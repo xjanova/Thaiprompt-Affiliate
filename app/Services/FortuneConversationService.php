@@ -724,11 +724,15 @@ class FortuneConversationService
             $message .= 'จันทราพร้อมทำนายให้ค่ะ 🔮✨';
         } else {
             $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n";
-            $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
-            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-            $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
-            $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-            $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+            if ($this->settings->isDeepReadingEnabled()) {
+                $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
+                $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+                $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+            } else {
+                $message .= 'กลับมาใหม่พรุ่งนี้ได้นะคะ 🙏';
+            }
         }
 
         return [
@@ -834,12 +838,16 @@ class FortuneConversationService
             // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            $price = $this->getDeepReadingPrice();
-            $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
-            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-            $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
-            $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-            $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+            if ($this->settings->isDeepReadingEnabled()) {
+                $price = $this->getDeepReadingPrice();
+                $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
+                $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+                $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+            } else {
+                $message .= 'กลับมาใหม่พรุ่งนี้ได้นะคะ 🙏';
+            }
         }
 
         return [
@@ -1245,6 +1253,19 @@ class FortuneConversationService
     {
         // ตรวจสอบว่าต้องการดูดวงละเอียดหรือไม่
         if ($this->isDeepReadingAccepted($messageText)) {
+            // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            if (! $this->settings->isDeepReadingEnabled()) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return [
+                    'action' => 'deep_reading_disabled',
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดถูกปิดการใช้งานชั่วคราวค่ะ\n\n".
+                                 "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกตินะคะ\n".
+                                 "พิมพ์คำถามมาได้เลยค่ะ หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
+                    'reading' => $reading,
+                ];
+            }
+
             $reading->updateConversationStatus(FortuneReading::STATUS_COLLECTING_BIRTHDATE);
 
             return [
@@ -1277,6 +1298,21 @@ class FortuneConversationService
     protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null): array
     {
         try {
+            // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            if (! $this->settings->isDeepReadingEnabled()) {
+                Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return [
+                    'action' => 'deep_reading_disabled',
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดถูกปิดการใช้งานชั่วคราวค่ะ\n\n".
+                                 "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกตินะคะ\n".
+                                 "พิมพ์คำถามมาได้เลยค่ะ หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
+                    'reading' => null,
+                ];
+            }
+
             // ดึงโปรไฟล์ถ้ายังไม่มี
             if (empty($userProfile)) {
                 $userProfile = $this->facebookService->getUserProfile($facebookUserId);
@@ -1802,6 +1838,11 @@ class FortuneConversationService
      */
     protected function getUpsellMessage(string $name): string
     {
+        // ✅ ถ้าปิดดูดวงละเอียด → ไม่แสดง upsell
+        if (! $this->settings->isDeepReadingEnabled()) {
+            return '';
+        }
+
         $price = $this->getDeepReadingPrice();
 
         return "═══════════════════════\n".
@@ -2615,29 +2656,34 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
-        $price = $this->getDeepReadingPrice();
-
         $message = "🔮 *เพจดูดวงหมอจันทรายินดีต้อนรับค่ะ*\n\n";
         $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";
         $message .= "(ฟรีวันละ 1 คำถาม)\n\n";
 
-        $message .= "═══════════════════════\n";
-        $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-        $message .= "═══════════════════════\n\n";
+        // ✅ แสดง upsell เฉพาะเมื่อเปิดดูดวงละเอียด
+        if ($this->settings->isDeepReadingEnabled()) {
+            $price = $this->getDeepReadingPrice();
 
-        $message .= "📌 ถามได้ถึง 2 คำถาม\n";
-        $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
-        $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
-        $message .= "📌 คำทำนายละเอียดคุ้มราคา\n\n";
+            $message .= "═══════════════════════\n";
+            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+            $message .= "═══════════════════════\n\n";
 
-        $message .= "🎯 *วิธีใช้บริการ*\n";
-        $message .= "─────────────────────\n";
-        $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
-        $message .= "2️⃣ ถามคำถามได้เลย 2 ข้อ\n";
-        $message .= "3️⃣ ระบบจะออกบิลพร้อมยอดชำระ\n";
-        $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
+            $message .= "📌 ถามได้ถึง 2 คำถาม\n";
+            $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
+            $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
+            $message .= "📌 คำทำนายละเอียดคุ้มราคา\n\n";
 
-        $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+            $message .= "🎯 *วิธีใช้บริการ*\n";
+            $message .= "─────────────────────\n";
+            $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
+            $message .= "2️⃣ ถามคำถามได้เลย 2 ข้อ\n";
+            $message .= "3️⃣ ระบบจะออกบิลพร้อมยอดชำระ\n";
+            $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
+
+            $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
+        } else {
+            $message .= 'กลับมาใหม่พรุ่งนี้ได้นะคะ 🙏';
+        }
 
         return $message;
     }

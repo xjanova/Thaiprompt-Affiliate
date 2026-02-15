@@ -256,13 +256,17 @@ class FortuneChannelManager
             'contents' => $fortuneFlex,
         ]);
 
-        // ส่ง Flex Message Upsell
-        $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
+        // ส่ง Flex Message Upsell (เฉพาะเมื่อเปิดดูดวงละเอียด)
+        if ($this->settings->isDeepReadingEnabled()) {
+            $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
 
-        return $lineService->sendRichMessage($userId, [
-            'alt_text' => 'ดูดวงละเอียด',
-            'contents' => $upsellFlex,
-        ]);
+            return $lineService->sendRichMessage($userId, [
+                'alt_text' => 'ดูดวงละเอียด',
+                'contents' => $upsellFlex,
+            ]);
+        }
+
+        return true;
     }
 
     /**
@@ -410,10 +414,12 @@ class FortuneChannelManager
                 ['label' => '🔮 ดูเลย', 'text' => 'ดู'],
                 ['label' => 'ไม่ต้องการ', 'text' => 'ไม่'],
             ],
-            'basic_done' => [
-                ['label' => '✨ ต้องการ', 'text' => 'ต้องการดูดวงละเอียด'],
-                ['label' => 'ไม่ต้องการ', 'text' => 'ไม่ต้องการ'],
-            ],
+            'basic_done' => $this->settings->isDeepReadingEnabled()
+                ? [
+                    ['label' => '✨ ต้องการ', 'text' => 'ต้องการดูดวงละเอียด'],
+                    ['label' => 'ไม่ต้องการ', 'text' => 'ไม่ต้องการ'],
+                ]
+                : [],
             'collecting_birthdate' => [
                 ['label' => 'ยกเลิก', 'text' => 'ยกเลิก'],
             ],
