@@ -395,6 +395,9 @@ class SetupController extends Controller
             // เข้าสู่ระบบอัตโนมัติ
             auth()->login($user);
 
+            // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
+            $request->session()->regenerate();
+
             return redirect()->route('admin.dashboard')
                 ->with('success', 'ติดตั้งระบบเรียบร้อยแล้ว! ยินดีต้อนรับสู่ TP-Affiliate');
 

@@ -273,6 +273,9 @@ class RegisterController extends Controller
         // Log the user in
         Auth::login($user);
 
+        // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
+        $request->session()->regenerate();
+
         return redirect()->route('user.home')
             ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
     }

@@ -189,6 +189,9 @@ class LineLoginController extends Controller
                 // Login user
                 Auth::login($user);
 
+                // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
+                $request->session()->regenerate();
+
                 // ตรวจสอบว่ามาจาก mobile app หรือไม่
                 $mobileToken = Session::get('line_mobile_token');
                 $mobileState = Session::get('line_mobile_state');
