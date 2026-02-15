@@ -503,6 +503,12 @@ backup_critical_files() {
             print_success "✓ Backed up Google credentials"
     fi
 
+    # Backup Firebase credentials for FCM push notifications (if exists)
+    if [ -f "storage/app/firebase-credentials.json" ]; then
+        cp storage/app/firebase-credentials.json "$CRITICAL_BACKUP_DIR/firebase-credentials.json" && \
+            print_success "✓ Backed up Firebase credentials"
+    fi
+
     echo "$CRITICAL_BACKUP_DIR" > /tmp/deploy_backup_path_$$
     log "Critical files backed up to: $CRITICAL_BACKUP_DIR"
 }
@@ -545,6 +551,13 @@ restore_critical_files() {
                 mkdir -p storage/app
                 cp "$backup_path/google-credentials.json" storage/app/google-credentials.json 2>/dev/null || true
                 print_success "✓ Restored Google credentials"
+            fi
+
+            # Restore Firebase credentials for FCM push notifications (if exists)
+            if [ -f "$backup_path/firebase-credentials.json" ]; then
+                mkdir -p storage/app
+                cp "$backup_path/firebase-credentials.json" storage/app/firebase-credentials.json 2>/dev/null || true
+                print_success "✓ Restored Firebase credentials"
             fi
         fi
 
@@ -795,7 +808,7 @@ fi
 # Step 4.4: Clean all untracked files and directories (SAFE - excludes critical files)
 print_info "Removing untracked files and directories..."
 # Note: Critical files (.env, uploads) are backed up and will be restored
-git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' || print_warning "Git clean failed (continuing anyway)"
+git clean -fdx -e '.env*' -e 'storage/app/public/*' -e 'public/storage' -e 'storage/app/firebase-credentials.json' -e 'storage/app/google-credentials.json' || print_warning "Git clean failed (continuing anyway)"
 
 # Step 4.5: Restore Critical Files (PREVENT DATA LOSS!)
 print_info "Restoring critical files (.env, uploads)..."

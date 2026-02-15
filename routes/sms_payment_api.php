@@ -6,6 +6,11 @@
  * เส้นทาง API สำหรับระบบชำระเงินผ่าน SMS Checker
  * URL เต็ม: /api/v1/sms-payment/*
  *
+ * Rate Limiting (ต่อนาที):
+ * - Critical endpoints: 300/นาที (notify, register, FCM, approve/reject)
+ * - Standard endpoints: 120/นาที (orders, sync, status)
+ * - Web auth endpoints: 30/นาที (generate-amount, notifications)
+ *
  * รวมอยู่ใน routes/api.php:
  * require __DIR__ . '/sms_payment_api.php';
  */
@@ -19,28 +24,41 @@ use Illuminate\Support\Facades\Route;
 // URL เต็มจะเป็น: /api/v1/sms-payment/*
 Route::prefix('v1/sms-payment')->group(function () {
 
-    // เส้นทางที่ต้อง authenticate ด้วย API Key ของอุปกรณ์
-    Route::middleware([VerifySmsCheckerDevice::class])->group(function () {
-        // รับ SMS notification จาก Android App (ไม่ต้องเช็ค subscription — รับ SMS ได้เสมอ)
+    // ═══════════════════════════════════════════════════
+    // Critical endpoints — 300/นาที (ต้องผ่านเสมอ)
+    // SMS notification, device registration, FCM token
+    // ═══════════════════════════════════════════════════
+    Route::middleware([VerifySmsCheckerDevice::class, 'throttle:300,1'])->group(function () {
+        // รับ SMS notification จาก Android App
         Route::post('/notify', [SmsPaymentController::class, 'notify']);
 
-        // รับ encrypted action (approve/reject) จาก Android App (critical path — ไม่ต้องเช็ค subscription)
+        // รับ encrypted action (approve/reject) จาก Android App
         Route::post('/notify-action', [SmsPaymentController::class, 'notifyAction']);
-
-        // ตรวจสอบสถานะอุปกรณ์
-        Route::get('/status', [SmsPaymentController::class, 'status']);
 
         // ลงทะเบียน/อัพเดทข้อมูลอุปกรณ์
         Route::post('/register-device', [SmsPaymentController::class, 'registerDevice']);
 
         // FCM Token registration (สำหรับ push notifications)
         Route::post('/register-fcm-token', [SmsPaymentController::class, 'registerFcmToken']);
+    });
+
+    // ═══════════════════════════════════════════════════
+    // Standard endpoints — 120/นาที
+    // Status, settings, orders, sync
+    // ═══════════════════════════════════════════════════
+    Route::middleware([VerifySmsCheckerDevice::class, 'throttle:120,1'])->group(function () {
+        // ตรวจสอบสถานะอุปกรณ์
+        Route::get('/status', [SmsPaymentController::class, 'status']);
+
+        // ตั้งค่าอุปกรณ์ (สำหรับ Android App)
+        Route::get('/device-settings', [SmsPaymentController::class, 'getDeviceSettings']);
+        Route::put('/device-settings', [SmsPaymentController::class, 'updateDeviceSettings']);
 
         // เส้นทางที่ต้องมี SMS Gateway access (subscription/premium/official)
         Route::middleware([VerifySmsGatewayAccess::class])->group(function () {
             // จัดการ Orders (สำหรับ Android App)
             Route::get('/orders', [SmsPaymentController::class, 'orders']);
-            Route::get('/orders/match', [SmsPaymentController::class, 'matchOrderByAmount']); // ค้นหา order ตามยอดเงิน
+            Route::get('/orders/match', [SmsPaymentController::class, 'matchOrderByAmount']);
             Route::post('/orders/{id}/approve', [SmsPaymentController::class, 'approveOrder']);
             Route::post('/orders/{id}/reject', [SmsPaymentController::class, 'rejectOrder']);
             Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
@@ -55,14 +73,13 @@ Route::prefix('v1/sms-payment')->group(function () {
             // สถิติ dashboard (สำหรับ Android App)
             Route::get('/dashboard-stats', [SmsPaymentController::class, 'dashboardStats']);
         });
-
-        // ตั้งค่าอุปกรณ์ (สำหรับ Android App — ไม่ต้องเช็ค subscription)
-        Route::get('/device-settings', [SmsPaymentController::class, 'getDeviceSettings']);
-        Route::put('/device-settings', [SmsPaymentController::class, 'updateDeviceSettings']);
     });
 
-    // เส้นทางที่ต้อง authenticate ด้วย Laravel Sanctum (web/admin)
-    Route::middleware(['auth:sanctum'])->group(function () {
+    // ═══════════════════════════════════════════════════
+    // Web auth endpoints — 30/นาที
+    // เรียกจาก checkout/admin ไม่ใช่จากแอพ
+    // ═══════════════════════════════════════════════════
+    Route::middleware(['auth:sanctum', 'throttle:30,1'])->group(function () {
         // สร้าง unique payment amount (เรียกจาก checkout)
         Route::post('/generate-amount', [SmsPaymentController::class, 'generateAmount']);
 

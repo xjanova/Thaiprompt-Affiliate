@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\SmsGatewaySubscription;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -12,7 +13,7 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * ใช้หลัง VerifySmsCheckerDevice middleware
  * - Admin devices (store_id = null) → ผ่านเสมอ
- * - Seller devices → เช็ค subscription → 403 ถ้าไม่มีสิทธิ์
+ * - Seller devices → เช็ค subscription (cache 5 นาที) → 403 ถ้าไม่มีสิทธิ์
  */
 class VerifySmsGatewayAccess
 {
@@ -32,8 +33,13 @@ class VerifySmsGatewayAccess
             return $next($request);
         }
 
-        // Seller devices → เช็ค subscription
-        if (! SmsGatewaySubscription::storeHasAccess($device->store_id)) {
+        // Seller devices → เช็ค subscription (cache 5 นาที เพื่อลด DB queries)
+        $cacheKey = 'sms_gateway_access:' . $device->store_id;
+        $hasAccess = Cache::remember($cacheKey, 300, function () use ($device) {
+            return SmsGatewaySubscription::storeHasAccess($device->store_id);
+        });
+
+        if (! $hasAccess) {
             return response()->json([
                 'success' => false,
                 'message' => 'SMS Gateway subscription required. Please subscribe from your store dashboard.',
