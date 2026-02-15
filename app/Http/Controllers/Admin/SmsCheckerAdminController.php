@@ -490,28 +490,20 @@ class SmsCheckerAdminController extends Controller
     {
         try {
             $fcmService = app(FcmNotificationService::class);
-            $result = $fcmService->triggerSync();
 
-            $successMsg = 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android';
-            $errorMsg = 'ส่ง FCM test push ล้มเหลว — อาจยังไม่มีอุปกรณ์ที่ลงทะเบียน FCM token';
+            // ใช้ testPush() แทน triggerSync() เพื่อให้ได้ข้อมูล debug ละเอียด
+            $result = $fcmService->testPush();
 
-            // ถ้าเป็น AJAX request → return JSON
+            // ถ้าเป็น AJAX request → return JSON พร้อม details
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => (bool) $result,
-                    'message' => $result ? $successMsg : $errorMsg,
-                ]);
+                return response()->json($result);
             }
 
-            if ($result) {
-                return redirect()
-                    ->route('admin.smschecker.settings')
-                    ->with('success', $successMsg);
-            }
+            $flashType = $result['success'] ? 'success' : 'error';
 
             return redirect()
                 ->route('admin.smschecker.settings')
-                ->with('error', $errorMsg);
+                ->with($flashType, $result['message']);
 
         } catch (\Exception $e) {
             Log::error('FCM Test: Exception', ['error' => $e->getMessage()]);

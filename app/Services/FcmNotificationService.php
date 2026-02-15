@@ -376,6 +376,116 @@ class FcmNotificationService
     }
 
     /**
+     * ทดสอบ FCM push แบบละเอียด — return ข้อมูล debug สำหรับ admin panel
+     *
+     * @return array{success: bool, message: string, details: array}
+     */
+    public function testPush(): array
+    {
+        // ตรวจสอบ FCM enabled
+        if (! $this->isEnabled()) {
+            return [
+                'success' => false,
+                'message' => 'FCM ถูกปิดอยู่ — เปิดใช้งานที่ตั้งค่า FCM ก่อน',
+                'details' => ['fcm_enabled' => false],
+            ];
+        }
+
+        // ตรวจสอบ credentials
+        $credentialsPath = Setting::get('fcm_credentials_path') ?: config('services.firebase.credentials');
+        if (! $credentialsPath || ! file_exists($credentialsPath)) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบไฟล์ Firebase credentials — อัพโหลดใหม่อีกครั้ง',
+                'details' => ['credentials_path' => $credentialsPath],
+            ];
+        }
+
+        // ตรวจสอบ project ID
+        $projectId = Setting::get('fcm_project_id') ?: config('services.firebase.project_id');
+        if (! $projectId) {
+            $projectId = $this->getProjectIdFromCredentials();
+        }
+        if (! $projectId) {
+            return [
+                'success' => false,
+                'message' => 'ไม่พบ Firebase Project ID — กรอกใน settings',
+                'details' => [],
+            ];
+        }
+
+        // ตรวจสอบ access token (OAuth2)
+        $accessToken = $this->getAccessToken();
+        if (! $accessToken) {
+            return [
+                'success' => false,
+                'message' => 'ไม่สามารถขอ Access Token จาก Google ได้ — ตรวจสอบไฟล์ credentials',
+                'details' => ['project_id' => $projectId],
+            ];
+        }
+
+        // ตรวจสอบอุปกรณ์
+        $activeDevices = SmsCheckerDevice::where('status', 'active')->count();
+        $tokens = $this->getTargetTokens(null);
+
+        if (empty($tokens)) {
+            return [
+                'success' => false,
+                'message' => "มี {$activeDevices} อุปกรณ์ active แต่ไม่มีอุปกรณ์ที่ลงทะเบียน FCM token — ต้องเปิดแอพ Android เพื่อให้ส่ง token มาลงทะเบียน",
+                'details' => [
+                    'active_devices' => $activeDevices,
+                    'devices_with_token' => 0,
+                    'project_id' => $projectId,
+                    'access_token_ok' => true,
+                ],
+            ];
+        }
+
+        // ลองส่ง sync push
+        $data = [
+            'type' => 'sync',
+            'timestamp' => (string) (time() * 1000),
+        ];
+
+        $successCount = 0;
+        $failedCount = 0;
+        $errors = [];
+
+        foreach ($tokens as $token) {
+            if ($this->sendToToken($token, $data, null)) {
+                $successCount++;
+            } else {
+                $failedCount++;
+                $errors[] = 'token: '.substr($token, 0, 20).'...';
+            }
+        }
+
+        if ($successCount > 0) {
+            return [
+                'success' => true,
+                'message' => "ส่ง FCM push สำเร็จ {$successCount}/" . count($tokens) . ' อุปกรณ์ — ตรวจสอบที่แอพ Android',
+                'details' => [
+                    'total_tokens' => count($tokens),
+                    'success' => $successCount,
+                    'failed' => $failedCount,
+                    'project_id' => $projectId,
+                ],
+            ];
+        }
+
+        return [
+            'success' => false,
+            'message' => "ส่งล้มเหลวทั้ง " . count($tokens) . " อุปกรณ์ — token อาจไม่ถูกต้อง (แอพต้องอัพเดทและเปิดใหม่)",
+            'details' => [
+                'total_tokens' => count($tokens),
+                'failed' => $failedCount,
+                'errors' => $errors,
+                'project_id' => $projectId,
+            ],
+        ];
+    }
+
+    /**
      * Check if FCM is enabled via admin settings
      */
     public function isEnabled(): bool
