@@ -778,6 +778,7 @@ class FacebookWebhookController extends Controller
                 'awaiting_confirmation', 'basic_done', 'check_remaining',
                 'collecting_questions', 'need_more_questions', 'retry_question',
                 'ai_limit', 'declined', 'payment_expired', 'completed',
+                'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
             ];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
@@ -873,6 +874,8 @@ class FacebookWebhookController extends Controller
 
     /**
      * ส่ง Quick Replies ตาม action
+     *
+     * ถ้า user มีบิลดูดวงที่ชำระเงินแล้ววันนี้ → แสดงปุ่ม "📜 คำทำนายล่าสุด" เพิ่ม
      */
     protected function sendConversationQuickReplies(string $senderId, string $action): void
     {
@@ -911,8 +914,29 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
+            'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty' => [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
+            ],
             default => null,
         };
+
+        // เพิ่มปุ่ม "📜 คำทำนายล่าสุด" ถ้า user มีบิลที่จ่ายวันนี้
+        // แสดงเฉพาะ actions ที่ไม่ได้อยู่กลาง flow (ไม่ใส่ตอนเก็บคำถาม/รอชำระ)
+        if ($quickReplies) {
+            $showViewLastButton = in_array($action, [
+                'awaiting_confirmation', 'basic_done', 'check_remaining',
+                'ai_limit', 'payment_expired', 'declined', 'completed',
+                'view_reading_basic', 'view_reading_deep', 'view_reading_processing',
+                'view_reading_empty',
+            ]);
+
+            if ($showViewLastButton && $this->hasTodayPaidReading($senderId)) {
+                // Facebook Quick Replies รองรับสูงสุด 13 ปุ่ม — ต่อท้ายได้เลย
+                $quickReplies[] = ['content_type' => 'text', 'title' => '📜 คำทำนายล่าสุด', 'payload' => 'VIEW_LAST_READING'];
+            }
+        }
 
         if ($quickReplies) {
             // ส่ง Quick Replies แยก
@@ -923,6 +947,19 @@ class FacebookWebhookController extends Controller
                 $quickReplies
             );
         }
+    }
+
+    /**
+     * ตรวจสอบว่า user มีบิลดูดวงที่ชำระเงินแล้ววันนี้หรือไม่
+     *
+     * ใช้สำหรับแสดง/ซ่อนปุ่ม "📜 คำทำนายล่าสุด"
+     */
+    protected function hasTodayPaidReading(string $facebookUserId): bool
+    {
+        return FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('is_paid', true)
+            ->whereDate('paid_at', today())
+            ->exists();
     }
 
     /**
@@ -1139,6 +1176,9 @@ class FacebookWebhookController extends Controller
             'QUESTION_MONEY' => $this->handleCategoryQuestion($senderId, 'money'),
             'QUESTION_HEALTH' => $this->handleCategoryQuestion($senderId, 'health'),
             'QUESTION_CUSTOM' => $this->sendCustomQuestionPrompt($senderId),
+
+            // Quick Reply ดูคำทำนายล่าสุด
+            'VIEW_LAST_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
 
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
