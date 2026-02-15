@@ -432,8 +432,12 @@ class FcmNotificationService
             return false;
         }
 
-        // Read project ID from database first, fallback to config
+        // Read project ID from database first, fallback to config, then from credentials file
         $projectId = Setting::get('fcm_project_id') ?: config('services.firebase.project_id');
+        if (! $projectId) {
+            // ✅ Fallback: อ่าน project_id จากไฟล์ credentials JSON
+            $projectId = $this->getProjectIdFromCredentials();
+        }
         if (! $projectId) {
             Log::error('FCM: Firebase project ID not configured');
 
@@ -541,6 +545,25 @@ class FcmNotificationService
         } catch (\Exception $e) {
             Log::error('FCM: Exception getting access token', ['error' => $e->getMessage()]);
 
+            return null;
+        }
+    }
+
+    /**
+     * อ่าน project_id จากไฟล์ credentials JSON (fallback เมื่อไม่ได้ตั้ง env/DB)
+     */
+    private function getProjectIdFromCredentials(): ?string
+    {
+        $credentialsPath = Setting::get('fcm_credentials_path') ?: config('services.firebase.credentials');
+        if (! $credentialsPath || ! file_exists($credentialsPath)) {
+            return null;
+        }
+
+        try {
+            $credentials = json_decode(file_get_contents($credentialsPath), true);
+
+            return $credentials['project_id'] ?? null;
+        } catch (\Exception $e) {
             return null;
         }
     }

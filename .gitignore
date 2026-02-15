@@ -49,6 +49,11 @@ storage/app/public/*
 storage/app/google-credentials.json
 google-credentials.json
 
+# Firebase / FCM Credentials (ห้ามเข้า git — มี private key)
+storage/app/firebase-credentials.json
+plptdb-firebase-adminsdk-*.json
+*-firebase-adminsdk-*.json
+
 # Deployment
 .composer.lock.checksum
 .seeders.checksum
