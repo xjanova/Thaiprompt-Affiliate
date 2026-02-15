@@ -171,28 +171,32 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             $notifArg
         );
 
+        // ✅ Log output ไปไฟล์แทน /dev/null เพื่อ debug กรณี process ล้มเหลว
+        $logFile = \storage_path("logs/fortune-deep-{$readingId}.log");
+
         Log::info('ProcessDeepFortuneReadingJob: proc_open background process', [
             'reading_id' => $readingId,
             'command' => $cmd,
+            'log_file' => $logFile,
         ]);
 
         // ใช้ proc_open() เพื่อรัน background process
         // รองรับทั้ง Unix (nohup + &) และ Windows (start /B)
         if (self::isWindows()) {
-            // Windows: ใช้ start /B เพื่อรัน background + NUL แทน /dev/null
-            $bgCmd = "start /B {$cmd} > NUL 2>&1";
+            // Windows: ใช้ start /B เพื่อรัน background
+            $bgCmd = "start /B {$cmd} >> \"{$logFile}\" 2>&1";
             $descriptors = [
                 0 => ['file', 'NUL', 'r'],   // stdin
-                1 => ['file', 'NUL', 'w'],   // stdout
-                2 => ['file', 'NUL', 'w'],   // stderr
+                1 => ['file', 'NUL', 'w'],   // stdout (shell stdout)
+                2 => ['file', 'NUL', 'w'],   // stderr (shell stderr)
             ];
         } else {
             // Unix/Linux: ใช้ nohup + & เพื่อให้ process ทำงานอิสระจาก parent
-            $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
+            $bgCmd = "nohup {$cmd} >> \"{$logFile}\" 2>&1 &";
             $descriptors = [
                 0 => ['file', '/dev/null', 'r'],  // stdin
-                1 => ['file', '/dev/null', 'w'],  // stdout
-                2 => ['file', '/dev/null', 'w'],  // stderr
+                1 => ['file', '/dev/null', 'w'],  // stdout (shell stdout)
+                2 => ['file', '/dev/null', 'w'],  // stderr (shell stderr)
             ];
         }
 
@@ -202,6 +206,11 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             // proc_close() รอ shell command เสร็จ (แต่ shell จะ return ทันที
             // เพราะใช้ & หรือ start /B ให้ child process ทำงาน background)
             \proc_close($process);
+        } else {
+            Log::error('ProcessDeepFortuneReadingJob: proc_open ล้มเหลว!', [
+                'reading_id' => $readingId,
+                'command' => $bgCmd,
+            ]);
         }
     }
 

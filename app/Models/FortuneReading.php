@@ -705,6 +705,20 @@ class FortuneReading extends Model
      */
     public function confirmPayment(?SmsPaymentNotification $notification = null): void
     {
+        // ✅ Idempotent: ถ้าชำระแล้ว ไม่ต้องทำซ้ำ (ป้องกัน paid_at ถูก reset)
+        if ($this->is_paid) {
+            // อัพเดทเฉพาะ SMS notification info ถ้ายังไม่มี
+            if ($notification && empty($this->sms_notification_id)) {
+                $this->update([
+                    'sms_notification_id' => $notification->id,
+                    'sender_info' => $notification->sender_or_receiver,
+                    'sender_bank' => $notification->bank,
+                ]);
+            }
+
+            return;
+        }
+
         $updateData = [
             'is_paid' => true,
             'paid_at' => now(),

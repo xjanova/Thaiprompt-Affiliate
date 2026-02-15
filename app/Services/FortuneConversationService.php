@@ -1728,6 +1728,17 @@ class FortuneConversationService
                 'chart_image_url' => $chartImageUrl,
             ]);
 
+            // ✅ ส่ง FCM push ให้แอพ SMS Checker เห็นบิลใหม่ทันที
+            // ไม่ต้องรอ polling cycle (ปกติ 30-60 วินาที)
+            try {
+                app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+            } catch (\Exception $fcmErr) {
+                Log::warning('Fortune Conversation: FCM push new_fortune_reading ล้มเหลว (ไม่ blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $fcmErr->getMessage(),
+                ]);
+            }
+
             // ดึง QR Code URL สำหรับชำระเงิน (ถ้ามี)
             $qrImageUrl = $this->getPaymentQrImageUrl();
 

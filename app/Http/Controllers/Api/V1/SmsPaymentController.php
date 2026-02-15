@@ -683,6 +683,11 @@ class SmsPaymentController extends Controller
             return $this->transformToOrderApproval($txn);
         });
 
+        // ✅ Safety net: ตรวจสอบบิลดูดวงที่ค้างที่ 'paid' → retry อัตโนมัติ
+        // ทำงานทุกครั้งที่แอพ poll orders (ทุก 30-60 วินาที)
+        // ใช้เวลาน้อย (1 query) ไม่กระทบ performance
+        $this->retryStuckFortuneReadings();
+
         // === รวมบิลดูดวง (FortuneReading) ที่รอชำระเงินหรือชำระแล้ว ===
         // FortuneReading ไม่มี store_id → เฉพาะ admin device เท่านั้นที่เห็น
         // หมายเหตุ: บิลเก่าอาจไม่มี unique_payment_amount_id (สร้างก่อนระบบ SMS Checker)
@@ -886,6 +891,70 @@ class SmsPaymentController extends Controller
             'message' => 'Order approved successfully',
             'data' => ['transaction_id' => $model->transaction_id, 'status' => 'completed'],
         ]);
+    }
+
+    /**
+     * ✅ Safety net: ตรวจสอบบิลดูดวงที่ค้างที่ 'paid' แต่ยังไม่มีคำทำนาย → retry อัตโนมัติ
+     *
+     * เรียกทุกครั้งที่แอพ poll orders — ทำงานเร็ว (1 query, ไม่ lock)
+     * เป็นตัวช่วยเสริมจาก fortune:check-pending (scheduler) ที่อาจไม่ได้ตั้ง
+     */
+    private function retryStuckFortuneReadings(): void
+    {
+        try {
+            // ค้นหาบิลที่ชำระแล้ว แต่ยังไม่มี deep_response (ค้าง 2-30 นาที)
+            $stuckReadings = FortuneReading::where('is_paid', true)
+                ->where('reading_type', 'deep')
+                ->whereNull('deep_response')
+                ->where('conversation_status', FortuneReading::STATUS_PAID)
+                ->whereNotNull('paid_at')
+                ->where('paid_at', '<=', now()->subMinutes(2))
+                ->where('paid_at', '>=', now()->subMinutes(30))
+                ->limit(3) // จำกัดไม่ให้ retry มากเกินไปพร้อมกัน
+                ->get();
+
+            foreach ($stuckReadings as $reading) {
+                // ตรวจสอบ retry count (ป้องกัน dispatch ซ้ำไม่จำกัด)
+                $retryCount = $reading->getConversationState('auto_retry_count', 0);
+                if ($retryCount >= 3) {
+                    continue;
+                }
+
+                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+                if (empty($userId)) {
+                    continue;
+                }
+
+                // ใช้ Cache lock ป้องกัน dispatch ซ้ำจากหลาย request พร้อมกัน
+                $lockKey = "fortune_retry_lock:{$reading->id}";
+                if (Cache::has($lockKey)) {
+                    continue;
+                }
+                Cache::put($lockKey, true, 120); // lock 2 นาที
+
+                // อัพเดท retry count
+                $reading->setConversationState('auto_retry_count', $retryCount + 1);
+                $reading->setConversationState('last_auto_retry_at', now()->toIso8601String());
+
+                $platform = $reading->platform ?? 'facebook';
+
+                ProcessDeepFortuneReadingJob::dispatchSmart(
+                    $reading->id, null, $platform, $userId
+                );
+
+                Log::info('SMS Payment orders(): auto-retry stuck fortune reading', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'retry_count' => $retryCount + 1,
+                    'paid_minutes_ago' => (int) $reading->paid_at->diffInMinutes(now()),
+                ]);
+            }
+        } catch (\Exception $e) {
+            // ไม่ให้ error จาก safety net กระทบ response ปกติ
+            Log::warning('SMS Payment orders(): retryStuckFortuneReadings failed', [
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

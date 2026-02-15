@@ -284,6 +284,52 @@ class FcmNotificationService
     }
 
     /**
+     * ส่ง push notification เมื่อสร้างบิลดูดวงใหม่ (รอชำระเงิน)
+     *
+     * แจ้งแอพ SMS Checker ว่ามีบิลดูดวงใหม่รอจับคู่
+     * เพื่อให้แอพแสดงบิลทันทีโดยไม่ต้องรอ polling cycle
+     */
+    public function notifyNewFortuneReading(FortuneReading $reading): bool
+    {
+        $tokens = $this->getTargetTokens(null);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens available for new fortune reading notification');
+
+            return false;
+        }
+
+        // ใช้ offset ID เดียวกับ transformFortuneReadingToOrderApproval()
+        $offsetId = $reading->id + 10000000;
+
+        $data = [
+            'type' => 'new_order',
+            'order_id' => (string) $offsetId,
+            'order_number' => $reading->bill_reference ?? ('FTU-' . $reading->id),
+            'amount' => number_format((float) ($reading->amount_paid ?? 0), 2, '.', ''),
+            'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
+            'is_fortune_reading' => 'true',
+        ];
+
+        $notification = [
+            'title' => '🔮 บิลดูดวงใหม่ รอชำระเงิน',
+            'body' => sprintf(
+                'บิล %s ยอด ฿%s (%s)',
+                $reading->bill_reference ?? "#{$reading->id}",
+                number_format((float) ($reading->amount_paid ?? 0), 2),
+                $reading->facebook_user_name ?? 'ลูกค้าดูดวง'
+            ),
+        ];
+
+        Log::info('FCM: Sending new_fortune_reading push', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'amount' => $reading->amount_paid,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notification);
+    }
+
+    /**
      * Notify device that settings changed (e.g. approval_mode from admin panel)
      * Device will trigger sync to pull updated settings
      */

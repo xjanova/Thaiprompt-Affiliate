@@ -112,6 +112,25 @@ class FortuneProcessDeepReading extends Command
                 'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
+            // ✅ เปลี่ยนสถานะเป็น completed เพื่อไม่ให้บิลค้างที่ paid ตลอดไป
+            // fortune:check-pending จะ retry ให้อีกครั้ง (ถ้า deep_response ยังว่าง)
+            try {
+                $reading = FortuneReading::find($readingId);
+                if ($reading && $reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
+                    $reading->update([
+                        'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                    ]);
+                    Log::info('fortune:process-deep: เปลี่ยนสถานะเป็น completed หลังล้มเหลว', [
+                        'reading_id' => $readingId,
+                    ]);
+                }
+            } catch (\Exception $statusErr) {
+                Log::error('fortune:process-deep: เปลี่ยนสถานะไม่สำเร็จ', [
+                    'reading_id' => $readingId,
+                    'error' => $statusErr->getMessage(),
+                ]);
+            }
+
             // ส่งข้อความ error ให้ user
             try {
                 $settings = FortuneTellingSetting::getSettings();
