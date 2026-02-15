@@ -680,11 +680,24 @@ class FortuneReading extends Model
      */
     public function setPendingPayment(UniquePaymentAmount $uniqueAmount): void
     {
-        $this->update([
+        $updateData = [
             'unique_payment_amount_id' => $uniqueAmount->id,
             'amount_paid' => $uniqueAmount->unique_amount,
             'conversation_status' => self::STATUS_PENDING_PAYMENT,
-        ]);
+        ];
+
+        // Safety net: ถ้ายังไม่มี bill_reference → สร้างให้
+        // กรณี reading มาจาก basic→upsell path หรือ boot creating ไม่ได้สร้าง
+        if (empty($this->bill_reference)) {
+            $updateData['bill_reference'] = self::generateBillReference();
+        }
+
+        // ถ้า reading_type ยังเป็น basic → เปลี่ยนเป็น deep (กำลังจะชำระเงิน)
+        if ($this->reading_type !== 'deep') {
+            $updateData['reading_type'] = 'deep';
+        }
+
+        $this->update($updateData);
     }
 
     /**

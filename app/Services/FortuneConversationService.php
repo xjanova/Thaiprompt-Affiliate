@@ -1264,7 +1264,17 @@ class FortuneConversationService
                 ];
             }
 
-            $reading->updateConversationStatus(FortuneReading::STATUS_COLLECTING_BIRTHDATE);
+            // ⚠️ เปลี่ยน reading_type เป็น 'deep' + สร้าง bill_reference
+            // เพราะ reading เดิมเป็น basic → ต้องแปลงให้เป็น deep reading
+            // boot creating event ไม่ fire ตอน update ดังนั้นต้องสร้าง bill_reference เอง
+            $updateData = [
+                'reading_type' => 'deep',
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+            ];
+            if (empty($reading->bill_reference)) {
+                $updateData['bill_reference'] = FortuneReading::generateBillReference();
+            }
+            $reading->update($updateData);
 
             return [
                 'action' => 'collecting_birthdate',
