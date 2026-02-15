@@ -253,19 +253,34 @@ class FortuneConversationService
     }
 
     /**
-     * ดึงราคาดูดวงละเอียดจากการตั้งค่า
+     * ดึงราคาดูดวงจากการตั้งค่าระบบ
      *
-     * ⚠️ สำคัญ: ต้องใช้ method นี้แทน $this->settings->deep_reading_price ?: DEEP_READING_PRICE
-     * เพราะ Laravel decimal:2 cast จะคืนค่า "0.00" เป็น string ซึ่ง PHP ถือว่าเป็น truthy
-     * ทำให้ ?: operator ไม่ fallback ไปค่า default
+     * ลำดับการดึงราคา:
+     * 1. deep_reading_price (ราคาเชิงลึกจากส่วน Freemium — ถ้าเปิดและตั้งราคาไว้)
+     * 2. reading_price (ราคาดูดวงพื้นฐาน/ครั้ง — ตั้งจากหน้า settings หลัก)
+     * 3. DEEP_READING_PRICE constant (fallback สุดท้าย = 49 บาท)
      *
-     * @return float ราคาดูดวงละเอียด (บาท)
+     * ⚠️ สำคัญ: ต้อง cast เป็น float เพราะ Laravel decimal:2 cast
+     * จะคืนค่า "0.00" เป็น string ซึ่ง PHP ถือว่าเป็น truthy
+     *
+     * @return float ราคาดูดวง (บาท)
      */
     protected function getDeepReadingPrice(): float
     {
-        $price = (float) ($this->settings->deep_reading_price ?? 0);
+        // ลำดับที่ 1: ราคาเชิงลึก (Freemium section)
+        $deepPrice = (float) ($this->settings->deep_reading_price ?? 0);
+        if ($deepPrice > 0) {
+            return $deepPrice;
+        }
 
-        return $price > 0 ? $price : self::DEEP_READING_PRICE;
+        // ลำดับที่ 2: ราคาดูดวงพื้นฐาน/ครั้ง (ตั้งจากหน้า settings หลัก)
+        $readingPrice = (float) ($this->settings->reading_price ?? 0);
+        if ($readingPrice > 0) {
+            return $readingPrice;
+        }
+
+        // ลำดับที่ 3: fallback ค่า default
+        return self::DEEP_READING_PRICE;
     }
 
     /**

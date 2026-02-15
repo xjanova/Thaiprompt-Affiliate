@@ -47,6 +47,28 @@ class FortuneChannelManager
     }
 
     /**
+     * ดึงราคาดูดวงจากการตั้งค่าระบบ
+     *
+     * ลำดับ: deep_reading_price → reading_price → DEEP_READING_PRICE constant
+     *
+     * @return float ราคาดูดวง (บาท)
+     */
+    protected function getReadingPrice(): float
+    {
+        $deepPrice = (float) ($this->settings->deep_reading_price ?? 0);
+        if ($deepPrice > 0) {
+            return $deepPrice;
+        }
+
+        $readingPrice = (float) ($this->settings->reading_price ?? 0);
+        if ($readingPrice > 0) {
+            return $readingPrice;
+        }
+
+        return FortuneConversationService::DEEP_READING_PRICE;
+    }
+
+    /**
      * ดึง platform instance
      *
      * @param  string  $platform  ชื่อ platform (facebook, line)
@@ -235,7 +257,7 @@ class FortuneChannelManager
         ]);
 
         // ส่ง Flex Message Upsell
-        $upsellFlex = $lineService->buildUpsellFlexMessage($userName, FortuneConversationService::DEEP_READING_PRICE);
+        $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
 
         return $lineService->sendRichMessage($userId, [
             'alt_text' => 'ดูดวงละเอียด',
@@ -283,7 +305,7 @@ class FortuneChannelManager
         $uniquePayment = $reading->uniquePaymentAmount;
         $amount = $uniquePayment
             ? (float) $uniquePayment->unique_amount
-            : ((float) $reading->amount_paid ?: FortuneConversationService::DEEP_READING_PRICE);
+            : ((float) $reading->amount_paid ?: $this->getReadingPrice());
         $expiresAt = $uniquePayment?->expires_at?->format('H:i') ?? '--:--';
         $billRef = $reading->bill_reference;
 
