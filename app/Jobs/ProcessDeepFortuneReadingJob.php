@@ -143,7 +143,7 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             'command' => $cmd,
         ]);
 
-        exec($bgCmd);
+        \exec($bgCmd);
     }
 
     /**
