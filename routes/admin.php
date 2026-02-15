@@ -3191,102 +3191,112 @@ Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () 
             ->name('cancel');
     });
 
-    // =========================================
-    // Video Automation System
-    // ระบบสร้างวีดีโออัตโนมัติ (Suno + Freepik + YouTube)
-    // =========================================
-    Route::prefix('video-automation')->name('video-automation.')->group(function () {
+});
 
-        // Dashboard
-        Route::get('/', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'dashboard'])
-            ->name('dashboard');
-        Route::get('/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getDashboardStats'])
-            ->name('stats');
+// =========================================
+// Video Automation System
+// ระบบสร้างวีดีโออัตโนมัติ (Suno + Freepik + YouTube)
+// ⚠️ ย้ายออกมาจาก platform-revenue group เพื่อให้ route name ตรงกับ views
+// URL: /admin/platform-revenue/video-automation/*
+// Route name: admin.video-automation.*
+// =========================================
+Route::prefix('platform-revenue/video-automation')->name('video-automation.')->group(function () {
 
-        // Settings (API Keys, Credentials)
-        Route::get('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'settings'])
-            ->name('settings');
-        Route::post('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSettings'])
-            ->name('settings.save');
-        Route::post('/settings/test/{apiType}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'testApiConnection'])
-            ->name('settings.test');
+    // Dashboard
+    Route::get('/', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'dashboard'])
+        ->name('dashboard');
+    Route::get('/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getDashboardStats'])
+        ->name('stats');
 
-        // Platforms (YouTube, Facebook, Instagram, TikTok, etc.)
-        Route::get('/platforms', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'platforms'])
-            ->name('platforms');
-        Route::post('/platforms', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'savePlatform'])
-            ->name('platforms.save');
-        Route::delete('/platforms/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePlatform'])
-            ->name('platforms.delete');
+    // Settings (API Keys, Credentials)
+    Route::get('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'settings'])
+        ->name('settings');
+    Route::post('/settings', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSettings'])
+        ->name('settings.save');
+    Route::post('/settings/test/{apiType}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'testApiConnection'])
+        ->name('settings.test');
 
-        // YouTube OAuth
-        Route::get('/youtube/connect', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'connectYouTube'])
-            ->name('youtube.connect');
-        Route::get('/youtube/callback', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'youtubeCallback'])
-            ->name('youtube.callback');
+    // Platforms (YouTube, Facebook, Instagram, TikTok, etc.)
+    Route::get('/platforms', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'platforms'])
+        ->name('platforms');
+    Route::post('/platforms', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'savePlatform'])
+        ->name('platforms.save');
+    Route::delete('/platforms/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePlatform'])
+        ->name('platforms.delete');
 
-        // Templates (เทมเพลตสำหรับสร้างวีดีโอ)
-        Route::get('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'templates'])
-            ->name('templates');
-        Route::get('/templates/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createTemplate'])
-            ->name('templates.create');
-        Route::post('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeTemplate'])
-            ->name('templates.store');
-        Route::get('/templates/{id}/edit', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'editTemplate'])
-            ->name('templates.edit');
-        Route::put('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updateTemplate'])
-            ->name('templates.update');
-        Route::delete('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteTemplate'])
-            ->name('templates.delete');
+    // YouTube OAuth
+    Route::get('/youtube/connect', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'connectYouTube'])
+        ->name('youtube.connect');
+    Route::get('/youtube/callback', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'youtubeCallback'])
+        ->name('youtube.callback');
 
-        // Projects (โปรเจกต์สร้างวีดีโอ)
-        Route::get('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'projects'])
-            ->name('projects');
-        Route::get('/projects/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createProject'])
-            ->name('projects.create');
-        Route::post('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeProject'])
-            ->name('projects.store');
-        Route::get('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showProject'])
-            ->name('projects.show');
-        Route::post('/projects/{id}/run', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'runProject'])
-            ->name('projects.run');
-        Route::delete('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteProject'])
-            ->name('projects.delete');
+    // Templates (เทมเพลตสำหรับสร้างวีดีโอ)
+    Route::get('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'templates'])
+        ->name('templates');
+    Route::get('/templates/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createTemplate'])
+        ->name('templates.create');
+    Route::post('/templates', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeTemplate'])
+        ->name('templates.store');
+    Route::get('/templates/{id}/edit', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'editTemplate'])
+        ->name('templates.edit');
+    Route::put('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updateTemplate'])
+        ->name('templates.update');
+    Route::delete('/templates/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteTemplate'])
+        ->name('templates.delete');
 
-        // Jobs (งานที่รัน)
-        Route::get('/jobs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'jobs'])
-            ->name('jobs');
-        Route::get('/jobs/{id}/logs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getJobLogs'])
-            ->name('jobs.logs');
-        Route::post('/jobs/{id}/retry', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'retryJob'])
-            ->name('jobs.retry');
+    // Projects (โปรเจกต์สร้างวีดีโอ)
+    Route::get('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'projects'])
+        ->name('projects');
+    Route::get('/projects/create', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'createProject'])
+        ->name('projects.create');
+    Route::post('/projects', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'storeProject'])
+        ->name('projects.store');
+    Route::get('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showProject'])
+        ->name('projects.show');
+    Route::post('/projects/{id}/run', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'runProject'])
+        ->name('projects.run');
+    Route::delete('/projects/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteProject'])
+        ->name('projects.delete');
 
-        // Schedules (ตารางเวลาอัตโนมัติ)
-        Route::get('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'schedules'])
-            ->name('schedules');
-        Route::post('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSchedule'])
-            ->name('schedules.save');
-        Route::delete('/schedules/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteSchedule'])
-            ->name('schedules.delete');
+    // Jobs (งานที่รัน)
+    Route::get('/jobs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'jobs'])
+        ->name('jobs');
+    Route::get('/jobs/{id}/logs', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getJobLogs'])
+        ->name('jobs.logs');
+    Route::post('/jobs/{id}/retry', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'retryJob'])
+        ->name('jobs.retry');
 
-        // Publish History (ประวัติการโพสต์)
-        Route::get('/publish-history', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'publishHistory'])
-            ->name('publish-history');
-        Route::get('/publish-history/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getPublishStats'])
-            ->name('publish-history.stats');
-        Route::get('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showPublishHistory'])
-            ->name('publish-history.show');
-        Route::put('/publish-history/{id}/engagement', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updatePublishEngagement'])
-            ->name('publish-history.engagement');
-        Route::delete('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishHistory'])
-            ->name('publish-history.delete');
-        Route::delete('/publish-history/{id}/source-files', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishSourceFiles'])
-            ->name('publish-history.delete-source');
+    // Schedules (ตารางเวลาอัตโนมัติ)
+    Route::get('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'schedules'])
+        ->name('schedules');
+    Route::post('/schedules', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'saveSchedule'])
+        ->name('schedules.save');
+    Route::delete('/schedules/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deleteSchedule'])
+        ->name('schedules.delete');
 
-        // Documentation (คู่มือการใช้งาน)
-        Route::get('/documentation', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'documentation'])
-            ->name('documentation');
-    });
+    // Publish History (ประวัติการโพสต์)
+    Route::get('/publish-history', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'publishHistory'])
+        ->name('publish-history');
+    Route::get('/publish-history/stats', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'getPublishStats'])
+        ->name('publish-history.stats');
+    Route::get('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'showPublishHistory'])
+        ->name('publish-history.show');
+    Route::put('/publish-history/{id}/engagement', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'updatePublishEngagement'])
+        ->name('publish-history.engagement');
+    Route::delete('/publish-history/{id}', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishHistory'])
+        ->name('publish-history.delete');
+    Route::delete('/publish-history/{id}/source-files', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'deletePublishSourceFiles'])
+        ->name('publish-history.delete-source');
+
+    // Documentation (คู่มือการใช้งาน)
+    Route::get('/documentation', [\App\Http\Controllers\Admin\VideoAutomationController::class, 'documentation'])
+        ->name('documentation');
+});
+
+// =========================================
+// ต่อจาก platform-revenue group (สำหรับ sub-modules ที่ต้องอยู่ใน namespace platform-revenue)
+// =========================================
+Route::prefix('platform-revenue')->name('platform-revenue.')->group(function () {
 
     // =========================================
     // AI Content Writer System
@@ -3945,3 +3955,5 @@ Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
     // สถิติรายได้
     Route::get('/revenue', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'revenue'])->name('revenue');
 });
+
+}); // ← ปิด platform-revenue group ที่ 2 (AI Content Writer, Forum, SMS Gateway)
