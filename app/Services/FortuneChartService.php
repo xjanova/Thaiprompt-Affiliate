@@ -372,13 +372,14 @@ class FortuneChartService
      */
     protected function buildPngChart(array $chartData): string
     {
-        $width = 800;
-        $height = 800;
+        // ✅ ขนาดใหญ่ขึ้น → อ่านง่ายบนมือถือ
+        $width = 1000;
+        $height = 1000;
         $cx = $width / 2;
         $cy = $height / 2;
-        $outerR = 340;
-        $innerR = 220;
-        $centerR = 130;
+        $outerR = 420;
+        $innerR = 275;
+        $centerR = 165;
 
         // สร้าง canvas
         $img = imagecreatetruecolor($width, $height);
@@ -389,47 +390,45 @@ class FortuneChartService
         $thaiFont = $this->getThaiFont();
         $symbolFont = $this->getSymbolFont();
 
-        // === สีที่ใช้ ===
-        $bgColor = $this->hexColor($img, '#0d0521');
-        $bgInner = $this->hexColor($img, '#1a0a3e');
-        $purple = $this->hexColor($img, '#8B5CF6');
-        $purpleDark = $this->hexColor($img, '#6D28D9');
-        $purpleLight = $this->hexColor($img, '#A78BFA');
-        $purpleFaint = $this->hexColor($img, '#C4B5FD');
-        $gold = $this->hexColor($img, '#FFD700');
+        // === สีที่ปรับใหม่ — contrast สูงขึ้น อ่านง่าย ===
+        $bgColor = $this->hexColor($img, '#0f0a2e');       // พื้นหลัง: สว่างขึ้นเล็กน้อย
+        $bgInner = $this->hexColor($img, '#1e1050');        // วงกลางสว่างขึ้น
+        $purple = $this->hexColor($img, '#9B6FFF');         // เส้นวงกลม: สว่างขึ้น
+        $purpleDark = $this->hexColor($img, '#7C3AED');     // เส้นแบ่ง
+        $purpleLight = $this->hexColor($img, '#C4A8FF');    // ข้อความ: สว่าง ชัดขึ้น
+        $purpleFaint = $this->hexColor($img, '#DDD6FE');    // Subtitle: ชัดขึ้น
+        $gold = $this->hexColor($img, '#FFE04A');           // ทอง: สดใสขึ้น
         $white = $this->hexColor($img, '#FFFFFF');
-        $gray = $this->hexColor($img, '#D1D5DB');
-        $grayDark = $this->hexColor($img, '#6B7280');
-        $green = $this->hexColor($img, '#4ADE80');
-        $red = $this->hexColor($img, '#F87171');
+        $offWhite = $this->hexColor($img, '#F0F0F0');       // ข้อความทั่วไป
+        $gray = $this->hexColor($img, '#E5E7EB');           // วันเกิด: สว่างขึ้น
+        $grayDark = $this->hexColor($img, '#9CA3AF');       // Footer: สว่างขึ้น
+        $green = $this->hexColor($img, '#6EE7A0');          // มิตร: สดใสขึ้น
+        $red = $this->hexColor($img, '#FCA5A5');            // ศัตรู: ชัดขึ้น
 
         // === พื้นหลัง ===
         imagefilledrectangle($img, 0, 0, $width, $height, $bgColor);
 
         // ดาวกะพริบ (decorative)
-        for ($i = 0; $i < 60; $i++) {
+        for ($i = 0; $i < 80; $i++) {
             $sx = rand(10, $width - 10);
             $sy = rand(10, $height - 10);
-            $sr = rand(1, 2);
-            $starColor = imagecolorallocatealpha($img, 255, 255, 255, rand(40, 100));
+            $sr = rand(1, 3);
+            $starColor = imagecolorallocatealpha($img, 255, 255, 255, rand(30, 90));
             imagefilledellipse($img, $sx, $sy, $sr * 2, $sr * 2, $starColor);
         }
 
         // Glow ตรงกลาง (วงกลมโปร่งใส)
         for ($r = $outerR; $r > $centerR; $r -= 5) {
             $alpha = (int) (127 - (127 - 100) * ($r - $centerR) / ($outerR - $centerR));
-            $glowColor = imagecolorallocatealpha($img, 139, 92, 246, $alpha);
+            $glowColor = imagecolorallocatealpha($img, 155, 111, 255, $alpha);
             imagefilledellipse($img, (int) $cx, (int) $cy, $r * 2, $r * 2, $glowColor);
         }
 
         // === วงกลม 3 ชั้น ===
-        // วงนอก
-        $this->drawCircle($img, $cx, $cy, $outerR, $purple, 2);
-        // วงใน
+        $this->drawCircle($img, $cx, $cy, $outerR, $purple, 3);
         $this->drawCircle($img, $cx, $cy, $innerR, $purpleDark, 2);
-        // วงกลาง (filled)
         imagefilledellipse($img, (int) $cx, (int) $cy, $centerR * 2, $centerR * 2, $bgInner);
-        $this->drawCircle($img, $cx, $cy, $centerR, $purpleLight, 2);
+        $this->drawCircle($img, $cx, $cy, $centerR, $purpleLight, 3);
 
         // === เส้นแบ่ง 12 ภพ ===
         for ($i = 0; $i < 12; $i++) {
@@ -446,74 +445,74 @@ class FortuneChartService
             $house = self::HOUSES[$i];
             $midAngle = deg2rad(($i - 1) * 30 - 90 + 15);
 
-            // ชื่อภพ (วงนอก)
+            // ชื่อภพ (วงนอก) — ตัวใหญ่ขึ้น
             $houseColor = $this->hexColor($img, $house['color']);
-            $tx = $cx + ($outerR - 25) * cos($midAngle);
-            $ty = $cy + ($outerR - 25) * sin($midAngle);
+            $tx = $cx + ($outerR - 30) * cos($midAngle);
+            $ty = $cy + ($outerR - 30) * sin($midAngle);
             $label = "{$i}.{$house['name']}";
-            $this->drawCenteredText($img, $thaiFont, 13, $tx, $ty, $label, $houseColor);
+            $this->drawCenteredText($img, $thaiFont, 16, $tx, $ty, $label, $houseColor);
 
             // ดาวเคราะห์ในภพ
             $planets = $chartData['planetPositions'][$i] ?? [];
             if (! empty($planets)) {
-                $planetR = ($innerR + $centerR) / 2 + 15;
+                $planetR = ($innerR + $centerR) / 2 + 20;
                 $planetCount = count($planets);
 
                 foreach ($planets as $pIdx => $planetKey) {
                     $planet = self::PLANETS[$planetKey];
                     $planetColor = $this->hexColor($img, $planet['color']);
-                    $offset = ($pIdx - ($planetCount - 1) / 2) * 12;
+                    $offset = ($pIdx - ($planetCount - 1) / 2) * 15;
                     $px = $cx + ($planetR + $offset) * cos($midAngle);
                     $py = $cy + ($planetR + $offset) * sin($midAngle);
 
-                    // วงกลมพื้นหลังดาว
-                    $bgPlanet = $this->hexColorAlpha($img, $planet['color'], 90);
-                    imagefilledellipse($img, (int) $px, (int) $py, 30, 30, $bgPlanet);
+                    // วงกลมพื้นหลังดาว — ใหญ่ขึ้น
+                    $bgPlanet = $this->hexColorAlpha($img, $planet['color'], 80);
+                    imagefilledellipse($img, (int) $px, (int) $py, 38, 38, $bgPlanet);
 
-                    // สัญลักษณ์ดาว (ใช้ symbol font)
-                    $this->drawCenteredText($img, $symbolFont, 18, $px, $py - 2, $planet['symbol'], $planetColor);
+                    // สัญลักษณ์ดาว — ใหญ่ขึ้น
+                    $this->drawCenteredText($img, $symbolFont, 22, $px, $py - 2, $planet['symbol'], $white);
 
-                    // ชื่อดาว (ภาษาไทย)
-                    $this->drawCenteredText($img, $thaiFont, 11, $px, $py + 16, $planet['name'], $planetColor);
+                    // ชื่อดาว (ภาษาไทย) — ใหญ่ขึ้น + สีขาวชัด
+                    $this->drawCenteredText($img, $thaiFont, 13, $px, $py + 20, $planet['name'], $offWhite);
                 }
             }
         }
 
-        // === ตรงกลาง: ข้อมูลผู้ใช้ ===
+        // === ตรงกลาง: ข้อมูลผู้ใช้ — ตัวใหญ่ขึ้นทั้งหมด ===
         $name = mb_substr($chartData['name'], 0, 15);
 
         if ($chartData['isFullChart']) {
             $mainColor = $this->hexColor($img, $chartData['mainPlanetColor'] ?? '#FFD700');
 
-            $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy - 55, 'BIRTH CHART', $gold);
-            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 33, $name, $white);
-            $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy - 13, "วัน{$chartData['dayOfWeek']}", $purpleLight);
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 7, $chartData['birthDate'], $gray);
+            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 75, 'BIRTH CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 24, $cx, $cy - 48, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 17, $cx, $cy - 22, "วัน{$chartData['dayOfWeek']}", $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy + 2, $chartData['birthDate'], $gray);
 
             // ดาวเจ้าชนะ (symbol ใหญ่)
-            $this->drawCenteredText($img, $symbolFont, 30, $cx, $cy + 35, $chartData['mainPlanetSymbol'], $mainColor);
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy + 58, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
+            $this->drawCenteredText($img, $symbolFont, 38, $cx, $cy + 40, $chartData['mainPlanetSymbol'], $mainColor);
+            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy + 70, "ดาวเจ้าชนะ: {$chartData['mainPlanet']}", $mainColor);
 
-            // มิตร/ศัตรู
+            // มิตร/ศัตรู — ใหญ่ขึ้น
             $friendNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['friends']));
             $enemyNames = implode(' ', array_map(fn ($k) => self::PLANETS[$k]['name'], $chartData['chaochana']['enemies']));
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 78, "มิตร: {$friendNames}", $green);
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 95, "ศัตรู: {$enemyNames}", $red);
+            $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy + 95, "มิตร: {$friendNames}", $green);
+            $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy + 115, "ศัตรู: {$enemyNames}", $red);
         } else {
             // Quick chart (ไม่มีวันเกิด)
-            $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy - 50, 'TRANSIT CHART', $gold);
-            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 25, $name, $white);
-            $this->drawCenteredText($img, $thaiFont, 13, $cx, $cy, 'ดวงดาวโคจรขณะนี้', $purpleLight);
-            $this->drawCenteredText($img, $thaiFont, 12, $cx, $cy + 20, $chartData['transitDate'], $gray);
-            $this->drawCenteredText($img, $thaiFont, 11, $cx, $cy + 70, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleFaint);
+            $this->drawCenteredText($img, $thaiFont, 18, $cx, $cy - 65, 'TRANSIT CHART', $gold);
+            $this->drawCenteredText($img, $thaiFont, 24, $cx, $cy - 35, $name, $white);
+            $this->drawCenteredText($img, $thaiFont, 16, $cx, $cy - 5, 'ดวงดาวโคจรขณะนี้', $purpleLight);
+            $this->drawCenteredText($img, $thaiFont, 15, $cx, $cy + 20, $chartData['transitDate'], $gray);
+            $this->drawCenteredText($img, $thaiFont, 14, $cx, $cy + 85, 'บอกวันเกิดเพื่อดู Birth Chart', $purpleFaint);
         }
 
-        // === หัวเรื่องด้านบน ===
-        $this->drawCenteredText($img, $thaiFont, 22, $cx, 32, '~~ จันทราพยากรณ์ ~~', $gold);
-        $this->drawCenteredText($img, $thaiFont, 12, $cx, 58, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
+        // === หัวเรื่องด้านบน — ใหญ่ขึ้น ===
+        $this->drawCenteredText($img, $thaiFont, 28, $cx, 38, '~~ จันทราพยากรณ์ ~~', $gold);
+        $this->drawCenteredText($img, $thaiFont, 15, $cx, 68, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
 
-        // === Footer ===
-        $this->drawCenteredText($img, $thaiFont, 10, $cx, $height - 20, 'จันทราพยากรณ์ | Powered by Xman Studio', $grayDark);
+        // === Footer — สว่างขึ้น ===
+        $this->drawCenteredText($img, $thaiFont, 12, $cx, $height - 22, 'จันทราพยากรณ์ | Powered by Xman Studio', $grayDark);
 
         // === Export PNG ===
         ob_start();

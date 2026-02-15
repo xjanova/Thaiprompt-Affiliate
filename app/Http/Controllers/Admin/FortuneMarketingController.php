@@ -8,6 +8,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneAIService;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneChartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -322,6 +323,7 @@ PROMPT;
 
         $settings = FortuneTellingSetting::getSettings();
         $channelManager = new FortuneChannelManager($settings);
+        $chartService = app(FortuneChartService::class);
         $message = $campaign->getMessageToSend();
 
         // ดึงรายชื่อเป้าหมาย
@@ -334,12 +336,50 @@ PROMPT;
         foreach ($recipients as $recipient) {
             try {
                 $platformService = $channelManager->getPlatform($recipient->platform);
-                if ($platformService) {
-                    $success = $platformService->sendMessage($recipient->facebook_user_id, $message, ['from_admin' => true]);
-                    $success ? $sent++ : $failed++;
-                } else {
+                if (! $platformService) {
                     $failed++;
+
+                    continue;
                 }
+
+                // ✅ สร้างและส่งภาพดวงดาว (Birth Chart) ก่อนข้อความ
+                try {
+                    $chartUrl = null;
+                    $name = $recipient->facebook_user_name ?? 'คุณ';
+                    $birthDate = $recipient->birth_date;
+
+                    if ($birthDate) {
+                        $chartUrl = $chartService->generateBirthChart(
+                            $birthDate instanceof \Carbon\Carbon ? $birthDate->format('Y-m-d') : $birthDate,
+                            $name
+                        );
+                    } else {
+                        $chartUrl = $chartService->generateQuickChart($name);
+                    }
+
+                    if ($chartUrl) {
+                        // บันทึก chart URL ลงใน reading ล่าสุดของผู้ใช้
+                        FortuneReading::where('facebook_user_id', $recipient->facebook_user_id)
+                            ->latest()
+                            ->first()
+                            ?->update(['reading_image_url' => $chartUrl]);
+
+                        $platformService->sendImage($recipient->facebook_user_id, $chartUrl);
+                        usleep(500000); // 0.5 วินาที ให้ภาพส่งก่อน
+                    }
+                } catch (\Exception $chartErr) {
+                    // ส่ง chart ไม่ได้ ไม่ blocking → ยังส่งข้อความต่อ
+                    Log::warning('Marketing campaign: ส่ง chart image ไม่สำเร็จ', [
+                        'campaign_id' => $campaign->id,
+                        'user_id' => $recipient->facebook_user_id,
+                        'error' => $chartErr->getMessage(),
+                    ]);
+                }
+
+                // ส่งข้อความคำทำนาย
+                $success = $platformService->sendMessage($recipient->facebook_user_id, $message, ['from_admin' => true]);
+                $success ? $sent++ : $failed++;
+
                 // หน่วงเวลาเพื่อไม่ให้โดน rate limit
                 usleep(300000); // 0.3 วินาที
             } catch (\Exception $e) {
@@ -370,7 +410,12 @@ PROMPT;
     private function getRecipients(FortuneMarketingCampaign $campaign)
     {
         $query = FortuneReading::query()
-            ->select('facebook_user_id', 'platform')
+            ->select(
+                'facebook_user_id',
+                'platform',
+                DB::raw('MAX(facebook_user_name) as facebook_user_name'),
+                DB::raw('MAX(birth_date) as birth_date')
+            )
             ->groupBy('facebook_user_id', 'platform');
 
         // กรอง platform
