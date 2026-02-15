@@ -786,6 +786,12 @@ class SmsPaymentController extends Controller
             // ค้นหา SMS notification ที่จับคู่กับบิลนี้
             $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
 
+            // ✅ ยืนยันการชำระเงินทันที (ก่อน dispatch job)
+            // เพื่อให้แอพแสดงสถานะ "ชำระแล้ว" ทันที ไม่ต้องรอ job รัน
+            if (! $model->is_paid) {
+                $model->confirmPayment($notification);
+            }
+
             // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
             // ใช้ queue job แทน sync call → ไม่ติด web server timeout
             $platform = $model->platform ?? 'facebook';
@@ -795,11 +801,6 @@ class SmsPaymentController extends Controller
                 ProcessDeepFortuneReadingJob::dispatchSmart(
                     $model->id, $notification?->id, $platform, $userId
                 );
-            } else {
-                // ไม่มี user ID → แค่ confirm payment
-                if (! $model->is_paid) {
-                    $model->confirmPayment($notification);
-                }
             }
 
             // อัพเดท notification สถานะเป็น confirmed

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\FortuneReading;
 use App\Models\PaymentTransaction;
 use App\Models\Setting;
 use App\Models\SmsCheckerDevice;
@@ -226,6 +227,57 @@ class FcmNotificationService
 
         Log::info('FCM: Sending order_cancelled push', [
             'transaction_id' => $transaction->id,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notification);
+    }
+
+    /**
+     * ส่ง push notification เมื่อบิลดูดวง match กับ SMS แล้ว (auto-approve)
+     *
+     * แจ้งแอพ SMS Checker ว่าบิลดูดวงจับคู่สำเร็จ + ชำระแล้ว
+     * เพื่อให้แอพอัพเดทสถานะจาก "รอจับคู่" เป็น "ชำระแล้ว" ทันที
+     */
+    public function notifyFortuneReadingMatched(FortuneReading $reading, SmsPaymentNotification $smsNotification, ?SmsCheckerDevice $device = null): bool
+    {
+        $tokens = $this->getTargetTokens($device);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens available for fortune reading matched notification');
+
+            return false;
+        }
+
+        $banks = config('smschecker.supported_banks', []);
+        $bankName = $banks[$smsNotification->bank] ?? $smsNotification->bank;
+
+        // ใช้ offset ID เดียวกับ transformFortuneReadingToOrderApproval()
+        // เพื่อให้แอพ map ได้ถูกต้อง
+        $offsetId = $reading->id + 10000000;
+
+        $data = [
+            'type' => 'order_approved',
+            'order_id' => (string) $offsetId,
+            'order_number' => $reading->bill_reference ?? ('FTU-' . $reading->id),
+            'amount' => number_format((float) $smsNotification->amount, 2, '.', ''),
+            'bank' => $smsNotification->bank,
+            'payment_status' => 'completed',
+            'is_fortune_reading' => 'true',
+        ];
+
+        $notification = [
+            'title' => '🔮 บิลดูดวงชำระแล้ว!',
+            'body' => sprintf(
+                'บิล %s ยอด ฿%s จับคู่สำเร็จ (%s)',
+                $reading->bill_reference ?? "#{$reading->id}",
+                number_format((float) $smsNotification->amount, 2),
+                $bankName
+            ),
+        ];
+
+        Log::info('FCM: Sending fortune_reading_matched push', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'notification_id' => $smsNotification->id,
         ]);
 
         return $this->sendToMultipleTokens($tokens, $data, $notification);

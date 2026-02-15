@@ -539,8 +539,21 @@ class SmsPaymentService
             'user_id' => $userId,
         ]);
 
+        // ✅ ยืนยันการชำระเงินทันที (ก่อน dispatch job)
+        // เพื่อให้ response กลับไปแอพ SMS Checker แสดงสถานะ "auto_approved" ทันที
+        // ไม่ใช่ค้างที่ "pending_review" จนกว่า job จะรัน confirmPayment()
+        $reading->confirmPayment($notification);
+
+        Log::info('SMS Payment: confirmPayment ทันที (ก่อน dispatch job)', [
+            'reading_id' => $reading->id,
+            'notification_id' => $notification->id,
+            'is_paid' => $reading->is_paid,
+            'conversation_status' => $reading->conversation_status,
+        ]);
+
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
-        // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
+        // Job จะ: สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
+        // (confirmPayment() ถูกเรียกแล้วด้านบน — job จะเรียกซ้ำก็ไม่เป็นไร เป็น idempotent)
         // ⚠️ อัพเดท notification เป็น matched หลัง dispatch สำเร็จ (ไม่ใช่ก่อน)
         try {
             ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -559,6 +572,15 @@ class SmsPaymentService
                 'platform' => $platform,
                 'user_id' => $userId,
             ]);
+
+            // ส่ง FCM push ให้แอพอัพเดทสถานะทันที (จาก "รอจับคู่" → "ชำระแล้ว")
+            try {
+                app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
+            } catch (\Exception $fcmErr) {
+                Log::warning('SMS Payment: FCM push fortune_reading_matched ล้มเหลว (ไม่ critical)', [
+                    'error' => $fcmErr->getMessage(),
+                ]);
+            }
 
             return true;
 
