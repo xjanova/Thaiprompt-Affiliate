@@ -446,6 +446,18 @@ class SmsCheckerAdminController extends Controller
                 'admin_id' => auth()->id(),
                 'service_account' => $json['client_email'],
             ]);
+        } else {
+            // ✅ ถ้าไม่ได้อัพโหลดไฟล์ใหม่ แต่ไฟล์มีอยู่แล้ว → บันทึก path ลง Setting DB
+            $existingPath = Setting::get('fcm_credentials_path');
+            if (empty($existingPath) || ! file_exists($existingPath)) {
+                $defaultPath = storage_path('app/firebase-credentials.json');
+                if (file_exists($defaultPath)) {
+                    Setting::set('fcm_credentials_path', $defaultPath, 'string', 'fcm');
+                    Log::info('FCM: Auto-detected existing credentials file', [
+                        'path' => $defaultPath,
+                    ]);
+                }
+            }
         }
 
         return redirect()
