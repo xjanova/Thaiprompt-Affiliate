@@ -3,8 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
+use App\Services\FortuneChannelManager;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Fortune Readings Controller
@@ -109,6 +113,130 @@ class FortuneReadingsController extends Controller
         return redirect()
             ->route('admin.fortune.readings.index')
             ->with('success', 'ลบการทำนายสำเร็จ');
+    }
+
+    /**
+     * สร้างคำทำนายเชิงลึกใหม่ + ส่งให้ลูกค้า (Manual Retry)
+     *
+     * ใช้กรณี: ลูกค้าชำระเงินแล้ว แต่ระบบส่งคำทำนายไม่สำเร็จ
+     * (เช่น background job ล้มเหลว, process crash, timeout)
+     */
+    public function retryDeepReading(FortuneReading $reading)
+    {
+        // ตรวจสอบเงื่อนไข: ต้องเป็น deep reading ที่ชำระเงินแล้ว
+        if (! $reading->is_paid || $reading->reading_type !== 'deep') {
+            return redirect()->back()->with('error', 'ไม่สามารถดำเนินการได้: ต้องเป็น deep reading ที่ชำระเงินแล้ว');
+        }
+
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+        if (empty($userId)) {
+            return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
+        }
+
+        // ถ้ามี deep_response อยู่แล้ว → clear เพื่อสร้างใหม่
+        // (Artisan command จะข้ามถ้ามี deep_response + status=completed)
+        if (! empty($reading->deep_response)) {
+            $reading->update([
+                'deep_response' => null,
+                'ai_response' => null,
+                'conversation_status' => FortuneReading::STATUS_PAID,
+            ]);
+        }
+
+        // Dispatch job สร้างคำทำนาย + ส่งข้อความ
+        try {
+            ProcessDeepFortuneReadingJob::dispatchSmart(
+                $reading->id, null, $platform, $userId
+            );
+
+            Log::info('Admin: Manual retry deep reading', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'admin' => auth()->user()?->name,
+            ]);
+
+            return redirect()->back()->with('success', '🔄 กำลังสร้างคำทำนายเชิงลึกใหม่... ระบบจะส่งให้ลูกค้าอัตโนมัติ');
+
+        } catch (\Exception $e) {
+            Log::error('Admin: Manual retry deep reading ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * ส่งคำทำนายเชิงลึกที่มีอยู่แล้วซ้ำให้ลูกค้า (Manual Resend)
+     *
+     * ใช้กรณี: มีคำทำนายอยู่แล้ว แต่ส่งให้ลูกค้าไม่สำเร็จ
+     * (เช่น Messenger/LINE error, ข้อความไม่ถึง)
+     */
+    public function resendDeepReading(FortuneReading $reading)
+    {
+        // ตรวจสอบว่ามี deep_response
+        if (empty($reading->deep_response)) {
+            return redirect()->back()->with('error', 'ไม่มีคำทำนายเชิงลึก กรุณาใช้ปุ่ม "สร้างคำทำนายใหม่" แทน');
+        }
+
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+        if (empty($userId)) {
+            return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
+        }
+
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $channelManager = new FortuneChannelManager($settings);
+
+            // ส่ง Birth Chart ก่อน (ถ้ามี)
+            if ($reading->reading_image_url) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $reading->reading_image_url);
+                        usleep(500000); // รอ 0.5 วินาที
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('Admin Resend: ส่ง chart image ไม่สำเร็จ', [
+                        'error' => $imgErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // ส่งคำทำนายเชิงลึก
+            $channelManager->sendResponse($platform, $userId, [
+                'action' => 'resend',
+                'message' => $reading->deep_response,
+            ], ['from_admin' => true]);
+
+            // อัพเดท status เป็น completed ถ้ายังไม่ได้
+            if ($reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            }
+
+            Log::info('Admin: Manual resend deep reading สำเร็จ', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'admin' => auth()->user()?->name,
+            ]);
+
+            return redirect()->back()->with('success', '✅ ส่งคำทำนายเชิงลึกให้ลูกค้าสำเร็จ!');
+
+        } catch (\Exception $e) {
+            Log::error('Admin: Manual resend deep reading ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'ส่งไม่สำเร็จ: '.$e->getMessage());
+        }
     }
 
     /**

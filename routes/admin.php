@@ -3874,6 +3874,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
+    Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
+    Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
 
     // จัดการผู้ใช้ดูดวง + ส่งข้อความ
     Route::prefix('users')->name('users.')->group(function () {

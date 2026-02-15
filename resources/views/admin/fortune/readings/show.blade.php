@@ -223,6 +223,59 @@
                 <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : '-' }}</span>
             </div>
         </div>
+
+        {{-- ปุ่ม Manual Action สำหรับ Admin (เฉพาะ deep reading ที่ชำระเงินแล้ว) --}}
+        @if($reading->reading_type === 'deep' && $reading->is_paid)
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {{-- Flash Messages --}}
+                @if(session('success'))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
+                        {{ session('error') }}
+                    </div>
+                @endif
+
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">จัดการคำทำนายเชิงลึก (Manual)</p>
+                <div class="flex flex-wrap gap-3">
+                    @if(empty($reading->deep_response))
+                        {{-- ไม่มีคำทำนาย → ปุ่มสร้างใหม่ (เด่น) --}}
+                        <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
+                              method="POST"
+                              onsubmit="return confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ')">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow transition">
+                                🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า
+                            </button>
+                        </form>
+                    @else
+                        {{-- มีคำทำนายแล้ว → ปุ่มส่งซ้ำ + ปุ่มสร้างใหม่ --}}
+                        <form action="{{ route('admin.fortune.readings.resend-deep', $reading) }}"
+                              method="POST"
+                              onsubmit="return confirm('ส่งคำทำนายที่มีอยู่ให้ลูกค้าซ้ำหรือไม่?')">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow transition">
+                                📨 ส่งคำทำนายซ้ำให้ลูกค้า
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
+                              method="POST"
+                              onsubmit="return confirm('ต้องการสร้างคำทำนายเชิงลึกใหม่ทั้งหมดหรือไม่?\n\n⚠️ คำทำนายเดิมจะถูกลบ และระบบจะสร้างคำทำนายใหม่โดย AI')">
+                            @csrf
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm font-medium rounded-lg transition">
+                                🔄 สร้างคำทำนายใหม่
+                            </button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endif
     </div>
 
     {{-- Stats --}}
