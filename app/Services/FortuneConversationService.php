@@ -1166,15 +1166,13 @@ class FortuneConversationService
             // สร้างข้อความเชิญชวนดูดวงละเอียด
             $upsellMessage = $this->getUpsellMessage($name);
 
-            // เพิ่มเลขที่บิลอ้างอิงท้ายคำทำนาย
-            $billRefMessage = $this->getBillReferenceMessage($reading->bill_reference);
-
             // แสดงจำนวนสิทธิ์ฟรีที่เหลือ (รวมเครดิตพิเศษจากแอดมิน/โปรโมชั่น)
             $remainingMessage = $this->getRemainingCreditsMessage($facebookUserId);
 
+            // ทำนายฟรี → ไม่แสดงเลขบิล (bill_reference สร้างเฉพาะ deep reading)
             return [
                 'action' => 'basic_done',
-                'message' => $aiResult['response']."\n\n".$remainingMessage."\n\n".$billRefMessage."\n\n".$upsellMessage,
+                'message' => $aiResult['response']."\n\n".$remainingMessage."\n\n".$upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
                 'chart_image_url' => $chartImageUrl,

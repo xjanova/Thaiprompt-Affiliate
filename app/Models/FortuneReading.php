@@ -730,7 +730,9 @@ class FortuneReading extends Model
         parent::boot();
 
         static::creating(function ($reading) {
-            if (empty($reading->bill_reference)) {
+            // สร้าง bill_reference เฉพาะ deep reading (เสียเงิน) เท่านั้น
+            // basic reading (ฟรี) ไม่ต้องมีเลขบิล
+            if (empty($reading->bill_reference) && $reading->reading_type === 'deep') {
                 $reading->bill_reference = self::generateBillReference();
             }
         });

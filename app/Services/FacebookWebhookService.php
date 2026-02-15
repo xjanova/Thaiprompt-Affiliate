@@ -91,9 +91,23 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ลองส่งแต่ละ chunk สูงสุด 2 ครั้ง
             for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
                 try {
+                    $messagePayload = ['text' => $chunk];
+
+                    // ✅ เพิ่ม Quick Reply buttons ใน chunk สุดท้าย
+                    $isLastChunk = ($chunkIndex === count($chunks) - 1);
+                    if ($isLastChunk && ! empty($options['quick_replies'])) {
+                        $messagePayload['quick_replies'] = array_map(function ($reply) {
+                            return [
+                                'content_type' => 'text',
+                                'title' => mb_substr($reply['label'] ?? $reply['title'] ?? '', 0, 20),
+                                'payload' => $reply['text'] ?? $reply['payload'] ?? $reply['label'] ?? '',
+                            ];
+                        }, array_slice($options['quick_replies'], 0, 13));
+                    }
+
                     $payload = [
                         'recipient' => ['id' => $recipientId],
-                        'message' => ['text' => $chunk],
+                        'message' => $messagePayload,
                         'messaging_type' => $messagingType,
                         'access_token' => $this->pageAccessToken,
                     ];
