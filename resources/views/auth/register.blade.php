@@ -343,8 +343,19 @@
                             </script>
                         @else
                             {{-- Normal Registration Form --}}
-                            <form method="POST" action="{{ route('register') }}" class="space-y-4">
+                            <form method="POST" action="{{ route('register') }}" class="space-y-4" id="registerForm">
                                 @csrf
+
+                                {{-- แสดง error เมื่อ session/CSRF หมดอายุ --}}
+                                @if ($errors->has('csrf') || $errors->has('turnstile'))
+                                <div class="bg-amber-500/20 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl text-sm">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                                        <span>{{ $errors->first('csrf') ?: $errors->first('turnstile') }}</span>
+                                    </div>
+                                    <p class="mt-1 text-amber-300/70 text-xs">กรุณากดปุ่ม "สมัครสมาชิกเลย!" อีกครั้ง</p>
+                                </div>
+                                @endif
 
                                 {{-- Referral Code Notice - แสดงชื่อผู้เชิญ --}}
                                 @if (!empty($referralCode) && !empty($referrerName))
@@ -683,6 +694,51 @@
 
     {{-- Alpine.js --}}
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {{-- CSRF Token Auto-Refresh สำหรับมือถือที่เปิดทิ้งไว้นาน --}}
+    <script>
+        (function() {
+            // Refresh CSRF token ทุก 10 นาที เพื่อป้องกัน session หมดอายุ
+            var csrfRefreshInterval = 10 * 60 * 1000; // 10 นาที
+
+            function refreshCsrfToken() {
+                fetch('/sanctum/csrf-cookie', {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).catch(function() {
+                    // ถ้า sanctum endpoint ไม่มี → ใช้ GET หน้าปัจจุบัน
+                    fetch(window.location.href, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    }).then(function(response) {
+                        // ดึง CSRF token จาก cookie ที่ได้รับ
+                        var match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+                        if (match) {
+                            var token = decodeURIComponent(match[1]);
+                            // อัพเดท meta tag
+                            var meta = document.querySelector('meta[name="csrf-token"]');
+                            if (meta) meta.setAttribute('content', token);
+                            // อัพเดท hidden input ในฟอร์ม
+                            var inputs = document.querySelectorAll('input[name="_token"]');
+                            inputs.forEach(function(input) { input.value = token; });
+                        }
+                    }).catch(function() {});
+                });
+            }
+
+            // Refresh เมื่อหน้ากลับมา active (มือถือสลับแอป/ล็อคหน้าจอ)
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) {
+                    refreshCsrfToken();
+                }
+            });
+
+            // Refresh ตาม interval
+            setInterval(refreshCsrfToken, csrfRefreshInterval);
+        })();
+    </script>
 
     {{-- Stats Animation Script --}}
     <script>

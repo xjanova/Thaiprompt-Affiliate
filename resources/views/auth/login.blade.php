@@ -302,8 +302,19 @@
                 @endif
 
                 {{-- Login Form --}}
-                <form method="POST" action="{{ route('login') }}" class="space-y-4 sm:space-y-5">
+                <form method="POST" action="{{ route('login') }}" class="space-y-4 sm:space-y-5" id="loginForm">
                     @csrf
+
+                    {{-- แสดง error เมื่อ session/CSRF หมดอายุ --}}
+                    @if ($errors->has('csrf') || $errors->has('turnstile'))
+                    <div class="bg-amber-500/20 border border-amber-500/40 text-amber-200 px-4 py-3 rounded-xl text-sm">
+                        <div class="flex items-center gap-2">
+                            <i class="fas fa-exclamation-triangle text-amber-400"></i>
+                            <span>{{ $errors->first('csrf') ?: $errors->first('turnstile') }}</span>
+                        </div>
+                        <p class="mt-1 text-amber-300/70 text-xs">กรุณากดปุ่มเข้าสู่ระบบอีกครั้ง</p>
+                    </div>
+                    @endif
 
                     {{-- Email Field --}}
                     <div>
@@ -567,6 +578,33 @@
                 }
             }, 500);
         });
+    </script>
+
+    {{-- CSRF Token Auto-Refresh สำหรับมือถือที่เปิดทิ้งไว้นาน --}}
+    <script>
+        (function() {
+            var csrfRefreshInterval = 10 * 60 * 1000; // 10 นาที
+            function refreshCsrfToken() {
+                fetch(window.location.href, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function() {
+                    var match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+                    if (match) {
+                        var token = decodeURIComponent(match[1]);
+                        var meta = document.querySelector('meta[name="csrf-token"]');
+                        if (meta) meta.setAttribute('content', token);
+                        var inputs = document.querySelectorAll('input[name="_token"]');
+                        inputs.forEach(function(input) { input.value = token; });
+                    }
+                }).catch(function() {});
+            }
+            document.addEventListener('visibilitychange', function() {
+                if (!document.hidden) refreshCsrfToken();
+            });
+            setInterval(refreshCsrfToken, csrfRefreshInterval);
+        })();
     </script>
 </body>
 </html>
