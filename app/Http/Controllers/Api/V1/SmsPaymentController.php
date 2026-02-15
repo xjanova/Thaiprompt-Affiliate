@@ -756,7 +756,48 @@ class SmsPaymentController extends Controller
             $orders = $orders->concat($fortuneOrders)
                 ->sortByDesc('created_at')
                 ->values();
+
+            // 🔍 Debug: log fortune readings ที่ถูกส่งกลับ
+            if ($fortuneReadings->isNotEmpty()) {
+                Log::info('SMS Payment orders(): ส่ง fortune readings กลับแอพ', [
+                    'device_id' => $device->device_id,
+                    'fortune_count' => $fortuneReadings->count(),
+                    'status_filter' => $status,
+                    'fortune_ids' => $fortuneReadings->pluck('id')->toArray(),
+                    'fortune_statuses' => $fortuneReadings->pluck('conversation_status')->toArray(),
+                    'fortune_bills' => $fortuneReadings->pluck('bill_reference')->toArray(),
+                ]);
+
+                // 🔍 Debug: log ตัวอย่าง transformed data ตัวแรก
+                $sampleTransformed = $fortuneOrders->first();
+                if ($sampleTransformed) {
+                    Log::info('SMS Payment orders(): sample fortune order', [
+                        'sample_id' => $sampleTransformed['id'] ?? 'null',
+                        'sample_status' => $sampleTransformed['approval_status'] ?? 'null',
+                        'sample_order_number' => $sampleTransformed['order_details_json']['order_number'] ?? 'null',
+                        'sample_amount' => $sampleTransformed['order_details_json']['amount'] ?? 'null',
+                        'sample_notification_id' => $sampleTransformed['notification_id'] ?? 'null',
+                        'sample_has_notification' => isset($sampleTransformed['notification']),
+                        'sample_synced_version' => $sampleTransformed['synced_version'] ?? 'null',
+                    ]);
+                }
+            } else {
+                Log::info('SMS Payment orders(): ไม่มี fortune readings ให้ส่ง', [
+                    'device_id' => $device->device_id,
+                    'status_filter' => $status,
+                    'device_can_access' => true,
+                ]);
+            }
         }
+
+        // 🔍 Debug: log total response
+        Log::info('SMS Payment orders(): response', [
+            'device_id' => $device->device_id,
+            'total_orders' => $orders->count(),
+            'payment_txn_count' => $paginated->total(),
+            'fortune_count' => $fortuneReadings->count(),
+            'status_filter' => $status,
+        ]);
 
         return response()->json([
             'success' => true,
@@ -1381,6 +1422,23 @@ class SmsPaymentController extends Controller
             $allOrders = $orders->concat($fortuneOrders)
                 ->sortByDesc('updated_at')
                 ->values();
+
+            // 🔍 Debug: log fortune readings ที่ถูกส่งผ่าน sync
+            if ($fortuneReadings->isNotEmpty()) {
+                Log::info('SMS Payment syncOrders(): ส่ง fortune readings', [
+                    'device_id' => $device->device_id,
+                    'fortune_count' => $fortuneReadings->count(),
+                    'since_version' => $sinceVersion,
+                    'fortune_ids' => $fortuneReadings->pluck('id')->toArray(),
+                    'fortune_bills' => $fortuneReadings->pluck('bill_reference')->toArray(),
+                ]);
+            } else {
+                Log::info('SMS Payment syncOrders(): ไม่มี fortune readings', [
+                    'device_id' => $device->device_id,
+                    'since_version' => $sinceVersion,
+                    'since_date' => $sinceVersion > 0 ? date('Y-m-d H:i:s', $sinceVersion / 1000) : 'all',
+                ]);
+            }
         }
 
         $latestVersion = intval(round(microtime(true) * 1000));
