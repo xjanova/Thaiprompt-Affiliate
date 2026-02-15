@@ -1742,6 +1742,23 @@ else
     QUEUE_STATUS="ℹ️ ไม่มี worker ทำงาน"
 fi
 
+# ✅ ตรวจสอบและเริ่ม queue worker สำหรับ fortune-deep (ถ้ายังไม่มี)
+# ใช้เป็น backup สำหรับกรณี proc_open ไม่ทำงาน
+print_info "→ ตรวจสอบ Fortune Deep Queue Worker..."
+if pgrep -f "queue:work.*fortune-deep" > /dev/null 2>&1; then
+    print_success "  ✓ Fortune deep queue worker กำลังทำงานอยู่"
+else
+    # ลอง start queue worker ใน background (ถ้า Redis/Database มีอยู่)
+    QUEUE_DRIVER=$(php artisan tinker --execute="echo config('queue.default');" 2>/dev/null | tail -1)
+    if [ "$QUEUE_DRIVER" = "redis" ] || [ "$QUEUE_DRIVER" = "database" ]; then
+        nohup php artisan queue:work "$QUEUE_DRIVER" --queue=fortune-deep --tries=3 --timeout=300 --sleep=5 --max-jobs=50 --max-time=3600 >> storage/logs/queue-fortune-deep.log 2>&1 &
+        print_success "  ✓ เริ่ม Fortune deep queue worker (PID: $!)"
+        QUEUE_STATUS="$QUEUE_STATUS | Fortune: started PID $!"
+    else
+        print_info "  ℹ Queue driver เป็น sync — ไม่ต้องใช้ worker (ใช้ proc_open แทน)"
+    fi
+fi
+
 # Wait for OPcache to fully clear
 if [ "$PHP_FPM_RESTARTED" = true ]; then
     print_info "→ รอให้ OPcache clear เสร็จสมบูรณ์ (2 วินาที)..."

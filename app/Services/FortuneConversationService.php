@@ -1795,19 +1795,25 @@ class FortuneConversationService
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
             // สร้าง Birth Chart ใหม่จากวันเกิดจริง (ส่งก่อนคำทำนาย)
+            // ถ้าไม่มีวันเกิด → ใช้ Quick Chart แทน (เพื่อให้มีภาพส่งเสมอ)
             $chartImageUrl = null;
             try {
                 if ($birthDate) {
                     $chartImageUrl = $this->chartService->generateBirthChart(
                         $birthDate, $name, $userProfile['gender'] ?? null
                     );
-                    if ($chartImageUrl) {
-                        $reading->update(['reading_image_url' => $chartImageUrl]);
-                    }
+                } else {
+                    // ไม่มีวันเกิด → สร้าง Quick Chart เป็น fallback
+                    $chartImageUrl = $this->chartService->generateQuickChart($name);
+                }
+
+                if ($chartImageUrl) {
+                    $reading->update(['reading_image_url' => $chartImageUrl]);
                 }
             } catch (\Exception $chartErr) {
-                Log::warning('Fortune Deep: Failed to generate birth chart', [
+                Log::warning('Fortune Deep: Failed to generate chart image', [
                     'error' => $chartErr->getMessage(),
+                    'has_birth_date' => ! empty($birthDate),
                 ]);
             }
 

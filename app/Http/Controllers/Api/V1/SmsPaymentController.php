@@ -835,6 +835,16 @@ class SmsPaymentController extends Controller
                 ProcessDeepFortuneReadingJob::dispatchSmart(
                     $model->id, $notification?->id, $platform, $userId
                 );
+            } else {
+                // ⚠️ ไม่มี userId → ไม่สามารถ dispatch job ได้
+                // บันทึก log เพื่อให้แอดมินตรวจสอบ
+                Log::warning('SMS Payment: approveOrder — ไม่มี userId สำหรับส่งคำทำนาย', [
+                    'fortune_reading_id' => $model->id,
+                    'bill_reference' => $model->bill_reference,
+                    'platform' => $platform,
+                    'platform_user_id' => $model->platform_user_id,
+                    'facebook_user_id' => $model->facebook_user_id,
+                ]);
             }
 
             // อัพเดท notification สถานะเป็น confirmed
@@ -929,10 +939,19 @@ class SmsPaymentController extends Controller
     {
         try {
             // ค้นหาบิลที่ชำระแล้ว แต่ยังไม่มี deep_response (ค้าง 2-30 นาที)
+            // รวม STATUS_COMPLETED ด้วย เพราะ job ที่ล้มเหลวจะเปลี่ยนสถานะเป็น completed
+            // แต่ deep_response ยังเป็น null → ต้อง retry
             $stuckReadings = FortuneReading::where('is_paid', true)
                 ->where('reading_type', 'deep')
                 ->whereNull('deep_response')
-                ->where('conversation_status', FortuneReading::STATUS_PAID)
+                ->where(function ($q) {
+                    $q->where('conversation_status', FortuneReading::STATUS_PAID)
+                        ->orWhere(function ($sub) {
+                            // completed + deep_response null = job ล้มเหลว
+                            $sub->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->whereNull('deep_response');
+                        });
+                })
                 ->whereNotNull('paid_at')
                 ->where('paid_at', '<=', now()->subMinutes(2))
                 ->where('paid_at', '>=', now()->subMinutes(30))
@@ -962,6 +981,11 @@ class SmsPaymentController extends Controller
                 $reading->setConversationState('auto_retry_count', $retryCount + 1);
                 $reading->setConversationState('last_auto_retry_at', now()->toIso8601String());
 
+                // เปลี่ยนสถานะกลับเป็น paid เพื่อให้ job ทำงานได้
+                if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_PAID]);
+                }
+
                 $platform = $reading->platform ?? 'facebook';
 
                 ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -973,6 +997,7 @@ class SmsPaymentController extends Controller
                     'bill_reference' => $reading->bill_reference,
                     'retry_count' => $retryCount + 1,
                     'paid_minutes_ago' => (int) $reading->paid_at->diffInMinutes(now()),
+                    'was_status' => $reading->conversation_status,
                 ]);
             }
         } catch (\Exception $e) {

@@ -87,10 +87,15 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
     /**
      * Dispatch อัจฉริยะ — รัน fortune processing ใน background เสมอ
      *
-     * Priority:
-     * 1. Queue driver จริง (database/redis) → dispatch ไป queue worker
-     * 2. proc_open() background process → รัน artisan command แยก process (ไม่ติด web timeout)
+     * Priority (ปรับปรุงใหม่):
+     * 1. proc_open() background process → รัน artisan command แยก process (เชื่อถือได้สุด, ไม่ต้องพึ่ง queue worker)
+     * 2. Queue driver จริง (database/redis) → dispatch ไป queue worker (ต้องมี worker รัน)
      * 3. Artisan::call() sync + fastcgi_finish_request() → รันใน process เดิม (flush response ก่อน)
+     *
+     * หมายเหตุ: เปลี่ยนจาก queue-first เป็น proc_open-first เพราะ:
+     * - Queue worker อาจไม่ได้รันหรือไม่ได้ listen ที่ fortune-deep queue
+     * - proc_open() สร้าง process อิสระที่ไม่ติด web server timeout
+     * - ไม่ต้องพึ่ง supervisor หรือ queue worker daemon
      *
      * @return void
      */
@@ -104,8 +109,24 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             'platform' => $platform,
         ]);
 
-        // ถ้ามี queue driver จริง → dispatch ไป queue worker (background)
+        // ✅ ลำดับแรก: proc_open() — เชื่อถือได้สูงสุด, ไม่ต้องพึ่ง queue worker
+        // สร้าง background process แยกที่ไม่ติด web server timeout
+        if (\function_exists('proc_open')) {
+            Log::info('ProcessDeepFortuneReadingJob: ใช้ proc_open (primary strategy)', [
+                'reading_id' => $readingId,
+            ]);
+            self::dispatchViaProcOpen($readingId, $notificationId, $platform, $userId);
+
+            return;
+        }
+
+        // ✅ ลำดับสอง: Queue driver จริง → dispatch ไป queue worker
+        // ใช้เมื่อ proc_open ไม่มี (disabled ใน php.ini)
         if ($driver !== 'sync') {
+            Log::info('ProcessDeepFortuneReadingJob: fallback to queue dispatch (proc_open unavailable)', [
+                'reading_id' => $readingId,
+                'queue' => 'fortune-deep',
+            ]);
             $job = new self($readingId, $notificationId, $platform, $userId);
             $job->onQueue('fortune-deep');
             dispatch($job);
@@ -113,17 +134,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
-        // Sync driver → ลองรัน background process หรือ fallback เป็น Artisan::call()
-        // ลอง proc_open() ก่อน (exec() อาจถูก disable ใน php.ini)
-        if (\function_exists('proc_open')) {
-            self::dispatchViaProcOpen($readingId, $notificationId, $platform, $userId);
-
-            return;
-        }
-
-        // Fallback: ใช้ Artisan::call() ตรงๆ (sync — อาจติด timeout)
+        // ✅ ลำดับสุดท้าย: Artisan::call() sync (ถ้าทั้ง proc_open + queue ใช้ไม่ได้)
         // พยายาม flush response ก่อนเพื่อให้ user ไม่ต้องรอ
-        Log::info('ProcessDeepFortuneReadingJob: fallback to Artisan::call (sync)', [
+        Log::info('ProcessDeepFortuneReadingJob: fallback to Artisan::call (sync — last resort)', [
             'reading_id' => $readingId,
         ]);
 
