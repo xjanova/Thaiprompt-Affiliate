@@ -177,6 +177,20 @@ php artisan serve
   - `xjanova/TP-Affiliate` - Distribution repository (deployment target)
   - `xjanova/TpLicense` - WordPress license management plugin
 
+### Production & Environments
+
+| Environment | URL | Description |
+|-------------|-----|-------------|
+| **Production** | `https://main.thaiprompt.online` | เซิร์ฟเวอร์หลัก (Main production server) |
+| **Admin Panel** | `https://main.thaiprompt.online/admin` | ระบบจัดการ Admin |
+| **API** | `https://main.thaiprompt.online/api/v1` | REST API endpoint |
+
+**Firebase/FCM Configuration:**
+- **Project ID**: `plptdb`
+- **Service Account**: `firebase-adminsdk-1rz9e@plptdb.iam.gserviceaccount.com`
+- **Credentials Path**: `storage/app/firebase-credentials.json` (ไม่อยู่ใน git)
+- **Admin Settings**: Admin Panel → SMS Payment → Settings → FCM Configuration
+
 ### Current Branch Strategy
 
 **Branch**: `claude/claude-md-mhya6ld6lgdhbp54-01NCebcUhTRN2TPBK6HVnFMb`
@@ -1513,7 +1527,7 @@ git push origin vX.X.X
 APP_NAME="TP-Affiliate"
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://yourdomain.com
+APP_URL=https://main.thaiprompt.online
 
 # Database
 DB_CONNECTION=mysql
