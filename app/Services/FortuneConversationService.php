@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * Flow:
  * 1. User พิมพ์ข้อความ → แจ้งสิทธิ์ดูดวงฟรีที่เหลือวันนี้ + ถามว่าจะดูไหม
  * 2. User ยืนยัน → ดึงโปรไฟล์ + ทำนายพื้นฐานฟรี
- * 3. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 3 คำถาม
+ * 3. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 2 คำถาม
  * 4. สร้างบิล + unique amount → แสดงบัญชีธนาคาร
  * 5. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
  *
@@ -45,7 +45,7 @@ class FortuneConversationService
     /**
      * จำนวนคำถามที่ต้องการ
      */
-    public const REQUIRED_QUESTIONS = 3;
+    public const REQUIRED_QUESTIONS = 2;
 
     /**
      * ความยาวคำถามขั้นต่ำ (ตัวอักษร) - ลดลงเพื่อให้คุยได้สะดวก
@@ -711,7 +711,7 @@ class FortuneConversationService
             $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้วค่ะ\n";
             $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
             $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-            $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+            $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
         }
@@ -822,7 +822,7 @@ class FortuneConversationService
             $price = $this->getDeepReadingPrice();
             $message .= "กลับมาใหม่พรุ่งนี้ได้นะคะ หรือ\n\n";
             $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-            $message .= "📌 ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+            $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
             $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่มค่ะ 👇';
         }
@@ -1345,8 +1345,8 @@ class FortuneConversationService
      * จัดการ input คำถาม — เก็บทีละข้อ
      *
      * รับข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split อีกต่อไป)
-     * ถ้ายังไม่ครบ 3 ข้อ → return action 'need_more_questions'
-     * ถ้าครบ 3 ข้อ → สร้างบิลรอชำระ
+     * ถ้ายังไม่ครบ 2 ข้อ → return action 'need_more_questions'
+     * ถ้าครบ 2 ข้อ → สร้างบิลรอชำระ
      */
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
@@ -1379,8 +1379,8 @@ class FortuneConversationService
                 ];
             }
 
-            // ได้ครบ 3 คำถามแล้ว → สร้างบิลรอชำระ
-            Log::info('Fortune: ครบ 3 คำถาม กำลังสร้างบิล', [
+            // ได้ครบ 2 คำถามแล้ว → สร้างบิลรอชำระ
+            Log::info('Fortune: ครบ 2 คำถาม กำลังสร้างบิล', [
                 'reading_id' => $reading->id,
                 'questions' => $collectedQuestions,
             ]);
@@ -1541,7 +1541,7 @@ class FortuneConversationService
         // ถ้ามี channelManager → ส่งผลทีละคำถามแบบ streaming (ป้องกัน timeout)
         $streaming = $channelManager && $platform && $userId;
 
-        // ขยายเวลา execution เป็น 3 นาที (AI ใช้เวลา ~15-20 วินาทีต่อคำถาม × 3 ข้อ)
+        // ขยายเวลา execution เป็น 3 นาที (AI ใช้เวลา ~15-20 วินาทีต่อคำถาม × 2 ข้อ)
         set_time_limit(180);
 
         try {
@@ -1768,7 +1768,7 @@ class FortuneConversationService
                "═══════════════════════\n\n".
                "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n".
                "📍 บอกวันเดือนปีเกิด\n".
-               "📍 ถามได้ 3 คำถาม\n".
+               "📍 ถามได้ 2 คำถาม\n".
                "📍 เริ่มต้นเพียง {$price} บาท\n\n".
                'กดเลือกด้านล่างได้เลยค่ะ 👇';
     }
@@ -1950,7 +1950,7 @@ class FortuneConversationService
         $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
 
         $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-        $message .= "   ถามได้ 3 คำถาม วิเคราะห์จากวันเกิด\n";
+        $message .= "   ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
         $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
 
         $message .= "📝 *ตัวอย่างคำถาม*:\n";
@@ -2584,7 +2584,7 @@ class FortuneConversationService
         $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
         $message .= "═══════════════════════\n\n";
 
-        $message .= "📌 ถามได้ถึง 3 คำถาม\n";
+        $message .= "📌 ถามได้ถึง 2 คำถาม\n";
         $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
         $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
         $message .= "📌 คำทำนายละเอียดคุ้มราคา\n\n";
@@ -2592,7 +2592,7 @@ class FortuneConversationService
         $message .= "🎯 *วิธีใช้บริการ*\n";
         $message .= "─────────────────────\n";
         $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
-        $message .= "2️⃣ ถามคำถามได้เลย 3 ข้อ\n";
+        $message .= "2️⃣ ถามคำถามได้เลย 2 ข้อ\n";
         $message .= "3️⃣ ระบบจะออกบิลพร้อมยอดชำระ\n";
         $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
 
@@ -3219,7 +3219,7 @@ class FortuneConversationService
      *
      * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
      * @param  string  $question  คำถามเดียว
-     * @param  int  $questionNumber  ลำดับคำถาม (1,2,3)
+     * @param  int  $questionNumber  ลำดับคำถาม (1,2)
      * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
      * @param  string|null  $birthDate  วันเกิด
      * @param  array  $previousReadings  คำทำนายก่อนหน้า (เพื่อไม่ให้ซ้ำ)

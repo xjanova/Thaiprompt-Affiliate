@@ -546,7 +546,7 @@ class SmsPaymentService
         ]);
 
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
-        // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+        // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
         try {
             ProcessDeepFortuneReadingJob::dispatchSmart(
                 $reading->id, $notification->id, $platform, $userId

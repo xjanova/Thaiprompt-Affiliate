@@ -21,7 +21,7 @@ use Throwable;
  * ประมวลผลคำทำนายเชิงลึกแบบ background (Queue Job)
  *
  * แก้ปัญหา: web server timeout (~60 วินาที) ฆ่า PHP process ก่อนที่
- * AI จะสร้างคำทำนายครบ 3 ข้อ + บันทึกลง DB ได้
+ * AI จะสร้างคำทำนายครบ 2 ข้อ + บันทึกลง DB ได้
  *
  * Job นี้ทำงาน background → ไม่ติด nginx/Apache timeout
  * - สร้าง birth chart + ส่งรูป
