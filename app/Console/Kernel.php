@@ -319,6 +319,20 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // Fortune Check Pending - เช็คบิลที่ชำระแล้วแต่ยังไม่ได้คำทำนาย
+        // ========================================
+        $schedule->command('fortune:check-pending')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                // ไม่ log ทุกครั้ง เพราะรันทุกนาที (log เฉพาะใน command เมื่อมี dispatch)
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Check Pending] ตรวจสอบบิลรอคำทำนายล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Marketing - ส่งแคมเปญการตลาดดูดวงอัตโนมัติ
         // ========================================
         $schedule->command('fortune:marketing-send')

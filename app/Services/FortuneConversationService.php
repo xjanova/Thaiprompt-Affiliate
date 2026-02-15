@@ -340,6 +340,11 @@ class FortuneConversationService
                 return $this->handleCheckRemaining($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่งพิเศษ: ดูคำทำนายล่าสุด
+            if ($this->isViewLastReadingRequest($messageText)) {
+                return $this->handleViewLastReading($facebookUserId);
+            }
+
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
@@ -738,6 +743,144 @@ class FortuneConversationService
         return [
             'action' => 'check_remaining',
             'message' => $message,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูคำทำนายล่าสุดหรือไม่
+     *
+     * รองรับคำสั่ง:
+     * - "ดูคำทำนาย" / "ดูผลทำนาย" / "ดูผล" / "ผลทำนาย"
+     * - "คำทำนายล่าสุด" / "ดูดวงล่าสุด"
+     * - "ดูผลดูดวง" / "ผลดูดวง"
+     */
+    protected function isViewLastReadingRequest(string $text): bool
+    {
+        $keywords = [
+            'ดูคำทำนาย', 'ดูผลทำนาย', 'ดูผล', 'ผลทำนาย', 'ผลดูดวง',
+            'คำทำนายล่าสุด', 'ดูดวงล่าสุด', 'ดูผลดูดวง', 'ผลล่าสุด',
+            'ดูผลล่าสุด', 'ขอดูผล', 'ขอดูคำทำนาย',
+        ];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * แสดงคำทำนายล่าสุดของผู้ใช้
+     *
+     * กรณีที่เป็นไปได้:
+     * 1. ชำระเงินแล้ว + มี deep_response → ส่งคำทำนายละเอียด
+     * 2. ชำระเงินแล้ว + ยังไม่มี deep_response → แจ้งว่ากำลังประมวลผล
+     * 3. ไม่เสียเงิน + มี basic_response → ส่งคำทำนายพื้นฐาน
+     * 4. ไม่มีคำทำนายเลย → แจ้งไม่พบ
+     */
+    protected function handleViewLastReading(string $facebookUserId): array
+    {
+        // ดึงคำทำนายล่าสุด (ไม่รวม conversation ที่อยู่ระหว่างดำเนินการ)
+        $lastReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where(function ($q) {
+                $q->whereNotNull('basic_response')
+                    ->orWhereNotNull('deep_response');
+            })
+            ->latest()
+            ->first();
+
+        // ถ้าไม่มีคำทำนาย → เช็คว่ามีบิลที่ชำระเงินแล้วแต่ยังไม่ได้คำทำนายหรือไม่
+        if (! $lastReading) {
+            $paidButNoResponse = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('is_paid', true)
+                ->whereNull('deep_response')
+                ->latest()
+                ->first();
+
+            if ($paidButNoResponse) {
+                return [
+                    'action' => 'view_reading_processing',
+                    'message' => "🔮 คุณมีบิลที่ชำระเงินแล้วค่ะ\n"
+                        ."📋 เลขที่บิล: {$paidButNoResponse->bill_reference}\n\n"
+                        ."⏳ ระบบกำลังสร้างคำทำนายให้อยู่ค่ะ\n"
+                        ."กรุณารอสักครู่ หรือทักแชทแอดมินหากรอนานเกิน 5 นาทีนะคะ 🙏",
+                    'reading' => $paidButNoResponse,
+                ];
+            }
+
+            return [
+                'action' => 'view_reading_empty',
+                'message' => "🔮 ยังไม่มีคำทำนายค่ะ\n\n"
+                    ."พิมพ์คำถามมาได้เลยนะคะ\n"
+                    .'จันทราพร้อมดูดวงให้ค่ะ ✨',
+                'reading' => null,
+            ];
+        }
+
+        // กรณี 1: ชำระเงินแล้ว + มี deep_response
+        if ($lastReading->is_paid && ! empty($lastReading->deep_response)) {
+            $name = $lastReading->facebook_user_name ?? 'คุณ';
+
+            $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
+            $message .= '📋 เลขที่บิล: '.($lastReading->bill_reference ?? '-')."\n";
+            $message .= '📅 วันที่: '.$lastReading->created_at->format('d/m/Y H:i')."\n";
+            $message .= "═══════════════════════\n\n";
+            $message .= $lastReading->deep_response;
+
+            return [
+                'action' => 'view_reading_deep',
+                'message' => $message,
+                'reading' => $lastReading,
+                'chart_image_url' => $lastReading->reading_image_url,
+            ];
+        }
+
+        // กรณี 2: ชำระเงินแล้ว + ยังไม่มี deep_response (กำลังประมวลผล)
+        if ($lastReading->is_paid && empty($lastReading->deep_response)) {
+            return [
+                'action' => 'view_reading_processing',
+                'message' => "🔮 คำทำนายเชิงลึกกำลังประมวลผลค่ะ\n"
+                    ."📋 เลขที่บิล: {$lastReading->bill_reference}\n\n"
+                    ."⏳ ระบบ AI กำลังสร้างคำทำนายให้อยู่ค่ะ\n"
+                    ."ใช้เวลาประมาณ 1-2 นาที\n\n"
+                    ."💡 พิมพ์ 'ดูผล' อีกครั้งเพื่อเช็คสถานะได้นะคะ\n"
+                    .'หรือทักแชทแอดมินหากรอนานเกิน 5 นาที 🙏',
+                'reading' => $lastReading,
+            ];
+        }
+
+        // กรณี 3: มี basic_response (ไม่เสียเงิน)
+        if (! empty($lastReading->basic_response)) {
+            $name = $lastReading->facebook_user_name ?? 'คุณ';
+
+            $message = "🔮 *คำทำนายล่าสุดของคุณ{$name}*\n";
+            $message .= '📅 วันที่: '.$lastReading->created_at->format('d/m/Y H:i')."\n";
+            $message .= "═══════════════════════\n\n";
+            $message .= $lastReading->basic_response;
+
+            // ชวน upsell ถ้าเปิดอยู่
+            if ($this->settings->isDeepReadingEnabled()) {
+                $price = $this->getDeepReadingPrice();
+                $message .= "\n\n═══════════════════════\n";
+                $message .= "💎 อยากรู้ลึกกว่านี้? ดูดวงละเอียดเริ่มต้น {$price} บาท\n";
+                $message .= "พิมพ์ 'ดูดวงละเอียด' ได้เลยค่ะ ✨";
+            }
+
+            return [
+                'action' => 'view_reading_basic',
+                'message' => $message,
+                'reading' => $lastReading,
+            ];
+        }
+
+        // Fallback
+        return [
+            'action' => 'view_reading_empty',
+            'message' => "🔮 ยังไม่มีคำทำนายค่ะ พิมพ์คำถามมาได้เลยนะคะ ✨",
             'reading' => null,
         ];
     }
@@ -1744,6 +1887,7 @@ class FortuneConversationService
             // บันทึกคำทำนายละเอียดลง DB
             // Note: saveDeepReading ใช้ DB::table query ตรง เพราะหลัง AI generation
             // 45-60 วินาที MySQL connection อาจ stale ทำให้ Eloquent update ล้มเหลว
+            $saveSuccess = false;
             try {
                 $reading->saveDeepReading(
                     $fullResponse,
@@ -1751,13 +1895,61 @@ class FortuneConversationService
                     $lastModel,
                     $totalTokens
                 );
+                $saveSuccess = true;
             } catch (\Exception $saveErr) {
-                Log::error('Fortune Deep: saveDeepReading ล้มเหลว!', [
+                Log::error('Fortune Deep: saveDeepReading ล้มเหลว! พยายาม reconnect + retry...', [
                     'reading_id' => $reading->id,
                     'error' => $saveErr->getMessage(),
                     'response_length' => strlen($fullResponse),
-                    'trace' => substr($saveErr->getTraceAsString(), 0, 300),
                 ]);
+
+                // Retry: reconnect MySQL แล้วลองใหม่ด้วย DB::table ตรง
+                try {
+                    \Illuminate\Support\Facades\DB::reconnect();
+                    \Illuminate\Support\Facades\DB::table('fortune_readings')
+                        ->where('id', $reading->id)
+                        ->update([
+                            'deep_response' => $fullResponse,
+                            'ai_response' => $fullResponse,
+                            'ai_provider' => $lastProvider,
+                            'ai_model' => $lastModel,
+                            'tokens_used' => ($reading->tokens_used ?? 0) + $totalTokens,
+                            'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                            'reading_type' => 'deep',
+                            'updated_at' => now(),
+                        ]);
+                    $saveSuccess = true;
+                    Log::info('Fortune Deep: saveDeepReading retry สำเร็จ (reconnect)', [
+                        'reading_id' => $reading->id,
+                    ]);
+                } catch (\Exception $retryErr) {
+                    Log::critical('Fortune Deep: saveDeepReading retry ล้มเหลวด้วย!', [
+                        'reading_id' => $reading->id,
+                        'error' => $retryErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // Safety net: ถ้า save ล้มเหลวทั้ง 2 รอบ → บังคับเปลี่ยนสถานะเป็น completed
+            // เพื่อไม่ให้บิลค้างที่ paid ตลอดไป (แอดมินยังสามารถ retry ได้ภายหลัง)
+            if (! $saveSuccess) {
+                try {
+                    \Illuminate\Support\Facades\DB::reconnect();
+                    \Illuminate\Support\Facades\DB::table('fortune_readings')
+                        ->where('id', $reading->id)
+                        ->update([
+                            'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                            'updated_at' => now(),
+                        ]);
+                    Log::warning('Fortune Deep: บังคับเปลี่ยนสถานะเป็น completed (deep_response ไม่ได้บันทึก)', [
+                        'reading_id' => $reading->id,
+                    ]);
+                } catch (\Exception $forceErr) {
+                    Log::critical('Fortune Deep: ไม่สามารถเปลี่ยนสถานะเป็น completed ได้เลย!', [
+                        'reading_id' => $reading->id,
+                        'error' => $forceErr->getMessage(),
+                    ]);
+                }
             }
 
             // สร้างข้อความขอบคุณ
@@ -1801,11 +1993,9 @@ class FortuneConversationService
                 'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
-            return [
-                'action' => 'error',
-                'message' => "🔮 คำทำนายเชิงลึกของคุณกำลังดำเนินการค่ะ\n\nระบบจะส่งผลให้เร็วที่สุดนะคะ 🙏\nหากรอนานเกิน 5 นาที สามารถทักแชทเพื่อสอบถามแอดมินได้เลยค่ะ ✨",
-                'reading' => $reading,
-            ];
+            // ไม่เปลี่ยนสถานะเป็น completed ทันที — throw ให้ Job retry ก่อน
+            // ถ้า retry หมด → Job::failed() จะแจ้ง user
+            throw $e;
         }
     }
 

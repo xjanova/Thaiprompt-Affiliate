@@ -319,6 +319,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
 
     /**
      * จัดการเมื่อ job ล้มเหลวถาวร (หลัง retry หมด)
+     *
+     * เปลี่ยนสถานะบิลเป็น completed เพื่อไม่ให้ค้างที่ paid ตลอดไป
+     * แอดมินยังสามารถกด retryFortune ได้ในภายหลัง
      */
     public function failed(Throwable $exception): void
     {
@@ -329,6 +332,25 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             'error' => $exception->getMessage(),
             'attempts' => $this->attempts(),
         ]);
+
+        // เปลี่ยนสถานะเป็น completed เพื่อไม่ให้บิลค้างที่ paid
+        // แอดมินยัง retry ได้เพราะ retryFortune() เช็คแค่ is_paid + มีคำถาม
+        try {
+            $reading = FortuneReading::find($this->readingId);
+            if ($reading && $reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
+                $reading->update([
+                    'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                ]);
+                Log::info('ProcessDeepFortuneReadingJob: เปลี่ยนสถานะเป็น completed หลัง retry หมด', [
+                    'reading_id' => $this->readingId,
+                ]);
+            }
+        } catch (\Exception $statusErr) {
+            Log::error('ProcessDeepFortuneReadingJob: เปลี่ยนสถานะเป็น completed ไม่สำเร็จ', [
+                'reading_id' => $this->readingId,
+                'error' => $statusErr->getMessage(),
+            ]);
+        }
 
         // ส่งข้อความให้ user ว่าระบบมีปัญหา
         try {

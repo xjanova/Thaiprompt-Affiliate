@@ -194,11 +194,12 @@ class FortuneBillingController extends Controller
                 'platform' => $platform,
             ]);
         } else {
-            // ไม่มีคำถาม (บิลพื้นฐาน) → แค่ confirm payment
+            // ไม่มีคำถาม (บิลพื้นฐาน) → confirm payment + เปลี่ยนสถานะเป็นสิ้นสุดทันที
+            // เพราะไม่มี deep reading ที่ต้องสร้าง จึงไม่ต้องรอ
             $reading->update([
                 'is_paid' => true,
                 'paid_at' => now(),
-                'conversation_status' => FortuneReading::STATUS_PAID,
+                'conversation_status' => FortuneReading::STATUS_COMPLETED,
             ]);
         }
 
