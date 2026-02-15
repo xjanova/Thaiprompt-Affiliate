@@ -198,6 +198,14 @@ class SmsPaymentController extends Controller
      * ใช้ bill_reference (FTU-YYMMDD-XXXXX) เป็น order_number
      * เพื่อให้ Android ส่งกลับ approve ตาม prefix ได้ถูกต้อง
      */
+    /**
+     * Offset สำหรับ FortuneReading ID เพื่อไม่ให้ชนกับ PaymentTransaction ID
+     * Android app ใช้ UNIQUE(remoteApprovalId, serverId) ในฐานข้อมูลท้องถิ่น
+     * ถ้า FortuneReading.id = PaymentTransaction.id → ตัวหลังจะทับตัวแรก
+     * เลยบวก offset 10,000,000 เพื่อแยก namespace
+     */
+    private const FORTUNE_READING_ID_OFFSET = 10000000;
+
     private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
     {
         // แปลง conversation_status → approval_status ที่ Android เข้าใจ
@@ -252,10 +260,13 @@ class SmsPaymentController extends Controller
             ];
         }
 
+        // ใช้ offset ID เพื่อไม่ให้ชนกับ PaymentTransaction ID ใน Android local DB
+        $offsetId = $reading->id + self::FORTUNE_READING_ID_OFFSET;
+
         return [
-            'id' => $reading->id,
+            'id' => $offsetId,
             'notification_id' => $reading->sms_notification_id,
-            'matched_transaction_id' => $reading->id,
+            'matched_transaction_id' => $offsetId,
             'device_id' => null,
             'approval_status' => $approvalStatus,
             'confidence' => $reading->is_paid ? 'high' : 'medium',
