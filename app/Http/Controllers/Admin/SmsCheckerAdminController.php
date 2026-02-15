@@ -488,29 +488,47 @@ class SmsCheckerAdminController extends Controller
      */
     public function testFcm(Request $request)
     {
-        $fcmService = app(FcmNotificationService::class);
-        $result = $fcmService->triggerSync();
+        try {
+            $fcmService = app(FcmNotificationService::class);
+            $result = $fcmService->triggerSync();
 
-        $successMsg = 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android';
-        $errorMsg = 'ส่ง FCM test push ล้มเหลว ตรวจสอบ log สำหรับรายละเอียด';
+            $successMsg = 'ส่ง FCM test push สำเร็จ! ตรวจสอบที่อุปกรณ์ Android';
+            $errorMsg = 'ส่ง FCM test push ล้มเหลว — อาจยังไม่มีอุปกรณ์ที่ลงทะเบียน FCM token';
 
-        // ถ้าเป็น AJAX request → return JSON
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => (bool) $result,
-                'message' => $result ? $successMsg : $errorMsg,
-            ], $result ? 200 : 500);
-        }
+            // ถ้าเป็น AJAX request → return JSON
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => (bool) $result,
+                    'message' => $result ? $successMsg : $errorMsg,
+                ]);
+            }
 
-        if ($result) {
+            if ($result) {
+                return redirect()
+                    ->route('admin.smschecker.settings')
+                    ->with('success', $successMsg);
+            }
+
             return redirect()
                 ->route('admin.smschecker.settings')
-                ->with('success', $successMsg);
-        }
+                ->with('error', $errorMsg);
 
-        return redirect()
-            ->route('admin.smschecker.settings')
-            ->with('error', $errorMsg);
+        } catch (\Exception $e) {
+            Log::error('FCM Test: Exception', ['error' => $e->getMessage()]);
+
+            $errorMsg = 'เกิดข้อผิดพลาด: '.$e->getMessage();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $errorMsg,
+                ], 500);
+            }
+
+            return redirect()
+                ->route('admin.smschecker.settings')
+                ->with('error', $errorMsg);
+        }
     }
 
     /**

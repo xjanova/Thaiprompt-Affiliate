@@ -13,15 +13,24 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sms_checker_devices', function (Blueprint $table) {
-            $table->text('fcm_token')->nullable()->after('ip_address');
-            $table->timestamp('fcm_token_updated_at')->nullable()->after('fcm_token');
+            if (! Schema::hasColumn('sms_checker_devices', 'fcm_token')) {
+                $table->text('fcm_token')->nullable()->after('ip_address');
+            }
+            if (! Schema::hasColumn('sms_checker_devices', 'fcm_token_updated_at')) {
+                $table->timestamp('fcm_token_updated_at')->nullable()->after('fcm_token');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('sms_checker_devices', function (Blueprint $table) {
-            $table->dropColumn(['fcm_token', 'fcm_token_updated_at']);
+            if (Schema::hasColumn('sms_checker_devices', 'fcm_token')) {
+                $table->dropColumn('fcm_token');
+            }
+            if (Schema::hasColumn('sms_checker_devices', 'fcm_token_updated_at')) {
+                $table->dropColumn('fcm_token_updated_at');
+            }
         });
     }
 };
