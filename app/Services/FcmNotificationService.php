@@ -728,7 +728,10 @@ class FcmNotificationService
     }
 
     /**
-     * Mark tokens as invalid (remove from devices)
+     * ทำเครื่องหมาย tokens ที่ไม่ถูกต้อง (Firebase ปฏิเสธ)
+     *
+     * เรียกเมื่อ FCM push ล้มเหลวด้วย error UNREGISTERED หรือ INVALID_ARGUMENT
+     * จะลบ token ออกจากอุปกรณ์เพื่อไม่ให้ส่งซ้ำ
      */
     private function markTokensInvalid(array $tokens): void
     {
@@ -736,26 +739,58 @@ class FcmNotificationService
             return;
         }
 
+        // Log device IDs ที่จะถูกลบ token ก่อน — เพื่อ debug
+        $affectedDevices = SmsCheckerDevice::whereIn('fcm_token', $tokens)
+            ->pluck('device_id')
+            ->toArray();
+
         SmsCheckerDevice::whereIn('fcm_token', $tokens)
             ->update(['fcm_token' => null]);
 
-        Log::info('FCM: Marked invalid tokens', ['count' => count($tokens)]);
+        Log::warning('FCM: ลบ tokens ที่ไม่ถูกต้อง', [
+            'count' => count($tokens),
+            'affected_devices' => $affectedDevices,
+            'token_prefixes' => array_map(fn ($t) => substr($t, 0, 20) . '...', $tokens),
+        ]);
     }
 
     /**
-     * Register/update FCM token for a device
+     * ลงทะเบียน/อัพเดท FCM token สำหรับอุปกรณ์
+     *
+     * - ลบ token เดิมจากอุปกรณ์อื่น (1 token = 1 อุปกรณ์)
+     * - บันทึก token ใหม่พร้อม timestamp
+     * - Log ทุกขั้นตอนเพื่อ debug
      */
     public function registerToken(SmsCheckerDevice $device, string $fcmToken): bool
     {
-        // Remove token from other devices (one token = one device)
-        SmsCheckerDevice::where('fcm_token', $fcmToken)
+        $tokenPrefix = substr($fcmToken, 0, 20) . '...';
+
+        // ลบ token จากอุปกรณ์อื่น (ป้องกัน token ซ้ำ)
+        $duplicateCount = SmsCheckerDevice::where('fcm_token', $fcmToken)
             ->where('id', '!=', $device->id)
-            ->update(['fcm_token' => null]);
+            ->count();
 
-        $device->update(['fcm_token' => $fcmToken]);
+        if ($duplicateCount > 0) {
+            SmsCheckerDevice::where('fcm_token', $fcmToken)
+                ->where('id', '!=', $device->id)
+                ->update(['fcm_token' => null]);
 
-        Log::debug('FCM: Token registered', [
+            Log::info('FCM: ลบ token ซ้ำจากอุปกรณ์อื่น', [
+                'device_id' => $device->device_id,
+                'duplicates_removed' => $duplicateCount,
+            ]);
+        }
+
+        // บันทึก token ใหม่พร้อม timestamp
+        $device->update([
+            'fcm_token' => $fcmToken,
+            'fcm_token_updated_at' => now(),
+        ]);
+
+        Log::info('FCM: Token registered ✅', [
             'device_id' => $device->device_id,
+            'token_prefix' => $tokenPrefix,
+            'token_length' => strlen($fcmToken),
         ]);
 
         return true;

@@ -488,8 +488,16 @@ class SmsPaymentController extends Controller
 
         // บันทึก FCM token สำหรับ push notifications
         if ($request->filled('fcm_token')) {
-            $updateData['fcm_token'] = $request->input('fcm_token');
+            $fcmToken = $request->input('fcm_token');
+            $updateData['fcm_token'] = $fcmToken;
             $updateData['fcm_token_updated_at'] = now();
+
+            Log::info('FCM Register (via registerDevice): ได้รับ FCM token', [
+                'device_id' => $device->device_id,
+                'token_length' => strlen($fcmToken),
+                'token_prefix' => substr($fcmToken, 0, 20) . '...',
+                'ip' => $request->ip(),
+            ]);
         }
 
         $device->update($updateData);
@@ -512,14 +520,23 @@ class SmsPaymentController extends Controller
     {
         $device = $request->attributes->get('sms_checker_device');
         if (! $device instanceof SmsCheckerDevice) {
+            Log::warning('FCM Register: Unauthorized — ไม่พบอุปกรณ์ใน request', [
+                'ip' => $request->ip(),
+            ]);
+
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
         }
 
         $validator = Validator::make($request->all(), [
-            'fcm_token' => 'required|string|max:255',
+            'fcm_token' => 'required|string|max:500',
         ]);
 
         if ($validator->fails()) {
+            Log::warning('FCM Register: Validation failed', [
+                'device_id' => $device->device_id,
+                'errors' => $validator->errors()->toArray(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
@@ -527,7 +544,16 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        $this->fcmService->registerToken($device, $request->input('fcm_token'));
+        $fcmToken = $request->input('fcm_token');
+
+        Log::info('FCM Register: ได้รับ FCM token จากแอพ', [
+            'device_id' => $device->device_id,
+            'token_length' => strlen($fcmToken),
+            'token_prefix' => substr($fcmToken, 0, 20) . '...',
+            'ip' => $request->ip(),
+        ]);
+
+        $this->fcmService->registerToken($device, $fcmToken);
 
         return response()->json([
             'success' => true,

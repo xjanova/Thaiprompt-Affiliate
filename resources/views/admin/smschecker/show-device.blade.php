@@ -102,6 +102,34 @@
                     <dt class="text-sm text-gray-500 dark:text-gray-400">สร้างเมื่อ</dt>
                     <dd class="text-sm text-gray-900 dark:text-white">{{ $device->created_at->format('d/m/Y H:i:s') }}</dd>
                 </div>
+
+                {{-- FCM Token Status --}}
+                <div class="pt-3 mt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div class="flex justify-between items-center">
+                        <dt class="text-sm text-gray-500 dark:text-gray-400">🔔 FCM Push</dt>
+                        <dd>
+                            @if($device->fcm_token)
+                                <span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded-full">✅ พร้อม</span>
+                            @else
+                                <span class="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 rounded-full">❌ ไม่มี token</span>
+                            @endif
+                        </dd>
+                    </div>
+                </div>
+                @if($device->fcm_token)
+                <div class="flex justify-between">
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">FCM Token</dt>
+                    <dd class="text-xs font-mono text-gray-600 dark:text-gray-400 max-w-[200px] truncate" title="{{ $device->fcm_token }}">
+                        {{ Str::limit($device->fcm_token, 30) }}
+                    </dd>
+                </div>
+                @endif
+                @if($device->fcm_token_updated_at)
+                <div class="flex justify-between">
+                    <dt class="text-sm text-gray-500 dark:text-gray-400">Token อัพเดท</dt>
+                    <dd class="text-sm text-gray-900 dark:text-white">{{ $device->fcm_token_updated_at->format('d/m/Y H:i:s') }}</dd>
+                </div>
+                @endif
             </dl>
         </div>
 
