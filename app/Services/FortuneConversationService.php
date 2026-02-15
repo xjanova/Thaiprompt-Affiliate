@@ -1507,6 +1507,30 @@ class FortuneConversationService
             ]);
             $reading->setPendingPayment($uniqueAmount);
 
+            // สร้าง Birth Chart ส่งให้ผู้ใช้เห็นก่อนชำระเงิน (เป็น preview)
+            $chartImageUrl = null;
+            try {
+                $birthDate = $reading->birth_date;
+                $name = $reading->facebook_user_name ?? 'คุณ';
+                $userProfile = $reading->user_profile ?? [];
+                $gender = $userProfile['gender'] ?? null;
+
+                if ($birthDate) {
+                    $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $gender);
+                } else {
+                    $chartImageUrl = $this->chartService->generateQuickChart($name);
+                }
+
+                if ($chartImageUrl) {
+                    $reading->update(['reading_image_url' => $chartImageUrl]);
+                }
+            } catch (\Exception $chartErr) {
+                Log::warning('Fortune: สร้าง Birth Chart ก่อนบิลไม่สำเร็จ (ไม่ blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $chartErr->getMessage(),
+                ]);
+            }
+
             // สร้างข้อความสรุป + บัญชีธนาคาร
             $message = $this->getPaymentSummaryMessage($reading, $questions, $uniqueAmount);
 
@@ -1514,6 +1538,7 @@ class FortuneConversationService
                 'reading_id' => $reading->id,
                 'unique_amount' => $uniqueAmount->unique_amount,
                 'facebook_user_id' => $reading->facebook_user_id,
+                'chart_image_url' => $chartImageUrl,
             ]);
 
             // ดึง QR Code URL สำหรับชำระเงิน (ถ้ามี)
@@ -1524,6 +1549,7 @@ class FortuneConversationService
                 'message' => $message,
                 'reading' => $reading,
                 'payment_qr_url' => $qrImageUrl,
+                'chart_image_url' => $chartImageUrl,
             ];
 
         } catch (\Exception $e) {

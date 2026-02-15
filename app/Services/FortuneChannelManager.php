@@ -309,6 +309,19 @@ class FortuneChannelManager
         $expiresAt = $uniquePayment?->expires_at?->format('H:i') ?? '--:--';
         $billRef = $reading->bill_reference;
 
+        // ส่ง Birth Chart ก่อนบิล (ถ้ามี) เพื่อให้ผู้ใช้เห็นภาพดวงดาวก่อนชำระเงิน
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $lineService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $imgErr) {
+                Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
         // ส่ง Payment Flex พร้อมยอด unique amount สำหรับเช็คผ่าน SMS payment checker
         $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
 
