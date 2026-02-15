@@ -177,20 +177,30 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
         ]);
 
         // ใช้ proc_open() เพื่อรัน background process
-        // ใช้ nohup + & เพื่อให้ process ทำงานอิสระจาก parent
-        $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
-
-        $descriptors = [
-            0 => ['file', '/dev/null', 'r'],  // stdin
-            1 => ['file', '/dev/null', 'w'],  // stdout
-            2 => ['file', '/dev/null', 'w'],  // stderr
-        ];
+        // รองรับทั้ง Unix (nohup + &) และ Windows (start /B)
+        if (self::isWindows()) {
+            // Windows: ใช้ start /B เพื่อรัน background + NUL แทน /dev/null
+            $bgCmd = "start /B {$cmd} > NUL 2>&1";
+            $descriptors = [
+                0 => ['file', 'NUL', 'r'],   // stdin
+                1 => ['file', 'NUL', 'w'],   // stdout
+                2 => ['file', 'NUL', 'w'],   // stderr
+            ];
+        } else {
+            // Unix/Linux: ใช้ nohup + & เพื่อให้ process ทำงานอิสระจาก parent
+            $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
+            $descriptors = [
+                0 => ['file', '/dev/null', 'r'],  // stdin
+                1 => ['file', '/dev/null', 'w'],  // stdout
+                2 => ['file', '/dev/null', 'w'],  // stderr
+            ];
+        }
 
         $process = \proc_open($bgCmd, $descriptors, $pipes);
 
         if (\is_resource($process)) {
             // proc_close() รอ shell command เสร็จ (แต่ shell จะ return ทันที
-            // เพราะใช้ & ให้ child process ทำงาน background)
+            // เพราะใช้ & หรือ start /B ให้ child process ทำงาน background)
             \proc_close($process);
         }
     }

@@ -539,20 +539,21 @@ class SmsPaymentService
             'user_id' => $userId,
         ]);
 
-        // อัพเดท notification สถานะเป็น matched ก่อน dispatch job
-        $notification->update([
-            'status' => 'matched',
-            'matched_transaction_id' => $reading->id,
-        ]);
-
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
         // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
+        // ⚠️ อัพเดท notification เป็น matched หลัง dispatch สำเร็จ (ไม่ใช่ก่อน)
         try {
             ProcessDeepFortuneReadingJob::dispatchSmart(
                 $reading->id, $notification->id, $platform, $userId
             );
 
-            Log::info('SMS Payment: dispatch ProcessDeepFortuneReadingJob', [
+            // Dispatch สำเร็จ → อัพเดท notification เป็น matched
+            $notification->update([
+                'status' => 'matched',
+                'matched_transaction_id' => $reading->id,
+            ]);
+
+            Log::info('SMS Payment: dispatch ProcessDeepFortuneReadingJob สำเร็จ', [
                 'reading_id' => $reading->id,
                 'notification_id' => $notification->id,
                 'platform' => $platform,
@@ -562,13 +563,77 @@ class SmsPaymentService
             return true;
 
         } catch (\Exception $e) {
-            Log::error('SMS Payment: dispatch job ล้มเหลว', [
+            Log::error('SMS Payment: dispatch job ล้มเหลว — ลอง sync fallback', [
                 'reading_id' => $reading->id,
                 'platform' => $platform,
                 'error' => $e->getMessage(),
             ]);
 
-            return false;
+            // Fallback: ลอง process sync ทันที (ขยาย execution time)
+            try {
+                \set_time_limit(300);
+
+                // Flush response กลับ user ก่อน (ถ้าเป็น FPM)
+                if (\function_exists('fastcgi_finish_request')) {
+                    \fastcgi_finish_request();
+                }
+
+                $settings = FortuneTellingSetting::getSettings();
+                $conversationService = new FortuneConversationService($settings);
+                $channelManager = new FortuneChannelManager($settings);
+
+                $result = $conversationService->processPaymentConfirmed(
+                    $reading, $notification, $channelManager, $platform, $userId
+                );
+
+                // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
+                if (empty($result['streaming']) && ! empty($result['message'])) {
+                    $channelManager->sendResponse($platform, $userId, $result);
+                }
+
+                // Sync สำเร็จ → mark matched
+                $notification->update([
+                    'status' => 'matched',
+                    'matched_transaction_id' => $reading->id,
+                ]);
+
+                Log::info('SMS Payment: sync fallback สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'action' => $result['action'] ?? 'unknown',
+                ]);
+
+                return true;
+
+            } catch (\Exception $syncErr) {
+                Log::critical('SMS Payment: sync fallback ล้มเหลว!', [
+                    'reading_id' => $reading->id,
+                    'error' => $syncErr->getMessage(),
+                    'trace' => substr($syncErr->getTraceAsString(), 0, 500),
+                ]);
+
+                // Mark เป็น matched เพราะเงินโอนมาแล้ว แต่ใส่ notes ว่า dispatch ล้มเหลว
+                $notification->update([
+                    'status' => 'matched',
+                    'matched_transaction_id' => $reading->id,
+                    'notes' => 'dispatch + sync fallback failed: '.$syncErr->getMessage(),
+                ]);
+
+                // ส่งข้อความให้ user ว่าระบบกำลังดำเนินการ
+                try {
+                    $settings = FortuneTellingSetting::getSettings();
+                    $channelManager = new FortuneChannelManager($settings);
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'error',
+                        'message' => "🔮 จันทราได้รับเงินเรียบร้อยแล้วค่ะ\n\nระบบกำลังสร้างคำทำนาย อาจใช้เวลาสักครู่นะคะ\nถ้ารอนานเกิน 5 นาที กรุณาทักแชทมาได้เลยค่ะ 🙏",
+                    ], ['from_admin' => true]);
+                } catch (\Exception $msgErr) {
+                    Log::error('SMS Payment: ส่งข้อความ error ไม่สำเร็จ', [
+                        'error' => $msgErr->getMessage(),
+                    ]);
+                }
+
+                return true; // return true เพราะ matched แล้ว (เงินโอนมาจริง) แค่ dispatch ล้มเหลว
+            }
         }
     }
 

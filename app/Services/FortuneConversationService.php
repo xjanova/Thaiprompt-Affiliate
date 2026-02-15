@@ -2930,6 +2930,25 @@ class FortuneConversationService
     // ============================================================
 
     /**
+     * แทนที่ตัวแปร placeholder ใน prompt template จากการตั้งค่าระบบ
+     *
+     * ใช้เมื่อ admin กำหนด prompt เองในหน้า Settings
+     * แทน {name}, {gender_prefix}, {questions} ฯลฯ ด้วยค่าจริง
+     *
+     * @param  string  $template  prompt template ที่มี placeholder
+     * @param  array  $variables  key-value pairs ของตัวแปร
+     * @return string prompt ที่แทนค่าแล้ว
+     */
+    protected function applyPromptVariables(string $template, array $variables): string
+    {
+        return str_replace(
+            array_keys($variables),
+            array_values($variables),
+            $template
+        );
+    }
+
+    /**
      * สร้าง prompt สำหรับทำนายพื้นฐาน
      * เป็นหมอดูหญิง ใช้คำแทนตัวว่า "จันทรา"
      *
@@ -2948,6 +2967,24 @@ class FortuneConversationService
         $name = $userProfile['name'] ?? 'คุณ';
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
         $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
+
+        // ลำดับที่ 1: ใช้ prompt จากการตั้งค่าระบบ (ถ้ามี)
+        $customPrompt = $this->settings->basic_prompt_template;
+        if (! empty(trim($customPrompt ?? ''))) {
+            return $this->applyPromptVariables($customPrompt, [
+                '{name}' => $name,
+                '{gender_prefix}' => $genderPrefix,
+                '{gender}' => $gender,
+                '{user_profile}' => json_encode($userProfile ?? [], JSON_UNESCAPED_UNICODE),
+                '{questions}' => $question,
+                '{question}' => $question,
+                '{user_context}' => $userContext,
+                '{detected_category}' => $detectedCategory ?? '',
+                '{birth_date_section}' => '',
+            ]);
+        }
+
+        // ลำดับที่ 2: ใช้ prompt hardcode เดิม (default)
 
         // ส่วน User Context (ประวัติผู้ใช้)
         $contextSection = '';
@@ -3251,7 +3288,7 @@ class FortuneConversationService
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
         $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
 
-        // ข้อมูลวันเกิดและราศี
+        // ข้อมูลวันเกิดและราศี (คำนวณก่อน เผื่อ custom prompt ต้องใช้)
         $birthInfo = '';
         $zodiacInfo = '';
         $planetPositionsInfo = '';
@@ -3305,6 +3342,27 @@ class FortuneConversationService
             }
         }
 
+        // ลำดับที่ 1: ใช้ prompt จากการตั้งค่าระบบ (ถ้ามี)
+        $customPrompt = $this->settings->deep_prompt_template;
+        if (! empty(trim($customPrompt ?? ''))) {
+            return $this->applyPromptVariables($customPrompt, [
+                '{name}' => $name,
+                '{gender_prefix}' => $genderPrefix,
+                '{gender}' => $gender,
+                '{question}' => $question,
+                '{question_number}' => (string) $questionNumber,
+                '{total_questions}' => (string) $totalQuestions,
+                '{birth_info}' => $birthInfo,
+                '{birth_date}' => $birthDate ?? '',
+                '{zodiac_info}' => $zodiacInfo,
+                '{planet_positions}' => $planetPositionsInfo,
+                '{transit_info}' => $transitInfo,
+                '{previous_context}' => $previousContext,
+                '{user_profile}' => json_encode($userProfile ?? [], JSON_UNESCAPED_UNICODE),
+            ]);
+        }
+
+        // ลำดับที่ 2: ใช้ prompt hardcode เดิม (default)
         $prompt = "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญศาสตร์โหราศาสตร์โบราณของไทย (หลักเจ้าชนะ) โหราศาสตร์สากล ไพ่ทาโรต์ และเลขศาสตร์ ได้รับวิชาจากครูบาอาจารย์สายลังกา มีประสบการณ์ 15 ปี ทำนายด้วยหลักวิชาโบราณล้วนๆ ทุกคำทำนายมีศาสตร์รองรับ พูดจาเพราะ อบอุ่น ใช้คำว่า \"จันทรา\" แทนตัวเอง
 
 [ตารางเจ้าชนะ + เลขประจำดาว]
