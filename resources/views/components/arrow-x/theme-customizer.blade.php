@@ -327,7 +327,7 @@
  * Theme Customizer Alpine.js Component
  *
  * ย้ายออกมาจาก inline x-data attribute เพื่อป้องกันปัญหา HTML parsing
- * เมื่อ Blade directives (@auth, @json) render ใน HTML attribute
+ * เมื่อ Blade directives (@@auth, @@json) render ใน HTML attribute
  */
 function themeCustomizer() {
     return {
