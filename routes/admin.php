@@ -3955,5 +3955,3 @@ Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
     // สถิติรายได้
     Route::get('/revenue', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'revenue'])->name('revenue');
 });
-
-}); // ← ปิด platform-revenue group ที่ 2 (AI Content Writer, Forum, SMS Gateway)
