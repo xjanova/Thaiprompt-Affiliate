@@ -12,6 +12,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
@@ -88,8 +89,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
      *
      * Priority:
      * 1. Queue driver จริง (database/redis) → dispatch ไป queue worker
-     * 2. exec() background process → รัน artisan command แยก process (ไม่ติด web timeout)
-     * 3. Sync fallback → รันใน request เดิม (อาจติด web timeout)
+     * 2. proc_open() background process → รัน artisan command แยก process (ไม่ติด web timeout)
+     * 3. Artisan::call() sync + fastcgi_finish_request() → รันใน process เดิม (flush response ก่อน)
      *
      * @return void
      */
@@ -112,38 +113,86 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
-        // Sync driver → ใช้ exec() รัน artisan command ใน background process แยก
-        // ไม่ติด web server (nginx) timeout เพราะเป็น process อิสระ
-        $artisan = base_path('artisan');
+        // Sync driver → ลองรัน background process หรือ fallback เป็น Artisan::call()
+        // ลอง proc_open() ก่อน (exec() อาจถูก disable ใน php.ini)
+        if (\function_exists('proc_open')) {
+            self::dispatchViaProcOpen($readingId, $notificationId, $platform, $userId);
+
+            return;
+        }
+
+        // Fallback: ใช้ Artisan::call() ตรงๆ (sync — อาจติด timeout)
+        // พยายาม flush response ก่อนเพื่อให้ user ไม่ต้องรอ
+        Log::info('ProcessDeepFortuneReadingJob: fallback to Artisan::call (sync)', [
+            'reading_id' => $readingId,
+        ]);
+
+        // ขยาย execution time เพื่อป้องกัน PHP timeout
+        \set_time_limit(300);
+
+        // Flush response กลับ user ก่อน (ถ้าเป็น FPM)
+        if (\function_exists('fastcgi_finish_request')) {
+            \fastcgi_finish_request();
+        }
+
+        $args = [
+            'readingId' => $readingId,
+            'platform' => $platform,
+            'userId' => $userId,
+        ];
+
+        if ($notificationId) {
+            $args['--notification-id'] = $notificationId;
+        }
+
+        Artisan::call('fortune:process-deep', $args);
+    }
+
+    /**
+     * รัน artisan command ใน background ผ่าน proc_open()
+     *
+     * ใช้แทน exec() เมื่อ exec() ถูก disable ใน php.ini
+     * proc_open() สร้าง process แยกที่ไม่ติด web server timeout
+     */
+    private static function dispatchViaProcOpen(int $readingId, ?int $notificationId, string $platform, string $userId): void
+    {
+        $artisan = \base_path('artisan');
         $php = self::findPhpBinary();
         $notifArg = $notificationId ? " --notification-id={$notificationId}" : '';
 
-        // สร้าง command สำหรับ background process
-        $cmd = sprintf(
+        // สร้าง command
+        $cmd = \sprintf(
             '%s %s fortune:process-deep %d %s %s%s',
-            escapeshellarg($php),
-            escapeshellarg($artisan),
+            \escapeshellarg($php),
+            \escapeshellarg($artisan),
             $readingId,
-            escapeshellarg($platform),
-            escapeshellarg($userId),
+            \escapeshellarg($platform),
+            \escapeshellarg($userId),
             $notifArg
         );
 
-        // ตรวจสอบ OS เพื่อรัน background ให้ถูกต้อง
-        if (self::isWindows()) {
-            // Windows: ใช้ start /B
-            $bgCmd = "start /B {$cmd} > NUL 2>&1";
-        } else {
-            // Linux/Mac: ใช้ & + nohup
-            $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
-        }
-
-        Log::info('ProcessDeepFortuneReadingJob: exec background process', [
+        Log::info('ProcessDeepFortuneReadingJob: proc_open background process', [
             'reading_id' => $readingId,
             'command' => $cmd,
         ]);
 
-        \exec($bgCmd);
+        // ใช้ proc_open() เพื่อรัน background process
+        // ใช้ nohup + & เพื่อให้ process ทำงานอิสระจาก parent
+        $bgCmd = "nohup {$cmd} > /dev/null 2>&1 &";
+
+        $descriptors = [
+            0 => ['file', '/dev/null', 'r'],  // stdin
+            1 => ['file', '/dev/null', 'w'],  // stdout
+            2 => ['file', '/dev/null', 'w'],  // stderr
+        ];
+
+        $process = \proc_open($bgCmd, $descriptors, $pipes);
+
+        if (\is_resource($process)) {
+            // proc_close() รอ shell command เสร็จ (แต่ shell จะ return ทันที
+            // เพราะใช้ & ให้ child process ทำงาน background)
+            \proc_close($process);
+        }
     }
 
     /**
