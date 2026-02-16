@@ -189,6 +189,7 @@ class FortuneUsersController extends Controller
             // ดึงรายชื่อผู้ใช้ที่จะส่ง
             $query = FortuneReading::query()
                 ->select('facebook_user_id', 'platform')
+                ->whereNotNull('platform')
                 ->groupBy('facebook_user_id', 'platform');
 
             if ($validated['platform'] !== 'all') {
@@ -208,6 +209,11 @@ class FortuneUsersController extends Controller
 
             foreach ($recipients as $recipient) {
                 try {
+                    // ข้ามผู้ใช้ที่ไม่มีข้อมูล platform
+                    if (empty($recipient->platform)) {
+                        $failed++;
+                        continue;
+                    }
                     $platformService = $channelManager->getPlatform($recipient->platform);
                     if ($platformService) {
                         $success = $platformService->sendMessage(
