@@ -325,6 +325,64 @@ git commit -m "Add NewFeatureSeeder"
 
 ---
 
+## 🔍 Server Logs & Debugging ผ่าน GitHub Actions
+
+### วิธีดู Production Server Logs
+
+เมื่อต้องการข้อมูลจาก production server (ดู log, debug ปัญหา) **ให้ใช้ GitHub Actions workflow** ที่ชื่อ `server-logs.yml` แทนการ SSH เข้าเซิร์ฟเวอร์โดยตรง:
+
+```bash
+# 1. ดู Fortune Payment Flow (SMS → sendResponse → process-deep → ready)
+gh workflow run server-logs.yml --ref claude/Main -f log_command=fortune-flow -f lines=1000
+
+# 2. ดู Fortune Errors เท่านั้น
+gh workflow run server-logs.yml --ref claude/Main -f log_command=fortune-errors -f lines=2000
+
+# 3. ดู Fortune Deep Jobs + Log Files
+gh workflow run server-logs.yml --ref claude/Main -f log_command=fortune-deep-jobs -f lines=1000
+
+# 4. ดู FortuneChannelManager sendResponse Logs
+gh workflow run server-logs.yml --ref claude/Main -f log_command=sendResponse -f lines=500
+
+# 5. ดู 500 บรรทัดล่าสุดของ laravel.log
+gh workflow run server-logs.yml --ref claude/Main -f log_command=last-500
+
+# 6. ค้นหาแบบ custom (regex pattern)
+gh workflow run server-logs.yml --ref claude/Main -f log_command=custom -f custom_grep="PATTERN_HERE" -f lines=3000
+```
+
+### วิธีอ่านผลลัพธ์
+
+```bash
+# รอให้ workflow เสร็จ (~10-15 วินาที)
+sleep 15
+
+# ดูสถานะ
+gh run list --workflow=server-logs.yml --limit 1
+
+# อ่าน log output (เปลี่ยน RUN_ID ตามที่ได้)
+gh run view <RUN_ID> --log 2>&1 | grep "Read logs via SSH" | head -60
+```
+
+### Deploy ผ่าน GitHub Actions
+
+```bash
+# Deploy ไปยัง production
+gh workflow run deploy.yml --ref claude/Main
+
+# ดูสถานะ deploy
+gh run watch <RUN_ID> --exit-status
+```
+
+### ⚠️ หมายเหตุสำคัญ
+
+- **ห้าม SSH เข้าเซิร์ฟเวอร์โดยตรง** — ใช้ GitHub Actions เท่านั้น
+- Log file อยู่ที่ `storage/logs/laravel.log` บนเซิร์ฟเวอร์
+- Fortune deep reading log files อยู่ที่ `storage/logs/fortune-deep-*.log`
+- Deploy ใช้ `deploy.sh` ที่อยู่บนเซิร์ฟเวอร์ (git pull, composer, npm build, migrate, cache)
+
+---
+
 ## 💡 สรุป
 
 **"โปรแกรมที่เราพัฒนาต้องมีคุณภาพระดับหลักล้าน"**
