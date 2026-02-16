@@ -469,7 +469,7 @@ class FortuneChartService
                     $bgPlanet = $this->hexColorAlpha($img, $planet['color'], 80);
                     imagefilledellipse($img, (int) $px, (int) $py, 38, 38, $bgPlanet);
 
-                    // สัญลักษณ์ดาว — ใหญ่ขึ้น
+                    // สัญลักษณ์ดาว (ใช้ symbolFont ที่รองรับ Unicode astrological symbols)
                     $this->drawCenteredText($img, $symbolFont, 22, $px, $py - 2, $planet['symbol'], $white);
 
                     // ชื่อดาว (ภาษาไทย) — ใหญ่ขึ้น + สีขาวชัด
@@ -557,14 +557,13 @@ class FortuneChartService
      */
     protected function getSymbolFont(): string
     {
-        // ✅ ใช้ฟอนต์ใน resources/ เป็นหลัก (NotoSansThai รองรับ Unicode symbols ☉☽♂ ได้)
-        // หลีกเลี่ยง system paths ที่ถูก open_basedir บล็อคบน shared hosting
-        $localFont = resource_path('fonts/NotoSansThai-Bold.ttf');
-        if (@file_exists($localFont)) {
-            return $localFont;
+        // ✅ ใช้ DejaVuSans เป็นหลัก — รองรับ Unicode astrological symbols (☉☽♂☿♃♀♄) ครบ
+        $dejaVu = resource_path('fonts/DejaVuSans.ttf');
+        if (@file_exists($dejaVu)) {
+            return $dejaVu;
         }
 
-        // fallback: ลอง system paths (suppress warning)
+        // fallback: ลอง system paths (suppress warning เพื่อป้องกัน open_basedir)
         $systemPaths = [
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
@@ -576,7 +575,8 @@ class FortuneChartService
             }
         }
 
-        return $localFont;
+        // fallback สุดท้าย → NotoSansThai (symbols อาจแสดงไม่ครบ)
+        return resource_path('fonts/NotoSansThai-Bold.ttf');
     }
 
     /**
