@@ -933,6 +933,29 @@ class FortuneConversationService
      */
     protected function closeAllActiveConversations(string $facebookUserId): int
     {
+        // ✅ ยกเลิกบิล (UniquePaymentAmount) ของ reading ที่ pending_payment ก่อน
+        $pendingReadings = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->with('uniquePaymentAmount')
+            ->get();
+
+        foreach ($pendingReadings as $pendingReading) {
+            if ($pendingReading->uniquePaymentAmount && $pendingReading->uniquePaymentAmount->status === 'reserved') {
+                $pendingReading->uniquePaymentAmount->cancel();
+
+                Log::info('Fortune: ยกเลิกบิล UniquePaymentAmount เนื่องจากลูกค้ากดยกเลิก', [
+                    'facebook_user_id' => $facebookUserId,
+                    'reading_id' => $pendingReading->id,
+                    'bill_reference' => $pendingReading->bill_reference,
+                    'unique_amount_id' => $pendingReading->unique_payment_amount_id,
+                    'amount' => $pendingReading->amount_paid,
+                ]);
+            }
+        }
+
+        // ปิดทุก conversation ที่ค้างอยู่
         $closed = FortuneReading::where('facebook_user_id', $facebookUserId)
             ->whereIn('conversation_status', [
                 FortuneReading::STATUS_AWAITING_CONFIRMATION,
@@ -948,6 +971,7 @@ class FortuneConversationService
             Log::info('Fortune: ปิด conversation เก่าที่ค้างอยู่', [
                 'facebook_user_id' => $facebookUserId,
                 'closed_count' => $closed,
+                'cancelled_bills' => $pendingReadings->count(),
             ]);
         }
 
