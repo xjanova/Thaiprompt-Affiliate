@@ -746,7 +746,7 @@ class SmsCheckerAdminController extends Controller
 
         // 4. Active devices
         $devices = \App\Models\SmsCheckerDevice::query()
-            ->where('is_active', true)
+            ->where('status', 'active')
             ->get()
             ->map(function ($d) {
                 return [
