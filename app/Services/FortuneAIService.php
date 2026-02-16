@@ -181,9 +181,10 @@ class FortuneAIService
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
         $startTime = microtime(true);
 
-        // ขั้นที่ 1: ลอง provider หลัก 2 ครั้ง
+        // ขั้นที่ 1: ลอง provider หลัก 3 ครั้ง (หน่วงนานขึ้นถ้าเจอ 429 rate limit)
+        $maxRetries = 3;
         if (! empty($this->apiKey)) {
-            for ($attempt = 1; $attempt <= 2; $attempt++) {
+            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
                 try {
                     Log::info("FortuneAI Retry: ลอง {$this->provider} ครั้งที่ {$attempt}");
 
@@ -201,8 +202,16 @@ class FortuneAIService
                     Log::warning("FortuneAI Retry: {$this->provider} ล้ม ครั้งที่ {$attempt}", [
                         'error' => $e->getMessage(),
                     ]);
-                    if ($attempt < 2) {
-                        usleep(2000000); // รอ 2 วินาทีก่อนลองใหม่
+                    if ($attempt < $maxRetries) {
+                        // ถ้าเจอ 429 rate limit → หน่วง 60 วินาที ให้ quota reset
+                        // ถ้า error อื่น → หน่วง 5 วินาที
+                        $is429 = str_contains($e->getMessage(), '429');
+                        $delaySeconds = $is429 ? 60 : 5;
+                        Log::info("FortuneAI Retry: รอ {$delaySeconds} วินาทีก่อนลองใหม่", [
+                            'is_rate_limit' => $is429,
+                            'attempt' => $attempt,
+                        ]);
+                        sleep($delaySeconds);
                     }
                 }
             }

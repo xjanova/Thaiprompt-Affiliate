@@ -528,23 +528,28 @@ class FortuneChartService
      */
     protected function getThaiFont(): string
     {
-        // ลองหาฟอนต์ตามลำดับ
-        $paths = [
-            resource_path('fonts/NotoSansThai-Bold.ttf'),
+        // ✅ ใช้ฟอนต์ใน resources/ เป็นหลัก (หลีกเลี่ยง system paths ที่ถูก open_basedir บล็อค)
+        $localFont = resource_path('fonts/NotoSansThai-Bold.ttf');
+        if (@file_exists($localFont)) {
+            return $localFont;
+        }
+
+        // fallback: ลอง system paths (suppress warning เพื่อป้องกัน open_basedir error)
+        $systemPaths = [
             '/usr/share/fonts/truetype/noto/NotoSansThai-Bold.ttf',
             '/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf',
             '/usr/share/fonts/truetype/tlwg/TlwgTypo-Bold.ttf',
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
         ];
 
-        foreach ($paths as $path) {
-            if (file_exists($path)) {
+        foreach ($systemPaths as $path) {
+            if (@file_exists($path)) {
                 return $path;
             }
         }
 
-        // fallback — ใช้ GD built-in (จะไม่มีภาษาไทย แต่ไม่ crash)
-        return '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
+        // fallback สุดท้าย — ใช้ path ใน resources เสมอ (อาจไม่มีจริง แต่ดีกว่า system path ที่ถูกบล็อค)
+        return $localFont;
     }
 
     /**
@@ -552,19 +557,26 @@ class FortuneChartService
      */
     protected function getSymbolFont(): string
     {
-        $paths = [
+        // ✅ ใช้ฟอนต์ใน resources/ เป็นหลัก (NotoSansThai รองรับ Unicode symbols ☉☽♂ ได้)
+        // หลีกเลี่ยง system paths ที่ถูก open_basedir บล็อคบน shared hosting
+        $localFont = resource_path('fonts/NotoSansThai-Bold.ttf');
+        if (@file_exists($localFont)) {
+            return $localFont;
+        }
+
+        // fallback: ลอง system paths (suppress warning)
+        $systemPaths = [
             '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
             '/usr/share/fonts/truetype/freefont/FreeSans.ttf',
-            resource_path('fonts/NotoSansThai-Bold.ttf'), // fallback ใช้ฟอนต์ไทย
         ];
 
-        foreach ($paths as $path) {
-            if (file_exists($path)) {
+        foreach ($systemPaths as $path) {
+            if (@file_exists($path)) {
                 return $path;
             }
         }
 
-        return resource_path('fonts/NotoSansThai-Bold.ttf');
+        return $localFont;
     }
 
     /**

@@ -557,7 +557,10 @@ class SmsPaymentService
         ]);
 
         // ✅ ส่งข้อความ "รอสักครู่" ให้ลูกค้าทราบทันทีหลังชำระเงินสำเร็จ
-        if (! empty($userId)) {
+        // ⚠️ ป้องกัน SMS duplicate — เช็คว่าส่ง "รอสักครู่" ไปแล้วหรือยัง
+        $alreadySentWait = $reading->getConversationState('wait_message_sent', false);
+
+        if (! empty($userId) && ! $alreadySentWait) {
             try {
                 $settings = FortuneTellingSetting::getSettings();
                 $channelManager = new FortuneChannelManager($settings);
@@ -571,7 +574,7 @@ class SmsPaymentService
                     'message' => $waitMessage,
                 ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                // บันทึกสถานะว่าส่งข้อความรอแล้ว
+                // บันทึกสถานะว่าส่งข้อความรอแล้ว (ป้องกัน duplicate)
                 $reading->setConversationState('wait_message_sent', true);
                 $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
 
@@ -590,6 +593,11 @@ class SmsPaymentService
                     'trace' => substr($waitErr->getTraceAsString(), 0, 300),
                 ]);
             }
+        } elseif ($alreadySentWait) {
+            Log::info('SMS Payment: ข้าม "รอสักครู่" — ส่งไปแล้วก่อนหน้า (SMS duplicate)', [
+                'reading_id' => $reading->id,
+                'notification_id' => $notification->id,
+            ]);
         } else {
             Log::error('SMS Payment: ไม่สามารถส่งข้อความ "รอสักครู่" — ไม่มี userId', [
                 'reading_id' => $reading->id,
@@ -597,6 +605,60 @@ class SmsPaymentService
                 'platform_user_id' => $reading->platform_user_id,
                 'facebook_user_id' => $reading->facebook_user_id,
             ]);
+        }
+
+        // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง (กรณี check-pending retry สำเร็จก่อน SMS duplicate เข้ามา)
+        $reading->refresh();
+        if (! empty($reading->deep_response) && ! $reading->getConversationState('reading_sent_directly', false)) {
+            // มีคำทำนายแล้ว → ส่งให้ลูกค้าเลยทันที (ไม่ต้อง dispatch job ใหม่)
+            try {
+                $settings = $settings ?? FortuneTellingSetting::getSettings();
+                $channelManager = $channelManager ?? new FortuneChannelManager($settings);
+                $name = $reading->facebook_user_name ?? 'คุณ';
+                $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
+
+                // 1. ส่ง chart + header
+                $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'send_chart',
+                    'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
+                    'chart_image_url' => $reading->reading_image_url,
+                ], $extra);
+
+                usleep(500000);
+
+                // 2. ส่งคำทำนาย
+                $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'deep_reading_result',
+                    'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
+                ], $extra);
+
+                usleep(500000);
+
+                // 3. ข้อความปิดท้าย
+                $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'reading_complete',
+                    'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
+                ], $extra);
+
+                $reading->setConversationState('reading_sent_directly', true);
+                $reading->setConversationState('reading_ready_sent', true);
+                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+                Log::info('SMS Payment: มีคำทำนายพร้อมแล้ว → ส่งให้ลูกค้าทันที', [
+                    'reading_id' => $reading->id,
+                    'has_chart' => ! empty($reading->reading_image_url),
+                ]);
+
+                $notification->update(['status' => 'matched', 'matched_transaction_id' => $reading->id]);
+
+                return true;
+            } catch (\Exception $sendErr) {
+                Log::error('SMS Payment: ส่งคำทำนายที่มีอยู่แล้วล้มเหลว — fallback dispatch job', [
+                    'reading_id' => $reading->id,
+                    'error' => $sendErr->getMessage(),
+                ]);
+                // fallthrough ไป dispatch job ด้านล่าง
+            }
         }
 
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
