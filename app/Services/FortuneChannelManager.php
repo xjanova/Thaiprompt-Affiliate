@@ -123,9 +123,12 @@ class FortuneChannelManager
         // ใช้ conversation service ประมวลผล
         $result = $this->conversationService->processMessage($userId, $messageText, $userProfile);
 
-        // เพิ่ม platform info
+        // เพิ่ม platform info + ชื่อผู้ใช้ (ให้ handler ใช้ fallback ได้)
         $result['platform'] = $platform;
         $result['user_id'] = $userId;
+        $result['user_name'] = $result['reading']?->facebook_user_name
+            ?? $userProfile['name']
+            ?? 'คุณ';
 
         // อัพเดท reading ด้วย platform info
         if ($result['reading'] instanceof FortuneReading) {
@@ -234,77 +237,92 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $replyToken = $extra['reply_token'] ?? null;
 
-        // ใช้ Flex Message สวยงามทุก action — ไม่ส่ง text ธรรมดาอีกต่อไป!
-        return match ($action) {
-            // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Flex
-            'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result, $replyToken),
+        // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
+        try {
+            return match ($action) {
+                // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Flex
+                'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result, $replyToken),
 
-            // รอชำระเงิน → ส่ง Payment Flex
-            'pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+                // รอชำระเงิน → ส่ง Payment Flex
+                'pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
-            // ทำนายละเอียดเสร็จ → ส่งทีละคำถาม
-            'completed' => $this->sendLineDeepReadingResponse($lineService, $userId, $result, $replyToken),
+                // ทำนายละเอียดเสร็จ → ส่งทีละคำถาม
+                'completed' => $this->sendLineDeepReadingResponse($lineService, $userId, $result, $replyToken),
 
-            // Help → ส่ง Welcome Flex
-            'help', 'filtered' => $this->sendLineHelpResponse($lineService, $userId, $result, $replyToken),
+                // Help → ส่ง Welcome Flex
+                'help', 'filtered' => $this->sendLineHelpResponse($lineService, $userId, $result, $replyToken),
 
-            // เริ่มเก็บคำถาม → ส่ง Flex เลือกหมวด
-            'collecting_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
+                // เริ่มเก็บคำถาม → ส่ง Flex เลือกหมวด
+                'collecting_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
 
-            // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
-            'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
+                // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
+                'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
 
-            // ยืนยันดูดวง → Flex สวยๆ พร้อมราคา + สิทธิ์
-            'awaiting_confirmation' => $this->sendLineConfirmationResponse($lineService, $userId, $result, $replyToken),
+                // ยืนยันดูดวง → Flex สวยๆ พร้อมราคา + สิทธิ์
+                'awaiting_confirmation' => $this->sendLineConfirmationResponse($lineService, $userId, $result, $replyToken),
 
-            // ขอวันเกิด → Flex พร้อมรูปแบบ + ราคา
-            'collecting_birthdate' => $this->sendLineBirthdateResponse($lineService, $userId, $result, $replyToken),
+                // ขอวันเกิด → Flex พร้อมรูปแบบ + ราคา
+                'collecting_birthdate' => $this->sendLineBirthdateResponse($lineService, $userId, $result, $replyToken),
 
-            // วันเกิดผิดรูปแบบ → Flex แจ้ง error + ตัวอย่าง
-            'invalid_birthdate', 'retry_birthdate' => $this->sendLineInvalidBirthdateResponse($lineService, $userId, $result, $replyToken),
+                // วันเกิดผิดรูปแบบ → Flex แจ้ง error + ตัวอย่าง
+                'invalid_birthdate', 'retry_birthdate' => $this->sendLineInvalidBirthdateResponse($lineService, $userId, $result, $replyToken),
 
-            // หมดสิทธิ์ฟรี → Flex แนะนำดูดวงละเอียดพร้อมราคา
-            'ai_limit' => $this->sendLineAiLimitResponse($lineService, $userId, $result, $replyToken),
+                // หมดสิทธิ์ฟรี → Flex แนะนำดูดวงละเอียดพร้อมราคา
+                'ai_limit' => $this->sendLineAiLimitResponse($lineService, $userId, $result, $replyToken),
 
-            // เช็คสิทธิ์ → Flex แสดงสิทธิ์ + ราคา
-            'check_remaining' => $this->sendLineCheckRemainingResponse($lineService, $userId, $result, $replyToken),
+                // เช็คสิทธิ์ → Flex แสดงสิทธิ์ + ราคา
+                'check_remaining' => $this->sendLineCheckRemainingResponse($lineService, $userId, $result, $replyToken),
 
-            // ปฏิเสธ → Flex บอกลา + ปุ่มแชร์
-            'declined' => $this->sendLineDeclinedResponse($lineService, $userId, $result, 'declined', $replyToken),
+                // ปฏิเสธ → Flex บอกลา + ปุ่มแชร์
+                'declined' => $this->sendLineDeclinedResponse($lineService, $userId, $result, 'declined', $replyToken),
 
-            // ยกเลิก → Flex ยืนยันยกเลิก + ปุ่มดูดวงใหม่
-            'cancelled' => $this->sendLineDeclinedResponse($lineService, $userId, $result, 'cancelled', $replyToken),
+                // ยกเลิก → Flex ยืนยันยกเลิก + ปุ่มดูดวงใหม่
+                'cancelled' => $this->sendLineDeclinedResponse($lineService, $userId, $result, 'cancelled', $replyToken),
 
-            // รอชำระเงิน (เตือนซ้ำ) → Flex ยอดเงิน + เวลาเหลือ
-            'waiting_payment' => $this->sendLineWaitingPaymentResponse($lineService, $userId, $result, $replyToken),
+                // รอชำระเงิน (เตือนซ้ำ) → Flex ยอดเงิน + เวลาเหลือ
+                'waiting_payment' => $this->sendLineWaitingPaymentResponse($lineService, $userId, $result, $replyToken),
 
-            // บิลหมดอายุ → Flex แจ้ง + ปุ่มเริ่มใหม่
-            'payment_expired' => $this->sendLinePaymentExpiredResponse($lineService, $userId, $result, $replyToken),
+                // บิลหมดอายุ → Flex แจ้ง + ปุ่มเริ่มใหม่
+                'payment_expired' => $this->sendLinePaymentExpiredResponse($lineService, $userId, $result, $replyToken),
 
-            // กำลังประมวลผล → Flex แจ้งสถานะ
-            'view_reading_processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
+                // กำลังประมวลผล → Flex แจ้งสถานะ
+                'view_reading_processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
 
-            // ไม่มีคำทำนาย → Flex เชิญดูดวง
-            'view_reading_empty' => $this->sendLineNoReadingResponse($lineService, $userId, $result, $replyToken),
+                // ไม่มีคำทำนาย → Flex เชิญดูดวง
+                'view_reading_empty' => $this->sendLineNoReadingResponse($lineService, $userId, $result, $replyToken),
 
-            // ไว้ดูทีหลัง → Flex ยืนยันบันทึก
-            'view_later' => $this->sendLineViewLaterResponse($lineService, $userId, $result, $replyToken),
+                // ไว้ดูทีหลัง → Flex ยืนยันบันทึก
+                'view_later' => $this->sendLineViewLaterResponse($lineService, $userId, $result, $replyToken),
 
-            // ดูดวงละเอียดปิด → Flex แจ้ง
-            'deep_reading_disabled' => $this->sendLineDeepDisabledResponse($lineService, $userId, $result, $replyToken),
+                // ดูดวงละเอียดปิด → Flex แจ้ง
+                'deep_reading_disabled' => $this->sendLineDeepDisabledResponse($lineService, $userId, $result, $replyToken),
 
-            // ข้อผิดพลาด → Flex สวยงาม
-            'error', 'retry_question' => $this->sendLineErrorResponse($lineService, $userId, $result, $replyToken),
+                // ข้อผิดพลาด → Flex สวยงาม
+                'error', 'retry_question' => $this->sendLineErrorResponse($lineService, $userId, $result, $replyToken),
 
-            // ดูคำทำนายพื้นฐาน/ละเอียด → ส่ง Flex คำทำนาย
-            'view_reading_basic', 'view_reading_deep' => $this->sendLineViewReadingResponse($lineService, $userId, $result, $replyToken),
+                // ดูคำทำนายพื้นฐาน/ละเอียด → ส่ง Flex คำทำนาย
+                'view_reading_basic', 'view_reading_deep' => $this->sendLineViewReadingResponse($lineService, $userId, $result, $replyToken),
 
-            // partial (streaming) → ส่ง text ธรรมดา (Flex ถูก handle ใน FortuneConversationService แล้ว)
-            'partial' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                // partial (streaming) → ส่ง text ธรรมดา (Flex ถูก handle ใน FortuneConversationService แล้ว)
+                'partial' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
-            // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
-            default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
-        };
+                // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
+                default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
+            };
+        } catch (\Exception $e) {
+            // ⚡ Flex Message ล้มเหลว → fallback ส่ง text ธรรมดา (ดีกว่าไม่ส่งอะไรเลย!)
+            Log::error('LINE Flex Message ล้มเหลว — fallback เป็น text', [
+                'action' => $action,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'error_file' => $e->getFile().':'.$e->getLine(),
+            ]);
+
+            // ส่ง text ธรรมดาเป็น fallback เสมอ
+            $fallbackText = $message ?: 'ระบบกำลังดำเนินการค่ะ กรุณารอสักครู่ 🙏';
+
+            return $lineService->sendMessageWithReplyFallback($userId, mb_substr($fallbackText, 0, 2000), $replyToken);
+        }
     }
 
     /**
@@ -315,7 +333,7 @@ class FortuneChannelManager
     protected function sendLineBasicDoneResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
         $billRef = $reading?->bill_reference;
 
         // ส่ง Birth Chart / Quick Chart ก่อนคำทำนาย (ถ้ามี)
@@ -541,7 +559,7 @@ class FortuneChannelManager
         $deepReadings = $result['deep_readings'] ?? [];
         $thankYou = $result['thank_you'] ?? '';
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
 
         // ถ้าไม่มี deep_readings (format เก่า หรือ streaming thank you) → ส่ง Thank You Flex
         if (empty($deepReadings)) {
@@ -643,7 +661,7 @@ class FortuneChannelManager
     protected function sendLineQuestionSelectionResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
         $questionNumber = $result['question_number'] ?? 1;
         $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
 
@@ -676,7 +694,7 @@ class FortuneChannelManager
     protected function sendLineConfirmationResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
 
         // ดึงสิทธิ์จาก result (ถูกส่งมาจาก FortuneConversationService)
         $remaining = $result['remaining'] ?? ($result['show_quick_replies'] ? 1 : 0);
@@ -726,8 +744,8 @@ class FortuneChannelManager
      */
     protected function sendLineCheckRemainingResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
-        $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        // ⚡ check_remaining ไม่มี reading → ใช้ user_name จาก profile
+        $userName = $result['user_name'] ?? 'คุณ';
         $remaining = $result['remaining'] ?? 0;
         $used = $result['used'] ?? 0;
         $total = $result['total'] ?? 1;
@@ -746,7 +764,7 @@ class FortuneChannelManager
     protected function sendLineDeclinedResponse(LineFortuneService $lineService, string $userId, array $result, string $type = 'declined', ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
         $flex = $lineService->buildDeclinedFlexMessage($userName, $type);
 
         $altText = $type === 'cancelled' ? '✅ ยกเลิกแล้วค่ะ' : '🙏 ไม่เป็นไรค่ะ';
@@ -845,7 +863,7 @@ class FortuneChannelManager
     {
         $reading = $result['reading'] ?? null;
         $action = $result['action'] ?? '';
-        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
 
         // ส่ง chart image ก่อน (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? $reading?->reading_image_url;

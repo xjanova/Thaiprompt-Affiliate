@@ -1992,6 +1992,15 @@ class LineFortuneService implements MessagingPlatformInterface
             $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay}.-", 'text' => 'ดูดวงละเอียด']];
         }
 
+        // ปุ่มดูคำทำนายย้อนหลัง + แชร์
+        $footerContents[] = [
+            'type' => 'box', 'layout' => 'horizontal', 'spacing' => 'sm',
+            'contents' => [
+                ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '📖 คำทำนายล่าสุด', 'text' => 'ดูคำทำนายล่าสุด']],
+                ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'uri', 'label' => '📤 แชร์ให้เพื่อน', 'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))]],
+            ],
+        ];
+
         return [
             'type' => 'bubble',
             'styles' => ['header' => ['backgroundColor' => '#1976D2']],

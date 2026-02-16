@@ -115,12 +115,24 @@ class LineFortuneWebhookController extends Controller
         $messageText = $event['message']['text'] ?? '';
 
         try {
+            // ⚡ ดึง profile ครั้งเดียวแล้วส่งต่อ (ลด API call ซ้ำ)
+            $userProfile = null;
+            try {
+                $userProfile = $this->lineService->getUserProfile($userId);
+            } catch (\Exception $profileErr) {
+                Log::debug('LINE Webhook: ดึง profile ไม่ได้ ใช้ default', [
+                    'user_id' => $userId,
+                ]);
+            }
+            // ส่ง empty array ถ้า null → กัน FortuneChannelManager เรียก getUserProfile ซ้ำ
+            $userProfile = $userProfile ?: ['id' => $userId, 'name' => null];
+
             // ประมวลผลข้อความผ่าน Channel Manager
             $result = $this->channelManager->processMessage(
                 FortuneChannelManager::PLATFORM_LINE,
                 $userId,
                 $messageText,
-                null,
+                $userProfile,
                 ['reply_token' => $replyToken]
             );
 
@@ -133,10 +145,13 @@ class LineFortuneWebhookController extends Controller
             Log::error('LINE Webhook: Error processing message', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
+                'error_file' => $e->getFile().':'.$e->getLine(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 500),
             ]);
 
-            // ส่งข้อความ error
-            $this->lineService->sendMessage($userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏');
+            // ส่งข้อความ error (ลอง reply ก่อน ถ้าไม่ได้ใช้ push)
+            $errorMessage = 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏';
+            $this->lineService->sendMessageWithReplyFallback($userId, $errorMessage, $replyToken);
         }
     }
 
