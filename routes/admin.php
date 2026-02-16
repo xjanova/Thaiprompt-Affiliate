@@ -423,6 +423,7 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::get('/pending-orders', [SmsCheckerAdminController::class, 'pendingOrders'])->name('pending-orders');
     Route::post('/orders/{order}/confirm', [SmsCheckerAdminController::class, 'confirmPayment'])->name('order-confirm');
     Route::post('/orders/{order}/reject', [SmsCheckerAdminController::class, 'rejectPayment'])->name('order-reject');
+    Route::get('/debug-fortune', [SmsCheckerAdminController::class, 'debugFortuneSmsChecker'])->name('debug-fortune');
 });
 
 // Payment Bank Accounts Management (จัดการบัญชีธนาคารรับชำระเงิน)

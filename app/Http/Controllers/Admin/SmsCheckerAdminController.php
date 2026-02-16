@@ -690,4 +690,158 @@ class SmsCheckerAdminController extends Controller
                 ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
         }
     }
+
+    /**
+     * Debug page for fortune reading → SmsChecker order transformation.
+     * Shows what the API would return and identifies potential issues.
+     */
+    public function debugFortuneSmsChecker()
+    {
+        // 1. Fortune Reading status counts
+        $statusCounts = \App\Models\FortuneReading::query()
+            ->selectRaw('conversation_status, COUNT(*) as count')
+            ->groupBy('conversation_status')
+            ->pluck('count', 'conversation_status')
+            ->toArray();
+
+        // 2. Fortune readings eligible for SmsChecker (same query as orders() endpoint)
+        $eligibleStatuses = ['pending_payment', 'paid', 'completed'];
+        $fortuneReadings = \App\Models\FortuneReading::query()
+            ->whereIn('conversation_status', $eligibleStatuses)
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get();
+
+        // 3. Transform each using same logic as SmsPaymentController
+        $transformed = [];
+        $validationIssues = [];
+        $smsPaymentController = app(\App\Http\Controllers\Api\V1\SmsPaymentController::class);
+        $idOffset = 10000000;
+
+        foreach ($fortuneReadings as $reading) {
+            // Use reflection to call the private transform method, or replicate logic
+            $order = $this->transformFortuneForDebug($reading, $idOffset);
+            $transformed[] = $order;
+
+            // Validate
+            $issues = [];
+            if (empty($order['order_details_json']['order_number'])) {
+                $issues[] = 'Missing order_number (bill_reference is null)';
+            }
+            if (empty($order['order_details_json']['amount']) || $order['order_details_json']['amount'] == 0) {
+                $issues[] = 'Amount is 0 or missing';
+            }
+            if (empty($order['approval_status'])) {
+                $issues[] = 'Missing approval_status';
+            }
+            if (!empty($issues)) {
+                $validationIssues[] = [
+                    'fortune_reading_id' => $reading->id,
+                    'offset_id' => $reading->id + $idOffset,
+                    'bill_reference' => $reading->bill_reference,
+                    'issues' => $issues,
+                ];
+            }
+        }
+
+        // 4. Active devices
+        $devices = \App\Models\SmsCheckerDevice::query()
+            ->where('is_active', true)
+            ->get()
+            ->map(function ($d) {
+                return [
+                    'device_id' => $d->device_id,
+                    'device_name' => $d->device_name,
+                    'last_active_at' => $d->last_active_at?->toIso8601String(),
+                    'fcm_token_length' => strlen($d->fcm_token ?? ''),
+                    'has_fcm_token' => !empty($d->fcm_token),
+                ];
+            });
+
+        // 5. syncOrders specific check: fortune readings with bill_reference
+        $withBillRef = \App\Models\FortuneReading::query()
+            ->whereIn('conversation_status', $eligibleStatuses)
+            ->whereNotNull('bill_reference')
+            ->count();
+        $withoutBillRef = \App\Models\FortuneReading::query()
+            ->whereIn('conversation_status', $eligibleStatuses)
+            ->whereNull('bill_reference')
+            ->count();
+
+        return view('admin.smschecker.debug-fortune', [
+            'statusCounts' => $statusCounts,
+            'fortuneReadings' => $fortuneReadings,
+            'transformed' => $transformed,
+            'validationIssues' => $validationIssues,
+            'devices' => $devices,
+            'withBillRef' => $withBillRef,
+            'withoutBillRef' => $withoutBillRef,
+            'idOffset' => $idOffset,
+        ]);
+    }
+
+    /**
+     * Replicate SmsPaymentController::transformFortuneReadingToOrderApproval()
+     * with extra debug fields.
+     */
+    private function transformFortuneForDebug($reading, int $idOffset): array
+    {
+        $statusMap = [
+            'pending_payment' => 'pending_review',
+            'paid' => 'auto_approved',
+            'completed' => 'auto_approved',
+            'cancelled' => 'cancelled',
+            'expired' => 'expired',
+        ];
+
+        $approvalStatus = $statusMap[$reading->conversation_status] ?? 'pending_review';
+        $amount = 0;
+
+        // Try to get amount from bill_amount or fortune_type pricing
+        if ($reading->bill_amount) {
+            $amount = (float) $reading->bill_amount;
+        } elseif ($reading->fortune_type) {
+            // Look up pricing
+            $pricing = \App\Models\FortuneType::where('slug', $reading->fortune_type)->first();
+            if ($pricing) {
+                $amount = (float) $pricing->price;
+            }
+        }
+
+        return [
+            'id' => $reading->id + $idOffset,
+            'notification_id' => null,
+            'matched_transaction_id' => null,
+            'device_id' => null,
+            'approval_status' => $approvalStatus,
+            'confidence' => ($approvalStatus === 'pending_review') ? 'medium' : 'high',
+            'approved_by' => ($approvalStatus !== 'pending_review') ? 'system' : null,
+            'approved_at' => ($reading->paid_at) ? $reading->paid_at->toIso8601String() : null,
+            'rejected_at' => null,
+            'rejection_reason' => null,
+            'order_details_json' => [
+                'order_number' => $reading->bill_reference,
+                'product_name' => 'ดูดวง: ' . ($reading->fortune_type ?? 'ทั่วไป'),
+                'product_details' => $reading->question ?? null,
+                'amount' => $amount,
+                'customer_name' => $reading->customer_name ?? ($reading->line_user_id ? 'LINE:' . substr($reading->line_user_id, 0, 8) : null),
+                'website_name' => 'thaiprompt.com',
+            ],
+            'server_name' => config('app.name', 'Thaiprompt'),
+            'synced_version' => $reading->updated_at ? intval($reading->updated_at->timestamp * 1000) : 0,
+            'created_at' => $reading->created_at?->toIso8601String(),
+            'updated_at' => $reading->updated_at?->toIso8601String(),
+            'notification' => null,
+            // Debug-only fields
+            '_debug' => [
+                'real_id' => $reading->id,
+                'conversation_status' => $reading->conversation_status,
+                'bill_reference' => $reading->bill_reference,
+                'bill_amount' => $reading->bill_amount,
+                'fortune_type' => $reading->fortune_type,
+                'paid_at' => $reading->paid_at?->toIso8601String(),
+                'line_user_id' => $reading->line_user_id,
+            ],
+        ];
+    }
 }
