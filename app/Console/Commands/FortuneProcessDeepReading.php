@@ -131,22 +131,12 @@ class FortuneProcessDeepReading extends Command
                     ]);
                 }
             } else {
-                // ❌ คำทำนายไม่ได้ถูกบันทึก → แจ้งลูกค้าว่าระบบกำลังพยายามอีกครั้ง
-                Log::error('fortune:process-deep: deep_response ว่างหลัง processPaymentConfirmed สำเร็จ', [
+                // ❌ คำทำนายไม่ได้ถูกบันทึก → ไม่แจ้งลูกค้า (retry เงียบๆ ผ่าน fortune:check-pending)
+                // ลูกค้าได้รับข้อความ "รอสักครู่" ไปแล้ว ไม่ควรส่ง error message ซ้ำ
+                Log::warning('fortune:process-deep: deep_response ว่างหลัง processPaymentConfirmed — รอ check-pending retry', [
                     'reading_id' => $readingId,
                     'result_action' => $result['action'] ?? 'unknown',
                 ]);
-
-                try {
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'error',
-                        'message' => "🔮 ขออภัยค่ะ ระบบกำลังสร้างคำทำนายอยู่ กรุณารอสักครู่นะคะ\n\nจันทราจะส่งคำทำนายให้เร็วที่สุดค่ะ 🙏",
-                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-                } catch (\Exception $errMsgErr) {
-                    Log::error('fortune:process-deep: ส่งข้อความ fallback ล้มเหลว', [
-                        'error' => $errMsgErr->getMessage(),
-                    ]);
-                }
             }
 
             return self::SUCCESS;
@@ -181,20 +171,9 @@ class FortuneProcessDeepReading extends Command
                 ]);
             }
 
-            // ส่งข้อความ error ให้ user
-            try {
-                $settings = FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
-
-                $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'error',
-                    'message' => "🔮 ขออภัยค่ะ ระบบสร้างคำทำนายเชิงลึกขัดข้อง\n\nกรุณาทักแชทเพื่อแจ้งแอดมินได้เลยค่ะ 🙏",
-                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-            } catch (\Exception $msgErr) {
-                Log::error('fortune:process-deep: ส่งข้อความ error ไม่สำเร็จ', [
-                    'error' => $msgErr->getMessage(),
-                ]);
-            }
+            // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
+            // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
+            // ถ้ารอนานเกิน 10 นาที → check-pending จะส่ง "คนใช้งานมาก" แทน
 
             return self::FAILURE;
         }

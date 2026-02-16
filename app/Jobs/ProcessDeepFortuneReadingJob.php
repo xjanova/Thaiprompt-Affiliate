@@ -374,24 +374,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             ]);
         }
 
-        // ส่งข้อความให้ user ว่าระบบมีปัญหา
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $channelManager = new FortuneChannelManager($settings);
-
-            $errorMessage = "🔮 ขออภัยค่ะ ระบบสร้างคำทำนายเชิงลึกขัดข้อง\n\n"
-                ."กรุณาทักแชทเพื่อแจ้งแอดมินได้เลยค่ะ\n"
-                .'แอดมินจะจัดการให้เร็วที่สุดนะคะ 🙏';
-
-            $channelManager->sendResponse($this->platform, $this->userId, [
-                'action' => 'error',
-                'message' => $errorMessage,
-            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-        } catch (\Exception $e) {
-            Log::error('ProcessDeepFortuneReadingJob: ส่งข้อความ error ไม่สำเร็จ', [
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
+        // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
     }
 
     /**

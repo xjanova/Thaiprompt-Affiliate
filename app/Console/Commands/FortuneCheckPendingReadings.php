@@ -138,8 +138,9 @@ class FortuneCheckPendingReadings extends Command
 
             $this->info("  🔄 {$billRef} — รอ {$waitMinutes} นาที, retry #{$retryCount} → dispatch job");
 
-            // ✅ ส่งข้อความ "คนใช้งานมาก" ถ้ารอ >5 นาที + ยังไม่เคยส่ง
-            if ($waitMinutes >= 5 && ! $reading->getConversationState('busy_message_sent', false) && ! $isDryRun) {
+            // ✅ ส่งข้อความ "คนใช้งานมาก" ถ้ารอ >10 นาที + ยังไม่เคยส่ง
+            // (ให้เวลา AI retry สัก 2-3 รอบก่อนแจ้งลูกค้า)
+            if ($waitMinutes >= 10 && ! $reading->getConversationState('busy_message_sent', false) && ! $isDryRun) {
                 try {
                     $settings = FortuneTellingSetting::getSettings();
                     $channelManager = new FortuneChannelManager($settings);

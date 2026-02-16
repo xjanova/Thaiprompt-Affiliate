@@ -688,19 +688,11 @@ class SmsPaymentService
                     'notes' => 'dispatch + sync fallback failed: '.$syncErr->getMessage(),
                 ]);
 
-                // ส่งข้อความให้ user ว่าระบบกำลังดำเนินการ
-                try {
-                    $settings = FortuneTellingSetting::getSettings();
-                    $channelManager = new FortuneChannelManager($settings);
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'error',
-                        'message' => "🔮 จันทราได้รับเงินเรียบร้อยแล้วค่ะ\n\nระบบกำลังสร้างคำทำนาย อาจใช้เวลาสักครู่นะคะ\nถ้ารอนานเกิน 5 นาที กรุณาทักแชทมาได้เลยค่ะ 🙏",
-                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-                } catch (\Exception $msgErr) {
-                    Log::error('SMS Payment: ส่งข้อความ error ไม่สำเร็จ', [
-                        'error' => $msgErr->getMessage(),
-                    ]);
-                }
+                // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
+                // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
+                Log::info('SMS Payment: dispatch ล้มเหลว → รอ check-pending retry', [
+                    'reading_id' => $reading->id,
+                ]);
 
                 return true; // return true เพราะ matched แล้ว (เงินโอนมาจริง) แค่ dispatch ล้มเหลว
             }
