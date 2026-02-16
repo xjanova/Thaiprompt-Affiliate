@@ -246,12 +246,23 @@ class LineFortuneWebhookController extends Controller
      */
     protected function handleDeepReadingPostback(string $userId, ?string $replyToken): void
     {
-        // ส่งข้อความเหมือนพิมพ์ "ต้องการดูดวงละเอียด"
-        $this->channelManager->processMessage(
-            FortuneChannelManager::PLATFORM_LINE,
-            $userId,
-            'ต้องการดูดวงละเอียด'
-        );
+        try {
+            $this->channelManager->processMessage(
+                FortuneChannelManager::PLATFORM_LINE,
+                $userId,
+                'ต้องการดูดวงละเอียด',
+                null,
+                ['reply_token' => $replyToken]
+            );
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback deep_reading ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
     }
 
     /**
@@ -259,11 +270,22 @@ class LineFortuneWebhookController extends Controller
      */
     protected function handleCancelPostback(string $userId, ?string $replyToken): void
     {
-        // ส่งข้อความเหมือนพิมพ์ "ยกเลิก"
-        $this->channelManager->processMessage(
-            FortuneChannelManager::PLATFORM_LINE,
-            $userId,
-            'ยกเลิก'
-        );
+        try {
+            $this->channelManager->processMessage(
+                FortuneChannelManager::PLATFORM_LINE,
+                $userId,
+                'ยกเลิก',
+                null,
+                ['reply_token' => $replyToken]
+            );
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback cancel ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
     }
 }
