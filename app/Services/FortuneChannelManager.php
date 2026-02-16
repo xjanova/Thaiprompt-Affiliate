@@ -194,7 +194,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $platformService->sendImage($userId, $chartUrl);
-                usleep(500000); // 0.5 วินาที
+                usleep(200000); // ⚡ 0.2 วินาที (ลดจาก 0.5)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send chart image', [
                     'platform' => $platform,
@@ -223,36 +223,48 @@ class FortuneChannelManager
 
     /**
      * ส่ง Response สำหรับ LINE ด้วย Flex Message
+     *
+     * ⚡ ปรับปรุง: ใช้ replyToken สำหรับข้อความแรก (เร็วกว่า + ฟรี)
+     * replyToken จาก webhook มีอายุ 1 นาที ใช้ได้ครั้งเดียว
      */
     protected function sendLineResponse(LineFortuneService $lineService, string $userId, array $result, array $extra = []): bool
     {
         $action = $result['action'] ?? 'unknown';
         $message = $result['message'] ?? '';
         $reading = $result['reading'] ?? null;
+        $replyToken = $extra['reply_token'] ?? null;
 
         // ใช้ Flex Message ตาม action
         return match ($action) {
             // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Flex
-            'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result),
+            'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result, $replyToken),
 
             // รอชำระเงิน → ส่ง Payment Flex
-            'pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result),
+            'pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
             // ทำนายละเอียดเสร็จ → ส่งทีละคำถาม
-            'completed' => $this->sendLineDeepReadingResponse($lineService, $userId, $result),
+            'completed' => $this->sendLineDeepReadingResponse($lineService, $userId, $result, $replyToken),
 
             // Help → ส่ง Welcome Flex
-            'help', 'filtered' => $this->sendLineHelpResponse($lineService, $userId, $result),
+            'help', 'filtered' => $this->sendLineHelpResponse($lineService, $userId, $result, $replyToken),
 
-            // อื่นๆ → ส่งข้อความธรรมดา
-            default => $lineService->sendMessage($userId, $message),
+            // เริ่มเก็บคำถาม → ส่ง Flex เลือกหมวด
+            'collecting_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
+
+            // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
+            'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
+
+            // อื่นๆ → ส่งข้อความธรรมดา (ใช้ replyToken ถ้ามี)
+            default => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
         };
     }
 
     /**
      * ส่ง Response เมื่อทำนายพื้นฐานเสร็จ (LINE)
+     *
+     * ⚡ ปรับปรุง: ใช้ replyToken สำหรับ chart+คำทำนาย (เร็วขึ้น)
      */
-    protected function sendLineBasicDoneResponse(LineFortuneService $lineService, string $userId, array $result): bool
+    protected function sendLineBasicDoneResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
         $userName = $reading?->facebook_user_name ?? 'คุณ';
@@ -262,8 +274,46 @@ class FortuneChannelManager
         $chartUrl = $result['chart_image_url'] ?? null;
         if ($chartUrl) {
             try {
+                // ⚡ ใช้ replyToken ส่ง chart + คำทำนาย รวมกัน (เร็วมาก!)
+                if ($replyToken) {
+                    $message = $result['message'] ?? '';
+                    $parts = explode('═══════════════════════', $message);
+                    $prediction = trim($parts[0] ?? $message);
+                    $fortuneFlex = $lineService->buildFortuneFlexMessage($prediction, $userName, $billRef);
+
+                    $replyMessages = [
+                        [
+                            'type' => 'image',
+                            'originalContentUrl' => $chartUrl,
+                            'previewImageUrl' => $chartUrl,
+                        ],
+                        [
+                            'type' => 'flex',
+                            'altText' => 'คำทำนายจากแม่หมอจันทรา',
+                            'contents' => $fortuneFlex,
+                        ],
+                    ];
+
+                    // เพิ่ม Upsell ถ้าเปิดดูดวงละเอียด (รวมใน replyMessage เดียว สูงสุด 5 ข้อความ)
+                    if ($this->settings->isDeepReadingEnabled()) {
+                        $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
+                        $replyMessages[] = [
+                            'type' => 'flex',
+                            'altText' => 'ดูดวงละเอียด',
+                            'contents' => $upsellFlex,
+                        ];
+                    }
+
+                    $sent = $lineService->replyMessage($replyToken, $replyMessages);
+                    if ($sent) {
+                        return true;
+                    }
+                    // ถ้า reply ล้มเหลว → fallback ด้านล่าง
+                    Log::warning('FortuneChannelManager: replyMessage ล้มเหลว (basic_done) fallback เป็น push');
+                }
+
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(500000); // 0.5 วินาที
+                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image (basic_done)', [
                     'error' => $imgErr->getMessage(),
@@ -298,8 +348,10 @@ class FortuneChannelManager
 
     /**
      * ส่ง Response เมื่อรอชำระเงิน (LINE)
+     *
+     * ⚡ ปรับปรุง: ใช้ replyToken
      */
-    protected function sendLinePaymentResponse(LineFortuneService $lineService, string $userId, array $result): bool
+    protected function sendLinePaymentResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $reading = $result['reading'] ?? null;
 
@@ -342,19 +394,42 @@ class FortuneChannelManager
 
         // ส่ง Birth Chart ก่อนบิล (ถ้ามี) เพื่อให้ผู้ใช้เห็นภาพดวงดาวก่อนชำระเงิน
         $chartUrl = $result['chart_image_url'] ?? null;
+        $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
+
+        // ⚡ ใช้ replyToken ส่ง chart+payment รวมกัน (เร็วมาก!)
+        if ($replyToken) {
+            $replyMessages = [];
+            if ($chartUrl) {
+                $replyMessages[] = [
+                    'type' => 'image',
+                    'originalContentUrl' => $chartUrl,
+                    'previewImageUrl' => $chartUrl,
+                ];
+            }
+            $replyMessages[] = [
+                'type' => 'flex',
+                'altText' => 'ยอดชำระ ฿'.number_format($amount, 2),
+                'contents' => $paymentFlex,
+            ];
+
+            $sent = $lineService->replyMessage($replyToken, $replyMessages);
+            if ($sent) {
+                return true;
+            }
+            Log::warning('FortuneChannelManager: replyMessage ล้มเหลว (payment) fallback เป็น push');
+        }
+
+        // Fallback: pushMessage
         if ($chartUrl) {
             try {
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
                 ]);
             }
         }
-
-        // ส่ง Payment Flex พร้อมยอด unique amount สำหรับเช็คผ่าน SMS payment checker
-        $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
 
         return $lineService->sendRichMessage($userId, [
             'alt_text' => 'ยอดชำระ ฿'.number_format($amount, 2),
@@ -367,26 +442,52 @@ class FortuneChannelManager
      *
      * ใช้ Flex Message การ์ดสวยๆ แทน text ธรรมดา
      * แต่ละคำถามเป็นการ์ดแยก มีสีตามหมวด
-     * ปิดท้ายด้วยการ์ดขอบคุณ + ปุ่ม engagement
+     * ปิดท้ายด้วยการ์ดขอบคุณ + ปุ่มแชร์ + ปุ่ม engagement
+     *
+     * ⚡ ปรับปรุง: ลด usleep, ใช้ replyToken ถ้ามี
      */
-    protected function sendLineDeepReadingResponse(LineFortuneService $lineService, string $userId, array $result): bool
+    protected function sendLineDeepReadingResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $deepReadings = $result['deep_readings'] ?? [];
         $thankYou = $result['thank_you'] ?? '';
         $reading = $result['reading'] ?? null;
         $userName = $reading?->facebook_user_name ?? 'คุณ';
 
-        // ถ้าไม่มี deep_readings (format เก่า) → ส่งข้อความเดียว
+        // ถ้าไม่มี deep_readings (format เก่า หรือ streaming thank you) → ส่ง Thank You Flex
         if (empty($deepReadings)) {
-            return $lineService->sendMessage($userId, $result['message'] ?? '');
+            $message = $result['message'] ?? '';
+            // ตรวจว่าเป็นข้อความขอบคุณ
+            if (mb_strpos($message, 'ขอบคุณ') !== false || mb_strpos($message, 'ขอให้โชคดี') !== false) {
+                $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
+
+                return $lineService->sendFlexWithReplyFallback(
+                    $userId, $thankYouFlex, '🙏 ขอบคุณที่ไว้วางใจค่ะ', $replyToken
+                );
+            }
+
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
         }
 
         // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? null;
         if ($chartUrl) {
             try {
-                $lineService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                // ⚡ ส่ง chart ด้วย replyToken (เร็ว + ฟรี)
+                if ($replyToken) {
+                    $sent = $lineService->replyMessage($replyToken, [
+                        [
+                            'type' => 'image',
+                            'originalContentUrl' => $chartUrl,
+                            'previewImageUrl' => $chartUrl,
+                        ],
+                    ]);
+                    if ($sent) {
+                        $replyToken = null; // ใช้แล้ว ห้ามใช้ซ้ำ
+                    }
+                } else {
+                    $lineService->sendImage($userId, $chartUrl);
+                }
+                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image', [
                     'error' => $imgErr->getMessage(),
@@ -415,11 +516,11 @@ class FortuneChannelManager
                 'contents' => $flex,
             ]);
 
-            // หน่วงเวลาเล็กน้อยระหว่างข้อความ (ป้องกัน rate limit)
-            usleep(500000); // 0.5 วินาที
+            // ⚡ หน่วงเวลาลด (ป้องกัน rate limit แต่ไม่ช้าเกินไป)
+            usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
         }
 
-        // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่ม engagement
+        // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่มแชร์ + engagement
         $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
         $lineService->sendRichMessage($userId, [
             'alt_text' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
@@ -431,15 +532,48 @@ class FortuneChannelManager
 
     /**
      * ส่ง Response Help/Welcome (LINE)
+     *
+     * ⚡ ปรับปรุง: ใช้ replyToken
      */
-    protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result): bool
+    protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $welcomeFlex = $lineService->buildWelcomeFlexMessage();
 
-        return $lineService->sendRichMessage($userId, [
-            'alt_text' => 'แม่หมอจันทรายินดีต้อนรับค่ะ',
-            'contents' => $welcomeFlex,
-        ]);
+        return $lineService->sendFlexWithReplyFallback(
+            $userId, $welcomeFlex, 'แม่หมอจันทรายินดีต้อนรับค่ะ', $replyToken
+        );
+    }
+
+    /**
+     * ส่ง Response เลือกหมวดคำถาม (LINE)
+     *
+     * ใช้ Flex Message การ์ดสวยๆ มีปุ่มหมวดคำถามให้กด
+     * แทน text ธรรมดาที่บอกให้ "พิมพ์เองได้เลย"
+     */
+    protected function sendLineQuestionSelectionResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $questionNumber = $result['question_number'] ?? 1;
+        $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
+
+        // ตรวจหาคำถามก่อนหน้า (ถ้าเป็นข้อ 2+)
+        $previousQuestion = null;
+        if ($reading && $questionNumber > 1) {
+            $collected = $reading->getCollectedQuestions();
+            $previousQuestion = end($collected) ?: null;
+        }
+
+        $questionFlex = $lineService->buildQuestionSelectionFlexMessage(
+            $questionNumber,
+            $totalQuestions,
+            $userName,
+            $previousQuestion
+        );
+
+        return $lineService->sendFlexWithReplyFallback(
+            $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", $replyToken
+        );
     }
 
     /**

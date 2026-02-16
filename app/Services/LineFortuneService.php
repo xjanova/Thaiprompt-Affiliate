@@ -118,9 +118,9 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(30)
-                ->connectTimeout(15)
-                ->retry(2, 2000)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->retry(2, 1000)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
@@ -1030,31 +1030,270 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
             'footer' => [
                 'type' => 'box',
-                'layout' => 'horizontal',
-                'spacing' => 'md',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
                 'paddingAll' => 'lg',
                 'contents' => [
+                    // แถวที่ 1: ดูดวงอีกครั้ง + เช็คสิทธิ์
                     [
-                        'type' => 'button',
-                        'style' => 'primary',
-                        'color' => '#6B46C1',
-                        'height' => 'sm',
-                        'action' => [
-                            'type' => 'message',
-                            'label' => '🔮 ดูดวงอีกครั้ง',
-                            'text' => 'ดูดวง',
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'button',
+                                'style' => 'primary',
+                                'color' => '#6B46C1',
+                                'height' => 'sm',
+                                'action' => [
+                                    'type' => 'message',
+                                    'label' => '🔮 ดูดวงอีกครั้ง',
+                                    'text' => 'ดูดวง',
+                                ],
+                            ],
+                            [
+                                'type' => 'button',
+                                'style' => 'secondary',
+                                'height' => 'sm',
+                                'action' => [
+                                    'type' => 'message',
+                                    'label' => '📊 เช็คสิทธิ์',
+                                    'text' => 'เช็คสิทธิ์',
+                                ],
+                            ],
                         ],
                     ],
+                    // แถวที่ 2: ปุ่มแชร์
                     [
                         'type' => 'button',
                         'style' => 'secondary',
                         'height' => 'sm',
                         'action' => [
-                            'type' => 'message',
-                            'label' => '📊 เช็คสิทธิ์',
-                            'text' => 'เช็คสิทธิ์',
+                            'type' => 'uri',
+                            'label' => '📤 แชร์ให้เพื่อน',
+                            'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls')),
                         ],
                     ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message สำหรับเลือกหมวดคำถาม (ดูดวงละเอียด)
+     *
+     * แสดงปุ่มหมวดคำถามสวยๆ พร้อมไอคอนและสี
+     * ผู้ใช้สามารถกดเลือกหมวดหรือพิมพ์เองได้
+     *
+     * @param  int  $questionNumber  คำถามข้อที่ (1, 2)
+     * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string|null  $previousQuestion  คำถามก่อนหน้า (ถ้ามี)
+     * @return array Flex Message bubble
+     */
+    public function buildQuestionSelectionFlexMessage(int $questionNumber, int $totalQuestions, string $userName = 'คุณ', ?string $previousQuestion = null): array
+    {
+        $bodyContents = [];
+
+        // ถ้าเป็นข้อที่ 2+ → แสดงว่ารับคำถามก่อนหน้าแล้ว
+        if ($previousQuestion) {
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'backgroundColor' => '#E8F5E9',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '✅',
+                        'size' => 'md',
+                        'flex' => 0,
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => 'รับคำถามข้อที่ '.($questionNumber - 1).' แล้วค่ะ',
+                        'size' => 'sm',
+                        'color' => '#2E7D32',
+                        'flex' => 1,
+                        'paddingStart' => 'sm',
+                    ],
+                ],
+            ];
+            $bodyContents[] = [
+                'type' => 'separator',
+                'margin' => 'lg',
+                'color' => '#E8E0FF',
+            ];
+        }
+
+        // ข้อความแนะนำ
+        $bodyContents[] = [
+            'type' => 'text',
+            'text' => "เลือกหมวดที่สนใจ หรือพิมพ์คำถามเองได้เลยค่ะ 👇",
+            'wrap' => true,
+            'size' => 'sm',
+            'color' => '#666666',
+            'margin' => $previousQuestion ? 'lg' : 'none',
+        ];
+
+        // ปุ่มหมวดคำถาม — แถวที่ 1: ความรัก + การงาน
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'lg',
+            'spacing' => 'md',
+            'contents' => [
+                $this->buildCategoryButton('💕', 'ความรัก คู่ครอง', '#E91E8C', 'ดูดวงความรัก'),
+                $this->buildCategoryButton('💼', 'การงาน อาชีพ', '#1976D2', 'ดูดวงการงาน'),
+            ],
+        ];
+
+        // ปุ่มหมวดคำถาม — แถวที่ 2: การเงิน + สุขภาพ
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'md',
+            'spacing' => 'md',
+            'contents' => [
+                $this->buildCategoryButton('💰', 'การเงิน โชคลาภ', '#E8890C', 'ดูดวงการเงิน'),
+                $this->buildCategoryButton('🏥', 'สุขภาพ', '#43A047', 'ดูดวงสุขภาพ'),
+            ],
+        ];
+
+        // ปุ่มหมวดคำถาม — แถวที่ 3: ดวงรวม + การเรียน
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'md',
+            'spacing' => 'md',
+            'contents' => [
+                $this->buildCategoryButton('🔮', 'ดวงชะตารวม', '#6B46C1', 'ดูดวงรวม'),
+                $this->buildCategoryButton('📚', 'การเรียน', '#5D4037', 'ดูดวงการเรียน'),
+            ],
+        ];
+
+        // คำแนะนำเพิ่มเติม
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'xl',
+            'backgroundColor' => '#F8F7FF',
+            'cornerRadius' => 'lg',
+            'paddingAll' => 'md',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '💡 หรือพิมพ์คำถามเองได้ เช่น',
+                    'size' => 'xs',
+                    'color' => '#6B46C1',
+                ],
+                [
+                    'type' => 'text',
+                    'text' => '"ปีนี้จะมีแฟนไหม" "ควรเปลี่ยนงานดีไหม"',
+                    'size' => 'xs',
+                    'color' => '#999999',
+                    'wrap' => true,
+                    'margin' => 'sm',
+                ],
+            ],
+        ];
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => [
+                'header' => ['backgroundColor' => '#6B46C1'],
+            ],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '📝',
+                                'size' => 'xxl',
+                                'flex' => 0,
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'vertical',
+                                'flex' => 1,
+                                'paddingStart' => 'md',
+                                'contents' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => "คำถามข้อที่ {$questionNumber} จาก {$totalQuestions}",
+                                        'color' => '#FFFFFF',
+                                        'size' => 'lg',
+                                        'weight' => 'bold',
+                                    ],
+                                    [
+                                        'type' => 'text',
+                                        'text' => "คุณ{$userName} อยากถามเรื่องอะไรคะ?",
+                                        'color' => '#FFFFFFCC',
+                                        'size' => 'sm',
+                                        'margin' => 'xs',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'alignItems' => 'center',
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'contents' => $bodyContents,
+            ],
+        ];
+    }
+
+    /**
+     * สร้างปุ่มหมวดคำถาม (ใช้ภายใน buildQuestionSelectionFlexMessage)
+     *
+     * @param  string  $icon  Emoji ไอคอน
+     * @param  string  $label  ชื่อหมวด
+     * @param  string  $color  สี hex
+     * @param  string  $text  ข้อความที่จะส่งเมื่อกด
+     * @return array Flex Message button component
+     */
+    protected function buildCategoryButton(string $icon, string $label, string $color, string $text): array
+    {
+        return [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'flex' => 1,
+            'backgroundColor' => $color.'15',  // สีจาง 15% opacity
+            'cornerRadius' => 'xl',
+            'paddingAll' => 'md',
+            'action' => [
+                'type' => 'message',
+                'label' => "{$icon} {$label}",
+                'text' => $text,
+            ],
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => $icon,
+                    'size' => 'xl',
+                    'align' => 'center',
+                ],
+                [
+                    'type' => 'text',
+                    'text' => $label,
+                    'size' => 'xs',
+                    'align' => 'center',
+                    'color' => $color,
+                    'weight' => 'bold',
+                    'margin' => 'sm',
                 ],
             ],
         ];
@@ -1139,9 +1378,9 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(30)
-                ->connectTimeout(15)
-                ->retry(2, 2000)
+                ->timeout(15)
+                ->connectTimeout(5)
+                ->retry(2, 1000)
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -1170,17 +1409,20 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
-     * ตอบกลับข้อความ (Reply)
+     * ตอบกลับข้อความ (Reply) — เร็วกว่า pushMessage มาก!
      *
-     * @param  string  $replyToken  Reply token จาก webhook
-     * @param  array  $messages  รายการข้อความ
+     * replyMessage ใช้ replyToken จาก webhook → ตอบกลับทันที ไม่ต้องสร้าง connection ใหม่
+     * ⚡ เร็วกว่า pushMessage 2-3 เท่า + ฟรี (ไม่นับ quota)
+     *
+     * @param  string  $replyToken  Reply token จาก webhook (ใช้ได้ภายใน 1 นาที)
+     * @param  array  $messages  รายการข้อความ (สูงสุด 5 ข้อความ)
      */
     public function replyMessage(string $replyToken, array $messages): bool
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(30)
-                ->connectTimeout(15)
+                ->timeout(10)
+                ->connectTimeout(5)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
@@ -1204,6 +1446,75 @@ class LineFortuneService implements MessagingPlatformInterface
 
             return false;
         }
+    }
+
+    /**
+     * ตอบกลับด้วย Flex Message ผ่าน replyToken (เร็วที่สุด!)
+     *
+     * @param  string  $replyToken  Reply token จาก webhook
+     * @param  array  $flexContent  Flex Message content
+     * @param  string  $altText  ข้อความ fallback สำหรับ notification
+     */
+    public function replyWithFlex(string $replyToken, array $flexContent, string $altText = 'ข้อความจากระบบดูดวง'): bool
+    {
+        return $this->replyMessage($replyToken, [
+            [
+                'type' => 'flex',
+                'altText' => $altText,
+                'contents' => $flexContent,
+            ],
+        ]);
+    }
+
+    /**
+     * ส่ง Flex Message ด้วย replyToken ก่อน ถ้าไม่ได้ → fallback เป็น pushMessage
+     *
+     * @param  string  $recipientId  LINE User ID
+     * @param  array  $flexContent  Flex Message content
+     * @param  string  $altText  ข้อความ fallback
+     * @param  string|null  $replyToken  Reply token (ถ้ามี)
+     */
+    public function sendFlexWithReplyFallback(string $recipientId, array $flexContent, string $altText, ?string $replyToken = null): bool
+    {
+        // ลอง replyMessage ก่อน (เร็วกว่า + ฟรี)
+        if ($replyToken) {
+            $result = $this->replyWithFlex($replyToken, $flexContent, $altText);
+            if ($result) {
+                return true;
+            }
+            Log::warning('LINE: replyMessage ล้มเหลว fallback เป็น pushMessage', [
+                'recipient_id' => $recipientId,
+            ]);
+        }
+
+        // Fallback: ใช้ pushMessage
+        return $this->sendRichMessage($recipientId, [
+            'alt_text' => $altText,
+            'contents' => $flexContent,
+        ]);
+    }
+
+    /**
+     * ส่งข้อความ text ด้วย replyToken ก่อน ถ้าไม่ได้ → fallback เป็น pushMessage
+     *
+     * @param  string  $recipientId  LINE User ID
+     * @param  string  $message  ข้อความ
+     * @param  string|null  $replyToken  Reply token (ถ้ามี)
+     */
+    public function sendMessageWithReplyFallback(string $recipientId, string $message, ?string $replyToken = null): bool
+    {
+        // ลอง replyMessage ก่อน
+        if ($replyToken) {
+            $result = $this->replyMessage($replyToken, [
+                ['type' => 'text', 'text' => $message],
+            ]);
+            if ($result) {
+                return true;
+            }
+        }
+
+        // Fallback: pushMessage
+        return $this->sendMessage($recipientId, $message);
     }
 
     /**
@@ -1258,9 +1569,9 @@ class LineFortuneService implements MessagingPlatformInterface
 
             // เรียก API เพื่อดึงข้อมูล Bot
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(30)
-                ->connectTimeout(15)
-                ->retry(2, 2000)
+                ->timeout(15)
+                ->connectTimeout(5)
+                ->retry(2, 1000)
                 ->get(self::API_ENDPOINT.'/info');
 
             if ($response->successful()) {

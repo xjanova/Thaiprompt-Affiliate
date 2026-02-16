@@ -8,6 +8,7 @@ use App\Models\FortuneUserCredit;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Services\FortuneChannelManager;
+use App\Services\LineFortuneService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -1887,11 +1888,13 @@ class FortuneConversationService
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
-                        usleep(500000); // รอ 0.5 วินาที
+                        usleep(200000); // ⚡ รอ 0.2 วินาที (ลดจาก 0.5)
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
                         'error' => $imgErr->getMessage(),
+                        'chart_url' => $chartImageUrl,
+                        'platform' => $platform,
                     ]);
                 }
             }
@@ -1938,17 +1941,32 @@ class FortuneConversationService
                 // [Streaming] ส่งคำทำนายแต่ละข้อกลับทันที
                 if ($streaming) {
                     try {
-                        $perQuestionMessage = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
-                            ."❓ {$question}\n\n"
-                            .$aiResult['response'];
+                        Log::info("Fortune Deep Streaming: ข้อที่ {$questionNum} ยาว ".mb_strlen($aiResult['response']).' ตัวอักษร');
 
-                        Log::info("Fortune Deep Streaming: ข้อที่ {$questionNum} ยาว ".mb_strlen($perQuestionMessage).' ตัวอักษร');
+                        // ⚡ สำหรับ LINE → ใช้ Flex Message การ์ดสวยๆ (แทน text ธรรมดา)
+                        if ($platform === 'line') {
+                            $lineService = $channelManager->getPlatform('line');
+                            if ($lineService instanceof LineFortuneService) {
+                                $flex = $lineService->buildDeepReadingFlexMessage(
+                                    $questionNum, $question, $aiResult['response'], $totalQuestions
+                                );
+                                $lineService->sendRichMessage($userId, [
+                                    'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
+                                    'contents' => $flex,
+                                ]);
+                            }
+                        } else {
+                            // Facebook / platform อื่น → ส่งเป็น text
+                            $perQuestionMessage = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
+                                ."❓ {$question}\n\n"
+                                .$aiResult['response'];
 
-                        $channelManager->sendResponse($platform, $userId, [
-                            'action' => 'partial',
-                            'message' => $perQuestionMessage,
-                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-                        usleep(500000); // รอ 0.5 วินาทีก่อนข้อถัดไป (ลด rate limit)
+                            $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'partial',
+                                'message' => $perQuestionMessage,
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        }
+                        usleep(200000); // ⚡ รอ 0.2 วินาที (ลดจาก 0.5)
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
                             'error' => $sendErr->getMessage(),
