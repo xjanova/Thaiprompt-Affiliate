@@ -239,7 +239,7 @@ class FortuneChannelManager
 
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
         try {
-            return match ($action) {
+            $sent = match ($action) {
                 // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Flex
                 'basic_done' => $this->sendLineBasicDoneResponse($lineService, $userId, $result, $replyToken),
 
@@ -306,9 +306,27 @@ class FortuneChannelManager
                 // partial (streaming) → ส่ง text ธรรมดา (Flex ถูก handle ใน FortuneConversationService แล้ว)
                 'partial' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // กำลังสร้างคำทำนาย (หลังชำระเงิน) → Flex แจ้งสถานะ
+                'queued' => $this->sendLineQueuedResponse($lineService, $userId, $result, $replyToken),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
+
+            // ⚡ Log ถ้าส่งไม่สำเร็จ (return false) — ช่วยวิเคราะห์ปัญหา
+            if (! $sent) {
+                Log::warning('LINE sendLineResponse: ส่งไม่สำเร็จ', [
+                    'action' => $action,
+                    'user_id' => $userId,
+                    'message_length' => mb_strlen($message),
+                ]);
+                // fallback ส่ง text ธรรมดาถ้า Flex ส่งไม่ได้
+                if ($message) {
+                    $lineService->sendMessage($userId, mb_substr($message, 0, 2000));
+                }
+            }
+
+            return $sent;
         } catch (\Exception $e) {
             // ⚡ Flex Message ล้มเหลว → fallback ส่ง text ธรรมดา (ดีกว่าไม่ส่งอะไรเลย!)
             Log::error('LINE Flex Message ล้มเหลว — fallback เป็น text', [
@@ -490,6 +508,17 @@ class FortuneChannelManager
 
             return $info;
         })->filter()->values()->toArray();
+
+        // ⚡ Safety: ถ้าไม่มีบัญชีเลย → ส่ง text แทน
+        if (empty($bankAccounts)) {
+            Log::error('FortuneChannelManager: ไม่มีบัญชีธนาคาร/พร้อมเพย์', ['display_mode' => $displayMode]);
+
+            return $lineService->sendMessageWithReplyFallback(
+                $userId,
+                $result['message'] ?? 'กรุณาติดต่อแอดมินเพื่อชำระเงินค่ะ 🙏',
+                $replyToken
+            );
+        }
 
         // ดึงยอดจาก uniquePaymentAmount (unique amount สำหรับเช็คผ่าน SMS payment checker)
         // ใช้ unique_amount เป็นหลัก เพราะมีทศนิยมเฉพาะสำหรับจับคู่ SMS
@@ -814,6 +843,20 @@ class FortuneChannelManager
         $flex = $lineService->buildProcessingFlexMessage($billRef);
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, '⏳ กำลังสร้างคำทำนาย', $replyToken);
+    }
+
+    /**
+     * ส่ง Flex กำลังสร้างคำทำนาย (queued — หลังชำระเงินแล้ว)
+     */
+    protected function sendLineQueuedResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $billRef = $reading?->bill_reference ?? '-';
+
+        // ใช้ Processing Flex เดิม (แจ้งว่ากำลังสร้างคำทำนาย)
+        $flex = $lineService->buildProcessingFlexMessage($billRef);
+
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, '✅ ชำระเงินสำเร็จ กำลังสร้างคำทำนาย...', $replyToken);
     }
 
     /**
