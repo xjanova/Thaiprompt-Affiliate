@@ -61,7 +61,7 @@
                     </p>
                     <p class="text-red-500 dark:text-red-500 text-sm mt-1">
                         กรุณาเข้าไปกดปุ่ม "สร้างคำทำนายเชิงลึก" ในแต่ละรายการ หรือตรวจสอบ AI API keys ใน
-                        <a href="{{ route('admin.fortune.settings') }}" class="underline font-medium">ตั้งค่าระบบดูดวง</a>
+                        <a href="{{ route('admin.fortune.settings.index') }}" class="underline font-medium">ตั้งค่าระบบดูดวง</a>
                     </p>
                 </div>
             </div>
