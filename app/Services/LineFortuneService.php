@@ -595,19 +595,35 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * @return array Flex Message content
      */
-    public function buildWelcomeFlexMessage(): array
+    public function buildWelcomeFlexMessage(string $userName = ''): array
     {
+        // สร้างข้อความทักทาย — ถ้ามีชื่อจะใส่ชื่อด้วย
+        $greeting = $userName
+            ? "สวัสดีค่ะ คุณ{$userName} ✨"
+            : 'สวัสดีค่ะ ✨';
+
         return [
             'type' => 'bubble',
+            'size' => 'mega',
             'styles' => [
                 'header' => [
                     'backgroundColor' => '#6B46C1',
+                ],
+                'footer' => [
+                    'backgroundColor' => '#F8F7FF',
                 ],
             ],
             'header' => [
                 'type' => 'box',
                 'layout' => 'vertical',
+                'paddingAll' => 'xl',
                 'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🔮',
+                        'size' => '3xl',
+                        'align' => 'center',
+                    ],
                     [
                         'type' => 'text',
                         'text' => '🔮 จันทรายินดีต้อนรับค่ะ 🔮',
@@ -615,12 +631,22 @@ class LineFortuneService implements MessagingPlatformInterface
                         'size' => 'lg',
                         'weight' => 'bold',
                         'align' => 'center',
+                        'margin' => 'md',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => $greeting,
+                        'color' => '#FFFFFFCC',
+                        'size' => 'sm',
+                        'align' => 'center',
+                        'margin' => 'sm',
                     ],
                 ],
             ],
             'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
+                'paddingAll' => 'xl',
                 'contents' => [
                     [
                         'type' => 'text',
@@ -642,14 +668,76 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'separator',
-                        'margin' => 'lg',
+                        'margin' => 'xl',
+                        'color' => '#E8E0FF',
+                    ],
+                    // บริการของเรา
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'xl',
+                        'spacing' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '📋 บริการของเรา',
+                                'weight' => 'bold',
+                                'size' => 'sm',
+                                'color' => '#6B46C1',
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'horizontal',
+                                'backgroundColor' => '#F0FFF4',
+                                'cornerRadius' => 'md',
+                                'paddingAll' => 'md',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
+                                    [
+                                        'type' => 'box',
+                                        'layout' => 'vertical',
+                                        'flex' => 1,
+                                        'paddingStart' => 'md',
+                                        'contents' => [
+                                            ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold'],
+                                            ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไป', 'size' => 'xs', 'color' => '#888888'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'horizontal',
+                                'backgroundColor' => '#F8F7FF',
+                                'cornerRadius' => 'md',
+                                'paddingAll' => 'md',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => '💎', 'size' => 'lg', 'flex' => 0],
+                                    [
+                                        'type' => 'box',
+                                        'layout' => 'vertical',
+                                        'flex' => 1,
+                                        'paddingStart' => 'md',
+                                        'contents' => [
+                                            ['type' => 'text', 'text' => 'ดูดวงละเอียด (49 บาท)', 'size' => 'sm', 'weight' => 'bold'],
+                                            ['type' => 'text', 'text' => 'ถาม 3 คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
+                                        ],
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'xl',
+                        'color' => '#E8E0FF',
                     ],
                     [
                         'type' => 'text',
-                        'text' => '💡 ตัวอย่างคำถาม',
+                        'text' => '💡 พิมพ์คำถามมาได้เลยค่ะ เช่น',
                         'weight' => 'bold',
                         'size' => 'sm',
-                        'margin' => 'lg',
+                        'margin' => 'xl',
                     ],
                     [
                         'type' => 'text',
@@ -663,16 +751,29 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
             'footer' => [
                 'type' => 'box',
-                'layout' => 'vertical',
+                'layout' => 'horizontal',
+                'spacing' => 'md',
+                'paddingAll' => 'lg',
                 'contents' => [
                     [
                         'type' => 'button',
                         'style' => 'primary',
                         'color' => '#6B46C1',
+                        'height' => 'sm',
                         'action' => [
                             'type' => 'message',
                             'label' => '🔮 เริ่มดูดวงเลย',
                             'text' => 'ดูดวง',
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '📊 เช็คสิทธิ์',
+                            'text' => 'เช็คสิทธิ์',
                         ],
                     ],
                 ],

@@ -142,6 +142,8 @@ class LineFortuneWebhookController extends Controller
 
     /**
      * Handle follow event (user add friend)
+     *
+     * ดึงชื่อจาก LINE Profile แล้วส่ง Welcome Flex Message พร้อมชื่อ
      */
     protected function handleFollowEvent(array $event): void
     {
@@ -152,15 +154,32 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
-        Log::info('LINE Webhook: New follower', ['user_id' => $userId]);
+        // ดึงชื่อจาก LINE Profile
+        $userName = '';
+        try {
+            $profile = $this->lineService->getUserProfile($userId);
+            $userName = $profile['name'] ?? '';
 
-        // ส่ง Welcome Message
-        $welcomeFlex = $this->lineService->buildWelcomeFlexMessage();
+            Log::info('LINE Webhook: New follower', [
+                'user_id' => $userId,
+                'display_name' => $userName,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('LINE Webhook: ดึงโปรไฟล์ไม่ได้ ส่ง Welcome โดยไม่มีชื่อ', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // ส่ง Welcome Message พร้อมชื่อ
+        $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName);
 
         $this->lineService->replyMessage($replyToken, [
             [
                 'type' => 'flex',
-                'altText' => 'ทางเพจยินดีต้อนรับค่ะ',
+                'altText' => $userName
+                    ? "ยินดีต้อนรับค่ะ คุณ{$userName} 🔮"
+                    : 'ทางเพจยินดีต้อนรับค่ะ 🔮',
                 'contents' => $welcomeFlex,
             ],
         ]);
