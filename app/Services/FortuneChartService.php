@@ -426,9 +426,16 @@ class FortuneChartService
         imagealphablending($img, true);
         imagesavealpha($img, true);
 
-        // โหลดฟอนต์
+        // โหลดฟอนต์ + ตรวจสอบว่ามีจริง
         $thaiFont = $this->getThaiFont();
         $symbolFont = $this->getSymbolFont();
+
+        Log::debug('FortuneChart: buildPngChart fonts', [
+            'thaiFont' => $thaiFont,
+            'thaiFont_exists' => @file_exists($thaiFont),
+            'symbolFont' => $symbolFont,
+            'symbolFont_exists' => @file_exists($symbolFont),
+        ]);
 
         // === สีที่ปรับใหม่ — contrast สูงขึ้น อ่านง่าย ===
         $bgColor = $this->hexColor($img, '#0f0a2e');       // พื้นหลัง: สว่างขึ้นเล็กน้อย
@@ -647,18 +654,32 @@ class FortuneChartService
 
     /**
      * วาดข้อความจัดกลาง (centered) ด้วย TTF
+     *
+     * ⚠️ ใช้ @ เพื่อ suppress warning จาก imagettfbbox/imagettftext
+     * เพราะ Laravel HandleExceptions แปลง warning → ErrorException ทำให้ chart ล้มเหลวทั้งหมด
+     * ถ้า imagettfbbox อ่านไม่ได้ → fallback ใช้ imagettftext ตรงๆ (ไม่ center)
      */
     protected function drawCenteredText($img, string $font, float $size, float $x, float $y, string $text, int $color): void
     {
-        $bbox = imagettfbbox($size, 0, $font, $text);
-        if ($bbox === false) {
+        // ข้ามถ้า font ไม่มี
+        if (empty($font) || ! @file_exists($font)) {
             return;
         }
-        $textWidth = $bbox[2] - $bbox[0];
-        $textHeight = $bbox[1] - $bbox[7];
-        $drawX = $x - $textWidth / 2;
-        $drawY = $y + $textHeight / 2;
-        imagettftext($img, $size, 0, (int) $drawX, (int) $drawY, $color, $font, $text);
+
+        $bbox = @imagettfbbox($size, 0, $font, $text);
+        if ($bbox !== false) {
+            // จัดกลางได้ → คำนวณตำแหน่ง
+            $textWidth = $bbox[2] - $bbox[0];
+            $textHeight = $bbox[1] - $bbox[7];
+            $drawX = $x - $textWidth / 2;
+            $drawY = $y + $textHeight / 2;
+        } else {
+            // imagettfbbox ล้มเหลว → วาดตรงจุดเลย (ไม่ center แต่ดีกว่าไม่มีข้อความ)
+            $drawX = $x;
+            $drawY = $y;
+        }
+
+        @imagettftext($img, $size, 0, (int) $drawX, (int) $drawY, $color, $font, $text);
     }
 
     /**
