@@ -149,15 +149,24 @@ class FortuneChannelManager
      */
     public function sendResponse(string $platform, string $userId, array $result, array $extra = []): bool
     {
+        $action = $result['action'] ?? 'unknown';
+        $message = $result['message'] ?? '';
+
+        Log::info('FortuneChannelManager: sendResponse เริ่มส่ง', [
+            'platform' => $platform,
+            'user_id' => $userId,
+            'action' => $action,
+            'message_length' => mb_strlen($message),
+            'has_quick_replies' => ! empty($result['show_quick_replies']),
+            'from_admin' => ! empty($extra['from_admin']),
+        ]);
+
         $platformService = $this->getPlatform($platform);
         if (! $platformService) {
             Log::error('FortuneChannelManager: Platform not found', ['platform' => $platform]);
 
             return false;
         }
-
-        $message = $result['message'] ?? '';
-        $action = $result['action'] ?? 'unknown';
 
         // สำหรับ LINE ใช้ Flex Message ที่สวยงาม
         if ($platform === self::PLATFORM_LINE && $platformService instanceof LineFortuneService) {
@@ -191,7 +200,17 @@ class FortuneChannelManager
             $options['quick_replies'] = $this->getQuickReplies($action);
         }
 
-        return $platformService->sendMessage($userId, $message, $options);
+        $sent = $platformService->sendMessage($userId, $message, $options);
+
+        Log::info('FortuneChannelManager: sendResponse ผลลัพธ์', [
+            'platform' => $platform,
+            'user_id' => $userId,
+            'action' => $action,
+            'sent' => $sent,
+            'has_quick_replies' => ! empty($options['quick_replies']),
+        ]);
+
+        return $sent;
     }
 
     /**

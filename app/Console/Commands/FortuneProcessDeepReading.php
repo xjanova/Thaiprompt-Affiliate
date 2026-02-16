@@ -100,28 +100,51 @@ class FortuneProcessDeepReading extends Command
             $reading->refresh();
 
             if (! empty($reading->deep_response)) {
+                // ✅ คำทำนายสร้างสำเร็จ → ส่งข้อความ "พร้อมแล้ว" + ปุ่ม
                 try {
                     $name = $reading->facebook_user_name ?? 'คุณ';
                     $readyMessage = "🔮✨ คำทำนายของ{$name}พร้อมแล้วค่ะ!\n\n"
                         . "จันทราได้ตรวจดวงชะตาเรียบร้อยแล้ว พร้อมดูเลยไหมคะ?";
 
-                    $channelManager->sendResponse($platform, $userId, [
+                    $sent = $channelManager->sendResponse($platform, $userId, [
                         'action' => 'reading_ready',
                         'message' => $readyMessage,
+                        'show_quick_replies' => true,
                     ], ['from_admin' => true]);
 
                     // บันทึกสถานะว่าส่งข้อความ "พร้อมแล้ว" แล้ว
                     $reading->setConversationState('reading_ready_sent', true);
                     $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
-                    Log::info('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" + ปุ่ม สำเร็จ', [
+                    Log::info('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" + ปุ่ม', [
                         'reading_id' => $readingId,
                         'platform' => $platform,
+                        'user_id' => $userId,
+                        'sent_result' => $sent,
                     ]);
                 } catch (\Exception $readyErr) {
-                    Log::warning('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" ล้มเหลว', [
+                    Log::error('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" ล้มเหลว', [
                         'reading_id' => $readingId,
+                        'platform' => $platform,
+                        'user_id' => $userId,
                         'error' => $readyErr->getMessage(),
+                    ]);
+                }
+            } else {
+                // ❌ คำทำนายไม่ได้ถูกบันทึก → แจ้งลูกค้าว่าระบบกำลังพยายามอีกครั้ง
+                Log::error('fortune:process-deep: deep_response ว่างหลัง processPaymentConfirmed สำเร็จ', [
+                    'reading_id' => $readingId,
+                    'result_action' => $result['action'] ?? 'unknown',
+                ]);
+
+                try {
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'error',
+                        'message' => "🔮 ขออภัยค่ะ ระบบกำลังสร้างคำทำนายอยู่ กรุณารอสักครู่นะคะ\n\nจันทราจะส่งคำทำนายให้เร็วที่สุดค่ะ 🙏",
+                    ], ['from_admin' => true]);
+                } catch (\Exception $errMsgErr) {
+                    Log::error('fortune:process-deep: ส่งข้อความ fallback ล้มเหลว', [
+                        'error' => $errMsgErr->getMessage(),
                     ]);
                 }
             }

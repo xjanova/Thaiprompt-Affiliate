@@ -557,31 +557,45 @@ class SmsPaymentService
         ]);
 
         // ✅ ส่งข้อความ "รอสักครู่" ให้ลูกค้าทราบทันทีหลังชำระเงินสำเร็จ
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $channelManager = new FortuneChannelManager($settings);
+        if (! empty($userId)) {
+            try {
+                $settings = FortuneTellingSetting::getSettings();
+                $channelManager = new FortuneChannelManager($settings);
 
-            $name = $reading->facebook_user_name ?? 'คุณ';
-            $waitMessage = "✨ ขอบคุณค่ะ {$name}! ได้รับการชำระเงินเรียบร้อยแล้ว\n\n"
-                . "🔮 จันทราจะตรวจดวงชะตาให้นะคะ รอสักครู่ประมาณ 5 นาทีค่ะ ✨";
+                $name = $reading->facebook_user_name ?? 'คุณ';
+                $waitMessage = "✨ ขอบคุณค่ะ {$name}! ได้รับการชำระเงินเรียบร้อยแล้ว\n\n"
+                    . "🔮 จันทราจะตรวจดวงชะตาให้นะคะ รอสักครู่ประมาณ 5 นาทีค่ะ ✨";
 
-            $channelManager->sendResponse($platform, $userId, [
-                'action' => 'payment_confirmed_wait',
-                'message' => $waitMessage,
-            ], ['from_admin' => true]);
+                $sent = $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'payment_confirmed_wait',
+                    'message' => $waitMessage,
+                ], ['from_admin' => true]);
 
-            // บันทึกสถานะว่าส่งข้อความรอแล้ว
-            $reading->setConversationState('wait_message_sent', true);
-            $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+                // บันทึกสถานะว่าส่งข้อความรอแล้ว
+                $reading->setConversationState('wait_message_sent', true);
+                $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
 
-            Log::info('SMS Payment: ส่งข้อความ "รอสักครู่" สำเร็จ', [
+                Log::info('SMS Payment: ส่งข้อความ "รอสักครู่"', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'sent_result' => $sent,
+                ]);
+            } catch (\Exception $waitErr) {
+                Log::error('SMS Payment: ส่งข้อความ "รอสักครู่" ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'error' => $waitErr->getMessage(),
+                    'trace' => substr($waitErr->getTraceAsString(), 0, 300),
+                ]);
+            }
+        } else {
+            Log::error('SMS Payment: ไม่สามารถส่งข้อความ "รอสักครู่" — ไม่มี userId', [
                 'reading_id' => $reading->id,
                 'platform' => $platform,
-            ]);
-        } catch (\Exception $waitErr) {
-            Log::warning('SMS Payment: ส่งข้อความ "รอสักครู่" ล้มเหลว (ไม่ critical)', [
-                'reading_id' => $reading->id,
-                'error' => $waitErr->getMessage(),
+                'platform_user_id' => $reading->platform_user_id,
+                'facebook_user_id' => $reading->facebook_user_id,
             ]);
         }
 
