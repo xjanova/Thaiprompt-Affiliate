@@ -1303,12 +1303,19 @@ class LineFortuneService implements MessagingPlatformInterface
                         'flex' => 0,
                     ],
                     [
-                        'type' => 'text',
-                        'text' => 'รับคำถามข้อที่ '.($questionNumber - 1).' แล้วค่ะ',
-                        'size' => 'sm',
-                        'color' => '#2E7D32',
+                        'type' => 'box',
+                        'layout' => 'vertical',
                         'flex' => 1,
                         'paddingStart' => 'sm',
+                        'justifyContent' => 'center',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => 'รับคำถามข้อที่ '.($questionNumber - 1).' แล้วค่ะ',
+                                'size' => 'sm',
+                                'color' => '#2E7D32',
+                            ],
+                        ],
                     ],
                 ],
             ];
@@ -1820,7 +1827,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '⚠️', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'รูปแบบวันเกิดไม่ถูกต้อง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'รูปแบบวันเกิดไม่ถูกต้อง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2008,7 +2015,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '📊', 'size' => 'xxl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'สิทธิ์การใช้งาน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'สิทธิ์การใช้งาน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
@@ -2036,7 +2043,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => $type === 'cancelled' ? '✅' : '🙏', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'text', 'text' => $title, 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => $title, 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2073,7 +2080,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '⏰', 'size' => 'xxl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'บิลหมดอายุแล้ว', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'บิลหมดอายุแล้ว', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2218,7 +2225,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'ยังไม่มีคำทำนาย', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'ยังไม่มีคำทำนาย', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2252,7 +2259,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '✅', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'บันทึกแล้วค่ะ', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'บันทึกแล้วค่ะ', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2291,7 +2298,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '⚠️', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'เกิดข้อผิดพลาด', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'เกิดข้อผิดพลาด', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
@@ -2323,7 +2330,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '🔒', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'ปิดให้บริการชั่วคราว', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'ปิดให้บริการชั่วคราว', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
