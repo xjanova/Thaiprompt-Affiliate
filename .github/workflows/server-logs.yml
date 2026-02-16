@@ -1,0 +1,117 @@
+name: Server Logs
+
+on:
+  workflow_dispatch:
+    inputs:
+      log_command:
+        description: 'Log command to run'
+        required: true
+        default: 'fortune-flow'
+        type: choice
+        options:
+          - fortune-flow
+          - fortune-errors
+          - fortune-deep-jobs
+          - sendResponse
+          - last-500
+          - custom
+      custom_grep:
+        description: 'Custom grep pattern (only for "custom" option)'
+        required: false
+        default: ''
+      lines:
+        description: 'Number of lines to search'
+        required: false
+        default: '500'
+
+jobs:
+  read-logs:
+    name: Read Server Logs
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Read logs via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 2m
+          envs: DEPLOY_DIR
+          script: |
+            cd "$DEPLOY_DIR" || exit 1
+
+            LOG_FILE="storage/logs/laravel.log"
+            LINES=${{ inputs.lines }}
+            COMMAND="${{ inputs.log_command }}"
+
+            echo "============================================"
+            echo "📋 Server Logs — $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "📁 Log file: $LOG_FILE"
+            echo "🔍 Command: $COMMAND"
+            echo "📊 Lines to search: $LINES"
+            echo "============================================"
+            echo ""
+
+            case "$COMMAND" in
+              fortune-flow)
+                echo "🔮 Fortune Payment Flow (SMS Payment → sendResponse → process-deep → ready)"
+                echo "---"
+                tail -$LINES "$LOG_FILE" | grep -E "SMS Payment|FortuneChannelManager: sendResponse|fortune:process-deep|reading_ready|payment_confirmed|รอสักครู่|คำทำนายพร้อม" | tail -60
+                ;;
+              fortune-errors)
+                echo "❌ Fortune Errors"
+                echo "---"
+                tail -$LINES "$LOG_FILE" | grep -iE "ERROR|CRITICAL|ล้มเหลว|Failed|exception" | grep -iE "fortune|reading|deep|channel|sms" | tail -40
+                ;;
+              fortune-deep-jobs)
+                echo "🔮 Fortune Deep Jobs + Log Files"
+                echo "---"
+                echo "=== Job Logs ==="
+                tail -$LINES "$LOG_FILE" | grep "fortune:process-deep" | tail -30
+                echo ""
+                echo "=== Per-Reading Log Files ==="
+                ls -lt storage/logs/fortune-deep-*.log 2>/dev/null | head -10
+                echo ""
+                echo "=== Latest Job Log Content ==="
+                LATEST_LOG=$(ls -t storage/logs/fortune-deep-*.log 2>/dev/null | head -1)
+                if [ -n "$LATEST_LOG" ]; then
+                  echo "File: $LATEST_LOG"
+                  cat "$LATEST_LOG" | tail -50
+                else
+                  echo "(no fortune-deep log files found)"
+                fi
+                ;;
+              sendResponse)
+                echo "📨 FortuneChannelManager sendResponse Logs"
+                echo "---"
+                tail -$LINES "$LOG_FILE" | grep "FortuneChannelManager" | tail -40
+                ;;
+              last-500)
+                echo "📜 Last 500 lines of laravel.log"
+                echo "---"
+                tail -500 "$LOG_FILE"
+                ;;
+              custom)
+                PATTERN="${{ inputs.custom_grep }}"
+                if [ -z "$PATTERN" ]; then
+                  echo "❌ No custom grep pattern provided"
+                  exit 1
+                fi
+                echo "🔍 Custom grep: $PATTERN"
+                echo "---"
+                tail -$LINES "$LOG_FILE" | grep -E "$PATTERN" | tail -60
+                ;;
+              *)
+                echo "❌ Unknown command: $COMMAND"
+                exit 1
+                ;;
+            esac
+
+            echo ""
+            echo "============================================"
+            echo "✅ Log read complete — $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "============================================"
