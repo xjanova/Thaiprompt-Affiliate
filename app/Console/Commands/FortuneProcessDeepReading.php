@@ -176,6 +176,7 @@ class FortuneProcessDeepReading extends Command
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'deep_reading_result',
                         'message' => $readingText,
+                        'reading' => $reading,
                     ], $extra);
 
                     usleep(500000);
@@ -185,6 +186,7 @@ class FortuneProcessDeepReading extends Command
                         'action' => 'reading_complete',
                         'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n"
                             . "💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
+                        'reading' => $reading,
                     ], $extra);
 
                     // บันทึกสถานะ

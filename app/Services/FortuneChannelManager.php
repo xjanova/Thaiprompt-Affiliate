@@ -317,6 +317,18 @@ class FortuneChannelManager
                 // กำลังสร้างคำทำนาย (หลังชำระเงิน) → Flex แจ้งสถานะ
                 'queued' => $this->sendLineQueuedResponse($lineService, $userId, $result, $replyToken),
 
+                // ส่ง Chart Image (จาก FortuneProcessDeepReading batch mode)
+                'send_chart' => $this->sendLineChartResponse($lineService, $userId, $result, $replyToken),
+
+                // ส่งคำทำนายเชิงลึก (จาก FortuneProcessDeepReading batch mode)
+                'deep_reading_result' => $this->sendLineDeepReadingResultResponse($lineService, $userId, $result, $replyToken),
+
+                // ข้อความปิดท้าย (จาก FortuneProcessDeepReading batch mode)
+                'reading_complete' => $this->sendLineReadingCompleteResponse($lineService, $userId, $result, $replyToken),
+
+                // แจ้งคำทำนายพร้อม (จาก FortuneProcessDeepReading batch mode)
+                'reading_ready' => $this->sendLineReadingReadyResponse($lineService, $userId, $result, $replyToken),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
@@ -1010,6 +1022,243 @@ class FortuneChannelManager
     }
 
     /**
+     * ส่ง Chart Image ให้ลูกค้า (send_chart)
+     *
+     * ใช้โดย FortuneProcessDeepReading batch mode
+     * ส่ง chart image + ข้อความแจ้งสถานะ
+     */
+    protected function sendLineChartResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $chartUrl = $result['chart_image_url'] ?? null;
+        $message = $result['message'] ?? '';
+
+        Log::info('LINE sendLineChartResponse: ส่ง chart image', [
+            'user_id' => $userId,
+            'chart_url' => $chartUrl,
+            'has_message' => ! empty($message),
+        ]);
+
+        // ส่ง chart image ก่อน (ถ้ามี)
+        if ($chartUrl) {
+            try {
+                if ($replyToken) {
+                    $sent = $lineService->replyMessage($replyToken, [
+                        ['type' => 'image', 'originalContentUrl' => $chartUrl, 'previewImageUrl' => $chartUrl],
+                    ]);
+                    if ($sent) {
+                        $replyToken = null; // ใช้แล้ว ห้ามใช้ซ้ำ
+                    }
+                } else {
+                    $lineService->sendImage($userId, $chartUrl);
+                }
+                usleep(50000); // ⚡ 50ms
+            } catch (\Exception $imgErr) {
+                Log::warning('LINE sendLineChartResponse: ส่ง chart image ไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
+        // ส่งข้อความแจ้ง (ถ้ามี) — ใช้ text ธรรมดา (สั้นๆ)
+        if ($message) {
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        }
+
+        return true;
+    }
+
+    /**
+     * ส่งคำทำนายเชิงลึก (deep_reading_result)
+     *
+     * ใช้โดย FortuneProcessDeepReading batch mode
+     * ข้อความเป็น raw text (deep_response) → แบ่งเป็น Flex bubble สวยๆ
+     */
+    protected function sendLineDeepReadingResultResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $message = $result['message'] ?? '';
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+        $billRef = $reading?->bill_reference ?? null;
+
+        Log::info('LINE sendLineDeepReadingResultResponse: ส่งคำทำนายละเอียด', [
+            'user_id' => $userId,
+            'message_length' => mb_strlen($message),
+            'has_reading' => ! empty($reading),
+        ]);
+
+        if (empty(trim($message))) {
+            return false;
+        }
+
+        // ลอง parse คำทำนายจาก reading model (มี collected_questions สำหรับแบ่งเป็น Flex card แต่ละคำถาม)
+        $collectedQuestions = $reading ? $reading->getCollectedQuestions() : [];
+
+        if (! empty($collectedQuestions)) {
+            // มีคำถามแยก → ลอง parse deep_response ตามคำถาม เพื่อสร้าง Flex card แต่ละข้อ
+            $deepResponse = $reading->deep_response ?? $message;
+            $parsedQA = $this->parseDeepResponseByQuestions($deepResponse, $collectedQuestions);
+
+            if (! empty($parsedQA)) {
+                $totalQuestions = count($parsedQA);
+                foreach ($parsedQA as $idx => $qa) {
+                    $questionNum = $idx + 1;
+                    $flex = $lineService->buildDeepReadingFlexMessage(
+                        $questionNum,
+                        $qa['question'],
+                        $qa['answer'],
+                        $totalQuestions
+                    );
+
+                    $lineService->sendRichMessage($userId, [
+                        'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$qa['question']}",
+                        'contents' => $flex,
+                    ]);
+
+                    usleep(50000); // ⚡ 50ms
+                }
+
+                return true;
+            }
+        }
+
+        // Fallback: ใช้ buildSplitFortuneMessages (แบ่ง text ยาวเป็นหลาย bubble)
+        $fortuneBubbles = $lineService->buildSplitFortuneMessages($message, $userName, $billRef);
+        foreach ($fortuneBubbles as $bubble) {
+            $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $bubble]);
+            usleep(50000); // ⚡ 50ms
+        }
+
+        return true;
+    }
+
+    /**
+     * ส่งข้อความปิดท้าย Thank You (reading_complete)
+     *
+     * ใช้โดย FortuneProcessDeepReading batch mode
+     */
+    protected function sendLineReadingCompleteResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+
+        $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
+
+        return $lineService->sendRichMessage($userId, [
+            'alt_text' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
+            'contents' => $thankYouFlex,
+        ]);
+    }
+
+    /**
+     * ส่งแจ้งเตือนคำทำนายพร้อม (reading_ready)
+     *
+     * ใช้โดย FortuneProcessDeepReading batch mode (เมื่อ chart ส่งไปก่อนแล้ว)
+     */
+    protected function sendLineReadingReadyResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $message = $result['message'] ?? '🔮✨ คำทำนายของคุณพร้อมแล้วค่ะ!';
+
+        // สร้าง Flex notification สวยๆ
+        $flex = [
+            'type' => 'bubble',
+            'size' => 'kilo',
+            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮✨', 'size' => 'xl', 'align' => 'center'],
+                    ['type' => 'text', 'text' => 'คำทำนายพร้อมแล้วค่ะ!', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'align' => 'center', 'margin' => 'sm'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm', 'color' => '#555555', 'align' => 'center'],
+                ],
+            ],
+        ];
+
+        return $lineService->sendRichMessage($userId, [
+            'alt_text' => '🔮 คำทำนายพร้อมแล้วค่ะ!',
+            'contents' => $flex,
+        ]);
+    }
+
+    /**
+     * Parse deep_response text ตามคำถามที่เก็บไว้
+     *
+     * พยายาม match คำถามใน deep_response text เพื่อแยกคำตอบออกมา
+     *
+     * @param  string  $deepResponse  ข้อความ deep_response ทั้งหมด
+     * @param  array  $collectedQuestions  คำถามที่เก็บไว้ ['ดูดวงความรัก', 'ดูดวงการเงิน']
+     * @return array [['question' => '...', 'answer' => '...'], ...]
+     */
+    protected function parseDeepResponseByQuestions(string $deepResponse, array $collectedQuestions): array
+    {
+        $result = [];
+        $totalQuestions = count($collectedQuestions);
+
+        if ($totalQuestions === 0) {
+            return [];
+        }
+
+        // ลอง split ด้วยรูปแบบต่างๆ ที่ AI มักใช้
+        // เช่น "คำถามที่ 1:", "ข้อ 1:", "1.", "**คำถามที่ 1**" ฯลฯ
+        $patterns = [
+            '/(?:คำถาม(?:ที่)?\s*(\d+)\s*[:：])/u',
+            '/(?:ข้อ\s*(\d+)\s*[:：])/u',
+            '/(?:^|\n)\s*(\d+)\s*[.)\]]\s*/u',
+            '/(?:\*{1,2}คำถาม(?:ที่)?\s*(\d+)\*{1,2}\s*[:：]?)/u',
+            '/(?:═{3,})/u', // เส้นแบ่ง
+        ];
+
+        // วิธีง่ายที่สุด: ถ้ามี 2 คำถาม ลองแบ่งครึ่ง
+        // หรือ split ด้วย pattern คำถามที่พบ
+        foreach ($patterns as $pattern) {
+            $parts = preg_split($pattern, $deepResponse, -1, PREG_SPLIT_NO_EMPTY);
+
+            // ลบส่วนที่เป็น header (เช่น "คำทำนายเชิงลึก", "เลขที่บิล") → เอาเฉพาะส่วนคำตอบ
+            $cleanParts = [];
+            foreach ($parts as $part) {
+                $trimmed = trim($part);
+                // ข้ามส่วนที่เป็น header (สั้นมาก หรือ มีแค่สัญลักษณ์)
+                if (mb_strlen($trimmed) < 20) {
+                    continue;
+                }
+                // ข้ามบรรทัดที่เป็น header เช่น "คำทำนายเชิงลึก", "เลขที่บิล"
+                if (preg_match('/^[🌟📋═*\s]*(?:คำทำนายเชิงลึก|เลขที่บิล)/u', $trimmed)) {
+                    continue;
+                }
+                $cleanParts[] = $trimmed;
+            }
+
+            // ถ้าได้จำนวนส่วนตรงกับจำนวนคำถาม → จับคู่ได้!
+            if (count($cleanParts) === $totalQuestions) {
+                foreach ($collectedQuestions as $idx => $question) {
+                    $result[] = [
+                        'question' => $question,
+                        'answer' => trim($cleanParts[$idx]),
+                    ];
+                }
+
+                return $result;
+            }
+        }
+
+        // ❌ parse ไม่สำเร็จ → คืน empty (จะ fallback ไปใช้ buildSplitFortuneMessages)
+        Log::debug('parseDeepResponseByQuestions: parse ไม่สำเร็จ fallback ไปใช้ split', [
+            'total_questions' => $totalQuestions,
+            'response_length' => mb_strlen($deepResponse),
+        ]);
+
+        return [];
+    }
+
+    /**
      * ส่ง Flex สำหรับข้อความ default (fallback)
      *
      * แทนที่จะส่ง text ธรรมดา → ส่ง Flex message ที่ดูดี
@@ -1035,7 +1284,9 @@ class FortuneChannelManager
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'md',
                 'contents' => [
                     ['type' => 'text', 'text' => '🔮', 'size' => 'lg', 'flex' => 0],
-                    ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [
+                        ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold'],
+                    ]],
                 ],
             ],
             'body' => [
