@@ -110,7 +110,7 @@ class FortuneProcessDeepReading extends Command
                         'action' => 'reading_ready',
                         'message' => $readyMessage,
                         'show_quick_replies' => true,
-                    ], ['from_admin' => true]);
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
                     // บันทึกสถานะว่าส่งข้อความ "พร้อมแล้ว" แล้ว
                     $reading->setConversationState('reading_ready_sent', true);
@@ -141,7 +141,7 @@ class FortuneProcessDeepReading extends Command
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'error',
                         'message' => "🔮 ขออภัยค่ะ ระบบกำลังสร้างคำทำนายอยู่ กรุณารอสักครู่นะคะ\n\nจันทราจะส่งคำทำนายให้เร็วที่สุดค่ะ 🙏",
-                    ], ['from_admin' => true]);
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                 } catch (\Exception $errMsgErr) {
                     Log::error('fortune:process-deep: ส่งข้อความ fallback ล้มเหลว', [
                         'error' => $errMsgErr->getMessage(),
@@ -189,7 +189,7 @@ class FortuneProcessDeepReading extends Command
                 $channelManager->sendResponse($platform, $userId, [
                     'action' => 'error',
                     'message' => "🔮 ขออภัยค่ะ ระบบสร้างคำทำนายเชิงลึกขัดข้อง\n\nกรุณาทักแชทเพื่อแจ้งแอดมินได้เลยค่ะ 🙏",
-                ], ['from_admin' => true]);
+                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
             } catch (\Exception $msgErr) {
                 Log::error('fortune:process-deep: ส่งข้อความ error ไม่สำเร็จ', [
                     'error' => $msgErr->getMessage(),

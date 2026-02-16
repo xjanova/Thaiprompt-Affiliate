@@ -176,9 +176,17 @@ class FortuneChannelManager
         // สำหรับ platform อื่นๆ ส่งข้อความธรรมดา
         $options = [];
 
-        // ถ้าเป็นการส่งจาก admin หรือ extra ระบุ → ใช้ MESSAGE_TAG เพื่อส่งได้แม้เกิน 24 ชม.
+        // ถ้าเป็นการส่งจาก admin/ระบบอัตโนมัติ → ส่งผ่าน from_admin flag
+        // FacebookWebhookService จะลอง RESPONSE ก่อน แล้ว fallback เป็น MESSAGE_TAG
         if (! empty($extra['from_admin'])) {
             $options['from_admin'] = true;
+        }
+
+        // ถ้ากำหนด message_tag มา → ส่งต่อให้ FacebookWebhookService
+        // ✅ POST_PURCHASE_UPDATE = update หลังชำระเงิน (ไม่ต้องขออนุมัติ Facebook)
+        // ⚠️ HUMAN_AGENT = ต้องได้รับอนุมัติจาก Facebook ก่อนใช้
+        if (! empty($extra['message_tag'])) {
+            $options['message_tag'] = $extra['message_tag'];
         }
 
         // ส่ง Birth Chart / Quick Chart ก่อนข้อความทำนาย (ถ้ามี)

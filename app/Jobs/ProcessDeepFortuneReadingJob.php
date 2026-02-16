@@ -386,7 +386,7 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             $channelManager->sendResponse($this->platform, $this->userId, [
                 'action' => 'error',
                 'message' => $errorMessage,
-            ], ['from_admin' => true]);
+            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
         } catch (\Exception $e) {
             Log::error('ProcessDeepFortuneReadingJob: ส่งข้อความ error ไม่สำเร็จ', [
                 'error' => $e->getMessage(),

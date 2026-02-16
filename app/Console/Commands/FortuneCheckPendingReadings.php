@@ -151,7 +151,7 @@ class FortuneCheckPendingReadings extends Command
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'busy_processing',
                         'message' => $busyMessage,
-                    ], ['from_admin' => true]);
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
                     $reading->setConversationState('busy_message_sent', true);
                     $reading->setConversationState('busy_message_sent_at', now()->toIso8601String());

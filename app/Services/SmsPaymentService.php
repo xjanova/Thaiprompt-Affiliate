@@ -569,7 +569,7 @@ class SmsPaymentService
                 $sent = $channelManager->sendResponse($platform, $userId, [
                     'action' => 'payment_confirmed_wait',
                     'message' => $waitMessage,
-                ], ['from_admin' => true]);
+                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
                 // บันทึกสถานะว่าส่งข้อความรอแล้ว
                 $reading->setConversationState('wait_message_sent', true);
@@ -695,7 +695,7 @@ class SmsPaymentService
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'error',
                         'message' => "🔮 จันทราได้รับเงินเรียบร้อยแล้วค่ะ\n\nระบบกำลังสร้างคำทำนาย อาจใช้เวลาสักครู่นะคะ\nถ้ารอนานเกิน 5 นาที กรุณาทักแชทมาได้เลยค่ะ 🙏",
-                    ], ['from_admin' => true]);
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                 } catch (\Exception $msgErr) {
                     Log::error('SMS Payment: ส่งข้อความ error ไม่สำเร็จ', [
                         'error' => $msgErr->getMessage(),

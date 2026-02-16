@@ -78,11 +78,22 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $messagingType = $options['messaging_type'] ?? 'RESPONSE';
         $messageTag = $options['message_tag'] ?? null;
 
-        // ถ้าเป็นการส่งจาก admin / marketing → ใช้ MESSAGE_TAG + HUMAN_AGENT
-        // เพื่อให้ส่งได้แม้เกิน 24 ชม. (Facebook อนุญาตภายใน 7 วัน)
-        if (! empty($options['from_admin']) || ! empty($options['force_tag'])) {
+        // เก็บ fallback tag ไว้ใช้กรณี RESPONSE ล้มเหลว (เกิน 24 ชม.)
+        // ⚠️ HUMAN_AGENT ต้องได้รับ approval จาก Facebook ก่อนใช้
+        // ✅ POST_PURCHASE_UPDATE ใช้ได้ทันทีสำหรับ update หลังชำระเงิน
+        $fallbackTag = $messageTag ?? 'POST_PURCHASE_UPDATE';
+
+        // ถ้า force_tag → ใช้ MESSAGE_TAG ทันที (admin ส่งมือจริงๆ)
+        if (! empty($options['force_tag'])) {
             $messagingType = 'MESSAGE_TAG';
-            $messageTag = $messageTag ?? 'HUMAN_AGENT';
+            $messageTag = $messageTag ?? 'POST_PURCHASE_UPDATE';
+        }
+
+        // ถ้า from_admin (ระบบส่งอัตโนมัติ) → ลอง RESPONSE ก่อน
+        // เพราะส่วนใหญ่ลูกค้าเพิ่งคุยกับบอทใน 24 ชม.
+        // ถ้าล้มเหลว จะ fallback เป็น MESSAGE_TAG + POST_PURCHASE_UPDATE
+        if (! empty($options['from_admin']) && empty($options['force_tag'])) {
+            $messagingType = 'RESPONSE';
         }
 
         foreach ($chunks as $chunkIndex => $chunk) {
@@ -144,15 +155,28 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'chunk' => $chunkIndex + 1,
                     ]);
 
-                    // ถ้าใช้ RESPONSE แล้ว error 10 (outside 24hr) → ลองใหม่ด้วย MESSAGE_TAG
+                    // ถ้าใช้ RESPONSE แล้ว error (outside 24hr) → ลองใหม่ด้วย MESSAGE_TAG
+                    // ⚠️ ใช้ POST_PURCHASE_UPDATE แทน HUMAN_AGENT (ไม่ต้องขออนุมัติ Facebook)
                     if ($messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065])) {
-                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG + HUMAN_AGENT', [
+                        Log::info('🔄 เกิน 24 ชม. ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE', [
                             'recipient' => $recipientId,
+                            'fallback_tag' => $fallbackTag,
                         ]);
                         $messagingType = 'MESSAGE_TAG';
-                        $messageTag = 'HUMAN_AGENT';
+                        $messageTag = $fallbackTag;
 
                         continue; // retry ด้วย tag ใหม่
+                    }
+
+                    // ถ้าใช้ MESSAGE_TAG แล้วยัง error (tag ไม่ได้รับอนุมัติ) → log แจ้งเตือน
+                    if ($messagingType === 'MESSAGE_TAG' && in_array($errorSubcode, [2018276])) {
+                        Log::warning("⚠️ Facebook MESSAGE_TAG '{$messageTag}' ไม่ได้รับอนุมัติ", [
+                            'recipient' => $recipientId,
+                            'tag' => $messageTag,
+                            'hint' => 'ตรวจสอบ Facebook App → Messenger → Advanced Messaging',
+                        ]);
+
+                        return false;
                     }
 
                     // ถ้าเป็น token error (190) หรือ permission error (10) ไม่ต้อง retry

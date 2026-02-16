@@ -1947,7 +1947,7 @@ class FortuneConversationService
                         $channelManager->sendResponse($platform, $userId, [
                             'action' => 'partial',
                             'message' => $perQuestionMessage,
-                        ], ['from_admin' => true]);
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                         usleep(500000); // รอ 0.5 วินาทีก่อนข้อถัดไป (ลด rate limit)
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
@@ -2049,7 +2049,7 @@ class FortuneConversationService
                     $channelManager->sendResponse($platform, $userId, [
                         'action' => 'completed',
                         'message' => $thankYouMessage,
-                    ], ['from_admin' => true]);
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                 } catch (\Exception $sendErr) {
                     Log::warning('Fortune Deep Streaming: ส่งข้อความขอบคุณไม่สำเร็จ', [
                         'error' => $sendErr->getMessage(),
