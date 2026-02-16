@@ -66,6 +66,18 @@ class FortuneChartService
     public function generateBirthChart(string $birthDate, string $name, ?string $gender = null): ?string
     {
         try {
+            // ✅ เช็ค GD extension ก่อนสร้าง chart
+            if (! extension_loaded('gd')) {
+                Log::error('FortuneChart: GD extension ไม่ได้ติดตั้ง! ไม่สามารถสร้าง chart ได้', [
+                    'birthDate' => $birthDate,
+                    'name' => $name,
+                    'php_version' => PHP_VERSION,
+                    'loaded_extensions' => implode(', ', get_loaded_extensions()),
+                ]);
+
+                return null;
+            }
+
             $date = Carbon::parse($birthDate);
             $dayOfWeek = $date->dayOfWeek;
 
@@ -90,13 +102,24 @@ class FortuneChartService
 
             $pngData = $this->buildPngChart($chartData);
 
-            return $this->saveChartAsImage($pngData, "birth-chart-{$dayOfWeek}");
+            $url = $this->saveChartAsImage($pngData, "birth-chart-{$dayOfWeek}");
 
-        } catch (\Exception $e) {
-            Log::warning('FortuneChart: Failed to generate birth chart', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
+            Log::info('FortuneChart: สร้าง birth chart สำเร็จ', [
+                'name' => $name,
                 'birthDate' => $birthDate,
+                'url' => $url,
+            ]);
+
+            return $url;
+
+        } catch (\Throwable $e) {
+            // ⚠️ ใช้ \Throwable เพื่อจับทั้ง \Exception และ \Error (เช่น GD function not found)
+            Log::error('FortuneChart: Failed to generate birth chart', [
+                'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
+                'birthDate' => $birthDate,
+                'gd_loaded' => extension_loaded('gd'),
             ]);
 
             return null;
@@ -154,6 +177,13 @@ class FortuneChartService
     public function generateQuickChart(string $name): ?string
     {
         try {
+            // ✅ เช็ค GD extension ก่อนสร้าง chart
+            if (! extension_loaded('gd')) {
+                Log::error('FortuneChart: GD extension ไม่ได้ติดตั้ง! ไม่สามารถสร้าง quick chart ได้');
+
+                return null;
+            }
+
             $now = Carbon::now('Asia/Bangkok');
             $dayOfWeek = $now->dayOfWeek;
 
@@ -172,11 +202,21 @@ class FortuneChartService
 
             $pngData = $this->buildPngChart($chartData);
 
-            return $this->saveChartAsImage($pngData, 'quick-chart');
+            $url = $this->saveChartAsImage($pngData, 'quick-chart');
 
-        } catch (\Exception $e) {
-            Log::warning('FortuneChart: Failed to generate quick chart', [
+            Log::info('FortuneChart: สร้าง quick chart สำเร็จ', [
+                'name' => $name,
+                'url' => $url,
+            ]);
+
+            return $url;
+
+        } catch (\Throwable $e) {
+            // ⚠️ ใช้ \Throwable เพื่อจับทั้ง \Exception และ \Error
+            Log::error('FortuneChart: Failed to generate quick chart', [
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'gd_loaded' => extension_loaded('gd'),
             ]);
 
             return null;
@@ -793,10 +833,20 @@ SVG;
 
             Storage::disk('public')->put($path, $pngData);
 
-            return Storage::disk('public')->url($path);
-        } catch (\Exception $e) {
+            $url = Storage::disk('public')->url($path);
+
+            Log::debug('FortuneChart: บันทึก chart สำเร็จ', [
+                'path' => $path,
+                'url' => $url,
+                'size' => strlen($pngData),
+            ]);
+
+            return $url;
+        } catch (\Throwable $e) {
             Log::error('FortuneChart: Failed to save chart image', [
                 'error' => $e->getMessage(),
+                'error_class' => get_class($e),
+                'prefix' => $prefix,
             ]);
 
             return null;

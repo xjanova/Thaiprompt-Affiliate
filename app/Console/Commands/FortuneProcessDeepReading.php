@@ -118,10 +118,12 @@ class FortuneProcessDeepReading extends Command
                         'chart_url' => $chartUrl,
                     ]);
                 }
-            } catch (\Exception $chartErr) {
-                Log::warning('fortune:process-deep: ส่ง chart ล่วงหน้าล้มเหลว (ไม่กระทบ AI)', [
+            } catch (\Throwable $chartErr) {
+                Log::error('fortune:process-deep: ส่ง chart ล่วงหน้าล้มเหลว (ไม่กระทบ AI)', [
                     'reading_id' => $readingId,
                     'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
+                    'gd_loaded' => extension_loaded('gd'),
                 ]);
             }
 

@@ -1363,7 +1363,7 @@ class FortuneConversationService
             // ✅ สร้าง Birth Chart / Quick Chart ส่งก่อนคำทำนาย
             $chartImageUrl = null;
             try {
-                $birthDate = $reading->birth_date;
+                $birthDate = $reading->birth_date?->format('Y-m-d');
                 if ($birthDate) {
                     $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $userProfile['gender'] ?? null);
                 } else {
@@ -1372,9 +1372,11 @@ class FortuneConversationService
                 if ($chartImageUrl) {
                     $reading->update(['reading_image_url' => $chartImageUrl]);
                 }
-            } catch (\Exception $chartErr) {
-                Log::warning('Fortune: Chart generation failed (non-critical)', [
+            } catch (\Throwable $chartErr) {
+                Log::error('Fortune: Chart generation failed (basic reading)', [
                     'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
+                    'reading_id' => $reading->id ?? null,
                 ]);
             }
 
@@ -1766,7 +1768,7 @@ class FortuneConversationService
             // สร้าง Birth Chart ส่งให้ผู้ใช้เห็นก่อนชำระเงิน (เป็น preview)
             $chartImageUrl = null;
             try {
-                $birthDate = $reading->birth_date;
+                $birthDate = $reading->birth_date?->format('Y-m-d');
                 $name = $reading->facebook_user_name ?? 'คุณ';
                 $userProfile = $reading->user_profile ?? [];
                 $gender = $userProfile['gender'] ?? null;
@@ -1780,10 +1782,11 @@ class FortuneConversationService
                 if ($chartImageUrl) {
                     $reading->update(['reading_image_url' => $chartImageUrl]);
                 }
-            } catch (\Exception $chartErr) {
-                Log::warning('Fortune: สร้าง Birth Chart ก่อนบิลไม่สำเร็จ (ไม่ blocking)', [
+            } catch (\Throwable $chartErr) {
+                Log::error('Fortune: สร้าง Birth Chart ก่อนบิลไม่สำเร็จ', [
                     'reading_id' => $reading->id,
                     'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
                 ]);
             }
 
@@ -1879,10 +1882,13 @@ class FortuneConversationService
                 if ($chartImageUrl) {
                     $reading->update(['reading_image_url' => $chartImageUrl]);
                 }
-            } catch (\Exception $chartErr) {
-                Log::warning('Fortune Deep: Failed to generate chart image', [
+            } catch (\Throwable $chartErr) {
+                Log::error('Fortune Deep: Failed to generate chart image', [
                     'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
                     'has_birth_date' => ! empty($birthDate),
+                    'reading_id' => $reading->id ?? null,
+                    'gd_loaded' => extension_loaded('gd'),
                 ]);
             }
 
