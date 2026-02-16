@@ -750,6 +750,10 @@ class FortuneConversationService
             'action' => 'check_remaining',
             'message' => $message,
             'reading' => null,
+            'remaining' => $remaining,
+            'used' => $usedToday,
+            'total' => $maxFreeReadings,
+            'is_unlimited' => $userCredit && $userCredit->isCurrentlyUnlimited(),
         ];
     }
 
@@ -1063,6 +1067,7 @@ class FortuneConversationService
             'message' => $message,
             'reading' => $reading,
             'show_quick_replies' => ($remaining > 0),
+            'remaining' => $remaining,
         ];
     }
 

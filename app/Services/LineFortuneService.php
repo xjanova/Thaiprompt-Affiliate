@@ -1365,6 +1365,742 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     // ============================================================
+    // 🆕 Flex Message Templates — ข้อความสวยงามทุกจุด
+    // ============================================================
+
+    /**
+     * สร้าง Flex Message ยืนยันดูดวง (awaiting_confirmation)
+     *
+     * แสดงสิทธิ์ฟรีที่เหลือ + ราคาดูดวงละเอียด + ปุ่มเลือก
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  int  $remaining  จำนวนสิทธิ์ฟรีที่เหลือ
+     * @param  float  $deepReadingPrice  ราคาดูดวงละเอียด
+     * @param  bool  $deepReadingEnabled  เปิดดูดวงละเอียดหรือไม่
+     * @param  bool  $isUnlimited  มีสิทธิ์ไม่จำกัดหรือไม่
+     * @return array Flex Message bubble
+     */
+    public function buildConfirmationFlexMessage(string $userName, int $remaining, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false): array
+    {
+        // แสดงสิทธิ์ฟรี
+        $creditText = $isUnlimited || $remaining >= 99
+            ? '✨ ไม่จำกัด ✨'
+            : ($remaining > 0 ? "{$remaining} ครั้ง" : 'หมดแล้ว');
+        $creditColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
+
+        $bodyContents = [
+            // สวัสดี
+            [
+                'type' => 'text',
+                'text' => "สวัสดีค่ะ คุณ{$userName} ✨",
+                'size' => 'md',
+                'weight' => 'bold',
+                'color' => '#333333',
+            ],
+            [
+                'type' => 'text',
+                'text' => 'จันทราพร้อมดูดวงให้ค่ะ',
+                'size' => 'sm',
+                'color' => '#999999',
+                'margin' => 'sm',
+            ],
+            // สิทธิ์ฟรีวันนี้
+            [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'xl',
+                'backgroundColor' => $remaining > 0 || $isUnlimited ? '#E8F5E9' : '#FFEBEE',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '📊 สิทธิ์ฟรีวันนี้:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                    ['type' => 'text', 'text' => $creditText, 'size' => 'sm', 'weight' => 'bold', 'color' => $creditColor, 'flex' => 2, 'align' => 'end'],
+                ],
+            ],
+            // เส้นแบ่ง
+            ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'],
+            // บริการ
+            [
+                'type' => 'text',
+                'text' => '🎁 บริการของจันทรา',
+                'size' => 'md',
+                'weight' => 'bold',
+                'color' => '#6B46C1',
+                'margin' => 'xl',
+            ],
+        ];
+
+        // บริการฟรี
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'lg',
+            'contents' => [
+                ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
+                [
+                    'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                    'contents' => [
+                        ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333'],
+                        ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไปแบบสั้นๆ', 'size' => 'xs', 'color' => '#999999'],
+                    ],
+                ],
+            ],
+        ];
+
+        // บริการเสียเงิน (ถ้าเปิด)
+        if ($deepReadingEnabled) {
+            $priceDisplay = number_format($deepReadingPrice, 0);
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💎', 'size' => 'lg', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => "ดูดวงละเอียด ({$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => 'ถาม 2 คำถาม + วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999'],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        // ปุ่ม footer
+        $footerContents = [];
+        if ($remaining > 0 || $isUnlimited) {
+            $footerContents[] = [
+                'type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => '🔮 ดูดวงเลย', 'text' => 'ดู'],
+            ];
+        }
+        if ($deepReadingEnabled) {
+            $footerContents[] = [
+                'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+            ];
+        }
+        if (empty($footerContents)) {
+            $footerContents[] = [
+                'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+            ];
+        }
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'ยินดีต้อนรับค่ะ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
+            'footer' => ['type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg', 'contents' => $footerContents],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ขอวันเกิด (collecting_birthdate)
+     *
+     * @param  float  $deepReadingPrice  ราคาดูดวงละเอียด
+     * @return array Flex Message bubble
+     */
+    public function buildBirthdateRequestFlexMessage(float $deepReadingPrice): array
+    {
+        $priceDisplay = number_format($deepReadingPrice, 0);
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => '#7C3AED']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🎂', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'ดูดวงละเอียด', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "เริ่มต้น {$priceDisplay} บาท • ถาม 2 คำถาม", 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'กรุณาบอกวันเดือนปีเกิดค่ะ', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'เพื่อวิเคราะห์ดวงชะตาได้แม่นยำ ✨', 'size' => 'sm', 'color' => '#999999', 'margin' => 'sm'],
+                    ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'],
+                    // รูปแบบที่รับ
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#F8F7FF', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📅 รูปแบบที่รับ', 'size' => 'sm', 'weight' => 'bold', 'color' => '#6B46C1'],
+                            ['type' => 'text', 'text' => '• 15/08/1990', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
+                            ['type' => 'text', 'text' => '• 15/08/2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                            ['type' => 'text', 'text' => '• 15 สิงหาคม 2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                        ],
+                    ],
+                    // ราคา + สิ่งที่ได้
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => "💎 สิ่งที่คุณจะได้รับ ({$priceDisplay} บาท)", 'size' => 'xs', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => '✅ ถามได้ 2 คำถาม วิเคราะห์เจาะลึก', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => '✅ สีมงคล เลขมงคล ฤกษ์ดี', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm'],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message วันเกิดผิดรูปแบบ (invalid_birthdate)
+     *
+     * @return array Flex Message bubble
+     */
+    public function buildInvalidBirthdateFlexMessage(): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#E53935']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⚠️', 'size' => 'xl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'รูปแบบวันเกิดไม่ถูกต้อง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'กรุณาพิมพ์วันเกิดใหม่ค่ะ', 'size' => 'md', 'color' => '#333333'],
+                    ['type' => 'separator', 'margin' => 'lg', 'color' => '#FFCDD2'],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF3E0', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📅 ตัวอย่างที่ถูกต้อง', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E65100'],
+                            ['type' => 'text', 'text' => '• 15/08/1990', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
+                            ['type' => 'text', 'text' => '• 15/08/2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                            ['type' => 'text', 'text' => '• 15 สิงหาคม 2533', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message หมดสิทธิ์ฟรี (ai_limit)
+     *
+     * @param  float  $deepReadingPrice  ราคาดูดวงละเอียด
+     * @param  bool  $deepReadingEnabled  เปิดดูดวงละเอียดหรือไม่
+     * @return array Flex Message bubble
+     */
+    public function buildAiLimitFlexMessage(float $deepReadingPrice, bool $deepReadingEnabled = true): array
+    {
+        $priceDisplay = number_format($deepReadingPrice, 0);
+
+        $bodyContents = [
+            [
+                'type' => 'box', 'layout' => 'horizontal', 'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⏰', 'size' => 'lg', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'สิทธิ์ฟรีวันนี้หมดแล้วค่ะ', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
+                            ['type' => 'text', 'text' => 'ฟรีวันละ 1 คำถาม', 'size' => 'xs', 'color' => '#999999'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        if ($deepReadingEnabled) {
+            $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+            $bodyContents[] = [
+                'type' => 'text', 'text' => '💎 แนะนำ: ดูดวงละเอียด', 'size' => 'md', 'weight' => 'bold', 'color' => '#E8890C', 'margin' => 'xl',
+            ];
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => "เริ่มต้นเพียง {$priceDisplay} บาท", 'size' => 'lg', 'weight' => 'bold', 'color' => '#E8890C', 'align' => 'center'],
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#FFE082'],
+                    ['type' => 'text', 'text' => '📌 ถามได้ 2 คำถาม', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
+                    ['type' => 'text', 'text' => '📌 วิเคราะห์จากวันเกิดเจาะลึก', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                    ['type' => 'text', 'text' => '📌 สีมงคล เลขมงคล ฤกษ์ดี', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                ],
+            ];
+        }
+
+        $footerContents = [];
+        if ($deepReadingEnabled) {
+            $footerContents[] = [
+                'type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด'],
+            ];
+        }
+        $footerContents[] = [
+            'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+            'action' => ['type' => 'message', 'label' => '📊 เช็คสิทธิ์', 'text' => 'เช็คสิทธิ์'],
+        ];
+
+        return [
+            'type' => 'bubble', 'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'ยินดีต้อนรับค่ะ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
+            'footer' => ['type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg', 'contents' => $footerContents],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message เช็คสิทธิ์ (check_remaining)
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  int  $remaining  สิทธิ์ฟรีที่เหลือ
+     * @param  int  $used  ใช้ไปแล้ว
+     * @param  int  $total  สิทธิ์ทั้งหมด
+     * @param  float  $deepReadingPrice  ราคาดูดวงละเอียด
+     * @param  bool  $deepReadingEnabled  เปิดดูดวงละเอียดหรือไม่
+     * @param  bool  $isUnlimited  มีสิทธิ์ไม่จำกัดหรือไม่
+     * @return array Flex Message bubble
+     */
+    public function buildCheckRemainingFlexMessage(string $userName, int $remaining, int $used, int $total, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false): array
+    {
+        $creditText = $isUnlimited || $remaining >= 99 ? '✨ ไม่จำกัด ✨' : "{$remaining} ครั้ง";
+        $statusColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
+        $priceDisplay = number_format($deepReadingPrice, 0);
+
+        $bodyContents = [
+            ['type' => 'text', 'text' => "คุณ{$userName}", 'size' => 'md', 'weight' => 'bold', 'color' => '#333333'],
+            // สิทธิ์คงเหลือ
+            [
+                'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#F8F7FF', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
+                'contents' => [
+                    [
+                        'type' => 'box', 'layout' => 'horizontal',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📊 ใช้ไปแล้ว:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => $isUnlimited ? '-' : "{$used}/{$total} ครั้ง", 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333', 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🆓 สิทธิ์ฟรีคงเหลือ:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => $creditText, 'size' => 'sm', 'weight' => 'bold', 'color' => $statusColor, 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // แนะนำดูดวงละเอียด (ถ้าเปิด)
+        if ($deepReadingEnabled) {
+            $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'horizontal', 'margin' => 'xl', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💎', 'size' => 'lg', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => "ดูดวงละเอียด {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => 'ถาม 2 คำถาม วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999', 'wrap' => true],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        $footerContents = [
+            ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
+        ];
+        if ($deepReadingEnabled) {
+            $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay}.-", 'text' => 'ดูดวงละเอียด']];
+        }
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#1976D2']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '📊', 'size' => 'xxl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'สิทธิ์การใช้งาน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
+            'footer' => ['type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg', 'contents' => $footerContents],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ปฏิเสธ/ยกเลิก (declined, cancelled)
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string  $type  'declined' หรือ 'cancelled'
+     * @return array Flex Message bubble
+     */
+    public function buildDeclinedFlexMessage(string $userName, string $type = 'declined'): array
+    {
+        $title = $type === 'cancelled' ? 'ยกเลิกแล้วค่ะ' : 'ไม่เป็นไรค่ะ';
+        $subtitle = "คุณ{$userName} สามารถกลับมาดูดวงได้ทุกเมื่อนะคะ ✨";
+        $headerColor = $type === 'cancelled' ? '#78909C' : '#8E24AA';
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => $headerColor]],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => $type === 'cancelled' ? '✅' : '🙏', 'size' => 'xl', 'flex' => 0],
+                    ['type' => 'text', 'text' => $title, 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => $subtitle, 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+                    ['type' => 'text', 'text' => 'ขอให้โชคดีค่ะ 🌟', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg'],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'horizontal', 'spacing' => 'md', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'uri', 'label' => '📤 แชร์ให้เพื่อน', 'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))]],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message บิลหมดอายุ (payment_expired)
+     *
+     * @param  float  $deepReadingPrice  ราคาดูดวงละเอียด
+     * @return array Flex Message bubble
+     */
+    public function buildPaymentExpiredFlexMessage(float $deepReadingPrice): array
+    {
+        $priceDisplay = number_format($deepReadingPrice, 0);
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#E53935']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⏰', 'size' => 'xxl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'บิลหมดอายุแล้ว', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'ระยะเวลาชำระเงินหมดแล้วค่ะ', 'size' => 'sm', 'color' => '#555555'],
+                    ['type' => 'text', 'text' => 'สามารถเริ่มดูดวงละเอียดใหม่ได้เลยค่ะ', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message รอชำระเงิน (waiting_payment)
+     *
+     * @param  float  $amount  ยอดชำระ
+     * @param  string  $billRef  เลขที่บิล
+     * @param  string  $expiresAt  เวลาหมดอายุ
+     * @param  int  $remainingMinutes  เวลาที่เหลือ (นาที)
+     * @return array Flex Message bubble
+     */
+    public function buildWaitingPaymentFlexMessage(float $amount, string $billRef, string $expiresAt, int $remainingMinutes): array
+    {
+        $amountDisplay = number_format($amount, 2);
+        $urgentColor = $remainingMinutes <= 10 ? '#E53935' : '#E8890C';
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#E8890C']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💰', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'รอชำระเงิน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "บิล: {$billRef}", 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    // ยอดชำระ
+                    ['type' => 'text', 'text' => "฿{$amountDisplay}", 'size' => 'xxl', 'weight' => 'bold', 'color' => '#E8890C', 'align' => 'center'],
+                    ['type' => 'text', 'text' => '⚠️ โอนตรงตามทศนิยม', 'size' => 'xs', 'color' => '#E53935', 'align' => 'center', 'margin' => 'sm'],
+                    ['type' => 'separator', 'margin' => 'xl', 'color' => '#FFF3E0'],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'lg',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '⏰ โอนก่อน:', 'size' => 'sm', 'color' => '#555555', 'flex' => 2],
+                            ['type' => 'text', 'text' => "{$expiresAt} น.", 'size' => 'sm', 'weight' => 'bold', 'color' => $urgentColor, 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '⏳ เหลือเวลา:', 'size' => 'sm', 'color' => '#555555', 'flex' => 2],
+                            ['type' => 'text', 'text' => "{$remainingMinutes} นาที", 'size' => 'sm', 'weight' => 'bold', 'color' => $urgentColor, 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                    // ข้อความเตือน
+                    ['type' => 'text', 'text' => 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨', 'size' => 'xs', 'color' => '#999999', 'margin' => 'xl', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🏦 ดูบัญชีธนาคาร', 'text' => 'บัญชี']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message กำลังประมวลผล (view_reading_processing)
+     *
+     * @param  string  $billRef  เลขที่บิล
+     * @return array Flex Message bubble
+     */
+    public function buildProcessingFlexMessage(string $billRef): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#1976D2']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⏳', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'กำลังสร้างคำทำนาย', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "บิล: {$billRef}", 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'AI กำลังวิเคราะห์ดวงชะตาให้ค่ะ', 'size' => 'sm', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'ใช้เวลาประมาณ 1-2 นาที', 'size' => 'sm', 'color' => '#999999', 'margin' => 'sm'],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#E3F2FD', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💡 พิมพ์ "ดูผล" เพื่อเช็คสถานะ', 'size' => 'xs', 'color' => '#1565C0'],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#1976D2', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔍 เช็คสถานะ', 'text' => 'ดูผล']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ไม่มีคำทำนาย (view_reading_empty)
+     *
+     * @return array Flex Message bubble
+     */
+    public function buildNoReadingFlexMessage(): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'ยังไม่มีคำทำนาย', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'เริ่มดูดวงกันเลยค่ะ!', 'size' => 'md', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'พิมพ์คำถามหรือกดปุ่มด้านล่างได้เลยนะคะ ✨', 'size' => 'sm', 'color' => '#999999', 'margin' => 'sm', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงเลย', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ไว้ดูทีหลัง (view_later)
+     *
+     * @return array Flex Message bubble
+     */
+    public function buildViewLaterFlexMessage(): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#43A047']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '✅', 'size' => 'xl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'บันทึกแล้วค่ะ', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'คำทำนายถูกบันทึกไว้แล้วค่ะ', 'size' => 'sm', 'color' => '#333333'],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#E8F5E9', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💡 พิมพ์ "ดูคำทำนาย" เพื่อดูได้ทุกเมื่อ', 'size' => 'xs', 'color' => '#2E7D32', 'wrap' => true],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูคำทำนาย', 'text' => 'ดูคำทำนาย']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ข้อผิดพลาด (error)
+     *
+     * @param  string  $message  ข้อความ error (optional)
+     * @return array Flex Message bubble
+     */
+    public function buildErrorFlexMessage(string $message = ''): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#E53935']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⚠️', 'size' => 'xl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'เกิดข้อผิดพลาด', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'ขอโทษค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ลองอีกครั้ง', 'text' => 'ดูดวง']],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ดูดวงละเอียดถูกปิด (deep_reading_disabled)
+     *
+     * @return array Flex Message bubble
+     */
+    public function buildDeepReadingDisabledFlexMessage(): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#78909C']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔒', 'size' => 'xl', 'flex' => 0],
+                    ['type' => 'text', 'text' => 'ปิดให้บริการชั่วคราว', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold', 'flex' => 1, 'paddingStart' => 'md'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'บริการดูดวงละเอียดปิดให้บริการชั่วคราวค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+                    ['type' => 'text', 'text' => 'ยังสามารถดูดวงฟรีได้ตามปกตินะคะ ✨', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']],
+                ],
+            ],
+        ];
+    }
+
+    // ============================================================
     // Private Methods
     // ============================================================
 
