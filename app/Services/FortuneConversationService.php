@@ -340,6 +340,11 @@ class FortuneConversationService
                 return $this->handleCheckRemaining($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่ง "ไว้ดูทีหลัง" (จากปุ่ม quick reply หลังคำทำนายพร้อม)
+            if ($this->isViewLaterRequest($messageText)) {
+                return $this->handleViewLater($facebookUserId);
+            }
+
             // ✅ ตรวจสอบคำสั่งพิเศษ: ดูคำทำนายล่าสุด
             if ($this->isViewLastReadingRequest($messageText)) {
                 return $this->handleViewLastReading($facebookUserId);
@@ -743,6 +748,41 @@ class FortuneConversationService
         return [
             'action' => 'check_remaining',
             'message' => $message,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูคำทำนายล่าสุดหรือไม่
+     *
+     * ตรวจสอบว่าเป็นคำขอ "ไว้ดูทีหลัง" หรือไม่
+     *
+     * รองรับจากปุ่ม quick reply หลังคำทำนายพร้อม
+     */
+    protected function isViewLaterRequest(string $text): bool
+    {
+        $keywords = [
+            'ไว้ดูทีหลัง', 'ดูทีหลัง', 'ไว้ก่อน', 'เดี๋ยวดู',
+        ];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำขอ "ไว้ดูทีหลัง" — แจ้งว่าพิมพ์ "ดูคำทำนาย" ได้ทุกเมื่อ
+     */
+    protected function handleViewLater(string $facebookUserId): array
+    {
+        return [
+            'action' => 'view_later',
+            'message' => "ได้เลยค่ะ! เมื่อพร้อมดู พิมพ์ 'ดูคำทำนาย' ได้ทุกเมื่อนะคะ 🔮",
             'reading' => null,
         ];
     }
@@ -2159,18 +2199,47 @@ class FortuneConversationService
             return "🏦 กรุณาติดต่อแอดมินเพื่อขอบัญชีธนาคาร\n";
         }
 
-        $message = "🏦 *บัญชีที่รับโอน*:\n\n";
+        // ดึงโหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
+        $displayMode = $this->settings->getPaymentDisplayMode();
+        $showBank = $this->settings->shouldShowBankAccount();
+        $showPromptpay = $this->settings->shouldShowPromptpay();
+
+        // เลือก header ตามโหมด
+        if ($displayMode === 'promptpay_only') {
+            $message = "📱 *ช่องทางชำระเงิน (พร้อมเพย์)*:\n\n";
+        } elseif ($displayMode === 'bank_only') {
+            $message = "🏦 *บัญชีที่รับโอน*:\n\n";
+        } else {
+            $message = "🏦 *บัญชีที่รับโอน*:\n\n";
+        }
 
         foreach ($accounts as $account) {
-            $message .= "📌 {$account->bank_name}\n";
-            $message .= "   เลขบัญชี: {$account->account_number}\n";
-            $message .= "   ชื่อ: {$account->account_name}\n";
+            if ($displayMode === 'promptpay_only') {
+                // แสดงเฉพาะพร้อมเพย์ (ไม่แสดงเลขบัญชี — เลี่ยง FB ตรวจจับ)
+                if ($account->hasPromptpay()) {
+                    $message .= "📱 {$account->bank_name}\n";
+                    $message .= "   พร้อมเพย์: {$account->promptpay_id}\n";
+                    $message .= "   ชื่อ: {$account->account_name}\n";
+                    $message .= "\n";
+                }
+            } elseif ($displayMode === 'bank_only') {
+                // แสดงเฉพาะเลขบัญชี (ไม่แสดงพร้อมเพย์)
+                $message .= "📌 {$account->bank_name}\n";
+                $message .= "   เลขบัญชี: {$account->account_number}\n";
+                $message .= "   ชื่อ: {$account->account_name}\n";
+                $message .= "\n";
+            } else {
+                // แสดงทั้งสองอย่าง (default)
+                $message .= "📌 {$account->bank_name}\n";
+                $message .= "   เลขบัญชี: {$account->account_number}\n";
+                $message .= "   ชื่อ: {$account->account_name}\n";
 
-            if ($account->hasPromptpay()) {
-                $message .= "   พร้อมเพย์: {$account->promptpay_id}\n";
+                if ($account->hasPromptpay()) {
+                    $message .= "   พร้อมเพย์: {$account->promptpay_id}\n";
+                }
+
+                $message .= "\n";
             }
-
-            $message .= "\n";
         }
 
         return $message;

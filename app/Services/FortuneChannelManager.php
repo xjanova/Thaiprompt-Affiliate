@@ -427,6 +427,11 @@ class FortuneChannelManager
                 ['label' => '🏦 ดูบัญชี', 'text' => 'บัญชี'],
                 ['label' => 'ยกเลิก', 'text' => 'ยกเลิก'],
             ],
+            'reading_ready' => [
+                ['label' => '🔮 ดูเลย', 'text' => 'ดูคำทำนาย'],
+                ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
+            ],
+            'payment_confirmed_wait' => [],
             default => [],
         };
     }

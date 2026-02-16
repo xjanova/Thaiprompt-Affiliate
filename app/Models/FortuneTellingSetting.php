@@ -114,6 +114,8 @@ class FortuneTellingSetting extends Model
         'admin_handover_timeout',
         // บัญชีธนาคารเฉพาะระบบดูดวง
         'fortune_bank_account_ids',
+        // โหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
+        'payment_display_mode',
     ];
 
     /**
@@ -239,6 +241,34 @@ class FortuneTellingSetting extends Model
         }
 
         return $accounts;
+    }
+
+    /**
+     * ดึงโหมดแสดงช่องทางชำระเงิน
+     *
+     * @return string 'both', 'bank_only', 'promptpay_only'
+     */
+    public function getPaymentDisplayMode(): string
+    {
+        return $this->payment_display_mode ?? 'both';
+    }
+
+    /**
+     * ตรวจสอบว่าควรแสดงเลขบัญชีธนาคารหรือไม่
+     * จะไม่แสดงเมื่อโหมดเป็น promptpay_only
+     */
+    public function shouldShowBankAccount(): bool
+    {
+        return $this->getPaymentDisplayMode() !== 'promptpay_only';
+    }
+
+    /**
+     * ตรวจสอบว่าควรแสดงพร้อมเพย์หรือไม่
+     * จะไม่แสดงเมื่อโหมดเป็น bank_only
+     */
+    public function shouldShowPromptpay(): bool
+    {
+        return $this->getPaymentDisplayMode() !== 'bank_only';
     }
 
     /**

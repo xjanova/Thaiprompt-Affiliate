@@ -4,6 +4,8 @@ namespace App\Console\Commands;
 
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
+use App\Services\FortuneChannelManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -135,6 +137,37 @@ class FortuneCheckPendingReadings extends Command
             }
 
             $this->info("  🔄 {$billRef} — รอ {$waitMinutes} นาที, retry #{$retryCount} → dispatch job");
+
+            // ✅ ส่งข้อความ "คนใช้งานมาก" ถ้ารอ >5 นาที + ยังไม่เคยส่ง
+            if ($waitMinutes >= 5 && ! $reading->getConversationState('busy_message_sent', false) && ! $isDryRun) {
+                try {
+                    $settings = FortuneTellingSetting::getSettings();
+                    $channelManager = new FortuneChannelManager($settings);
+
+                    $name = $reading->facebook_user_name ?? 'คุณ';
+                    $busyMessage = "🔮 เนื่องจากตอนนี้มีคนใช้งานมาก จันทรากำลังพยายามตรวจดวงชะตาให้อยู่ค่ะ\n\n"
+                        . "กรุณารอสักครู่นะคะ {$name} 🙏";
+
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'busy_processing',
+                        'message' => $busyMessage,
+                    ], ['from_admin' => true]);
+
+                    $reading->setConversationState('busy_message_sent', true);
+                    $reading->setConversationState('busy_message_sent_at', now()->toIso8601String());
+
+                    $this->info("  📨 {$billRef} — ส่งข้อความ 'คนใช้งานมาก' สำเร็จ");
+                    Log::info('fortune:check-pending: ส่งข้อความ busy message', [
+                        'reading_id' => $reading->id,
+                        'wait_minutes' => $waitMinutes,
+                    ]);
+                } catch (\Exception $msgErr) {
+                    Log::warning('fortune:check-pending: ส่ง busy message ล้มเหลว', [
+                        'reading_id' => $reading->id,
+                        'error' => $msgErr->getMessage(),
+                    ]);
+                }
+            }
 
             if (! $isDryRun) {
                 try {

@@ -215,6 +215,8 @@ class FortuneSettingsController extends Controller
             // บัญชีธนาคารเฉพาะระบบดูดวง
             'fortune_bank_account_ids' => 'nullable|array',
             'fortune_bank_account_ids.*' => 'exists:payment_bank_accounts,id',
+            // โหมดแสดงช่องทางชำระเงิน (โอนเงิน / พร้อมเพย์ / ทั้งสองอย่าง)
+            'payment_display_mode' => 'nullable|in:both,bank_only,promptpay_only',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();

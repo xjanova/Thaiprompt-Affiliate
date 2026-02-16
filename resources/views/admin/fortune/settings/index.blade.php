@@ -526,6 +526,48 @@
                 </div>
             </div>
 
+            {{-- โหมดแสดงช่องทางชำระเงิน --}}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    💳 โหมดแสดงช่องทางชำระเงิน
+                </label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    เลือกช่องทางชำระเงินที่จะแสดงให้ลูกค้าเห็นในข้อความชำระเงิน (ช่วยหลีกเลี่ยง Facebook ตรวจจับเรื่องการเงิน)
+                </p>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition
+                        {{ ($settings->payment_display_mode ?? 'both') === 'both' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                        <input type="radio" name="payment_display_mode" value="both"
+                            {{ ($settings->payment_display_mode ?? 'both') === 'both' ? 'checked' : '' }}
+                            class="text-blue-600 focus:ring-blue-500">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">🏦 โอนเงิน + พร้อมเพย์</span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">แสดงทั้งเลขบัญชีธนาคารและพร้อมเพย์</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition
+                        {{ ($settings->payment_display_mode ?? 'both') === 'bank_only' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                        <input type="radio" name="payment_display_mode" value="bank_only"
+                            {{ ($settings->payment_display_mode ?? 'both') === 'bank_only' ? 'checked' : '' }}
+                            class="text-blue-600 focus:ring-blue-500">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">🏦 โอนเงินเท่านั้น</span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">แสดงเฉพาะเลขบัญชีธนาคาร (ไม่แสดงพร้อมเพย์)</p>
+                        </div>
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition
+                        {{ ($settings->payment_display_mode ?? 'both') === 'promptpay_only' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
+                        <input type="radio" name="payment_display_mode" value="promptpay_only"
+                            {{ ($settings->payment_display_mode ?? 'both') === 'promptpay_only' ? 'checked' : '' }}
+                            class="text-blue-600 focus:ring-blue-500">
+                        <div>
+                            <span class="text-sm font-medium text-gray-900 dark:text-white">📱 พร้อมเพย์เท่านั้น</span>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">แสดงเฉพาะพร้อมเพย์ (ไม่แสดงเลขบัญชี — เลี่ยง FB ตรวจจับ)</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
             <div class="mt-6" x-data="fortuneBankAccounts()">
                 <div class="flex items-center justify-between mb-3">

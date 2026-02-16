@@ -80,24 +80,51 @@ class FortuneProcessDeepReading extends Command
             $conversationService = new FortuneConversationService($settings);
             $channelManager = new FortuneChannelManager($settings);
 
-            // เรียก processPaymentConfirmed() — streaming mode ส่งทีละข้อ
+            // 🔄 เปลี่ยนเป็น batch mode: ไม่ส่ง channelManager (ปิด streaming)
+            // เก็บผลทำนายใน DB อย่างเดียว → ส่งข้อความ "คำทำนายพร้อมแล้ว" + ปุ่ม ทีหลัง
             $result = $conversationService->processPaymentConfirmed(
-                $reading, $notification, $channelManager, $platform, $userId
+                $reading, $notification, null, $platform, $userId
             );
-
-            // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
-            if (empty($result['streaming']) && ! empty($result['message'])) {
-                $channelManager->sendResponse($platform, $userId, $result);
-            }
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            $this->info("✅ สร้างคำทำนาย + ส่ง Messenger สำเร็จ ({$duration}ms)");
+            $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms)");
             Log::info('✅ fortune:process-deep สำเร็จ', [
                 'reading_id' => $readingId,
                 'action' => $result['action'] ?? 'unknown',
                 'duration_ms' => $duration,
             ]);
+
+            // ✅ ส่งข้อความ "คำทำนายพร้อมแล้ว" พร้อมปุ่ม [ดูเลย] [ไว้ดูทีหลัง]
+            // Reload reading เพื่อดึง deep_response ล่าสุด
+            $reading->refresh();
+
+            if (! empty($reading->deep_response)) {
+                try {
+                    $name = $reading->facebook_user_name ?? 'คุณ';
+                    $readyMessage = "🔮✨ คำทำนายของ{$name}พร้อมแล้วค่ะ!\n\n"
+                        . "จันทราได้ตรวจดวงชะตาเรียบร้อยแล้ว พร้อมดูเลยไหมคะ?";
+
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'reading_ready',
+                        'message' => $readyMessage,
+                    ], ['from_admin' => true]);
+
+                    // บันทึกสถานะว่าส่งข้อความ "พร้อมแล้ว" แล้ว
+                    $reading->setConversationState('reading_ready_sent', true);
+                    $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+                    Log::info('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" + ปุ่ม สำเร็จ', [
+                        'reading_id' => $readingId,
+                        'platform' => $platform,
+                    ]);
+                } catch (\Exception $readyErr) {
+                    Log::warning('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" ล้มเหลว', [
+                        'reading_id' => $readingId,
+                        'error' => $readyErr->getMessage(),
+                    ]);
+                }
+            }
 
             return self::SUCCESS;
 

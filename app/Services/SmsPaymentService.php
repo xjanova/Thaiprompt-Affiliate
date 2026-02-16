@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Services\FortuneChannelManager;
 use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
@@ -554,6 +555,35 @@ class SmsPaymentService
             'is_paid' => $reading->is_paid,
             'conversation_status' => $reading->conversation_status,
         ]);
+
+        // ✅ ส่งข้อความ "รอสักครู่" ให้ลูกค้าทราบทันทีหลังชำระเงินสำเร็จ
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $channelManager = new FortuneChannelManager($settings);
+
+            $name = $reading->facebook_user_name ?? 'คุณ';
+            $waitMessage = "✨ ขอบคุณค่ะ {$name}! ได้รับการชำระเงินเรียบร้อยแล้ว\n\n"
+                . "🔮 จันทราจะตรวจดวงชะตาให้นะคะ รอสักครู่ประมาณ 5 นาทีค่ะ ✨";
+
+            $channelManager->sendResponse($platform, $userId, [
+                'action' => 'payment_confirmed_wait',
+                'message' => $waitMessage,
+            ], ['from_admin' => true]);
+
+            // บันทึกสถานะว่าส่งข้อความรอแล้ว
+            $reading->setConversationState('wait_message_sent', true);
+            $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+
+            Log::info('SMS Payment: ส่งข้อความ "รอสักครู่" สำเร็จ', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+            ]);
+        } catch (\Exception $waitErr) {
+            Log::warning('SMS Payment: ส่งข้อความ "รอสักครู่" ล้มเหลว (ไม่ critical)', [
+                'reading_id' => $reading->id,
+                'error' => $waitErr->getMessage(),
+            ]);
+        }
 
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout
         // Job จะ: สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
