@@ -95,35 +95,62 @@ class FortuneProcessDeepReading extends Command
                 'duration_ms' => $duration,
             ]);
 
-            // ✅ ส่งข้อความ "คำทำนายพร้อมแล้ว" พร้อมปุ่ม [ดูเลย] [ไว้ดูทีหลัง]
+            // ✅ ส่งคำทำนาย + chart image ให้ลูกค้าทันที (ไม่ต้องกดปุ่ม)
             // Reload reading เพื่อดึง deep_response ล่าสุด
             $reading->refresh();
 
             if (! empty($reading->deep_response)) {
-                // ✅ คำทำนายสร้างสำเร็จ → ส่งข้อความ "พร้อมแล้ว" + ปุ่ม
+                // ✅ คำทำนายสร้างสำเร็จ → ส่งคำทำนาย + chart ให้ลูกค้าทันที
                 try {
                     $name = $reading->facebook_user_name ?? 'คุณ';
-                    $readyMessage = "🔮✨ คำทำนายของ{$name}พร้อมแล้วค่ะ!\n\n"
-                        . "จันทราได้ตรวจดวงชะตาเรียบร้อยแล้ว พร้อมดูเลยไหมคะ?";
+                    $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
 
-                    $sent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'reading_ready',
-                        'message' => $readyMessage,
-                        'show_quick_replies' => true,
-                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                    // 1. ส่ง chart image + ข้อความเปิด (ถ้ามี chart)
+                    $chartUrl = $reading->reading_image_url;
+                    $headerMessage = "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!";
 
-                    // บันทึกสถานะว่าส่งข้อความ "พร้อมแล้ว" แล้ว
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'send_chart',
+                        'message' => $headerMessage,
+                        'chart_image_url' => $chartUrl,
+                    ], $extra);
+
+                    usleep(500000); // รอ 0.5 วินาที ก่อนส่งคำทำนาย
+
+                    // 2. ส่งคำทำนายเชิงลึก (deep_response)
+                    $billRef = $reading->bill_reference ?? '-';
+                    $readingText = "🌟 *คำทำนายเชิงลึก*\n"
+                        . "📋 เลขที่บิล: {$billRef}\n"
+                        . "═══════════════════════\n\n"
+                        . $reading->deep_response;
+
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'deep_reading_result',
+                        'message' => $readingText,
+                    ], $extra);
+
+                    usleep(500000); // รอ 0.5 วินาที
+
+                    // 3. ข้อความปิดท้าย
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'reading_complete',
+                        'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n"
+                            . "💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
+                    ], $extra);
+
+                    // บันทึกสถานะ
                     $reading->setConversationState('reading_ready_sent', true);
+                    $reading->setConversationState('reading_sent_directly', true);
                     $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
-                    Log::info('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" + ปุ่ม', [
+                    Log::info('fortune:process-deep: ส่งคำทำนาย + chart ให้ลูกค้าสำเร็จ', [
                         'reading_id' => $readingId,
                         'platform' => $platform,
                         'user_id' => $userId,
-                        'sent_result' => $sent,
+                        'has_chart' => ! empty($chartUrl),
                     ]);
                 } catch (\Exception $readyErr) {
-                    Log::error('fortune:process-deep: ส่งข้อความ "คำทำนายพร้อมแล้ว" ล้มเหลว', [
+                    Log::error('fortune:process-deep: ส่งคำทำนายให้ลูกค้าล้มเหลว', [
                         'reading_id' => $readingId,
                         'platform' => $platform,
                         'user_id' => $userId,
