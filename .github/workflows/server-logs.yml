@@ -44,13 +44,27 @@ jobs:
           script: |
             cd "$DEPLOY_DIR" || exit 1
 
-            LOG_FILE="storage/logs/laravel.log"
+            # ค้นหาไฟล์ log ที่ถูกต้อง (รองรับ daily log)
+            if [ -f "storage/logs/laravel.log" ] && [ -s "storage/logs/laravel.log" ]; then
+              LOG_FILE="storage/logs/laravel.log"
+            else
+              # ถ้า laravel.log ว่างหรือไม่มี → หาไฟล์ daily log ล่าสุด
+              DAILY_LOG=$(ls -t storage/logs/laravel-*.log 2>/dev/null | head -1)
+              if [ -n "$DAILY_LOG" ]; then
+                LOG_FILE="$DAILY_LOG"
+              else
+                LOG_FILE="storage/logs/laravel.log"
+              fi
+            fi
             LINES=${{ inputs.lines }}
             COMMAND="${{ inputs.log_command }}"
 
             echo "============================================"
             echo "📋 Server Logs — $(date '+%Y-%m-%d %H:%M:%S')"
             echo "📁 Log file: $LOG_FILE"
+            echo "📏 Log file size: $(du -sh "$LOG_FILE" 2>/dev/null | cut -f1 || echo 'N/A')"
+            echo "📂 All log files:"
+            ls -lhrt storage/logs/laravel*.log 2>/dev/null | tail -5
             echo "🔍 Command: $COMMAND"
             echo "📊 Lines to search: $LINES"
             echo "============================================"
