@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiApiKey;
+use App\Models\AiContentSetting;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\PaymentBankAccount;
@@ -561,14 +563,120 @@ class FortuneSettingsController extends Controller
     {
         $settings = FortuneTellingSetting::getSettings();
 
+        // รวบรวม providers ที่มี API key พร้อมใช้
+        $availableProviders = $this->getAvailableProvidersForPlayground($settings);
+
         return view('admin.fortune.playground.index', [
             'settings' => $settings,
+            'availableProviders' => $availableProviders,
             'pageTitle' => 'AI Playground - ทดสอบดูดวง',
         ]);
     }
 
     /**
+     * รวบรวม AI providers ที่มี API key พร้อมใช้สำหรับ Playground
+     */
+    protected function getAvailableProvidersForPlayground(FortuneTellingSetting $settings): array
+    {
+        $providers = [];
+        $addedKeys = []; // ป้องกัน duplicate
+
+        // ค่า default จาก settings ปัจจุบัน
+        $defaultProvider = $settings->getActualAIProvider();
+        $defaultModel = $settings->getActualAIModel();
+        $defaultKey = $settings->getActualAIApiKey();
+
+        if (! empty($defaultKey)) {
+            $key = $defaultProvider.':'.$defaultModel;
+            $providers[] = [
+                'provider' => $defaultProvider,
+                'model' => $defaultModel,
+                'label' => ucfirst($defaultProvider).' - '.$defaultModel.' (ค่าเริ่มต้น)',
+                'source' => 'settings',
+            ];
+            $addedKeys[] = $key;
+        }
+
+        // ดึงจาก API Key Pool
+        try {
+            $poolKeys = AiApiKey::where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('disabled_until')
+                      ->orWhere('disabled_until', '<', now());
+                })
+                ->orderBy('priority', 'desc')
+                ->get();
+
+            $defaultModels = [
+                'gemini' => 'gemini-2.0-flash',
+                'groq' => 'llama-3.3-70b-versatile',
+                'grok' => 'grok-2-latest',
+                'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
+                'openrouter' => 'anthropic/claude-3-haiku',
+                'deepseek' => 'deepseek-chat',
+                'typhoon' => 'typhoon-v2-70b-instruct',
+            ];
+
+            foreach ($poolKeys as $poolKey) {
+                $model = $poolKey->metadata['model'] ?? ($defaultModels[$poolKey->provider] ?? $poolKey->provider);
+                $key = $poolKey->provider.':'.$model;
+
+                if (in_array($key, $addedKeys)) {
+                    continue;
+                }
+
+                $providerLabel = AiApiKey::PROVIDERS[$poolKey->provider] ?? ucfirst($poolKey->provider);
+                $providers[] = [
+                    'provider' => $poolKey->provider,
+                    'model' => $model,
+                    'label' => $providerLabel.' - '.$model.' (Pool: '.$poolKey->name.')',
+                    'source' => 'pool',
+                    'pool_key_id' => $poolKey->id,
+                ];
+                $addedKeys[] = $key;
+            }
+        } catch (\Exception $e) {
+            // ตาราง pool อาจยังไม่มี
+        }
+
+        // ดึงจาก Global AI Settings (AiContentSetting)
+        try {
+            $globalKeys = [
+                'gemini' => ['key_field' => 'gemini_api_key', 'model_field' => 'gemini_model', 'default_model' => 'gemini-2.0-flash'],
+                'openrouter' => ['key_field' => 'claude_api_key', 'model_field' => 'claude_model', 'default_model' => 'anthropic/claude-3-haiku'],
+            ];
+
+            foreach ($globalKeys as $provider => $config) {
+                $apiKey = AiContentSetting::getValue($config['key_field']);
+                if (empty($apiKey)) {
+                    continue;
+                }
+                $model = AiContentSetting::getValue($config['model_field'], $config['default_model']);
+                $key = $provider.':'.$model;
+
+                if (in_array($key, $addedKeys)) {
+                    continue;
+                }
+
+                $providerLabel = AiApiKey::PROVIDERS[$provider] ?? ucfirst($provider);
+                $providers[] = [
+                    'provider' => $provider,
+                    'model' => $model,
+                    'label' => $providerLabel.' - '.$model.' (Global Settings)',
+                    'source' => 'global',
+                ];
+                $addedKeys[] = $key;
+            }
+        } catch (\Exception $e) {
+            // ข้ามถ้า AiContentSetting ไม่พร้อม
+        }
+
+        return $providers;
+    }
+
+    /**
      * API สำหรับส่งข้อความใน Playground
+     * รองรับเลือก provider/model ที่ต้องการทดสอบ
      */
     public function playgroundChat(Request $request)
     {
@@ -577,12 +685,71 @@ class FortuneSettingsController extends Controller
             'messages.*.role' => 'required|in:user,assistant',
             'messages.*.content' => 'required|string|max:2000',
             'reading_type' => 'nullable|in:basic,deep',
+            'provider' => 'nullable|string|max:50',
+            'model' => 'nullable|string|max:100',
+            'pool_key_id' => 'nullable|integer',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
+        $overrideProvider = $validated['provider'] ?? null;
+        $overrideModel = $validated['model'] ?? null;
+        $poolKeyId = $validated['pool_key_id'] ?? null;
 
         try {
             $aiService = new FortuneAIService($settings);
+
+            // Override provider/model ถ้าเลือกจาก Playground
+            if ($overrideProvider) {
+                $apiKey = null;
+
+                // หา API key ตาม source
+                if ($poolKeyId) {
+                    $poolKey = AiApiKey::where('id', $poolKeyId)->where('is_active', true)->first();
+                    if ($poolKey) {
+                        $apiKey = $poolKey->api_key;
+                    }
+                }
+
+                if (empty($apiKey)) {
+                    // ลองหาจาก Pool ตาม provider
+                    $poolKey = AiApiKey::where('provider', $overrideProvider)
+                        ->where('is_active', true)
+                        ->where(function ($q) {
+                            $q->whereNull('disabled_until')
+                              ->orWhere('disabled_until', '<', now());
+                        })
+                        ->orderBy('priority', 'desc')
+                        ->first();
+                    if ($poolKey) {
+                        $apiKey = $poolKey->api_key;
+                    }
+                }
+
+                if (empty($apiKey)) {
+                    // ลองจาก Global Settings
+                    $globalKeyMap = [
+                        'gemini' => 'gemini_api_key',
+                        'openrouter' => 'claude_api_key',
+                    ];
+                    if (isset($globalKeyMap[$overrideProvider])) {
+                        $apiKey = AiContentSetting::getValue($globalKeyMap[$overrideProvider]);
+                    }
+                }
+
+                if (empty($apiKey)) {
+                    // Fallback: ใช้จาก settings ถ้า provider เดียวกัน
+                    if ($overrideProvider === $settings->getActualAIProvider()) {
+                        $apiKey = $settings->getActualAIApiKey();
+                    }
+                }
+
+                if (empty($apiKey)) {
+                    throw new \Exception("ไม่พบ API Key สำหรับ {$overrideProvider}");
+                }
+
+                $aiService->overrideForPlayground($overrideProvider, $overrideModel, $apiKey);
+            }
+
             $result = $aiService->playgroundChat(
                 $validated['messages'],
                 $validated['reading_type'] ?? 'basic'
@@ -603,8 +770,8 @@ class FortuneSettingsController extends Controller
                 'success' => false,
                 'error' => $e->getMessage(),
                 'debug' => [
-                    'provider' => $settings->getActualAIProvider(),
-                    'model' => $settings->getActualAIModel(),
+                    'provider' => $overrideProvider ?? $settings->getActualAIProvider(),
+                    'model' => $overrideModel ?? $settings->getActualAIModel(),
                     'has_api_key' => ! empty($settings->getActualAIApiKey()),
                 ],
             ], 500);

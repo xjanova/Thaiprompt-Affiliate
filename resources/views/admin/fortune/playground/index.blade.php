@@ -23,25 +23,32 @@
         </div>
     </div>
 
-    {{-- AI Provider Info --}}
+    {{-- AI Provider Selector --}}
     <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg p-4 mb-6 text-white">
         <div class="flex items-center justify-between flex-wrap gap-3">
             <div class="flex items-center gap-3">
                 <span class="text-3xl">🔮</span>
                 <div>
-                    <div class="font-bold text-lg">{{ ucfirst($settings->getActualAIProvider()) }}</div>
-                    <div class="text-purple-100 text-sm">Model: {{ $settings->getActualAIModel() }}</div>
+                    <div class="font-bold text-sm mb-1">เลือก AI Provider ทดสอบ</div>
+                    <select x-model="selectedProviderIndex"
+                            @change="onProviderChange()"
+                            class="w-full min-w-[280px] px-3 py-1.5 rounded-lg bg-white/20 text-white border border-white/30 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none">
+                        @foreach($availableProviders as $index => $p)
+                        <option value="{{ $index }}" class="text-gray-900">{{ $p['label'] }}</option>
+                        @endforeach
+                        @if(count($availableProviders) === 0)
+                        <option value="-1" class="text-gray-900">❌ ไม่มี Provider ที่พร้อมใช้</option>
+                        @endif
+                    </select>
                 </div>
             </div>
-            <div class="flex items-center gap-2">
-                <span class="px-3 py-1 rounded-full text-xs font-semibold {{ $settings->getActualAIApiKey() ? 'bg-green-400/30 text-green-100' : 'bg-red-400/30 text-red-100' }}">
-                    {{ $settings->getActualAIApiKey() ? '✅ API Key พร้อม' : '❌ ไม่มี API Key' }}
+            <div class="flex items-center gap-2 flex-wrap">
+                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-400/30 text-green-100"
+                      x-text="'✅ ' + currentProvider + ' / ' + currentModel">
                 </span>
-                @if($settings->use_global_ai_settings)
-                <span class="px-3 py-1 bg-blue-400/30 text-blue-100 rounded-full text-xs font-semibold">
-                    🔗 ใช้ Global Settings
+                <span class="px-3 py-1 bg-yellow-400/30 text-yellow-100 rounded-full text-xs font-semibold"
+                      x-text="'📦 ' + providerSource">
                 </span>
-                @endif
             </div>
         </div>
     </div>
@@ -250,6 +257,8 @@
 @push('scripts')
 <script>
 function fortunePlayground() {
+    const providers = @json($availableProviders);
+
     return {
         messages: [],
         inputMessage: '',
@@ -259,6 +268,25 @@ function fortunePlayground() {
         totalTokens: 0,
         totalResponseTime: 0,
         responseCount: 0,
+
+        // Provider selection
+        providers: providers,
+        selectedProviderIndex: 0,
+        currentProvider: providers.length ? providers[0].provider : '',
+        currentModel: providers.length ? providers[0].model : '',
+        providerSource: providers.length ? providers[0].source : '',
+        poolKeyId: providers.length ? (providers[0].pool_key_id || null) : null,
+
+        onProviderChange() {
+            const idx = parseInt(this.selectedProviderIndex);
+            if (idx >= 0 && idx < this.providers.length) {
+                const p = this.providers[idx];
+                this.currentProvider = p.provider;
+                this.currentModel = p.model;
+                this.providerSource = p.source;
+                this.poolKeyId = p.pool_key_id || null;
+            }
+        },
 
         get avgResponseTime() {
             if (this.responseCount === 0) return 0;
@@ -279,6 +307,19 @@ function fortunePlayground() {
             this.loading = true;
 
             try {
+                const payload = {
+                    messages: this.messages.map(m => ({
+                        role: m.role,
+                        content: m.content
+                    })),
+                    reading_type: this.readingType,
+                    provider: this.currentProvider,
+                    model: this.currentModel,
+                };
+                if (this.poolKeyId) {
+                    payload.pool_key_id = this.poolKeyId;
+                }
+
                 const response = await fetch('{{ route("admin.fortune.playground.chat") }}', {
                     method: 'POST',
                     headers: {
@@ -286,13 +327,7 @@ function fortunePlayground() {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({
-                        messages: this.messages.map(m => ({
-                            role: m.role,
-                            content: m.content
-                        })),
-                        reading_type: this.readingType
-                    })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();

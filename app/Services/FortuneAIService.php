@@ -68,6 +68,16 @@ class FortuneAIService
     }
 
     /**
+     * Override provider/model/key สำหรับ Playground ทดสอบ
+     */
+    public function overrideForPlayground(string $provider, ?string $model, string $apiKey): void
+    {
+        $this->provider = $provider;
+        $this->model = $model ?? $this->getDefaultModelForProvider($provider);
+        $this->apiKey = $apiKey;
+    }
+
+    /**
      * กำหนด maxTokens และ temperature ตาม reading type
      */
     protected const READING_CONFIG = [
