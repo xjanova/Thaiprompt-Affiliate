@@ -2464,14 +2464,26 @@ class LineFortuneService implements MessagingPlatformInterface
             }
             Log::warning('LINE: replyMessage ล้มเหลว fallback เป็น pushMessage', [
                 'recipient_id' => $recipientId,
+                'alt_text' => $altText,
             ]);
         }
 
         // Fallback: ใช้ pushMessage
-        return $this->sendRichMessage($recipientId, [
+        $pushResult = $this->sendRichMessage($recipientId, [
             'alt_text' => $altText,
             'contents' => $flexContent,
         ]);
+
+        if (! $pushResult) {
+            Log::error('LINE: pushMessage ล้มเหลวด้วย! ผู้ใช้ไม่ได้รับข้อความ', [
+                'recipient_id' => $recipientId,
+                'alt_text' => $altText,
+                'flex_type' => $flexContent['type'] ?? 'unknown',
+                'flex_json_size' => strlen(json_encode($flexContent)),
+            ]);
+        }
+
+        return $pushResult;
     }
 
     /**

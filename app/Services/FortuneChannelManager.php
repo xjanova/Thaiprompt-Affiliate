@@ -237,6 +237,14 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $replyToken = $extra['reply_token'] ?? null;
 
+        Log::info('LINE sendLineResponse: เริ่มจัดการ action', [
+            'action' => $action,
+            'user_id' => $userId,
+            'has_reply_token' => ! empty($replyToken),
+            'question_number' => $result['question_number'] ?? null,
+            'reading_id' => $reading?->id ?? null,
+        ]);
+
         // ⚡ ใช้ Flex Message สวยงามทุก action — ห่อด้วย try-catch เพื่อ fallback เป็น text ถ้า Flex ล้มเหลว
         try {
             $sent = match ($action) {
@@ -701,6 +709,18 @@ class FortuneChannelManager
             $previousQuestion = end($collected) ?: null;
         }
 
+        Log::info('LINE QuestionSelection: กำลังส่ง Flex เลือกหมวดคำถาม', [
+            'user_id' => $userId,
+            'question_number' => $questionNumber,
+            'total_questions' => $totalQuestions,
+            'user_name' => $userName,
+            'previous_question' => $previousQuestion ? mb_substr($previousQuestion, 0, 30) : null,
+            'has_reply_token' => ! empty($replyToken),
+            'reading_id' => $reading?->id,
+            'reading_status' => $reading?->conversation_status,
+            'collected_count' => $reading ? count($reading->getCollectedQuestions()) : 0,
+        ]);
+
         $questionFlex = $lineService->buildQuestionSelectionFlexMessage(
             $questionNumber,
             $totalQuestions,
@@ -708,9 +728,22 @@ class FortuneChannelManager
             $previousQuestion
         );
 
-        return $lineService->sendFlexWithReplyFallback(
+        $flexJsonSize = strlen(json_encode($questionFlex));
+        Log::info('LINE QuestionSelection: Flex JSON built', [
+            'json_size' => $flexJsonSize,
+            'flex_type' => $questionFlex['type'] ?? 'unknown',
+        ]);
+
+        $sent = $lineService->sendFlexWithReplyFallback(
             $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", $replyToken
         );
+
+        Log::info('LINE QuestionSelection: ผลลัพธ์การส่ง', [
+            'sent' => $sent,
+            'question_number' => $questionNumber,
+        ]);
+
+        return $sent;
     }
 
     // ============================================================
