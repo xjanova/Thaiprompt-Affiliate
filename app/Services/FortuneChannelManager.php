@@ -365,14 +365,16 @@ class FortuneChannelManager
     /**
      * ส่ง Response คำทำนายละเอียดทีละคำถาม (LINE)
      *
-     * ส่งแต่ละคู่คำถาม-คำทำนายเป็น message แยก
-     * ให้ผู้ใช้ได้อ่านทีละข้อ น่าติดตาม
+     * ใช้ Flex Message การ์ดสวยๆ แทน text ธรรมดา
+     * แต่ละคำถามเป็นการ์ดแยก มีสีตามหมวด
+     * ปิดท้ายด้วยการ์ดขอบคุณ + ปุ่ม engagement
      */
     protected function sendLineDeepReadingResponse(LineFortuneService $lineService, string $userId, array $result): bool
     {
         $deepReadings = $result['deep_readings'] ?? [];
         $thankYou = $result['thank_you'] ?? '';
         $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? 'คุณ';
 
         // ถ้าไม่มี deep_readings (format เก่า) → ส่งข้อความเดียว
         if (empty($deepReadings)) {
@@ -392,28 +394,37 @@ class FortuneChannelManager
             }
         }
 
-        // ส่งคำทำนายทีละคำถาม
+        $totalQuestions = count($deepReadings);
+
+        // ส่งคำทำนายทีละคำถาม — ใช้ Flex Message การ์ดสวยๆ
         foreach ($deepReadings as $dr) {
             $questionNum = $dr['question_number'];
             $question = $dr['question'];
             $answer = $dr['answer'];
 
-            // สร้างข้อความคู่ คำถาม-คำทำนาย
-            $message = "═══════════════════════\n";
-            $message .= "❓ คำถามที่ {$questionNum}: {$question}\n";
-            $message .= "═══════════════════════\n\n";
-            $message .= $answer;
+            // สร้าง Flex Message สำหรับคำถามนี้ (มีสีตามหมวด)
+            $flex = $lineService->buildDeepReadingFlexMessage(
+                $questionNum,
+                $question,
+                $answer,
+                $totalQuestions
+            );
 
-            $lineService->sendMessage($userId, $message);
+            $lineService->sendRichMessage($userId, [
+                'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
+                'contents' => $flex,
+            ]);
 
             // หน่วงเวลาเล็กน้อยระหว่างข้อความ (ป้องกัน rate limit)
             usleep(500000); // 0.5 วินาที
         }
 
-        // ส่งข้อความขอบคุณปิดท้าย
-        if ($thankYou) {
-            $lineService->sendMessage($userId, $thankYou);
-        }
+        // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่ม engagement
+        $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
+        $lineService->sendRichMessage($userId, [
+            'alt_text' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
+            'contents' => $thankYouFlex,
+        ]);
 
         return true;
     }

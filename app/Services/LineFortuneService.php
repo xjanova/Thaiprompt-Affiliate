@@ -197,30 +197,57 @@ class LineFortuneService implements MessagingPlatformInterface
     public function buildFortuneFlexMessage(string $prediction, string $userName, ?string $billRef = null): array
     {
         $bodyContents = [
+            // ชื่อผู้ใช้
             [
-                'type' => 'text',
-                'text' => '🔮 คำทำนาย',
-                'weight' => 'bold',
-                'size' => 'xl',
-                'color' => '#6B46C1',
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🌙',
+                        'size' => 'xl',
+                        'flex' => 0,
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'flex' => 1,
+                        'paddingStart' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => "สำหรับคุณ{$userName}",
+                                'size' => 'md',
+                                'weight' => 'bold',
+                                'color' => '#6B46C1',
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => 'ดวงชะตาของคุณวันนี้',
+                                'size' => 'xs',
+                                'color' => '#999999',
+                                'margin' => 'xs',
+                            ],
+                        ],
+                    ],
+                ],
+                'alignItems' => 'center',
             ],
-            [
-                'type' => 'text',
-                'text' => "สำหรับคุณ{$userName}",
-                'size' => 'sm',
-                'color' => '#666666',
-                'margin' => 'md',
-            ],
+            // เส้นแบ่ง
             [
                 'type' => 'separator',
-                'margin' => 'lg',
+                'margin' => 'xl',
+                'color' => '#E8E0FF',
             ],
+            // คำทำนาย
             [
                 'type' => 'text',
                 'text' => $prediction,
                 'wrap' => true,
                 'size' => 'md',
-                'margin' => 'lg',
+                'color' => '#333333',
+                'margin' => 'xl',
+                'lineSpacing' => '6px',
             ],
         ];
 
@@ -228,24 +255,28 @@ class LineFortuneService implements MessagingPlatformInterface
         if ($billRef) {
             $bodyContents[] = [
                 'type' => 'separator',
-                'margin' => 'lg',
+                'margin' => 'xl',
+                'color' => '#E8E0FF',
             ];
             $bodyContents[] = [
                 'type' => 'box',
                 'layout' => 'horizontal',
                 'margin' => 'md',
+                'backgroundColor' => '#F8F7FF',
+                'cornerRadius' => 'md',
+                'paddingAll' => 'sm',
                 'contents' => [
                     [
                         'type' => 'text',
                         'text' => '🔖 เลขที่บิล:',
-                        'size' => 'sm',
+                        'size' => 'xs',
                         'color' => '#888888',
                         'flex' => 2,
                     ],
                     [
                         'type' => 'text',
                         'text' => $billRef,
-                        'size' => 'sm',
+                        'size' => 'xs',
                         'color' => '#6B46C1',
                         'flex' => 3,
                         'weight' => 'bold',
@@ -256,15 +287,22 @@ class LineFortuneService implements MessagingPlatformInterface
 
         return [
             'type' => 'bubble',
+            'size' => 'mega',
             'styles' => [
-                'header' => [
-                    'backgroundColor' => '#6B46C1',
-                ],
+                'header' => ['backgroundColor' => '#6B46C1'],
+                'footer' => ['backgroundColor' => '#F8F7FF'],
             ],
             'header' => [
                 'type' => 'box',
                 'layout' => 'vertical',
+                'paddingAll' => 'xl',
                 'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🔮',
+                        'size' => '3xl',
+                        'align' => 'center',
+                    ],
                     [
                         'type' => 'text',
                         'text' => '✨ จันทราดูดวง ✨',
@@ -272,23 +310,34 @@ class LineFortuneService implements MessagingPlatformInterface
                         'size' => 'lg',
                         'weight' => 'bold',
                         'align' => 'center',
+                        'margin' => 'md',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => 'ผลคำทำนายดวงชะตา',
+                        'color' => '#FFFFFFCC',
+                        'size' => 'sm',
+                        'align' => 'center',
+                        'margin' => 'sm',
                     ],
                 ],
             ],
             'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
+                'paddingAll' => 'xl',
                 'contents' => $bodyContents,
             ],
             'footer' => [
                 'type' => 'box',
                 'layout' => 'vertical',
+                'paddingAll' => 'md',
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '🔮 ส่งต่อให้เพื่อนมาดูดวงด้วยกันนะคะ',
+                        'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกันนะคะ',
                         'size' => 'xs',
-                        'color' => '#888888',
+                        'color' => '#9B8EC4',
                         'align' => 'center',
                     ],
                 ],
@@ -629,6 +678,350 @@ class LineFortuneService implements MessagingPlatformInterface
                 ],
             ],
         ];
+    }
+
+    /**
+     * สร้าง Flex Message สำหรับคำทำนายละเอียด (Deep Reading) — แต่ละคำถาม
+     *
+     * ออกแบบเป็นการ์ดสวยๆ มี header สีตามหมวดคำถาม
+     * มี icon, คำถาม, คำทำนาย แยกส่วนชัดเจน
+     *
+     * @param  int  $questionNum  ลำดับคำถาม (1, 2, 3)
+     * @param  string  $question  คำถามของผู้ใช้
+     * @param  string  $answer  คำทำนาย
+     * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
+     * @return array Flex Message bubble
+     */
+    public function buildDeepReadingFlexMessage(int $questionNum, string $question, string $answer, int $totalQuestions = 3): array
+    {
+        // กำหนดสี + icon ตามหมวดคำถาม
+        $category = $this->detectQuestionCategory($question);
+        $theme = $this->getCategoryTheme($category);
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => [
+                'header' => ['backgroundColor' => $theme['color']],
+                'footer' => ['backgroundColor' => '#F8F7FF'],
+            ],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    // แถวบน: icon + หมวด
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => $theme['icon'],
+                                'size' => 'xxl',
+                                'flex' => 0,
+                            ],
+                            [
+                                'type' => 'box',
+                                'layout' => 'vertical',
+                                'flex' => 1,
+                                'paddingStart' => 'md',
+                                'contents' => [
+                                    [
+                                        'type' => 'text',
+                                        'text' => "คำทำนายข้อที่ {$questionNum}/{$totalQuestions}",
+                                        'color' => '#FFFFFF',
+                                        'size' => 'md',
+                                        'weight' => 'bold',
+                                    ],
+                                    [
+                                        'type' => 'text',
+                                        'text' => $theme['label'],
+                                        'color' => '#FFFFFFCC',
+                                        'size' => 'sm',
+                                        'margin' => 'xs',
+                                    ],
+                                ],
+                            ],
+                        ],
+                        'alignItems' => 'center',
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'contents' => [
+                    // คำถาม
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'backgroundColor' => '#F3F0FF',
+                        'cornerRadius' => 'lg',
+                        'paddingAll' => 'lg',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '❓ คำถาม',
+                                'size' => 'xs',
+                                'color' => '#6B46C1',
+                                'weight' => 'bold',
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => $question,
+                                'wrap' => true,
+                                'size' => 'md',
+                                'color' => '#4A3880',
+                                'margin' => 'sm',
+                                'weight' => 'bold',
+                            ],
+                        ],
+                    ],
+                    // เส้นแบ่ง
+                    [
+                        'type' => 'separator',
+                        'margin' => 'xl',
+                        'color' => '#E8E0FF',
+                    ],
+                    // คำทำนาย
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'xl',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '🔮 คำทำนาย',
+                                'size' => 'sm',
+                                'color' => $theme['color'],
+                                'weight' => 'bold',
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => $answer,
+                                'wrap' => true,
+                                'size' => 'md',
+                                'color' => '#333333',
+                                'margin' => 'md',
+                                'lineSpacing' => '8px',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'paddingAll' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '✨ จันทราดูดวง',
+                        'size' => 'xs',
+                        'color' => '#9B8EC4',
+                        'flex' => 1,
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "Q{$questionNum}/{$totalQuestions}",
+                        'size' => 'xs',
+                        'color' => '#9B8EC4',
+                        'align' => 'end',
+                        'flex' => 0,
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message สำหรับข้อความขอบคุณปิดท้ายคำทำนายละเอียด
+     *
+     * มีปุ่ม "ดูดวงอีกครั้ง" + "เช็คสิทธิ์" เพื่อกระตุ้น engagement
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @return array Flex Message bubble
+     */
+    public function buildThankYouFlexMessage(string $userName = 'คุณ'): array
+    {
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => [
+                'header' => ['backgroundColor' => '#6B46C1'],
+            ],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🙏',
+                        'size' => '3xl',
+                        'align' => 'center',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => 'ขอบคุณที่ไว้วางใจค่ะ',
+                        'color' => '#FFFFFF',
+                        'size' => 'lg',
+                        'weight' => 'bold',
+                        'align' => 'center',
+                        'margin' => 'md',
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'paddingAll' => 'xl',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => "คุณ{$userName} ✨",
+                        'size' => 'md',
+                        'weight' => 'bold',
+                        'color' => '#6B46C1',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => 'หวังว่าคำทำนายจะเป็นแนวทางที่ดีในชีวิตนะคะ ขอให้โชคดีและมีความสุขมากๆ ค่ะ',
+                        'wrap' => true,
+                        'size' => 'md',
+                        'color' => '#555555',
+                        'margin' => 'md',
+                        'lineSpacing' => '6px',
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'xl',
+                        'color' => '#E8E0FF',
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'xl',
+                        'backgroundColor' => '#F8F7FF',
+                        'cornerRadius' => 'lg',
+                        'paddingAll' => 'lg',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '💡 พิมพ์ "ดูคำทำนาย" เพื่อดูอีกครั้ง',
+                                'wrap' => true,
+                                'size' => 'sm',
+                                'color' => '#6B46C1',
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => 'สามารถดูย้อนหลังได้ทุกเมื่อค่ะ',
+                                'wrap' => true,
+                                'size' => 'xs',
+                                'color' => '#888888',
+                                'margin' => 'sm',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'md',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#6B46C1',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '🔮 ดูดวงอีกครั้ง',
+                            'text' => 'ดูดวง',
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '📊 เช็คสิทธิ์',
+                            'text' => 'เช็คสิทธิ์',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * ตรวจจับหมวดคำถาม จาก keyword ในคำถาม
+     *
+     * @param  string  $question  คำถามของผู้ใช้
+     * @return string หมวดคำถาม (love, work, money, health, general)
+     */
+    protected function detectQuestionCategory(string $question): string
+    {
+        $question = mb_strtolower($question);
+
+        $categories = [
+            'love' => ['รัก', 'คู่', 'แฟน', 'สามี', 'ภรรยา', 'แต่งงาน', 'หย่า', 'ความสัมพันธ์', 'คนรัก', 'เนื้อคู่', 'คู่ครอง', 'จีบ'],
+            'work' => ['งาน', 'อาชีพ', 'เปลี่ยนงาน', 'เลื่อนตำแหน่ง', 'ธุรกิจ', 'ค้าขาย', 'หุ้นส่วน', 'ลาออก', 'สัมภาษณ์', 'เจ้านาย'],
+            'money' => ['เงิน', 'การเงิน', 'โชค', 'ลาภ', 'หวย', 'หนี้', 'ร่ำรวย', 'รายได้', 'ลงทุน', 'กำไร', 'เศรษฐี', 'ทรัพย์'],
+            'health' => ['สุขภาพ', 'ป่วย', 'โรค', 'หมอ', 'ผ่าตัด', 'อุบัติเหตุ', 'ร่างกาย', 'แข็งแรง'],
+        ];
+
+        foreach ($categories as $cat => $keywords) {
+            foreach ($keywords as $kw) {
+                if (mb_strpos($question, $kw) !== false) {
+                    return $cat;
+                }
+            }
+        }
+
+        return 'general';
+    }
+
+    /**
+     * ดึง theme สี + icon ตามหมวดคำถาม
+     *
+     * @param  string  $category  หมวดคำถาม
+     * @return array ['color', 'icon', 'label']
+     */
+    protected function getCategoryTheme(string $category): array
+    {
+        return match ($category) {
+            'love' => [
+                'color' => '#E91E8C',
+                'icon' => '💕',
+                'label' => 'ความรัก คู่ครอง',
+            ],
+            'work' => [
+                'color' => '#1976D2',
+                'icon' => '💼',
+                'label' => 'การงาน อาชีพ',
+            ],
+            'money' => [
+                'color' => '#E8890C',
+                'icon' => '💰',
+                'label' => 'การเงิน โชคลาภ',
+            ],
+            'health' => [
+                'color' => '#43A047',
+                'icon' => '🏥',
+                'label' => 'สุขภาพ',
+            ],
+            default => [
+                'color' => '#6B46C1',
+                'icon' => '🔮',
+                'label' => 'คำทำนาย',
+            ],
+        };
     }
 
     // ============================================================
