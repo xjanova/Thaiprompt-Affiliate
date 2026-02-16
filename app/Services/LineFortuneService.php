@@ -346,6 +346,159 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * แบ่งคำทำนายยาวเป็น Flex bubbles หลายใบ
+     *
+     * ⚡ ลดปัญหาข้อความยาวเกิน → LINE ไม่ส่ง หรือ Flex body ล้น
+     * แบ่งตามย่อหน้า (\n\n) หรือตามขนาด (~800 ตัวอักษรต่อ bubble)
+     *
+     * @param  string  $prediction  คำทำนายทั้งหมด
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string|null  $billRef  เลขที่บิล
+     * @return array[] Array ของ Flex bubble arrays
+     */
+    public function buildSplitFortuneMessages(string $prediction, string $userName, ?string $billRef = null): array
+    {
+        $maxCharsPerBubble = 800;
+
+        // ถ้าสั้นพอ → ส่ง bubble เดียว
+        if (mb_strlen($prediction) <= $maxCharsPerBubble) {
+            return [$this->buildFortuneFlexMessage($prediction, $userName, $billRef)];
+        }
+
+        // แบ่งตามย่อหน้า (\n\n)
+        $paragraphs = preg_split('/\n{2,}/', trim($prediction));
+        $chunks = [];
+        $currentChunk = '';
+
+        foreach ($paragraphs as $para) {
+            $para = trim($para);
+            if (empty($para)) {
+                continue;
+            }
+
+            // ถ้าเพิ่มย่อหน้านี้แล้วยาวเกิน → ปิด chunk เริ่มใหม่
+            if (mb_strlen($currentChunk) > 0 && mb_strlen($currentChunk . "\n\n" . $para) > $maxCharsPerBubble) {
+                $chunks[] = trim($currentChunk);
+                $currentChunk = $para;
+            } else {
+                $currentChunk .= ($currentChunk ? "\n\n" : '') . $para;
+            }
+        }
+        if (! empty(trim($currentChunk))) {
+            $chunks[] = trim($currentChunk);
+        }
+
+        // ถ้าแบ่งไม่ได้ (1 ย่อหน้ายาวมาก) → บังคับตัด
+        if (count($chunks) === 1 && mb_strlen($chunks[0]) > $maxCharsPerBubble) {
+            $text = $chunks[0];
+            $chunks = [];
+            while (mb_strlen($text) > 0) {
+                $chunks[] = mb_substr($text, 0, $maxCharsPerBubble);
+                $text = mb_substr($text, $maxCharsPerBubble);
+            }
+        }
+
+        // สร้าง bubbles
+        $bubbles = [];
+        $total = count($chunks);
+        foreach ($chunks as $i => $chunk) {
+            $partNum = $i + 1;
+            $isFirst = ($i === 0);
+            $isLast = ($i === $total - 1);
+
+            $bodyContents = [];
+
+            if ($isFirst) {
+                // bubble แรก — มี header ชื่อผู้ใช้
+                $bodyContents[] = [
+                    'type' => 'box', 'layout' => 'horizontal',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '🌙', 'size' => 'xl', 'flex' => 0],
+                        [
+                            'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                            'contents' => [
+                                ['type' => 'text', 'text' => "สำหรับคุณ{$userName}", 'size' => 'md', 'weight' => 'bold', 'color' => '#6B46C1'],
+                                ['type' => 'text', 'text' => 'ดวงชะตาของคุณวันนี้', 'size' => 'xs', 'color' => '#999999', 'margin' => 'xs'],
+                            ],
+                        ],
+                    ],
+                    'alignItems' => 'center',
+                ];
+                $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+            } else {
+                // bubble ต่อๆ ไป — แสดงลำดับ
+                $bodyContents[] = [
+                    'type' => 'text',
+                    'text' => "📄 ส่วนที่ {$partNum} / {$total}",
+                    'size' => 'xs',
+                    'color' => '#6B46C1',
+                    'weight' => 'bold',
+                ];
+                $bodyContents[] = ['type' => 'separator', 'margin' => 'md', 'color' => '#E8E0FF'];
+            }
+
+            // เนื้อหาคำทำนาย
+            $bodyContents[] = [
+                'type' => 'text',
+                'text' => $chunk,
+                'wrap' => true,
+                'size' => 'md',
+                'color' => '#333333',
+                'margin' => 'lg',
+                'lineSpacing' => '6px',
+            ];
+
+            // Bill ref ใน bubble แรก
+            if ($isFirst && $billRef) {
+                $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+                $bodyContents[] = [
+                    'type' => 'box', 'layout' => 'horizontal', 'margin' => 'md',
+                    'backgroundColor' => '#F8F7FF', 'cornerRadius' => 'md', 'paddingAll' => 'sm',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '🔖 บิล:', 'size' => 'xs', 'color' => '#888888', 'flex' => 2],
+                        ['type' => 'text', 'text' => $billRef, 'size' => 'xs', 'color' => '#6B46C1', 'flex' => 3, 'weight' => 'bold'],
+                    ],
+                ];
+            }
+
+            $bubble = [
+                'type' => 'bubble',
+                'size' => 'mega',
+                'body' => [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                    'contents' => $bodyContents,
+                ],
+            ];
+
+            // Header เฉพาะ bubble แรก
+            if ($isFirst) {
+                $bubble['styles'] = ['header' => ['backgroundColor' => '#6B46C1'], 'footer' => ['backgroundColor' => '#F8F7FF']];
+                $bubble['header'] = [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '🔮', 'size' => '3xl', 'align' => 'center'],
+                        ['type' => 'text', 'text' => '✨ จันทราดูดวง ✨', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'align' => 'center', 'margin' => 'md'],
+                    ],
+                ];
+            }
+
+            // Footer ใน bubble สุดท้าย
+            if ($isLast) {
+                $bubble['footer'] = [
+                    'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'md',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกันนะคะ', 'size' => 'xs', 'color' => '#9B8EC4', 'align' => 'center'],
+                    ],
+                ];
+            }
+
+            $bubbles[] = $bubble;
+        }
+
+        return $bubbles;
+    }
+
+    /**
      * สร้าง Flex Message สำหรับเสนอดูดวงละเอียด (Upsell)
      *
      * @param  string  $userName  ชื่อผู้ใช้
@@ -773,8 +926,8 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
             'footer' => [
                 'type' => 'box',
-                'layout' => 'horizontal',
-                'spacing' => 'md',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
                 'paddingAll' => 'lg',
                 'contents' => [
                     [
@@ -789,13 +942,30 @@ class LineFortuneService implements MessagingPlatformInterface
                         ],
                     ],
                     [
-                        'type' => 'button',
-                        'style' => 'secondary',
-                        'height' => 'sm',
-                        'action' => [
-                            'type' => 'message',
-                            'label' => '📊 เช็คสิทธิ์',
-                            'text' => 'เช็คสิทธิ์',
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'button',
+                                'style' => 'secondary',
+                                'height' => 'sm',
+                                'action' => [
+                                    'type' => 'message',
+                                    'label' => '📖 คำทำนายล่าสุด',
+                                    'text' => 'ดูคำทำนายล่าสุด',
+                                ],
+                            ],
+                            [
+                                'type' => 'button',
+                                'style' => 'secondary',
+                                'height' => 'sm',
+                                'action' => [
+                                    'type' => 'message',
+                                    'label' => '📊 เช็คสิทธิ์',
+                                    'text' => 'เช็คสิทธิ์',
+                                ],
+                            ],
                         ],
                     ],
                 ],
@@ -1533,6 +1703,23 @@ class LineFortuneService implements MessagingPlatformInterface
                 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
             ];
         }
+
+        // ปุ่มดูคำทำนายย้อนหลัง + เช็คสิทธิ์
+        $footerContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'spacing' => 'sm',
+            'contents' => [
+                [
+                    'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                    'action' => ['type' => 'message', 'label' => '📖 ย้อนหลัง', 'text' => 'ดูคำทำนายล่าสุด'],
+                ],
+                [
+                    'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                    'action' => ['type' => 'message', 'label' => '📊 เช็คสิทธิ์', 'text' => 'เช็คสิทธิ์'],
+                ],
+            ],
+        ];
 
         return [
             'type' => 'bubble',

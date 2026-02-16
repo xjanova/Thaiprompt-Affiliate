@@ -323,11 +323,14 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 // ⚡ ใช้ replyToken ส่ง chart + คำทำนาย รวมกัน (เร็วมาก!)
+                // LINE อนุญาต max 5 messages ต่อ replyMessage
                 if ($replyToken) {
                     $message = $result['message'] ?? '';
                     $parts = explode('═══════════════════════', $message);
                     $prediction = trim($parts[0] ?? $message);
-                    $fortuneFlex = $lineService->buildFortuneFlexMessage($prediction, $userName, $billRef);
+
+                    // แบ่งคำทำนายเป็นส่วนๆ
+                    $fortuneBubbles = $lineService->buildSplitFortuneMessages($prediction, $userName, $billRef);
 
                     $replyMessages = [
                         [
@@ -335,15 +338,23 @@ class FortuneChannelManager
                             'originalContentUrl' => $chartUrl,
                             'previewImageUrl' => $chartUrl,
                         ],
-                        [
-                            'type' => 'flex',
-                            'altText' => 'คำทำนายจากแม่หมอจันทรา',
-                            'contents' => $fortuneFlex,
-                        ],
                     ];
 
-                    // เพิ่ม Upsell ถ้าเปิดดูดวงละเอียด (รวมใน replyMessage เดียว สูงสุด 5 ข้อความ)
-                    if ($this->settings->isDeepReadingEnabled()) {
+                    // ใส่ fortune bubbles (จำกัดให้ reply รวมไม่เกิน 5)
+                    $maxFortuneInReply = $this->settings->isDeepReadingEnabled() ? 3 : 4; // เผื่อที่ให้ upsell
+                    $inReplyBubbles = array_slice($fortuneBubbles, 0, $maxFortuneInReply);
+                    $overflowBubbles = array_slice($fortuneBubbles, $maxFortuneInReply);
+
+                    foreach ($inReplyBubbles as $bubble) {
+                        $replyMessages[] = [
+                            'type' => 'flex',
+                            'altText' => 'คำทำนายจากแม่หมอจันทรา',
+                            'contents' => $bubble,
+                        ];
+                    }
+
+                    // เพิ่ม Upsell ถ้าเปิดดูดวงละเอียด
+                    if ($this->settings->isDeepReadingEnabled() && count($replyMessages) < 5) {
                         $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
                         $replyMessages[] = [
                             'type' => 'flex',
@@ -354,9 +365,14 @@ class FortuneChannelManager
 
                     $sent = $lineService->replyMessage($replyToken, $replyMessages);
                     if ($sent) {
+                        // ส่วนที่เกิน replyMessage → push ทีหลัง
+                        foreach ($overflowBubbles as $bubble) {
+                            usleep(50000);
+                            $lineService->sendRichMessage($userId, ['alt_text' => 'คำทำนาย (ต่อ)', 'contents' => $bubble]);
+                        }
+
                         return true;
                     }
-                    // ถ้า reply ล้มเหลว → fallback ด้านล่าง
                     Log::warning('FortuneChannelManager: replyMessage ล้มเหลว (basic_done) fallback เป็น push');
                 }
 
@@ -374,12 +390,16 @@ class FortuneChannelManager
         $parts = explode('═══════════════════════', $message);
         $prediction = trim($parts[0] ?? $message);
 
-        // ส่ง Flex Message คำทำนาย
-        $fortuneFlex = $lineService->buildFortuneFlexMessage($prediction, $userName, $billRef);
-        $lineService->sendRichMessage($userId, [
-            'alt_text' => 'คำทำนายจากแม่หมอจันทรา',
-            'contents' => $fortuneFlex,
-        ]);
+        // ⚡ แบ่งคำทำนายเป็นส่วนๆ (ลดปัญหา Flex ยาวเกินไม่ส่ง)
+        $fortuneBubbles = $lineService->buildSplitFortuneMessages($prediction, $userName, $billRef);
+
+        foreach ($fortuneBubbles as $bubble) {
+            $lineService->sendRichMessage($userId, [
+                'alt_text' => 'คำทำนายจากแม่หมอจันทรา',
+                'contents' => $bubble,
+            ]);
+            usleep(50000); // ⚡ 50ms
+        }
 
         // ส่ง Flex Message Upsell (เฉพาะเมื่อเปิดดูดวงละเอียด)
         if ($this->settings->isDeepReadingEnabled()) {
@@ -847,12 +867,13 @@ class FortuneChannelManager
             }
         }
 
-        // ดูดวงละเอียด → ส่ง Flex คำทำนาย + Thank You
+        // ดูดวงละเอียด → แบ่งส่งเป็นส่วนๆ + Thank You
         if ($action === 'view_reading_deep' && ! empty($reading?->deep_response)) {
-            // ส่ง Fortune Flex
-            $fortuneFlex = $lineService->buildFortuneFlexMessage($reading->deep_response, $userName, $reading->bill_reference);
-            $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $fortuneFlex]);
-            usleep(50000); // ⚡ 50ms
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference);
+            foreach ($fortuneBubbles as $bubble) {
+                $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $bubble]);
+                usleep(50000); // ⚡ 50ms
+            }
 
             // ส่ง Thank You
             $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
@@ -860,11 +881,34 @@ class FortuneChannelManager
             return $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
         }
 
-        // ดูดวงพื้นฐาน → ส่ง Flex คำทำนาย
+        // ดูดวงพื้นฐาน → แบ่งส่งเป็นส่วนๆ
         if (! empty($reading?->basic_response)) {
-            $fortuneFlex = $lineService->buildFortuneFlexMessage($reading->basic_response, $userName);
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->basic_response, $userName);
 
-            return $lineService->sendFlexWithReplyFallback($userId, $fortuneFlex, '🔮 คำทำนายล่าสุด', $replyToken);
+            // bubble แรก → ใช้ replyToken (เร็ว)
+            if ($replyToken && ! empty($fortuneBubbles)) {
+                $firstBubble = array_shift($fortuneBubbles);
+                $sent = $lineService->replyWithFlex($replyToken, $firstBubble, '🔮 คำทำนายล่าสุด');
+                if (! $sent) {
+                    // fallback → push
+                    $lineService->sendRichMessage($userId, ['alt_text' => '🔮 คำทำนายล่าสุด', 'contents' => $firstBubble]);
+                }
+                // ส่วนที่เหลือ → push
+                foreach ($fortuneBubbles as $bubble) {
+                    usleep(50000);
+                    $lineService->sendRichMessage($userId, ['alt_text' => '🔮 คำทำนาย (ต่อ)', 'contents' => $bubble]);
+                }
+
+                return true;
+            }
+
+            // ไม่มี replyToken → push ทั้งหมด
+            foreach ($fortuneBubbles as $bubble) {
+                $lineService->sendRichMessage($userId, ['alt_text' => '🔮 คำทำนายล่าสุด', 'contents' => $bubble]);
+                usleep(50000);
+            }
+
+            return true;
         }
 
         // Fallback
