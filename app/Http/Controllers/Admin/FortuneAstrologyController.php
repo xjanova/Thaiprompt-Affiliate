@@ -67,7 +67,7 @@ class FortuneAstrologyController extends Controller
                 'success' => true,
                 'chart_url' => $chartUrl,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Astrology: preview chart failed', ['error' => $e->getMessage()]);
 
             return response()->json([
@@ -75,6 +75,34 @@ class FortuneAstrologyController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * ทดสอบสร้าง PNG Birth Chart (ใช้ GD library)
+     *
+     * เพื่อตรวจสอบว่า GD extension ทำงานได้บน production server
+     */
+    public function testPngChart(Request $request)
+    {
+        $results = [
+            'gd_loaded' => extension_loaded('gd'),
+            'gd_info' => function_exists('gd_info') ? gd_info() : 'gd_info() not available',
+            'php_version' => PHP_VERSION,
+            'freetype_support' => function_exists('gd_info') ? (gd_info()['FreeType Support'] ?? false) : false,
+        ];
+
+        try {
+            $chartService = new FortuneChartService;
+            $chartUrl = $chartService->generateBirthChart('1990-05-15', 'ทดสอบ PNG', null);
+            $results['chart_url'] = $chartUrl;
+            $results['success'] = ! empty($chartUrl);
+        } catch (\Throwable $e) {
+            $results['success'] = false;
+            $results['error'] = $e->getMessage();
+            $results['error_class'] = get_class($e);
+        }
+
+        return response()->json($results);
     }
 
     /**

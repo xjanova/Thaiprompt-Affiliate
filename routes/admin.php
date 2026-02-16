@@ -3840,6 +3840,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/astrology', [FortuneAstrologyController::class, 'update'])->name('astrology.update');
     Route::post('/astrology/preview-chart', [FortuneAstrologyController::class, 'previewChart'])->name('astrology.preview-chart');
     Route::post('/astrology/test-calculation', [FortuneAstrologyController::class, 'testCalculation'])->name('astrology.test-calculation');
+    Route::get('/astrology/test-png-chart', [FortuneAstrologyController::class, 'testPngChart'])->name('astrology.test-png-chart');
 
     // การตั้งค่า
     Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');
