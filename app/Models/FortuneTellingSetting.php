@@ -193,8 +193,18 @@ class FortuneTellingSetting extends Model
     /**
      * ดึงการตั้งค่าระบบ (Singleton pattern)
      */
+    /**
+     * Cache instance สำหรับ request เดียวกัน (ลดการ query DB ซ้ำ)
+     */
+    protected static ?self $cachedInstance = null;
+
     public static function getSettings(): self
     {
+        // ⚡ Cache per-request: ลดจาก 3+ DB queries เหลือ 1
+        if (static::$cachedInstance !== null) {
+            return static::$cachedInstance;
+        }
+
         $settings = self::first();
 
         if (! $settings) {
@@ -207,7 +217,17 @@ class FortuneTellingSetting extends Model
             ]);
         }
 
+        static::$cachedInstance = $settings;
+
         return $settings;
+    }
+
+    /**
+     * ล้าง cache (ใช้เมื่ออัพเดทค่า settings)
+     */
+    public static function clearSettingsCache(): void
+    {
+        static::$cachedInstance = null;
     }
 
     /**

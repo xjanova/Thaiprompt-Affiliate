@@ -1183,6 +1183,17 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
         ->name('facebook.verify');
 
     // LINE Fortune Webhook (สำหรับระบบดูดวงผ่าน LINE Official Account)
+    // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook (เร็วขึ้น ~30-50ms)
     Route::post('/line/fortune', [LineFortuneWebhookController::class, 'handle'])
-        ->name('line.fortune');
+        ->name('line.fortune')
+        ->withoutMiddleware([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\TrackVendorStoreVisit::class,
+            \App\Http\Middleware\TrackRequestMetrics::class,
+            \App\Http\Middleware\TrackPageView::class,
+        ]);
 });

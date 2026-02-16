@@ -706,13 +706,24 @@ class FortuneConversationService
      */
     protected function handleCheckRemaining(string $facebookUserId): array
     {
-        $remaining = $this->getRemainingFreeQuestions($facebookUserId);
+        // ⚡ ดึงข้อมูลครั้งเดียว (ลด DB queries ซ้ำจาก 4 เหลือ 2)
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
+        $userCredit = FortuneUserCredit::findByUser($facebookUserId);
         $price = $this->getDeepReadingPrice();
 
-        // ดึงข้อมูลเครดิตพิเศษ
-        $userCredit = FortuneUserCredit::findByUser($facebookUserId);
+        // คำนวณสิทธิ์จากข้อมูลที่ดึงมาแล้ว (ไม่เรียก getRemainingFreeQuestions ซ้ำ)
+        $normalRemaining = max(0, $maxFreeReadings - $usedToday);
+        if ($userCredit) {
+            if ($userCredit->isCurrentlyUnlimited()) {
+                $normalRemaining = 99;
+            } elseif ($userCredit->isDailyResetActive()) {
+                $normalRemaining = max($normalRemaining, $maxFreeReadings);
+            } else {
+                $normalRemaining += $userCredit->getRemainingCredits();
+            }
+        }
+        $remaining = $normalRemaining;
 
         $message = "🔮 *สิทธิ์ดูดวงของคุณวันนี้*\n";
         $message .= "═══════════════════════\n\n";
@@ -993,12 +1004,11 @@ class FortuneConversationService
      */
     protected function askFortuneConfirmation(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
-        // ดึงโปรไฟล์ถ้ายังไม่มี
-        if (empty($userProfile)) {
-            $userProfile = $this->facebookService->getUserProfile($facebookUserId);
-        }
-
-        if (! is_array($userProfile)) {
+        // ⚡ ใช้ profile ที่ส่งมาจาก FortuneChannelManager (ลดการเรียก API ซ้ำ)
+        // ไม่เรียก facebookService->getUserProfile อีก เพราะ:
+        // 1. LINE user → facebookService จะเรียก Facebook API ผิด platform
+        // 2. profile ถูก fetch แล้วใน FortuneChannelManager::processMessage()
+        if (! is_array($userProfile) || empty($userProfile)) {
             $userProfile = [
                 'name' => 'คุณ',
                 'id' => $facebookUserId,
@@ -1276,20 +1286,12 @@ class FortuneConversationService
      */
     protected function startNewConversation(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
-        // ดึงโปรไฟล์ถ้ายังไม่มี
-        if (empty($userProfile)) {
-            $userProfile = $this->facebookService->getUserProfile($facebookUserId);
-        }
-
-        // ✅ ป้องกัน null userProfile - สร้าง default profile
-        if (! is_array($userProfile)) {
+        // ⚡ ใช้ profile ที่ส่งมาจาก FortuneChannelManager (ลดการเรียก API ซ้ำ)
+        if (! is_array($userProfile) || empty($userProfile)) {
             $userProfile = [
                 'name' => 'คุณ',
                 'id' => $facebookUserId,
             ];
-            Log::info('Fortune: ไม่สามารถดึงโปรไฟล์ได้ ใช้ค่าเริ่มต้น', [
-                'facebook_user_id' => $facebookUserId,
-            ]);
         }
 
         // ✅ ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมดก่อนสร้างใหม่
@@ -1534,11 +1536,8 @@ class FortuneConversationService
                 ];
             }
 
-            // ดึงโปรไฟล์ถ้ายังไม่มี
-            if (empty($userProfile)) {
-                $userProfile = $this->facebookService->getUserProfile($facebookUserId);
-            }
-            if (! is_array($userProfile)) {
+            // ⚡ ใช้ profile จาก FortuneChannelManager (ไม่เรียก API ซ้ำ)
+            if (! is_array($userProfile) || empty($userProfile)) {
                 $userProfile = ['name' => 'คุณ', 'id' => $facebookUserId];
             }
 
@@ -1893,7 +1892,7 @@ class FortuneConversationService
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
-                        usleep(200000); // ⚡ รอ 0.2 วินาที (ลดจาก 0.5)
+                        usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
@@ -1971,7 +1970,7 @@ class FortuneConversationService
                                 'message' => $perQuestionMessage,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                         }
-                        usleep(200000); // ⚡ รอ 0.2 วินาที (ลดจาก 0.5)
+                        usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
                             'error' => $sendErr->getMessage(),

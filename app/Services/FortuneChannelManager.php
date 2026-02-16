@@ -194,7 +194,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $platformService->sendImage($userId, $chartUrl);
-                usleep(200000); // ⚡ 0.2 วินาที (ลดจาก 0.5)
+                usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send chart image', [
                     'platform' => $platform,
@@ -361,7 +361,7 @@ class FortuneChannelManager
                 }
 
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
+                usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image (basic_done)', [
                     'error' => $imgErr->getMessage(),
@@ -407,29 +407,51 @@ class FortuneChannelManager
             return $lineService->sendMessage($userId, $result['message'] ?? 'เกิดข้อผิดพลาด');
         }
 
-        // ดึงบัญชีธนาคาร
-        $bankAccounts = \App\Models\PaymentBankAccount::active()
+        // ✅ ดึงโหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
+        $displayMode = $this->settings->getPaymentDisplayMode();
+        $showBank = $this->settings->shouldShowBankAccount();
+        $showPromptpay = $this->settings->shouldShowPromptpay();
+
+        // ดึงบัญชีธนาคารตามโหมด
+        $accounts = \App\Models\PaymentBankAccount::active()
             ->smsCheckerEnabled()
             ->ordered()
-            ->get()
-            ->map(fn ($a) => [
-                'bank_name' => $a->bank_name,
-                'account_number' => $a->account_number,
-                'account_name' => $a->account_name,
-            ])
-            ->toArray();
+            ->get();
 
-        if (empty($bankAccounts)) {
-            $bankAccounts = \App\Models\PaymentBankAccount::active()
+        if ($accounts->isEmpty()) {
+            $accounts = \App\Models\PaymentBankAccount::active()
                 ->ordered()
-                ->get()
-                ->map(fn ($a) => [
-                    'bank_name' => $a->bank_name,
-                    'account_number' => $a->account_number,
-                    'account_name' => $a->account_name,
-                ])
-                ->toArray();
+                ->get();
         }
+
+        // จัดรูปแบบตาม payment_display_mode
+        $bankAccounts = $accounts->map(function ($a) use ($displayMode, $showBank, $showPromptpay) {
+            $info = ['account_name' => $a->account_name];
+
+            if ($displayMode === 'promptpay_only') {
+                // โหมดพร้อมเพย์อย่างเดียว — แสดง PromptPay เท่านั้น
+                if ($a->hasPromptpay()) {
+                    $info['bank_name'] = '📱 พร้อมเพย์';
+                    $info['account_number'] = $a->promptpay_id;
+                    $info['is_promptpay'] = true;
+                } else {
+                    return null; // ข้ามบัญชีที่ไม่มี promptpay
+                }
+            } elseif ($displayMode === 'bank_only') {
+                // โหมดบัญชีธนาคารอย่างเดียว
+                $info['bank_name'] = $a->bank_name;
+                $info['account_number'] = $a->account_number;
+            } else {
+                // โหมด both — แสดงทั้งสอง
+                $info['bank_name'] = $a->bank_name;
+                $info['account_number'] = $a->account_number;
+                if ($a->hasPromptpay()) {
+                    $info['promptpay_id'] = $a->promptpay_id;
+                }
+            }
+
+            return $info;
+        })->filter()->values()->toArray();
 
         // ดึงยอดจาก uniquePaymentAmount (unique amount สำหรับเช็คผ่าน SMS payment checker)
         // ใช้ unique_amount เป็นหลัก เพราะมีทศนิยมเฉพาะสำหรับจับคู่ SMS
@@ -471,7 +493,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
+                usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -535,7 +557,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
+                usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image', [
                     'error' => $imgErr->getMessage(),
@@ -565,7 +587,7 @@ class FortuneChannelManager
             ]);
 
             // ⚡ หน่วงเวลาลด (ป้องกัน rate limit แต่ไม่ช้าเกินไป)
-            usleep(200000); // 0.2 วินาที (ลดจาก 0.5)
+            usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
         }
 
         // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่มแชร์ + engagement
@@ -819,7 +841,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(200000);
+                usleep(50000); // ⚡ 50ms
             } catch (\Exception $e) {
                 Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
             }
@@ -830,7 +852,7 @@ class FortuneChannelManager
             // ส่ง Fortune Flex
             $fortuneFlex = $lineService->buildFortuneFlexMessage($reading->deep_response, $userName, $reading->bill_reference);
             $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $fortuneFlex]);
-            usleep(200000);
+            usleep(50000); // ⚡ 50ms
 
             // ส่ง Thank You
             $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);

@@ -117,10 +117,10 @@ class LineFortuneService implements MessagingPlatformInterface
     public function getUserProfile(string $userId): ?array
     {
         try {
+            // ⚡ ลด timeout: profile ไม่สำคัญมาก ถ้าช้าใช้ชื่อ default "คุณ"
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(10)
-                ->connectTimeout(5)
-                ->retry(2, 1000)
+                ->timeout(3)
+                ->connectTimeout(2)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
@@ -467,32 +467,52 @@ class LineFortuneService implements MessagingPlatformInterface
         $bankContents = [];
 
         foreach ($bankAccounts as $account) {
+            $isPromptpay = $account['is_promptpay'] ?? false;
+            $contents = [];
+
+            // ชื่อธนาคาร/พร้อมเพย์
+            $contents[] = [
+                'type' => 'text',
+                'text' => $isPromptpay ? "📱 {$account['bank_name']}" : "🏦 {$account['bank_name']}",
+                'weight' => 'bold',
+                'size' => 'sm',
+            ];
+
+            // เลขบัญชี/พร้อมเพย์
+            $numberLabel = $isPromptpay ? 'พร้อมเพย์' : 'เลขบัญชี';
+            $contents[] = [
+                'type' => 'text',
+                'text' => "{$numberLabel}: {$account['account_number']}",
+                'size' => 'sm',
+                'margin' => 'sm',
+            ];
+
+            // ชื่อบัญชี
+            $contents[] = [
+                'type' => 'text',
+                'text' => "ชื่อ: {$account['account_name']}",
+                'size' => 'sm',
+            ];
+
+            // PromptPay เสริม (กรณี both mode)
+            if (! $isPromptpay && ! empty($account['promptpay_id'])) {
+                $contents[] = [
+                    'type' => 'text',
+                    'text' => "📱 พร้อมเพย์: {$account['promptpay_id']}",
+                    'size' => 'sm',
+                    'color' => '#6B46C1',
+                    'margin' => 'sm',
+                ];
+            }
+
             $bankContents[] = [
                 'type' => 'box',
                 'layout' => 'vertical',
                 'margin' => 'lg',
                 'paddingAll' => 'md',
-                'backgroundColor' => '#F7FAFC',
+                'backgroundColor' => $isPromptpay ? '#F0E6FF' : '#F7FAFC',
                 'cornerRadius' => 'md',
-                'contents' => [
-                    [
-                        'type' => 'text',
-                        'text' => "🏦 {$account['bank_name']}",
-                        'weight' => 'bold',
-                        'size' => 'sm',
-                    ],
-                    [
-                        'type' => 'text',
-                        'text' => "เลขบัญชี: {$account['account_number']}",
-                        'size' => 'sm',
-                        'margin' => 'sm',
-                    ],
-                    [
-                        'type' => 'text',
-                        'text' => "ชื่อ: {$account['account_name']}",
-                        'size' => 'sm',
-                    ],
-                ],
+                'contents' => $contents,
             ];
         }
 
@@ -545,7 +565,9 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         [
                             'type' => 'text',
-                            'text' => '💳 บัญชีรับโอน',
+                            'text' => isset($bankAccounts[0]['is_promptpay']) && $bankAccounts[0]['is_promptpay']
+                                ? '📱 ช่องทางชำระเงิน (พร้อมเพย์)'
+                                : '💳 บัญชีรับโอน',
                             'weight' => 'bold',
                             'size' => 'md',
                         ],
@@ -1169,7 +1191,31 @@ class LineFortuneService implements MessagingPlatformInterface
             'spacing' => 'md',
             'contents' => [
                 $this->buildCategoryButton('🔮', 'ดวงชะตารวม', '#6B46C1', 'ดูดวงรวม'),
-                $this->buildCategoryButton('📚', 'การเรียน', '#5D4037', 'ดูดวงการเรียน'),
+                $this->buildCategoryButton('📚', 'การเรียน สอบ', '#5D4037', 'ดูดวงการเรียน'),
+            ],
+        ];
+
+        // ปุ่มหมวดคำถาม — แถวที่ 4: ครอบครัว + ธุรกิจ
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'md',
+            'spacing' => 'md',
+            'contents' => [
+                $this->buildCategoryButton('👨‍👩‍👧‍👦', 'ครอบครัว', '#00897B', 'ดูดวงครอบครัว'),
+                $this->buildCategoryButton('🏢', 'ธุรกิจ ลงทุน', '#FF6F00', 'ดูดวงธุรกิจ'),
+            ],
+        ];
+
+        // ปุ่มหมวดคำถาม — แถวที่ 5: การเดินทาง + ฮวงจุ้ย/โชค
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'md',
+            'spacing' => 'md',
+            'contents' => [
+                $this->buildCategoryButton('✈️', 'การเดินทาง', '#0288D1', 'ดูดวงการเดินทาง'),
+                $this->buildCategoryButton('🍀', 'โชคลาภ เลขเด็ด', '#2E7D32', 'ดูดวงโชคลาภ'),
             ],
         ];
 
@@ -1190,7 +1236,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 ],
                 [
                     'type' => 'text',
-                    'text' => '"ปีนี้จะมีแฟนไหม" "ควรเปลี่ยนงานดีไหม"',
+                    'text' => '"ปีนี้จะมีแฟนไหม" "ควรเปลี่ยนงานดีไหม" "เปิดร้านอาหารดีไหม"',
                     'size' => 'xs',
                     'color' => '#999999',
                     'wrap' => true,
@@ -2113,10 +2159,11 @@ class LineFortuneService implements MessagingPlatformInterface
     protected function pushMessage(string $to, array $messages): bool
     {
         try {
+            // ⚡ ลด timeout push: 5s + retry 1 ครั้ง (จาก 15s + 2 retries)
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(15)
-                ->connectTimeout(5)
-                ->retry(2, 1000)
+                ->timeout(5)
+                ->connectTimeout(3)
+                ->retry(1, 500)
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -2156,9 +2203,10 @@ class LineFortuneService implements MessagingPlatformInterface
     public function replyMessage(string $replyToken, array $messages): bool
     {
         try {
+            // ⚡ ลด timeout reply: 5s (จาก 10s)
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(10)
-                ->connectTimeout(5)
+                ->timeout(5)
+                ->connectTimeout(3)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
