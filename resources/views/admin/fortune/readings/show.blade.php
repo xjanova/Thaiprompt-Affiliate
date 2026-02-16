@@ -227,6 +227,20 @@
         {{-- ปุ่ม Manual Action สำหรับ Admin (เฉพาะ deep reading ที่ชำระเงินแล้ว) --}}
         @if($reading->reading_type === 'deep' && $reading->is_paid)
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                {{-- ⚠️ Warning: ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ --}}
+                @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
+                        <div class="flex items-start gap-2">
+                            <span class="text-red-500 text-lg">⚠️</span>
+                            <div>
+                                <p class="text-red-800 dark:text-red-200 font-medium">ลูกค้าชำระเงินแล้วแต่ยังไม่มีคำทำนายเชิงลึก!</p>
+                                <p class="text-red-600 dark:text-red-400 text-sm mt-1">อาจเกิดจาก: AI API quota หมด, API key หมดอายุ, หรือ provider ล่ม กรุณากดปุ่ม "สร้างคำทำนายเชิงลึก" ด้านล่าง</p>
+                                <p class="text-red-500 dark:text-red-500 text-xs mt-1">ตรวจสอบ log: <code class="bg-red-100 dark:bg-red-900 px-1 rounded">storage/logs/fortune-deep-{{ $reading->id }}.log</code></p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Flash Messages --}}
                 @if(session('success'))
                     <div class="mb-3 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
@@ -240,36 +254,109 @@
                 @endif
 
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">จัดการคำทำนายเชิงลึก (Manual)</p>
-                <div class="flex flex-wrap gap-3">
+
+                {{-- สถานะ: กำลังสร้างคำทำนาย (conversation_status = paid แต่ยังไม่มี deep_response) --}}
+                @if($reading->conversation_status === 'paid' && empty($reading->deep_response))
+                    <div id="ai-processing-banner" class="mb-4 px-4 py-3 rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700">
+                        <div class="flex items-center gap-3">
+                            <div class="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
+                            <div>
+                                <p class="text-purple-800 dark:text-purple-200 font-medium">🔮 AI กำลังสร้างคำทำนายเชิงลึก...</p>
+                                <p class="text-purple-600 dark:text-purple-400 text-sm">ใช้เวลาประมาณ 30-60 วินาที หน้าจะรีเฟรชอัตโนมัติเมื่อเสร็จ</p>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <div class="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-1.5">
+                                <div id="ai-progress-bar" class="bg-purple-600 h-1.5 rounded-full transition-all duration-1000" style="width: 5%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {{-- Auto-refresh ทุก 5 วินาทีเมื่อ AI กำลังทำงาน --}}
+                    <script>
+                        (function() {
+                            let elapsed = 0;
+                            const maxWait = 120; // 2 นาที
+                            const progressBar = document.getElementById('ai-progress-bar');
+
+                            const timer = setInterval(function() {
+                                elapsed += 5;
+                                // อัพเดท progress bar
+                                if (progressBar) {
+                                    const progress = Math.min(95, (elapsed / 60) * 100);
+                                    progressBar.style.width = progress + '%';
+                                }
+                                // รีเฟรชหน้า
+                                if (elapsed < maxWait) {
+                                    window.location.reload();
+                                } else {
+                                    clearInterval(timer);
+                                    const banner = document.getElementById('ai-processing-banner');
+                                    if (banner) {
+                                        banner.innerHTML = '<p class="text-orange-600 dark:text-orange-400">⚠️ AI ใช้เวลานานกว่าปกติ กรุณารีเฟรชหน้าด้วยตัวเอง หรือกดปุ่มสร้างคำทำนายใหม่</p>';
+                                    }
+                                }
+                            }, 5000);
+                        })();
+                    </script>
+                @endif
+
+                <div class="flex flex-wrap gap-3" x-data="{ submitting: false }">
                     @if(empty($reading->deep_response))
                         {{-- ไม่มีคำทำนาย → ปุ่มสร้างใหม่ (เด่น) --}}
                         <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
                               method="POST"
-                              onsubmit="return confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ')">
+                              @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow transition">
-                                🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า
+                                    :disabled="submitting"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg shadow transition">
+                                <template x-if="!submitting">
+                                    <span>🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า</span>
+                                </template>
+                                <template x-if="submitting">
+                                    <span class="flex items-center gap-2">
+                                        <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                        กำลังส่งคำสั่ง...
+                                    </span>
+                                </template>
                             </button>
                         </form>
                     @else
                         {{-- มีคำทำนายแล้ว → ปุ่มส่งซ้ำ + ปุ่มสร้างใหม่ --}}
                         <form action="{{ route('admin.fortune.readings.resend-deep', $reading) }}"
                               method="POST"
-                              onsubmit="return confirm('ส่งคำทำนายที่มีอยู่ให้ลูกค้าซ้ำหรือไม่?')">
+                              @submit="if(!confirm('ส่งคำทำนายที่มีอยู่ให้ลูกค้าซ้ำหรือไม่?')) { $event.preventDefault(); return; } submitting = true;">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-medium rounded-lg shadow transition">
-                                📨 ส่งคำทำนายซ้ำให้ลูกค้า
+                                    :disabled="submitting"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white text-sm font-medium rounded-lg shadow transition">
+                                <template x-if="!submitting">
+                                    <span>📨 ส่งคำทำนายซ้ำให้ลูกค้า</span>
+                                </template>
+                                <template x-if="submitting">
+                                    <span class="flex items-center gap-2">
+                                        <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                        กำลังส่ง...
+                                    </span>
+                                </template>
                             </button>
                         </form>
                         <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
                               method="POST"
-                              onsubmit="return confirm('ต้องการสร้างคำทำนายเชิงลึกใหม่ทั้งหมดหรือไม่?\n\n⚠️ คำทำนายเดิมจะถูกลบ และระบบจะสร้างคำทำนายใหม่โดย AI')">
+                              @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกใหม่ทั้งหมดหรือไม่?\n\n⚠️ คำทำนายเดิมจะถูกลบ และระบบจะสร้างคำทำนายใหม่โดย AI (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
                             @csrf
                             <button type="submit"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 text-sm font-medium rounded-lg transition">
-                                🔄 สร้างคำทำนายใหม่
+                                    :disabled="submitting"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 border-2 border-orange-500 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 disabled:opacity-50 text-sm font-medium rounded-lg transition">
+                                <template x-if="!submitting">
+                                    <span>🔄 สร้างคำทำนายใหม่</span>
+                                </template>
+                                <template x-if="submitting">
+                                    <span class="flex items-center gap-2">
+                                        <span class="animate-spin h-4 w-4 border-2 border-orange-500 border-t-transparent rounded-full"></span>
+                                        กำลังส่งคำสั่ง...
+                                    </span>
+                                </template>
                             </button>
                         </form>
                     @endif

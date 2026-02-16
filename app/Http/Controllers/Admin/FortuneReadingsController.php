@@ -80,6 +80,11 @@ class FortuneReadingsController extends Controller
             'basic' => FortuneReading::basic()->count(),
             'paid' => FortuneReading::paid()->count(),
             'free' => FortuneReading::free()->count(),
+            // ⚠️ จำนวนบิลที่ชำระแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ
+            'stuck_paid' => FortuneReading::where('is_paid', true)
+                ->where('reading_type', 'deep')
+                ->whereNull('deep_response')
+                ->count(),
         ];
 
         return view('admin.fortune.readings.index', [

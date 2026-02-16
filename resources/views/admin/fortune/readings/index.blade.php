@@ -47,6 +47,27 @@
         </div>
     </div>
 
+    {{-- ⚠️ Warning: บิลที่ชำระแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ --}}
+    @if(($stats['stuck_paid'] ?? 0) > 0)
+        <div class="mb-6 px-5 py-4 rounded-xl bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl">⚠️</span>
+                <div>
+                    <p class="text-red-800 dark:text-red-200 font-bold text-lg">
+                        มี {{ $stats['stuck_paid'] }} บิลที่ชำระเงินแล้วแต่ยังไม่มีคำทำนาย!
+                    </p>
+                    <p class="text-red-600 dark:text-red-400 text-sm mt-1">
+                        ลูกค้าจ่ายเงินแล้วแต่ยังไม่ได้รับคำทำนาย อาจเกิดจาก: AI quota หมด, API key หมดอายุ, เครือข่ายขัดข้อง
+                    </p>
+                    <p class="text-red-500 dark:text-red-500 text-sm mt-1">
+                        กรุณาเข้าไปกดปุ่ม "สร้างคำทำนายเชิงลึก" ในแต่ละรายการ หรือตรวจสอบ AI API keys ใน
+                        <a href="{{ route('admin.fortune.settings') }}" class="underline font-medium">ตั้งค่าระบบดูดวง</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- Quick Nav --}}
     <div class="flex flex-wrap gap-2 mb-6">
         <a href="{{ route('admin.fortune.dashboard') }}"
