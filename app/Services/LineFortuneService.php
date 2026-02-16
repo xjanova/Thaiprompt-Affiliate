@@ -118,6 +118,9 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
+                ->timeout(30)
+                ->connectTimeout(15)
+                ->retry(2, 2000)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
@@ -642,6 +645,9 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
+                ->timeout(30)
+                ->connectTimeout(15)
+                ->retry(2, 2000)
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -679,6 +685,8 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         try {
             $response = Http::withToken($this->channelAccessToken)
+                ->timeout(30)
+                ->connectTimeout(15)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
@@ -756,6 +764,9 @@ class LineFortuneService implements MessagingPlatformInterface
 
             // เรียก API เพื่อดึงข้อมูล Bot
             $response = Http::withToken($this->channelAccessToken)
+                ->timeout(30)
+                ->connectTimeout(15)
+                ->retry(2, 2000)
                 ->get(self::API_ENDPOINT.'/info');
 
             if ($response->successful()) {
