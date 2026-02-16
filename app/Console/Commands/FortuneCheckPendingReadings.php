@@ -46,15 +46,16 @@ class FortuneCheckPendingReadings extends Command
 
     /**
      * เวลาสูงสุดที่จะ retry (นาที)
-     * หลังจากนี้ถือว่าเก่าเกินไป ต้องให้แอดมินจัดการ
+     * ขยายเป็น 24 ชั่วโมง เพื่อรองรับกรณี AI ล่มนาน
+     * ลูกค้าจ่ายเงินแล้วต้องได้รับคำทำนายเสมอ
      */
-    protected const MAX_WAIT_MINUTES = 30;
+    protected const MAX_WAIT_MINUTES = 1440; // 24 ชั่วโมง
 
     /**
      * จำนวน retry สูงสุดต่อ reading ใน command นี้
-     * ป้องกัน dispatch ซ้ำไม่จำกัด
+     * เพิ่มเป็น 5 ครั้ง เพราะ AI อาจล่มหลายชั่วโมง
      */
-    protected const MAX_AUTO_RETRIES = 3;
+    protected const MAX_AUTO_RETRIES = 5;
 
     /**
      * Execute the console command.

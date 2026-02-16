@@ -995,14 +995,14 @@ class SmsPaymentController extends Controller
                 })
                 ->whereNotNull('paid_at')
                 ->where('paid_at', '<=', now()->subMinutes(2))
-                ->where('paid_at', '>=', now()->subMinutes(30))
+                ->where('paid_at', '>=', now()->subHours(24)) // ขยายจาก 30 นาทีเป็น 24 ชั่วโมง
                 ->limit(3) // จำกัดไม่ให้ retry มากเกินไปพร้อมกัน
                 ->get();
 
             foreach ($stuckReadings as $reading) {
                 // ตรวจสอบ retry count (ป้องกัน dispatch ซ้ำไม่จำกัด)
                 $retryCount = $reading->getConversationState('auto_retry_count', 0);
-                if ($retryCount >= 3) {
+                if ($retryCount >= 5) { // เพิ่มจาก 3 เป็น 5 ครั้ง
                     continue;
                 }
 
