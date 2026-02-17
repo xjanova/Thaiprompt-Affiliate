@@ -122,7 +122,7 @@ class FortuneRichMenuDeployController extends Controller
 
             // 1. เช็ค default Rich Menu ปัจจุบัน
             $defaultResponse = Http::withToken($token)
-                ->timeout(10)
+                ->timeout(30)->connectTimeout(15)
                 ->get('https://api.line.me/v2/bot/user/all/richmenu');
 
             $defaultRichMenuId = null;
@@ -132,7 +132,7 @@ class FortuneRichMenuDeployController extends Controller
 
             // 2. เช็ค Rich Menu ทั้งหมดบน LINE
             $listResponse = Http::withToken($token)
-                ->timeout(10)
+                ->timeout(30)->connectTimeout(15)
                 ->get('https://api.line.me/v2/bot/richmenu/list');
 
             $richMenus = [];
