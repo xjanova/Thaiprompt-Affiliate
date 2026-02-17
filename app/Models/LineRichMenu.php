@@ -18,6 +18,8 @@ class LineRichMenu extends Model
         'selected',
         'chat_bar_text',
         'areas',
+        'editor_config',
+        'editor_mode',
         'image_path',
         'is_default',
         'is_active',
@@ -27,6 +29,7 @@ class LineRichMenu extends Model
     protected $casts = [
         'selected' => 'boolean',
         'areas' => 'array',
+        'editor_config' => 'array',
         'is_default' => 'boolean',
         'is_active' => 'boolean',
     ];

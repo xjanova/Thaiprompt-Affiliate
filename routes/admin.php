@@ -3823,6 +3823,7 @@ Route::prefix('developers')->name('developers.')->group(function () {
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
+use App\Http\Controllers\Admin\FortuneRichMenuEditorController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
@@ -3849,6 +3850,14 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/rich-menu/deploy', [FortuneRichMenuDeployController::class, 'deploy'])->name('rich-menu.deploy');
     Route::post('/rich-menu/re-set-default', [FortuneRichMenuDeployController::class, 'reSetDefault'])->name('rich-menu.re-set-default');
     Route::get('/rich-menu/check-line-status', [FortuneRichMenuDeployController::class, 'checkLineStatus'])->name('rich-menu.check-line-status');
+
+    // Rich Menu Editor (แก้ไข Rich Menu ผ่าน Admin UI)
+    Route::get('/rich-menu/editor', [FortuneRichMenuEditorController::class, 'index'])->name('rich-menu.editor');
+    Route::get('/rich-menu/editor/config', [FortuneRichMenuEditorController::class, 'loadConfig'])->name('rich-menu.editor.config');
+    Route::post('/rich-menu/editor/config', [FortuneRichMenuEditorController::class, 'saveConfig'])->name('rich-menu.editor.save-config');
+    Route::post('/rich-menu/editor/preview', [FortuneRichMenuEditorController::class, 'preview'])->name('rich-menu.editor.preview');
+    Route::post('/rich-menu/editor/upload', [FortuneRichMenuEditorController::class, 'uploadImage'])->name('rich-menu.editor.upload');
+    Route::post('/rich-menu/editor/deploy', [FortuneRichMenuEditorController::class, 'deploy'])->name('rich-menu.editor.deploy');
 
     // การตั้งค่า
     Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');

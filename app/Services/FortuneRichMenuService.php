@@ -52,13 +52,29 @@ class FortuneRichMenuService
     /**
      * สร้างภาพ Rich Menu + deploy ไป LINE API + ตั้งเป็น default
      *
+     * รองรับ 2 โหมด:
+     * - config mode: สร้างภาพจาก editor config (auto-generate ด้วย GD)
+     * - custom mode: ใช้ภาพที่อัปโหลดเอง + areas ที่กำหนด
+     *
+     * @param  array|null  $config  Editor config (null = ใช้ default)
+     * @param  string|null  $customImagePath  Path ภาพ PNG ที่อัปโหลด (mode custom)
+     * @param  array|null  $customAreas  Areas สำหรับ custom mode (null = ใช้ default)
+     * @param  string  $editorMode  โหมด: 'config' หรือ 'custom'
      * @return array ผลลัพธ์ ['success', 'rich_menu_id', 'menu', 'error']
      */
-    public function generateAndDeploy(): array
+    public function generateAndDeploy(?array $config = null, ?string $customImagePath = null, ?array $customAreas = null, string $editorMode = 'config'): array
     {
         try {
-            // 1. สร้างภาพ PNG
-            $pngData = $this->generateImage();
+            // 1. สร้าง/ดึงภาพ PNG ตามโหมด
+            if ($editorMode === 'custom' && $customImagePath) {
+                // Custom mode: ใช้ภาพที่อัปโหลด
+                $pngData = Storage::disk('public')->get($customImagePath);
+                $areas = $customAreas ?? $this->getRichMenuAreas();
+            } else {
+                // Config mode: สร้างภาพจาก config
+                $pngData = $config ? $this->generateImageFromConfig($config) : $this->generateImage();
+                $areas = $this->getAreasFromConfig($config);
+            }
 
             if (empty($pngData)) {
                 return ['success' => false, 'error' => 'ไม่สามารถสร้างภาพ Rich Menu ได้'];
@@ -70,7 +86,7 @@ class FortuneRichMenuService
                 'selected' => true,
                 'name' => 'แม่หมอจันทรา - เมนูดูดวง v2',
                 'chatBarText' => '🔮 เมนูดูดวง',
-                'areas' => $this->getRichMenuAreas(),
+                'areas' => $areas,
             ];
 
             $richMenuId = $this->lineService->createRichMenu($richMenuData);
@@ -97,15 +113,17 @@ class FortuneRichMenuService
                 ->where('is_active', true)
                 ->update(['is_active' => false, 'is_default' => false]);
 
-            // 7. บันทึกลง DB
+            // 7. บันทึกลง DB (รวม editor_config + editor_mode)
             $menu = LineRichMenu::create([
                 'rich_menu_id' => $richMenuId,
                 'name' => 'fortune-telling-bot',
-                'description' => 'Rich Menu V2 สำหรับบอทแม่หมอจันทรา (ตัวหนังสือใหญ่)',
+                'description' => 'Rich Menu สำหรับบอทแม่หมอจันทรา',
                 'size' => 'full',
                 'selected' => true,
                 'chat_bar_text' => '🔮 เมนูดูดวง',
-                'areas' => $this->getRichMenuAreas(),
+                'areas' => $areas,
+                'editor_config' => $config ?? $this->getDefaultEditorConfig(),
+                'editor_mode' => $editorMode,
                 'image_path' => $imagePath,
                 'is_default' => true,
                 'is_active' => true,
@@ -115,6 +133,7 @@ class FortuneRichMenuService
             Log::info('FortuneRichMenu: Deploy สำเร็จ', [
                 'rich_menu_id' => $richMenuId,
                 'menu_id' => $menu->id,
+                'editor_mode' => $editorMode,
             ]);
 
             return [
@@ -134,159 +153,288 @@ class FortuneRichMenuService
     }
 
     /**
-     * สร้างภาพ Rich Menu ด้วย GD library (V2 — ตัวหนังสือใหญ่ขึ้น)
+     * คืน default editor config สำหรับ Rich Menu 6 ปุ่ม
      *
-     * ธีม: จักรวาลม่วง-ทอง + ดาว + พระจันทร์เสี้ยว
-     * ปุ่ม Row2 Col1: "สถานะ/สิทธิ์" แทน "เช็คสิทธิ์"
+     * ใช้เมื่อ: โหลด editor ครั้งแรก / ไม่มี config ใน DB
      *
+     * @return array Editor config
+     */
+    public function getDefaultEditorConfig(): array
+    {
+        $price = number_format($this->lineService->getDeepReadingPrice(), 0);
+
+        return [
+            'theme' => [
+                'bg_gradient_start' => '#0d0521',
+                'bg_gradient_end' => '#1a0a3e',
+                'grid_line_color' => '#4C1D95',
+                'branding_text' => '~~ แม่หมอจันทราพยากรณ์ ~~',
+                'branding_color' => '#FFD700',
+                'show_stars' => true,
+                'show_moon' => true,
+            ],
+            'buttons' => [
+                [
+                    'label' => 'ดูดวง',
+                    'subtitle' => 'ฟรี! ถามได้เลย',
+                    'icon' => 'crystal_ball',
+                    'bg_color' => null,
+                    'text_color' => '#FFD700',
+                    'subtitle_color' => '#C4B5FD',
+                    'font_size' => 72,
+                    'subtitle_size' => 32,
+                    'action_type' => 'message',
+                    'action_data' => 'ดูดวง',
+                    'display_text' => '',
+                    'glow' => true,
+                ],
+                [
+                    'label' => 'ดูดวงละเอียด',
+                    'subtitle' => "{$price} บาท",
+                    'extra_text' => 'วิเคราะห์เจาะลึก + ดวงชะตา',
+                    'icon' => 'star',
+                    'bg_color' => '#8C6400',
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#FFD700',
+                    'font_size' => 56,
+                    'subtitle_size' => 44,
+                    'action_type' => 'postback',
+                    'action_data' => 'action=deep_reading',
+                    'display_text' => 'ดูดวงละเอียด',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'ดูคำทำนาย',
+                    'subtitle' => 'ล่าสุด',
+                    'icon' => 'scroll',
+                    'bg_color' => null,
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#FFFFFF',
+                    'font_size' => 48,
+                    'subtitle_size' => 48,
+                    'action_type' => 'postback',
+                    'action_data' => 'action=view_last_reading',
+                    'display_text' => 'ดูคำทำนายล่าสุด',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'สิทธิ์ / สถานะ',
+                    'subtitle' => 'ดูสิทธิ์และข้อมูลสมาชิก',
+                    'icon' => 'status',
+                    'bg_color' => '#00605B',
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#C4B5FD',
+                    'font_size' => 48,
+                    'subtitle_size' => 28,
+                    'action_type' => 'postback',
+                    'action_data' => 'action=check_status',
+                    'display_text' => 'ดูสถานะสิทธิ์',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'แจ้งปัญหา',
+                    'subtitle' => 'การโอนเงิน',
+                    'extra_text' => 'โอนแล้วไม่ได้คำทำนาย?',
+                    'icon' => 'warning',
+                    'bg_color' => '#8B1A00',
+                    'text_color' => '#FFA726',
+                    'subtitle_color' => '#FFA726',
+                    'font_size' => 44,
+                    'subtitle_size' => 44,
+                    'action_type' => 'postback',
+                    'action_data' => 'action=report_payment',
+                    'display_text' => 'แจ้งปัญหาโอน',
+                    'glow' => false,
+                ],
+                [
+                    'label' => 'วิธีใช้งาน',
+                    'subtitle' => 'คู่มือ & ช่วยเหลือ',
+                    'icon' => 'info',
+                    'bg_color' => null,
+                    'text_color' => '#FFFFFF',
+                    'subtitle_color' => '#C4B5FD',
+                    'font_size' => 48,
+                    'subtitle_size' => 28,
+                    'action_type' => 'postback',
+                    'action_data' => 'action=help',
+                    'display_text' => 'วิธีใช้งาน',
+                    'glow' => false,
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Rich Menu areas จาก editor config
+     *
+     * @param  array|null  $config  Editor config (null = ใช้ default areas)
+     * @return array LINE areas format
+     */
+    public function getAreasFromConfig(?array $config = null): array
+    {
+        if (! $config || empty($config['buttons'])) {
+            return $this->getRichMenuAreas();
+        }
+
+        $colWidths = [self::COL_WIDTH_1, self::COL_WIDTH_2, self::COL_WIDTH_3];
+        $areas = [];
+
+        foreach ($config['buttons'] as $i => $btn) {
+            $row = (int) ($i / 3);
+            $col = $i % 3;
+            $x = array_sum(array_slice($colWidths, 0, $col));
+            $y = $row * self::ROW_HEIGHT;
+
+            $action = match ($btn['action_type'] ?? 'postback') {
+                'message' => [
+                    'type' => 'message',
+                    'text' => $btn['action_data'] ?? $btn['label'],
+                ],
+                default => [
+                    'type' => 'postback',
+                    'data' => $btn['action_data'] ?? "action={$btn['label']}",
+                    'displayText' => $btn['display_text'] ?? $btn['label'],
+                ],
+            };
+
+            $areas[] = [
+                'bounds' => [
+                    'x' => $x,
+                    'y' => $y,
+                    'width' => $colWidths[$col],
+                    'height' => self::ROW_HEIGHT,
+                ],
+                'action' => $action,
+            ];
+        }
+
+        return $areas;
+    }
+
+    /**
+     * สร้างภาพ Rich Menu จาก editor config (config-driven)
+     *
+     * @param  array  $config  Editor config จาก getDefaultEditorConfig() หรือ custom
      * @return string PNG binary data
      */
-    public function generateImage(): string
+    public function generateImageFromConfig(array $config): string
     {
         $img = imagecreatetruecolor(self::WIDTH, self::HEIGHT);
         imagealphablending($img, true);
         imagesavealpha($img, true);
 
         $font = $this->getThaiFont();
-
-        // === สี ===
-        $deepPurple = $this->hexColor($img, '#0d0521');
-        $purple1 = $this->hexColor($img, '#1a0a3e');
-        $purple2 = $this->hexColor($img, '#2d1070');
-        $purple3 = $this->hexColor($img, '#3B1585');
-        $purpleBright = $this->hexColor($img, '#7C3AED');
-        $gold = $this->hexColor($img, '#FFD700');
-        $goldDark = $this->hexColor($img, '#B8860B');
-        $white = $this->hexColor($img, '#FFFFFF');
-        $lightPurple = $this->hexColor($img, '#C4B5FD');
-        $orange = $this->hexColor($img, '#FF6B35');
-        $redOrange = $this->hexColor($img, '#D84315');
-        $lightGray = $this->hexColor($img, '#E0E0E0');
-        $gridLine = $this->hexColor($img, '#4C1D95');
-        $cyan = $this->hexColor($img, '#00E5FF');
-        $teal = $this->hexColor($img, '#00897B');
+        $theme = $config['theme'] ?? [];
+        $buttons = $config['buttons'] ?? [];
 
         // === พื้นหลัง gradient ===
+        $bgStart = $this->parseHex($theme['bg_gradient_start'] ?? '#0d0521');
+        $bgEnd = $this->parseHex($theme['bg_gradient_end'] ?? '#1a0a3e');
         for ($y = 0; $y < self::HEIGHT; $y++) {
             $ratio = $y / self::HEIGHT;
-            $r = (int) (13 + (26 - 13) * $ratio);
-            $g = (int) (5 + (10 - 5) * $ratio);
-            $b = (int) (33 + (62 - 33) * $ratio);
+            $r = (int) ($bgStart[0] + ($bgEnd[0] - $bgStart[0]) * $ratio);
+            $g = (int) ($bgStart[1] + ($bgEnd[1] - $bgStart[1]) * $ratio);
+            $b = (int) ($bgStart[2] + ($bgEnd[2] - $bgStart[2]) * $ratio);
             $lineColor = imagecolorallocate($img, $r, $g, $b);
             imageline($img, 0, $y, self::WIDTH, $y, $lineColor);
         }
 
         // === ดาวตกแต่ง ===
-        for ($i = 0; $i < 200; $i++) {
-            $sx = rand(10, self::WIDTH - 10);
-            $sy = rand(10, self::HEIGHT - 10);
-            $sr = rand(1, 4);
-            $starAlpha = rand(40, 110);
-            $starColor = imagecolorallocatealpha($img, 255, 255, 255, $starAlpha);
-            imagefilledellipse($img, $sx, $sy, $sr * 2, $sr * 2, $starColor);
+        if ($theme['show_stars'] ?? true) {
+            for ($i = 0; $i < 200; $i++) {
+                $sx = rand(10, self::WIDTH - 10);
+                $sy = rand(10, self::HEIGHT - 10);
+                $sr = rand(1, 4);
+                $starAlpha = rand(40, 110);
+                $starColor = imagecolorallocatealpha($img, 255, 255, 255, $starAlpha);
+                imagefilledellipse($img, $sx, $sy, $sr * 2, $sr * 2, $starColor);
+            }
         }
 
-        // === พระจันทร์เสี้ยว (มุมขวาบน) ===
-        $moonX = self::WIDTH - 250;
-        $moonY = 180;
-        imagefilledellipse($img, $moonX, $moonY, 140, 140, $gold);
-        imagefilledellipse($img, $moonX + 30, $moonY - 20, 130, 130, $this->hexColor($img, '#1a0a3e'));
+        // === พระจันทร์เสี้ยว ===
+        if ($theme['show_moon'] ?? true) {
+            $moonX = self::WIDTH - 250;
+            $moonY = 180;
+            $gold = $this->hexColor($img, '#FFD700');
+            imagefilledellipse($img, $moonX, $moonY, 140, 140, $gold);
+            imagefilledellipse($img, $moonX + 30, $moonY - 20, 130, 130, $this->hexColor($img, $theme['bg_gradient_end'] ?? '#1a0a3e'));
+        }
 
         // === เส้นแบ่ง grid ===
-        $this->drawThickLine($img, 0, self::ROW_HEIGHT, self::WIDTH, self::ROW_HEIGHT, $gridLine, 3);
-        $this->drawThickLine($img, self::COL_WIDTH_1, 0, self::COL_WIDTH_1, self::ROW_HEIGHT, $gridLine, 2);
-        $this->drawThickLine($img, self::COL_WIDTH_1 + self::COL_WIDTH_2, 0, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::ROW_HEIGHT, $gridLine, 2);
-        $this->drawThickLine($img, self::COL_WIDTH_1, self::ROW_HEIGHT, self::COL_WIDTH_1, self::HEIGHT, $gridLine, 2);
-        $this->drawThickLine($img, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::ROW_HEIGHT, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::HEIGHT, $gridLine, 2);
+        $gridColor = $this->hexColor($img, $theme['grid_line_color'] ?? '#4C1D95');
+        $this->drawThickLine($img, 0, self::ROW_HEIGHT, self::WIDTH, self::ROW_HEIGHT, $gridColor, 3);
+        $this->drawThickLine($img, self::COL_WIDTH_1, 0, self::COL_WIDTH_1, self::ROW_HEIGHT, $gridColor, 2);
+        $this->drawThickLine($img, self::COL_WIDTH_1 + self::COL_WIDTH_2, 0, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::ROW_HEIGHT, $gridColor, 2);
+        $this->drawThickLine($img, self::COL_WIDTH_1, self::ROW_HEIGHT, self::COL_WIDTH_1, self::HEIGHT, $gridColor, 2);
+        $this->drawThickLine($img, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::ROW_HEIGHT, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::HEIGHT, $gridColor, 2);
 
-        // ===== ROW 1 =====
+        // === วาดปุ่มตาม config ===
+        $colWidths = [self::COL_WIDTH_1, self::COL_WIDTH_2, self::COL_WIDTH_3];
+        $white = $this->hexColor($img, '#FFFFFF');
+        $lightPurple = $this->hexColor($img, '#C4B5FD');
 
-        // === ปุ่ม 1: ดูดวง (Row1, Col1) — สว่างที่สุด ===
-        $btn1Cx = self::COL_WIDTH_1 / 2;
-        $btn1Cy = self::ROW_HEIGHT / 2;
-        for ($r = 200; $r > 0; $r -= 10) {
-            $alpha = (int) (127 - (127 - 100) * $r / 200);
-            $glowColor = imagecolorallocatealpha($img, 124, 58, 237, $alpha);
-            imagefilledellipse($img, (int) $btn1Cx, (int) $btn1Cy, $r * 2, $r * 2, $glowColor);
+        foreach ($buttons as $i => $btn) {
+            $row = (int) ($i / 3);
+            $col = $i % 3;
+            $xOffset = array_sum(array_slice($colWidths, 0, $col));
+            $cx = $xOffset + $colWidths[$col] / 2;
+            $cy = $row * self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
+
+            // พื้นหลังปุ่ม (ถ้ามี)
+            if (! empty($btn['bg_color'])) {
+                $bgRgb = $this->parseHex($btn['bg_color']);
+                $yStart = $row * self::ROW_HEIGHT + 2;
+                $yEnd = ($row + 1) * self::ROW_HEIGHT - 2;
+                for ($yy = $yStart; $yy < $yEnd; $yy++) {
+                    $ratio = ($yy - $yStart) / ($yEnd - $yStart);
+                    $rr = (int) ($bgRgb[0] * (1 - $ratio * 0.3));
+                    $gg = (int) ($bgRgb[1] * (1 - $ratio * 0.3));
+                    $bb = (int) ($bgRgb[2] * (1 - $ratio * 0.3));
+                    $bgGrad = imagecolorallocatealpha($img, max(0, $rr), max(0, $gg), max(0, $bb), 85);
+                    imageline($img, $xOffset + 2, $yy, $xOffset + $colWidths[$col] - 2, $yy, $bgGrad);
+                }
+            }
+
+            // Glow effect
+            if ($btn['glow'] ?? false) {
+                for ($r = 200; $r > 0; $r -= 10) {
+                    $alpha = (int) (127 - (127 - 100) * $r / 200);
+                    $glowColor = imagecolorallocatealpha($img, 124, 58, 237, $alpha);
+                    imagefilledellipse($img, (int) $cx, (int) $cy, $r * 2, $r * 2, $glowColor);
+                }
+            }
+
+            // ไอคอน
+            $iconType = $btn['icon'] ?? 'info';
+            $color1 = $this->hexColor($img, $btn['text_color'] ?? '#FFFFFF');
+            $color2 = $this->hexColor($img, $btn['subtitle_color'] ?? '#C4B5FD');
+            $iconY = ! empty($btn['extra_text']) ? $cy - 80 : $cy - 60;
+            $this->drawIcon($img, $cx, $iconY, $iconType, $color1, $color2, $white);
+
+            // ข้อความหลัก
+            $textColor = $this->hexColor($img, $btn['text_color'] ?? '#FFFFFF');
+            $fontSize = $btn['font_size'] ?? 48;
+            $textY = ! empty($btn['extra_text']) ? $cy + 30 : $cy + 60;
+            $this->drawCenteredText($img, $font, $fontSize, $cx, $textY, $btn['label'] ?? '', $textColor);
+
+            // ข้อความรอง
+            if (! empty($btn['subtitle'])) {
+                $subColor = $this->hexColor($img, $btn['subtitle_color'] ?? '#C4B5FD');
+                $subSize = $btn['subtitle_size'] ?? 28;
+                $subY = $textY + (int) ($fontSize * 1.2);
+                $this->drawCenteredText($img, $font, $subSize, $cx, $subY, $btn['subtitle'], $subColor);
+            }
+
+            // ข้อความเพิ่มเติม (บรรทัดที่ 3)
+            if (! empty($btn['extra_text'])) {
+                $this->drawCenteredText($img, $font, 26, $cx, $cy + 160, $btn['extra_text'], $lightPurple);
+            }
         }
-        $this->drawIcon($img, $btn1Cx, $btn1Cy - 80, 'crystal_ball', $purpleBright, $gold, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น: 62→72
-        $this->drawCenteredText($img, $font, 72, $btn1Cx, $btn1Cy + 60, 'ดูดวง', $gold);
-        $this->drawCenteredText($img, $font, 32, $btn1Cx, $btn1Cy + 130, 'ฟรี! ถามได้เลย', $lightPurple);
-
-        // === ปุ่ม 2: ดูดวงละเอียด (Row1, Col2) — สีทอง ===
-        $btn2Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 / 2;
-        $btn2Cy = self::ROW_HEIGHT / 2;
-        for ($y2 = 0; $y2 < self::ROW_HEIGHT; $y2++) {
-            $ratio = $y2 / self::ROW_HEIGHT;
-            $r2 = (int) (140 + (180 - 140) * $ratio);
-            $g2 = (int) (100 + (130 - 100) * $ratio);
-            $b2 = (int) (5 + (20 - 5) * $ratio);
-            $goldGrad = imagecolorallocatealpha($img, $r2, $g2, $b2, 90);
-            imageline($img, self::COL_WIDTH_1 + 2, $y2, self::COL_WIDTH_1 + self::COL_WIDTH_2 - 2, $y2, $goldGrad);
-        }
-        $this->drawIcon($img, $btn2Cx, $btn2Cy - 80, 'star', $gold, $goldDark, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น: 48→56
-        $this->drawCenteredText($img, $font, 56, $btn2Cx, $btn2Cy + 40, 'ดูดวงละเอียด', $white);
-        $price = number_format($this->lineService->getDeepReadingPrice(), 0);
-        $this->drawCenteredText($img, $font, 44, $btn2Cx, $btn2Cy + 110, "{$price} บาท", $gold);
-        $this->drawCenteredText($img, $font, 28, $btn2Cx, $btn2Cy + 170, 'วิเคราะห์เจาะลึก + ดวงชะตา', $lightPurple);
-
-        // === ปุ่ม 3: ดูคำทำนายล่าสุด (Row1, Col3) ===
-        $btn3Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 + self::COL_WIDTH_3 / 2;
-        $btn3Cy = self::ROW_HEIGHT / 2;
-        $this->drawIcon($img, $btn3Cx, $btn3Cy - 60, 'scroll', $lightPurple, $purple2, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น: 38→48
-        $this->drawCenteredText($img, $font, 48, $btn3Cx, $btn3Cy + 70, 'ดูคำทำนาย', $white);
-        $this->drawCenteredText($img, $font, 48, $btn3Cx, $btn3Cy + 140, 'ล่าสุด', $white);
-
-        // ===== ROW 2 =====
-
-        // === ปุ่ม 4: สถานะ/สิทธิ์ (Row2, Col1) — แทน "เช็คสิทธิ์" ===
-        $btn4Cx = self::COL_WIDTH_1 / 2;
-        $btn4Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
-        // พื้นหลัง teal เรือง
-        for ($y4 = self::ROW_HEIGHT + 2; $y4 < self::HEIGHT - 2; $y4++) {
-            $ratio4 = ($y4 - self::ROW_HEIGHT) / self::ROW_HEIGHT;
-            $r4 = (int) (0 + (0 - 0) * $ratio4);
-            $g4 = (int) (80 + (60 - 80) * $ratio4);
-            $b4 = (int) (90 + (70 - 90) * $ratio4);
-            $tealGrad = imagecolorallocatealpha($img, $r4, $g4, $b4, 95);
-            imageline($img, 2, $y4, self::COL_WIDTH_1 - 2, $y4, $tealGrad);
-        }
-        // ไอคอน: ดาว + วงกลม (สถานะ)
-        $this->drawIcon($img, $btn4Cx, $btn4Cy - 60, 'status', $cyan, $teal, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น
-        $this->drawCenteredText($img, $font, 48, $btn4Cx, $btn4Cy + 60, 'สิทธิ์ / สถานะ', $white);
-        $this->drawCenteredText($img, $font, 28, $btn4Cx, $btn4Cy + 120, 'ดูสิทธิ์และข้อมูลสมาชิก', $lightPurple);
-
-        // === ปุ่ม 5: แจ้งปัญหาโอน (Row2, Col2) — สีส้ม/แดงเด่น ===
-        $btn5Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 / 2;
-        $btn5Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
-        for ($y5 = self::ROW_HEIGHT + 2; $y5 < self::HEIGHT - 2; $y5++) {
-            $ratio5 = ($y5 - self::ROW_HEIGHT) / self::ROW_HEIGHT;
-            $r5 = (int) (100 + (60 - 100) * $ratio5);
-            $g5 = (int) (20 + (10 - 20) * $ratio5);
-            $b5 = (int) (10 + (30 - 10) * $ratio5);
-            $orangeGrad = imagecolorallocatealpha($img, $r5, $g5, $b5, 85);
-            imageline($img, self::COL_WIDTH_1 + 2, $y5, self::COL_WIDTH_1 + self::COL_WIDTH_2 - 2, $y5, $orangeGrad);
-        }
-        $this->drawIcon($img, $btn5Cx, $btn5Cy - 80, 'warning', $orange, $redOrange, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น: 36→44
-        $this->drawCenteredText($img, $font, 44, $btn5Cx, $btn5Cy + 30, 'แจ้งปัญหา', $this->hexColor($img, '#FFA726'));
-        $this->drawCenteredText($img, $font, 44, $btn5Cx, $btn5Cy + 100, 'การโอนเงิน', $this->hexColor($img, '#FFA726'));
-        $this->drawCenteredText($img, $font, 26, $btn5Cx, $btn5Cy + 160, 'โอนแล้วไม่ได้คำทำนาย?', $lightGray);
-
-        // === ปุ่ม 6: วิธีใช้งาน (Row2, Col3) ===
-        $btn6Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 + self::COL_WIDTH_3 / 2;
-        $btn6Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
-        $this->drawIcon($img, $btn6Cx, $btn6Cy - 60, 'info', $purpleBright, $lightPurple, $white);
-        // ✅ ตัวหนังสือใหญ่ขึ้น: 38→48
-        $this->drawCenteredText($img, $font, 48, $btn6Cx, $btn6Cy + 60, 'วิธีใช้งาน', $white);
-        $this->drawCenteredText($img, $font, 28, $btn6Cx, $btn6Cy + 120, 'คู่มือ & ช่วยเหลือ', $lightPurple);
 
         // === Branding ด้านบน ===
-        $this->drawCenteredText($img, $font, 32, self::WIDTH / 2, 50, '~~ แม่หมอจันทราพยากรณ์ ~~', $gold);
+        $brandText = $theme['branding_text'] ?? '~~ แม่หมอจันทราพยากรณ์ ~~';
+        $brandColor = $this->hexColor($img, $theme['branding_color'] ?? '#FFD700');
+        $this->drawCenteredText($img, $font, 32, self::WIDTH / 2, 50, $brandText, $brandColor);
 
         // === Export PNG ===
         ob_start();
@@ -295,6 +443,16 @@ class FortuneRichMenuService
         imagedestroy($img);
 
         return $pngData;
+    }
+
+    /**
+     * สร้างภาพ Rich Menu ด้วย default config (backward compatible)
+     *
+     * @return string PNG binary data
+     */
+    public function generateImage(): string
+    {
+        return $this->generateImageFromConfig($this->getDefaultEditorConfig());
     }
 
     /**
@@ -380,6 +538,25 @@ class FortuneRichMenuService
         }
 
         return $localFont;
+    }
+
+    /**
+     * แปลง hex color เป็น RGB array [r, g, b]
+     *
+     * ใช้สำหรับคำนวณ gradient ใน generateImageFromConfig()
+     *
+     * @param  string  $hex  Hex color เช่น '#FF0000' หรือ 'FF0000'
+     * @return array [r, g, b]
+     */
+    protected function parseHex(string $hex): array
+    {
+        $hex = ltrim($hex, '#');
+
+        return [
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        ];
     }
 
     /**
