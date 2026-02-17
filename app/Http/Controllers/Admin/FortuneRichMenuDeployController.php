@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\LineRichMenu;
 use App\Services\FortuneRichMenuService;
+use App\Models\FortuneTellingSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -97,6 +99,72 @@ class FortuneRichMenuDeployController extends Controller
 
         } catch (\Throwable $e) {
             Log::error('FortuneRichMenu: Deploy ล้มเหลว', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * เช็คสถานะ Rich Menu จาก LINE API โดยตรง
+     *
+     * ตรวจสอบว่า default Rich Menu ที่ตั้งอยู่บน LINE Platform ตรงกับ DB หรือไม่
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function checkLineStatus()
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $token = $settings->line_channel_access_token ?? config('services.line.channel_token');
+
+            // 1. เช็ค default Rich Menu ปัจจุบัน
+            $defaultResponse = Http::withToken($token)
+                ->timeout(10)
+                ->get('https://api.line.me/v2/bot/user/all/richmenu');
+
+            $defaultRichMenuId = null;
+            if ($defaultResponse->successful()) {
+                $defaultRichMenuId = $defaultResponse->json('richMenuId');
+            }
+
+            // 2. เช็ค Rich Menu ทั้งหมดบน LINE
+            $listResponse = Http::withToken($token)
+                ->timeout(10)
+                ->get('https://api.line.me/v2/bot/richmenu/list');
+
+            $richMenus = [];
+            if ($listResponse->successful()) {
+                $richMenus = $listResponse->json('richmenus', []);
+            }
+
+            // 3. เช็คจาก DB
+            $activeMenu = LineRichMenu::where('name', 'fortune-telling-bot')
+                ->where('is_active', true)
+                ->latest()
+                ->first();
+
+            // 4. เปรียบเทียบ
+            $dbId = $activeMenu?->rich_menu_id;
+            $isMatched = $defaultRichMenuId && $dbId && $defaultRichMenuId === $dbId;
+
+            return response()->json([
+                'success' => true,
+                'line_default_rich_menu_id' => $defaultRichMenuId,
+                'db_active_rich_menu_id' => $dbId,
+                'is_matched' => $isMatched,
+                'total_rich_menus_on_line' => count($richMenus),
+                'rich_menus' => collect($richMenus)->map(fn ($m) => [
+                    'richMenuId' => $m['richMenuId'],
+                    'name' => $m['name'] ?? '-',
+                    'selected' => $m['selected'] ?? false,
+                ])->toArray(),
+            ]);
+
+        } catch (\Throwable $e) {
+            Log::error('FortuneRichMenu: เช็คสถานะ LINE ล้มเหลว', ['error' => $e->getMessage()]);
 
             return response()->json([
                 'success' => false,
