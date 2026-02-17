@@ -1118,11 +1118,28 @@ class FortuneConversationService
         // ถ้ายืนยัน หรือพิมพ์ข้อความอื่นเข้ามา → เริ่มทำนายเลย
         // ดึงข้อความต้นฉบับจาก state (ถ้ามี) หรือใช้ข้อความใหม่
         $originalMessage = $reading->getConversationState('original_message', $messageText);
+        $awaitingType = $reading->getConversationState('awaiting_type');
 
-        // ถ้าผู้ใช้ตอบ "ดู", "เอา", "ใช่" → ใช้ข้อความต้นฉบับที่เก็บไว้
-        // ถ้าผู้ใช้พิมพ์คำถามใหม่เข้ามา → ใช้ข้อความใหม่แทน
-        $isSimpleConfirm = $this->isSimpleConfirmResponse($messageText);
-        $questionText = $isSimpleConfirm ? $originalMessage : $messageText;
+        // ถ้าเป็น "รอคำถาม" (awaiting_type=question) → ใช้ข้อความใหม่เสมอ (เพราะผู้ใช้เลือกหัวข้อ/พิมพ์คำถาม)
+        // ยกเว้นตอบสั้นมาก "ดู", "เอา", "ใช่" → ถือเป็นขอดูดวงทั่วไป
+        if ($awaitingType === 'question') {
+            // ถ้าพิมพ์คำถามใหม่ (เช่น "ดูดวงความรัก", "การเงินปีนี้") → ใช้เป็นคำถาม
+            $questionText = $messageText;
+
+            // ถ้าตอบสั้นมาก "ดู", "เอา" → ใช้ "ดูดวงรวมทุกด้าน" เป็น default
+            $shortConfirms = ['ดู', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'ดูเลย', 'ดูค่ะ', 'ดูครับ', 'เอาค่ะ', 'เอาครับ'];
+            $textLower = mb_strtolower(trim($messageText));
+            foreach ($shortConfirms as $sc) {
+                if ($textLower === $sc) {
+                    $questionText = 'ดูดวงรวมทุกด้าน';
+                    break;
+                }
+            }
+        } else {
+            // flow ปกติ (ยืนยันดูดวง) → ถ้าตอบสั้น ใช้ original, ถ้าพิมพ์ใหม่ ใช้ใหม่
+            $isSimpleConfirm = $this->isSimpleConfirmResponse($messageText);
+            $questionText = $isSimpleConfirm ? $originalMessage : $messageText;
+        }
 
         // ปิด reading ที่รอยืนยันนี้ (จะสร้างใหม่ใน startNewConversation)
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
