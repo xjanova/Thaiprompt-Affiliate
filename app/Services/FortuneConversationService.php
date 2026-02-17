@@ -391,6 +391,11 @@ class FortuneConversationService
 
                     // ✅ ถ้าเป็นคำถามดูดวง → เริ่มทำนายเลยโดยไม่ถามซ้ำ (ไม่ต้อง greeting อีก)
                     if ($this->containsFortuneKeyword($messageText)) {
+                        // ถ้าพิมพ์แค่ "ดูดวง" เฉยๆ → ถามก่อนว่าอยากถามเรื่องอะไร
+                        if ($this->isGenericFortuneRequest($messageText)) {
+                            return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+                        }
+
                         if (! $this->canMakeAICall($facebookUserId)) {
                             return [
                                 'action' => 'ai_limit',
@@ -429,6 +434,11 @@ class FortuneConversationService
             // ✅ ถ้าผู้ใช้ถามคำถามดูดวงโดยตรง → เริ่มทำนายเลยไม่ต้องถามซ้ำ
             // เช่น "ดูดวงความรัก", "ปีนี้การเงินจะเป็นยังไง", "จะมีแฟนไหม" ฯลฯ
             if ($this->containsFortuneKeyword($messageText)) {
+                // ถ้าพิมพ์แค่ "ดูดวง" เฉยๆ (ไม่มีคำถามเพิ่ม) → ถามก่อนว่าอยากถามเรื่องอะไร
+                if ($this->isGenericFortuneRequest($messageText)) {
+                    return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+                }
+
                 return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
             }
 
@@ -1180,6 +1190,126 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูดวงแบบกว้างๆ ไม่มีคำถามเฉพาะเจาะจง
+     *
+     * เช่น "ดูดวง", "ดูดวงค่ะ", "ทำนาย", "หมอดู" → true
+     * แต่ "ดูดวงความรัก", "จะมีแฟนไหม", "การเงินปีหน้า" → false
+     *
+     * ใช้เพื่อตัดสินว่าควรถามคำถามก่อนเข้า AI หรือเข้าเลย
+     */
+    protected function isGenericFortuneRequest(string $text): bool
+    {
+        // คำขอดูดวงแบบกว้างๆ (ไม่มีคำถามเจาะจง)
+        $genericPatterns = [
+            'ดูดวง', 'ดูดวงค่ะ', 'ดูดวงครับ', 'ดูดวงหน่อย', 'ดูดวงให้หน่อย',
+            'ทำนาย', 'ทำนายค่ะ', 'ทำนายครับ', 'ทำนายให้หน่อย',
+            'หมอดู', 'อยากดูดวง', 'ขอดูดวง', 'ดูดวงด้วย',
+            'ดูดวงเลย', 'ดูดวงสิ', 'ดูดวงที', 'ดูดวงนะ',
+        ];
+
+        $textClean = mb_strtolower(trim($text));
+        // ลบคำลงท้าย (ค่ะ, ครับ, นะ, หน่อย, จ้า ฯลฯ) เพื่อเปรียบเทียบ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย)\s*$/u', '', $textClean);
+
+        foreach ($genericPatterns as $pattern) {
+            if ($textClean === mb_strtolower($pattern) || $textNormalized === mb_strtolower($pattern)) {
+                return true;
+            }
+        }
+
+        // ถ้ามีแค่ 1-2 คำที่เกี่ยวกับดวง (สั้นมาก ≤15 ตัวอักษร) → ถือเป็น generic
+        // เช่น "ดูดวง" = 6 chars, "ทำนาย" = 6 chars
+        if (mb_strlen($textNormalized) <= 15) {
+            $coreFortuneWords = ['ดูดวง', 'ทำนาย', 'หมอดู', 'ดวง', 'ไพ่', 'ทาโรต์'];
+            foreach ($coreFortuneWords as $word) {
+                if ($textNormalized === mb_strtolower($word)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ถามผู้ใช้ว่าอยากถามเรื่องอะไร ก่อนเข้าสู่การทำนาย
+     *
+     * ใช้เมื่อผู้ใช้พิมพ์แค่ "ดูดวง" เฉยๆ ไม่มีคำถามเจาะจง
+     * สร้าง reading ในสถานะ awaiting_question แล้วถามให้เลือกหัวข้อ
+     */
+    protected function askForQuestionBeforeReading(string $facebookUserId, string $messageText, ?array $userProfile = null): array
+    {
+        if (! is_array($userProfile) || empty($userProfile)) {
+            $userProfile = [
+                'name' => 'คุณ',
+                'id' => $facebookUserId,
+            ];
+        }
+
+        $name = $userProfile['name'] ?? 'คุณ';
+        $remaining = $this->getRemainingFreeQuestions($facebookUserId);
+
+        // เช็คสิทธิ์ก่อน
+        if (! $this->canMakeAICall($facebookUserId)) {
+            return [
+                'action' => 'ai_limit',
+                'message' => $this->getAILimitMessage(),
+                'reading' => null,
+            ];
+        }
+
+        // ปิด conversation เก่า
+        $this->closeAllActiveConversations($facebookUserId);
+
+        // สร้าง reading ในสถานะรอคำถาม
+        $reading = FortuneReading::create([
+            'facebook_user_id' => $facebookUserId,
+            'facebook_user_name' => $name,
+            'user_profile' => $userProfile,
+            'questions' => [$messageText],
+            'reading_type' => 'basic',
+            'conversation_status' => FortuneReading::STATUS_AWAITING_CONFIRMATION,
+            'response_type' => 'private_message',
+            'ai_response' => '',
+            'ai_provider' => '',
+        ]);
+
+        // เก็บว่าเป็น "รอคำถาม" (ไม่ใช่รอยืนยัน)
+        $reading->setConversationState('awaiting_type', 'question');
+        $reading->setConversationState('original_message', $messageText);
+
+        // สร้างข้อความถาม
+        $message = "🔮 สวัสดีค่ะ คุณ{$name}\n\n";
+        $message .= "จันทราพร้อมทำนายให้แล้วค่ะ ✨\n\n";
+        $message .= "📝 อยากถามเรื่องอะไรคะ? พิมพ์มาได้เลย\n";
+        $message .= "เช่น:\n";
+        $message .= "💕 \"ความรักปีนี้จะเป็นยังไง\"\n";
+        $message .= "💼 \"การงานจะดีขึ้นไหม\"\n";
+        $message .= "💰 \"การเงินเดือนนี้เป็นยังไง\"\n";
+        $message .= "🏥 \"สุขภาพช่วงนี้ต้องระวังอะไร\"\n\n";
+
+        if ($remaining < 99) {
+            $message .= "📊 สิทธิ์ฟรีคงเหลือ: {$remaining} ครั้ง\n\n";
+        }
+
+        $message .= "👇 พิมพ์คำถาม หรือเลือกหัวข้อด้านล่างค่ะ";
+
+        return [
+            'action' => 'awaiting_confirmation',
+            'message' => $message,
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'remaining' => $remaining,
+            'quick_replies' => [
+                ['label' => '💕 ความรัก', 'text' => 'ดูดวงความรัก'],
+                ['label' => '💼 การงาน', 'text' => 'ดูดวงการงาน'],
+                ['label' => '💰 การเงิน', 'text' => 'ดูดวงการเงิน'],
+                ['label' => '🌟 ดวงรวม', 'text' => 'ดูดวงรวมทุกด้าน'],
+            ],
+        ];
     }
 
     /**

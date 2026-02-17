@@ -206,9 +206,11 @@ class FortuneChannelManager
             }
         }
 
-        // เพิ่ม quick replies ถ้ามี
+        // เพิ่ม quick replies ถ้ามี (ใช้ค่าจาก result ถ้ามี, fallback เป็น getQuickReplies)
         if (! empty($result['show_quick_replies'])) {
-            $options['quick_replies'] = $this->getQuickReplies($action);
+            $options['quick_replies'] = ! empty($result['quick_replies'])
+                ? $result['quick_replies']
+                : $this->getQuickReplies($action);
         }
 
         $sent = $platformService->sendMessage($userId, $message, $options);
@@ -266,8 +268,8 @@ class FortuneChannelManager
                 // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
                 'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
 
-                // ยืนยันดูดวง → Flex สวยๆ พร้อมราคา + สิทธิ์
-                'awaiting_confirmation' => $this->sendLineConfirmationResponse($lineService, $userId, $result, $replyToken),
+                // ยืนยันดูดวง → ถ้าเป็น "รอคำถาม" ส่ง TopicFlex / ถ้าเป็นปกติ ส่ง ConfirmationFlex
+                'awaiting_confirmation' => $this->sendLineAwaitingResponse($lineService, $userId, $result, $replyToken),
 
                 // ขอวันเกิด → Flex พร้อมรูปแบบ + ราคา
                 'collecting_birthdate' => $this->sendLineBirthdateResponse($lineService, $userId, $result, $replyToken),
@@ -280,6 +282,9 @@ class FortuneChannelManager
 
                 // เช็คสิทธิ์ → Flex แสดงสิทธิ์ + ราคา
                 'check_remaining' => $this->sendLineCheckRemainingResponse($lineService, $userId, $result, $replyToken),
+
+                // สถานะ/สิทธิ์ (จาก Rich Menu) → Flex แสดงสถานะรวม
+                'check_status' => $this->sendLineCheckStatusResponse($lineService, $userId, $result, $replyToken),
 
                 // ปฏิเสธ → Flex บอกลา + ปุ่มแชร์
                 'declined' => $this->sendLineDeclinedResponse($lineService, $userId, $result, 'declined', $replyToken),
@@ -761,6 +766,69 @@ class FortuneChannelManager
     // ============================================================
     // 🆕 LINE Flex Handlers — ข้อความสวยงามทุกจุด
     // ============================================================
+
+    /**
+     * ส่ง Response awaiting_confirmation — ตรวจสอบว่าเป็น "รอคำถาม" หรือ "รอยืนยัน"
+     *
+     * ถ้า awaiting_type=question → ส่ง TopicFlex (เลือกหัวข้อดูดวง)
+     * ถ้า awaiting_type อื่น → ส่ง ConfirmationFlex (ปกติ)
+     */
+    protected function sendLineAwaitingResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $awaitingType = $reading?->getConversationState('awaiting_type');
+
+        // ถ้าเป็น "รอคำถาม" → ส่ง Flex เลือกหัวข้อ
+        if ($awaitingType === 'question') {
+            return $this->sendLineQuestionTopicResponse($lineService, $userId, $result, $replyToken);
+        }
+
+        // ปกติ → ส่ง Flex ยืนยัน
+        return $this->sendLineConfirmationResponse($lineService, $userId, $result, $replyToken);
+    }
+
+    /**
+     * ส่ง Flex เลือกหัวข้อดูดวง (เมื่อผู้ใช้พิมพ์ "ดูดวง" เฉยๆ)
+     */
+    protected function sendLineQuestionTopicResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+        $remaining = $result['remaining'] ?? 1;
+        $isUnlimited = $result['is_unlimited'] ?? ($remaining >= 99);
+
+        $flex = $lineService->buildQuestionTopicFlexMessage($userName, $remaining, $isUnlimited);
+
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, "🔮 อยากถามเรื่องอะไรคะ?", $replyToken);
+    }
+
+    /**
+     * ส่ง Flex สถานะ/สิทธิ์ (check_status จาก Rich Menu)
+     *
+     * แสดงข้อมูลรวม: สิทธิ์ฟรี, เครดิตพิเศษ, สถานะสมาชิก
+     */
+    protected function sendLineCheckStatusResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $userName = $result['user_name'] ?? 'คุณ';
+        $remaining = $result['remaining'] ?? 0;
+        $used = $result['used'] ?? 0;
+        $total = $result['total'] ?? 1;
+        $specialCredits = $result['special_credits'] ?? 0;
+        $isUnlimited = $result['is_unlimited'] ?? ($remaining >= 99);
+        $memberStatus = $result['member_status'] ?? null;
+
+        $flex = $lineService->buildStatusFlexMessage(
+            $userName,
+            $remaining,
+            $used,
+            $total,
+            $specialCredits,
+            $isUnlimited,
+            $memberStatus,
+        );
+
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, "✅ สถานะ: สิทธิ์ฟรี {$remaining} ครั้ง", $replyToken);
+    }
 
     /**
      * ส่ง Flex ยืนยันดูดวง (awaiting_confirmation)
@@ -1299,7 +1367,6 @@ class FortuneChannelManager
                 'type' => 'box', 'layout' => 'horizontal', 'spacing' => 'md', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
-                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '📊 เช็คสิทธิ์', 'text' => 'เช็คสิทธิ์']],
                 ],
             ],
         ];

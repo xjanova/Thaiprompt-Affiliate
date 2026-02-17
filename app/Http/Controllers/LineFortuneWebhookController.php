@@ -240,6 +240,7 @@ class LineFortuneWebhookController extends Controller
             'cancel' => $this->handleCancelPostback($userId, $replyToken),
             'view_last_reading' => $this->handleSimulateTextPostback($userId, $replyToken, 'ดูคำทำนาย'),
             'check_remaining' => $this->handleSimulateTextPostback($userId, $replyToken, 'เช็คสิทธิ์'),
+            'check_status' => $this->handleCheckStatusPostback($userId, $replyToken),
             'report_payment' => $this->handleReportPaymentPostback($userId, $replyToken),
             'help' => $this->handleHelpPostback($userId, $replyToken),
             'confirm_transfer' => $this->handleConfirmTransferPostback($userId, $replyToken, $params),
@@ -316,6 +317,76 @@ class LineFortuneWebhookController extends Controller
             ]);
             $this->lineService->sendMessageWithReplyFallback(
                 $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
+    }
+
+    /**
+     * แสดงสถานะ/สิทธิ์ (จากปุ่ม Rich Menu)
+     *
+     * ดึงข้อมูลสิทธิ์ฟรี, เครดิตพิเศษ, สถานะสมาชิก แล้วส่ง Flex
+     */
+    protected function handleCheckStatusPostback(string $userId, ?string $replyToken): void
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $maxFreeReadings = $settings->max_free_readings ?? 3;
+            $usedToday = FortuneReading::countTodayReadings($userId);
+
+            // ดึงข้อมูลเครดิตพิเศษ
+            $userCredit = \App\Models\FortuneUserCredit::findByUser($userId);
+            $specialCredits = 0;
+            $isUnlimited = false;
+
+            $normalRemaining = max(0, $maxFreeReadings - $usedToday);
+            if ($userCredit) {
+                if ($userCredit->isCurrentlyUnlimited()) {
+                    $isUnlimited = true;
+                    $normalRemaining = 99;
+                } elseif ($userCredit->isDailyResetActive()) {
+                    $normalRemaining = max($normalRemaining, $maxFreeReadings);
+                } else {
+                    $extraCredits = $userCredit->getRemainingCredits();
+                    $specialCredits = $extraCredits;
+                    $normalRemaining += $extraCredits;
+                }
+            }
+
+            // ดึงชื่อผู้ใช้จาก LINE Profile
+            $userName = 'คุณ';
+            $profile = $this->lineService->getUserProfile($userId);
+            if ($profile && ! empty($profile['displayName'])) {
+                $userName = $profile['displayName'];
+            }
+
+            // สร้าง result ในรูปแบบที่ FortuneChannelManager ต้องการ
+            $result = [
+                'action' => 'check_status',
+                'message' => "✅ สถานะ: สิทธิ์ฟรี {$normalRemaining} ครั้ง",
+                'reading' => null,
+                'user_name' => $userName,
+                'remaining' => $normalRemaining,
+                'used' => $usedToday,
+                'total' => $maxFreeReadings,
+                'special_credits' => $specialCredits,
+                'is_unlimited' => $isUnlimited,
+                'member_status' => null, // TODO: ตรวจสอบสมาชิก Thaiprompt ในอนาคต
+            ];
+
+            // ส่งผ่าน FortuneChannelManager เพื่อใช้ Flex Message
+            $this->channelManager->sendResponse(
+                FortuneChannelManager::PLATFORM_LINE,
+                $userId,
+                $result,
+                ['reply_token' => $replyToken]
+            );
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback check_status ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ ไม่สามารถดึงข้อมูลสถานะได้ กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
             );
         }
     }

@@ -962,30 +962,13 @@ class LineFortuneService implements MessagingPlatformInterface
                         ],
                     ],
                     [
-                        'type' => 'box',
-                        'layout' => 'horizontal',
-                        'spacing' => 'sm',
-                        'contents' => [
-                            [
-                                'type' => 'button',
-                                'style' => 'secondary',
-                                'height' => 'sm',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '📖 คำทำนายล่าสุด',
-                                    'text' => 'ดูคำทำนายล่าสุด',
-                                ],
-                            ],
-                            [
-                                'type' => 'button',
-                                'style' => 'secondary',
-                                'height' => 'sm',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '📊 เช็คสิทธิ์',
-                                    'text' => 'เช็คสิทธิ์',
-                                ],
-                            ],
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '📖 คำทำนายล่าสุด',
+                            'text' => 'ดูคำทำนายล่าสุด',
                         ],
                     ],
                 ],
@@ -1246,36 +1229,19 @@ class LineFortuneService implements MessagingPlatformInterface
                 'spacing' => 'sm',
                 'paddingAll' => 'lg',
                 'contents' => [
-                    // แถวที่ 1: ดูดวงอีกครั้ง + เช็คสิทธิ์
+                    // ปุ่มดูดวงอีกครั้ง
                     [
-                        'type' => 'box',
-                        'layout' => 'horizontal',
-                        'spacing' => 'md',
-                        'contents' => [
-                            [
-                                'type' => 'button',
-                                'style' => 'primary',
-                                'color' => '#6B46C1',
-                                'height' => 'sm',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '🔮 ดูดวงอีกครั้ง',
-                                    'text' => 'ดูดวง',
-                                ],
-                            ],
-                            [
-                                'type' => 'button',
-                                'style' => 'secondary',
-                                'height' => 'sm',
-                                'action' => [
-                                    'type' => 'message',
-                                    'label' => '📊 เช็คสิทธิ์',
-                                    'text' => 'เช็คสิทธิ์',
-                                ],
-                            ],
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#6B46C1',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '🔮 ดูดวงอีกครั้ง',
+                            'text' => 'ดูดวง',
                         ],
                     ],
-                    // แถวที่ 2: ปุ่มแชร์
+                    // ปุ่มแชร์
                     [
                         'type' => 'button',
                         'style' => 'secondary',
@@ -1731,21 +1697,10 @@ class LineFortuneService implements MessagingPlatformInterface
             ];
         }
 
-        // ปุ่มดูคำทำนายย้อนหลัง + เช็คสิทธิ์
+        // ปุ่มดูคำทำนายย้อนหลัง
         $footerContents[] = [
-            'type' => 'box',
-            'layout' => 'horizontal',
-            'spacing' => 'sm',
-            'contents' => [
-                [
-                    'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
-                    'action' => ['type' => 'message', 'label' => '📖 ย้อนหลัง', 'text' => 'ดูคำทำนายล่าสุด'],
-                ],
-                [
-                    'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
-                    'action' => ['type' => 'message', 'label' => '📊 เช็คสิทธิ์', 'text' => 'เช็คสิทธิ์'],
-                ],
-            ],
+            'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+            'action' => ['type' => 'message', 'label' => '📖 ย้อนหลัง', 'text' => 'ดูคำทำนายล่าสุด'],
         ];
 
         return [
@@ -1926,11 +1881,6 @@ class LineFortuneService implements MessagingPlatformInterface
                 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด'],
             ];
         }
-        $footerContents[] = [
-            'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
-            'action' => ['type' => 'message', 'label' => '📊 เช็คสิทธิ์', 'text' => 'เช็คสิทธิ์'],
-        ];
-
         return [
             'type' => 'bubble', 'size' => 'mega',
             'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
@@ -2036,6 +1986,334 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     ['type' => 'text', 'text' => '📊', 'size' => 'xxl', 'flex' => 0],
                     ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'สิทธิ์การใช้งาน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
+                ],
+            ],
+            'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
+            'footer' => ['type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg', 'contents' => $footerContents],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message ถามหัวข้อดูดวง (เมื่อผู้ใช้พิมพ์ "ดูดวง" เฉยๆ)
+     *
+     * แสดง topic buttons ให้เลือก: ความรัก, การงาน, การเงิน, ดวงรวม
+     * หรือพิมพ์คำถามเอง
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  int  $remaining  สิทธิ์ฟรีคงเหลือ
+     * @param  bool  $isUnlimited  สิทธิ์ไม่จำกัด
+     * @return array Flex Message bubble
+     */
+    public function buildQuestionTopicFlexMessage(string $userName, int $remaining, bool $isUnlimited = false): array
+    {
+        $creditText = $isUnlimited || $remaining >= 99
+            ? '✨ ไม่จำกัด ✨'
+            : "{$remaining} ครั้ง";
+        $creditColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
+
+        $bodyContents = [
+            // ทักทาย
+            [
+                'type' => 'text',
+                'text' => "สวัสดีค่ะ คุณ{$userName} ✨",
+                'size' => 'md',
+                'weight' => 'bold',
+                'color' => '#333333',
+            ],
+            [
+                'type' => 'text',
+                'text' => 'จันทราพร้อมทำนายให้แล้วค่ะ',
+                'size' => 'sm',
+                'color' => '#999999',
+                'margin' => 'sm',
+            ],
+            // สิทธิ์ฟรี
+            [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'xl',
+                'backgroundColor' => $remaining > 0 || $isUnlimited ? '#E8F5E9' : '#FFEBEE',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🆓 สิทธิ์ฟรีวันนี้:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                    ['type' => 'text', 'text' => $creditText, 'size' => 'sm', 'weight' => 'bold', 'color' => $creditColor, 'flex' => 2, 'align' => 'end'],
+                ],
+            ],
+            // เส้นแบ่ง
+            ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'],
+            // คำถาม
+            [
+                'type' => 'text',
+                'text' => '📝 อยากถามเรื่องอะไรคะ?',
+                'size' => 'lg',
+                'weight' => 'bold',
+                'color' => '#6B46C1',
+                'margin' => 'xl',
+            ],
+            [
+                'type' => 'text',
+                'text' => 'เลือกหัวข้อด้านล่าง หรือพิมพ์คำถามเองได้เลยค่ะ',
+                'size' => 'xs',
+                'color' => '#999999',
+                'margin' => 'sm',
+                'wrap' => true,
+            ],
+        ];
+
+        // ปุ่มเลือกหัวข้อ 2x2
+        $footerContents = [
+            // แถวที่ 1: ความรัก + การงาน
+            [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#E91E63',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '💕 ความรัก', 'text' => 'ดูดวงความรัก'],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#1565C0',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '💼 การงาน', 'text' => 'ดูดวงการงาน'],
+                    ],
+                ],
+            ],
+            // แถวที่ 2: การเงิน + ดวงรวม
+            [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#F57C00',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '💰 การเงิน', 'text' => 'ดูดวงการเงิน'],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#6B46C1',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '🌟 ดวงรวม', 'text' => 'ดูดวงรวมทุกด้าน'],
+                    ],
+                ],
+            ],
+            // แถวที่ 3: สุขภาพ
+            [
+                'type' => 'button',
+                'style' => 'secondary',
+                'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => '🏥 สุขภาพ', 'text' => 'ดูดวงสุขภาพ'],
+            ],
+        ];
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'flex' => 1,
+                        'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'เลือกเรื่องที่อยากถามค่ะ 🌙', 'color' => '#FFFFFFCC', 'size' => 'sm'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
+            'footer' => ['type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg', 'contents' => $footerContents],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message แสดงสถานะ/สิทธิ์ (check_status)
+     *
+     * แสดงข้อมูลรวม: สิทธิ์ฟรี, เครดิตพิเศษ, สถานะสมาชิก
+     *
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  int  $remaining  สิทธิ์ฟรีคงเหลือ
+     * @param  int  $used  จำนวนที่ใช้ไปแล้ว
+     * @param  int  $total  จำนวนสิทธิ์ทั้งหมดต่อวัน
+     * @param  int  $specialCredits  เครดิตพิเศษจาก admin
+     * @param  bool  $isUnlimited  สิทธิ์ไม่จำกัด
+     * @param  string|null  $memberStatus  สถานะสมาชิก (ถ้ามี)
+     * @return array Flex Message bubble
+     */
+    public function buildStatusFlexMessage(
+        string $userName,
+        int $remaining,
+        int $used,
+        int $total,
+        int $specialCredits = 0,
+        bool $isUnlimited = false,
+        ?string $memberStatus = null,
+    ): array {
+        $creditText = $isUnlimited || $remaining >= 99
+            ? '✨ ไม่จำกัด ✨'
+            : "{$remaining} ครั้ง";
+        $statusColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
+
+        $bodyContents = [
+            // ชื่อผู้ใช้
+            [
+                'type' => 'text',
+                'text' => "คุณ{$userName}",
+                'size' => 'lg',
+                'weight' => 'bold',
+                'color' => '#333333',
+            ],
+        ];
+
+        // กล่องสถานะสมาชิก (ถ้ามี)
+        if ($memberStatus) {
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'lg',
+                'backgroundColor' => '#E8F5E9',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '👤 สมาชิก:', 'size' => 'sm', 'flex' => 2, 'color' => '#555555'],
+                    ['type' => 'text', 'text' => $memberStatus, 'size' => 'sm', 'weight' => 'bold', 'color' => '#2E7D32', 'flex' => 3, 'align' => 'end'],
+                ],
+            ];
+        }
+
+        // กล่องสิทธิ์ฟรี
+        $bodyContents[] = [
+            'type' => 'box',
+            'layout' => 'vertical',
+            'margin' => 'lg',
+            'backgroundColor' => '#F3E5F5',
+            'cornerRadius' => 'lg',
+            'paddingAll' => 'lg',
+            'contents' => [
+                [
+                    'type' => 'text',
+                    'text' => '🔮 สิทธิ์ดูดวงฟรี',
+                    'size' => 'md',
+                    'weight' => 'bold',
+                    'color' => '#6B46C1',
+                ],
+                ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+                [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'margin' => 'md',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '📊 ใช้วันนี้:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                        ['type' => 'text', 'text' => $isUnlimited ? '—' : "{$used}/{$total} ครั้ง", 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333', 'flex' => 2, 'align' => 'end'],
+                    ],
+                ],
+                [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'margin' => 'sm',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '🆓 คงเหลือ:', 'size' => 'md', 'flex' => 3, 'color' => '#555555'],
+                        ['type' => 'text', 'text' => $creditText, 'size' => 'md', 'weight' => 'bold', 'color' => $statusColor, 'flex' => 2, 'align' => 'end'],
+                    ],
+                ],
+            ],
+        ];
+
+        // เครดิตพิเศษ (ถ้ามี)
+        if ($specialCredits > 0) {
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'lg',
+                'backgroundColor' => '#FFF8E1',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🎁 เครดิตพิเศษ:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                    ['type' => 'text', 'text' => "{$specialCredits} ครั้ง", 'size' => 'sm', 'weight' => 'bold', 'color' => '#F57C00', 'flex' => 2, 'align' => 'end'],
+                ],
+            ];
+        }
+
+        // เส้นแบ่ง + คำแนะนำ
+        $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+        $bodyContents[] = [
+            'type' => 'text',
+            'text' => '💡 พิมพ์ "ดูดวง" เพื่อเริ่มถามดวงชะตาได้เลยค่ะ',
+            'size' => 'xs',
+            'color' => '#999999',
+            'margin' => 'lg',
+            'wrap' => true,
+        ];
+
+        // ปุ่ม footer
+        $footerContents = [
+            [
+                'type' => 'button',
+                'style' => 'primary',
+                'color' => '#6B46C1',
+                'height' => 'sm',
+                'action' => ['type' => 'message', 'label' => '🔮 ดูดวงเลย', 'text' => 'ดูดวง'],
+            ],
+            [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '📖 คำทำนายล่าสุด', 'text' => 'ดูคำทำนายล่าสุด'],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => ['type' => 'uri', 'label' => '📤 แชร์', 'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))],
+                    ],
+                ],
+            ],
+        ];
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => '#00897B']],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '✅', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'flex' => 1,
+                        'paddingStart' => 'md',
+                        'justifyContent' => 'center',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'สถานะ / สิทธิ์', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง 🌙', 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
                 ],
             ],
             'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
@@ -2793,7 +3071,6 @@ class LineFortuneService implements MessagingPlatformInterface
                     ['type' => 'text', 'text' => '📋 คำสั่งที่ใช้ได้', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333', 'margin' => 'md'],
                     ['type' => 'text', 'text' => '• "ดูดวง" — เริ่มดูดวงฟรี', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
                     ['type' => 'text', 'text' => '• "ดูดวงละเอียด" — ดูดวงแบบเสียเงิน', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
-                    ['type' => 'text', 'text' => '• "เช็คสิทธิ์" — ดูสิทธิ์คงเหลือ', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
                     ['type' => 'text', 'text' => '• "ดูคำทำนาย" — ดูคำทำนายล่าสุด', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
                 ],
             ],
