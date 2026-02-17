@@ -190,7 +190,7 @@ class FortuneRichMenuService
         $this->drawThickLine($img, self::COL_WIDTH_1, self::ROW_HEIGHT, self::COL_WIDTH_1, self::HEIGHT, $gridLine, 2);
         $this->drawThickLine($img, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::ROW_HEIGHT, self::COL_WIDTH_1 + self::COL_WIDTH_2, self::HEIGHT, $gridLine, 2);
 
-        // === ปุ่ม 1: 🔮 ดูดวง (Row1, Col1) — สว่างที่สุด ===
+        // === ปุ่ม 1: ดูดวง (Row1, Col1) — สว่างที่สุด ===
         $btn1Cx = self::COL_WIDTH_1 / 2;
         $btn1Cy = self::ROW_HEIGHT / 2;
         // Glow effect
@@ -199,11 +199,12 @@ class FortuneRichMenuService
             $glowColor = imagecolorallocatealpha($img, 124, 58, 237, $alpha);
             imagefilledellipse($img, (int) $btn1Cx, (int) $btn1Cy, $r * 2, $r * 2, $glowColor);
         }
-        $this->drawCenteredText($img, $font, 90, $btn1Cx, $btn1Cy - 80, '🔮', $white);
-        $this->drawCenteredText($img, $font, 62, $btn1Cx, $btn1Cy + 30, 'ดูดวง', $gold);
-        $this->drawCenteredText($img, $font, 28, $btn1Cx, $btn1Cy + 100, 'ฟรี! ไม่มีค่าใช้จ่าย', $lightPurple);
+        // ไอคอน: วงกลมลูกแก้วม่วง
+        $this->drawIcon($img, $btn1Cx, $btn1Cy - 100, 'crystal_ball', $purpleBright, $gold, $white);
+        $this->drawCenteredText($img, $font, 62, $btn1Cx, $btn1Cy + 50, 'ดูดวง', $gold);
+        $this->drawCenteredText($img, $font, 28, $btn1Cx, $btn1Cy + 120, 'ฟรี! ไม่มีค่าใช้จ่าย', $lightPurple);
 
-        // === ปุ่ม 2: ✨ ดูดวงละเอียด (Row1, Col2) — สีทอง ===
+        // === ปุ่ม 2: ดูดวงละเอียด (Row1, Col2) — สีทอง ===
         $btn2Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 / 2;
         $btn2Cy = self::ROW_HEIGHT / 2;
         // พื้นหลัง gradient ทอง
@@ -215,29 +216,30 @@ class FortuneRichMenuService
             $goldGrad = imagecolorallocatealpha($img, $r2, $g2, $b2, 90);
             imageline($img, self::COL_WIDTH_1 + 2, $y, self::COL_WIDTH_1 + self::COL_WIDTH_2 - 2, $y, $goldGrad);
         }
-        $this->drawCenteredText($img, $font, 70, $btn2Cx, $btn2Cy - 80, '✨', $white);
-        $this->drawCenteredText($img, $font, 48, $btn2Cx, $btn2Cy + 10, 'ดูดวงละเอียด', $white);
+        // ไอคอน: ดาวทอง
+        $this->drawIcon($img, $btn2Cx, $btn2Cy - 100, 'star', $gold, $goldDark, $white);
+        $this->drawCenteredText($img, $font, 48, $btn2Cx, $btn2Cy + 30, 'ดูดวงละเอียด', $white);
         $price = number_format($this->lineService->getDeepReadingPrice(), 0);
-        $this->drawCenteredText($img, $font, 36, $btn2Cx, $btn2Cy + 80, "{$price} บาท", $gold);
-        // Badge ราคา
-        $badgeY = $btn2Cy + 140;
-        $this->drawCenteredText($img, $font, 24, $btn2Cx, $badgeY, 'วิเคราะห์เจาะลึก + ดวงชะตา', $lightPurple);
+        $this->drawCenteredText($img, $font, 36, $btn2Cx, $btn2Cy + 100, "{$price} บาท", $gold);
+        $this->drawCenteredText($img, $font, 24, $btn2Cx, $btn2Cy + 160, 'วิเคราะห์เจาะลึก + ดวงชะตา', $lightPurple);
 
-        // === ปุ่ม 3: 📖 ดูคำทำนายล่าสุด (Row1, Col3) ===
+        // === ปุ่ม 3: ดูคำทำนายล่าสุด (Row1, Col3) ===
         $btn3Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 + self::COL_WIDTH_3 / 2;
         $btn3Cy = self::ROW_HEIGHT / 2;
-        $this->drawCenteredText($img, $font, 70, $btn3Cx, $btn3Cy - 60, '📖', $white);
-        $this->drawCenteredText($img, $font, 38, $btn3Cx, $btn3Cy + 30, 'ดูคำทำนาย', $white);
-        $this->drawCenteredText($img, $font, 38, $btn3Cx, $btn3Cy + 90, 'ล่าสุด', $white);
+        // ไอคอน: หนังสือ/ม้วน
+        $this->drawIcon($img, $btn3Cx, $btn3Cy - 80, 'scroll', $lightPurple, $purple2, $white);
+        $this->drawCenteredText($img, $font, 38, $btn3Cx, $btn3Cy + 50, 'ดูคำทำนาย', $white);
+        $this->drawCenteredText($img, $font, 38, $btn3Cx, $btn3Cy + 110, 'ล่าสุด', $white);
 
-        // === ปุ่ม 4: 📊 เช็คสิทธิ์ (Row2, Col1) ===
+        // === ปุ่ม 4: เช็คสิทธิ์ (Row2, Col1) ===
         $btn4Cx = self::COL_WIDTH_1 / 2;
         $btn4Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
-        $this->drawCenteredText($img, $font, 70, $btn4Cx, $btn4Cy - 60, '📊', $white);
-        $this->drawCenteredText($img, $font, 38, $btn4Cx, $btn4Cy + 30, 'เช็คสิทธิ์', $white);
-        $this->drawCenteredText($img, $font, 24, $btn4Cx, $btn4Cy + 90, 'ดูรอบฟรีที่เหลือ', $lightPurple);
+        // ไอคอน: กราฟ/บาร์
+        $this->drawIcon($img, $btn4Cx, $btn4Cy - 80, 'chart', $purpleBright, $lightPurple, $white);
+        $this->drawCenteredText($img, $font, 38, $btn4Cx, $btn4Cy + 50, 'เช็คสิทธิ์', $white);
+        $this->drawCenteredText($img, $font, 24, $btn4Cx, $btn4Cy + 110, 'ดูรอบฟรีที่เหลือ', $lightPurple);
 
-        // === ปุ่ม 5: ⚠️ แจ้งปัญหาโอน (Row2, Col2) — สีส้ม/แดงเด่น ===
+        // === ปุ่ม 5: แจ้งปัญหาโอน (Row2, Col2) — สีส้ม/แดงเด่น ===
         $btn5Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 / 2;
         $btn5Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
         // พื้นหลังส้มเรือง
@@ -249,17 +251,19 @@ class FortuneRichMenuService
             $orangeGrad = imagecolorallocatealpha($img, $r5, $g5, $b5, 85);
             imageline($img, self::COL_WIDTH_1 + 2, $y, self::COL_WIDTH_1 + self::COL_WIDTH_2 - 2, $y, $orangeGrad);
         }
-        $this->drawCenteredText($img, $font, 70, $btn5Cx, $btn5Cy - 80, '⚠️', $white);
-        $this->drawCenteredText($img, $font, 36, $btn5Cx, $btn5Cy + 10, 'แจ้งปัญหา', $this->hexColor($img, '#FFA726'));
-        $this->drawCenteredText($img, $font, 36, $btn5Cx, $btn5Cy + 70, 'การโอนเงิน', $this->hexColor($img, '#FFA726'));
-        $this->drawCenteredText($img, $font, 22, $btn5Cx, $btn5Cy + 130, 'โอนแล้วไม่ได้คำทำนาย?', $lightGray);
+        // ไอคอน: สามเหลี่ยมเตือน
+        $this->drawIcon($img, $btn5Cx, $btn5Cy - 100, 'warning', $orange, $redOrange, $white);
+        $this->drawCenteredText($img, $font, 36, $btn5Cx, $btn5Cy + 20, 'แจ้งปัญหา', $this->hexColor($img, '#FFA726'));
+        $this->drawCenteredText($img, $font, 36, $btn5Cx, $btn5Cy + 80, 'การโอนเงิน', $this->hexColor($img, '#FFA726'));
+        $this->drawCenteredText($img, $font, 22, $btn5Cx, $btn5Cy + 140, 'โอนแล้วไม่ได้คำทำนาย?', $lightGray);
 
-        // === ปุ่ม 6: ℹ️ วิธีใช้งาน (Row2, Col3) ===
+        // === ปุ่ม 6: วิธีใช้งาน (Row2, Col3) ===
         $btn6Cx = self::COL_WIDTH_1 + self::COL_WIDTH_2 + self::COL_WIDTH_3 / 2;
         $btn6Cy = self::ROW_HEIGHT + self::ROW_HEIGHT / 2;
-        $this->drawCenteredText($img, $font, 70, $btn6Cx, $btn6Cy - 60, 'ℹ️', $white);
-        $this->drawCenteredText($img, $font, 38, $btn6Cx, $btn6Cy + 30, 'วิธีใช้งาน', $white);
-        $this->drawCenteredText($img, $font, 24, $btn6Cx, $btn6Cy + 90, 'คู่มือ & ช่วยเหลือ', $lightPurple);
+        // ไอคอน: วงกลม i
+        $this->drawIcon($img, $btn6Cx, $btn6Cy - 80, 'info', $purpleBright, $lightPurple, $white);
+        $this->drawCenteredText($img, $font, 38, $btn6Cx, $btn6Cy + 50, 'วิธีใช้งาน', $white);
+        $this->drawCenteredText($img, $font, 24, $btn6Cx, $btn6Cy + 110, 'คู่มือ & ช่วยเหลือ', $lightPurple);
 
         // === Branding ด้านบน ===
         $this->drawCenteredText($img, $font, 30, self::WIDTH / 2, 50, '~~ แม่หมอจันทราพยากรณ์ ~~', $gold);
@@ -399,5 +403,111 @@ class FortuneRichMenuService
         imagesetthickness($img, $thickness);
         imageline($img, $x1, $y1, $x2, $y2, $color);
         imagesetthickness($img, 1);
+    }
+
+    /**
+     * วาดไอคอนแบบ vector (ใช้ GD shapes แทน emoji)
+     *
+     * @param  resource  $img  GD image
+     * @param  float  $cx  จุดกลาง X
+     * @param  float  $cy  จุดกลาง Y
+     * @param  string  $type  ชนิดไอคอน
+     * @param  int  $color1  สีหลัก
+     * @param  int  $color2  สีรอง
+     * @param  int  $white  สีขาว
+     */
+    protected function drawIcon($img, float $cx, float $cy, string $type, int $color1, int $color2, int $white): void
+    {
+        $x = (int) $cx;
+        $y = (int) $cy;
+
+        switch ($type) {
+            case 'crystal_ball':
+                // วงกลมลูกแก้ว + ขาตั้ง
+                // Glow รอบนอก
+                $glowPurple = imagecolorallocatealpha($img, 180, 130, 255, 80);
+                imagefilledellipse($img, $x, $y, 160, 160, $glowPurple);
+                // ลูกแก้วหลัก
+                imagefilledellipse($img, $x, $y, 120, 120, $color1);
+                // Highlight
+                $highlight = imagecolorallocatealpha($img, 255, 255, 255, 80);
+                imagefilledellipse($img, $x - 18, $y - 20, 40, 30, $highlight);
+                // ขาตั้ง (สามเหลี่ยมคว่ำ)
+                $points = [$x - 40, $y + 55, $x + 40, $y + 55, $x, $y + 85];
+                imagefilledpolygon($img, $points, $color2);
+                break;
+
+            case 'star':
+                // ดาว 5 แฉก
+                $outerR = 65;
+                $innerR = 30;
+                $starPoints = [];
+                for ($i = 0; $i < 10; $i++) {
+                    $angle = deg2rad(-90 + $i * 36);
+                    $r = ($i % 2 === 0) ? $outerR : $innerR;
+                    $starPoints[] = $x + (int) ($r * cos($angle));
+                    $starPoints[] = $y + (int) ($r * sin($angle));
+                }
+                imagefilledpolygon($img, $starPoints, $color1);
+                // Inner glow
+                $innerGlow = imagecolorallocatealpha($img, 255, 255, 200, 70);
+                imagefilledellipse($img, $x, $y, 30, 30, $innerGlow);
+                break;
+
+            case 'scroll':
+                // ม้วนกระดาษ/หนังสือ
+                // กรอบหนังสือ
+                imagefilledrectangle($img, $x - 50, $y - 50, $x + 50, $y + 50, $color1);
+                // เส้นบรรทัด
+                for ($line = -30; $line <= 30; $line += 15) {
+                    imagesetthickness($img, 2);
+                    imageline($img, $x - 30, $y + $line, $x + 30, $y + $line, $color2);
+                }
+                imagesetthickness($img, 1);
+                // ม้วนบน-ล่าง
+                imagefilledellipse($img, $x, $y - 50, 110, 20, $white);
+                imagefilledellipse($img, $x, $y + 50, 110, 20, $white);
+                break;
+
+            case 'chart':
+                // กราฟแท่ง 3 แท่ง
+                $barW = 28;
+                $gap = 10;
+                $baseY = $y + 50;
+                // แท่ง 1 (สั้น)
+                imagefilledrectangle($img, $x - $barW - $gap - $barW, $baseY - 40, $x - $gap - $barW, $baseY, $color1);
+                // แท่ง 2 (สูง)
+                imagefilledrectangle($img, $x - $barW / 2, $baseY - 80, $x + $barW / 2, $baseY, $color2);
+                // แท่ง 3 (กลาง)
+                imagefilledrectangle($img, $x + $gap + $barW, $baseY - 60, $x + $gap + $barW + $barW, $baseY, $color1);
+                // เส้นแกน
+                imagesetthickness($img, 3);
+                imageline($img, $x - 60, $baseY, $x + 70, $baseY, $white);
+                imageline($img, $x - 60, $baseY - 90, $x - 60, $baseY, $white);
+                imagesetthickness($img, 1);
+                break;
+
+            case 'warning':
+                // สามเหลี่ยมเตือน
+                $triPoints = [
+                    $x, $y - 65,      // ยอด
+                    $x - 65, $y + 45,  // ซ้ายล่าง
+                    $x + 65, $y + 45,  // ขวาล่าง
+                ];
+                imagefilledpolygon($img, $triPoints, $color1);
+                // เครื่องหมาย !
+                imagefilledrectangle($img, $x - 7, $y - 35, $x + 7, $y + 10, $white);
+                imagefilledellipse($img, $x, $y + 28, 16, 16, $white);
+                break;
+
+            case 'info':
+                // วงกลม i
+                imagefilledellipse($img, $x, $y, 110, 110, $color1);
+                // จุดบน i
+                imagefilledellipse($img, $x, $y - 25, 18, 18, $white);
+                // แท่ง i
+                imagefilledrectangle($img, $x - 7, $y - 10, $x + 7, $y + 35, $white);
+                break;
+        }
     }
 }
