@@ -3847,6 +3847,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/rich-menu', [FortuneRichMenuDeployController::class, 'index'])->name('rich-menu.index');
     Route::post('/rich-menu/preview', [FortuneRichMenuDeployController::class, 'preview'])->name('rich-menu.preview');
     Route::post('/rich-menu/deploy', [FortuneRichMenuDeployController::class, 'deploy'])->name('rich-menu.deploy');
+    Route::post('/rich-menu/re-set-default', [FortuneRichMenuDeployController::class, 'reSetDefault'])->name('rich-menu.re-set-default');
     Route::get('/rich-menu/check-line-status', [FortuneRichMenuDeployController::class, 'checkLineStatus'])->name('rich-menu.check-line-status');
 
     // การตั้งค่า

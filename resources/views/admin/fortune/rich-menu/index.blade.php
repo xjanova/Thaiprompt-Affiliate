@@ -104,6 +104,28 @@
                 </template>
                 <span>🚀 Deploy Rich Menu</span>
             </button>
+
+            {{-- Re-set Default (ถ้า Rich Menu ไม่ขึ้น) --}}
+            @if($activeMenu)
+            <button @click="reSetDefault()"
+                    :disabled="loading"
+                    class="flex items-center justify-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white rounded-xl font-semibold transition shadow-lg hover:shadow-xl">
+                <template x-if="reSetLoading">
+                    <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </template>
+                <span>🔄 Re-set Default</span>
+            </button>
+            @endif
+        </div>
+
+        {{-- คำอธิบายปุ่ม --}}
+        <div class="mt-4 text-sm text-gray-500 dark:text-gray-400 space-y-1">
+            <p>🖼️ <strong>Preview</strong> — สร้างภาพดูตัวอย่าง (ไม่ deploy)</p>
+            <p>🚀 <strong>Deploy</strong> — สร้างใหม่ทั้งหมดแล้ว deploy ไป LINE</p>
+            <p>🔄 <strong>Re-set Default</strong> — ใช้เมื่อ Rich Menu ไม่ขึ้น ส่งคำสั่ง set default อีกครั้ง (ไม่สร้างภาพใหม่)</p>
         </div>
 
         {{-- Preview Image --}}
@@ -177,6 +199,7 @@ function richMenuDeploy() {
         loading: false,
         previewLoading: false,
         deployLoading: false,
+        reSetLoading: false,
         previewUrl: null,
         successMessage: null,
         errorMessage: null,
@@ -207,6 +230,35 @@ function richMenuDeploy() {
                 this.errorMessage = 'เกิดข้อผิดพลาด: ' + e.message;
             } finally {
                 this.previewLoading = false;
+                this.loading = false;
+            }
+        },
+
+        async reSetDefault() {
+            this.reSetLoading = true;
+            this.loading = true;
+            this.successMessage = null;
+            this.errorMessage = null;
+
+            try {
+                const response = await fetch('{{ route("admin.fortune.rich-menu.re-set-default") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'Accept': 'application/json',
+                    },
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    this.successMessage = data.message || 'Re-set default สำเร็จ!';
+                } else {
+                    this.errorMessage = data.error || 'Re-set default ไม่สำเร็จ';
+                }
+            } catch (e) {
+                this.errorMessage = 'เกิดข้อผิดพลาด: ' + e.message;
+            } finally {
+                this.reSetLoading = false;
                 this.loading = false;
             }
         },

@@ -108,6 +108,59 @@ class FortuneRichMenuDeployController extends Controller
     }
 
     /**
+     * Re-set Rich Menu ที่มีอยู่เป็น default อีกครั้ง (ไม่สร้างใหม่)
+     *
+     * ใช้กรณีที่ Rich Menu ไม่ขึ้น ให้ลอง re-set default
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function reSetDefault()
+    {
+        try {
+            // ดึง Rich Menu ID ที่ active ใน DB
+            $activeMenu = LineRichMenu::where('name', 'fortune-telling-bot')
+                ->where('is_active', true)
+                ->latest()
+                ->first();
+
+            if (! $activeMenu || ! $activeMenu->rich_menu_id) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'ไม่พบ Rich Menu ที่ active ใน DB — กรุณา Deploy ใหม่',
+                ], 404);
+            }
+
+            $richMenuId = $activeMenu->rich_menu_id;
+
+            // เรียก LINE API เพื่อ set default อีกครั้ง
+            $service = new FortuneRichMenuService;
+            $lineService = $service->getLineService();
+            $result = $lineService->setDefaultRichMenu($richMenuId);
+
+            if ($result) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Re-set default Rich Menu สำเร็จ! ({$richMenuId})",
+                    'rich_menu_id' => $richMenuId,
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => "Re-set default ไม่สำเร็จ — LINE API อาจมีปัญหา",
+            ], 500);
+
+        } catch (\Throwable $e) {
+            Log::error('FortuneRichMenu: Re-set default ล้มเหลว', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * เช็คสถานะ Rich Menu จาก LINE API โดยตรง
      *
      * ตรวจสอบว่า default Rich Menu ที่ตั้งอยู่บน LINE Platform ตรงกับ DB หรือไม่

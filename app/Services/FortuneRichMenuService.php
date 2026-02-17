@@ -40,6 +40,18 @@ class FortuneRichMenuService
     }
 
     /**
+     * ดึง LineFortuneService instance
+     *
+     * ใช้สำหรับเรียก API method โดยตรง เช่น setDefaultRichMenu
+     *
+     * @return LineFortuneService
+     */
+    public function getLineService(): LineFortuneService
+    {
+        return $this->lineService;
+    }
+
+    /**
      * สร้างภาพ Rich Menu + deploy ไป LINE API + ตั้งเป็น default
      *
      * @return array ผลลัพธ์ ['success', 'rich_menu_id', 'menu', 'error']
