@@ -3822,6 +3822,7 @@ Route::prefix('developers')->name('developers.')->group(function () {
 
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBillingController;
+use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
@@ -3841,6 +3842,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/astrology/preview-chart', [FortuneAstrologyController::class, 'previewChart'])->name('astrology.preview-chart');
     Route::post('/astrology/test-calculation', [FortuneAstrologyController::class, 'testCalculation'])->name('astrology.test-calculation');
     Route::get('/astrology/test-png-chart', [FortuneAstrologyController::class, 'testPngChart'])->name('astrology.test-png-chart');
+
+    // Rich Menu Deploy (แม่หมอจันทรา)
+    Route::get('/rich-menu', [FortuneRichMenuDeployController::class, 'index'])->name('rich-menu.index');
+    Route::post('/rich-menu/preview', [FortuneRichMenuDeployController::class, 'preview'])->name('rich-menu.preview');
+    Route::post('/rich-menu/deploy', [FortuneRichMenuDeployController::class, 'deploy'])->name('rich-menu.deploy');
 
     // การตั้งค่า
     Route::get('/settings', [FortuneSettingsController::class, 'index'])->name('settings.index');

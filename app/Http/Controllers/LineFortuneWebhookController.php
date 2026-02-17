@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneChannelManager;
 use App\Services\LineFortuneService;
@@ -237,6 +238,11 @@ class LineFortuneWebhookController extends Controller
         match ($action) {
             'deep_reading' => $this->handleDeepReadingPostback($userId, $replyToken),
             'cancel' => $this->handleCancelPostback($userId, $replyToken),
+            'view_last_reading' => $this->handleSimulateTextPostback($userId, $replyToken, 'ดูคำทำนาย'),
+            'check_remaining' => $this->handleSimulateTextPostback($userId, $replyToken, 'เช็คสิทธิ์'),
+            'report_payment' => $this->handleReportPaymentPostback($userId, $replyToken),
+            'help' => $this->handleHelpPostback($userId, $replyToken),
+            'confirm_transfer' => $this->handleConfirmTransferPostback($userId, $replyToken, $params),
             default => null,
         };
     }
@@ -280,6 +286,163 @@ class LineFortuneWebhookController extends Controller
             );
         } catch (\Exception $e) {
             Log::error('LINE Webhook: Postback cancel ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
+    }
+
+    /**
+     * จำลองส่งข้อความ text ผ่าน channelManager (ใช้กับ postback ที่ trigger เหมือนพิมพ์ข้อความ)
+     */
+    protected function handleSimulateTextPostback(string $userId, ?string $replyToken, string $text): void
+    {
+        try {
+            $this->channelManager->processMessage(
+                FortuneChannelManager::PLATFORM_LINE,
+                $userId,
+                $text,
+                null,
+                ['reply_token' => $replyToken]
+            );
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback simulate text ล้มเหลว', [
+                'user_id' => $userId,
+                'text' => $text,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
+    }
+
+    /**
+     * แจ้งปัญหาการโอนเงิน — แสดงคำเตือน + ข้อมูลบิลที่รอชำระ
+     */
+    protected function handleReportPaymentPostback(string $userId, ?string $replyToken): void
+    {
+        try {
+            // หาบิลที่รอชำระ
+            $pendingReading = FortuneReading::where('facebook_user_id', $userId)
+                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('is_paid', false)
+                ->whereNotNull('unique_payment_amount_id')
+                ->with('uniquePaymentAmount')
+                ->latest()
+                ->first();
+
+            $uniqueAmount = null;
+            $expiresAt = null;
+
+            if ($pendingReading && $pendingReading->uniquePaymentAmount) {
+                $uniqueAmount = (float) $pendingReading->uniquePaymentAmount->amount;
+                $expiresAtCarbon = $pendingReading->uniquePaymentAmount->expires_at ?? null;
+                $expiresAt = $expiresAtCarbon ? $expiresAtCarbon->format('H:i') : null;
+            }
+
+            $flex = $this->lineService->buildPaymentProblemFlexMessage(
+                $pendingReading,
+                $uniqueAmount,
+                $expiresAt
+            );
+
+            $this->lineService->sendFlexWithReplyFallback(
+                $userId, $flex, '⚠️ แจ้งปัญหาการโอนเงิน', $replyToken
+            );
+
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback report_payment ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
+    }
+
+    /**
+     * แสดงวิธีใช้งาน (help)
+     */
+    protected function handleHelpPostback(string $userId, ?string $replyToken): void
+    {
+        try {
+            $flex = $this->lineService->buildHelpFlexMessage();
+
+            $this->lineService->sendFlexWithReplyFallback(
+                $userId, $flex, 'ℹ️ วิธีใช้งานแม่หมอจันทรา', $replyToken
+            );
+
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback help ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
+            );
+        }
+    }
+
+    /**
+     * ยืนยันว่าโอนเงินแล้ว — บันทึก transfer_reported + แจ้ง admin
+     */
+    protected function handleConfirmTransferPostback(string $userId, ?string $replyToken, array $params): void
+    {
+        try {
+            $readingId = $params['reading_id'] ?? null;
+
+            // หา reading ที่ตรงกับ ID + user
+            $reading = null;
+            if ($readingId) {
+                $reading = FortuneReading::where('id', $readingId)
+                    ->where('facebook_user_id', $userId)
+                    ->first();
+            }
+
+            // ถ้าไม่มี reading_id → หาจาก pending ล่าสุด
+            if (! $reading) {
+                $reading = FortuneReading::where('facebook_user_id', $userId)
+                    ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                    ->where('is_paid', false)
+                    ->latest()
+                    ->first();
+            }
+
+            if (! $reading) {
+                $this->lineService->sendMessageWithReplyFallback(
+                    $userId, 'ไม่พบบิลที่รอชำระค่ะ กรุณาเริ่มดูดวงใหม่ 🔮', $replyToken
+                );
+
+                return;
+            }
+
+            // บันทึกว่าผู้ใช้แจ้งว่าโอนแล้ว
+            $reading->update([
+                'transfer_reported' => true,
+                'transfer_reported_at' => now(),
+            ]);
+
+            Log::info('LINE Webhook: ผู้ใช้แจ้งว่าโอนเงินแล้ว', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'bill_ref' => $reading->bill_reference,
+            ]);
+
+            // ตอบผู้ใช้
+            $billRef = $reading->bill_reference ?? $reading->id;
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId,
+                "✅ รับแจ้งแล้วค่ะ! (บิล: {$billRef})\n\nทีมงานจะตรวจสอบและส่งคำทำนายให้โดยเร็วที่สุดค่ะ 🙏\n\n⏳ กรุณารอสักครู่นะคะ",
+                $replyToken
+            );
+
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: Postback confirm_transfer ล้มเหลว', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
             ]);

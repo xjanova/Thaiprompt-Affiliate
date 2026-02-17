@@ -34,6 +34,26 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * ดึงราคาดูดวงละเอียดจาก settings (ใช้ logic เดียวกับ FortuneConversationService)
+     *
+     * @return float ราคา (บาท)
+     */
+    public function getDeepReadingPrice(): float
+    {
+        $deepPrice = (float) ($this->settings->deep_reading_price ?? 0);
+        if ($deepPrice > 0) {
+            return $deepPrice;
+        }
+
+        $readingPrice = (float) ($this->settings->reading_price ?? 0);
+        if ($readingPrice > 0) {
+            return $readingPrice;
+        }
+
+        return FortuneConversationService::DEEP_READING_PRICE;
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function getPlatformName(): string
@@ -561,7 +581,7 @@ class LineFortuneService implements MessagingPlatformInterface
                                 'margin' => 'sm',
                                 'contents' => [
                                     ['type' => 'text', 'text' => '❓', 'flex' => 1],
-                                    ['type' => 'text', 'text' => 'ถามได้ 3 คำถาม', 'flex' => 5, 'size' => 'sm'],
+                                    ['type' => 'text', 'text' => 'ถามได้ '.FortuneConversationService::REQUIRED_QUESTIONS.' คำถาม', 'flex' => 5, 'size' => 'sm'],
                                 ],
                             ],
                             [
@@ -894,8 +914,8 @@ class LineFortuneService implements MessagingPlatformInterface
                                         'flex' => 1,
                                         'paddingStart' => 'md',
                                         'contents' => [
-                                            ['type' => 'text', 'text' => 'ดูดวงละเอียด (49 บาท)', 'size' => 'sm', 'weight' => 'bold'],
-                                            ['type' => 'text', 'text' => 'ถาม 3 คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
+                                            ['type' => 'text', 'text' => 'ดูดวงละเอียด ('.number_format($this->getDeepReadingPrice(), 0).' บาท)', 'size' => 'sm', 'weight' => 'bold'],
+                                            ['type' => 'text', 'text' => 'ถาม '.FortuneConversationService::REQUIRED_QUESTIONS.' คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
                                         ],
                                     ],
                                 ],
@@ -2607,6 +2627,333 @@ class LineFortuneService implements MessagingPlatformInterface
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
+        }
+    }
+
+    // =====================================================================
+    // Flex Messages: แจ้งปัญหาโอน + วิธีใช้งาน
+    // =====================================================================
+
+    /**
+     * สร้าง Flex Message แจ้งปัญหาการโอนเงิน
+     *
+     * แสดงคำเตือนตัวใหญ่ว่าต้องโอนตรงทศนิยม + ข้อมูลบิลที่รอชำระ
+     *
+     * @param  \App\Models\FortuneReading|null  $pendingReading  บิลที่รอชำระ
+     * @param  float|null  $uniqueAmount  ยอดที่ต้องโอน (ทศนิยม)
+     * @param  string|null  $expiresAt  เวลาหมดอายุ
+     * @return array Flex Message bubble
+     */
+    public function buildPaymentProblemFlexMessage(
+        ?\App\Models\FortuneReading $pendingReading = null,
+        ?float $uniqueAmount = null,
+        ?string $expiresAt = null
+    ): array {
+        $bodyContents = [
+            // คำเตือนตัวใหญ่ XXL
+            ['type' => 'text', 'text' => '🚨 ต้องโอนให้ตรงทศนิยม', 'size' => 'xl', 'weight' => 'bold', 'color' => '#E53935', 'align' => 'center', 'wrap' => true],
+            ['type' => 'text', 'text' => 'เท่านั้น!', 'size' => 'xl', 'weight' => 'bold', 'color' => '#E53935', 'align' => 'center'],
+            ['type' => 'text', 'text' => 'ถ้าโอนไม่ตรง ระบบจะไม่ส่งคำทำนาย', 'size' => 'md', 'weight' => 'bold', 'color' => '#D84315', 'align' => 'center', 'margin' => 'lg', 'wrap' => true],
+            ['type' => 'separator', 'margin' => 'xl', 'color' => '#FFCDD2'],
+        ];
+
+        if ($pendingReading && $uniqueAmount) {
+            // มีบิลที่รอชำระ — แสดงข้อมูล
+            $amountDisplay = number_format($uniqueAmount, 2);
+            $billRef = $pendingReading->bill_reference ?? '-';
+
+            $bodyContents[] = ['type' => 'text', 'text' => '📋 บิลที่รอชำระ', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333', 'margin' => 'xl'];
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'horizontal', 'margin' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'เลขที่บิล:', 'size' => 'sm', 'color' => '#555555', 'flex' => 2],
+                    ['type' => 'text', 'text' => $billRef, 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333', 'flex' => 3, 'align' => 'end'],
+                ],
+            ];
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm',
+                'contents' => [
+                    ['type' => 'text', 'text' => 'ยอดที่ต้องโอน:', 'size' => 'sm', 'color' => '#555555', 'flex' => 2],
+                    ['type' => 'text', 'text' => "฿{$amountDisplay}", 'size' => 'lg', 'weight' => 'bold', 'color' => '#E53935', 'flex' => 3, 'align' => 'end'],
+                ],
+            ];
+
+            if ($expiresAt) {
+                $bodyContents[] = [
+                    'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm',
+                    'contents' => [
+                        ['type' => 'text', 'text' => 'หมดอายุ:', 'size' => 'sm', 'color' => '#555555', 'flex' => 2],
+                        ['type' => 'text', 'text' => "{$expiresAt} น.", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C', 'flex' => 3, 'align' => 'end'],
+                    ],
+                ];
+            }
+
+            // เน้นย้ำ
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'paddingAll' => 'md', 'backgroundColor' => '#FFF3E0', 'cornerRadius' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => "⚠️ โอนยอด ฿{$amountDisplay} ให้ตรงเป๊ะ!", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E65100', 'wrap' => true],
+                    ['type' => 'text', 'text' => 'ห้ามปัดเศษ! ต้องโอนตามทศนิยมเท่านั้น', 'size' => 'xs', 'color' => '#BF360C', 'margin' => 'sm', 'wrap' => true],
+                ],
+            ];
+        } else {
+            // ไม่มีบิลที่รอชำระ
+            $bodyContents[] = ['type' => 'text', 'text' => 'ไม่พบบิลที่รอชำระค่ะ', 'size' => 'md', 'color' => '#555555', 'align' => 'center', 'margin' => 'xl'];
+            $bodyContents[] = ['type' => 'text', 'text' => 'ถ้าโอนเงินไปแล้วแต่ยังไม่ได้คำทำนาย กรุณากดปุ่ม "แจ้งว่าโอนแล้ว" ด้านล่างค่ะ', 'size' => 'xs', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true];
+        }
+
+        // Footer buttons
+        $footerContents = [];
+        if ($pendingReading) {
+            $readingId = $pendingReading->id;
+            $footerContents[] = ['type' => 'button', 'style' => 'primary', 'color' => '#E53935', 'height' => 'sm', 'action' => ['type' => 'postback', 'label' => '✅ แจ้งว่าโอนแล้ว', 'data' => "action=confirm_transfer&reading_id={$readingId}", 'displayText' => 'แจ้งว่าโอนเงินแล้ว']];
+        }
+        $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#C62828']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '⚠️', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'แจ้งปัญหาการโอนเงิน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => $bodyContents,
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => $footerContents,
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message วิธีใช้งาน (help)
+     *
+     * @return array Flex Message bubble
+     */
+    public function buildHelpFlexMessage(): array
+    {
+        $price = number_format($this->getDeepReadingPrice(), 0);
+        $questions = FortuneConversationService::REQUIRED_QUESTIONS;
+
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#4A148C']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'วิธีใช้งานแม่หมอจันทรา', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'spacing' => 'md',
+                'contents' => [
+                    // ดูดวงฟรี
+                    ['type' => 'text', 'text' => '🌟 ดูดวงฟรี', 'size' => 'md', 'weight' => 'bold', 'color' => '#4A148C'],
+                    ['type' => 'text', 'text' => 'พิมพ์ "ดูดวง" แล้วตั้งคำถามได้เลยค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+
+                    // ดูดวงละเอียด
+                    ['type' => 'text', 'text' => "✨ ดูดวงละเอียด ({$price} บาท)", 'size' => 'md', 'weight' => 'bold', 'color' => '#E8890C', 'margin' => 'md'],
+                    ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเดือนปีเกิด → ได้คำทำนายละเอียดค่ะ", 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+
+                    // คำเตือนโอนเงิน
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'md', 'paddingAll' => 'md', 'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🚨 สำคัญ! เรื่องการโอนเงิน', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
+                            ['type' => 'text', 'text' => 'ระบบจะแจ้งยอดพร้อมทศนิยม เช่น 49.37 บาท', 'size' => 'xs', 'color' => '#B71C1C', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => 'ต้องโอนให้ตรงทศนิยมเท่านั้น!', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E53935', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => 'ถ้าโอนไม่ตรง ระบบจะไม่ส่งคำทำนาย', 'size' => 'xs', 'color' => '#B71C1C', 'margin' => 'sm', 'wrap' => true],
+                        ],
+                    ],
+
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+
+                    // คำสั่งที่ใช้ได้
+                    ['type' => 'text', 'text' => '📋 คำสั่งที่ใช้ได้', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333', 'margin' => 'md'],
+                    ['type' => 'text', 'text' => '• "ดูดวง" — เริ่มดูดวงฟรี', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
+                    ['type' => 'text', 'text' => '• "ดูดวงละเอียด" — ดูดวงแบบเสียเงิน', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
+                    ['type' => 'text', 'text' => '• "เช็คสิทธิ์" — ดูสิทธิ์คงเหลือ', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
+                    ['type' => 'text', 'text' => '• "ดูคำทำนาย" — ดูคำทำนายล่าสุด', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#4A148C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง']],
+                ],
+            ],
+        ];
+    }
+
+    // =====================================================================
+    // Rich Menu API Methods
+    // =====================================================================
+
+    /**
+     * สร้าง Rich Menu บน LINE Platform
+     *
+     * @param  array  $data  ข้อมูล Rich Menu (size, selected, name, chatBarText, areas)
+     * @return string|null  Rich Menu ID หรือ null ถ้าไม่สำเร็จ
+     */
+    public function createRichMenu(array $data): ?string
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->post(self::API_ENDPOINT.'/richmenu', $data);
+
+            if ($response->successful()) {
+                $richMenuId = $response->json('richMenuId');
+                Log::info('LINE Rich Menu: สร้างสำเร็จ', ['rich_menu_id' => $richMenuId]);
+
+                return $richMenuId;
+            }
+
+            Log::error('LINE Rich Menu: สร้างไม่สำเร็จ', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return null;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE Rich Menu: Exception ขณะสร้าง', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * อัปโหลดภาพ Rich Menu (PNG/JPEG, max 1MB)
+     *
+     * @param  string  $richMenuId  Rich Menu ID ที่สร้างไว้
+     * @param  string  $pngBinary  ข้อมูลไบนารีของภาพ PNG
+     * @return bool สำเร็จหรือไม่
+     */
+    public function uploadRichMenuImage(string $richMenuId, string $pngBinary): bool
+    {
+        try {
+            // ใช้ api-data.line.me (ไม่ใช่ api.line.me) สำหรับอัปโหลดไฟล์
+            $response = Http::withToken($this->channelAccessToken)
+                ->withHeaders(['Content-Type' => 'image/png'])
+                ->timeout(30)
+                ->connectTimeout(10)
+                ->withBody($pngBinary, 'image/png')
+                ->post("https://api-data.line.me/v2/bot/richmenu/{$richMenuId}/content");
+
+            if ($response->successful()) {
+                Log::info('LINE Rich Menu: อัปโหลดภาพสำเร็จ', ['rich_menu_id' => $richMenuId]);
+
+                return true;
+            }
+
+            Log::error('LINE Rich Menu: อัปโหลดภาพไม่สำเร็จ', [
+                'rich_menu_id' => $richMenuId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE Rich Menu: Exception ขณะอัปโหลดภาพ', [
+                'rich_menu_id' => $richMenuId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ตั้ง Rich Menu เป็น default สำหรับทุก user
+     *
+     * @param  string  $richMenuId  Rich Menu ID
+     * @return bool สำเร็จหรือไม่
+     */
+    public function setDefaultRichMenu(string $richMenuId): bool
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->post(self::API_ENDPOINT."/user/all/richmenu/{$richMenuId}");
+
+            if ($response->successful()) {
+                Log::info('LINE Rich Menu: ตั้ง default สำเร็จ', ['rich_menu_id' => $richMenuId]);
+
+                return true;
+            }
+
+            Log::error('LINE Rich Menu: ตั้ง default ไม่สำเร็จ', [
+                'rich_menu_id' => $richMenuId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE Rich Menu: Exception ขณะตั้ง default', ['error' => $e->getMessage()]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ลบ Rich Menu ออกจาก LINE Platform
+     *
+     * @param  string  $richMenuId  Rich Menu ID ที่ต้องการลบ
+     * @return bool สำเร็จหรือไม่
+     */
+    public function deleteRichMenu(string $richMenuId): bool
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->delete(self::API_ENDPOINT."/richmenu/{$richMenuId}");
+
+            if ($response->successful()) {
+                Log::info('LINE Rich Menu: ลบสำเร็จ', ['rich_menu_id' => $richMenuId]);
+
+                return true;
+            }
+
+            Log::error('LINE Rich Menu: ลบไม่สำเร็จ', [
+                'rich_menu_id' => $richMenuId,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            return false;
+
+        } catch (\Throwable $e) {
+            Log::error('LINE Rich Menu: Exception ขณะลบ', ['error' => $e->getMessage()]);
+
+            return false;
         }
     }
 }

@@ -115,6 +115,8 @@ class FortuneReading extends Model
         'view_count',
         'rating',
         'feedback',
+        'transfer_reported',
+        'transfer_reported_at',
     ];
 
     /**
@@ -137,6 +139,8 @@ class FortuneReading extends Model
         'view_count' => 'integer',
         'tokens_used' => 'integer',
         'rating' => 'integer',
+        'transfer_reported' => 'boolean',
+        'transfer_reported_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
