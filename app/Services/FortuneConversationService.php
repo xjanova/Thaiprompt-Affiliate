@@ -1123,6 +1123,16 @@ class FortuneConversationService
         // ถ้าเป็น "รอคำถาม" (awaiting_type=question) → ใช้ข้อความใหม่เสมอ (เพราะผู้ใช้เลือกหัวข้อ/พิมพ์คำถาม)
         // ยกเว้นตอบสั้นมาก "ดู", "เอา", "ใช่" → ถือเป็นขอดูดวงทั่วไป
         if ($awaitingType === 'question') {
+            // ✅ Fix: ถ้าผู้ใช้กด "ดูดวง" ซ้ำจาก Rich Menu (generic request)
+            // → ไม่ส่งไป AI ทันที แต่ถามหัวข้อใหม่อีกครั้ง
+            if ($this->isGenericFortuneRequest($messageText)) {
+                // ปิด reading เก่า
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                // ถามหัวข้อใหม่
+                return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+            }
+
             // ถ้าพิมพ์คำถามใหม่ (เช่น "ดูดวงความรัก", "การเงินปีนี้") → ใช้เป็นคำถาม
             $questionText = $messageText;
 
@@ -1489,16 +1499,17 @@ class FortuneConversationService
                 'basic'
             );
 
-            // บันทึก AI call สำหรับ rate limiting
-            $this->recordAICall($facebookUserId);
-
-            // บันทึกคำทำนายพื้นฐาน
+            // ✅ บันทึกคำทำนายพื้นฐาน (ตั้ง responded_at ก่อน recordAICall)
+            // เพื่อให้ countTodayReadings() นับ reading นี้ถูกต้อง
             $reading->saveBasicReading(
                 $aiResult['response'],
                 $aiResult['provider'],
                 $aiResult['model'],
                 $aiResult['tokens_used']
             );
+
+            // ✅ บันทึก AI call สำหรับ rate limiting (หลัง saveBasicReading เพื่อให้ responded_at ถูกตั้งก่อน)
+            $this->recordAICall($facebookUserId);
 
             Log::info('Fortune: AI ตอบสำเร็จ', [
                 'facebook_user_id' => $facebookUserId,
@@ -2873,7 +2884,10 @@ class FortuneConversationService
     }
 
     /**
-     * บันทึกการเรียก AI
+     * บันทึกการเรียก AI + หักเครดิตถ้าเกินสิทธิ์ฟรี
+     *
+     * ⚠️ ต้องเรียกหลัง saveBasicReading() เพื่อให้ responded_at ถูกตั้งก่อน
+     * เพราะ countTodayReadings() นับเฉพาะ reading ที่มี responded_at
      */
     public function recordAICall(string $userId): void
     {
@@ -2884,10 +2898,24 @@ class FortuneConversationService
         // หักเครดิตพิเศษ (ถ้าสิทธิ์ฟรีปกติหมดแล้ว ใช้เครดิตแทน)
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($userId);
+
+        Log::info('Fortune: recordAICall — นับสิทธิ์', [
+            'user_id' => $userId,
+            'used_today' => $usedToday,
+            'max_free' => $maxFreeReadings,
+            'cache_count' => $count + 1,
+            'will_deduct_credit' => $usedToday >= $maxFreeReadings,
+        ]);
+
         if ($usedToday >= $maxFreeReadings) {
             $userCredit = FortuneUserCredit::findByUser($userId);
             if ($userCredit) {
-                $userCredit->useCredit();
+                $deducted = $userCredit->useCredit();
+                Log::info('Fortune: หักเครดิตพิเศษ', [
+                    'user_id' => $userId,
+                    'deducted' => $deducted,
+                    'remaining_credits' => $userCredit->getRemainingCredits(),
+                ]);
             }
         }
     }
