@@ -79,12 +79,18 @@ class VerifySmsCheckerDevice
         }
 
         // ตรวจสอบ Device ID (ถ้ามีการส่งมา)
+        // ✅ Auto-sync: ถ้า API key ถูกต้อง + device active → อัพเดท device_id อัตโนมัติ
+        // เพราะ device_id เป็น global ค่าเดียวในแอพ แต่ server หลายตัวเก็บแยก
+        // เมื่อ user เพิ่ม server ใหม่ device_id อาจเปลี่ยน → server เก่าไม่ตรง
         $deviceId = $request->header('X-Device-Id');
         if ($deviceId && $device->device_id !== $deviceId) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Device ID mismatch',
-            ], 403);
+            Log::info('SmsChecker: Auto-sync device_id', [
+                'old_device_id' => $device->device_id,
+                'new_device_id' => $deviceId,
+                'ip' => $request->ip(),
+                'path' => $request->path(),
+            ]);
+            $device->update(['device_id' => $deviceId]);
         }
 
         // Rate Limiting — เฉพาะ non-critical endpoints
