@@ -308,6 +308,7 @@ class FcmNotificationService
             'amount' => number_format((float) ($reading->amount_paid ?? 0), 2, '.', ''),
             'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
             'is_fortune_reading' => 'true',
+            'server_url' => config('app.url'),  // ให้ Android app รู้ว่า FCM นี้มาจากเซิร์ฟไหน
         ];
 
         $notification = [
