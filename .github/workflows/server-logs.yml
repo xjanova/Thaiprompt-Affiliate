@@ -128,7 +128,10 @@ jobs:
                 fi
                 echo "🔧 Running artisan tinker..."
                 echo "---"
-                php artisan tinker --execute="$PHP_CODE" 2>&1
+                # ใช้ PHP version ที่ถูกต้อง (ตรงกับ deploy.sh)
+                PHP_BIN=$(which php8.3 2>/dev/null || which php83 2>/dev/null || which php 2>/dev/null)
+                echo "PHP: $PHP_BIN"
+                $PHP_BIN artisan tinker --execute="$PHP_CODE" 2>&1
                 ;;
               *)
                 echo "❌ Unknown command: $COMMAND"
