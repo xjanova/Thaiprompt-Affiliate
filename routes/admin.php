@@ -3888,6 +3888,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/channels/setup-facebook-messenger', [FortuneChannelController::class, 'setupFacebookMessenger'])->name('channels.setup-facebook-messenger');
     Route::get('/channels/facebook-messenger-profile', [FortuneChannelController::class, 'getFacebookMessengerProfile'])->name('channels.facebook-messenger-profile');
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');
+    Route::get('/channels/facebook-page-management', [FortuneChannelController::class, 'facebookPageManagement'])->name('channels.facebook-page-management');
 
     // หมวดหมู่
     Route::resource('categories', FortuneCategoriesController::class)->except('show');

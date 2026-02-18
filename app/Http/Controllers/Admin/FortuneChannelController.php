@@ -315,4 +315,47 @@ class FortuneChannelController extends Controller
             ]);
         }
     }
+
+    /**
+     * แสดงหน้าจัดการ Facebook Page Integration
+     *
+     * หน้าสาธิตสำหรับ Facebook App Review
+     * แสดงฟีเจอร์: pages_show_list, pages_manage_metadata,
+     * pages_messaging, pages_read_engagement, business_management
+     *
+     * @return \Illuminate\View\View
+     */
+    public function facebookPageManagement()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        // ดึงสถิติ Facebook
+        $fbStats = [
+            'total_readings' => FortuneReading::where('platform', 'facebook')->count(),
+            'total_deep' => FortuneReading::where('platform', 'facebook')->where('is_deep_reading', true)->count(),
+            'unique_users' => FortuneReading::where('platform', 'facebook')->distinct('platform_user_id')->count('platform_user_id'),
+            'total_revenue' => FortuneReading::where('platform', 'facebook')->where('payment_status', 'paid')->sum('amount_paid'),
+            'recent_readings' => FortuneReading::where('platform', 'facebook')
+                ->latest()
+                ->take(5)
+                ->get(),
+        ];
+
+        // ดึง comment engagement stats ถ้ามี
+        $commentStats = [];
+        if (class_exists(\App\Models\FortuneCommentEngagement::class)) {
+            $commentStats = [
+                'total' => \App\Models\FortuneCommentEngagement::count(),
+                'replied' => \App\Models\FortuneCommentEngagement::where('status', 'replied')->count(),
+                'dm_sent' => \App\Models\FortuneCommentEngagement::where('dm_sent', true)->count(),
+            ];
+        }
+
+        return view('admin.fortune.channels.facebook-page-management', [
+            'settings' => $settings,
+            'fbStats' => $fbStats,
+            'commentStats' => $commentStats,
+            'pageTitle' => 'จัดการ Facebook Page',
+        ]);
+    }
 }
