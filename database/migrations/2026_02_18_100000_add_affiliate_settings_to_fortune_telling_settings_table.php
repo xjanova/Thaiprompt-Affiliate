@@ -22,7 +22,7 @@ return new class extends Migration
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
             // เปิด/ปิดระบบ affiliate อัตโนมัติสำหรับลูกค้าดูดวง
             $this->safeAddColumn($table, 'fortune_telling_settings', 'fortune_affiliate_enabled', function ($table) {
-                $table->boolean('fortune_affiliate_enabled')->default(false)->after('payment_display_mode');
+                $table->boolean('fortune_affiliate_enabled')->default(true)->after('payment_display_mode');
             });
 
             // เปิด/ปิดการลงทะเบียน User อัตโนมัติ

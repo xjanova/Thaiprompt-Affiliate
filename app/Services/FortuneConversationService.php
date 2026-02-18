@@ -2277,21 +2277,34 @@ class FortuneConversationService
             // ============================================================
             // [Auto-Registration] ลงทะเบียนสมาชิก + MLM อัตโนมัติ
             // หลังส่งคำทำนายสำเร็จ → สร้าง User + MlmMember + ส่ง invite
+            // รองรับทุก platform (LINE, Facebook) — ไม่จำกัดเฉพาะ LINE
             // ============================================================
-            if ($streaming && $platform === 'line' && $userId) {
+            $affiliatePlatform = $platform ?? $reading->platform ?? null;
+            $affiliateUserId = $userId ?? $reading->platform_user_id ?? $reading->facebook_user_id ?? null;
+
+            if ($affiliateUserId) {
                 try {
                     $affiliateService = app(FortuneAffiliateService::class);
-                    $lineServiceInstance = $channelManager->getPlatform('line');
+
+                    // ส่ง LINE service เฉพาะเมื่อเป็น platform LINE
+                    $lineServiceInstance = null;
+                    if ($affiliatePlatform === 'line' && $channelManager) {
+                        $lineServiceInstance = $channelManager->getPlatform('line');
+                        $lineServiceInstance = $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null;
+                    }
+
                     $affiliateService->autoRegisterFromFortune(
                         $reading,
-                        $userId,
-                        $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null
+                        $affiliateUserId,
+                        $lineServiceInstance,
+                        $affiliatePlatform
                     );
                 } catch (\Exception $affErr) {
                     // ไม่ให้ error กระทบการส่งคำทำนาย
                     Log::warning('Fortune Affiliate: ลงทะเบียนอัตโนมัติล้มเหลว (ไม่กระทบคำทำนาย)', [
                         'reading_id' => $reading->id,
-                        'line_user_id' => $userId,
+                        'platform' => $affiliatePlatform,
+                        'user_id' => $affiliateUserId,
                         'error' => $affErr->getMessage(),
                     ]);
                 }

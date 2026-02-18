@@ -187,8 +187,8 @@ class FortuneTellingSetting extends Model
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
         'enabled_platforms' => ['facebook'],
-        // Affiliate Settings
-        'fortune_affiliate_enabled' => false,
+        // Affiliate Settings (เปิดเป็นค่าเริ่มต้น)
+        'fortune_affiliate_enabled' => true,
         'fortune_auto_register_enabled' => true,
         'fortune_pv_value' => 0,
         'fortune_use_global_commission_rate' => true,

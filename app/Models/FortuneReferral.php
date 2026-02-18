@@ -153,6 +153,20 @@ class FortuneReferral extends Model
     }
 
     /**
+     * หา referral ที่ active จาก platform user ID (LINE / Facebook / อื่นๆ)
+     *
+     * ค้นหาจาก referred_line_user_id (ใช้เก็บ platform user ID ทุก platform)
+     */
+    public static function findActiveByPlatformUserId(string $platformUserId): ?self
+    {
+        return self::where('referred_line_user_id', $platformUserId)
+            ->whereIn('status', [self::STATUS_FOLLOWED, self::STATUS_PENDING])
+            ->active()
+            ->latest()
+            ->first();
+    }
+
+    /**
      * เมื่อเพื่อนแอด LINE OA — บันทึก LINE user ID
      */
     public function markAsFollowed(string $lineUserId): void

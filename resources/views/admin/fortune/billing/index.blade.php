@@ -249,7 +249,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex justify-end gap-2">
+                                <div class="flex justify-end gap-2" x-data="{ submitting: false }">
                                     <a href="{{ route('admin.fortune.readings.show', $bill) }}"
                                        class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">
                                         ดู
@@ -263,17 +263,20 @@
                                     @if($bill->is_paid && !$bill->is_floating)
                                         @if($bill->is_paid && !empty($bill->getCollectedQuestions()) && empty($bill->deep_response))
                                             <form action="{{ route('admin.fortune.billing.retry-fortune', $bill) }}" method="POST" class="inline"
-                                                  onsubmit="return confirm('ต้องการส่งคำทำนายให้ลูกค้าอีกครั้ง?')">
+                                                  @submit="if(!confirm('ต้องการส่งคำทำนายให้ลูกค้าอีกครั้ง?')) { $event.preventDefault(); return; } submitting = true; showLoadingOverlay('กำลังส่งคำทำนาย...');">
                                                 @csrf
-                                                <button type="submit" class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300">
-                                                    🔮 ส่งคำทำนาย
+                                                <button type="submit" :disabled="submitting"
+                                                        class="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300 disabled:opacity-50">
+                                                    <template x-if="!submitting"><span>🔮 ส่งคำทำนาย</span></template>
+                                                    <template x-if="submitting"><span class="flex items-center gap-1"><span class="animate-spin h-3 w-3 border border-purple-600 border-t-transparent rounded-full inline-block"></span>กำลังส่ง...</span></template>
                                                 </button>
                                             </form>
                                         @endif
                                         <form action="{{ route('admin.fortune.billing.void', $bill) }}" method="POST" class="inline"
-                                              onsubmit="return confirm('ยืนยันยกเลิกบิลนี้?')">
+                                              @submit="if(!confirm('ยืนยันยกเลิกบิลนี้?')) { $event.preventDefault(); return; } submitting = true;">
                                             @csrf
-                                            <button type="submit" class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">
+                                            <button type="submit" :disabled="submitting"
+                                                    class="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50">
                                                 ยกเลิก
                                             </button>
                                         </form>
@@ -301,11 +304,24 @@
     @endif
 </div>
 
+{{-- Loading Overlay --}}
+<div id="loadingOverlay" class="fixed inset-0 bg-black bg-opacity-60 z-[100] hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8 w-full max-w-xs mx-4 text-center">
+        <div class="flex justify-center mb-4">
+            <div class="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full"></div>
+        </div>
+        <p id="loadingMessage" class="text-gray-900 dark:text-white font-semibold text-lg">กำลังประมวลผล...</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm mt-2">กรุณารอสักครู่ อย่าปิดหน้านี้</p>
+    </div>
+</div>
+
 {{-- Manual Confirm Modal --}}
 <div id="manualConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
+         x-data="{ submitting: false }">
         <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-4">ยืนยันการชำระเงินด้วยตนเอง</h3>
-        <form id="manualConfirmForm" method="POST">
+        <form id="manualConfirmForm" method="POST"
+              @submit="submitting = true; showLoadingOverlay('กำลังยืนยันบิลและส่งคำทำนาย...');">
             @csrf
             <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน</label>
@@ -318,10 +334,18 @@
                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             </div>
             <div class="flex gap-3">
-                <button type="submit" class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    ยืนยันการชำระ
+                <button type="submit" :disabled="submitting"
+                        class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg transition flex items-center justify-center gap-2">
+                    <template x-if="!submitting"><span>✅ ยืนยันการชำระ</span></template>
+                    <template x-if="submitting">
+                        <span class="flex items-center gap-2">
+                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                            กำลังดำเนินการ...
+                        </span>
+                    </template>
                 </button>
-                <button type="button" onclick="closeManualConfirm()" class="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
+                <button type="button" @click="if(!submitting) closeManualConfirm()" :disabled="submitting"
+                        class="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition">
                     ยกเลิก
                 </button>
             </div>
@@ -368,6 +392,15 @@
             }
         }
     });
+
+    // แสดง loading overlay ขณะรอระบบประมวลผล
+    function showLoadingOverlay(message) {
+        const overlay = document.getElementById('loadingOverlay');
+        const msg = document.getElementById('loadingMessage');
+        if (msg && message) msg.textContent = message;
+        overlay.classList.remove('hidden');
+        overlay.classList.add('flex');
+    }
 
     // Manual Confirm Modal
     function showManualConfirm(billId, amount) {
