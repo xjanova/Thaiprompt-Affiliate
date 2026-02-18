@@ -137,10 +137,10 @@ class LineFortuneService implements MessagingPlatformInterface
     public function getUserProfile(string $userId): ?array
     {
         try {
-            // ⚡ ลด timeout: profile ไม่สำคัญมาก ถ้าช้าใช้ชื่อ default "คุณ"
+            // ⚡ เพิ่ม timeout เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(3)
-                ->connectTimeout(2)
+                ->timeout(10)
+                ->connectTimeout(8)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
@@ -2660,11 +2660,11 @@ class LineFortuneService implements MessagingPlatformInterface
     protected function pushMessage(string $to, array $messages): bool
     {
         try {
-            // ⚡ ลด timeout push: 5s + retry 1 ครั้ง (จาก 15s + 2 retries)
+            // ⚡ เพิ่ม timeout + retry เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(5)
-                ->connectTimeout(3)
-                ->retry(1, 500)
+                ->timeout(15)
+                ->connectTimeout(10)
+                ->retry(2, 1000)
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -2704,10 +2704,10 @@ class LineFortuneService implements MessagingPlatformInterface
     public function replyMessage(string $replyToken, array $messages): bool
     {
         try {
-            // ⚡ ลด timeout reply: 5s (จาก 10s)
+            // ⚡ เพิ่ม timeout เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(5)
-                ->connectTimeout(3)
+                ->timeout(15)
+                ->connectTimeout(10)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
