@@ -209,9 +209,12 @@ class SmsPaymentController extends Controller
     private function transformFortuneReadingToOrderApproval(FortuneReading $reading): array
     {
         // แปลง conversation_status → approval_status ที่ Android เข้าใจ
-        $approvalStatus = match ($reading->conversation_status) {
-            FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
-            FortuneReading::STATUS_PAID, FortuneReading::STATUS_COMPLETED => 'auto_approved',
+        // ถ้า completed แต่ไม่ได้จ่ายเงิน = ลูกค้ายกเลิก → ส่ง 'cancelled'
+        $approvalStatus = match (true) {
+            $reading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
+            $reading->conversation_status === FortuneReading::STATUS_PAID => 'auto_approved',
+            $reading->conversation_status === FortuneReading::STATUS_COMPLETED && $reading->is_paid => 'auto_approved',
+            $reading->conversation_status === FortuneReading::STATUS_COMPLETED && ! $reading->is_paid => 'cancelled',
             default => 'pending_review',
         };
 

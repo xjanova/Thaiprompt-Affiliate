@@ -324,6 +324,41 @@ class FcmNotificationService
     }
 
     /**
+     * ส่ง push notification เมื่อบิลดูดวงถูกยกเลิก (ลูกค้ากดยกเลิกใน LINE)
+     *
+     * แจ้งแอพ SMS Checker ให้อัพเดทสถานะบิลเป็น cancelled ทันที
+     * เพื่อไม่ให้แอพยังแสดงบิลเป็น pending อยู่
+     */
+    public function notifyFortuneReadingCancelled(FortuneReading $reading): bool
+    {
+        $tokens = $this->getTargetTokens(null);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens available for fortune reading cancelled notification');
+
+            return false;
+        }
+
+        $offsetId = $reading->id + 10000000;
+
+        $data = [
+            'type' => 'order_cancelled',
+            'order_id' => (string) $offsetId,
+            'order_number' => $reading->bill_reference ?? ('FTU-'.$reading->id),
+            'payment_status' => 'cancelled',
+            'is_fortune_reading' => 'true',
+            'server_url' => config('app.url'),
+        ];
+
+        // data-only push เพื่อให้ onMessageReceived() ถูกเรียกเสมอ
+        Log::info('FCM: Sending fortune_reading_cancelled push (data-only)', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, null);
+    }
+
+    /**
      * Notify device that settings changed (e.g. approval_mode from admin panel)
      * Device will trigger sync to pull updated settings
      */

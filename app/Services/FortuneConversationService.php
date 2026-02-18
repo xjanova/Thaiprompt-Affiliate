@@ -981,6 +981,19 @@ class FortuneConversationService
                 'closed_count' => $closed,
                 'cancelled_bills' => $pendingReadings->count(),
             ]);
+
+            // ส่ง FCM push ไปบอกแอพ SMS Checker ว่าบิลถูกยกเลิก
+            // เพื่อให้แอพอัพเดทสถานะทันทีโดยไม่ต้องรอ polling cycle
+            try {
+                $fcmService = app(FcmNotificationService::class);
+                foreach ($pendingReadings as $cancelledReading) {
+                    $fcmService->notifyFortuneReadingCancelled($cancelledReading);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Fortune: FCM cancelled notification failed', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         return $closed;
