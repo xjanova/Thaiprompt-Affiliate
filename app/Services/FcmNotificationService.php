@@ -311,23 +311,16 @@ class FcmNotificationService
             'server_url' => config('app.url'),  // ให้ Android app รู้ว่า FCM นี้มาจากเซิร์ฟไหน
         ];
 
-        $notification = [
-            'title' => '🔮 บิลดูดวงใหม่ รอชำระเงิน',
-            'body' => sprintf(
-                'บิล %s ยอด ฿%s (%s)',
-                $reading->bill_reference ?? "#{$reading->id}",
-                number_format((float) ($reading->amount_paid ?? 0), 2),
-                $reading->facebook_user_name ?? 'ลูกค้าดูดวง'
-            ),
-        ];
-
-        Log::info('FCM: Sending new_fortune_reading push', [
+        // ส่งเป็น data-only (ไม่มี notification field) เพื่อให้ onMessageReceived() ถูกเรียกเสมอ
+        // แม้แอพอยู่ใน background — Android จะแสดง notification เองใน FcmService.handleNewOrder()
+        // ถ้าส่ง notification field ด้วย → Android OS จะ intercept และ onMessageReceived() จะไม่ถูกเรียก
+        Log::info('FCM: Sending new_fortune_reading push (data-only)', [
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
             'amount' => $reading->amount_paid,
         ]);
 
-        return $this->sendToMultipleTokens($tokens, $data, $notification);
+        return $this->sendToMultipleTokens($tokens, $data, null);
     }
 
     /**
