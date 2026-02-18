@@ -15,6 +15,7 @@ on:
           - sendResponse
           - last-500
           - custom
+          - tinker
       custom_grep:
         description: 'Custom grep pattern (only for "custom" option)'
         required: false
@@ -118,6 +119,16 @@ jobs:
                 echo "🔍 Custom grep: $PATTERN"
                 echo "---"
                 tail -$LINES "$LOG_FILE" | grep -E "$PATTERN" | tail -60
+                ;;
+              tinker)
+                PHP_CODE="${{ inputs.custom_grep }}"
+                if [ -z "$PHP_CODE" ]; then
+                  echo "❌ No PHP code provided in custom_grep field"
+                  exit 1
+                fi
+                echo "🔧 Running artisan tinker..."
+                echo "---"
+                php artisan tinker --execute="$PHP_CODE" 2>&1
                 ;;
               *)
                 echo "❌ Unknown command: $COMMAND"
