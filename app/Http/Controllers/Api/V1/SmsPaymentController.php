@@ -82,8 +82,14 @@ class SmsPaymentController extends Controller
     private function applyStoreFilter($query, SmsCheckerDevice $device)
     {
         if ($device->isAdminDevice()) {
-            // Admin device → เห็นเฉพาะบิลของ Premium Shop (platformStoreId)
-            $query->where('store_id', VendorStore::getPlatformStoreId());
+            // Admin device → เห็นบิลของ Platform + บิลที่ยังไม่มี store (legacy)
+            $platformStoreId = VendorStore::where('store_slug', VendorStore::PLATFORM_STORE_SLUG)->value('id');
+            $query->where(function ($q) use ($platformStoreId) {
+                $q->whereNull('store_id');
+                if ($platformStoreId) {
+                    $q->orWhere('store_id', $platformStoreId);
+                }
+            });
         } else {
             // Seller device → เห็นเฉพาะบิลของ store ตัวเอง
             $query->where('store_id', $device->store_id);
