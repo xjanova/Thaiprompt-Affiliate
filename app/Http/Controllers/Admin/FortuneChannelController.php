@@ -334,7 +334,7 @@ class FortuneChannelController extends Controller
             'total_readings' => FortuneReading::where('platform', 'facebook')->count(),
             'total_deep' => FortuneReading::where('platform', 'facebook')->where('is_deep_reading', true)->count(),
             'unique_users' => FortuneReading::where('platform', 'facebook')->distinct('platform_user_id')->count('platform_user_id'),
-            'total_revenue' => FortuneReading::where('platform', 'facebook')->where('payment_status', 'paid')->sum('amount_paid'),
+            'total_revenue' => FortuneReading::where('platform', 'facebook')->where('is_paid', true)->sum('amount_paid'),
             'recent_readings' => FortuneReading::where('platform', 'facebook')
                 ->latest()
                 ->take(5)

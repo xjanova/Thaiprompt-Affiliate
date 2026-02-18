@@ -389,24 +389,11 @@ class FortuneConversationService
                     // ปิด conversation เก่า
                     $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    // ✅ ถ้าเป็นคำถามดูดวง → เริ่มทำนายเลยโดยไม่ถามซ้ำ (ไม่ต้อง greeting อีก)
+                    // ✅ V3: ทุกกรณีให้ถามคำถามก่อนเสมอ → แล้วค่อยทำนาย → ชวนดูเชิงลึก
                     if ($this->containsFortuneKeyword($messageText)) {
-                        // ถ้าพิมพ์แค่ "ดูดวง" เฉยๆ → ถามก่อนว่าอยากถามเรื่องอะไร
-                        if ($this->isGenericFortuneRequest($messageText)) {
-                            return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
-                        }
-
-                        if (! $this->canMakeAICall($facebookUserId)) {
-                            return [
-                                'action' => 'ai_limit',
-                                'message' => $this->getAILimitMessage(),
-                                'reading' => null,
-                            ];
-                        }
-
-                        return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+                        return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                     }
-                    // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ (ต้อง return ไม่ให้ fall through)
+                    // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
 
@@ -431,15 +418,10 @@ class FortuneConversationService
                 ];
             }
 
-            // ✅ ถ้าผู้ใช้ถามคำถามดูดวงโดยตรง → เริ่มทำนายเลยไม่ต้องถามซ้ำ
-            // เช่น "ดูดวงความรัก", "ปีนี้การเงินจะเป็นยังไง", "จะมีแฟนไหม" ฯลฯ
+            // ✅ V3: ทุกกรณีถามคำถามก่อนเสมอ → ทำนายตามคำถาม → ชวนดูเชิงลึก
+            // ไม่ว่าจะพิมพ์ "ดูดวง" หรือ "ดวงการเงินปีนี้" → ถามคำถามก่อนแล้วค่อยทำนาย
             if ($this->containsFortuneKeyword($messageText)) {
-                // ถ้าพิมพ์แค่ "ดูดวง" เฉยๆ (ไม่มีคำถามเพิ่ม) → ถามก่อนว่าอยากถามเรื่องอะไร
-                if ($this->isGenericFortuneRequest($messageText)) {
-                    return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
-                }
-
-                return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
+                return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
             }
 
             // ถ้าข้อความไม่ชัดเจนว่าจะดูดวง → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
@@ -1136,12 +1118,18 @@ class FortuneConversationService
             // ถ้าพิมพ์คำถามใหม่ (เช่น "ดูดวงความรัก", "การเงินปีนี้") → ใช้เป็นคำถาม
             $questionText = $messageText;
 
-            // ถ้าตอบสั้นมาก "ดู", "เอา" → ใช้ "ดูดวงรวมทุกด้าน" เป็น default
+            // V3: ถ้าตอบสั้นมาก "ดู", "เอา", "ดูเลย" → ใช้ original_message ที่เก็บไว้
+            // เพราะผู้ใช้อาจพิมพ์คำถามเฉพาะมาก่อนแล้ว (เช่น "ดวงการเงินปีนี้")
             $shortConfirms = ['ดู', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'ดูเลย', 'ดูค่ะ', 'ดูครับ', 'เอาค่ะ', 'เอาครับ'];
             $textLower = mb_strtolower(trim($messageText));
             foreach ($shortConfirms as $sc) {
                 if ($textLower === $sc) {
-                    $questionText = 'ดูดวงรวมทุกด้าน';
+                    // ใช้คำถามเดิมที่ผู้ใช้เคยพิมพ์มา ถ้ามีและไม่ใช่ generic
+                    if ($originalMessage && ! $this->isGenericFortuneRequest($originalMessage)) {
+                        $questionText = $originalMessage;
+                    } else {
+                        $questionText = 'ดูดวงรวมทุกด้าน';
+                    }
                     break;
                 }
             }
@@ -1264,8 +1252,9 @@ class FortuneConversationService
     /**
      * ถามผู้ใช้ว่าอยากถามเรื่องอะไร ก่อนเข้าสู่การทำนาย
      *
-     * ใช้เมื่อผู้ใช้พิมพ์แค่ "ดูดวง" เฉยๆ ไม่มีคำถามเจาะจง
-     * สร้าง reading ในสถานะ awaiting_question แล้วถามให้เลือกหัวข้อ
+     * V3: ทุกกรณีต้องรับคำถามก่อน → ทำนายตามคำถาม → ชวนดูเชิงลึก
+     * - ถ้าผู้ใช้พิมพ์คำถามเฉพาะมาแล้ว (เช่น "ดวงการเงินปีนี้") → เก็บไว้ + ถามยืนยัน
+     * - ถ้าพิมพ์แค่ "ดูดวง" เฉยๆ → ถามให้เลือกหัวข้อ
      */
     protected function askForQuestionBeforeReading(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
@@ -1291,6 +1280,9 @@ class FortuneConversationService
         // ปิด conversation เก่า
         $this->closeAllActiveConversations($facebookUserId);
 
+        // ตรวจสอบว่าผู้ใช้มีคำถามเฉพาะแล้วหรือยัง
+        $hasSpecificQuestion = ! $this->isGenericFortuneRequest($messageText);
+
         // สร้าง reading ในสถานะรอคำถาม
         $reading = FortuneReading::create([
             'facebook_user_id' => $facebookUserId,
@@ -1308,7 +1300,33 @@ class FortuneConversationService
         $reading->setConversationState('awaiting_type', 'question');
         $reading->setConversationState('original_message', $messageText);
 
-        // สร้างข้อความถาม
+        // V3: ถ้ามีคำถามเฉพาะแล้ว → แจ้งว่ารับคำถามแล้ว + ถามยืนยัน
+        if ($hasSpecificQuestion) {
+            $message = "🔮 คุณ{$name} ถามว่า: \"{$messageText}\"\n\n";
+            $message .= "✨ จันทราพร้อมทำนายให้แล้วค่ะ\n\n";
+
+            if ($remaining < 99) {
+                $message .= "📊 สิทธิ์ฟรีคงเหลือ: {$remaining} ครั้ง\n\n";
+            }
+
+            $message .= "กด \"ดูเลย\" เพื่อรับคำทำนาย\nหรือพิมพ์คำถามใหม่ได้ค่ะ 👇";
+
+            return [
+                'action' => 'awaiting_confirmation',
+                'message' => $message,
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'remaining' => $remaining,
+                'quick_replies' => [
+                    ['label' => '✨ ดูเลย', 'text' => 'ดูเลย'],
+                    ['label' => '💕 เปลี่ยนเป็นความรัก', 'text' => 'ดูดวงความรัก'],
+                    ['label' => '💼 เปลี่ยนเป็นการงาน', 'text' => 'ดูดวงการงาน'],
+                    ['label' => '🌟 ดวงรวมทุกด้าน', 'text' => 'ดูดวงรวมทุกด้าน'],
+                ],
+            ];
+        }
+
+        // ไม่มีคำถามเฉพาะ → ถามให้เลือกหัวข้อ
         $message = "🔮 สวัสดีค่ะ คุณ{$name}\n\n";
         $message .= "จันทราพร้อมทำนายให้แล้วค่ะ ✨\n\n";
         $message .= "📝 อยากถามเรื่องอะไรคะ? พิมพ์มาได้เลย\n";

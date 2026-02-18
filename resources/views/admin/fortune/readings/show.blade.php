@@ -209,6 +209,10 @@
                 <span class="ml-2">
                     @if($reading->is_paid)
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">ชำระแล้ว</span>
+                    @elseif($reading->conversation_status === 'pending_payment')
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">💳 รอชำระ</span>
+                    @elseif($reading->reading_type === 'deep' && $reading->amount_paid > 0)
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">รอชำระ</span>
                     @else
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">ฟรี</span>
                     @endif
