@@ -1175,13 +1175,172 @@
             </div>
         </div>
 
+        {{-- ============================================================ --}}
+        {{-- Affiliate/MLM Settings สำหรับดูดวง --}}
+        {{-- ============================================================ --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                affEnabled: {{ old('fortune_affiliate_enabled', $settings->fortune_affiliate_enabled ?? false) ? 'true' : 'false' }},
+                autoReg: {{ old('fortune_auto_register_enabled', $settings->fortune_auto_register_enabled ?? true) ? 'true' : 'false' }},
+                useGlobal: {{ old('fortune_use_global_commission_rate', $settings->fortune_use_global_commission_rate ?? true) ? 'true' : 'false' }},
+                pvValue: '{{ old('fortune_pv_value', $settings->fortune_pv_value ?? 0) }}',
+                customRate: '{{ old('fortune_custom_commission_per_pv', $settings->fortune_custom_commission_per_pv ?? '') }}',
+                preview: null,
+                previewLoading: false,
+                async calcPreview() {
+                    this.previewLoading = true;
+                    try {
+                        const params = new URLSearchParams({
+                            pv_value: this.pvValue,
+                            use_global: this.useGlobal ? '1' : '0',
+                            custom_rate: this.customRate || '0'
+                        });
+                        const res = await fetch('{{ route('admin.fortune.settings.fortune-commission-preview') }}?' + params);
+                        const json = await res.json();
+                        if (json.success) this.preview = json.data;
+                    } catch (e) {
+                        alert('เกิดข้อผิดพลาด: ' + e.message);
+                    } finally {
+                        this.previewLoading = false;
+                    }
+                }
+             }">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                💰 ตั้งค่าระบบ Affiliate สำหรับดูดวง
+            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                ลงทะเบียนลูกค้าดูดวง LINE เป็นสมาชิก Thaiprompt อัตโนมัติ พร้อมระบบคอมมิชชั่น MLM
+            </p>
+
+            {{-- Toggle เปิด/ปิดระบบ --}}
+            <div class="flex items-center justify-between mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div>
+                    <label class="font-medium text-gray-900 dark:text-white">เปิดระบบ Affiliate อัตโนมัติ</label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เมื่อเปิด ลูกค้าดูดวง LINE จะถูกสมัครสมาชิก + MLM อัตโนมัติหลังจ่ายเงิน</p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="fortune_affiliate_enabled" value="1"
+                           x-model="affEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+
+            {{-- Settings (แสดงเมื่อ enabled) --}}
+            <div x-show="affEnabled" x-transition x-cloak class="space-y-5">
+                {{-- Auto-register toggle --}}
+                <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <div>
+                        <label class="text-sm font-medium text-gray-900 dark:text-white">สร้าง User อัตโนมัติ</label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">สร้างบัญชีสมาชิกจาก LINE profile อัตโนมัติหลังจ่ายค่าดูดวง</p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="fortune_auto_register_enabled" value="1"
+                               x-model="autoReg" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                {{-- PV Value --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        📊 ค่า PV ของการดูดวง
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        ค่า PV ที่ใช้คำนวณคอมมิชชั่น MLM (เช่น ราคาดูดวง {{ $settings->deep_reading_price ?? 49 }} บาท = {{ $settings->deep_reading_price ?? 49 }} PV)
+                    </p>
+                    <input type="number" name="fortune_pv_value" step="0.01" min="0"
+                           x-model="pvValue"
+                           class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                {{-- Commission Rate --}}
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            💱 อัตราคอมมิชชั่น
+                        </label>
+                    </div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="fortune_use_global_commission_rate" value="1"
+                                   x-model="useGlobal" class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                        <span class="text-sm text-gray-700 dark:text-gray-300">ใช้อัตราคอมมิชชั่นกลาง (MlmGlobalSetting)</span>
+                    </div>
+                    <div x-show="!useGlobal" x-transition class="mt-3">
+                        <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">อัตราคอมมิชชั่นกำหนดเอง (ต่อ PV)</label>
+                        <input type="number" name="fortune_custom_commission_per_pv" step="0.01" min="0"
+                               x-model="customRate"
+                               class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    </div>
+                </div>
+
+                {{-- Commission Preview --}}
+                <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <h4 class="text-sm font-bold text-purple-800 dark:text-purple-300">📈 ตัวอย่างการคำนวณคอมมิชชั่น</h4>
+                        <button type="button" @click="calcPreview()"
+                                :disabled="previewLoading"
+                                class="px-4 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition disabled:opacity-50">
+                            <span x-show="!previewLoading">🔄 คำนวณ</span>
+                            <span x-show="previewLoading">⏳ กำลังคำนวณ...</span>
+                        </button>
+                    </div>
+
+                    <template x-if="preview">
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">💵 ราคาดูดวง</span>
+                                <span class="font-medium text-gray-900 dark:text-white" x-text="preview.price + ' บาท'"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">📊 ค่า PV</span>
+                                <span class="font-medium text-gray-900 dark:text-white" x-text="preview.pv_value"></span>
+                            </div>
+                            <div class="border-t border-purple-200 dark:border-purple-700 my-2"></div>
+                            <template x-for="(level, idx) in (preview.levels || []).slice(0, 5)" :key="idx">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400" x-text="'📈 Level ' + level.level + ' (' + level.percentage + '%)'"></span>
+                                    <span class="text-gray-900 dark:text-white" x-text="level.amount + ' บาท'"></span>
+                                </div>
+                            </template>
+                            <div class="border-t border-purple-200 dark:border-purple-700 my-2"></div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">💸 รวมจ่ายคอมมิชชั่น</span>
+                                <span class="font-medium text-red-600 dark:text-red-400" x-text="preview.total_commission + ' บาท'"></span>
+                            </div>
+                            <div class="flex justify-between p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                                <span class="font-bold text-green-800 dark:text-green-300">✅ กำไรสุทธิ</span>
+                                <span class="font-bold text-green-800 dark:text-green-300" x-text="preview.net_profit + ' บาท (' + preview.profit_percentage + '%)'"></span>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="!preview">
+                        <p class="text-xs text-purple-600 dark:text-purple-400">กดปุ่ม "คำนวณ" เพื่อดู preview คอมมิชชั่น</p>
+                    </template>
+                </div>
+
+                {{-- Custom Invite Message --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        ✉️ ข้อความเชิญชวน (ไม่บังคับ)
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">ข้อความเพิ่มเติมที่จะแสดงใน Flex Message เชิญชวน (เว้นว่างเพื่อใช้ข้อความเริ่มต้น)</p>
+                    <textarea name="fortune_affiliate_invite_message" rows="3"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 text-sm"
+                              placeholder="ชวนเพื่อนมาดูดวง รับคอมมิชชั่นทุกครั้ง!">{{ old('fortune_affiliate_invite_message', $settings->fortune_affiliate_invite_message ?? '') }}</textarea>
+                </div>
+            </div>
+        </div>
+
         {{-- Submit Button --}}
         <div class="flex justify-end gap-3">
-            <a href="{{ route('admin.fortune.readings.index') }}" 
+            <a href="{{ route('admin.fortune.readings.index') }}"
                class="px-6 py-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition">
                 ดูประวัติการทำนาย
             </a>
-            <button type="submit" 
+            <button type="submit"
                     class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                 💾 บันทึกการตั้งค่า
             </button>

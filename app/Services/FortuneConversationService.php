@@ -2243,6 +2243,29 @@ class FortuneConversationService
                 }
             }
 
+            // ============================================================
+            // [Auto-Registration] ลงทะเบียนสมาชิก + MLM อัตโนมัติ
+            // หลังส่งคำทำนายสำเร็จ → สร้าง User + MlmMember + ส่ง invite
+            // ============================================================
+            if ($streaming && $platform === 'line' && $userId) {
+                try {
+                    $affiliateService = app(FortuneAffiliateService::class);
+                    $lineServiceInstance = $channelManager->getPlatform('line');
+                    $affiliateService->autoRegisterFromFortune(
+                        $reading,
+                        $userId,
+                        $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null
+                    );
+                } catch (\Exception $affErr) {
+                    // ไม่ให้ error กระทบการส่งคำทำนาย
+                    Log::warning('Fortune Affiliate: ลงทะเบียนอัตโนมัติล้มเหลว (ไม่กระทบคำทำนาย)', [
+                        'reading_id' => $reading->id,
+                        'line_user_id' => $userId,
+                        'error' => $affErr->getMessage(),
+                    ]);
+                }
+            }
+
             return [
                 'action' => 'completed',
                 'message' => $streaming ? null : $fullResponse."\n\n".$thankYouMessage,

@@ -219,6 +219,13 @@ class FortuneSettingsController extends Controller
             'fortune_bank_account_ids.*' => 'exists:payment_bank_accounts,id',
             // โหมดแสดงช่องทางชำระเงิน (โอนเงิน / พร้อมเพย์ / ทั้งสองอย่าง)
             'payment_display_mode' => 'nullable|in:both,bank_only,promptpay_only',
+            // Affiliate/MLM Settings สำหรับดูดวง
+            'fortune_affiliate_enabled' => 'boolean',
+            'fortune_auto_register_enabled' => 'boolean',
+            'fortune_pv_value' => 'nullable|numeric|min:0',
+            'fortune_use_global_commission_rate' => 'boolean',
+            'fortune_custom_commission_per_pv' => 'nullable|numeric|min:0',
+            'fortune_affiliate_invite_message' => 'nullable|string|max:2000',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -228,6 +235,8 @@ class FortuneSettingsController extends Controller
             'is_enabled', 'respond_in_comment', 'require_registration',
             'enable_deep_reading', 'allow_try_before_buy', 'subscription_enabled',
             'use_global_ai_settings', 'comment_engagement_enabled',
+            'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
+            'fortune_use_global_commission_rate',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {
@@ -257,6 +266,34 @@ class FortuneSettingsController extends Controller
         return redirect()
             ->route('admin.fortune.settings.index')
             ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
+    }
+
+    /**
+     * คำนวณ preview คอมมิชชั่นดูดวง (AJAX)
+     *
+     * แสดง: ราคา, PV, คอมมิชชั่นแต่ละ level, กำไรสุทธิ
+     */
+    public function fortuneCommissionPreview(Request $request)
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        // ถ้ามี parameter จาก form → ใช้ค่าจาก form (preview ก่อนบันทึก)
+        if ($request->has('pv_value')) {
+            $settings->fortune_pv_value = $request->input('pv_value', 0);
+        }
+        if ($request->has('use_global')) {
+            $settings->fortune_use_global_commission_rate = (bool) $request->input('use_global', true);
+        }
+        if ($request->has('custom_rate')) {
+            $settings->fortune_custom_commission_per_pv = $request->input('custom_rate');
+        }
+
+        $preview = $settings->calculateFortuneCommissionPreview();
+
+        return response()->json([
+            'success' => true,
+            'data' => $preview,
+        ]);
     }
 
     /**

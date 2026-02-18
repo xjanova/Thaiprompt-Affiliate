@@ -116,6 +116,13 @@ class FortuneTellingSetting extends Model
         'fortune_bank_account_ids',
         // โหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
         'payment_display_mode',
+        // Affiliate/MLM Settings สำหรับลงทะเบียนอัตโนมัติ
+        'fortune_affiliate_enabled',
+        'fortune_auto_register_enabled',
+        'fortune_pv_value',
+        'fortune_use_global_commission_rate',
+        'fortune_custom_commission_per_pv',
+        'fortune_affiliate_invite_message',
     ];
 
     /**
@@ -143,6 +150,11 @@ class FortuneTellingSetting extends Model
         'deep_reading_price' => 'decimal:2',
         'subscription_monthly_price' => 'decimal:2',
         'subscription_yearly_price' => 'decimal:2',
+        'fortune_affiliate_enabled' => 'boolean',
+        'fortune_auto_register_enabled' => 'boolean',
+        'fortune_pv_value' => 'decimal:2',
+        'fortune_use_global_commission_rate' => 'boolean',
+        'fortune_custom_commission_per_pv' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -175,6 +187,11 @@ class FortuneTellingSetting extends Model
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
         'enabled_platforms' => ['facebook'],
+        // Affiliate Settings
+        'fortune_affiliate_enabled' => false,
+        'fortune_auto_register_enabled' => true,
+        'fortune_pv_value' => 0,
+        'fortune_use_global_commission_rate' => true,
     ];
 
     /**
@@ -820,5 +837,78 @@ PROMPT;
     public function getLineWelcomeImageUrl(): ?string
     {
         return $this->line_welcome_image_url;
+    }
+
+    // ============================
+    // Affiliate/MLM Helper Methods
+    // ============================
+
+    /**
+     * ตรวจสอบว่าเปิดระบบ affiliate สำหรับดูดวงหรือไม่
+     */
+    public function isFortuneAffiliateEnabled(): bool
+    {
+        return (bool) ($this->fortune_affiliate_enabled ?? false);
+    }
+
+    /**
+     * ดึงอัตราคอมมิชชั่นที่ใช้งานจริง (จาก global หรือ custom)
+     */
+    public function getFortuneEffectiveCommissionRate(): float
+    {
+        if ($this->fortune_use_global_commission_rate ?? true) {
+            return (float) MlmGlobalSetting::get('commission_per_pv', 1);
+        }
+
+        return (float) ($this->fortune_custom_commission_per_pv ?? MlmGlobalSetting::get('commission_per_pv', 1));
+    }
+
+    /**
+     * คำนวณ preview คอมมิชชั่นจากการดูดวง
+     *
+     * แสดง: ราคา, PV, คอมมิชชั่นแต่ละ level, กำไรสุทธิ
+     */
+    public function calculateFortuneCommissionPreview(): array
+    {
+        $price = (float) ($this->deep_reading_price ?? 0);
+        $pvValue = (float) ($this->fortune_pv_value ?? 0);
+        $commissionRate = $this->getFortuneEffectiveCommissionRate();
+
+        // ดึง unilevel levels จาก MlmGlobalSetting
+        $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
+        if (is_string($unilevelLevels)) {
+            $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
+        }
+
+        // คำนวณคอมมิชชั่นแต่ละ level
+        $levelBreakdown = [];
+        $totalCommission = 0;
+
+        foreach ($unilevelLevels as $levelConfig) {
+            $level = $levelConfig['level'] ?? 0;
+            $percentage = (float) ($levelConfig['percentage'] ?? 0);
+            $amount = ($pvValue * $percentage / 100) * $commissionRate;
+
+            $levelBreakdown[] = [
+                'level' => $level,
+                'percentage' => $percentage,
+                'amount' => round($amount, 2),
+            ];
+
+            $totalCommission += $amount;
+        }
+
+        $totalCommission = round($totalCommission, 2);
+        $netProfit = round($price - $totalCommission, 2);
+
+        return [
+            'price' => $price,
+            'pv_value' => $pvValue,
+            'commission_rate' => $commissionRate,
+            'levels' => $levelBreakdown,
+            'total_commission' => $totalCommission,
+            'net_profit' => $netProfit,
+            'profit_percentage' => $price > 0 ? round(($netProfit / $price) * 100, 1) : 0,
+        ];
     }
 }

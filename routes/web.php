@@ -1197,3 +1197,14 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackPageView::class,
         ]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Fortune Referral Routes (ลิงก์เชิญเพื่อนดูดวง)
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\FortuneReferralController;
+
+Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landing'])
+    ->name('fortune.invite');

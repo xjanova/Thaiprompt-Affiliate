@@ -187,6 +187,31 @@ class LineFortuneWebhookController extends Controller
             ]);
         }
 
+        // ========================================
+        // จับคู่ FortuneReferral (ถ้ามีคนเชิญ)
+        // ========================================
+        try {
+            $referral = \App\Models\FortuneReferral::where('status', \App\Models\FortuneReferral::STATUS_PENDING)
+                ->whereNull('referred_line_user_id')
+                ->where('expires_at', '>', now())
+                ->where('created_at', '>=', now()->subMinutes(30))
+                ->latest()
+                ->first();
+
+            if ($referral) {
+                $referral->markAsFollowed($userId);
+                Log::info('LINE Webhook: จับคู่ referral สำเร็จ', [
+                    'referral_id' => $referral->id,
+                    'referrer_user_id' => $referral->referrer_user_id,
+                    'new_follower_line_id' => $userId,
+                ]);
+            }
+        } catch (\Exception $refErr) {
+            Log::debug('LINE Webhook: ตรวจ referral ไม่สำเร็จ (ไม่กระทบ welcome)', [
+                'error' => $refErr->getMessage(),
+            ]);
+        }
+
         // ส่ง Welcome Message พร้อมชื่อ
         $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName);
 
