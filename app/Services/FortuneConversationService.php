@@ -4727,6 +4727,14 @@ PROMPT;
             return;
         }
 
+        // คำนวณ % รวมทั้งหมด เพื่อใช้เป็นตัวหารสัดส่วน
+        $totalPercentage = 0;
+        foreach ($unilevelLevels as $lc) {
+            if (is_array($lc)) {
+                $totalPercentage += (float) ($lc['percentage'] ?? 0);
+            }
+        }
+
         $walletService = app(\App\Services\WalletService::class);
         $commissions = [];
         $totalPaid = 0;
@@ -4754,8 +4762,10 @@ PROMPT;
                 continue;
             }
 
-            // คำนวณคอมมิชชั่น: static_amount × percentage%
-            $commissionAmount = round(($staticAmount * $percentage / 100), 2);
+            // คำนวณคอมมิชชั่น: แบ่งตามสัดส่วน static_amount × (percentage / totalPercentage)
+            $commissionAmount = $totalPercentage > 0
+                ? round(($staticAmount * $percentage / $totalPercentage), 2)
+                : 0;
 
             if ($commissionAmount > 0) {
                 // สร้าง MlmCommission record

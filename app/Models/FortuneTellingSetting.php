@@ -1062,12 +1062,23 @@ PROMPT;
     /**
      * คำนวณ preview แบบ Static mode
      *
-     * จ่ายตรงตามจำนวนที่ตั้ง → แบ่งตาม unilevel level %
-     * เช่น ตั้ง 5 บาท, Level 1 = 20% → Level 1 ได้ 1 บาท
+     * จ่ายคอมมิชชั่นรวมเท่ากับ static_amount เต็มจำนวน
+     * แบ่งให้แต่ละ Level ตามสัดส่วน % (percentage / totalPercentage)
+     * เช่น ตั้ง 10 บาท, Level 1=5%, Level 2=3%... (รวม 12%)
+     *   → Level 1 ได้ 10 × 5/12 = 4.17 บาท
+     *   → กำไรสุทธิ = 39 - 10 = 29 บาท
      */
     protected function calculateStaticCommissionPreview(float $price, array $unilevelLevels): array
     {
         $staticAmount = $this->getFortuneStaticCommissionAmount();
+
+        // คำนวณ % รวมทั้งหมด เพื่อใช้เป็นตัวหารสัดส่วน
+        $totalPercentage = 0;
+        foreach ($unilevelLevels as $levelConfig) {
+            if (is_array($levelConfig)) {
+                $totalPercentage += (float) ($levelConfig['percentage'] ?? 0);
+            }
+        }
 
         $levelBreakdown = [];
         $totalCommission = 0;
@@ -1079,8 +1090,10 @@ PROMPT;
             $level = $levelConfig['level'] ?? 0;
             $percentage = (float) ($levelConfig['percentage'] ?? 0);
 
-            // Static mode: เอาจำนวนเต็มตามที่ตั้ง × percentage ของ level
-            $amount = ($staticAmount * $percentage / 100);
+            // แบ่งตามสัดส่วน: static_amount × (percentage / totalPercentage)
+            $amount = $totalPercentage > 0
+                ? ($staticAmount * $percentage / $totalPercentage)
+                : 0;
 
             $levelBreakdown[] = [
                 'level' => $level,
