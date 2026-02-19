@@ -275,25 +275,33 @@ class FortuneSettingsController extends Controller
      */
     public function fortuneCommissionPreview(Request $request)
     {
-        $settings = FortuneTellingSetting::getSettings();
+        try {
+            $settings = FortuneTellingSetting::getSettings();
 
-        // ถ้ามี parameter จาก form → ใช้ค่าจาก form (preview ก่อนบันทึก)
-        if ($request->has('pv_value')) {
-            $settings->fortune_pv_value = $request->input('pv_value', 0);
-        }
-        if ($request->has('use_global')) {
-            $settings->fortune_use_global_commission_rate = (bool) $request->input('use_global', true);
-        }
-        if ($request->has('custom_rate')) {
-            $settings->fortune_custom_commission_per_pv = $request->input('custom_rate');
-        }
+            // ถ้ามี parameter จาก form → ใช้ค่าจาก form (preview ก่อนบันทึก)
+            if ($request->has('pv_value')) {
+                $settings->fortune_pv_value = $request->input('pv_value', 0);
+            }
+            if ($request->has('use_global')) {
+                $settings->fortune_use_global_commission_rate = (bool) $request->input('use_global', true);
+            }
+            if ($request->has('custom_rate')) {
+                $settings->fortune_custom_commission_per_pv = $request->input('custom_rate');
+            }
 
-        $preview = $settings->calculateFortuneCommissionPreview();
+            $preview = $settings->calculateFortuneCommissionPreview();
 
-        return response()->json([
-            'success' => true,
-            'data' => $preview,
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $preview,
+            ]);
+        } catch (\Exception $e) {
+            // คืน JSON เสมอ ไม่ให้ return HTML error page
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการคำนวณ: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

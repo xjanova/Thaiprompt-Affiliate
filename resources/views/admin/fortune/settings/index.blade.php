@@ -1187,8 +1187,10 @@
                 customRate: '{{ old('fortune_custom_commission_per_pv', $settings->fortune_custom_commission_per_pv ?? '') }}',
                 preview: null,
                 previewLoading: false,
+                previewError: null,
                 async calcPreview() {
                     this.previewLoading = true;
+                    this.previewError = null;
                     try {
                         const params = new URLSearchParams({
                             pv_value: this.pvValue,
@@ -1196,10 +1198,20 @@
                             custom_rate: this.customRate || '0'
                         });
                         const res = await fetch('{{ route('admin.fortune.settings.fortune-commission-preview') }}?' + params);
+                        // ตรวจสอบว่า response เป็น JSON จริงๆ ไม่ใช่ HTML error page
+                        const contentType = res.headers.get('content-type') || '';
+                        if (!contentType.includes('application/json')) {
+                            this.previewError = 'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (HTTP ' + res.status + ') กรุณาล็อกอินใหม่แล้วลองอีกครั้ง';
+                            return;
+                        }
                         const json = await res.json();
-                        if (json.success) this.preview = json.data;
+                        if (json.success) {
+                            this.preview = json.data;
+                        } else {
+                            this.previewError = json.message || 'เกิดข้อผิดพลาดในการคำนวณ';
+                        }
                     } catch (e) {
-                        alert('เกิดข้อผิดพลาด: ' + e.message);
+                        this.previewError = 'เกิดข้อผิดพลาด: ' + e.message;
                     } finally {
                         this.previewLoading = false;
                     }
@@ -1287,6 +1299,13 @@
                             <span x-show="previewLoading">⏳ กำลังคำนวณ...</span>
                         </button>
                     </div>
+
+                    {{-- แสดง error message ถ้าคำนวณไม่สำเร็จ --}}
+                    <template x-if="previewError">
+                        <div class="p-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-sm text-red-700 dark:text-red-300">
+                            ⚠️ <span x-text="previewError"></span>
+                        </div>
+                    </template>
 
                     <template x-if="preview">
                         <div class="space-y-2 text-sm">
