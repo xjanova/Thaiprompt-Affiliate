@@ -258,9 +258,11 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function member_is_inactive_when_pv_below_threshold(): void
     {
+        // ⚠️ ปิด grace period เพื่อทดสอบ PV threshold ล้วนๆ
+        MlmGlobalSetting::set('volume_retention_grace_days', '0');
+
         // เกณฑ์ = 100 PV, มีแค่ 50
-        // ⚠️ สร้าง transaction เมื่อ 10 วันก่อน (พ้น grace period 7 วัน)
-        // เพราะถ้าสร้างวันนี้ → grace period จะยังทำให้ active
+        // สร้าง transaction เมื่อเดือนก่อน (ไม่นับใน monthly PV ของเดือนนี้)
         MlmPvTransaction::create([
             'mlm_member_id' => $this->memberA->id,
             'mlm_plan_id' => $this->plan->id,
@@ -269,8 +271,8 @@ class MlmCommissionFlowTest extends TestCase
             'sales_amount' => 50,
             'previous_balance' => 0,
             'new_balance' => 50,
-            'description' => 'ซื้อสินค้า PV ต่ำกว่าเกณฑ์',
-            'created_at' => now()->subDays(10),
+            'description' => 'ซื้อสินค้า PV ต่ำกว่าเกณฑ์ เดือนก่อน',
+            'created_at' => now()->subMonth()->subDay(),
         ]);
 
         $this->assertFalse(MlmRetentionHelper::isMemberActive($this->memberA));
@@ -412,9 +414,10 @@ class MlmCommissionFlowTest extends TestCase
         // ทำให้ B (sponsor ตรงของ C) active
         $this->makeActiveByPurchase($this->memberB);
 
-        // สร้าง FortuneReading
+        // สร้าง FortuneReading (⚠️ facebook_user_id = NOT NULL ใน DB)
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
+            'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-001',
             'is_paid' => true,
             'amount_paid' => 39,
@@ -475,9 +478,10 @@ class MlmCommissionFlowTest extends TestCase
         $isActive = MlmRetentionHelper::isMemberActive($sponsor);
         $this->assertFalse($isActive, 'Sponsor B ต้องไม่ active');
 
-        // สร้าง FortuneReading
+        // สร้าง FortuneReading (⚠️ facebook_user_id = NOT NULL ใน DB)
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
+            'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-002',
             'is_paid' => true,
             'amount_paid' => 39,
@@ -684,8 +688,11 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_static_mode(): void
     {
-        // สร้าง FortuneTellingSetting (⚠️ ใช้ is_enabled ไม่ใช่ enabled)
-        FortuneTellingSetting::create([
+        // ⚠️ ใช้ getSettings() แทน create() เพราะ $attributes default มี
+        // 'enabled_platforms' => ['facebook'] (PHP array) ซึ่ง create() ไม่ serialize ให้
+        // → เกิด "Array to string conversion" ตอน INSERT
+        $settings = FortuneTellingSetting::getSettings();
+        $settings->update([
             'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'static',
@@ -724,8 +731,9 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_pv_mode(): void
     {
-        // สร้าง FortuneTellingSetting (⚠️ ใช้ is_enabled ไม่ใช่ enabled)
-        FortuneTellingSetting::create([
+        // ⚠️ ใช้ getSettings() แทน create() (ดูเหตุผลใน static_mode test)
+        $settings = FortuneTellingSetting::getSettings();
+        $settings->update([
             'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'pv',
@@ -822,6 +830,7 @@ class MlmCommissionFlowTest extends TestCase
     {
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
+            'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-DUP',
             'is_paid' => true,
             'amount_paid' => 39,
