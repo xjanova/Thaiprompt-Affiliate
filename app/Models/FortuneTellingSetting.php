@@ -123,6 +123,9 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate',
         'fortune_custom_commission_per_pv',
         'fortune_affiliate_invite_message',
+        // โหมดจ่ายคอมมิชชั่น: 'pv' หรือ 'static'
+        'fortune_commission_mode',
+        'fortune_static_commission_amount',
     ];
 
     /**
@@ -155,6 +158,7 @@ class FortuneTellingSetting extends Model
         'fortune_pv_value' => 'decimal:2',
         'fortune_use_global_commission_rate' => 'boolean',
         'fortune_custom_commission_per_pv' => 'decimal:2',
+        'fortune_static_commission_amount' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -192,6 +196,8 @@ class FortuneTellingSetting extends Model
         'fortune_auto_register_enabled' => true,
         'fortune_pv_value' => 0,
         'fortune_use_global_commission_rate' => true,
+        'fortune_commission_mode' => 'pv',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
+        'fortune_static_commission_amount' => 0,
     ];
 
     /**
@@ -864,39 +870,78 @@ PROMPT;
     }
 
     /**
+     * ดึงโหมดจ่ายคอมมิชชั่น: 'pv' หรือ 'static'
+     */
+    public function getFortuneCommissionMode(): string
+    {
+        return $this->fortune_commission_mode ?? 'pv';
+    }
+
+    /**
+     * ดึงจำนวนคอมมิชชั่น static (ใช้เมื่อ mode = static)
+     */
+    public function getFortuneStaticCommissionAmount(): float
+    {
+        return (float) ($this->fortune_static_commission_amount ?? 0);
+    }
+
+    /**
      * คำนวณ preview คอมมิชชั่นจากการดูดวง
+     *
+     * รองรับ 2 โหมด:
+     * - 'pv': ใช้ PV คำนวณตาม MLM unilevel levels
+     *   สูตร: PV × percentage% × commission_per_pv (เหมือน MlmCommissionService)
+     * - 'static': จ่ายตรงตามจำนวนที่ตั้ง (ไม่สน PV, แบ่งตาม level %)
      *
      * แสดง: ราคา, PV, คอมมิชชั่นแต่ละ level, กำไรสุทธิ
      */
     public function calculateFortuneCommissionPreview(): array
     {
         $price = (float) ($this->deep_reading_price ?? 0);
-        $pvValue = (float) ($this->fortune_pv_value ?? 0);
-        $commissionRate = $this->getFortuneEffectiveCommissionRate();
+        $mode = $this->getFortuneCommissionMode();
 
         // ดึง unilevel levels จาก MlmGlobalSetting
         $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
 
-        // แปลงเป็น array อย่างปลอดภัย — ป้องกัน "foreach() argument must be of type array|object, int given"
+        // แปลงเป็น array อย่างปลอดภัย
         if (is_string($unilevelLevels)) {
             $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
         }
-        if (!is_array($unilevelLevels)) {
+        if (! is_array($unilevelLevels)) {
             $unilevelLevels = [];
         }
 
-        // คำนวณคอมมิชชั่นแต่ละ level
+        // คำนวณตามโหมด
+        if ($mode === 'static') {
+            return $this->calculateStaticCommissionPreview($price, $unilevelLevels);
+        }
+
+        return $this->calculatePvCommissionPreview($price, $unilevelLevels);
+    }
+
+    /**
+     * คำนวณ preview แบบ PV mode
+     *
+     * สูตรตรงกับ MlmCommissionService::calculateUnilevelWithRollup() line 224:
+     * commissionAmount = (PV × percentage / 100) × commission_per_pv
+     */
+    protected function calculatePvCommissionPreview(float $price, array $unilevelLevels): array
+    {
+        $pvValue = (float) ($this->fortune_pv_value ?? 0);
+        $commissionPerPv = $this->getFortuneEffectiveCommissionRate();
+
         $levelBreakdown = [];
         $totalCommission = 0;
 
         foreach ($unilevelLevels as $levelConfig) {
-            // ป้องกัน element ที่ไม่ใช่ array
-            if (!is_array($levelConfig)) {
+            if (! is_array($levelConfig)) {
                 continue;
             }
             $level = $levelConfig['level'] ?? 0;
             $percentage = (float) ($levelConfig['percentage'] ?? 0);
-            $amount = ($pvValue * $percentage / 100) * $commissionRate;
+
+            // สูตรเดียวกับ MlmCommissionService: (PV × percentage / 100) × commission_per_pv
+            $amount = ($pvValue * $percentage / 100) * $commissionPerPv;
 
             $levelBreakdown[] = [
                 'level' => $level,
@@ -911,9 +956,56 @@ PROMPT;
         $netProfit = round($price - $totalCommission, 2);
 
         return [
+            'mode' => 'pv',
             'price' => $price,
             'pv_value' => $pvValue,
-            'commission_rate' => $commissionRate,
+            'commission_per_pv' => $commissionPerPv,
+            'levels' => $levelBreakdown,
+            'total_commission' => $totalCommission,
+            'net_profit' => $netProfit,
+            'profit_percentage' => $price > 0 ? round(($netProfit / $price) * 100, 1) : 0,
+        ];
+    }
+
+    /**
+     * คำนวณ preview แบบ Static mode
+     *
+     * จ่ายตรงตามจำนวนที่ตั้ง → แบ่งตาม unilevel level %
+     * เช่น ตั้ง 5 บาท, Level 1 = 20% → Level 1 ได้ 1 บาท
+     */
+    protected function calculateStaticCommissionPreview(float $price, array $unilevelLevels): array
+    {
+        $staticAmount = $this->getFortuneStaticCommissionAmount();
+
+        $levelBreakdown = [];
+        $totalCommission = 0;
+
+        foreach ($unilevelLevels as $levelConfig) {
+            if (! is_array($levelConfig)) {
+                continue;
+            }
+            $level = $levelConfig['level'] ?? 0;
+            $percentage = (float) ($levelConfig['percentage'] ?? 0);
+
+            // Static mode: เอาจำนวนเต็มตามที่ตั้ง × percentage ของ level
+            $amount = ($staticAmount * $percentage / 100);
+
+            $levelBreakdown[] = [
+                'level' => $level,
+                'percentage' => $percentage,
+                'amount' => round($amount, 2),
+            ];
+
+            $totalCommission += $amount;
+        }
+
+        $totalCommission = round($totalCommission, 2);
+        $netProfit = round($price - $totalCommission, 2);
+
+        return [
+            'mode' => 'static',
+            'price' => $price,
+            'static_amount' => $staticAmount,
             'levels' => $levelBreakdown,
             'total_commission' => $totalCommission,
             'net_profit' => $netProfit,

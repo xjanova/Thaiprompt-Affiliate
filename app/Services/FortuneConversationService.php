@@ -4564,9 +4564,9 @@ PROMPT;
     /**
      * แบ่งคอมมิชชั่น MLM หลังชำระค่าดูดวงสำเร็จ
      *
-     * ใช้ fortune_pv_value จาก FortuneTellingSetting เป็น PV
-     * ส่งเข้า MlmCommissionService::calculateCommissionsWithRollup()
-     * ซึ่งรองรับ rollup, overpay protection, binary etc. เหมือน orders
+     * รองรับ 2 โหมด:
+     * - 'pv': ใช้ fortune_pv_value → ส่งเข้า MlmCommissionService (rollup, binary, etc.)
+     * - 'static': จ่ายตรงตามจำนวนที่ตั้ง → แบ่งตาม unilevel % → เข้า wallet upline
      *
      * ทุกอย่างอยู่ใน try/catch — ห้าม error กระทบการส่งคำทำนาย
      *
@@ -4580,14 +4580,27 @@ PROMPT;
                 return;
             }
 
-            // ดึง PV จาก settings
-            $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
-            if ($pvValue <= 0) {
-                Log::debug('Fortune Commission: fortune_pv_value = 0 ข้ามการแบ่งคอมมิชชั่น', [
-                    'reading_id' => $reading->id,
-                ]);
+            $mode = $this->settings->getFortuneCommissionMode();
 
-                return;
+            // ตรวจว่ามีค่าที่จะจ่ายหรือไม่
+            if ($mode === 'static') {
+                $staticAmount = $this->settings->getFortuneStaticCommissionAmount();
+                if ($staticAmount <= 0) {
+                    Log::debug('Fortune Commission: static_commission_amount = 0 ข้ามการแบ่ง', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return;
+                }
+            } else {
+                $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
+                if ($pvValue <= 0) {
+                    Log::debug('Fortune Commission: fortune_pv_value = 0 ข้ามการแบ่ง', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return;
+                }
             }
 
             // Refresh reading เพื่อให้ได้ user_id ล่าสุด (อาจเพิ่งถูก link จาก auto-register)
@@ -4595,7 +4608,7 @@ PROMPT;
 
             // ต้องมี user_id ที่ link กับ reading
             if (! $reading->user_id) {
-                Log::debug('Fortune Commission: reading ไม่มี user_id ข้ามการแบ่งคอมมิชชั่น', [
+                Log::debug('Fortune Commission: reading ไม่มี user_id ข้ามการแบ่ง', [
                     'reading_id' => $reading->id,
                 ]);
 
@@ -4605,7 +4618,7 @@ PROMPT;
             // หา MlmMember ของ user
             $mlmMember = \App\Models\MlmMember::where('user_id', $reading->user_id)->first();
             if (! $mlmMember) {
-                Log::debug('Fortune Commission: user ไม่ใช่สมาชิก MLM ข้ามการแบ่งคอมมิชชั่น', [
+                Log::debug('Fortune Commission: user ไม่ใช่สมาชิก MLM ข้ามการแบ่ง', [
                     'reading_id' => $reading->id,
                     'user_id' => $reading->user_id,
                 ]);
@@ -4626,29 +4639,11 @@ PROMPT;
                 return;
             }
 
-            // เรียก MlmCommissionService เพื่อแบ่งคอมมิชชั่นตาม unilevel + binary
-            $commissionService = app(\App\Services\MlmCommissionService::class);
-            $result = $commissionService->calculateCommissionsWithRollup(
-                $mlmMember,
-                $pvValue,
-                'fortune_reading',    // transaction type
-                $reading->id          // transaction ID
-            );
-
-            if ($result['success']) {
-                Log::info('Fortune Commission: แบ่งคอมมิชชั่น MLM สำเร็จ', [
-                    'reading_id' => $reading->id,
-                    'user_id' => $reading->user_id,
-                    'pv' => $pvValue,
-                    'amount_paid' => $reading->amount_paid,
-                    'total_commission' => $result['total_amount'] ?? 0,
-                    'commission_count' => count($result['commissions'] ?? []),
-                ]);
+            // แบ่งตามโหมด
+            if ($mode === 'static') {
+                $this->distributeStaticCommissions($reading, $mlmMember);
             } else {
-                Log::warning('Fortune Commission: แบ่งคอมมิชชั่นไม่สำเร็จ', [
-                    'reading_id' => $reading->id,
-                    'error' => $result['error'] ?? 'unknown',
-                ]);
+                $this->distributePvCommissions($reading, $mlmMember);
             }
 
         } catch (\Exception $e) {
@@ -4659,5 +4654,178 @@ PROMPT;
                 'trace' => mb_substr($e->getTraceAsString(), 0, 500),
             ]);
         }
+    }
+
+    /**
+     * แบ่งคอมมิชชั่นแบบ PV mode
+     *
+     * ส่ง PV เข้า MlmCommissionService::calculateCommissionsWithRollup()
+     * ซึ่งรองรับ rollup, overpay protection, binary etc. เหมือน orders
+     */
+    protected function distributePvCommissions(FortuneReading $reading, \App\Models\MlmMember $mlmMember): void
+    {
+        $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
+
+        $commissionService = app(\App\Services\MlmCommissionService::class);
+        $result = $commissionService->calculateCommissionsWithRollup(
+            $mlmMember,
+            $pvValue,
+            'fortune_reading',
+            $reading->id
+        );
+
+        if ($result['success']) {
+            Log::info('Fortune Commission [PV mode]: แบ่งคอมมิชชั่นสำเร็จ', [
+                'reading_id' => $reading->id,
+                'user_id' => $reading->user_id,
+                'pv' => $pvValue,
+                'amount_paid' => $reading->amount_paid,
+                'total_commission' => $result['total_amount'] ?? 0,
+                'commission_count' => count($result['commissions'] ?? []),
+            ]);
+        } else {
+            Log::warning('Fortune Commission [PV mode]: แบ่งคอมมิชชั่นไม่สำเร็จ', [
+                'reading_id' => $reading->id,
+                'error' => $result['error'] ?? 'unknown',
+            ]);
+        }
+    }
+
+    /**
+     * แบ่งคอมมิชชั่นแบบ Static mode
+     *
+     * จ่ายตรงตามจำนวนที่ตั้ง (เช่น 5 บาท) → แบ่งตาม unilevel levels %
+     * ไม่ผ่าน MlmCommissionService — จ่ายตรงเข้า wallet upline เลย
+     */
+    protected function distributeStaticCommissions(FortuneReading $reading, \App\Models\MlmMember $mlmMember): void
+    {
+        $staticAmount = $this->settings->getFortuneStaticCommissionAmount();
+
+        // ดึง unilevel levels
+        $unilevelLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
+        if (is_string($unilevelLevels)) {
+            $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
+        }
+        if (! is_array($unilevelLevels)) {
+            $unilevelLevels = [];
+        }
+
+        if (empty($unilevelLevels)) {
+            Log::debug('Fortune Commission [Static]: ไม่มี unilevel_levels ข้ามการแบ่ง');
+
+            return;
+        }
+
+        $walletService = app(\App\Services\WalletService::class);
+        $commissions = [];
+        $totalPaid = 0;
+
+        // วนหา upline ตาม unilevel
+        $currentMember = $mlmMember;
+        $level = 1;
+        $maxLevels = count($unilevelLevels);
+
+        while ($level <= $maxLevels && $currentMember->unilevel_sponsor_id) {
+            $sponsor = \App\Models\MlmMember::find($currentMember->unilevel_sponsor_id);
+
+            if (! $sponsor || ! $sponsor->user) {
+                break;
+            }
+
+            // หา level config
+            $levelConfig = collect($unilevelLevels)->firstWhere('level', $level);
+            $percentage = (float) ($levelConfig['percentage'] ?? 0);
+
+            if ($percentage <= 0) {
+                $currentMember = $sponsor;
+                $level++;
+
+                continue;
+            }
+
+            // คำนวณคอมมิชชั่น: static_amount × percentage%
+            $commissionAmount = round(($staticAmount * $percentage / 100), 2);
+
+            if ($commissionAmount > 0) {
+                // สร้าง MlmCommission record
+                \App\Models\MlmCommission::create([
+                    'mlm_member_id' => $sponsor->id,
+                    'mlm_plan_id' => $mlmMember->mlm_plan_id,
+                    'user_id' => $sponsor->user_id,
+                    'from_member_id' => $mlmMember->id,
+                    'source_type' => FortuneReading::class,
+                    'source_id' => $reading->id,
+                    'type' => $level === 1 ? 'unilevel_direct' : 'unilevel_indirect',
+                    'level' => $level,
+                    'commission_amount' => $commissionAmount,
+                    'pv_amount' => $staticAmount,
+                    'percentage' => $percentage,
+                    'status' => 'pending',
+                    'is_rollup' => false,
+                    'tree_type' => 'unilevel',
+                    'notes' => "คอมมิชชั่นดูดวง (static) Level {$level}",
+                    'calculation_details' => json_encode([
+                        'mode' => 'static',
+                        'static_amount' => $staticAmount,
+                        'percentage' => $percentage,
+                        'level' => $level,
+                        'fortune_reading_id' => $reading->id,
+                    ]),
+                    'created_at' => now(),
+                ]);
+
+                // เพิ่มเงินเข้า wallet ของ upline
+                try {
+                    $wallet = $sponsor->user->wallet;
+                    if (! $wallet) {
+                        $wallet = \App\Models\Wallet::create([
+                            'user_id' => $sponsor->user_id,
+                            'balance' => 0,
+                            'currency' => 'THB',
+                        ]);
+                    }
+
+                    $walletService->deposit(
+                        $wallet,
+                        $commissionAmount,
+                        'fortune_commission',
+                        "คอมมิชชั่นดูดวง Level {$level} จากบิล #{$reading->id}",
+                        [
+                            'reading_id' => $reading->id,
+                            'level' => $level,
+                            'buyer_user_id' => $reading->user_id,
+                            'mode' => 'static',
+                        ]
+                    );
+                } catch (\Exception $walletErr) {
+                    Log::warning('Fortune Commission [Static]: เพิ่มเงินเข้า wallet ไม่สำเร็จ', [
+                        'user_id' => $sponsor->user_id,
+                        'amount' => $commissionAmount,
+                        'error' => $walletErr->getMessage(),
+                    ]);
+                }
+
+                $totalPaid += $commissionAmount;
+
+                $commissions[] = [
+                    'user_id' => $sponsor->user_id,
+                    'level' => $level,
+                    'amount' => $commissionAmount,
+                ];
+            }
+
+            $currentMember = $sponsor;
+            $level++;
+        }
+
+        Log::info('Fortune Commission [Static mode]: แบ่งคอมมิชชั่นสำเร็จ', [
+            'reading_id' => $reading->id,
+            'user_id' => $reading->user_id,
+            'static_amount' => $staticAmount,
+            'amount_paid' => $reading->amount_paid,
+            'total_commission' => $totalPaid,
+            'commission_count' => count($commissions),
+            'commissions' => $commissions,
+        ]);
     }
 }
