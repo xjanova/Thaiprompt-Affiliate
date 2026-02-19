@@ -4701,17 +4701,11 @@ PROMPT;
     {
         $staticAmount = $this->settings->getFortuneStaticCommissionAmount();
 
-        // ดึง unilevel levels
-        $unilevelLevels = \App\Models\MlmGlobalSetting::get('unilevel_levels', []);
-        if (is_string($unilevelLevels)) {
-            $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
-        }
-        if (! is_array($unilevelLevels)) {
-            $unilevelLevels = [];
-        }
+        // ดึง unilevel levels (อ่านจาก unilevel_percentages → parse เป็น array of objects)
+        $unilevelLevels = \App\Models\FortuneTellingSetting::resolveUnilevelLevels();
 
         if (empty($unilevelLevels)) {
-            Log::debug('Fortune Commission [Static]: ไม่มี unilevel_levels ข้ามการแบ่ง');
+            Log::debug('Fortune Commission [Static]: ไม่มี unilevel levels ข้ามการแบ่ง');
 
             return;
         }

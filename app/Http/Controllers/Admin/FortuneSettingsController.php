@@ -226,6 +226,9 @@ class FortuneSettingsController extends Controller
             'fortune_use_global_commission_rate' => 'boolean',
             'fortune_custom_commission_per_pv' => 'nullable|numeric|min:0',
             'fortune_affiliate_invite_message' => 'nullable|string|max:2000',
+            // โหมดจ่ายคอมมิชชั่น: pv หรือ static
+            'fortune_commission_mode' => 'nullable|in:pv,static',
+            'fortune_static_commission_amount' => 'nullable|numeric|min:0',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -287,6 +290,12 @@ class FortuneSettingsController extends Controller
             }
             if ($request->has('custom_rate')) {
                 $settings->fortune_custom_commission_per_pv = $request->input('custom_rate');
+            }
+            if ($request->has('commission_mode')) {
+                $settings->fortune_commission_mode = $request->input('commission_mode', 'pv');
+            }
+            if ($request->has('static_amount')) {
+                $settings->fortune_static_commission_amount = $request->input('static_amount', 0);
             }
 
             $preview = $settings->calculateFortuneCommissionPreview();

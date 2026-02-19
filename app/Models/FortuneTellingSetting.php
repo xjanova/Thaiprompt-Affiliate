@@ -886,6 +886,53 @@ PROMPT;
     }
 
     /**
+     * ดึง unilevel levels เป็น array of objects จาก MlmGlobalSetting
+     *
+     * ระบบ MLM เก็บแยก 2 key:
+     * - unilevel_levels = จำนวนชั้น (integer เช่น 5)
+     * - unilevel_percentages = เปอร์เซ็นต์แต่ละชั้น (string เช่น "5,3,2,1,1")
+     *
+     * Method นี้แปลง unilevel_percentages → [{level: 1, percentage: 5}, {level: 2, percentage: 3}, ...]
+     *
+     * @return array
+     */
+    public static function resolveUnilevelLevels(): array
+    {
+        // ลอง unilevel_percentages ก่อน (string "5,3,2,1,1")
+        $percentages = MlmGlobalSetting::get('unilevel_percentages', '');
+
+        if (! empty($percentages) && is_string($percentages)) {
+            $parts = explode(',', $percentages);
+            $levels = [];
+            foreach ($parts as $i => $pct) {
+                $pctVal = (float) trim($pct);
+                if ($pctVal > 0) {
+                    $levels[] = ['level' => $i + 1, 'percentage' => $pctVal];
+                }
+            }
+            if (! empty($levels)) {
+                return $levels;
+            }
+        }
+
+        // Fallback: ลองอ่าน unilevel_levels (อาจเป็น JSON array)
+        $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
+
+        if (is_string($unilevelLevels)) {
+            $decoded = json_decode($unilevelLevels, true);
+            if (is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        if (is_array($unilevelLevels)) {
+            return $unilevelLevels;
+        }
+
+        return [];
+    }
+
+    /**
      * คำนวณ preview คอมมิชชั่นจากการดูดวง
      *
      * รองรับ 2 โหมด:
@@ -901,15 +948,10 @@ PROMPT;
         $mode = $this->getFortuneCommissionMode();
 
         // ดึง unilevel levels จาก MlmGlobalSetting
-        $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
-
-        // แปลงเป็น array อย่างปลอดภัย
-        if (is_string($unilevelLevels)) {
-            $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
-        }
-        if (! is_array($unilevelLevels)) {
-            $unilevelLevels = [];
-        }
+        // ⚠️ ระบบเก็บแยก 2 key:
+        //   - unilevel_levels = จำนวนชั้น (integer เช่น 5)
+        //   - unilevel_percentages = เปอร์เซ็นต์แต่ละชั้น (string เช่น "5,3,2,1,1")
+        $unilevelLevels = self::resolveUnilevelLevels();
 
         // คำนวณตามโหมด
         if ($mode === 'static') {

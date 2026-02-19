@@ -1185,6 +1185,8 @@
                 useGlobal: {{ old('fortune_use_global_commission_rate', $settings->fortune_use_global_commission_rate ?? true) ? 'true' : 'false' }},
                 pvValue: '{{ old('fortune_pv_value', $settings->fortune_pv_value ?? 0) }}',
                 customRate: '{{ old('fortune_custom_commission_per_pv', $settings->fortune_custom_commission_per_pv ?? '') }}',
+                commissionMode: '{{ old('fortune_commission_mode', $settings->fortune_commission_mode ?? 'pv') }}',
+                staticAmount: '{{ old('fortune_static_commission_amount', $settings->fortune_static_commission_amount ?? 0) }}',
                 preview: null,
                 previewLoading: false,
                 previewError: null,
@@ -1195,10 +1197,11 @@
                         const params = new URLSearchParams({
                             pv_value: this.pvValue,
                             use_global: this.useGlobal ? '1' : '0',
-                            custom_rate: this.customRate || '0'
+                            custom_rate: this.customRate || '0',
+                            commission_mode: this.commissionMode,
+                            static_amount: this.staticAmount || '0'
                         });
                         const res = await fetch('{{ route('admin.fortune.settings.fortune-commission-preview') }}?' + params);
-                        // ตรวจสอบว่า response เป็น JSON จริงๆ ไม่ใช่ HTML error page
                         const contentType = res.headers.get('content-type') || '';
                         if (!contentType.includes('application/json')) {
                             this.previewError = 'เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง (HTTP ' + res.status + ') กรุณาล็อกอินใหม่แล้วลองอีกครั้ง';
@@ -1252,8 +1255,69 @@
                     </label>
                 </div>
 
-                {{-- PV Value --}}
+                {{-- Commission Mode Selector --}}
                 <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🎯 โหมดจ่ายคอมมิชชั่น
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                        เลือกวิธีคำนวณคอมมิชชั่นจากการดูดวง — ใช้ PV ตามระบบ MLM หรือจ่ายตรงตามจำนวนที่กำหนด
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {{-- PV Mode --}}
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="fortune_commission_mode" value="pv"
+                                   x-model="commissionMode" class="sr-only peer">
+                            <div class="p-4 rounded-lg border-2 transition-all
+                                        peer-checked:border-purple-500 peer-checked:bg-purple-50 dark:peer-checked:bg-purple-900/30
+                                        border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700
+                                        hover:border-purple-300 dark:hover:border-purple-600">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">📊</span>
+                                    <span class="font-bold text-gray-900 dark:text-white">PV Mode</span>
+                                    <span x-show="commissionMode === 'pv'" class="ml-auto text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">เลือกอยู่</span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    คำนวณผ่านระบบ MLM: (PV × Level% / 100) × commission_per_pv
+                                </p>
+                            </div>
+                        </label>
+                        {{-- Static Mode --}}
+                        <label class="relative cursor-pointer">
+                            <input type="radio" name="fortune_commission_mode" value="static"
+                                   x-model="commissionMode" class="sr-only peer">
+                            <div class="p-4 rounded-lg border-2 transition-all
+                                        peer-checked:border-orange-500 peer-checked:bg-orange-50 dark:peer-checked:bg-orange-900/30
+                                        border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700
+                                        hover:border-orange-300 dark:hover:border-orange-600">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-lg">💵</span>
+                                    <span class="font-bold text-gray-900 dark:text-white">Static Mode</span>
+                                    <span x-show="commissionMode === 'static'" class="ml-auto text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">เลือกอยู่</span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    จ่ายตรงตามจำนวนที่ตั้ง เช่น 5 บาท → แบ่งตาม Level %
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                {{-- Static Commission Amount (แสดงเมื่อเลือก static mode) --}}
+                <div x-show="commissionMode === 'static'" x-transition x-cloak>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        💵 จำนวนคอมมิชชั่นคงที่ (บาท)
+                    </label>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        จำนวนเงินที่จะนำไปแบ่งจ่ายตาม Level % ของ MLM เช่น ตั้ง 5 บาท, Level 1 = 10% → Level 1 ได้ 0.50 บาท
+                    </p>
+                    <input type="number" name="fortune_static_commission_amount" step="0.01" min="0"
+                           x-model="staticAmount"
+                           class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500">
+                </div>
+
+                {{-- PV Value (แสดงเมื่อเลือก pv mode) --}}
+                <div x-show="commissionMode === 'pv'" x-transition x-cloak>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         📊 ค่า PV ของการดูดวง
                     </label>
@@ -1265,8 +1329,8 @@
                            class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
                 </div>
 
-                {{-- Commission Rate --}}
-                <div>
+                {{-- Commission Rate (แสดงเมื่อเลือก pv mode) --}}
+                <div x-show="commissionMode === 'pv'" x-transition x-cloak>
                     <div class="flex items-center justify-between mb-2">
                         <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
                             💱 อัตราคอมมิชชั่น
@@ -1309,15 +1373,38 @@
 
                     <template x-if="preview">
                         <div class="space-y-2 text-sm">
+                            {{-- โหมดที่ใช้ --}}
+                            <div class="flex justify-between">
+                                <span class="text-gray-600 dark:text-gray-400">🎯 โหมด</span>
+                                <span class="font-medium text-gray-900 dark:text-white"
+                                      x-text="preview.mode === 'static' ? '💵 Static (จ่ายตรง)' : '📊 PV (ตาม MLM)'"></span>
+                            </div>
                             <div class="flex justify-between">
                                 <span class="text-gray-600 dark:text-gray-400">💵 ราคาดูดวง</span>
                                 <span class="font-medium text-gray-900 dark:text-white" x-text="preview.price + ' บาท'"></span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-600 dark:text-gray-400">📊 ค่า PV</span>
-                                <span class="font-medium text-gray-900 dark:text-white" x-text="preview.pv_value"></span>
-                            </div>
+                            {{-- PV mode: แสดงค่า PV + commission_per_pv --}}
+                            <template x-if="preview.mode === 'pv'">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600 dark:text-gray-400">📊 ค่า PV</span>
+                                        <span class="font-medium text-gray-900 dark:text-white" x-text="preview.pv_value"></span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-600 dark:text-gray-400">💱 Commission/PV</span>
+                                        <span class="font-medium text-gray-900 dark:text-white" x-text="preview.commission_per_pv + ' บาท'"></span>
+                                    </div>
+                                </div>
+                            </template>
+                            {{-- Static mode: แสดงจำนวนคงที่ --}}
+                            <template x-if="preview.mode === 'static'">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600 dark:text-gray-400">💵 คอมมิชชั่นคงที่</span>
+                                    <span class="font-medium text-orange-600 dark:text-orange-400" x-text="preview.static_amount + ' บาท'"></span>
+                                </div>
+                            </template>
                             <div class="border-t border-purple-200 dark:border-purple-700 my-2"></div>
+                            {{-- Level breakdown --}}
                             <template x-for="(level, idx) in (preview.levels || []).slice(0, 5)" :key="idx">
                                 <div class="flex justify-between">
                                     <span class="text-gray-600 dark:text-gray-400" x-text="'📈 Level ' + level.level + ' (' + level.percentage + '%)'"></span>
