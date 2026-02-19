@@ -109,6 +109,7 @@ class FortuneTellingSetting extends Model
         'enabled_platforms',
         'line_flex_primary_color',
         'line_welcome_image_url',
+        'fortune_brand_name',
         // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
         'admin_handover_enabled',
         'admin_handover_timeout',
@@ -190,6 +191,7 @@ class FortuneTellingSetting extends Model
         // LINE Settings
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
+        'fortune_brand_name' => 'แม่หมอจันทรา',
         'enabled_platforms' => ['facebook'],
         // Affiliate Settings (เปิดเป็นค่าเริ่มต้น)
         'fortune_affiliate_enabled' => true,
@@ -827,6 +829,14 @@ PROMPT;
         }
 
         return $result;
+    }
+
+    /**
+     * ดึงชื่อแบรนด์ดูดวง (ใช้แสดงใน Flex Message)
+     */
+    public function getFortuneBrandName(): string
+    {
+        return $this->fortune_brand_name ?? 'แม่หมอจันทรา';
     }
 
     /**

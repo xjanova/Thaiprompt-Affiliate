@@ -334,6 +334,18 @@ class FortuneChannelManager
                 // แจ้งคำทำนายพร้อม (จาก FortuneProcessDeepReading batch mode)
                 'reading_ready' => $this->sendLineReadingReadyResponse($lineService, $userId, $result, $replyToken),
 
+                // กำลังประมวลผล (AI ทำงานอยู่ / PAID status) → Flex แจ้งสถานะ ไม่มีปุ่มดูดวงใหม่
+                'processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
+
+                // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ ไม่มีปุ่ม
+                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // แสดงบัญชีธนาคาร → ส่ง text (ไม่มีปุ่มดูดวง)
+                'bank_account_info' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // busy_processing (จาก FortuneCheckPendingReadings — แจ้งคนใช้งานมาก)
+                'busy_processing' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
@@ -409,7 +421,7 @@ class FortuneChannelManager
                     foreach ($inReplyBubbles as $bubble) {
                         $replyMessages[] = [
                             'type' => 'flex',
-                            'altText' => 'คำทำนายจากแม่หมอจันทรา',
+                            'altText' => "คำทำนายจาก{$this->settings->getFortuneBrandName()}",
                             'contents' => $bubble,
                         ];
                     }
@@ -456,7 +468,7 @@ class FortuneChannelManager
 
         foreach ($fortuneBubbles as $bubble) {
             $lineService->sendRichMessage($userId, [
-                'alt_text' => 'คำทำนายจากแม่หมอจันทรา',
+                'alt_text' => "คำทำนายจาก{$this->settings->getFortuneBrandName()}",
                 'contents' => $bubble,
             ]);
             usleep(50000); // ⚡ 50ms
@@ -702,7 +714,7 @@ class FortuneChannelManager
         $welcomeFlex = $lineService->buildWelcomeFlexMessage();
 
         return $lineService->sendFlexWithReplyFallback(
-            $userId, $welcomeFlex, 'แม่หมอจันทรายินดีต้อนรับค่ะ', $replyToken
+            $userId, $welcomeFlex, "{$this->settings->getFortuneBrandName()}ยินดีต้อนรับค่ะ", $replyToken
         );
     }
 
@@ -1230,7 +1242,7 @@ class FortuneChannelManager
         $flex = [
             'type' => 'bubble',
             'size' => 'kilo',
-            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'styles' => ['header' => ['backgroundColor' => $this->settings->getLineFlexPrimaryColor()]],
             'header' => [
                 'type' => 'box',
                 'layout' => 'vertical',
@@ -1345,15 +1357,18 @@ class FortuneChannelManager
         }
 
         // ถ้ายาว → ส่ง Flex สวยๆ
+        $brandName = $this->settings->getFortuneBrandName();
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
+
         $flex = [
             'type' => 'bubble',
-            'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
+            'styles' => ['header' => ['backgroundColor' => $primaryColor]],
             'header' => [
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'md',
                 'contents' => [
                     ['type' => 'text', 'text' => '🔮', 'size' => 'lg', 'flex' => 0],
                     ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [
-                        ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => "{$brandName}ดูดวง", 'color' => '#FFFFFF', 'size' => 'md', 'weight' => 'bold'],
                     ]],
                 ],
             ],
@@ -1366,12 +1381,12 @@ class FortuneChannelManager
             'footer' => [
                 'type' => 'box', 'layout' => 'horizontal', 'spacing' => 'md', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'primary', 'color' => $primaryColor, 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
                 ],
             ],
         ];
 
-        return $lineService->sendFlexWithReplyFallback($userId, $flex, '🔮 ข้อความจากแม่หมอจันทรา', $replyToken);
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, "🔮 ข้อความจาก{$brandName}", $replyToken);
     }
 
     /**

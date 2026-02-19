@@ -713,6 +713,16 @@ class FortuneAffiliateService
             return;
         }
 
+        // ✅ จำกัดความถี่: ส่ง promo ไม่เกิน 1 ครั้ง / 24 ชม. ต่อ user
+        $cacheKey = "fortune:affiliate_promo:{$platformUserId}";
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            Log::debug('Fortune Promo: ข้ามเพราะเพิ่งส่งไปไม่ถึง 24 ชม.', [
+                'line_user_id' => $platformUserId,
+            ]);
+
+            return;
+        }
+
         try {
             // หา User จาก platform user ID
             $user = User::where('line_user_id', $platformUserId)->first();
@@ -744,6 +754,9 @@ class FortuneAffiliateService
                 $referralLink,
                 $lineService
             );
+
+            // ✅ บันทึกว่าส่งแล้ว (ภายใน 24 ชม. จะไม่ส่งซ้ำ)
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours(24));
 
             Log::info('Fortune Promo: ส่งข้อความโปรโมทหลังดูดวงสำเร็จ', [
                 'user_id' => $user->id,

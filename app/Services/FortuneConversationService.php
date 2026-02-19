@@ -3535,11 +3535,23 @@ class FortuneConversationService
      */
     protected function isCancelRequest(string $text): bool
     {
-        $cancelKeywords = ['ยกเลิก', 'cancel', 'ไม่เอา', 'เลิก', 'หยุด', 'stop'];
         $text = mb_strtolower(trim($text));
 
-        foreach ($cancelKeywords as $keyword) {
+        // คำสั่งยกเลิกชัดเจน → ใช้ str_contains (ข้อความยาวก็ match)
+        $strongKeywords = ['ยกเลิก', 'cancel', 'stop'];
+        foreach ($strongKeywords as $keyword) {
             if (str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        // คำสั้นที่อาจกำกวม → ใช้ exact match เท่านั้น
+        // เพื่อไม่ให้ "ไม่เอาดูดวงละเอียด" → ยกเลิกทั้ง session
+        $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด'];
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
                 return true;
             }
         }
@@ -3549,15 +3561,37 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบว่าต้องการดูบัญชีธนาคารหรือไม่
+     *
+     * ใช้ exact match สำหรับคำสั้น เพื่อไม่ให้ trigger ผิด
+     * เช่น "เงินโอนจากงาน" หรือ "ดวงบัญชีการเงิน" ไม่ควร match
      */
     protected function isBankAccountRequest(string $text): bool
     {
-        $keywords = ['บัญชี', 'ธนาคาร', 'โอน', 'bank', 'account', 'เลขบัญชี'];
         $text = mb_strtolower(trim($text));
 
-        foreach ($keywords as $keyword) {
-            if (str_contains($text, $keyword)) {
+        // คำสั่งที่ตรงชัดเจน (exact match) — ข้อความทั้งหมดต้องเป็นคำสั่งนี้
+        $exactKeywords = [
+            'บัญชี', 'ดูบัญชี', 'เลขบัญชี', 'ธนาคาร', 'ดูธนาคาร',
+            'โอนเงิน', 'ขอบัญชี', 'ขอเลขบัญชี', 'bank', 'account',
+        ];
+
+        // ลบคำลงท้ายสุภาพ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
                 return true;
+            }
+        }
+
+        // คำสั่งแบบ contains แต่จำกัดเฉพาะข้อความสั้น (≤20 ตัวอักษร)
+        // เพื่อไม่ให้ "ดวงการเงินจะได้โอนไหม" match ผิด
+        if (mb_strlen($text) <= 20) {
+            $shortKeywords = ['เลขบัญชี', 'ดูบัญชี', 'ขอบัญชี'];
+            foreach ($shortKeywords as $keyword) {
+                if (str_contains($text, $keyword)) {
+                    return true;
+                }
             }
         }
 
@@ -5083,16 +5117,20 @@ PROMPT;
                             ],
                             'margin' => 'lg',
                         ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        // ✅ แสดงยอด Wallet เด่นชัด
                         [
                             'type' => 'box',
-                            'layout' => 'horizontal',
+                            'layout' => 'vertical',
+                            'margin' => 'lg',
+                            'backgroundColor' => '#F0FFF4',
+                            'cornerRadius' => 'md',
+                            'paddingAll' => 'md',
                             'contents' => [
-                                ['type' => 'text', 'text' => 'ยอดรวมใน Wallet', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
-                                ['type' => 'text', 'text' => "{$totalBalance} บาท", 'size' => 'xs', 'color' => '#333333', 'weight' => 'bold', 'align' => 'end', 'flex' => 4],
+                                ['type' => 'text', 'text' => '💰 ยอดเงินใน Wallet', 'size' => 'xxs', 'color' => '#888888'],
+                                ['type' => 'text', 'text' => "฿{$totalBalance}", 'size' => 'xl', 'color' => '#06C755', 'weight' => 'bold', 'margin' => 'xs'],
                             ],
-                            'margin' => 'sm',
                         ],
-                        ['type' => 'separator', 'margin' => 'lg'],
                         [
                             'type' => 'text',
                             'text' => '💸 ถอนเงินที่เว็บไซต์ (ต้อง KYC)',
@@ -5113,8 +5151,8 @@ PROMPT;
                             'color' => $primaryColor,
                             'action' => [
                                 'type' => 'uri',
-                                'label' => '🌐 ดู Wallet ที่เว็บ',
-                                'uri' => $appUrl.'/user/wallet',
+                                'label' => '💰 ดู Wallet',
+                                'uri' => $appUrl.'/auth/line?redirect=/user/wallet',
                             ],
                             'height' => 'sm',
                         ],
@@ -5122,12 +5160,24 @@ PROMPT;
                 ],
             ];
 
-            // ส่งผ่าน LINE OA push message (ไม่ใช่ LINE Notify)
+            // ส่งผ่าน LINE OA push message (ไม่ใช่ LINE Notify) + retry 1 ครั้ง
             $lineService = new LineFortuneService($this->settings);
-            $lineService->sendRichMessage($lineUserId, [
+            $richPayload = [
                 'alt_text' => "💰 ค่าแนะนำดูดวง +{$amountText} บาท | ยอดรวม: {$totalBalance} บาท",
                 'contents' => $flex,
-            ]);
+            ];
+
+            try {
+                $lineService->sendRichMessage($lineUserId, $richPayload);
+            } catch (\Exception $firstErr) {
+                // retry 1 ครั้ง หลังรอ 500ms
+                Log::info('Fortune Commission Notify: retry ครั้งที่ 1', [
+                    'line_user_id' => $lineUserId,
+                    'first_error' => $firstErr->getMessage(),
+                ]);
+                usleep(500000);
+                $lineService->sendRichMessage($lineUserId, $richPayload);
+            }
 
             // ส่ง in-app notification ด้วย
             $this->notifyCommissionInApp($user, $amount);
@@ -5228,16 +5278,20 @@ PROMPT;
                             ],
                             'margin' => 'lg',
                         ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        // ✅ แสดงยอด Wallet เด่นชัด
                         [
                             'type' => 'box',
-                            'layout' => 'horizontal',
+                            'layout' => 'vertical',
+                            'margin' => 'lg',
+                            'backgroundColor' => '#F0FFF4',
+                            'cornerRadius' => 'md',
+                            'paddingAll' => 'md',
                             'contents' => [
-                                ['type' => 'text', 'text' => 'ยอดรวมใน Wallet', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
-                                ['type' => 'text', 'text' => "{$totalBalance} บาท", 'size' => 'xs', 'color' => '#333333', 'weight' => 'bold', 'align' => 'end', 'flex' => 4],
+                                ['type' => 'text', 'text' => '💰 ยอดเงินใน Wallet', 'size' => 'xxs', 'color' => '#888888'],
+                                ['type' => 'text', 'text' => "฿{$totalBalance}", 'size' => 'xl', 'color' => '#06C755', 'weight' => 'bold', 'margin' => 'xs'],
                             ],
-                            'margin' => 'sm',
                         ],
-                        ['type' => 'separator', 'margin' => 'lg'],
                         [
                             'type' => 'text',
                             'text' => '💸 ถอนเงินที่เว็บไซต์ (ต้อง KYC)',
@@ -5258,8 +5312,8 @@ PROMPT;
                             'color' => $primaryColor,
                             'action' => [
                                 'type' => 'uri',
-                                'label' => '🌐 ดู Wallet ที่เว็บ',
-                                'uri' => $appUrl.'/user/wallet',
+                                'label' => '💰 ดู Wallet',
+                                'uri' => $appUrl.'/auth/line?redirect=/user/wallet',
                             ],
                             'height' => 'sm',
                         ],
@@ -5267,12 +5321,23 @@ PROMPT;
                 ],
             ];
 
-            // ส่งผ่าน LINE OA push message
+            // ส่งผ่าน LINE OA push message (มี retry 1 ครั้ง)
             $lineService = new LineFortuneService($this->settings);
-            $lineService->sendRichMessage($lineUserId, [
+            $richPayload = [
                 'alt_text' => "💰 คอมมิชชั่นดูดวง Level {$level}: +{$amountText} บาท | ยอดรวม: {$totalBalance} บาท",
                 'contents' => $flex,
-            ]);
+            ];
+
+            try {
+                $lineService->sendRichMessage($lineUserId, $richPayload);
+            } catch (\Exception $firstErr) {
+                Log::info('Fortune Commission Notify [PV]: retry ครั้งที่ 1', [
+                    'user_id' => $userId,
+                    'error' => $firstErr->getMessage(),
+                ]);
+                usleep(500000); // 500ms
+                $lineService->sendRichMessage($lineUserId, $richPayload);
+            }
 
             // ส่ง in-app notification ด้วย
             $this->notifyCommissionInApp($user, $amount);

@@ -351,6 +351,20 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // Fortune Cleanup Free Readings - ล้างคำทำนายฟรีเก่าเพื่อลดภาระ DB
+        // ========================================
+        $schedule->command('fortune:cleanup-free')
+            ->dailyAt('03:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Cleanup] ล้างคำทำนายฟรีเก่าสำเร็จ');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Cleanup] ล้างคำทำนายฟรีเก่าล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Marketing - ส่งแคมเปญการตลาดดูดวงอัตโนมัติ
         // ========================================
         $schedule->command('fortune:marketing-send')

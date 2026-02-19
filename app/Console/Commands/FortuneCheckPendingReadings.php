@@ -115,6 +115,35 @@ class FortuneCheckPendingReadings extends Command
                 $this->warn("  ⏭  {$billRef} — retry ครบ {$retryCount} ครั้งแล้ว (ข้าม) ต้องให้แอดมิน retry");
                 $skipped++;
 
+                // ✅ แจ้งลูกค้าว่าระบบมีปัญหา (ส่งครั้งเดียว)
+                if (! $reading->getConversationState('failure_notified', false) && ! empty($userId) && ! $isDryRun) {
+                    try {
+                        $settings = FortuneTellingSetting::getSettings();
+                        $channelManager = new FortuneChannelManager($settings);
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+
+                        $failMessage = "🔮 ขออภัยค่ะ คุณ{$name}\n\n"
+                            . "ระบบประมวลผลคำทำนายขัดข้องชั่วคราว\n"
+                            . "แอดมินจะดำเนินการให้เร็วที่สุดค่ะ\n\n"
+                            . "💬 พิมพ์ 'ดูคำทำนาย' เพื่อตรวจสอบสถานะได้ตลอดนะคะ 🙏";
+
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'error',
+                            'message' => $failMessage,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('failure_notified', true);
+                        $reading->setConversationState('failure_notified_at', now()->toIso8601String());
+
+                        $this->info("  📨 {$billRef} — ส่งข้อความแจ้งปัญหาให้ลูกค้าแล้ว");
+                    } catch (\Exception $notifyErr) {
+                        Log::warning('fortune:check-pending: ส่ง failure notification ล้มเหลว', [
+                            'reading_id' => $reading->id,
+                            'error' => $notifyErr->getMessage(),
+                        ]);
+                    }
+                }
+
                 continue;
             }
 

@@ -190,13 +190,28 @@ class LineFortuneWebhookController extends Controller
         // ========================================
         // จับคู่ FortuneReferral (ถ้ามีคนเชิญ)
         // ========================================
+        // ⚠️ LINE API ไม่ส่ง referral token ตอน follow event
+        // ดังนั้นใช้วิธีจับคู่จาก: 1) IP ที่เคยเข้า landing page, 2) referral ล่าสุดที่ยังว่าง
+        // จำกัดเวลาไว้ 10 นาที (เพื่อลดโอกาส match ผิดคน)
         try {
+            // ลำดับความสำคัญ: 1) referral ที่มี IP match (แม่นยำกว่า)
             $referral = \App\Models\FortuneReferral::where('status', \App\Models\FortuneReferral::STATUS_PENDING)
                 ->whereNull('referred_line_user_id')
                 ->where('expires_at', '>', now())
-                ->where('created_at', '>=', now()->subMinutes(30))
-                ->latest()
+                ->whereNotNull('ip_address') // มี IP = เคยเข้า landing page
+                ->where('updated_at', '>=', now()->subMinutes(10)) // จำกัด 10 นาที
+                ->latest('updated_at')
                 ->first();
+
+            // 2) Fallback: referral ล่าสุดที่ยังไม่มีคนจับคู่ (ภายใน 10 นาที)
+            if (! $referral) {
+                $referral = \App\Models\FortuneReferral::where('status', \App\Models\FortuneReferral::STATUS_PENDING)
+                    ->whereNull('referred_line_user_id')
+                    ->where('expires_at', '>', now())
+                    ->where('created_at', '>=', now()->subMinutes(10))
+                    ->latest()
+                    ->first();
+            }
 
             if ($referral) {
                 $referral->markAsFollowed($userId);
@@ -204,6 +219,7 @@ class LineFortuneWebhookController extends Controller
                     'referral_id' => $referral->id,
                     'referrer_user_id' => $referral->referrer_user_id,
                     'new_follower_line_id' => $userId,
+                    'match_method' => $referral->ip_address ? 'ip_match' : 'latest_pending',
                 ]);
             }
         } catch (\Exception $refErr) {
@@ -233,8 +249,51 @@ class LineFortuneWebhookController extends Controller
     {
         $userId = $event['source']['userId'] ?? null;
 
-        if ($userId) {
-            Log::info('LINE Webhook: User unfollowed', ['user_id' => $userId]);
+        if (! $userId) {
+            return;
+        }
+
+        Log::info('LINE Webhook: User unfollowed (blocked bot)', ['user_id' => $userId]);
+
+        try {
+            // ปิด conversation ที่ค้างอยู่ทั้งหมด (ยกเว้น PAID — อาจกำลัง processing)
+            $closedConversations = FortuneReading::where('facebook_user_id', $userId)
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_AWAITING_CONFIRMATION,
+                    FortuneReading::STATUS_BASIC_DONE,
+                    FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                    FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                    FortuneReading::STATUS_NEW,
+                ])
+                ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            // ยกเลิก pending payment bills + คืน UniquePaymentAmount
+            $pendingReadings = FortuneReading::where('facebook_user_id', $userId)
+                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('is_paid', false)
+                ->whereNotNull('unique_payment_amount_id')
+                ->with('uniquePaymentAmount')
+                ->get();
+
+            foreach ($pendingReadings as $reading) {
+                if ($reading->uniquePaymentAmount && $reading->uniquePaymentAmount->status === 'reserved') {
+                    $reading->uniquePaymentAmount->cancel();
+                }
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            }
+
+            if ($closedConversations > 0 || $pendingReadings->count() > 0) {
+                Log::info('LINE Webhook: Unfollow cleanup สำเร็จ', [
+                    'user_id' => $userId,
+                    'closed_conversations' => $closedConversations,
+                    'cancelled_bills' => $pendingReadings->count(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::warning('LINE Webhook: Unfollow cleanup ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -269,7 +328,11 @@ class LineFortuneWebhookController extends Controller
             'report_payment' => $this->handleReportPaymentPostback($userId, $replyToken),
             'help' => $this->handleHelpPostback($userId, $replyToken),
             'confirm_transfer' => $this->handleConfirmTransferPostback($userId, $replyToken, $params),
-            default => null,
+            default => Log::warning('LINE Webhook: Unknown postback action', [
+                'user_id' => $userId,
+                'action' => $action,
+                'data' => $data,
+            ]),
         };
     }
 
@@ -378,10 +441,11 @@ class LineFortuneWebhookController extends Controller
             }
 
             // ดึงชื่อผู้ใช้จาก LINE Profile
+            // ⚠️ getUserProfile() return key 'name' (ไม่ใช่ 'displayName')
             $userName = 'คุณ';
             $profile = $this->lineService->getUserProfile($userId);
-            if ($profile && ! empty($profile['displayName'])) {
-                $userName = $profile['displayName'];
+            if ($profile && ! empty($profile['name'])) {
+                $userName = $profile['name'];
             }
 
             // สร้าง result ในรูปแบบที่ FortuneChannelManager ต้องการ
