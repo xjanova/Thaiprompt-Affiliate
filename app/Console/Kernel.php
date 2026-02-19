@@ -13,7 +13,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // ข้าม schedule ขณะรัน test เพื่อไม่ให้ DB queries ตอน boot ทำ artisan test พัง
-        if ($this->app->runningUnitTests()) {
+        if ($this->app->runningUnitTests() || $this->app->environment('testing')) {
             return;
         }
 

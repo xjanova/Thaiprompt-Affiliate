@@ -91,7 +91,18 @@ jobs:
           DB_PASSWORD: password
         run: php artisan migrate --force
 
-      - name: Run tests
+      - name: Run MLM commission tests
+        env:
+          APP_ENV: testing
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: password
+        run: vendor/bin/phpunit tests/Feature/MlmCommissionFlowTest.php --testdox
+
+      - name: Run all tests
         continue-on-error: true
         env:
           APP_ENV: testing
@@ -101,7 +112,7 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: php artisan test --coverage || vendor/bin/phpunit --coverage-text
+        run: vendor/bin/phpunit --coverage-text
 
   code-quality:
     name: Code Quality Checks
