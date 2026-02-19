@@ -1292,11 +1292,11 @@
                                         hover:border-orange-300 dark:hover:border-orange-600">
                                 <div class="flex items-center gap-2 mb-1">
                                     <span class="text-lg">💵</span>
-                                    <span class="font-bold text-gray-900 dark:text-white">Static Mode</span>
+                                    <span class="font-bold text-gray-900 dark:text-white">ค่าแนะนำ (Static)</span>
                                     <span x-show="commissionMode === 'static'" class="ml-auto text-xs bg-orange-600 text-white px-2 py-0.5 rounded-full">เลือกอยู่</span>
                                 </div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    จ่ายตรงตามจำนวนที่ตั้ง เช่น 5 บาท → แบ่งตาม Level %
+                                    จ่ายค่าแนะนำให้ผู้แนะนำตรง (Level 1) เต็มจำนวน เช่น 10 บาท
                                 </p>
                             </div>
                         </label>
@@ -1306,10 +1306,10 @@
                 {{-- Static Commission Amount (แสดงเมื่อเลือก static mode) --}}
                 <div x-show="commissionMode === 'static'" x-transition x-cloak>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        💵 จำนวนคอมมิชชั่นคงที่ (บาท)
+                        💵 ค่าแนะนำ (บาท)
                     </label>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        จำนวนเงินที่จะนำไปแบ่งจ่ายตาม Level % ของ MLM เช่น ตั้ง 5 บาท, Level 1 = 10% → Level 1 ได้ 0.50 บาท
+                        จำนวนเงินที่ผู้แนะนำตรงได้รับเมื่อมีคนมาดูดวงผ่านลิงก์ เช่น ตั้ง 10 บาท → ผู้แนะนำได้ 10 บาท/ครั้ง
                     </p>
                     <input type="number" name="fortune_static_commission_amount" step="0.01" min="0"
                            x-model="staticAmount"
@@ -1404,19 +1404,23 @@
                                     </div>
                                 </div>
                             </template>
-                            {{-- Static mode: แสดงจำนวนคงที่ --}}
+                            {{-- Static mode: แสดงค่าแนะนำ --}}
                             <template x-if="preview.mode === 'static'">
                                 <div class="flex justify-between">
-                                    <span class="text-gray-600 dark:text-gray-400">💵 คอมมิชชั่นคงที่</span>
+                                    <span class="text-gray-600 dark:text-gray-400">🤝 ค่าแนะนำ (ผู้แนะนำตรง)</span>
                                     <span class="font-medium text-orange-600 dark:text-orange-400" x-text="preview.static_amount + ' บาท'"></span>
                                 </div>
                             </template>
                             <div class="border-t border-purple-200 dark:border-purple-700 my-2"></div>
-                            {{-- Level breakdown --}}
-                            <template x-for="(level, idx) in (preview.levels || []).slice(0, 5)" :key="idx">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-600 dark:text-gray-400" x-text="'📈 Level ' + level.level + ' (' + level.percentage + '%)'"></span>
-                                    <span class="text-gray-900 dark:text-white" x-text="level.amount + ' บาท'"></span>
+                            {{-- PV mode: Level breakdown --}}
+                            <template x-if="preview.mode === 'pv'">
+                                <div class="space-y-1">
+                                    <template x-for="(level, idx) in (preview.levels || []).slice(0, 5)" :key="idx">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-600 dark:text-gray-400" x-text="'📈 Level ' + level.level + ' (' + level.percentage + '%)'"></span>
+                                            <span class="text-gray-900 dark:text-white" x-text="level.amount + ' บาท'"></span>
+                                        </div>
+                                    </template>
                                 </div>
                             </template>
                             <div class="border-t border-purple-200 dark:border-purple-700 my-2"></div>

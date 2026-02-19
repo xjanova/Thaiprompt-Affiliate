@@ -1062,49 +1062,24 @@ PROMPT;
     /**
      * คำนวณ preview แบบ Static mode
      *
-     * จ่ายคอมมิชชั่นรวมเท่ากับ static_amount เต็มจำนวน
-     * แบ่งให้แต่ละ Level ตามสัดส่วน % (percentage / totalPercentage)
-     * เช่น ตั้ง 10 บาท, Level 1=5%, Level 2=3%... (รวม 12%)
-     *   → Level 1 ได้ 10 × 5/12 = 4.17 บาท
-     *   → กำไรสุทธิ = 39 - 10 = 29 บาท
+     * ระบบดูดวงจ่ายเฉพาะค่าแนะนำ (Direct Referral / Level 1) อย่างเดียว
+     * static_amount = จำนวนเงินที่ผู้แนะนำตรงได้รับเต็มจำนวน
+     * เช่น ตั้ง 10 บาท → ผู้แนะนำได้ 10 บาท → กำไร = ราคา - 10 = 29 บาท
      */
     protected function calculateStaticCommissionPreview(float $price, array $unilevelLevels): array
     {
         $staticAmount = $this->getFortuneStaticCommissionAmount();
 
-        // คำนวณ % รวมทั้งหมด เพื่อใช้เป็นตัวหารสัดส่วน
-        $totalPercentage = 0;
-        foreach ($unilevelLevels as $levelConfig) {
-            if (is_array($levelConfig)) {
-                $totalPercentage += (float) ($levelConfig['percentage'] ?? 0);
-            }
-        }
+        // จ่ายเฉพาะค่าแนะนำ (Level 1) เต็มจำนวน
+        $levelBreakdown = [
+            [
+                'level' => 1,
+                'percentage' => 100,
+                'amount' => round($staticAmount, 2),
+            ],
+        ];
 
-        $levelBreakdown = [];
-        $totalCommission = 0;
-
-        foreach ($unilevelLevels as $levelConfig) {
-            if (! is_array($levelConfig)) {
-                continue;
-            }
-            $level = $levelConfig['level'] ?? 0;
-            $percentage = (float) ($levelConfig['percentage'] ?? 0);
-
-            // แบ่งตามสัดส่วน: static_amount × (percentage / totalPercentage)
-            $amount = $totalPercentage > 0
-                ? ($staticAmount * $percentage / $totalPercentage)
-                : 0;
-
-            $levelBreakdown[] = [
-                'level' => $level,
-                'percentage' => $percentage,
-                'amount' => round($amount, 2),
-            ];
-
-            $totalCommission += $amount;
-        }
-
-        $totalCommission = round($totalCommission, 2);
+        $totalCommission = round($staticAmount, 2);
         $netProfit = round($price - $totalCommission, 2);
 
         return [

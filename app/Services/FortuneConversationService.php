@@ -4709,144 +4709,104 @@ PROMPT;
     }
 
     /**
-     * แบ่งคอมมิชชั่นแบบ Static mode
+     * แบ่งคอมมิชชั่นแบบ Static mode (ค่าแนะนำ)
      *
-     * จ่ายตรงตามจำนวนที่ตั้ง (เช่น 5 บาท) → แบ่งตาม unilevel levels %
-     * ไม่ผ่าน MlmCommissionService — จ่ายตรงเข้า wallet upline เลย
+     * ระบบดูดวงจ่ายเฉพาะค่าแนะนำ (Direct Referral / Level 1) อย่างเดียว
+     * static_amount = จำนวนเงินที่ผู้แนะนำตรงได้รับเต็มจำนวน
+     * เช่น ตั้ง 10 บาท → ผู้แนะนำได้ 10 บาท
+     *
+     * ไม่ผ่าน MlmCommissionService — จ่ายตรงเข้า wallet ผู้แนะนำเลย
      */
     protected function distributeStaticCommissions(FortuneReading $reading, \App\Models\MlmMember $mlmMember): void
     {
         $staticAmount = $this->settings->getFortuneStaticCommissionAmount();
+        $commissionAmount = round($staticAmount, 2);
 
-        // ดึง unilevel levels (อ่านจาก unilevel_percentages → parse เป็น array of objects)
-        $unilevelLevels = \App\Models\FortuneTellingSetting::resolveUnilevelLevels();
-
-        if (empty($unilevelLevels)) {
-            Log::debug('Fortune Commission [Static]: ไม่มี unilevel levels ข้ามการแบ่ง');
+        // หา sponsor (ผู้แนะนำตรง / Level 1) ของสมาชิก
+        if (! $mlmMember->unilevel_sponsor_id) {
+            Log::debug('Fortune Commission [Static]: สมาชิกไม่มีผู้แนะนำ ข้ามการจ่าย', [
+                'reading_id' => $reading->id,
+                'mlm_member_id' => $mlmMember->id,
+            ]);
 
             return;
         }
 
-        // คำนวณ % รวมทั้งหมด เพื่อใช้เป็นตัวหารสัดส่วน
-        $totalPercentage = 0;
-        foreach ($unilevelLevels as $lc) {
-            if (is_array($lc)) {
-                $totalPercentage += (float) ($lc['percentage'] ?? 0);
-            }
+        $sponsor = \App\Models\MlmMember::find($mlmMember->unilevel_sponsor_id);
+        if (! $sponsor || ! $sponsor->user) {
+            Log::debug('Fortune Commission [Static]: ผู้แนะนำไม่พบหรือไม่มี user', [
+                'reading_id' => $reading->id,
+                'sponsor_id' => $mlmMember->unilevel_sponsor_id,
+            ]);
+
+            return;
         }
 
+        // สร้าง MlmCommission record
+        \App\Models\MlmCommission::create([
+            'mlm_member_id' => $sponsor->id,
+            'mlm_plan_id' => $mlmMember->mlm_plan_id,
+            'user_id' => $sponsor->user_id,
+            'from_member_id' => $mlmMember->id,
+            'source_type' => FortuneReading::class,
+            'source_id' => $reading->id,
+            'type' => 'unilevel_direct',
+            'level' => 1,
+            'commission_amount' => $commissionAmount,
+            'pv_amount' => $staticAmount,
+            'percentage' => 100,
+            'status' => 'pending',
+            'is_rollup' => false,
+            'tree_type' => 'unilevel',
+            'notes' => "ค่าแนะนำดูดวง {$commissionAmount} บาท",
+            'calculation_details' => json_encode([
+                'mode' => 'static',
+                'static_amount' => $staticAmount,
+                'type' => 'referral_bonus',
+                'fortune_reading_id' => $reading->id,
+            ]),
+            'created_at' => now(),
+        ]);
+
+        // เพิ่มเงินเข้า wallet ของผู้แนะนำ
         $walletService = app(\App\Services\WalletService::class);
-        $commissions = [];
-        $totalPaid = 0;
-
-        // วนหา upline ตาม unilevel
-        $currentMember = $mlmMember;
-        $level = 1;
-        $maxLevels = count($unilevelLevels);
-
-        while ($level <= $maxLevels && $currentMember->unilevel_sponsor_id) {
-            $sponsor = \App\Models\MlmMember::find($currentMember->unilevel_sponsor_id);
-
-            if (! $sponsor || ! $sponsor->user) {
-                break;
-            }
-
-            // หา level config
-            $levelConfig = collect($unilevelLevels)->firstWhere('level', $level);
-            $percentage = (float) ($levelConfig['percentage'] ?? 0);
-
-            if ($percentage <= 0) {
-                $currentMember = $sponsor;
-                $level++;
-
-                continue;
-            }
-
-            // คำนวณคอมมิชชั่น: แบ่งตามสัดส่วน static_amount × (percentage / totalPercentage)
-            $commissionAmount = $totalPercentage > 0
-                ? round(($staticAmount * $percentage / $totalPercentage), 2)
-                : 0;
-
-            if ($commissionAmount > 0) {
-                // สร้าง MlmCommission record
-                \App\Models\MlmCommission::create([
-                    'mlm_member_id' => $sponsor->id,
-                    'mlm_plan_id' => $mlmMember->mlm_plan_id,
+        try {
+            $wallet = $sponsor->user->wallet;
+            if (! $wallet) {
+                $wallet = \App\Models\Wallet::create([
                     'user_id' => $sponsor->user_id,
-                    'from_member_id' => $mlmMember->id,
-                    'source_type' => FortuneReading::class,
-                    'source_id' => $reading->id,
-                    'type' => $level === 1 ? 'unilevel_direct' : 'unilevel_indirect',
-                    'level' => $level,
-                    'commission_amount' => $commissionAmount,
-                    'pv_amount' => $staticAmount,
-                    'percentage' => $percentage,
-                    'status' => 'pending',
-                    'is_rollup' => false,
-                    'tree_type' => 'unilevel',
-                    'notes' => "คอมมิชชั่นดูดวง (static) Level {$level}",
-                    'calculation_details' => json_encode([
-                        'mode' => 'static',
-                        'static_amount' => $staticAmount,
-                        'percentage' => $percentage,
-                        'level' => $level,
-                        'fortune_reading_id' => $reading->id,
-                    ]),
-                    'created_at' => now(),
+                    'balance' => 0,
+                    'currency' => 'THB',
                 ]);
-
-                // เพิ่มเงินเข้า wallet ของ upline
-                try {
-                    $wallet = $sponsor->user->wallet;
-                    if (! $wallet) {
-                        $wallet = \App\Models\Wallet::create([
-                            'user_id' => $sponsor->user_id,
-                            'balance' => 0,
-                            'currency' => 'THB',
-                        ]);
-                    }
-
-                    $walletService->deposit(
-                        $wallet,
-                        $commissionAmount,
-                        'fortune_commission',
-                        "คอมมิชชั่นดูดวง Level {$level} จากบิล #{$reading->id}",
-                        [
-                            'reading_id' => $reading->id,
-                            'level' => $level,
-                            'buyer_user_id' => $reading->user_id,
-                            'mode' => 'static',
-                        ]
-                    );
-                } catch (\Exception $walletErr) {
-                    Log::warning('Fortune Commission [Static]: เพิ่มเงินเข้า wallet ไม่สำเร็จ', [
-                        'user_id' => $sponsor->user_id,
-                        'amount' => $commissionAmount,
-                        'error' => $walletErr->getMessage(),
-                    ]);
-                }
-
-                $totalPaid += $commissionAmount;
-
-                $commissions[] = [
-                    'user_id' => $sponsor->user_id,
-                    'level' => $level,
-                    'amount' => $commissionAmount,
-                ];
             }
 
-            $currentMember = $sponsor;
-            $level++;
+            $walletService->deposit(
+                $wallet,
+                $commissionAmount,
+                'fortune_commission',
+                "ค่าแนะนำดูดวง {$commissionAmount} บาท จากบิล #{$reading->id}",
+                [
+                    'reading_id' => $reading->id,
+                    'level' => 1,
+                    'buyer_user_id' => $reading->user_id,
+                    'mode' => 'static_referral',
+                ]
+            );
+        } catch (\Exception $walletErr) {
+            Log::warning('Fortune Commission [Static]: เพิ่มเงินเข้า wallet ไม่สำเร็จ', [
+                'user_id' => $sponsor->user_id,
+                'amount' => $commissionAmount,
+                'error' => $walletErr->getMessage(),
+            ]);
         }
 
-        Log::info('Fortune Commission [Static mode]: แบ่งคอมมิชชั่นสำเร็จ', [
+        Log::info('Fortune Commission [Static/ค่าแนะนำ]: จ่ายสำเร็จ', [
             'reading_id' => $reading->id,
-            'user_id' => $reading->user_id,
+            'buyer_user_id' => $reading->user_id,
+            'sponsor_user_id' => $sponsor->user_id,
             'static_amount' => $staticAmount,
-            'amount_paid' => $reading->amount_paid,
-            'total_commission' => $totalPaid,
-            'commission_count' => count($commissions),
-            'commissions' => $commissions,
+            'commission' => $commissionAmount,
+            'reading_price' => $reading->amount_paid,
         ]);
     }
 }
