@@ -94,6 +94,7 @@ jobs:
       - name: Run MLM commission tests
         env:
           APP_ENV: testing
+          APP_KEY: base64:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
@@ -106,6 +107,7 @@ jobs:
         continue-on-error: true
         env:
           APP_ENV: testing
+          APP_KEY: base64:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
           DB_CONNECTION: mysql
           DB_HOST: 127.0.0.1
           DB_PORT: 3306
