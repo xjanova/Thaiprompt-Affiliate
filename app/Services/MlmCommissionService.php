@@ -31,7 +31,7 @@ class MlmCommissionService
      * 2. กระจายแบบต่างๆ (single/distributed/proportional)
      * 3. ส่ง excess ไป Pool Bonus แทน admin (rollup_to_pool_enabled)
      */
-    public function calculateCommissionsWithRollup(MlmMember $member, float $pv, string $transactionType = 'purchase', $transactionId = null)
+    public function calculateCommissionsWithRollup(MlmMember $member, float $pv, string $transactionType = 'purchase', $transactionId = null, bool $disableRollup = false)
     {
         DB::beginTransaction();
 
@@ -43,7 +43,8 @@ class MlmCommissionService
             $this->pooledRollupAmount = 0;
 
             // Get global settings
-            $rollupEnabled = MlmGlobalSetting::get('rollup_enabled', false);
+            // ถ้า disableRollup = true → บังคับปิด rollup (ใช้สำหรับดูดวงที่ไม่ต้อง roll up)
+            $rollupEnabled = $disableRollup ? false : MlmGlobalSetting::get('rollup_enabled', false);
             $preventDuplicateRollup = MlmGlobalSetting::get('rollup_prevent_duplicate', true);
             $rollupMaxLevels = MlmGlobalSetting::get('rollup_max_levels', 10);
 

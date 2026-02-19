@@ -15,7 +15,7 @@ use Carbon\Carbon;
  * เกณฑ์:
  * 1. ถ้า volume_retention_enabled = false → ถือว่า active ทุกคน
  * 2. ถ้า member มี status != 'active' หรือ is_qualified = false → ไม่ active
- * 3. ตรวจ PV จากการซื้อส่วนตัวในเดือนนี้ >= เกณฑ์ที่กำหนด → active
+ * 3. ตรวจ PV จากการเคลื่อนไหว (ซื้อสินค้า หรือ ดูดวง) ในเดือนนี้ >= เกณฑ์ → active
  * 4. ถ้ายังอยู่ใน grace period → ถือว่า active ชั่วคราว
  */
 class MlmRetentionHelper
@@ -41,25 +41,25 @@ class MlmRetentionHelper
             return false;
         }
 
-        // ตรวจ PV จากการซื้อส่วนตัวในเดือนปัจจุบัน
+        // ตรวจ PV จากการเคลื่อนไหวในเดือนปัจจุบัน (ซื้อสินค้า หรือ ดูดวง)
         $requiredMonthlyPv = (float) MlmGlobalSetting::get('volume_retention_monthly_pv', 100);
         $startOfMonth = Carbon::now()->startOfMonth();
 
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->where('transaction_type', 'purchase')
+            ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
             ->sum('pv_amount');
 
         if ($monthlyPv >= $requiredMonthlyPv) {
             return true;
         }
 
-        // ตรวจ grace period (ผ่อนผันหลังซื้อล่าสุด)
+        // ตรวจ grace period (ผ่อนผันหลังเคลื่อนไหวล่าสุด — ซื้อสินค้า หรือ ดูดวง)
         $graceDays = (int) MlmGlobalSetting::get('volume_retention_grace_days', 7);
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->where('transaction_type', 'purchase')
+                ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 
@@ -89,12 +89,12 @@ class MlmRetentionHelper
         $startOfMonth = Carbon::now()->startOfMonth();
         $monthlyPv = $member->pvTransactions()
             ->where('created_at', '>=', $startOfMonth)
-            ->where('transaction_type', 'purchase')
+            ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
             ->sum('pv_amount');
 
         $lastPurchaseDate = $member->last_purchase_at
             ?? $member->pvTransactions()
-                ->where('transaction_type', 'purchase')
+                ->whereIn('transaction_type', ['purchase', 'fortune_reading'])
                 ->orderBy('created_at', 'desc')
                 ->value('created_at');
 

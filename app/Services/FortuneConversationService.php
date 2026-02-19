@@ -4684,11 +4684,13 @@ PROMPT;
         }
 
         $commissionService = app(\App\Services\MlmCommissionService::class);
+        // ดูดวง: ไม่ roll up — ถ้าผู้แนะนำไม่ active ให้ข้ามเลย (disableRollup = true)
         $result = $commissionService->calculateCommissionsWithRollup(
             $mlmMember,
             $pvValue,
             'fortune_reading',
-            $reading->id
+            $reading->id,
+            disableRollup: true
         );
 
         if ($result['success']) {
@@ -4737,6 +4739,19 @@ PROMPT;
             Log::debug('Fortune Commission [Static]: ผู้แนะนำไม่พบหรือไม่มี user', [
                 'reading_id' => $reading->id,
                 'sponsor_id' => $mlmMember->unilevel_sponsor_id,
+            ]);
+
+            return;
+        }
+
+        // เช็ค active: ผู้แนะนำต้องมีการเคลื่อนไหว (ซื้อสินค้า/ดูดวง) ในเดือนนี้
+        // ถ้าไม่ active → ข้ามเลย ไม่จ่าย ไม่ roll up (กฎดูดวง: ไม่ roll up)
+        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($sponsor);
+        if (! $isActive) {
+            Log::info('Fortune Commission [Static]: ผู้แนะนำไม่ active ข้ามการจ่าย (ไม่ roll up)', [
+                'reading_id' => $reading->id,
+                'sponsor_id' => $sponsor->id,
+                'sponsor_user_id' => $sponsor->user_id,
             ]);
 
             return;
