@@ -16,6 +16,7 @@ use App\Models\Wallet;
 use App\Services\MlmCommissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 /**
@@ -414,11 +415,12 @@ class MlmCommissionFlowTest extends TestCase
         // ทำให้ B (sponsor ตรงของ C) active
         $this->makeActiveByPurchase($this->memberB);
 
-        // สร้าง FortuneReading (⚠️ facebook_user_id = NOT NULL ใน DB)
+        // สร้าง FortuneReading (⚠️ facebook_user_id + questions = NOT NULL ใน DB)
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
             'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-001',
+            'questions' => [],
             'is_paid' => true,
             'amount_paid' => 39,
             'platform' => 'facebook',
@@ -478,11 +480,12 @@ class MlmCommissionFlowTest extends TestCase
         $isActive = MlmRetentionHelper::isMemberActive($sponsor);
         $this->assertFalse($isActive, 'Sponsor B ต้องไม่ active');
 
-        // สร้าง FortuneReading (⚠️ facebook_user_id = NOT NULL ใน DB)
+        // สร้าง FortuneReading (⚠️ facebook_user_id + questions = NOT NULL ใน DB)
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
             'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-002',
+            'questions' => [],
             'is_paid' => true,
             'amount_paid' => 39,
             'platform' => 'facebook',
@@ -688,15 +691,21 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_static_mode(): void
     {
-        // ⚠️ ใช้ getSettings() แทน create() เพราะ $attributes default มี
-        // 'enabled_platforms' => ['facebook'] (PHP array) ซึ่ง create() ไม่ serialize ให้
-        // → เกิด "Array to string conversion" ตอน INSERT
-        $settings = FortuneTellingSetting::getSettings();
-        $settings->update([
+        // ⚠️ ใช้ DB::table()->insert() แทน Eloquent create()
+        // เพราะ $attributes default มี 'enabled_platforms' => ['facebook'] (PHP array)
+        // ซึ่ง Eloquent create() ไม่ serialize ให้ → เกิด "Array to string conversion"
+        DB::table('fortune_telling_settings')->insert([
             'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'static',
             'fortune_static_commission_amount' => 10,
+            'enabled_platforms' => json_encode(['facebook']),
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-2.0-flash',
+            'max_free_readings' => 3,
+            'reading_price' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $response = $this->actingAs($this->adminUser)
@@ -731,13 +740,19 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_pv_mode(): void
     {
-        // ⚠️ ใช้ getSettings() แทน create() (ดูเหตุผลใน static_mode test)
-        $settings = FortuneTellingSetting::getSettings();
-        $settings->update([
+        // ⚠️ ใช้ DB::table()->insert() (ดูเหตุผลใน static_mode test)
+        DB::table('fortune_telling_settings')->insert([
             'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'pv',
             'fortune_pv_value' => 0,
+            'enabled_platforms' => json_encode(['facebook']),
+            'ai_provider' => 'gemini',
+            'ai_model' => 'gemini-2.0-flash',
+            'max_free_readings' => 3,
+            'reading_price' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $response = $this->actingAs($this->adminUser)
@@ -832,6 +847,7 @@ class MlmCommissionFlowTest extends TestCase
             'user_id' => $this->userC->id,
             'facebook_user_id' => 'test-fb-user-c',
             'bill_reference' => 'TEST-DUP',
+            'questions' => [],
             'is_paid' => true,
             'amount_paid' => 39,
             'platform' => 'facebook',
