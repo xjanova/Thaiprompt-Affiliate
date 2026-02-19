@@ -841,6 +841,7 @@ class MlmCommissionService
     {
         return match ($transactionType) {
             'order', 'purchase' => Order::class,
+            'fortune_reading' => \App\Models\FortuneReading::class,
             default => null,
         };
     }

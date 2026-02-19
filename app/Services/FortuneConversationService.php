@@ -2310,6 +2310,13 @@ class FortuneConversationService
                 }
             }
 
+            // ============================================================
+            // [MLM Commission] แบ่งคอมมิชชั่น MLM หลังชำระเงินสำเร็จ
+            // ใช้ fortune_pv_value จาก settings → ส่งเข้า MlmCommissionService
+            // คอมมิชชั่นจะถูกสร้างใน mlm_commissions table ตาม unilevel levels
+            // ============================================================
+            $this->distributeFortuneCommissions($reading);
+
             return [
                 'action' => 'completed',
                 'message' => $streaming ? null : $fullResponse."\n\n".$thankYouMessage,
@@ -4548,5 +4555,109 @@ PROMPT;
         ];
 
         return $events[$month] ?? '';
+    }
+
+    // ============================================================
+    // MLM Commission Distribution สำหรับ Fortune Reading
+    // ============================================================
+
+    /**
+     * แบ่งคอมมิชชั่น MLM หลังชำระค่าดูดวงสำเร็จ
+     *
+     * ใช้ fortune_pv_value จาก FortuneTellingSetting เป็น PV
+     * ส่งเข้า MlmCommissionService::calculateCommissionsWithRollup()
+     * ซึ่งรองรับ rollup, overpay protection, binary etc. เหมือน orders
+     *
+     * ทุกอย่างอยู่ใน try/catch — ห้าม error กระทบการส่งคำทำนาย
+     *
+     * @param FortuneReading $reading บันทึกการดูดวงที่ชำระเงินแล้ว
+     */
+    protected function distributeFortuneCommissions(FortuneReading $reading): void
+    {
+        try {
+            // ตรวจว่าเปิดระบบ affiliate หรือไม่
+            if (! $this->settings->isFortuneAffiliateEnabled()) {
+                return;
+            }
+
+            // ดึง PV จาก settings
+            $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
+            if ($pvValue <= 0) {
+                Log::debug('Fortune Commission: fortune_pv_value = 0 ข้ามการแบ่งคอมมิชชั่น', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return;
+            }
+
+            // Refresh reading เพื่อให้ได้ user_id ล่าสุด (อาจเพิ่งถูก link จาก auto-register)
+            $reading->refresh();
+
+            // ต้องมี user_id ที่ link กับ reading
+            if (! $reading->user_id) {
+                Log::debug('Fortune Commission: reading ไม่มี user_id ข้ามการแบ่งคอมมิชชั่น', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return;
+            }
+
+            // หา MlmMember ของ user
+            $mlmMember = \App\Models\MlmMember::where('user_id', $reading->user_id)->first();
+            if (! $mlmMember) {
+                Log::debug('Fortune Commission: user ไม่ใช่สมาชิก MLM ข้ามการแบ่งคอมมิชชั่น', [
+                    'reading_id' => $reading->id,
+                    'user_id' => $reading->user_id,
+                ]);
+
+                return;
+            }
+
+            // ตรวจสอบว่า reading นี้จ่ายคอมมิชชั่นไปแล้วหรือยัง (ป้องกันจ่ายซ้ำ)
+            $alreadyDistributed = \App\Models\MlmCommission::where('source_type', FortuneReading::class)
+                ->where('source_id', $reading->id)
+                ->exists();
+
+            if ($alreadyDistributed) {
+                Log::info('Fortune Commission: reading นี้จ่ายคอมมิชชั่นไปแล้ว ข้าม', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return;
+            }
+
+            // เรียก MlmCommissionService เพื่อแบ่งคอมมิชชั่นตาม unilevel + binary
+            $commissionService = app(\App\Services\MlmCommissionService::class);
+            $result = $commissionService->calculateCommissionsWithRollup(
+                $mlmMember,
+                $pvValue,
+                'fortune_reading',    // transaction type
+                $reading->id          // transaction ID
+            );
+
+            if ($result['success']) {
+                Log::info('Fortune Commission: แบ่งคอมมิชชั่น MLM สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'user_id' => $reading->user_id,
+                    'pv' => $pvValue,
+                    'amount_paid' => $reading->amount_paid,
+                    'total_commission' => $result['total_amount'] ?? 0,
+                    'commission_count' => count($result['commissions'] ?? []),
+                ]);
+            } else {
+                Log::warning('Fortune Commission: แบ่งคอมมิชชั่นไม่สำเร็จ', [
+                    'reading_id' => $reading->id,
+                    'error' => $result['error'] ?? 'unknown',
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            // ไม่ให้ error กระทบการส่งคำทำนาย
+            Log::error('Fortune Commission: แบ่งคอมมิชชั่นล้มเหลว (ไม่กระทบคำทำนาย)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+                'trace' => mb_substr($e->getTraceAsString(), 0, 500),
+            ]);
+        }
     }
 }
