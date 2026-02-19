@@ -1729,7 +1729,18 @@ class FortuneConversationService
 
             // ⚡ ใช้ profile จาก FortuneChannelManager (ไม่เรียก API ซ้ำ)
             if (! is_array($userProfile) || empty($userProfile)) {
-                $userProfile = ['name' => 'คุณ', 'id' => $facebookUserId];
+                // ลอง lookup ชื่อจาก reading ก่อนหน้า (basic reading มักมีชื่อจริงจาก API แล้ว)
+                $previousName = FortuneReading::where('facebook_user_id', $facebookUserId)
+                    ->whereNotNull('facebook_user_name')
+                    ->where('facebook_user_name', '!=', 'คุณ')
+                    ->where('facebook_user_name', '!=', '')
+                    ->latest()
+                    ->value('facebook_user_name');
+
+                $userProfile = [
+                    'name' => $previousName ?? 'คุณ',
+                    'id' => $facebookUserId,
+                ];
             }
 
             // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
