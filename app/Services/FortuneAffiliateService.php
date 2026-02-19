@@ -673,4 +673,269 @@ class FortuneAffiliateService
 
         return url('/fortune/invite/'.$referral->referral_token);
     }
+
+    // ============================================================
+    // Post-Reading Affiliate Promotion — ส่งทุกครั้งหลังดูดวงเสร็จ
+    // ============================================================
+
+    /**
+     * ส่งข้อความโปรโมทระบบ affiliate หลังดูดวงเสร็จ (ทุกครั้ง)
+     *
+     * แตกต่างจาก sendAffiliateInviteFlexMessage() ที่ส่งเฉพาะตอน auto-register (ครั้งแรก)
+     * method นี้ส่ง **ทุกครั้ง** ที่ดูดวงเสร็จ เพื่อจูงใจให้แชร์ต่อ
+     *
+     * แสดง:
+     * - ค่าแนะนำดึงจาก settings (ไม่ hardcode)
+     * - ตัวอย่างรายได้ (เพื่อน 1 คน, ชวน 10 คน)
+     * - ปุ่มแชร์ลิงก์ referral
+     * - ปุ่มเข้าเว็บ affiliate
+     * - ข้อมูลถอนเงินที่เว็บ (KYC)
+     *
+     * @param FortuneReading $reading บันทึกการดูดวง
+     * @param string $platformUserId User ID ของ platform
+     * @param LineFortuneService|null $lineService LINE service
+     * @param string|null $platform ชื่อ platform
+     */
+    public function sendPostReadingAffiliatePromotion(
+        FortuneReading $reading,
+        string $platformUserId,
+        ?LineFortuneService $lineService = null,
+        ?string $platform = null
+    ): void {
+        // ตรวจว่าเปิดระบบ affiliate หรือไม่
+        if (! $this->settings->isFortuneAffiliateEnabled()) {
+            return;
+        }
+
+        // ปัจจุบันรองรับเฉพาะ LINE (platform อื่นขยายภายหลัง)
+        $platform = $platform ?? $reading->platform ?? 'facebook';
+        if ($platform !== 'line' || ! $lineService) {
+            return;
+        }
+
+        try {
+            // หา User จาก platform user ID
+            $user = User::where('line_user_id', $platformUserId)->first();
+            if (! $user) {
+                Log::debug('Fortune Promo: ไม่พบ User จาก line_user_id ข้ามการส่ง promo', [
+                    'line_user_id' => $platformUserId,
+                ]);
+
+                return;
+            }
+
+            // หา MlmMember
+            $member = MlmMember::where('user_id', $user->id)->first();
+            if (! $member) {
+                Log::debug('Fortune Promo: ไม่พบ MlmMember ข้ามการส่ง promo', [
+                    'user_id' => $user->id,
+                ]);
+
+                return;
+            }
+
+            // สร้าง/ดึง referral link
+            $referralLink = $this->generateReferralLink($user, $member);
+
+            // ส่ง Flex Message โปรโมท
+            $this->sendPostReadingPromoFlexMessage(
+                $platformUserId,
+                $user,
+                $referralLink,
+                $lineService
+            );
+
+            Log::info('Fortune Promo: ส่งข้อความโปรโมทหลังดูดวงสำเร็จ', [
+                'user_id' => $user->id,
+                'reading_id' => $reading->id,
+            ]);
+
+        } catch (\Exception $e) {
+            // ไม่ให้ error กระทบ flow หลัก
+            Log::warning('Fortune Promo: ส่งข้อความโปรโมทล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Flex Message: โปรโมทหลังดูดวงเสร็จ — แสดงค่าแนะนำ + ตัวอย่างรายได้
+     *
+     * ดึงค่าคอมมิชชั่นจาก settings:
+     * - mode static → getFortuneStaticCommissionAmount()
+     * - mode pv → calculateFortuneCommissionPreview() → Level 1 amount
+     */
+    protected function sendPostReadingPromoFlexMessage(
+        string $lineUserId,
+        User $user,
+        string $referralLink,
+        LineFortuneService $lineService
+    ): void {
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
+        $mode = $this->settings->getFortuneCommissionMode();
+        $preview = $this->settings->calculateFortuneCommissionPreview();
+        $price = $preview['price'];
+
+        // ดึงค่าแนะนำจาก settings (ไม่ hardcode)
+        if ($mode === 'static') {
+            $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
+            $commissionText = number_format($commissionAmount, 0).' บาท';
+        } else {
+            // PV mode: ใช้ Level 1 amount เป็นตัวอย่าง
+            $level1 = $preview['levels'][0] ?? null;
+            $commissionAmount = $level1 ? $level1['amount'] : 0;
+            $commissionText = number_format($commissionAmount, 2).' บาท';
+        }
+
+        // คำนวณตัวอย่างรายได้
+        $example10Friends = number_format($commissionAmount * 10 * 3, 0);
+
+        // สร้างเนื้อหาตัวอย่างรายได้
+        $earningExamples = [
+            [
+                'type' => 'text',
+                'text' => "💎 เพื่อน 1 คนดูดวง = คุณได้ {$commissionText}",
+                'size' => 'xs',
+                'color' => '#333333',
+                'weight' => 'bold',
+                'margin' => 'md',
+                'wrap' => true,
+            ],
+            [
+                'type' => 'text',
+                'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = {$example10Friends} บาท!",
+                'size' => 'xs',
+                'color' => '#333333',
+                'margin' => 'sm',
+                'wrap' => true,
+            ],
+            [
+                'type' => 'text',
+                'text' => '🛍️ เพื่อนซื้อสินค้า Thaiprompt → ได้คอม MLM ไม่จบสิ้น!',
+                'size' => 'xs',
+                'color' => '#888888',
+                'margin' => 'sm',
+                'wrap' => true,
+            ],
+        ];
+
+        // ถ้า PV mode → แสดง multi-level preview
+        if ($mode === 'pv' && count($preview['levels'] ?? []) > 1) {
+            $earningExamples[] = ['type' => 'separator', 'margin' => 'md'];
+            $levelsToShow = min(3, count($preview['levels']));
+            for ($i = 0; $i < $levelsToShow; $i++) {
+                $level = $preview['levels'][$i];
+                $earningExamples[] = [
+                    'type' => 'text',
+                    'text' => "Level {$level['level']} ({$level['percentage']}%): ".number_format($level['amount'], 2).' บาท',
+                    'size' => 'xs',
+                    'color' => $i === 0 ? '#333333' : '#888888',
+                    'weight' => $i === 0 ? 'bold' : 'regular',
+                    'margin' => 'sm',
+                ];
+            }
+        }
+
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
+
+        $flex = [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'hero' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💰', 'size' => '4xl', 'align' => 'center'],
+                ],
+                'backgroundColor' => '#FFB800',
+                'paddingAll' => 'lg',
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => array_merge(
+                    [
+                        [
+                            'type' => 'text',
+                            'text' => 'ชวนเพื่อนดูดวง รับเงินทุกครั้ง!',
+                            'weight' => 'bold',
+                            'size' => 'lg',
+                            'color' => '#333333',
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => "ทุกครั้งที่เพื่อนดูดวง คุณได้รับค่าแนะนำ {$commissionText} ตลอดไป!",
+                            'size' => 'xs',
+                            'color' => '#888888',
+                            'margin' => 'md',
+                            'wrap' => true,
+                        ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'text',
+                            'text' => '📊 ตัวอย่างรายได้',
+                            'weight' => 'bold',
+                            'size' => 'sm',
+                            'color' => $primaryColor,
+                            'margin' => 'lg',
+                        ],
+                    ],
+                    $earningExamples,
+                    [
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'text',
+                            'text' => '💸 ถอนเงินได้ที่เว็บไซต์ (ต้องยืนยันตัวตน KYC)',
+                            'size' => 'xxs',
+                            'color' => '#AAAAAA',
+                            'margin' => 'md',
+                            'wrap' => true,
+                        ],
+                    ]
+                ),
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '📢 แชร์ลิงก์เชิญเพื่อน',
+                            'uri' => $referralLink,
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#06C755',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '🌐 เข้าสู่ระบบ Affiliate',
+                            'uri' => $appUrl.'/user/dashboard',
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'link',
+                        'action' => [
+                            'type' => 'message',
+                            'label' => '🔮 ดูดวงอีกครั้ง',
+                            'text' => 'ดูดวง',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $lineService->sendRichMessage($lineUserId, [
+            'alt_text' => "💰 ชวนเพื่อนดูดวง ได้ {$commissionText} ทุกครั้ง!",
+            'contents' => $flex,
+        ]);
+    }
 }

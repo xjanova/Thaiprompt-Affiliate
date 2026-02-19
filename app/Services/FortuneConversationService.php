@@ -2328,6 +2328,36 @@ class FortuneConversationService
             // ============================================================
             $this->distributeFortuneCommissions($reading);
 
+            // ============================================================
+            // [Affiliate Promo] ส่งข้อความโปรโมทระบบ affiliate หลังดูดวงเสร็จ
+            // ส่งทุกครั้ง (repeat user ก็ส่ง) เพื่อจูงใจให้แชร์
+            // แสดง: ค่าแนะนำ (จาก settings) + ตัวอย่างรายได้ + ลิงก์แชร์ + ลิงก์เว็บ
+            // ============================================================
+            if ($affiliateUserId) {
+                try {
+                    $affiliateServiceForPromo = app(FortuneAffiliateService::class);
+
+                    // ดึง LINE service สำหรับส่ง promo
+                    $lineServiceForPromo = $lineServiceInstance ?? null;
+                    if (! $lineServiceForPromo && $affiliatePlatform === 'line' && $channelManager) {
+                        $lineServiceForPromo = $channelManager->getPlatform('line');
+                        $lineServiceForPromo = $lineServiceForPromo instanceof LineFortuneService ? $lineServiceForPromo : null;
+                    }
+
+                    $affiliateServiceForPromo->sendPostReadingAffiliatePromotion(
+                        $reading,
+                        $affiliateUserId,
+                        $lineServiceForPromo,
+                        $affiliatePlatform
+                    );
+                } catch (\Exception $promoErr) {
+                    Log::warning('Fortune Affiliate Promo: ส่งข้อความโปรโมทล้มเหลว (ไม่กระทบ)', [
+                        'reading_id' => $reading->id,
+                        'error' => $promoErr->getMessage(),
+                    ]);
+                }
+            }
+
             return [
                 'action' => 'completed',
                 'message' => $streaming ? null : $fullResponse."\n\n".$thankYouMessage,
@@ -4713,6 +4743,13 @@ PROMPT;
                 'total_commission' => $result['total_amount'] ?? 0,
                 'commission_count' => count($result['commissions'] ?? []),
             ]);
+
+            // แจ้ง LINE OA notification สำหรับทุก commission ที่สร้าง
+            if (! empty($result['commissions'])) {
+                foreach ($result['commissions'] as $comm) {
+                    $this->notifyCommissionRecipientViaLineOa($comm, $reading);
+                }
+            }
         } else {
             Log::warning('Fortune Commission [PV mode]: แบ่งคอมมิชชั่นไม่สำเร็จ', [
                 'reading_id' => $reading->id,
@@ -4834,5 +4871,321 @@ PROMPT;
             'commission' => $commissionAmount,
             'reading_price' => $reading->amount_paid,
         ]);
+
+        // แจ้ง LINE OA notification ให้ผู้แนะนำ (ส่งผ่าน LINE OA push message)
+        $this->notifySponsorViaLineOa($sponsor, $commissionAmount, $reading);
+    }
+
+    // ============================================================
+    // LINE OA Commission Notification — แจ้งผู้แนะนำผ่าน LINE OA
+    // ============================================================
+
+    /**
+     * แจ้งผู้แนะนำผ่าน LINE OA เมื่อได้รับค่าคอมมิชชั่น (Static mode)
+     *
+     * ส่ง Flex Message ผ่าน LINE OA push API → ไม่ใช่ LINE Notify
+     * ใช้ line_user_id ของผู้แนะนำที่เก็บในระบบ
+     *
+     * แสดง: ยอดที่ได้ + ยอดรวมใน wallet + ลิงก์เข้าเว็บ + แจ้ง KYC ถอนเงิน
+     */
+    protected function notifySponsorViaLineOa(
+        \App\Models\MlmMember $sponsor,
+        float $amount,
+        FortuneReading $reading
+    ): void {
+        try {
+            // ตรวจว่ามี line_user_id หรือไม่
+            $user = $sponsor->user;
+            if (! $user || empty($user->line_user_id)) {
+                // ไม่มี LINE → ส่ง in-app notification เท่านั้น
+                $this->notifyCommissionInApp($user, $amount);
+
+                return;
+            }
+
+            $lineUserId = $user->line_user_id;
+
+            // ดึง wallet balance ปัจจุบัน (ยอดรวม)
+            $wallet = $user->wallet;
+            $totalBalance = $wallet ? number_format($wallet->balance, 2) : '0.00';
+
+            // ดึง member code สำหรับแสดง
+            $buyerMember = \App\Models\MlmMember::where('user_id', $reading->user_id)->first();
+            $buyerCode = $buyerMember?->member_code ?? "#{$reading->id}";
+
+            // สร้าง Flex Message แจ้งค่าคอม
+            $appUrl = config('app.url', 'https://main.thaiprompt.online');
+            $primaryColor = $this->settings->getLineFlexPrimaryColor();
+            $amountText = number_format($amount, 2);
+
+            $flex = [
+                'type' => 'bubble',
+                'size' => 'kilo',
+                'hero' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '💰', 'size' => '3xl', 'align' => 'center'],
+                    ],
+                    'backgroundColor' => '#06C755',
+                    'paddingAll' => 'md',
+                ],
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => 'ได้รับค่าแนะนำดูดวง!',
+                            'weight' => 'bold',
+                            'size' => 'md',
+                            'color' => '#333333',
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => "+{$amountText} บาท",
+                            'size' => 'xxl',
+                            'color' => '#06C755',
+                            'weight' => 'bold',
+                            'margin' => 'md',
+                        ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'contents' => [
+                                ['type' => 'text', 'text' => 'จากสมาชิก', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
+                                ['type' => 'text', 'text' => $buyerCode, 'size' => 'xs', 'color' => '#333333', 'align' => 'end', 'flex' => 4],
+                            ],
+                            'margin' => 'lg',
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'contents' => [
+                                ['type' => 'text', 'text' => 'ยอดรวมใน Wallet', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
+                                ['type' => 'text', 'text' => "{$totalBalance} บาท", 'size' => 'xs', 'color' => '#333333', 'weight' => 'bold', 'align' => 'end', 'flex' => 4],
+                            ],
+                            'margin' => 'sm',
+                        ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'text',
+                            'text' => '💸 ถอนเงินที่เว็บไซต์ (ต้อง KYC)',
+                            'size' => 'xxs',
+                            'color' => '#AAAAAA',
+                            'margin' => 'md',
+                            'wrap' => true,
+                        ],
+                    ],
+                ],
+                'footer' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'primary',
+                            'color' => $primaryColor,
+                            'action' => [
+                                'type' => 'uri',
+                                'label' => '🌐 ดู Wallet ที่เว็บ',
+                                'uri' => $appUrl.'/user/wallet',
+                            ],
+                            'height' => 'sm',
+                        ],
+                    ],
+                ],
+            ];
+
+            // ส่งผ่าน LINE OA push message (ไม่ใช่ LINE Notify)
+            $lineService = new LineFortuneService($this->settings);
+            $lineService->sendRichMessage($lineUserId, [
+                'alt_text' => "💰 ค่าแนะนำดูดวง +{$amountText} บาท | ยอดรวม: {$totalBalance} บาท",
+                'contents' => $flex,
+            ]);
+
+            // ส่ง in-app notification ด้วย
+            $this->notifyCommissionInApp($user, $amount);
+
+            Log::info('Fortune Commission Notify: ส่ง LINE OA notification สำเร็จ', [
+                'sponsor_user_id' => $user->id,
+                'line_user_id' => $lineUserId,
+                'amount' => $amount,
+                'total_balance' => $totalBalance,
+            ]);
+
+        } catch (\Exception $e) {
+            // ไม่ให้ error กระทบ flow หลัก
+            Log::warning('Fortune Commission Notify: ส่ง LINE OA notification ล้มเหลว', [
+                'sponsor_id' => $sponsor->id,
+                'amount' => $amount,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * แจ้งผู้ได้รับคอมมิชชั่นผ่าน LINE OA (PV mode — สำหรับทุก level)
+     *
+     * ส่ง Flex Message ผ่าน LINE OA push API
+     * ใช้ line_user_id ของผู้ได้รับที่เก็บในระบบ
+     */
+    protected function notifyCommissionRecipientViaLineOa(array $commissionData, FortuneReading $reading): void
+    {
+        try {
+            $userId = $commissionData['user_id'] ?? null;
+            $amount = (float) ($commissionData['amount'] ?? $commissionData['commission_amount'] ?? 0);
+            $level = $commissionData['level'] ?? 1;
+            $percentage = $commissionData['percentage'] ?? 0;
+
+            if (! $userId || $amount <= 0) {
+                return;
+            }
+
+            $user = \App\Models\User::find($userId);
+            if (! $user || empty($user->line_user_id)) {
+                // ไม่มี LINE → ส่ง in-app notification เท่านั้น
+                if ($user) {
+                    $this->notifyCommissionInApp($user, $amount);
+                }
+
+                return;
+            }
+
+            $lineUserId = $user->line_user_id;
+
+            // ดึง wallet balance ปัจจุบัน
+            $wallet = $user->wallet;
+            $totalBalance = $wallet ? number_format($wallet->balance, 2) : '0.00';
+
+            $appUrl = config('app.url', 'https://main.thaiprompt.online');
+            $primaryColor = $this->settings->getLineFlexPrimaryColor();
+            $amountText = number_format($amount, 2);
+
+            $flex = [
+                'type' => 'bubble',
+                'size' => 'kilo',
+                'hero' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        ['type' => 'text', 'text' => '💰', 'size' => '3xl', 'align' => 'center'],
+                    ],
+                    'backgroundColor' => '#06C755',
+                    'paddingAll' => 'md',
+                ],
+                'body' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => "คอมมิชชั่นดูดวง Level {$level}",
+                            'weight' => 'bold',
+                            'size' => 'md',
+                            'color' => '#333333',
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => "+{$amountText} บาท",
+                            'size' => 'xxl',
+                            'color' => '#06C755',
+                            'weight' => 'bold',
+                            'margin' => 'md',
+                        ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'contents' => [
+                                ['type' => 'text', 'text' => 'Level / อัตรา', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
+                                ['type' => 'text', 'text' => "Level {$level} ({$percentage}%)", 'size' => 'xs', 'color' => '#333333', 'align' => 'end', 'flex' => 4],
+                            ],
+                            'margin' => 'lg',
+                        ],
+                        [
+                            'type' => 'box',
+                            'layout' => 'horizontal',
+                            'contents' => [
+                                ['type' => 'text', 'text' => 'ยอดรวมใน Wallet', 'size' => 'xs', 'color' => '#888888', 'flex' => 3],
+                                ['type' => 'text', 'text' => "{$totalBalance} บาท", 'size' => 'xs', 'color' => '#333333', 'weight' => 'bold', 'align' => 'end', 'flex' => 4],
+                            ],
+                            'margin' => 'sm',
+                        ],
+                        ['type' => 'separator', 'margin' => 'lg'],
+                        [
+                            'type' => 'text',
+                            'text' => '💸 ถอนเงินที่เว็บไซต์ (ต้อง KYC)',
+                            'size' => 'xxs',
+                            'color' => '#AAAAAA',
+                            'margin' => 'md',
+                            'wrap' => true,
+                        ],
+                    ],
+                ],
+                'footer' => [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'contents' => [
+                        [
+                            'type' => 'button',
+                            'style' => 'primary',
+                            'color' => $primaryColor,
+                            'action' => [
+                                'type' => 'uri',
+                                'label' => '🌐 ดู Wallet ที่เว็บ',
+                                'uri' => $appUrl.'/user/wallet',
+                            ],
+                            'height' => 'sm',
+                        ],
+                    ],
+                ],
+            ];
+
+            // ส่งผ่าน LINE OA push message
+            $lineService = new LineFortuneService($this->settings);
+            $lineService->sendRichMessage($lineUserId, [
+                'alt_text' => "💰 คอมมิชชั่นดูดวง Level {$level}: +{$amountText} บาท | ยอดรวม: {$totalBalance} บาท",
+                'contents' => $flex,
+            ]);
+
+            // ส่ง in-app notification ด้วย
+            $this->notifyCommissionInApp($user, $amount);
+
+            Log::info('Fortune Commission Notify [PV]: ส่ง LINE OA notification สำเร็จ', [
+                'user_id' => $userId,
+                'level' => $level,
+                'amount' => $amount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::warning('Fortune Commission Notify [PV]: ส่ง LINE OA notification ล้มเหลว', [
+                'user_id' => $commissionData['user_id'] ?? null,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ส่ง in-app notification เมื่อได้รับคอมมิชชั่น
+     *
+     * ใช้ NotificationService ที่มีอยู่แล้ว
+     */
+    protected function notifyCommissionInApp(?\App\Models\User $user, float $amount): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        try {
+            $notificationService = app(\App\Services\NotificationService::class);
+            $notificationService->notifyCommissionEarned($user, $amount, 'THB');
+        } catch (\Exception $e) {
+            Log::debug('Fortune Commission: in-app notification ล้มเหลว', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
