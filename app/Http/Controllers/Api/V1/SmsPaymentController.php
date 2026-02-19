@@ -759,6 +759,14 @@ class SmsPaymentController extends Controller
                 ]);
             }
 
+            // ไม่ส่งบิลที่ยอด 0 (ยังไม่มี unique amount / ยังอยู่ระหว่าง conversation)
+            $fortuneQuery->where(function ($q) {
+                $q->where('amount_paid', '>', 0)
+                    ->orWhereHas('uniquePaymentAmount', function ($uq) {
+                        $uq->where('unique_amount', '>', 0);
+                    });
+            });
+
             if ($dateFrom) {
                 $fortuneQuery->where('created_at', '>=', $dateFrom);
             }
@@ -1427,7 +1435,14 @@ class SmsPaymentController extends Controller
                     FortuneReading::STATUS_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
                     FortuneReading::STATUS_COMPLETED,
-                ]);
+                ])
+                // ไม่ส่งบิลที่ยอด 0
+                ->where(function ($q) {
+                    $q->where('amount_paid', '>', 0)
+                        ->orWhereHas('uniquePaymentAmount', function ($uq) {
+                            $uq->where('unique_amount', '>', 0);
+                        });
+                });
 
             if ($sinceVersion > 0) {
                 $fortuneQuery->where('updated_at', '>', date('Y-m-d H:i:s', $sinceVersion / 1000));
