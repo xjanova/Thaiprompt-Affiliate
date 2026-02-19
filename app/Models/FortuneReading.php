@@ -454,11 +454,21 @@ class FortuneReading extends Model
     public const PAYMENT_TIMEOUT_MINUTES = 30;
 
     /**
+     * ระยะเวลา timeout ของ PAID status (นาที)
+     *
+     * หลังชำระเงินแล้ว AI จะประมวลผลคำทำนาย (~45-60 วินาที)
+     * ให้ timeout 5 นาทีเพื่อรอให้ AI ทำงานเสร็จ
+     * ถ้าเกิน 5 นาที → ถือว่า AI ล้มเหลว → ปิด conversation อัตโนมัติ
+     */
+    public const PAID_PROCESSING_TIMEOUT_MINUTES = 5;
+
+    /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่
      *
      * เพิ่ม timeout เพื่อป้องกัน conversation ค้างบล็อก conversation ใหม่
      * - conversation ทั่วไป: timeout 30 นาที
-     * - pending_payment: timeout 60 นาที
+     * - pending_payment: timeout 30 นาที (รอโอนเงิน)
+     * - paid: timeout 5 นาที (AI กำลังประมวลผลคำทำนาย)
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
@@ -472,6 +482,7 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
                 self::STATUS_PENDING_PAYMENT,
+                self::STATUS_PAID, // เพิ่ม: ระหว่าง AI กำลังประมวลผลคำทำนาย
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -484,10 +495,15 @@ class FortuneReading extends Model
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
-                // pending_payment: timeout 60 นาที (รอโอนเงินนานกว่า)
+                // pending_payment: timeout 30 นาที (รอโอนเงิน)
                     ->orWhere(function ($sub) {
                         $sub->where('conversation_status', self::STATUS_PENDING_PAYMENT)
                             ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                    })
+                // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)
+                    ->orWhere(function ($sub) {
+                        $sub->where('conversation_status', self::STATUS_PAID)
+                            ->where('updated_at', '>=', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES));
                     });
             })
             ->latest();
@@ -513,7 +529,8 @@ class FortuneReading extends Model
      */
     public static function expireOldConversations(string $facebookUserId): int
     {
-        return self::where('facebook_user_id', $facebookUserId)
+        // ปิด conversation ทั่วไป + pending_payment ที่ค้างเกิน 30 นาที
+        $expired = self::where('facebook_user_id', $facebookUserId)
             ->whereIn('conversation_status', [
                 self::STATUS_AWAITING_CONFIRMATION,
                 self::STATUS_BASIC_DONE,
@@ -523,6 +540,14 @@ class FortuneReading extends Model
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        // ปิด PAID ที่ค้างเกิน 5 นาที (AI processing ล้มเหลว/timeout)
+        $expiredPaid = self::where('facebook_user_id', $facebookUserId)
+            ->where('conversation_status', self::STATUS_PAID)
+            ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
+            ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        return $expired + $expiredPaid;
     }
 
     /**

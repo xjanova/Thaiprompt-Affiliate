@@ -336,6 +336,26 @@ class FortuneConversationService
                 ];
             }
 
+            // ✅ Cache-based mutex: ป้องกันข้อความซ้ำซ้อนจากผู้ใช้คนเดียวกัน
+            // เช่น กดปุ่มหลายครั้ง, ส่งข้อความพร้อมกัน, หรือ LINE retry
+            $lockKey = "fortune:processing:{$facebookUserId}";
+            $lock = Cache::lock($lockKey, 10); // 10 วินาที TTL
+
+            if (! $lock->get()) {
+                Log::info('Fortune processMessage: ข้อความซ้ำซ้อน (mutex locked) ข้ามไป', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 30),
+                ]);
+
+                return [
+                    'action' => 'busy',
+                    'message' => 'กำลังประมวลผลอยู่ค่ะ กรุณารอสักครู่ 🙏',
+                    'reading' => null,
+                ];
+            }
+
+            try {
+
             // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
             if ($this->isCheckRemainingRequest($messageText)) {
                 return $this->handleCheckRemaining($facebookUserId);
@@ -351,6 +371,12 @@ class FortuneConversationService
                 return $this->handleViewLastReading($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่ง "ดูบัญชี" / "บัญชี" / "ธนาคาร" → แสดงบัญชีธนาคาร
+            // ทำงานได้ทุกสถานะ ไม่ว่าจะมี active conversation หรือไม่
+            if ($this->isBankAccountRequest($messageText)) {
+                return $this->handleBankAccountRequest($facebookUserId);
+            }
+
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
@@ -364,6 +390,24 @@ class FortuneConversationService
             ]);
 
             if ($activeReading) {
+                // ✅ ถ้าสถานะเป็น PAID (AI กำลังประมวลผลคำทำนาย) → แจ้งให้รอ
+                // ไม่ว่าจะพิมพ์อะไรมา ห้าม cancel/สร้างใหม่ เพราะลูกค้าจ่ายเงินแล้ว
+                if ($activeReading->conversation_status === FortuneReading::STATUS_PAID) {
+                    Log::info('Fortune processMessage: ผู้ใช้ส่งข้อความระหว่าง AI กำลังประมวลผล (PAID)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'reading_id' => $activeReading->id,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return [
+                        'action' => 'processing',
+                        'message' => "🔮 กำลังประมวลผลคำทำนายละเอียดอยู่ค่ะ กรุณารอสักครู่นะคะ ✨\n\n"
+                            . "ระบบกำลังวิเคราะห์ดวงให้อย่างละเอียด\n"
+                            . "จะส่งให้ทันทีเมื่อเสร็จค่ะ 🙏",
+                        'reading' => $activeReading,
+                    ];
+                }
+
                 // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                 if ($this->isCancelRequest($messageText)) {
                     $this->closeAllActiveConversations($facebookUserId);
@@ -427,7 +471,16 @@ class FortuneConversationService
             // ถ้าข้อความไม่ชัดเจนว่าจะดูดวง → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
             return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
 
+            } finally {
+                // ปล่อย mutex lock เสมอ ไม่ว่า return หรือ exception
+                $lock->release();
+            }
+
         } catch (\Exception $e) {
+            // ปล่อย mutex lock กรณี exception หลุดจาก try ด้านใน
+            if (isset($lock) && $lock) {
+                try { $lock->release(); } catch (\Exception $lockErr) { /* ignore */ }
+            }
             // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
             Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
                 'facebook_user_id' => $facebookUserId,
@@ -1147,12 +1200,25 @@ class FortuneConversationService
                 }
             }
         } else {
-            // flow ปกติ (ยืนยันดูดวง) → ถ้าตอบสั้น ใช้ original, ถ้าพิมพ์ใหม่ ใช้ใหม่
+            // ✅ V3: flow ยืนยันดูดวง (awaiting_type != 'question')
+            // ถามคำถามก่อนเสมอ → ไม่ส่ง AI ทันที เพื่อให้ผู้ใช้ป้อนคำถามที่ต้องการ
             $isSimpleConfirm = $this->isSimpleConfirmResponse($messageText);
-            $questionText = $isSimpleConfirm ? $originalMessage : $messageText;
+
+            // ปิด reading ที่รอยืนยัน
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            if ($isSimpleConfirm) {
+                // ตอบ "ใช่", "ดู", "เอา" → ถามให้เลือกหัวข้อ/พิมพ์คำถาม
+                return $this->askForQuestionBeforeReading($facebookUserId, 'ดูดวง', $userProfile);
+            }
+
+            // พิมพ์ข้อความใหม่ (เช่น "ดวงความรัก") → ส่งเป็นหัวข้อ/คำถาม
+            return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
         }
 
-        // ปิด reading ที่รอยืนยันนี้ (จะสร้างใหม่ใน startNewConversation)
+        // === ถึงจุดนี้ = awaiting_type === 'question' เท่านั้น ===
+
+        // ปิด reading ที่รอคำถามนี้ (จะสร้างใหม่ใน startNewConversation)
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
         // ตรวจสอบ limit อีกครั้งก่อนส่งให้ AI
@@ -1164,7 +1230,7 @@ class FortuneConversationService
             ];
         }
 
-        // เริ่มทำนายจริง
+        // เริ่มทำนายจริง (เฉพาะ awaiting_type=question ที่ผู้ใช้ป้อนคำถามแล้ว)
         return $this->startNewConversation($facebookUserId, $questionText, $userProfile);
     }
 
@@ -1642,6 +1708,14 @@ class FortuneConversationService
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
+            // PAID: AI กำลังประมวลผลคำทำนายอยู่ → แจ้งให้รอ
+            FortuneReading::STATUS_PAID => [
+                'action' => 'processing',
+                'message' => "🔮 กำลังประมวลผลคำทำนายอยู่ค่ะ กรุณารอสักครู่ ✨\n\n"
+                    . "ระบบกำลังวิเคราะห์ดวงให้อย่างละเอียด\n"
+                    . 'จะส่งให้ทันทีเมื่อเสร็จค่ะ 🙏',
+                'reading' => $reading,
+            ],
             default => [
                 'action' => 'unknown',
                 'message' => $this->getHelpMessage(),
@@ -3488,6 +3562,56 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "ดูบัญชี" / "บัญชี" / "ธนาคาร"
+     *
+     * ถ้ามีบิลรอชำระ → แสดงยอดชำระ + บัญชีธนาคาร + เวลาเหลือ
+     * ถ้าไม่มีบิลรอชำระ → แสดงบัญชีธนาคารทั่วไป
+     *
+     * @param string $facebookUserId
+     * @return array
+     */
+    protected function handleBankAccountRequest(string $facebookUserId): array
+    {
+        try {
+            // ถ้ามีบิลรอชำระ → แสดงข้อมูลบิล + บัญชีธนาคาร + เวลาเหลือ
+            $pendingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('is_paid', false)
+                ->latest()
+                ->first();
+
+            if ($pendingReading) {
+                // ส่งต่อให้ handlePendingPayment() แสดงยอด+บัญชี+เวลาเหลือ
+                return $this->handlePendingPayment($pendingReading, 'บัญชี');
+            }
+
+            // ไม่มีบิลรอชำระ → แสดงบัญชีธนาคารทั่วไป
+            $message = "🏦 บัญชีธนาคารสำหรับชำระเงิน\n\n";
+            $message .= $this->getBankAccountsListMessage();
+            $message .= "ℹ️ ตอนนี้ยังไม่มีบิลรอชำระค่ะ\n";
+            $message .= "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮";
+
+            return [
+                'action' => 'bank_account_info',
+                'message' => $message,
+                'reading' => null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleBankAccountRequest error', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback: แสดงบัญชีธนาคารพื้นฐาน
+            return [
+                'action' => 'bank_account_info',
+                'message' => "🏦 บัญชีธนาคาร\n\n" . $this->getBankAccountsListMessage(),
+                'reading' => null,
+            ];
+        }
     }
 
     /**
