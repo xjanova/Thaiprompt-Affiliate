@@ -1006,7 +1006,18 @@ PROMPT;
      */
     protected function calculatePvCommissionPreview(float $price, array $unilevelLevels): array
     {
-        $pvValue = (float) ($this->fortune_pv_value ?? 0);
+        // คำนวณ PV จาก global_pv_rate × ราคา (เหมือน OrderDistributionService)
+        // ถ้า admin ตั้ง fortune_pv_value ไว้ → ใช้เป็น override
+        // ถ้าไม่ได้ตั้ง (0) → คำนวณจาก price × global_pv_rate
+        $manualPv = (float) ($this->fortune_pv_value ?? 0);
+        $globalPvRate = (float) MlmGlobalSetting::get('global_pv_rate', 1);
+
+        if ($manualPv > 0) {
+            $pvValue = $manualPv;
+        } else {
+            $pvValue = $price * $globalPvRate;
+        }
+
         $commissionPerPv = $this->getFortuneEffectiveCommissionRate();
 
         $levelBreakdown = [];
@@ -1037,7 +1048,9 @@ PROMPT;
         return [
             'mode' => 'pv',
             'price' => $price,
-            'pv_value' => $pvValue,
+            'pv_value' => round($pvValue, 2),
+            'global_pv_rate' => $globalPvRate,
+            'pv_source' => $manualPv > 0 ? 'manual' : 'auto',
             'commission_per_pv' => $commissionPerPv,
             'levels' => $levelBreakdown,
             'total_commission' => round($totalCommission, 2),

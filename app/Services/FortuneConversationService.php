@@ -4593,9 +4593,18 @@ PROMPT;
                     return;
                 }
             } else {
-                $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
+                // คำนวณ PV: ใช้ fortune_pv_value (override) หรือ price × global_pv_rate (auto)
+                $manualPv = (float) ($this->settings->fortune_pv_value ?? 0);
+                if ($manualPv > 0) {
+                    $pvValue = $manualPv;
+                } else {
+                    $price = (float) ($this->settings->deep_reading_price ?? 0);
+                    $globalPvRate = (float) \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
+                    $pvValue = $price * $globalPvRate;
+                }
+
                 if ($pvValue <= 0) {
-                    Log::debug('Fortune Commission: fortune_pv_value = 0 ข้ามการแบ่ง', [
+                    Log::debug('Fortune Commission: PV = 0 (ราคา/pv_rate เป็น 0) ข้ามการแบ่ง', [
                         'reading_id' => $reading->id,
                     ]);
 
@@ -4664,7 +4673,15 @@ PROMPT;
      */
     protected function distributePvCommissions(FortuneReading $reading, \App\Models\MlmMember $mlmMember): void
     {
-        $pvValue = (float) ($this->settings->fortune_pv_value ?? 0);
+        // คำนวณ PV: ใช้ fortune_pv_value (override) หรือ price × global_pv_rate (auto)
+        $manualPv = (float) ($this->settings->fortune_pv_value ?? 0);
+        if ($manualPv > 0) {
+            $pvValue = $manualPv;
+        } else {
+            $price = (float) ($this->settings->deep_reading_price ?? 0);
+            $globalPvRate = (float) \App\Models\MlmGlobalSetting::get('global_pv_rate', 1);
+            $pvValue = $price * $globalPvRate;
+        }
 
         $commissionService = app(\App\Services\MlmCommissionService::class);
         $result = $commissionService->calculateCommissionsWithRollup(

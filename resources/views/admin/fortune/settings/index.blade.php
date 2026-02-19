@@ -1319,13 +1319,14 @@
                 {{-- PV Value (แสดงเมื่อเลือก pv mode) --}}
                 <div x-show="commissionMode === 'pv'" x-transition x-cloak>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        📊 ค่า PV ของการดูดวง
+                        📊 ค่า PV (Override)
                     </label>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        ค่า PV ที่ใช้คำนวณคอมมิชชั่น MLM (เช่น ราคาดูดวง {{ $settings->deep_reading_price ?? 49 }} บาท = {{ $settings->deep_reading_price ?? 49 }} PV)
+                        ถ้าเว้นว่าง (0) ระบบจะคำนวณ PV อัตโนมัติจาก <strong>ราคาดูดวง × global_pv_rate</strong> (ตั้งค่าใน MLM Settings)<br>
+                        ใส่ค่าที่นี่เพื่อ override PV เฉพาะระบบดูดวง
                     </p>
                     <input type="number" name="fortune_pv_value" step="0.01" min="0"
-                           x-model="pvValue"
+                           x-model="pvValue" placeholder="0 = ใช้ auto (ราคา × pv_rate)"
                            class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
                 </div>
 
@@ -1383,12 +1384,19 @@
                                 <span class="text-gray-600 dark:text-gray-400">💵 ราคาดูดวง</span>
                                 <span class="font-medium text-gray-900 dark:text-white" x-text="preview.price + ' บาท'"></span>
                             </div>
-                            {{-- PV mode: แสดงค่า PV + commission_per_pv --}}
+                            {{-- PV mode: แสดงค่า PV + global_pv_rate + commission_per_pv --}}
                             <template x-if="preview.mode === 'pv'">
                                 <div class="space-y-2">
                                     <div class="flex justify-between">
+                                        <span class="text-gray-600 dark:text-gray-400">📊 PV Rate (บาท→PV)</span>
+                                        <span class="font-medium text-gray-900 dark:text-white" x-text="'×' + preview.global_pv_rate"></span>
+                                    </div>
+                                    <div class="flex justify-between">
                                         <span class="text-gray-600 dark:text-gray-400">📊 ค่า PV</span>
-                                        <span class="font-medium text-gray-900 dark:text-white" x-text="preview.pv_value"></span>
+                                        <span class="font-medium text-gray-900 dark:text-white">
+                                            <span x-text="preview.pv_value + ' PV'"></span>
+                                            <span class="text-xs text-gray-400 ml-1" x-text="preview.pv_source === 'auto' ? '(auto)' : '(override)'"></span>
+                                        </span>
                                     </div>
                                     <div class="flex justify-between">
                                         <span class="text-gray-600 dark:text-gray-400">💱 Commission/PV</span>
