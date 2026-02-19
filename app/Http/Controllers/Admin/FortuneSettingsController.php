@@ -300,19 +300,6 @@ class FortuneSettingsController extends Controller
 
             $preview = $settings->calculateFortuneCommissionPreview();
 
-            // Debug: แสดงค่า raw จาก MlmGlobalSetting
-            if ($request->has('_debug')) {
-                $rawPercentages = \App\Models\MlmGlobalSetting::where('key', 'unilevel_percentages')->first();
-                $rawLevels = \App\Models\MlmGlobalSetting::where('key', 'unilevel_levels')->first();
-                $preview['_debug'] = [
-                    'raw_percentages_value' => $rawPercentages ? $rawPercentages->value : null,
-                    'raw_percentages_type' => $rawPercentages ? $rawPercentages->type : null,
-                    'raw_levels_value' => $rawLevels ? $rawLevels->value : null,
-                    'raw_levels_type' => $rawLevels ? $rawLevels->type : null,
-                    'resolved' => FortuneTellingSetting::resolveUnilevelLevels(),
-                ];
-            }
-
             return response()->json([
                 'success' => true,
                 'data' => $preview,

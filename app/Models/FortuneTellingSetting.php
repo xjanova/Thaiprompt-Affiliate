@@ -898,11 +898,29 @@ PROMPT;
      */
     public static function resolveUnilevelLevels(): array
     {
-        // ลอง unilevel_percentages ก่อน (string "5,3,2,1,1")
+        // ดึง unilevel_percentages จาก MlmGlobalSetting
+        // ⚠️ ค่าที่เก็บอาจเป็น:
+        //   1. JSON array string: "[5,3,2,1,1]" (จาก frontend JSON.stringify)
+        //   2. Comma-separated: "5,3,2,1,1"
+        //   3. Array (ถ้า type เป็น 'json' หรือ 'array')
         $percentages = MlmGlobalSetting::get('unilevel_percentages', '');
 
+        // กรณี getTypedValue() คืน array มาเลย (type = json/array)
+        if (is_array($percentages) && ! empty($percentages)) {
+            return self::buildLevelsFromArray($percentages);
+        }
+
         if (! empty($percentages) && is_string($percentages)) {
-            $parts = explode(',', $percentages);
+            // ลอง JSON decode ก่อน (กรณี "[5,3,2,1,1]")
+            $decoded = json_decode($percentages, true);
+            if (is_array($decoded) && ! empty($decoded)) {
+                return self::buildLevelsFromArray($decoded);
+            }
+
+            // Fallback: comma-separated "5,3,2,1,1"
+            // ลบ brackets ออกก่อน เผื่อ JSON decode ไม่สำเร็จ
+            $cleaned = trim($percentages, '[]');
+            $parts = explode(',', $cleaned);
             $levels = [];
             foreach ($parts as $i => $pct) {
                 $pctVal = (float) trim($pct);
@@ -930,6 +948,25 @@ PROMPT;
         }
 
         return [];
+    }
+
+    /**
+     * แปลง flat array ของ percentages เป็น level config array
+     *
+     * @param array $percentages เช่น [5, 3, 2, 1, 1]
+     * @return array เช่น [{level: 1, percentage: 5}, {level: 2, percentage: 3}, ...]
+     */
+    protected static function buildLevelsFromArray(array $percentages): array
+    {
+        $levels = [];
+        foreach (array_values($percentages) as $i => $pct) {
+            $pctVal = (float) $pct;
+            if ($pctVal > 0) {
+                $levels[] = ['level' => $i + 1, 'percentage' => $pctVal];
+            }
+        }
+
+        return $levels;
     }
 
     /**
@@ -988,13 +1025,13 @@ PROMPT;
             $levelBreakdown[] = [
                 'level' => $level,
                 'percentage' => $percentage,
-                'amount' => round($amount, 2),
+                'amount' => round($amount, 4),
             ];
 
             $totalCommission += $amount;
         }
 
-        $totalCommission = round($totalCommission, 2);
+        $totalCommission = round($totalCommission, 4);
         $netProfit = round($price - $totalCommission, 2);
 
         return [
@@ -1003,7 +1040,7 @@ PROMPT;
             'pv_value' => $pvValue,
             'commission_per_pv' => $commissionPerPv,
             'levels' => $levelBreakdown,
-            'total_commission' => $totalCommission,
+            'total_commission' => round($totalCommission, 2),
             'net_profit' => $netProfit,
             'profit_percentage' => $price > 0 ? round(($netProfit / $price) * 100, 1) : 0,
         ];
