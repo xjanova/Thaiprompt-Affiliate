@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Models\Wallet;
 use App\Services\MlmCommissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
 /**
@@ -63,6 +64,10 @@ class MlmCommissionFlowTest extends TestCase
     {
         parent::setUp();
 
+        // ล้าง cache ก่อนทุก test (ป้องกัน Cache::remember ค้างจาก test ก่อนหน้า)
+        Cache::flush();
+        FortuneTellingSetting::clearSettingsCache();
+
         // สร้าง MLM Plan
         $this->plan = MlmPlan::create([
             'name' => 'Test Plan',
@@ -74,7 +79,9 @@ class MlmCommissionFlowTest extends TestCase
         ]);
 
         // สร้าง Users (Admin, A, B, C)
+        // ⚠️ 'role' อยู่ใน $guarded → ต้องใช้ forceFill หรือ DB update
         $this->adminUser = User::factory()->create(['name' => 'Admin']);
+        $this->adminUser->forceFill(['role' => 'admin'])->save();
         $this->userA = User::factory()->create(['name' => 'Sponsor A']);
         $this->userB = User::factory()->create(['name' => 'Sponsor B']);
         $this->userC = User::factory()->create(['name' => 'Buyer C']);
@@ -131,32 +138,44 @@ class MlmCommissionFlowTest extends TestCase
 
     /**
      * ตั้งค่า MLM settings สำหรับทดสอบ
+     *
+     * ⚠️ ข้อควรระวัง:
+     * - MlmGlobalSetting::set() ใช้ detectType() สำหรับ record ใหม่
+     * - ถ้าส่ง string 'false' → type = 'string' → get() คืน 'false' (truthy!)
+     * - ถ้าส่ง boolean false → type = 'boolean' → get() คืน false (falsy)
+     * - ถ้าส่ง json_encode(array) → type = 'string' → get() คืน JSON string (ไม่ decode)
+     * - ถ้าส่ง array โดยตรง → type = 'json' → get() คืน array (decoded)
      */
     protected function setupMlmSettings(): void
     {
         // Unilevel levels: 5 ชั้น [5%, 3%, 2%, 1%, 1%]
-        MlmGlobalSetting::set('unilevel_levels', json_encode([
+        // ⚠️ ส่ง array โดยตรง → detectType() จะกำหนด type = 'json'
+        // → getTypedValue() จะ json_decode กลับเป็น array อัตโนมัติ
+        MlmGlobalSetting::set('unilevel_levels', [
             ['level' => 1, 'percentage' => 5],
             ['level' => 2, 'percentage' => 3],
             ['level' => 3, 'percentage' => 2],
             ['level' => 4, 'percentage' => 1],
             ['level' => 5, 'percentage' => 1],
-        ]));
+        ]);
+
+        // ตั้ง unilevel_percentages ด้วย (resolveUnilevelLevels อ่านจาก key นี้ก่อน)
+        MlmGlobalSetting::set('unilevel_percentages', [5, 3, 2, 1, 1]);
 
         MlmGlobalSetting::set('global_pv_rate', '1');
         MlmGlobalSetting::set('commission_per_pv', '0.01');
         MlmGlobalSetting::set('unilevel_max_depth', '10');
-        MlmGlobalSetting::set('unilevel_enabled', 'true');
-        MlmGlobalSetting::set('binary_enabled', 'false');
+        MlmGlobalSetting::set('unilevel_enabled', true);
+        MlmGlobalSetting::set('binary_enabled', false);
         MlmGlobalSetting::set('max_commission_percentage', '80');
 
         // Rollup settings
-        MlmGlobalSetting::set('rollup_enabled', 'true');
-        MlmGlobalSetting::set('rollup_prevent_duplicate', 'true');
+        MlmGlobalSetting::set('rollup_enabled', true);
+        MlmGlobalSetting::set('rollup_prevent_duplicate', true);
         MlmGlobalSetting::set('rollup_max_levels', '10');
 
-        // Retention settings
-        MlmGlobalSetting::set('volume_retention_enabled', 'true');
+        // Retention settings — ใช้ boolean จริง ไม่ใช่ string
+        MlmGlobalSetting::set('volume_retention_enabled', true);
         MlmGlobalSetting::set('volume_retention_monthly_pv', '100');
         MlmGlobalSetting::set('volume_retention_grace_days', '7');
     }
@@ -235,12 +254,24 @@ class MlmCommissionFlowTest extends TestCase
 
     /**
      * @test
-     * PV ไม่ถึงเกณฑ์ → inactive
+     * PV ไม่ถึงเกณฑ์ และ พ้น grace period → inactive
      */
     public function member_is_inactive_when_pv_below_threshold(): void
     {
         // เกณฑ์ = 100 PV, มีแค่ 50
-        $this->makeActiveByPurchase($this->memberA, 50);
+        // ⚠️ สร้าง transaction เมื่อ 10 วันก่อน (พ้น grace period 7 วัน)
+        // เพราะถ้าสร้างวันนี้ → grace period จะยังทำให้ active
+        MlmPvTransaction::create([
+            'mlm_member_id' => $this->memberA->id,
+            'mlm_plan_id' => $this->plan->id,
+            'transaction_type' => 'purchase',
+            'pv_amount' => 50,
+            'sales_amount' => 50,
+            'previous_balance' => 0,
+            'new_balance' => 50,
+            'description' => 'ซื้อสินค้า PV ต่ำกว่าเกณฑ์',
+            'created_at' => now()->subDays(10),
+        ]);
 
         $this->assertFalse(MlmRetentionHelper::isMemberActive($this->memberA));
     }
@@ -251,9 +282,13 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function all_members_active_when_retention_disabled(): void
     {
-        MlmGlobalSetting::set('volume_retention_enabled', 'false');
+        // ⚠️ ต้องส่ง boolean false (ไม่ใช่ string 'false')
+        // เพราะ set() ใช้ detectType() → boolean false จะได้ type='boolean'
+        // → getTypedValue() จะ cast (bool) '0' = false (ถูกต้อง)
+        // แต่ถ้าส่ง string 'false' → type='string' → get() คืน 'false' (truthy!)
+        MlmGlobalSetting::set('volume_retention_enabled', false);
 
-        // ไม่มี PV transaction แต่ยังถือว่า active
+        // ไม่มี PV transaction แต่ยังถือว่า active (เพราะปิดระบบ retention)
         $this->assertTrue(MlmRetentionHelper::isMemberActive($this->memberA));
     }
 
@@ -377,14 +412,6 @@ class MlmCommissionFlowTest extends TestCase
         // ทำให้ B (sponsor ตรงของ C) active
         $this->makeActiveByPurchase($this->memberB);
 
-        // สร้าง Fortune settings
-        $settings = FortuneTellingSetting::create([
-            'enabled' => true,
-            'deep_reading_price' => 39,
-            'fortune_commission_mode' => 'static',
-            'fortune_static_commission_amount' => 10,
-        ]);
-
         // สร้าง FortuneReading
         $reading = FortuneReading::create([
             'user_id' => $this->userC->id,
@@ -399,7 +426,7 @@ class MlmCommissionFlowTest extends TestCase
         $isActive = MlmRetentionHelper::isMemberActive($sponsor);
         $this->assertTrue($isActive, 'Sponsor B ต้อง active');
 
-        // สร้าง commission record
+        // สร้าง commission record (จำลอง static mode: จ่าย 10 บาทตรงให้ sponsor)
         MlmCommission::create([
             'mlm_member_id' => $sponsor->id,
             'mlm_plan_id' => $this->plan->id,
@@ -657,9 +684,9 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_static_mode(): void
     {
-        // สร้าง FortuneTellingSetting
+        // สร้าง FortuneTellingSetting (⚠️ ใช้ is_enabled ไม่ใช่ enabled)
         FortuneTellingSetting::create([
-            'enabled' => true,
+            'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'static',
             'fortune_static_commission_amount' => 10,
@@ -697,11 +724,12 @@ class MlmCommissionFlowTest extends TestCase
      */
     public function fortune_commission_preview_pv_mode(): void
     {
+        // สร้าง FortuneTellingSetting (⚠️ ใช้ is_enabled ไม่ใช่ enabled)
         FortuneTellingSetting::create([
-            'enabled' => true,
+            'is_enabled' => true,
             'deep_reading_price' => 39,
             'fortune_commission_mode' => 'pv',
-            'fortune_pv_value' => 0, // ใช้ auto calc จาก global_pv_rate
+            'fortune_pv_value' => 0,
         ]);
 
         $response = $this->actingAs($this->adminUser)
