@@ -1341,14 +1341,31 @@
                 </div>
 
                 {{-- Custom Invite Message --}}
+                @php
+                    // ข้อความเชิญชวนเริ่มต้น (ใช้เมื่อแอดมินไม่ได้กำหนดเอง)
+                    $defaultInviteMessage = '🌟 แชร์ลิงก์ให้เพื่อน เพื่อนมาดูดวง คุณได้คอมมิชชั่นทุกครั้งที่เพื่อนจ่ายเงิน ง่ายๆ ไม่ต้องขาย!';
+                    $currentInviteMessage = old('fortune_affiliate_invite_message', $settings->fortune_affiliate_invite_message ?? '');
+                @endphp
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         ✉️ ข้อความเชิญชวน (ไม่บังคับ)
                     </label>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">ข้อความเพิ่มเติมที่จะแสดงใน Flex Message เชิญชวน (เว้นว่างเพื่อใช้ข้อความเริ่มต้น)</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        ข้อความที่จะแสดงใน Flex Message เชิญชวน — เว้นว่างเพื่อใช้ข้อความเริ่มต้น
+                    </p>
+
+                    {{-- แสดง default text ให้เห็นก่อนแก้ไข --}}
+                    <div class="mb-2 px-3 py-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 text-xs text-purple-700 dark:text-purple-300">
+                        <span class="font-semibold">ข้อความเริ่มต้น:</span>
+                        {{ $defaultInviteMessage }}
+                    </div>
+
                     <textarea name="fortune_affiliate_invite_message" rows="3"
                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 text-sm"
-                              placeholder="ชวนเพื่อนมาดูดวง รับคอมมิชชั่นทุกครั้ง!">{{ old('fortune_affiliate_invite_message', $settings->fortune_affiliate_invite_message ?? '') }}</textarea>
+                              placeholder="{{ $defaultInviteMessage }}">{{ $currentInviteMessage }}</textarea>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                        💡 พิมพ์ข้อความเพื่อแทนที่ข้อความเริ่มต้น หรือเว้นว่างเพื่อใช้ข้อความเริ่มต้นด้านบน
+                    </p>
                 </div>
             </div>
         </div>

@@ -607,7 +607,10 @@ class FortuneAffiliateService
                         ],
                         [
                             'type' => 'text',
-                            'text' => 'แชร์ลิงก์ให้เพื่อน → เพื่อนดูดวง → คุณได้คอมมิชชั่นทุกครั้ง',
+                            // ใช้ข้อความที่แอดมินกำหนด ถ้าไม่มีใช้ข้อความเริ่มต้น
+                            'text' => !empty($this->settings->fortune_affiliate_invite_message)
+                                ? $this->settings->fortune_affiliate_invite_message
+                                : '🌟 แชร์ลิงก์ให้เพื่อน เพื่อนมาดูดวง คุณได้คอมมิชชั่นทุกครั้งที่เพื่อนจ่ายเงิน ง่ายๆ ไม่ต้องขาย!',
                             'size' => 'xs',
                             'color' => '#888888',
                             'margin' => 'md',

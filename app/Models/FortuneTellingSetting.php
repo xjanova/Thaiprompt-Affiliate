@@ -876,8 +876,13 @@ PROMPT;
 
         // ดึง unilevel levels จาก MlmGlobalSetting
         $unilevelLevels = MlmGlobalSetting::get('unilevel_levels', []);
+
+        // แปลงเป็น array อย่างปลอดภัย — ป้องกัน "foreach() argument must be of type array|object, int given"
         if (is_string($unilevelLevels)) {
             $unilevelLevels = json_decode($unilevelLevels, true) ?? [];
+        }
+        if (!is_array($unilevelLevels)) {
+            $unilevelLevels = [];
         }
 
         // คำนวณคอมมิชชั่นแต่ละ level
@@ -885,6 +890,10 @@ PROMPT;
         $totalCommission = 0;
 
         foreach ($unilevelLevels as $levelConfig) {
+            // ป้องกัน element ที่ไม่ใช่ array
+            if (!is_array($levelConfig)) {
+                continue;
+            }
             $level = $levelConfig['level'] ?? 0;
             $percentage = (float) ($levelConfig['percentage'] ?? 0);
             $amount = ($pvValue * $percentage / 100) * $commissionRate;
