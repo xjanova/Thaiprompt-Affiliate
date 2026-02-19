@@ -12,6 +12,24 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
+        // ข้าม schedule ขณะรัน test เพื่อไม่ให้ DB queries ตอน boot ทำ artisan test พัง
+        if ($this->app->runningUnitTests()) {
+            return;
+        }
+
+        try {
+            $this->registerScheduledTasks($schedule);
+        } catch (\Exception $e) {
+            // ถ้า DB ยังไม่พร้อม (เช่น CI ก่อน migrate) → ข้ามไป ไม่ให้ boot พัง
+            \Log::warning('Schedule registration failed: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * ลงทะเบียน scheduled tasks ทั้งหมด (แยกออกมาเพื่อ try-catch ได้)
+     */
+    protected function registerScheduledTasks(Schedule $schedule): void
+    {
         // Dynamic Threat Intelligence Update Schedule
         $enabled = \App\Models\Setting::get('threat_auto_update_enabled', 'boolean', true);
 
