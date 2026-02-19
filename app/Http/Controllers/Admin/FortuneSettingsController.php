@@ -300,17 +300,6 @@ class FortuneSettingsController extends Controller
 
             $preview = $settings->calculateFortuneCommissionPreview();
 
-            // Debug: ตรวจสอบ resolveUnilevelLevels (ลบออกหลังแก้เสร็จ)
-            if ($request->has('_debug')) {
-                $raw = \App\Models\MlmGlobalSetting::get('unilevel_percentages', '');
-                $preview['_debug'] = [
-                    'raw_value' => $raw,
-                    'raw_type' => gettype($raw),
-                    'json_decode' => is_string($raw) ? json_decode($raw, true) : 'not_string',
-                    'resolved' => FortuneTellingSetting::resolveUnilevelLevels(),
-                ];
-            }
-
             return response()->json([
                 'success' => true,
                 'data' => $preview,
