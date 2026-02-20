@@ -64,11 +64,25 @@ class FortuneProcessDeepReading extends Command
             return self::FAILURE;
         }
 
-        // ถ้าเสร็จแล้ว → ข้าม
+        // ถ้าเสร็จแล้ว → เช็คว่าส่งลูกค้าจริงหรือยัง
         if (! empty($reading->deep_response) && $reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
-            $this->info("FortuneReading #{$readingId} เสร็จแล้ว — ข้าม");
+            $alreadySent = $reading->getConversationState('reading_sent_directly', false);
 
-            return self::SUCCESS;
+            if ($alreadySent) {
+                $this->info("FortuneReading #{$readingId} เสร็จ + ส่งแล้ว — ข้าม");
+
+                return self::SUCCESS;
+            }
+
+            // ⚠️ คำทำนายเสร็จแล้วแต่ยังไม่เคยส่งลูกค้า → ส่งเลย!
+            $this->info("FortuneReading #{$readingId} มีคำทำนายแล้วแต่ยังไม่ได้ส่ง → กำลังส่ง...");
+            Log::info('fortune:process-deep: คำทำนายเสร็จแล้วแต่ยังไม่ได้ส่ง → retry ส่ง', [
+                'reading_id' => $readingId,
+                'platform' => $platform,
+                'user_id' => $userId,
+            ]);
+
+            // ใช้ flow ส่งคำทำนายด้านล่าง (ไม่ return ที่นี่)
         }
 
         // ดึง SMS notification (ถ้ามี)
@@ -80,69 +94,78 @@ class FortuneProcessDeepReading extends Command
             $conversationService = new FortuneConversationService($settings);
             $channelManager = new FortuneChannelManager($settings);
 
-            // ✅ ส่ง Chart Image ให้ลูกค้าทันที (ก่อนรอ AI ทำงาน ~1-5 นาที)
-            // ลูกค้าจะได้เห็นรูปดวงดาวก่อนเลย ไม่ต้องรอ AI เสร็จ
-            try {
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $birthDate = $reading->birth_date?->format('Y-m-d');
-                $chartService = new \App\Services\FortuneChartService;
-                $chartUrl = $reading->reading_image_url; // เช็ค chart ที่สร้างไว้แล้ว
+            // ⚡ ถ้า deep_response มีอยู่แล้ว → ข้าม AI generation ไปส่งเลย
+            $skipAiGeneration = ! empty($reading->deep_response);
 
-                if (empty($chartUrl)) {
-                    // สร้าง chart ใหม่
-                    if ($birthDate) {
-                        $chartUrl = $chartService->generateBirthChart(
-                            $birthDate, $name, $reading->user_profile['gender'] ?? null
-                        );
-                    } else {
-                        $chartUrl = $chartService->generateQuickChart($name);
+            if (! $skipAiGeneration) {
+                // ✅ ส่ง Chart Image ให้ลูกค้าทันที (ก่อนรอ AI ทำงาน ~1-5 นาที)
+                // ลูกค้าจะได้เห็นรูปดวงดาวก่อนเลย ไม่ต้องรอ AI เสร็จ
+                try {
+                    $name = $reading->facebook_user_name ?? 'คุณ';
+                    $birthDate = $reading->birth_date?->format('Y-m-d');
+                    $chartService = new \App\Services\FortuneChartService;
+                    $chartUrl = $reading->reading_image_url; // เช็ค chart ที่สร้างไว้แล้ว
+
+                    if (empty($chartUrl)) {
+                        // สร้าง chart ใหม่
+                        if ($birthDate) {
+                            $chartUrl = $chartService->generateBirthChart(
+                                $birthDate, $name, $reading->user_profile['gender'] ?? null
+                            );
+                        } else {
+                            $chartUrl = $chartService->generateQuickChart($name);
+                        }
+
+                        if ($chartUrl) {
+                            $reading->update(['reading_image_url' => $chartUrl]);
+                        }
                     }
 
-                    if ($chartUrl) {
-                        $reading->update(['reading_image_url' => $chartUrl]);
+                    // ส่ง chart ให้ลูกค้าทันที
+                    if ($chartUrl && ! empty($userId)) {
+                        $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'send_chart',
+                            'message' => "🔮 ดวงชะตาของคุณ{$name}ค่ะ ✨\n\n⏳ กำลังวิเคราะห์คำทำนายเชิงลึก รอสักครู่นะคะ...",
+                            'chart_image_url' => $chartUrl,
+                        ], $extra);
+
+                        $reading->setConversationState('chart_sent_early', true);
+                        Log::info('fortune:process-deep: ส่ง chart ให้ลูกค้าก่อนรอ AI', [
+                            'reading_id' => $readingId,
+                            'chart_url' => $chartUrl,
+                        ]);
                     }
-                }
-
-                // ส่ง chart ให้ลูกค้าทันที
-                if ($chartUrl && ! empty($userId)) {
-                    $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'send_chart',
-                        'message' => "🔮 ดวงชะตาของคุณ{$name}ค่ะ ✨\n\n⏳ กำลังวิเคราะห์คำทำนายเชิงลึก รอสักครู่นะคะ...",
-                        'chart_image_url' => $chartUrl,
-                    ], $extra);
-
-                    $reading->setConversationState('chart_sent_early', true);
-                    Log::info('fortune:process-deep: ส่ง chart ให้ลูกค้าก่อนรอ AI', [
+                } catch (\Throwable $chartErr) {
+                    Log::error('fortune:process-deep: ส่ง chart ล่วงหน้าล้มเหลว (ไม่กระทบ AI)', [
                         'reading_id' => $readingId,
-                        'chart_url' => $chartUrl,
+                        'error' => $chartErr->getMessage(),
+                        'error_class' => get_class($chartErr),
+                        'gd_loaded' => extension_loaded('gd'),
                     ]);
                 }
-            } catch (\Throwable $chartErr) {
-                Log::error('fortune:process-deep: ส่ง chart ล่วงหน้าล้มเหลว (ไม่กระทบ AI)', [
+
+                // 🔄 batch mode: ไม่ส่ง channelManager (ปิด streaming คำทำนาย)
+                // เก็บผลทำนายใน DB → ส่งคำทำนายหลัง AI เสร็จ
+                $result = $conversationService->processPaymentConfirmed(
+                    $reading, $notification, null, $platform, $userId
+                );
+
+                $duration = round((microtime(true) - $startTime) * 1000, 2);
+
+                $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms)");
+                Log::info('✅ fortune:process-deep สำเร็จ', [
                     'reading_id' => $readingId,
-                    'error' => $chartErr->getMessage(),
-                    'error_class' => get_class($chartErr),
-                    'gd_loaded' => extension_loaded('gd'),
+                    'action' => $result['action'] ?? 'unknown',
+                    'duration_ms' => $duration,
+                ]);
+            } else {
+                Log::info('fortune:process-deep: ข้าม AI generation (deep_response มีอยู่แล้ว) → ส่งคำทำนายเลย', [
+                    'reading_id' => $readingId,
                 ]);
             }
 
-            // 🔄 batch mode: ไม่ส่ง channelManager (ปิด streaming คำทำนาย)
-            // เก็บผลทำนายใน DB → ส่งคำทำนายหลัง AI เสร็จ
-            $result = $conversationService->processPaymentConfirmed(
-                $reading, $notification, null, $platform, $userId
-            );
-
-            $duration = round((microtime(true) - $startTime) * 1000, 2);
-
-            $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms)");
-            Log::info('✅ fortune:process-deep สำเร็จ', [
-                'reading_id' => $readingId,
-                'action' => $result['action'] ?? 'unknown',
-                'duration_ms' => $duration,
-            ]);
-
-            // ✅ AI เสร็จแล้ว → ส่งคำทำนายให้ลูกค้าทันที (chart ส่งไปแล้วก่อนหน้า)
+            // ✅ ส่งคำทำนายให้ลูกค้าทันที (ไม่ว่าจะเพิ่งสร้างหรือมีอยู่แล้ว)
             $reading->refresh();
 
             if (! empty($reading->deep_response)) {
@@ -158,50 +181,82 @@ class FortuneProcessDeepReading extends Command
                             'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
                             'chart_image_url' => $reading->reading_image_url,
                         ], $extra);
-                        usleep(500000);
+                        sleep(2); // ⚡ 2s — ให้ LINE API พร้อมก่อนส่งข้อความถัดไป
                     } else {
                         // chart ส่งไปแล้ว → ส่งแค่ข้อความแจ้ง
                         $channelManager->sendResponse($platform, $userId, [
                             'action' => 'reading_ready',
                             'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
                         ], $extra);
-                        usleep(500000);
+                        sleep(2); // ⚡ 2s — เว้นระยะก่อนส่งคำทำนาย
                     }
 
-                    // 2. ส่งคำทำนายเชิงลึก (deep_response)
+                    // 2. ส่งคำทำนายเชิงลึก (deep_response) — ✅ เช็ค return value + retry
                     $billRef = $reading->bill_reference ?? '-';
                     $readingText = "🌟 *คำทำนายเชิงลึก*\n"
                         . "📋 เลขที่บิล: {$billRef}\n"
                         . "═══════════════════════\n\n"
                         . $reading->deep_response;
 
-                    $channelManager->sendResponse($platform, $userId, [
+                    $deepSent = $channelManager->sendResponse($platform, $userId, [
                         'action' => 'deep_reading_result',
                         'message' => $readingText,
                         'reading' => $reading,
                     ], $extra);
 
-                    usleep(500000);
+                    // 🔄 Retry: ถ้าส่งไม่สำเร็จ → ลองอีก 2 ครั้ง (เนื้อหาเสียเงิน สำคัญมาก!)
+                    if (! $deepSent) {
+                        Log::warning('fortune:process-deep: ส่งคำทำนายครั้งที่ 1 ไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $readingId]);
+                        sleep(5);
+                        $deepSent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'deep_reading_result',
+                            'message' => $readingText,
+                            'reading' => $reading,
+                        ], $extra);
+                    }
 
-                    // 3. ข้อความปิดท้าย
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'reading_complete',
-                        'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n"
-                            . "💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
-                        'reading' => $reading,
-                    ], $extra);
+                    if (! $deepSent) {
+                        Log::warning('fortune:process-deep: ส่งคำทำนายครั้งที่ 2 ไม่สำเร็จ → retry ใน 15 วิ', ['reading_id' => $readingId]);
+                        sleep(15);
+                        $deepSent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'deep_reading_result',
+                            'message' => $readingText,
+                            'reading' => $reading,
+                        ], $extra);
+                    }
 
-                    // บันทึกสถานะ
-                    $reading->setConversationState('reading_ready_sent', true);
-                    $reading->setConversationState('reading_sent_directly', true);
-                    $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                    // ✅ เซ็ต flag เฉพาะเมื่อส่งสำเร็จจริงเท่านั้น!
+                    if ($deepSent) {
+                        sleep(2);
 
-                    Log::info('fortune:process-deep: ส่งคำทำนายให้ลูกค้าสำเร็จ', [
-                        'reading_id' => $readingId,
-                        'chart_sent_early' => $chartSentEarly,
-                    ]);
+                        // 3. ข้อความปิดท้าย (ไม่สำคัญเท่าคำทำนาย)
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'reading_complete',
+                            'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n"
+                                . "💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
+                            'reading' => $reading,
+                        ], $extra);
+
+                        // ✅ ส่งสำเร็จจริง → บันทึกสถานะ
+                        $reading->setConversationState('reading_ready_sent', true);
+                        $reading->setConversationState('reading_sent_directly', true);
+                        $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+                        Log::info('fortune:process-deep: ✅ ส่งคำทำนายให้ลูกค้าสำเร็จ', [
+                            'reading_id' => $readingId,
+                            'chart_sent_early' => $chartSentEarly,
+                        ]);
+                    } else {
+                        // ❌ ส่งไม่สำเร็จทุกครั้ง → ไม่เซ็ต flag → check-pending/retry ครั้งหน้าจะลองใหม่
+                        Log::error('fortune:process-deep: ❌ ส่งคำทำนายไม่สำเร็จ 3 ครั้ง — รอ retry ครั้งหน้า', [
+                            'reading_id' => $readingId,
+                            'platform' => $platform,
+                            'user_id' => $userId,
+                        ]);
+                    }
                 } catch (\Exception $readyErr) {
-                    Log::error('fortune:process-deep: ส่งคำทำนายให้ลูกค้าล้มเหลว', [
+                    // ❌ Exception → ไม่เซ็ต flag → ครั้งหน้าจะลองส่งใหม่
+                    Log::error('fortune:process-deep: ส่งคำทำนายให้ลูกค้าล้มเหลว (exception)', [
                         'reading_id' => $readingId,
                         'error' => $readyErr->getMessage(),
                     ]);

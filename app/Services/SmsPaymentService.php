@@ -626,34 +626,54 @@ class SmsPaymentService
                     'chart_image_url' => $reading->reading_image_url,
                 ], $extra);
 
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                sleep(2); // ⚡ 2s — เว้นระยะก่อนส่งคำทำนาย
 
-                // 2. ส่งคำทำนาย
-                $channelManager->sendResponse($platform, $userId, [
+                // 2. ส่งคำทำนาย — ✅ เช็ค return value
+                $deepSent = $channelManager->sendResponse($platform, $userId, [
                     'action' => 'deep_reading_result',
                     'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
+                    'reading' => $reading,
                 ], $extra);
 
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                // 🔄 Retry ถ้าส่งไม่สำเร็จ (เนื้อหาเสียเงิน สำคัญมาก)
+                if (! $deepSent) {
+                    Log::warning('SMS Payment: ส่งคำทำนายครั้ง 1 ไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id]);
+                    sleep(5);
+                    $deepSent = $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'deep_reading_result',
+                        'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
+                        'reading' => $reading,
+                    ], $extra);
+                }
 
-                // 3. ข้อความปิดท้าย
-                $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'reading_complete',
-                    'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
-                ], $extra);
+                if ($deepSent) {
+                    sleep(2);
 
-                $reading->setConversationState('reading_sent_directly', true);
-                $reading->setConversationState('reading_ready_sent', true);
-                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                    // 3. ข้อความปิดท้าย
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'reading_complete',
+                        'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
+                    ], $extra);
 
-                Log::info('SMS Payment: มีคำทำนายพร้อมแล้ว → ส่งให้ลูกค้าทันที', [
-                    'reading_id' => $reading->id,
-                    'has_chart' => ! empty($reading->reading_image_url),
-                ]);
+                    // ✅ ส่งสำเร็จจริง → บันทึกสถานะ
+                    $reading->setConversationState('reading_sent_directly', true);
+                    $reading->setConversationState('reading_ready_sent', true);
+                    $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
-                $notification->update(['status' => 'matched', 'matched_transaction_id' => $reading->id]);
+                    Log::info('SMS Payment: มีคำทำนายพร้อมแล้ว → ส่งให้ลูกค้าสำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'has_chart' => ! empty($reading->reading_image_url),
+                    ]);
 
-                return true;
+                    $notification->update(['status' => 'matched', 'matched_transaction_id' => $reading->id]);
+
+                    return true;
+                } else {
+                    // ❌ ส่งไม่สำเร็จ → ไม่เซ็ต flag → fallthrough dispatch job ด้านล่าง
+                    Log::error('SMS Payment: ส่งคำทำนายไม่สำเร็จ 2 ครั้ง — fallback dispatch job', [
+                        'reading_id' => $reading->id,
+                    ]);
+                }
             } catch (\Exception $sendErr) {
                 Log::error('SMS Payment: ส่งคำทำนายที่มีอยู่แล้วล้มเหลว — fallback dispatch job', [
                     'reading_id' => $reading->id,
