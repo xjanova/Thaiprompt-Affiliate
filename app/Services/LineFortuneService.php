@@ -2775,22 +2775,14 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
+        // ✅ Gatekeeper: นับ attempt ก่อนส่ง (ป้องกันชน rate limit ซ้ำ)
+        LineGatekeeperService::recordLinePush();
+
         try {
-            // ⚡ ไม่ retry เมื่อ 429 — retry เฉพาะ server error (500+) หรือ timeout
+            // ⚡ ไม่ retry เลย — 429/timeout ไม่ควร retry (amplify rate limit)
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(10)
                 ->connectTimeout(5)
-                ->retry(2, 1500, function (\Exception $exception, $request) {
-                    // ❌ ไม่ retry ถ้า 429 (rate limit) — retry แค่ timeout/server error
-                    if ($exception instanceof \Illuminate\Http\Client\RequestException) {
-                        $status = $exception->response?->status() ?? 0;
-                        if ($status === 429) {
-                            return false; // ❌ ห้าม retry
-                        }
-                    }
-
-                    return true; // ✅ retry สำหรับ timeout/server error อื่น
-                })
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -2799,14 +2791,13 @@ class LineFortuneService implements MessagingPlatformInterface
             if (! $response->successful()) {
                 $status = $response->status();
 
-                // 🔴 Rate limit → เปิด circuit breaker 60 วินาที
+                // 🔴 Rate limit → เปิด circuit breaker 15 วินาที (ลดจาก 60s)
                 if ($status === 429) {
-                    $cooldownSeconds = 60;
+                    $cooldownSeconds = 15;
                     cache()->put($circuitKey, true, $cooldownSeconds);
                     cache()->put($circuitKey . '_until', now()->addSeconds($cooldownSeconds)->toTimeString(), $cooldownSeconds);
-                    Log::error('LINE pushMessage: HTTP 429 Rate Limit → เปิด circuit breaker {$cooldownSeconds}s', [
+                    Log::error('LINE pushMessage: HTTP 429 → circuit breaker '.$cooldownSeconds.'s', [
                         'to' => $to,
-                        'status' => $status,
                         'cooldown' => $cooldownSeconds,
                     ]);
                 } else {
@@ -2820,17 +2811,14 @@ class LineFortuneService implements MessagingPlatformInterface
                 return false;
             }
 
-            // ✅ บันทึก Gatekeeper: push สำเร็จ
-            LineGatekeeperService::recordLinePush();
-
             return true;
 
         } catch (\Exception $e) {
-            // cURL timeout → เปิด circuit breaker 30 วินาที (อาจเป็นปัญหาชั่วคราว)
+            // cURL timeout → เปิด circuit breaker 10 วินาที (ลดจาก 30s)
             if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
-                cache()->put($circuitKey, true, 30);
-                cache()->put($circuitKey . '_until', now()->addSeconds(30)->toTimeString(), 30);
-                Log::error('LINE pushMessage: Timeout → เปิด circuit breaker 30s', [
+                cache()->put($circuitKey, true, 10);
+                cache()->put($circuitKey . '_until', now()->addSeconds(10)->toTimeString(), 10);
+                Log::error('LINE pushMessage: Timeout → circuit breaker 10s', [
                     'to' => $to,
                     'error' => $e->getMessage(),
                 ]);
@@ -2889,10 +2877,10 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            // Timeout → เปิด circuit breaker สั้นๆ 15 วินาที
+            // Timeout → เปิด circuit breaker สั้นๆ 5 วินาที (ลดจาก 15s)
             if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
-                cache()->put($circuitKey, true, 15);
-                Log::warning('LINE replyMessage: Timeout → เปิด circuit breaker 15s', [
+                cache()->put($circuitKey, true, 5);
+                Log::warning('LINE replyMessage: Timeout → circuit breaker 5s', [
                     'error' => $e->getMessage(),
                 ]);
             } else {
