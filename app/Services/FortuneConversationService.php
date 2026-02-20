@@ -5969,8 +5969,52 @@ PROMPT;
     protected function handleShareRequest(string $facebookUserId): array
     {
         try {
-            // หา User จาก LINE user ID
+            // ✅ ค้นหา User หลายวิธี (ไม่ใช่แค่ line_user_id เดียว)
             $user = \App\Models\User::where('line_user_id', $facebookUserId)->first();
+
+            // Fallback: ค้นหาจาก email pattern
+            if (! $user) {
+                $user = \App\Models\User::where('email', 'line_'.$facebookUserId.'@thaiprompt.local')->first();
+            }
+
+            // Fallback: ค้นหาจาก FortuneReading ที่ link กับ user
+            if (! $user) {
+                $linkedReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                    ->whereNotNull('user_id')
+                    ->latest()
+                    ->first();
+                if ($linkedReading && $linkedReading->user_id) {
+                    $user = \App\Models\User::find($linkedReading->user_id);
+                }
+            }
+
+            // ⭐ ถ้ายังไม่มี User → สร้างอัตโนมัติจาก FortuneReading (user เคยจ่ายเงินแล้ว)
+            if (! $user) {
+                $paidReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                    ->where('is_paid', true)
+                    ->latest()
+                    ->first();
+
+                if ($paidReading) {
+                    // สร้าง User อัตโนมัติ
+                    $userName = $paidReading->facebook_user_name ?? 'User';
+                    $user = \App\Models\User::create([
+                        'name' => $userName,
+                        'email' => 'line_'.$facebookUserId.'@thaiprompt.local',
+                        'password' => \Illuminate\Support\Facades\Hash::make('12345678'),
+                        'line_user_id' => $facebookUserId,
+                    ]);
+
+                    // Link reading กับ user
+                    $paidReading->update(['user_id' => $user->id]);
+
+                    Log::info('Fortune Share: สร้าง User อัตโนมัติจาก paid reading', [
+                        'user_id' => $user->id,
+                        'line_user_id' => $facebookUserId,
+                        'reading_id' => $paidReading->id,
+                    ]);
+                }
+            }
 
             if (! $user) {
                 return [
