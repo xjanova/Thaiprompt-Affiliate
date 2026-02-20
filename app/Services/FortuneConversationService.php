@@ -3751,6 +3751,22 @@ class FortuneConversationService
                 return null;
             }
 
+            // ✅ ตรวจจับ [SAVE_QUESTION] — AI บอกว่าตอบไม่ได้ → บันทึกคำถามให้แอดมิน
+            if (str_contains($responseText, '[SAVE_QUESTION]')) {
+                $responseText = trim(str_replace('[SAVE_QUESTION]', '', $responseText));
+                $this->saveQuestionForAdmin(
+                    $userId,
+                    $messageText,
+                    'ai_cannot_answer',
+                    $responseText,
+                    $userProfile['name'] ?? null
+                );
+                Log::info('Fortune: AI ตอบไม่ได้ → บันทึกคำถามให้แอดมิน', [
+                    'user_id' => $userId,
+                    'question' => mb_substr($messageText, 0, 100),
+                ]);
+            }
+
             Log::info('Fortune: AI Chat response สำเร็จ', [
                 'user_id' => $userId,
                 'provider' => $result['provider'] ?? 'unknown',
@@ -3767,14 +3783,47 @@ class FortuneConversationService
             ];
 
         } catch (\Exception $e) {
-            // AI ล้มเหลว → return null เพื่อให้ caller fallback ไป askFortuneConfirmation
-            Log::warning('Fortune: AI Chat ล้มเหลว → fallback', [
+            // AI ล้มเหลว → บันทึกคำถามให้แอดมิน + return null เพื่อ fallback
+            Log::warning('Fortune: AI Chat ล้มเหลว → บันทึกคำถามให้แอดมิน', [
                 'user_id' => $userId,
                 'error' => $e->getMessage(),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
 
+            $this->saveQuestionForAdmin(
+                $userId,
+                $messageText,
+                'ai_failed',
+                null,
+                $userProfile['name'] ?? null
+            );
+
             return null;
+        }
+    }
+
+    /**
+     * บันทึกคำถามที่ AI ตอบไม่ได้ ให้แอดมินมาตอบกลับทีหลัง
+     */
+    protected function saveQuestionForAdmin(
+        string $userId,
+        string $question,
+        string $reason = 'ai_cannot_answer',
+        ?string $aiResponse = null,
+        ?string $userName = null
+    ): void {
+        try {
+            \App\Models\FortuneSavedQuestion::saveQuestion(
+                platformUserId: $userId,
+                question: $question,
+                reason: $reason,
+                aiResponse: $aiResponse,
+                userName: $userName,
+                platform: 'line'
+            );
+        } catch (\Exception $e) {
+            // ไม่ให้ error กระทบ flow หลัก
+            Log::warning('Fortune: บันทึกคำถามล้มเหลว', ['error' => $e->getMessage()]);
         }
     }
 

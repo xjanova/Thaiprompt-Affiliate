@@ -3901,6 +3901,14 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
 
+    // คำถามที่ AI ตอบไม่ได้ — รอแอดมินตอบกลับ
+    Route::prefix('saved-questions')->name('saved-questions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FortuneSavedQuestionsController::class, 'index'])->name('index');
+        Route::post('/{question}/reply', [\App\Http\Controllers\Admin\FortuneSavedQuestionsController::class, 'reply'])->name('reply');
+        Route::post('/{question}/resend', [\App\Http\Controllers\Admin\FortuneSavedQuestionsController::class, 'resend'])->name('resend');
+        Route::delete('/{question}', [\App\Http\Controllers\Admin\FortuneSavedQuestionsController::class, 'destroy'])->name('destroy');
+    });
+
     // จัดการผู้ใช้ดูดวง + ส่งข้อความ
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [FortuneUsersController::class, 'index'])->name('index');
