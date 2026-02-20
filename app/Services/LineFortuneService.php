@@ -325,7 +325,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => '✨ จันทราดูดวง ✨',
+                        'text' => '✨ หมอจันทราดูดวง ✨',
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -497,7 +497,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                     'contents' => [
                         ['type' => 'text', 'text' => '🔮', 'size' => '3xl', 'align' => 'center'],
-                        ['type' => 'text', 'text' => '✨ จันทราดูดวง ✨', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'align' => 'center', 'margin' => 'md'],
+                        ['type' => 'text', 'text' => '✨ หมอจันทราดูดวง ✨', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold', 'align' => 'center', 'margin' => 'md'],
                     ],
                 ];
             }
@@ -1117,7 +1117,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '✨ จันทราดูดวง',
+                        'text' => '✨ หมอจันทราดูดวง',
                         'size' => 'xs',
                         'color' => '#9B8EC4',
                         'flex' => 1,
@@ -1611,7 +1611,7 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
             [
                 'type' => 'text',
-                'text' => 'จันทราพร้อมดูดวงให้ค่ะ',
+                'text' => 'หมอจันทราพร้อมดูดวงให้ค่ะ',
                 'size' => 'sm',
                 'color' => '#999999',
                 'margin' => 'sm',
@@ -1634,7 +1634,7 @@ class LineFortuneService implements MessagingPlatformInterface
             // บริการ
             [
                 'type' => 'text',
-                'text' => '🎁 บริการของจันทรา',
+                'text' => '🎁 บริการของหมอจันทรา',
                 'size' => 'md',
                 'weight' => 'bold',
                 'color' => '#6B46C1',
@@ -2055,7 +2055,7 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
             [
                 'type' => 'text',
-                'text' => 'จันทราพร้อมทำนายให้แล้วค่ะ',
+                'text' => 'หมอจันทราพร้อมทำนายให้แล้วค่ะ',
                 'size' => 'sm',
                 'color' => '#999999',
                 'margin' => 'sm',

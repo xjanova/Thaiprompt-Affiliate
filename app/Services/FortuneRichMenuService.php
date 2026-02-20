@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 /**
  * FortuneRichMenuService — สร้างภาพ Rich Menu + deploy ไป LINE API
  *
- * สร้างเมนูแม่หมอจันทรา 6 ปุ่ม (V2 ตัวหนังสือใหญ่ขึ้น):
+ * สร้างเมนูหมอจันทรา 6 ปุ่ม (V2 ตัวหนังสือใหญ่ขึ้น):
  * 🔮 ดูดวง | ✨ ดูดวงละเอียด | 📖 ดูคำทำนายล่าสุด
  * 📊 สถานะ/สิทธิ์ | ⚠️ แจ้งปัญหาโอน | ℹ️ วิธีใช้งาน
  */
@@ -84,7 +84,7 @@ class FortuneRichMenuService
             $richMenuData = [
                 'size' => ['width' => self::WIDTH, 'height' => self::HEIGHT],
                 'selected' => true,
-                'name' => 'แม่หมอจันทรา - เมนูดูดวง v2',
+                'name' => 'หมอจันทรา - เมนูดูดวง v2',
                 'chatBarText' => '🔮 เมนูดูดวง',
                 'areas' => $areas,
             ];
@@ -117,7 +117,7 @@ class FortuneRichMenuService
             $menu = LineRichMenu::create([
                 'rich_menu_id' => $richMenuId,
                 'name' => 'fortune-telling-bot',
-                'description' => 'Rich Menu สำหรับบอทแม่หมอจันทรา',
+                'description' => 'Rich Menu สำหรับบอทหมอจันทรา',
                 'size' => 'full',
                 'selected' => true,
                 'chat_bar_text' => '🔮 เมนูดูดวง',
@@ -168,7 +168,7 @@ class FortuneRichMenuService
                 'bg_gradient_start' => '#0d0521',
                 'bg_gradient_end' => '#1a0a3e',
                 'grid_line_color' => '#4C1D95',
-                'branding_text' => '~~ แม่หมอจันทราพยากรณ์ ~~',
+                'branding_text' => '~~ หมอจันทราพยากรณ์ ~~',
                 'branding_color' => '#FFD700',
                 'show_stars' => true,
                 'show_moon' => true,
@@ -432,7 +432,7 @@ class FortuneRichMenuService
         }
 
         // === Branding ด้านบน ===
-        $brandText = $theme['branding_text'] ?? '~~ แม่หมอจันทราพยากรณ์ ~~';
+        $brandText = $theme['branding_text'] ?? '~~ หมอจันทราพยากรณ์ ~~';
         $brandColor = $this->hexColor($img, $theme['branding_color'] ?? '#FFD700');
         $this->drawCenteredText($img, $font, 32, self::WIDTH / 2, 50, $brandText, $brandColor);
 

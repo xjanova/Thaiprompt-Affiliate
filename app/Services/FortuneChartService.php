@@ -555,11 +555,11 @@ class FortuneChartService
         }
 
         // === หัวเรื่องด้านบน — ใหญ่ขึ้น ===
-        $this->drawCenteredText($img, $thaiFont, 28, $cx, 38, '~~ จันทราพยากรณ์ ~~', $gold);
+        $this->drawCenteredText($img, $thaiFont, 28, $cx, 38, '~~ หมอจันทราพยากรณ์ ~~', $gold);
         $this->drawCenteredText($img, $thaiFont, 15, $cx, 68, 'โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ', $purpleFaint);
 
         // === Footer — สว่างขึ้น ===
-        $this->drawCenteredText($img, $thaiFont, 12, $cx, $height - 22, 'จันทราพยากรณ์ | Powered by Xman Studio', $grayDark);
+        $this->drawCenteredText($img, $thaiFont, 12, $cx, $height - 22, 'หมอจันทราพยากรณ์ | Powered by Xman Studio', $grayDark);
 
         // === Export PNG ===
         ob_start();
@@ -828,11 +828,11 @@ SVG;
         }
 
         // Title ด้านบน
-        $svg .= "<text x=\"{$cx}\" y=\"30\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"22\" font-weight=\"bold\" filter=\"url(#textGlow)\">~~ จันทราพยากรณ์ ~~</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"30\" text-anchor=\"middle\" fill=\"#FFD700\" font-size=\"22\" font-weight=\"bold\" filter=\"url(#textGlow)\">~~ หมอจันทราพยากรณ์ ~~</text>\n";
         $svg .= "<text x=\"{$cx}\" y=\"55\" text-anchor=\"middle\" fill=\"#C4B5FD\" font-size=\"12\">โหราศาสตร์เจ้าชนะ | ดวงดาว 9 ดวง | ภพ 12 ภพ</text>\n";
 
         // Footer
-        $svg .= "<text x=\"{$cx}\" y=\"".($height - 20)."\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"10\">จันทราพยากรณ์ | Powered by Xman Studio</text>\n";
+        $svg .= "<text x=\"{$cx}\" y=\"".($height - 20)."\" text-anchor=\"middle\" fill=\"#6B7280\" font-size=\"10\">หมอจันทราพยากรณ์ | Powered by Xman Studio</text>\n";
 
         $svg .= '</svg>';
 
