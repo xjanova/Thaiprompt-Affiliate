@@ -6,6 +6,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FortuneChannelManager;
 use App\Services\LineFortuneService;
+use App\Services\LineGatekeeperService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
@@ -116,7 +117,23 @@ class LineFortuneWebhookController extends Controller
         $messageText = $event['message']['text'] ?? '';
 
         try {
-            // ✅ Flood Protection: ถ้า user ส่งข้อความถี่เกินไป → ตอบข้อความเตือนซ้ำ ไม่เรียก AI/LINE push
+            // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อน (ทุก user รวมกัน)
+            if (LineGatekeeperService::isSystemThrottled()) {
+                Log::warning('LINE Webhook: System throttled — ส่งข้อความเตือน', [
+                    'user_id' => $userId,
+                    'stats' => LineGatekeeperService::getStats(),
+                ]);
+
+                if ($replyToken) {
+                    $this->lineService->replyMessage($replyToken, [
+                        ['type' => 'text', 'text' => "⏳ ขณะนี้มีผู้ใช้งานจำนวนมากค่ะ\n\nกรุณารอสักครู่แล้วพิมพ์ข้อความมาใหม่นะคะ 🙏✨"],
+                    ]);
+                }
+
+                return;
+            }
+
+            // ✅ Flood Protection: ถ้า user คนนี้ส่งข้อความถี่เกินไป → ตอบข้อความเตือนซ้ำ
             $floodKey = "line_flood:{$userId}";
             $floodCount = (int) cache()->get($floodKey, 0);
             cache()->put($floodKey, $floodCount + 1, 10); // นับข้อความใน 10 วินาที

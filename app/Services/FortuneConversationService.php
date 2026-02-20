@@ -10,6 +10,7 @@ use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Services\FortuneChannelManager;
 use App\Services\LineFortuneService;
+use App\Services\LineGatekeeperService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -1702,6 +1703,19 @@ class FortuneConversationService
             // ทำนายพื้นฐานฟรี - ใช้ retry + auto-switch provider
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText, $userContext, $detectedCategory);
 
+            // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก
+            if (! LineGatekeeperService::canCallAI()) {
+                Log::warning('Fortune: AI ทำนายพื้นฐานถูก throttle โดย Gatekeeper', [
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return [
+                    'action' => 'fortune_throttled',
+                    'message' => "⏳ ขณะนี้มีผู้ขอดูดวงจำนวนมากค่ะ\nกรุณารอสักครู่แล้วพิมพ์ขอดูดวงใหม่นะคะ 🙏✨",
+                    'reading' => $reading,
+                ];
+            }
+
             Log::info('Fortune: กำลังเรียก AI', [
                 'facebook_user_id' => $facebookUserId,
                 'provider' => $this->settings->getActualAIProvider(),
@@ -1716,6 +1730,9 @@ class FortuneConversationService
                 $basicPrompt,
                 'basic'
             );
+
+            // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune basic)
+            LineGatekeeperService::recordAICall();
 
             // ✅ บันทึกคำทำนายพื้นฐาน (ตั้ง responded_at ก่อน recordAICall)
             // เพื่อให้ countTodayReadings() นับ reading นี้ถูกต้อง
@@ -2324,6 +2341,14 @@ class FortuneConversationService
                     $deepReadings
                 );
 
+                // ✅ Gatekeeper: เช็คทราฟฟิค AI ก่อนเรียกทุกคำถาม
+                if (! LineGatekeeperService::canCallAI()) {
+                    Log::warning('Fortune: AI Deep Reading ถูก throttle ที่ข้อ '.$questionNum, [
+                        'reading_id' => $reading->id ?? null,
+                    ]);
+                    break; // หยุดถามข้อต่อไป ส่งผลลัพธ์ที่ได้แล้ว
+                }
+
                 $aiResult = $this->aiService->generateWithRetryAndFallback(
                     [$question],
                     $userProfile,
@@ -2332,6 +2357,9 @@ class FortuneConversationService
                     'deep',
                     $birthDate
                 );
+
+                // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune deep)
+                LineGatekeeperService::recordAICall();
 
                 $deepReadings[] = [
                     'question_number' => $questionNum,
@@ -3776,6 +3804,17 @@ class FortuneConversationService
                 return null;
             }
 
+            // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก
+            if (! LineGatekeeperService::canCallAI()) {
+                Log::warning('Fortune: AI Chat ถูก throttle โดย Gatekeeper', ['user_id' => $userId]);
+
+                return [
+                    'action' => 'ai_chat_response',
+                    'message' => "⏳ ขณะนี้มีผู้ใช้งานจำนวนมากค่ะ\nกรุณารอสักครู่แล้วพิมพ์ข้อความมาใหม่นะคะ 🙏✨",
+                    'reading' => null,
+                ];
+            }
+
             Log::debug('Fortune: กำลังเรียก AI Chat', [
                 'user_id' => $userId,
                 'provider' => $this->settings->getChatAIProvider(),
@@ -3786,6 +3825,9 @@ class FortuneConversationService
             // เรียก AI Chat
             $aiService = new FortuneAIService($this->settings);
             $result = $aiService->generateChatResponse($messageText, $userProfile);
+
+            // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
+            LineGatekeeperService::recordAICall();
 
             $responseText = trim($result['response'] ?? '');
 

@@ -2754,6 +2754,16 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     protected function pushMessage(string $to, array $messages): bool
     {
+        // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อนส่ง
+        if (! LineGatekeeperService::canPushLine()) {
+            Log::warning('LINE pushMessage: Gatekeeper blocked — เกิน safe limit', [
+                'to' => $to,
+                'stats' => LineGatekeeperService::getStats(),
+            ]);
+
+            return false;
+        }
+
         // ✅ Circuit Breaker: ถ้าโดน rate limit อยู่ → หยุดส่งชั่วคราว (ป้องกัน amplify)
         $circuitKey = 'line_push_circuit_open';
         if (cache()->get($circuitKey)) {
@@ -2809,6 +2819,9 @@ class LineFortuneService implements MessagingPlatformInterface
 
                 return false;
             }
+
+            // ✅ บันทึก Gatekeeper: push สำเร็จ
+            LineGatekeeperService::recordLinePush();
 
             return true;
 

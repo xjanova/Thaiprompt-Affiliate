@@ -352,6 +352,9 @@ class FortuneChannelManager
                 // AI Chat ทั่วไป (Gemini) → ส่ง text ธรรมดา (เป็นธรรมชาติกว่า Flex)
                 'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // Gatekeeper throttle → ส่งข้อความ "รอสักครู่" แทน
+                'fortune_throttled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
                 // AI ตอบไม่ได้ → ส่งข้อความพร้อม quick reply ให้เลือก "ฝาก/ไม่ฝาก"
                 // ใช้ replyMessage ก่อน (เร็ว + ฟรี) → fallback เป็น pushMessage
                 'ai_ask_save_question' => $this->sendLineMessageWithQuickReply(
