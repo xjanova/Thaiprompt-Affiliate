@@ -554,32 +554,24 @@ class FortuneAffiliateService
         LineFortuneService $lineService
     ): void {
         $primaryColor = $this->settings->getLineFlexPrimaryColor();
-        $preview = $this->settings->calculateFortuneCommissionPreview();
-        $price = $preview['price'];
+        $mode = $this->settings->getFortuneCommissionMode();
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
 
-        // สร้างข้อความตัวอย่างรายได้ (แสดง 3 levels)
-        $earningContents = [];
-        $earningContents[] = [
-            'type' => 'text',
-            'text' => "เพื่อนจ่ายดูดวง {$price} บาท คุณได้รับ:",
-            'size' => 'xs',
-            'color' => '#666666',
-            'wrap' => true,
-            'margin' => 'md',
-        ];
-
-        $levelsToShow = min(3, count($preview['levels'] ?? []));
-        for ($i = 0; $i < $levelsToShow; $i++) {
-            $level = $preview['levels'][$i];
-            $earningContents[] = [
-                'type' => 'text',
-                'text' => "Level {$level['level']} ({$level['percentage']}%): {$level['amount']} บาท",
-                'size' => 'xs',
-                'color' => $i === 0 ? '#333333' : '#888888',
-                'weight' => $i === 0 ? 'bold' : 'regular',
-                'margin' => 'sm',
-            ];
+        // ดึงค่าคอมมิชชั่นจาก settings (dynamic)
+        if ($mode === 'static') {
+            $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
+            $commissionText = number_format($commissionAmount, 0).' บาท';
+        } else {
+            $preview = $this->settings->calculateFortuneCommissionPreview();
+            $level1 = $preview['levels'][0] ?? null;
+            $commissionAmount = $level1 ? $level1['amount'] : 0;
+            $commissionText = number_format($commissionAmount, 2).' บาท';
         }
+
+        // ข้อความหลัก — ดึงจาก settings หรือใช้ default ที่แปรผันตามค่าคอมมิชชั่น
+        $inviteMessage = ! empty($this->settings->fortune_affiliate_invite_message)
+            ? $this->settings->fortune_affiliate_invite_message
+            : "🌟 แชร์ลิงก์ให้คนอื่น หากเขาดูดวง คุณจะได้รับบิลละ {$commissionText} เข้า Wallet ตลอดไป!";
 
         $flex = [
             'type' => 'bubble',
@@ -596,38 +588,58 @@ class FortuneAffiliateService
             'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
-                'contents' => array_merge(
+                'contents' => [
                     [
-                        [
-                            'type' => 'text',
-                            'text' => 'ชวนเพื่อนดูดวง รับรายได้!',
-                            'weight' => 'bold',
-                            'size' => 'lg',
-                            'color' => '#333333',
-                        ],
-                        [
-                            'type' => 'text',
-                            // ใช้ข้อความที่แอดมินกำหนด ถ้าไม่มีใช้ข้อความเริ่มต้น
-                            'text' => !empty($this->settings->fortune_affiliate_invite_message)
-                                ? $this->settings->fortune_affiliate_invite_message
-                                : '🌟 แชร์ลิงก์ให้เพื่อน เพื่อนมาดูดวง คุณได้คอมมิชชั่นทุกครั้งที่เพื่อนจ่ายเงิน ง่ายๆ ไม่ต้องขาย!',
-                            'size' => 'xs',
-                            'color' => '#888888',
-                            'margin' => 'md',
-                            'wrap' => true,
-                        ],
-                        ['type' => 'separator', 'margin' => 'lg'],
-                        [
-                            'type' => 'text',
-                            'text' => '📊 ตัวอย่างรายได้',
-                            'weight' => 'bold',
-                            'size' => 'sm',
-                            'color' => $primaryColor,
-                            'margin' => 'lg',
-                        ],
+                        'type' => 'text',
+                        'text' => "แชร์ให้เพื่อน รับ {$commissionText} ทุกบิล!",
+                        'weight' => 'bold',
+                        'size' => 'lg',
+                        'color' => '#333333',
+                        'wrap' => true,
                     ],
-                    $earningContents
-                ),
+                    [
+                        'type' => 'text',
+                        'text' => $inviteMessage,
+                        'size' => 'xs',
+                        'color' => '#888888',
+                        'margin' => 'md',
+                        'wrap' => true,
+                    ],
+                    ['type' => 'separator', 'margin' => 'lg'],
+                    [
+                        'type' => 'text',
+                        'text' => '📊 รายได้ของคุณ',
+                        'weight' => 'bold',
+                        'size' => 'sm',
+                        'color' => $primaryColor,
+                        'margin' => 'lg',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "💎 เพื่อน 1 คนดูดวง = คุณได้ {$commissionText}",
+                        'size' => 'xs',
+                        'color' => '#333333',
+                        'weight' => 'bold',
+                        'margin' => 'md',
+                        'wrap' => true,
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "🎯 ชวน 10 คน × ดูดวง 3 ครั้ง = ".number_format($commissionAmount * 10 * 3, 0).' บาท!',
+                        'size' => 'xs',
+                        'color' => '#333333',
+                        'margin' => 'sm',
+                        'wrap' => true,
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '✅ ได้เงินเข้า Wallet ทุกครั้งที่เพื่อนดูดวง ตลอดไป!',
+                        'size' => 'xs',
+                        'color' => '#06C755',
+                        'margin' => 'sm',
+                        'wrap' => true,
+                    ],
+                ],
             ],
             'footer' => [
                 'type' => 'box',
@@ -644,12 +656,21 @@ class FortuneAffiliateService
                             'uri' => $referralLink,
                         ],
                     ],
+                    [
+                        'type' => 'button',
+                        'style' => 'link',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '📖 ดูวิธีใช้และรายละเอียดเพิ่มเติม',
+                            'uri' => $appUrl.'/user/dashboard',
+                        ],
+                    ],
                 ],
             ],
         ];
 
         $lineService->sendRichMessage($lineUserId, [
-            'alt_text' => '💰 ชวนเพื่อนดูดวง รับรายได้!',
+            'alt_text' => "💰 แชร์ให้เพื่อน รับ {$commissionText} ทุกบิลตลอดไป!",
             'contents' => $flex,
         ]);
     }
@@ -787,15 +808,15 @@ class FortuneAffiliateService
     ): void {
         $primaryColor = $this->settings->getLineFlexPrimaryColor();
         $mode = $this->settings->getFortuneCommissionMode();
-        $preview = $this->settings->calculateFortuneCommissionPreview();
-        $price = $preview['price'];
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
 
-        // ดึงค่าแนะนำจาก settings (ไม่ hardcode)
+        // ดึงค่าคอมมิชชั่นจาก settings (dynamic — แปรผันตามที่ตั้งค่าจริง)
         if ($mode === 'static') {
             $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
             $commissionText = number_format($commissionAmount, 0).' บาท';
         } else {
             // PV mode: ใช้ Level 1 amount เป็นตัวอย่าง
+            $preview = $this->settings->calculateFortuneCommissionPreview();
             $level1 = $preview['levels'][0] ?? null;
             $commissionAmount = $level1 ? $level1['amount'] : 0;
             $commissionText = number_format($commissionAmount, 2).' บาท';
@@ -825,32 +846,33 @@ class FortuneAffiliateService
             ],
             [
                 'type' => 'text',
-                'text' => '🛍️ เพื่อนซื้อสินค้า Thaiprompt → ได้คอม MLM ไม่จบสิ้น!',
+                'text' => '✅ ได้เงินเข้า Wallet ทุกครั้งที่เพื่อนดูดวง ตลอดไป!',
                 'size' => 'xs',
-                'color' => '#888888',
+                'color' => '#06C755',
                 'margin' => 'sm',
                 'wrap' => true,
             ],
         ];
 
         // ถ้า PV mode → แสดง multi-level preview
-        if ($mode === 'pv' && count($preview['levels'] ?? []) > 1) {
-            $earningExamples[] = ['type' => 'separator', 'margin' => 'md'];
-            $levelsToShow = min(3, count($preview['levels']));
-            for ($i = 0; $i < $levelsToShow; $i++) {
-                $level = $preview['levels'][$i];
-                $earningExamples[] = [
-                    'type' => 'text',
-                    'text' => "Level {$level['level']} ({$level['percentage']}%): ".number_format($level['amount'], 2).' บาท',
-                    'size' => 'xs',
-                    'color' => $i === 0 ? '#333333' : '#888888',
-                    'weight' => $i === 0 ? 'bold' : 'regular',
-                    'margin' => 'sm',
-                ];
+        if ($mode === 'pv') {
+            $preview = $preview ?? $this->settings->calculateFortuneCommissionPreview();
+            if (count($preview['levels'] ?? []) > 1) {
+                $earningExamples[] = ['type' => 'separator', 'margin' => 'md'];
+                $levelsToShow = min(3, count($preview['levels']));
+                for ($i = 0; $i < $levelsToShow; $i++) {
+                    $level = $preview['levels'][$i];
+                    $earningExamples[] = [
+                        'type' => 'text',
+                        'text' => "Level {$level['level']} ({$level['percentage']}%): ".number_format($level['amount'], 2).' บาท',
+                        'size' => 'xs',
+                        'color' => $i === 0 ? '#333333' : '#888888',
+                        'weight' => $i === 0 ? 'bold' : 'regular',
+                        'margin' => 'sm',
+                    ];
+                }
             }
         }
-
-        $appUrl = config('app.url', 'https://main.thaiprompt.online');
 
         $flex = [
             'type' => 'bubble',
@@ -871,14 +893,15 @@ class FortuneAffiliateService
                     [
                         [
                             'type' => 'text',
-                            'text' => 'ชวนเพื่อนดูดวง รับเงินทุกครั้ง!',
+                            'text' => "แชร์ให้เพื่อน รับ {$commissionText} ทุกบิล!",
                             'weight' => 'bold',
                             'size' => 'lg',
                             'color' => '#333333',
+                            'wrap' => true,
                         ],
                         [
                             'type' => 'text',
-                            'text' => "ทุกครั้งที่เพื่อนดูดวง คุณได้รับค่าแนะนำ {$commissionText} ตลอดไป!",
+                            'text' => "แชร์ลิงก์ให้คนอื่น หากเขาดูดวง คุณจะได้รับบิลละ {$commissionText} เข้า Wallet ตลอดไป!",
                             'size' => 'xs',
                             'color' => '#888888',
                             'margin' => 'md',
@@ -899,7 +922,7 @@ class FortuneAffiliateService
                         ['type' => 'separator', 'margin' => 'lg'],
                         [
                             'type' => 'text',
-                            'text' => '💸 ถอนเงินได้ที่เว็บไซต์ (ต้องยืนยันตัวตน KYC)',
+                            'text' => '💸 ถอนเงินได้ที่เว็บไซต์ ดูวิธีใช้และรายละเอียดเพิ่มเติมได้ที่เว็บ',
                             'size' => 'xxs',
                             'color' => '#AAAAAA',
                             'margin' => 'md',
@@ -929,7 +952,7 @@ class FortuneAffiliateService
                         'color' => '#06C755',
                         'action' => [
                             'type' => 'uri',
-                            'label' => '🌐 เข้าสู่ระบบ Affiliate',
+                            'label' => '📖 ดูวิธีใช้และรายละเอียดเพิ่มเติม',
                             'uri' => $appUrl.'/user/dashboard',
                         ],
                     ],
@@ -947,7 +970,7 @@ class FortuneAffiliateService
         ];
 
         $lineService->sendRichMessage($lineUserId, [
-            'alt_text' => "💰 ชวนเพื่อนดูดวง ได้ {$commissionText} ทุกครั้ง!",
+            'alt_text' => "💰 แชร์ให้เพื่อน รับ {$commissionText} ทุกบิลตลอดไป!",
             'contents' => $flex,
         ]);
     }

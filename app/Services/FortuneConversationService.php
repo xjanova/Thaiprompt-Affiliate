@@ -450,15 +450,17 @@ class FortuneConversationService
                         return $this->handleKeywordMatchResponse($matchedKeyword);
                     }
 
+                    // ✅ ถ้ามีคำเกี่ยวกับดูดวง (เช่น "ดวงการเงิน", "ความรัก", "การงานปีนี้")
+                    // → เข้า fortune flow ก่อน AI Chat เพื่อไม่ให้ AI Chat ดักคำถามดูดวงไว้
+                    if ($this->containsFortuneKeyword($messageText)) {
+                        return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+                    }
+
                     // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
+                    // เฉพาะข้อความที่ไม่เกี่ยวกับดูดวงเลย (เช่น "สวัสดี", "อากาศวันนี้", "แนะนำร้านอาหาร")
                     $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
                     if ($aiChatResult) {
                         return $aiChatResult;
-                    }
-
-                    // ✅ Fallback: ถ้ามีคำเกี่ยวดูดวง → ชวนทำนาย
-                    if ($this->containsFortuneKeyword($messageText)) {
-                        return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                     }
 
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
@@ -502,14 +504,8 @@ class FortuneConversationService
                 return $this->handleKeywordMatchResponse($matchedKeyword);
             }
 
-            // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
-            // ไม่นับ AI call limit เพราะเป็นแค่ chat ไม่ใช่ทำนาย
-            $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
-            if ($aiChatResult) {
-                return $aiChatResult;
-            }
-
-            // ✅ ถ้า AI Chat ล้มเหลว + มีคำเกี่ยวกับดูดวง → ถามคำถามก่อนทำนาย
+            // ✅ ถ้ามีคำเกี่ยวกับดูดวง (เช่น "ดวงการเงิน", "ความรัก", "การงานปีนี้")
+            // → เข้า fortune flow ก่อน AI Chat เพื่อไม่ให้ AI Chat ดักคำถามดูดวงไว้
             if ($this->containsFortuneKeyword($messageText)) {
                 if (! $this->canMakeAICall($facebookUserId)) {
                     return [
@@ -520,6 +516,13 @@ class FortuneConversationService
                 }
 
                 return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+            }
+
+            // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
+            // เฉพาะข้อความที่ไม่เกี่ยวกับดูดวงเลย (เช่น "สวัสดี", "อากาศวันนี้", "แนะนำร้านอาหาร")
+            $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
+            if ($aiChatResult) {
+                return $aiChatResult;
             }
 
             // ถ้าไม่ match อะไรเลย → ถามยืนยันดูดวง (fallback สุดท้าย)
