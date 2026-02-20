@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LineBotKeyword;
 use App\Services\LineHybridBotService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -77,7 +78,7 @@ class LineBotKeywordController extends Controller
             'response_text' => 'required_if:response_type,text,quick_reply|string|nullable',
             'response_flex_json' => 'required_if:response_type,flex_message|json|nullable',
             'quick_reply_options' => 'required_if:response_type,quick_reply|json|nullable',
-            'category' => 'required|in:faq,support,product,custom',
+            'category' => 'required|in:faq,support,product,custom,fortune',
             'priority' => 'required|integer|min:1|max:100',
             'is_active' => 'boolean',
             'notes' => 'nullable|string|max:1000',
@@ -100,6 +101,9 @@ class LineBotKeywordController extends Controller
         }
 
         $keyword = LineBotKeyword::create($validated);
+
+        // ล้าง cache keywords สำหรับ Fortune Bot
+        Cache::forget('fortune:db_keywords');
 
         Log::info('สร้าง Keyword ใหม่', [
             'keyword_id' => $keyword->id,
@@ -142,7 +146,7 @@ class LineBotKeywordController extends Controller
             'response_text' => 'required_if:response_type,text,quick_reply|string|nullable',
             'response_flex_json' => 'required_if:response_type,flex_message|json|nullable',
             'quick_reply_options' => 'required_if:response_type,quick_reply|json|nullable',
-            'category' => 'required|in:faq,support,product,custom',
+            'category' => 'required|in:faq,support,product,custom,fortune',
             'priority' => 'required|integer|min:1|max:100',
             'is_active' => 'boolean',
             'notes' => 'nullable|string|max:1000',
@@ -170,6 +174,9 @@ class LineBotKeywordController extends Controller
 
         $keyword->update($validated);
 
+        // ล้าง cache keywords สำหรับ Fortune Bot
+        Cache::forget('fortune:db_keywords');
+
         Log::info('แก้ไข Keyword', [
             'keyword_id' => $keyword->id,
             'keyword' => $keyword->keyword,
@@ -190,6 +197,9 @@ class LineBotKeywordController extends Controller
     {
         $keywordName = $keyword->keyword;
         $keyword->delete();
+
+        // ล้าง cache keywords สำหรับ Fortune Bot
+        Cache::forget('fortune:db_keywords');
 
         Log::info('ลบ Keyword', [
             'keyword' => $keywordName,
@@ -272,6 +282,7 @@ class LineBotKeywordController extends Controller
             'support' => 'Support (ช่วยเหลือ)',
             'product' => 'Product (สินค้า)',
             'custom' => 'Custom (อื่นๆ)',
+            'fortune' => 'Fortune (ดูดวง)',
         ];
     }
 }

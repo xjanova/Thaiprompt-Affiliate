@@ -346,6 +346,9 @@ class FortuneChannelManager
                 // busy_processing (จาก FortuneCheckPendingReadings — แจ้งคนใช้งานมาก)
                 'busy_processing' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // Keyword auto-reply จากฐานข้อมูล → ส่งตาม response_type
+                'keyword_matched' => $this->sendLineKeywordResponse($lineService, $userId, $result, $replyToken),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
@@ -1341,6 +1344,60 @@ class FortuneChannelManager
         ]);
 
         return [];
+    }
+
+    /**
+     * ส่ง Response สำหรับ keyword match จากฐานข้อมูล (LineBotKeyword)
+     *
+     * รองรับ 3 response types:
+     * - text: ส่งข้อความ text ผ่าน fallback (Flex สวยถ้ายาว)
+     * - flex_message: ส่ง Flex Message JSON โดยตรง
+     * - quick_reply: ส่ง text + quick reply buttons
+     */
+    protected function sendLineKeywordResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $responseType = $result['response_type'] ?? 'text';
+        $message = $result['message'] ?? '';
+
+        try {
+            switch ($responseType) {
+                case 'flex_message':
+                    $flexJson = $result['response_flex_json'] ?? null;
+                    if ($flexJson) {
+                        return $lineService->sendFlexWithReplyFallback(
+                            $userId,
+                            $flexJson,
+                            mb_substr($message ?: 'ข้อมูลจากระบบ', 0, 40),
+                            $replyToken
+                        );
+                    }
+                    // fallback เป็น text ถ้าไม่มี flex json
+                    return $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
+
+                case 'quick_reply':
+                    // ส่ง text พร้อม quick reply buttons ผ่าน sendMessage
+                    $quickReplyOptions = $result['quick_reply_options'] ?? [];
+                    if (! empty($quickReplyOptions) && ! empty($message)) {
+                        return $lineService->sendMessage($userId, $message, [
+                            'quick_replies' => $quickReplyOptions,
+                        ]);
+                    }
+                    // fallback เป็น text ถ้าไม่มี quick reply
+                    return $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
+
+                case 'text':
+                default:
+                    return $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
+            }
+        } catch (\Exception $e) {
+            Log::warning('Fortune: sendLineKeywordResponse error', [
+                'error' => $e->getMessage(),
+                'response_type' => $responseType,
+                'keyword_name' => $result['keyword_name'] ?? 'unknown',
+            ]);
+            // fallback เป็น text ธรรมดา
+            return $lineService->sendMessageWithReplyFallback($userId, $message ?: '🔮 มีอะไรให้ช่วยค่ะ?', $replyToken);
+        }
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\FortuneUserCredit;
+use App\Models\LineBotKeyword;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
 use App\Services\FortuneChannelManager;
@@ -437,6 +438,19 @@ class FortuneConversationService
                     if ($this->containsFortuneKeyword($messageText)) {
                         return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                     }
+
+                    // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
+                    // ถ้า match → ตอบกลับโดยไม่สร้าง reading ใหม่
+                    $matchedKeyword = $this->checkDatabaseKeywords($messageText);
+                    if ($matchedKeyword) {
+                        Log::info('Fortune: DB keyword matched (basic_done fallback)', [
+                            'user_id' => $facebookUserId,
+                            'keyword' => $matchedKeyword->keyword,
+                        ]);
+
+                        return $this->handleKeywordMatchResponse($matchedKeyword);
+                    }
+
                     // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
@@ -466,6 +480,19 @@ class FortuneConversationService
             // ไม่ว่าจะพิมพ์ "ดูดวง" หรือ "ดวงการเงินปีนี้" → ถามคำถามก่อนแล้วค่อยทำนาย
             if ($this->containsFortuneKeyword($messageText)) {
                 return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+            }
+
+            // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
+            // ตอบ small talk, FAQ, อารมณ์ ฯลฯ โดยไม่สร้าง FortuneReading
+            $matchedKeyword = $this->checkDatabaseKeywords($messageText);
+            if ($matchedKeyword) {
+                Log::info('Fortune: DB keyword matched (no active conversation)', [
+                    'user_id' => $facebookUserId,
+                    'keyword' => $matchedKeyword->keyword,
+                    'category' => $matchedKeyword->category,
+                ]);
+
+                return $this->handleKeywordMatchResponse($matchedKeyword);
             }
 
             // ถ้าข้อความไม่ชัดเจนว่าจะดูดวง → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
@@ -3587,6 +3614,75 @@ class FortuneConversationService
      * ใช้ exact match สำหรับคำสั้น เพื่อไม่ให้ trigger ผิด
      * เช่น "เงินโอนจากงาน" หรือ "ดวงบัญชีการเงิน" ไม่ควร match
      */
+
+    // =====================================================================
+    // Database Keyword Matching (Auto-Reply อัจฉริยะ)
+    // =====================================================================
+
+    /**
+     * ตรวจสอบ keywords จากฐานข้อมูล (LineBotKeyword)
+     *
+     * ใช้ cache เพื่อลด DB queries — cache หมดอายุทุก 5 นาที
+     * ตรวจสอบเฉพาะ category 'fortune' + 'faq' ที่ active
+     * เรียงตาม priority สูงสุดก่อน
+     *
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @return LineBotKeyword|null keyword ที่ match หรือ null
+     */
+    protected function checkDatabaseKeywords(string $messageText): ?LineBotKeyword
+    {
+        try {
+            // ดึง keywords จาก cache (ลดการเรียก DB ทุกข้อความ)
+            $keywords = Cache::remember('fortune:db_keywords', 300, function () {
+                return LineBotKeyword::active()
+                    ->where(function ($query) {
+                        $query->where('category', 'fortune')
+                            ->orWhere('category', 'faq');
+                    })
+                    ->byPriority()
+                    ->get();
+            });
+
+            // ตรวจสอบว่า match keyword ไหน
+            foreach ($keywords as $keyword) {
+                if ($keyword->matches($messageText)) {
+                    return $keyword;
+                }
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::warning('Fortune: checkDatabaseKeywords error', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * สร้าง response array จาก LineBotKeyword ที่ match
+     *
+     * รองรับ response_type: text, flex_message, quick_reply
+     * FortuneChannelManager จะจัดการส่งตาม type
+     *
+     * @param  LineBotKeyword  $keyword  keyword ที่ match
+     * @return array response array สำหรับ FortuneChannelManager
+     */
+    protected function handleKeywordMatchResponse(LineBotKeyword $keyword): array
+    {
+        return [
+            'action' => 'keyword_matched',
+            'message' => $keyword->response_text ?? '',
+            'reading' => null,
+            'keyword_id' => $keyword->id,
+            'keyword_name' => $keyword->keyword,
+            'response_type' => $keyword->response_type ?? 'text',
+            'response_flex_json' => $keyword->response_flex_json,
+            'quick_reply_options' => $keyword->quick_reply_options,
+        ];
+    }
+
     protected function isBankAccountRequest(string $text): bool
     {
         $text = mb_strtolower(trim($text));
