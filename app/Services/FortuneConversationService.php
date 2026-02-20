@@ -434,13 +434,12 @@ class FortuneConversationService
                     // ปิด conversation เก่า
                     $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    // ✅ V3: ทุกกรณีให้ถามคำถามก่อนเสมอ → แล้วค่อยทำนาย → ชวนดูเชิงลึก
-                    if ($this->containsFortuneKeyword($messageText)) {
+                    // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย") → fortune flow เลย
+                    if ($this->isGenericFortuneRequest($messageText)) {
                         return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                     }
 
                     // ✅ ตรวจสอบ keywords จากฐานข้อมูล (auto-reply อัจฉริยะ)
-                    // ถ้า match → ตอบกลับโดยไม่สร้าง reading ใหม่
                     $matchedKeyword = $this->checkDatabaseKeywords($messageText);
                     if ($matchedKeyword) {
                         Log::info('Fortune: DB keyword matched (basic_done fallback)', [
@@ -451,13 +450,17 @@ class FortuneConversationService
                         return $this->handleKeywordMatchResponse($matchedKeyword);
                     }
 
-                    // ✅ ลอง AI Chat ทั่วไป (Gemini) ก่อน fallback
+                    // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
                     $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
                     if ($aiChatResult) {
                         return $aiChatResult;
                     }
 
-                    // ถ้า AI Chat ไม่พร้อม/ล้มเหลว → ถาม confirmation ตามปกติ
+                    // ✅ Fallback: ถ้ามีคำเกี่ยวดูดวง → ชวนทำนาย
+                    if ($this->containsFortuneKeyword($messageText)) {
+                        return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+                    }
+
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
 
@@ -473,18 +476,16 @@ class FortuneConversationService
                 return $this->startDeepReadingFlow($facebookUserId, $userProfile);
             }
 
-            // ✅ ตรวจสอบ AI calls limit ก่อนส่งให้ AI (เฉพาะบริการฟรี)
-            if (! $this->canMakeAICall($facebookUserId)) {
-                return [
-                    'action' => 'ai_limit',
-                    'message' => $this->getAILimitMessage(),
-                    'reading' => null,
-                ];
-            }
+            // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย", "หมอดู") → ไป fortune flow เลย
+            if ($this->isGenericFortuneRequest($messageText)) {
+                if (! $this->canMakeAICall($facebookUserId)) {
+                    return [
+                        'action' => 'ai_limit',
+                        'message' => $this->getAILimitMessage(),
+                        'reading' => null,
+                    ];
+                }
 
-            // ✅ V3: ทุกกรณีถามคำถามก่อนเสมอ → ทำนายตามคำถาม → ชวนดูเชิงลึก
-            // ไม่ว่าจะพิมพ์ "ดูดวง" หรือ "ดวงการเงินปีนี้" → ถามคำถามก่อนแล้วค่อยทำนาย
-            if ($this->containsFortuneKeyword($messageText)) {
                 return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
             }
 
@@ -501,13 +502,27 @@ class FortuneConversationService
                 return $this->handleKeywordMatchResponse($matchedKeyword);
             }
 
-            // ✅ ลอง AI Chat ทั่วไป (Gemini) — สนทนาเป็นธรรมชาติ + ชวนดูดวง
+            // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
+            // ไม่นับ AI call limit เพราะเป็นแค่ chat ไม่ใช่ทำนาย
             $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
             if ($aiChatResult) {
                 return $aiChatResult;
             }
 
-            // ถ้า AI Chat ไม่พร้อม/ล้มเหลว → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
+            // ✅ ถ้า AI Chat ล้มเหลว + มีคำเกี่ยวกับดูดวง → ถามคำถามก่อนทำนาย
+            if ($this->containsFortuneKeyword($messageText)) {
+                if (! $this->canMakeAICall($facebookUserId)) {
+                    return [
+                        'action' => 'ai_limit',
+                        'message' => $this->getAILimitMessage(),
+                        'reading' => null,
+                    ];
+                }
+
+                return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+            }
+
+            // ถ้าไม่ match อะไรเลย → ถามยืนยันดูดวง (fallback สุดท้าย)
             return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
 
             } finally {
@@ -3711,8 +3726,17 @@ class FortuneConversationService
         try {
             // เช็คว่าเปิด AI Chat หรือไม่
             if (! ($this->settings->enable_ai_chat ?? false)) {
+                Log::debug('Fortune: AI Chat ปิดอยู่ (enable_ai_chat=false)', ['user_id' => $userId]);
+
                 return null;
             }
+
+            Log::debug('Fortune: กำลังเรียก AI Chat', [
+                'user_id' => $userId,
+                'provider' => $this->settings->getChatAIProvider(),
+                'has_key' => ! empty($this->settings->getChatAIApiKey()),
+                'text_preview' => mb_substr($messageText, 0, 30),
+            ]);
 
             // เรียก AI Chat
             $aiService = new FortuneAIService($this->settings);
