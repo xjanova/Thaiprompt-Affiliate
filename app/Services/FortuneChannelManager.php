@@ -1073,9 +1073,79 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $action = $result['action'] ?? '';
         $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
-
-        // ส่ง chart image ก่อน (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? $reading?->reading_image_url;
+
+        // ⭐ ดูดวงละเอียด (เสียเงิน) → ส่งคำทำนายผ่าน replyToken ก่อน (ฟรี+เร็ว+เชื่อถือได้)
+        // สำคัญ: replyToken ต้องใช้สำหรับ content ที่ลูกค้าจ่ายเงิน ไม่ใช่ chart image!
+        if ($action === 'view_reading_deep' && ! empty($reading?->deep_response)) {
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference);
+            $flexContent = null;
+
+            // ✅ รวมทุก bubble เป็น carousel เดียว
+            if (count($fortuneBubbles) > 1) {
+                $flexContent = ['type' => 'carousel', 'contents' => $fortuneBubbles];
+            } elseif (count($fortuneBubbles) === 1) {
+                $flexContent = $fortuneBubbles[0];
+            }
+
+            // ✅ ส่งคำทำนายผ่าน replyToken ก่อน (เชื่อถือได้ที่สุด)
+            $sent = false;
+            if ($flexContent && $replyToken) {
+                $sent = $lineService->replyWithFlex($replyToken, $flexContent, '🌟 คำทำนายเชิงลึก');
+                if ($sent) {
+                    $replyToken = null; // ใช้แล้ว
+                    Log::info('LINE view_reading_deep: ส่งคำทำนายผ่าน replyToken สำเร็จ', ['reading_id' => $reading->id ?? null]);
+                }
+            }
+
+            // ✅ Fallback: ถ้า reply ไม่สำเร็จ → ลอง push + retry 1 ครั้ง (เนื้อหาเสียเงิน สำคัญมาก)
+            if (! $sent && $flexContent) {
+                $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
+
+                // 🔄 Retry 1 ครั้ง — เนื้อหาเสียเงิน ต้องพยายามส่งให้ได้
+                if (! $sent) {
+                    Log::warning('LINE view_reading_deep: push ครั้งแรกไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id ?? null]);
+                    sleep(5); // รอ circuit breaker reset
+                    $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
+                }
+
+                if (! $sent) {
+                    // 🔄 Retry ครั้งที่ 2 — รออีก 10 วิ
+                    Log::warning('LINE view_reading_deep: push ครั้งที่ 2 ไม่สำเร็จ → retry ใน 10 วิ', ['reading_id' => $reading->id ?? null]);
+                    sleep(10);
+                    $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
+                }
+
+                if ($sent) {
+                    Log::info('LINE view_reading_deep: ส่งคำทำนายผ่าน push สำเร็จ (retry)', ['reading_id' => $reading->id ?? null]);
+                } else {
+                    Log::error('LINE view_reading_deep: ส่งคำทำนายไม่สำเร็จทุกวิธี!', ['reading_id' => $reading->id ?? null, 'user_id' => $userId]);
+                }
+            }
+
+            // ส่ง chart image ทีหลัง (ไม่สำคัญเท่าคำทำนาย)
+            if ($chartUrl) {
+                try {
+                    usleep(1500000);
+                    $lineService->sendImage($userId, $chartUrl);
+                } catch (\Exception $e) {
+                    Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
+                }
+            }
+
+            // ส่ง Thank You ทีหลัง (ไม่สำคัญ)
+            try {
+                usleep(1500000);
+                $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
+                $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
+            } catch (\Exception $e) {
+                // ไม่สำคัญ ข้ามได้
+            }
+
+            return $sent;
+        }
+
+        // ดูดวงพื้นฐาน (ฟรี) → ส่ง chart image ก่อนก็ได้
         if ($chartUrl) {
             try {
                 if ($replyToken) {
@@ -1088,29 +1158,10 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                usleep(1500000);
             } catch (\Exception $e) {
                 Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
             }
-        }
-
-        // ดูดวงละเอียด → รวมเป็น Carousel เดียว (ป้องกัน LINE rate limit)
-        if ($action === 'view_reading_deep' && ! empty($reading?->deep_response)) {
-            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference);
-
-            // ✅ รวมทุก bubble เป็น carousel เดียว — ส่ง push แค่ครั้งเดียว
-            if (count($fortuneBubbles) > 1) {
-                $carousel = ['type' => 'carousel', 'contents' => $fortuneBubbles];
-                $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $carousel]);
-            } elseif (count($fortuneBubbles) === 1) {
-                $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $fortuneBubbles[0]]);
-            }
-
-            // ส่ง Thank You — เว้น 1.5s ป้องกัน rate limit
-            usleep(1500000);
-            $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
-
-            return $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
         }
 
         // ดูดวงพื้นฐาน → รวมเป็น Carousel เดียว (ป้องกัน LINE rate limit)
@@ -1218,15 +1269,18 @@ class FortuneChannelManager
         // ลอง parse คำทำนายจาก reading model (มี collected_questions สำหรับแบ่งเป็น Flex card แต่ละคำถาม)
         $collectedQuestions = $reading ? $reading->getCollectedQuestions() : [];
 
+        // สร้าง Flex content
+        $flexContent = null;
+        $altText = '🌟 คำทำนายเชิงลึก';
+
         if (! empty($collectedQuestions)) {
-            // มีคำถามแยก → ลอง parse deep_response ตามคำถาม เพื่อสร้าง Flex card แต่ละข้อ
             $deepResponse = $reading->deep_response ?? $message;
             $parsedQA = $this->parseDeepResponseByQuestions($deepResponse, $collectedQuestions);
 
             if (! empty($parsedQA)) {
                 $totalQuestions = count($parsedQA);
+                $altText = "🔮 คำทำนายเชิงลึก {$totalQuestions} ข้อ";
 
-                // ✅ รวมทุก QA bubble เป็น carousel เดียว — ป้องกัน LINE rate limit
                 $allBubbles = [];
                 foreach ($parsedQA as $idx => $qa) {
                     $questionNum = $idx + 1;
@@ -1239,35 +1293,50 @@ class FortuneChannelManager
                 }
 
                 if (count($allBubbles) > 1) {
-                    // ✅ ส่งเป็น carousel เดียว (max 12 bubbles)
-                    $carousel = ['type' => 'carousel', 'contents' => array_slice($allBubbles, 0, 12)];
-                    $lineService->sendRichMessage($userId, [
-                        'alt_text' => "🔮 คำทำนายเชิงลึก {$totalQuestions} ข้อ",
-                        'contents' => $carousel,
-                    ]);
+                    $flexContent = ['type' => 'carousel', 'contents' => array_slice($allBubbles, 0, 12)];
                 } elseif (count($allBubbles) === 1) {
-                    $lineService->sendRichMessage($userId, [
-                        'alt_text' => '🔮 คำทำนายเชิงลึก',
-                        'contents' => $allBubbles[0],
-                    ]);
+                    $flexContent = $allBubbles[0];
                 }
-
-                return true;
             }
         }
 
         // Fallback: ใช้ buildSplitFortuneMessages (แบ่ง text ยาวเป็นหลาย bubble)
-        // ✅ รวมเป็น carousel เดียว — ป้องกัน LINE rate limit
-        $fortuneBubbles = $lineService->buildSplitFortuneMessages($message, $userName, $billRef);
+        if (! $flexContent) {
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($message, $userName, $billRef);
 
-        if (count($fortuneBubbles) > 1) {
-            $carousel = ['type' => 'carousel', 'contents' => $fortuneBubbles];
-            $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $carousel]);
-        } elseif (count($fortuneBubbles) === 1) {
-            $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $fortuneBubbles[0]]);
+            if (count($fortuneBubbles) > 1) {
+                $flexContent = ['type' => 'carousel', 'contents' => $fortuneBubbles];
+            } elseif (count($fortuneBubbles) === 1) {
+                $flexContent = $fortuneBubbles[0];
+            }
         }
 
-        return true;
+        if (! $flexContent) {
+            return false;
+        }
+
+        // ⭐ ส่งคำทำนายเชิงลึก (เสียเงิน) พร้อม retry — ต้องส่งให้ได้!
+        $sent = $lineService->sendRichMessage($userId, ['alt_text' => $altText, 'contents' => $flexContent]);
+
+        // 🔄 Retry 1: รอ 5 วิ แล้วลองใหม่
+        if (! $sent) {
+            Log::warning('LINE DeepResult: push ครั้งแรกไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id ?? null]);
+            sleep(5);
+            $sent = $lineService->sendRichMessage($userId, ['alt_text' => $altText, 'contents' => $flexContent]);
+        }
+
+        // 🔄 Retry 2: รอ 10 วิ แล้วลองอีก
+        if (! $sent) {
+            Log::warning('LINE DeepResult: push ครั้งที่ 2 ไม่สำเร็จ → retry ใน 10 วิ', ['reading_id' => $reading->id ?? null]);
+            sleep(10);
+            $sent = $lineService->sendRichMessage($userId, ['alt_text' => $altText, 'contents' => $flexContent]);
+        }
+
+        if (! $sent) {
+            Log::error('LINE DeepResult: ส่งคำทำนายเชิงลึกไม่สำเร็จทุกวิธี!', ['reading_id' => $reading->id ?? null, 'user_id' => $userId]);
+        }
+
+        return $sent;
     }
 
     /**
