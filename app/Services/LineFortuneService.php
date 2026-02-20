@@ -2780,9 +2780,10 @@ class LineFortuneService implements MessagingPlatformInterface
 
         try {
             // ⚡ ไม่ retry เลย — 429/timeout ไม่ควร retry (amplify rate limit)
+            // เพิ่ม connectTimeout เป็น 8s เพราะ network path อาจช้า
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(10)
-                ->connectTimeout(5)
+                ->timeout(15)
+                ->connectTimeout(8)
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
@@ -2856,10 +2857,11 @@ class LineFortuneService implements MessagingPlatformInterface
         }
 
         try {
-            // ⚡ ลด timeout — replyToken หมดอายุ 30s ไม่ควรรอนาน
+            // ⚡ เพิ่ม connectTimeout เป็น 8s (network path อาจช้า)
+            // replyToken หมดอายุ 30s → ยังพอรอ 8s connect + 12s read
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(8)
-                ->connectTimeout(5)
+                ->timeout(12)
+                ->connectTimeout(8)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
