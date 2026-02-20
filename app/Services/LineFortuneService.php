@@ -136,17 +136,29 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function getUserProfile(string $userId): ?array
     {
+        // ✅ Cache profile 24 ชั่วโมง — ลด LINE API calls (profile ไม่ค่อยเปลี่ยน)
+        $cacheKey = "line_profile:{$userId}";
+        $cached = cache()->get($cacheKey);
+        if ($cached) {
+            return $cached;
+        }
+
+        // ✅ Circuit breaker: ถ้า LINE API ล่ม → ข้าม getProfile (ไม่จำเป็นต้องมี)
+        if (cache()->get('line_profile_circuit_open')) {
+            return null;
+        }
+
         try {
-            // ⚡ เพิ่ม timeout เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
+            // ⚡ ลด timeout ให้สั้น — getProfile ไม่สำคัญเท่าส่งข้อความ
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(10)
-                ->connectTimeout(8)
+                ->timeout(3)
+                ->connectTimeout(2)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
                 $data = $response->json();
 
-                return [
+                $profile = [
                     'id' => $data['userId'] ?? $userId,
                     'name' => $data['displayName'] ?? null,
                     'picture_url' => $data['pictureUrl'] ?? null,
@@ -154,6 +166,11 @@ class LineFortuneService implements MessagingPlatformInterface
                     'language' => $data['language'] ?? 'th',
                     'platform' => 'line',
                 ];
+
+                // ✅ Cache สำเร็จ 24 ชม.
+                cache()->put($cacheKey, $profile, 86400);
+
+                return $profile;
             }
 
             Log::warning('LINE: ไม่สามารถดึงโปรไฟล์ได้', [
@@ -164,10 +181,18 @@ class LineFortuneService implements MessagingPlatformInterface
             return null;
 
         } catch (\Exception $e) {
-            Log::error('LINE: Error getting profile', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
+            // Timeout → เปิด circuit breaker 60s (ป้องกัน getProfile ทำให้ webhook ช้า)
+            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
+                cache()->put('line_profile_circuit_open', true, 60);
+                Log::warning('LINE getProfile: Timeout → เปิด circuit breaker 60s (ข้าม getProfile)', [
+                    'user_id' => $userId,
+                ]);
+            } else {
+                Log::error('LINE: Error getting profile', [
+                    'user_id' => $userId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return null;
         }
