@@ -2293,7 +2293,7 @@ class FortuneConversationService
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
-                        usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
+                        usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
@@ -2371,7 +2371,7 @@ class FortuneConversationService
                                 'message' => $perQuestionMessage,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                         }
-                        usleep(50000); // ⚡ 50ms (ลดจาก 200ms)
+                        usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
                             'error' => $sendErr->getMessage(),

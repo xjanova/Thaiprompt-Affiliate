@@ -624,7 +624,7 @@ class SmsPaymentService
                     'chart_image_url' => $reading->reading_image_url,
                 ], $extra);
 
-                usleep(500000);
+                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
 
                 // 2. ส่งคำทำนาย
                 $channelManager->sendResponse($platform, $userId, [
@@ -632,7 +632,7 @@ class SmsPaymentService
                     'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
                 ], $extra);
 
-                usleep(500000);
+                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
 
                 // 3. ข้อความปิดท้าย
                 $channelManager->sendResponse($platform, $userId, [
