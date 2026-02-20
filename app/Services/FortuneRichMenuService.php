@@ -218,8 +218,8 @@ class FortuneRichMenuService
                     'glow' => false,
                 ],
                 [
-                    'label' => 'สิทธิ์ / สถานะ',
-                    'subtitle' => 'ดูสิทธิ์และข้อมูลสมาชิก',
+                    'label' => 'สิทธิ์ / Wallet',
+                    'subtitle' => 'ดูสิทธิ์ รายได้ Wallet',
                     'icon' => 'status',
                     'bg_color' => '#00605B',
                     'text_color' => '#FFFFFF',

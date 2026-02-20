@@ -1914,7 +1914,7 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  bool  $isUnlimited  มีสิทธิ์ไม่จำกัดหรือไม่
      * @return array Flex Message bubble
      */
-    public function buildCheckRemainingFlexMessage(string $userName, int $remaining, int $used, int $total, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false): array
+    public function buildCheckRemainingFlexMessage(string $userName, int $remaining, int $used, int $total, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false, float $walletBalance = 0, float $totalCommission = 0): array
     {
         $creditText = $isUnlimited || $remaining >= 99 ? '✨ ไม่จำกัด ✨' : "{$remaining} ครั้ง";
         $statusColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
@@ -1962,6 +1962,36 @@ class LineFortuneService implements MessagingPlatformInterface
             ];
         }
 
+        // ✅ แสดง Wallet + รายได้ค่าคอม (ถ้ามี)
+        if ($walletBalance > 0 || $totalCommission > 0) {
+            $walletDisplay = number_format($walletBalance, 2);
+            $commDisplay = number_format($totalCommission, 2);
+            $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#F0FFF4', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💰 Wallet & รายได้', 'size' => 'sm', 'weight' => 'bold', 'color' => '#2E7D32'],
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#C8E6C9'],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💰 ยอดใน Wallet:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => "฿{$walletDisplay}", 'size' => 'sm', 'weight' => 'bold', 'color' => '#06C755', 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📈 รายได้ค่าคอมรวม:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => "฿{$commDisplay}", 'size' => 'sm', 'weight' => 'bold', 'color' => '#FF8F00', 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
+
         $footerContents = [
             ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
         ];
@@ -1969,12 +1999,12 @@ class LineFortuneService implements MessagingPlatformInterface
             $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay}.-", 'text' => 'ดูดวงละเอียด']];
         }
 
-        // ปุ่มดูคำทำนายย้อนหลัง + แชร์
+        // ปุ่ม Wallet + คำทำนายล่าสุด + แชร์
         $footerContents[] = [
             'type' => 'box', 'layout' => 'horizontal', 'spacing' => 'sm',
             'contents' => [
+                ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'uri', 'label' => '💰 Wallet', 'uri' => $appUrl.'/auth/line?redirect=/user/wallet']],
                 ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '📖 คำทำนายล่าสุด', 'text' => 'ดูคำทำนายล่าสุด']],
-                ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'uri', 'label' => '📤 แชร์ให้เพื่อน', 'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))]],
             ],
         ];
 
@@ -1985,7 +2015,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '📊', 'size' => 'xxl', 'flex' => 0],
-                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'สิทธิ์การใช้งาน', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'สิทธิ์ / Wallet', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => ['type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'contents' => $bodyContents],
@@ -2165,6 +2195,8 @@ class LineFortuneService implements MessagingPlatformInterface
         int $specialCredits = 0,
         bool $isUnlimited = false,
         ?string $memberStatus = null,
+        float $walletBalance = 0,
+        float $totalCommission = 0,
     ): array {
         $creditText = $isUnlimited || $remaining >= 99
             ? '✨ ไม่จำกัด ✨'
@@ -2252,6 +2284,38 @@ class LineFortuneService implements MessagingPlatformInterface
             ];
         }
 
+        // ✅ แสดง Wallet + รายได้ค่าคอม (ถ้ามี)
+        if ($walletBalance > 0 || $totalCommission > 0) {
+            $walletDisplay = number_format($walletBalance, 2);
+            $commDisplay = number_format($totalCommission, 2);
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'margin' => 'lg',
+                'backgroundColor' => '#F0FFF4',
+                'cornerRadius' => 'lg',
+                'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💰 Wallet & รายได้', 'size' => 'md', 'weight' => 'bold', 'color' => '#2E7D32'],
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#C8E6C9'],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💰 ยอดใน Wallet:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => "฿{$walletDisplay}", 'size' => 'sm', 'weight' => 'bold', 'color' => '#06C755', 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📈 รายได้ค่าคอมรวม:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
+                            ['type' => 'text', 'text' => "฿{$commDisplay}", 'size' => 'sm', 'weight' => 'bold', 'color' => '#FF8F00', 'flex' => 2, 'align' => 'end'],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
         // เส้นแบ่ง + คำแนะนำ
         $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
         $bodyContents[] = [
@@ -2262,6 +2326,9 @@ class LineFortuneService implements MessagingPlatformInterface
             'margin' => 'lg',
             'wrap' => true,
         ];
+
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
+        $brandName = $this->settings->getFortuneBrandName();
 
         // ปุ่ม footer
         $footerContents = [
@@ -2281,13 +2348,13 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'button',
                         'style' => 'secondary',
                         'height' => 'sm',
-                        'action' => ['type' => 'message', 'label' => '📖 คำทำนายล่าสุด', 'text' => 'ดูคำทำนายล่าสุด'],
+                        'action' => ['type' => 'uri', 'label' => '💰 Wallet', 'uri' => $appUrl.'/auth/line?redirect=/user/wallet'],
                     ],
                     [
                         'type' => 'button',
                         'style' => 'secondary',
                         'height' => 'sm',
-                        'action' => ['type' => 'uri', 'label' => '📤 แชร์', 'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))],
+                        'action' => ['type' => 'message', 'label' => '📖 คำทำนายล่าสุด', 'text' => 'ดูคำทำนายล่าสุด'],
                     ],
                 ],
             ],
@@ -2310,8 +2377,8 @@ class LineFortuneService implements MessagingPlatformInterface
                         'paddingStart' => 'md',
                         'justifyContent' => 'center',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'สถานะ / สิทธิ์', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
-                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง 🌙', 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                            ['type' => 'text', 'text' => 'สถานะ / Wallet', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "{$brandName}ดูดวง 🌙", 'color' => '#FFFFFFCC', 'size' => 'xs'],
                         ],
                     ],
                 ],

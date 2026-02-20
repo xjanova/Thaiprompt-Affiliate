@@ -828,6 +828,8 @@ class FortuneChannelManager
         $specialCredits = $result['special_credits'] ?? 0;
         $isUnlimited = $result['is_unlimited'] ?? ($remaining >= 99);
         $memberStatus = $result['member_status'] ?? null;
+        $walletBalance = $result['wallet_balance'] ?? 0;
+        $totalCommission = $result['total_commission'] ?? 0;
 
         $flex = $lineService->buildStatusFlexMessage(
             $userName,
@@ -837,6 +839,8 @@ class FortuneChannelManager
             $specialCredits,
             $isUnlimited,
             $memberStatus,
+            $walletBalance,
+            $totalCommission,
         );
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, "✅ สถานะ: สิทธิ์ฟรี {$remaining} ครั้ง", $replyToken);
@@ -898,7 +902,6 @@ class FortuneChannelManager
      */
     protected function sendLineCheckRemainingResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
-        // ⚡ check_remaining ไม่มี reading → ใช้ user_name จาก profile
         $userName = $result['user_name'] ?? 'คุณ';
         $remaining = $result['remaining'] ?? 0;
         $used = $result['used'] ?? 0;
@@ -906,8 +909,10 @@ class FortuneChannelManager
         $isUnlimited = $result['is_unlimited'] ?? ($remaining >= 99);
         $deepPrice = $this->getReadingPrice();
         $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $walletBalance = $result['wallet_balance'] ?? 0;
+        $totalCommission = $result['total_commission'] ?? 0;
 
-        $flex = $lineService->buildCheckRemainingFlexMessage($userName, $remaining, $used, $total, $deepPrice, $deepEnabled, $isUnlimited);
+        $flex = $lineService->buildCheckRemainingFlexMessage($userName, $remaining, $used, $total, $deepPrice, $deepEnabled, $isUnlimited, $walletBalance, $totalCommission);
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, "📊 สิทธิ์คงเหลือ: {$remaining}", $replyToken);
     }

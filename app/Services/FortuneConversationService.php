@@ -751,6 +751,25 @@ class FortuneConversationService
      */
     protected function handleCheckRemaining(string $facebookUserId): array
     {
+        // ✅ ดึงชื่อผู้ใช้จาก reading ล่าสุด (ถ้าเคยใช้งาน → มีชื่อเก็บไว้)
+        $latestReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->whereNotNull('facebook_user_name')
+            ->latest()
+            ->first();
+        $userName = $latestReading?->facebook_user_name ?? 'คุณ';
+
+        // ✅ ดึงข้อมูล wallet + รายได้ค่าคอม
+        $walletBalance = 0;
+        $totalCommission = 0;
+        $user = \App\Models\User::where('line_user_id', $facebookUserId)->first();
+        if ($user && $user->wallet) {
+            $walletBalance = $user->wallet->balance ?? 0;
+            $totalCommission = \App\Models\WalletTransaction::where('wallet_id', $user->wallet->id)
+                ->where('type', 'credit')
+                ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                ->sum('amount');
+        }
+
         // ⚡ ดึงข้อมูลครั้งเดียว (ลด DB queries ซ้ำจาก 4 เหลือ 2)
         $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
@@ -770,7 +789,7 @@ class FortuneConversationService
         }
         $remaining = $normalRemaining;
 
-        $message = "🔮 *สิทธิ์ดูดวงของคุณวันนี้*\n";
+        $message = "🔮 *สิทธิ์ดูดวงของคุณ{$userName}วันนี้*\n";
         $message .= "═══════════════════════\n\n";
         $message .= "📊 ใช้ไปแล้ว: {$usedToday} / {$maxFreeReadings} ครั้ง\n";
 
@@ -806,10 +825,13 @@ class FortuneConversationService
             'action' => 'check_remaining',
             'message' => $message,
             'reading' => null,
+            'user_name' => $userName,
             'remaining' => $remaining,
             'used' => $usedToday,
             'total' => $maxFreeReadings,
             'is_unlimited' => $userCredit && $userCredit->isCurrentlyUnlimited(),
+            'wallet_balance' => $walletBalance,
+            'total_commission' => $totalCommission,
         ];
     }
 

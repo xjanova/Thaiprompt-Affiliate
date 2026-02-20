@@ -440,12 +440,35 @@ class LineFortuneWebhookController extends Controller
                 }
             }
 
-            // ดึงชื่อผู้ใช้จาก LINE Profile
-            // ⚠️ getUserProfile() return key 'name' (ไม่ใช่ 'displayName')
+            // ✅ ดึงชื่อผู้ใช้: ลำดับ 1) LINE Profile API, 2) DB (reading ล่าสุด), 3) fallback 'คุณ'
             $userName = 'คุณ';
             $profile = $this->lineService->getUserProfile($userId);
             if ($profile && ! empty($profile['name'])) {
                 $userName = $profile['name'];
+            } else {
+                // ถ้า LINE API ไม่ได้ชื่อ → ดึงจาก reading ล่าสุด
+                $latestReading = FortuneReading::where('facebook_user_id', $userId)
+                    ->whereNotNull('facebook_user_name')
+                    ->latest()
+                    ->value('facebook_user_name');
+                if ($latestReading) {
+                    $userName = $latestReading;
+                }
+            }
+
+            // ✅ ดึงข้อมูล wallet + รายได้ค่าคอม
+            $walletBalance = 0;
+            $totalCommission = 0;
+            $user = \App\Models\User::where('line_user_id', $userId)->first();
+            if ($user) {
+                $walletBalance = $user->wallet?->balance ?? 0;
+                // ดึงยอดรายได้ค่าคอมรวม (จาก wallet transactions ประเภท commission)
+                $totalCommission = $user->wallet
+                    ? \App\Models\WalletTransaction::where('wallet_id', $user->wallet->id)
+                        ->where('type', 'credit')
+                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                        ->sum('amount')
+                    : 0;
             }
 
             // สร้าง result ในรูปแบบที่ FortuneChannelManager ต้องการ
@@ -459,7 +482,9 @@ class LineFortuneWebhookController extends Controller
                 'total' => $maxFreeReadings,
                 'special_credits' => $specialCredits,
                 'is_unlimited' => $isUnlimited,
-                'member_status' => null, // TODO: ตรวจสอบสมาชิก Thaiprompt ในอนาคต
+                'member_status' => null,
+                'wallet_balance' => $walletBalance,
+                'total_commission' => $totalCommission,
             ];
 
             // ส่งผ่าน FortuneChannelManager เพื่อใช้ Flex Message
