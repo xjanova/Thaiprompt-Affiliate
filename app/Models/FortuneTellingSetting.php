@@ -205,8 +205,8 @@ class FortuneTellingSetting extends Model
         'fortune_auto_register_enabled' => true,
         'fortune_pv_value' => 0,
         'fortune_use_global_commission_rate' => true,
-        'fortune_commission_mode' => 'pv',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
-        'fortune_static_commission_amount' => 0,
+        'fortune_commission_mode' => 'static',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
+        'fortune_static_commission_amount' => 10,
         // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
@@ -896,7 +896,7 @@ PROMPT;
      */
     public function getFortuneCommissionMode(): string
     {
-        return $this->fortune_commission_mode ?? 'pv';
+        return $this->fortune_commission_mode ?? 'static';
     }
 
     /**
@@ -904,7 +904,7 @@ PROMPT;
      */
     public function getFortuneStaticCommissionAmount(): float
     {
-        return (float) ($this->fortune_static_commission_amount ?? 0);
+        return (float) ($this->fortune_static_commission_amount ?? 10);
     }
 
     // ===== AI Chat ทั่วไป (สนทนาอัจฉริยะ) =====
