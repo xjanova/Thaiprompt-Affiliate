@@ -372,6 +372,22 @@ class FortuneConversationService
                 return $this->handleViewLastReading($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่ง "แชร์" → ส่งลิงก์เชิญเพื่อน
+            if ($this->isShareRequest($messageText)) {
+                return $this->handleShareRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "ฝากคำถาม" → เข้าโหมดฝากคำถามถึงแอดมิน
+            if ($this->isLeaveQuestionRequest($messageText)) {
+                return $this->handleManualLeaveQuestion($facebookUserId, $userProfile);
+            }
+
+            // ✅ ตรวจสอบว่าผู้ใช้อยู่ในโหมดฝากคำถาม → บันทึกคำถาม
+            $leaveQuestionResult = $this->handleLeaveQuestionMode($facebookUserId, $messageText, $userProfile);
+            if ($leaveQuestionResult) {
+                return $leaveQuestionResult;
+            }
+
             // ✅ ตรวจสอบคำสั่ง "ดูบัญชี" / "บัญชี" / "ธนาคาร" → แสดงบัญชีธนาคาร
             // ทำงานได้ทุกสถานะ ไม่ว่าจะมี active conversation หรือไม่
             if ($this->isBankAccountRequest($messageText)) {
@@ -970,7 +986,45 @@ class FortuneConversationService
      */
     protected function handleViewLastReading(string $facebookUserId): array
     {
-        // ดึงคำทำนายล่าสุด (ไม่รวม conversation ที่อยู่ระหว่างดำเนินการ)
+        // ✅ ลำดับที่ 1: เช็คคำทำนายที่ชำระเงินแล้วก่อน (ให้ความสำคัญกับ paid reading)
+        $lastPaidReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('is_paid', true)
+            ->latest()
+            ->first();
+
+        if ($lastPaidReading) {
+            // ชำระเงินแล้ว + มี deep_response → แสดงคำทำนายเชิงลึก
+            if (! empty($lastPaidReading->deep_response)) {
+                $name = $lastPaidReading->facebook_user_name ?? 'คุณ';
+
+                $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
+                $message .= '📋 เลขที่บิล: '.($lastPaidReading->bill_reference ?? '-')."\n";
+                $message .= '📅 วันที่: '.$lastPaidReading->created_at->format('d/m/Y H:i')."\n";
+                $message .= "═══════════════════════\n\n";
+                $message .= $lastPaidReading->deep_response;
+
+                return [
+                    'action' => 'view_reading_deep',
+                    'message' => $message,
+                    'reading' => $lastPaidReading,
+                    'chart_image_url' => $lastPaidReading->reading_image_url,
+                ];
+            }
+
+            // ชำระเงินแล้ว + ยังไม่มี deep_response → กำลังประมวลผล
+            return [
+                'action' => 'view_reading_processing',
+                'message' => "🔮 คำทำนายเชิงลึกกำลังประมวลผลค่ะ\n"
+                    ."📋 เลขที่บิล: {$lastPaidReading->bill_reference}\n\n"
+                    ."⏳ ระบบ AI กำลังสร้างคำทำนายให้อยู่ค่ะ\n"
+                    ."ใช้เวลาประมาณ 1-2 นาที\n\n"
+                    ."💡 พิมพ์ 'ดูผล' อีกครั้งเพื่อเช็คสถานะได้นะคะ\n"
+                    .'หรือทักแชทแอดมินหากรอนานเกิน 5 นาที 🙏',
+                'reading' => $lastPaidReading,
+            ];
+        }
+
+        // ✅ ลำดับที่ 2: ไม่มี paid reading → ดึงคำทำนายล่าสุด (ฟรี)
         $lastReading = FortuneReading::where('facebook_user_id', $facebookUserId)
             ->where(function ($q) {
                 $q->whereNotNull('basic_response')
@@ -979,25 +1033,7 @@ class FortuneConversationService
             ->latest()
             ->first();
 
-        // ถ้าไม่มีคำทำนาย → เช็คว่ามีบิลที่ชำระเงินแล้วแต่ยังไม่ได้คำทำนายหรือไม่
         if (! $lastReading) {
-            $paidButNoResponse = FortuneReading::where('facebook_user_id', $facebookUserId)
-                ->where('is_paid', true)
-                ->whereNull('deep_response')
-                ->latest()
-                ->first();
-
-            if ($paidButNoResponse) {
-                return [
-                    'action' => 'view_reading_processing',
-                    'message' => "🔮 คุณมีบิลที่ชำระเงินแล้วค่ะ\n"
-                        ."📋 เลขที่บิล: {$paidButNoResponse->bill_reference}\n\n"
-                        ."⏳ ระบบกำลังสร้างคำทำนายให้อยู่ค่ะ\n"
-                        ."กรุณารอสักครู่ หรือทักแชทแอดมินหากรอนานเกิน 5 นาทีนะคะ 🙏",
-                    'reading' => $paidButNoResponse,
-                ];
-            }
-
             return [
                 'action' => 'view_reading_empty',
                 'message' => "🔮 ยังไม่มีคำทำนายค่ะ\n\n"
@@ -5854,5 +5890,206 @@ PROMPT;
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    // ============================================================
+    // คำสั่ง "แชร์" — ส่งลิงก์เชิญเพื่อน
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอแชร์ลิงก์หรือไม่
+     */
+    protected function isShareRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        // ลบคำลงท้ายสุภาพ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $exactKeywords = [
+            'แชร์', 'share', 'ลิงก์แชร์', 'ลิงค์แชร์',
+            'แชร์ลิงก์', 'แชร์ลิงค์', 'ลิงก์เชิญ', 'ลิงค์เชิญ',
+            'เชิญเพื่อน', 'ขอลิงก์', 'ขอลิงค์',
+            'แชร์เพื่อน', 'ลิงก์ชวนเพื่อน', 'ลิงค์ชวนเพื่อน',
+        ];
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "แชร์" — สร้างและส่งลิงก์เชิญเพื่อน
+     */
+    protected function handleShareRequest(string $facebookUserId): array
+    {
+        try {
+            // หา User จาก LINE user ID
+            $user = \App\Models\User::where('line_user_id', $facebookUserId)->first();
+
+            if (! $user) {
+                return [
+                    'action' => 'share_no_user',
+                    'message' => "🔗 ระบบแชร์ลิงก์เชิญเพื่อน\n\n"
+                        ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
+                        ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
+                        ."พิมพ์คำถามมาได้เลยค่ะ 🔮",
+                    'reading' => null,
+                ];
+            }
+
+            // สร้าง referral link
+            $affiliateService = app(FortuneAffiliateService::class);
+            $referralLink = $affiliateService->generateReferralLink($user);
+
+            // ดึงค่าแนะนำจาก settings
+            $commissionMode = $this->settings->getFortuneCommissionMode();
+            $commissionText = '';
+            if ($commissionMode === 'static') {
+                $amount = $this->settings->getFortuneStaticCommissionAmount();
+                $commissionText = number_format($amount, 0).' บาท';
+            } else {
+                $preview = $this->settings->calculateFortuneCommissionPreview();
+                $level1 = $preview['levels'][0] ?? null;
+                $amount = $level1 ? $level1['amount'] : 0;
+                $commissionText = number_format($amount, 2).' บาท';
+            }
+
+            $message = "🔗 ลิงก์เชิญเพื่อนของคุณ\n\n"
+                ."📢 แชร์ลิงก์นี้ให้เพื่อน:\n"
+                ."{$referralLink}\n\n"
+                ."💰 ทุกครั้งที่เพื่อนดูดวง คุณจะได้รับค่าแนะนำ {$commissionText} เข้า Wallet อัตโนมัติค่ะ ✨\n\n"
+                ."📲 ถอนเงินได้ที่เว็บไซต์ เข้าบัญชีภายใน 1-3 วันทำการ\n\n"
+                .'กดค้างที่ลิงก์ด้านบนเพื่อคัดลอก แล้วส่งต่อให้เพื่อนได้เลยค่ะ 🎁';
+
+            Log::info('Fortune: ส่งลิงก์แชร์ให้ผู้ใช้', [
+                'user_id' => $facebookUserId,
+                'referral_link' => $referralLink,
+            ]);
+
+            return [
+                'action' => 'share_link',
+                'message' => $message,
+                'reading' => null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleShareRequest error', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'share_error',
+                'message' => "ขออภัยค่ะ ไม่สามารถสร้างลิงก์ได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'reading' => null,
+            ];
+        }
+    }
+
+    // ============================================================
+    // คำสั่ง "ฝากคำถามถึงแอดมิน" — โหมดฝากคำถามแบบ user-initiated
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอฝากคำถามถึงแอดมินหรือไม่
+     */
+    protected function isLeaveQuestionRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        // ลบคำลงท้ายสุภาพ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $keywords = [
+            'ฝากคำถาม', 'ฝากคำถามถึงแอดมิน', 'ฝากถึงแอดมิน',
+            'ถามแอดมิน', 'ฝากเรื่อง', 'ฝากเรื่องถึงแอดมิน',
+            'ติดต่อแอดมิน', 'ขอคุยกับแอดมิน',
+        ];
+
+        foreach ($keywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword || str_contains($text, $keyword)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * เข้าโหมดฝากคำถาม — ถามก่อนว่าจะฝากคำถามอะไร
+     */
+    protected function handleManualLeaveQuestion(string $userId, ?array $userProfile = null): array
+    {
+        // ตั้ง cache flag ว่าอยู่ในโหมดฝากคำถาม (TTL 5 นาที)
+        $cacheKey = "fortune_leave_question_mode:{$userId}";
+        Cache::put($cacheKey, [
+            'user_name' => $userProfile['name'] ?? null,
+            'entered_at' => now()->toDateTimeString(),
+        ], 300);
+
+        Log::info('Fortune: ผู้ใช้เข้าโหมดฝากคำถาม', ['user_id' => $userId]);
+
+        return [
+            'action' => 'leave_question_prompt',
+            'message' => "📝 โหมดฝากคำถามถึงแอดมิน\n\n"
+                ."พิมพ์คำถามที่ต้องการฝากถึงแอดมินได้เลยค่ะ\n"
+                ."แอดมินจะตอบกลับให้เร็วที่สุดนะคะ\n\n"
+                ."💡 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการฝากคำถามค่ะ",
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * จัดการข้อความเมื่ออยู่ในโหมดฝากคำถาม — บันทึกคำถามหรือยกเลิก
+     */
+    protected function handleLeaveQuestionMode(string $userId, string $messageText, ?array $userProfile = null): ?array
+    {
+        $cacheKey = "fortune_leave_question_mode:{$userId}";
+        $modeData = Cache::get($cacheKey);
+
+        // ไม่อยู่ในโหมดฝากคำถาม → ข้าม
+        if (! $modeData) {
+            return null;
+        }
+
+        $normalizedText = mb_strtolower(trim($messageText));
+
+        // ผู้ใช้ยกเลิก
+        if ($normalizedText === 'ยกเลิก' || $normalizedText === 'cancel' || $normalizedText === 'ไม่' || $normalizedText === 'ไม่ฝาก') {
+            Cache::forget($cacheKey);
+
+            return [
+                'action' => 'leave_question_cancelled',
+                'message' => "ยกเลิกการฝากคำถามแล้วค่ะ ✅\n\nพิมพ์ถามหมอจันทราได้เลยนะคะ 🔮",
+                'reading' => null,
+            ];
+        }
+
+        // บันทึกคำถาม
+        $this->saveQuestionForAdmin(
+            $userId,
+            $messageText,
+            'user_initiated',
+            null,
+            $modeData['user_name'] ?? $userProfile['name'] ?? null
+        );
+
+        Cache::forget($cacheKey);
+
+        Log::info('Fortune: บันทึกคำถามจากโหมดฝากคำถาม', [
+            'user_id' => $userId,
+            'question_preview' => mb_substr($messageText, 0, 100),
+        ]);
+
+        return [
+            'action' => 'leave_question_saved',
+            'message' => "📝 บันทึกคำถามเรียบร้อยแล้วค่ะ!\n\n"
+                ."คำถาม: \"{$messageText}\"\n\n"
+                ."แอดมินจะตอบกลับให้เร็วที่สุดนะคะ 🙏\n\n"
+                ."ระหว่างนี้ พิมพ์ถามหมอจันทราได้เลยค่ะ ✨",
+            'reading' => null,
+        ];
     }
 }
