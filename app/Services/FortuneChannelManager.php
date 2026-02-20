@@ -352,6 +352,14 @@ class FortuneChannelManager
                 // AI Chat ทั่วไป (Gemini) → ส่ง text ธรรมดา (เป็นธรรมชาติกว่า Flex)
                 'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // AI ตอบไม่ได้ → ส่งข้อความพร้อม quick reply ให้เลือก "ฝาก/ไม่ฝาก"
+                'ai_ask_save_question' => $lineService->sendMessage($userId, $message, [
+                    'quick_replies' => $result['quick_reply_options'] ?? [
+                        ['label' => '📝 ฝากถึงแอดมิน', 'text' => 'ฝากคำถามถึงแอดมิน'],
+                        ['label' => '❌ ไม่ฝาก', 'text' => 'ไม่ฝากคำถาม'],
+                    ],
+                ]),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };

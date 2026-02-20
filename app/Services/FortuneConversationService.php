@@ -378,6 +378,12 @@ class FortuneConversationService
                 return $this->handleBankAccountRequest($facebookUserId);
             }
 
+            // ✅ ตรวจสอบว่าผู้ใช้ตอบกลับปุ่ม "ฝากคำถามถึงแอดมิน" หรือ "ไม่ฝากคำถาม"
+            $pendingSaveResult = $this->handlePendingSaveResponse($facebookUserId, $messageText, $userProfile);
+            if ($pendingSaveResult) {
+                return $pendingSaveResult;
+            }
+
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
@@ -3751,20 +3757,32 @@ class FortuneConversationService
                 return null;
             }
 
-            // ✅ ตรวจจับ [SAVE_QUESTION] — AI บอกว่าตอบไม่ได้ → บันทึกคำถามให้แอดมิน
-            if (str_contains($responseText, '[SAVE_QUESTION]')) {
-                $responseText = trim(str_replace('[SAVE_QUESTION]', '', $responseText));
-                $this->saveQuestionForAdmin(
-                    $userId,
-                    $messageText,
-                    'ai_cannot_answer',
-                    $responseText,
-                    $userProfile['name'] ?? null
-                );
-                Log::info('Fortune: AI ตอบไม่ได้ → บันทึกคำถามให้แอดมิน', [
+            // ✅ ตรวจจับ [ASK_SAVE] — AI บอกว่าตอบไม่ได้ → ถามผู้ใช้ก่อนว่าจะฝากคำถามถึงแอดมินไหม
+            if (str_contains($responseText, '[ASK_SAVE]')) {
+                $responseText = trim(str_replace('[ASK_SAVE]', '', $responseText));
+
+                // เก็บคำถามไว้ใน Cache รอยืนยันจากผู้ใช้ (หมดอายุ 10 นาที)
+                $cacheKey = "fortune_pending_save:{$userId}";
+                Cache::put($cacheKey, [
+                    'question' => $messageText,
+                    'ai_response' => $responseText,
+                    'user_name' => $userProfile['name'] ?? null,
+                ], now()->addMinutes(10));
+
+                Log::info('Fortune: AI ตอบไม่ได้ → ถามผู้ใช้ว่าจะฝากถึงแอดมินไหม', [
                     'user_id' => $userId,
                     'question' => mb_substr($messageText, 0, 100),
                 ]);
+
+                return [
+                    'action' => 'ai_ask_save_question',
+                    'message' => $responseText,
+                    'reading' => null,
+                    'quick_reply_options' => [
+                        ['label' => '📝 ฝากถึงแอดมิน', 'text' => 'ฝากคำถามถึงแอดมิน'],
+                        ['label' => '❌ ไม่ฝาก', 'text' => 'ไม่ฝากคำถาม'],
+                    ],
+                ];
             }
 
             Log::info('Fortune: AI Chat response สำเร็จ', [
@@ -3800,6 +3818,70 @@ class FortuneConversationService
 
             return null;
         }
+    }
+
+    /**
+     * จัดการเมื่อผู้ใช้กดปุ่ม "ฝากคำถามถึงแอดมิน" หรือ "ไม่ฝากคำถาม"
+     *
+     * ตรวจสอบว่ามี pending question ใน Cache หรือไม่
+     * ถ้ามี → ดำเนินการตามที่ผู้ใช้เลือก (ฝาก/ไม่ฝาก)
+     */
+    protected function handlePendingSaveResponse(string $userId, string $messageText, ?array $userProfile = null): ?array
+    {
+        $cacheKey = "fortune_pending_save:{$userId}";
+        $pendingData = Cache::get($cacheKey);
+
+        // ไม่มี pending question → ข้าม
+        if (! $pendingData) {
+            return null;
+        }
+
+        $normalizedText = mb_strtolower(trim($messageText));
+
+        // ผู้ใช้เลือก "ฝากคำถามถึงแอดมิน"
+        if (str_contains($normalizedText, 'ฝากคำถามถึงแอดมิน') || str_contains($normalizedText, 'ฝากถึงแอดมิน') || $normalizedText === 'ฝาก') {
+            // บันทึกคำถามลง DB
+            $this->saveQuestionForAdmin(
+                $userId,
+                $pendingData['question'],
+                'ai_cannot_answer',
+                $pendingData['ai_response'] ?? null,
+                $pendingData['user_name'] ?? $userProfile['name'] ?? null
+            );
+
+            // ลบ pending ออกจาก Cache
+            Cache::forget($cacheKey);
+
+            Log::info('Fortune: ผู้ใช้ยืนยันฝากคำถามถึงแอดมิน', [
+                'user_id' => $userId,
+                'question' => mb_substr($pendingData['question'], 0, 100),
+            ]);
+
+            return [
+                'action' => 'ai_chat_response',
+                'message' => "จันทราบันทึกคำถามไว้เรียบร้อยแล้วค่ะ 📝 แอดมินจะตอบกลับให้เร็วที่สุดนะคะ\n\nระหว่างนี้ พิมพ์ ดูดวง หรือถามเรื่องอื่นได้เลยค่ะ ✨",
+                'reading' => null,
+            ];
+        }
+
+        // ผู้ใช้เลือก "ไม่ฝากคำถาม"
+        if (str_contains($normalizedText, 'ไม่ฝากคำถาม') || str_contains($normalizedText, 'ไม่ฝาก') || $normalizedText === 'ไม่') {
+            // ลบ pending ออกจาก Cache
+            Cache::forget($cacheKey);
+
+            Log::info('Fortune: ผู้ใช้เลือกไม่ฝากคำถาม', ['user_id' => $userId]);
+
+            return [
+                'action' => 'ai_chat_response',
+                'message' => "ไม่เป็นไรค่ะ! ถ้ามีคำถามอื่น พิมพ์ถามจันทราได้เลยนะคะ 😊\n\nหรือพิมพ์ ดูดวง เพื่อเข้าสู่การทำนายค่ะ ✨",
+                'reading' => null,
+            ];
+        }
+
+        // ผู้ใช้พิมพ์อย่างอื่น → ลบ pending ให้ (ไม่ค้างไว้) แล้วปล่อย flow ปกติ
+        Cache::forget($cacheKey);
+
+        return null;
     }
 
     /**
