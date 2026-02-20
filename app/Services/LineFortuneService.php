@@ -2764,10 +2764,11 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
-        // ✅ Circuit Breaker: ถ้าโดน rate limit อยู่ → หยุดส่งชั่วคราว (ป้องกัน amplify)
-        $circuitKey = 'line_push_circuit_open';
+        // ✅ Circuit Breaker: เฉพาะ 429 เท่านั้น (LINE บอกหยุด → ต้อง respect)
+        // ไม่ block สำหรับ timeout — timeout เป็นปัญหา network ชั่วคราว ครั้งต่อไปอาจสำเร็จ
+        $circuitKey = 'line_push_circuit_429';
         if (cache()->get($circuitKey)) {
-            Log::warning('LINE pushMessage: Circuit breaker OPEN — ข้ามการส่ง (รอ cooldown)', [
+            Log::warning('LINE pushMessage: 429 circuit breaker OPEN — รอ cooldown', [
                 'to' => $to,
                 'cooldown_remaining' => cache()->get($circuitKey . '_until', 'unknown'),
             ]);
@@ -2779,8 +2780,7 @@ class LineFortuneService implements MessagingPlatformInterface
         LineGatekeeperService::recordLinePush();
 
         try {
-            // ⚡ ไม่ retry เลย — 429/timeout ไม่ควร retry (amplify rate limit)
-            // เพิ่ม connectTimeout เป็น 8s เพราะ network path อาจช้า
+            // ⚡ เพิ่ม connectTimeout เป็น 8s เพราะ network path อาจช้า
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(15)
                 ->connectTimeout(8)
@@ -2792,7 +2792,7 @@ class LineFortuneService implements MessagingPlatformInterface
             if (! $response->successful()) {
                 $status = $response->status();
 
-                // 🔴 Rate limit → เปิด circuit breaker 15 วินาที (ลดจาก 60s)
+                // 🔴 Rate limit 429 เท่านั้นที่เปิด circuit breaker (15 วินาที)
                 if ($status === 429) {
                     $cooldownSeconds = 15;
                     cache()->put($circuitKey, true, $cooldownSeconds);
@@ -2815,20 +2815,11 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            // cURL timeout → เปิด circuit breaker 10 วินาที (ลดจาก 30s)
-            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
-                cache()->put($circuitKey, true, 10);
-                cache()->put($circuitKey . '_until', now()->addSeconds(10)->toTimeString(), 10);
-                Log::error('LINE pushMessage: Timeout → circuit breaker 10s', [
-                    'to' => $to,
-                    'error' => $e->getMessage(),
-                ]);
-            } else {
-                Log::error('LINE Push Message Exception', [
-                    'to' => $to,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // Timeout → แค่ log ไม่เปิด circuit breaker (ครั้งต่อไปอาจสำเร็จ)
+            Log::error('LINE pushMessage: Exception', [
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
 
             return false;
         }
@@ -2845,19 +2836,10 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function replyMessage(string $replyToken, array $messages): bool
     {
-        // ✅ Circuit Breaker: ถ้าโดน rate limit → replyMessage ยังลองได้ (ฟรี ไม่นับ quota)
-        // แต่ถ้า timeout → ข้าม (ประหยัดเวลา)
-        $circuitKey = 'line_reply_circuit_open';
-        if (cache()->get($circuitKey)) {
-            Log::warning('LINE replyMessage: Circuit breaker OPEN — ข้ามการส่ง', [
-                'reply_token' => substr($replyToken, 0, 10) . '...',
-            ]);
-
-            return false;
-        }
-
+        // ⚠️ ไม่มี circuit breaker สำหรับ reply — reply ฟรี ไม่นับ quota
+        // ต้องลองส่งทุกครั้ง เพราะ timeout ครั้งก่อนไม่ได้หมายความว่าครั้งนี้จะ timeout
         try {
-            // ⚡ เพิ่ม connectTimeout เป็น 8s (network path อาจช้า)
+            // ⚡ connectTimeout 8s (network path อาจช้า)
             // replyToken หมดอายุ 30s → ยังพอรอ 8s connect + 12s read
             $response = Http::withToken($this->channelAccessToken)
                 ->timeout(12)
@@ -2879,17 +2861,10 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            // Timeout → เปิด circuit breaker สั้นๆ 5 วินาที (ลดจาก 15s)
-            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
-                cache()->put($circuitKey, true, 5);
-                Log::warning('LINE replyMessage: Timeout → circuit breaker 5s', [
-                    'error' => $e->getMessage(),
-                ]);
-            } else {
-                Log::error('LINE Reply Message Exception', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // Timeout → แค่ log ไม่ block ครั้งถัดไป
+            Log::warning('LINE replyMessage: Exception (ลองใหม่ครั้งหน้า)', [
+                'error' => $e->getMessage(),
+            ]);
 
             return false;
         }
