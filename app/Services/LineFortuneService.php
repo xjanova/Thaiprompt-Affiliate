@@ -2729,23 +2729,58 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     protected function pushMessage(string $to, array $messages): bool
     {
+        // ✅ Circuit Breaker: ถ้าโดน rate limit อยู่ → หยุดส่งชั่วคราว (ป้องกัน amplify)
+        $circuitKey = 'line_push_circuit_open';
+        if (cache()->get($circuitKey)) {
+            Log::warning('LINE pushMessage: Circuit breaker OPEN — ข้ามการส่ง (รอ cooldown)', [
+                'to' => $to,
+                'cooldown_remaining' => cache()->get($circuitKey . '_until', 'unknown'),
+            ]);
+
+            return false;
+        }
+
         try {
-            // ⚡ เพิ่ม timeout + retry เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
+            // ⚡ ไม่ retry เมื่อ 429 — retry เฉพาะ server error (500+) หรือ timeout
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(15)
-                ->connectTimeout(10)
-                ->retry(2, 1000)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->retry(2, 1500, function (\Exception $exception, $request) {
+                    // ❌ ไม่ retry ถ้า 429 (rate limit) — retry แค่ timeout/server error
+                    if ($exception instanceof \Illuminate\Http\Client\RequestException) {
+                        $status = $exception->response?->status() ?? 0;
+                        if ($status === 429) {
+                            return false; // ❌ ห้าม retry
+                        }
+                    }
+
+                    return true; // ✅ retry สำหรับ timeout/server error อื่น
+                })
                 ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
                     'messages' => $messages,
                 ]);
 
             if (! $response->successful()) {
-                Log::error('LINE Push Message Error', [
-                    'to' => $to,
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
+                $status = $response->status();
+
+                // 🔴 Rate limit → เปิด circuit breaker 60 วินาที
+                if ($status === 429) {
+                    $cooldownSeconds = 60;
+                    cache()->put($circuitKey, true, $cooldownSeconds);
+                    cache()->put($circuitKey . '_until', now()->addSeconds($cooldownSeconds)->toTimeString(), $cooldownSeconds);
+                    Log::error('LINE pushMessage: HTTP 429 Rate Limit → เปิด circuit breaker {$cooldownSeconds}s', [
+                        'to' => $to,
+                        'status' => $status,
+                        'cooldown' => $cooldownSeconds,
+                    ]);
+                } else {
+                    Log::error('LINE Push Message Error', [
+                        'to' => $to,
+                        'status' => $status,
+                        'body' => $response->body(),
+                    ]);
+                }
 
                 return false;
             }
@@ -2753,10 +2788,20 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            Log::error('LINE Push Message Exception', [
-                'to' => $to,
-                'error' => $e->getMessage(),
-            ]);
+            // cURL timeout → เปิด circuit breaker 30 วินาที (อาจเป็นปัญหาชั่วคราว)
+            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
+                cache()->put($circuitKey, true, 30);
+                cache()->put($circuitKey . '_until', now()->addSeconds(30)->toTimeString(), 30);
+                Log::error('LINE pushMessage: Timeout → เปิด circuit breaker 30s', [
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            } else {
+                Log::error('LINE Push Message Exception', [
+                    'to' => $to,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return false;
         }
@@ -2773,11 +2818,22 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function replyMessage(string $replyToken, array $messages): bool
     {
+        // ✅ Circuit Breaker: ถ้าโดน rate limit → replyMessage ยังลองได้ (ฟรี ไม่นับ quota)
+        // แต่ถ้า timeout → ข้าม (ประหยัดเวลา)
+        $circuitKey = 'line_reply_circuit_open';
+        if (cache()->get($circuitKey)) {
+            Log::warning('LINE replyMessage: Circuit breaker OPEN — ข้ามการส่ง', [
+                'reply_token' => substr($replyToken, 0, 10) . '...',
+            ]);
+
+            return false;
+        }
+
         try {
-            // ⚡ เพิ่ม timeout เพราะ LINE API อาจช้า (Akamai CDN latency จาก hosting Thai)
+            // ⚡ ลด timeout — replyToken หมดอายุ 30s ไม่ควรรอนาน
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(15)
-                ->connectTimeout(10)
+                ->timeout(8)
+                ->connectTimeout(5)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,
@@ -2795,9 +2851,17 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            Log::error('LINE Reply Message Exception', [
-                'error' => $e->getMessage(),
-            ]);
+            // Timeout → เปิด circuit breaker สั้นๆ 15 วินาที
+            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
+                cache()->put($circuitKey, true, 15);
+                Log::warning('LINE replyMessage: Timeout → เปิด circuit breaker 15s', [
+                    'error' => $e->getMessage(),
+                ]);
+            } else {
+                Log::error('LINE Reply Message Exception', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return false;
         }
