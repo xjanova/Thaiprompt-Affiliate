@@ -714,6 +714,7 @@ return [
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],
                 ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
+                ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],
                 ['label' => '🎨 Rich Menu Editor', 'route' => 'admin.fortune.rich-menu.editor', 'description' => 'แก้ไขปุ่ม สี ข้อความ Rich Menu + อัปโหลดภาพเอง'],
