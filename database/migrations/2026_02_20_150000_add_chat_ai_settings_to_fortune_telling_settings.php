@@ -25,14 +25,14 @@ return new class extends Migration
                 $table->boolean('enable_ai_chat')->default(true)->after('comment_engagement_prompt');
             });
 
-            // AI Provider สำหรับ chat (แยกจาก provider ทำนาย)
+            // AI Provider สำหรับ chat (แยกจาก provider ทำนาย) — default เป็น groq เพราะเร็วที่สุดและฟรี
             $this->safeAddColumn($table, 'fortune_telling_settings', 'chat_ai_provider', function ($table) {
-                $table->string('chat_ai_provider', 50)->default('gemini')->after('enable_ai_chat');
+                $table->string('chat_ai_provider', 50)->default('groq')->after('enable_ai_chat');
             });
 
             // AI Model สำหรับ chat
             $this->safeAddColumn($table, 'fortune_telling_settings', 'chat_ai_model', function ($table) {
-                $table->string('chat_ai_model', 100)->default('gemini-2.0-flash')->after('chat_ai_provider');
+                $table->string('chat_ai_model', 100)->default('llama-3.3-70b-versatile')->after('chat_ai_provider');
             });
 
             // API Key override สำหรับ chat (ถ้าว่าง → ใช้ key จาก pool/global)

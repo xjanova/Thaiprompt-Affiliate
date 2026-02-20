@@ -209,8 +209,8 @@ class FortuneTellingSetting extends Model
         'fortune_static_commission_amount' => 0,
         // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
         'enable_ai_chat' => true,
-        'chat_ai_provider' => 'gemini',
-        'chat_ai_model' => 'gemini-2.0-flash',
+        'chat_ai_provider' => 'groq',
+        'chat_ai_model' => 'llama-3.3-70b-versatile',
     ];
 
     /**
@@ -917,7 +917,7 @@ PROMPT;
      */
     public function getChatAIProvider(): string
     {
-        return $this->chat_ai_provider ?: 'gemini';
+        return $this->chat_ai_provider ?: 'groq';
     }
 
     /**
@@ -925,7 +925,7 @@ PROMPT;
      */
     public function getChatAIModel(): string
     {
-        return $this->chat_ai_model ?: 'gemini-2.0-flash';
+        return $this->chat_ai_model ?: 'llama-3.3-70b-versatile';
     }
 
     /**
@@ -959,7 +959,13 @@ PROMPT;
             // Pool table อาจไม่มี → ข้ามไป
         }
 
-        // 3. ลองดึงจาก Global AI Settings
+        // 3. ถ้า chat provider ตรงกับ fortune provider → ใช้ key เดียวกัน
+        $fortuneProvider = $this->getActualAIProvider();
+        if ($provider === $fortuneProvider && ! empty($this->ai_api_key)) {
+            return $this->ai_api_key;
+        }
+
+        // 4. ลองดึงจาก Global AI Settings
         $key = match ($provider) {
             'gemini' => AiContentSetting::getValue('gemini_api_key'),
             'openrouter' => AiContentSetting::getValue('claude_api_key')

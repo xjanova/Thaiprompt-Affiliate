@@ -54,10 +54,10 @@ EOT,
             'welcome_message' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง\n\nพิมพ์: ดูดวง ตามด้วยคำถาม 1-3 ข้อ\nตัวอย่าง: ดูดวง เรื่องความรัก, เรื่องการเงิน, เรื่องสุขภาพ",
             'limit_exceeded_message' => "คุณได้ใช้งานครบจำนวนฟรีวันนี้แล้ว\n\nสมัครสมาชิกเพื่อใช้งานไม่จำกัด",
             'payment_message' => "💰 ชำระเงินเพื่อใช้งานต่อ\n\nโอนเงินผ่าน QR Code ด้านล่าง",
-            // AI Chat ทั่วไป (Gemini สำหรับสนทนา, แยกจาก Grok/อื่นๆ สำหรับทำนาย)
+            // AI Chat ทั่วไป (Groq สำหรับสนทนา — เร็วที่สุด ฟรี, แยกจาก Grok/อื่นๆ สำหรับทำนาย)
             'enable_ai_chat' => true,
-            'chat_ai_provider' => 'gemini',
-            'chat_ai_model' => 'gemini-2.0-flash',
+            'chat_ai_provider' => 'groq',
+            'chat_ai_model' => 'llama-3.3-70b-versatile',
         ]);
 
         $this->command->info('✅ Seed ข้อมูลการตั้งค่าระบบดูดวงสำเร็จ!');
