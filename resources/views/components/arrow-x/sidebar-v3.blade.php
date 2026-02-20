@@ -600,6 +600,16 @@
                     <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การตลาดดูดวง</span>
                 </a>
+
+                {{-- Saved Questions 📝 --}}
+                <a href="{{ route('admin.fortune.saved-questions.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.saved-questions.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.saved-questions.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-question-circle w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คำถามรอตอบ</span>
+                </a>
             </div>
         </div>
 
