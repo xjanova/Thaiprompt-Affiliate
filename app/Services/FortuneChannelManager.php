@@ -353,12 +353,14 @@ class FortuneChannelManager
                 'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // AI ตอบไม่ได้ → ส่งข้อความพร้อม quick reply ให้เลือก "ฝาก/ไม่ฝาก"
-                'ai_ask_save_question' => $lineService->sendMessage($userId, $message, [
-                    'quick_replies' => $result['quick_reply_options'] ?? [
+                // ใช้ replyMessage ก่อน (เร็ว + ฟรี) → fallback เป็น pushMessage
+                'ai_ask_save_question' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    $result['quick_reply_options'] ?? [
                         ['label' => '📝 ฝากถึงแอดมิน', 'text' => 'ฝากคำถามถึงแอดมิน'],
                         ['label' => '❌ ไม่ฝาก', 'text' => 'ไม่ฝากคำถาม'],
-                    ],
-                ]),
+                    ]
+                ),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
@@ -1409,6 +1411,46 @@ class FortuneChannelManager
             // fallback เป็น text ธรรมดา
             return $lineService->sendMessageWithReplyFallback($userId, $message ?: '🔮 มีอะไรให้ช่วยค่ะ?', $replyToken);
         }
+    }
+
+    /**
+     * ส่งข้อความพร้อม Quick Reply ปุ่มเลือก
+     *
+     * ลอง replyMessage ก่อน (เร็ว + ฟรี) → fallback เป็น pushMessage
+     */
+    protected function sendLineMessageWithQuickReply(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken, array $quickReplies): bool
+    {
+        // สร้าง Quick Reply items
+        $quickReplyItems = [];
+        foreach ($quickReplies as $reply) {
+            $quickReplyItems[] = [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'message',
+                    'label' => $reply['label'] ?? $reply,
+                    'text' => $reply['text'] ?? $reply,
+                ],
+            ];
+        }
+
+        $textMessage = [
+            'type' => 'text',
+            'text' => $message,
+            'quickReply' => ['items' => $quickReplyItems],
+        ];
+
+        // ลอง replyMessage ก่อน (เร็วกว่า + ฟรี)
+        if ($replyToken) {
+            $result = $lineService->replyMessage($replyToken, [$textMessage]);
+            if ($result) {
+                return true;
+            }
+        }
+
+        // Fallback: pushMessage พร้อม quick replies
+        return $lineService->sendMessage($userId, $message, [
+            'quick_replies' => $quickReplies,
+        ]);
     }
 
     /**

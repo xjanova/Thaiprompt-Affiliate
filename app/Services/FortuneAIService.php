@@ -240,7 +240,7 @@ class FortuneAIService
     {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-        $response = Http::timeout(30)->post($url, [
+        $response = Http::timeout(15)->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -294,7 +294,7 @@ class FortuneAIService
             $headers['HTTP-Referer'] = config('app.url');
         }
 
-        $response = Http::timeout(30)
+        $response = Http::timeout(15)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
