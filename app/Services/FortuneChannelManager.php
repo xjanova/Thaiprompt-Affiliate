@@ -319,6 +319,9 @@ class FortuneChannelManager
                 // partial (streaming) → ส่ง text ธรรมดา (Flex ถูก handle ใน FortuneConversationService แล้ว)
                 'partial' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
+                // ✅ ยืนยันชำระเงินสำเร็จ → Flex สีเขียว "ได้รับเงินแล้ว กำลังวิเคราะห์"
+                'payment_confirmed_wait' => $this->sendLinePaymentConfirmedResponse($lineService, $userId, $result, $replyToken),
+
                 // กำลังสร้างคำทำนาย (หลังชำระเงิน) → Flex แจ้งสถานะ
                 'queued' => $this->sendLineQueuedResponse($lineService, $userId, $result, $replyToken),
 
@@ -1026,6 +1029,33 @@ class FortuneChannelManager
         $flex = $lineService->buildProcessingFlexMessage($billRef);
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, '✅ ชำระเงินสำเร็จ กำลังสร้างคำทำนาย...', $replyToken);
+    }
+
+    /**
+     * ส่ง Flex ยืนยันชำระเงินสำเร็จ (payment_confirmed_wait)
+     *
+     * ✅ ข้อความแรกที่ลูกค้าเห็นหลังจ่ายเงิน — สีเขียว "จ่ายแล้ว รอวิเคราะห์"
+     * เรียกจาก SmsPaymentService หลัง confirmPayment() สำเร็จ
+     */
+    protected function sendLinePaymentConfirmedResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $billRef = $reading?->bill_reference ?? '-';
+        $userName = $reading?->facebook_user_name ?? 'คุณ';
+
+        // ถ้าไม่มี reading object → ลองดึง bill ref จาก message หรือ result
+        if (! $reading && ! empty($result['facebook_user_id'])) {
+            $reading = \App\Models\FortuneReading::where('facebook_user_id', $result['facebook_user_id'])
+                ->where('is_paid', true)
+                ->latest()
+                ->first();
+            $billRef = $reading?->bill_reference ?? $billRef;
+            $userName = $reading?->facebook_user_name ?? $userName;
+        }
+
+        $flex = $lineService->buildPaymentConfirmedFlexMessage($billRef, $userName);
+
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, '✅ ชำระเงินสำเร็จ! กำลังวิเคราะห์ดวงชะตา...', $replyToken);
     }
 
     /**

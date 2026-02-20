@@ -2593,6 +2593,63 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * สร้าง Flex Message ยืนยันชำระเงินสำเร็จ (payment_confirmed_wait)
+     *
+     * ✅ สีเขียว — แยกจาก processing (สีฟ้า) เพื่อให้ลูกค้าเห็นชัดว่า "จ่ายเงินผ่านแล้ว"
+     *
+     * @param string $billRef เลขที่บิล
+     * @param string $userName ชื่อผู้ใช้
+     * @return array Flex Message bubble
+     */
+    public function buildPaymentConfirmedFlexMessage(string $billRef, string $userName = 'คุณ'): array
+    {
+        return [
+            'type' => 'bubble',
+            'styles' => ['header' => ['backgroundColor' => '#2E7D32']],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '✅', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'ชำระเงินสำเร็จ!', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "บิล: {$billRef}", 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => "ขอบคุณค่ะ คุณ{$userName}! 🙏", 'size' => 'md', 'color' => '#333333', 'weight' => 'bold'],
+                    ['type' => 'text', 'text' => 'ได้รับการชำระเงินเรียบร้อยแล้ว', 'size' => 'sm', 'color' => '#2E7D32', 'margin' => 'sm'],
+                    ['type' => 'separator', 'margin' => 'lg'],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🔮 จันทราจะวิเคราะห์ดวงชะตาให้นะคะ', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
+                            ['type' => 'text', 'text' => '⏳ รอสักครู่ประมาณ 3-5 นาทีค่ะ', 'size' => 'sm', 'color' => '#BF360C', 'margin' => 'sm', 'wrap' => true],
+                        ],
+                    ],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#E8F5E9', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💡 พิมพ์ "ดูผล" เพื่อเช็คสถานะได้ค่ะ', 'size' => 'xs', 'color' => '#1B5E20'],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#2E7D32', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔍 เช็คสถานะคำทำนาย', 'text' => 'ดูผล']],
+                ],
+            ],
+        ];
+    }
+
+    /**
      * สร้าง Flex Message ไม่มีคำทำนาย (view_reading_empty)
      *
      * @return array Flex Message bubble

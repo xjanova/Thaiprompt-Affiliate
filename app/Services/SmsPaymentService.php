@@ -572,6 +572,8 @@ class SmsPaymentService
                 $sent = $channelManager->sendResponse($platform, $userId, [
                     'action' => 'payment_confirmed_wait',
                     'message' => $waitMessage,
+                    'reading' => $reading,
+                    'facebook_user_id' => $userId,
                 ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
                 // บันทึกสถานะว่าส่งข้อความรอแล้ว (ป้องกัน duplicate)
