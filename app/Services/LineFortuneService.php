@@ -792,6 +792,9 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildWelcomeFlexMessage(string $userName = ''): array
     {
+        $brandName = $this->settings->getFortuneBrandName();
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
+
         // สร้างข้อความทักทาย — ถ้ามีชื่อจะใส่ชื่อด้วย
         $greeting = $userName
             ? "สวัสดีค่ะ คุณ{$userName} ✨"
@@ -802,7 +805,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'size' => 'mega',
             'styles' => [
                 'header' => [
-                    'backgroundColor' => '#6B46C1',
+                    'backgroundColor' => $primaryColor,
                 ],
                 'footer' => [
                     'backgroundColor' => '#F8F7FF',
@@ -821,7 +824,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => '🔮 จันทรายินดีต้อนรับค่ะ 🔮',
+                        'text' => "🔮 {$brandName}ยินดีต้อนรับค่ะ 🔮",
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -845,7 +848,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => 'จันทรารับดูดวงเรื่องต่างๆ',
+                        'text' => "{$brandName}รับดูดวงเรื่องต่างๆ",
                         'wrap' => true,
                         'size' => 'md',
                     ],
@@ -878,7 +881,7 @@ class LineFortuneService implements MessagingPlatformInterface
                                 'text' => '📋 บริการของเรา',
                                 'weight' => 'bold',
                                 'size' => 'sm',
-                                'color' => '#6B46C1',
+                                'color' => $primaryColor,
                             ],
                             [
                                 'type' => 'box',
@@ -953,7 +956,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'button',
                         'style' => 'primary',
-                        'color' => '#6B46C1',
+                        'color' => $primaryColor,
                         'height' => 'sm',
                         'action' => [
                             'type' => 'message',
@@ -3090,10 +3093,13 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         $price = number_format($this->getDeepReadingPrice(), 0);
         $questions = FortuneConversationService::REQUIRED_QUESTIONS;
+        $brandName = $this->settings->getFortuneBrandName();
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
 
         return [
             'type' => 'bubble',
-            'styles' => ['header' => ['backgroundColor' => '#4A148C']],
+            'size' => 'mega',
+            'styles' => ['header' => ['backgroundColor' => $primaryColor]],
             'header' => [
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
@@ -3101,50 +3107,158 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'วิธีใช้งานแม่หมอจันทรา', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => "วิธีใช้งาน{$brandName}", 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'คู่มือการใช้งานทุกฟีเจอร์', 'color' => '#FFFFFFCC', 'size' => 'xs', 'margin' => 'sm'],
                         ],
                     ],
                 ],
             ],
             'body' => [
-                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'spacing' => 'md',
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'spacing' => 'sm',
                 'contents' => [
-                    // ดูดวงฟรี
-                    ['type' => 'text', 'text' => '🌟 ดูดวงฟรี', 'size' => 'md', 'weight' => 'bold', 'color' => '#4A148C'],
-                    ['type' => 'text', 'text' => 'พิมพ์ "ดูดวง" แล้วตั้งคำถามได้เลยค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+                    // ═══ บริการดูดวง ═══
+                    ['type' => 'text', 'text' => '🔮 บริการดูดวง', 'size' => 'md', 'weight' => 'bold', 'color' => $primaryColor],
 
-                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+                    // ดูดวงฟรี
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#F0FFF4', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🆓', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'ดูดวงฟรี', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'พิมพ์ "ดูดวง" หรือตั้งคำถามได้เลย', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
 
                     // ดูดวงละเอียด
-                    ['type' => 'text', 'text' => "✨ ดูดวงละเอียด ({$price} บาท)", 'size' => 'md', 'weight' => 'bold', 'color' => '#E8890C', 'margin' => 'md'],
-                    ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเดือนปีเกิด → ได้คำทำนายละเอียดค่ะ", 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
-
-                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
-
-                    // คำเตือนโอนเงิน
                     [
-                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'md', 'paddingAll' => 'md', 'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'md',
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => '🚨 สำคัญ! เรื่องการโอนเงิน', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
-                            ['type' => 'text', 'text' => 'ระบบจะแจ้งยอดพร้อมทศนิยม เช่น 49.37 บาท', 'size' => 'xs', 'color' => '#B71C1C', 'margin' => 'sm', 'wrap' => true],
-                            ['type' => 'text', 'text' => 'ต้องโอนให้ตรงทศนิยมเท่านั้น!', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E53935', 'margin' => 'sm', 'wrap' => true],
-                            ['type' => 'text', 'text' => 'ถ้าโอนไม่ตรง ระบบจะไม่ส่งคำทำนาย', 'size' => 'xs', 'color' => '#B71C1C', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => '💎', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => "ดูดวงละเอียด ({$price} บาท)", 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเกิด → คำทำนายเชิงลึก", 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
                         ],
                     ],
 
                     ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
 
-                    // คำสั่งที่ใช้ได้
-                    ['type' => 'text', 'text' => '📋 คำสั่งที่ใช้ได้', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333', 'margin' => 'md'],
-                    ['type' => 'text', 'text' => '• "ดูดวง" — เริ่มดูดวงฟรี', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
-                    ['type' => 'text', 'text' => '• "ดูดวงละเอียด" — ดูดวงแบบเสียเงิน', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
-                    ['type' => 'text', 'text' => '• "ดูคำทำนาย" — ดูคำทำนายล่าสุด', 'size' => 'xs', 'color' => '#666666', 'wrap' => true],
+                    // ═══ ฟีเจอร์อื่นๆ ═══
+                    ['type' => 'text', 'text' => '📋 ฟีเจอร์อื่นๆ', 'size' => 'md', 'weight' => 'bold', 'color' => $primaryColor, 'margin' => 'sm'],
+
+                    // เช็คสิทธิ์ / Wallet
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#E8F5E9', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💰', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'สิทธิ์ / Wallet', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'กดปุ่ม "สิทธิ์/Wallet" ดูยอด Wallet รายได้ค่าคอม และสิทธิ์ดูดวงคงเหลือ', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    // ดูคำทำนายล่าสุด
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#F3E5F5', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📖', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'ดูคำทำนายล่าสุด', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'พิมพ์ "ดูคำทำนาย" หรือกดปุ่มคำทำนายล่าสุดที่เมนูด้านล่าง', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    // ดูบัญชีธนาคาร
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#E3F2FD', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🏦', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'ดูบัญชีธนาคาร', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'พิมพ์ "บัญชี" หรือ "ดูบัญชี" ดูเลขบัญชีสำหรับโอนเงิน', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    // แนะนำเพื่อน
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#FFF3E0', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '👥', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'แนะนำเพื่อน รับค่าคอม', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'แชร์ให้เพื่อนมาดูดวง รับค่าคอมมิชชั่นทุกยอดดูดวงละเอียด', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    // ยกเลิก
+                    [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                        'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '❌', 'size' => 'md', 'flex' => 0],
+                            [
+                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                                'contents' => [
+                                    ['type' => 'text', 'text' => 'ยกเลิกการดูดวง', 'size' => 'sm', 'weight' => 'bold'],
+                                    ['type' => 'text', 'text' => 'พิมพ์ "ยกเลิก" เพื่อหยุดการดูดวงปัจจุบัน', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
+
+                    // คำเตือนโอนเงิน
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'sm', 'paddingAll' => 'md',
+                        'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🚨 คำเตือนการโอนเงิน', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
+                            ['type' => 'text', 'text' => 'ระบบจะแจ้งยอดพร้อมทศนิยม เช่น 49.37 บาท ต้องโอนให้ตรงทศนิยมเท่านั้น! ถ้าไม่ตรง ระบบจะไม่ส่งคำทำนาย', 'size' => 'xs', 'color' => '#B71C1C', 'margin' => 'sm', 'wrap' => true],
+                        ],
+                    ],
                 ],
             ],
             'footer' => [
                 'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'button', 'style' => 'primary', 'color' => '#4A148C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'primary', 'color' => $primaryColor, 'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                        'action' => ['type' => 'postback', 'label' => '📊 เช็คสิทธิ์ / Wallet', 'data' => 'action=check_remaining']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                        'action' => ['type' => 'uri', 'label' => '📤 แชร์ให้เพื่อน',
+                            'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls'))]],
                 ],
             ],
         ];
