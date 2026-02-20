@@ -143,16 +143,11 @@ class LineFortuneService implements MessagingPlatformInterface
             return $cached;
         }
 
-        // ✅ Circuit breaker: ถ้า LINE API ล่ม → ข้าม getProfile (ไม่จำเป็นต้องมี)
-        if (cache()->get('line_profile_circuit_open')) {
-            return null;
-        }
-
         try {
-            // ⚡ ลด timeout ให้สั้น — getProfile ไม่สำคัญเท่าส่งข้อความ
+            // ⚡ timeout สั้น — getProfile ไม่สำคัญเท่าส่งข้อความ
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(3)
-                ->connectTimeout(2)
+                ->timeout(5)
+                ->connectTimeout(3)
                 ->get(self::API_ENDPOINT."/profile/{$userId}");
 
             if ($response->successful()) {
@@ -181,18 +176,11 @@ class LineFortuneService implements MessagingPlatformInterface
             return null;
 
         } catch (\Exception $e) {
-            // Timeout → เปิด circuit breaker 60s (ป้องกัน getProfile ทำให้ webhook ช้า)
-            if (str_contains($e->getMessage(), 'cURL error 28') || str_contains($e->getMessage(), 'Connection timeout')) {
-                cache()->put('line_profile_circuit_open', true, 60);
-                Log::warning('LINE getProfile: Timeout → เปิด circuit breaker 60s (ข้าม getProfile)', [
-                    'user_id' => $userId,
-                ]);
-            } else {
-                Log::error('LINE: Error getting profile', [
-                    'user_id' => $userId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            // Timeout หรือ error → แค่ log ไม่ block (Gatekeeper จัดการ rate limit แทน)
+            Log::warning('LINE getProfile: Exception (ลองใหม่ครั้งหน้า)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
 
             return null;
         }

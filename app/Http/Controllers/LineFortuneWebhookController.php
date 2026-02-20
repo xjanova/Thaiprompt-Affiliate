@@ -155,8 +155,7 @@ class LineFortuneWebhookController extends Controller
                 return;
             }
 
-            // ⚡ ดึง profile จาก cache (ไม่เรียก LINE API ถ้ามี cache แล้ว)
-            // getUserProfile มี cache 24hr + circuit breaker อยู่แล้ว
+            // ⚡ ดึง profile จาก cache 24hr (ไม่เรียก LINE API ถ้ามี cache แล้ว)
             $userProfile = null;
             try {
                 $userProfile = $this->lineService->getUserProfile($userId);

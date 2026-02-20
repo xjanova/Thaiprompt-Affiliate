@@ -1108,7 +1108,7 @@ class FortuneChannelManager
                 // 🔄 Retry 1 ครั้ง — เนื้อหาเสียเงิน ต้องพยายามส่งให้ได้
                 if (! $sent) {
                     Log::warning('LINE view_reading_deep: push ครั้งแรกไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id ?? null]);
-                    sleep(5); // รอ circuit breaker reset
+                    sleep(5); // รอสักครู่ก่อน retry
                     $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
                 }
 
