@@ -116,7 +116,30 @@ class LineFortuneWebhookController extends Controller
         $messageText = $event['message']['text'] ?? '';
 
         try {
-            // ⚡ ดึง profile ครั้งเดียวแล้วส่งต่อ (ลด API call ซ้ำ)
+            // ✅ Flood Protection: ถ้า user ส่งข้อความถี่เกินไป → ตอบข้อความเตือนซ้ำ ไม่เรียก AI/LINE push
+            $floodKey = "line_flood:{$userId}";
+            $floodCount = (int) cache()->get($floodKey, 0);
+            cache()->put($floodKey, $floodCount + 1, 10); // นับข้อความใน 10 วินาที
+
+            if ($floodCount >= 3) {
+                // ⚡ ส่ง replyMessage ตรงๆ (ฟรี ไม่นับ push quota) — ไม่เรียก AI, ไม่เรียก LINE push
+                Log::warning('LINE Webhook: Flood detected — ส่งข้อความเตือนซ้ำ', [
+                    'user_id' => $userId,
+                    'flood_count' => $floodCount,
+                    'text' => mb_substr($messageText, 0, 30),
+                ]);
+
+                if ($replyToken) {
+                    $this->lineService->replyMessage($replyToken, [
+                        ['type' => 'text', 'text' => "🙏 กรุณารอสักครู่ค่ะ ระบบกำลังประมวลผลอยู่\n\nพิมพ์ข้อความทีละข้อความนะคะ 💫"],
+                    ]);
+                }
+
+                return;
+            }
+
+            // ⚡ ดึง profile จาก cache (ไม่เรียก LINE API ถ้ามี cache แล้ว)
+            // getUserProfile มี cache 24hr + circuit breaker อยู่แล้ว
             $userProfile = null;
             try {
                 $userProfile = $this->lineService->getUserProfile($userId);
