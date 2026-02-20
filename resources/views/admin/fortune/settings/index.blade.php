@@ -401,6 +401,90 @@
             </div>
         </div> {{-- End of AI Settings card --}}
 
+        {{-- AI Chat ทั่วไป (สนทนาอัจฉริยะ) --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{ enableAiChat: {{ old('enable_ai_chat', $settings->enable_ai_chat ?? true) ? 'true' : 'false' }} }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                    💬 AI Chat ทั่วไป (สนทนาอัจฉริยะ)
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="enable_ai_chat" value="0">
+                    <input type="checkbox" name="enable_ai_chat" value="1"
+                           {{ old('enable_ai_chat', $settings->enable_ai_chat ?? true) ? 'checked' : '' }}
+                           class="sr-only peer"
+                           x-model="enableAiChat">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-green-600"></div>
+                </label>
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                เมื่อเปิดใช้งาน ข้อความที่ไม่ตรงกับคำสั่งดูดวงจะถูกส่งให้ AI ตอบแบบสนทนาทั่วไป แทนที่จะถามว่า "จะให้ดูดวงไหม" ทุกครั้ง
+            </p>
+
+            <div x-show="enableAiChat" x-transition class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{-- Chat AI Provider --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Chat AI Provider
+                        </label>
+                        <select name="chat_ai_provider"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                            <option value="gemini" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? 'gemini') === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ ฟรี</option>
+                            <option value="typhoon" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'typhoon' ? 'selected' : '' }}>Typhoon (SCB 10X) - ภาษาไทยดีสุด</option>
+                            <option value="groq" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด ฟรี</option>
+                            <option value="deepseek" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'deepseek' ? 'selected' : '' }}>DeepSeek - ราคาถูก</option>
+                            <option value="grok" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'grok' ? 'selected' : '' }}>Grok (xAI)</option>
+                            <option value="qwen" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'qwen' ? 'selected' : '' }}>Qwen (Alibaba)</option>
+                            <option value="openrouter" {{ old('chat_ai_provider', $settings->chat_ai_provider ?? '') === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
+                        </select>
+                    </div>
+
+                    {{-- Chat AI Model --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Chat AI Model
+                        </label>
+                        <input type="text" name="chat_ai_model"
+                               value="{{ old('chat_ai_model', $settings->chat_ai_model ?? 'gemini-2.0-flash') }}"
+                               placeholder="gemini-2.0-flash"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                {{-- Chat API Key --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Chat API Key <span class="text-gray-400 font-normal">(ถ้าว่าง จะใช้ Key จาก Pool/ระบบหลัก)</span>
+                    </label>
+                    <input type="password" name="chat_ai_api_key"
+                           value="{{ old('chat_ai_api_key', $settings->chat_ai_api_key) }}"
+                           placeholder="ไม่จำเป็น — ใช้ Key จากระบบหลักได้"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                </div>
+
+                {{-- Custom System Prompt --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        System Prompt สำหรับ Chat <span class="text-gray-400 font-normal">(ถ้าว่าง จะใช้ค่าเริ่มต้น)</span>
+                    </label>
+                    <textarea name="chat_system_prompt" rows="4"
+                              placeholder="ปล่อยว่างเพื่อใช้ prompt เริ่มต้น — จันทราจะสนทนาเป็นมิตรและชวนดูดวงอย่างเป็นธรรมชาติ"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('chat_system_prompt', $settings->chat_system_prompt) }}</textarea>
+                </div>
+
+                {{-- Info box --}}
+                <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                    <p class="text-xs text-blue-800 dark:text-blue-200">
+                        💡 <strong>AI Chat</strong> จะทำงานเฉพาะเมื่อข้อความไม่ตรงกับ keywords ดูดวง และ keywords จากฐานข้อมูล — ไม่กระทบ limit ดูดวงฟรี ไม่สร้าง FortuneReading
+                    </p>
+                    <p class="text-xs text-blue-800 dark:text-blue-200 mt-1">
+                        🎯 <strong>แนะนำ:</strong> ใช้ Gemini สำหรับ Chat (เร็ว ฟรี สนทนาดี) และ Grok/อื่นๆ สำหรับทำนาย (ฟันธง แม่น)
+                    </p>
+                </div>
+            </div>
+        </div> {{-- End of AI Chat card --}}
+
         {{-- Comment Engagement Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">

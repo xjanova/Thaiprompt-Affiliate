@@ -451,7 +451,13 @@ class FortuneConversationService
                         return $this->handleKeywordMatchResponse($matchedKeyword);
                     }
 
-                    // ✅ ถ้าไม่ใช่คำถามดูดวง → ถาม confirmation ตามปกติ
+                    // ✅ ลอง AI Chat ทั่วไป (Gemini) ก่อน fallback
+                    $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
+                    if ($aiChatResult) {
+                        return $aiChatResult;
+                    }
+
+                    // ถ้า AI Chat ไม่พร้อม/ล้มเหลว → ถาม confirmation ตามปกติ
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                 }
 
@@ -495,7 +501,13 @@ class FortuneConversationService
                 return $this->handleKeywordMatchResponse($matchedKeyword);
             }
 
-            // ถ้าข้อความไม่ชัดเจนว่าจะดูดวง → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
+            // ✅ ลอง AI Chat ทั่วไป (Gemini) — สนทนาเป็นธรรมชาติ + ชวนดูดวง
+            $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
+            if ($aiChatResult) {
+                return $aiChatResult;
+            }
+
+            // ถ้า AI Chat ไม่พร้อม/ล้มเหลว → ถามยืนยันก่อน แจ้งสิทธิ์ฟรีที่เหลือ
             return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
 
             } finally {
@@ -3681,6 +3693,62 @@ class FortuneConversationService
             'response_flex_json' => $keyword->response_flex_json,
             'quick_reply_options' => $keyword->quick_reply_options,
         ];
+    }
+
+    /**
+     * ลอง AI Chat ทั่วไป (Gemini) สำหรับข้อความที่ไม่ใช่เรื่องดูดวง
+     *
+     * ใช้ provider แยกจากทำนาย (chat_ai_provider) เพื่อตอบสนทนาเป็นธรรมชาติ
+     * ไม่สร้าง FortuneReading + ไม่นับ AI call limit
+     *
+     * @param  string  $userId  ID ผู้ใช้
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @return array|null  ผลลัพธ์ action 'ai_chat_response' หรือ null ถ้าล้มเหลว
+     */
+    protected function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null): ?array
+    {
+        try {
+            // เช็คว่าเปิด AI Chat หรือไม่
+            if (! ($this->settings->enable_ai_chat ?? false)) {
+                return null;
+            }
+
+            // เรียก AI Chat
+            $aiService = new FortuneAIService($this->settings);
+            $result = $aiService->generateChatResponse($messageText, $userProfile);
+
+            $responseText = trim($result['response'] ?? '');
+
+            if (empty($responseText)) {
+                return null;
+            }
+
+            Log::info('Fortune: AI Chat response สำเร็จ', [
+                'user_id' => $userId,
+                'provider' => $result['provider'] ?? 'unknown',
+                'model' => $result['model'] ?? 'unknown',
+                'response_preview' => mb_substr($responseText, 0, 80),
+            ]);
+
+            return [
+                'action' => 'ai_chat_response',
+                'message' => $responseText,
+                'reading' => null,
+                'chat_provider' => $result['provider'] ?? '',
+                'chat_model' => $result['model'] ?? '',
+            ];
+
+        } catch (\Exception $e) {
+            // AI ล้มเหลว → return null เพื่อให้ caller fallback ไป askFortuneConfirmation
+            Log::warning('Fortune: AI Chat ล้มเหลว → fallback', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return null;
+        }
     }
 
     protected function isBankAccountRequest(string $text): bool

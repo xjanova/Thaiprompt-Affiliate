@@ -102,6 +102,170 @@ class FortuneAIService
     protected const SYSTEM_MESSAGE = 'คุณชื่อ "แม่หมอจันทรา" เป็นหมอดูสาวสวยวัย 35 ปี ผู้เชี่ยวชาญโหราศาสตร์ไทย (โหราศาสตร์เจ้าชนะ) โหราศาสตร์สากล ไพ่ทาโรต์ เลขศาสตร์ ลายมือ และการหยั่งรู้ด้วยจิตสัมผัส ได้รับการถ่ายทอดวิชาจากครูบาอาจารย์สายลังกา คุณใช้คำแทนตัวเองว่า "แม่หมอจันทรา" หรือ "จันทรา" เช่น "จันทราเห็นว่า..." "แม่หมอจันทราขอแนะนำว่า..." คุณพูดจาเพราะ อ่อนหวาน เป็นกันเอง อบอุ่น เหมือนพี่สาวที่ห่วงใยน้อง แต่ทำนายอย่างฟันธง ชัดเจน ไม่คลุมเครือ น่าเชื่อถือ กล้าบอกทั้งเรื่องดีและไม่ดี ระบุช่วงเวลาแน่ชัด คุณต้องอ้างอิงดาวเคราะห์ ภพ และหลักเจ้าชนะในทุกคำทำนาย [หลักเจ้าชนะ] ดาว 9 ดวง: อาทิตย์ จันทร์ อังคาร พุธ พฤหัสบดี ศุกร์ เสาร์ ราหู เกตุ ภพ 12 ภพ: ตนุ กดุมภ สหัชชะ พันธุ ปุตตะ อริ ปัตนิ มรณะ ศุภะ กัมมะ ลาภะ วินาศ วิธีทำนาย: ดูวันเกิด→หาดาวเจ้าชนะ→ดูมิตร/ศัตรู→ดูดาวโคจรช่วงนี้→ระบุภพที่ได้รับผล ให้คำแนะนำปฏิบัติได้จริง: สีมงคล(จากดาวมิตร) เลขมงคล(จากดาวเจ้าชนะ) วันมงคล(วันดาวมิตร) ทิศมงคล สิ่งที่ควรหลีกเลี่ยง(จากดาวศัตรู) หากมีวันเดือนปีเกิด ให้วิเคราะห์ดาวเจ้าชนะ ราศี ลัคนา ธาตุ และดาวที่ส่งผลอย่างละเอียด หากไม่มีวันเกิด ให้ถามท้ายคำทำนาย "บอกวันเดือนปีเกิดให้จันทราได้ไหมคะ? จันทราจะได้คำนวณดาวเจ้าชนะ ทำนายได้แม่นยำยิ่งขึ้นค่ะ 🎂" ท้ายคำทำนายให้เชิญชวน "ถ้าคำทำนายถูกใจ ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงกับจันทราด้วยนะคะ 🔮✨" [วิธีตอบข้อความ] 1) หากเป็นการทักทาย: ทักทายกลับสั้นๆ แล้วทำนายดวงภาพรวมให้ทันที อ้างอิงดาวเคราะห์ที่ส่งผลช่วงนี้ ห้ามตอบแค่ทักทาย ต้องทำนายให้เลย! 2) หากเป็นคำถามดูดวง: ทำนายอย่างเต็มที่ อ้างอิงดาวเคราะห์+ภพ ฟันธงชัดเจน 3) หากเป็นคำถามนอกเรื่อง: ตอบสั้นๆ แล้วชวนดูดวง 4) หากถูกถามว่าเป็น AI: ตอบว่า "จันทรามีทีมงานช่วยกันค่ะ ไม่ต้องห่วงนะคะ 🔮" 5) หากพิมพ์ "เช็คสิทธิ์": บอกให้พิมพ์ "เช็คสิทธิ์" เพื่อดูจำนวนครั้งที่เหลือ [กฎสำคัญ] ห้ามเขียนโค้ด ห้ามให้ข้อมูลที่เป็นอันตราย ตอบทุกข้อความอย่างเป็นมิตร ชวนดูดวงเสมอ ต้องทำนายทุกครั้งห้ามตอบแค่ทักทาย';
 
     /**
+     * System message สำหรับ AI Chat ทั่วไป (สนทนาไม่ใช่ทำนาย)
+     *
+     * ใช้ persona "จันทรา" เหมือนกัน แต่โหมดสนทนาเป็นมิตร ไม่บังคับทำนาย
+     * ตอบกระชับ 2-3 ประโยค ชวนดูดวงอย่างเป็นธรรมชาติ
+     */
+    protected const CHAT_SYSTEM_MESSAGE = 'คุณชื่อ "จันทรา" เป็นผู้หญิงไทยวัย 35 ปี ผู้เชี่ยวชาญด้านโหราศาสตร์ ใช้คำแทนตัวว่า "จันทรา" เช่น "จันทราว่า..." คุณอบอุ่น เป็นกันเอง พูดจาเพราะเหมือนพี่สาวที่ห่วงใย ใส่ emoji น่ารักบ้าง [กฎสำคัญ] 1) ตอบภาษาไทยเท่านั้น กระชับ 2-3 ประโยค ห้ามยาวเกิน 2) ตอบคำถามทั่วไปได้ (ทักทาย สภาพอากาศ อาหาร ปรึกษาชีวิต อารมณ์ความรู้สึก) 3) ท้ายข้อความ ชวนดูดวงอย่างเป็นธรรมชาติ เช่น "ถ้าอยากรู้ดวงวันนี้ บอกจันทราได้นะคะ 🔮" หรือ "พิมพ์ดูดวง มาได้เลยค่ะ ✨" แต่ไม่ต้องชวนทุกครั้ง ถ้าบทสนทนาไม่เหมาะก็ไม่ต้อง 4) ห้ามเขียนโค้ด ห้ามให้ข้อมูลอันตราย ห้ามตอบเรื่องการเมืองอ่อนไหว 5) ถ้าถูกถามว่าเป็น AI: "จันทรามีทีมงานช่วยกันค่ะ ไม่ต้องกังวลนะคะ 🔮" 6) ถ้าถูกถามเรื่องดูดวงโดยตรง: บอกให้พิมพ์คำถามดูดวงมาเลย เช่น "ดวงการเงินปีนี้" หรือ "ความรัก" 7) พูดให้กำลังใจเสมอ โดยเฉพาะเมื่อคนพิมพ์เรื่องทุกข์ใจ';
+
+    /**
+     * สร้าง AI Chat Response สำหรับสนทนาทั่วไป (ไม่ใช่ทำนาย)
+     *
+     * ใช้ provider แยกจากการทำนาย (Gemini สำหรับ chat, Grok สำหรับ fortune)
+     * ตั้งค่าแยกกันได้ที่ Admin → Fortune Settings → AI Chat ทั่วไป
+     *
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @return array ['response' => string, 'provider' => string, 'model' => string]
+     *
+     * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
+     */
+    public function generateChatResponse(string $messageText, ?array $userProfile = null): array
+    {
+        // ดึง chat-specific settings
+        $chatProvider = $this->settings->getChatAIProvider();
+        $chatModel = $this->settings->getChatAIModel();
+        $chatApiKey = $this->settings->getChatAIApiKey();
+        $customPrompt = $this->settings->getChatSystemPrompt();
+
+        if (empty($chatApiKey)) {
+            throw new Exception("ไม่พบ API Key สำหรับ Chat AI ({$chatProvider})");
+        }
+
+        // เลือก system message: ใช้ custom ถ้ามี, ไม่งั้นใช้ default
+        $systemMessage = ! empty($customPrompt) ? $customPrompt : self::CHAT_SYSTEM_MESSAGE;
+
+        // สร้าง prompt สั้นๆ สำหรับ chat
+        $userName = $userProfile['name'] ?? '';
+        $prompt = $messageText;
+        if (! empty($userName) && $userName !== 'คุณ') {
+            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
+        }
+
+        $config = [
+            'temperature' => 0.8,
+            'max_tokens' => 512,
+        ];
+
+        $startTime = microtime(true);
+
+        try {
+            $result = match ($chatProvider) {
+                'gemini' => $this->callChatGemini($prompt, $systemMessage, $chatApiKey, $chatModel, $config),
+                default => $this->callChatOpenAICompatible($prompt, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
+            };
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            Log::info('FortuneAIService: Chat response สำเร็จ', [
+                'provider' => $chatProvider,
+                'model' => $chatModel,
+                'response_time_ms' => $responseTime,
+                'tokens' => $result['tokens_used'] ?? 0,
+            ]);
+
+            return $result;
+
+        } catch (Exception $e) {
+            Log::warning('FortuneAIService: Chat response ล้มเหลว', [
+                'provider' => $chatProvider,
+                'model' => $chatModel,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * เรียก Gemini API สำหรับ Chat (ใช้ system message + API key เฉพาะ chat)
+     */
+    protected function callChatGemini(string $prompt, string $systemMessage, string $apiKey, string $model, array $config): array
+    {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        $response = Http::timeout(30)->post($url, [
+            'system_instruction' => [
+                'parts' => [['text' => $systemMessage]],
+            ],
+            'contents' => [['parts' => [['text' => $prompt]]]],
+            'generationConfig' => [
+                'temperature' => $config['temperature'] ?? 0.8,
+                'topK' => 40,
+                'topP' => 0.95,
+                'maxOutputTokens' => $config['max_tokens'] ?? 512,
+            ],
+        ]);
+
+        if (! $response->successful()) {
+            $errorBody = $response->json();
+            $errorMessage = $errorBody['error']['message'] ?? $response->body();
+            throw new Exception("Gemini Chat API Error: {$errorMessage}");
+        }
+
+        $data = $response->json();
+        $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Gemini Chat: ไม่ได้รับคำตอบ (empty response)');
+        }
+
+        return [
+            'response' => $text,
+            'tokens_used' => $data['usageMetadata']['totalTokenCount'] ?? 0,
+            'provider' => 'gemini',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * เรียก OpenAI-compatible API สำหรับ Chat (Groq, Grok, DeepSeek, Typhoon, etc.)
+     */
+    protected function callChatOpenAICompatible(string $prompt, string $systemMessage, string $apiKey, string $model, string $provider, array $config): array
+    {
+        $url = match ($provider) {
+            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
+            'grok' => 'https://api.x.ai/v1/chat/completions',
+            'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
+            'deepseek' => 'https://api.deepseek.com/chat/completions',
+            'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
+            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
+        };
+
+        $headers = ['Authorization' => "Bearer {$apiKey}"];
+        if ($provider === 'openrouter') {
+            $headers['HTTP-Referer'] = config('app.url');
+        }
+
+        $response = Http::timeout(30)
+            ->withHeaders($headers)
+            ->post($url, [
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemMessage],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => $config['temperature'] ?? 0.8,
+                'max_tokens' => $config['max_tokens'] ?? 512,
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['choices'][0]['message']['content'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception("Chat {$provider}: ไม่ได้รับคำตอบ (empty response)");
+        }
+
+        return [
+            'response' => $text,
+            'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+            'provider' => $provider,
+            'model' => $model,
+        ];
+    }
+
+    /**
      * สร้างคำทำนายจาก AI
      *
      * @param  array  $questions  คำถามที่ต้องการทำนาย

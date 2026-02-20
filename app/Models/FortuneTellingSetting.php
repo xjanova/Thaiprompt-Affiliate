@@ -127,6 +127,12 @@ class FortuneTellingSetting extends Model
         // โหมดจ่ายคอมมิชชั่น: 'pv' หรือ 'static'
         'fortune_commission_mode',
         'fortune_static_commission_amount',
+        // AI Chat ทั่วไป (สนทนาอัจฉริยะ — แยก provider จากทำนาย)
+        'enable_ai_chat',
+        'chat_ai_provider',
+        'chat_ai_model',
+        'chat_ai_api_key',
+        'chat_system_prompt',
     ];
 
     /**
@@ -160,6 +166,7 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate' => 'boolean',
         'fortune_custom_commission_per_pv' => 'decimal:2',
         'fortune_static_commission_amount' => 'decimal:2',
+        'enable_ai_chat' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -200,6 +207,10 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate' => true,
         'fortune_commission_mode' => 'pv',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
         'fortune_static_commission_amount' => 0,
+        // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
+        'enable_ai_chat' => true,
+        'chat_ai_provider' => 'gemini',
+        'chat_ai_model' => 'gemini-2.0-flash',
     ];
 
     /**
@@ -211,6 +222,7 @@ class FortuneTellingSetting extends Model
         'facebook_app_secret',
         'facebook_page_token',
         'ai_api_key',
+        'chat_ai_api_key',
         'line_channel_secret',
         'line_channel_access_token',
     ];
@@ -893,6 +905,77 @@ PROMPT;
     public function getFortuneStaticCommissionAmount(): float
     {
         return (float) ($this->fortune_static_commission_amount ?? 0);
+    }
+
+    // ===== AI Chat ทั่วไป (สนทนาอัจฉริยะ) =====
+
+    /**
+     * ดึง AI Provider สำหรับ Chat ทั่วไป
+     *
+     * แยกจาก getActualAIProvider() ซึ่งใช้สำหรับทำนาย (Grok)
+     * Chat ใช้ Gemini เป็นค่าเริ่มต้น — เร็ว ฟรี สนทนาดี
+     */
+    public function getChatAIProvider(): string
+    {
+        return $this->chat_ai_provider ?: 'gemini';
+    }
+
+    /**
+     * ดึง AI Model สำหรับ Chat ทั่วไป
+     */
+    public function getChatAIModel(): string
+    {
+        return $this->chat_ai_model ?: 'gemini-2.0-flash';
+    }
+
+    /**
+     * ดึง API Key สำหรับ Chat ทั่วไป
+     *
+     * ลำดับความสำคัญ:
+     * 1. chat_ai_api_key (ตั้งค่าเฉพาะ chat)
+     * 2. API Key Pool ตาม chat_ai_provider
+     * 3. Global AI Settings (AiContentSetting)
+     */
+    public function getChatAIApiKey(): ?string
+    {
+        // 1. ใช้ key เฉพาะ chat ถ้ามี
+        if (! empty($this->chat_ai_api_key)) {
+            return $this->chat_ai_api_key;
+        }
+
+        $provider = $this->getChatAIProvider();
+
+        // 2. ลองดึงจาก API Key Pool
+        try {
+            $poolKey = AiApiKey::where('provider', $provider)
+                ->where('is_active', true)
+                ->whereNull('disabled_until')
+                ->orderBy('priority', 'desc')
+                ->first();
+            if ($poolKey) {
+                return $poolKey->api_key;
+            }
+        } catch (\Exception $e) {
+            // Pool table อาจไม่มี → ข้ามไป
+        }
+
+        // 3. ลองดึงจาก Global AI Settings
+        $key = match ($provider) {
+            'gemini' => AiContentSetting::getValue('gemini_api_key'),
+            'openrouter' => AiContentSetting::getValue('claude_api_key')
+                ?? AiContentSetting::getValue('openai_api_key'),
+            default => null,
+        };
+
+        return ! empty($key) ? $key : null;
+    }
+
+    /**
+     * ดึง System Prompt สำหรับ Chat ทั่วไป (ถ้าว่าง → ใช้ default ใน FortuneAIService)
+     */
+    public function getChatSystemPrompt(): ?string
+    {
+        return $this->chat_system_prompt;
     }
 
     /**

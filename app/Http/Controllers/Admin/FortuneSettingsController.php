@@ -229,6 +229,12 @@ class FortuneSettingsController extends Controller
             // โหมดจ่ายคอมมิชชั่น: pv หรือ static
             'fortune_commission_mode' => 'nullable|in:pv,static',
             'fortune_static_commission_amount' => 'nullable|numeric|min:0',
+            // AI Chat ทั่วไป (สนทนาอัจฉริยะ)
+            'enable_ai_chat' => 'boolean',
+            'chat_ai_provider' => 'nullable|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
+            'chat_ai_model' => 'nullable|string|max:100',
+            'chat_ai_api_key' => 'nullable|string',
+            'chat_system_prompt' => 'nullable|string|max:5000',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
@@ -240,6 +246,7 @@ class FortuneSettingsController extends Controller
             'use_global_ai_settings', 'comment_engagement_enabled',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate',
+            'enable_ai_chat',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

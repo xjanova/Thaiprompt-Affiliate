@@ -349,6 +349,9 @@ class FortuneChannelManager
                 // Keyword auto-reply จากฐานข้อมูล → ส่งตาม response_type
                 'keyword_matched' => $this->sendLineKeywordResponse($lineService, $userId, $result, $replyToken),
 
+                // AI Chat ทั่วไป (Gemini) → ส่ง text ธรรมดา (เป็นธรรมชาติกว่า Flex)
+                'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };
