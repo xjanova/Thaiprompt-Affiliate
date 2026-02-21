@@ -12,7 +12,7 @@
  * - Real browser fullscreen (Fullscreen API)
  *
  * @author TP-Affiliate Team
- * @version 3.2.1
+ * @version 3.3.0
  */
 
 class OrgChartViewer {
@@ -54,13 +54,17 @@ class OrgChartViewer {
         this.data = null;
         this.transform = { x: 0, y: 0, scale: 1 };
         this.isDragging = false;
+        this.hasDragged = false; // ตรวจว่ามีการลากจริงหรือไม่ (ใช้แยก click กับ drag)
+        this.dragThreshold = 5; // ระยะ pixel ขั้นต่ำที่ถือว่าเป็นการลาก
         this.lastTouchDistance = null;
         this.lastTouchCenter = null;
         this.startDragPoint = { x: 0, y: 0 };
+        this.mouseDownPoint = { x: 0, y: 0 }; // จุดเริ่มต้นจริง (ใช้คำนวณ threshold)
         this.nodeCount = 0;
         this.maxDepthReached = 0;
         this.nodePositions = new Map();
         this.isFullscreen = false;
+        this.minimapDragging = false; // สถานะลากบน minimap
 
         // Initialize
         this.init();
@@ -427,6 +431,7 @@ class OrgChartViewer {
                     width: 100%;
                     height: 100px;
                     display: block;
+                    cursor: pointer;
                 }
 
                 .n8n-minimap-viewport {
@@ -435,6 +440,7 @@ class OrgChartViewer {
                     background: rgba(168, 85, 247, 0.1);
                     border-radius: 4px;
                     pointer-events: none;
+                    transition: left 0.15s ease, top 0.15s ease;
                 }
 
                 /* Stats */
@@ -669,17 +675,27 @@ class OrgChartViewer {
         document.addEventListener('mozfullscreenchange', () => this.handleFullscreenChange());
         document.addEventListener('MSFullscreenChange', () => this.handleFullscreenChange());
 
-        // Mouse events
+        // Mouse events — ลากได้จากทุกจุดบน canvas (ทั้ง grid และ node)
         this.canvas.addEventListener('mousedown', (e) => this.onDragStart(e));
-        this.canvas.addEventListener('mousemove', (e) => this.onDragMove(e));
-        this.canvas.addEventListener('mouseup', () => this.onDragEnd());
-        this.canvas.addEventListener('mouseleave', () => this.onDragEnd());
+        document.addEventListener('mousemove', (e) => this.onDragMove(e));
+        document.addEventListener('mouseup', (e) => this.onDragEnd(e));
+        this.canvas.addEventListener('mouseleave', () => {
+            // ไม่หยุด drag เมื่อออกจาก canvas — ให้ mouseup บน document จัดการ
+        });
         this.canvas.addEventListener('wheel', (e) => this.onWheel(e), { passive: false });
 
         // Touch events
         this.canvas.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });
         this.canvas.addEventListener('touchmove', (e) => this.onTouchMove(e), { passive: false });
         this.canvas.addEventListener('touchend', (e) => this.onTouchEnd(e));
+
+        // Minimap click/drag — คลิกหรือลากบน minimap เพื่อเลื่อนมุมมอง
+        const minimapContainer = this.container.querySelector('.n8n-minimap');
+        if (minimapContainer && this.minimapCanvas) {
+            minimapContainer.addEventListener('mousedown', (e) => this.onMinimapMouseDown(e));
+            document.addEventListener('mousemove', (e) => this.onMinimapMouseMove(e));
+            document.addEventListener('mouseup', (e) => this.onMinimapMouseUp(e));
+        }
 
         // Modal
         this.container.querySelector('.n8n-modal-backdrop').addEventListener('click', () => this.hideModal());
@@ -689,27 +705,49 @@ class OrgChartViewer {
     }
 
     /**
-     * Mouse/Touch Events
+     * Mouse/Touch Events — ลากได้จากทุกจุด (grid + node)
+     * ใช้ drag threshold เพื่อแยก click กับ drag
      */
     onDragStart(e) {
-        if (e.target.closest('.n8n-node')) return;
+        // ไม่ block drag บน node แล้ว — ให้ลากได้จากทุกจุด
+        // ใช้ drag threshold แทนเพื่อแยก click vs drag
+        if (e.button !== 0) return; // เฉพาะ left click
+
         this.isDragging = true;
+        this.hasDragged = false;
+        this.mouseDownPoint = { x: e.clientX, y: e.clientY };
         this.startDragPoint = {
             x: e.clientX - this.transform.x,
             y: e.clientY - this.transform.y
         };
+        this.canvas.style.cursor = 'grabbing';
+        e.preventDefault(); // ป้องกัน text selection ระหว่างลาก
     }
 
     onDragMove(e) {
         if (!this.isDragging) return;
+
+        // คำนวณระยะที่เลื่อนจากจุดเริ่มต้น
+        const dx = e.clientX - this.mouseDownPoint.x;
+        const dy = e.clientY - this.mouseDownPoint.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // ถ้าเลื่อนเกิน threshold → ถือว่าเป็นการลากจริง
+        if (distance > this.dragThreshold) {
+            this.hasDragged = true;
+        }
+
+        // อัพเดท transform เสมอ (แม้ยังไม่เกิน threshold ก็ให้เลื่อนทันที)
         this.transform.x = e.clientX - this.startDragPoint.x;
         this.transform.y = e.clientY - this.startDragPoint.y;
         this.applyTransform();
         this.updateMinimap();
     }
 
-    onDragEnd() {
+    onDragEnd(e) {
+        if (!this.isDragging) return;
         this.isDragging = false;
+        this.canvas.style.cursor = 'grab';
     }
 
     onWheel(e) {
@@ -725,6 +763,8 @@ class OrgChartViewer {
         if (e.touches.length === 1) {
             const touch = e.touches[0];
             this.isDragging = true;
+            this.hasDragged = false;
+            this.mouseDownPoint = { x: touch.clientX, y: touch.clientY };
             this.startDragPoint = {
                 x: touch.clientX - this.transform.x,
                 y: touch.clientY - this.transform.y
@@ -732,6 +772,7 @@ class OrgChartViewer {
         } else if (e.touches.length === 2) {
             e.preventDefault();
             this.isDragging = false;
+            this.hasDragged = true; // pinch-zoom ถือว่า drag แล้ว
             this.lastTouchDistance = this.getTouchDistance(e.touches);
             this.lastTouchCenter = this.getTouchCenter(e.touches);
         }
@@ -740,6 +781,11 @@ class OrgChartViewer {
     onTouchMove(e) {
         if (e.touches.length === 1 && this.isDragging) {
             const touch = e.touches[0];
+            const dx = touch.clientX - this.mouseDownPoint.x;
+            const dy = touch.clientY - this.mouseDownPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > this.dragThreshold) {
+                this.hasDragged = true;
+            }
             this.transform.x = touch.clientX - this.startDragPoint.x;
             this.transform.y = touch.clientY - this.startDragPoint.y;
             this.applyTransform();
@@ -786,6 +832,71 @@ class OrgChartViewer {
             x: (touches[0].clientX + touches[1].clientX) / 2,
             y: (touches[0].clientY + touches[1].clientY) / 2
         };
+    }
+
+    /**
+     * Minimap Click/Drag — คลิกหรือลากบน minimap เพื่อเลื่อนมุมมอง
+     */
+    onMinimapMouseDown(e) {
+        // ตรวจว่าคลิกที่ minimap canvas ไม่ใช่ title
+        const target = e.target;
+        if (!target.classList.contains('n8n-minimap-canvas') &&
+            !target.classList.contains('n8n-minimap-viewport') &&
+            !target.closest('.n8n-minimap-canvas')) {
+            return;
+        }
+
+        e.preventDefault();
+        e.stopPropagation();
+        this.minimapDragging = true;
+        this.navigateFromMinimap(e);
+    }
+
+    onMinimapMouseMove(e) {
+        if (!this.minimapDragging) return;
+        e.preventDefault();
+        this.navigateFromMinimap(e);
+    }
+
+    onMinimapMouseUp(e) {
+        if (this.minimapDragging) {
+            e.preventDefault();
+            this.minimapDragging = false;
+        }
+    }
+
+    /**
+     * คำนวณตำแหน่งจาก minimap click แล้วเลื่อน canvas
+     */
+    navigateFromMinimap(e) {
+        if (!this.data || !this.minimapCanvas) return;
+
+        const canvasEl = this.minimapCanvas;
+        const rect = canvasEl.getBoundingClientRect();
+
+        // ตำแหน่ง click บน minimap canvas (pixel)
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+
+        // คำนวณ bounds ของ tree
+        const bounds = this.calculateBounds();
+        const padding = 20;
+        const scale = Math.min(
+            (canvasEl.width - padding * 2) / bounds.width,
+            (canvasEl.height - padding * 2) / bounds.height
+        ) * 0.8;
+
+        // แปลง minimap coordinates → world coordinates
+        const worldX = (clickX - canvasEl.width / 2) / scale + bounds.centerX;
+        const worldY = (clickY - padding) / scale + bounds.minY;
+
+        // เลื่อน canvas ให้จุดนี้อยู่ตรงกลาง
+        const viewRect = this.canvas.getBoundingClientRect();
+        this.transform.x = viewRect.width / 2 - worldX * this.transform.scale;
+        this.transform.y = viewRect.height / 2 - worldY * this.transform.scale;
+
+        this.applyTransform();
+        this.updateMinimap();
     }
 
     /**
@@ -1161,14 +1272,16 @@ class OrgChartViewer {
             <circle cx="${nodeWidth / 2}" cy="${nodeHeight}" r="5" fill="${accentColor}" stroke="white" stroke-width="2"/>
         `;
 
-        // Click handler
+        // Click handler — แสดงรายละเอียดเฉพาะเมื่อไม่ได้ลาก
         g.addEventListener('click', (e) => {
             e.stopPropagation();
+            // ถ้ามีการลากจริง (hasDragged) ไม่ต้องแสดง modal
+            if (this.hasDragged) return;
             this.showNodeDetail(node);
         });
 
         g.addEventListener('touchend', (e) => {
-            if (!this.isDragging && e.changedTouches.length === 1) {
+            if (!this.hasDragged && e.changedTouches.length === 1) {
                 e.preventDefault();
                 e.stopPropagation();
                 this.showNodeDetail(node);
