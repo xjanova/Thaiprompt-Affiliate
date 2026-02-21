@@ -2592,6 +2592,12 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     // Usage Logs & Analytics
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
 
+    // Generations Gallery
+    Route::get('/generations', [AiGenAdminController::class, 'generations'])->name('generations');
+
+    // Subscriptions
+    Route::get('/subscriptions', [AiGenAdminController::class, 'subscriptions'])->name('subscriptions');
+
     // Settings (Wallet, Pricing, General)
     Route::get('/settings', [AiGenAdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AiGenAdminController::class, 'saveSettings'])->name('settings.save');

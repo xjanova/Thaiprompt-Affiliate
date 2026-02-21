@@ -508,6 +508,69 @@ class AiGenAdminController extends Controller
     }
 
     // ===================================================================
+    // Generations Gallery
+    // ===================================================================
+
+    /**
+     * แสดงหน้า gallery ผลงานที่สร้างจาก AI
+     */
+    public function generations(Request $request)
+    {
+        try {
+            $logs = AiGenUsageLog::with(['user', 'provider'])
+                ->where('status', 'completed')
+                ->latest()
+                ->paginate(24);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $logs,
+                ]);
+            }
+
+            return view('admin.ai-gen.generations', compact('logs'));
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+
+            return view('admin.ai-gen.generations', ['logs' => collect()]);
+        }
+    }
+
+    // ===================================================================
+    // Subscriptions
+    // ===================================================================
+
+    /**
+     * แสดงรายการ subscriptions ของผู้ใช้
+     */
+    public function subscriptions(Request $request)
+    {
+        try {
+            $subscriptions = AiGenSubscription::with(['user', 'package'])
+                ->latest()
+                ->paginate(20);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $subscriptions,
+                ]);
+            }
+
+            return view('admin.ai-gen.subscriptions', compact('subscriptions'));
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            }
+
+            return view('admin.ai-gen.subscriptions', ['subscriptions' => collect()]);
+        }
+    }
+
+    // ===================================================================
     // Settings (Wallet, Pricing, General)
     // ===================================================================
 
