@@ -110,6 +110,12 @@
                 {{-- Description --}}
                 <div class="px-5 pb-3">
                     <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2" x-text="provider.description || 'ไม่มีคำอธิบาย'"></p>
+                    {{-- API Docs Link --}}
+                    <a x-show="provider.api_docs_url" :href="provider.api_docs_url" target="_blank" rel="noopener"
+                       class="inline-flex items-center gap-1 mt-2 text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 font-medium hover:underline transition">
+                        🔑 ไปเอา API Key
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
                 </div>
 
                 {{-- Features Tags --}}
@@ -228,6 +234,15 @@
             <form @submit.prevent="saveConfig()" class="p-6 space-y-4">
                 <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-sm text-blue-700 dark:text-blue-300">
                     ℹ️ กำหนด API credentials สำหรับเชื่อมต่อกับ provider
+                </div>
+                {{-- API Docs Link ใน Config Modal --}}
+                <div x-show="configProvider?.api_docs_url" class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-3">
+                    <a :href="configProvider?.api_docs_url" target="_blank" rel="noopener"
+                       class="flex items-center gap-2 text-sm text-purple-700 dark:text-purple-300 hover:text-purple-900 dark:hover:text-purple-100 font-medium">
+                        🔑 ไปเอา API Key ที่นี่
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                    </a>
+                    <p class="text-xs text-purple-500 dark:text-purple-400 mt-1" x-text="configProvider?.api_docs_url"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key *</label>

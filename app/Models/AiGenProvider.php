@@ -16,6 +16,7 @@ class AiGenProvider extends Model
         'type',
         'description',
         'logo_url',
+        'api_docs_url',
         'supported_features',
         'is_active',
         'priority',

@@ -13,120 +13,320 @@ class AiGenSeeder extends Seeder
 {
     /**
      * Run the database seeds.
+     *
+     * สร้าง AI Providers ทุกตัวในตลาดพร้อมลิ้งค์ API docs
+     * admin แค่ใส่ API key ก็พร้อมใช้งานได้ทันที
      */
     public function run(): void
     {
-        // Freepik Provider (เดิม)
-        $freepik = AiGenProvider::updateOrCreate(
-            ['slug' => 'freepik'],
-            [
-                'name' => 'Freepik',
-                'slug' => 'freepik',
-                'type' => 'both',
-                'description' => 'เจนภาพและวิดีโอคุณภาพสูงด้วย Freepik AI',
-                'logo_url' => null,
-                'supported_features' => ['text-to-image', 'text-to-video', 'image-editing'],
-                'is_active' => true,
-                'priority' => 5,
-            ]
-        );
+        $this->command->info('🤖 กำลัง seed AI Gen Providers ทั้งหมด...');
 
-        // Add Freepik configs (empty by default - admin needs to configure)
-        $freepik->setConfig('api_key', '', true);
-        $freepik->setConfig('api_endpoint', 'https://api.freepik.com/v1', false);
+        // =====================================================================
+        // 🖼️ IMAGE GENERATION PROVIDERS
+        // =====================================================================
 
-        // Together AI Provider (FLUX.1 schnell - ฟรีไม่อั้น)
+        // 1. Together AI (FLUX.1 schnell - ฟรีไม่อั้น) ⭐ แนะนำ
         $togetherAi = AiGenProvider::updateOrCreate(
             ['slug' => 'together-ai'],
             [
                 'name' => 'Together AI (FLUX)',
-                'slug' => 'together-ai',
                 'type' => 'image',
                 'description' => 'เจนภาพฟรีไม่อั้นด้วย FLUX.1 schnell - คุณภาพดี ความเร็วสูง',
-                'logo_url' => null,
+                'api_docs_url' => 'https://api.together.ai/settings/api-keys',
                 'supported_features' => ['text-to-image'],
                 'is_active' => true,
                 'priority' => 1,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 0,
             ]
         );
-
-        // ตั้งค่า Together AI (admin ต้องใส่ API key ในหลังบ้าน)
         $togetherAi->setConfig('api_key', '', true);
         $togetherAi->setConfig('api_endpoint', 'https://api.together.xyz/v1', false);
 
-        // Grok Provider (xAI Aurora - คุณภาพสูง $0.07/ภาพ)
-        $grok = AiGenProvider::updateOrCreate(
-            ['slug' => 'grok'],
-            [
-                'name' => 'Grok (xAI Aurora)',
-                'slug' => 'grok',
-                'type' => 'image',
-                'description' => 'เจนภาพคุณภาพสูงด้วย Grok Aurora จาก xAI ($0.07/ภาพ)',
-                'logo_url' => null,
-                'supported_features' => ['text-to-image'],
-                'is_active' => true,
-                'priority' => 3,
-            ]
-        );
-
-        // ตั้งค่า Grok (admin ต้องใส่ API key ในหลังบ้าน)
-        $grok->setConfig('api_key', '', true);
-        $grok->setConfig('api_endpoint', 'https://api.x.ai/v1', false);
-
-        // Cloudflare Workers AI Provider (ฟรี ~40 ภาพ/วัน แล้ว ~$0.003/ภาพ)
+        // 2. Cloudflare Workers AI (FLUX - ฟรี ~40 ภาพ/วัน)
         $cloudflareAi = AiGenProvider::updateOrCreate(
             ['slug' => 'cloudflare-ai'],
             [
                 'name' => 'Cloudflare AI (FLUX)',
-                'slug' => 'cloudflare-ai',
                 'type' => 'image',
-                'description' => 'เจนภาพราคาถูกด้วย Cloudflare Workers AI - ฟรี ~40 ภาพ/วัน',
-                'logo_url' => null,
+                'description' => 'เจนภาพราคาถูกด้วย Cloudflare Workers AI - ฟรี ~40 ภาพ/วัน จากนั้น $0.003/ภาพ',
+                'api_docs_url' => 'https://dash.cloudflare.com/profile/api-tokens',
                 'supported_features' => ['text-to-image'],
                 'is_active' => true,
                 'priority' => 2,
+                'wallet_cost_per_image' => 1,
+                'wallet_cost_per_video' => 0,
             ]
         );
-
-        // ตั้งค่า Cloudflare AI (admin ต้องใส่ API token และ Account ID ในหลังบ้าน)
         $cloudflareAi->setConfig('api_key', '', true);
         $cloudflareAi->setConfig('account_id', '', false);
 
-        // Placeholder providers สำหรับอนาคต
+        // 3. Grok / xAI Aurora (คุณภาพสูง)
+        $grok = AiGenProvider::updateOrCreate(
+            ['slug' => 'grok'],
+            [
+                'name' => 'Grok (xAI Aurora)',
+                'type' => 'image',
+                'description' => 'เจนภาพคุณภาพสูงด้วย Grok Aurora จาก xAI ($0.07/ภาพ)',
+                'api_docs_url' => 'https://console.x.ai/',
+                'supported_features' => ['text-to-image'],
+                'is_active' => true,
+                'priority' => 3,
+                'wallet_cost_per_image' => 3,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $grok->setConfig('api_key', '', true);
+        $grok->setConfig('api_endpoint', 'https://api.x.ai/v1', false);
+
+        // 4. OpenAI (DALL-E 3 / gpt-image-1) ⭐ ยอดนิยม
+        $openai = AiGenProvider::updateOrCreate(
+            ['slug' => 'openai'],
+            [
+                'name' => 'OpenAI (DALL-E 3)',
+                'type' => 'image',
+                'description' => 'เจนภาพด้วย DALL-E 3 และ gpt-image-1 จาก OpenAI - คุณภาพสูง เข้าใจ prompt ได้ดี',
+                'api_docs_url' => 'https://platform.openai.com/api-keys',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 4,
+                'wallet_cost_per_image' => 5,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $openai->setConfig('api_key', '', true);
+        $openai->setConfig('api_endpoint', 'https://api.openai.com/v1', false);
+
+        // 5. Stability AI (Stable Diffusion 3.5)
+        $stabilityAi = AiGenProvider::updateOrCreate(
+            ['slug' => 'stability-ai'],
+            [
+                'name' => 'Stability AI (SD 3.5)',
+                'type' => 'image',
+                'description' => 'เจนภาพด้วย Stable Diffusion 3.5 - โมเดล open-source ระดับโลก รองรับ negative prompt',
+                'api_docs_url' => 'https://platform.stability.ai/account/keys',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 5,
+                'wallet_cost_per_image' => 3,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $stabilityAi->setConfig('api_key', '', true);
+
+        // 6. FAL AI (FLUX Pro - เร็วมาก)
+        $falAi = AiGenProvider::updateOrCreate(
+            ['slug' => 'fal-ai'],
+            [
+                'name' => 'FAL AI (FLUX Pro)',
+                'type' => 'image',
+                'description' => 'เจนภาพเร็วมาก (~2 วินาที) ด้วย FLUX Pro, FLUX Dev, FLUX Realism',
+                'api_docs_url' => 'https://fal.ai/dashboard/keys',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 6,
+                'wallet_cost_per_image' => 2,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $falAi->setConfig('api_key', '', true);
+
+        // 7. Black Forest Labs (FLUX Pro - คุณภาพสูงสุด)
+        $bfl = AiGenProvider::updateOrCreate(
+            ['slug' => 'bfl'],
+            [
+                'name' => 'BFL (FLUX Pro 1.1)',
+                'type' => 'image',
+                'description' => 'เจนภาพคุณภาพสูงสุดจากผู้สร้าง FLUX โดยตรง - FLUX Pro 1.1',
+                'api_docs_url' => 'https://api.bfl.ml/',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 7,
+                'wallet_cost_per_image' => 4,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $bfl->setConfig('api_key', '', true);
+
+        // 8. Replicate (หลายโมเดล)
+        $replicate = AiGenProvider::updateOrCreate(
+            ['slug' => 'replicate'],
+            [
+                'name' => 'Replicate',
+                'type' => 'image',
+                'description' => 'เข้าถึง AI model หลายร้อยตัว - FLUX, SDXL, Kandinsky และอื่นๆ',
+                'api_docs_url' => 'https://replicate.com/account/api-tokens',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 8,
+                'wallet_cost_per_image' => 2,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $replicate->setConfig('api_key', '', true);
+
+        // 9. Ideogram (เน้นข้อความในภาพ)
+        $ideogram = AiGenProvider::updateOrCreate(
+            ['slug' => 'ideogram'],
+            [
+                'name' => 'Ideogram',
+                'type' => 'image',
+                'description' => 'เจนภาพที่มีข้อความถูกต้อง 100% - เหมาะสำหรับโปสเตอร์ โลโก้ โฆษณา',
+                'api_docs_url' => 'https://ideogram.ai/manage-api',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 9,
+                'wallet_cost_per_image' => 3,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $ideogram->setConfig('api_key', '', true);
+
+        // 10. Leonardo AI (game art, concept art)
+        $leonardoAi = AiGenProvider::updateOrCreate(
+            ['slug' => 'leonardo-ai'],
+            [
+                'name' => 'Leonardo AI',
+                'type' => 'image',
+                'description' => 'เจนภาพเน้น game art, character design, concept art - มีโมเดลเฉพาะทาง',
+                'api_docs_url' => 'https://app.leonardo.ai/api-access',
+                'supported_features' => ['text-to-image'],
+                'is_active' => false,
+                'priority' => 10,
+                'wallet_cost_per_image' => 3,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+        $leonardoAi->setConfig('api_key', '', true);
+
+        // 11. Freepik (ภาพ + วิดีโอ)
+        $freepik = AiGenProvider::updateOrCreate(
+            ['slug' => 'freepik'],
+            [
+                'name' => 'Freepik AI',
+                'type' => 'both',
+                'description' => 'เจนภาพและวิดีโอคุณภาพสูงด้วย Freepik AI - เหมาะสำหรับงาน commercial',
+                'api_docs_url' => 'https://www.freepik.com/api',
+                'supported_features' => ['text-to-image', 'text-to-video', 'image-editing'],
+                'is_active' => false,
+                'priority' => 11,
+                'wallet_cost_per_image' => 2,
+                'wallet_cost_per_video' => 10,
+            ]
+        );
+        $freepik->setConfig('api_key', '', true);
+        $freepik->setConfig('api_endpoint', 'https://api.freepik.com/v1', false);
+
+        // =====================================================================
+        // 🎬 VIDEO GENERATION PROVIDERS
+        // =====================================================================
+
+        // 12. Kling AI (ภาพ + วิดีโอ คุณภาพสูง) ⭐
+        $klingAi = AiGenProvider::updateOrCreate(
+            ['slug' => 'kling-ai'],
+            [
+                'name' => 'Kling AI',
+                'type' => 'both',
+                'description' => 'สร้างภาพและวิดีโอ AI คุณภาพสูง - text-to-video, image-to-video ราคาเหมาะสม',
+                'api_docs_url' => 'https://platform.klingai.com/',
+                'supported_features' => ['text-to-image', 'text-to-video', 'image-to-video'],
+                'is_active' => false,
+                'priority' => 12,
+                'wallet_cost_per_image' => 2,
+                'wallet_cost_per_video' => 15,
+            ]
+        );
+        $klingAi->setConfig('api_key', '', true);
+
+        // 13. Runway ML (Gen-3 Alpha - top tier video)
+        $runwayMl = AiGenProvider::updateOrCreate(
+            ['slug' => 'runway-ml'],
+            [
+                'name' => 'Runway ML (Gen-3)',
+                'type' => 'video',
+                'description' => 'สร้างวิดีโอคุณภาพสูงสุดด้วย Gen-3 Alpha Turbo - ผู้นำตลาด AI video',
+                'api_docs_url' => 'https://dev.runwayml.com/',
+                'supported_features' => ['text-to-video', 'image-to-video'],
+                'is_active' => false,
+                'priority' => 13,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 25,
+            ]
+        );
+        $runwayMl->setConfig('api_key', '', true);
+
+        // 14. Luma AI (Dream Machine)
+        $lumaAi = AiGenProvider::updateOrCreate(
+            ['slug' => 'luma-ai'],
+            [
+                'name' => 'Luma AI (Dream Machine)',
+                'type' => 'video',
+                'description' => 'สร้างวิดีโอ cinematic ด้วย Dream Machine - คุณภาพระดับ Hollywood',
+                'api_docs_url' => 'https://lumalabs.ai/dream-machine/api',
+                'supported_features' => ['text-to-video', 'image-to-video'],
+                'is_active' => false,
+                'priority' => 14,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 20,
+            ]
+        );
+        $lumaAi->setConfig('api_key', '', true);
+
+        // 15. Minimax / Hailuo (วิดีโอ realistic)
+        $minimax = AiGenProvider::updateOrCreate(
+            ['slug' => 'minimax'],
+            [
+                'name' => 'Minimax (Hailuo)',
+                'type' => 'video',
+                'description' => 'สร้างวิดีโอ realistic ด้วย Hailuo AI - คุณภาพสูง ราคาย่อมเยา',
+                'api_docs_url' => 'https://platform.minimaxi.com/',
+                'supported_features' => ['text-to-video', 'image-to-video'],
+                'is_active' => false,
+                'priority' => 15,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 15,
+            ]
+        );
+        $minimax->setConfig('api_key', '', true);
+
+        // 16. Vidu (placeholder)
         AiGenProvider::updateOrCreate(
             ['slug' => 'vidu'],
             [
                 'name' => 'Vidu',
-                'slug' => 'vidu',
                 'type' => 'video',
-                'description' => 'AI-powered video generation platform',
-                'logo_url' => null,
+                'description' => 'AI-powered video generation platform - รอ API เปิดให้บริการ',
+                'api_docs_url' => 'https://www.vidu.com/',
                 'supported_features' => ['text-to-video', 'video-editing'],
                 'is_active' => false,
-                'priority' => 10,
+                'priority' => 16,
             ]
         );
 
+        // 17. Pixverse (placeholder)
         AiGenProvider::updateOrCreate(
             ['slug' => 'pixverse'],
             [
                 'name' => 'Pixverse',
-                'slug' => 'pixverse',
                 'type' => 'video',
-                'description' => 'Create stunning videos with AI',
-                'logo_url' => null,
+                'description' => 'สร้างวิดีโอ AI สไตล์สวยงาม - รอ API เปิดให้บริการ',
+                'api_docs_url' => 'https://pixverse.ai/',
                 'supported_features' => ['text-to-video', 'image-to-video'],
                 'is_active' => false,
-                'priority' => 11,
+                'priority' => 17,
             ]
         );
 
-        // Create Packages
+        $this->command->info('✅ Seed AI Providers ทั้งหมด 17 ตัว สำเร็จ!');
+
+        // =====================================================================
+        // 📦 PACKAGES
+        // =====================================================================
+
         AiGenPackage::updateOrCreate(
             ['slug' => 'starter'],
             [
                 'name' => 'Starter',
-                'slug' => 'starter',
                 'description' => 'Perfect for trying out AI generation',
                 'price' => 299.00,
                 'currency' => 'THB',
@@ -136,7 +336,7 @@ class AiGenSeeder extends Seeder
                 'is_recurring' => false,
                 'recurring_period' => null,
                 'features' => ['50 Image Credits', '10 Video Credits', '30 Days Access', 'Standard Quality'],
-                'provider_access' => null, // null = all providers
+                'provider_access' => null,
                 'is_active' => true,
                 'is_popular' => false,
                 'sort_order' => 1,
@@ -147,7 +347,6 @@ class AiGenSeeder extends Seeder
             ['slug' => 'professional'],
             [
                 'name' => 'Professional',
-                'slug' => 'professional',
                 'description' => 'For content creators and professionals',
                 'price' => 799.00,
                 'currency' => 'THB',
@@ -168,7 +367,6 @@ class AiGenSeeder extends Seeder
             ['slug' => 'enterprise'],
             [
                 'name' => 'Enterprise',
-                'slug' => 'enterprise',
                 'description' => 'Unlimited power for teams and businesses',
                 'price' => 1999.00,
                 'currency' => 'THB',
@@ -185,17 +383,19 @@ class AiGenSeeder extends Seeder
             ]
         );
 
-        // Create Quotas
+        // =====================================================================
+        // 🎯 QUOTAS
+        // =====================================================================
+
         AiGenQuota::updateOrCreate(
             ['name' => 'Default Free Quota'],
             [
-                'name' => 'Default Free Quota',
                 'description' => 'Free quota for all registered users',
                 'free_image_daily' => 3,
                 'free_image_monthly' => 20,
                 'free_video_daily' => 1,
                 'free_video_monthly' => 5,
-                'role' => null, // applies to all
+                'role' => null,
                 'is_active' => true,
                 'is_default' => true,
             ]
@@ -204,7 +404,6 @@ class AiGenSeeder extends Seeder
         AiGenQuota::updateOrCreate(
             ['name' => 'Admin Unlimited'],
             [
-                'name' => 'Admin Unlimited',
                 'description' => 'Unlimited access for administrators',
                 'free_image_daily' => 999999,
                 'free_image_monthly' => 999999,
@@ -216,10 +415,12 @@ class AiGenSeeder extends Seeder
             ]
         );
 
-        // ===== ตั้งค่า Wallet & System =====
+        // =====================================================================
+        // ⚙️ SETTINGS
+        // =====================================================================
+
         $this->command->info('🔧 กำลังตั้งค่า AI Gen settings...');
 
-        // ตั้งค่า wallet (ปิดเป็นค่าเริ่มต้น - admin เปิดเองได้)
         Setting::set('ai_gen_wallet_enabled', false, 'boolean', 'ai_gen');
         Setting::set('ai_gen_wallet_cost_image', 5, 'float', 'ai_gen');
         Setting::set('ai_gen_wallet_cost_video', 20, 'float', 'ai_gen');
@@ -229,7 +430,10 @@ class AiGenSeeder extends Seeder
         Setting::set('ai_gen_allow_nsfw', false, 'boolean', 'ai_gen');
         Setting::set('ai_gen_default_provider', '', 'string', 'ai_gen');
 
-        // ===== โปรโมชั่นตัวอย่าง =====
+        // =====================================================================
+        // 🎉 PROMOTIONS
+        // =====================================================================
+
         AiGenPromotion::updateOrCreate(
             ['code' => 'WELCOME50'],
             [
