@@ -39,7 +39,7 @@ class PollinationsProvider extends BaseAiGenProvider
      * เจนภาพด้วย Pollinations.ai
      *
      * Pollinations ใช้ GET request + query parameters
-     * ส่ง binary image กลับมาโดยตรง (ไม่ต้อง API key)
+     * รองรับทั้งแบบมี API key และไม่มี (ฟรีมี rate limit)
      *
      * @param string $prompt คำอธิบายภาพที่ต้องการเจน
      * @param array $parameters พารามิเตอร์เพิ่มเติม (size, style, model, num_images, seed)
@@ -63,8 +63,13 @@ class PollinationsProvider extends BaseAiGenProvider
             'height' => $size['height'],
             'model' => $model,
             'nologo' => 'true',
-            'quality' => 'high',
         ];
+
+        // เพิ่ม API key ถ้ามี (รองรับ ?key= query parameter)
+        $apiKey = $this->getConfig('api_key');
+        if ($apiKey) {
+            $queryParams['key'] = $apiKey;
+        }
 
         // เพิ่ม seed ถ้ามี
         if (isset($parameters['seed'])) {
@@ -86,13 +91,31 @@ class PollinationsProvider extends BaseAiGenProvider
                 $url = self::BASE_URL.'/'.$encodedPrompt.'?'.http_build_query($queryParams);
 
                 // เรียก API (GET request, returns binary image)
-                $response = Http::timeout(120)->get($url);
+                // ส่ง Authorization header ถ้ามี API key
+                $http = Http::timeout(120);
+                if ($apiKey) {
+                    $http = $http->withHeaders([
+                        'Authorization' => 'Bearer '.$apiKey,
+                    ]);
+                }
+                $response = $http->get($url);
 
                 if (! $response->successful()) {
                     if ($i === 0) {
+                        // ดึง error message จาก response body ถ้าเป็น JSON
+                        $errorMsg = 'Pollinations API error: HTTP '.$response->status();
+                        try {
+                            $errorBody = $response->json();
+                            if (isset($errorBody['error']['message'])) {
+                                $errorMsg = $errorBody['error']['message'];
+                            }
+                        } catch (\Exception $e) {
+                            // ไม่สามารถ parse JSON ได้ ใช้ default message
+                        }
+
                         return [
                             'success' => false,
-                            'error' => 'Pollinations API error: HTTP '.$response->status(),
+                            'error' => $errorMsg,
                         ];
                     }
                     break;
@@ -191,14 +214,16 @@ class PollinationsProvider extends BaseAiGenProvider
 
     /**
      * ตรวจสอบว่า provider ตั้งค่าเรียบร้อยหรือยัง
-     * Pollinations ไม่ต้อง API key - พร้อมใช้งานเสมอ
+     * Pollinations ต้องมี API key (ฟรีสมัครได้ที่ enter.pollinations.ai)
      *
      * @return bool
      */
     public function isConfigured(): bool
     {
-        // Pollinations ไม่ต้อง API key
-        return true;
+        // ตรวจสอบว่ามี API key หรือไม่
+        $apiKey = $this->getConfig('api_key');
+
+        return ! empty($apiKey);
     }
 
     /**
@@ -209,9 +234,31 @@ class PollinationsProvider extends BaseAiGenProvider
     public function testConnection(): array
     {
         try {
-            // ทดสอบโดยเจนภาพเล็กๆ
-            $testUrl = self::BASE_URL.'/test?width=256&height=256&model=flux&nologo=true&seed=42';
-            $response = Http::timeout(30)->get($testUrl);
+            $apiKey = $this->getConfig('api_key');
+
+            // สร้าง URL ทดสอบ
+            $queryParams = [
+                'width' => 256,
+                'height' => 256,
+                'model' => 'flux',
+                'nologo' => 'true',
+                'seed' => 42,
+            ];
+
+            if ($apiKey) {
+                $queryParams['key'] = $apiKey;
+            }
+
+            $testUrl = self::BASE_URL.'/test?'.http_build_query($queryParams);
+
+            // เรียก API พร้อม Authorization header
+            $http = Http::timeout(30);
+            if ($apiKey) {
+                $http = $http->withHeaders([
+                    'Authorization' => 'Bearer '.$apiKey,
+                ]);
+            }
+            $response = $http->get($testUrl);
 
             if ($response->successful()) {
                 $contentType = $response->header('content-type');
@@ -223,9 +270,20 @@ class PollinationsProvider extends BaseAiGenProvider
                 ];
             }
 
+            // ดึง error message จาก response
+            $errorMsg = 'HTTP '.$response->status();
+            try {
+                $errorBody = $response->json();
+                if (isset($errorBody['error']['message'])) {
+                    $errorMsg = $errorBody['error']['message'];
+                }
+            } catch (\Exception $e) {
+                // ไม่สามารถ parse JSON ได้
+            }
+
             return [
                 'success' => false,
-                'message' => 'เชื่อมต่อล้มเหลว: HTTP '.$response->status(),
+                'message' => 'เชื่อมต่อล้มเหลว: '.$errorMsg,
             ];
         } catch (\Exception $e) {
             return [

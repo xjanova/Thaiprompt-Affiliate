@@ -317,14 +317,14 @@ class AiGenSeeder extends Seeder
             ]
         );
 
-        // 18. Pollinations.ai (ฟรี 100% ไม่ต้อง API key) ⭐ แนะนำ
+        // 18. Pollinations.ai (ฟรีสมัคร API key ได้ที่ enter.pollinations.ai) ⭐ แนะนำ
         AiGenProvider::updateOrCreate(
             ['slug' => 'pollinations'],
             [
                 'name' => 'Pollinations.ai (FLUX)',
                 'type' => 'image',
-                'description' => 'เจนภาพฟรี 100% ไม่ต้อง API key ไม่ต้องสมัคร - ใช้โมเดล FLUX, FLUX Realism, FLUX Anime',
-                'api_docs_url' => 'https://pollinations.ai',
+                'description' => 'เจนภาพด้วยโมเดล FLUX - สมัคร API key ฟรีที่ enter.pollinations.ai',
+                'api_docs_url' => 'https://enter.pollinations.ai',
                 'supported_features' => ['text-to-image'],
                 'is_active' => true,
                 'priority' => 0,

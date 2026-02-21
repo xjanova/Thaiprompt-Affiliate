@@ -353,7 +353,9 @@ function aiProviders() {
             'minimax': [
                 { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
             ],
-            'pollinations': [],
+            'pollinations': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 สมัครฟรีที่ enter.pollinations.ai แล้วนำ key มาใส่', placeholder: 'sk_...' }
+            ],
         },
 
         async init() {
