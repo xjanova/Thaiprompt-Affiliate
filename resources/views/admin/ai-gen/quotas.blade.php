@@ -1,581 +1,159 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'AI Gen Free Quotas')
+@section('title', 'จัดการ Free Quotas')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div x-data="aiQuotas()" x-init="init()" class="space-y-6">
+
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="h3 mb-1">
-                <i class="fas fa-gift text-success"></i> Free Quotas Management
-            </h1>
-            <p class="text-muted mb-0">จัดการ Quota ฟรีรายวันและรายเดือนสำหรับผู้ใช้</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">🎁 จัดการ Free Quotas</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">กำหนดโควตาฟรีสำหรับผู้ใช้แต่ละระดับ</p>
         </div>
-        <button class="btn btn-success" data-toggle="modal" data-target="#quotaModal">
-            <i class="fas fa-plus"></i> Add Quota Setting
+        <button @click="openAdd()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white rounded-xl font-medium shadow-lg transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            เพิ่ม Quota
         </button>
     </div>
 
-    <!-- Info Alert -->
-    <div class="alert alert-info shadow">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-info-circle fa-2x mr-3"></i>
-            <div>
-                <strong>เกี่ยวกับ Free Quotas:</strong><br>
-                ตั้งค่า quota ฟรีสำหรับผู้ใช้แต่ละ role เพื่อให้สามารถทดลองใช้งาน AI Gen ได้โดยไม่ต้องซื้อแพคเกจ
-            </div>
+    {{-- Loading --}}
+    <div x-show="loading" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-amber-500 border-t-transparent"></div>
+    </div>
+
+    {{-- Empty --}}
+    <div x-show="!loading && quotas.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-6xl mb-4">🎁</div>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">ยังไม่มี Free Quota</h3>
+    </div>
+
+    {{-- Quotas Table --}}
+    <div x-show="!loading && quotas.length > 0" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ชื่อ</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ภาพ/วัน</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ภาพ/เดือน</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">วิดีโอ/วัน</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">วิดีโอ/เดือน</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">สำหรับ</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">สถานะ</th>
+                        <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">จัดการ</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="q in quotas" :key="q.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-gray-900 dark:text-white" x-text="q.name"></div>
+                                <div class="text-xs text-gray-500" x-text="q.description || ''"></div>
+                                <span x-show="q.is_default" class="text-xs bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-0.5 rounded-full">Default</span>
+                            </td>
+                            <td class="px-4 py-4 text-center font-medium text-gray-900 dark:text-white" x-text="q.free_image_daily"></td>
+                            <td class="px-4 py-4 text-center font-medium text-gray-900 dark:text-white" x-text="q.free_image_monthly"></td>
+                            <td class="px-4 py-4 text-center font-medium text-gray-900 dark:text-white" x-text="q.free_video_daily"></td>
+                            <td class="px-4 py-4 text-center font-medium text-gray-900 dark:text-white" x-text="q.free_video_monthly"></td>
+                            <td class="px-4 py-4 text-center"><span class="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" x-text="q.role || 'user'"></span></td>
+                            <td class="px-4 py-4 text-center"><span class="w-2 h-2 inline-block rounded-full" :class="q.is_active ? 'bg-green-500' : 'bg-red-400'"></span></td>
+                            <td class="px-6 py-4 text-right">
+                                <button @click="openEdit(q)" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm mr-2">✏️</button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Current Quotas -->
-    <div class="row mb-4" id="quotas-grid">
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-spinner fa-spin fa-3x text-muted"></i>
-            <p class="text-muted mt-3">Loading quotas...</p>
-        </div>
-    </div>
-
-    <!-- Usage Stats -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-chart-bar"></i> Free Quota Usage Statistics
-            </h6>
-        </div>
-        <div class="card-body">
-            <div class="row mb-4">
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card border-left-primary h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
-                                        Today's Free Usage
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-today">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-calendar-day fa-2x text-primary"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card border-left-success h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                        This Month
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-month">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-calendar-alt fa-2x text-success"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card border-left-info h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                        Active Users
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-users">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-users fa-2x text-info"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-3 col-md-6 mb-3">
-                    <div class="card border-left-warning h-100 py-2">
-                        <div class="card-body">
-                            <div class="row no-gutters align-items-center">
-                                <div class="col mr-2">
-                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                        Total Free Gens
-                                    </div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-900 dark:text-white" id="stat-total">-</div>
-                                </div>
-                                <div class="col-auto">
-                                    <i class="fas fa-gift fa-2x text-warning"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    {{-- Modal --}}
+    <div x-show="showModal" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="editing ? '✏️ แก้ไข Quota' : '➕ เพิ่ม Quota'"></h3>
             </div>
-
-            <!-- Chart -->
-            <div class="chart-area">
-                <canvas id="usageChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Add/Edit Quota Modal -->
-<div class="modal fade" id="quotaModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-gift"></i> <span id="modal-title">Add Quota Setting</span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form id="quotaForm">
-                <input type="hidden" id="quota-id">
-                <div class="modal-body">
-                    <div class="alert alert-light border">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i> กำหนด quota สำหรับแต่ละ role ของผู้ใช้
-                            (ตัวอย่าง: user, subscriber, vip, หรือ all สำหรับทุก role)
-                        </small>
+            <form @submit.prevent="save()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ *</label>
+                    <input type="text" x-model="form.name" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
+                    <input type="text" x-model="form.description" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ภาพ/วัน *</label><input type="number" x-model="form.free_image_daily" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ภาพ/เดือน *</label><input type="number" x-model="form.free_image_monthly" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วิดีโอ/วัน *</label><input type="number" x-model="form.free_video_daily" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วิดีโอ/เดือน *</label><input type="number" x-model="form.free_video_monthly" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"></div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">สำหรับ Role</label>
+                        <select x-model="form.role" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500"><option value="user">User</option><option value="admin">Admin</option></select>
                     </div>
-
-                    <div class="form-group">
-                        <label>Role *</label>
-                        <input type="text" class="form-control" name="role" required placeholder="e.g., user, subscriber, vip, all">
-                        <small class="form-text text-muted">ใช้ "all" สำหรับทุก role</small>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h6 class="font-weight-bold mb-3">
-                                <i class="fas fa-image text-primary"></i> Image Generation Quotas
-                            </h6>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Daily Image Quota</label>
-                                <input type="number" class="form-control" name="free_image_daily" min="0" value="0">
-                                <small class="form-text text-muted">จำนวนภาพฟรีต่อวัน</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Monthly Image Quota</label>
-                                <input type="number" class="form-control" name="free_image_monthly" min="0" value="0">
-                                <small class="form-text text-muted">จำนวนภาพฟรีต่อเดือน</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-12">
-                            <h6 class="font-weight-bold mb-3">
-                                <i class="fas fa-video text-danger"></i> Video Generation Quotas
-                            </h6>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Daily Video Quota</label>
-                                <input type="number" class="form-control" name="free_video_daily" min="0" value="0">
-                                <small class="form-text text-muted">จำนวนวีดีโอฟรีต่อวัน</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Monthly Video Quota</label>
-                                <input type="number" class="form-control" name="free_video_monthly" min="0" value="0">
-                                <small class="form-text text-muted">จำนวนวีดีโอฟรีต่อเดือน</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" checked>
-                            <label class="custom-control-label" for="is_active">
-                                Active
-                            </label>
-                        </div>
+                    <div class="flex flex-col justify-end gap-2">
+                        <label class="flex items-center gap-2"><input type="checkbox" x-model="form.is_active" class="rounded text-amber-600"><span class="text-sm text-gray-700 dark:text-gray-300">เปิดใช้</span></label>
+                        <label class="flex items-center gap-2"><input type="checkbox" x-model="form.is_default" class="rounded text-yellow-500"><span class="text-sm text-gray-700 dark:text-gray-300">Default</span></label>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save"></i> Save Quota
-                    </button>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showModal = false" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">ยกเลิก</button>
+                    <button type="submit" :disabled="saving" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl transition disabled:opacity-50 font-medium">💾 บันทึก</button>
                 </div>
             </form>
         </div>
     </div>
-</div>
-@endsection
 
-@push('styles')
-<style>
-    .quota-card {
-        border-radius: 15px;
-        border: 2px solid #e3e6f0;
-        transition: all 0.3s ease;
-        overflow: hidden;
-    }
-
-    .quota-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-    }
-
-    .quota-card.inactive {
-        opacity: 0.6;
-    }
-
-    .quota-header {
-        background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
-        color: white;
-        padding: 20px;
-        text-align: center;
-    }
-
-    .quota-card.inactive .quota-header {
-        background: linear-gradient(135deg, #858796 0%, #5a5c69 100%);
-    }
-
-    .role-badge {
-        display: inline-block;
-        padding: 8px 20px;
-        background: rgba(255,255,255,0.2);
-        border-radius: 20px;
-        font-size: 1.1rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-    }
-
-    .quota-item {
-        padding: 15px;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .quota-item:last-child {
-        border-bottom: none;
-    }
-
-    .quota-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-    }
-
-    .quota-icon.image {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .quota-icon.video {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-    }
-
-    .quota-value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #1cc88a;
-    }
-
-    .quota-label {
-        font-size: 0.85rem;
-        color: #858796;
-        font-weight: 600;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
-<script>
-let quotas = [];
-let usageChart = null;
-
-async function loadQuotas() {
-    try {
-        const response = await fetch('/admin/ai-gen/quotas', {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            quotas = data.data.quotas || [];
-            updateStats(data.data.stats || {});
-            renderQuotas();
-            renderChart(data.data.chart_data || {});
-        }
-    } catch (error) {
-        console.error('Error loading quotas:', error);
-        showError('Failed to load quotas');
-    }
-}
-
-function renderQuotas() {
-    const grid = document.getElementById('quotas-grid');
-
-    if (quotas.length === 0) {
-        grid.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-gift fa-4x text-muted mb-3"></i>
-                <h5 class="text-muted">No quota settings yet</h5>
-                <p class="text-muted">Click "Add Quota Setting" to create your first quota</p>
-            </div>
-        `;
-        return;
-    }
-
-    grid.innerHTML = quotas.map(quota => `
-        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-            <div class="card quota-card ${quota.is_active ? '' : 'inactive'} h-100">
-                <div class="quota-header">
-                    <div class="role-badge">${quota.role}</div>
-                    <div class="text-white small">
-                        ${quota.is_active ? '<i class="fas fa-check-circle"></i> Active' : '<i class="fas fa-times-circle"></i> Inactive'}
-                    </div>
-                </div>
-                <div class="card-body p-0">
-                    <!-- Image Quotas -->
-                    <div class="quota-item">
-                        <div class="d-flex align-items-center">
-                            <div class="quota-icon image mr-3">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="quota-label">Image Daily</div>
-                                <div class="quota-value">${quota.free_image_daily}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="quota-item">
-                        <div class="d-flex align-items-center">
-                            <div class="quota-icon image mr-3">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="quota-label">Image Monthly</div>
-                                <div class="quota-value">${quota.free_image_monthly}</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Video Quotas -->
-                    <div class="quota-item">
-                        <div class="d-flex align-items-center">
-                            <div class="quota-icon video mr-3">
-                                <i class="fas fa-video"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="quota-label">Video Daily</div>
-                                <div class="quota-value">${quota.free_video_daily}</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="quota-item">
-                        <div class="d-flex align-items-center">
-                            <div class="quota-icon video mr-3">
-                                <i class="fas fa-video"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <div class="quota-label">Video Monthly</div>
-                                <div class="quota-value">${quota.free_video_monthly}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer glass-fusion" border border-white/20 dark:border-white/10>
-                    <div class="d-flex justify-content-between">
-                        <button class="btn btn-sm btn-primary" onclick="editQuota(${quota.id})">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteQuota(${quota.id})">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
+    {{-- Toast --}}
+    <div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 max-w-sm">
+        <div class="rounded-xl shadow-2xl p-4 flex items-center gap-3" :class="toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+            <span x-text="toast.message" class="text-sm font-medium"></span>
         </div>
-    `).join('');
-}
+    </div>
+</div>
 
-function updateStats(stats) {
-    document.getElementById('stat-today').textContent = (stats.today || 0).toLocaleString();
-    document.getElementById('stat-month').textContent = (stats.this_month || 0).toLocaleString();
-    document.getElementById('stat-users').textContent = (stats.active_users || 0).toLocaleString();
-    document.getElementById('stat-total').textContent = (stats.total_free || 0).toLocaleString();
-}
+<script>
+function aiQuotas() {
+    return {
+        quotas: [], loading: true, saving: false, showModal: false, editing: null,
+        toast: { show: false, message: '', type: 'success' },
+        form: { name: '', description: '', free_image_daily: 5, free_image_monthly: 100, free_video_daily: 1, free_video_monthly: 10, role: 'user', is_active: true, is_default: false },
 
-function renderChart(chartData) {
-    const ctx = document.getElementById('usageChart');
-
-    if (usageChart) {
-        usageChart.destroy();
-    }
-
-    usageChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartData.labels || [],
-            datasets: [{
-                label: 'Free Image Generations',
-                data: chartData.images || [],
-                borderColor: '#4e73df',
-                backgroundColor: 'rgba(78, 115, 223, 0.1)',
-                tension: 0.3
-            }, {
-                label: 'Free Video Generations',
-                data: chartData.videos || [],
-                borderColor: '#e74a3b',
-                backgroundColor: 'rgba(231, 74, 59, 0.1)',
-                tension: 0.3
-            }]
+        async init() { await this.load(); },
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch('/admin/ai-gen/quotas', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+                if (data.success) this.quotas = data.data;
+            } catch (e) { this.showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
+            this.loading = false;
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'top',
-                },
-                title: {
-                    display: true,
-                    text: 'Free Quota Usage (Last 30 Days)'
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
-        }
-    });
-}
-
-// Form handling
-document.getElementById('quotaForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const quotaId = document.getElementById('quota-id').value;
-
-    const data = {
-        role: formData.get('role'),
-        free_image_daily: parseInt(formData.get('free_image_daily')),
-        free_image_monthly: parseInt(formData.get('free_image_monthly')),
-        free_video_daily: parseInt(formData.get('free_video_daily')),
-        free_video_monthly: parseInt(formData.get('free_video_monthly')),
-        is_active: formData.has('is_active')
-    };
-
-    try {
-        const url = quotaId ? `/admin/ai-gen/quotas/${quotaId}` : '/admin/ai-gen/quotas';
-        const method = quotaId ? 'PUT' : 'POST';
-
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            $('#quotaModal').modal('hide');
-            e.target.reset();
-            loadQuotas();
-            showSuccess(quotaId ? 'Quota updated successfully!' : 'Quota created successfully!');
-        } else {
-            showError(result.error || 'Failed to save quota');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to save quota');
-    }
-});
-
-function editQuota(quotaId) {
-    const quota = quotas.find(q => q.id === quotaId);
-    if (!quota) return;
-
-    document.getElementById('modal-title').textContent = 'Edit Quota Setting';
-    document.getElementById('quota-id').value = quota.id;
-    document.querySelector('[name="role"]').value = quota.role;
-    document.querySelector('[name="free_image_daily"]').value = quota.free_image_daily;
-    document.querySelector('[name="free_image_monthly"]').value = quota.free_image_monthly;
-    document.querySelector('[name="free_video_daily"]').value = quota.free_video_daily;
-    document.querySelector('[name="free_video_monthly"]').value = quota.free_video_monthly;
-    document.getElementById('is_active').checked = quota.is_active;
-
-    $('#quotaModal').modal('show');
-}
-
-async function deleteQuota(quotaId) {
-    if (!confirm('Are you sure you want to delete this quota setting?')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/ai-gen/quotas/${quotaId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            loadQuotas();
-            showSuccess('Quota deleted successfully!');
-        } else {
-            showError(result.error || 'Failed to delete quota');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to delete quota');
+        openAdd() {
+            this.editing = null;
+            this.form = { name: '', description: '', free_image_daily: 5, free_image_monthly: 100, free_video_daily: 1, free_video_monthly: 10, role: 'user', is_active: true, is_default: false };
+            this.showModal = true;
+        },
+        openEdit(q) { this.editing = q; this.form = { ...q }; this.showModal = true; },
+        async save() {
+            this.saving = true;
+            try {
+                const url = this.editing ? `/admin/ai-gen/quotas/${this.editing.id}` : '/admin/ai-gen/quotas';
+                const res = await fetch(url, {
+                    method: this.editing ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify(this.form)
+                });
+                const data = await res.json();
+                if (data.success) { this.showModal = false; await this.load(); this.showToast('บันทึกสำเร็จ', 'success'); }
+                else this.showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+            } catch (e) { this.showToast('เกิดข้อผิดพลาด', 'error'); }
+            this.saving = false;
+        },
+        showToast(msg, type = 'success') { this.toast = { show: true, message: msg, type }; setTimeout(() => this.toast.show = false, 3000); }
     }
 }
-
-// Reset form when modal is closed
-$('#quotaModal').on('hidden.bs.modal', function () {
-    document.getElementById('modal-title').textContent = 'Add Quota Setting';
-    document.getElementById('quota-id').value = '';
-    document.getElementById('quotaForm').reset();
-    document.getElementById('is_active').checked = true;
-});
-
-function showSuccess(message) {
-    alert(message);
-}
-
-function showError(message) {
-    alert(message);
-}
-
-// Load quotas on page load
-document.addEventListener('DOMContentLoaded', loadQuotas);
 </script>
-@endpush
+@endsection

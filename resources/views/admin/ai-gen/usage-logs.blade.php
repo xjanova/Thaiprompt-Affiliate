@@ -1,689 +1,150 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'AI Gen Usage Logs')
+@section('title', 'บันทึกการใช้งาน AI Gen')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div x-data="aiUsageLogs()" x-init="init()" class="space-y-6">
+
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="h3 mb-1">
-                <i class="fas fa-history text-primary"></i> Usage Logs
-            </h1>
-            <p class="text-muted mb-0">ดูบันทึกการใช้งาน AI Gen ทั้งหมด</p>
-        </div>
-        <div>
-            <button class="btn btn-outline-primary" onclick="loadLogs()">
-                <i class="fas fa-sync-alt"></i> Refresh
-            </button>
-            <button class="btn btn-outline-success" onclick="exportLogs()">
-                <i class="fas fa-download"></i> Export
-            </button>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📋 บันทึกการใช้งาน</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">ดูประวัติการสร้างภาพ/วิดีโอของผู้ใช้ทั้งหมด</p>
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-success shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
-                                Successful
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-success">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-check-circle fa-2x text-success"></i>
-                        </div>
-                    </div>
-                </div>
+    {{-- Filters --}}
+    <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">สถานะ</label>
+                <select x-model="filters.status" @change="load()" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="">ทั้งหมด</option>
+                    <option value="completed">สำเร็จ</option>
+                    <option value="failed">ล้มเหลว</option>
+                    <option value="processing">กำลังสร้าง</option>
+                    <option value="pending">รอดำเนินการ</option>
+                </select>
             </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-danger shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
-                                Failed
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-failed">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-times-circle fa-2x text-danger"></i>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Provider</label>
+                <select x-model="filters.provider_id" @change="load()" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="">ทั้งหมด</option>
+                    @foreach($providers ?? [] as $p)
+                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                    @endforeach
+                </select>
             </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-warning shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
-                                Pending
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-pending">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-clock fa-2x text-warning"></i>
-                        </div>
-                    </div>
-                </div>
+            <div>
+                <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">ประเภท</label>
+                <select x-model="filters.is_free_quota" @change="load()" class="w-full px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-blue-500">
+                    <option value="">ทั้งหมด</option>
+                    <option value="1">Free Quota</option>
+                    <option value="0">จ่ายเงิน</option>
+                </select>
             </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6 mb-4">
-            <div class="card border-left-info shadow h-100 py-2">
-                <div class="card-body">
-                    <div class="row no-gutters align-items-center">
-                        <div class="col mr-2">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
-                                Total Credits Used
-                            </div>
-                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-credits">-</div>
-                        </div>
-                        <div class="col-auto">
-                            <i class="fas fa-coins fa-2x text-info"></i>
-                        </div>
-                    </div>
-                </div>
+            <div class="flex items-end">
+                <button @click="resetFilters()" class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">🔄 รีเซ็ต</button>
             </div>
         </div>
     </div>
 
-    <!-- Filters -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-filter"></i> Filters
-            </h6>
-            <button class="btn btn-sm btn-outline-secondary" onclick="clearFilters()">
-                <i class="fas fa-redo"></i> Clear
-            </button>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Type</label>
-                        <select class="form-control" id="filter-type">
-                            <option value="">All Types</option>
-                            <option value="image">Image</option>
-                            <option value="video">Video</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Status</label>
-                        <select class="form-control" id="filter-status">
-                            <option value="">All Status</option>
-                            <option value="success">Success</option>
-                            <option value="failed">Failed</option>
-                            <option value="pending">Pending</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Provider</label>
-                        <select class="form-control" id="filter-provider">
-                            <option value="">All Providers</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Free Quota</label>
-                        <select class="form-control" id="filter-quota">
-                            <option value="">All</option>
-                            <option value="1">Free Quota Only</option>
-                            <option value="0">Paid Only</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Date From</label>
-                        <input type="date" class="form-control" id="filter-from">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>Date To</label>
-                        <input type="date" class="form-control" id="filter-to">
-                    </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-10">
-                    <div class="form-group">
-                        <label>Search</label>
-                        <input type="text" class="form-control" id="filter-search" placeholder="Search by user, prompt, or ID...">
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="form-group">
-                        <label>&nbsp;</label>
-                        <button class="btn btn-primary btn-block" onclick="applyFilters()">
-                            <i class="fas fa-search"></i> Search
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+    {{-- Loading --}}
+    <div x-show="loading" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-blue-500 border-t-transparent"></div>
     </div>
 
-    <!-- Logs Table -->
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">
-                <i class="fas fa-list"></i> Activity Logs
-            </h6>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-bordered table-hover" id="logsTable" width="100%" cellspacing="0">
-                    <thead>
-                        <tr>
-                            <th width="60">ID</th>
-                            <th width="120">Time</th>
-                            <th width="150">User</th>
-                            <th width="100">Provider</th>
-                            <th width="80">Type</th>
-                            <th>Prompt</th>
-                            <th width="80">Credits</th>
-                            <th width="80">Status</th>
-                            <th width="100">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="logs-tbody">
-                        <tr>
-                            <td colspan="9" class="text-center py-5">
-                                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
-                                <p class="text-muted mt-3">Loading logs...</p>
+    {{-- Table --}}
+    <div x-show="!loading" class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 dark:bg-gray-700/50">
+                    <tr>
+                        <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ผู้ใช้</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Provider</th>
+                        <th class="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">ประเภท</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">สถานะ</th>
+                        <th class="text-center px-4 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">โควตา</th>
+                        <th class="text-right px-6 py-3 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">เวลา</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    <template x-for="log in logs" :key="log.id">
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition">
+                            <td class="px-6 py-3">
+                                <div class="font-medium text-sm text-gray-900 dark:text-white" x-text="log.user?.name || 'N/A'"></div>
+                                <div class="text-xs text-gray-500" x-text="log.user?.email || ''"></div>
                             </td>
+                            <td class="px-4 py-3 text-sm text-gray-700 dark:text-gray-300" x-text="log.provider?.name || 'N/A'"></td>
+                            <td class="px-4 py-3"><span class="text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300" x-text="log.generation_type || 'image'"></span></td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium"
+                                    :class="{
+                                        'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400': log.status === 'completed',
+                                        'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400': log.status === 'failed',
+                                        'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400': log.status === 'processing',
+                                        'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400': log.status === 'pending'
+                                    }"
+                                    x-text="log.status === 'completed' ? '✅ สำเร็จ' : log.status === 'failed' ? '❌ ล้มเหลว' : log.status === 'processing' ? '⏳ กำลังสร้าง' : '🕐 รอ'">
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center"><span class="text-xs" :class="log.is_free_quota ? 'text-green-600' : 'text-amber-600'" x-text="log.is_free_quota ? '🎁 ฟรี' : '💰 จ่ายเงิน'"></span></td>
+                            <td class="px-6 py-3 text-right text-xs text-gray-500" x-text="new Date(log.created_at).toLocaleString('th-TH')"></td>
                         </tr>
-                    </tbody>
-                </table>
-            </div>
+                    </template>
+                    <tr x-show="!loading && logs.length === 0">
+                        <td colspan="6" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">ไม่มีข้อมูล</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-            <!-- Pagination -->
-            <div class="d-flex justify-content-between align-items-center mt-3">
-                <div class="text-muted" id="pagination-info">
-                    Showing 0 to 0 of 0 entries
-                </div>
-                <nav>
-                    <ul class="pagination mb-0" id="pagination">
-                    </ul>
-                </nav>
+        {{-- Pagination --}}
+        <div x-show="pagination.last_page > 1" class="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <span class="text-sm text-gray-500" x-text="'แสดง ' + pagination.from + '-' + pagination.to + ' จาก ' + pagination.total"></span>
+            <div class="flex gap-1">
+                <button @click="goPage(pagination.current_page - 1)" :disabled="pagination.current_page <= 1" class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">ก่อนหน้า</button>
+                <button @click="goPage(pagination.current_page + 1)" :disabled="pagination.current_page >= pagination.last_page" class="px-3 py-1 text-sm rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-30 transition">ถัดไป</button>
             </div>
         </div>
     </div>
 </div>
 
-<!-- View Log Details Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-info-circle"></i> Log Details
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="log-details">
-                <div class="text-center py-5">
-                    <i class="fas fa-spinner fa-spin fa-2x"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-@endsection
-
-@push('styles')
-<style>
-    .status-badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .status-badge.success {
-        background: #d4edda;
-        color: #155724;
-    }
-
-    .status-badge.failed {
-        background: #f8d7da;
-        color: #721c24;
-    }
-
-    .status-badge.pending {
-        background: #fff3cd;
-        color: #856404;
-    }
-
-    .type-badge {
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.7rem;
-        font-weight: 600;
-    }
-
-    .type-badge.image {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .type-badge.video {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-    }
-
-    .free-badge {
-        background: #17a2b8;
-        color: white;
-        padding: 2px 6px;
-        border-radius: 8px;
-        font-size: 0.65rem;
-        font-weight: 600;
-    }
-
-    .table td {
-        vertical-align: middle;
-        font-size: 0.85rem;
-    }
-
-    .prompt-preview {
-        max-width: 300px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-    .detail-section {
-        margin-bottom: 20px;
-    }
-
-    .detail-section h6 {
-        border-bottom: 2px solid #4e73df;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-    }
-
-    .detail-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px 0;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .detail-row:last-child {
-        border-bottom: none;
-    }
-
-    .error-box {
-        background: #f8d7da;
-        border: 1px solid #f5c6cb;
-        border-radius: 8px;
-        padding: 15px;
-        color: #721c24;
-    }
-</style>
-@endpush
-
-@push('scripts')
 <script>
-let logs = [];
-let providers = [];
-let currentPage = 1;
-let perPage = 50;
-let filters = {};
+function aiUsageLogs() {
+    return {
+        logs: [], loading: true,
+        filters: { status: '', provider_id: '', is_free_quota: '' },
+        pagination: { current_page: 1, last_page: 1, from: 0, to: 0, total: 0 },
 
-async function loadLogs() {
-    try {
-        const params = new URLSearchParams({
-            page: currentPage,
-            per_page: perPage,
-            ...filters
-        });
+        async init() { await this.load(); },
+        async load() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams();
+                if (this.filters.status) params.set('status', this.filters.status);
+                if (this.filters.provider_id) params.set('provider_id', this.filters.provider_id);
+                if (this.filters.is_free_quota !== '') params.set('is_free_quota', this.filters.is_free_quota);
+                params.set('page', this.pagination.current_page);
 
-        const response = await fetch(`/admin/ai-gen/usage-logs?${params}`, {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            logs = data.data.logs || [];
-            updateStats(data.data.stats || {});
-            renderLogs();
-            renderPagination(data.data.pagination || {});
-        }
-    } catch (error) {
-        console.error('Error loading logs:', error);
-        showError('Failed to load logs');
+                const res = await fetch('/admin/ai-gen/usage-logs?' + params.toString(), { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+                if (data.success) {
+                    this.logs = data.data.data || [];
+                    this.pagination = {
+                        current_page: data.data.current_page,
+                        last_page: data.data.last_page,
+                        from: data.data.from || 0,
+                        to: data.data.to || 0,
+                        total: data.data.total || 0
+                    };
+                }
+            } catch (e) { console.error(e); }
+            this.loading = false;
+        },
+        resetFilters() { this.filters = { status: '', provider_id: '', is_free_quota: '' }; this.pagination.current_page = 1; this.load(); },
+        goPage(p) { if (p >= 1 && p <= this.pagination.last_page) { this.pagination.current_page = p; this.load(); } }
     }
 }
-
-async function loadProviders() {
-    try {
-        const response = await fetch('/admin/ai-gen/providers', {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            providers = data.data;
-            renderProviderFilter();
-        }
-    } catch (error) {
-        console.error('Error loading providers:', error);
-    }
-}
-
-function renderProviderFilter() {
-    const select = document.getElementById('filter-provider');
-    providers.forEach(provider => {
-        const option = document.createElement('option');
-        option.value = provider.id;
-        option.textContent = provider.name;
-        select.appendChild(option);
-    });
-}
-
-function updateStats(stats) {
-    document.getElementById('stat-success').textContent = (stats.success || 0).toLocaleString();
-    document.getElementById('stat-failed').textContent = (stats.failed || 0).toLocaleString();
-    document.getElementById('stat-pending').textContent = (stats.pending || 0).toLocaleString();
-    document.getElementById('stat-credits').textContent = (stats.total_credits || 0).toLocaleString();
-}
-
-function renderLogs() {
-    const tbody = document.getElementById('logs-tbody');
-
-    if (logs.length === 0) {
-        tbody.innerHTML = `
-            <tr>
-                <td colspan="9" class="text-center py-5">
-                    <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
-                    <p class="text-muted">No logs found</p>
-                </td>
-            </tr>
-        `;
-        return;
-    }
-
-    tbody.innerHTML = logs.map(log => `
-        <tr>
-            <td class="text-center">#${log.id}</td>
-            <td>
-                <div class="small">${formatDateTime(log.created_at)}</div>
-            </td>
-            <td>
-                <div class="font-weight-bold">${log.user_name}</div>
-                <div class="small text-muted">${log.user_email}</div>
-            </td>
-            <td>
-                <span class="badge badge-secondary">${log.provider_name}</span>
-            </td>
-            <td>
-                <span class="type-badge ${log.generation_type}">${log.generation_type}</span>
-            </td>
-            <td>
-                <div class="prompt-preview" title="${escapeHtml(log.prompt)}">
-                    ${escapeHtml(log.prompt)}
-                </div>
-            </td>
-            <td class="text-center">
-                <strong>${log.credits_used}</strong>
-                ${log.is_free_quota ? '<div class="free-badge">FREE</div>' : ''}
-            </td>
-            <td>
-                <span class="status-badge ${log.status}">${log.status}</span>
-            </td>
-            <td class="text-center">
-                <button class="btn btn-sm btn-info" onclick="viewLog(${log.id})" title="View Details">
-                    <i class="fas fa-eye"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-function renderPagination(pagination) {
-    const info = document.getElementById('pagination-info');
-    const paginationEl = document.getElementById('pagination');
-
-    if (!pagination.total) {
-        info.textContent = 'No entries';
-        paginationEl.innerHTML = '';
-        return;
-    }
-
-    const from = (pagination.current_page - 1) * perPage + 1;
-    const to = Math.min(from + perPage - 1, pagination.total);
-    info.textContent = `Showing ${from} to ${to} of ${pagination.total} entries`;
-
-    let pages = '';
-
-    // Previous button
-    if (pagination.current_page > 1) {
-        pages += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${pagination.current_page - 1}); return false;">Previous</a></li>`;
-    }
-
-    // Page numbers (show max 5 pages)
-    const startPage = Math.max(1, pagination.current_page - 2);
-    const endPage = Math.min(pagination.last_page, pagination.current_page + 2);
-
-    if (startPage > 1) {
-        pages += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(1); return false;">1</a></li>`;
-        if (startPage > 2) pages += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-        if (i === pagination.current_page) {
-            pages += `<li class="page-item active"><span class="page-link">${i}</span></li>`;
-        } else {
-            pages += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${i}); return false;">${i}</a></li>`;
-        }
-    }
-
-    if (endPage < pagination.last_page) {
-        if (endPage < pagination.last_page - 1) pages += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
-        pages += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${pagination.last_page}); return false;">${pagination.last_page}</a></li>`;
-    }
-
-    // Next button
-    if (pagination.current_page < pagination.last_page) {
-        pages += `<li class="page-item"><a class="page-link" href="#" onclick="goToPage(${pagination.current_page + 1}); return false;">Next</a></li>`;
-    }
-
-    paginationEl.innerHTML = pages;
-}
-
-function goToPage(page) {
-    currentPage = page;
-    loadLogs();
-}
-
-function applyFilters() {
-    filters = {
-        type: document.getElementById('filter-type').value,
-        status: document.getElementById('filter-status').value,
-        provider_id: document.getElementById('filter-provider').value,
-        is_free_quota: document.getElementById('filter-quota').value,
-        date_from: document.getElementById('filter-from').value,
-        date_to: document.getElementById('filter-to').value,
-        search: document.getElementById('filter-search').value
-    };
-    currentPage = 1;
-    loadLogs();
-}
-
-function clearFilters() {
-    document.getElementById('filter-type').value = '';
-    document.getElementById('filter-status').value = '';
-    document.getElementById('filter-provider').value = '';
-    document.getElementById('filter-quota').value = '';
-    document.getElementById('filter-from').value = '';
-    document.getElementById('filter-to').value = '';
-    document.getElementById('filter-search').value = '';
-    filters = {};
-    currentPage = 1;
-    loadLogs();
-}
-
-async function viewLog(logId) {
-    const log = logs.find(l => l.id === logId);
-    if (!log) return;
-
-    const details = document.getElementById('log-details');
-    details.innerHTML = `
-        <div class="detail-section">
-            <h6><i class="fas fa-user"></i> User Information</h6>
-            <div class="detail-row">
-                <span class="text-muted">User:</span>
-                <strong>${log.user_name} (${log.user_email})</strong>
-            </div>
-            <div class="detail-row">
-                <span class="text-muted">User ID:</span>
-                <strong>#${log.user_id}</strong>
-            </div>
-        </div>
-
-        <div class="detail-section">
-            <h6><i class="fas fa-cog"></i> Generation Details</h6>
-            <div class="detail-row">
-                <span class="text-muted">Provider:</span>
-                <strong>${log.provider_name}</strong>
-            </div>
-            <div class="detail-row">
-                <span class="text-muted">Type:</span>
-                <span class="type-badge ${log.generation_type}">${log.generation_type}</span>
-            </div>
-            <div class="detail-row">
-                <span class="text-muted">Status:</span>
-                <span class="status-badge ${log.status}">${log.status}</span>
-            </div>
-            <div class="detail-row">
-                <span class="text-muted">Credits Used:</span>
-                <strong>${log.credits_used} ${log.is_free_quota ? '<span class="free-badge ml-2">FREE QUOTA</span>' : ''}</strong>
-            </div>
-            <div class="detail-row">
-                <span class="text-muted">Created At:</span>
-                <strong>${formatDateTime(log.created_at)}</strong>
-            </div>
-        </div>
-
-        <div class="detail-section">
-            <h6><i class="fas fa-comment-dots"></i> Prompt</h6>
-            <div class="bg-light p-3 rounded">
-                ${escapeHtml(log.prompt)}
-            </div>
-        </div>
-
-        ${log.parameters ? `
-        <div class="detail-section">
-            <h6><i class="fas fa-sliders-h"></i> Parameters</h6>
-            <pre class="bg-light p-3 rounded"><code>${JSON.stringify(log.parameters, null, 2)}</code></pre>
-        </div>
-        ` : ''}
-
-        ${log.error_message ? `
-        <div class="detail-section">
-            <h6><i class="fas fa-exclamation-triangle"></i> Error Details</h6>
-            <div class="error-box">
-                <strong>Error Message:</strong><br>
-                ${escapeHtml(log.error_message)}
-            </div>
-        </div>
-        ` : ''}
-
-        ${log.response_data ? `
-        <div class="detail-section">
-            <h6><i class="fas fa-code"></i> Response Data</h6>
-            <pre class="bg-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><code>${JSON.stringify(log.response_data, null, 2)}</code></pre>
-        </div>
-        ` : ''}
-    `;
-
-    $('#viewModal').modal('show');
-}
-
-async function exportLogs() {
-    try {
-        const params = new URLSearchParams(filters);
-        window.location.href = `/admin/ai-gen/usage-logs/export?${params}`;
-        showSuccess('Export started. Download will begin shortly.');
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to export logs');
-    }
-}
-
-function formatDateTime(datetime) {
-    const date = new Date(datetime);
-    return date.toLocaleString('th-TH', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function showSuccess(message) {
-    alert(message);
-}
-
-function showError(message) {
-    alert(message);
-}
-
-// Load data on page load
-document.addEventListener('DOMContentLoaded', () => {
-    loadProviders();
-    loadLogs();
-});
-
-// Search on Enter key
-document.getElementById('filter-search').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-        applyFilters();
-    }
-});
-
-// Auto-refresh every 30 seconds
-setInterval(() => {
-    if (document.visibilityState === 'visible') {
-        loadLogs();
-    }
-}, 30000);
 </script>
-@endpush
+@endsection

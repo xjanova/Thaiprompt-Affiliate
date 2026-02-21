@@ -2576,6 +2576,7 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::put('/providers/{providerId}', [AiGenAdminController::class, 'updateProvider'])->name('providers.update');
     Route::post('/providers/{providerId}/config', [AiGenAdminController::class, 'updateProviderConfig'])->name('providers.config');
     Route::post('/providers/{providerId}/test', [AiGenAdminController::class, 'testProvider'])->name('providers.test');
+    Route::delete('/providers/{providerId}', [AiGenAdminController::class, 'deleteProvider'])->name('providers.destroy');
 
     // Packages Management
     Route::get('/packages', [AiGenAdminController::class, 'packages'])->name('packages.index');

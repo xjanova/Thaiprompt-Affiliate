@@ -228,22 +228,51 @@ class AiGenAdminController extends Controller
     }
 
     /**
-     * Get all packages.
+     * ลบ provider
      */
-    public function packages(): JsonResponse
+    public function deleteProvider(int $providerId): JsonResponse
     {
         try {
-            $packages = AiGenPackage::orderBy('sort_order')->get();
+            $provider = AiGenProvider::findOrFail($providerId);
+            $provider->delete();
 
             return response()->json([
                 'success' => true,
-                'data' => $packages,
+                'message' => 'ลบ Provider สำเร็จ',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Get all packages.
+     */
+    public function packages(Request $request)
+    {
+        try {
+            $packages = AiGenPackage::orderBy('sort_order')->get();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $packages,
+                ]);
+            }
+
+            return view('admin.ai-gen.packages', ['packages' => $packages]);
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 
@@ -363,20 +392,28 @@ class AiGenAdminController extends Controller
     /**
      * Get all quotas.
      */
-    public function quotas(): JsonResponse
+    public function quotas(Request $request)
     {
         try {
             $quotas = AiGenQuota::all();
 
-            return response()->json([
-                'success' => true,
-                'data' => $quotas,
-            ]);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $quotas,
+                ]);
+            }
+
+            return view('admin.ai-gen.quotas', ['quotas' => $quotas]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 
@@ -423,7 +460,7 @@ class AiGenAdminController extends Controller
     /**
      * Get usage logs.
      */
-    public function usageLogs(Request $request): JsonResponse
+    public function usageLogs(Request $request)
     {
         try {
             $query = AiGenUsageLog::with(['user', 'provider', 'subscription']);
@@ -447,15 +484,26 @@ class AiGenAdminController extends Controller
             $logs = $query->orderBy('created_at', 'desc')
                 ->paginate($request->get('per_page', 50));
 
-            return response()->json([
-                'success' => true,
-                'data' => $logs,
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $logs,
+                ]);
+            }
+
+            return view('admin.ai-gen.usage-logs', [
+                'logs' => $logs,
+                'providers' => AiGenProvider::all(),
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => $e->getMessage(),
-            ], 500);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
         }
     }
 

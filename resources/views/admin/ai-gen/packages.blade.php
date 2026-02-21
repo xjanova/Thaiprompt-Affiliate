@@ -1,524 +1,194 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'AI Gen Packages Management')
+@section('title', 'จัดการ Packages')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div x-data="aiPackages()" x-init="init()" class="space-y-6">
+
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="h3 mb-1">
-                <i class="fas fa-box text-primary"></i> Packages Management
-            </h1>
-            <p class="text-muted mb-0">จัดการแพคเกจสำหรับขายและ Subscription</p>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">📦 จัดการ Packages</h1>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">สร้างและจัดการแพ็คเกจสำหรับผู้ใช้</p>
         </div>
-        <button class="btn btn-primary" data-toggle="modal" data-target="#packageModal">
-            <i class="fas fa-plus"></i> Add Package
+        <button @click="openAdd()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl font-medium shadow-lg transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            เพิ่ม Package
         </button>
     </div>
 
-    <!-- Packages Grid -->
-    <div class="row" id="packages-grid">
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-spinner fa-spin fa-3x text-muted"></i>
-            <p class="text-muted mt-3">Loading packages...</p>
-        </div>
+    {{-- Loading --}}
+    <div x-show="loading" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-green-500 border-t-transparent"></div>
     </div>
-</div>
 
-<!-- Package Modal (Add/Edit) -->
-<div class="modal fade" id="packageModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-box"></i> <span id="modal-title">Add New Package</span>
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form id="packageForm">
-                <input type="hidden" id="package-id">
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Package Name *</label>
-                                <input type="text" class="form-control" name="name" required>
-                            </div>
+    {{-- Empty --}}
+    <div x-show="!loading && packages.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-6xl mb-4">📦</div>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">ยังไม่มี Package</h3>
+        <p class="text-sm text-gray-500 mt-1">คลิก "เพิ่ม Package" เพื่อเริ่มต้น</p>
+    </div>
+
+    {{-- Packages Grid --}}
+    <div x-show="!loading && packages.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <template x-for="pkg in packages" :key="pkg.id">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all overflow-hidden relative"
+                 :class="{ 'ring-2 ring-yellow-400': pkg.is_popular }">
+
+                {{-- Popular Badge --}}
+                <div x-show="pkg.is_popular" class="absolute top-3 right-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-bold px-3 py-1 rounded-full">⭐ ยอดนิยม</div>
+
+                <div class="p-6">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white" x-text="pkg.name"></h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="pkg.description || '-'"></p>
+
+                    {{-- Price --}}
+                    <div class="mt-4">
+                        <span class="text-3xl font-bold text-green-600" x-text="'฿' + Number(pkg.price).toLocaleString()"></span>
+                        <span x-show="pkg.is_recurring" class="text-sm text-gray-500" x-text="'/' + (pkg.recurring_period === 'monthly' ? 'เดือน' : 'ปี')"></span>
+                    </div>
+
+                    {{-- Credits --}}
+                    <div class="mt-4 grid grid-cols-2 gap-3">
+                        <div class="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 text-center">
+                            <div class="text-lg font-bold text-blue-600" x-text="(pkg.image_credits || 0).toLocaleString()">0</div>
+                            <div class="text-xs text-blue-500">🖼️ เครดิตภาพ</div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Slug *</label>
-                                <input type="text" class="form-control" name="slug" required>
-                                <small class="form-text text-muted">URL-friendly name</small>
-                            </div>
+                        <div class="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-3 text-center">
+                            <div class="text-lg font-bold text-pink-600" x-text="(pkg.video_credits || 0).toLocaleString()">0</div>
+                            <div class="text-xs text-pink-500">🎬 เครดิตวิดีโอ</div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Price (฿) *</label>
-                                <input type="number" class="form-control" name="price" min="0" step="0.01" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Image Credits *</label>
-                                <input type="number" class="form-control" name="image_credits" min="0" required>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="form-group">
-                                <label>Video Credits *</label>
-                                <input type="number" class="form-control" name="video_credits" min="0" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Duration (Days) *</label>
-                                <input type="number" class="form-control" name="duration_days" min="1" value="30" required>
-                                <small class="form-text text-muted">How long the package is valid</small>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Sort Order</label>
-                                <input type="number" class="form-control" name="sort_order" value="0">
-                                <small class="form-text text-muted">Display order (lower first)</small>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Features (one per line)</label>
-                        <textarea class="form-control" name="features" rows="4" placeholder="Feature 1&#10;Feature 2&#10;Feature 3"></textarea>
-                        <small class="form-text text-muted">จะแสดงเป็น bullet points</small>
-                    </div>
-
-                    <hr>
-
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="is_recurring" name="is_recurring">
-                                <label class="custom-control-label" for="is_recurring">
-                                    Recurring Subscription
-                                </label>
-                            </div>
-                            <small class="form-text text-muted">ต่ออายุอัตโนมัติ</small>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="is_popular" name="is_popular">
-                                <label class="custom-control-label" for="is_popular">
-                                    Popular Badge
-                                </label>
-                            </div>
-                            <small class="form-text text-muted">แสดงป้าย "Popular"</small>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="custom-control custom-switch">
-                                <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" checked>
-                                <label class="custom-control-label" for="is_active">
-                                    Active
-                                </label>
-                            </div>
-                            <small class="form-text text-muted">เปิดใช้งาน</small>
-                        </div>
+                    {{-- Duration & Status --}}
+                    <div class="mt-4 flex items-center justify-between">
+                        <span class="text-xs text-gray-500" x-text="pkg.duration_days ? pkg.duration_days + ' วัน' : 'ไม่มีวันหมดอายุ'"></span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium" :class="pkg.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'" x-text="pkg.is_active ? 'เปิดใช้' : 'ปิดใช้'"></span>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Package
+
+                {{-- Actions --}}
+                <div class="px-6 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 flex gap-2">
+                    <button @click="openEdit(pkg)" class="flex-1 px-3 py-2 text-sm bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition">✏️ แก้ไข</button>
+                    <button @click="deletePkg(pkg.id)" class="px-3 py-2 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition">🗑️</button>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    {{-- Add/Edit Modal --}}
+    <div x-show="showModal" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="editing ? '✏️ แก้ไข Package' : '➕ เพิ่ม Package'"></h3>
+                <button @click="showModal = false" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button>
+            </div>
+            <form @submit.prevent="save()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ *</label>
+                    <input type="text" x-model="form.name" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
+                    <textarea x-model="form.description" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ราคา (฿) *</label>
+                        <input type="number" x-model="form.price" min="0" step="0.01" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">อายุ (วัน)</label>
+                        <input type="number" x-model="form.duration_days" min="1" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เครดิตภาพ *</label>
+                        <input type="number" x-model="form.image_credits" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">เครดิตวิดีโอ *</label>
+                        <input type="number" x-model="form.video_credits" min="0" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500 focus:border-transparent">
+                    </div>
+                </div>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2"><input type="checkbox" x-model="form.is_active" class="rounded text-green-600"><span class="text-sm text-gray-700 dark:text-gray-300">เปิดใช้</span></label>
+                    <label class="flex items-center gap-2"><input type="checkbox" x-model="form.is_popular" class="rounded text-yellow-500"><span class="text-sm text-gray-700 dark:text-gray-300">ยอดนิยม</span></label>
+                    <label class="flex items-center gap-2"><input type="checkbox" x-model="form.is_recurring" class="rounded text-blue-600"><span class="text-sm text-gray-700 dark:text-gray-300">รายเดือน/ปี</span></label>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showModal = false" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">ยกเลิก</button>
+                    <button type="submit" :disabled="saving" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition disabled:opacity-50 font-medium">
+                        <span x-show="!saving">💾 บันทึก</span><span x-show="saving">กำลังบันทึก...</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
-</div>
-@endsection
 
-@push('styles')
-<style>
-    .package-card {
-        transition: all 0.3s ease;
-        border: 2px solid #e3e6f0;
-        border-radius: 15px;
-        overflow: hidden;
-    }
-
-    .package-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-    }
-
-    .package-card.inactive {
-        opacity: 0.6;
-    }
-
-    .package-card.popular {
-        border-color: #f6c23e;
-        box-shadow: 0 5px 15px rgba(246, 194, 62, 0.3);
-    }
-
-    .popular-badge {
-        position: absolute;
-        top: -10px;
-        right: 20px;
-        background: linear-gradient(135deg, #f6c23e 0%, #f4b942 100%);
-        color: white;
-        padding: 5px 15px;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        box-shadow: 0 4px 6px rgba(246, 194, 62, 0.4);
-        transform: rotate(3deg);
-    }
-
-    .package-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 30px 20px;
-        text-align: center;
-    }
-
-    .package-card.inactive .package-header {
-        background: linear-gradient(135deg, #858796 0%, #5a5c69 100%);
-    }
-
-    .package-price {
-        font-size: 3rem;
-        font-weight: 800;
-        line-height: 1;
-        margin: 10px 0;
-    }
-
-    .package-price-currency {
-        font-size: 1.5rem;
-        vertical-align: super;
-    }
-
-    .package-duration {
-        font-size: 0.9rem;
-        opacity: 0.9;
-    }
-
-    .credits-display {
-        background: #f8f9fc;
-        border-radius: 10px;
-        padding: 15px;
-        margin: 15px 0;
-    }
-
-    .credit-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 8px 0;
-        border-bottom: 1px solid #e3e6f0;
-    }
-
-    .credit-item:last-child {
-        border-bottom: none;
-    }
-
-    .credit-icon {
-        width: 30px;
-        height: 30px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-    }
-
-    .credit-icon.image {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-
-    .credit-icon.video {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-    }
-
-    .features-list {
-        list-style: none;
-        padding: 0;
-        margin: 15px 0;
-    }
-
-    .features-list li {
-        padding: 8px 0;
-        padding-left: 30px;
-        position: relative;
-    }
-
-    .features-list li:before {
-        content: "✓";
-        position: absolute;
-        left: 0;
-        color: #1cc88a;
-        font-weight: bold;
-        font-size: 1.2rem;
-    }
-
-    .stats-badge {
-        display: inline-block;
-        padding: 4px 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        margin: 2px;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<script>
-let packages = [];
-let editingPackage = null;
-
-async function loadPackages() {
-    try {
-        const response = await fetch('/admin/ai-gen/packages', {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            packages = data.data;
-            renderPackages();
-        }
-    } catch (error) {
-        console.error('Error loading packages:', error);
-        showError('Failed to load packages');
-    }
-}
-
-function renderPackages() {
-    const grid = document.getElementById('packages-grid');
-
-    if (packages.length === 0) {
-        grid.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-box fa-4x text-muted mb-3"></i>
-                <h5 class="text-muted">No packages created yet</h5>
-                <p class="text-muted">Click "Add Package" to create your first package</p>
-            </div>
-        `;
-        return;
-    }
-
-    grid.innerHTML = packages.map(pkg => `
-        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-            <div class="card package-card ${pkg.is_active ? '' : 'inactive'} ${pkg.is_popular ? 'popular' : ''} h-100">
-                ${pkg.is_popular ? '<div class="popular-badge">⭐ POPULAR</div>' : ''}
-
-                <div class="package-header">
-                    <h4 class="mb-0">${pkg.name}</h4>
-                    <div class="package-price">
-                        <span class="package-price-currency">฿</span>${parseFloat(pkg.price).toLocaleString()}
-                    </div>
-                    <div class="package-duration">
-                        <i class="fas fa-calendar-alt"></i> ${pkg.duration_days} Days
-                    </div>
-                </div>
-
-                <div class="card-body">
-                    <div class="credits-display">
-                        <div class="credit-item">
-                            <div class="d-flex align-items-center">
-                                <div class="credit-icon image">
-                                    <i class="fas fa-image"></i>
-                                </div>
-                                <span class="ml-2">Image Credits</span>
-                            </div>
-                            <strong>${pkg.image_credits.toLocaleString()}</strong>
-                        </div>
-                        <div class="credit-item">
-                            <div class="d-flex align-items-center">
-                                <div class="credit-icon video">
-                                    <i class="fas fa-video"></i>
-                                </div>
-                                <span class="ml-2">Video Credits</span>
-                            </div>
-                            <strong>${pkg.video_credits.toLocaleString()}</strong>
-                        </div>
-                    </div>
-
-                    ${pkg.description ? `<p class="text-muted small mb-2">${pkg.description}</p>` : ''}
-
-                    ${pkg.features && pkg.features.length > 0 ? `
-                        <ul class="features-list small">
-                            ${pkg.features.slice(0, 3).map(feature => `<li>${feature}</li>`).join('')}
-                            ${pkg.features.length > 3 ? `<li class="text-muted">+${pkg.features.length - 3} more...</li>` : ''}
-                        </ul>
-                    ` : ''}
-
-                    <div class="mt-3">
-                        ${pkg.is_recurring ? '<span class="stats-badge bg-info text-white">Recurring</span>' : ''}
-                        <span class="stats-badge ${pkg.is_active ? 'bg-success' : 'bg-secondary'} text-white">
-                            ${pkg.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                    </div>
-                </div>
-
-                <div class="card-footer glass-fusion border-top" border border-white/20 dark:border-white/10>
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small class="text-muted">
-                            <i class="fas fa-users"></i> ${pkg.subscribers_count || 0} subscribers
-                        </small>
-                        <div class="btn-group btn-group-sm">
-                            <button class="btn btn-outline-primary" onclick="editPackage(${pkg.id})">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn btn-outline-danger" onclick="deletePackage(${pkg.id})">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    {{-- Toast --}}
+    <div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 max-w-sm">
+        <div class="rounded-xl shadow-2xl p-4 flex items-center gap-3" :class="toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+            <span x-text="toast.type === 'success' ? '✅' : '❌'" class="text-xl"></span>
+            <span x-text="toast.message" class="text-sm font-medium"></span>
         </div>
-    `).join('');
-}
+    </div>
+</div>
 
-// Form handling
-document.getElementById('packageForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const packageId = document.getElementById('package-id').value;
+<script>
+function aiPackages() {
+    return {
+        packages: [], loading: true, saving: false, showModal: false, editing: null,
+        toast: { show: false, message: '', type: 'success' },
+        form: { name: '', description: '', price: 0, duration_days: 30, image_credits: 0, video_credits: 0, is_active: true, is_popular: false, is_recurring: false },
 
-    const data = {
-        name: formData.get('name'),
-        slug: formData.get('slug'),
-        description: formData.get('description'),
-        price: parseFloat(formData.get('price')),
-        image_credits: parseInt(formData.get('image_credits')),
-        video_credits: parseInt(formData.get('video_credits')),
-        duration_days: parseInt(formData.get('duration_days')),
-        sort_order: parseInt(formData.get('sort_order') || 0),
-        features: formData.get('features') ? formData.get('features').split('\n').filter(f => f.trim()) : [],
-        is_recurring: formData.has('is_recurring'),
-        is_popular: formData.has('is_popular'),
-        is_active: formData.has('is_active')
-    };
-
-    try {
-        const url = packageId ? `/admin/ai-gen/packages/${packageId}` : '/admin/ai-gen/packages';
-        const method = packageId ? 'PUT' : 'POST';
-
-        const response = await fetch(url, {
-            method: method,
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify(data)
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            $('#packageModal').modal('hide');
-            e.target.reset();
-            loadPackages();
-            showSuccess(packageId ? 'Package updated successfully!' : 'Package created successfully!');
-        } else {
-            showError(result.error || 'Failed to save package');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to save package');
-    }
-});
-
-function editPackage(packageId) {
-    const pkg = packages.find(p => p.id === packageId);
-    if (!pkg) return;
-
-    document.getElementById('modal-title').textContent = 'Edit Package';
-    document.getElementById('package-id').value = pkg.id;
-    document.querySelector('[name="name"]').value = pkg.name;
-    document.querySelector('[name="slug"]').value = pkg.slug;
-    document.querySelector('[name="description"]').value = pkg.description || '';
-    document.querySelector('[name="price"]').value = pkg.price;
-    document.querySelector('[name="image_credits"]').value = pkg.image_credits;
-    document.querySelector('[name="video_credits"]').value = pkg.video_credits;
-    document.querySelector('[name="duration_days"]').value = pkg.duration_days;
-    document.querySelector('[name="sort_order"]').value = pkg.sort_order || 0;
-    document.querySelector('[name="features"]').value = (pkg.features || []).join('\n');
-    document.getElementById('is_recurring').checked = pkg.is_recurring;
-    document.getElementById('is_popular').checked = pkg.is_popular;
-    document.getElementById('is_active').checked = pkg.is_active;
-
-    $('#packageModal').modal('show');
-}
-
-async function deletePackage(packageId) {
-    if (!confirm('Are you sure you want to delete this package? This action cannot be undone.')) {
-        return;
-    }
-
-    try {
-        const response = await fetch(`/admin/ai-gen/packages/${packageId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            }
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            loadPackages();
-            showSuccess('Package deleted successfully!');
-        } else {
-            showError(result.error || 'Failed to delete package');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to delete package');
+        async init() { await this.load(); },
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch('/admin/ai-gen/packages', { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } });
+                const data = await res.json();
+                if (data.success) this.packages = data.data;
+            } catch (e) { this.showToast('โหลดข้อมูลไม่สำเร็จ', 'error'); }
+            this.loading = false;
+        },
+        openAdd() {
+            this.editing = null;
+            this.form = { name: '', description: '', price: 0, duration_days: 30, image_credits: 0, video_credits: 0, is_active: true, is_popular: false, is_recurring: false };
+            this.showModal = true;
+        },
+        openEdit(pkg) {
+            this.editing = pkg;
+            this.form = { ...pkg };
+            this.showModal = true;
+        },
+        async save() {
+            this.saving = true;
+            try {
+                const url = this.editing ? `/admin/ai-gen/packages/${this.editing.id}` : '/admin/ai-gen/packages';
+                const res = await fetch(url, {
+                    method: this.editing ? 'PUT' : 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                    body: JSON.stringify(this.form)
+                });
+                const data = await res.json();
+                if (data.success) { this.showModal = false; await this.load(); this.showToast('บันทึกสำเร็จ', 'success'); }
+                else this.showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+            } catch (e) { this.showToast('เกิดข้อผิดพลาด', 'error'); }
+            this.saving = false;
+        },
+        async deletePkg(id) {
+            if (!confirm('ต้องการลบ Package นี้?')) return;
+            try {
+                const res = await fetch(`/admin/ai-gen/packages/${id}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content } });
+                const data = await res.json();
+                if (data.success) { await this.load(); this.showToast('ลบสำเร็จ', 'success'); }
+                else this.showToast(data.error || 'ลบไม่สำเร็จ', 'error');
+            } catch (e) { this.showToast('เกิดข้อผิดพลาด', 'error'); }
+        },
+        showToast(message, type = 'success') { this.toast = { show: true, message, type }; setTimeout(() => this.toast.show = false, 3000); }
     }
 }
-
-// Reset form when modal is closed
-$('#packageModal').on('hidden.bs.modal', function () {
-    document.getElementById('modal-title').textContent = 'Add New Package';
-    document.getElementById('package-id').value = '';
-    document.getElementById('packageForm').reset();
-    document.getElementById('is_active').checked = true;
-});
-
-function showSuccess(message) {
-    // TODO: Implement with your notification system
-    alert(message);
-}
-
-function showError(message) {
-    // TODO: Implement with your notification system
-    alert(message);
-}
-
-// Load packages on page load
-document.addEventListener('DOMContentLoaded', loadPackages);
 </script>
-@endpush
+@endsection

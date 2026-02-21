@@ -1,441 +1,461 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'AI Providers Management')
+@section('title', 'จัดการ AI Providers')
 
 @section('content')
-<div class="container-fluid">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div x-data="aiProviders()" x-init="init()" class="space-y-6">
+
+    {{-- Header --}}
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 class="h3 mb-1">
-                <i class="fas fa-server text-primary"></i> AI Providers Management
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                🤖 จัดการ AI Providers
             </h1>
-            <p class="text-muted mb-0">จัดการ AI Providers และการเชื่อมต่อ API</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">จัดการ AI Providers และการเชื่อมต่อ API</p>
         </div>
-        <button class="btn btn-primary" data-toggle="modal" data-target="#addProviderModal">
-            <i class="fas fa-plus"></i> Add Provider
+        <button @click="openAddModal()" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white rounded-xl font-medium shadow-lg hover:shadow-xl transition-all">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            เพิ่ม Provider
         </button>
     </div>
 
-    <!-- Providers Grid -->
-    <div class="row" id="providers-grid">
-        <div class="col-12 text-center py-5">
-            <i class="fas fa-spinner fa-spin fa-3x text-muted"></i>
-            <p class="text-muted mt-3">Loading providers...</p>
+    {{-- Stats Cards --}}
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-2xl font-bold text-purple-600" x-text="providers.length">0</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">ทั้งหมด</div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-2xl font-bold text-green-600" x-text="providers.filter(p => p.is_active).length">0</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">ใช้งานอยู่</div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-2xl font-bold text-blue-600" x-text="providers.filter(p => p.type === 'image' || p.type === 'both').length">0</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">รองรับภาพ</div>
+        </div>
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <div class="text-2xl font-bold text-pink-600" x-text="providers.filter(p => p.type === 'video' || p.type === 'both').length">0</div>
+            <div class="text-xs text-gray-500 dark:text-gray-400">รองรับวิดีโอ</div>
         </div>
     </div>
-</div>
 
-<!-- Add Provider Modal -->
-<div class="modal fade" id="addProviderModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-plus-circle"></i> Add New Provider
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form id="addProviderForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>Provider Name *</label>
-                        <input type="text" class="form-control" name="name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Slug *</label>
-                        <input type="text" class="form-control" name="slug" required>
-                        <small class="form-text text-muted">URL-friendly name (e.g., freepik, vidu)</small>
-                    </div>
-                    <div class="form-group">
-                        <label>Type *</label>
-                        <select class="form-control" name="type" required>
-                            <option value="image">Image Only</option>
-                            <option value="video">Video Only</option>
-                            <option value="both">Both Image & Video</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Description</label>
-                        <textarea class="form-control" name="description" rows="3"></textarea>
-                    </div>
-                    <div class="form-group">
-                        <label>Logo URL</label>
-                        <input type="url" class="form-control" name="logo_url">
-                    </div>
-                    <div class="form-group">
-                        <label>Supported Features</label>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" id="feat1" name="features[]" value="text-to-image">
-                                    <label class="custom-control-label" for="feat1">Text to Image</label>
-                                </div>
+    {{-- Loading --}}
+    <div x-show="loading" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-10 w-10 border-4 border-purple-500 border-t-transparent"></div>
+    </div>
+
+    {{-- Empty State --}}
+    <div x-show="!loading && providers.length === 0" class="bg-white dark:bg-gray-800 rounded-2xl p-12 text-center border border-gray-200 dark:border-gray-700">
+        <div class="text-6xl mb-4">🤖</div>
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">ยังไม่มี Provider</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">คลิก "เพิ่ม Provider" เพื่อเริ่มต้น</p>
+    </div>
+
+    {{-- Providers Grid --}}
+    <div x-show="!loading && providers.length > 0" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <template x-for="provider in providers" :key="provider.id">
+            <div class="group bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-purple-400 dark:hover:border-purple-500 hover:shadow-xl transition-all duration-300 overflow-hidden"
+                 :class="{ 'opacity-50': !provider.is_active }">
+
+                {{-- Card Header --}}
+                <div class="p-5 pb-3">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-3">
+                            {{-- Logo --}}
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+                                 :class="provider.is_active ? 'bg-gradient-to-br from-purple-100 to-pink-100 dark:from-purple-900/40 dark:to-pink-900/40' : 'bg-gray-100 dark:bg-gray-700'">
+                                <template x-if="provider.logo_url">
+                                    <img :src="provider.logo_url" class="w-8 h-8 rounded-lg object-contain" :alt="provider.name">
+                                </template>
+                                <template x-if="!provider.logo_url">
+                                    <span>🤖</span>
+                                </template>
                             </div>
-                            <div class="col-md-4">
-                                <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" id="feat2" name="features[]" value="text-to-video">
-                                    <label class="custom-control-label" for="feat2">Text to Video</label>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="custom-control custom-checkbox">
-                                    <input type="checkbox" class="custom-control-input" id="feat3" name="features[]" value="image-editing">
-                                    <label class="custom-control-label" for="feat3">Image Editing</label>
+                            <div>
+                                <h3 class="font-bold text-gray-900 dark:text-white" x-text="provider.name"></h3>
+                                <div class="flex items-center gap-1.5 mt-0.5">
+                                    <span class="w-2 h-2 rounded-full" :class="provider.is_active ? 'bg-green-500 animate-pulse' : 'bg-red-400'"></span>
+                                    <span class="text-xs" :class="provider.is_active ? 'text-green-600 dark:text-green-400' : 'text-red-500'" x-text="provider.is_active ? 'Active' : 'Inactive'"></span>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="custom-control custom-switch">
-                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" checked>
-                            <label class="custom-control-label" for="is_active">Active</label>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Provider
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
-<!-- Config Modal -->
-<div class="modal fade" id="configModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header bg-info text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-cog"></i> Provider Configuration
-                </h5>
-                <button type="button" class="close text-white" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form id="configForm">
-                <input type="hidden" id="config-provider-id">
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Configure API credentials and settings for this provider
-                    </div>
-
-                    <div class="form-group">
-                        <label>API Key *</label>
-                        <div class="input-group">
-                            <input type="password" class="form-control" id="api_key" name="api_key" required>
-                            <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('api_key')">
-                                    <i class="fas fa-eye"></i>
+                        {{-- Actions Menu --}}
+                        <div class="relative" x-data="{ open: false }">
+                            <button @click="open = !open" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
+                                <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+                            </button>
+                            <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-1 w-48 bg-white dark:bg-gray-700 rounded-xl shadow-xl border border-gray-200 dark:border-gray-600 py-1 z-50">
+                                <button @click="openConfigModal(provider); open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    ⚙️ ตั้งค่า API
+                                </button>
+                                <button @click="testConnection(provider.id); open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    🔌 ทดสอบเชื่อมต่อ
+                                </button>
+                                <button @click="toggleActive(provider); open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    <span x-text="provider.is_active ? '⏸️ ปิดใช้งาน' : '▶️ เปิดใช้งาน'"></span>
+                                </button>
+                                <button @click="openEditModal(provider); open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                                    ✏️ แก้ไข
+                                </button>
+                                <div class="border-t border-gray-200 dark:border-gray-600 my-1"></div>
+                                <button @click="deleteProvider(provider.id); open = false" class="w-full text-left px-4 py-2 text-sm hover:bg-red-50 dark:hover:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center gap-2">
+                                    🗑️ ลบ
                                 </button>
                             </div>
                         </div>
-                        <small class="form-text text-muted">Will be encrypted in database</small>
                     </div>
-
-                    <div class="form-group">
-                        <label>API Endpoint *</label>
-                        <input type="url" class="form-control" id="api_endpoint" name="api_endpoint" required>
-                        <small class="form-text text-muted">Base URL for API requests</small>
-                    </div>
-
-                    <div id="additional-configs"></div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-warning" onclick="testConnection()">
-                        <i class="fas fa-plug"></i> Test Connection
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Configuration
+
+                {{-- Description --}}
+                <div class="px-5 pb-3">
+                    <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-2" x-text="provider.description || 'ไม่มีคำอธิบาย'"></p>
+                </div>
+
+                {{-- Features Tags --}}
+                <div class="px-5 pb-3 flex flex-wrap gap-1.5">
+                    <span class="px-2.5 py-0.5 rounded-full text-xs font-medium"
+                          :class="{
+                              'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300': provider.type === 'both',
+                              'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300': provider.type === 'image',
+                              'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-300': provider.type === 'video'
+                          }"
+                          x-text="provider.type === 'both' ? '🖼️ ภาพ+วิดีโอ' : (provider.type === 'image' ? '🖼️ ภาพ' : '🎬 วิดีโอ')">
+                    </span>
+                    <template x-for="feat in (provider.supported_features || [])" :key="feat">
+                        <span class="px-2.5 py-0.5 rounded-full text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" x-text="feat"></span>
+                    </template>
+                </div>
+
+                {{-- Stats Footer --}}
+                <div class="px-5 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-gray-100 dark:border-gray-700 grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <div class="text-lg font-bold text-gray-900 dark:text-white" x-text="(provider.generations_count || 0).toLocaleString()">0</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">การสร้าง</div>
+                    </div>
+                    <div>
+                        <div class="text-lg font-bold" :class="(provider.success_rate || 0) >= 80 ? 'text-green-600' : (provider.success_rate || 0) >= 50 ? 'text-yellow-600' : 'text-red-600'" x-text="(provider.success_rate || 0) + '%'">0%</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">สำเร็จ</div>
+                    </div>
+                </div>
+
+                {{-- Wallet Pricing --}}
+                <div x-show="provider.wallet_cost_per_image || provider.wallet_cost_per_video" class="px-5 py-2 bg-amber-50 dark:bg-amber-900/20 border-t border-amber-100 dark:border-amber-800/30 flex items-center gap-3 text-xs">
+                    <span class="text-amber-700 dark:text-amber-400 font-medium">💰 ราคา:</span>
+                    <span x-show="provider.wallet_cost_per_image" class="text-amber-600 dark:text-amber-300" x-text="'ภาพ ' + provider.wallet_cost_per_image + '฿'"></span>
+                    <span x-show="provider.wallet_cost_per_video" class="text-amber-600 dark:text-amber-300" x-text="'วิดีโอ ' + provider.wallet_cost_per_video + '฿'"></span>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    {{-- Add/Edit Provider Modal --}}
+    <div x-show="showModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white" x-text="editingProvider ? '✏️ แก้ไข Provider' : '➕ เพิ่ม Provider ใหม่'"></h3>
+                <button @click="showModal = false" class="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form @submit.prevent="saveProvider()" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อ Provider *</label>
+                    <input type="text" x-model="form.name" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug</label>
+                    <input type="text" x-model="form.slug" placeholder="auto-generated" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ประเภท *</label>
+                    <select x-model="form.type" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <option value="image">🖼️ ภาพอย่างเดียว</option>
+                        <option value="video">🎬 วิดีโออย่างเดียว</option>
+                        <option value="both">🖼️🎬 ทั้งภาพและวิดีโอ</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">คำอธิบาย</label>
+                    <textarea x-model="form.description" rows="2" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Logo URL</label>
+                    <input type="url" x-model="form.logo_url" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ฟีเจอร์ที่รองรับ</label>
+                    <div class="flex flex-wrap gap-3">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" value="text-to-image" x-model="form.supported_features" class="rounded text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Text to Image</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" value="text-to-video" x-model="form.supported_features" class="rounded text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Text to Video</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" value="image-editing" x-model="form.supported_features" class="rounded text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Image Editing</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" value="image-to-video" x-model="form.supported_features" class="rounded text-purple-600 focus:ring-purple-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">Image to Video</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" x-model="form.is_active" class="rounded text-purple-600 focus:ring-purple-500">
+                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">เปิดใช้งาน</span>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showModal = false" class="flex-1 px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">ยกเลิก</button>
+                    <button type="submit" :disabled="saving" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 font-medium">
+                        <span x-show="!saving" x-text="editingProvider ? 'บันทึก' : 'สร้าง Provider'"></span>
+                        <span x-show="saving">กำลังบันทึก...</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
-</div>
-@endsection
 
-@push('styles')
-<style>
-    .provider-card {
-        transition: all 0.3s ease;
-        border: 2px solid #e3e6f0;
-    }
-
-    .provider-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    }
-
-    .provider-card.inactive {
-        opacity: 0.6;
-    }
-
-    .provider-logo {
-        width: 60px;
-        height: 60px;
-        object-fit: contain;
-        border-radius: 10px;
-        background: #f8f9fc;
-        padding: 10px;
-    }
-
-    .status-dot {
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 5px;
-    }
-
-    .status-dot.active {
-        background: #1cc88a;
-        box-shadow: 0 0 10px rgba(28, 200, 138, 0.5);
-    }
-
-    .status-dot.inactive {
-        background: #e74a3b;
-    }
-
-    .feature-badge {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-        margin: 0.2rem;
-        border-radius: 0.25rem;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<script>
-let providers = [];
-
-async function loadProviders() {
-    try {
-        const response = await fetch('/admin/ai-gen/providers', {
-            headers: {
-                'Accept': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            providers = data.data;
-            renderProviders();
-        }
-    } catch (error) {
-        console.error('Error loading providers:', error);
-        showError('Failed to load providers');
-    }
-}
-
-function renderProviders() {
-    const grid = document.getElementById('providers-grid');
-
-    if (providers.length === 0) {
-        grid.innerHTML = `
-            <div class="col-12 text-center py-5">
-                <i class="fas fa-server fa-4x text-muted mb-3"></i>
-                <h5 class="text-muted">No providers configured yet</h5>
-                <p class="text-muted">Click "Add Provider" to get started</p>
+    {{-- Config Modal --}}
+    <div x-show="showConfigModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showConfigModal = false">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.stop>
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-white">⚙️ ตั้งค่า API - <span x-text="configProvider?.name"></span></h3>
             </div>
-        `;
-        return;
-    }
-
-    grid.innerHTML = providers.map(provider => `
-        <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
-            <div class="card provider-card ${provider.is_active ? '' : 'inactive'} h-100">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-start mb-3">
-                        <div>
-                            ${provider.logo_url ?
-                                `<img src="${provider.logo_url}" class="provider-logo" alt="${provider.name}">` :
-                                `<div class="provider-logo">
-                                    <i class="fas fa-server fa-2x text-muted"></i>
-                                </div>`
-                            }
-                        </div>
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-link text-muted" data-toggle="dropdown">
-                                <i class="fas fa-ellipsis-v"></i>
-                            </button>
-                            <div class="dropdown-menu dropdown-menu-right">
-                                <a class="dropdown-item" onclick="openConfig(${provider.id})">
-                                    <i class="fas fa-cog"></i> Configure
-                                </a>
-                                <a class="dropdown-item" onclick="testProvider(${provider.id})">
-                                    <i class="fas fa-plug"></i> Test Connection
-                                </a>
-                                <a class="dropdown-item" onclick="toggleProvider(${provider.id})">
-                                    <i class="fas fa-power-off"></i> ${provider.is_active ? 'Deactivate' : 'Activate'}
-                                </a>
-                                <div class="dropdown-divider"></div>
-                                <a class="dropdown-item text-danger" onclick="deleteProvider(${provider.id})">
-                                    <i class="fas fa-trash"></i> Delete
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <h5 class="card-title mb-1">${provider.name}</h5>
-                    <div class="mb-2">
-                        <span class="status-dot ${provider.is_active ? 'active' : 'inactive'}"></span>
-                        <span class="text-muted small">${provider.is_active ? 'Active' : 'Inactive'}</span>
-                    </div>
-
-                    <p class="text-muted small mb-3">${provider.description || 'No description'}</p>
-
-                    <div class="mb-3">
-                        <span class="badge badge-primary">${provider.type}</span>
-                        ${(provider.supported_features || []).map(feature =>
-                            `<span class="badge badge-secondary feature-badge">${feature}</span>`
-                        ).join('')}
-                    </div>
-
-                    <div class="row text-center border-top pt-3">
-                        <div class="col-6">
-                            <div class="text-muted small">Generations</div>
-                            <div class="font-weight-bold">${(provider.generations_count || 0).toLocaleString()}</div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-muted small">Success Rate</div>
-                            <div class="font-weight-bold">${provider.success_rate || 0}%</div>
-                        </div>
-                    </div>
+            <form @submit.prevent="saveConfig()" class="p-6 space-y-4">
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3 text-sm text-blue-700 dark:text-blue-300">
+                    ℹ️ กำหนด API credentials สำหรับเชื่อมต่อกับ provider
                 </div>
-            </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key *</label>
+                    <div class="relative">
+                        <input :type="showApiKey ? 'text' : 'password'" x-model="configForm.api_key" required class="w-full px-4 py-2.5 pr-12 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <button type="button" @click="showApiKey = !showApiKey" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                            <svg x-show="!showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                            <svg x-show="showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">🔒 จะถูกเข้ารหัสในฐานข้อมูล</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Endpoint *</label>
+                    <input type="url" x-model="configForm.api_endpoint" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="https://api.example.com/v1">
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" @click="showConfigModal = false" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">ยกเลิก</button>
+                    <button type="button" @click="testConnection(configProvider?.id)" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition flex items-center gap-1">
+                        🔌 ทดสอบ
+                    </button>
+                    <button type="submit" :disabled="saving" class="flex-1 px-4 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 transition disabled:opacity-50 font-medium">
+                        💾 บันทึก
+                    </button>
+                </div>
+            </form>
         </div>
-    `).join('');
-}
+    </div>
 
-// Form submissions
-document.getElementById('addProviderForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData);
+    {{-- Toast --}}
+    <div x-show="toast.show" x-transition class="fixed bottom-6 right-6 z-50 max-w-sm">
+        <div class="rounded-xl shadow-2xl p-4 flex items-center gap-3" :class="toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+            <span x-text="toast.type === 'success' ? '✅' : '❌'" class="text-xl"></span>
+            <span x-text="toast.message" class="text-sm font-medium"></span>
+        </div>
+    </div>
+</div>
 
-    // Handle features array
-    data.supported_features = formData.getAll('features[]');
-    data.is_active = formData.has('is_active');
+<script>
+function aiProviders() {
+    return {
+        providers: [],
+        loading: true,
+        saving: false,
+        showModal: false,
+        showConfigModal: false,
+        showApiKey: false,
+        editingProvider: null,
+        configProvider: null,
+        toast: { show: false, message: '', type: 'success' },
+        form: { name: '', slug: '', type: 'image', description: '', logo_url: '', supported_features: [], is_active: true },
+        configForm: { api_key: '', api_endpoint: '' },
 
-    try {
-        const response = await fetch('/admin/ai-gen/providers', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify(data)
-        });
+        async init() {
+            await this.loadProviders();
+        },
 
-        const result = await response.json();
-
-        if (result.success) {
-            $('#addProviderModal').modal('hide');
-            e.target.reset();
-            loadProviders();
-            showSuccess('Provider added successfully!');
-        } else {
-            showError(result.error || 'Failed to add provider');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to add provider');
-    }
-});
-
-document.getElementById('configForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const providerId = document.getElementById('config-provider-id').value;
-    const formData = new FormData(e.target);
-
-    const configs = [{
-        key: 'api_key',
-        value: formData.get('api_key'),
-        is_encrypted: true
-    }, {
-        key: 'api_endpoint',
-        value: formData.get('api_endpoint'),
-        is_encrypted: false
-    }];
-
-    try {
-        const response = await fetch(`/admin/ai-gen/providers/${providerId}/config`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ configs })
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-            $('#configModal').modal('hide');
-            showSuccess('Configuration saved successfully!');
-        } else {
-            showError(result.error || 'Failed to save configuration');
-        }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to save configuration');
-    }
-});
-
-function openConfig(providerId) {
-    document.getElementById('config-provider-id').value = providerId;
-    $('#configModal').modal('show');
-}
-
-async function testProvider(providerId) {
-    try {
-        const response = await fetch(`/admin/ai-gen/providers/${providerId}/test`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        async loadProviders() {
+            this.loading = true;
+            try {
+                const res = await fetch('/admin/ai-gen/providers', {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.success) this.providers = data.data;
+            } catch (e) {
+                this.showToast('โหลดข้อมูลไม่สำเร็จ', 'error');
             }
-        });
+            this.loading = false;
+        },
 
-        const result = await response.json();
+        openAddModal() {
+            this.editingProvider = null;
+            this.form = { name: '', slug: '', type: 'image', description: '', logo_url: '', supported_features: [], is_active: true };
+            this.showModal = true;
+        },
 
-        if (result.success) {
-            showSuccess('Connection successful!');
-        } else {
-            showError(result.message || 'Connection failed');
+        openEditModal(provider) {
+            this.editingProvider = provider;
+            this.form = {
+                name: provider.name,
+                slug: provider.slug,
+                type: provider.type,
+                description: provider.description || '',
+                logo_url: provider.logo_url || '',
+                supported_features: provider.supported_features || [],
+                is_active: provider.is_active
+            };
+            this.showModal = true;
+        },
+
+        async saveProvider() {
+            this.saving = true;
+            try {
+                const url = this.editingProvider
+                    ? `/admin/ai-gen/providers/${this.editingProvider.id}`
+                    : '/admin/ai-gen/providers';
+                const method = this.editingProvider ? 'PUT' : 'POST';
+
+                const res = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(this.form)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showModal = false;
+                    await this.loadProviders();
+                    this.showToast(this.editingProvider ? 'อัพเดทสำเร็จ' : 'สร้าง Provider สำเร็จ', 'success');
+                } else {
+                    this.showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+                }
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
+            }
+            this.saving = false;
+        },
+
+        openConfigModal(provider) {
+            this.configProvider = provider;
+            this.configForm = { api_key: '', api_endpoint: '' };
+            this.showApiKey = false;
+
+            // โหลดค่า config ที่มีอยู่
+            if (provider.configs) {
+                provider.configs.forEach(c => {
+                    if (c.key === 'api_key') this.configForm.api_key = c.is_encrypted ? '' : c.value;
+                    if (c.key === 'api_endpoint') this.configForm.api_endpoint = c.value;
+                });
+            }
+            this.showConfigModal = true;
+        },
+
+        async saveConfig() {
+            this.saving = true;
+            try {
+                const configs = [
+                    { key: 'api_key', value: this.configForm.api_key, is_encrypted: true },
+                    { key: 'api_endpoint', value: this.configForm.api_endpoint, is_encrypted: false }
+                ];
+
+                const res = await fetch(`/admin/ai-gen/providers/${this.configProvider.id}/config`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ configs })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showConfigModal = false;
+                    this.showToast('บันทึกตั้งค่าสำเร็จ', 'success');
+                } else {
+                    this.showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
+                }
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
+            }
+            this.saving = false;
+        },
+
+        async testConnection(providerId) {
+            try {
+                this.showToast('🔌 กำลังทดสอบ...', 'success');
+                const res = await fetch(`/admin/ai-gen/providers/${providerId}/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await res.json();
+                this.showToast(data.success ? '✅ เชื่อมต่อสำเร็จ!' : (data.error || 'เชื่อมต่อไม่สำเร็จ'), data.success ? 'success' : 'error');
+            } catch (e) {
+                this.showToast('ไม่สามารถทดสอบได้', 'error');
+            }
+        },
+
+        async toggleActive(provider) {
+            try {
+                const res = await fetch(`/admin/ai-gen/providers/${provider.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ is_active: !provider.is_active })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await this.loadProviders();
+                    this.showToast(provider.is_active ? 'ปิดใช้งานแล้ว' : 'เปิดใช้งานแล้ว', 'success');
+                }
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
+            }
+        },
+
+        async deleteProvider(id) {
+            if (!confirm('ต้องการลบ Provider นี้?')) return;
+            try {
+                const res = await fetch(`/admin/ai-gen/providers/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    await this.loadProviders();
+                    this.showToast('ลบ Provider สำเร็จ', 'success');
+                } else {
+                    this.showToast(data.error || 'ลบไม่สำเร็จ', 'error');
+                }
+            } catch (e) {
+                this.showToast('เกิดข้อผิดพลาด', 'error');
+            }
+        },
+
+        showToast(message, type = 'success') {
+            this.toast = { show: true, message, type };
+            setTimeout(() => this.toast.show = false, 3000);
         }
-    } catch (error) {
-        console.error('Error:', error);
-        showError('Failed to test connection');
     }
 }
-
-function togglePassword(inputId) {
-    const input = document.getElementById(inputId);
-    input.type = input.type === 'password' ? 'text' : 'password';
-}
-
-function showSuccess(message) {
-    // Implement your success notification
-    alert(message);
-}
-
-function showError(message) {
-    // Implement your error notification
-    alert(message);
-}
-
-// Load providers on page load
-document.addEventListener('DOMContentLoaded', loadProviders);
 </script>
-@endpush
+@endsection
