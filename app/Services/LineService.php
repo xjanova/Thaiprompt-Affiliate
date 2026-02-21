@@ -29,6 +29,12 @@ class LineService
     private const LINE_OAUTH_BASE = 'https://access.line.me/oauth2/v2.1';
 
     /**
+     * LINE OAuth Token API endpoint
+     * ⚠️ Token exchange ต้องใช้ api.line.me ไม่ใช่ access.line.me
+     */
+    private const LINE_TOKEN_API = 'https://api.line.me/oauth2/v2.1';
+
+    /**
      * Auto-retry enabled flag
      *
      * เมื่อเป็น true จะบันทึกข้อความที่ล้มเหลวและทำ auto-retry
@@ -93,7 +99,7 @@ class LineService
         // Use custom redirect_uri from settings if available, otherwise use route
         $redirectUri = $redirectUri ?? $this->settings->redirect_uri ?? route('line.callback');
 
-        $response = Http::asForm()->post(self::LINE_OAUTH_BASE.'/token', [
+        $response = Http::asForm()->post(self::LINE_TOKEN_API.'/token', [
             'grant_type' => 'authorization_code',
             'code' => $code,
             'redirect_uri' => $redirectUri,

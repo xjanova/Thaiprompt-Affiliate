@@ -136,7 +136,7 @@ class LineTokenService
         try {
             // Call LINE OAuth to refresh token
             $response = \Illuminate\Support\Facades\Http::asForm()
-                ->post('https://access.line.me/oauth2/v2.1/token', [
+                ->post('https://api.line.me/oauth2/v2.1/token', [
                     'grant_type' => 'refresh_token',
                     'refresh_token' => $refreshToken,
                     'client_id' => config('services.line.client_id'),
