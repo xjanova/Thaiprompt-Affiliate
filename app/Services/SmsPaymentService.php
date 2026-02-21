@@ -576,9 +576,49 @@ class SmsPaymentService
                     'facebook_user_id' => $userId,
                 ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
+                // 🔄 Retry: ถ้า Flex pushMessage ล้มเหลว → รอ 3 วิ ลองส่ง text ธรรมดาแทน
+                if (! $sent) {
+                    Log::warning('SMS Payment: Flex "รอสักครู่" ล้มเหลว → retry ด้วย text ธรรมดาใน 3 วิ', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                    ]);
+                    sleep(3);
+
+                    // ลอง Flex อีกครั้ง
+                    $sent = $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'payment_confirmed_wait',
+                        'message' => $waitMessage,
+                        'reading' => $reading,
+                        'facebook_user_id' => $userId,
+                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                    // ถ้า Flex ยังไม่สำเร็จ → ลอง text ธรรมดา (fallback สุดท้าย)
+                    if (! $sent && $platform === 'line') {
+                        try {
+                            $lineService = $channelManager->getPlatform('line');
+                            if ($lineService) {
+                                $sent = $lineService->sendMessage($userId, $waitMessage);
+                                if ($sent) {
+                                    Log::info('SMS Payment: text fallback "รอสักครู่" สำเร็จ', [
+                                        'reading_id' => $reading->id,
+                                    ]);
+                                }
+                            }
+                        } catch (\Exception $textErr) {
+                            Log::warning('SMS Payment: text fallback ล้มเหลวด้วย', [
+                                'reading_id' => $reading->id,
+                                'error' => $textErr->getMessage(),
+                            ]);
+                        }
+                    }
+                }
+
                 // บันทึกสถานะว่าส่งข้อความรอแล้ว (ป้องกัน duplicate)
+                // ⚠️ เซ็ต flag เสมอ ไม่ว่าจะส่งสำเร็จหรือไม่ — เพื่อป้องกัน duplicate จาก SMS ซ้ำ
+                // check-pending Phase 2 จะ retry ส่งคำทำนายให้อัตโนมัติ
                 $reading->setConversationState('wait_message_sent', true);
                 $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+                $reading->setConversationState('wait_message_delivered', $sent);
 
                 Log::info('SMS Payment: ส่งข้อความ "รอสักครู่"', [
                     'reading_id' => $reading->id,

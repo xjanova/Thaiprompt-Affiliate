@@ -227,7 +227,7 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  string|null  $billRef  เลขที่บิล
      * @return array Flex Message content
      */
-    public function buildFortuneFlexMessage(string $prediction, string $userName, ?string $billRef = null): array
+    public function buildFortuneFlexMessage(string $prediction, string $userName, ?string $billRef = null, ?string $paidAt = null): array
     {
         $bodyContents = [
             // ชื่อผู้ใช้
@@ -284,37 +284,72 @@ class LineFortuneService implements MessagingPlatformInterface
             ],
         ];
 
-        // เพิ่มเลขที่บิลถ้ามี
-        if ($billRef) {
+        // เพิ่มเลขที่บิล + วันเวลาชำระเงิน (ถ้ามี)
+        if ($billRef || $paidAt) {
             $bodyContents[] = [
                 'type' => 'separator',
                 'margin' => 'xl',
                 'color' => '#E8E0FF',
             ];
+
+            $infoRows = [];
+
+            if ($billRef) {
+                $infoRows[] = [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '🔖 เลขที่บิล:',
+                            'size' => 'xs',
+                            'color' => '#888888',
+                            'flex' => 2,
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $billRef,
+                            'size' => 'xs',
+                            'color' => '#6B46C1',
+                            'flex' => 3,
+                            'weight' => 'bold',
+                        ],
+                    ],
+                ];
+            }
+
+            if ($paidAt) {
+                $infoRows[] = [
+                    'type' => 'box',
+                    'layout' => 'horizontal',
+                    'margin' => 'xs',
+                    'contents' => [
+                        [
+                            'type' => 'text',
+                            'text' => '📅 วันที่ชำระ:',
+                            'size' => 'xs',
+                            'color' => '#888888',
+                            'flex' => 2,
+                        ],
+                        [
+                            'type' => 'text',
+                            'text' => $paidAt,
+                            'size' => 'xs',
+                            'color' => '#6B46C1',
+                            'flex' => 3,
+                        ],
+                    ],
+                ];
+            }
+
             $bodyContents[] = [
                 'type' => 'box',
-                'layout' => 'horizontal',
+                'layout' => 'vertical',
                 'margin' => 'md',
                 'backgroundColor' => '#F8F7FF',
                 'cornerRadius' => 'md',
                 'paddingAll' => 'sm',
-                'contents' => [
-                    [
-                        'type' => 'text',
-                        'text' => '🔖 เลขที่บิล:',
-                        'size' => 'xs',
-                        'color' => '#888888',
-                        'flex' => 2,
-                    ],
-                    [
-                        'type' => 'text',
-                        'text' => $billRef,
-                        'size' => 'xs',
-                        'color' => '#6B46C1',
-                        'flex' => 3,
-                        'weight' => 'bold',
-                    ],
-                ],
+                'contents' => $infoRows,
             ];
         }
 
@@ -389,13 +424,13 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  string|null  $billRef  เลขที่บิล
      * @return array[] Array ของ Flex bubble arrays
      */
-    public function buildSplitFortuneMessages(string $prediction, string $userName, ?string $billRef = null): array
+    public function buildSplitFortuneMessages(string $prediction, string $userName, ?string $billRef = null, ?string $paidAt = null): array
     {
         $maxCharsPerBubble = 800;
 
         // ถ้าสั้นพอ → ส่ง bubble เดียว
         if (mb_strlen($prediction) <= $maxCharsPerBubble) {
-            return [$this->buildFortuneFlexMessage($prediction, $userName, $billRef)];
+            return [$this->buildFortuneFlexMessage($prediction, $userName, $billRef, $paidAt)];
         }
 
         // แบ่งตามย่อหน้า (\n\n)
@@ -481,16 +516,34 @@ class LineFortuneService implements MessagingPlatformInterface
                 'lineSpacing' => '6px',
             ];
 
-            // Bill ref ใน bubble แรก
-            if ($isFirst && $billRef) {
+            // Bill ref + วันเวลาชำระ ใน bubble แรก
+            if ($isFirst && ($billRef || $paidAt)) {
                 $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+
+                $infoRows = [];
+                if ($billRef) {
+                    $infoRows[] = [
+                        'type' => 'box', 'layout' => 'horizontal',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '🔖 บิล:', 'size' => 'xs', 'color' => '#888888', 'flex' => 2],
+                            ['type' => 'text', 'text' => $billRef, 'size' => 'xs', 'color' => '#6B46C1', 'flex' => 3, 'weight' => 'bold'],
+                        ],
+                    ];
+                }
+                if ($paidAt) {
+                    $infoRows[] = [
+                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'xs',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '📅 วันที่:', 'size' => 'xs', 'color' => '#888888', 'flex' => 2],
+                            ['type' => 'text', 'text' => $paidAt, 'size' => 'xs', 'color' => '#6B46C1', 'flex' => 3],
+                        ],
+                    ];
+                }
+
                 $bodyContents[] = [
-                    'type' => 'box', 'layout' => 'horizontal', 'margin' => 'md',
+                    'type' => 'box', 'layout' => 'vertical', 'margin' => 'md',
                     'backgroundColor' => '#F8F7FF', 'cornerRadius' => 'md', 'paddingAll' => 'sm',
-                    'contents' => [
-                        ['type' => 'text', 'text' => '🔖 บิล:', 'size' => 'xs', 'color' => '#888888', 'flex' => 2],
-                        ['type' => 'text', 'text' => $billRef, 'size' => 'xs', 'color' => '#6B46C1', 'flex' => 3, 'weight' => 'bold'],
-                    ],
+                    'contents' => $infoRows,
                 ];
             }
 

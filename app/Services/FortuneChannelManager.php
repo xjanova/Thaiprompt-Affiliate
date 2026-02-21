@@ -1118,7 +1118,9 @@ class FortuneChannelManager
         // ⭐ ดูดวงละเอียด (เสียเงิน) → ส่งคำทำนายผ่าน replyToken ก่อน (ฟรี+เร็ว+เชื่อถือได้)
         // สำคัญ: replyToken ต้องใช้สำหรับ content ที่ลูกค้าจ่ายเงิน ไม่ใช่ chart image!
         if ($action === 'view_reading_deep' && ! empty($reading?->deep_response)) {
-            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference);
+            // ✅ แสดงวันเวลาชำระเงินในคำทำนาย
+            $paidAt = $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : ($reading->created_at ? $reading->created_at->format('d/m/Y H:i') : null);
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference, $paidAt);
             $flexContent = null;
 
             // ✅ รวมทุก bubble เป็น carousel เดียว
@@ -1341,7 +1343,8 @@ class FortuneChannelManager
 
         // Fallback: ใช้ buildSplitFortuneMessages (แบ่ง text ยาวเป็นหลาย bubble)
         if (! $flexContent) {
-            $fortuneBubbles = $lineService->buildSplitFortuneMessages($message, $userName, $billRef);
+            $paidAt = $reading?->paid_at ? $reading->paid_at->format('d/m/Y H:i') : null;
+            $fortuneBubbles = $lineService->buildSplitFortuneMessages($message, $userName, $billRef, $paidAt);
 
             if (count($fortuneBubbles) > 1) {
                 $flexContent = ['type' => 'carousel', 'contents' => $fortuneBubbles];
