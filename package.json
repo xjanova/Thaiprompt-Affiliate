@@ -21,6 +21,7 @@
     "vite": "^5.0.0"
   },
   "dependencies": {
+    "@rollup/rollup-win32-x64-msvc": "^4.57.1",
     "@wagmi/core": "^1.4.13",
     "@web3modal/wagmi": "^3.5.7",
     "alpinejs": "^3.13.5",

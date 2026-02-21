@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AiGenPackage;
+use App\Models\AiGenPromotion;
 use App\Models\AiGenProvider;
 use App\Models\AiGenQuota;
 use App\Models\AiGenSubscription;
 use App\Models\AiGenUsageLog;
+use App\Models\Setting;
 use App\Services\AiGen\AiGenProviderFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -448,6 +450,245 @@ class AiGenAdminController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $logs,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // ===================================================================
+    // Settings (Wallet, Pricing, General)
+    // ===================================================================
+
+    /**
+     * แสดงหน้าตั้งค่า AI Gen (wallet, pricing, promotions)
+     */
+    public function settings(Request $request)
+    {
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'data' => $this->getSettingsData(),
+            ]);
+        }
+
+        return view('admin.ai-gen.settings', [
+            'settings' => $this->getSettingsData(),
+            'providers' => AiGenProvider::active()->orderBy('priority')->get(),
+            'promotions' => AiGenPromotion::orderBy('created_at', 'desc')->get(),
+        ]);
+    }
+
+    /**
+     * บันทึกตั้งค่า AI Gen
+     */
+    public function saveSettings(Request $request): JsonResponse
+    {
+        try {
+            $data = $request->validate([
+                'ai_gen_wallet_enabled' => 'nullable|boolean',
+                'ai_gen_wallet_cost_image' => 'nullable|numeric|min:0',
+                'ai_gen_wallet_cost_video' => 'nullable|numeric|min:0',
+                'ai_gen_system_enabled' => 'nullable|boolean',
+                'ai_gen_max_daily_generations' => 'nullable|integer|min:0',
+                'ai_gen_max_prompt_length' => 'nullable|integer|min:10',
+                'ai_gen_allow_nsfw' => 'nullable|boolean',
+                'ai_gen_default_provider' => 'nullable|string',
+                // ราคาต่อ provider
+                'provider_pricing' => 'nullable|array',
+                'provider_pricing.*.wallet_cost_per_image' => 'nullable|numeric|min:0',
+                'provider_pricing.*.wallet_cost_per_video' => 'nullable|numeric|min:0',
+            ]);
+
+            // บันทึก settings ทั่วไป
+            $settingsKeys = [
+                'ai_gen_wallet_enabled' => 'boolean',
+                'ai_gen_wallet_cost_image' => 'float',
+                'ai_gen_wallet_cost_video' => 'float',
+                'ai_gen_system_enabled' => 'boolean',
+                'ai_gen_max_daily_generations' => 'integer',
+                'ai_gen_max_prompt_length' => 'integer',
+                'ai_gen_allow_nsfw' => 'boolean',
+                'ai_gen_default_provider' => 'string',
+            ];
+
+            foreach ($settingsKeys as $key => $type) {
+                if (array_key_exists($key, $data)) {
+                    Setting::set($key, $data[$key] ?? ($type === 'boolean' ? false : null), $type, 'ai_gen');
+                }
+            }
+
+            // บันทึก pricing ต่อ provider
+            if (isset($data['provider_pricing'])) {
+                foreach ($data['provider_pricing'] as $providerId => $pricing) {
+                    $provider = AiGenProvider::find($providerId);
+                    if ($provider) {
+                        $provider->update([
+                            'wallet_cost_per_image' => $pricing['wallet_cost_per_image'] ?? null,
+                            'wallet_cost_per_video' => $pricing['wallet_cost_per_video'] ?? null,
+                        ]);
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'บันทึกตั้งค่าสำเร็จ',
+                'data' => $this->getSettingsData(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ดึงข้อมูลตั้งค่าทั้งหมด
+     */
+    protected function getSettingsData(): array
+    {
+        return [
+            'wallet_enabled' => Setting::get('ai_gen_wallet_enabled', false),
+            'wallet_cost_image' => Setting::get('ai_gen_wallet_cost_image', 5),
+            'wallet_cost_video' => Setting::get('ai_gen_wallet_cost_video', 20),
+            'system_enabled' => Setting::get('ai_gen_system_enabled', true),
+            'max_daily_generations' => Setting::get('ai_gen_max_daily_generations', 100),
+            'max_prompt_length' => Setting::get('ai_gen_max_prompt_length', 1000),
+            'allow_nsfw' => Setting::get('ai_gen_allow_nsfw', false),
+            'default_provider' => Setting::get('ai_gen_default_provider', ''),
+        ];
+    }
+
+    // ===================================================================
+    // Promotions Management
+    // ===================================================================
+
+    /**
+     * แสดงรายการโปรโมชั่น
+     */
+    public function promotions(Request $request): JsonResponse
+    {
+        try {
+            $promotions = AiGenPromotion::with('provider')
+                ->orderBy('created_at', 'desc')
+                ->paginate($request->get('per_page', 20));
+
+            return response()->json([
+                'success' => true,
+                'data' => $promotions,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้างโปรโมชั ่นใหม่
+     */
+    public function createPromotion(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'description' => 'nullable|string',
+                'type' => 'required|in:discount_percent,discount_fixed,free_credits,bonus_credits',
+                'value' => 'required|numeric|min:0',
+                'code' => 'nullable|string|max:50|unique:ai_gen_promotions,code',
+                'applies_to' => 'required|in:all,image,video',
+                'max_uses' => 'nullable|integer|min:1',
+                'max_uses_per_user' => 'nullable|integer|min:1',
+                'starts_at' => 'nullable|date',
+                'expires_at' => 'nullable|date|after_or_equal:starts_at',
+                'min_wallet_balance' => 'nullable|numeric|min:0',
+                'provider_id' => 'nullable|integer|exists:ai_gen_providers,id',
+                'is_active' => 'nullable|boolean',
+            ]);
+
+            // สร้างโค้ดอัตโนมัติถ้าไม่ได้กำหนด
+            if (empty($validated['code'])) {
+                $validated['code'] = null;
+            } else {
+                $validated['code'] = strtoupper(trim($validated['code']));
+            }
+
+            $promotion = AiGenPromotion::create($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'สร้างโปรโมชั่นสำเร็จ',
+                'data' => $promotion->load('provider'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * อัพเดทโปรโมชั่น
+     */
+    public function updatePromotion(Request $request, int $promotionId): JsonResponse
+    {
+        try {
+            $promotion = AiGenPromotion::findOrFail($promotionId);
+
+            $validated = $request->validate([
+                'name' => 'sometimes|string|max:255',
+                'description' => 'nullable|string',
+                'type' => 'sometimes|in:discount_percent,discount_fixed,free_credits,bonus_credits',
+                'value' => 'sometimes|numeric|min:0',
+                'code' => 'nullable|string|max:50|unique:ai_gen_promotions,code,' . $promotionId,
+                'applies_to' => 'sometimes|in:all,image,video',
+                'max_uses' => 'nullable|integer|min:1',
+                'max_uses_per_user' => 'nullable|integer|min:1',
+                'starts_at' => 'nullable|date',
+                'expires_at' => 'nullable|date',
+                'min_wallet_balance' => 'nullable|numeric|min:0',
+                'provider_id' => 'nullable|integer|exists:ai_gen_providers,id',
+                'is_active' => 'nullable|boolean',
+            ]);
+
+            if (isset($validated['code'])) {
+                $validated['code'] = $validated['code'] ? strtoupper(trim($validated['code'])) : null;
+            }
+
+            $promotion->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'อัพเดทโปรโมชั่นสำเร็จ',
+                'data' => $promotion->fresh()->load('provider'),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ลบโปรโมชั่น
+     */
+    public function deletePromotion(int $promotionId): JsonResponse
+    {
+        try {
+            $promotion = AiGenPromotion::findOrFail($promotionId);
+            $promotion->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'ลบโปรโมชั่นสำเร็จ',
             ]);
         } catch (\Exception $e) {
             return response()->json([

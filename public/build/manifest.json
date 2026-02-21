@@ -16,7 +16,7 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-Dc8lDWmQ.css",
+    "file": "assets/app-CRpZJ9Ly.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -47,23 +47,19 @@
     ]
   },
   "resources/js/mlm-genealogy-premium.js": {
-    "file": "assets/mlm-genealogy-premium-B7hVYblL.js",
+    "file": "assets/mlm-genealogy-premium-ejiG2vH9.js",
     "name": "mlm-genealogy-premium",
     "src": "resources/js/mlm-genealogy-premium.js",
     "isEntry": true
   },
   "resources/js/pos/app.js": {
-    "file": "assets/app-bBtg8LRG.js",
+    "file": "assets/app-pe5vh2FH.js",
     "name": "app",
     "src": "resources/js/pos/app.js",
-    "isEntry": true,
-    "imports": [
-      "resources/js/pos/database.js",
-      "resources/js/pos/sync.js"
-    ]
+    "isEntry": true
   },
   "resources/js/pos/database.js": {
-    "file": "assets/database-CHvaS8pb.js",
+    "file": "assets/database-l0sNRNKZ.js",
     "name": "database",
     "src": "resources/js/pos/database.js",
     "isEntry": true
@@ -75,13 +71,10 @@
     "isEntry": true
   },
   "resources/js/pos/sync.js": {
-    "file": "assets/sync-BIAsrdOj.js",
+    "file": "assets/sync-l0sNRNKZ.js",
     "name": "sync",
     "src": "resources/js/pos/sync.js",
-    "isEntry": true,
-    "imports": [
-      "resources/js/pos/database.js"
-    ]
+    "isEntry": true
   },
   "resources/js/service-worker-register.js": {
     "file": "assets/service-worker-register-D9vu4f_3.js",

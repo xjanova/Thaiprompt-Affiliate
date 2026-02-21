@@ -19,12 +19,16 @@ class AiGenProvider extends Model
         'supported_features',
         'is_active',
         'priority',
+        'wallet_cost_per_image',
+        'wallet_cost_per_video',
     ];
 
     protected $casts = [
         'supported_features' => 'array',
         'is_active' => 'boolean',
         'priority' => 'integer',
+        'wallet_cost_per_image' => 'decimal:2',
+        'wallet_cost_per_video' => 'decimal:2',
     ];
 
     /**

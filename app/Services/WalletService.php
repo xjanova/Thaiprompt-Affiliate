@@ -184,6 +184,81 @@ class WalletService
     }
 
     /**
+     * หักเงินจาก wallet สำหรับบริการของระบบ (ไม่ต้องใช้ PIN)
+     *
+     * ใช้สำหรับ: AI Gen, Service Booking ฯลฯ ที่ผู้ใช้ยืนยันแล้วผ่านหน้า UI
+     *
+     * @param Wallet $wallet กระเป๋าเงิน
+     * @param float $amount จำนวนเงิน
+     * @param string $description คำอธิบาย
+     * @param string|null $referenceType ประเภทอ้างอิง (เช่น ai_gen, service_booking)
+     * @param int|null $referenceId ID อ้างอิง
+     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @return WalletTransaction
+     *
+     * @throws Exception
+     */
+    public function deductForService(
+        Wallet $wallet,
+        float $amount,
+        string $description = 'Service payment',
+        ?string $referenceType = null,
+        ?int $referenceId = null,
+        array $metadata = []
+    ): WalletTransaction {
+        if ($amount <= 0) {
+            throw new Exception('Amount must be greater than 0');
+        }
+
+        if (! $wallet->isActive()) {
+            throw new Exception('Wallet is not active');
+        }
+
+        if ($wallet->balance < $amount) {
+            throw new Exception('Insufficient balance');
+        }
+
+        return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+            $balanceBefore = $wallet->balance;
+            $balanceAfter = $balanceBefore - $amount;
+
+            // สร้างรายการธุรกรรม
+            $transaction = WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $wallet->user_id,
+                'type' => 'fee',
+                'amount' => $amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter,
+                'currency' => $wallet->currency,
+                'description' => $description,
+                'reference_type' => $referenceType,
+                'reference_id' => $referenceId,
+                'status' => 'completed',
+                'metadata' => $metadata,
+                'completed_at' => now(),
+            ]);
+
+            // อัพเดทยอดเงินใน wallet
+            $wallet->update([
+                'balance' => $balanceAfter,
+                'total_expense' => $wallet->total_expense + $amount,
+                'last_transaction_at' => now(),
+            ]);
+
+            $this->logAction(
+                $wallet,
+                'transaction_success',
+                "Service deduction: {$amount} {$wallet->currency} - {$description}",
+                'info',
+                ['transaction_id' => $transaction->id]
+            );
+
+            return $transaction;
+        });
+    }
+
+    /**
      * Transfer money between wallets
      */
     public function transfer(

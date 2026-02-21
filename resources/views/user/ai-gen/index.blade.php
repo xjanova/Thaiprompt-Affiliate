@@ -1,1389 +1,996 @@
 @extends('layouts.user-arrow-x')
 
-@section('title', 'AI Gen - Create Amazing Images & Videos')
+@section('title', 'AI Gen - สร้างสรรค์ผลงานด้วย AI')
 
 @section('content')
-<div class="ai-gen-container">
-    {{-- Premium Hero Header (Purple-Pink-Indigo for AI Gen) --}}
-    <div class="relative overflow-hidden bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 dark:from-purple-800 dark:via-pink-800 dark:to-indigo-800 rounded-2xl shadow-2xl p-8 mb-6">
-        <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse"></div>
-            <div class="absolute bottom-0 left-0 w-96 h-96 bg-white rounded-full blur-3xl animate-pulse" style="animation-delay: 0.5s"></div>
-        </div>
+<div x-data="aiGenApp()" x-init="init()" class="min-h-screen">
+
+    {{-- ===== Hero Header ===== --}}
+    <div class="relative overflow-hidden bg-gradient-to-br from-violet-600 via-purple-600 to-fuchsia-600 dark:from-violet-800 dark:via-purple-900 dark:to-fuchsia-900 rounded-2xl shadow-2xl p-6 md:p-10 mb-6">
+        {{-- พื้นหลังอนิเมชัน --}}
         <div class="absolute inset-0 overflow-hidden pointer-events-none">
-            <div class="absolute text-white/10 text-8xl top-10 right-20" style="animation: float 6s ease-in-out infinite">
-                <i class="fas fa-magic"></i>
-            </div>
+            <div class="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
+            <div class="absolute -bottom-20 -left-20 w-80 h-80 bg-pink-300/10 rounded-full blur-3xl animate-pulse" style="animation-delay:1s"></div>
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-violet-500/5 to-fuchsia-500/5 rounded-full blur-3xl animate-spin" style="animation-duration:30s"></div>
+        </div>
+        {{-- ไอคอนลอย --}}
+        <div class="absolute top-8 right-12 text-white/10 text-7xl hidden md:block" style="animation:aiFloat 6s ease-in-out infinite">
+            <i class="fas fa-wand-magic-sparkles"></i>
+        </div>
+        <div class="absolute bottom-8 right-40 text-white/5 text-5xl hidden lg:block" style="animation:aiFloat 8s ease-in-out infinite 2s">
+            <i class="fas fa-palette"></i>
         </div>
 
-        <div class="relative z-10 py-6 md:py-10">
-            <div class="flex flex-col md:flex-row items-center justify-between gap-8">
+        <div class="relative z-10">
+            <div class="flex flex-col md:flex-row items-center gap-6 md:gap-10">
                 <div class="flex-1 text-center md:text-left">
-                    <div class="glass-fusion inline-block p-4 rounded-2xl mb-4">
-                        <i class="fas fa-wand-magic-sparkles text-4xl text-white drop-shadow-lg"></i>
+                    <div class="inline-flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-white/90 text-sm mb-4">
+                        <i class="fas fa-sparkles text-yellow-300"></i>
+                        <span>AI Image Generation</span>
                     </div>
-                    <h1 class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg mb-4">
-                        ✨ สร้างสรรค์ผลงาน<br>
-                        <span class="text-pink-200">สุดล้ำด้วย AI</span>
+                    <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-3 leading-tight">
+                        สร้างสรรค์ผลงาน<br>
+                        <span class="bg-clip-text text-transparent bg-gradient-to-r from-pink-200 to-yellow-200">สุดล้ำด้วย AI</span>
                     </h1>
-                    <p class="text-lg text-purple-100 mb-6">Transform your ideas into reality with powerful AI generation</p>
-                    <button class="glass-fusion px-8 py-4 hover:bg-white/30 text-white rounded-xl transition font-bold inline-flex items-center gap-2 text-lg" onclick="showCreateModal()">
+                    <p class="text-purple-100 text-base md:text-lg mb-6 max-w-lg">
+                        เปลี่ยนไอเดียของคุณให้เป็นภาพสวยงาม ด้วยเทคโนโลยี AI ล่าสุด
+                    </p>
+                    <button @click="showCreateModal = true"
+                        class="inline-flex items-center gap-2.5 px-8 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white rounded-xl transition-all duration-300 font-bold text-lg shadow-lg hover:shadow-xl hover:scale-105 active:scale-95">
                         <i class="fas fa-magic"></i>
-                        <span>Start Creating Now</span>
+                        <span>เริ่มสร้างเลย</span>
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Stats Bar -->
-    <div class="stats-bar">
-        <div class="container">
-            <div class="row text-center">
-                <div class="col-md-3 col-6 mb-3 mb-md-0">
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-image"></i>
-                        </div>
-                        <div class="stat-value" id="stat-images">{{ $stats['remaining_images'] ?? 0 }}</div>
-                        <div class="stat-label">Images Left</div>
+                {{-- สถิติมินิ --}}
+                <div class="grid grid-cols-2 gap-3 md:gap-4 w-full md:w-auto md:min-w-[280px]">
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
+                        <div class="text-3xl font-bold text-white" x-text="stats.remainingImages">{{ $stats['remaining_images'] ?? 0 }}</div>
+                        <div class="text-purple-200 text-xs mt-1"><i class="fas fa-image mr-1"></i>เครดิตภาพ</div>
                     </div>
-                </div>
-                <div class="col-md-3 col-6 mb-3 mb-md-0">
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-video"></i>
-                        </div>
-                        <div class="stat-value" id="stat-videos">{{ $stats['remaining_videos'] ?? 0 }}</div>
-                        <div class="stat-label">Videos Left</div>
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
+                        <div class="text-3xl font-bold text-white" x-text="stats.remainingVideos">{{ $stats['remaining_videos'] ?? 0 }}</div>
+                        <div class="text-purple-200 text-xs mt-1"><i class="fas fa-video mr-1"></i>เครดิตวิดีโอ</div>
                     </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-value" id="stat-generated">{{ $stats['total_generated'] ?? 0 }}</div>
-                        <div class="stat-label">Created</div>
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
+                        <div class="text-3xl font-bold text-white" x-text="stats.totalGenerated">{{ $stats['total_generated'] ?? 0 }}</div>
+                        <div class="text-purple-200 text-xs mt-1"><i class="fas fa-chart-line mr-1"></i>สร้างแล้ว</div>
                     </div>
-                </div>
-                <div class="col-md-3 col-6">
-                    <div class="stat-item">
-                        <div class="stat-icon">
-                            <i class="fas fa-crown"></i>
-                        </div>
-                        <div class="stat-value">{{ $package_name ?? 'Free' }}</div>
-                        <div class="stat-label">Plan</div>
+                    <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
+                        <div class="text-2xl font-bold text-white" x-text="stats.planName">{{ $package_name ?? 'Free' }}</div>
+                        <div class="text-purple-200 text-xs mt-1"><i class="fas fa-crown mr-1"></i>แพ็กเกจ</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div class="container mt-5">
-        <!-- Tabs -->
-        <ul class="nav nav-pills nav-fill ai-gen-tabs mb-4" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" data-toggle="tab" href="#my-creations">
-                    <i class="fas fa-images"></i> My Creations
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#explore">
-                    <i class="fas fa-compass"></i> Explore
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-toggle="tab" href="#packages">
-                    <i class="fas fa-box"></i> Packages
-                </a>
-            </li>
-        </ul>
+    {{-- ===== แท็บนำทาง ===== --}}
+    <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+        <template x-for="tab in tabs" :key="tab.id">
+            <button @click="activeTab = tab.id"
+                :class="activeTab === tab.id
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/25 dark:bg-purple-500'
+                    : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700'"
+                class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-200 whitespace-nowrap">
+                <i :class="tab.icon"></i>
+                <span x-text="tab.label"></span>
+            </button>
+        </template>
+        {{-- ปุ่มสร้างใหม่ --}}
+        <button @click="showCreateModal = true"
+            class="ml-auto inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white rounded-xl font-semibold text-sm shadow-lg shadow-purple-500/25 transition-all duration-200 hover:scale-105 active:scale-95 whitespace-nowrap">
+            <i class="fas fa-plus"></i>
+            <span>สร้างใหม่</span>
+        </button>
+    </div>
 
-        <!-- Tab Content -->
-        <div class="tab-content">
-            <!-- My Creations Tab -->
-            <div class="tab-pane fade show active" id="my-creations">
-                <div class="row mb-4">
-                    <div class="col-md-8">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-primary" data-filter="all">All</button>
-                            <button class="btn btn-outline-primary" data-filter="image">Images</button>
-                            <button class="btn btn-outline-primary" data-filter="video">Videos</button>
-                            <button class="btn btn-outline-primary" data-filter="favorite">Favorites</button>
+    {{-- ===== แท็บ: ผลงานของฉัน ===== --}}
+    <div x-show="activeTab === 'creations'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        {{-- ตัวกรอง --}}
+        <div class="flex flex-wrap items-center gap-2 mb-5">
+            <template x-for="f in creationFilters" :key="f.value">
+                <button @click="filterCreations(f.value)"
+                    :class="currentFilter === f.value
+                        ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition">
+                    <i :class="f.icon" class="text-xs"></i>
+                    <span x-text="f.label"></span>
+                </button>
+            </template>
+        </div>
+
+        {{-- แกลเลอรี --}}
+        <div x-show="!loadingCreations && generations.length > 0"
+            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <template x-for="gen in generations" :key="gen.id">
+                <div @click="viewGeneration(gen)"
+                    class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
+                    {{-- รูปภาพ --}}
+                    <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
+                        <template x-if="gen.file_url || gen.thumbnail_url">
+                            <img :src="gen.thumbnail_url || gen.file_url" :alt="gen.prompt"
+                                class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                loading="lazy">
+                        </template>
+                        <template x-if="!gen.file_url && !gen.thumbnail_url">
+                            <div class="w-full h-full flex flex-col items-center justify-center text-gray-400 dark:text-gray-600">
+                                <template x-if="gen.status === 'pending' || gen.status === 'processing'">
+                                    <div class="text-center">
+                                        <i class="fas fa-spinner fa-spin text-3xl text-purple-400 mb-2"></i>
+                                        <p class="text-xs">กำลังสร้าง...</p>
+                                    </div>
+                                </template>
+                                <template x-if="gen.status === 'failed'">
+                                    <div class="text-center">
+                                        <i class="fas fa-exclamation-triangle text-3xl text-red-400 mb-2"></i>
+                                        <p class="text-xs text-red-400">ล้มเหลว</p>
+                                    </div>
+                                </template>
+                                <template x-if="gen.status !== 'pending' && gen.status !== 'processing' && gen.status !== 'failed'">
+                                    <div class="text-center">
+                                        <i class="fas fa-image text-3xl mb-2"></i>
+                                        <p class="text-xs">ไม่มีรูปภาพ</p>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                    {{-- โอเวอร์เลย์ --}}
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <p class="text-white text-xs line-clamp-2" x-text="gen.prompt"></p>
+                            <div class="flex items-center justify-between mt-2">
+                                <span class="text-white/70 text-[10px]" x-text="gen.provider?.name || ''"></span>
+                                <div class="flex items-center gap-1">
+                                    <template x-if="gen.is_favorite">
+                                        <i class="fas fa-heart text-red-400 text-xs"></i>
+                                    </template>
+                                    <span class="text-white/70 text-[10px]" x-text="formatDate(gen.created_at)"></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                    <div class="col-md-4 text-right">
-                        <button class="btn btn-primary btn-glow" onclick="showCreateModal()">
-                            <i class="fas fa-plus"></i> Create New
+                    {{-- แบดจ์ประเภท --}}
+                    <div class="absolute top-2 left-2">
+                        <span :class="gen.type === 'image' ? 'bg-blue-500' : 'bg-pink-500'"
+                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-white text-[10px] font-medium backdrop-blur-sm bg-opacity-80">
+                            <i :class="gen.type === 'image' ? 'fas fa-image' : 'fas fa-video'" class="text-[8px]"></i>
+                            <span x-text="gen.type === 'image' ? 'ภาพ' : 'วิดีโอ'"></span>
+                        </span>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        {{-- สถานะว่าง --}}
+        <div x-show="!loadingCreations && generations.length === 0"
+            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
+                <i class="fas fa-wand-magic-sparkles text-3xl text-purple-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">ยังไม่มีผลงาน</h3>
+            <p class="text-gray-500 dark:text-gray-400 mb-6 text-sm">เริ่มสร้างสรรค์ผลงานสุดเจ๋งด้วย AI กันเลย!</p>
+            <button @click="showCreateModal = true"
+                class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl font-semibold text-sm hover:shadow-lg transition">
+                <i class="fas fa-plus"></i> สร้างผลงานแรก
+            </button>
+        </div>
+
+        {{-- กำลังโหลด --}}
+        <div x-show="loadingCreations" class="flex flex-col items-center justify-center py-16">
+            <div class="w-12 h-12 border-4 border-purple-200 dark:border-purple-800 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">กำลังโหลดผลงาน...</p>
+        </div>
+    </div>
+
+    {{-- ===== แท็บ: สำรวจ ===== --}}
+    <div x-show="activeTab === 'explore'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="flex flex-wrap items-center gap-2 mb-5">
+            <template x-for="f in exploreFilters" :key="f.value">
+                <button @click="filterExplore(f.value)"
+                    :class="currentExploreFilter === f.value
+                        ? 'bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 border-purple-300 dark:border-purple-600'
+                        : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-purple-300'"
+                    class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition">
+                    <i :class="f.icon" class="text-xs"></i>
+                    <span x-text="f.label"></span>
+                </button>
+            </template>
+        </div>
+
+        <div x-show="!loadingExplore && exploreItems.length > 0"
+            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <template x-for="gen in exploreItems" :key="gen.id">
+                <div @click="viewGeneration(gen)"
+                    class="group relative bg-white dark:bg-gray-800 rounded-xl overflow-hidden shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 transition-all duration-300 cursor-pointer hover:-translate-y-1">
+                    <div class="aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
+                        <img :src="gen.thumbnail_url || gen.file_url" :alt="gen.prompt"
+                            class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            loading="lazy">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div class="absolute bottom-0 left-0 right-0 p-3">
+                            <p class="text-white text-xs line-clamp-2" x-text="gen.prompt"></p>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="!loadingExplore && exploreItems.length === 0"
+            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
+                <i class="fas fa-compass text-3xl text-purple-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">ยังไม่มีผลงานให้สำรวจ</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">ผลงานจากชุมชนจะปรากฏที่นี่</p>
+        </div>
+
+        <div x-show="loadingExplore" class="flex flex-col items-center justify-center py-16">
+            <div class="w-12 h-12 border-4 border-purple-200 dark:border-purple-800 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">กำลังโหลด...</p>
+        </div>
+    </div>
+
+    {{-- ===== แท็บ: แพ็กเกจ ===== --}}
+    <div x-show="activeTab === 'packages'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-2" x-transition:enter-end="opacity-100 translate-y-0">
+        <div x-show="!loadingPackages && packages.length > 0"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <template x-for="pkg in packages" :key="pkg.id">
+                <div :class="pkg.is_popular ? 'ring-2 ring-purple-500 dark:ring-purple-400' : ''"
+                    class="relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 dark:border-gray-700 p-6 transition-all duration-300 hover:-translate-y-1">
+                    {{-- แบดจ์ยอดนิยม --}}
+                    <template x-if="pkg.is_popular">
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span class="inline-flex items-center gap-1 px-4 py-1 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white text-xs font-bold rounded-full shadow-lg">
+                                <i class="fas fa-fire"></i> ยอดนิยม
+                            </span>
+                        </div>
+                    </template>
+                    <div class="text-center mb-5 pt-2">
+                        <h3 class="text-xl font-bold text-gray-900 dark:text-white" x-text="pkg.name"></h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-1" x-text="pkg.description || ''"></p>
+                    </div>
+                    <div class="text-center mb-6">
+                        <span class="text-4xl font-extrabold text-gray-900 dark:text-white">
+                            ฿<span x-text="Number(pkg.price).toLocaleString()"></span>
+                        </span>
+                        <span class="text-gray-500 dark:text-gray-400 text-sm" x-text="'/' + (pkg.duration_days || 30) + ' วัน'"></span>
+                    </div>
+                    <ul class="space-y-3 mb-6">
+                        <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-image text-blue-500 w-5 text-center"></i>
+                            <span>ภาพ <strong x-text="pkg.image_credits?.toLocaleString() || '0'"></strong> เครดิต</span>
+                        </li>
+                        <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                            <i class="fas fa-video text-pink-500 w-5 text-center"></i>
+                            <span>วิดีโอ <strong x-text="pkg.video_credits?.toLocaleString() || '0'"></strong> เครดิต</span>
+                        </li>
+                        <template x-if="pkg.features">
+                            <template x-for="feat in (typeof pkg.features === 'string' ? JSON.parse(pkg.features) : pkg.features)" :key="feat">
+                                <li class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <i class="fas fa-check text-green-500 w-5 text-center"></i>
+                                    <span x-text="feat"></span>
+                                </li>
+                            </template>
+                        </template>
+                    </ul>
+                    <button @click="purchasePackage(pkg)"
+                        :class="pkg.is_popular
+                            ? 'bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700 text-white shadow-lg shadow-purple-500/25'
+                            : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-800 dark:text-white'"
+                        class="w-full py-3 rounded-xl font-semibold text-sm transition-all duration-200 hover:scale-[1.02] active:scale-95">
+                        <i class="fas fa-shopping-cart mr-1"></i> ซื้อแพ็กเกจ
+                    </button>
+                </div>
+            </template>
+        </div>
+
+        <div x-show="!loadingPackages && packages.length === 0"
+            class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-purple-100 dark:bg-purple-900/30 rounded-full mb-4">
+                <i class="fas fa-box-open text-3xl text-purple-500"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 dark:text-white mb-2">ยังไม่มีแพ็กเกจ</h3>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">แพ็กเกจจะปรากฏที่นี่เมื่อเปิดให้บริการ</p>
+        </div>
+
+        <div x-show="loadingPackages" class="flex flex-col items-center justify-center py-16">
+            <div class="w-12 h-12 border-4 border-purple-200 dark:border-purple-800 border-t-purple-600 dark:border-t-purple-400 rounded-full animate-spin mb-4"></div>
+            <p class="text-gray-500 dark:text-gray-400 text-sm">กำลังโหลดแพ็กเกจ...</p>
+        </div>
+    </div>
+
+    {{-- ===== Modal สร้างผลงาน ===== --}}
+    <div x-show="showCreateModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        {{-- พื้นหลังมืด --}}
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="showCreateModal = false"></div>
+
+        {{-- เนื้อหา Modal --}}
+        <div class="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+            x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 scale-100"
+            x-transition:leave-end="opacity-0 scale-95"
+            @click.stop>
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between p-6 border-b border-gray-100 dark:border-gray-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-magic text-white"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">สร้างผลงานด้วย AI</h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">อธิบายสิ่งที่คุณต้องการ แล้ว AI จะสร้างให้</p>
+                    </div>
+                </div>
+                <button @click="showCreateModal = false" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-6 space-y-5">
+                {{-- ประเภท --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-shapes mr-1 text-purple-500"></i> ประเภท
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button @click="form.type = 'image'"
+                            :class="form.type === 'image'
+                                ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-500 dark:border-purple-400 text-purple-700 dark:text-purple-300 ring-2 ring-purple-500/20'
+                                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-purple-300'"
+                            class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer">
+                            <i class="fas fa-image text-xl"></i>
+                            <div class="text-left">
+                                <div class="font-semibold text-sm">ภาพ</div>
+                                <div class="text-xs opacity-70">สร้างภาพด้วย AI</div>
+                            </div>
+                        </button>
+                        <button @click="form.type = 'video'"
+                            :class="form.type === 'video'
+                                ? 'bg-pink-50 dark:bg-pink-900/30 border-pink-500 dark:border-pink-400 text-pink-700 dark:text-pink-300 ring-2 ring-pink-500/20'
+                                : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-pink-300'"
+                            class="flex items-center gap-3 p-4 rounded-xl border-2 transition-all duration-200 cursor-pointer">
+                            <i class="fas fa-video text-xl"></i>
+                            <div class="text-left">
+                                <div class="font-semibold text-sm">วิดีโอ</div>
+                                <div class="text-xs opacity-70">สร้างวิดีโอด้วย AI</div>
+                            </div>
                         </button>
                     </div>
                 </div>
 
-                <div class="generations-grid" id="generations-grid">
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                        <p class="text-muted mt-3">Loading your creations...</p>
+                {{-- AI Provider --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-robot mr-1 text-purple-500"></i> AI Provider
+                    </label>
+                    <div class="space-y-2">
+                        <template x-for="prov in availableProviders" :key="prov.slug">
+                            <button @click="form.provider = prov.slug"
+                                x-show="prov.type === form.type || prov.type === 'both'"
+                                :class="form.provider === prov.slug
+                                    ? 'bg-purple-50 dark:bg-purple-900/30 border-purple-500 dark:border-purple-400 ring-2 ring-purple-500/20'
+                                    : 'bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 hover:border-purple-300'"
+                                class="w-full flex items-center gap-3 p-3 rounded-xl border-2 transition-all duration-200 cursor-pointer text-left">
+                                <div class="w-9 h-9 bg-gradient-to-br from-purple-500 to-fuchsia-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fas fa-microchip text-white text-sm"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2">
+                                        <span class="font-semibold text-sm text-gray-900 dark:text-white" x-text="prov.name"></span>
+                                        <template x-if="prov.slug === 'together-ai'">
+                                            <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300 text-[10px] font-bold rounded-full">ฟรี</span>
+                                        </template>
+                                    </div>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="prov.description || ''"></p>
+                                </div>
+                                <template x-if="form.provider === prov.slug">
+                                    <i class="fas fa-check-circle text-purple-500 text-lg flex-shrink-0"></i>
+                                </template>
+                            </button>
+                        </template>
+                    </div>
+                    <template x-if="availableProviders.filter(p => p.type === form.type || p.type === 'both').length === 0">
+                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center py-4">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ยังไม่มี provider สำหรับประเภทนี้
+                        </p>
+                    </template>
+                </div>
+
+                {{-- Prompt --}}
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-pencil mr-1 text-purple-500"></i> อธิบายสิ่งที่ต้องการ
+                    </label>
+                    <textarea x-model="form.prompt" rows="4"
+                        class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition placeholder:text-gray-400"
+                        placeholder="เช่น: ภาพวิวพระอาทิตย์ตกริมทะเล มีโลมากระโดด สไตล์สีน้ำ..."
+                        required></textarea>
+                    <div class="flex items-center justify-between mt-1.5">
+                        <p class="text-xs text-gray-400">
+                            <i class="fas fa-lightbulb text-yellow-500 mr-1"></i>
+                            ยิ่งอธิบายละเอียด ผลลัพธ์ยิ่งดี
+                        </p>
+                        <span class="text-xs" :class="form.prompt.length > 900 ? 'text-red-500' : 'text-gray-400'"
+                            x-text="form.prompt.length + '/1000'"></span>
                     </div>
                 </div>
-            </div>
 
-            <!-- Explore Tab -->
-            <div class="tab-pane fade" id="explore">
-                <div class="row mb-4">
-                    <div class="col-md-12">
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-primary active" data-explore-filter="all">All</button>
-                            <button class="btn btn-outline-primary" data-explore-filter="image">Images</button>
-                            <button class="btn btn-outline-primary" data-explore-filter="video">Videos</button>
-                            <button class="btn btn-outline-primary" data-explore-filter="popular">Popular</button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="generations-grid" id="explore-grid">
-                    <div class="text-center py-5">
-                        <div class="spinner-border text-primary" role="status">
-                            <span class="sr-only">Loading...</span>
-                        </div>
-                        <p class="text-muted mt-3">Loading trending creations...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Packages Tab -->
-            <div class="tab-pane fade" id="packages">
-                <div class="row" id="packages-grid">
-                    <div class="col-12 text-center py-5">
-                        <div class="spinner-border text-primary"></div>
-                        <p class="text-muted mt-3">Loading packages...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Create Modal -->
-<div class="modal fade" id="createModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title">
-                    <i class="fas fa-magic text-primary"></i> Create with AI
-                </h5>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
-                </button>
-            </div>
-            <form id="createForm">
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label>What do you want to create? *</label>
-                        <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
-                            <label class="btn btn-outline-primary active">
-                                <input type="radio" name="type" value="image" checked>
-                                <i class="fas fa-image"></i> Image
-                            </label>
-                            <label class="btn btn-outline-primary">
-                                <input type="radio" name="type" value="video">
-                                <i class="fas fa-video"></i> Video
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>AI Provider *</label>
-                        <select class="form-control" name="provider" id="provider-select" required>
-                            <option value="">Loading providers...</option>
+                {{-- สไตล์ & ขนาด --}}
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-palette mr-1 text-purple-500"></i> สไตล์
+                        </label>
+                        <select x-model="form.style"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                            <option value="realistic">สมจริง (Realistic)</option>
+                            <option value="artistic">ศิลปะ (Artistic)</option>
+                            <option value="anime">อนิเมะ (Anime)</option>
+                            <option value="cartoon">การ์ตูน (Cartoon)</option>
+                            <option value="3d">3D Render</option>
                         </select>
                     </div>
-
-                    <div class="form-group">
-                        <label>Describe what you want *</label>
-                        <textarea class="form-control" name="prompt" rows="4"
-                            placeholder="E.g., A beautiful sunset over the ocean with dolphins jumping"
-                            required></textarea>
-                        <small class="form-text text-muted">
-                            <i class="fas fa-lightbulb"></i> Tip: Be specific and descriptive for better results
-                        </small>
+                    <div x-show="form.type === 'image'">
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            <i class="fas fa-expand mr-1 text-purple-500"></i> ขนาด
+                        </label>
+                        <select x-model="form.size"
+                            class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+                            <option value="1024x1024">สี่เหลี่ยม (1024x1024)</option>
+                            <option value="1024x768">แนวนอน (1024x768)</option>
+                            <option value="768x1024">แนวตั้ง (768x1024)</option>
+                        </select>
                     </div>
+                </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Style</label>
-                                <select class="form-control" name="style">
-                                    <option value="realistic">Realistic</option>
-                                    <option value="artistic">Artistic</option>
-                                    <option value="anime">Anime</option>
-                                    <option value="cartoon">Cartoon</option>
-                                    <option value="3d">3D Render</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="col-md-6" id="size-group">
-                            <div class="form-group">
-                                <label>Size</label>
-                                <select class="form-control" name="size">
-                                    <option value="1024x1024">Square (1024x1024)</option>
-                                    <option value="1024x768">Landscape (1024x768)</option>
-                                    <option value="768x1024">Portrait (768x1024)</option>
-                                </select>
-                            </div>
+                {{-- ข้อมูลเครดิต --}}
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl p-4">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-info-circle text-purple-500 mt-0.5"></i>
+                        <div class="text-sm">
+                            <p class="text-purple-800 dark:text-purple-200">
+                                <span x-text="form.type === 'image' ? 'เครดิตภาพคงเหลือ: ' + stats.remainingImages : 'เครดิตวิดีโอคงเหลือ: ' + stats.remainingVideos"></span>
+                            </p>
+                            <p class="text-purple-600 dark:text-purple-300 text-xs mt-1">การสร้างแต่ละครั้งใช้ 1 เครดิต</p>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i>
-                        <span id="credits-info">Loading...</span>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-glow">
-                        <i class="fas fa-magic"></i> Generate
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- View Modal -->
-<div class="modal fade" id="viewModal" tabindex="-1">
-    <div class="modal-dialog modal-xl modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <div>
-                    <h5 class="modal-title mb-1" id="view-title">Untitled</h5>
-                    <small class="text-muted" id="view-date"></small>
-                </div>
-                <button type="button" class="close" data-dismiss="modal">
-                    <span>&times;</span>
+            {{-- Footer --}}
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-100 dark:border-gray-700">
+                <button @click="showCreateModal = false"
+                    class="px-5 py-2.5 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl text-sm font-medium transition">
+                    ยกเลิก
+                </button>
+                <button @click="generate()"
+                    :disabled="generating || !form.prompt.trim() || !form.provider"
+                    :class="generating || !form.prompt.trim() || !form.provider ? 'opacity-50 cursor-not-allowed' : 'hover:shadow-lg hover:scale-[1.02] active:scale-95'"
+                    class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white rounded-xl text-sm font-semibold shadow-lg shadow-purple-500/25 transition-all duration-200">
+                    <template x-if="!generating">
+                        <span class="contents"><i class="fas fa-magic"></i> สร้างเลย</span>
+                    </template>
+                    <template x-if="generating">
+                        <span class="contents"><i class="fas fa-spinner fa-spin"></i> กำลังสร้าง...</span>
+                    </template>
                 </button>
             </div>
-            <div class="modal-body">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div class="generation-preview" id="generation-preview">
-                            <img src="" alt="" class="img-fluid rounded" id="preview-image">
+        </div>
+    </div>
+
+    {{-- ===== Modal ดูผลงาน ===== --}}
+    <div x-show="showViewModal" x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0">
+        <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" @click="showViewModal = false"></div>
+
+        <div class="relative w-full max-w-5xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 scale-95"
+            x-transition:enter-end="opacity-100 scale-100"
+            @click.stop>
+
+            {{-- Header --}}
+            <div class="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white line-clamp-1" x-text="viewItem?.prompt || 'ผลงาน'"></h3>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5" x-text="viewItem ? formatDate(viewItem.created_at) : ''"></p>
+                </div>
+                <button @click="showViewModal = false" class="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="p-5">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    {{-- รูปภาพ --}}
+                    <div class="flex-1 min-w-0">
+                        <div class="bg-gray-100 dark:bg-gray-900 rounded-xl overflow-hidden">
+                            <template x-if="viewItem?.file_url">
+                                <img :src="viewItem.file_url" :alt="viewItem.prompt"
+                                    class="w-full h-auto max-h-[60vh] object-contain mx-auto">
+                            </template>
+                            <template x-if="!viewItem?.file_url">
+                                <div class="flex items-center justify-center h-64 text-gray-400">
+                                    <div class="text-center">
+                                        <i class="fas fa-image text-4xl mb-2"></i>
+                                        <p class="text-sm">ไม่มีรูปภาพ</p>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </div>
-                    <div class="col-lg-4">
-                        <div class="generation-details">
-                            <h6>Details</h6>
-                            <dl class="row">
-                                <dt class="col-4">Type</dt>
-                                <dd class="col-8" id="detail-type"></dd>
-                                <dt class="col-4">Provider</dt>
-                                <dd class="col-8" id="detail-provider"></dd>
-                                <dt class="col-4">Status</dt>
-                                <dd class="col-8" id="detail-status"></dd>
-                            </dl>
 
-                            <h6>Prompt</h6>
-                            <p class="text-muted" id="detail-prompt"></p>
-
-                            <div class="mt-4">
-                                <button class="btn btn-primary btn-block" onclick="downloadGeneration()">
-                                    <i class="fas fa-download"></i> Download
-                                </button>
-                                <button class="btn btn-outline-warning btn-block" onclick="toggleFavorite()">
-                                    <i class="fas fa-heart"></i> <span id="favorite-text">Add to Favorites</span>
-                                </button>
-                                <button class="btn btn-outline-danger btn-block" onclick="deleteGeneration()">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
+                    {{-- รายละเอียด --}}
+                    <div class="w-full lg:w-72 flex-shrink-0 space-y-4">
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 space-y-3">
+                            <h4 class="font-semibold text-gray-900 dark:text-white text-sm">รายละเอียด</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">ประเภท</span>
+                                    <span class="font-medium text-gray-900 dark:text-white" x-text="viewItem?.type === 'image' ? 'ภาพ' : 'วิดีโอ'"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">Provider</span>
+                                    <span class="font-medium text-gray-900 dark:text-white" x-text="viewItem?.provider?.name || '-'"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500 dark:text-gray-400">สถานะ</span>
+                                    <span class="font-medium" :class="{
+                                        'text-green-600 dark:text-green-400': viewItem?.status === 'completed',
+                                        'text-yellow-600 dark:text-yellow-400': viewItem?.status === 'pending' || viewItem?.status === 'processing',
+                                        'text-red-600 dark:text-red-400': viewItem?.status === 'failed'
+                                    }" x-text="statusLabel(viewItem?.status)"></span>
+                                </div>
                             </div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+                            <h4 class="font-semibold text-gray-900 dark:text-white text-sm mb-2">Prompt</h4>
+                            <p class="text-sm text-gray-600 dark:text-gray-300 leading-relaxed" x-text="viewItem?.prompt || '-'"></p>
+                        </div>
+
+                        {{-- ปุ่มจัดการ --}}
+                        <div class="space-y-2">
+                            <template x-if="viewItem?.file_url">
+                                <a :href="viewItem.file_url" download
+                                    class="flex items-center justify-center gap-2 w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-sm font-semibold transition">
+                                    <i class="fas fa-download"></i> ดาวน์โหลด
+                                </a>
+                            </template>
+                            <button @click="toggleFavorite()"
+                                class="flex items-center justify-center gap-2 w-full py-2.5 border-2 rounded-xl text-sm font-semibold transition"
+                                :class="viewItem?.is_favorite
+                                    ? 'border-red-300 dark:border-red-600 text-red-500 bg-red-50 dark:bg-red-900/20'
+                                    : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 hover:border-red-300 hover:text-red-500'">
+                                <i :class="viewItem?.is_favorite ? 'fas fa-heart' : 'far fa-heart'"></i>
+                                <span x-text="viewItem?.is_favorite ? 'เอาออกจากรายการโปรด' : 'เพิ่มในรายการโปรด'"></span>
+                            </button>
+                            <button @click="deleteGeneration()"
+                                class="flex items-center justify-center gap-2 w-full py-2.5 border-2 border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-red-300 hover:text-red-500 rounded-xl text-sm font-semibold transition">
+                                <i class="fas fa-trash"></i> ลบ
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    {{-- ===== Toast Notification ===== --}}
+    <div x-show="toast.show" x-cloak
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-4"
+        x-transition:enter-end="opacity-100 translate-y-0"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100 translate-y-0"
+        x-transition:leave-end="opacity-0 translate-y-4"
+        class="fixed bottom-6 right-6 z-[60] max-w-sm">
+        <div :class="{
+            'bg-green-600': toast.type === 'success',
+            'bg-red-600': toast.type === 'error',
+            'bg-blue-600': toast.type === 'info'
+        }" class="flex items-center gap-3 px-5 py-3.5 rounded-xl text-white shadow-2xl">
+            <i :class="{
+                'fas fa-check-circle': toast.type === 'success',
+                'fas fa-exclamation-circle': toast.type === 'error',
+                'fas fa-info-circle': toast.type === 'info'
+            }"></i>
+            <span class="text-sm font-medium" x-text="toast.message"></span>
+            <button @click="toast.show = false" class="ml-2 text-white/70 hover:text-white">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+    </div>
+
 </div>
 @endsection
 
 @push('styles')
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css">
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
-
-    .ai-gen-container {
-        font-family: 'Poppins', sans-serif;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        min-height: 100vh;
-        padding-bottom: 60px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    /* Animated Background Particles */
-    .ai-gen-container::before {
-        content: '';
-        position: absolute;
-        width: 200%;
-        height: 200%;
-        top: -50%;
-        left: -50%;
-        background:
-            radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-            radial-gradient(circle at 40% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
-        animation: floating 20s ease-in-out infinite;
-        pointer-events: none;
-    }
-
-    @keyframes floating {
-        0%, 100% { transform: translate(0, 0) rotate(0deg); }
-        33% { transform: translate(30px, -30px) rotate(120deg); }
-        66% { transform: translate(-20px, 20px) rotate(240deg); }
-    }
-
-    .hero-section {
-        padding: 100px 0 80px;
-        color: white;
-        position: relative;
-        z-index: 1;
-    }
-
-    .hero-title {
-        font-size: 4rem;
-        font-weight: 900;
-        line-height: 1.1;
-        margin-bottom: 24px;
-        text-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        letter-spacing: -1px;
-    }
-
-    .gradient-text {
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 50%, #FF6347 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        position: relative;
-        display: inline-block;
-        animation: shimmer 3s ease-in-out infinite;
-    }
-
-    @keyframes shimmer {
-        0%, 100% { filter: brightness(1) hue-rotate(0deg); }
-        50% { filter: brightness(1.2) hue-rotate(10deg); }
-    }
-
-    .hero-subtitle {
-        font-size: 1.35rem;
-        margin-bottom: 40px;
-        opacity: 0.95;
-        font-weight: 300;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .btn-glow {
-        padding: 16px 40px;
-        font-size: 1.1rem;
-        font-weight: 600;
-        border-radius: 50px;
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-        border: none;
-        color: #333;
-        box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4), 0 0 0 0 rgba(255, 215, 0, 0.5);
-        animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .btn-glow::before {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.5);
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s;
-    }
-
-    .btn-glow:hover::before {
-        width: 300px;
-        height: 300px;
-    }
-
-    .btn-glow:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 50px rgba(255, 215, 0, 0.6);
-    }
-
-    @keyframes pulse-glow {
-        0%, 100% {
-            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4), 0 0 0 0 rgba(255, 215, 0, 0.5);
-        }
-        50% {
-            box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4), 0 0 0 15px rgba(255, 215, 0, 0);
-        }
-    }
-
-    .hero-image-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
-        perspective: 1000px;
-    }
-
-    .grid-item {
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
-        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        position: relative;
-        transform-style: preserve-3d;
-    }
-
-    .grid-item::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(255, 215, 0, 0.2) 0%, rgba(255, 105, 180, 0.2) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        z-index: 1;
-    }
-
-    .grid-item:hover {
-        transform: translateY(-10px) rotateX(5deg);
-        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
-    }
-
-    .grid-item:hover::before {
-        opacity: 1;
-    }
-
-    .grid-item img {
-        width: 100%;
-        height: 200px;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-
-    .grid-item:hover img {
-        transform: scale(1.1);
-    }
-
-    .stats-bar {
-        background: rgba(255, 255, 255, 0.98);
-        backdrop-filter: blur(20px);
-        padding: 40px 0;
-        box-shadow: 0 -10px 60px rgba(0, 0, 0, 0.15);
-        border-radius: 40px 40px 0 0;
-        margin-top: -40px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .stat-item {
-        padding: 20px;
-        border-radius: 20px;
-        transition: all 0.3s ease;
-        cursor: pointer;
-    }
-
-    .stat-item:hover {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        transform: translateY(-5px);
-    }
-
-    .stat-icon {
-        font-size: 2.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 12px;
-        transition: transform 0.3s ease;
-    }
-
-    .stat-item:hover .stat-icon {
-        transform: scale(1.2) rotate(5deg);
-    }
-
-    .stat-value {
-        font-size: 2.5rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 5px;
-    }
-
-    .stat-label {
-        font-size: 0.95rem;
-        color: #666;
-        font-weight: 500;
-        letter-spacing: 0.5px;
-    }
-
-    .ai-gen-tabs {
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px);
-        border-radius: 60px;
-        padding: 8px;
-    }
-
-    .ai-gen-tabs .nav-link {
-        border-radius: 50px;
-        font-weight: 600;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        padding: 14px 32px;
-        color: #666;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .ai-gen-tabs .nav-link::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: -100%;
-        width: 100%;
-        height: 100%;
-        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-        transition: left 0.5s;
-    }
-
-    .ai-gen-tabs .nav-link:hover::before {
-        left: 100%;
-    }
-
-    .ai-gen-tabs .nav-link.active {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white !important;
-        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-        transform: translateY(-2px);
-    }
-
-    .generations-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-        gap: 30px;
-        min-height: 400px;
-    }
-
-    .generation-card {
-        border-radius: 24px;
-        overflow: hidden;
-        background: white;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        cursor: pointer;
-        position: relative;
-        transform-style: preserve-3d;
-    }
-
-    .generation-card::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        opacity: 0;
-        transition: opacity 0.3s ease;
-        pointer-events: none;
-    }
-
-    .generation-card:hover {
-        transform: translateY(-12px) scale(1.02);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    }
-
-    .generation-card:hover::after {
-        opacity: 1;
-    }
-
-    .generation-card img {
-        width: 100%;
-        height: 280px;
-        object-fit: cover;
-        transition: transform 0.5s ease;
-    }
-
-    .generation-card:hover img {
-        transform: scale(1.1) rotate(2deg);
-    }
-
-    .generation-info {
-        padding: 20px;
-        position: relative;
-        z-index: 1;
-    }
-
-    .category-card {
-        background: white;
-        border-radius: 24px;
-        padding: 40px 30px;
-        text-align: center;
-        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        cursor: pointer;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        position: relative;
-        overflow: hidden;
-    }
-
-    .category-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        transform: rotate(45deg);
-        transition: all 0.5s ease;
-        opacity: 0;
-    }
-
-    .category-card:hover::before {
-        opacity: 1;
-        transform: rotate(45deg) translate(10%, 10%);
-    }
-
-    .category-card:hover {
-        transform: translateY(-12px) scale(1.05);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-    }
-
-    .category-icon {
-        font-size: 3.5rem;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin-bottom: 20px;
-        transition: transform 0.4s ease;
-        position: relative;
-        z-index: 1;
-    }
-
-    .category-card:hover .category-icon {
-        transform: scale(1.2) rotate(10deg);
-    }
-
-    .package-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-        border-radius: 28px;
-        padding: 50px 40px;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
-        transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        position: relative;
-        overflow: hidden;
-        border: 2px solid transparent;
-    }
-
-    .package-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
-        opacity: 0;
-        transition: opacity 0.4s ease;
-    }
-
-    .package-card.popular {
-        border: 2px solid #FFD700;
-        transform: scale(1.05);
-    }
-
-    .package-card.popular::after {
-        content: '⭐ POPULAR';
-        position: absolute;
-        top: 24px;
-        right: -32px;
-        background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
-        color: #333;
-        padding: 8px 50px;
-        transform: rotate(45deg);
-        font-weight: 700;
-        font-size: 0.75rem;
-        letter-spacing: 1px;
-        box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-    }
-
-    .package-card:hover {
-        transform: translateY(-15px) scale(1.02);
-        box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25);
-        border-color: #667eea;
-    }
-
-    .package-card:hover::before {
-        opacity: 1;
-    }
-
-    .package-card.popular:hover {
-        transform: translateY(-15px) scale(1.07);
-    }
-
-    .package-price {
-        font-size: 3.5rem;
-        font-weight: 900;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 20px 0;
-        letter-spacing: -2px;
-    }
-
-    .modal-content {
-        border-radius: 28px;
-        border: none;
-        overflow: hidden;
-        box-shadow: 0 25px 100px rgba(0, 0, 0, 0.3);
-    }
-
-    .modal-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 24px 30px;
-    }
-
-    .modal-body {
-        padding: 30px;
-    }
-
-    .modal-footer {
-        padding: 20px 30px;
-        background: #f8f9fa;
-    }
-
-    .generation-preview {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 20px;
-        padding: 30px;
-        min-height: 450px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .generation-preview::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background:
-            repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(102, 126, 234, 0.03) 10px, rgba(102, 126, 234, 0.03) 20px);
-    }
-
-    .generation-preview img {
-        max-width: 100%;
-        max-height: 100%;
-        border-radius: 16px;
-        box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
-        position: relative;
-        z-index: 1;
-    }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
-
-    ::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 10px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-        background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-    }
-
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .hero-title {
-            font-size: 2.5rem;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-        }
-
-        .package-price {
-            font-size: 2.5rem;
-        }
-
-        .generations-grid {
-            grid-template-columns: 1fr;
-        }
-    }
+    [x-cloak] { display: none !important; }
+    @keyframes aiFloat {
+        0%, 100% { transform: translateY(0px) rotate(0deg); }
+        50% { transform: translateY(-15px) rotate(5deg); }
+    }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 </style>
 @endpush
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
 <script>
-    AOS.init();
+    /**
+     * Alpine.js component สำหรับหน้า AI Gen
+     * จัดการการสร้างภาพ/วิดีโอด้วย AI
+     */
+    function aiGenApp() {
+        return {
+            // สถานะ
+            activeTab: 'creations',
+            showCreateModal: false,
+            showViewModal: false,
+            generating: false,
+            loadingCreations: true,
+            loadingExplore: false,
+            loadingPackages: false,
+            currentFilter: 'all',
+            currentExploreFilter: 'all',
 
-    let currentGeneration = null;
-    let availableProviders = [];
+            // ข้อมูล
+            stats: {
+                remainingImages: {{ $stats['remaining_images'] ?? 0 }},
+                remainingVideos: {{ $stats['remaining_videos'] ?? 0 }},
+                totalGenerated: {{ $stats['total_generated'] ?? 0 }},
+                planName: '{{ $package_name ?? "Free" }}'
+            },
+            generations: [],
+            exploreItems: [],
+            packages: [],
+            availableProviders: [],
+            viewItem: null,
+            pollingIntervals: {},
 
-    async function loadDashboardData() {
-        try {
-            const response = await fetch('/api/v1/ai-gen/dashboard', {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
+            // ฟอร์ม
+            form: {
+                type: 'image',
+                provider: '',
+                prompt: '',
+                style: 'realistic',
+                size: '1024x1024'
+            },
 
-            const data = await response.json();
+            // Toast notification
+            toast: { show: false, message: '', type: 'info' },
 
-            if (data.success) {
-                updateStats(data.data);
-                availableProviders = data.data.providers || [];
-                updateProviderSelect();
-            }
-        } catch (error) {
-            console.error('Error loading dashboard:', error);
-        }
-    }
+            // ตั้งค่าแท็บ
+            tabs: [
+                { id: 'creations', label: 'ผลงานของฉัน', icon: 'fas fa-images' },
+                { id: 'explore', label: 'สำรวจ', icon: 'fas fa-compass' },
+                { id: 'packages', label: 'แพ็กเกจ', icon: 'fas fa-box' }
+            ],
 
-    function updateStats(data) {
-        // Update stats from dashboard data
-        const quota = data.quota || {};
-        const subscription = data.subscription || {};
+            // ตัวกรอง
+            creationFilters: [
+                { value: 'all', label: 'ทั้งหมด', icon: 'fas fa-th' },
+                { value: 'image', label: 'ภาพ', icon: 'fas fa-image' },
+                { value: 'video', label: 'วิดีโอ', icon: 'fas fa-video' },
+                { value: 'favorite', label: 'โปรด', icon: 'fas fa-heart' }
+            ],
+            exploreFilters: [
+                { value: 'all', label: 'ทั้งหมด', icon: 'fas fa-th' },
+                { value: 'image', label: 'ภาพ', icon: 'fas fa-image' },
+                { value: 'video', label: 'วิดีโอ', icon: 'fas fa-video' }
+            ],
 
-        // Update remaining credits display
-        if (subscription.has_subscription) {
-            document.getElementById('stat-images').textContent = subscription.image_credits?.remaining || 0;
-            document.getElementById('stat-videos').textContent = subscription.video_credits?.remaining || 0;
-        } else {
-            document.getElementById('stat-images').textContent = quota.image?.daily || 0;
-            document.getElementById('stat-videos').textContent = quota.video?.daily || 0;
-        }
+            // API Token
+            apiToken: '{{ $api_token }}',
 
-        document.getElementById('stat-generated').textContent = data.stats?.total_generations || 0;
-    }
+            // เมธอดเริ่มต้น
+            init() {
+                // เก็บ token สำหรับ API calls
+                localStorage.setItem('token', this.apiToken);
+                this.loadDashboard();
+                this.loadCreations();
 
-    async function loadGenerations(filter = 'all') {
-        const grid = document.getElementById('generations-grid');
-        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
-
-        try {
-            const params = new URLSearchParams();
-            if (filter !== 'all') {
-                if (filter === 'image' || filter === 'video') {
-                    params.append('type', filter);
-                } else if (filter === 'favorite') {
-                    params.append('is_favorite', 'true');
-                }
-            }
-
-            const response = await fetch('/api/v1/ai-gen/generations?' + params, {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.data.data.length > 0) {
-                renderGenerations(data.data.data);
-            } else {
-                grid.innerHTML = `
-                    <div class="col-12 text-center py-5">
-                        <i class="fas fa-image fa-4x text-muted mb-3"></i>
-                        <h5>No creations yet</h5>
-                        <p class="text-muted">Start creating amazing content with AI!</p>
-                        <button class="btn btn-primary btn-glow" onclick="showCreateModal()">
-                            <i class="fas fa-magic"></i> Create Now
-                        </button>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('Error loading generations:', error);
-        }
-    }
-
-    function renderGenerations(generations) {
-        const grid = document.getElementById('generations-grid');
-
-        grid.innerHTML = generations.map(gen => `
-            <div class="generation-card" onclick="viewGeneration(${gen.id})">
-                <img src="${gen.file_url || gen.thumbnail_url || '/images/placeholder.jpg'}" alt="${gen.prompt}">
-                <div class="generation-info">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge badge-${gen.type === 'image' ? 'primary' : 'success'}">
-                            ${gen.type}
-                        </span>
-                        <span class="badge badge-${getStatusColor(gen.status)}">
-                            ${gen.status}
-                        </span>
-                    </div>
-                    <p class="mb-0 text-muted small">${gen.prompt.substring(0, 60)}...</p>
-                    <small class="text-muted">${formatDate(gen.created_at)}</small>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    function showCreateModal() {
-        $('#createModal').modal('show');
-        loadDashboardData();
-    }
-
-    function updateProviderSelect() {
-        const select = document.getElementById('provider-select');
-        select.innerHTML = availableProviders.map(provider => `
-            <option value="${provider.slug}">${provider.name} (${provider.type})</option>
-        `).join('');
-    }
-
-    function getStatusColor(status) {
-        const colors = {
-            'completed': 'success',
-            'processing': 'info',
-            'pending': 'warning',
-            'failed': 'danger'
-        };
-        return colors[status] || 'secondary';
-    }
-
-    function formatDate(dateString) {
-        return new Date(dateString).toLocaleDateString();
-    }
-
-    // View generation details
-    async function viewGeneration(generationId) {
-        try {
-            const response = await fetch(`/api/v1/ai-gen/generations/${generationId}`, {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                const gen = data.data;
-                currentGeneration = gen;
-
-                // Update modal content
-                document.getElementById('view-title').textContent = gen.prompt.substring(0, 50) + '...';
-                document.getElementById('view-date').textContent = formatDate(gen.created_at);
-                document.getElementById('preview-image').src = gen.file_url || gen.thumbnail_url || '/images/placeholder.jpg';
-                document.getElementById('detail-type').textContent = gen.type;
-                document.getElementById('detail-provider').textContent = gen.provider?.name || 'N/A';
-                document.getElementById('detail-status').innerHTML = `<span class="badge badge-${getStatusColor(gen.status)}">${gen.status}</span>`;
-                document.getElementById('detail-prompt').textContent = gen.prompt;
-                document.getElementById('favorite-text').textContent = gen.is_favorite ? 'Remove from Favorites' : 'Add to Favorites';
-
-                // Show modal
-                $('#viewModal').modal('show');
-            }
-        } catch (error) {
-            console.error('Error loading generation:', error);
-            alert('Failed to load generation details');
-        }
-    }
-
-    // Download generation
-    function downloadGeneration() {
-        if (!currentGeneration || !currentGeneration.file_url) {
-            alert('No file available for download');
-            return;
-        }
-
-        const link = document.createElement('a');
-        link.href = currentGeneration.file_url;
-        link.download = `ai-gen-${currentGeneration.id}.${currentGeneration.type === 'video' ? 'mp4' : 'png'}`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-
-    // Toggle favorite
-    async function toggleFavorite() {
-        if (!currentGeneration) return;
-
-        try {
-            const response = await fetch(`/api/v1/ai-gen/generations/${currentGeneration.id}/favorite`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                currentGeneration.is_favorite = data.is_favorite;
-                document.getElementById('favorite-text').textContent = data.is_favorite ? 'Remove from Favorites' : 'Add to Favorites';
-                loadGenerations(); // Reload to update the grid
-            }
-        } catch (error) {
-            console.error('Error toggling favorite:', error);
-            alert('Failed to update favorite status');
-        }
-    }
-
-    // Delete generation
-    async function deleteGeneration() {
-        if (!currentGeneration) return;
-
-        if (!confirm('Are you sure you want to delete this generation?')) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/v1/ai-gen/generations/${currentGeneration.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                $('#viewModal').modal('hide');
-                loadGenerations(); // Reload the grid
-                alert('Generation deleted successfully');
-            }
-        } catch (error) {
-            console.error('Error deleting generation:', error);
-            alert('Failed to delete generation');
-        }
-    }
-
-    // Poll generation status
-    async function pollGenerationStatus(generationId, maxAttempts = 60) {
-        let attempts = 0;
-
-        const poll = async () => {
-            if (attempts >= maxAttempts) {
-                console.log('Stopped polling for generation', generationId);
-                return;
-            }
-
-            attempts++;
-
-            try {
-                const response = await fetch(`/api/v1/ai-gen/generations/${generationId}/status`, {
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                        'Accept': 'application/json'
-                    }
+                // เมื่อเปลี่ยนแท็บ โหลดข้อมูลที่เกี่ยวข้อง
+                this.$watch('activeTab', (tab) => {
+                    if (tab === 'explore' && this.exploreItems.length === 0) this.loadExplore();
+                    if (tab === 'packages' && this.packages.length === 0) this.loadPackages();
                 });
+            },
 
-                const data = await response.json();
+            // ===== API Calls =====
 
-                if (data.success && data.data) {
-                    const status = data.data.status;
-
-                    if (status === 'completed' || status === 'failed') {
-                        // Reload generations to show the completed/failed item
-                        loadGenerations();
-                        return;
-                    }
-
-                    // Continue polling
-                    setTimeout(poll, 5000); // Poll every 5 seconds
-                }
-            } catch (error) {
-                console.error('Error polling status:', error);
-            }
-        };
-
-        poll();
-    }
-
-    // Load packages
-    async function loadPackages() {
-        const grid = document.getElementById('packages-grid');
-        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
-
-        try {
-            const response = await fetch('/api/v1/ai-gen/packages', {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.data.length > 0) {
-                grid.innerHTML = data.data.map((pkg, index) => `
-                    <div class="col-lg-4 mb-4">
-                        <div class="package-card ${index === 1 ? 'popular' : ''}">
-                            <h3>${pkg.name}</h3>
-                            <p class="text-muted">${pkg.description || ''}</p>
-                            <div class="package-price">${pkg.price > 0 ? pkg.currency + ' ' + pkg.price : 'Free'}</div>
-                            <ul class="list-unstyled mt-4">
-                                <li><i class="fas fa-check text-success"></i> ${pkg.image_credits} Image Credits</li>
-                                <li><i class="fas fa-check text-success"></i> ${pkg.video_credits} Video Credits</li>
-                                <li><i class="fas fa-check text-success"></i> ${pkg.duration_days ? pkg.duration_days + ' Days' : 'Unlimited'}</li>
-                            </ul>
-                            <button class="btn btn-primary btn-block mt-4" onclick="purchasePackage(${pkg.id}, '${pkg.name}', ${pkg.price})">
-                                ${pkg.price > 0 ? 'Purchase Now' : 'Activate Free Plan'}
-                            </button>
-                        </div>
-                    </div>
-                `).join('');
-            } else {
-                grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-muted">No packages available</p></div>';
-            }
-        } catch (error) {
-            console.error('Error loading packages:', error);
-            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Failed to load packages</p></div>';
-        }
-    }
-
-    // Purchase package
-    async function purchasePackage(packageId, packageName, price) {
-        if (!confirm(`Purchase ${packageName} for ${price > 0 ? price + ' THB' : 'FREE'}?`)) {
-            return;
-        }
-
-        try {
-            const response = await fetch(`/api/v1/ai-gen/packages/${packageId}/purchase`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
+            async apiCall(url, options = {}) {
+                const headers = {
+                    'Authorization': 'Bearer ' + this.apiToken,
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    payment_method: 'credit_card' // Default for demo
-                })
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                alert(data.message || 'Package purchased successfully!');
-                loadDashboardData(); // Reload stats
-                loadPackages(); // Reload packages
-            } else {
-                alert('Error: ' + (data.error || 'Failed to purchase package'));
-            }
-        } catch (error) {
-            console.error('Error purchasing package:', error);
-            alert('An error occurred. Please try again.');
-        }
-    }
-
-    // Load explore content
-    async function loadExplore(filter = 'all') {
-        const grid = document.getElementById('explore-grid');
-        grid.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-primary"></div></div>';
-
-        try {
-            const params = new URLSearchParams();
-            params.append('status', 'completed'); // Only show completed generations
-            params.append('per_page', '24');
-
-            if (filter !== 'all') {
-                if (filter === 'image' || filter === 'video') {
-                    params.append('type', filter);
-                } else if (filter === 'popular') {
-                    params.append('is_favorite', 'true');
-                }
-            }
-
-            // For explore, we fetch public/completed generations from all users
-            // Note: This would need a backend endpoint that returns public generations
-            // For now, showing user's own completed generations as demo
-            const response = await fetch('/api/v1/ai-gen/generations?' + params, {
-                headers: {
-                    'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                    'Accept': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-
-            if (data.success && data.data.data.length > 0) {
-                renderExplore(data.data.data);
-            } else {
-                grid.innerHTML = `
-                    <div class="col-12 text-center py-5">
-                        <i class="fas fa-compass fa-4x text-muted mb-3"></i>
-                        <h5>No content to explore yet</h5>
-                        <p class="text-muted">Start creating to see your work here!</p>
-                    </div>
-                `;
-            }
-        } catch (error) {
-            console.error('Error loading explore:', error);
-            grid.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Failed to load content</p></div>';
-        }
-    }
-
-    function renderExplore(generations) {
-        const grid = document.getElementById('explore-grid');
-
-        grid.innerHTML = generations.map(gen => `
-            <div class="generation-card" onclick="viewGeneration(${gen.id})">
-                <img src="${gen.file_url || gen.thumbnail_url || '/images/placeholder.jpg'}" alt="${gen.prompt}">
-                <div class="generation-info">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <span class="badge badge-${gen.type === 'image' ? 'primary' : 'success'}">
-                            ${gen.type}
-                        </span>
-                        ${gen.is_favorite ? '<i class="fas fa-heart text-danger"></i>' : ''}
-                    </div>
-                    <p class="mb-0 text-muted small">${gen.prompt.substring(0, 60)}...</p>
-                    <small class="text-muted">${formatDate(gen.created_at)}</small>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    // Initialize API token
-    @if(isset($api_token))
-        localStorage.setItem('token', '{{ $api_token }}');
-    @endif
-
-    // Initialize
-    document.addEventListener('DOMContentLoaded', function() {
-        loadDashboardData();
-        loadGenerations();
-
-        // Load packages when tab is clicked
-        $('a[href="#packages"]').on('shown.bs.tab', function() {
-            loadPackages();
-        });
-
-        // Load explore when tab is clicked
-        $('a[href="#explore"]').on('shown.bs.tab', function() {
-            loadExplore();
-        });
-
-        // Filter buttons for My Creations
-        document.querySelectorAll('[data-filter]').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('[data-filter]').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                loadGenerations(this.dataset.filter);
-            });
-        });
-
-        // Filter buttons for Explore
-        document.querySelectorAll('[data-explore-filter]').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('[data-explore-filter]').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                loadExplore(this.dataset.exploreFilter);
-            });
-        });
-
-        // Create form submission
-        document.getElementById('createForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const formData = new FormData(this);
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-
-            // Disable submit button and show loading
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-
-            try {
-                // Get form data
-                const data = {
-                    provider: formData.get('provider'),
-                    type: formData.get('type'),
-                    prompt: formData.get('prompt'),
-                    parameters: {
-                        style: formData.get('style'),
-                        size: formData.get('size')
-                    }
+                    'Accept': 'application/json',
+                    ...options.headers
                 };
-
-                // Make API request
-                const response = await fetch('/api/v1/ai-gen/generate', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('token'),
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    // Close modal
-                    $('#createModal').modal('hide');
-
-                    // Show success message
-                    alert('Generation started! Your creation will appear in a moment.');
-
-                    // Reset form
-                    this.reset();
-
-                    // Reload generations
-                    loadGenerations();
-
-                    // Start polling for status if needed
-                    if (result.data && result.data.id) {
-                        pollGenerationStatus(result.data.id);
-                    }
-                } else {
-                    alert('Error: ' + (result.error || 'Failed to start generation'));
+                try {
+                    const response = await fetch(url, { ...options, headers });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || data.message || 'เกิดข้อผิดพลาด');
+                    return data;
+                } catch (error) {
+                    throw error;
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            } finally {
-                // Re-enable submit button
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        });
-    });
-</script>
-@endpush
+            },
 
-@push('styles')
-<style>
-.glass-fusion {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-@keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-}
-</style>
+            async loadDashboard() {
+                try {
+                    const res = await this.apiCall('/api/v1/ai-gen/dashboard');
+                    if (res.success && res.data) {
+                        const d = res.data;
+                        this.availableProviders = d.providers || [];
+                        this.stats.totalGenerated = d.stats?.total_generations || 0;
+                        this.stats.planName = d.subscription?.package_name || 'Free';
+                        // ตั้ง provider เริ่มต้น
+                        if (this.availableProviders.length > 0 && !this.form.provider) {
+                            const imgProviders = this.availableProviders.filter(p => p.type === 'image' || p.type === 'both');
+                            if (imgProviders.length > 0) this.form.provider = imgProviders[0].slug;
+                        }
+                    }
+                } catch (e) {
+                    console.error('โหลด dashboard ไม่สำเร็จ:', e);
+                }
+            },
+
+            async loadCreations(filter) {
+                this.loadingCreations = true;
+                try {
+                    let url = '/api/v1/ai-gen/generations?per_page=50';
+                    if (filter && filter !== 'all') {
+                        if (filter === 'favorite') url += '&is_favorite=1';
+                        else url += '&type=' + filter;
+                    }
+                    const res = await this.apiCall(url);
+                    if (res.success) {
+                        this.generations = res.data?.data || res.data || [];
+                        // ตรวจสอบสถานะ pending/processing
+                        this.generations.forEach(gen => {
+                            if (gen.status === 'pending' || gen.status === 'processing') {
+                                this.pollStatus(gen.id);
+                            }
+                        });
+                    }
+                } catch (e) {
+                    console.error('โหลดผลงานไม่สำเร็จ:', e);
+                } finally {
+                    this.loadingCreations = false;
+                }
+            },
+
+            async loadExplore(filter) {
+                this.loadingExplore = true;
+                try {
+                    let url = '/api/v1/ai-gen/generations?status=completed&per_page=50';
+                    if (filter && filter !== 'all') url += '&type=' + filter;
+                    const res = await this.apiCall(url);
+                    if (res.success) {
+                        this.exploreItems = res.data?.data || res.data || [];
+                    }
+                } catch (e) {
+                    console.error('โหลด explore ไม่สำเร็จ:', e);
+                } finally {
+                    this.loadingExplore = false;
+                }
+            },
+
+            async loadPackages() {
+                this.loadingPackages = true;
+                try {
+                    const res = await this.apiCall('/api/v1/ai-gen/packages');
+                    if (res.success) {
+                        this.packages = res.data?.data || res.data || [];
+                    }
+                } catch (e) {
+                    console.error('โหลดแพ็กเกจไม่สำเร็จ:', e);
+                } finally {
+                    this.loadingPackages = false;
+                }
+            },
+
+            // ===== การสร้างภาพ/วิดีโอ =====
+
+            async generate() {
+                if (this.generating || !this.form.prompt.trim() || !this.form.provider) return;
+
+                this.generating = true;
+                try {
+                    const payload = {
+                        provider: this.form.provider,
+                        type: this.form.type,
+                        prompt: this.form.prompt.trim(),
+                        parameters: {
+                            style: this.form.style,
+                            size: this.form.size
+                        }
+                    };
+
+                    const res = await this.apiCall('/api/v1/ai-gen/generate', {
+                        method: 'POST',
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (res.success) {
+                        this.showCreateModal = false;
+                        this.showToast('เริ่มสร้างผลงานแล้ว! รอสักครู่...', 'success');
+                        this.form.prompt = '';
+                        this.loadCreations(this.currentFilter !== 'all' ? this.currentFilter : undefined);
+                        this.loadDashboard();
+                        // Poll status
+                        if (res.generation_id) {
+                            this.pollStatus(res.generation_id);
+                        }
+                    } else {
+                        this.showToast(res.error || 'สร้างผลงานไม่สำเร็จ', 'error');
+                    }
+                } catch (e) {
+                    this.showToast(e.message || 'เกิดข้อผิดพลาด กรุณาลองใหม่', 'error');
+                } finally {
+                    this.generating = false;
+                }
+            },
+
+            // ===== Poll สถานะ =====
+
+            pollStatus(generationId) {
+                if (this.pollingIntervals[generationId]) return;
+
+                this.pollingIntervals[generationId] = setInterval(async () => {
+                    try {
+                        const res = await this.apiCall('/api/v1/ai-gen/generations/' + generationId + '/status');
+                        if (res.success && (res.status === 'completed' || res.status === 'failed')) {
+                            clearInterval(this.pollingIntervals[generationId]);
+                            delete this.pollingIntervals[generationId];
+
+                            if (res.status === 'completed') {
+                                this.showToast('สร้างผลงานสำเร็จ!', 'success');
+                            } else {
+                                this.showToast('สร้างผลงานไม่สำเร็จ', 'error');
+                            }
+                            this.loadCreations(this.currentFilter !== 'all' ? this.currentFilter : undefined);
+                            this.loadDashboard();
+                        }
+                    } catch (e) {
+                        console.error('Poll status error:', e);
+                    }
+                }, 5000);
+            },
+
+            // ===== จัดการผลงาน =====
+
+            viewGeneration(gen) {
+                this.viewItem = gen;
+                this.showViewModal = true;
+            },
+
+            async toggleFavorite() {
+                if (!this.viewItem) return;
+                try {
+                    const res = await this.apiCall('/api/v1/ai-gen/generations/' + this.viewItem.id + '/favorite', {
+                        method: 'POST'
+                    });
+                    if (res.success) {
+                        this.viewItem.is_favorite = res.is_favorite;
+                        // อัพเดทใน list ด้วย
+                        const gen = this.generations.find(g => g.id === this.viewItem.id);
+                        if (gen) gen.is_favorite = res.is_favorite;
+                        this.showToast(res.is_favorite ? 'เพิ่มในรายการโปรดแล้ว' : 'เอาออกจากรายการโปรดแล้ว', 'success');
+                    }
+                } catch (e) {
+                    this.showToast('เกิดข้อผิดพลาด', 'error');
+                }
+            },
+
+            async deleteGeneration() {
+                if (!this.viewItem) return;
+                if (!confirm('ต้องการลบผลงานนี้หรือไม่?')) return;
+                try {
+                    const res = await this.apiCall('/api/v1/ai-gen/generations/' + this.viewItem.id, {
+                        method: 'DELETE'
+                    });
+                    if (res.success) {
+                        this.showViewModal = false;
+                        this.showToast('ลบผลงานแล้ว', 'success');
+                        this.generations = this.generations.filter(g => g.id !== this.viewItem.id);
+                        this.viewItem = null;
+                    }
+                } catch (e) {
+                    this.showToast('ลบไม่สำเร็จ', 'error');
+                }
+            },
+
+            async purchasePackage(pkg) {
+                if (!confirm('ต้องการซื้อแพ็กเกจ "' + pkg.name + '" ราคา ฿' + Number(pkg.price).toLocaleString() + ' หรือไม่?')) return;
+                try {
+                    const res = await this.apiCall('/api/v1/ai-gen/packages/' + pkg.id + '/purchase', {
+                        method: 'POST'
+                    });
+                    if (res.success) {
+                        this.showToast('ซื้อแพ็กเกจสำเร็จ!', 'success');
+                        this.loadDashboard();
+                    } else {
+                        this.showToast(res.error || 'ซื้อแพ็กเกจไม่สำเร็จ', 'error');
+                    }
+                } catch (e) {
+                    this.showToast(e.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            },
+
+            // ===== ตัวกรอง =====
+
+            filterCreations(filter) {
+                this.currentFilter = filter;
+                if (filter === 'all') this.loadCreations();
+                else if (filter === 'favorite') this.loadCreations('favorite');
+                else this.loadCreations(filter);
+            },
+
+            filterExplore(filter) {
+                this.currentExploreFilter = filter;
+                this.loadExplore(filter === 'all' ? undefined : filter);
+            },
+
+            // ===== Helpers =====
+
+            formatDate(dateStr) {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                const now = new Date();
+                const diffMs = now - d;
+                const diffMins = Math.floor(diffMs / 60000);
+                const diffHours = Math.floor(diffMs / 3600000);
+                const diffDays = Math.floor(diffMs / 86400000);
+
+                if (diffMins < 1) return 'เมื่อสักครู่';
+                if (diffMins < 60) return diffMins + ' นาทีที่แล้ว';
+                if (diffHours < 24) return diffHours + ' ชั่วโมงที่แล้ว';
+                if (diffDays < 7) return diffDays + ' วันที่แล้ว';
+                return d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' });
+            },
+
+            statusLabel(status) {
+                const map = {
+                    'completed': 'สำเร็จ',
+                    'pending': 'รอดำเนินการ',
+                    'processing': 'กำลังสร้าง',
+                    'failed': 'ล้มเหลว'
+                };
+                return map[status] || status || '-';
+            },
+
+            showToast(message, type = 'info') {
+                this.toast = { show: true, message, type };
+                setTimeout(() => { this.toast.show = false; }, 4000);
+            }
+        }
+    }
+</script>
 @endpush

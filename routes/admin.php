@@ -2590,6 +2590,16 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
 
     // Usage Logs & Analytics
     Route::get('/usage-logs', [AiGenAdminController::class, 'usageLogs'])->name('usage-logs');
+
+    // Settings (Wallet, Pricing, General)
+    Route::get('/settings', [AiGenAdminController::class, 'settings'])->name('settings');
+    Route::post('/settings', [AiGenAdminController::class, 'saveSettings'])->name('settings.save');
+
+    // Promotions Management
+    Route::get('/promotions', [AiGenAdminController::class, 'promotions'])->name('promotions.index');
+    Route::post('/promotions', [AiGenAdminController::class, 'createPromotion'])->name('promotions.store');
+    Route::put('/promotions/{promotionId}', [AiGenAdminController::class, 'updatePromotion'])->name('promotions.update');
+    Route::delete('/promotions/{promotionId}', [AiGenAdminController::class, 'deletePromotion'])->name('promotions.destroy');
 });
 
 // Game Management Routes
