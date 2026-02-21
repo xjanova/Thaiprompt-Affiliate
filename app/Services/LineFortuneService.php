@@ -2862,17 +2862,11 @@ class LineFortuneService implements MessagingPlatformInterface
             return false;
         }
 
-        // ✅ Circuit Breaker: เฉพาะ 429 เท่านั้น (LINE บอกหยุด → ต้อง respect)
-        // ไม่ block สำหรับ timeout — timeout เป็นปัญหา network ชั่วคราว ครั้งต่อไปอาจสำเร็จ
-        $circuitKey = 'line_push_circuit_429';
-        if (cache()->get($circuitKey)) {
-            Log::warning('LINE pushMessage: 429 circuit breaker OPEN — รอ cooldown', [
-                'to' => $to,
-                'cooldown_remaining' => cache()->get($circuitKey . '_until', 'unknown'),
-            ]);
-
-            return false;
-        }
+        // ❌ เอา Circuit Breaker ออกแล้ว — เพราะมันทำให้คำทำนายส่งไม่ได้!
+        // ปัญหา: push "ชำระเงินสำเร็จ" โดน 429 → circuit breaker block ทุก push 15 วิ
+        // → คำทำนายที่สร้างเสร็จระหว่างนั้นส่งไม่ได้เลย
+        // แทนที่จะ block ทั้งระบบ → ให้แต่ละ push ลองส่งเอง
+        // ถ้าโดน 429 ก็ return false → fortune:check-pending จะ retry ให้ทีหลัง
 
         // ✅ Gatekeeper: นับ attempt ก่อนส่ง (ป้องกันชน rate limit ซ้ำ)
         LineGatekeeperService::recordLinePush();
@@ -2890,14 +2884,11 @@ class LineFortuneService implements MessagingPlatformInterface
             if (! $response->successful()) {
                 $status = $response->status();
 
-                // 🔴 Rate limit 429 เท่านั้นที่เปิด circuit breaker (15 วินาที)
                 if ($status === 429) {
-                    $cooldownSeconds = 15;
-                    cache()->put($circuitKey, true, $cooldownSeconds);
-                    cache()->put($circuitKey . '_until', now()->addSeconds($cooldownSeconds)->toTimeString(), $cooldownSeconds);
-                    Log::error('LINE pushMessage: HTTP 429 → circuit breaker '.$cooldownSeconds.'s', [
+                    // 🔴 429 → log แต่ไม่ block push อื่น (ไม่มี circuit breaker แล้ว)
+                    // fortune:check-pending จะ retry ให้อัตโนมัติทุกนาที
+                    Log::warning('LINE pushMessage: HTTP 429 rate limited — จะ retry ผ่าน check-pending', [
                         'to' => $to,
-                        'cooldown' => $cooldownSeconds,
                     ]);
                 } else {
                     Log::error('LINE Push Message Error', [
@@ -2913,7 +2904,7 @@ class LineFortuneService implements MessagingPlatformInterface
             return true;
 
         } catch (\Exception $e) {
-            // Timeout → แค่ log ไม่เปิด circuit breaker (ครั้งต่อไปอาจสำเร็จ)
+            // Timeout → แค่ log (ครั้งต่อไปอาจสำเร็จ)
             Log::error('LINE pushMessage: Exception', [
                 'to' => $to,
                 'error' => $e->getMessage(),
