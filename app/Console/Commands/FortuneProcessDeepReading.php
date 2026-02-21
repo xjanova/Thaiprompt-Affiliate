@@ -140,22 +140,29 @@ class FortuneProcessDeepReading extends Command
                         ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                 }
 
+                $streamingSentCount = $result['streaming_sent_count'] ?? 0;
                 $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-                $this->info("✅ สร้างคำทำนาย + ส่งให้ลูกค้า สำเร็จ ({$duration}ms)");
-                Log::info('✅ fortune:process-deep สำเร็จ (streaming)', [
+                $this->info("✅ สร้างคำทำนาย สำเร็จ ({$duration}ms) — streaming ส่งได้ {$streamingSentCount} ข้อ");
+                Log::info('✅ fortune:process-deep สำเร็จ', [
                     'reading_id' => $readingId,
                     'action' => $result['action'] ?? 'unknown',
                     'streaming' => ! empty($result['streaming']),
+                    'streaming_sent_count' => $streamingSentCount,
                     'duration_ms' => $duration,
                 ]);
 
-                // ✅ บันทึกว่าส่งให้ลูกค้าแล้ว (ป้องกันส่งซ้ำเมื่อ retry)
+                // ✅ บันทึกว่าส่งให้ลูกค้าแล้ว — เฉพาะเมื่อส่งได้จริง!
+                // ⚠️ ถ้า streaming ส่งไม่ได้เลย (0 ข้อ) → ไม่ set flag → safety net ด้านล่างจะส่งให้
                 $reading->refresh();
-                if (! empty($reading->deep_response)) {
+                if (! empty($reading->deep_response) && $streamingSentCount > 0) {
                     $reading->setConversationState('reading_ready_sent', true);
                     $reading->setConversationState('reading_sent_directly', true);
                     $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                } elseif (! empty($result['streaming']) && $streamingSentCount === 0) {
+                    Log::warning('fortune:process-deep: streaming ส่งไม่ได้เลย → safety net จะส่งให้', [
+                        'reading_id' => $readingId,
+                    ]);
                 }
             } else {
                 Log::info('fortune:process-deep: ข้าม AI generation (deep_response มีอยู่แล้ว) → ส่งคำทำนายเลย', [
@@ -163,57 +170,53 @@ class FortuneProcessDeepReading extends Command
                 ]);
             }
 
-            // ✅ Safety net: ส่งคำทำนายที่มีอยู่แล้วแต่ยังไม่เคยส่ง (กรณี retry / deep_response มีอยู่ก่อน)
+            // ✅ Safety net: ส่งคำทำนายที่มีอยู่แล้วแต่ยังไม่เคยส่ง (กรณี retry / streaming ล้มเหลว / deep_response มีอยู่ก่อน)
             $reading->refresh();
             $alreadySentDirectly = $reading->getConversationState('reading_sent_directly', false);
 
             if (! empty($reading->deep_response) && ! $alreadySentDirectly) {
                 try {
                     $name = $reading->facebook_user_name ?? 'คุณ';
-                    $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
+                    $deepSent = false;
+
+                    Log::info('fortune:process-deep: safety net → ส่งคำทำนายให้ลูกค้า', [
+                        'reading_id' => $readingId,
+                        'platform' => $platform,
+                    ]);
 
                     // 1. ส่ง chart ถ้ายังไม่ได้ส่ง
                     if (! empty($reading->reading_image_url)) {
-                        $channelManager->sendResponse($platform, $userId, [
-                            'action' => 'send_chart',
-                            'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
-                            'chart_image_url' => $reading->reading_image_url,
-                        ], $extra);
+                        $lineService = ($platform === 'line') ? $channelManager->getPlatform('line') : null;
+                        if ($lineService) {
+                            $lineService->sendImage($userId, $reading->reading_image_url);
+                        } else {
+                            $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'send_chart',
+                                'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
+                                'chart_image_url' => $reading->reading_image_url,
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        }
                         sleep(2);
                     }
 
-                    // 2. ส่งคำทำนายเชิงลึก (deep_response) — ✅ เช็ค return value + retry
-                    $billRef = $reading->bill_reference ?? '-';
-                    $readingText = "🌟 *คำทำนายเชิงลึก*\n"
-                        . "📋 เลขที่บิล: {$billRef}\n"
-                        . "═══════════════════════\n\n"
-                        . $reading->deep_response;
+                    // 2. ส่งคำทำนายเชิงลึก — ⚡ ส่งทีละข้อ (ไม่ใช้ carousel ที่อาจเกิน LINE size limit)
+                    if ($platform === 'line') {
+                        $deepSent = $this->sendIndividualBubblesForLine(
+                            $channelManager, $userId, $reading, $name
+                        );
+                    } else {
+                        // Facebook / platform อื่น → ส่ง text เดียว
+                        $billRef = $reading->bill_reference ?? '-';
+                        $readingText = "🌟 *คำทำนายเชิงลึก*\n"
+                            . "📋 เลขที่บิล: {$billRef}\n"
+                            . "═══════════════════════\n\n"
+                            . $reading->deep_response;
 
-                    $deepSent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'deep_reading_result',
-                        'message' => $readingText,
-                        'reading' => $reading,
-                    ], $extra);
-
-                    // 🔄 Retry: ถ้าส่งไม่สำเร็จ → ลองอีก 2 ครั้ง (เนื้อหาเสียเงิน สำคัญมาก!)
-                    if (! $deepSent) {
-                        Log::warning('fortune:process-deep: ส่งคำทำนายครั้งที่ 1 ไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $readingId]);
-                        sleep(5);
                         $deepSent = $channelManager->sendResponse($platform, $userId, [
                             'action' => 'deep_reading_result',
                             'message' => $readingText,
                             'reading' => $reading,
-                        ], $extra);
-                    }
-
-                    if (! $deepSent) {
-                        Log::warning('fortune:process-deep: ส่งคำทำนายครั้งที่ 2 ไม่สำเร็จ → retry ใน 15 วิ', ['reading_id' => $readingId]);
-                        sleep(15);
-                        $deepSent = $channelManager->sendResponse($platform, $userId, [
-                            'action' => 'deep_reading_result',
-                            'message' => $readingText,
-                            'reading' => $reading,
-                        ], $extra);
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                     }
 
                     if ($deepSent) {
@@ -225,7 +228,7 @@ class FortuneProcessDeepReading extends Command
                             'reading_id' => $readingId,
                         ]);
                     } else {
-                        Log::error('fortune:process-deep: ❌ ส่งคำทำนายไม่สำเร็จ 3 ครั้ง — รอ retry ครั้งหน้า', [
+                        Log::error('fortune:process-deep: ❌ ส่งคำทำนายไม่สำเร็จทุกวิธี — รอ retry ครั้งหน้า', [
                             'reading_id' => $readingId,
                             'platform' => $platform,
                             'user_id' => $userId,
@@ -277,5 +280,150 @@ class FortuneProcessDeepReading extends Command
 
             return self::FAILURE;
         }
+    }
+
+    /**
+     * ส่งคำทำนายเชิงลึกทีละข้อสำหรับ LINE (ไม่ใช้ carousel → ป้องกัน size limit)
+     *
+     * ลำดับ: ลอง Flex bubble ทีละข้อ → ถ้า Flex ไม่ได้ → fallback text ทั้งก้อน
+     */
+    protected function sendIndividualBubblesForLine(
+        FortuneChannelManager $channelManager,
+        string $userId,
+        FortuneReading $reading,
+        string $userName
+    ): bool {
+        $lineService = $channelManager->getPlatform('line');
+        if (! $lineService instanceof \App\Services\LineFortuneService) {
+            Log::error('fortune:process-deep: safety net ไม่พบ LineFortuneService');
+
+            return false;
+        }
+
+        // ลอง parse คำทำนายเป็น QA pairs
+        $collectedQuestions = $reading->getCollectedQuestions();
+        $deepResponse = $reading->deep_response;
+        $sentCount = 0;
+
+        if (! empty($collectedQuestions)) {
+            // ดึง parseDeepResponseByQuestions จาก FortuneChannelManager (เป็น protected)
+            // → ใช้ regex parse เอง (logic เดียวกัน)
+            $parsedQA = $this->parseDeepResponseSimple($deepResponse, $collectedQuestions);
+
+            if (! empty($parsedQA)) {
+                $totalQuestions = count($parsedQA);
+                foreach ($parsedQA as $idx => $qa) {
+                    $questionNum = $idx + 1;
+                    try {
+                        $flex = $lineService->buildDeepReadingFlexMessage(
+                            $questionNum, $qa['question'], $qa['answer'], $totalQuestions
+                        );
+                        $sent = $lineService->sendRichMessage($userId, [
+                            'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$qa['question']}",
+                            'contents' => $flex,
+                        ]);
+
+                        if ($sent) {
+                            $sentCount++;
+                        } else {
+                            Log::warning("fortune:process-deep: safety net Flex ส่งไม่ได้ข้อ {$questionNum} → ลอง text", [
+                                'reading_id' => $reading->id,
+                            ]);
+                            // Fallback: ส่งเป็น text ธรรมดา
+                            $textMsg = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
+                                . "❓ {$qa['question']}\n\n"
+                                . $qa['answer'];
+                            if ($lineService->sendMessage($userId, mb_substr($textMsg, 0, 5000))) {
+                                $sentCount++;
+                            }
+                        }
+                        usleep(1500000); // 1.5s — ป้องกัน rate limit
+                    } catch (\Exception $e) {
+                        Log::warning("fortune:process-deep: safety net ส่งข้อ {$questionNum} ล้มเหลว", [
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                if ($sentCount > 0) {
+                    return true;
+                }
+            }
+        }
+
+        // Fallback สุดท้าย: ส่ง deep_response เป็น text ธรรมดาทั้งก้อน (ดีกว่าไม่ส่งอะไรเลย!)
+        Log::info('fortune:process-deep: safety net fallback → ส่ง text ทั้งก้อน', [
+            'reading_id' => $reading->id,
+            'response_length' => mb_strlen($deepResponse),
+        ]);
+
+        $billRef = $reading->bill_reference ?? '-';
+        $fullText = "🌟 คำทำนายเชิงลึก\n"
+            . "📋 เลขที่บิล: {$billRef}\n"
+            . "═══════════════════════\n\n"
+            . $deepResponse;
+
+        // ถ้ายาวเกิน LINE limit (5000 ตัวอักษร) → แบ่งส่ง
+        $chunks = mb_str_split($fullText, 4500);
+        foreach ($chunks as $chunk) {
+            $sent = $lineService->sendMessage($userId, $chunk);
+            if ($sent) {
+                $sentCount++;
+            }
+            usleep(1500000);
+        }
+
+        return $sentCount > 0;
+    }
+
+    /**
+     * Parse deep_response ตามคำถาม (simplified version)
+     *
+     * @return array [['question' => '...', 'answer' => '...'], ...]
+     */
+    protected function parseDeepResponseSimple(string $deepResponse, array $collectedQuestions): array
+    {
+        $totalQuestions = count($collectedQuestions);
+        if ($totalQuestions === 0) {
+            return [];
+        }
+
+        // ลอง split ด้วยรูปแบบที่ AI ใช้
+        $patterns = [
+            '/(?:คำถาม(?:ที่)?\s*(\d+)\s*[:：])/u',
+            '/(?:ข้อ\s*(\d+)\s*[:：])/u',
+            '/(?:^|\n)\s*(\d+)\s*[.)\]]\s*/u',
+            '/(?:\*{1,2}คำถาม(?:ที่)?\s*(\d+)\*{1,2}\s*[:：]?)/u',
+            '/(?:═{3,})/u',
+        ];
+
+        foreach ($patterns as $pattern) {
+            $parts = preg_split($pattern, $deepResponse, -1, PREG_SPLIT_NO_EMPTY);
+            $cleanParts = [];
+            foreach ($parts as $part) {
+                $trimmed = trim($part);
+                if (mb_strlen($trimmed) < 20) {
+                    continue;
+                }
+                if (preg_match('/^[🌟📋═*\s]*(?:คำทำนายเชิงลึก|เลขที่บิล)/u', $trimmed)) {
+                    continue;
+                }
+                $cleanParts[] = $trimmed;
+            }
+
+            if (count($cleanParts) === $totalQuestions) {
+                $result = [];
+                foreach ($collectedQuestions as $idx => $question) {
+                    $result[] = [
+                        'question' => $question,
+                        'answer' => trim($cleanParts[$idx]),
+                    ];
+                }
+
+                return $result;
+            }
+        }
+
+        return [];
     }
 }
