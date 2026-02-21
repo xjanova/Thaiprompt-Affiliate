@@ -98,6 +98,35 @@ class FortuneProcessDeepReading extends Command
             $skipAiGeneration = ! empty($reading->deep_response);
 
             if (! $skipAiGeneration) {
+                // ✅ แจ้งลูกค้าว่า "ชำระเงินสำเร็จ กำลังเตรียมคำทำนาย" ก่อนเริ่ม AI
+                // เช็ค wait_message_sent flag เพื่อไม่ส่งซ้ำ (SMS flow ส่งไปแล้วใน handleFortuneReadingPayment)
+                $alreadySentWait = $reading->getConversationState('wait_message_sent', false);
+                if (! $alreadySentWait && ! empty($userId)) {
+                    try {
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'payment_confirmed_wait',
+                            'message' => "✨ ขอบคุณค่ะ {$name}! ได้รับการชำระเงินเรียบร้อยแล้ว\n\n"
+                                . "🔮 จันทราจะตรวจดวงชะตาให้นะคะ รอสักครู่ประมาณ 5 นาทีค่ะ ✨",
+                            'reading' => $reading,
+                            'facebook_user_id' => $userId,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('wait_message_sent', true);
+                        $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+
+                        Log::info('fortune:process-deep: ส่งข้อความ "ชำระเงินสำเร็จ กำลังเตรียมคำทำนาย"', [
+                            'reading_id' => $readingId,
+                            'platform' => $platform,
+                        ]);
+                    } catch (\Throwable $waitErr) {
+                        Log::warning('fortune:process-deep: ส่งข้อความ "รอสักครู่" ล้มเหลว (ไม่กระทบ AI)', [
+                            'reading_id' => $readingId,
+                            'error' => $waitErr->getMessage(),
+                        ]);
+                    }
+                }
+
                 // ✅ streaming mode: ส่งคำทำนายทีละข้อทันทีที่ AI สร้างเสร็จ
                 // ลูกค้าจะได้รับ chart + คำทำนายแต่ละข้อทันที ไม่ต้องรอ AI ทำครบทุกข้อ
                 // (เหมือนกับ ProcessDeepFortuneReadingJob::handle() ที่ใช้ streaming)
