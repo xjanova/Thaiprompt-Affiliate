@@ -353,6 +353,7 @@ function aiProviders() {
             'minimax': [
                 { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
             ],
+            'pollinations': [],
         },
 
         async init() {

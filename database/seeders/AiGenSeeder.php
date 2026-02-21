@@ -317,7 +317,23 @@ class AiGenSeeder extends Seeder
             ]
         );
 
-        $this->command->info('✅ Seed AI Providers ทั้งหมด 17 ตัว สำเร็จ!');
+        // 18. Pollinations.ai (ฟรี 100% ไม่ต้อง API key) ⭐ แนะนำ
+        AiGenProvider::updateOrCreate(
+            ['slug' => 'pollinations'],
+            [
+                'name' => 'Pollinations.ai (FLUX)',
+                'type' => 'image',
+                'description' => 'เจนภาพฟรี 100% ไม่ต้อง API key ไม่ต้องสมัคร - ใช้โมเดล FLUX, FLUX Realism, FLUX Anime',
+                'api_docs_url' => 'https://pollinations.ai',
+                'supported_features' => ['text-to-image'],
+                'is_active' => true,
+                'priority' => 0,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+
+        $this->command->info('✅ Seed AI Providers ทั้งหมด 18 ตัว สำเร็จ!');
 
         // =====================================================================
         // 📦 PACKAGES
@@ -429,6 +445,8 @@ class AiGenSeeder extends Seeder
         Setting::set('ai_gen_max_prompt_length', 1000, 'integer', 'ai_gen');
         Setting::set('ai_gen_allow_nsfw', false, 'boolean', 'ai_gen');
         Setting::set('ai_gen_default_provider', '', 'string', 'ai_gen');
+        Setting::set('ai_gen_max_storage_mb', 500, 'integer', 'ai_gen');
+        Setting::set('ai_gen_auto_cleanup_days', 30, 'integer', 'ai_gen');
 
         // =====================================================================
         // 🎉 PROMOTIONS

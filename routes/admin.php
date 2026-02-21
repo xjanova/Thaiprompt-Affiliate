@@ -2607,6 +2607,10 @@ Route::prefix('ai-gen')->name('ai-gen.')->group(function () {
     Route::post('/promotions', [AiGenAdminController::class, 'createPromotion'])->name('promotions.store');
     Route::put('/promotions/{promotionId}', [AiGenAdminController::class, 'updatePromotion'])->name('promotions.update');
     Route::delete('/promotions/{promotionId}', [AiGenAdminController::class, 'deletePromotion'])->name('promotions.destroy');
+
+    // Storage Management (จัดการพื้นที่เก็บภาพ)
+    Route::get('/storage/info', [AiGenAdminController::class, 'storageInfo'])->name('storage.info');
+    Route::post('/storage/cleanup', [AiGenAdminController::class, 'storageCleanup'])->name('storage.cleanup');
 });
 
 // Game Management Routes

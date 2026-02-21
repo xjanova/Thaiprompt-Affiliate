@@ -13,6 +13,7 @@ use App\Models\Setting;
 use App\Services\AiGen\AiGenProviderFactory;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 class AiGenAdminController extends Controller
@@ -590,6 +591,7 @@ class AiGenAdminController extends Controller
             'settings' => $this->getSettingsData(),
             'providers' => AiGenProvider::active()->orderBy('priority')->get(),
             'promotions' => AiGenPromotion::orderBy('created_at', 'desc')->get(),
+            'storageInfo' => $this->getStorageInfo(),
         ]);
     }
 
@@ -608,6 +610,8 @@ class AiGenAdminController extends Controller
                 'ai_gen_max_prompt_length' => 'nullable|integer|min:10',
                 'ai_gen_allow_nsfw' => 'nullable|boolean',
                 'ai_gen_default_provider' => 'nullable|string',
+                'ai_gen_max_storage_mb' => 'nullable|integer|min:0',
+                'ai_gen_auto_cleanup_days' => 'nullable|integer|min:0',
                 // ราคาต่อ provider
                 'provider_pricing' => 'nullable|array',
                 'provider_pricing.*.wallet_cost_per_image' => 'nullable|numeric|min:0',
@@ -624,6 +628,8 @@ class AiGenAdminController extends Controller
                 'ai_gen_max_prompt_length' => 'integer',
                 'ai_gen_allow_nsfw' => 'boolean',
                 'ai_gen_default_provider' => 'string',
+                'ai_gen_max_storage_mb' => 'integer',
+                'ai_gen_auto_cleanup_days' => 'integer',
             ];
 
             foreach ($settingsKeys as $key => $type) {
@@ -672,6 +678,8 @@ class AiGenAdminController extends Controller
             'max_prompt_length' => Setting::get('ai_gen_max_prompt_length', 1000),
             'allow_nsfw' => Setting::get('ai_gen_allow_nsfw', false),
             'default_provider' => Setting::get('ai_gen_default_provider', ''),
+            'max_storage_mb' => Setting::get('ai_gen_max_storage_mb', 500),
+            'auto_cleanup_days' => Setting::get('ai_gen_auto_cleanup_days', 30),
         ];
     }
 
@@ -807,5 +815,133 @@ class AiGenAdminController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    // ===================================================================
+    // Storage Management (จัดการพื้นที่เก็บภาพ)
+    // ===================================================================
+
+    /**
+     * ดึงข้อมูลพื้นที่เก็บภาพ AI Gen
+     */
+    public function storageInfo(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->getStorageInfo(),
+        ]);
+    }
+
+    /**
+     * ลบภาพเก่าเพื่อเพิ่มพื้นที่
+     */
+    public function storageCleanup(Request $request): JsonResponse
+    {
+        $days = $request->input('days', 30);
+
+        try {
+            $disk = Storage::disk('public');
+            $basePath = 'ai-gen';
+            $deletedCount = 0;
+            $freedBytes = 0;
+            $cutoffDate = now()->subDays($days);
+
+            // ดึงรายชื่อไฟล์ทั้งหมดใน ai-gen/
+            $files = $disk->allFiles($basePath);
+
+            foreach ($files as $file) {
+                $lastModified = $disk->lastModified($file);
+
+                if ($lastModified < $cutoffDate->timestamp) {
+                    $fileSize = $disk->size($file);
+                    $disk->delete($file);
+                    $deletedCount++;
+                    $freedBytes += $fileSize;
+                }
+            }
+
+            // แสดงขนาดที่เพิ่มขึ้น
+            $freedDisplay = $this->formatBytes($freedBytes);
+
+            return response()->json([
+                'success' => true,
+                'deleted_count' => $deletedCount,
+                'freed_bytes' => $freedBytes,
+                'freed_display' => $freedDisplay,
+                'message' => "ลบภาพเก่า {$deletedCount} ไฟล์ เพิ่มพื้นที่ {$freedDisplay}",
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * คำนวณข้อมูลพื้นที่เก็บภาพ
+     *
+     * @return array ข้อมูลพื้นที่ (used_bytes, used_display, max_mb, percent, file_count)
+     */
+    protected function getStorageInfo(): array
+    {
+        try {
+            $disk = Storage::disk('public');
+            $basePath = 'ai-gen';
+            $totalBytes = 0;
+            $fileCount = 0;
+
+            if ($disk->exists($basePath)) {
+                $files = $disk->allFiles($basePath);
+                $fileCount = count($files);
+
+                foreach ($files as $file) {
+                    $totalBytes += $disk->size($file);
+                }
+            }
+
+            $maxStorageMb = (int) Setting::get('ai_gen_max_storage_mb', 500);
+            $usedMb = round($totalBytes / 1024 / 1024, 2);
+            $percent = $maxStorageMb > 0 ? min(round(($usedMb / $maxStorageMb) * 100, 1), 100) : 0;
+
+            return [
+                'used_bytes' => $totalBytes,
+                'used_mb' => $usedMb,
+                'used_display' => $this->formatBytes($totalBytes),
+                'max_mb' => $maxStorageMb,
+                'percent' => $percent,
+                'file_count' => $fileCount,
+            ];
+        } catch (\Exception $e) {
+            return [
+                'used_bytes' => 0,
+                'used_mb' => 0,
+                'used_display' => '0 MB',
+                'max_mb' => 500,
+                'percent' => 0,
+                'file_count' => 0,
+            ];
+        }
+    }
+
+    /**
+     * แปลง bytes เป็นหน่วยที่อ่านง่าย
+     *
+     * @param int $bytes จำนวน bytes
+     * @return string เช่น "12.5 MB", "1.2 GB"
+     */
+    protected function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 2) . ' GB';
+        }
+        if ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        }
+        if ($bytes >= 1024) {
+            return number_format($bytes / 1024, 2) . ' KB';
+        }
+
+        return $bytes . ' B';
     }
 }

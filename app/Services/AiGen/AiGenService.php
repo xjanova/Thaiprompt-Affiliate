@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\WalletService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 class AiGenService
 {
@@ -72,6 +73,14 @@ class AiGenService
             return [
                 'success' => false,
                 'error' => 'Provider ยังไม่ได้ตั้งค่า',
+            ];
+        }
+
+        // ตรวจสอบพื้นที่เก็บภาพ
+        if (! $this->checkStorageAvailable()) {
+            return [
+                'success' => false,
+                'error' => 'พื้นที่เก็บภาพเต็มแล้ว กรุณาติดต่อผู้ดูแลระบบ หรือลบภาพเก่าเพื่อเพิ่มพื้นที่',
             ];
         }
 
@@ -379,6 +388,41 @@ class AiGenService
             ];
         } catch (\Exception $e) {
             return ['can_generate' => false, 'reason' => 'ไม่สามารถตรวจสอบ Wallet ได้'];
+        }
+    }
+
+    /**
+     * ตรวจสอบว่าพื้นที่เก็บภาพยังเพียงพอหรือไม่
+     *
+     * @return bool true ถ้ายังมีพื้นที่เพียงพอ
+     */
+    protected function checkStorageAvailable(): bool
+    {
+        $maxStorageMb = (int) Setting::get('ai_gen_max_storage_mb', 500);
+
+        // ถ้าตั้ง 0 = ไม่จำกัดพื้นที่
+        if ($maxStorageMb <= 0) {
+            return true;
+        }
+
+        try {
+            $disk = Storage::disk('public');
+            $basePath = 'ai-gen';
+            $totalBytes = 0;
+
+            if ($disk->exists($basePath)) {
+                $files = $disk->allFiles($basePath);
+                foreach ($files as $file) {
+                    $totalBytes += $disk->size($file);
+                }
+            }
+
+            $usedMb = $totalBytes / 1024 / 1024;
+
+            return $usedMb < $maxStorageMb;
+        } catch (\Exception $e) {
+            // ถ้าเช็คไม่ได้ ให้อนุญาตไปก่อน
+            return true;
         }
     }
 
