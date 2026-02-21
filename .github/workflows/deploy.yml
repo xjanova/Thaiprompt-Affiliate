@@ -64,6 +64,10 @@ jobs:
               exit 1
             fi
 
+            # Run safe seeders (updateOrCreate pattern - idempotent)
+            echo "🌱 Running safe seeders..."
+            php artisan db:seed --class=AiGenSeeder --force 2>&1 || echo "⚠️ AiGenSeeder skipped"
+
             echo "✅ Deployment completed!"
 
       - name: Health check
