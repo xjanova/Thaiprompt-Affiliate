@@ -343,15 +343,29 @@ class LineLoginController extends Controller
         }
 
         try {
+            Log::info('LINE linkCallback: เริ่มแลก code สำหรับ access token', [
+                'user_id' => Auth::id(),
+                'has_code' => ! empty($code),
+            ]);
+
             // Exchange code for access token
             $tokenData = $this->lineService->getAccessToken($code);
             $accessToken = $tokenData['access_token'];
+
+            Log::info('LINE linkCallback: แลก token สำเร็จ ดึง profile...', [
+                'user_id' => Auth::id(),
+            ]);
 
             // Get user profile
             $profile = $this->lineService->getUserProfile($accessToken);
             $lineUserId = $profile['userId'];
             $displayName = $profile['displayName'] ?? 'LINE User';
             $pictureUrl = $profile['pictureUrl'] ?? null;
+
+            Log::info('LINE linkCallback: ได้ profile แล้ว', [
+                'line_user_id' => $lineUserId,
+                'display_name' => $displayName,
+            ]);
 
             // Check if LINE account is already linked
             $existingUser = User::where('line_user_id', $lineUserId)
@@ -373,6 +387,11 @@ class LineLoginController extends Controller
                 'line_verified' => true,
             ]);
 
+            Log::info('LINE linkCallback: อัพเดท user สำเร็จ เก็บ token...', [
+                'user_id' => $user->id,
+                'line_user_id' => $lineUserId,
+            ]);
+
             // Store encrypted access token securely
             $expiresIn = $tokenData['expires_in'] ?? null;
             $this->tokenService->storeAccessToken($user, $accessToken, $expiresIn);
@@ -386,16 +405,25 @@ class LineLoginController extends Controller
             // RequireLineUid middleware เก็บ URL ไว้ใน 'line_redirect_after'
             $redirectAfter = session()->pull('line_redirect_after');
 
+            Log::info('LINE linkCallback: เชื่อมต่อสำเร็จ! redirect ไป ' . ($redirectAfter ?? 'profile'), [
+                'user_id' => $user->id,
+            ]);
+
             return redirect($redirectAfter ?? route('user.profile'))
                 ->with('success', 'เชื่อมต่อบัญชี LINE สำเร็จ!');
 
         } catch (\Exception $e) {
-            Log::error('LINE linking error', [
+            Log::error('LINE linking error — DETAILED', [
                 'error' => $e->getMessage(),
+                'exception_class' => get_class($e),
+                'file' => $e->getFile(),
+                'line_number' => $e->getLine(),
+                'user_id' => Auth::id(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return redirect()->route('user.profile')
-                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE');
+                ->with('error', 'เกิดข้อผิดพลาดในการเชื่อมต่อบัญชี LINE: ' . $e->getMessage());
         }
     }
 
