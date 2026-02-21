@@ -2885,10 +2885,18 @@ class LineFortuneService implements MessagingPlatformInterface
                 $status = $response->status();
 
                 if ($status === 429) {
-                    // 🔴 429 → log แต่ไม่ block push อื่น (ไม่มี circuit breaker แล้ว)
+                    // 🔴 429 → log พร้อม response body เพื่อดูว่า LINE บอกอะไร
                     // fortune:check-pending จะ retry ให้อัตโนมัติทุกนาที
                     Log::warning('LINE pushMessage: HTTP 429 rate limited — จะ retry ผ่าน check-pending', [
                         'to' => $to,
+                        'response_body' => $response->body(),
+                        'response_headers' => [
+                            'x-line-request-id' => $response->header('x-line-request-id'),
+                            'retry-after' => $response->header('retry-after'),
+                            'x-ratelimit-limit' => $response->header('x-ratelimit-limit'),
+                            'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),
+                            'x-ratelimit-reset' => $response->header('x-ratelimit-reset'),
+                        ],
                     ]);
                 } else {
                     Log::error('LINE Push Message Error', [
