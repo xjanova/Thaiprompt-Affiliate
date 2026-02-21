@@ -89,9 +89,25 @@ class LineLoginController extends Controller
 
     /**
      * Handle LINE Login callback
+     *
+     * ✅ รองรับทั้ง 2 flows:
+     * 1. Login flow (guest) — ผู้ใช้ใหม่/เดิมเข้าสู่ระบบด้วย LINE
+     * 2. Link flow (authenticated) — ผู้ใช้ที่ login แล้วต้องการเชื่อมต่อ LINE
+     *    (เมื่อ link() redirect ไป LINE OAuth แล้ว LINE redirect กลับมาที่นี่)
      */
     public function callback(Request $request): RedirectResponse
     {
+        // ✅ ตรวจสอบว่าเป็น link mode หรือไม่ (มาจาก line-required page → link())
+        // link() เก็บ state เป็น 'line_link_state' (ไม่ใช่ 'line_login_state')
+        // ดังนั้นต้อง forward ไป linkCallback() เพื่อใช้ state key ที่ถูกต้อง
+        if (Session::get('line_link_mode') && Auth::check()) {
+            Log::info('LINE callback: detected link mode — forwarding to linkCallback()', [
+                'user_id' => Auth::id(),
+            ]);
+
+            return $this->linkCallback($request);
+        }
+
         // ดึง origin page เพื่อ redirect กลับเมื่อเกิด error
         $origin = Session::get('line_login_origin', 'login');
         $errorRoute = $origin === 'register' ? 'register' : 'login';
@@ -366,7 +382,11 @@ class LineLoginController extends Controller
                 'display_name' => $displayName,
             ]);
 
-            return redirect()->route('user.profile')
+            // ✅ Redirect กลับไปหน้าที่ผู้ใช้ต้องการ (เช่น wallet)
+            // RequireLineUid middleware เก็บ URL ไว้ใน 'line_redirect_after'
+            $redirectAfter = session()->pull('line_redirect_after');
+
+            return redirect($redirectAfter ?? route('user.profile'))
                 ->with('success', 'เชื่อมต่อบัญชี LINE สำเร็จ!');
 
         } catch (\Exception $e) {

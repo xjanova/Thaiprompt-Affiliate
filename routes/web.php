@@ -287,13 +287,17 @@ Route::middleware('guest')->group(function () {
     Route::match(['GET', 'HEAD'], '/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register'])->middleware('turnstile:register');
 
-    // LINE Login Routes
+    // LINE Login Routes (redirect ต้องอยู่ใน guest — สำหรับผู้ใช้ที่ยังไม่ได้ login)
     Route::match(['GET', 'HEAD'], '/auth/line', [LineLoginController::class, 'redirect'])->name('line.login');
-    Route::match(['GET', 'HEAD'], '/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
     Route::match(['GET', 'HEAD'], '/auth/line/register-guide', function () {
         return view('auth.line-register-guide');
     })->name('line.register.guide');
 });
+
+// ✅ LINE callback ต้องอยู่นอก guest middleware
+// เพราะทั้ง guest (login) และ authenticated users (link LINE) ต้องเข้าถึงได้
+// ถ้าอยู่ใน guest → authenticated users ที่ทำ LINE link จะถูก redirect ไป /home แทน
+Route::match(['GET', 'HEAD'], '/auth/line/callback', [LineLoginController::class, 'callback'])->name('line.callback');
 
 // LINE Login Mobile App Callback (public - รับ callback จาก LINE OAuth แล้ว redirect ไป app deep link)
 Route::match(['GET', 'HEAD'], '/auth/line/mobile-callback', [LineLoginController::class, 'mobileCallback'])
