@@ -395,6 +395,11 @@ class FortuneConversationService
                 return $this->handleBankAccountRequest($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่ง "เมนู" / "menu" / "help" → แสดงเมนูครบทุกบริการ
+            if ($this->isMenuRequest($messageText)) {
+                return $this->handleMenuRequest($facebookUserId);
+            }
+
             // ✅ ตรวจสอบว่าผู้ใช้ตอบกลับปุ่ม "ฝากคำถามถึงแอดมิน" หรือ "ไม่ฝากคำถาม"
             $pendingSaveResult = $this->handlePendingSaveResponse($facebookUserId, $messageText, $userProfile);
             if ($pendingSaveResult) {
@@ -4116,6 +4121,113 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * ตรวจสอบว่าผู้ใช้ต้องการดูเมนูหรือไม่
+     * รองรับ: เมนู, menu, คำสั่ง, ช่วยเหลือ, help
+     */
+    protected function isMenuRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        // ลบคำลงท้ายสุภาพ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $exactKeywords = [
+            'เมนู', 'menu', 'คำสั่ง', 'ช่วยเหลือ', 'help',
+            'ดูเมนู', 'ขอเมนู', 'แสดงเมนู', 'เปิดเมนู',
+            'ทำอะไรได้บ้าง', 'มีอะไรบ้าง', 'บริการ',
+        ];
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "เมนู" — แสดงเมนูทุกบริการแบบครบถ้วน
+     * แสดงหมวดหมู่ดูดวงทั้งหมด + คำสั่งพิเศษ + บริการอื่นๆ
+     *
+     * @param string $facebookUserId
+     * @return array
+     */
+    protected function handleMenuRequest(string $facebookUserId): array
+    {
+        try {
+            $brandName = $this->settings->getFortuneBrandName();
+            $price = number_format($this->getDeepReadingPrice(), 0);
+
+            // ดึงหมวดหมู่ดูดวงจาก database
+            $categories = \App\Models\FortuneCategory::where('is_active', true)
+                ->orderBy('order')
+                ->get();
+
+            // สร้างข้อความหมวดหมู่ดูดวง
+            $categoryLines = [];
+            foreach ($categories as $cat) {
+                $categoryLines[] = "{$cat->icon} {$cat->name} — {$cat->description}";
+            }
+
+            $categoryText = implode("\n", $categoryLines);
+            if (empty($categoryText)) {
+                $categoryText = "💕 ความรัก — ทำนายเรื่องความรัก ความสัมพันธ์\n"
+                    ."💰 การเงิน — ทำนายเรื่องการเงิน ความมั่งคั่ง\n"
+                    ."🏥 สุขภาพ — ทำนายเรื่องสุขภาพ โรคภัย\n"
+                    ."💼 การงาน — ทำนายเรื่องอาชีพ ความก้าวหน้า\n"
+                    ."👨‍👩‍👧‍👦 ครอบครัว — ทำนายเรื่องครอบครัว บุตร\n"
+                    ."🍀 โชคลาภ — ทำนายเรื่องโชค ดวง โชคชะตา";
+            }
+
+            $message = "📋 เมนูบริการ {$brandName}\n"
+                ."━━━━━━━━━━━━━━━━━\n\n"
+                ."🔮 หมวดหมู่ดูดวง\n"
+                ."─────────────────\n"
+                ."{$categoryText}\n\n"
+                ."💡 วิธีใช้: พิมพ์คำถามที่ต้องการ\n"
+                ."เช่น \"ดวงความรักเดือนนี้\" หรือ \"การเงินจะดีไหม\"\n\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."🆓 ดูดวงฟรี — พิมพ์ \"ดูดวง\"\n"
+                ."💎 ดูดวงละเอียด — {$price} บาท\n"
+                ."📖 ดูคำทำนาย — พิมพ์ \"ดูคำทำนาย\"\n"
+                ."💰 เช็คสิทธิ์/Wallet — พิมพ์ \"เช็คสิทธิ์\"\n"
+                ."🏦 ดูบัญชี — พิมพ์ \"บัญชี\"\n"
+                ."🔗 แชร์เชิญเพื่อน — พิมพ์ \"แชร์\"\n"
+                ."📝 ฝากคำถาม — พิมพ์ \"ฝากคำถาม\"\n"
+                ."━━━━━━━━━━━━━━━━━\n\n"
+                ."✨ เลือกเรื่องที่สนใจแล้วพิมพ์มาได้เลยค่ะ 🙏";
+
+            Log::info('Fortune Menu: แสดงเมนูครบถ้วน', [
+                'user_id' => $facebookUserId,
+                'categories_count' => $categories->count(),
+            ]);
+
+            return [
+                'action' => 'menu',
+                'message' => $message,
+                'reading' => null,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Fortune Menu: แสดงเมนูล้มเหลว', [
+                'user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'menu_error',
+                'message' => "📋 เมนูบริการ\n\n"
+                    ."🔮 ดูดวง — พิมพ์ \"ดูดวง\"\n"
+                    ."📖 ดูคำทำนาย — พิมพ์ \"ดูคำทำนาย\"\n"
+                    ."💰 เช็คสิทธิ์ — พิมพ์ \"เช็คสิทธิ์\"\n"
+                    ."🔗 แชร์ — พิมพ์ \"แชร์\"\n\n"
+                    ."✨ พิมพ์คำสั่งที่ต้องการได้เลยค่ะ 🙏",
+                'reading' => null,
+            ];
+        }
     }
 
     /**

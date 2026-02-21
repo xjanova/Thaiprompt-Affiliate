@@ -366,6 +366,7 @@ class LineFortuneWebhookController extends Controller
             'check_status' => $this->handleCheckStatusPostback($userId, $replyToken),
             'report_payment' => $this->handleReportPaymentPostback($userId, $replyToken),
             'help' => $this->handleHelpPostback($userId, $replyToken),
+            'menu' => $this->handleSimulateTextPostback($userId, $replyToken, 'เมนู'),
             'confirm_transfer' => $this->handleConfirmTransferPostback($userId, $replyToken, $params),
             default => Log::warning('LINE Webhook: Unknown postback action', [
                 'user_id' => $userId,
