@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\SmsPaymentNotification;
+use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -294,30 +295,66 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             : null;
 
         try {
-            // สร้าง services (ไม่สร้าง channelManager — V3 ไม่ push อีกต่อไป)
+            // สร้าง services
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
+            $channelManager = new FortuneChannelManager($settings);
 
-            // ✅ V3: เรียก processPaymentConfirmed() โดยไม่ส่ง channelManager → ไม่ push
-            // คำทำนายจะถูกบันทึกลง DB → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage (ฟรี!)
+            // ✅ V3: ไม่ push เนื้อหาคำทำนาย → บันทึก DB เท่านั้น
+            // เนื้อหาจริงจะส่งผ่าน replyMessage เมื่อ user ส่งข้อความมา (ฟรี!)
             $result = $conversationService->processPaymentConfirmed(
                 $reading,
                 $notification,
-                null, // ไม่ส่ง channelManager → ไม่ push (ประหยัดโควต้า LINE)
+                null, // ไม่ส่ง channelManager สำหรับ streaming → ไม่ push เนื้อหาคำทำนาย
                 null,
                 null
             );
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            // ✅ ตั้ง flag "คำทำนายพร้อม" → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage
+            // ✅ ตั้ง flag "คำทำนายพร้อม"
             $reading->refresh();
             if (! empty($reading->deep_response)) {
                 $reading->setConversationState('reading_ready_for_reply', true);
                 $reading->setConversationState('reading_ready_at', now()->toIso8601String());
             }
 
-            Log::info('✅ ProcessDeepFortuneReadingJob: สำเร็จ — บันทึก DB แล้ว รอ replyMessage', [
+            // ✅ Push แจ้งเตือนสั้นๆ "คำทำนายพร้อมแล้ว" (1 push — ไม่ push เนื้อหา)
+            // ถ้า push ล้มเหลว → user ส่งข้อความมาก็จะได้รับแจ้งผ่าน replyMessage
+            if (! empty($reading->deep_response) && $this->userId) {
+                $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
+                if (! $alreadyNotified) {
+                    try {
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+                        $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
+                            . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                            . "🔮 พร้อมอ่านเลยไหมคะ?\n"
+                            . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+
+                        $notifySent = $channelManager->sendResponse($this->platform, $this->userId, [
+                            'action' => 'fortune_ready_notification',
+                            'message' => $readyMessage,
+                            'reading' => $reading,
+                            'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('reading_notification_sent', $notifySent);
+                        $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+
+                        Log::info('ProcessDeepFortuneReadingJob: push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                            'reading_id' => $this->readingId,
+                            'sent' => $notifySent,
+                        ]);
+                    } catch (\Exception $notifyErr) {
+                        Log::warning('ProcessDeepFortuneReadingJob: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
+                            'reading_id' => $this->readingId,
+                            'error' => $notifyErr->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            Log::info('✅ ProcessDeepFortuneReadingJob: สำเร็จ', [
                 'reading_id' => $this->readingId,
                 'action' => $result['action'] ?? 'unknown',
                 'duration_ms' => $duration,

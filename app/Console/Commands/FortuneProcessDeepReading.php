@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\SmsPaymentNotification;
+use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -88,9 +89,10 @@ class FortuneProcessDeepReading extends Command
         $notification = $notificationId ? SmsPaymentNotification::find($notificationId) : null;
 
         try {
-            // สร้าง services (ไม่สร้าง channelManager — ไม่ push อีกต่อไป)
+            // สร้าง services
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
+            $channelManager = new FortuneChannelManager($settings);
 
             // ⚡ ถ้า deep_response มีอยู่แล้ว → ข้าม AI generation ไปส่งเลย
             $skipAiGeneration = ! empty($reading->deep_response);
@@ -126,6 +128,44 @@ class FortuneProcessDeepReading extends Command
 
                 // deep_response มีแล้ว → ตั้ง flag พร้อมส่ง
                 $reading->setConversationState('reading_ready_for_reply', true);
+            }
+
+            // ✅ Push แจ้งเตือนสั้นๆ "คำทำนายพร้อมแล้ว" (1 push — ไม่ push เนื้อหาคำทำนาย)
+            // เนื้อหาจริงจะส่งผ่าน replyMessage เมื่อ user ตอบกลับ (ฟรี!)
+            // ถ้า push ล้มเหลว (หมดโควต้า) → user ส่งข้อความมาก็จะได้รับแจ้งผ่าน replyMessage
+            $reading->refresh();
+            if (! empty($reading->deep_response) && ! empty($userId)) {
+                $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
+                if (! $alreadyNotified) {
+                    try {
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+                        $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
+                            . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                            . "🔮 พร้อมอ่านเลยไหมคะ?\n"
+                            . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+
+                        $notifySent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'fortune_ready_notification',
+                            'message' => $readyMessage,
+                            'reading' => $reading,
+                            'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('reading_notification_sent', $notifySent);
+                        $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+
+                        Log::info('fortune:process-deep: push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                            'reading_id' => $readingId,
+                            'sent' => $notifySent,
+                        ]);
+                    } catch (\Exception $notifyErr) {
+                        // push ล้มเหลว → ไม่เป็นไร user ส่งข้อความมาจะได้รับผ่าน replyMessage
+                        Log::warning('fortune:process-deep: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
+                            'reading_id' => $readingId,
+                            'error' => $notifyErr->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             return self::SUCCESS;
