@@ -5,7 +5,6 @@ namespace App\Jobs;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\SmsPaymentNotification;
-use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -295,32 +294,35 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             : null;
 
         try {
-            // สร้าง services
+            // สร้าง services (ไม่สร้าง channelManager — V3 ไม่ push อีกต่อไป)
             $settings = FortuneTellingSetting::getSettings();
             $conversationService = new FortuneConversationService($settings);
-            $channelManager = new FortuneChannelManager($settings);
 
-            // เรียก processPaymentConfirmed() — streaming mode ส่งทีละข้อ
+            // ✅ V3: เรียก processPaymentConfirmed() โดยไม่ส่ง channelManager → ไม่ push
+            // คำทำนายจะถูกบันทึกลง DB → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage (ฟรี!)
             $result = $conversationService->processPaymentConfirmed(
                 $reading,
                 $notification,
-                $channelManager,
-                $this->platform,
-                $this->userId
+                null, // ไม่ส่ง channelManager → ไม่ push (ประหยัดโควต้า LINE)
+                null,
+                null
             );
-
-            // ถ้าไม่ได้ streaming (fallback) → ส่งข้อความรวม
-            if (empty($result['streaming']) && ! empty($result['message'])) {
-                $channelManager->sendResponse($this->platform, $this->userId, $result);
-            }
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
-            Log::info('✅ ProcessDeepFortuneReadingJob: สำเร็จ', [
+            // ✅ ตั้ง flag "คำทำนายพร้อม" → เมื่อ user ส่งข้อความมาจะได้รับผ่าน replyMessage
+            $reading->refresh();
+            if (! empty($reading->deep_response)) {
+                $reading->setConversationState('reading_ready_for_reply', true);
+                $reading->setConversationState('reading_ready_at', now()->toIso8601String());
+            }
+
+            Log::info('✅ ProcessDeepFortuneReadingJob: สำเร็จ — บันทึก DB แล้ว รอ replyMessage', [
                 'reading_id' => $this->readingId,
                 'action' => $result['action'] ?? 'unknown',
                 'duration_ms' => $duration,
                 'attempt' => $this->attempts(),
+                'deep_response_length' => mb_strlen($reading->deep_response ?? ''),
             ]);
 
         } catch (\Exception $e) {
@@ -374,26 +376,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             ]);
         }
 
-        // ✅ ส่งข้อความแจ้งลูกค้าว่าระบบกำลังพยายามใหม่
-        // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
-        try {
-            if ($this->userId && $this->platform) {
-                $settings = FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
-
-                $channelManager->sendResponse($this->platform, $this->userId, [
-                    'action' => 'busy_processing',
-                    'message' => "🔮 ขออภัยค่ะ ระบบกำลังโหลดสูง\n\n"
-                        . "จันทรากำลังพยายามสร้างคำทำนายให้อยู่ค่ะ\n"
-                        . 'กรุณารอสักครู่นะคะ 🙏',
-                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-            }
-        } catch (\Exception $msgErr) {
-            Log::warning('ProcessDeepFortuneReadingJob: ส่ง error message ให้ลูกค้าไม่สำเร็จ', [
-                'reading_id' => $this->readingId,
-                'error' => $msgErr->getMessage(),
-            ]);
-        }
+        // ✅ V3: ไม่ push error message ให้ลูกค้า (ประหยัดโควต้า LINE push)
+        // fortune:check-pending จะตั้ง flag reading_ready_for_reply → user ส่งข้อความมาจะได้รับผ่าน replyMessage
     }
 
     /**

@@ -260,20 +260,17 @@ class FortuneCheckPendingReadings extends Command
     }
 
     /**
-     * Phase 2: retry ส่งคำทำนายที่สร้างแล้วแต่ยังไม่ได้ส่งให้ลูกค้า
+     * Phase 2: ตรวจสอบคำทำนายที่สร้างแล้วแต่ยังไม่ได้ตั้ง flag พร้อมส่ง
      *
-     * หา FortuneReading ที่:
-     * - is_paid = true (จ่ายเงินแล้ว)
-     * - deep_response ไม่ว่าง (คำทำนายสร้างแล้ว)
-     * - reading_sent_directly = false (ยังไม่เคยส่งสำเร็จ)
-     * - ชำระเงินมาแล้ว 3 นาที - 24 ชม.
+     * ✅ V3: ไม่ push คำทำนายผ่าน pushMessage อีกต่อไป (ประหยัดโควต้า LINE 200/เดือน)
+     * แค่ตั้ง flag reading_ready_for_reply → เมื่อ user ส่งข้อความมา จะได้รับผ่าน replyMessage (ฟรี!)
      *
-     * @return int จำนวนที่ส่งสำเร็จ
+     * @return int จำนวนที่ตั้ง flag สำเร็จ
      */
     protected function retryUnsentDeliveries(bool $isDryRun, bool $isForce): int
     {
         $this->newLine();
-        $this->info('📨 Phase 2: ตรวจสอบคำทำนายที่สร้างแล้วแต่ยังไม่ส่ง...');
+        $this->info('📨 Phase 2: ตรวจสอบคำทำนายที่สร้างแล้วแต่ยังไม่ตั้ง flag พร้อมส่ง...');
 
         // ค้นหา readings ที่มี deep_response แต่ยังไม่ได้ส่ง
         $query = FortuneReading::where('is_paid', true)
@@ -303,148 +300,44 @@ class FortuneCheckPendingReadings extends Command
 
         $this->info("📋 พบ {$unsentReadings->count()} คำทำนายที่ยังไม่ได้ส่ง");
 
-        $sent = 0;
-        $failed = 0;
+        $flagged = 0;
 
         foreach ($unsentReadings as $reading) {
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
-            $platform = $reading->platform ?? 'facebook';
-            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
 
-            if (empty($userId)) {
-                $this->warn("  ⏭  {$billRef} — ไม่มี User ID (ข้าม)");
-                $failed++;
-
-                continue;
-            }
-
-            // ป้องกัน retry ซ้ำซ้อน (สูงสุด 10 ครั้ง)
-            $deliveryRetryCount = $reading->getConversationState('delivery_retry_count', 0);
-            if ($deliveryRetryCount >= 10 && ! $isForce) {
-                $this->warn("  ⏭  {$billRef} — retry ส่งครบ {$deliveryRetryCount} ครั้งแล้ว (ข้าม)");
-                $failed++;
-
-                continue;
-            }
-
-            $this->info("  📨 {$billRef} — รอ {$waitMinutes} นาที, delivery retry #{$deliveryRetryCount}");
-
-            if ($isDryRun) {
-                $this->info("  [DRY RUN] จะส่งคำทำนายสำหรับ {$billRef}");
-                $sent++;
-
-                continue;
-            }
-
-            try {
-                $settings = FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
-
-                // อัพเดท retry count
-                $reading->setConversationState('delivery_retry_count', $deliveryRetryCount + 1);
-                $reading->setConversationState('last_delivery_retry_at', now()->toIso8601String());
-
-                // 1. ส่ง chart image (ถ้ามี + ยังไม่เคยส่ง)
-                $chartSentEarly = $reading->getConversationState('chart_sent_early', false);
-                if (! $chartSentEarly && ! empty($reading->reading_image_url)) {
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'send_chart',
-                        'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
-                        'chart_image_url' => $reading->reading_image_url,
-                    ], $extra);
-                    sleep(2);
-                } else {
-                    // แจ้งว่าคำทำนายพร้อม
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'reading_ready',
-                        'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
-                    ], $extra);
-                    sleep(2);
+            // ✅ V3: ตั้ง flag reading_ready_for_reply (ไม่ push อีกต่อไป)
+            // เมื่อ user ส่งข้อความมา → processMessage() จะตรวจจับ flag นี้
+            // แล้วส่งคำทำนายผ่าน replyMessage (ฟรี!)
+            if (! $reading->getConversationState('reading_ready_for_reply', false)) {
+                if (! $isDryRun) {
+                    $reading->setConversationState('reading_ready_for_reply', true);
+                    $reading->setConversationState('reading_ready_at', now()->toIso8601String());
                 }
 
-                // 2. ส่งคำทำนายเชิงลึก
-                $readingText = "🌟 *คำทำนายเชิงลึก*\n"
-                    . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
-                    . "═══════════════════════\n\n"
-                    . $reading->deep_response;
-
-                $deepSent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'deep_reading_result',
-                    'message' => $readingText,
-                    'reading' => $reading,
-                ], $extra);
-
-                // Retry 1 ครั้ง ถ้าล้มเหลว
-                if (! $deepSent) {
-                    Log::warning('fortune:check-pending Phase 2: ส่งคำทำนายครั้ง 1 ไม่สำเร็จ → retry ใน 5 วิ', [
-                        'reading_id' => $reading->id,
-                    ]);
-                    sleep(5);
-                    $deepSent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'deep_reading_result',
-                        'message' => $readingText,
-                        'reading' => $reading,
-                    ], $extra);
-                }
-
-                if ($deepSent) {
-                    sleep(2);
-
-                    // 3. ข้อความปิดท้าย
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'reading_complete',
-                        'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n"
-                            . "💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
-                        'reading' => $reading,
-                    ], $extra);
-
-                    // ✅ เซ็ต flag ว่าส่งสำเร็จแล้ว
-                    $reading->setConversationState('reading_sent_directly', true);
-                    $reading->setConversationState('reading_ready_sent', true);
-                    $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                    $reading->setConversationState('delivered_by_check_pending', true);
-
-                    $this->info("  ✅ {$billRef} — ส่งคำทำนายให้ลูกค้าสำเร็จ!");
-                    Log::info('fortune:check-pending Phase 2: ส่งคำทำนายสำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'bill_reference' => $billRef,
-                        'delivery_retry' => $deliveryRetryCount + 1,
-                        'wait_minutes' => $waitMinutes,
-                    ]);
-
-                    $sent++;
-                } else {
-                    $this->error("  ❌ {$billRef} — ส่งคำทำนายไม่สำเร็จ (จะ retry ครั้งหน้า)");
-                    Log::error('fortune:check-pending Phase 2: ส่งคำทำนายไม่สำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'delivery_retry' => $deliveryRetryCount + 1,
-                    ]);
-                    $failed++;
-                }
-            } catch (\Exception $e) {
-                $this->error("  ❌ {$billRef} — exception: {$e->getMessage()}");
-                Log::error('fortune:check-pending Phase 2: exception', [
+                $this->info("  ✅ {$billRef} — ตั้ง flag reading_ready_for_reply (รอ {$waitMinutes} นาที)");
+                Log::info('fortune:check-pending Phase 2: ตั้ง flag reading_ready_for_reply', [
                     'reading_id' => $reading->id,
-                    'error' => $e->getMessage(),
+                    'bill_reference' => $billRef,
+                    'wait_minutes' => $waitMinutes,
                 ]);
-                $failed++;
+            } else {
+                $this->info("  📌 {$billRef} — flag ตั้งแล้ว รอ user ส่งข้อความมา (รอ {$waitMinutes} นาที)");
             }
+
+            $flagged++;
         }
 
         $this->newLine();
-        $this->info("📊 Phase 2 สรุป: ส่งสำเร็จ {$sent}, ล้มเหลว {$failed}");
+        $this->info("📊 Phase 2 สรุป: ตั้ง flag {$flagged} รายการ (รอ user ส่งข้อความมาเพื่อรับผ่าน replyMessage)");
 
-        if ($sent > 0 || $failed > 0) {
-            Log::info('fortune:check-pending Phase 2: สรุปผล', [
-                'sent' => $sent,
-                'failed' => $failed,
+        if ($flagged > 0) {
+            Log::info('fortune:check-pending Phase 2: V3 สรุปผล — ตั้ง flag ไม่ push', [
+                'flagged' => $flagged,
                 'total_found' => $unsentReadings->count(),
             ]);
         }
 
-        return $sent;
+        return $flagged;
     }
 }

@@ -556,171 +556,29 @@ class SmsPaymentService
             'conversation_status' => $reading->conversation_status,
         ]);
 
-        // ✅ ส่งข้อความ "รอสักครู่" ให้ลูกค้าทราบทันทีหลังชำระเงินสำเร็จ
-        // ⚠️ ป้องกัน SMS duplicate — เช็คว่าส่ง "รอสักครู่" ไปแล้วหรือยัง
-        $alreadySentWait = $reading->getConversationState('wait_message_sent', false);
+        // ✅ V3: ไม่ push "รอสักครู่" อีกต่อไป — ประหยัดโควต้า LINE push (200/เดือน)
+        // เมื่อ user ส่งข้อความมา → จะส่งคำทำนายผ่าน replyMessage (ฟรี!)
+        // ตั้ง flag ว่าชำระเงินแล้ว + คำทำนายจะพร้อมเร็วๆ นี้
+        $reading->setConversationState('wait_message_sent', true);
+        $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
+        $reading->setConversationState('wait_message_delivered', false); // ไม่ push แล้ว
 
-        if (! empty($userId) && ! $alreadySentWait) {
-            try {
-                $settings = FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
+        Log::info('SMS Payment: V3 — ไม่ push "รอสักครู่" (ประหยัดโควต้า) → รอ user ส่งข้อความมาเพื่อรับผ่าน replyMessage', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'user_id' => $userId,
+        ]);
 
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $waitMessage = "✨ ขอบคุณค่ะ {$name}! ได้รับการชำระเงินเรียบร้อยแล้ว\n\n"
-                    . "🔮 จันทราจะตรวจดวงชะตาให้นะคะ รอสักครู่ประมาณ 5 นาทีค่ะ ✨";
-
-                $sent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'payment_confirmed_wait',
-                    'message' => $waitMessage,
-                    'reading' => $reading,
-                    'facebook_user_id' => $userId,
-                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                // 🔄 Retry: ถ้า Flex pushMessage ล้มเหลว → รอ 3 วิ ลองส่ง text ธรรมดาแทน
-                if (! $sent) {
-                    Log::warning('SMS Payment: Flex "รอสักครู่" ล้มเหลว → retry ด้วย text ธรรมดาใน 3 วิ', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                    ]);
-                    sleep(3);
-
-                    // ลอง Flex อีกครั้ง
-                    $sent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'payment_confirmed_wait',
-                        'message' => $waitMessage,
-                        'reading' => $reading,
-                        'facebook_user_id' => $userId,
-                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                    // ถ้า Flex ยังไม่สำเร็จ → ลอง text ธรรมดา (fallback สุดท้าย)
-                    if (! $sent && $platform === 'line') {
-                        try {
-                            $lineService = $channelManager->getPlatform('line');
-                            if ($lineService) {
-                                $sent = $lineService->sendMessage($userId, $waitMessage);
-                                if ($sent) {
-                                    Log::info('SMS Payment: text fallback "รอสักครู่" สำเร็จ', [
-                                        'reading_id' => $reading->id,
-                                    ]);
-                                }
-                            }
-                        } catch (\Exception $textErr) {
-                            Log::warning('SMS Payment: text fallback ล้มเหลวด้วย', [
-                                'reading_id' => $reading->id,
-                                'error' => $textErr->getMessage(),
-                            ]);
-                        }
-                    }
-                }
-
-                // บันทึกสถานะว่าส่งข้อความรอแล้ว (ป้องกัน duplicate)
-                // ⚠️ เซ็ต flag เสมอ ไม่ว่าจะส่งสำเร็จหรือไม่ — เพื่อป้องกัน duplicate จาก SMS ซ้ำ
-                // check-pending Phase 2 จะ retry ส่งคำทำนายให้อัตโนมัติ
-                $reading->setConversationState('wait_message_sent', true);
-                $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
-                $reading->setConversationState('wait_message_delivered', $sent);
-
-                Log::info('SMS Payment: ส่งข้อความ "รอสักครู่"', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'user_id' => $userId,
-                    'sent_result' => $sent,
-                ]);
-            } catch (\Exception $waitErr) {
-                Log::error('SMS Payment: ส่งข้อความ "รอสักครู่" ล้มเหลว', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'user_id' => $userId,
-                    'error' => $waitErr->getMessage(),
-                    'trace' => substr($waitErr->getTraceAsString(), 0, 300),
-                ]);
-            }
-        } elseif ($alreadySentWait) {
-            Log::info('SMS Payment: ข้าม "รอสักครู่" — ส่งไปแล้วก่อนหน้า (SMS duplicate)', [
-                'reading_id' => $reading->id,
-                'notification_id' => $notification->id,
-            ]);
-        } else {
-            Log::error('SMS Payment: ไม่สามารถส่งข้อความ "รอสักครู่" — ไม่มี userId', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'platform_user_id' => $reading->platform_user_id,
-                'facebook_user_id' => $reading->facebook_user_id,
-            ]);
-        }
-
-        // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง (กรณี check-pending retry สำเร็จก่อน SMS duplicate เข้ามา)
+        // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง → ตั้ง flag เพื่อให้ replyMessage ส่งได้
         $reading->refresh();
         if (! empty($reading->deep_response) && ! $reading->getConversationState('reading_sent_directly', false)) {
-            // มีคำทำนายแล้ว → ส่งให้ลูกค้าเลยทันที (ไม่ต้อง dispatch job ใหม่)
-            try {
-                $settings = $settings ?? FortuneTellingSetting::getSettings();
-                $channelManager = $channelManager ?? new FortuneChannelManager($settings);
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $extra = ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE'];
+            // มีคำทำนายแล้ว → ตั้ง flag reading_ready_for_reply (ไม่ push — รอ user ส่งข้อความมา)
+            $reading->setConversationState('reading_ready_for_reply', true);
+            $reading->setConversationState('reading_ready_at', now()->toIso8601String());
 
-                // 1. ส่ง chart + header
-                $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'send_chart',
-                    'message' => "🔮✨ คำทำนายของคุณ{$name}พร้อมแล้วค่ะ!",
-                    'chart_image_url' => $reading->reading_image_url,
-                ], $extra);
-
-                sleep(2); // ⚡ 2s — เว้นระยะก่อนส่งคำทำนาย
-
-                // 2. ส่งคำทำนาย — ✅ เช็ค return value
-                $deepSent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'deep_reading_result',
-                    'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
-                    'reading' => $reading,
-                ], $extra);
-
-                // 🔄 Retry ถ้าส่งไม่สำเร็จ (เนื้อหาเสียเงิน สำคัญมาก)
-                if (! $deepSent) {
-                    Log::warning('SMS Payment: ส่งคำทำนายครั้ง 1 ไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id]);
-                    sleep(5);
-                    $deepSent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'deep_reading_result',
-                        'message' => "🌟 *คำทำนายเชิงลึก*\n📋 เลขที่บิล: " . ($reading->bill_reference ?? '-') . "\n═══════════════════════\n\n" . $reading->deep_response,
-                        'reading' => $reading,
-                    ], $extra);
-                }
-
-                if ($deepSent) {
-                    sleep(2);
-
-                    // 3. ข้อความปิดท้าย
-                    $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'reading_complete',
-                        'message' => "💫 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ\n\n💡 พิมพ์ 'ดูคำทำนาย' เพื่อดูอีกครั้งได้ทุกเมื่อค่ะ 🔮",
-                    ], $extra);
-
-                    // ✅ ส่งสำเร็จจริง → บันทึกสถานะ
-                    $reading->setConversationState('reading_sent_directly', true);
-                    $reading->setConversationState('reading_ready_sent', true);
-                    $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-
-                    Log::info('SMS Payment: มีคำทำนายพร้อมแล้ว → ส่งให้ลูกค้าสำเร็จ', [
-                        'reading_id' => $reading->id,
-                        'has_chart' => ! empty($reading->reading_image_url),
-                    ]);
-
-                    $notification->update(['status' => 'matched', 'matched_transaction_id' => $reading->id]);
-
-                    return true;
-                } else {
-                    // ❌ ส่งไม่สำเร็จ → ไม่เซ็ต flag → fallthrough dispatch job ด้านล่าง
-                    Log::error('SMS Payment: ส่งคำทำนายไม่สำเร็จ 2 ครั้ง — fallback dispatch job', [
-                        'reading_id' => $reading->id,
-                    ]);
-                }
-            } catch (\Exception $sendErr) {
-                Log::error('SMS Payment: ส่งคำทำนายที่มีอยู่แล้วล้มเหลว — fallback dispatch job', [
-                    'reading_id' => $reading->id,
-                    'error' => $sendErr->getMessage(),
-                ]);
-                // fallthrough ไป dispatch job ด้านล่าง
-            }
+            Log::info('SMS Payment: คำทำนายพร้อมแล้ว → ตั้ง flag reading_ready_for_reply (รอ replyMessage)', [
+                'reading_id' => $reading->id,
+            ]);
         }
 
         // Dispatch background job → ไม่ติด web server timeout / SMS webhook timeout

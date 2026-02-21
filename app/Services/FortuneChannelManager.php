@@ -371,6 +371,12 @@ class FortuneChannelManager
                     ]
                 ),
 
+                // แจ้งเตือนคำทำนายพร้อม → ส่ง text + quick reply ให้กด "อ่านเลย"
+                'fortune_ready_notification' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    array_map(fn ($label) => ['label' => $label, 'text' => $label], $result['quick_replies'] ?? ['อ่านคำทำนาย'])
+                ),
+
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
             };

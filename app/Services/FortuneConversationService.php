@@ -401,6 +401,75 @@ class FortuneConversationService
                 return $pendingSaveResult;
             }
 
+            // ✅ V3: เช็คคำทำนายที่พร้อมส่งแต่ยังไม่ได้ส่ง (ไม่ใช้ push เลย — ส่งผ่าน replyMessage ฟรี!)
+            // Flow: แจ้ง "คำทำนายพร้อมแล้ว" → user ตอบ → ส่งคำทำนายเต็ม
+            $unsentReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('is_paid', true)
+                ->whereNotNull('deep_response')
+                ->where('deep_response', '!=', '')
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->latest()
+                ->first();
+
+            if ($unsentReading) {
+                $readyForReply = $unsentReading->getConversationState('reading_ready_for_reply', false);
+                $alreadySent = $unsentReading->getConversationState('reading_sent_directly', false);
+                $notificationSent = $unsentReading->getConversationState('reading_notification_sent', false);
+
+                if ($readyForReply && ! $alreadySent) {
+
+                    // Step 2: แจ้งเตือนไปแล้ว → user ตอบกลับ → ส่งคำทำนายเต็ม!
+                    if ($notificationSent) {
+                        Log::info('Fortune processMessage: user ตอบกลับ → ส่งคำทำนายเต็มผ่าน replyMessage (ฟรี!)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'reading_id' => $unsentReading->id,
+                            'bill_reference' => $unsentReading->bill_reference,
+                        ]);
+
+                        // ✅ Mark as sent (ป้องกัน duplicate)
+                        $unsentReading->setConversationState('reading_sent_directly', true);
+                        $unsentReading->setConversationState('reading_ready_sent', true);
+                        $unsentReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                        $unsentReading->setConversationState('delivered_by_reply_message', true);
+
+                        $name = $unsentReading->facebook_user_name ?? 'คุณ';
+                        $message = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                        $message .= '📋 เลขที่บิล: '.($unsentReading->bill_reference ?? '-')."\n";
+                        $message .= '📅 วันที่: '.$unsentReading->created_at->format('d/m/Y H:i')."\n";
+                        $message .= "═══════════════════════\n\n";
+                        $message .= $unsentReading->deep_response;
+
+                        return [
+                            'action' => 'view_reading_deep',
+                            'message' => $message,
+                            'reading' => $unsentReading,
+                            'chart_image_url' => $unsentReading->reading_image_url,
+                        ];
+                    }
+
+                    // Step 1: แจ้งเตือน "คำทำนายพร้อมแล้ว พร้อมอ่านเลยไหมคะ?"
+                    Log::info('Fortune processMessage: พบคำทำนายพร้อมส่ง → แจ้งเตือน user ผ่าน replyMessage', [
+                        'facebook_user_id' => $facebookUserId,
+                        'reading_id' => $unsentReading->id,
+                        'bill_reference' => $unsentReading->bill_reference,
+                    ]);
+
+                    $unsentReading->setConversationState('reading_notification_sent', true);
+                    $unsentReading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+
+                    $name = $unsentReading->facebook_user_name ?? 'คุณ';
+
+                    return [
+                        'action' => 'fortune_ready_notification',
+                        'message' => "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
+                            . '📋 เลขที่บิล: '.($unsentReading->bill_reference ?? '-')."\n\n"
+                            . "🔮 พร้อมอ่านเลยไหมคะ? พิมพ์อะไรก็ได้ หรือกด 'อ่านเลย' ด้านล่างค่ะ ✨",
+                        'reading' => $unsentReading,
+                        'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                    ];
+                }
+            }
+
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
             $activeReading = FortuneReading::findActiveConversation($facebookUserId);
 
@@ -425,9 +494,10 @@ class FortuneConversationService
 
                     return [
                         'action' => 'processing',
-                        'message' => "🔮 กำลังประมวลผลคำทำนายละเอียดอยู่ค่ะ กรุณารอสักครู่นะคะ ✨\n\n"
-                            . "ระบบกำลังวิเคราะห์ดวงให้อย่างละเอียด\n"
-                            . "จะส่งให้ทันทีเมื่อเสร็จค่ะ 🙏",
+                        'message' => "✅ รับชำระเงินเรียบร้อยแล้วค่ะ!\n\n"
+                            . "🔮 จันทรากำลังวิเคราะห์ดวงชะตาให้อย่างละเอียดอยู่ค่ะ\n"
+                            . "ใช้เวลาประมาณ 2-3 นาทีนะคะ\n\n"
+                            . "💡 พิมพ์ข้อความมาอีกครั้งเมื่อรอสักพักค่ะ จันทราจะส่งคำทำนายให้ทันทีค่ะ ✨",
                         'reading' => $activeReading,
                     ];
                 }
