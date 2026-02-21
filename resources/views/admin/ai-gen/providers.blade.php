@@ -356,6 +356,9 @@ function aiProviders() {
             'pollinations': [
                 { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 สมัครฟรีที่ enter.pollinations.ai แล้วนำ key มาใส่', placeholder: 'sk_...' }
             ],
+            'huggingface': [
+                { key: 'api_key', label: 'API Token', type: 'password', required: true, encrypted: true, hint: '🔒 สมัครฟรีที่ huggingface.co → Settings → Access Tokens → สร้าง token ใหม่', placeholder: 'hf_...' }
+            ],
         },
 
         async init() {

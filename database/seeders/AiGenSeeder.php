@@ -333,7 +333,23 @@ class AiGenSeeder extends Seeder
             ]
         );
 
-        $this->command->info('✅ Seed AI Providers ทั้งหมด 18 ตัว สำเร็จ!');
+        // 19. Hugging Face (ฟรี สมัคร token ได้ที่ huggingface.co) ⭐ แนะนำ - รองรับภาษาไทย
+        AiGenProvider::updateOrCreate(
+            ['slug' => 'huggingface'],
+            [
+                'name' => 'Hugging Face (FLUX)',
+                'type' => 'image',
+                'description' => 'เจนภาพด้วย FLUX.1-schnell ฟรี! รองรับ prompt ภาษาไทย (แปลอัตโนมัติ) - สมัคร token ฟรีที่ huggingface.co',
+                'api_docs_url' => 'https://huggingface.co/settings/tokens',
+                'supported_features' => ['text-to-image'],
+                'is_active' => true,
+                'priority' => 0,
+                'wallet_cost_per_image' => 0,
+                'wallet_cost_per_video' => 0,
+            ]
+        );
+
+        $this->command->info('✅ Seed AI Providers ทั้งหมด 19 ตัว สำเร็จ!');
 
         // =====================================================================
         // 📦 PACKAGES
