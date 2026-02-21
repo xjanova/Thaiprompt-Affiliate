@@ -707,32 +707,39 @@ class FortuneChannelManager
 
         $totalQuestions = count($deepReadings);
 
-        // ✅ รวมทุก QA bubble เป็น carousel เดียว — ป้องกัน LINE rate limit
+        // ✅ ส่ง QA bubble ทีละข้อ (ป้องกัน carousel เกิน LINE Flex size limit 50KB)
         $allBubbles = [];
+        $sentCount = 0;
         foreach ($deepReadings as $dr) {
             $questionNum = $dr['question_number'];
             $question = $dr['question'];
             $answer = $dr['answer'];
 
-            $allBubbles[] = $lineService->buildDeepReadingFlexMessage(
+            $flex = $lineService->buildDeepReadingFlexMessage(
                 $questionNum,
                 $question,
                 $answer,
                 $totalQuestions
             );
-        }
+            $allBubbles[] = $flex;
 
-        if (count($allBubbles) > 1) {
-            $carousel = ['type' => 'carousel', 'contents' => array_slice($allBubbles, 0, 12)];
-            $lineService->sendRichMessage($userId, [
-                'alt_text' => "🔮 คำทำนายเชิงลึก {$totalQuestions} ข้อ",
-                'contents' => $carousel,
+            // ส่งทีละ bubble (เชื่อถือได้กว่า carousel ที่อาจเกิน 50KB)
+            $sent = $lineService->sendRichMessage($userId, [
+                'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
+                'contents' => $flex,
             ]);
-        } elseif (count($allBubbles) === 1) {
-            $lineService->sendRichMessage($userId, [
-                'alt_text' => '🔮 คำทำนายเชิงลึก',
-                'contents' => $allBubbles[0],
-            ]);
+
+            if ($sent) {
+                $sentCount++;
+            } else {
+                // Fallback: ส่งเป็น text ถ้า Flex ไม่ได้
+                $textMsg = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n❓ {$question}\n\n{$answer}";
+                if ($lineService->sendMessage($userId, mb_substr($textMsg, 0, 5000))) {
+                    $sentCount++;
+                }
+            }
+
+            usleep(1500000); // 1.5s — ป้องกัน LINE rate limit
         }
 
         // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่มแชร์ + engagement
@@ -1304,6 +1311,7 @@ class FortuneChannelManager
 
         // สร้าง Flex content
         $flexContent = null;
+        $allBubbles = [];
         $altText = '🌟 คำทำนายเชิงลึก';
 
         if (! empty($collectedQuestions)) {
@@ -1313,8 +1321,6 @@ class FortuneChannelManager
             if (! empty($parsedQA)) {
                 $totalQuestions = count($parsedQA);
                 $altText = "🔮 คำทำนายเชิงลึก {$totalQuestions} ข้อ";
-
-                $allBubbles = [];
                 foreach ($parsedQA as $idx => $qa) {
                     $questionNum = $idx + 1;
                     $allBubbles[] = $lineService->buildDeepReadingFlexMessage(
@@ -1363,6 +1369,35 @@ class FortuneChannelManager
             Log::warning('LINE DeepResult: push ครั้งที่ 2 ไม่สำเร็จ → retry ใน 10 วิ', ['reading_id' => $reading->id ?? null]);
             sleep(10);
             $sent = $lineService->sendRichMessage($userId, ['alt_text' => $altText, 'contents' => $flexContent]);
+        }
+
+        // ⚡ Fallback: carousel ส่งไม่ได้ → ลองส่งทีละ bubble (ป้องกัน Flex size limit เกิน 50KB)
+        if (! $sent && ! empty($allBubbles) && count($allBubbles) > 1) {
+            Log::warning('LINE DeepResult: carousel ส่งไม่ได้ → fallback ส่งทีละ bubble', [
+                'reading_id' => $reading->id ?? null,
+                'bubble_count' => count($allBubbles),
+            ]);
+            $individualSentCount = 0;
+            foreach ($allBubbles as $bubble) {
+                $bubbleSent = $lineService->sendRichMessage($userId, [
+                    'alt_text' => $altText,
+                    'contents' => $bubble,
+                ]);
+                if ($bubbleSent) {
+                    $individualSentCount++;
+                }
+                usleep(1500000); // 1.5s — ป้องกัน rate limit
+            }
+            $sent = $individualSentCount > 0;
+        }
+
+        // ⚡ Fallback สุดท้าย: ส่ง text ธรรมดา (ดีกว่าไม่ส่งอะไรเลย!)
+        if (! $sent) {
+            Log::warning('LINE DeepResult: Flex ไม่ได้เลย → fallback text ธรรมดา', [
+                'reading_id' => $reading->id ?? null,
+            ]);
+            $textMessage = mb_substr($message, 0, 5000);
+            $sent = $lineService->sendMessage($userId, $textMessage);
         }
 
         if (! $sent) {

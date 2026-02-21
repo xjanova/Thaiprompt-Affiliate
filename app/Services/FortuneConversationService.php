@@ -2326,6 +2326,7 @@ class FortuneConversationService
             $totalTokens = 0;
             $lastProvider = '';
             $lastModel = '';
+            $streamingSentCount = 0; // นับจำนวนคำทำนายที่ส่งสำเร็จผ่าน streaming
 
             foreach ($questions as $index => $question) {
                 $questionNum = $index + 1;
@@ -2376,6 +2377,8 @@ class FortuneConversationService
                     try {
                         Log::info("Fortune Deep Streaming: ข้อที่ {$questionNum} ยาว ".mb_strlen($aiResult['response']).' ตัวอักษร');
 
+                        $sendSuccess = false;
+
                         // ⚡ สำหรับ LINE → ใช้ Flex Message การ์ดสวยๆ (แทน text ธรรมดา)
                         if ($platform === 'line') {
                             $lineService = $channelManager->getPlatform('line');
@@ -2383,10 +2386,22 @@ class FortuneConversationService
                                 $flex = $lineService->buildDeepReadingFlexMessage(
                                     $questionNum, $question, $aiResult['response'], $totalQuestions
                                 );
-                                $lineService->sendRichMessage($userId, [
+                                $sendSuccess = $lineService->sendRichMessage($userId, [
                                     'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
                                     'contents' => $flex,
                                 ]);
+
+                                // ⚠️ ถ้า Flex ส่งไม่ได้ → fallback ส่งเป็น text ธรรมดา (ดีกว่าไม่ส่ง!)
+                                if (! $sendSuccess) {
+                                    Log::warning("Fortune Deep Streaming: Flex ส่งไม่ได้ข้อที่ {$questionNum} → fallback text", [
+                                        'reading_id' => $reading->id,
+                                        'user_id' => $userId,
+                                    ]);
+                                    $textFallback = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
+                                        ."❓ {$question}\n\n"
+                                        .$aiResult['response'];
+                                    $sendSuccess = $lineService->sendMessage($userId, mb_substr($textFallback, 0, 5000));
+                                }
                             }
                         } else {
                             // Facebook / platform อื่น → ส่งเป็น text
@@ -2394,14 +2409,26 @@ class FortuneConversationService
                                 ."❓ {$question}\n\n"
                                 .$aiResult['response'];
 
-                            $channelManager->sendResponse($platform, $userId, [
+                            $sendSuccess = $channelManager->sendResponse($platform, $userId, [
                                 'action' => 'partial',
                                 'message' => $perQuestionMessage,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                         }
+
+                        if ($sendSuccess) {
+                            $streamingSentCount++;
+                        } else {
+                            Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ (return false)", [
+                                'reading_id' => $reading->id,
+                                'platform' => $platform,
+                                'user_id' => $userId,
+                            ]);
+                        }
+
                         usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
                     } catch (\Exception $sendErr) {
-                        Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ", [
+                        Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ (exception)", [
+                            'reading_id' => $reading->id,
                             'error' => $sendErr->getMessage(),
                         ]);
                     }
@@ -2589,6 +2616,7 @@ class FortuneConversationService
                 'reading' => $reading,
                 'chart_image_url' => $chartImageUrl,
                 'streaming' => $streaming,
+                'streaming_sent_count' => $streamingSentCount,
             ];
 
         } catch (\Exception $e) {
