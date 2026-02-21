@@ -395,6 +395,7 @@ class MlmGenealogyPremium {
             #minimap-canvas {
                 width: 100%;
                 height: 100%;
+                cursor: pointer;
             }
 
             .mlm-minimap-viewport {
@@ -402,6 +403,7 @@ class MlmGenealogyPremium {
                 border: 2px solid #7c3aed;
                 background: rgba(124, 58, 237, 0.1);
                 pointer-events: none;
+                transition: left 0.15s ease, top 0.15s ease;
             }
 
             .mlm-stats-panel {
@@ -836,7 +838,12 @@ class MlmGenealogyPremium {
             </foreignObject>
         `;
 
-        g.addEventListener('click', () => this.showNodeDetails(node));
+        // Click handler — แสดงรายละเอียดเฉพาะเมื่อไม่ได้ลาก
+        g.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (this.hasDragged) return; // ถ้าลากอยู่ ไม่ต้องแสดง
+            this.showNodeDetails(node);
+        });
         parent.appendChild(g);
     }
 
@@ -867,45 +874,255 @@ class MlmGenealogyPremium {
         const svg = this.container.querySelector('#mlm-svg');
         const canvas = this.container.querySelector('#mlm-canvas');
 
-        let isPanning = false;
+        // ตัวแปรสำหรับ drag/pan
+        this.isPanning = false;
+        this.hasDragged = false; // แยก click กับ drag
+        this.dragThreshold = 5; // ระยะ pixel ขั้นต่ำที่ถือว่าลาก
+        this.mouseDownPoint = { x: 0, y: 0 };
         let startPoint = { x: 0, y: 0 };
 
-        // Pan
+        // Pan — ลากได้จากทุกจุด (grid + node)
         canvas.addEventListener('mousedown', (e) => {
-            if (e.target === svg || e.target === canvas) {
-                isPanning = true;
+            if (e.button !== 0) return; // เฉพาะ left click
+            this.isPanning = true;
+            this.hasDragged = false;
+            this.mouseDownPoint = { x: e.clientX, y: e.clientY };
+            startPoint = {
+                x: e.clientX - this.transform.x,
+                y: e.clientY - this.transform.y
+            };
+            canvas.style.cursor = 'grabbing';
+            e.preventDefault(); // ป้องกัน text selection
+        });
+
+        // ใช้ document เพื่อให้ลากต่อเนื่องแม้เมาส์ออกจาก canvas
+        document.addEventListener('mousemove', (e) => {
+            if (!this.isPanning) return;
+
+            const dx = e.clientX - this.mouseDownPoint.x;
+            const dy = e.clientY - this.mouseDownPoint.y;
+            if (Math.sqrt(dx * dx + dy * dy) > this.dragThreshold) {
+                this.hasDragged = true;
+            }
+
+            this.transform.x = e.clientX - startPoint.x;
+            this.transform.y = e.clientY - startPoint.y;
+            this.applyTransform();
+            this.updateMinimap();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (!this.isPanning) return;
+            this.isPanning = false;
+            canvas.style.cursor = 'grab';
+        });
+
+        // Touch events — สำหรับมือถือ/แท็บเล็ต
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                const touch = e.touches[0];
+                this.isPanning = true;
+                this.hasDragged = false;
+                this.mouseDownPoint = { x: touch.clientX, y: touch.clientY };
                 startPoint = {
-                    x: e.clientX - this.transform.x,
-                    y: e.clientY - this.transform.y
+                    x: touch.clientX - this.transform.x,
+                    y: touch.clientY - this.transform.y
                 };
             }
+        }, { passive: true });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (this.isPanning && e.touches.length === 1) {
+                const touch = e.touches[0];
+                const dx = touch.clientX - this.mouseDownPoint.x;
+                const dy = touch.clientY - this.mouseDownPoint.y;
+                if (Math.sqrt(dx * dx + dy * dy) > this.dragThreshold) {
+                    this.hasDragged = true;
+                }
+                this.transform.x = touch.clientX - startPoint.x;
+                this.transform.y = touch.clientY - startPoint.y;
+                this.applyTransform();
+                this.updateMinimap();
+            }
+        }, { passive: true });
+
+        canvas.addEventListener('touchend', () => {
+            this.isPanning = false;
         });
 
-        canvas.addEventListener('mousemove', (e) => {
-            if (isPanning) {
-                this.transform.x = e.clientX - startPoint.x;
-                this.transform.y = e.clientY - startPoint.y;
-                this.applyTransform();
+        // Zoom — scroll wheel
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            const oldK = this.transform.k;
+            const newK = Math.max(0.1, Math.min(3, oldK * delta));
+            if (newK === oldK) return;
+
+            // ซูมที่ตำแหน่งเมาส์
+            const ratio = newK / oldK;
+            this.transform.x = mouseX - (mouseX - this.transform.x) * ratio;
+            this.transform.y = mouseY - (mouseY - this.transform.y) * ratio;
+            this.transform.k = newK;
+
+            this.applyTransform();
+            this.updateZoomLevel();
+            this.updateMinimap();
+        }, { passive: false });
+
+        // Minimap click — คลิกบน minimap เพื่อนำทาง
+        this.initMinimapInteraction();
+    }
+
+    /**
+     * Minimap click/drag interaction
+     */
+    initMinimapInteraction() {
+        const minimapCanvas = this.container.querySelector('#minimap-canvas');
+        if (!minimapCanvas) return;
+
+        let minimapDragging = false;
+
+        const navigateFromMinimap = (e) => {
+            if (!this.data) return;
+            const rect = minimapCanvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // คำนวณ bounds ของ tree
+            const stats = this.calculateStats(this.data);
+            const bounds = this.getTreeBounds();
+            if (!bounds) return;
+
+            const padding = 10;
+            const scale = Math.min(
+                (minimapCanvas.width - padding * 2) / bounds.width,
+                (minimapCanvas.height - padding * 2) / bounds.height
+            ) * 0.8;
+
+            // แปลง minimap → world coordinates
+            const worldX = (clickX - minimapCanvas.width / 2) / scale + bounds.centerX;
+            const worldY = (clickY - padding) / scale + bounds.minY;
+
+            // เลื่อน canvas ให้จุดนี้อยู่ตรงกลาง
+            const canvasEl = this.container.querySelector('#mlm-canvas');
+            const viewRect = canvasEl.getBoundingClientRect();
+            this.transform.x = viewRect.width / 2 - worldX * this.transform.k;
+            this.transform.y = viewRect.height / 2 - worldY * this.transform.k;
+
+            this.applyTransform();
+            this.updateMinimap();
+        };
+
+        minimapCanvas.style.cursor = 'pointer';
+        minimapCanvas.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            minimapDragging = true;
+            navigateFromMinimap(e);
+        });
+        document.addEventListener('mousemove', (e) => {
+            if (minimapDragging) {
+                e.preventDefault();
+                navigateFromMinimap(e);
+            }
+        });
+        document.addEventListener('mouseup', () => {
+            minimapDragging = false;
+        });
+    }
+
+    /**
+     * คำนวณขอบเขตของ tree ทั้งหมด
+     */
+    getTreeBounds() {
+        const nodes = this.container.querySelectorAll('.mlm-node');
+        if (nodes.length === 0) return null;
+
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+        nodes.forEach(node => {
+            const transform = node.getAttribute('transform');
+            const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+            if (match) {
+                const x = parseFloat(match[1]);
+                const y = parseFloat(match[2]);
+                minX = Math.min(minX, x);
+                maxX = Math.max(maxX, x + this.options.nodeWidth);
+                minY = Math.min(minY, y);
+                maxY = Math.max(maxY, y + this.options.nodeHeight);
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
-            isPanning = false;
+        return {
+            minX, maxX, minY, maxY,
+            width: maxX - minX || 1,
+            height: maxY - minY || 1,
+            centerX: (minX + maxX) / 2,
+            centerY: (minY + maxY) / 2
+        };
+    }
+
+    /**
+     * อัพเดท Minimap แสดงตำแหน่งปัจจุบัน
+     */
+    updateMinimap() {
+        const minimapCanvas = this.container.querySelector('#minimap-canvas');
+        const viewport = this.container.querySelector('#minimap-viewport');
+        if (!minimapCanvas || !this.data) return;
+
+        const ctx = minimapCanvas.getContext('2d');
+        const bounds = this.getTreeBounds();
+        if (!bounds) return;
+
+        // ตั้งค่า canvas
+        minimapCanvas.width = 200;
+        minimapCanvas.height = 150;
+
+        // พื้นหลัง
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(0, 0, minimapCanvas.width, minimapCanvas.height);
+
+        // วาด node เป็นจุด
+        const padding = 10;
+        const scale = Math.min(
+            (minimapCanvas.width - padding * 2) / bounds.width,
+            (minimapCanvas.height - padding * 2) / bounds.height
+        ) * 0.8;
+
+        ctx.fillStyle = '#7c3aed';
+        const nodes = this.container.querySelectorAll('.mlm-node');
+        nodes.forEach(node => {
+            const transform = node.getAttribute('transform');
+            const match = transform.match(/translate\(([^,]+),\s*([^)]+)\)/);
+            if (match) {
+                const x = parseFloat(match[1]) + this.options.nodeWidth / 2;
+                const y = parseFloat(match[2]) + this.options.nodeHeight / 2;
+                const px = (x - bounds.centerX) * scale + minimapCanvas.width / 2;
+                const py = (y - bounds.minY) * scale + padding;
+                ctx.beginPath();
+                ctx.arc(px, py, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
 
-        canvas.addEventListener('mouseleave', () => {
-            isPanning = false;
-        });
+        // อัพเดท viewport rectangle
+        if (viewport) {
+            const canvasEl = this.container.querySelector('#mlm-canvas');
+            const rect = canvasEl.getBoundingClientRect();
+            const vpScale = scale / this.transform.k;
+            const vpW = rect.width * vpScale;
+            const vpH = rect.height * vpScale;
+            const vpX = (-this.transform.x / this.transform.k - bounds.centerX) * scale + minimapCanvas.width / 2;
+            const vpY = (-this.transform.y / this.transform.k - bounds.minY) * scale + padding;
 
-        // Zoom
-        canvas.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            this.transform.k *= delta;
-            this.transform.k = Math.max(0.1, Math.min(3, this.transform.k));
-            this.applyTransform();
-            this.updateZoomLevel();
-        });
+            viewport.style.left = `${Math.max(0, vpX)}px`;
+            viewport.style.top = `${Math.max(0, vpY)}px`;
+            viewport.style.width = `${Math.min(vpW, minimapCanvas.width)}px`;
+            viewport.style.height = `${Math.min(vpH, minimapCanvas.height)}px`;
+        }
     }
 
     applyTransform() {
@@ -930,9 +1147,17 @@ class MlmGenealogyPremium {
     }
 
     resetView() {
-        this.transform = { x: 200, y: 50, k: 1 };
+        // ปรับให้อยู่ตรงกลาง
+        const canvas = this.container.querySelector('#mlm-canvas');
+        if (canvas) {
+            const rect = canvas.getBoundingClientRect();
+            this.transform = { x: rect.width / 2 - 200, y: 50, k: 1 };
+        } else {
+            this.transform = { x: 200, y: 50, k: 1 };
+        }
         this.applyTransform();
         this.updateZoomLevel();
+        this.updateMinimap();
     }
 
     updateZoomLevel() {
@@ -1012,7 +1237,7 @@ class MlmGenealogyPremium {
                 </div>
             </div>
             <div style="text-align: center;">
-                <button onclick="window.location.href='/admin/mlm/members/${node.id}'"
+                <button onclick="this.closest('.mlm-modal').classList.remove('show')"
                         style="
                             padding: 12px 24px;
                             background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
@@ -1021,8 +1246,11 @@ class MlmGenealogyPremium {
                             border-radius: 12px;
                             font-weight: 600;
                             cursor: pointer;
-                        ">
-                    ดูรายละเอียดเพิ่มเติม
+                            transition: transform 0.2s;
+                        "
+                        onmouseover="this.style.transform='translateY(-2px)'"
+                        onmouseout="this.style.transform=''">
+                    ✨ ปิด
                 </button>
             </div>
         `;
