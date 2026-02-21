@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * Fortune AI Service
@@ -411,81 +412,90 @@ class FortuneAIService
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
         $startTime = microtime(true);
 
-        // ขั้นที่ 1: ลอง provider หลัก 3 ครั้ง (หน่วงนานขึ้นถ้าเจอ 429 rate limit)
-        $maxRetries = 3;
-        if (! empty($this->apiKey)) {
-            for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-                try {
-                    Log::info("FortuneAI Retry: ลอง {$this->provider} ครั้งที่ {$attempt}");
+        // ✅ รวม keys ทั้งหมดจาก Pool + Settings + Global Settings เป็นรายการเดียว
+        // เรียงลำดับ: primary provider keys ก่อน → providers อื่น
+        // วนลองทุก key — สลับทันทีเมื่อโดน 429 ไม่ต้องรอ 60 วินาที
+        $allKeys = $this->getAllAvailableKeys();
 
-                    $result = $this->callProviderDirect(
-                        $this->provider, $this->apiKey, $this->model, $prompt, $config
-                    );
+        Log::info('FortuneAI: เริ่มสร้างคำทำนาย — รวม keys ทั้งหมด', [
+            'primary_provider' => $this->provider,
+            'total_keys' => count($allKeys),
+            'keys' => array_map(fn ($k) => "{$k['provider']}/{$k['name']}({$k['source']})", $allKeys),
+        ]);
 
-                    // บันทึกการใช้งาน tokens
-                    $responseTime = (int) ((microtime(true) - $startTime) * 1000);
-                    $this->recordUsage($result['tokens_used'] ?? 0, $result['model'] ?? $this->model, $responseTime, $readingType);
-
-                    return $result;
-                } catch (Exception $e) {
-                    $errors[] = "{$this->provider} (ครั้งที่ {$attempt}): {$e->getMessage()}";
-                    Log::warning("FortuneAI Retry: {$this->provider} ล้ม ครั้งที่ {$attempt}", [
-                        'error' => $e->getMessage(),
-                    ]);
-                    if ($attempt < $maxRetries) {
-                        // ถ้าเจอ 429 rate limit → หน่วง 60 วินาที ให้ quota reset
-                        // ถ้า error อื่น → หน่วง 5 วินาที
-                        $is429 = str_contains($e->getMessage(), '429');
-                        $delaySeconds = $is429 ? 60 : 5;
-                        Log::info("FortuneAI Retry: รอ {$delaySeconds} วินาทีก่อนลองใหม่", [
-                            'is_rate_limit' => $is429,
-                            'attempt' => $attempt,
-                        ]);
-                        sleep($delaySeconds);
-                    }
-                }
+        if (empty($allKeys)) {
+            // Fallback: ถ้าไม่มี key จาก Pool/Settings เลย ลอง key เดิมจาก constructor
+            if (! empty($this->apiKey)) {
+                $allKeys = [[
+                    'provider' => $this->provider,
+                    'api_key' => $this->apiKey,
+                    'model' => $this->model,
+                    'pool_key' => $this->currentKey,
+                    'source' => 'constructor',
+                    'name' => 'Constructor Key',
+                ]];
+            } else {
+                throw new Exception('ไม่มี API Key ที่ใช้ได้เลย — กรุณาเพิ่ม key ในระบบ AI API Key Pool');
             }
-        } else {
-            $errors[] = "{$this->provider}: ไม่มี API Key";
         }
 
-        // ขั้นที่ 2: ลองสลับไป provider อื่นอัตโนมัติ
-        $backupProviders = $this->getBackupProviders();
-
-        if (! empty($backupProviders)) {
-            Log::info('FortuneAI: สลับไป backup providers', [
-                'primary_failed' => $this->provider,
-                'backup_count' => count($backupProviders),
-                'backup_providers' => array_column($backupProviders, 'provider'),
-            ]);
-        }
-
-        foreach ($backupProviders as $backup) {
+        // วนลอง keys ทั้งหมด — สลับทันทีเมื่อโดน error/429
+        foreach ($allKeys as $index => $keyInfo) {
             try {
-                Log::info("FortuneAI Backup: ลอง {$backup['provider']} ({$backup['model']})");
+                $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
+                $keyNum = $index + 1;
+                $totalKeys = count($allKeys);
+                Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel}");
 
                 $result = $this->callProviderDirect(
-                    $backup['provider'], $backup['api_key'], $backup['model'], $prompt, $config
+                    $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config
                 );
 
-                // สำเร็จ!
-                Log::info("FortuneAI Backup: {$backup['provider']} สำเร็จ!", [
+                // สำเร็จ! — บันทึก usage
+                $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+                if ($keyInfo['pool_key'] instanceof AiApiKey) {
+                    $this->recordUsageForKey($keyInfo['pool_key'], $result['tokens_used'] ?? 0, $result['model'] ?? $keyInfo['model'], $responseTime, $readingType);
+                }
+
+                Log::info("FortuneAI: สำเร็จ! ใช้ key [{$keyNum}/{$totalKeys}] {$keyLabel}", [
                     'tokens_used' => $result['tokens_used'] ?? 0,
+                    'response_time_ms' => $responseTime,
                 ]);
 
                 return $result;
             } catch (Exception $e) {
-                $errors[] = "{$backup['provider']}: {$e->getMessage()}";
-                Log::warning("FortuneAI Backup: {$backup['provider']} ล้มเช่นกัน", [
-                    'error' => $e->getMessage(),
+                $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
+                $keyNum = $index + 1;
+                $totalKeys = count($allKeys);
+                $errors[] = "{$keyLabel}: " . Str::limit($e->getMessage(), 150);
+
+                // บันทึก error ลง Pool key (ถ้ามี)
+                if ($keyInfo['pool_key'] instanceof AiApiKey) {
+                    $this->recordErrorForKey($keyInfo['pool_key'], $e->getMessage(), $keyInfo['model']);
+                }
+
+                $is429 = str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'rate_limit');
+                Log::warning("FortuneAI: key [{$keyNum}/{$totalKeys}] {$keyLabel} ล้ม", [
+                    'error' => Str::limit($e->getMessage(), 200),
+                    'is_rate_limit' => $is429,
+                    'remaining_keys' => $totalKeys - $keyNum,
                 ]);
+
+                // ถ้ายังมี key ถัดไป → สลับทันที (รอแค่ 1-3 วินาที)
+                if ($index < $totalKeys - 1) {
+                    $delay = $is429 ? 1 : 3; // 429 = สลับเลย (1s), error อื่น = 3s
+                    sleep($delay);
+                }
             }
         }
 
-        // ทุก provider ล้มหมด
+        // ทุก key ล้มหมด
         $errorSummary = implode(' | ', array_slice($errors, 0, 5));
-        Log::error('FortuneAI: ทุก provider ล้มหมด', ['errors' => $errors]);
-        throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." ครั้ง): {$errorSummary}");
+        Log::error('FortuneAI: ทุก key ล้มหมด', [
+            'total_tried' => count($errors),
+            'errors' => $errors,
+        ]);
+        throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว ' . count($errors) . " keys): {$errorSummary}");
     }
 
     /**
@@ -527,83 +537,112 @@ class FortuneAIService
     }
 
     /**
-     * ดึง backup providers จาก Pool + Global Settings
-     * ข้ามตัวที่เป็น provider หลัก
+     * รวม keys ทั้งหมดจาก Pool + Fortune Settings + Global AI Settings
      *
-     * @return array [['provider' => '...', 'api_key' => '...', 'model' => '...'], ...]
+     * เรียงลำดับ:
+     * 1. Keys ของ primary provider จาก Pool (ตาม priority)
+     * 2. Keys ของ providers อื่นจาก Pool (ตาม priority)
+     * 3. Keys จาก Fortune Settings (ถ้ามี)
+     * 4. Keys จาก Global AI Settings (Gemini, OpenRouter)
+     *
+     * ไม่ซ้ำกัน — deduplicate ด้วย api_key
+     *
+     * @return array [['provider' => '...', 'api_key' => '...', 'model' => '...', 'pool_key' => ?AiApiKey, 'source' => '...', 'name' => '...'], ...]
      */
-    protected function getBackupProviders(): array
+    protected function getAllAvailableKeys(): array
     {
-        $backups = [];
-        $currentProvider = $this->provider;
-        $addedProviders = [$currentProvider]; // เก็บ list provider ที่เพิ่มแล้ว ป้องกันซ้ำ
+        $keys = [];
+        $addedApiKeys = []; // เก็บ api_key ที่เพิ่มแล้ว ป้องกันซ้ำ
+        $primaryProvider = $this->provider;
 
-        // 1) ดึงจาก API Key Pool
-        if ($this->poolService) {
-            try {
-                $providers = ['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon'];
-                foreach ($providers as $provider) {
-                    if (in_array($provider, $addedProviders)) {
+        // 1) ดึงจาก API Key Pool — ทุก provider (primary ก่อน)
+        try {
+            // เรียง: primary provider ก่อน → providers อื่น
+            $providerOrder = array_merge(
+                [$primaryProvider],
+                array_filter(
+                    ['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon'],
+                    fn ($p) => $p !== $primaryProvider
+                )
+            );
+
+            foreach ($providerOrder as $provider) {
+                // ดึง ALL available keys ของ provider นี้ (ไม่ใช่แค่ 1 key)
+                $poolKeys = AiApiKey::forProvider($provider)
+                    ->available()
+                    ->orderByDesc('priority')
+                    ->get();
+
+                foreach ($poolKeys as $poolKey) {
+                    if (in_array($poolKey->api_key, $addedApiKeys)) {
                         continue;
                     }
-                    $key = $this->poolService->getKey($provider);
-                    if ($key && ! empty($key->api_key)) {
-                        $backups[] = [
-                            'provider' => $provider,
-                            'api_key' => $key->api_key,
-                            'model' => $this->getDefaultModelForProvider($provider),
-                        ];
-                        $addedProviders[] = $provider;
-                    }
-                }
-            } catch (Exception $e) {
-                Log::debug('FortuneAI: Pool service ดึง backup ไม่ได้', ['error' => $e->getMessage()]);
-            }
-        }
-
-        // 2) ดึงจาก Global AI Settings (Gemini key มักจะมีอยู่)
-        try {
-            if (! in_array('gemini', $addedProviders)) {
-                $geminiKey = AiContentSetting::getValue('gemini_api_key');
-                if (! empty($geminiKey)) {
-                    $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
-                    $backups[] = [
-                        'provider' => 'gemini',
-                        'api_key' => $geminiKey,
-                        'model' => $geminiModel,
+                    $keys[] = [
+                        'provider' => $provider,
+                        'api_key' => $poolKey->api_key,
+                        'model' => $this->getDefaultModelForProvider($provider),
+                        'pool_key' => $poolKey,
+                        'source' => 'pool',
+                        'name' => $poolKey->name ?? "Pool #{$poolKey->id}",
                     ];
-                    $addedProviders[] = 'gemini';
-                }
-            }
-
-            // OpenRouter จาก claude key
-            if (! in_array('openrouter', $addedProviders)) {
-                $claudeKey = AiContentSetting::getValue('claude_api_key');
-                if (! empty($claudeKey)) {
-                    $backups[] = [
-                        'provider' => 'openrouter',
-                        'api_key' => $claudeKey,
-                        'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-haiku'),
-                    ];
-                    $addedProviders[] = 'openrouter';
+                    $addedApiKeys[] = $poolKey->api_key;
                 }
             }
         } catch (Exception $e) {
-            Log::debug('FortuneAI: Global settings ดึง backup ไม่ได้', ['error' => $e->getMessage()]);
+            Log::debug('FortuneAI: Pool ดึง keys ไม่ได้', ['error' => $e->getMessage()]);
         }
 
-        // 3) ดึงจาก fortune settings เอง (กรณี use_global_ai_settings = false อาจมี key อื่นอยู่)
+        // 2) ดึงจาก Fortune Settings (กรณี use_global_ai_settings = false)
         if (! empty($this->settings->ai_api_key) && ! empty($this->settings->ai_provider)) {
-            if (! in_array($this->settings->ai_provider, $addedProviders)) {
-                $backups[] = [
+            $settingsKey = $this->settings->ai_api_key;
+            if (! in_array($settingsKey, $addedApiKeys)) {
+                $keys[] = [
                     'provider' => $this->settings->ai_provider,
-                    'api_key' => $this->settings->ai_api_key,
+                    'api_key' => $settingsKey,
                     'model' => $this->settings->ai_model ?: $this->getDefaultModelForProvider($this->settings->ai_provider),
+                    'pool_key' => null,
+                    'source' => 'fortune_settings',
+                    'name' => 'Fortune Settings Key',
                 ];
+                $addedApiKeys[] = $settingsKey;
             }
         }
 
-        return $backups;
+        // 3) ดึงจาก Global AI Settings (Gemini, Claude/OpenRouter)
+        try {
+            // Gemini key จาก global settings
+            $geminiKey = AiContentSetting::getValue('gemini_api_key');
+            if (! empty($geminiKey) && ! in_array($geminiKey, $addedApiKeys)) {
+                $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
+                $keys[] = [
+                    'provider' => 'gemini',
+                    'api_key' => $geminiKey,
+                    'model' => $geminiModel,
+                    'pool_key' => null,
+                    'source' => 'global_settings',
+                    'name' => 'Global Gemini Key',
+                ];
+                $addedApiKeys[] = $geminiKey;
+            }
+
+            // Claude/OpenRouter key จาก global settings
+            $claudeKey = AiContentSetting::getValue('claude_api_key');
+            if (! empty($claudeKey) && ! in_array($claudeKey, $addedApiKeys)) {
+                $keys[] = [
+                    'provider' => 'openrouter',
+                    'api_key' => $claudeKey,
+                    'model' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-haiku'),
+                    'pool_key' => null,
+                    'source' => 'global_settings',
+                    'name' => 'Global Claude/OpenRouter Key',
+                ];
+                $addedApiKeys[] = $claudeKey;
+            }
+        } catch (Exception $e) {
+            Log::debug('FortuneAI: Global settings ดึง keys ไม่ได้', ['error' => $e->getMessage()]);
+        }
+
+        return $keys;
     }
 
     /**
@@ -1543,6 +1582,48 @@ class FortuneAIService
             $this->currentKey->recordError($errorMessage, $model);
         } catch (\Exception $e) {
             Log::warning('FortuneAIService: บันทึก error ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * บันทึกการใช้งาน tokens สำหรับ key ที่ระบุ (ใช้กับ unified key list)
+     *
+     * @param  AiApiKey  $key  key ที่ต้องการบันทึก
+     * @param  int  $tokensUsed  จำนวน tokens ที่ใช้
+     * @param  string  $model  model ที่ใช้
+     * @param  int  $responseTime  เวลาตอบกลับ (ms)
+     * @param  string  $requestType  ประเภท request
+     */
+    protected function recordUsageForKey(AiApiKey $key, int $tokensUsed, string $model, int $responseTime, string $requestType = 'fortune'): void
+    {
+        try {
+            $inputTokens = (int) ($tokensUsed * 0.3);
+            $outputTokens = $tokensUsed - $inputTokens;
+            $key->recordUsage($inputTokens, $outputTokens, $model, $responseTime, $requestType);
+        } catch (\Exception $e) {
+            Log::warning('FortuneAI: บันทึก usage สำหรับ key ไม่สำเร็จ', [
+                'key_id' => $key->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * บันทึก error สำหรับ key ที่ระบุ (ใช้กับ unified key list)
+     *
+     * @param  AiApiKey  $key  key ที่ต้องการบันทึก
+     * @param  string  $errorMessage  ข้อความ error
+     * @param  string|null  $model  model ที่ใช้
+     */
+    protected function recordErrorForKey(AiApiKey $key, string $errorMessage, ?string $model = null): void
+    {
+        try {
+            $key->recordError($errorMessage, $model);
+        } catch (\Exception $e) {
+            Log::warning('FortuneAI: บันทึก error สำหรับ key ไม่สำเร็จ', [
+                'key_id' => $key->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

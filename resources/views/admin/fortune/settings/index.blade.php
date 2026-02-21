@@ -329,10 +329,18 @@
                             <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini (แนะนำ - ฟรี)</div>
                             <div>• หากมี <strong>Claude API Key</strong> จะใช้ Claude (via OpenRouter)</div>
                             <div>• หากมี <strong>OpenAI API Key</strong> จะใช้ GPT (via OpenRouter)</div>
-                            <div>• หากมี Key ใน <strong>API Key Pool</strong> จะใช้ Key จาก Pool (Gemini/Groq/DeepSeek/Typhoon)</div>
+                            <div>• หากมี Key ใน <strong>API Key Pool</strong> จะใช้ Key จาก Pool — วนครบทุก key อัตโนมัติ</div>
+                        </div>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <a href="{{ route('admin.ai-api-keys.index') }}"
+                               class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition shadow-sm"
+                               target="_blank">
+                                🔑 จัดการ AI API Key Pool
+                                <svg class="ml-1.5 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                            </a>
                         </div>
                         <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                            💡 หากต้องการตั้งค่าแยกเฉพาะระบบดูดวง ให้ปิดตัวเลือกนี้
+                            💡 แนะนำเพิ่ม key หลายตัวใน Pool — ระบบจะวนใช้ครบทุก key ก่อน fail
                         </p>
                     </div>
                 </div>
