@@ -556,49 +556,15 @@ class SmsPaymentService
             'conversation_status' => $reading->conversation_status,
         ]);
 
-        // ✅ V3: push แค่แจ้งเตือนสั้นๆ "รับชำระแล้ว" (1 push เท่านั้น — ไม่ push เนื้อหาคำทำนาย)
-        // เนื้อหาคำทำนายจะส่งผ่าน replyMessage เมื่อ user ส่งข้อความมา (ฟรี!)
-        $alreadySentWait = $reading->getConversationState('wait_message_sent', false);
+        // ✅ V3: ไม่ push ตอนรับชำระ — push แค่ครั้งเดียวตอนคำทำนายพร้อม (จาก process-deep/Job)
+        // ถ้า user ส่งข้อความมาระหว่างรอ → processMessage() จะแจ้ง "รับชำระแล้ว กำลังทำนาย" ผ่าน replyMessage (ฟรี!)
+        $reading->setConversationState('wait_message_sent', true);
+        $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
 
-        if (! empty($userId) && ! $alreadySentWait) {
-            try {
-                $settings = $settings ?? FortuneTellingSetting::getSettings();
-                $channelManager = new FortuneChannelManager($settings);
-
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $waitMessage = "✅ รับชำระเงินเรียบร้อยแล้วค่ะ คุณ{$name}!\n\n"
-                    . "🔮 จันทรากำลังวิเคราะห์ดวงชะตาให้อย่างละเอียดค่ะ\n"
-                    . "ใช้เวลาประมาณ 2-3 นาทีนะคะ\n\n"
-                    . "💡 จันทราจะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมค่ะ ✨";
-
-                $sent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'payment_confirmed_wait',
-                    'message' => $waitMessage,
-                    'reading' => $reading,
-                    'facebook_user_id' => $userId,
-                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                // ⚠️ เซ็ต flag เสมอ (ป้องกัน duplicate จาก SMS ซ้ำ)
-                $reading->setConversationState('wait_message_sent', true);
-                $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
-                $reading->setConversationState('wait_message_delivered', $sent);
-
-                Log::info('SMS Payment: push แจ้ง "รับชำระแล้ว" (1 push เท่านั้น)', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'sent' => $sent,
-                ]);
-            } catch (\Exception $waitErr) {
-                // ส่งไม่ได้ก็ไม่เป็นไร — user ส่งข้อความมาจะได้รับแจ้งผ่าน replyMessage
-                $reading->setConversationState('wait_message_sent', true);
-                $reading->setConversationState('wait_message_delivered', false);
-
-                Log::warning('SMS Payment: push แจ้ง "รับชำระแล้ว" ล้มเหลว (user จะได้แจ้งผ่าน replyMessage แทน)', [
-                    'reading_id' => $reading->id,
-                    'error' => $waitErr->getMessage(),
-                ]);
-            }
-        }
+        Log::info('SMS Payment: V3 — ไม่ push "รอสักครู่" (push แค่ตอนคำทำนายพร้อม)', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+        ]);
 
         // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง → ตั้ง flag เพื่อให้ replyMessage ส่งได้
         $reading->refresh();
