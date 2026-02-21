@@ -846,6 +846,15 @@ class LineFortuneService implements MessagingPlatformInterface
                         'color' => '#888888',
                         'align' => 'center',
                     ],
+                    [
+                        'type' => 'text',
+                        'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน\nให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ",
+                        'size' => 'xs',
+                        'color' => '#E65100',
+                        'align' => 'center',
+                        'margin' => 'md',
+                        'wrap' => true,
+                    ],
                 ],
             ],
         ];
@@ -2587,6 +2596,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     // ข้อความเตือน
                     ['type' => 'text', 'text' => 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨', 'size' => 'xs', 'color' => '#999999', 'margin' => 'xl', 'wrap' => true],
+                    ['type' => 'text', 'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ", 'size' => 'xs', 'color' => '#E65100', 'margin' => 'md', 'wrap' => true],
                 ],
             ],
             'footer' => [

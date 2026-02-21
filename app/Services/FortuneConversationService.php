@@ -2209,7 +2209,8 @@ class FortuneConversationService
 
         $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n\n";
+        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n";
+        $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ\n\n";
         if ($remainingMinutes <= 10) {
             $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุค่ะ\n\n";
         }
@@ -2830,6 +2831,7 @@ class FortuneConversationService
         $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
         $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨\n";
+        $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ\n\n";
         $message .= "📌 บิลจะหมดอายุอัตโนมัติใน {$remainingMinutes} นาทีค่ะ";
 
         return $message;
@@ -2908,7 +2910,8 @@ class FortuneConversationService
             : number_format($reading->amount_paid, 2);
         $message = "💰 *ยอดชำระ: ฿{$amount}*\n\n";
         $message .= $this->getBankAccountsListMessage();
-        $message .= "⚠️ กรุณาโอนยอด ฿{$amount} ตรงตามทศนิยมค่ะ";
+        $message .= "⚠️ กรุณาโอนยอด ฿{$amount} ตรงตามทศนิยมค่ะ\n";
+        $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ";
 
         return $message;
     }
