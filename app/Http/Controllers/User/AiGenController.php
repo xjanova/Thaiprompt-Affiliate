@@ -81,10 +81,17 @@ class AiGenController extends Controller
     }
 
     /**
-     * Helper to get remaining credits
+     * ดึงจำนวนเครดิตที่เหลือ
+     * คืนค่า -1 = ไม่จำกัด (admin), 0+ = จำนวนเครดิตที่เหลือ
      */
     private function getRemainingCredits(array $dashboard, string $type): int
     {
+        // Admin มีเครดิตไม่จำกัด
+        $isAdmin = $dashboard['quota']['is_admin'] ?? false;
+        if ($isAdmin) {
+            return -1;
+        }
+
         $subscription = $dashboard['subscription'] ?? null;
 
         if ($subscription && isset($subscription['has_subscription']) && $subscription['has_subscription']) {
@@ -95,7 +102,14 @@ class AiGenController extends Controller
 
         $quota = $dashboard['quota'][$type] ?? null;
         if ($quota) {
-            return min($quota['daily'] ?? 0, $quota['monthly'] ?? 0);
+            $daily = $quota['daily'] ?? 0;
+            $monthly = $quota['monthly'] ?? 0;
+
+            if ($daily === -1 || $monthly === -1) {
+                return -1;
+            }
+
+            return min($daily, $monthly);
         }
 
         return 0;

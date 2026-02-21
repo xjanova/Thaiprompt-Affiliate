@@ -44,11 +44,11 @@
                 {{-- สถิติมินิ --}}
                 <div class="grid grid-cols-2 gap-3 md:gap-4 w-full md:w-auto md:min-w-[280px]">
                     <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
-                        <div class="text-3xl font-bold text-white" x-text="stats.remainingImages">{{ $stats['remaining_images'] ?? 0 }}</div>
+                        <div class="text-3xl font-bold text-white" x-text="stats.remainingImages == -1 ? '∞' : stats.remainingImages">{{ ($stats['remaining_images'] ?? 0) == -1 ? '∞' : ($stats['remaining_images'] ?? 0) }}</div>
                         <div class="text-purple-200 text-xs mt-1"><i class="fas fa-image mr-1"></i>เครดิตภาพ</div>
                     </div>
                     <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
-                        <div class="text-3xl font-bold text-white" x-text="stats.remainingVideos">{{ $stats['remaining_videos'] ?? 0 }}</div>
+                        <div class="text-3xl font-bold text-white" x-text="stats.remainingVideos == -1 ? '∞' : stats.remainingVideos">{{ ($stats['remaining_videos'] ?? 0) == -1 ? '∞' : ($stats['remaining_videos'] ?? 0) }}</div>
                         <div class="text-purple-200 text-xs mt-1"><i class="fas fa-video mr-1"></i>เครดิตวิดีโอ</div>
                     </div>
                     <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl p-4 text-center hover:bg-white/15 transition">
@@ -465,7 +465,7 @@
                         <i class="fas fa-info-circle text-purple-500 mt-0.5"></i>
                         <div class="text-sm">
                             <p class="text-purple-800 dark:text-purple-200">
-                                <span x-text="form.type === 'image' ? 'เครดิตภาพคงเหลือ: ' + stats.remainingImages : 'เครดิตวิดีโอคงเหลือ: ' + stats.remainingVideos"></span>
+                                <span x-text="form.type === 'image' ? 'เครดิตภาพคงเหลือ: ' + (stats.remainingImages == -1 ? '∞ (ไม่จำกัด)' : stats.remainingImages) : 'เครดิตวิดีโอคงเหลือ: ' + (stats.remainingVideos == -1 ? '∞ (ไม่จำกัด)' : stats.remainingVideos)"></span>
                             </p>
                             <p class="text-purple-600 dark:text-purple-300 text-xs mt-1">การสร้างแต่ละครั้งใช้ 1 เครดิต</p>
                         </div>

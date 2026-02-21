@@ -225,7 +225,7 @@
         </div>
     </div>
 
-    {{-- Config Modal --}}
+    {{-- Config Modal (Dynamic per provider) --}}
     <div x-show="showConfigModal" x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-200" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showConfigModal = false">
         <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" @click.stop>
             <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -244,21 +244,26 @@
                     </a>
                     <p class="text-xs text-purple-500 dark:text-purple-400 mt-1" x-text="configProvider?.api_docs_url"></p>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key *</label>
-                    <div class="relative">
-                        <input :type="showApiKey ? 'text' : 'password'" x-model="configForm.api_key" required class="w-full px-4 py-2.5 pr-12 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
-                        <button type="button" @click="showApiKey = !showApiKey" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <svg x-show="!showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-                            <svg x-show="showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
-                        </button>
+
+                {{-- Dynamic Config Fields --}}
+                <template x-for="field in getConfigFields()" :key="field.key">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            <span x-text="field.label"></span>
+                            <span x-show="field.required" class="text-red-500">*</span>
+                        </label>
+                        <div class="relative" x-show="field.type === 'password'">
+                            <input :type="showApiKey ? 'text' : 'password'" x-model="configForm[field.key]" :required="field.required" :placeholder="field.placeholder || ''" class="w-full px-4 py-2.5 pr-12 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            <button type="button" @click="showApiKey = !showApiKey" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                <svg x-show="!showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                <svg x-show="showApiKey" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21"/></svg>
+                            </button>
+                        </div>
+                        <input x-show="field.type !== 'password'" :type="field.type || 'text'" x-model="configForm[field.key]" :required="field.required" :placeholder="field.placeholder || ''" class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                        <p x-show="field.hint" class="text-xs text-gray-400 mt-1" x-text="field.hint"></p>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">🔒 จะถูกเข้ารหัสในฐานข้อมูล</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Endpoint *</label>
-                    <input type="url" x-model="configForm.api_endpoint" required class="w-full px-4 py-2.5 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 focus:border-transparent" placeholder="https://api.example.com/v1">
-                </div>
+                </template>
+
                 <div class="flex gap-3 pt-2">
                     <button type="button" @click="showConfigModal = false" class="px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition">ยกเลิก</button>
                     <button type="button" @click="testConnection(configProvider?.id)" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition flex items-center gap-1">
@@ -294,7 +299,61 @@ function aiProviders() {
         configProvider: null,
         toast: { show: false, message: '', type: 'success' },
         form: { name: '', slug: '', type: 'image', description: '', logo_url: '', supported_features: [], is_active: true },
-        configForm: { api_key: '', api_endpoint: '' },
+        configForm: {},
+
+        // กำหนด config fields เฉพาะ provider
+        providerConfigDefs: {
+            'together-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, hint: 'ค่าเริ่มต้น: https://api.together.xyz/v1', placeholder: 'https://api.together.xyz/v1' }
+            ],
+            'cloudflare-ai': [
+                { key: 'api_key', label: 'API Token', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' },
+                { key: 'account_id', label: 'Account ID', type: 'text', required: true, encrypted: false, hint: 'อยู่ในหน้า Dashboard ของ Cloudflare', placeholder: 'เช่น 1a2b3c4d5e...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, hint: 'ค่าเริ่มต้น: https://api.cloudflare.com/client/v4', placeholder: 'https://api.cloudflare.com/client/v4' }
+            ],
+            'grok': [
+                { key: 'api_key', label: 'API Key (xAI)', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xai-xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, hint: 'ค่าเริ่มต้น: https://api.x.ai/v1', placeholder: 'https://api.x.ai/v1' }
+            ],
+            'openai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'sk-xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, hint: 'ค่าเริ่มต้น: https://api.openai.com/v1', placeholder: 'https://api.openai.com/v1' }
+            ],
+            'stability-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'sk-xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, placeholder: 'https://api.stability.ai/v2beta' }
+            ],
+            'fal-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, placeholder: 'https://fal.run' }
+            ],
+            'bfl': [
+                { key: 'api_key', label: 'API Key (X-Key)', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'replicate': [
+                { key: 'api_key', label: 'API Token', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'r8_xxx...' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, placeholder: 'https://api.replicate.com/v1' }
+            ],
+            'ideogram': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'leonardo-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'runway-ml': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'luma-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'kling-ai': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+            'minimax': [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล', placeholder: 'xxx...' }
+            ],
+        },
 
         async init() {
             await this.loadProviders();
@@ -364,28 +423,61 @@ function aiProviders() {
             this.saving = false;
         },
 
+        // ดึง config fields ตาม provider slug
+        getConfigFields() {
+            if (!this.configProvider) return [];
+            const slug = this.configProvider.slug;
+            return this.providerConfigDefs[slug] || [
+                { key: 'api_key', label: 'API Key', type: 'password', required: true, encrypted: true, hint: '🔒 จะถูกเข้ารหัสในฐานข้อมูล' },
+                { key: 'api_endpoint', label: 'API Endpoint', type: 'url', required: false, encrypted: false, placeholder: 'https://api.example.com/v1' }
+            ];
+        },
+
         openConfigModal(provider) {
             this.configProvider = provider;
-            this.configForm = { api_key: '', api_endpoint: '' };
             this.showApiKey = false;
 
-            // โหลดค่า config ที่มีอยู่
-            if (provider.configs) {
+            // เตรียม form ตาม config fields ของ provider
+            const fields = this.providerConfigDefs[provider.slug] || [
+                { key: 'api_key' }, { key: 'api_endpoint' }
+            ];
+            const form = {};
+            fields.forEach(f => { form[f.key] = ''; });
+
+            // โหลดค่า config ที่มีอยู่ (ใช้ config_key + config_value)
+            if (provider.configs && Array.isArray(provider.configs)) {
                 provider.configs.forEach(c => {
-                    if (c.key === 'api_key') this.configForm.api_key = c.is_encrypted ? '' : c.value;
-                    if (c.key === 'api_endpoint') this.configForm.api_endpoint = c.value;
+                    const key = c.config_key || c.key;
+                    const val = c.config_value || c.value;
+                    if (form.hasOwnProperty(key)) {
+                        // ถ้าเป็น encrypted ไม่แสดงค่าเดิม (เพราะเข้ารหัสอยู่)
+                        form[key] = c.is_encrypted ? '' : (val || '');
+                    }
                 });
             }
+
+            this.configForm = form;
             this.showConfigModal = true;
         },
 
         async saveConfig() {
             this.saving = true;
             try {
-                const configs = [
-                    { key: 'api_key', value: this.configForm.api_key, is_encrypted: true },
-                    { key: 'api_endpoint', value: this.configForm.api_endpoint, is_encrypted: false }
-                ];
+                // สร้าง configs array จาก dynamic fields
+                const fields = this.getConfigFields();
+                const configs = fields
+                    .filter(f => this.configForm[f.key] !== '' && this.configForm[f.key] !== undefined)
+                    .map(f => ({
+                        key: f.key,
+                        value: this.configForm[f.key],
+                        is_encrypted: f.encrypted || false
+                    }));
+
+                if (configs.length === 0) {
+                    this.showToast('กรุณากรอก API Key', 'error');
+                    this.saving = false;
+                    return;
+                }
 
                 const res = await fetch(`/admin/ai-gen/providers/${this.configProvider.id}/config`, {
                     method: 'POST',
@@ -398,6 +490,7 @@ function aiProviders() {
                 const data = await res.json();
                 if (data.success) {
                     this.showConfigModal = false;
+                    await this.loadProviders();
                     this.showToast('บันทึกตั้งค่าสำเร็จ', 'success');
                 } else {
                     this.showToast(data.error || 'เกิดข้อผิดพลาด', 'error');
@@ -410,7 +503,29 @@ function aiProviders() {
 
         async testConnection(providerId) {
             try {
-                this.showToast('🔌 กำลังทดสอบ...', 'success');
+                // บันทึก config ก่อนทดสอบ (ถ้ากรอกไว้)
+                const fields = this.getConfigFields();
+                const configs = fields
+                    .filter(f => this.configForm[f.key] !== '' && this.configForm[f.key] !== undefined)
+                    .map(f => ({
+                        key: f.key,
+                        value: this.configForm[f.key],
+                        is_encrypted: f.encrypted || false
+                    }));
+
+                if (configs.length > 0) {
+                    this.showToast('💾 กำลังบันทึกแล้วทดสอบ...', 'success');
+                    await fetch(`/admin/ai-gen/providers/${providerId}/config`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({ configs })
+                    });
+                }
+
+                this.showToast('🔌 กำลังทดสอบเชื่อมต่อ...', 'success');
                 const res = await fetch(`/admin/ai-gen/providers/${providerId}/test`, {
                     method: 'POST',
                     headers: {
@@ -419,7 +534,7 @@ function aiProviders() {
                     }
                 });
                 const data = await res.json();
-                this.showToast(data.success ? '✅ เชื่อมต่อสำเร็จ!' : (data.error || 'เชื่อมต่อไม่สำเร็จ'), data.success ? 'success' : 'error');
+                this.showToast(data.success ? '✅ เชื่อมต่อสำเร็จ!' : (data.message || data.error || 'เชื่อมต่อไม่สำเร็จ'), data.success ? 'success' : 'error');
             } catch (e) {
                 this.showToast('ไม่สามารถทดสอบได้', 'error');
             }
