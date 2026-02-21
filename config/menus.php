@@ -752,6 +752,8 @@ return [
                 ['label' => '📦 Packages', 'route' => 'admin.ai-gen.packages.index'],
                 ['label' => '🎁 Free Quotas', 'route' => 'admin.ai-gen.quotas.index'],
                 ['label' => '📋 Usage Logs', 'route' => 'admin.ai-gen.usage-logs'],
+                ['label' => '⚙️ ตั้งค่าระบบ', 'route' => 'admin.ai-gen.settings'],
+                ['label' => '🎉 โปรโมชั่น', 'route' => 'admin.ai-gen.promotions.index'],
             ],
         ],
 
