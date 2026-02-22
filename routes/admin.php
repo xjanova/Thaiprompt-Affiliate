@@ -3983,6 +3983,23 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{campaign}/send-now', [FortuneMarketingController::class, 'sendNow'])->name('send-now');
         Route::post('/preview', [FortuneMarketingController::class, 'preview'])->name('preview');
     });
+
+    // ดวงรายวันอัตโนมัติ (Daily Horoscope Auto-Posting)
+    Route::prefix('horoscope')->name('horoscope.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'store'])->name('store');
+        Route::get('/{campaign}/edit', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'edit'])->name('edit');
+        Route::put('/{campaign}', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'update'])->name('update');
+        Route::delete('/{campaign}', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'destroy'])->name('destroy');
+        Route::post('/{campaign}/activate', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'activate'])->name('activate');
+        Route::post('/{campaign}/pause', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'pause'])->name('pause');
+        Route::post('/{campaign}/generate-now', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'generateNow'])->name('generate-now');
+        Route::post('/{campaign}/publish-now', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'publishNow'])->name('publish-now');
+        Route::get('/{campaign}/content-history', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'contentHistory'])->name('content-history');
+        Route::get('/{campaign}/post-history', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'postHistory'])->name('post-history');
+        Route::get('/{campaign}/preview/{date?}', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'previewContent'])->name('preview');
+    });
 });
 
 // ========================================

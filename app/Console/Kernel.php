@@ -377,6 +377,34 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Fortune Marketing] Campaign check failed');
             });
+
+        // ========================================
+        // Fortune Daily Horoscope - สร้าง+โพสดวงรายวันอัตโนมัติ
+        // ========================================
+
+        // สร้างเนื้อหาดวง (เช็คทุก 15 นาทีว่ามีแคมเปญถึงเวลาสร้างหรือยัง)
+        $schedule->command('fortune:horoscope-process --generate --sync')
+            ->everyFifteenMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Horoscope] Content generation check completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Horoscope] Content generation check failed');
+            });
+
+        // โพสเนื้อหาที่พร้อมแล้ว (เช็คทุก 5 นาที)
+        $schedule->command('fortune:horoscope-process --publish')
+            ->everyFiveMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Horoscope] Post publishing check completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Horoscope] Post publishing check failed');
+            });
     }
 
     /**

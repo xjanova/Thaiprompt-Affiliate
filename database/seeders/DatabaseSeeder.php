@@ -64,6 +64,7 @@ class DatabaseSeeder extends Seeder
             FortuneCategorySeeder::class,        // 🆕 ระบบดูดวง - หมวดหมู่การทำนาย (ความรัก, การเงิน, สุขภาพ)
             FortuneResponseTemplateSeeder::class, // 🆕 ระบบดูดวง - เทมเพลตตอบกลับคำทำนาย (basic, deep, welcome, payment, error)
             FortuneKeywordSeeder::class,         // 🆕 ระบบดูดวง - Keywords บทสนทนาอัจฉริยะ (ทักทาย, ขอบคุณ, ราคา, อารมณ์, FAQ 48+ entries)
+            FortuneHoroscopeCampaignSeeder::class, // 🆕 ระบบดูดวง - แคมเปญโพสดวงรายวันอัตโนมัติ (AI + FB/LINE auto-post)
 
             // 5. AI & Integrations
             CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)

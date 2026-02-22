@@ -1,0 +1,433 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\FortuneHoroscopeCampaign;
+use App\Models\FortuneHoroscopeContent;
+use App\Services\AiGen\AiGenProviderFactory;
+use Carbon\Carbon;
+use Exception;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * FortuneHoroscopeService
+ *
+ * ตัวหลักสำหรับสร้างเนื้อหาดวงรายวัน
+ * 1. ดึงข้อมูลดาวจาก FortuneChartService
+ * 2. สร้างคำทำนายจาก FortuneAIService
+ * 3. สร้างรูปภาพจาก AiGen Provider (Pollinations ฟรี)
+ */
+class FortuneHoroscopeService
+{
+    protected FortuneChartService $chartService;
+
+    protected FortuneAIService $aiService;
+
+    public function __construct()
+    {
+        $this->chartService = new FortuneChartService;
+        $this->aiService = new FortuneAIService;
+    }
+
+    /**
+     * สร้างเนื้อหาดวงรายวันสำหรับทุกวันเกิดในแคมเปญ
+     *
+     * @param  FortuneHoroscopeCampaign  $campaign  แคมเปญที่จะสร้าง
+     * @param  Carbon  $targetDate  วันที่สร้างเนื้อหา
+     * @return array สรุปผล ['success' => int, 'failed' => int, 'contents' => Collection]
+     */
+    public function generateDailyContent(FortuneHoroscopeCampaign $campaign, Carbon $targetDate): array
+    {
+        $birthDays = $campaign->getTargetBirthDays();
+        $success = 0;
+        $failed = 0;
+        $contents = collect();
+
+        Log::info('FortuneHoroscope: เริ่มสร้างเนื้อหาดวงรายวัน', [
+            'campaign_id' => $campaign->id,
+            'campaign_name' => $campaign->name,
+            'target_date' => $targetDate->toDateString(),
+            'birth_days' => $birthDays,
+        ]);
+
+        foreach ($birthDays as $birthDay) {
+            try {
+                $content = $this->generateForBirthDay($campaign, $targetDate, $birthDay);
+                $contents->push($content);
+                $success++;
+            } catch (Exception $e) {
+                $failed++;
+                Log::error('FortuneHoroscope: สร้างเนื้อหาล้มเหลวสำหรับวัน ' . FortuneHoroscopeCampaign::THAI_DAYS[$birthDay], [
+                    'campaign_id' => $campaign->id,
+                    'birth_day' => $birthDay,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        // อัพเดทสถานะแคมเปญ
+        $campaign->update(['last_generated_at' => now()]);
+
+        if ($failed > 0 && $success === 0) {
+            $campaign->markError('สร้างเนื้อหาล้มเหลวทั้งหมด');
+        }
+
+        Log::info('FortuneHoroscope: สร้างเนื้อหาเสร็จ', [
+            'campaign_id' => $campaign->id,
+            'success' => $success,
+            'failed' => $failed,
+        ]);
+
+        return [
+            'success' => $success,
+            'failed' => $failed,
+            'contents' => $contents,
+        ];
+    }
+
+    /**
+     * สร้างเนื้อหาสำหรับ 1 วันเกิด
+     *
+     * @param  FortuneHoroscopeCampaign  $campaign
+     * @param  Carbon  $targetDate
+     * @param  int  $birthDay  0-6
+     * @return FortuneHoroscopeContent
+     */
+    public function generateForBirthDay(
+        FortuneHoroscopeCampaign $campaign,
+        Carbon $targetDate,
+        int $birthDay
+    ): FortuneHoroscopeContent {
+        $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
+
+        // ดึงหรือสร้าง content record
+        $content = FortuneHoroscopeContent::updateOrCreate(
+            [
+                'campaign_id' => $campaign->id,
+                'target_date' => $targetDate->toDateString(),
+                'birth_day' => $birthDay,
+            ],
+            [
+                'birth_day_name' => $dayName,
+                'status' => FortuneHoroscopeContent::STATUS_GENERATING,
+                'error_message' => null,
+            ]
+        );
+
+        try {
+            // ขั้นที่ 1: ดึงข้อมูลดาวศาสตร์
+            $astrologyData = $this->getAstrologyData($birthDay);
+            $content->update([
+                'main_planet' => $astrologyData['main_planet'],
+                'planet_positions' => $astrologyData['planet_positions'],
+                'chaochana_data' => $astrologyData['chaochana'],
+                'lucky_color' => $astrologyData['chaochana']['lucky_color'] ?? null,
+                'lucky_number' => $this->generateLuckyNumber($birthDay),
+                'lucky_direction' => $this->generateLuckyDirection($birthDay),
+            ]);
+
+            // ขั้นที่ 2: สร้างคำทำนายด้วย AI
+            $prediction = $this->generatePrediction($campaign, $targetDate, $birthDay, $astrologyData);
+            $content->update([
+                'ai_prediction' => $prediction['response'],
+                'ai_prompt_used' => $prediction['prompt'],
+                'ai_text_provider_used' => $prediction['provider'] ?? null,
+                'ai_text_model_used' => $prediction['model'] ?? null,
+            ]);
+
+            // ขั้นที่ 3: สร้างรูปภาพ (ถ้าเปิดใช้)
+            if ($campaign->include_image) {
+                $imageResult = $this->generateImage($campaign, $birthDay, $astrologyData);
+                if ($imageResult) {
+                    $content->update([
+                        'image_url' => $imageResult['url'] ?? null,
+                        'image_path' => $imageResult['path'] ?? null,
+                        'image_prompt_used' => $imageResult['prompt'] ?? null,
+                        'ai_image_provider_used' => $campaign->ai_image_provider,
+                    ]);
+                }
+            }
+
+            $content->markGenerated();
+
+            Log::info("FortuneHoroscope: สร้างเนื้อหาสำเร็จ วัน{$dayName}", [
+                'content_id' => $content->id,
+                'has_image' => ! empty($content->image_url),
+            ]);
+
+            return $content;
+
+        } catch (Exception $e) {
+            $content->markFailed($e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * ดึงข้อมูลโหราศาสตร์สำหรับวันเกิด
+     */
+    protected function getAstrologyData(int $birthDay): array
+    {
+        $chaochana = FortuneChartService::CHAOCHANA[$birthDay];
+        $mainPlanetKey = $chaochana['planet'];
+        $mainPlanet = FortuneChartService::PLANETS[$mainPlanetKey];
+        $planetPositions = $this->chartService->calculatePlanetPositions($birthDay);
+
+        // แปลงชื่อดาวมิตร/ศัตรูเป็นภาษาไทย
+        $friendNames = array_map(
+            fn ($key) => FortuneChartService::PLANETS[$key]['name'] ?? $key,
+            $chaochana['friends']
+        );
+        $enemyNames = array_map(
+            fn ($key) => FortuneChartService::PLANETS[$key]['name'] ?? $key,
+            $chaochana['enemies']
+        );
+
+        return [
+            'main_planet' => $mainPlanet['name'],
+            'main_planet_key' => $mainPlanetKey,
+            'main_planet_color' => $mainPlanet['color'],
+            'planet_positions' => $planetPositions,
+            'chaochana' => $chaochana,
+            'friend_planets' => implode(', ', $friendNames),
+            'enemy_planets' => implode(', ', $enemyNames),
+        ];
+    }
+
+    /**
+     * สร้างคำทำนายด้วย AI
+     */
+    protected function generatePrediction(
+        FortuneHoroscopeCampaign $campaign,
+        Carbon $targetDate,
+        int $birthDay,
+        array $astrologyData
+    ): array {
+        $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
+        $prompt = $this->buildTextPrompt($campaign, $targetDate, $birthDay, $astrologyData);
+
+        // ใช้ FortuneAIService::generateWithRetryAndFallback
+        $result = $this->aiService->generateWithRetryAndFallback(
+            questions: ["ทำนายดวงวันนี้สำหรับคนเกิดวัน{$dayName}"],
+            userProfile: ['name' => "คนเกิดวัน{$dayName}"],
+            promptTemplate: $prompt,
+            readingType: 'basic',
+        );
+
+        return [
+            'response' => $result['response'] ?? '',
+            'prompt' => $prompt,
+            'provider' => $result['provider'] ?? null,
+            'model' => $result['model'] ?? null,
+        ];
+    }
+
+    /**
+     * สร้าง text prompt จาก template
+     */
+    protected function buildTextPrompt(
+        FortuneHoroscopeCampaign $campaign,
+        Carbon $targetDate,
+        int $birthDay,
+        array $astrologyData
+    ): string {
+        $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
+        $template = $campaign->text_prompt_template;
+
+        // ถ้าไม่มี template ใช้ default
+        if (empty($template)) {
+            $template = $this->getDefaultTextPrompt();
+        }
+
+        // แปลง planet_positions เป็นข้อความ
+        $positionsText = $this->formatPlanetPositions($astrologyData['planet_positions']);
+
+        // วันที่แบบไทย
+        $thaiDate = $targetDate->format('d/m/') . ($targetDate->year + 543);
+
+        // แทนที่ placeholders
+        $replacements = [
+            '{target_date}' => $thaiDate,
+            '{birth_day_name}' => $dayName,
+            '{birth_day}' => (string) $birthDay,
+            '{main_planet}' => $astrologyData['main_planet'],
+            '{element}' => $astrologyData['chaochana']['element'] ?? '',
+            '{lucky_color}' => $astrologyData['chaochana']['lucky_color'] ?? '',
+            '{friend_planets}' => $astrologyData['friend_planets'],
+            '{enemy_planets}' => $astrologyData['enemy_planets'],
+            '{planet_positions}' => $positionsText,
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    /**
+     * สร้างรูปภาพด้วย AI
+     */
+    protected function generateImage(
+        FortuneHoroscopeCampaign $campaign,
+        int $birthDay,
+        array $astrologyData
+    ): ?array {
+        try {
+            $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
+            $imagePrompt = $this->buildImagePrompt($campaign, $birthDay, $astrologyData);
+
+            // สร้าง provider instance
+            $provider = AiGenProviderFactory::create($campaign->ai_image_provider);
+
+            $result = $provider->generateImage($imagePrompt, [
+                'model' => $campaign->ai_image_model,
+                'size' => $campaign->image_size,
+                'style' => $campaign->image_style,
+                'num_images' => 1,
+            ]);
+
+            if (! ($result['success'] ?? false) || empty($result['images'])) {
+                Log::warning("FortuneHoroscope: สร้างรูปล้มเหลวสำหรับวัน{$dayName}", [
+                    'error' => $result['error'] ?? 'ไม่ทราบสาเหตุ',
+                ]);
+
+                return null;
+            }
+
+            return [
+                'url' => $result['images'][0]['url'] ?? null,
+                'path' => null,
+                'prompt' => $imagePrompt,
+            ];
+
+        } catch (Exception $e) {
+            Log::warning('FortuneHoroscope: สร้างรูปภาพ exception', [
+                'birth_day' => $birthDay,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * สร้าง image prompt จาก template
+     */
+    protected function buildImagePrompt(
+        FortuneHoroscopeCampaign $campaign,
+        int $birthDay,
+        array $astrologyData
+    ): string {
+        $dayName = FortuneHoroscopeCampaign::THAI_DAYS[$birthDay];
+        $template = $campaign->image_prompt_template;
+
+        if (empty($template)) {
+            $template = $this->getDefaultImagePrompt();
+        }
+
+        $replacements = [
+            '{birth_day_name}' => $dayName,
+            '{main_planet}' => $astrologyData['main_planet'],
+            '{element}' => $astrologyData['chaochana']['element'] ?? 'fire',
+            '{lucky_color}' => $astrologyData['chaochana']['lucky_color'] ?? 'gold',
+            '{planet_color}' => $astrologyData['main_planet_color'] ?? '#FFD700',
+        ];
+
+        return str_replace(array_keys($replacements), array_values($replacements), $template);
+    }
+
+    /**
+     * แปลง planet_positions เป็นข้อความอ่านง่าย
+     */
+    protected function formatPlanetPositions(array $positions): string
+    {
+        $lines = [];
+        foreach ($positions as $house => $planets) {
+            if (empty($planets)) {
+                continue;
+            }
+            $houseName = FortuneChartService::HOUSES[$house]['name'] ?? "ภพ {$house}";
+            $houseMeaning = FortuneChartService::HOUSES[$house]['meaning'] ?? '';
+            $planetNames = array_map(
+                fn ($key) => FortuneChartService::PLANETS[$key]['name'] ?? $key,
+                $planets
+            );
+            $lines[] = "ภพ{$houseName}({$houseMeaning}): " . implode(', ', $planetNames);
+        }
+
+        return implode(' | ', $lines);
+    }
+
+    /**
+     * สร้างเลขมงคลจากวันเกิด
+     */
+    protected function generateLuckyNumber(int $birthDay): string
+    {
+        $baseNumbers = [
+            0 => [1, 6, 9],      // อาทิตย์
+            1 => [2, 7, 11],     // จันทร์
+            2 => [3, 8, 9],      // อังคาร
+            3 => [4, 5, 14],     // พุธ
+            4 => [5, 9, 19],     // พฤหัสบดี
+            5 => [6, 15, 24],    // ศุกร์
+            6 => [7, 8, 17],     // เสาร์
+        ];
+
+        $numbers = $baseNumbers[$birthDay] ?? [1, 5, 9];
+        // เพิ่มความหลากหลายตามวันที่
+        $dayOfYear = now()->dayOfYear;
+        $extra = ($dayOfYear + $birthDay) % 36 + 1;
+        $numbers[] = $extra;
+
+        return implode(', ', array_unique($numbers));
+    }
+
+    /**
+     * สร้างทิศมงคลจากวันเกิด
+     */
+    protected function generateLuckyDirection(int $birthDay): string
+    {
+        $directions = [
+            0 => 'ตะวันออกเฉียงเหนือ',  // อาทิตย์
+            1 => 'ตะวันตกเฉียงเหนือ',     // จันทร์
+            2 => 'ใต้',                      // อังคาร
+            3 => 'เหนือ',                   // พุธ
+            4 => 'ตะวันออกเฉียงเหนือ',    // พฤหัสบดี
+            5 => 'ตะวันออกเฉียงใต้',       // ศุกร์
+            6 => 'ตะวันตก',                 // เสาร์
+        ];
+
+        return $directions[$birthDay] ?? 'เหนือ';
+    }
+
+    /**
+     * Default text prompt template
+     */
+    protected function getDefaultTextPrompt(): string
+    {
+        return 'คุณเป็นหมอดูชื่อดังเชี่ยวชาญโหราศาสตร์ไทย (หลักเจ้าชนะ)
+
+วันนี้วันที่: {target_date}
+คนเกิดวัน: {birth_day_name}
+ดาวเจ้าชนะ: {main_planet}
+ธาตุ: {element}
+สีมงคล: {lucky_color}
+ดาวมิตร: {friend_planets}
+ดาวศัตรู: {enemy_planets}
+
+ทำนายดวงวันนี้สำหรับคนเกิดวัน{birth_day_name}:
+1. ภาพรวม (2-3 ประโยค ฟันธง)
+2. การเงิน (1-2 ประโยค)
+3. ความรัก (1-2 ประโยค)
+4. การงาน (1-2 ประโยค)
+5. สุขภาพ (1 ประโยค)
+6. สีมงคล + เลขมงคล + ทิศมงคล
+
+ภาษาไทย ใส่ emoji ฟันธง อ้างอิงดาว ไม่เกิน 200 คำ';
+    }
+
+    /**
+     * Default image prompt template
+     */
+    protected function getDefaultImagePrompt(): string
+    {
+        return 'Thai astrology zodiac card, {birth_day_name} born, {element} element theme, mystical {lucky_color} color scheme, celestial background with stars, ornate Thai art style, golden decorations, high quality digital art';
+    }
+}
