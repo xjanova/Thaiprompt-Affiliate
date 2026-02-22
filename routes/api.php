@@ -456,6 +456,14 @@ Route::prefix('v1')->group(function () {
                 Route::post('/pair', [NFCPairingApiController::class, 'pairCard']);
                 Route::get('/available-cards', [NFCPairingApiController::class, 'availableCards']);
             });
+
+            // NFC Device (App-Backend) Pairing
+            Route::prefix('devices')->group(function () {
+                Route::post('/generate-qr', [\App\Http\Controllers\Api\NFCDeviceApiController::class, 'generatePairingQR']);
+                Route::post('/register', [\App\Http\Controllers\Api\NFCDeviceApiController::class, 'registerDevice']);
+                Route::get('/status', [\App\Http\Controllers\Api\NFCDeviceApiController::class, 'deviceStatus']);
+                Route::delete('/revoke', [\App\Http\Controllers\Api\NFCDeviceApiController::class, 'revokeDevice']);
+            });
         });
 
         // TPIX Native Blockchain API
