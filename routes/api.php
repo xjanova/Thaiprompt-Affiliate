@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\CryptoWalletApiController;
 use App\Http\Controllers\Api\FoodPassportController;
 use App\Http\Controllers\Api\InvestmentController;
 use App\Http\Controllers\Api\NFCCardApiController;
+use App\Http\Controllers\Api\NFCPairingApiController;
 use App\Http\Controllers\Api\QualityController;
 use App\Http\Controllers\Api\RankController;
 use App\Http\Controllers\Api\TraceabilityController;
@@ -447,6 +448,14 @@ Route::prefix('v1')->group(function () {
             Route::get('/cards/{cardId}/transactions', [NFCCardApiController::class, 'transactions']);
             Route::get('/cards/{cardId}/balance', [NFCCardApiController::class, 'balance']);
             Route::get('/readers/nearby', [NFCCardApiController::class, 'nearbyReaders']);
+
+            // NFC Card Pairing via QR Code
+            Route::prefix('pairing')->group(function () {
+                Route::post('/generate', [NFCPairingApiController::class, 'generatePairingToken']);
+                Route::post('/verify', [NFCPairingApiController::class, 'verifyPairingToken']);
+                Route::post('/pair', [NFCPairingApiController::class, 'pairCard']);
+                Route::get('/available-cards', [NFCPairingApiController::class, 'availableCards']);
+            });
         });
 
         // TPIX Native Blockchain API
