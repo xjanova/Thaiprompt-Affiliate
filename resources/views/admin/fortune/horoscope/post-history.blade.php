@@ -184,12 +184,12 @@
 
                             {{-- เวลาโพส --}}
                             <td class="px-4 py-4 text-center text-sm">
-                                @if($post->posted_at)
+                                @if($post->published_at)
                                     <span class="text-gray-900 dark:text-white">
-                                        {{ $post->posted_at->format('d/m/Y') }}
+                                        {{ $post->published_at->format('d/m/Y') }}
                                     </span>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">
-                                        {{ $post->posted_at->format('H:i:s') }}
+                                        {{ $post->published_at->format('H:i:s') }}
                                     </div>
                                 @else
                                     <span class="text-gray-400">-</span>
