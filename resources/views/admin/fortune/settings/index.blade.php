@@ -58,6 +58,110 @@
         </a>
     </div>
 
+    {{-- ===== Facebook App Review Guide ===== --}}
+    <div class="bg-gradient-to-br from-gray-800 to-gray-900 dark:from-gray-800 dark:to-gray-900 rounded-xl shadow-lg p-6 mb-6 border border-gray-700" x-data="{ showGuide: false }">
+        <div class="flex items-center justify-between cursor-pointer" @click="showGuide = !showGuide">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">📋</span>
+                <div>
+                    <h3 class="text-lg font-bold text-white">Facebook App Review Guide</h3>
+                    <p class="text-sm text-gray-400">สถานะ permissions ที่ต้องส่งตรวจสอบ + หน้า Demo สำหรับ reviewer</p>
+                </div>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 transition-transform" :class="showGuide && 'rotate-180'" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+        </div>
+
+        <div x-show="showGuide" x-collapse class="mt-5">
+            {{-- Permission Status Cards --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-5">
+                <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg">📋</span>
+                        <span class="text-xs font-mono text-indigo-400">pages_show_list</span>
+                    </div>
+                    <p class="text-sm text-gray-300 font-semibold">เลือก Page</p>
+                    <p class="text-xs text-gray-500 mt-1">แสดงรายการ Pages ที่จัดการ</p>
+                    @if($settings->facebook_page_id)
+                        <span class="inline-block mt-2 text-xs bg-green-900/50 text-green-400 px-2 py-0.5 rounded">✅ เชื่อมต่อแล้ว</span>
+                    @else
+                        <span class="inline-block mt-2 text-xs bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded">⚠️ ยังไม่เชื่อมต่อ</span>
+                    @endif
+                </div>
+
+                <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg">⚙️</span>
+                        <span class="text-xs font-mono text-violet-400">pages_manage_metadata</span>
+                    </div>
+                    <p class="text-sm text-gray-300 font-semibold">ตั้งค่า Messenger</p>
+                    <p class="text-xs text-gray-500 mt-1">Get Started, เมนู, ข้อความต้อนรับ</p>
+                    <span class="inline-block mt-2 text-xs bg-blue-900/50 text-blue-400 px-2 py-0.5 rounded">🔧 ตั้งค่าได้ที่หน้า Page Management</span>
+                </div>
+
+                <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg">💬</span>
+                        <span class="text-xs font-mono text-blue-400">pages_messaging</span>
+                    </div>
+                    <p class="text-sm text-gray-300 font-semibold">ส่งข้อความดูดวง</p>
+                    <p class="text-xs text-gray-500 mt-1">Bot ตอบผลดูดวงผ่าน Messenger</p>
+                    @if($settings->is_enabled)
+                        <span class="inline-block mt-2 text-xs bg-green-900/50 text-green-400 px-2 py-0.5 rounded">✅ เปิดใช้งาน</span>
+                    @else
+                        <span class="inline-block mt-2 text-xs bg-red-900/50 text-red-400 px-2 py-0.5 rounded">⛔ ปิดอยู่</span>
+                    @endif
+                </div>
+
+                <div class="bg-gray-700/50 rounded-lg p-4 border border-gray-600">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-lg">🗨️</span>
+                        <span class="text-xs font-mono text-emerald-400">pages_read_engagement</span>
+                    </div>
+                    <p class="text-sm text-gray-300 font-semibold">ตอบคอมเม้นต์</p>
+                    <p class="text-xs text-gray-500 mt-1">Auto-reply เมื่อมีคนคอมเม้นต์โพสต์</p>
+                    @if($settings->comment_engagement_enabled)
+                        <span class="inline-block mt-2 text-xs bg-green-900/50 text-green-400 px-2 py-0.5 rounded">✅ เปิดใช้งาน</span>
+                    @else
+                        <span class="inline-block mt-2 text-xs bg-yellow-900/50 text-yellow-400 px-2 py-0.5 rounded">⚠️ ปิดอยู่</span>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Action Buttons --}}
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ route('facebook-app-review-demo') }}"
+                   target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+                    🌐 เปิดหน้า Demo สำหรับ Facebook Reviewer
+                </a>
+                <a href="https://developers.facebook.com/apps/664172615253513/app-review/submissions/"
+                   target="_blank"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition">
+                    📝 ไปหน้า Facebook App Review
+                </a>
+                @if(Route::has('admin.fortune.channels.facebook-page-management'))
+                <a href="{{ route('admin.fortune.channels.facebook-page-management') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-600 hover:bg-gray-500 text-white text-sm font-semibold rounded-lg transition">
+                    ⚙️ จัดการ Facebook Page
+                </a>
+                @endif
+            </div>
+
+            {{-- Video Recording Guide --}}
+            <div class="mt-5 bg-gray-700/30 rounded-lg p-4 border border-gray-600">
+                <h4 class="text-sm font-bold text-gray-300 mb-3">📹 คู่มือบันทึกวิดีโอสำหรับ App Review</h4>
+                <div class="space-y-2 text-xs text-gray-400">
+                    <p><strong class="text-indigo-400">Video 1 — pages_show_list:</strong> เปิดหน้า Settings → แสดง Page ID ที่เชื่อมต่อ → ไปหน้า Page Management → แสดงรายการ Pages</p>
+                    <p><strong class="text-violet-400">Video 2 — pages_manage_metadata:</strong> เปิดหน้า Page Management → กด Setup Messenger Profile → แสดง Get Started Button + Persistent Menu</p>
+                    <p><strong class="text-blue-400">Video 3 — pages_messaging:</strong> เปิด Messenger → ส่ง "ดูดวง" → Bot ถามวันเกิด → เลือกวัน → ได้ผลดูดวง</p>
+                    <p><strong class="text-emerald-400">Video 4 — pages_read_engagement:</strong> เปิด Facebook Page → คอมเม้นต์โพสต์ → Bot ตอบคอมเม้นต์ + ส่ง DM → แสดง engagement stats</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <form action="{{ route('admin.fortune.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')

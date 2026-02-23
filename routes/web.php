@@ -847,6 +847,12 @@ Route::match(['GET', 'HEAD'], '/terms-of-service', function () {
     return view('terms-of-service');
 })->name('terms-of-service');
 
+// Facebook App Review Demo Page
+// หน้าสาธิตสำหรับ Facebook App Review - แสดงการใช้งาน permissions
+Route::match(['GET', 'HEAD'], '/facebook-app-review-demo', function () {
+    return view('facebook-app-review-demo');
+})->name('facebook-app-review-demo');
+
 // Cryptocurrency Price Charts
 // ⚠️ Public Tool: Crypto charts ต้องถูก index โดย search engines
 Route::prefix('crypto')->name('crypto.')->group(function () {
