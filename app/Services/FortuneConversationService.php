@@ -3928,9 +3928,16 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 30),
             ]);
 
-            // เรียก AI Chat
+            // ✅ ดึง conversation history สำหรับ AI (ความจำ 10 ข้อความ)
+            $history = $this->getConversationHistoryForAI($userId);
+
+            // เรียก AI Chat พร้อม history (ถ้ามี)
             $aiService = new FortuneAIService($this->settings);
-            $result = $aiService->generateChatResponse($messageText, $userProfile);
+            if (! empty($history)) {
+                $result = $aiService->generateChatResponseWithHistory($messageText, $userProfile, $history);
+            } else {
+                $result = $aiService->generateChatResponse($messageText, $userProfile);
+            }
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
             LineGatekeeperService::recordAICall();
@@ -3940,6 +3947,10 @@ class FortuneConversationService
             if (empty($responseText)) {
                 return null;
             }
+
+            // ✅ บันทึก conversation history (ทั้งข้อความผู้ใช้ + คำตอบ AI)
+            $this->saveConversationMessage($userId, 'user', $messageText);
+            $this->saveConversationMessage($userId, 'assistant', $responseText);
 
             // ✅ ตรวจจับ [ASK_SAVE] — AI บอกว่าตอบไม่ได้ → ถามผู้ใช้ก่อนว่าจะฝากคำถามถึงแอดมินไหม
             if (str_contains($responseText, '[ASK_SAVE]')) {
@@ -3974,6 +3985,7 @@ class FortuneConversationService
                 'provider' => $result['provider'] ?? 'unknown',
                 'model' => $result['model'] ?? 'unknown',
                 'response_preview' => mb_substr($responseText, 0, 80),
+                'history_count' => count($history),
             ]);
 
             return [
@@ -4001,6 +4013,68 @@ class FortuneConversationService
             );
 
             return null;
+        }
+    }
+
+    /**
+     * ดึงประวัติสนทนาสำหรับส่งไป AI (ความจำ 10 ข้อความล่าสุด)
+     *
+     * ใช้ LineBotConversation เก็บ history ร่วมกันทุก platform
+     * ปิด conversation ที่ไม่มีข้อความ > 30 นาทีอัตโนมัติ
+     *
+     * @param  string  $userId  Platform User ID (Facebook PSID / LINE user ID)
+     * @param  string  $platform  ชื่อ platform (auto-detect จาก context)
+     * @return array  [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     */
+    protected function getConversationHistoryForAI(string $userId, string $platform = 'facebook'): array
+    {
+        try {
+            $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
+                $userId,
+                $platform,
+                30 // timeout 30 นาที
+            );
+
+            return $conversation->getHistoryForAI(10);
+        } catch (\Exception $e) {
+            Log::warning('Fortune: ดึง conversation history ไม่ได้', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [];
+        }
+    }
+
+    /**
+     * บันทึกข้อความลง conversation history
+     *
+     * @param  string  $userId  Platform User ID
+     * @param  string  $role  'user' หรือ 'assistant'
+     * @param  string  $message  เนื้อหาข้อความ
+     * @param  string  $platform  ชื่อ platform
+     */
+    protected function saveConversationMessage(
+        string $userId,
+        string $role,
+        string $message,
+        string $platform = 'facebook'
+    ): void {
+        try {
+            $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
+                $userId,
+                $platform,
+                30
+            );
+
+            $conversation->addMessage($role, mb_substr($message, 0, 2000));
+        } catch (\Exception $e) {
+            // ไม่ block ระบบหลักถ้าบันทึก history ไม่ได้
+            Log::warning('Fortune: บันทึก conversation message ไม่ได้', [
+                'user_id' => $userId,
+                'role' => $role,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

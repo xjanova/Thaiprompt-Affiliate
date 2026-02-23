@@ -1070,32 +1070,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ],
 
                 // Persistent Menu - เมนูถาวรที่แสดงตลอดเวลา (ปุ่มลัดในแชท)
+                // Facebook จำกัดสูงสุด 3 top-level items
                 'persistent_menu' => [
                     [
                         'locale' => 'default',
                         'composer_input_disabled' => false, // อนุญาตให้พิมพ์ข้อความได้
-                        'call_to_actions' => [
-                            [
-                                'type' => 'postback',
-                                'title' => '🔮 ดูดวงฟรี',
-                                'payload' => 'MENU_FORTUNE',
-                            ],
-                            [
-                                'type' => 'postback',
-                                'title' => '💎 ดูดวงละเอียด',
-                                'payload' => 'MENU_DEEP_FORTUNE',
-                            ],
-                            [
-                                'type' => 'postback',
-                                'title' => '📊 เช็คสิทธิ์ดูดวง',
-                                'payload' => 'MENU_CHECK_REMAINING',
-                            ],
-                            [
-                                'type' => 'postback',
-                                'title' => '❓ วิธีใช้งาน',
-                                'payload' => 'MENU_HELP',
-                            ],
-                        ],
+                        'call_to_actions' => $this->buildPersistentMenuActions(),
                     ],
                 ],
             ]);
@@ -1131,6 +1111,49 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * สร้างรายการเมนูสำหรับ Persistent Menu
+     *
+     * Facebook จำกัดสูงสุด 3 top-level items
+     * รองรับปุ่ม LINE เพิ่มเพื่อนถ้ามีการตั้งค่า
+     *
+     * @return array call_to_actions สำหรับ Persistent Menu
+     */
+    protected function buildPersistentMenuActions(): array
+    {
+        $actions = [
+            [
+                'type' => 'postback',
+                'title' => '🔮 ดูดวงฟรี',
+                'payload' => 'MENU_FORTUNE',
+            ],
+            [
+                'type' => 'postback',
+                'title' => '💎 ดูดวงละเอียด',
+                'payload' => 'MENU_DEEP_FORTUNE',
+            ],
+        ];
+
+        // ถ้ามี LINE → ใส่ปุ่มเพิ่มเพื่อน LINE (URL button)
+        $lineChannelId = $this->settings->line_channel_id ?? null;
+        if (! empty($lineChannelId)) {
+            $actions[] = [
+                'type' => 'web_url',
+                'title' => '💚 เพิ่มเพื่อน LINE',
+                'url' => 'https://line.me/R/ti/p/' . $lineChannelId,
+            ];
+        } else {
+            // ถ้าไม่มี LINE → ใส่ปุ่มเช็คสิทธิ์แทน
+            $actions[] = [
+                'type' => 'postback',
+                'title' => '📊 เช็คสิทธิ์ดูดวง',
+                'payload' => 'MENU_CHECK_REMAINING',
+            ];
+        }
+
+        return $actions;
     }
 
     /**
@@ -1210,6 +1233,130 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
             ];
+        }
+    }
+
+    // ============================================================
+    // Facebook Messenger Templates: Button, Generic, Quick Replies
+    // ============================================================
+
+    /**
+     * ส่ง Button Template (ข้อความ + ปุ่ม สูงสุด 3 ปุ่ม)
+     *
+     * ใช้สำหรับ: upsell, payment, check remaining, welcome
+     * ข้อจำกัด Facebook: text สูงสุด 640 chars, สูงสุด 3 ปุ่ม
+     *
+     * @param string $recipientId Facebook User ID
+     * @param array $templatePayload payload จาก FacebookRichMessageService
+     * @param array $options ตัวเลือกเพิ่มเติม (messaging_type, from_admin)
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
+    {
+        try {
+            $messagingType = 'RESPONSE';
+            $requestBody = [
+                'recipient' => ['id' => $recipientId],
+                'message' => $templatePayload,
+                'messaging_type' => $messagingType,
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            // เพิ่ม message_tag ถ้าระบุ (สำหรับส่งนอก 24 ชั่วโมง)
+            if (! empty($options['message_tag'])) {
+                $requestBody['messaging_type'] = 'MESSAGE_TAG';
+                $requestBody['tag'] = $options['message_tag'];
+            }
+
+            $response = Http::timeout(30)->post($this->graphUrl('/me/messages'), $requestBody);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            // ลอง fallback เป็น MESSAGE_TAG ถ้า 24 ชั่วโมงหมดอายุ
+            $error = $response->json('error', []);
+            $subcode = $error['error_subcode'] ?? 0;
+            if (in_array($subcode, [2018278, 2018065]) && empty($options['message_tag'])) {
+                Log::info('Facebook Button Template: 24hr expired, retry with MESSAGE_TAG');
+                $requestBody['messaging_type'] = 'MESSAGE_TAG';
+                $requestBody['tag'] = 'POST_PURCHASE_UPDATE';
+
+                $retry = Http::timeout(30)->post($this->graphUrl('/me/messages'), $requestBody);
+
+                return $retry->successful();
+            }
+
+            Log::error('Facebook Button Template ส่งไม่สำเร็จ', [
+                'recipient' => $recipientId,
+                'error' => $error,
+            ]);
+
+            return false;
+        } catch (Exception $e) {
+            Log::error('Facebook Button Template exception: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * ส่ง Generic Template (การ์ดพร้อมรูป + ปุ่ม, รองรับ carousel)
+     *
+     * ใช้สำหรับ: affiliate share, reading result
+     * ข้อจำกัด Facebook: สูงสุด 10 cards, title 80 chars, subtitle 80 chars
+     *
+     * @param string $recipientId Facebook User ID
+     * @param array $elements Generic Template elements
+     * @param array $options ตัวเลือกเพิ่มเติม
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendGenericTemplate(string $recipientId, array $elements, array $options = []): bool
+    {
+        try {
+            $payload = [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'generic',
+                        'elements' => $elements,
+                    ],
+                ],
+            ];
+
+            return $this->sendButtonTemplate($recipientId, $payload, $options);
+        } catch (Exception $e) {
+            Log::error('Facebook Generic Template exception: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+
+    /**
+     * ส่งข้อความพร้อม Quick Replies และ Button Template ในครั้งเดียว
+     *
+     * @param string $recipientId Facebook User ID
+     * @param array $templatePayload payload จาก FacebookRichMessageService
+     * @param array $quickReplies Quick Replies array
+     * @return bool สำเร็จหรือไม่
+     */
+    public function sendTemplateWithQuickReplies(string $recipientId, array $templatePayload, array $quickReplies): bool
+    {
+        try {
+            // Facebook ไม่รองรับ Quick Replies กับ Template พร้อมกัน
+            // ส่ง Template ก่อน แล้วส่ง Quick Replies แยก
+            $sent = $this->sendButtonTemplate($recipientId, $templatePayload);
+
+            if ($sent && ! empty($quickReplies)) {
+                usleep(500000); // รอ 500ms
+                $this->sendQuickReplies($recipientId, 'เลือกได้เลยค่ะ 👇', $quickReplies);
+            }
+
+            return $sent;
+        } catch (Exception $e) {
+            Log::error('Facebook Template+QuickReplies exception: ' . $e->getMessage());
+
+            return false;
         }
     }
 

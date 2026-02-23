@@ -13,6 +13,7 @@ class LineBotConversation extends Model
 
     protected $fillable = [
         'line_user_id',
+        'platform',
         'user_id',
         'ai_setting_id',
         'session_id',
@@ -127,5 +128,62 @@ class LineBotConversation extends Model
     public function archive(): void
     {
         $this->update(['status' => 'archived']);
+    }
+
+    /**
+     * Scope: กรองตาม platform (line, facebook, web, etc.)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $platform  ชื่อ platform
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeForPlatform($query, string $platform)
+    {
+        return $query->where('platform', $platform);
+    }
+
+    /**
+     * ค้นหาหรือสร้าง conversation สำหรับ platform + user
+     *
+     * - ถ้ามี conversation ที่ active อยู่ (status = active, ยังไม่หมดอายุ) → ใช้ต่อ
+     * - ถ้าไม่มี → สร้างใหม่
+     * - ปิด conversation ที่ไม่มีข้อความ > 30 นาทีอัตโนมัติ
+     *
+     * @param  string  $platformUserId  user ID ของ platform (Facebook PSID / LINE user ID)
+     * @param  string  $platform  ชื่อ platform (line, facebook)
+     * @param  int  $timeoutMinutes  หมดเวลาถ้าไม่มีข้อความ (นาที)
+     * @return self
+     */
+    public static function findOrCreateForPlatform(
+        string $platformUserId,
+        string $platform = 'line',
+        int $timeoutMinutes = 30
+    ): self {
+        // ปิด conversation ที่หมดอายุก่อน (ไม่มีข้อความ > timeout)
+        static::where('line_user_id', $platformUserId)
+            ->forPlatform($platform)
+            ->where('status', 'active')
+            ->where('last_message_at', '<', now()->subMinutes($timeoutMinutes))
+            ->update(['status' => 'closed']);
+
+        // ค้นหา conversation ที่ active อยู่
+        $conversation = static::where('line_user_id', $platformUserId)
+            ->forPlatform($platform)
+            ->where('status', 'active')
+            ->latest('last_message_at')
+            ->first();
+
+        if ($conversation) {
+            return $conversation;
+        }
+
+        // สร้าง conversation ใหม่
+        return static::create([
+            'line_user_id' => $platformUserId,
+            'platform' => $platform,
+            'status' => 'active',
+            'last_message_at' => now(),
+            'message_count' => 0,
+        ]);
     }
 }

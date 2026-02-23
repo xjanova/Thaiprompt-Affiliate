@@ -176,6 +176,11 @@ class FortuneChannelManager
             return $this->sendLineResponse($platformService, $userId, $result, $extra);
         }
 
+        // สำหรับ Facebook ใช้ Button/Generic Template ที่สวยงาม
+        if ($platform === self::PLATFORM_FACEBOOK && $platformService instanceof FacebookWebhookService) {
+            return $this->sendFacebookResponse($platformService, $userId, $result, $extra);
+        }
+
         // สำหรับ platform อื่นๆ ส่งข้อความธรรมดา
         $options = [];
 
@@ -224,6 +229,457 @@ class FortuneChannelManager
         ]);
 
         return $sent;
+    }
+
+    /**
+     * ส่ง Response สำหรับ Facebook ด้วย Button/Generic Template
+     *
+     * ใช้ FacebookRichMessageService สร้าง templates แล้วส่งผ่าน
+     * FacebookWebhookService.sendButtonTemplate()
+     *
+     * ⚠️ ไม่แตะ SMS Payment / UniquePaymentAmount / confirmPayment()
+     * เปลี่ยนแค่วิธี display ข้อมูล (จาก text → Button Template)
+     */
+    protected function sendFacebookResponse(FacebookWebhookService $fbService, string $userId, array $result, array $extra = []): bool
+    {
+        $action = $result['action'] ?? 'unknown';
+        $message = $result['message'] ?? '';
+        $reading = $result['reading'] ?? null;
+
+        Log::info('Facebook sendFacebookResponse: เริ่มจัดการ action', [
+            'action' => $action,
+            'user_id' => $userId,
+            'reading_id' => $reading?->id ?? null,
+        ]);
+
+        $richService = new FacebookRichMessageService($this->settings);
+
+        try {
+            $sent = match ($action) {
+                // ทำนายพื้นฐานเสร็จ → ส่งคำทำนาย + Upsell Template
+                'basic_done' => $this->sendFacebookBasicDoneResponse($fbService, $richService, $userId, $result),
+
+                // รอชำระเงิน → ส่ง Payment Template + QR
+                'pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+
+                // ทำนายละเอียดเสร็จ → ส่งคำทำนาย + LINE invite + affiliate
+                'completed' => $this->sendFacebookCompletedResponse($fbService, $richService, $userId, $result),
+
+                // ยืนยันดูดวง → Quick Replies เลือกหมวด
+                'awaiting_confirmation' => $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action),
+
+                // ขอวันเกิด → Birthdate prompt Template
+                'collecting_birthdate' => $this->sendFacebookBirthdateResponse($fbService, $richService, $userId, $result),
+
+                // เลือกคำถาม → Quick Replies
+                'collecting_questions', 'need_more_questions', 'retry_question'
+                    => $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action),
+
+                // เช็คสิทธิ์ → Check Remaining Template
+                'check_remaining' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
+
+                // หมดสิทธิ์ฟรี → AI Limit Template
+                'ai_limit' => $this->sendFacebookAiLimitResponse($fbService, $richService, $userId, $result),
+
+                // บิลหมดอายุ → Payment Expired Template
+                'payment_expired' => $this->sendFacebookPaymentExpiredResponse($fbService, $richService, $userId, $result),
+
+                // ปฏิเสธ / ยกเลิก → Declined Template
+                'declined', 'cancelled' => $this->sendFacebookDeclinedResponse($fbService, $richService, $userId, $result),
+
+                // Help → Welcome Template
+                'help', 'filtered' => $this->sendFacebookHelpResponse($fbService, $richService, $userId, $result),
+
+                // รอชำระเงิน (เตือนซ้ำ) → Waiting Payment Template
+                'waiting_payment' => $this->sendFacebookWaitingPaymentResponse($fbService, $richService, $userId, $result),
+
+                // ยืนยันชำระเงินสำเร็จ → Payment Confirmed Template
+                'payment_confirmed_wait' => $this->sendFacebookPaymentConfirmedResponse($fbService, $richService, $userId, $result),
+
+                // เช็คสถานะ → เช็คสิทธิ์
+                'check_status' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
+
+                // แชร์ลิงก์เชิญเพื่อน
+                'share_link' => $this->sendFacebookShareResponse($fbService, $richService, $userId, $result),
+
+                // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
+                'keyword_matched', 'ai_chat_response', 'fortune_throttled', 'busy', 'busy_processing',
+                'bank_account_info', 'partial', 'processing', 'queued',
+                'share_no_user', 'share_error',
+                'deep_reading_disabled',
+                'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
+                'view_later',
+                'invalid_birthdate', 'retry_birthdate',
+                'error',
+                'ai_ask_save_question',
+                'fortune_ready_notification',
+                'send_chart', 'deep_reading_result', 'reading_complete', 'reading_ready'
+                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result),
+
+                // อื่นๆ → ส่ง text ธรรมดา
+                default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการค่ะ 🙏'),
+            };
+
+            // Log ถ้าส่งไม่สำเร็จ
+            if (! $sent) {
+                Log::warning('Facebook sendFacebookResponse: ส่งไม่สำเร็จ, fallback เป็น text', [
+                    'action' => $action,
+                    'user_id' => $userId,
+                ]);
+                // Fallback ส่ง text ธรรมดา
+                if ($message) {
+                    $fbService->sendMessage($userId, mb_substr($message, 0, 2000));
+                }
+            }
+
+            return $sent;
+        } catch (\Exception $e) {
+            Log::error('Facebook sendFacebookResponse exception — fallback เป็น text', [
+                'action' => $action,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback ส่ง text ธรรมดาเสมอ
+            $fallbackText = $message ?: 'ระบบกำลังดำเนินการค่ะ กรุณารอสักครู่ 🙏';
+
+            return $fbService->sendMessage($userId, mb_substr($fallbackText, 0, 2000));
+        }
+    }
+
+    // ============================================================
+    // Facebook Response Handlers (เทียบเท่า sendLine*Response)
+    // ============================================================
+
+    /**
+     * Facebook: ส่งคำทำนายพื้นฐาน + Upsell + LINE invite
+     */
+    protected function sendFacebookBasicDoneResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+
+        // ส่ง Birth Chart ก่อน (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $fbService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่งคำทำนาย (text — อาจยาว ต้องแบ่ง)
+        if (! empty($message)) {
+            // แยก message ออกจากส่วน upsell
+            $parts = explode('═══════════════════════', $message);
+            $prediction = trim($parts[0] ?? $message);
+            if (! empty($prediction)) {
+                $fbService->sendMessage($userId, $prediction);
+                usleep(500000);
+            }
+        }
+
+        // ส่ง Upsell Template (ถ้าเปิดดูดวงละเอียด)
+        if ($this->settings->isDeepReadingEnabled()) {
+            $upsellTemplate = $richService->buildUpsellTemplate($userName, $this->getReadingPrice());
+
+            return $fbService->sendButtonTemplate($userId, $upsellTemplate);
+        }
+
+        // ถ้าไม่มี deep reading → ส่ง LINE invite
+        $lineInvite = $richService->buildLineInviteTemplate();
+        if ($lineInvite) {
+            return $fbService->sendButtonTemplate($userId, $lineInvite);
+        }
+
+        return true;
+    }
+
+    /**
+     * Facebook: ส่งข้อมูลชำระเงิน
+     * ⚠️ ไม่แก้ logic การจับคู่ SMS — แค่แสดงข้อมูลบิลสวยขึ้น
+     */
+    protected function sendFacebookPaymentResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $message = $result['message'] ?? '';
+
+        // ส่ง Birth Chart ก่อน (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $fbService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (payment)', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่งข้อมูลบิลเป็น text (เพราะมีรายละเอียดเยอะ)
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        // ส่งภาพ QR Code ชำระเงิน (ถ้ามี)
+        $paymentQrUrl = $result['payment_qr_url'] ?? null;
+        if ($paymentQrUrl) {
+            try {
+                $fbService->sendImage($userId, $paymentQrUrl);
+                usleep(300000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง QR Code ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่ง Payment Template (ปุ่มแจ้งชำระ/เช็คสถานะ/ยกเลิก)
+        if ($reading) {
+            $paymentTemplate = $richService->buildPaymentTemplate($reading);
+
+            return $fbService->sendButtonTemplate($userId, $paymentTemplate);
+        }
+
+        return true;
+    }
+
+    /**
+     * Facebook: ส่งคำทำนายละเอียดเสร็จ + LINE invite + affiliate
+     */
+    protected function sendFacebookCompletedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่ง Birth Chart ก่อน (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $fbService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (completed)', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่งคำทำนาย (text)
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        // ส่ง Reading Complete Template + LINE invite + affiliate
+        $completeTemplate = $richService->buildReadingCompleteTemplate();
+
+        return $fbService->sendButtonTemplate($userId, $completeTemplate);
+    }
+
+    /**
+     * Facebook: ส่งข้อความ + Quick Replies ตาม action
+     */
+    protected function sendFacebookWithQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action): bool
+    {
+        $quickReplies = $richService->getQuickRepliesForAction($action);
+
+        if (! empty($quickReplies) && ! empty($message)) {
+            return $fbService->sendQuickReplies($userId, $message, $quickReplies);
+        }
+
+        return $fbService->sendMessage($userId, $message ?: 'พิมพ์คำถามมาได้เลยค่ะ 🔮');
+    }
+
+    /**
+     * Facebook: ขอวันเกิด
+     */
+    protected function sendFacebookBirthdateResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่ง text ข้อความเดิม (ถ้ามี)
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        $template = $richService->buildBirthdatePromptTemplate($this->getReadingPrice());
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: เช็คสิทธิ์ดูดวง
+     */
+    protected function sendFacebookCheckRemainingResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        // ดึงข้อมูลจาก result
+        $remaining = $result['remaining'] ?? 0;
+        $maxFree = $result['max_free'] ?? (int) ($this->settings->max_free_readings ?? 3);
+        $todayCount = $result['today_count'] ?? 0;
+
+        $template = $richService->buildCheckRemainingTemplate($remaining, $maxFree, $todayCount);
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: หมดสิทธิ์ฟรี
+     */
+    protected function sendFacebookAiLimitResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่ง text ข้อความเดิม
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        $template = $richService->buildAiLimitTemplate($this->getReadingPrice());
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: บิลหมดอายุ
+     */
+    protected function sendFacebookPaymentExpiredResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        $template = $richService->buildPaymentExpiredTemplate();
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: ปฏิเสธ/ยกเลิก
+     */
+    protected function sendFacebookDeclinedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        $template = $richService->buildDeclinedTemplate();
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: Help / Welcome
+     */
+    protected function sendFacebookHelpResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $userName = $result['user_name'] ?? 'คุณ';
+        $template = $richService->buildWelcomeTemplate($userName);
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: เตือนชำระเงิน
+     */
+    protected function sendFacebookWaitingPaymentResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่ง text ก่อน (มีรายละเอียดบัญชี)
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        $template = $richService->buildWaitingPaymentTemplate($result['remaining_time'] ?? 'ไม่ทราบ');
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: ยืนยันชำระเงินสำเร็จ
+     */
+    protected function sendFacebookPaymentConfirmedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $template = $richService->buildPaymentConfirmedTemplate();
+
+        return $fbService->sendButtonTemplate($userId, $template);
+    }
+
+    /**
+     * Facebook: แชร์ลิงก์เชิญเพื่อน
+     */
+    protected function sendFacebookShareResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $referralUrl = $result['referral_url'] ?? null;
+
+        if ($referralUrl) {
+            $template = $richService->buildAffiliateShareTemplate($referralUrl);
+
+            return $fbService->sendButtonTemplate($userId, $template);
+        }
+
+        // ถ้าไม่มี referral URL → ส่ง LINE invite แทน
+        $lineInvite = $richService->buildLineInviteTemplate();
+        if ($lineInvite) {
+            return $fbService->sendButtonTemplate($userId, $lineInvite);
+        }
+
+        return $fbService->sendMessage($userId, $result['message'] ?? 'กรุณาสมัครสมาชิกก่อนเพื่อรับลิงก์เชิญเพื่อนค่ะ');
+    }
+
+    /**
+     * Facebook: ส่ง text + Quick Replies (ถ้ามี) สำหรับ actions ทั่วไป
+     *
+     * ใช้กับ actions ที่ไม่ต้องการ Button Template เช่น:
+     * keyword_matched, ai_chat_response, error, ฯลฯ
+     */
+    protected function sendFacebookTextWithOptionalQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
+    {
+        if (empty($message)) {
+            $message = 'ระบบกำลังดำเนินการค่ะ 🙏';
+        }
+
+        // ส่ง chart image ก่อน (ถ้ามี)
+        $chartUrl = $result['chart_image_url'] ?? null;
+        if ($chartUrl) {
+            try {
+                $fbService->sendImage($userId, $chartUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง chart ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่ง QR code (ถ้ามี)
+        $paymentQrUrl = $result['payment_qr_url'] ?? null;
+        if ($paymentQrUrl) {
+            $fbService->sendMessage($userId, $message);
+            usleep(300000);
+            try {
+                $fbService->sendImage($userId, $paymentQrUrl);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่ง QR ไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+
+            return true;
+        }
+
+        // เช็คว่ามี Quick Replies สำหรับ action นี้ไหม
+        $quickReplies = $richService->getQuickRepliesForAction($action);
+
+        if (! empty($quickReplies)) {
+            return $fbService->sendQuickReplies($userId, $message, $quickReplies);
+        }
+
+        return $fbService->sendMessage($userId, $message);
     }
 
     /**

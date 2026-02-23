@@ -9,6 +9,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
+use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -39,6 +40,12 @@ class FacebookWebhookController extends Controller
 
     protected $settings;
 
+    /**
+     * FortuneChannelManager — ตัวกลางจัดการ routing + Rich Message response
+     * ใช้ตรรกะเดียวกันกับ LINE Bot (keyword matching, state machine, AI chat)
+     */
+    protected $channelManager;
+
     public function __construct()
     {
         try {
@@ -46,6 +53,7 @@ class FacebookWebhookController extends Controller
             $this->facebookService = new FacebookWebhookService($this->settings);
             $this->aiService = new FortuneAIService($this->settings);
             $this->conversationService = new FortuneConversationService($this->settings);
+            $this->channelManager = new FortuneChannelManager($this->settings);
         } catch (\Exception $e) {
             // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
             Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
@@ -81,6 +89,16 @@ class FacebookWebhookController extends Controller
                 } catch (\Exception $convError) {
                     Log::error('FacebookWebhookController: สร้าง ConversationService ไม่ได้', [
                         'error' => $convError->getMessage(),
+                    ]);
+                }
+            }
+            // ✅ สร้าง fallback สำหรับ channelManager
+            if (! $this->channelManager) {
+                try {
+                    $this->channelManager = new FortuneChannelManager($this->settings);
+                } catch (\Exception $cmError) {
+                    Log::error('FacebookWebhookController: สร้าง FortuneChannelManager ไม่ได้', [
+                        'error' => $cmError->getMessage(),
                     ]);
                 }
             }
@@ -596,6 +614,17 @@ class FacebookWebhookController extends Controller
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
+            // ✅ ปุ่มจาก Rich Templates — ดูดวงละเอียด flow
+            'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
+            'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
+            'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+
+            // ✅ ปุ่ม LINE Invite + Affiliate Share
+            'LINE_ADD_FRIEND' => $this->handleLineAddFriend($senderId),
+            'LINE_INVITE' => $this->handleLineAddFriend($senderId),
+            'AFFILIATE_SHARE' => $this->processConversationalMessage($senderId, 'แชร์'),
+
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
         };
@@ -604,7 +633,7 @@ class FacebookWebhookController extends Controller
     /**
      * จัดการเมื่อผู้ใช้กดปุ่ม "Get Started" (เริ่มต้นใช้งาน)
      *
-     * ส่งข้อความต้อนรับและแนะนำวิธีใช้งาน
+     * ส่ง Rich Welcome Template พร้อมปุ่มดูดวง + เพิ่มเพื่อน LINE
      *
      * @param  string  $senderId  Facebook User ID
      */
@@ -623,20 +652,34 @@ class FacebookWebhookController extends Controller
                 'user_name' => $userName,
             ]);
 
-            // ข้อความต้อนรับ
-            $welcomeMessage = $this->buildWelcomeMessage($userName);
-
             // ปิด typing indicator
             $this->facebookService->sendTypingIndicator($senderId, false);
 
-            // ส่งข้อความต้อนรับพร้อม Quick Replies
-            $quickReplies = [
-                ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
-                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
-            ];
+            // ✅ ส่ง Rich Welcome Template พร้อม Quick Replies
+            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $welcomeTemplate = $richService->buildWelcomeTemplate($userName);
+            $welcomeQuickReplies = $richService->getQuickRepliesForAction('help');
 
-            $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
+            if ($welcomeTemplate && ! empty($welcomeTemplate['elements'])) {
+                // ส่ง Generic Template + Quick Replies
+                $this->facebookService->sendTemplateWithQuickReplies(
+                    $senderId,
+                    [
+                        'template_type' => 'generic',
+                        'elements' => $welcomeTemplate['elements'],
+                    ],
+                    $welcomeQuickReplies
+                );
+            } else {
+                // Fallback: ส่งข้อความต้อนรับธรรมดา + Quick Replies
+                $welcomeMessage = $this->buildWelcomeMessage($userName);
+                $quickReplies = [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_BASIC'],
+                    ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
+                    ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
+                ];
+                $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
+            }
 
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [
@@ -691,7 +734,13 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * ประมวลผลข้อความแบบ Conversational (flow ใหม่)
+     * ประมวลผลข้อความแบบ Conversational ผ่าน FortuneChannelManager
+     *
+     * ใช้ตรรกะเดียวกับ LINE Bot:
+     * - keyword matching → state machine → AI fallback
+     * - Rich Message Templates (Button/Generic แทน Flex)
+     * - Quick Replies อัตโนมัติตาม action
+     * - LINE invite + affiliate share
      *
      * Flow:
      * 1. ดูดวงพื้นฐานฟรี (ดึงโปรไฟล์ทำนายเบื้องต้น)
@@ -699,15 +748,17 @@ class FacebookWebhookController extends Controller
      * 3. สร้างบิล + unique amount + แสดงบัญชีธนาคาร
      * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
      *
+     * ⚠️ ไม่แตะ SMS Payment / UniquePaymentAmount / confirmPayment()
+     *
      * @param  string  $senderId  Facebook User ID
      * @param  string  $messageText  ข้อความที่ส่งมา
      */
     protected function processConversationalMessage(string $senderId, string $messageText): void
     {
         try {
-            // ตรวจสอบว่า service พร้อมใช้งาน
-            if (! $this->conversationService) {
-                Log::error('ConversationService ไม่พร้อม - อาจเกิดจากการตั้งค่าระบบไม่ครบ');
+            // ตรวจสอบว่า channelManager พร้อมใช้งาน (fallback ไป conversationService ถ้าไม่มี)
+            if (! $this->channelManager && ! $this->conversationService) {
+                Log::error('ChannelManager และ ConversationService ไม่พร้อม');
                 $this->facebookService->sendMessage(
                     $senderId,
                     "🔮 สวัสดีค่ะ\n\nระบบกำลังเตรียมพร้อมอยู่ค่ะ กรุณาลองพิมพ์มาใหม่ในอีกสักครู่นะคะ 🙏✨"
@@ -731,19 +782,45 @@ class FacebookWebhookController extends Controller
                 ]);
             }
 
-            // ประมวลผลข้อความ
+            // ✅ ใช้ FortuneChannelManager เพื่อ routing + Rich Message response
+            // ChannelManager จะเรียก conversationService->processMessage() ภายใน
+            // แล้วส่ง Rich Message (Button/Generic Template) ตอบกลับอัตโนมัติ
+            if ($this->channelManager) {
+                $result = $this->channelManager->processMessage(
+                    FortuneChannelManager::PLATFORM_FACEBOOK,
+                    $senderId,
+                    $messageText,
+                    $userProfile
+                );
+
+                // ปิด typing indicator
+                $this->facebookService->sendTypingIndicator($senderId, false);
+
+                Log::info('Conversational Fortune (via ChannelManager): ประมวลผลสำเร็จ', [
+                    'facebook_user_id' => $senderId,
+                    'action' => $result['action'] ?? 'unknown',
+                    'reading_id' => ($result['reading'] ?? null)?->id,
+                ]);
+
+                return;
+            }
+
+            // 🔄 Fallback: ใช้ conversationService โดยตรง (กรณี channelManager พัง)
+            Log::warning('Facebook: ChannelManager ไม่พร้อม ใช้ fallback conversationService', [
+                'sender_id' => $senderId,
+            ]);
+
             $result = $this->conversationService->processMessage($senderId, $messageText, $userProfile);
 
             // ปิด typing indicator
             $this->facebookService->sendTypingIndicator($senderId, false);
 
-            // ✅ ส่งภาพ Birth Chart ก่อนข้อความทำนาย (ถ้ามี)
+            // Fallback: ส่งภาพ Birth Chart ก่อนข้อความทำนาย (ถ้ามี)
             $chartUrl = $result['chart_image_url'] ?? null;
             if ($chartUrl) {
                 try {
                     $this->facebookService->sendImage($senderId, $chartUrl);
-                    // รอสักครู่ให้ภาพส่งก่อน
-                    usleep(500000); // 0.5 วินาที
+                    usleep(500000);
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune: Failed to send chart image', [
                         'error' => $imgErr->getMessage(),
@@ -752,28 +829,26 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // ส่งข้อความกลับ
+            // Fallback: ส่งข้อความกลับ
             $message = $result['message'] ?? '';
             if (! empty($message)) {
-                // แยกข้อความยาวออกเป็นหลายๆ ข้อความ
                 $this->sendLongMessage($senderId, $message);
             }
 
-            // ✅ ส่งภาพ QR Code ชำระเงิน หลังข้อความบิล (ถ้ามี)
+            // Fallback: ส่งภาพ QR Code ชำระเงิน (ถ้ามี)
             $paymentQrUrl = $result['payment_qr_url'] ?? null;
             if ($paymentQrUrl) {
                 try {
-                    usleep(300000); // รอ 0.3 วินาทีให้ข้อความส่งก่อน
+                    usleep(300000);
                     $this->facebookService->sendImage($senderId, $paymentQrUrl);
                 } catch (\Exception $qrErr) {
                     Log::warning('Fortune: ส่งภาพ QR Code ไม่สำเร็จ', [
                         'error' => $qrErr->getMessage(),
-                        'qr_url' => $paymentQrUrl,
                     ]);
                 }
             }
 
-            // ส่ง Quick Replies ถ้าต้องการ หรือสำหรับ actions ที่มี quick replies
+            // Fallback: ส่ง Quick Replies
             $actionsWithQuickReplies = [
                 'awaiting_confirmation', 'basic_done', 'check_remaining',
                 'collecting_questions', 'need_more_questions', 'retry_question',
@@ -784,7 +859,7 @@ class FacebookWebhookController extends Controller
                 $this->sendConversationQuickReplies($senderId, $result['action']);
             }
 
-            Log::info('Conversational Fortune: ประมวลผลสำเร็จ', [
+            Log::info('Conversational Fortune (fallback): ประมวลผลสำเร็จ', [
                 'facebook_user_id' => $senderId,
                 'action' => $result['action'],
                 'reading_id' => $result['reading']?->id,
@@ -1180,6 +1255,19 @@ class FacebookWebhookController extends Controller
             // Quick Reply ดูคำทำนายล่าสุด
             'VIEW_LAST_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
 
+            // ✅ LINE Invite + Affiliate Share (จาก Rich Templates)
+            'LINE_ADD_FRIEND' => $this->handleLineAddFriend($senderId),
+            'LINE_INVITE' => $this->handleLineAddFriend($senderId),
+            'AFFILIATE_SHARE' => $this->processConversationalMessage($senderId, 'แชร์'),
+
+            // ✅ ปุ่มจาก Button Templates
+            'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
+            'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
+            'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+            'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'VIEW_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
+
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
@@ -1283,6 +1371,31 @@ class FacebookWebhookController extends Controller
      */
     protected function sendHelpMessage(string $userId): void
     {
+        // ✅ ใช้ Rich Welcome Template แทนข้อความธรรมดา
+        try {
+            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $helpTemplate = $richService->buildWelcomeTemplate('คุณ');
+            $helpQuickReplies = $richService->getQuickRepliesForAction('help');
+
+            if ($helpTemplate && ! empty($helpTemplate['elements'])) {
+                $this->facebookService->sendTemplateWithQuickReplies(
+                    $userId,
+                    [
+                        'template_type' => 'generic',
+                        'elements' => $helpTemplate['elements'],
+                    ],
+                    $helpQuickReplies
+                );
+
+                return;
+            }
+        } catch (\Exception $e) {
+            Log::warning('sendHelpMessage: Rich Template ล้มเหลว ใช้ fallback', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // Fallback: ข้อความธรรมดา
         $message = "🔮 ระบบดูดวง AI\n\n";
         $message .= "📌 ดูดวงพื้นฐาน (ฟรี):\n";
         $message .= "พิมพ์: ดูดวง ตามด้วยคำถาม\n";
@@ -1308,5 +1421,58 @@ class FacebookWebhookController extends Controller
         }
 
         $this->facebookService->sendQuickReplies($userId, $message, $quickReplies);
+    }
+
+    /**
+     * จัดการเมื่อ user กดปุ่ม "เพิ่มเพื่อน LINE"
+     *
+     * ส่ง LINE Add-Friend Template พร้อม URL + Quick Replies
+     * ถ้าไม่มี LINE configured จะส่งข้อความทั่วไปแทน
+     *
+     * @param  string  $senderId  Facebook User ID
+     */
+    protected function handleLineAddFriend(string $senderId): void
+    {
+        try {
+            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $lineUrl = $richService->getLineAddFriendUrl();
+
+            if ($lineUrl) {
+                // ส่ง LINE Invite Template
+                $lineTemplate = $richService->buildLineInviteTemplate();
+                if ($lineTemplate) {
+                    $this->facebookService->sendButtonTemplate($senderId, $lineTemplate);
+                } else {
+                    // Fallback: ส่ง URL โดยตรง
+                    $this->facebookService->sendMessage(
+                        $senderId,
+                        "💚 เพิ่มเพื่อน LINE เพื่อดูดวงแบบสวยงาม!\n\n" .
+                        "👉 {$lineUrl}\n\n" .
+                        "✨ ดูดวง Flex Message สวยๆ ได้ที่ LINE ค่ะ"
+                    );
+                }
+            } else {
+                // ไม่มี LINE configured — แนะนำดูดวงผ่าน Facebook ต่อ
+                $quickReplies = $richService->getQuickRepliesForAction('declined');
+                $this->facebookService->sendQuickReplies(
+                    $senderId,
+                    "🔮 ดูดวงต่อได้เลยค่ะ!\n\nพิมพ์คำถามมาได้เลย หรือเลือกจากปุ่มด้านล่าง 👇",
+                    $quickReplies
+                );
+            }
+
+            Log::info('💚 LINE Add Friend: ส่ง invite สำเร็จ', [
+                'sender_id' => $senderId,
+                'has_line_url' => ! empty($lineUrl),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('handleLineAddFriend error: ' . $e->getMessage(), [
+                'sender_id' => $senderId,
+            ]);
+            $this->facebookService->sendMessage(
+                $senderId,
+                "🔮 ขอโทษค่ะ ลองพิมพ์ 'ดูดวง' เพื่อเริ่มต้นใหม่นะคะ ✨"
+            );
+        }
     }
 }

@@ -204,6 +204,218 @@ class FortuneAIService
     }
 
     /**
+     * สร้าง AI Chat Response พร้อม conversation history (ความจำ)
+     *
+     * ใช้สำหรับสนทนาต่อเนื่อง — AI จะจำบริบทจากข้อความก่อนหน้า
+     * ส่ง history เป็น messages array ไป AI provider
+     *
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  array|null  $userProfile  ข้อมูลโปรไฟล์ผู้ใช้
+     * @param  array  $history  ประวัติสนทนา [['role' => 'user'|'assistant', 'content' => '...'], ...]
+     * @return array ['response' => string, 'provider' => string, 'model' => string]
+     *
+     * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
+     */
+    public function generateChatResponseWithHistory(
+        string $messageText,
+        ?array $userProfile = null,
+        array $history = []
+    ): array {
+        // ถ้าไม่มี history → ใช้ generateChatResponse ปกติ
+        if (empty($history)) {
+            return $this->generateChatResponse($messageText, $userProfile);
+        }
+
+        // ดึง chat-specific settings
+        $chatProvider = $this->settings->getChatAIProvider();
+        $chatModel = $this->settings->getChatAIModel();
+        $chatApiKey = $this->settings->getChatAIApiKey();
+        $customPrompt = $this->settings->getChatSystemPrompt();
+
+        if (empty($chatApiKey)) {
+            throw new Exception("ไม่พบ API Key สำหรับ Chat AI ({$chatProvider})");
+        }
+
+        // เลือก system message
+        $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
+
+        // สร้าง prompt พร้อมชื่อผู้ใช้
+        $userName = $userProfile['name'] ?? '';
+        $prompt = $messageText;
+        if (! empty($userName) && $userName !== 'คุณ') {
+            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
+        }
+
+        $config = [
+            'temperature' => 0.8,
+            'max_tokens' => 512,
+        ];
+
+        $startTime = microtime(true);
+
+        try {
+            $result = match ($chatProvider) {
+                'gemini' => $this->callChatGeminiWithHistory($prompt, $systemMessage, $chatApiKey, $chatModel, $config, $history),
+                default => $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config, $history),
+            };
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            Log::info('FortuneAIService: Chat with history สำเร็จ', [
+                'provider' => $chatProvider,
+                'model' => $chatModel,
+                'response_time_ms' => $responseTime,
+                'history_count' => count($history),
+                'tokens' => $result['tokens_used'] ?? 0,
+            ]);
+
+            return $result;
+
+        } catch (Exception $e) {
+            Log::warning('FortuneAIService: Chat with history ล้มเหลว ลอง fallback ไม่มี history', [
+                'provider' => $chatProvider,
+                'error' => $e->getMessage(),
+            ]);
+            // Fallback: ลองส่งโดยไม่มี history
+            return $this->generateChatResponse($messageText, $userProfile);
+        }
+    }
+
+    /**
+     * เรียก Gemini API พร้อม conversation history
+     *
+     * Gemini ใช้ format: contents[] = [{role: 'user', parts: [...]}, {role: 'model', parts: [...]}]
+     */
+    protected function callChatGeminiWithHistory(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        array $config,
+        array $history
+    ): array {
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        // สร้าง contents จาก history (Gemini ใช้ 'model' แทน 'assistant')
+        $contents = [];
+        foreach ($history as $msg) {
+            $role = $msg['role'] === 'assistant' ? 'model' : 'user';
+            $contents[] = [
+                'role' => $role,
+                'parts' => [['text' => $msg['content']]],
+            ];
+        }
+        // เพิ่มข้อความปัจจุบัน
+        $contents[] = [
+            'role' => 'user',
+            'parts' => [['text' => $prompt]],
+        ];
+
+        $response = Http::timeout(20)->post($url, [
+            'system_instruction' => [
+                'parts' => [['text' => $systemMessage]],
+            ],
+            'contents' => $contents,
+            'generationConfig' => [
+                'temperature' => $config['temperature'] ?? 0.8,
+                'topK' => 40,
+                'topP' => 0.95,
+                'maxOutputTokens' => $config['max_tokens'] ?? 512,
+            ],
+        ]);
+
+        if (! $response->successful()) {
+            $errorBody = $response->json();
+            $errorMessage = $errorBody['error']['message'] ?? $response->body();
+            throw new Exception("Gemini Chat (history) Error: {$errorMessage}");
+        }
+
+        $data = $response->json();
+        $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Gemini Chat (history): ไม่ได้รับคำตอบ');
+        }
+
+        return [
+            'response' => $text,
+            'tokens_used' => $data['usageMetadata']['totalTokenCount'] ?? 0,
+            'provider' => 'gemini',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * เรียก OpenAI-compatible API พร้อม conversation history
+     *
+     * OpenAI format: messages[] = [{role: 'system', ...}, {role: 'user', ...}, {role: 'assistant', ...}]
+     */
+    protected function callChatOpenAICompatibleWithHistory(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        string $provider,
+        array $config,
+        array $history
+    ): array {
+        $url = match ($provider) {
+            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
+            'grok' => 'https://api.x.ai/v1/chat/completions',
+            'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
+            'deepseek' => 'https://api.deepseek.com/chat/completions',
+            'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
+            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
+        };
+
+        $headers = ['Authorization' => "Bearer {$apiKey}"];
+        if ($provider === 'openrouter') {
+            $headers['HTTP-Referer'] = config('app.url');
+        }
+
+        // สร้าง messages array: system → history → user message ปัจจุบัน
+        $messages = [
+            ['role' => 'system', 'content' => $systemMessage],
+        ];
+
+        // เพิ่ม history (จำกัด 10 ข้อความล่าสุด เพื่อประหยัด tokens)
+        $recentHistory = array_slice($history, -10);
+        foreach ($recentHistory as $msg) {
+            $messages[] = [
+                'role' => $msg['role'],
+                'content' => $msg['content'],
+            ];
+        }
+
+        // เพิ่มข้อความปัจจุบัน
+        $messages[] = ['role' => 'user', 'content' => $prompt];
+
+        $response = Http::timeout(20)
+            ->withHeaders($headers)
+            ->post($url, [
+                'model' => $model,
+                'messages' => $messages,
+                'temperature' => $config['temperature'] ?? 0.8,
+                'max_tokens' => $config['max_tokens'] ?? 512,
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['choices'][0]['message']['content'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception("Chat {$provider} (history): ไม่ได้รับคำตอบ");
+        }
+
+        return [
+            'response' => $text,
+            'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+            'provider' => $provider,
+            'model' => $model,
+        ];
+    }
+
+    /**
      * สร้าง system message สำหรับ AI Chat โดย inject ข้อมูลจริงจาก settings
      *
      * ทำให้ AI รู้จักราคา, จำนวนฟรี, ค่าคอมมิชชั่น ตามที่ตั้งค่าจริง
