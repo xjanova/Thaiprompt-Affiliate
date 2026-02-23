@@ -41,6 +41,12 @@ class FortuneConversationService
     protected FacebookWebhookService $facebookService;
 
     /**
+     * Platform ปัจจุบัน ('line' หรือ 'facebook')
+     * ใช้สำหรับบันทึก platform ที่ถูกต้องเมื่อ save คำถามรอตอบ
+     */
+    protected string $currentPlatform = 'line';
+
+    /**
      * ราคาดูดวงละเอียด (บาท)
      */
     public const DEEP_READING_PRICE = 49;
@@ -253,6 +259,19 @@ class FortuneConversationService
         $this->aiService = new FortuneAIService($this->settings);
         $this->facebookService = new FacebookWebhookService($this->settings);
         $this->chartService = new FortuneChartService;
+    }
+
+    /**
+     * ตั้งค่า platform ปัจจุบัน (เรียกจาก FortuneChannelManager ก่อน processMessage)
+     *
+     * @param string $platform 'line' หรือ 'facebook'
+     * @return self
+     */
+    public function setPlatform(string $platform): self
+    {
+        $this->currentPlatform = in_array($platform, ['line', 'facebook']) ? $platform : 'line';
+
+        return $this;
     }
 
     /**
@@ -4210,7 +4229,7 @@ class FortuneConversationService
                 reason: $reason,
                 aiResponse: $aiResponse,
                 userName: $userName,
-                platform: 'line'
+                platform: $this->currentPlatform
             );
         } catch (\Exception $e) {
             // ไม่ให้ error กระทบ flow หลัก

@@ -120,6 +120,9 @@ class FortuneChannelManager
             }
         }
 
+        // ✅ ตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
+        $this->conversationService->setPlatform($platform);
+
         // ใช้ conversation service ประมวลผล
         $result = $this->conversationService->processMessage($userId, $messageText, $userProfile);
 
