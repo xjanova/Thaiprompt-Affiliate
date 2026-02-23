@@ -548,17 +548,19 @@ class FortuneConversationService
                         return $this->handleKeywordMatchResponse($matchedKeyword);
                     }
 
-                    // ✅ ถ้ามีคำเกี่ยวกับดูดวง (เช่น "ดวงการเงิน", "ความรัก", "การงานปีนี้")
-                    // → เข้า fortune flow ก่อน AI Chat เพื่อไม่ให้ AI Chat ดักคำถามดูดวงไว้
-                    if ($this->containsFortuneKeyword($messageText)) {
-                        return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
-                    }
-
-                    // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
-                    // เฉพาะข้อความที่ไม่เกี่ยวกับดูดวงเลย (เช่น "สวัสดี", "อากาศวันนี้", "แนะนำร้านอาหาร")
+                    // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง (ไม่ใช้โควต้าฟรี)
+                    // ต้องให้ AI Chat จัดการก่อน เพราะ containsFortuneKeyword จับคำกว้างเกิน
+                    // (เช่น "งาน", "เงิน", "แฟน") ทำให้ข้อความทั่วไปถูก trigger fortune flow
                     $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
                     if ($aiChatResult) {
                         return $aiChatResult;
+                    }
+
+                    // ✅ ถ้ามีคำเกี่ยวกับดูดวง → ถามยืนยันก่อน (ไม่สร้าง FortuneReading จนกว่าจะยืนยัน)
+                    // ⚠️ ใช้ askFortuneConfirmation แทน askForQuestionBeforeReading
+                    // เพื่อไม่ให้ใช้โควต้าฟรีจากคำพูดทั่วไปที่มีคำเกี่ยวข้อง
+                    if ($this->containsFortuneKeyword($messageText)) {
+                        return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                     }
 
                     return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
@@ -602,25 +604,18 @@ class FortuneConversationService
                 return $this->handleKeywordMatchResponse($matchedKeyword);
             }
 
-            // ✅ ถ้ามีคำเกี่ยวกับดูดวง (เช่น "ดวงการเงิน", "ความรัก", "การงานปีนี้")
-            // → เข้า fortune flow ก่อน AI Chat เพื่อไม่ให้ AI Chat ดักคำถามดูดวงไว้
-            if ($this->containsFortuneKeyword($messageText)) {
-                if (! $this->canMakeAICall($facebookUserId)) {
-                    return [
-                        'action' => 'ai_limit',
-                        'message' => $this->getAILimitMessage(),
-                        'reading' => null,
-                    ];
-                }
-
-                return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
-            }
-
             // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
-            // เฉพาะข้อความที่ไม่เกี่ยวกับดูดวงเลย (เช่น "สวัสดี", "อากาศวันนี้", "แนะนำร้านอาหาร")
+            // คำเกี่ยวกับดวง (เช่น "ความรัก", "การเงิน", "ปีนี้") จะถูกจัดการโดย AI Chat
+            // ไม่สร้าง FortuneReading → ไม่ใช้สิทธิ์ฟรี
+            // ✅ ผู้ใช้ต้องพิมพ์ "ดูดวง" หรือกดปุ่มดูดวงฟรีเท่านั้นจึงจะเริ่มกระบวนการทำนาย
             $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
             if ($aiChatResult) {
                 return $aiChatResult;
+            }
+
+            // ถ้า AI Chat ไม่ตอบ + มีคำเกี่ยวกับดวง → ถามยืนยันก่อนเริ่มทำนาย (ไม่สร้าง Reading ยัง)
+            if ($this->containsFortuneKeyword($messageText)) {
+                return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
             }
 
             // ถ้าไม่ match อะไรเลย → ถามยืนยันดูดวง (fallback สุดท้าย)
@@ -1484,38 +1479,48 @@ class FortuneConversationService
     }
 
     /**
-     * ตรวจสอบว่าเป็นคำขอดูดวงแบบกว้างๆ ไม่มีคำถามเฉพาะเจาะจง
+     * ตรวจสอบว่าเป็นคำขอดูดวงที่ชัดเจน (Explicit Fortune Request)
      *
-     * เช่น "ดูดวง", "ดูดวงค่ะ", "ทำนาย", "หมอดู" → true
-     * แต่ "ดูดวงความรัก", "จะมีแฟนไหม", "การเงินปีหน้า" → false
+     * ✅ ต้องมีคำนำหน้าชัดเจน: "ดูดวง", "ทำนาย", "หมอดู" ฯลฯ
+     * ✅ จับทั้งคำเดี่ยว ("ดูดวง") และมีหัวข้อตาม ("ดูดวงความรัก", "ทำนายการเงิน")
+     * ❌ ไม่จับคำถามที่มีแค่ keyword เรื่อง ("ความรักปีนี้", "การเงินจะดีไหม")
      *
-     * ใช้เพื่อตัดสินว่าควรถามคำถามก่อนเข้า AI หรือเข้าเลย
+     * เหตุผล: ป้องกันข้อความพูดคุยทั่วไปที่มีคำเกี่ยวกับดวง
+     * ถูกนับเป็นคำถามดูดวง → ใช้สิทธิ์ฟรีโดยไม่ตั้งใจ
+     *
+     * @param  string  $text  ข้อความจาก user
+     * @return bool true = เป็นคำขอดูดวงชัดเจน
      */
     protected function isGenericFortuneRequest(string $text): bool
     {
-        // คำขอดูดวงแบบกว้างๆ (ไม่มีคำถามเจาะจง)
-        $genericPatterns = [
-            'ดูดวง', 'ดูดวงค่ะ', 'ดูดวงครับ', 'ดูดวงหน่อย', 'ดูดวงให้หน่อย',
-            'ทำนาย', 'ทำนายค่ะ', 'ทำนายครับ', 'ทำนายให้หน่อย',
-            'หมอดู', 'อยากดูดวง', 'ขอดูดวง', 'ดูดวงด้วย',
-            'ดูดวงเลย', 'ดูดวงสิ', 'ดูดวงที', 'ดูดวงนะ',
-        ];
-
         $textClean = mb_strtolower(trim($text));
+
         // ลบคำลงท้าย (ค่ะ, ครับ, นะ, หน่อย, จ้า ฯลฯ) เพื่อเปรียบเทียบ
         $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย)\s*$/u', '', $textClean);
 
-        foreach ($genericPatterns as $pattern) {
-            if ($textClean === mb_strtolower($pattern) || $textNormalized === mb_strtolower($pattern)) {
+        // ✅ คำนำหน้าที่ชี้เจตนาชัดว่าอยากดูดวง
+        // จับทั้งคำเดี่ยว ("ดูดวง") และ "ดูดวง + อะไรก็ตาม" ("ดูดวงความรัก")
+        $explicitPrefixes = [
+            'ดูดวง', 'ทำนาย', 'หมอดู', 'อยากดูดวง', 'ขอดูดวง',
+            'ทำนายดวง', 'ดูดวงให้', 'ทำนายให้', 'ช่วยดูดวง', 'ช่วยทำนาย',
+        ];
+
+        foreach ($explicitPrefixes as $prefix) {
+            $prefixLower = mb_strtolower($prefix);
+            // exact match ("ดูดวง") หรือ starts with ("ดูดวงความรัก")
+            if ($textClean === $prefixLower
+                || $textNormalized === $prefixLower
+                || str_starts_with($textClean, $prefixLower)
+                || str_starts_with($textNormalized, $prefixLower)
+            ) {
                 return true;
             }
         }
 
-        // ถ้ามีแค่ 1-2 คำที่เกี่ยวกับดวง (สั้นมาก ≤15 ตัวอักษร) → ถือเป็น generic
-        // เช่น "ดูดวง" = 6 chars, "ทำนาย" = 6 chars
+        // ✅ คำที่เป็นคำเดียวสั้นๆ เกี่ยวกับดวง → ถือเป็นคำขอดูดวง
         if (mb_strlen($textNormalized) <= 15) {
-            $coreFortuneWords = ['ดูดวง', 'ทำนาย', 'หมอดู', 'ดวง', 'ไพ่', 'ทาโรต์'];
-            foreach ($coreFortuneWords as $word) {
+            $shortExactWords = ['ดวง', 'ไพ่', 'ทาโรต์', 'ดูไพ่', 'เปิดไพ่'];
+            foreach ($shortExactWords as $word) {
                 if ($textNormalized === mb_strtolower($word)) {
                     return true;
                 }
