@@ -21,7 +21,6 @@ return new class extends Migration
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_public_enabled')) {
                 $table->boolean('horoscope_public_enabled')
                     ->default(true)
-                    ->after('is_active')
                     ->comment('เปิด/ปิดระบบดูดวงสาธารณะ');
             }
 
@@ -29,21 +28,18 @@ return new class extends Migration
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_free_daily_limit')) {
                 $table->unsignedSmallInteger('horoscope_free_daily_limit')
                     ->default(5)
-                    ->after('horoscope_public_enabled')
                     ->comment('จำนวนครั้งดูดวงฟรีต่อวัน');
             }
 
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_dream_free_limit')) {
                 $table->unsignedSmallInteger('horoscope_dream_free_limit')
                     ->default(3)
-                    ->after('horoscope_free_daily_limit')
                     ->comment('จำนวนครั้งทำนายฝันฟรีต่อวัน');
             }
 
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_numerology_free_limit')) {
                 $table->unsignedSmallInteger('horoscope_numerology_free_limit')
                     ->default(3)
-                    ->after('horoscope_dream_free_limit')
                     ->comment('จำนวนครั้งเลขศาสตร์ฟรีต่อวัน');
             }
 
@@ -51,14 +47,12 @@ return new class extends Migration
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_seo_title_th')) {
                 $table->string('horoscope_seo_title_th', 255)
                     ->nullable()
-                    ->after('horoscope_numerology_free_limit')
                     ->comment('SEO title ภาษาไทย');
             }
 
             if (! Schema::hasColumn('fortune_telling_settings', 'horoscope_seo_description_th')) {
                 $table->text('horoscope_seo_description_th')
                     ->nullable()
-                    ->after('horoscope_seo_title_th')
                     ->comment('SEO description ภาษาไทย');
             }
         });
