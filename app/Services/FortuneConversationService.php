@@ -563,7 +563,14 @@ class FortuneConversationService
                         return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
                     }
 
-                    return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
+                    // ✅ FIX: ถ้าไม่ match อะไรเลยใน basic_done → ตอบเป็น AI Chat fallback
+                    // ❌ เดิม: เรียก askFortuneConfirmation → วนลูป confirmation ซ้ำไม่จบ
+                    // ✅ ใหม่: ตอบข้อความทั่วไป + ชวนดูดวง (ไม่สร้าง FortuneReading)
+                    return [
+                        'action' => 'ai_chat_response',
+                        'message' => "✨ หมอจันทรารับฟังอยู่ค่ะ\n\nหากต้องการดูดวง พิมพ์ \"ดูดวง\" หรือกดปุ่ม 🔮 ด้านล่างได้เลยนะคะ",
+                        'reading' => null,
+                    ];
                 }
 
                 // ✅ สถานะอื่นๆ (collecting_birthdate, collecting_questions, pending_payment)
@@ -618,8 +625,14 @@ class FortuneConversationService
                 return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
             }
 
-            // ถ้าไม่ match อะไรเลย → ถามยืนยันดูดวง (fallback สุดท้าย)
-            return $this->askFortuneConfirmation($facebookUserId, $messageText, $userProfile);
+            // ✅ FIX: ถ้าไม่ match อะไรเลย → ตอบข้อความทั่วไป + ชวนดูดวง
+            // ❌ เดิม: เรียก askFortuneConfirmation → วนลูป confirmation ซ้ำไม่จบ
+            // ✅ ใหม่: ตอบเป็นมิตร + แนะนำให้พิมพ์ "ดูดวง" (ไม่สร้าง FortuneReading)
+            return [
+                'action' => 'ai_chat_response',
+                'message' => "🔮 สวัสดีค่ะ ยินดีต้อนรับค่ะ ✨\n\nหมอจันทราพร้อมดูดวงให้คุณค่ะ\n\n💫 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงฟรี\n🔮 หรือพิมพ์ \"ดูดวงความรัก\" \"ดูดวงการเงิน\" ก็ได้ค่ะ\n\nหรือจะคุยเรื่องอื่นก็ได้นะคะ 😊",
+                'reading' => null,
+            ];
 
             } finally {
                 // ปล่อย mutex lock เสมอ ไม่ว่า return หรือ exception
@@ -1363,17 +1376,31 @@ class FortuneConversationService
         // ถ้าเป็น "รอคำถาม" (awaiting_type=question) → ใช้ข้อความใหม่เสมอ (เพราะผู้ใช้เลือกหัวข้อ/พิมพ์คำถาม)
         // ยกเว้นตอบสั้นมาก "ดู", "เอา", "ใช่" → ถือเป็นขอดูดวงทั่วไป
         if ($awaitingType === 'question') {
-            // ✅ Fix: ถ้าผู้ใช้กด "ดูดวง" ซ้ำจาก Rich Menu (generic request)
-            // → ไม่ส่งไป AI ทันที แต่ถามหัวข้อใหม่อีกครั้ง
-            if ($this->isGenericFortuneRequest($messageText)) {
-                // ปิด reading เก่า
+            // ✅ FIX: ถ้าผู้ใช้กด "ดูดวง" (คำเดียว ไม่มีหัวข้อ) ซ้ำจาก Rich Menu
+            // → ถือว่าอยากดูดวงรวมทุกด้าน → ทำนายเลย (ไม่วนลูป)
+            $textCleanForCheck = mb_strtolower(trim($messageText));
+            $pureGenericWords = ['ดูดวง', 'ทำนาย', 'หมอดู', 'ดวง', 'ไพ่', 'ทาโรต์'];
+            // ลบคำลงท้ายออก
+            $normalizedForCheck = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย)\s*$/u', '', $textCleanForCheck);
+
+            $isPureGeneric = in_array($normalizedForCheck, $pureGenericWords);
+
+            if ($isPureGeneric) {
+                // คำเดี่ยว "ดูดวง" → ปิด reading เก่า → ทำนายรวมทุกด้านเลย
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                // ถามหัวข้อใหม่
-                return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+                if (! $this->canMakeAICall($facebookUserId)) {
+                    return [
+                        'action' => 'ai_limit',
+                        'message' => $this->getAILimitMessage(),
+                        'reading' => null,
+                    ];
+                }
+
+                return $this->startNewConversation($facebookUserId, 'ดูดวงรวมทุกด้าน', $userProfile);
             }
 
-            // ถ้าพิมพ์คำถามใหม่ (เช่น "ดูดวงความรัก", "การเงินปีนี้") → ใช้เป็นคำถาม
+            // ✅ "ดูดวงความรัก", "ดูดวงการเงิน" → มีหัวข้อแนบ → ใช้เป็นคำถามเลย
             $questionText = $messageText;
 
             // V3: ถ้าตอบสั้นมาก "ดู", "เอา", "ดูเลย" → ใช้ original_message ที่เก็บไว้
@@ -1392,20 +1419,39 @@ class FortuneConversationService
                 }
             }
         } else {
-            // ✅ V3: flow ยืนยันดูดวง (awaiting_type != 'question')
-            // ถามคำถามก่อนเสมอ → ไม่ส่ง AI ทันที เพื่อให้ผู้ใช้ป้อนคำถามที่ต้องการ
+            // ✅ FIX V3: flow ยืนยันดูดวง (awaiting_type != 'question')
+            // ❌ เดิม: ถามคำถามอีกรอบ → ผู้ใช้ต้องยืนยัน 2 ครั้ง → วนลูป
+            // ✅ ใหม่: ยืนยันแล้ว → เริ่มทำนายเลย (ลดขั้นตอนจาก 3 → 1)
             $isSimpleConfirm = $this->isSimpleConfirmResponse($messageText);
 
             // ปิด reading ที่รอยืนยัน
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            if ($isSimpleConfirm) {
-                // ตอบ "ใช่", "ดู", "เอา" → ถามให้เลือกหัวข้อ/พิมพ์คำถาม
-                return $this->askForQuestionBeforeReading($facebookUserId, 'ดูดวง', $userProfile);
+            // ✅ ตรวจสอบ limit ก่อนเริ่มทำนาย
+            if (! $this->canMakeAICall($facebookUserId)) {
+                return [
+                    'action' => 'ai_limit',
+                    'message' => $this->getAILimitMessage(),
+                    'reading' => null,
+                ];
             }
 
-            // พิมพ์ข้อความใหม่ (เช่น "ดวงความรัก") → ส่งเป็นหัวข้อ/คำถาม
-            return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
+            if ($isSimpleConfirm) {
+                // ตอบ "ใช่", "ดู", "เอา" → ใช้ข้อความต้นฉบับเป็นคำถาม / ถ้าไม่มี → ใช้ "ดูดวงรวมทุกด้าน"
+                $questionText = ($originalMessage && ! $this->isGenericFortuneRequest($originalMessage))
+                    ? $originalMessage
+                    : 'ดูดวงรวมทุกด้าน';
+
+                return $this->startNewConversation($facebookUserId, $questionText, $userProfile);
+            }
+
+            if ($this->isGenericFortuneRequest($messageText)) {
+                // พิมพ์ "ดูดวง" ซ้ำ → ทำนายรวมทุกด้านเลย (ไม่ถามซ้ำ)
+                return $this->startNewConversation($facebookUserId, 'ดูดวงรวมทุกด้าน', $userProfile);
+            }
+
+            // พิมพ์ข้อความใหม่ (เช่น "ดวงความรัก") → ใช้เป็นคำถามเลย ทำนายทันที
+            return $this->startNewConversation($facebookUserId, $messageText, $userProfile);
         }
 
         // === ถึงจุดนี้ = awaiting_type === 'question' เท่านั้น ===

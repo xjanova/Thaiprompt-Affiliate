@@ -133,6 +133,13 @@ class FortuneTellingSetting extends Model
         'chat_ai_model',
         'chat_ai_api_key',
         'chat_system_prompt',
+        // ระบบดูดวงสาธารณะ (Horoscope Public)
+        'horoscope_public_enabled',
+        'horoscope_free_daily_limit',
+        'horoscope_dream_free_limit',
+        'horoscope_numerology_free_limit',
+        'horoscope_seo_title_th',
+        'horoscope_seo_description_th',
     ];
 
     /**
@@ -167,6 +174,11 @@ class FortuneTellingSetting extends Model
         'fortune_custom_commission_per_pv' => 'decimal:2',
         'fortune_static_commission_amount' => 'decimal:2',
         'enable_ai_chat' => 'boolean',
+        // ระบบดูดวงสาธารณะ
+        'horoscope_public_enabled' => 'boolean',
+        'horoscope_free_daily_limit' => 'integer',
+        'horoscope_dream_free_limit' => 'integer',
+        'horoscope_numerology_free_limit' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

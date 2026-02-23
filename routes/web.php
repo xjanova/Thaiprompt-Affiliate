@@ -768,6 +768,50 @@ Route::prefix('tarot')->name('tarot.')->group(function () {
     });
 });
 
+// ================================================
+// Horoscope Public Routes (ระบบดูดวงออนไลน์สาธารณะ)
+// ⚠️ Public Service: ดูดวงฟรี ต้องถูก index โดย search engines (SEO friendly)
+// ================================================
+Route::prefix('horoscope')->name('horoscope.')->group(function () {
+    // หน้าแรกดูดวง (แสดงทุกหมวด)
+    Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeHomeController::class, 'index'])->name('home');
+
+    // ดวงรายวัน 12 ราศี + 7 วันเกิด
+    Route::prefix('daily')->name('daily.')->group(function () {
+        Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'index'])->name('index');
+        Route::match(['GET', 'HEAD'], '/zodiac/{slug}', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'showZodiac'])->name('zodiac');
+        Route::match(['GET', 'HEAD'], '/birth-day/{day}', [\App\Http\Controllers\Frontend\HoroscopeDailyController::class, 'showBirthDay'])->name('birth-day')
+            ->where('day', '[0-6]');
+    });
+
+    // ไพ่ทาโรต์ Interactive
+    Route::prefix('tarot')->name('tarot.')->group(function () {
+        Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeTarotController::class, 'index'])->name('index');
+        Route::match(['GET', 'HEAD'], '/quick', [\App\Http\Controllers\Frontend\HoroscopeTarotController::class, 'quickReading'])->name('quick');
+        Route::post('/quick-interpret', [\App\Http\Controllers\Frontend\HoroscopeTarotController::class, 'quickInterpret'])->name('quick-interpret');
+    });
+
+    // ทำนายชื่อ/เลขศาสตร์
+    Route::prefix('numerology')->name('numerology.')->group(function () {
+        Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'index'])->name('index');
+        Route::post('/analyze-name', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'analyzeName'])->name('analyze-name');
+        Route::post('/analyze-phone', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'analyzePhone'])->name('analyze-phone');
+        Route::post('/analyze-license', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'analyzeLicensePlate'])->name('analyze-license');
+        Route::post('/analyze-idcard', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'analyzeIdCard'])->name('analyze-idcard');
+        Route::post('/analyze-birthday', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'analyzeBirthday'])->name('analyze-birthday');
+        Route::match(['GET', 'HEAD'], '/result/{id}', [\App\Http\Controllers\Frontend\HoroscopeNumerologyController::class, 'showResult'])->name('result');
+    });
+
+    // ทำนายฝัน + เลขเด็ด
+    Route::prefix('dream')->name('dream.')->group(function () {
+        Route::match(['GET', 'HEAD'], '/', [\App\Http\Controllers\Frontend\HoroscopeDreamController::class, 'index'])->name('index');
+        Route::post('/search', [\App\Http\Controllers\Frontend\HoroscopeDreamController::class, 'search'])->name('search');
+        Route::post('/interpret', [\App\Http\Controllers\Frontend\HoroscopeDreamController::class, 'interpret'])->name('interpret');
+        Route::match(['GET', 'HEAD'], '/category/{slug}', [\App\Http\Controllers\Frontend\HoroscopeDreamController::class, 'showCategory'])->name('category');
+        Route::match(['GET', 'HEAD'], '/result/{id}', [\App\Http\Controllers\Frontend\HoroscopeDreamController::class, 'showResult'])->name('result');
+    });
+});
+
 // QR Code & Barcode Generator Routes (Public)
 // ⚠️ Public Tool: QR/Barcode generator เป็น SEO-friendly tool
 Route::prefix('qr-barcode')->name('qr-barcode.')->group(function () {

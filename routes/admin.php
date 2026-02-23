@@ -4000,6 +4000,53 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/{campaign}/post-history', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'postHistory'])->name('post-history');
         Route::get('/{campaign}/preview/{date?}', [\App\Http\Controllers\Admin\FortuneHoroscopeController::class, 'previewContent'])->name('preview');
     });
+
+    // ========================================
+    // HOROSCOPE PUBLIC — จัดการระบบดูดวงสาธารณะ (frontend)
+    // ========================================
+    Route::prefix('horoscope-public')->name('horoscope-public.')->group(function () {
+        // ตั้งค่าทั่วไป
+        Route::get('/settings', [\App\Http\Controllers\Admin\HoroscopePublicSettingsController::class, 'index'])->name('settings');
+        Route::put('/settings', [\App\Http\Controllers\Admin\HoroscopePublicSettingsController::class, 'update'])->name('settings.update');
+
+        // จัดการ 12 ราศี
+        Route::prefix('zodiac')->name('zodiac.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'index'])->name('index');
+            Route::get('/{zodiac}/edit', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'edit'])->name('edit');
+            Route::put('/{zodiac}', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'update'])->name('update');
+            Route::post('/generate-daily', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'generateDaily'])->name('generate-daily');
+            Route::get('/predictions', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'predictions'])->name('predictions');
+            Route::delete('/predictions/{prediction}', [\App\Http\Controllers\Admin\HoroscopeZodiacController::class, 'destroyPrediction'])->name('predictions.destroy');
+        });
+
+        // จัดการพจนานุกรมฝัน
+        Route::prefix('dream')->name('dream.')->group(function () {
+            // หมวดหมู่
+            Route::get('/categories', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'categories'])->name('categories');
+            Route::get('/categories/create', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'createCategory'])->name('categories.create');
+            Route::post('/categories', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'storeCategory'])->name('categories.store');
+            Route::get('/categories/{category}/edit', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'editCategory'])->name('categories.edit');
+            Route::put('/categories/{category}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'updateCategory'])->name('categories.update');
+            Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'destroyCategory'])->name('categories.destroy');
+
+            // พจนานุกรม (สัญลักษณ์ฝัน)
+            Route::get('/', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'index'])->name('index');
+            Route::get('/create', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'create'])->name('create');
+            Route::post('/', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'store'])->name('store');
+            Route::get('/{symbol}/edit', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'edit'])->name('edit');
+            Route::put('/{symbol}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'update'])->name('update');
+            Route::delete('/{symbol}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'destroy'])->name('destroy');
+
+            // ผลทำนายฝัน
+            Route::get('/readings', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'readings'])->name('readings');
+            Route::get('/readings/{reading}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'showReading'])->name('readings.show');
+            Route::delete('/readings/{reading}', [\App\Http\Controllers\Admin\HoroscopeDreamManagementController::class, 'destroyReading'])->name('readings.destroy');
+        });
+
+        // Analytics
+        Route::get('/analytics', [\App\Http\Controllers\Admin\HoroscopeAnalyticsController::class, 'index'])->name('analytics');
+        Route::get('/analytics/data', [\App\Http\Controllers\Admin\HoroscopeAnalyticsController::class, 'getData'])->name('analytics.data');
+    });
 });
 
 // ========================================

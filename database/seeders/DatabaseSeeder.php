@@ -183,6 +183,12 @@ class DatabaseSeeder extends Seeder
 
             // 20. Mobile App System
             MobileBannerSeeder::class,          // 📱 Mobile App Banners (3 ตัวอย่าง: Welcome, Promo, News)
+
+            // 21. Horoscope Public System (ระบบดูดวงสาธารณะ)
+            HoroscopeZodiacSignSeeder::class,       // 🌟 12 ราศี (เมษ→มีน) พร้อมข้อมูลครบ
+            HoroscopeDreamCategorySeeder::class,    // 🌙 หมวดหมู่ทำนายฝัน 12 หมวด
+            HoroscopeDreamDictionarySeeder::class,  // 💭 พจนานุกรมฝัน 100+ สัญลักษณ์ + เลขเด็ด
+            HoroscopeSettingsSeeder::class,         // ⚙️ ค่าเริ่มต้นระบบดูดวงสาธารณะ
         ]);
 
         $this->command->info('');

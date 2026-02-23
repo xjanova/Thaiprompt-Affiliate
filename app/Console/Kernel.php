@@ -405,6 +405,22 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Fortune Horoscope] Post publishing check failed');
             });
+
+        // ========================================
+        // Horoscope Public — ดวงรายวัน 12 ราศี + 7 วันเกิด (AI)
+        // ========================================
+
+        // สร้างดวงรายวันทุกวันเวลา 06:00 น.
+        $schedule->command('horoscope:generate-daily')
+            ->dailyAt('06:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Horoscope Public] สร้างดวงรายวันสำเร็จ');
+            })
+            ->onFailure(function () {
+                \Log::error('[Horoscope Public] สร้างดวงรายวันล้มเหลว');
+            });
     }
 
     /**
