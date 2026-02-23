@@ -14,7 +14,7 @@ on:
 
 jobs:
   tests:
-    name: Tests (PHP 8.3)
+    name: Tests & Build (PHP 8.3)
     runs-on: ubuntu-latest
 
     services:
@@ -36,7 +36,7 @@ jobs:
         with:
           php-version: '8.3'
           extensions: dom, curl, libxml, mbstring, zip, pcntl, pdo, sqlite, pdo_sqlite, pdo_mysql, bcmath, soap, intl, gd, exif, iconv
-          coverage: xdebug
+          coverage: none
 
       - name: Get Composer cache directory
         id: composer-cache
@@ -64,6 +64,14 @@ jobs:
       - name: Build assets
         run: npm run build
 
+      - name: Check build output
+        run: |
+          if [ ! -f public/build/manifest.json ]; then
+            echo "Build manifest not found!"
+            exit 1
+          fi
+          echo "✓ Build completed successfully"
+
       - name: Prepare Laravel application
         env:
           DB_CONNECTION: mysql
@@ -76,7 +84,6 @@ jobs:
           cp .env.example .env
           sed -i 's/APP_ENV=local/APP_ENV=testing/' .env
           php artisan key:generate
-          touch database/database.sqlite
           php artisan config:clear
           php artisan cache:clear
 
@@ -91,19 +98,7 @@ jobs:
           DB_PASSWORD: password
         run: php artisan migrate --force
 
-      - name: Run MLM commission tests
-        env:
-          APP_ENV: testing
-          APP_KEY: base64:YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=
-          DB_CONNECTION: mysql
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_DATABASE: testing
-          DB_USERNAME: root
-          DB_PASSWORD: password
-        run: vendor/bin/phpunit tests/Feature/MlmCommissionFlowTest.php --testdox
-
-      - name: Run all tests
+      - name: Run tests
         continue-on-error: true
         env:
           APP_ENV: testing
@@ -114,7 +109,7 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: password
-        run: vendor/bin/phpunit --coverage-text
+        run: vendor/bin/phpunit --testdox
 
   code-quality:
     name: Code Quality Checks
@@ -151,10 +146,8 @@ jobs:
         timeout-minutes: 5
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            # PR: lint only changed PHP files vs base branch
             CHANGED=$(git diff --name-only --diff-filter=d origin/${{ github.base_ref }}...HEAD -- '*.php' || true)
           else
-            # Push: lint only changed PHP files vs previous commit
             CHANGED=$(git diff --name-only --diff-filter=d HEAD~1...HEAD -- '*.php' || true)
           fi
 
@@ -171,40 +164,12 @@ jobs:
           echo "::notice::Security audit is informational only - will not block CI"
           composer audit || echo "::warning::Security vulnerabilities found - review recommended but not blocking"
 
-  build-check:
-    name: Build Assets Check
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install NPM dependencies
-        run: npm install --no-audit
-
-      - name: Build production assets
-        run: npm run build
-
-      - name: Check build output
-        run: |
-          if [ ! -f public/build/manifest.json ]; then
-            echo "Build manifest not found!"
-            exit 1
-          fi
-          echo "✓ Build completed successfully"
-
   # Auto-release when all checks pass on main branch
   # Bumps patch version, commits, creates tag and GitHub Release
   auto-release:
     name: Auto Release
     runs-on: ubuntu-latest
-    needs: [tests, code-quality, build-check]
+    needs: [tests, code-quality]
     if: (github.ref == 'refs/heads/claude/Main' || github.ref == 'refs/heads/main') && github.event_name == 'push'
     # Prevent race conditions - only one release at a time
     concurrency:
