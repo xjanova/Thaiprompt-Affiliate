@@ -440,9 +440,9 @@
                         </p>
                         <p class="text-sm text-white/70">
                             ข้าพเจ้ายอมรับ
-                            <a href="#" class="text-emerald-400 hover:underline">ข้อกำหนดการใช้งาน</a>
+                            <a href="/terms-of-service.html" target="_blank" class="text-emerald-400 hover:underline">ข้อกำหนดการใช้งาน</a>
                             และ
-                            <a href="#" class="text-emerald-400 hover:underline">นโยบายความเป็นส่วนตัว</a>
+                            <a href="/privacy-policy.html" target="_blank" class="text-emerald-400 hover:underline">นโยบายความเป็นส่วนตัว</a>
                             ของผู้ให้บริการ
                         </p>
                     </div>

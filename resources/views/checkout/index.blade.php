@@ -475,11 +475,11 @@
                                class="mt-1 w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
                         <span class="text-sm text-gray-700 dark:text-gray-300">
                             ฉันยอมรับ
-                            <a href="/terms" target="_blank" class="text-purple-600 dark:text-purple-400 hover:underline">
+                            <a href="/terms-of-service.html" target="_blank" class="text-purple-600 dark:text-purple-400 hover:underline">
                                 เงื่อนไขและข้อตกลง
                             </a>
                             และ
-                            <a href="/privacy" target="_blank" class="text-purple-600 dark:text-purple-400 hover:underline">
+                            <a href="/privacy-policy.html" target="_blank" class="text-purple-600 dark:text-purple-400 hover:underline">
                                 นโยบายความเป็นส่วนตัว
                             </a>
                         </span>

@@ -146,9 +146,9 @@
                             <input type="checkbox" name="accept_terms" class="mt-1 mr-3 w-5 h-5 text-purple-600 rounded" required>
                             <span class="text-sm text-gray-300">
                                 ฉันยอมรับ
-                                <a href="#" class="text-purple-400 hover:text-purple-300 hover:underline transition">ข้อกำหนดและเงื่อนไข</a>
+                                <a href="/terms-of-service.html" target="_blank" class="text-purple-400 hover:text-purple-300 hover:underline transition">ข้อกำหนดและเงื่อนไข</a>
                                 และ
-                                <a href="#" class="text-purple-400 hover:text-purple-300 hover:underline transition">นโยบายความเป็นส่วนตัว</a>
+                                <a href="/privacy-policy.html" target="_blank" class="text-purple-400 hover:text-purple-300 hover:underline transition">นโยบายความเป็นส่วนตัว</a>
                             </span>
                         </label>
                     </div>

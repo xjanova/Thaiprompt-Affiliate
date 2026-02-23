@@ -388,7 +388,7 @@
                         <input type="checkbox" x-model="agreedToTerms" required
                                class="mt-1 w-5 h-5 text-green-600 bg-gray-100 border-gray-300 rounded focus:ring-green-500">
                         <span class="text-sm text-gray-700 dark:text-gray-300">
-                            ฉันยอมรับ <a href="#" class="text-green-600 dark:text-green-400 hover:underline">ข้อกำหนดการใช้งาน</a> และเข้าใจว่าการสร้าง Token ต้องผ่านการอนุมัติก่อน
+                            ฉันยอมรับ <a href="/terms-of-service.html" target="_blank" class="text-green-600 dark:text-green-400 hover:underline">ข้อกำหนดการใช้งาน</a> และเข้าใจว่าการสร้าง Token ต้องผ่านการอนุมัติก่อน
                         </span>
                     </label>
                 </div>

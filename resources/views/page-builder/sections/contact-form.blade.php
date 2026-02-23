@@ -102,7 +102,7 @@ $showContactInfo = $settings['show_contact_info'] ?? true;
                         <label class="flex items-start gap-3 cursor-pointer">
                             <input type="checkbox" required class="mt-1 w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-200">
                             <span class="text-sm text-gray-600">
-                                ฉันยอมรับ <a href="{{ $content['privacy_policy_url'] ?? '#' }}" class="text-blue-600 hover:underline">นโยบายความเป็นส่วนตัว</a> และยินยอมให้ประมวลผลข้อมูลของฉัน
+                                ฉันยอมรับ <a href="{{ $content['privacy_policy_url'] ?? '/privacy-policy.html' }}" target="_blank" class="text-blue-600 hover:underline">นโยบายความเป็นส่วนตัว</a> และยินยอมให้ประมวลผลข้อมูลของฉัน
                             </span>
                         </label>
                     </div>
