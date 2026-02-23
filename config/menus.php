@@ -720,6 +720,11 @@ return [
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],
                 ['label' => '🎨 Rich Menu Editor', 'route' => 'admin.fortune.rich-menu.editor', 'description' => 'แก้ไขปุ่ม สี ข้อความ Rich Menu + อัปโหลดภาพเอง'],
                 ['label' => '📤 Rich Menu Deploy', 'route' => 'admin.fortune.rich-menu.index', 'description' => 'Deploy Rich Menu ไป LINE'],
+                ['label' => '---', 'route' => null], // Divider
+                ['label' => '🌙 ตั้งค่าดูดวงสาธารณะ', 'route' => 'admin.fortune.horoscope-public.settings', 'description' => 'เปิด/ปิด จำกัดฟรี SEO'],
+                ['label' => '♈ 12 ราศี + ดวงรายวัน', 'route' => 'admin.fortune.horoscope-public.zodiac.index', 'description' => 'จัดการราศี + Generate ดวง AI'],
+                ['label' => '💤 พจนานุกรมฝัน', 'route' => 'admin.fortune.horoscope-public.dream.index', 'description' => 'สัญลักษณ์ฝัน หมวดหมู่ ผลทำนาย'],
+                ['label' => '📈 สถิติดูดวงสาธารณะ', 'route' => 'admin.fortune.horoscope-public.analytics', 'description' => 'กราฟ สถิติ Top ราศี/ฝัน'],
             ],
         ],
 

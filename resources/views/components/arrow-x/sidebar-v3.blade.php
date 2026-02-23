@@ -610,6 +610,51 @@
                     <i class="fas fa-question-circle w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คำถามรอตอบ</span>
                 </a>
+
+                {{-- ===== ดูดวงสาธารณะ (Horoscope Public) ===== --}}
+                <div x-show="$store.sidebar.shouldExpand" x-transition class="mt-2 pt-2 border-t border-white/20">
+                    <span class="px-3 py-1 text-xs font-semibold text-yellow-300/80 uppercase tracking-wider drop-shadow">🌙 ดูดวงสาธารณะ</span>
+                </div>
+
+                {{-- Horoscope Settings ⚙️ --}}
+                <a href="{{ route('admin.fortune.horoscope-public.settings') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.horoscope-public.settings*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.horoscope-public.settings*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-sliders w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ตั้งค่าดูดวงสาธารณะ</span>
+                </a>
+
+                {{-- Zodiac Management ♈ --}}
+                <a href="{{ route('admin.fortune.horoscope-public.zodiac.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.horoscope-public.zodiac.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.horoscope-public.zodiac.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-sun w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">12 ราศี + ดวงรายวัน</span>
+                </a>
+
+                {{-- Dream Dictionary 🌙 --}}
+                <a href="{{ route('admin.fortune.horoscope-public.dream.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.horoscope-public.dream.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.horoscope-public.dream.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-moon w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">พจนานุกรมฝัน</span>
+                </a>
+
+                {{-- Horoscope Analytics 📊 --}}
+                <a href="{{ route('admin.fortune.horoscope-public.analytics') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.horoscope-public.analytics*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.horoscope-public.analytics*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-chart-line w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">สถิติดูดวงสาธารณะ</span>
+                </a>
             </div>
         </div>
 
