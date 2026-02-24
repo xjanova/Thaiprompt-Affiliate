@@ -107,9 +107,27 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
                         @endif
                     </div>
 
+                    <!-- PromptPay Account Info -->
+                    @if(!empty($promptpayInfo['promptpay_id']))
+                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6">
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">ชื่อบัญชี:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">{{ $promptpayInfo['promptpay_name'] ?? '-' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">
+                                    {{ ($promptpayInfo['promptpay_type'] ?? 'phone') === 'phone' ? 'เบอร์พร้อมเพย์:' : 'เลขพร้อมเพย์:' }}
+                                </span>
+                                <span class="font-mono font-bold text-lg text-blue-600 dark:text-blue-400">{{ $promptpayInfo['promptpay_id'] }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <!-- Reference Number -->
                     @if(isset($paymentData['ref_no']))
-                    <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-6">
+                    <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-1">เลขอ้างอิง</p>
                         <p class="text-xl font-mono font-bold text-blue-600">{{ $paymentData['ref_no'] }}</p>
                     </div>

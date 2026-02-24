@@ -177,9 +177,12 @@ class SmsPaymentNotification extends Model
 
                 // ยืนยัน payment transaction อัตโนมัติ (ถ้าเปิดใช้งาน)
                 // ใช้ PaymentService เพื่อให้ Order ถูกอัพเดทและ downstream logic ทำงาน
+                // ⚠️ ต้องเช็คทั้ง 'pending' และ 'processing' เพราะ:
+                // - pending = เพิ่งสร้าง transaction ยังไม่ได้เรียก processPayment()
+                // - processing = เรียก processPayment() แล้ว (เช่น PromptPay สร้าง QR แล้ว) รอลูกค้าโอน
                 if ($autoConfirm && $uniqueAmount->transaction_id) {
                     $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
-                    if ($transaction && $transaction->status === 'pending') {
+                    if ($transaction && in_array($transaction->status, ['pending', 'processing'])) {
                         app(PaymentService::class)->completePayment($transaction);
                     }
                 }
@@ -229,7 +232,7 @@ class SmsPaymentNotification extends Model
             // ขั้นที่ 3: Fallback - จับคู่ด้วย reference_number (พร้อม lock)
             if ($this->reference_number) {
                 $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
-                    ->where('status', 'pending')
+                    ->whereIn('status', ['pending', 'processing'])
                     ->where('store_id', $deviceStoreId)
                     ->lockForUpdate()
                     ->first();

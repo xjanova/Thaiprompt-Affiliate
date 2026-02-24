@@ -11,6 +11,7 @@ use App\Models\Wallet;
 use App\Notifications\NewOrderNotification;
 use App\Services\CashbackService;
 use App\Services\Payment\PaymentService;
+use App\Services\Payment\PromptPayProvider;
 use App\Services\ShippingService;
 use App\Services\WalletService;
 use Illuminate\Http\Request;
@@ -480,10 +481,34 @@ class CheckoutController extends Controller
             'gateway_transaction_id' => $transaction->gateway_transaction_id,
         ];
 
+        // ดึงข้อมูล PromptPay account สำหรับแสดงในหน้าชำระเงิน
+        $promptpayInfo = [];
+        if ($order->payment_method === 'promptpay') {
+            try {
+                $promptpayProvider = app(PromptPayProvider::class);
+                $promptpayInfo = $promptpayProvider->getAccountInfo();
+
+                // ✅ ถ้ายังไม่มี QR image (transaction เก่าที่สร้างก่อน fix) → สร้างใหม่ทันที
+                if (empty($paymentData['qr_code_image']) || ! str_starts_with($paymentData['qr_code_image'] ?? '', 'data:image/')) {
+                    $qrImage = $promptpayProvider->generateQrDataUri((float) $transaction->amount);
+                    if (! empty($qrImage)) {
+                        $paymentData['qr_code'] = $qrImage;
+                        $paymentData['qr_code_image'] = $qrImage;
+
+                        // บันทึกลง DB เพื่อไม่ต้องสร้างใหม่ทุกครั้ง
+                        $transaction->update(['promptpay_qr_code' => $qrImage]);
+                    }
+                }
+            } catch (\Exception $e) {
+                \Log::warning('PromptPay info loading failed: '.$e->getMessage());
+            }
+        }
+
         return view('shop.payment-processing', [
             'order' => $order,
             'transaction' => $transaction,
             'paymentData' => $paymentData,
+            'promptpayInfo' => $promptpayInfo,
         ]);
     }
 
