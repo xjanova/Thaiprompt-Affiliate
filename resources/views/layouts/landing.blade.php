@@ -304,6 +304,18 @@
                     <a href="{{ route('contact') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
                         ติดต่อเรา
                     </a>
+
+                    {{-- ปุ่มดูดวง - เด่นชัด --}}
+                    <a href="{{ route('horoscope.home') }}"
+                       class="relative inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl hover:shadow-purple-500/30 transition-all duration-300 transform hover:scale-105"
+                       title="ดูดวงออนไลน์ฟรี - ราศี ไพ่ทาโรต์ เลขศาสตร์ ทำนายฝัน">
+                        <span class="text-base">🔮</span>
+                        <span>ดูดวง</span>
+                        <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-400"></span>
+                        </span>
+                    </a>
                 </div>
 
                 {{-- Right Actions --}}
@@ -413,6 +425,13 @@
                    class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
                     <i class="fas fa-envelope w-5 text-center"></i>
                     ติดต่อเรา
+                </a>
+
+                {{-- ดูดวงออนไลน์ --}}
+                <a href="{{ route('horoscope.home') }}" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl bg-gradient-to-r from-violet-600/30 to-purple-600/30 text-white font-medium transition-colors mt-2">
+                    <span class="w-5 text-center text-lg">🔮</span>
+                    ดูดวงออนไลน์ฟรี
                 </a>
 
                 {{-- Wiki Section --}}
