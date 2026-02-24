@@ -58,6 +58,22 @@ class OrderController extends Controller
             ->where('user_id', auth()->id())
             ->firstOrFail();
 
+        // ✅ AJAX polling จากหน้า payment-processing ต้อง return JSON
+        // เพื่อให้ JavaScript ตรวจสอบ payment_status ได้
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'order' => [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'status' => $order->status,
+                    'payment_status' => $order->payment_status,
+                    'payment_method' => $order->payment_method,
+                    'total' => $order->total,
+                    'paid_at' => $order->paid_at?->toIso8601String(),
+                ],
+            ]);
+        }
+
         return view('shop.orders.show', compact('order'));
     }
 
