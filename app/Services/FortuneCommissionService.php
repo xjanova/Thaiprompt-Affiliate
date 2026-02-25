@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -267,6 +268,10 @@ class FortuneCommissionService
 
     /**
      * เพิ่มเงินเข้า wallet ผู้รับคอมมิชชั่น
+     *
+     * ⚠️ ทำ wallet + transaction โดยตรง (ไม่ผ่าน WalletService)
+     * เพื่อหลีกเลี่ยงปัญหา nested transaction + WalletLog
+     * ที่ทำให้ deposit ล้มเหลวเมื่อสร้าง wallet ใหม่ภายใน DB::transaction เดียวกัน
      */
     protected function depositToWallet(
         MlmMember $recipientMember,
@@ -276,31 +281,58 @@ class FortuneCommissionService
         float $amount
     ): void {
         try {
-            $walletService = app(WalletService::class);
+            // หา wallet ที่มีอยู่ หรือสร้างใหม่โดยตรง
+            $wallet = Wallet::where('user_id', $recipientMember->user_id)->first();
 
-            $wallet = $recipientMember->user->wallet;
             if (! $wallet) {
                 $wallet = Wallet::create([
                     'user_id' => $recipientMember->user_id,
                     'balance' => 0,
                     'currency' => 'THB',
+                    'status' => 'active',
                 ]);
+                // refresh เพื่อโหลด default values (wallet_address, etc.) จาก DB
+                $wallet->refresh();
             }
 
+            if ($wallet->status !== 'active') {
+                Log::warning("FortuneCommission: wallet ไม่ active สำหรับ user {$recipientMember->user_id}");
+
+                return;
+            }
+
+            $balanceBefore = (float) $wallet->balance;
+            $balanceAfter = $balanceBefore + $amount;
             $levelName = $level === 1 ? 'สายตรง' : 'หลาน';
-            $transaction = $walletService->deposit(
-                $wallet,
-                $amount,
-                "ค่าแนะนำดูดวง L{$level}({$levelName}) {$amount} บาท จากบิล #{$reading->id}",
-                FortuneCommission::class,
-                $commission->id,
-                [
+
+            // สร้าง WalletTransaction โดยตรง
+            $transaction = WalletTransaction::create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $wallet->user_id,
+                'type' => 'deposit',
+                'amount' => $amount,
+                'balance_before' => $balanceBefore,
+                'balance_after' => $balanceAfter,
+                'currency' => $wallet->currency,
+                'description' => "ค่าแนะนำดูดวง L{$level}({$levelName}) {$amount} บาท จากบิล #{$reading->id}",
+                'reference_type' => FortuneCommission::class,
+                'reference_id' => $commission->id,
+                'status' => 'completed',
+                'metadata' => [
                     'reading_id' => $reading->id,
                     'level' => $level,
                     'buyer_user_id' => $reading->user_id,
                     'mode' => 'fortune_commission',
-                ]
-            );
+                ],
+                'completed_at' => now(),
+            ]);
+
+            // อัพเดท wallet balance โดยตรง
+            $wallet->update([
+                'balance' => $balanceAfter,
+                'total_income' => (float) ($wallet->total_income ?? 0) + $amount,
+                'last_transaction_at' => now(),
+            ]);
 
             // อัพเดท wallet_transaction_id ใน commission record
             $commission->update(['wallet_transaction_id' => $transaction->id]);
@@ -309,6 +341,7 @@ class FortuneCommissionService
                 'user_id' => $recipientMember->user_id,
                 'amount' => $amount,
                 'error' => $walletErr->getMessage(),
+                'trace' => $walletErr->getTraceAsString(),
             ]);
         }
     }
