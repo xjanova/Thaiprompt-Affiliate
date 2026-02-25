@@ -145,9 +145,11 @@ class SmsPaymentNotification extends Model
         return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm) {
             // ดึง store_id ของ device เพื่อ filter เฉพาะ transactions ของร้านตัวเอง
             // ป้องกันการ match ข้ามร้านเมื่อมี multi-store
-            // ถ้า device.store_id = null (legacy) → fallback เป็น platformStoreId
+            // Admin device (store_id = null) → match ทุกร้าน (เพราะเป็น device หลักรับ SMS ของทั้ง platform)
+            // Seller device → match เฉพาะร้านของตัวเอง
             $deviceModel = SmsCheckerDevice::where('device_id', $this->device_id)->first();
-            $deviceStoreId = (int) ($deviceModel?->store_id ?? VendorStore::getPlatformStoreId());
+            $isAdminDevice = $deviceModel?->isAdminDevice() ?? true;
+            $deviceStoreId = $isAdminDevice ? null : (int) $deviceModel->store_id;
 
             // ขั้นที่ 1: จับคู่ด้วย unique amount ที่ยังไม่หมดอายุ (พร้อม lock)
             // กรองเฉพาะบิลอีคอมเมิร์ซ (order, order_payment, topup, tarot_reading)
@@ -159,9 +161,13 @@ class SmsPaymentNotification extends Model
                 ->lockForUpdate();
 
             // Filter ตาม store_id ของ device (ป้องกัน match ข้ามร้าน)
-            $uniqueAmountQuery->whereHas('transaction', function ($q) use ($deviceStoreId) {
-                $q->where('store_id', $deviceStoreId);
-            });
+            // Admin device → ไม่ filter store_id (match ทุกร้านได้)
+            // Seller device → filter เฉพาะร้านตัวเอง
+            if ($deviceStoreId !== null) {
+                $uniqueAmountQuery->whereHas('transaction', function ($q) use ($deviceStoreId) {
+                    $q->where('store_id', $deviceStoreId);
+                });
+            }
 
             $uniqueAmount = $uniqueAmountQuery->first();
 
@@ -194,13 +200,18 @@ class SmsPaymentNotification extends Model
             // กรณี UniquePaymentAmount หมดอายุแล้ว (เช่น ลูกค้าจ่ายหลัง 30 นาที)
             // แต่ PaymentTransaction ยังเป็น pending อยู่ (ยังไม่ถูก cleanup)
             // ใช้ exact match กับ amount ที่มีทศนิยม (unique decimal) เพื่อความแม่นยำ
-            $transaction = PaymentTransaction::where('amount', $this->amount)
+            $txnQuery = PaymentTransaction::where('amount', $this->amount)
                 ->whereIn('status', ['pending', 'processing'])
                 ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
-                ->where('store_id', $deviceStoreId)
                 ->lockForUpdate()
-                ->orderBy('created_at', 'desc')
-                ->first();
+                ->orderBy('created_at', 'desc');
+
+            // Admin device → match ทุกร้าน, Seller device → match เฉพาะร้านตัวเอง
+            if ($deviceStoreId !== null) {
+                $txnQuery->where('store_id', $deviceStoreId);
+            }
+
+            $transaction = $txnQuery->first();
 
             if ($transaction) {
                 $this->status = 'matched';
@@ -231,11 +242,16 @@ class SmsPaymentNotification extends Model
 
             // ขั้นที่ 3: Fallback - จับคู่ด้วย reference_number (พร้อม lock)
             if ($this->reference_number) {
-                $transaction = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
+                $refQuery = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
                     ->whereIn('status', ['pending', 'processing'])
-                    ->where('store_id', $deviceStoreId)
-                    ->lockForUpdate()
-                    ->first();
+                    ->lockForUpdate();
+
+                // Admin device → match ทุกร้าน, Seller device → match เฉพาะร้านตัวเอง
+                if ($deviceStoreId !== null) {
+                    $refQuery->where('store_id', $deviceStoreId);
+                }
+
+                $transaction = $refQuery->first();
 
                 if ($transaction && abs((float) $transaction->amount - (float) $this->amount) < 0.01) {
                     $this->status = 'matched';
