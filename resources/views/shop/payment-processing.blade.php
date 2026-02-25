@@ -54,10 +54,34 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
 }
 @endphp
 
-{{-- Debug info (แสดงเฉพาะ debug mode และมี error) --}}
-@if(config('app.debug') && isset($smsDebug['error']))
-<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 mx-4 text-sm">
-    <strong>⚠️ SMS Debug:</strong> {{ json_encode($smsDebug) }}
+{{-- Debug info (แสดงเฉพาะ debug mode) --}}
+@if(config('app.debug'))
+@php
+    // ดึงข้อมูล debug สำหรับตรวจสอบ
+    $debugUniqueAmount = \App\Models\UniquePaymentAmount::where('transaction_id', $transaction->id)->first();
+    $debugSmsNotifications = \App\Models\SmsPaymentNotification::where('matched_transaction_id', $transaction->id)
+        ->orWhere(function($q) use ($debugUniqueAmount) {
+            if ($debugUniqueAmount) {
+                $q->where('amount', $debugUniqueAmount->unique_amount);
+            }
+        })
+        ->latest()
+        ->take(3)
+        ->get(['id', 'amount', 'status', 'bank', 'created_at']);
+@endphp
+<div class="bg-gray-100 border border-gray-300 text-gray-700 px-4 py-3 rounded mb-4 mx-4 text-xs font-mono space-y-1">
+    <strong>🔍 Payment Debug:</strong>
+    <div>Transaction: #{{ $transaction->id }} | Status: <span class="font-bold {{ $transaction->status === 'completed' ? 'text-green-600' : 'text-yellow-600' }}">{{ $transaction->status }}</span> | Amount: ฿{{ $transaction->amount }}</div>
+    <div>Order: #{{ $order->id }} | Payment Status: <span class="font-bold {{ $order->payment_status === 'paid' ? 'text-green-600' : 'text-yellow-600' }}">{{ $order->payment_status }}</span> | Store ID: {{ $transaction->store_id ?? 'null' }}</div>
+    <div>UniqueAmount: {{ $debugUniqueAmount ? '✅ ID#'.$debugUniqueAmount->id.' | suffix: .'.$debugUniqueAmount->decimal_suffix.' | status: '.$debugUniqueAmount->status.' | expires: '.$debugUniqueAmount->expires_at : '❌ ไม่มี' }}</div>
+    <div>QR Image: {{ !empty($paymentData['qr_code_image']) && str_starts_with($paymentData['qr_code_image'] ?? '', 'data:image/') ? '✅ data URI' : '❌ ไม่มี/ไม่ถูกต้อง' }}</div>
+    <div>SMS Notifications (matched): {{ $debugSmsNotifications->isEmpty() ? '❌ ยังไม่มี SMS เข้ามา' : '✅ '.$debugSmsNotifications->count().' รายการ' }}</div>
+    @foreach($debugSmsNotifications as $sms)
+    <div class="ml-4">→ SMS#{{ $sms->id }} | ฿{{ $sms->amount }} | {{ $sms->bank }} | {{ $sms->status }} | {{ $sms->created_at }}</div>
+    @endforeach
+    @if(isset($smsDebug['error']))
+    <div class="text-red-600">⚠️ Error: {{ $smsDebug['error'] }}</div>
+    @endif
 </div>
 @endif
 
