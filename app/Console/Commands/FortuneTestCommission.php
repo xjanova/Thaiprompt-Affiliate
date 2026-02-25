@@ -652,18 +652,25 @@ class FortuneTestCommission extends Command
             return $settings->fresh();
         }
 
-        return FortuneTellingSetting::create([
-            'facebook_app_id' => 'test-e2e-app',
-            'facebook_page_id' => 'test-e2e-page',
-            'is_enabled' => true,
-            'reading_price' => 29,
-            'deep_reading_price' => 99,
-            'fortune_level1_commission_type' => $l1Type,
-            'fortune_level1_commission_amount' => $l1Amount,
-            'fortune_level2_enabled' => $l2Enabled,
-            'fortune_level2_commission_type' => $l2Type,
-            'fortune_level2_commission_amount' => $l2Amount,
-        ]);
+        // ⚠️ ใช้ manual assignment แทน ::create()
+        // เพราะ model $attributes มี default เป็น PHP array (enabled_platforms, fortune_bank_account_ids)
+        // ที่ cast ไม่ apply ตอน INSERT ผ่าน ::create()
+        $settings = new FortuneTellingSetting;
+        $settings->facebook_app_id = 'test-e2e-app';
+        $settings->facebook_page_id = 'test-e2e-page';
+        $settings->is_enabled = true;
+        $settings->reading_price = 29;
+        $settings->deep_reading_price = 99;
+        $settings->enabled_platforms = ['facebook'];
+        $settings->fortune_bank_account_ids = [];
+        $settings->fortune_level1_commission_type = $l1Type;
+        $settings->fortune_level1_commission_amount = $l1Amount;
+        $settings->fortune_level2_enabled = $l2Enabled;
+        $settings->fortune_level2_commission_type = $l2Type;
+        $settings->fortune_level2_commission_amount = $l2Amount;
+        $settings->save();
+
+        return $settings;
     }
 
     // =====================================================
