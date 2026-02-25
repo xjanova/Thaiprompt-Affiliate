@@ -5,7 +5,10 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneCommission;
 use App\Models\FortuneTellingSetting;
+use App\Models\MlmMember;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * FortuneReferralDashboardController
@@ -13,6 +16,7 @@ use Illuminate\Http\Request;
  * หน้าจัดการคอมมิชชั่นดูดวงสำหรับ user
  * - คอมมิชชั่นดูดวง (Level 1 + Level 2)
  * - หน้าชวนเพื่อนดูดวง (marketing + referral link)
+ * - ผังสายงานดูดวง (referral tree)
  */
 class FortuneReferralDashboardController extends Controller
 {
@@ -95,5 +99,124 @@ class FortuneReferralDashboardController extends Controller
             'level2Enabled' => $settings->isFortuneLevel2Enabled(),
             'pageTitle' => 'ชวนเพื่อนดูดวง',
         ]);
+    }
+
+    /**
+     * หน้าผังสายงานดูดวง
+     *
+     * แสดง tree visualization ของ user ปัจจุบัน
+     * โครงสร้าง sponsor → ผู้ถูกแนะนำ พร้อมข้อมูลคอมมิชชั่น
+     */
+    public function tree()
+    {
+        $user = auth()->user();
+
+        // หา MlmMember ของ user ปัจจุบัน
+        $currentMember = MlmMember::where('user_id', $user->id)->first();
+
+        // สถิติคอมมิชชั่นดูดวงของ user
+        $stats = [
+            'total' => FortuneCommission::forUser($user->id)->sum('amount'),
+            'level1' => FortuneCommission::forUser($user->id)->level1()->sum('amount'),
+            'level2' => FortuneCommission::forUser($user->id)->level2()->sum('amount'),
+            'referral_count' => $currentMember
+                ? MlmMember::where('original_sponsor_id', $currentMember->id)->count()
+                : 0,
+        ];
+
+        return view('user.fortune-referral.tree', [
+            'currentMember' => $currentMember,
+            'stats' => $stats,
+            'pageTitle' => 'ผังสายงานดูดวง',
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล tree สำหรับแสดงผัง (JSON API)
+     *
+     * สร้าง tree data จาก MlmMember ของ user ปัจจุบัน
+     * พร้อมข้อมูลคอมมิชชั่นดูดวง
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getTreeData(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+        $maxDepth = min((int) $request->get('depth', 5), 10);
+
+        // หา MlmMember ของ user ปัจจุบัน
+        $currentMember = MlmMember::where('user_id', $user->id)->first();
+
+        if (! $currentMember) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบข้อมูลสมาชิกในระบบ MLM',
+            ], 404);
+        }
+
+        try {
+            $treeData = $this->buildFortuneTree($currentMember, $maxDepth);
+
+            return response()->json([
+                'success' => true,
+                'data' => $treeData,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User fortune tree error', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการโหลดผังสายงาน',
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้าง tree data สำหรับผังสายงานดูดวง (User)
+     *
+     * @param MlmMember $member root member
+     * @param int $maxDepth ความลึกสูงสุด
+     * @param int $currentDepth ความลึกปัจจุบัน
+     * @return array
+     */
+    private function buildFortuneTree(MlmMember $member, int $maxDepth, int $currentDepth = 0): array
+    {
+        $member->loadMissing('user');
+
+        // ดึงสรุปคอมมิชชั่นดูดวงของสมาชิกคนนี้
+        $commissionStats = FortuneCommission::where('user_id', $member->user_id)
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(amount), 0) as total_amount')
+            ->first();
+
+        $node = [
+            'id' => $member->id,
+            'name' => $member->user?->name ?? 'Unknown',
+            'code' => $member->member_code ?? '-',
+            'avatar' => null,
+            'status' => $member->status ?? 'active',
+            'rank' => $member->rank_name ?? '-',
+            'pv' => (float) ($member->personal_pv ?? 0),
+            'total_earnings' => (float) ($commissionStats->total_amount ?? 0),
+            'commission_count' => (int) ($commissionStats->total_count ?? 0),
+            'children' => [],
+        ];
+
+        // ดึง children ถ้ายังไม่เกิน depth
+        if ($currentDepth < $maxDepth) {
+            $children = MlmMember::with('user')
+                ->where('original_sponsor_id', $member->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($children as $child) {
+                $node['children'][] = $this->buildFortuneTree($child, $maxDepth, $currentDepth + 1);
+            }
+        }
+
+        return $node;
     }
 }

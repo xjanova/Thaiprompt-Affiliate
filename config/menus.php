@@ -1380,6 +1380,7 @@ return [
             'submenu' => [
                 ['label' => '💰 คอมมิชชั่นดูดวง', 'route' => 'user.fortune-referral.commissions', 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง'],
                 ['label' => '📢 ชวนเพื่อนดูดวง', 'route' => 'user.fortune-referral.recruit', 'icon' => '📢', 'description' => 'แชร์ลิงก์เชิญเพื่อน'],
+                ['label' => '🔮 ผังสายงานดูดวง', 'route' => 'user.fortune-referral.tree', 'icon' => '🔮', 'description' => 'ดูโครงสร้างสายงานดูดวง'],
             ],
         ],
 

@@ -3973,6 +3973,12 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/create-manual', [FortuneCommissionController::class, 'createManual'])->name('create-manual');
     });
 
+    // ผังสายงานดูดวง (Fortune Referral Tree)
+    Route::prefix('referral-tree')->name('referral-tree.')->group(function () {
+        Route::get('/', [FortuneCommissionController::class, 'referralTree'])->name('index');
+        Route::get('/{member}/tree-data', [FortuneCommissionController::class, 'getReferralTreeData'])->name('tree-data');
+    });
+
     // จัดการเครดิตดูดวงฟรีรายคน
     Route::prefix('credits')->name('credits.')->group(function () {
         Route::get('/', [FortuneUserCreditController::class, 'index'])->name('index');

@@ -507,6 +507,134 @@ class FortuneCommissionController extends Controller
         ]);
     }
 
+    // ===== ผังสายงานดูดวง =====
+
+    /**
+     * แสดงผังสายงานดูดวง (Referral Tree)
+     *
+     * แสดงโครงสร้าง sponsor → ผู้ถูกแนะนำ เฉพาะระบบดูดวง
+     * พร้อมข้อมูลคอมมิชชั่น L1/L2 ในแต่ละ node
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function referralTree(Request $request)
+    {
+        // ดึงรายชื่อสมาชิกที่มีคอมมิชชั่นดูดวง (เป็น sponsor หรือ receiver)
+        $memberIds = FortuneCommission::select('mlm_member_id')
+            ->whereNotNull('mlm_member_id')
+            ->distinct()
+            ->pluck('mlm_member_id')
+            ->merge(
+                FortuneCommission::select('from_mlm_member_id')
+                    ->whereNotNull('from_mlm_member_id')
+                    ->distinct()
+                    ->pluck('from_mlm_member_id')
+            )
+            ->unique()
+            ->values();
+
+        $members = MlmMember::with('user')
+            ->whereIn('id', $memberIds)
+            ->orWhereHas('directReferrals', function ($q) use ($memberIds) {
+                $q->whereIn('id', $memberIds);
+            })
+            ->orderBy('created_at', 'desc')
+            ->limit(200)
+            ->get();
+
+        // ถ้าไม่มีสมาชิกที่เกี่ยวข้อง ดึงทั้งหมด
+        if ($members->isEmpty()) {
+            $members = MlmMember::with('user')
+                ->orderBy('created_at', 'desc')
+                ->limit(100)
+                ->get();
+        }
+
+        return view('admin.fortune.referral-tree.index', [
+            'members' => $members,
+            'pageTitle' => 'ผังสายงานดูดวง',
+        ]);
+    }
+
+    /**
+     * ดึงข้อมูล tree สำหรับแสดงผัง (JSON API)
+     *
+     * สร้าง tree data จาก MlmMember + fortune commission info
+     *
+     * @param MlmMember $member
+     * @param Request $request
+     * @return JsonResponse
+     */
+    public function getReferralTreeData(MlmMember $member, Request $request): JsonResponse
+    {
+        $maxDepth = min((int) $request->get('depth', 5), 10);
+
+        try {
+            $treeData = $this->buildFortuneTree($member, $maxDepth);
+
+            return response()->json([
+                'success' => true,
+                'data' => $treeData,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Fortune referral tree error', [
+                'member_id' => $member->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาดในการโหลดผังสายงาน',
+            ], 500);
+        }
+    }
+
+    /**
+     * สร้าง tree data สำหรับผังสายงานดูดวง
+     *
+     * @param MlmMember $member root member
+     * @param int $maxDepth ความลึกสูงสุด
+     * @param int $currentDepth ความลึกปัจจุบัน
+     * @return array
+     */
+    private function buildFortuneTree(MlmMember $member, int $maxDepth, int $currentDepth = 0): array
+    {
+        $member->loadMissing('user');
+
+        // ดึงสรุปคอมมิชชั่นดูดวงของสมาชิกคนนี้
+        $commissionStats = FortuneCommission::where('user_id', $member->user_id)
+            ->selectRaw('COUNT(*) as total_count, COALESCE(SUM(amount), 0) as total_amount')
+            ->first();
+
+        $node = [
+            'id' => $member->id,
+            'name' => $member->user?->name ?? 'Unknown',
+            'code' => $member->member_code ?? '-',
+            'avatar' => null,
+            'status' => $member->status ?? 'active',
+            'rank' => $member->rank_name ?? '-',
+            'pv' => (float) ($member->personal_pv ?? 0),
+            'total_earnings' => (float) ($commissionStats->total_amount ?? 0),
+            'commission_count' => (int) ($commissionStats->total_count ?? 0),
+            'children' => [],
+        ];
+
+        // ดึง children ถ้ายังไม่เกิน depth
+        if ($currentDepth < $maxDepth) {
+            $children = MlmMember::with('user')
+                ->where('original_sponsor_id', $member->id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            foreach ($children as $child) {
+                $node['children'][] = $this->buildFortuneTree($child, $maxDepth, $currentDepth + 1);
+            }
+        }
+
+        return $node;
+    }
+
     // ===== Private Methods =====
 
     /**

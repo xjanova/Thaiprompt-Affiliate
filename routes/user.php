@@ -424,6 +424,10 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
             ->name('commissions');
         Route::get('/recruit', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'recruit'])
             ->name('recruit');
+        Route::get('/tree', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'tree'])
+            ->name('tree');
+        Route::get('/tree-data', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'getTreeData'])
+            ->name('tree-data');
     });
 
 // Wealth Guide E-book - Complete guide from beginner to expert
