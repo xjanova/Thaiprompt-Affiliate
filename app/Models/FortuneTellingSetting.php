@@ -220,7 +220,7 @@ class FortuneTellingSetting extends Model
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
         'fortune_brand_name' => 'แม่หมอจันทรา',
-        'enabled_platforms' => ['facebook'],
+        'enabled_platforms' => '["facebook"]',
         // Affiliate Settings (เปิดเป็นค่าเริ่มต้น)
         'fortune_affiliate_enabled' => true,
         'fortune_auto_register_enabled' => true,

@@ -51,22 +51,18 @@ class FortuneReferralCommissionTest extends TestCase
         );
 
         // สร้าง settings เริ่มต้น: Level 1 fixed 10 บาท, Level 2 fixed 5 บาท
-        // ⚠️ ต้อง override enabled_platforms + fortune_bank_account_ids
-        // เพราะ model $attributes default เป็น PHP array แต่ cast ไม่ apply ตอน insert
-        $this->settings = new FortuneTellingSetting;
-        $this->settings->facebook_app_id = 'test-app-' . uniqid();
-        $this->settings->facebook_page_id = 'test-page-' . uniqid();
-        $this->settings->is_enabled = true;
-        $this->settings->reading_price = 29;
-        $this->settings->deep_reading_price = 99;
-        $this->settings->enabled_platforms = ['facebook'];
-        $this->settings->fortune_bank_account_ids = [];
-        $this->settings->fortune_level1_commission_type = 'fixed';
-        $this->settings->fortune_level1_commission_amount = 10;
-        $this->settings->fortune_level2_enabled = true;
-        $this->settings->fortune_level2_commission_type = 'fixed';
-        $this->settings->fortune_level2_commission_amount = 5;
-        $this->settings->save();
+        $this->settings = FortuneTellingSetting::create([
+            'facebook_app_id' => 'test-app-'.uniqid(),
+            'facebook_page_id' => 'test-page-'.uniqid(),
+            'is_enabled' => true,
+            'reading_price' => 29,
+            'deep_reading_price' => 99,
+            'fortune_level1_commission_type' => 'fixed',
+            'fortune_level1_commission_amount' => 10,
+            'fortune_level2_enabled' => true,
+            'fortune_level2_commission_type' => 'fixed',
+            'fortune_level2_commission_amount' => 5,
+        ]);
     }
 
     // ===========================================================
