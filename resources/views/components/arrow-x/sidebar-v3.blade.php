@@ -591,6 +591,26 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการบิล</span>
                 </a>
 
+                {{-- ภาพรวมคอมมิชชั่น 💰 --}}
+                <a href="{{ route('admin.fortune.commissions.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.commissions.index') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.commissions.index') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-hand-holding-usd w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">ภาพรวมคอมมิชชั่น</span>
+                </a>
+
+                {{-- จัดการคอมมิชชั่น ⚙️ --}}
+                <a href="{{ route('admin.fortune.commissions.manage') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.fortune.commissions.manage') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.commissions.manage') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fas fa-money-check-alt w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">จัดการคอมมิชชั่น</span>
+                </a>
+
                 {{-- Marketing 📣 --}}
                 <a href="{{ route('admin.fortune.marketing.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"

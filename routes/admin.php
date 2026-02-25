@@ -3843,6 +3843,7 @@ Route::prefix('developers')->name('developers.')->group(function () {
 
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBillingController;
+use App\Http\Controllers\Admin\FortuneCommissionController;
 use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
 use App\Http\Controllers\Admin\FortuneRichMenuEditorController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
@@ -3956,6 +3957,20 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/retry-fortune', [FortuneBillingController::class, 'retryFortune'])->name('retry-fortune');
         Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
         Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
+    });
+
+    // คอมมิชชั่นดูดวง (Fortune Commission Management)
+    Route::prefix('commissions')->name('commissions.')->group(function () {
+        Route::get('/', [FortuneCommissionController::class, 'index'])->name('index');
+        Route::get('/manage', [FortuneCommissionController::class, 'manage'])->name('manage');
+        Route::get('/export', [FortuneCommissionController::class, 'exportCsv'])->name('export');
+        Route::get('/{commission}', [FortuneCommissionController::class, 'show'])->name('show');
+        Route::post('/approve', [FortuneCommissionController::class, 'approve'])->name('approve');
+        Route::post('/{commission}/reject', [FortuneCommissionController::class, 'reject'])->name('reject');
+        Route::post('/{commission}/adjust', [FortuneCommissionController::class, 'adjustAmount'])->name('adjust');
+        Route::post('/pay', [FortuneCommissionController::class, 'payOut'])->name('pay');
+        Route::post('/settings', [FortuneCommissionController::class, 'updateSettings'])->name('update-settings');
+        Route::post('/create-manual', [FortuneCommissionController::class, 'createManual'])->name('create-manual');
     });
 
     // จัดการเครดิตดูดวงฟรีรายคน

@@ -178,6 +178,14 @@ class FortuneCommission extends Model
         return $query->where('user_id', $userId);
     }
 
+    /**
+     * กรองเฉพาะสถานะ rejected
+     */
+    public function scopeRejected($query)
+    {
+        return $query->where('status', self::STATUS_REJECTED);
+    }
+
     // ===== Helper Methods =====
 
     /**
@@ -220,5 +228,118 @@ class FortuneCommission extends Model
             self::STATUS_REJECTED => 'ปฏิเสธ',
             default => $this->status,
         };
+    }
+
+    // ===== สถานะ Management Methods =====
+
+    /**
+     * อนุมัติคอมมิชชั่น (pending → approved)
+     *
+     * @return bool สำเร็จหรือไม่
+     */
+    public function approve(): bool
+    {
+        if ($this->status !== self::STATUS_PENDING) {
+            return false;
+        }
+
+        return $this->update([
+            'status' => self::STATUS_APPROVED,
+            'approved_at' => now(),
+        ]);
+    }
+
+    /**
+     * ปฏิเสธคอมมิชชั่น (pending → rejected)
+     *
+     * @param string|null $reason เหตุผลที่ปฏิเสธ
+     * @return bool สำเร็จหรือไม่
+     */
+    public function reject(?string $reason = null): bool
+    {
+        if ($this->status !== self::STATUS_PENDING) {
+            return false;
+        }
+
+        $data = [
+            'status' => self::STATUS_REJECTED,
+            'rejected_at' => now(),
+        ];
+
+        if ($reason) {
+            $data['notes'] = $reason;
+        }
+
+        return $this->update($data);
+    }
+
+    /**
+     * จ่ายคอมมิชชั่นแล้ว (approved/pending → paid)
+     *
+     * @param int|null $walletTransactionId ID ของ wallet transaction
+     * @return bool สำเร็จหรือไม่
+     */
+    public function markPaid(?int $walletTransactionId = null): bool
+    {
+        if (! in_array($this->status, [self::STATUS_PENDING, self::STATUS_APPROVED])) {
+            return false;
+        }
+
+        $data = [
+            'status' => self::STATUS_PAID,
+            'paid_at' => now(),
+        ];
+
+        if ($walletTransactionId) {
+            $data['wallet_transaction_id'] = $walletTransactionId;
+        }
+
+        return $this->update($data);
+    }
+
+    // ===== สถิติ =====
+
+    /**
+     * คำนวณสถิติคอมมิชชั่นดูดวง
+     *
+     * @param array $filters ตัวกรอง (date_from, date_to, status, level)
+     * @return array สถิติรวม
+     */
+    public static function getStats(array $filters = []): array
+    {
+        $query = static::query();
+
+        // ใช้ filter วันที่ถ้ามี
+        if (! empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (! empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // clone query สำหรับแต่ละ stat
+        $baseQuery = $query->clone();
+
+        return [
+            'total_count' => $baseQuery->clone()->count(),
+            'total_amount' => (float) $baseQuery->clone()->sum('amount'),
+
+            'l1_count' => $baseQuery->clone()->where('level', 1)->count(),
+            'l1_amount' => (float) $baseQuery->clone()->where('level', 1)->sum('amount'),
+
+            'l2_count' => $baseQuery->clone()->where('level', 2)->count(),
+            'l2_amount' => (float) $baseQuery->clone()->where('level', 2)->sum('amount'),
+
+            'pending_count' => $baseQuery->clone()->where('status', self::STATUS_PENDING)->count(),
+            'pending_amount' => (float) $baseQuery->clone()->where('status', self::STATUS_PENDING)->sum('amount'),
+
+            'approved_count' => $baseQuery->clone()->where('status', self::STATUS_APPROVED)->count(),
+            'approved_amount' => (float) $baseQuery->clone()->where('status', self::STATUS_APPROVED)->sum('amount'),
+
+            'paid_count' => $baseQuery->clone()->where('status', self::STATUS_PAID)->count(),
+            'paid_amount' => (float) $baseQuery->clone()->where('status', self::STATUS_PAID)->sum('amount'),
+
+            'rejected_count' => $baseQuery->clone()->where('status', self::STATUS_REJECTED)->count(),
+        ];
     }
 }
