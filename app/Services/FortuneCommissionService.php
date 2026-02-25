@@ -39,6 +39,17 @@ class FortuneCommissionService
         MlmMember $mlmMember,
         FortuneTellingSetting $settings
     ): void {
+        // ตรวจสอบว่าบิลชำระเงินแล้ว (ไม่จ่ายคอมมิชชั่นสำหรับบิลฟรี)
+        if (! $reading->is_paid || (float) ($reading->amount_paid ?? 0) <= 0) {
+            Log::debug('FortuneCommission: บิลยังไม่ชำระเงินหรือจำนวน 0 ข้าม', [
+                'reading_id' => $reading->id,
+                'is_paid' => $reading->is_paid,
+                'amount_paid' => $reading->amount_paid,
+            ]);
+
+            return;
+        }
+
         // ตรวจสอบว่าบิลนี้จ่ายคอมมิชชั่นใน fortune_commissions ไปแล้วหรือยัง
         $alreadyDistributed = FortuneCommission::where('fortune_reading_id', $reading->id)->exists();
         if ($alreadyDistributed) {
@@ -49,6 +60,7 @@ class FortuneCommissionService
             return;
         }
 
+        // ใช้ amount_paid จริง, fallback ไปที่ deep_reading_price (กรณี amount_paid ยังไม่อัพเดท)
         $readingPrice = (float) ($reading->amount_paid ?? 0);
         if ($readingPrice <= 0) {
             $readingPrice = (float) ($settings->deep_reading_price ?? 0);
