@@ -614,8 +614,19 @@ class FortuneTestCommission extends Command
     // =====================================================
     protected function createMlmMember(User $user, ?int $sponsorId = null): MlmMember
     {
+        // ดึงหรือสร้าง MlmPlan (จำเป็นสำหรับ FK)
+        $plan = \App\Models\MlmPlan::first() ?? \App\Models\MlmPlan::create([
+            'name' => 'E2E Test Plan',
+            'name_th' => 'แผนทดสอบ E2E',
+            'slug' => 'e2e-test-plan-'.strtolower(Str::random(6)),
+            'type' => 'unilevel',
+            'is_active' => true,
+            'is_default' => true,
+        ]);
+
         $member = MlmMember::create([
             'user_id' => $user->id,
+            'mlm_plan_id' => $plan->id,
             'unilevel_sponsor_id' => $sponsorId,
             'original_sponsor_id' => $sponsorId,
             'status' => 'active',

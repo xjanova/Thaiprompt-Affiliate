@@ -7,6 +7,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
+use App\Models\MlmPlan;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\FortuneCommissionService;
@@ -39,6 +40,8 @@ class FortuneReferralCommissionTest extends TestCase
 
     protected FortuneTellingSetting $settings;
 
+    protected MlmPlan $mlmPlan;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -49,6 +52,16 @@ class FortuneReferralCommissionTest extends TestCase
             ['key' => 'volume_retention_enabled'],
             ['value' => 'false', 'type' => 'boolean', 'group' => 'retention']
         );
+
+        // สร้าง MLM Plan (จำเป็นสำหรับ mlm_members FK)
+        $this->mlmPlan = MlmPlan::create([
+            'name' => 'Test Plan',
+            'name_th' => 'แผนทดสอบ',
+            'slug' => 'test-plan-'.uniqid(),
+            'type' => 'unilevel',
+            'is_active' => true,
+            'is_default' => true,
+        ]);
 
         // สร้าง settings เริ่มต้น: Level 1 fixed 10 บาท, Level 2 fixed 5 บาท
         $this->settings = FortuneTellingSetting::create([
@@ -378,7 +391,7 @@ class FortuneReferralCommissionTest extends TestCase
         [$sponsor, $sMember] = $this->createActiveMlmMember();
         [$buyer, $bMember] = $this->createActiveMlmMember(sponsorId: $sMember->id);
 
-        // สร้าง wallet ให้ sponsor
+        // สร้าง wallet ให้ sponsor (wallet_address auto-generated ใน boot)
         Wallet::create([
             'user_id' => $sponsor->id,
             'balance' => 100,
@@ -519,7 +532,8 @@ class FortuneReferralCommissionTest extends TestCase
 
         $member = MlmMember::create([
             'user_id' => $user->id,
-            'member_code' => 'TM' . str_pad(random_int(1, 99999), 5, '0', STR_PAD_LEFT),
+            'mlm_plan_id' => $this->mlmPlan->id,
+            'member_code' => 'TM'.str_pad(random_int(1, 99999), 5, '0', STR_PAD_LEFT),
             'unilevel_sponsor_id' => $sponsorId,
             'status' => 'active',
             'is_qualified' => true,
