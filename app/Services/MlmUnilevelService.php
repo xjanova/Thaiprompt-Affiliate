@@ -256,13 +256,34 @@ class MlmUnilevelService
         $commissionService = app(MlmCommissionService::class);
         $retentionData = $commissionService->getMemberRetentionStatus($member);
 
+        // ดึงข้อมูลเพิ่มเติมสำหรับ v3 genealogy tree
+        $user = $member->user;
+        $rank = $member->rank ?? null;
+
+        // คำนวณ retention วันหมดอายุ
+        $retentionExpiresAt = $retentionData['expires_at'] ?? null;
+        $retentionDaysLeft = null;
+        if ($retentionExpiresAt) {
+            $retentionDaysLeft = max(0, (int) now()->diffInDays($retentionExpiresAt, false));
+        }
+
         // สร้าง node ของ member นี้
         $node = [
             'id' => $member->id,
             'user_id' => $member->user_id,
-            'name' => $member->user->name ?? 'Unknown',
+            'name' => $user->name ?? 'Unknown',
             'member_code' => $member->member_code,
             'level' => $currentDepth,
+            // ข้อมูลใหม่ v3
+            'avatar_url' => $user->profile_picture_url ?? null,
+            'email' => $user->email ?? null,
+            'rank_name' => $rank->name ?? null,
+            'rank_color' => $rank->color ?? '#6B7280',
+            'joined_at' => $member->created_at?->format('Y-m-d'),
+            'retention_expires_at' => $retentionExpiresAt,
+            'retention_days_left' => $retentionDaysLeft,
+            'is_qualified' => (bool) ($member->is_qualified ?? false),
+            // ข้อมูลเดิม
             'total_pv' => $member->total_pv,
             'monthly_pv' => $retentionData['monthly_pv'] ?? 0,
             'total_team_pv' => $member->total_team_pv,
@@ -279,9 +300,9 @@ class MlmUnilevelService
             return $node;
         }
 
-        // โหลด children
+        // โหลด children (eager load user, plan, rank สำหรับ v3)
         $children = $member->unilevelChildren()
-            ->with(['user', 'plan'])
+            ->with(['user', 'plan', 'rank'])
             ->get();
 
         foreach ($children as $child) {

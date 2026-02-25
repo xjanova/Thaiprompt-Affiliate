@@ -252,6 +252,14 @@ class User extends Authenticatable
     }
 
     /**
+     * คอมมิชชั่นดูดวงที่ได้รับ (แยกจาก MLM commissions)
+     */
+    public function fortuneCommissions()
+    {
+        return $this->hasMany(FortuneCommission::class, 'user_id');
+    }
+
+    /**
      * Get all wallet transactions for the user
      */
     public function walletTransactions()

@@ -5747,23 +5747,27 @@ PROMPT;
                 return;
             }
 
-            // ตรวจสอบว่า reading นี้จ่ายคอมมิชชั่นไปแล้วหรือยัง (ป้องกันจ่ายซ้ำ)
-            $alreadyDistributed = \App\Models\MlmCommission::where('source_type', FortuneReading::class)
-                ->where('source_id', $reading->id)
-                ->exists();
-
-            if ($alreadyDistributed) {
-                Log::info('Fortune Commission: reading นี้จ่ายคอมมิชชั่นไปแล้ว ข้าม', [
-                    'reading_id' => $reading->id,
-                ]);
-
-                return;
-            }
-
             // แบ่งตามโหมด
             if ($mode === 'static') {
-                $this->distributeStaticCommissions($reading, $mlmMember);
+                // ✅ ใช้ FortuneCommissionService ใหม่ — จ่าย Level 1 + Level 2 ผ่าน fortune_commissions
+                // ตรวจซ้ำอยู่ใน FortuneCommissionService แล้ว
+                $fortuneCommissionService = app(\App\Services\FortuneCommissionService::class);
+                $fortuneCommissionService->distributeCommissions($reading, $mlmMember, $this->settings);
             } else {
+                // PV mode: ยังใช้ MlmCommissionService เดิม (จ่ายผ่าน mlm_commissions)
+                // ตรวจซ้ำสำหรับ PV mode
+                $alreadyDistributed = \App\Models\MlmCommission::where('source_type', FortuneReading::class)
+                    ->where('source_id', $reading->id)
+                    ->exists();
+
+                if ($alreadyDistributed) {
+                    Log::info('Fortune Commission: reading นี้จ่ายคอมมิชชั่น PV ไปแล้ว ข้าม', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return;
+                }
+
                 $this->distributePvCommissions($reading, $mlmMember);
             }
 

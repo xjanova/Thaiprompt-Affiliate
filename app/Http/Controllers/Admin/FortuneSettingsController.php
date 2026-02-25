@@ -229,6 +229,12 @@ class FortuneSettingsController extends Controller
             // โหมดจ่ายคอมมิชชั่น: pv หรือ static
             'fortune_commission_mode' => 'nullable|in:pv,static',
             'fortune_static_commission_amount' => 'nullable|numeric|min:0',
+            // Level 1/Level 2 commission settings
+            'fortune_level1_commission_type' => 'nullable|in:fixed,percent',
+            'fortune_level1_commission_amount' => 'nullable|numeric|min:0',
+            'fortune_level2_enabled' => 'boolean',
+            'fortune_level2_commission_type' => 'nullable|in:fixed,percent',
+            'fortune_level2_commission_amount' => 'nullable|numeric|min:0',
             // AI Chat ทั่วไป (สนทนาอัจฉริยะ)
             'enable_ai_chat' => 'boolean',
             'chat_ai_provider' => 'nullable|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
@@ -245,7 +251,7 @@ class FortuneSettingsController extends Controller
             'enable_deep_reading', 'allow_try_before_buy', 'subscription_enabled',
             'use_global_ai_settings', 'comment_engagement_enabled',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
-            'fortune_use_global_commission_rate',
+            'fortune_use_global_commission_rate', 'fortune_level2_enabled',
             'enable_ai_chat',
         ];
         foreach ($checkboxFields as $field) {
@@ -303,6 +309,22 @@ class FortuneSettingsController extends Controller
             }
             if ($request->has('static_amount')) {
                 $settings->fortune_static_commission_amount = $request->input('static_amount', 0);
+            }
+            // Level 1/Level 2 settings preview
+            if ($request->has('level1_type')) {
+                $settings->fortune_level1_commission_type = $request->input('level1_type', 'fixed');
+            }
+            if ($request->has('level1_amount')) {
+                $settings->fortune_level1_commission_amount = $request->input('level1_amount', 10);
+            }
+            if ($request->has('level2_enabled')) {
+                $settings->fortune_level2_enabled = (bool) $request->input('level2_enabled', true);
+            }
+            if ($request->has('level2_type')) {
+                $settings->fortune_level2_commission_type = $request->input('level2_type', 'fixed');
+            }
+            if ($request->has('level2_amount')) {
+                $settings->fortune_level2_commission_amount = $request->input('level2_amount', 5);
             }
 
             $preview = $settings->calculateFortuneCommissionPreview();

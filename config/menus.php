@@ -1371,6 +1371,19 @@ return [
         ],
 
         [
+            'id' => 'fortune-referral',
+            'label' => 'ดูดวง - ปันผล',
+            'icon' => '🔮',
+            'route' => null,
+            'order' => 12.5,
+            'permissions' => [],
+            'submenu' => [
+                ['label' => '💰 คอมมิชชั่นดูดวง', 'route' => 'user.fortune-referral.commissions', 'icon' => '💰', 'description' => 'รายได้จากการแนะนำดูดวง'],
+                ['label' => '📢 ชวนเพื่อนดูดวง', 'route' => 'user.fortune-referral.recruit', 'icon' => '📢', 'description' => 'แชร์ลิงก์เชิญเพื่อน'],
+            ],
+        ],
+
+        [
             'id' => 'security',
             'label' => 'ความปลอดภัย',
             'icon' => '🔐',

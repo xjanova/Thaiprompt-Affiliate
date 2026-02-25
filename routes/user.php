@@ -418,6 +418,14 @@ Route::prefix('mlm')->name('mlm.')->group(function () {
     })->name('dividend-simulator');
 });
 
+    // ===== Fortune Referral Commission (คอมมิชชั่นดูดวง) =====
+    Route::prefix('fortune-referral')->name('fortune-referral.')->group(function () {
+        Route::get('/commissions', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'commissions'])
+            ->name('commissions');
+        Route::get('/recruit', [\App\Http\Controllers\User\FortuneReferralDashboardController::class, 'recruit'])
+            ->name('recruit');
+    });
+
 // Wealth Guide E-book - Complete guide from beginner to expert
 Route::get('/wealth-guide', function () {
     return view('user.wealth-guide');

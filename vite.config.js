@@ -12,7 +12,8 @@ export default defineConfig({
                 'resources/js/service-worker-register.js', // Service Worker
                 'resources/js/echo-setup.js', // Laravel Echo
                 'resources/js/workflow-diagram.js', // n8n-style Workflow Diagram
-                'resources/js/mlm-genealogy-premium.js', // MLM Binary/Unilevel Tree Viewer
+                'resources/js/mlm-genealogy-premium.js', // MLM Binary/Unilevel Tree Viewer (legacy)
+                'resources/js/mlm-genealogy-v3.js', // MLM Genealogy V3 - ผังสายงานยกเครื่องใหม่
                 'resources/js/pos/app.js', // POS PWA App
                 'resources/js/pos/database.js', // POS IndexedDB
                 'resources/js/pos/sync.js', // POS Sync Service

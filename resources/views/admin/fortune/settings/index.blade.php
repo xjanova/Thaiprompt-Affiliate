@@ -1383,6 +1383,11 @@
                 customRate: '{{ old('fortune_custom_commission_per_pv', $settings->fortune_custom_commission_per_pv ?? '') }}',
                 commissionMode: '{{ old('fortune_commission_mode', $settings->fortune_commission_mode ?? 'pv') }}',
                 staticAmount: '{{ old('fortune_static_commission_amount', $settings->fortune_static_commission_amount ?? 0) }}',
+                level1Type: '{{ old('fortune_level1_commission_type', $settings->fortune_level1_commission_type ?? 'fixed') }}',
+                level1Amount: '{{ old('fortune_level1_commission_amount', $settings->fortune_level1_commission_amount ?? 10) }}',
+                level2Enabled: {{ old('fortune_level2_enabled', $settings->fortune_level2_enabled ?? true) ? 'true' : 'false' }},
+                level2Type: '{{ old('fortune_level2_commission_type', $settings->fortune_level2_commission_type ?? 'fixed') }}',
+                level2Amount: '{{ old('fortune_level2_commission_amount', $settings->fortune_level2_commission_amount ?? 5) }}',
                 preview: null,
                 previewLoading: false,
                 previewError: null,
@@ -1499,17 +1504,89 @@
                     </div>
                 </div>
 
-                {{-- Static Commission Amount (แสดงเมื่อเลือก static mode) --}}
-                <div x-show="commissionMode === 'static'" x-transition x-cloak>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        💵 ค่าแนะนำ (บาท)
-                    </label>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        จำนวนเงินที่ผู้แนะนำตรงได้รับเมื่อมีคนมาดูดวงผ่านลิงก์ เช่น ตั้ง 10 บาท → ผู้แนะนำได้ 10 บาท/ครั้ง
-                    </p>
-                    <input type="number" name="fortune_static_commission_amount" step="0.01" min="0"
-                           x-model="staticAmount"
-                           class="w-full md:w-48 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500">
+                {{-- Static Commission Amount (เก็บไว้สำหรับ backward compatibility) --}}
+                <input type="hidden" name="fortune_static_commission_amount" x-model="level1Amount">
+
+                {{-- ===== Level 1/Level 2 Settings (แสดงเมื่อเลือก static mode) ===== --}}
+                <div x-show="commissionMode === 'static'" x-transition x-cloak class="space-y-4">
+
+                    {{-- Level 1: สายตรง --}}
+                    <div class="p-4 rounded-lg border border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="text-lg">🤝</span>
+                            <span class="font-bold text-gray-900 dark:text-white">Level 1 — ค่าแนะนำสายตรง</span>
+                            <span class="text-xs bg-green-600 text-white px-2 py-0.5 rounded-full">ผู้แนะนำตรง</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ประเภท</label>
+                                <select name="fortune_level1_commission_type" x-model="level1Type"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500">
+                                    <option value="fixed">จำนวนเงินคงที่ (บาท)</option>
+                                    <option value="percent">เปอร์เซ็นต์จากราคาดูดวง (%)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                    <span x-show="level1Type === 'fixed'">จำนวนเงิน (บาท)</span>
+                                    <span x-show="level1Type === 'percent'">เปอร์เซ็นต์ (%)</span>
+                                </label>
+                                <input type="number" name="fortune_level1_commission_amount" step="0.01" min="0"
+                                       x-model="level1Amount"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500">
+                            </div>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                            <span x-show="level1Type === 'fixed'">เช่น ตั้ง 10 → ผู้แนะนำตรงได้ 10 บาท/ครั้ง</span>
+                            <span x-show="level1Type === 'percent'">เช่น ตั้ง 10% ราคาดูดวง 99 บาท → ได้ 9.90 บาท/ครั้ง</span>
+                        </p>
+                    </div>
+
+                    {{-- Level 2: ชั้นหลาน --}}
+                    <div class="p-4 rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/20">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center gap-2">
+                                <span class="text-lg">👶</span>
+                                <span class="font-bold text-gray-900 dark:text-white">Level 2 — ค่าแนะนำชั้นหลาน</span>
+                                <span class="text-xs bg-amber-600 text-white px-2 py-0.5 rounded-full">ผู้แนะนำของผู้แนะนำ</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="hidden" name="fortune_level2_enabled" value="0">
+                                <input type="checkbox" name="fortune_level2_enabled" value="1" x-model="level2Enabled"
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-amber-500"></div>
+                                <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300" x-text="level2Enabled ? 'เปิด' : 'ปิด'"></span>
+                            </label>
+                        </div>
+                        <div x-show="level2Enabled" x-transition x-cloak>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">ประเภท</label>
+                                    <select name="fortune_level2_commission_type" x-model="level2Type"
+                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500">
+                                        <option value="fixed">จำนวนเงินคงที่ (บาท)</option>
+                                        <option value="percent">เปอร์เซ็นต์จากราคาดูดวง (%)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                                        <span x-show="level2Type === 'fixed'">จำนวนเงิน (บาท)</span>
+                                        <span x-show="level2Type === 'percent'">เปอร์เซ็นต์ (%)</span>
+                                    </label>
+                                    <input type="number" name="fortune_level2_commission_amount" step="0.01" min="0"
+                                           x-model="level2Amount"
+                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500">
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                                <span x-show="level2Type === 'fixed'">เช่น ตั้ง 5 → ผู้แนะนำชั้น 2 ได้ 5 บาท/ครั้ง</span>
+                                <span x-show="level2Type === 'percent'">เช่น ตั้ง 5% ราคาดูดวง 99 บาท → ได้ 4.95 บาท/ครั้ง</span>
+                            </p>
+                        </div>
+                        <p x-show="!level2Enabled" class="text-xs text-gray-400 dark:text-gray-500">
+                            ปิดการจ่ายคอมมิชชั่นชั้นหลาน — จ่ายเฉพาะ Level 1 (สายตรง) เท่านั้น
+                        </p>
+                    </div>
                 </div>
 
                 {{-- PV Value (แสดงเมื่อเลือก pv mode) --}}

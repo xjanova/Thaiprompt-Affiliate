@@ -16,7 +16,7 @@
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-JrNLIuSk.css",
+    "file": "assets/app-CU9vYVW7.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
@@ -50,6 +50,12 @@
     "file": "assets/mlm-genealogy-premium-ejiG2vH9.js",
     "name": "mlm-genealogy-premium",
     "src": "resources/js/mlm-genealogy-premium.js",
+    "isEntry": true
+  },
+  "resources/js/mlm-genealogy-v3.js": {
+    "file": "assets/mlm-genealogy-v3-BiF61naR.js",
+    "name": "mlm-genealogy-v3",
+    "src": "resources/js/mlm-genealogy-v3.js",
     "isEntry": true
   },
   "resources/js/pos/app.js": {

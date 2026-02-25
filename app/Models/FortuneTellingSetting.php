@@ -127,6 +127,12 @@ class FortuneTellingSetting extends Model
         // โหมดจ่ายคอมมิชชั่น: 'pv' หรือ 'static'
         'fortune_commission_mode',
         'fortune_static_commission_amount',
+        // Level 1/Level 2 commission settings (ระบบดูดวง)
+        'fortune_level1_commission_type',
+        'fortune_level1_commission_amount',
+        'fortune_level2_enabled',
+        'fortune_level2_commission_type',
+        'fortune_level2_commission_amount',
         // AI Chat ทั่วไป (สนทนาอัจฉริยะ — แยก provider จากทำนาย)
         'enable_ai_chat',
         'chat_ai_provider',
@@ -173,6 +179,9 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate' => 'boolean',
         'fortune_custom_commission_per_pv' => 'decimal:2',
         'fortune_static_commission_amount' => 'decimal:2',
+        'fortune_level1_commission_amount' => 'decimal:2',
+        'fortune_level2_enabled' => 'boolean',
+        'fortune_level2_commission_amount' => 'decimal:2',
         'enable_ai_chat' => 'boolean',
         // ระบบดูดวงสาธารณะ
         'horoscope_public_enabled' => 'boolean',
@@ -917,6 +926,68 @@ PROMPT;
     public function getFortuneStaticCommissionAmount(): float
     {
         return (float) ($this->fortune_static_commission_amount ?? 10);
+    }
+
+    // ===== Level 1/Level 2 Fortune Commission =====
+
+    /**
+     * คำนวณคอมมิชชั่น Level 1 (สายตรง) จากราคาดูดวง
+     *
+     * @param float $readingPrice ราคาดูดวง
+     * @return float จำนวนเงินที่ได้
+     */
+    public function getFortuneLevel1Amount(float $readingPrice): float
+    {
+        $type = $this->fortune_level1_commission_type ?? 'fixed';
+        $amount = (float) ($this->fortune_level1_commission_amount ?? 10);
+
+        if ($type === 'percent') {
+            return round($readingPrice * $amount / 100, 2);
+        }
+
+        return round($amount, 2);
+    }
+
+    /**
+     * คำนวณคอมมิชชั่น Level 2 (ชั้นหลาน) จากราคาดูดวง
+     *
+     * @param float $readingPrice ราคาดูดวง
+     * @return float จำนวนเงินที่ได้
+     */
+    public function getFortuneLevel2Amount(float $readingPrice): float
+    {
+        $type = $this->fortune_level2_commission_type ?? 'fixed';
+        $amount = (float) ($this->fortune_level2_commission_amount ?? 5);
+
+        if ($type === 'percent') {
+            return round($readingPrice * $amount / 100, 2);
+        }
+
+        return round($amount, 2);
+    }
+
+    /**
+     * ตรวจสอบว่าเปิด Level 2 (ชั้นหลาน) หรือไม่
+     */
+    public function isFortuneLevel2Enabled(): bool
+    {
+        return (bool) ($this->fortune_level2_enabled ?? true);
+    }
+
+    /**
+     * ดึงประเภทคอมมิชชั่น Level 1
+     */
+    public function getFortuneLevel1CommissionType(): string
+    {
+        return $this->fortune_level1_commission_type ?? 'fixed';
+    }
+
+    /**
+     * ดึงประเภทคอมมิชชั่น Level 2
+     */
+    public function getFortuneLevel2CommissionType(): string
+    {
+        return $this->fortune_level2_commission_type ?? 'fixed';
     }
 
     // ===== AI Chat ทั่วไป (สนทนาอัจฉริยะ) =====
