@@ -718,6 +718,9 @@ return [
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],
+                ['label' => '📊 ภาพรวมคอมมิชชั่น', 'route' => 'admin.fortune.commissions.index', 'description' => 'สถิติคอมมิชชั่นดูดวง L1/L2'],
+                ['label' => '⚙️ จัดการคอมมิชชั่น', 'route' => 'admin.fortune.commissions.manage', 'description' => 'อนุมัติ ปฏิเสธ จ่ายเงิน ปรับจำนวน'],
+                ['label' => '🌳 ผังสายงานดูดวง', 'route' => 'admin.fortune.referral-tree.index', 'description' => 'ดูโครงสร้างสายงาน L1/L2'],
                 ['label' => '🎨 Rich Menu Editor', 'route' => 'admin.fortune.rich-menu.editor', 'description' => 'แก้ไขปุ่ม สี ข้อความ Rich Menu + อัปโหลดภาพเอง'],
                 ['label' => '📤 Rich Menu Deploy', 'route' => 'admin.fortune.rich-menu.index', 'description' => 'Deploy Rich Menu ไป LINE'],
                 ['label' => '---', 'route' => null], // Divider
