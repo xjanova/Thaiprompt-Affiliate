@@ -48,10 +48,14 @@ class FortuneReferralCommissionTest extends TestCase
         $this->service = new FortuneCommissionService;
 
         // ปิดระบบรักษายอด เพื่อให้ทุก member ที่ status=active ถือว่า active
+        // ⚠️ ใช้ '0' ไม่ใช่ 'false' เพราะ PHP: (bool)'false' = true
         MlmGlobalSetting::updateOrCreate(
             ['key' => 'volume_retention_enabled'],
-            ['value' => 'false', 'type' => 'boolean', 'group' => 'retention']
+            ['value' => '0', 'type' => 'boolean', 'group' => 'retention']
         );
+
+        // ล้าง cache (MlmGlobalSetting::get ใช้ Cache::remember)
+        \Illuminate\Support\Facades\Cache::flush();
 
         // สร้าง MLM Plan (จำเป็นสำหรับ mlm_members FK)
         $this->mlmPlan = MlmPlan::create([

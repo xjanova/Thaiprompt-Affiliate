@@ -208,10 +208,12 @@ class FortuneTestCommission extends Command
         }
 
         // ปิด volume retention เพื่อให้ test ง่าย
+        // ⚠️ ใช้ '0' ไม่ใช่ 'false' เพราะ PHP: (bool)'false' = true
         MlmGlobalSetting::updateOrCreate(
             ['key' => 'volume_retention_enabled'],
-            ['value' => 'false', 'type' => 'boolean', 'group' => 'retention']
+            ['value' => '0', 'type' => 'boolean', 'group' => 'retention']
         );
+        \Illuminate\Support\Facades\Cache::flush();
         $this->line('  ✓ ปิด volume_retention_enabled (ให้ทุก member active)');
 
         $this->line('  ✓ สภาพแวดล้อมพร้อมสำหรับทดสอบ');
