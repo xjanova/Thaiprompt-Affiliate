@@ -13,7 +13,7 @@
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
             <nav class="flex items-center gap-2 text-sm text-white/60 mb-2">
-                <a href="{{ route('admin.platform-revenue.forum.reports.index') }}" class="hover:text-white transition">
+                <a href="{{ route('admin.forum.reports.index') }}" class="hover:text-white transition">
                     จัดการรายงาน
                 </a>
                 <i class="fas fa-chevron-right text-xs"></i>
@@ -21,7 +21,7 @@
             </nav>
             <h1 class="text-2xl font-bold text-white">🚨 รายละเอียดรายงาน</h1>
         </div>
-        <a href="{{ route('admin.platform-revenue.forum.reports.index') }}"
+        <a href="{{ route('admin.forum.reports.index') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition">
             <i class="fas fa-arrow-left"></i>
             <span>กลับ</span>
@@ -127,7 +127,7 @@
                             {!! Str::limit(strip_tags($report->reportable->content), 500) !!}
                         </div>
                         <div class="mt-3">
-                            <a href="{{ route('admin.platform-revenue.forum.threads.show', $report->reportable) }}"
+                            <a href="{{ route('admin.forum.threads.show', $report->reportable) }}"
                                class="text-blue-400 hover:underline text-sm">
                                 <i class="fas fa-external-link-alt mr-1"></i>
                                 ดูกระทู้เต็ม
@@ -151,7 +151,7 @@
                         </div>
                         @if($report->reportable->thread)
                         <div class="mt-3">
-                            <a href="{{ route('admin.platform-revenue.forum.threads.show', $report->reportable->thread) }}"
+                            <a href="{{ route('admin.forum.threads.show', $report->reportable->thread) }}"
                                class="text-blue-400 hover:underline text-sm">
                                 <i class="fas fa-external-link-alt mr-1"></i>
                                 ดูกระทู้ที่เกี่ยวข้อง
@@ -281,7 +281,7 @@ function reportAdmin() {
             this.action = 'resolve';
 
             try {
-                const response = await fetch('{{ route("admin.platform-revenue.forum.reports.resolve", $report) }}', {
+                const response = await fetch('{{ route("admin.forum.reports.resolve", $report) }}', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -311,7 +311,7 @@ function reportAdmin() {
             this.action = 'dismiss';
 
             try {
-                const response = await fetch('{{ route("admin.platform-revenue.forum.reports.dismiss", $report) }}', {
+                const response = await fetch('{{ route("admin.forum.reports.dismiss", $report) }}', {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',

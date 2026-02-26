@@ -66,6 +66,53 @@ class ForumController extends Controller
     }
 
     /**
+     * แสดงกระทู้ของฉัน
+     *
+     * @return \Illuminate\View\View
+     */
+    public function myThreads()
+    {
+        $threads = ForumThread::with(['category'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(20);
+
+        return view('forum.my-threads', compact('threads'));
+    }
+
+    /**
+     * แสดงโพสต์/ความคิดเห็นของฉัน
+     *
+     * @return \Illuminate\View\View
+     */
+    public function myPosts()
+    {
+        $posts = \App\Models\ForumPost::with(['thread.category'])
+            ->where('user_id', auth()->id())
+            ->latest()
+            ->paginate(20);
+
+        return view('forum.my-posts', compact('posts'));
+    }
+
+    /**
+     * แสดงการแจ้งเตือนฟอรั่ม
+     *
+     * @return \Illuminate\View\View
+     */
+    public function notifications()
+    {
+        // ดึง notification ที่เกี่ยวกับฟอรั่ม
+        $notifications = auth()->user()
+            ->notifications()
+            ->where('type', 'like', '%Forum%')
+            ->latest()
+            ->paginate(20);
+
+        return view('forum.notifications', compact('notifications'));
+    }
+
+    /**
      * ค้นหากระทู้
      *
      * @return \Illuminate\View\View

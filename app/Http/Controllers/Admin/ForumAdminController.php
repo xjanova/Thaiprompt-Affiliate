@@ -38,7 +38,7 @@ class ForumAdminController extends Controller
             }])
             ->get();
 
-        return view('admin.platform-revenue.forum.categories.index', compact('categories'));
+        return view('admin.forum.categories.index', compact('categories'));
     }
 
     /**
@@ -52,7 +52,7 @@ class ForumAdminController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        return view('admin.platform-revenue.forum.categories.create', compact('parentCategories'));
+        return view('admin.forum.categories.create', compact('parentCategories'));
     }
 
     /**
@@ -79,7 +79,7 @@ class ForumAdminController extends Controller
         ForumCategory::create($validated);
 
         return redirect()
-            ->route('admin.platform-revenue.forum.categories.index')
+            ->route('admin.forum.categories.index')
             ->with('success', 'สร้างหมวดหมู่สำเร็จ');
     }
 
@@ -95,7 +95,7 @@ class ForumAdminController extends Controller
             ->orderBy('display_order')
             ->get();
 
-        return view('admin.platform-revenue.forum.categories.edit', compact('category', 'parentCategories'));
+        return view('admin.forum.categories.edit', compact('category', 'parentCategories'));
     }
 
     /**
@@ -121,7 +121,7 @@ class ForumAdminController extends Controller
         $category->update($validated);
 
         return redirect()
-            ->route('admin.platform-revenue.forum.categories.index')
+            ->route('admin.forum.categories.index')
             ->with('success', 'อัปเดตหมวดหมู่สำเร็จ');
     }
 
@@ -145,7 +145,7 @@ class ForumAdminController extends Controller
         $category->delete();
 
         return redirect()
-            ->route('admin.platform-revenue.forum.categories.index')
+            ->route('admin.forum.categories.index')
             ->with('success', 'ลบหมวดหมู่สำเร็จ');
     }
 
@@ -211,7 +211,7 @@ class ForumAdminController extends Controller
         $threads = $query->latest()->paginate(20);
         $categories = ForumCategory::orderBy('display_order')->get();
 
-        return view('admin.platform-revenue.forum.threads.index', compact('threads', 'categories'));
+        return view('admin.forum.threads.index', compact('threads', 'categories'));
     }
 
     /**
@@ -223,7 +223,7 @@ class ForumAdminController extends Controller
     {
         $thread->load(['user', 'category', 'posts.user']);
 
-        return view('admin.platform-revenue.forum.threads.show', compact('thread'));
+        return view('admin.forum.threads.show', compact('thread'));
     }
 
     /**
@@ -284,7 +284,7 @@ class ForumAdminController extends Controller
         $thread->delete();
 
         return redirect()
-            ->route('admin.platform-revenue.forum.threads.index')
+            ->route('admin.forum.threads.index')
             ->with('success', 'ลบกระทู้สำเร็จ');
     }
 
@@ -315,7 +315,7 @@ class ForumAdminController extends Controller
         $pendingCount = ForumReport::where('status', 'pending')->count();
         $resolvedCount = ForumReport::where('status', 'resolved')->count();
 
-        return view('admin.platform-revenue.forum.reports.index', compact('reports', 'pendingCount', 'resolvedCount'));
+        return view('admin.forum.reports.index', compact('reports', 'pendingCount', 'resolvedCount'));
     }
 
     /**
@@ -327,7 +327,7 @@ class ForumAdminController extends Controller
     {
         $report->load(['user', 'reportable']);
 
-        return view('admin.platform-revenue.forum.reports.show', compact('report'));
+        return view('admin.forum.reports.show', compact('report'));
     }
 
     /**
@@ -339,14 +339,15 @@ class ForumAdminController extends Controller
     {
         $validated = $request->validate([
             'action' => 'nullable|string|max:255',
-            'admin_notes' => 'nullable|string',
+            'reviewer_notes' => 'nullable|string',
         ]);
 
         $report->update([
             'status' => 'resolved',
-            'resolved_at' => now(),
-            'resolved_by' => auth()->id(),
-            'admin_notes' => $validated['admin_notes'] ?? null,
+            'reviewed_at' => now(),
+            'reviewed_by' => auth()->id(),
+            'action_taken' => $validated['action'] ?? null,
+            'reviewer_notes' => $validated['reviewer_notes'] ?? null,
         ]);
 
         return response()->json([
@@ -363,14 +364,15 @@ class ForumAdminController extends Controller
     public function dismissReport(Request $request, ForumReport $report)
     {
         $validated = $request->validate([
-            'admin_notes' => 'nullable|string',
+            'reviewer_notes' => 'nullable|string',
         ]);
 
         $report->update([
             'status' => 'dismissed',
-            'resolved_at' => now(),
-            'resolved_by' => auth()->id(),
-            'admin_notes' => $validated['admin_notes'] ?? null,
+            'reviewed_at' => now(),
+            'reviewed_by' => auth()->id(),
+            'action_taken' => 'none',
+            'reviewer_notes' => $validated['reviewer_notes'] ?? null,
         ]);
 
         return response()->json([
@@ -394,7 +396,7 @@ class ForumAdminController extends Controller
             ->orderBy('display_order', 'asc')
             ->get();
 
-        return view('admin.platform-revenue.forum.trophies.index', compact('trophies'));
+        return view('admin.forum.trophies.index', compact('trophies'));
     }
 
     /**
@@ -404,7 +406,7 @@ class ForumAdminController extends Controller
      */
     public function createTrophy()
     {
-        return view('admin.platform-revenue.forum.trophies.create');
+        return view('admin.forum.trophies.create');
     }
 
     /**
@@ -428,7 +430,7 @@ class ForumAdminController extends Controller
         ForumTrophy::create($validated);
 
         return redirect()
-            ->route('admin.platform-revenue.forum.trophies.index')
+            ->route('admin.forum.trophies.index')
             ->with('success', 'สร้างถ้วยรางวัลสำเร็จ');
     }
 
@@ -441,7 +443,7 @@ class ForumAdminController extends Controller
     {
         $trophy->loadCount('users');
 
-        return view('admin.platform-revenue.forum.trophies.edit', compact('trophy'));
+        return view('admin.forum.trophies.edit', compact('trophy'));
     }
 
     /**
@@ -465,7 +467,7 @@ class ForumAdminController extends Controller
         $trophy->update($validated);
 
         return redirect()
-            ->route('admin.platform-revenue.forum.trophies.index')
+            ->route('admin.forum.trophies.index')
             ->with('success', 'อัปเดตถ้วยรางวัลสำเร็จ');
     }
 
@@ -479,7 +481,7 @@ class ForumAdminController extends Controller
         $trophy->delete();
 
         return redirect()
-            ->route('admin.platform-revenue.forum.trophies.index')
+            ->route('admin.forum.trophies.index')
             ->with('success', 'ลบถ้วยรางวัลสำเร็จ');
     }
 
@@ -542,7 +544,7 @@ class ForumAdminController extends Controller
         $weeklyThreads = ForumThread::where('created_at', '>=', now()->subWeek())->count();
         $weeklyPosts = ForumPost::where('created_at', '>=', now()->subWeek())->count();
 
-        return view('admin.platform-revenue.forum.analytics.index', compact(
+        return view('admin.forum.analytics.index', compact(
             'stats',
             'topThreads',
             'topContributors',
@@ -574,7 +576,7 @@ class ForumAdminController extends Controller
             'max_attachment_size' => config('forum.max_attachment_size', 5), // MB
         ];
 
-        return view('admin.platform-revenue.forum.settings.index', compact('settings'));
+        return view('admin.forum.settings.index', compact('settings'));
     }
 
     /**
@@ -600,7 +602,7 @@ class ForumAdminController extends Controller
         // สามารถปรับเปลี่ยนตามโครงสร้างของโปรเจกต์
 
         return redirect()
-            ->route('admin.platform-revenue.forum.settings.index')
+            ->route('admin.forum.settings.index')
             ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
     }
 }

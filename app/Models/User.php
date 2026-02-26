@@ -908,6 +908,42 @@ class User extends Authenticatable
         return $this->hasMany(\App\Models\MarketplaceCommission::class);
     }
 
+    // =========================================
+    // Forum Relationships - ความสัมพันธ์กับฟอรั่ม
+    // =========================================
+
+    /**
+     * กระทู้ฟอรั่มที่ user สร้าง
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function forumThreads()
+    {
+        return $this->hasMany(\App\Models\ForumThread::class);
+    }
+
+    /**
+     * โพสต์ฟอรั่มที่ user เขียน
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany
+     */
+    public function forumPosts()
+    {
+        return $this->hasMany(\App\Models\ForumPost::class);
+    }
+
+    /**
+     * ถ้วยรางวัลฟอรั่มที่ user ได้รับ
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function forumTrophies()
+    {
+        return $this->belongsToMany(\App\Models\ForumTrophy::class, 'user_forum_trophies')
+            ->withPivot('awarded_at', 'awarded_by')
+            ->withTimestamps();
+    }
+
     /**
      * Get active MLM membership for a specific plan
      */

@@ -49,6 +49,11 @@ Route::prefix('forum')->name('forum.')->group(function () {
 
 Route::prefix('forum')->name('forum.')->middleware(['auth', 'verified'])->group(function () {
 
+    // กระทู้ของฉัน / โพสต์ของฉัน / แจ้งเตือน
+    Route::get('/my-threads', [ForumController::class, 'myThreads'])->name('my-threads');
+    Route::get('/my-posts', [ForumController::class, 'myPosts'])->name('my-posts');
+    Route::get('/notifications', [ForumController::class, 'notifications'])->name('notifications');
+
     // สร้างกระทู้
     Route::get('/thread/create', [ForumThreadController::class, 'create'])->name('thread.create');
     Route::post('/thread', [ForumThreadController::class, 'store'])->name('thread.store');

@@ -40,6 +40,14 @@ return new class extends Migration
             if (! Schema::hasColumn('users', 'forum_banned_until')) {
                 $table->timestamp('forum_banned_until')->nullable()->after('forum_warnings_count');
             }
+
+            if (! Schema::hasColumn('users', 'forum_spam_reports')) {
+                $table->unsignedInteger('forum_spam_reports')->default(0)->after('forum_banned_until');
+            }
+
+            if (! Schema::hasColumn('users', 'forum_banned_count')) {
+                $table->unsignedInteger('forum_banned_count')->default(0)->after('forum_spam_reports');
+            }
         });
     }
 
@@ -57,6 +65,8 @@ return new class extends Migration
                 'forum_best_answers_count',
                 'forum_warnings_count',
                 'forum_banned_until',
+                'forum_spam_reports',
+                'forum_banned_count',
             ];
 
             foreach ($columnsToRemove as $column) {

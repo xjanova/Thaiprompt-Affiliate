@@ -10,7 +10,7 @@
             <h1 class="text-2xl font-bold text-white">🏆 จัดการถ้วยรางวัล</h1>
             <p class="text-white/60 mt-1">สร้างและจัดการถ้วยรางวัลสำหรับผู้ใช้ฟอรั่ม</p>
         </div>
-        <a href="{{ route('admin.platform-revenue.forum.trophies.create') }}"
+        <a href="{{ route('admin.forum.trophies.create') }}"
            class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600 transition shadow-lg">
             <i class="fas fa-plus"></i>
             <span>สร้างถ้วยรางวัลใหม่</span>
@@ -49,11 +49,11 @@
                         @endif
                     </div>
                     <div class="flex items-center gap-2">
-                        <a href="{{ route('admin.platform-revenue.forum.trophies.edit', $trophy) }}"
+                        <a href="{{ route('admin.forum.trophies.edit', $trophy) }}"
                            class="p-2 text-blue-400 hover:bg-blue-500/20 rounded-lg transition">
                             <i class="fas fa-edit"></i>
                         </a>
-                        <form action="{{ route('admin.platform-revenue.forum.trophies.delete', $trophy) }}" method="POST" class="inline"
+                        <form action="{{ route('admin.forum.trophies.delete', $trophy) }}" method="POST" class="inline"
                               onsubmit="return confirm('ต้องการลบถ้วยรางวัลนี้?')">
                             @csrf
                             @method('DELETE')
@@ -68,7 +68,7 @@
             <div class="col-span-full glass-card rounded-xl p-12 text-center">
                 <i class="fas fa-trophy text-4xl mb-4 text-yellow-400"></i>
                 <p class="text-white/60">ยังไม่มีถ้วยรางวัล</p>
-                <a href="{{ route('admin.platform-revenue.forum.trophies.create') }}" class="text-blue-400 hover:underline mt-2 inline-block">
+                <a href="{{ route('admin.forum.trophies.create') }}" class="text-blue-400 hover:underline mt-2 inline-block">
                     + สร้างถ้วยรางวัลแรก
                 </a>
             </div>
