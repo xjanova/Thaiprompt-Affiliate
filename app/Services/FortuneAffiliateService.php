@@ -10,6 +10,7 @@ use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\MlmProspect;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -90,6 +91,9 @@ class FortuneAffiliateService
                     DB::reconnect();
                     $existingMember = $this->createMlmMember($existingUser, $platformUserId);
 
+                    // สร้าง Wallet ทันที (เพื่อรองรับการโอนเงินจากกระเป๋าอื่น)
+                    $this->ensureWalletExists($existingUser);
+
                     // ส่ง Flex Messages ถ้าเป็น LINE
                     if ($platform === 'line' && $lineService && $existingMember) {
                         try {
@@ -132,6 +136,9 @@ class FortuneAffiliateService
 
                 // สร้าง MlmMember (ต่อสายงานคนเชิญหรือ Super Admin)
                 $member = $this->createMlmMember($user, $platformUserId);
+
+                // สร้าง Wallet ทันที (เพื่อรองรับการโอนเงินจากกระเป๋าอื่น)
+                $this->ensureWalletExists($user);
             });
 
             if (! $user) {
@@ -330,6 +337,22 @@ class FortuneAffiliateService
     /**
      * สร้าง MlmMember — ต่อสายงานคนเชิญ (FortuneReferral) หรือ Super Admin
      *
+     * สร้าง Wallet ให้ User ทันที (ถ้ายังไม่มี)
+     * เพื่อรองรับการรับคอมมิชชั่นและการโอนเงินจากกระเป๋าอื่น
+     */
+    protected function ensureWalletExists(User $user): Wallet
+    {
+        return Wallet::firstOrCreate(
+            ['user_id' => $user->id],
+            [
+                'balance' => 0,
+                'currency' => 'THB',
+                'status' => 'active',
+            ]
+        );
+    }
+
+    /**
      * ใช้ logic จาก LineSignupService::createMlmMember()
      * รองรับทุก platform — ค้นหา referral จาก platformUserId
      */

@@ -10,6 +10,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
 use App\Models\User;
+use App\Models\Wallet;
 use App\Services\FortuneCommissionService;
 use App\Services\MlmBinaryService;
 use Illuminate\Console\Command;
@@ -284,7 +285,13 @@ class FortuneFixMissingMembers extends Command
                 }
             }
 
-            Log::info('FortuneFixMissingMembers: สร้าง MlmMember สำเร็จ', [
+            // สร้าง Wallet ทันที
+            Wallet::firstOrCreate(
+                ['user_id' => $user->id],
+                ['balance' => 0, 'currency' => 'THB', 'status' => 'active']
+            );
+
+            Log::info('FortuneFixMissingMembers: สร้าง MlmMember + Wallet สำเร็จ', [
                 'user_id' => $user->id,
                 'member_id' => $member->id,
                 'sponsor_id' => $sponsor->id,
