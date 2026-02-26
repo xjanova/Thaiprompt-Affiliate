@@ -12,9 +12,11 @@ on:
           - fortune-flow
           - fortune-errors
           - fortune-deep-jobs
+          - fortune-debug-commission
           - sendResponse
           - last-500
           - custom
+          - artisan
           - tinker
       custom_grep:
         description: 'Custom grep pattern (only for "custom" option)'
@@ -119,6 +121,31 @@ jobs:
                 echo "🔍 Custom grep: $PATTERN"
                 echo "---"
                 tail -$LINES "$LOG_FILE" | grep -E "$PATTERN" | tail -60
+                ;;
+              fortune-debug-commission)
+                echo "🔮 Fortune Debug Commission — ตรวจสอบปัญหาคอมมิชชั่นดูดวง"
+                echo "---"
+                PHP_BIN=$(which php8.3 2>/dev/null || which php83 2>/dev/null || which php 2>/dev/null)
+                EXTRA="${{ inputs.custom_grep }}"
+                if [ -z "$EXTRA" ]; then
+                  echo "Running: $PHP_BIN artisan fortune:debug-commission --recent=72"
+                  $PHP_BIN artisan fortune:debug-commission --recent=72 2>&1
+                else
+                  echo "Running: $PHP_BIN artisan fortune:debug-commission $EXTRA"
+                  $PHP_BIN artisan fortune:debug-commission $EXTRA 2>&1
+                fi
+                ;;
+              artisan)
+                ARTISAN_CMD="${{ inputs.custom_grep }}"
+                if [ -z "$ARTISAN_CMD" ]; then
+                  echo "❌ No artisan command provided in custom_grep field"
+                  exit 1
+                fi
+                echo "🔧 Running artisan command..."
+                echo "---"
+                PHP_BIN=$(which php8.3 2>/dev/null || which php83 2>/dev/null || which php 2>/dev/null)
+                echo "Running: $PHP_BIN artisan $ARTISAN_CMD"
+                $PHP_BIN artisan $ARTISAN_CMD 2>&1
                 ;;
               tinker)
                 PHP_CODE="${{ inputs.custom_grep }}"
