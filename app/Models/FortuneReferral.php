@@ -189,6 +189,7 @@ class FortuneReferral extends Model
 
     /**
      * เมื่อเพื่อนจ่ายเงิน + สมัครสมาชิกแล้ว
+     * อัพเดททั้ง FortuneReferral และ MlmProspect ที่เชื่อมกัน
      */
     public function markAsConverted(User $user): void
     {
@@ -197,6 +198,14 @@ class FortuneReferral extends Model
             'status' => self::STATUS_CONVERTED,
             'converted_at' => now(),
         ]);
+
+        // อัพเดท MlmProspect ที่เชื่อมกันให้เป็น completed ด้วย
+        if ($this->mlm_prospect_id) {
+            $prospect = MlmProspect::find($this->mlm_prospect_id);
+            if ($prospect) {
+                $prospect->markAsRegistered($user);
+            }
+        }
     }
 
     /**
