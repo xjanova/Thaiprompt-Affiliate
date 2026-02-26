@@ -226,6 +226,53 @@ class FortuneCommissionService
     }
 
     /**
+     * สร้าง commission โดยตรง (ข้าม active check) — ใช้สำหรับ retroactive fix เท่านั้น
+     *
+     * @param FortuneReading $reading
+     * @param MlmMember $recipient ผู้รับคอมมิชชั่น
+     * @param MlmMember $fromMember สมาชิกที่จ่ายดูดวง
+     * @param int $level 1 หรือ 2
+     * @param float $amount จำนวนเงิน
+     * @param float $readingPrice ราคา reading
+     * @param FortuneTellingSetting $settings
+     */
+    public function forceCreateCommission(
+        FortuneReading $reading,
+        MlmMember $recipient,
+        MlmMember $fromMember,
+        int $level,
+        float $amount,
+        float $readingPrice,
+        FortuneTellingSetting $settings
+    ): void {
+        // เช็คซ้ำ: ห้ามจ่าย reading+level เดียวกัน 2 ครั้ง
+        $exists = FortuneCommission::where('fortune_reading_id', $reading->id)
+            ->where('level', $level)
+            ->exists();
+        if ($exists) {
+            return;
+        }
+
+        $commissionType = $level === 1
+            ? $settings->getFortuneLevel1CommissionType()
+            : ($settings->fortune_level2_commission_type ?? 'fixed');
+        $commissionRate = $level === 1
+            ? (float) ($settings->fortune_level1_commission_amount ?? 10)
+            : (float) ($settings->fortune_level2_commission_amount ?? 1);
+
+        $this->createCommissionAndPay(
+            reading: $reading,
+            recipientMember: $recipient,
+            fromMember: $fromMember,
+            level: $level,
+            commissionType: $commissionType,
+            commissionRate: $commissionRate,
+            amount: $amount,
+            readingPrice: $readingPrice,
+        );
+    }
+
+    /**
      * สร้าง FortuneCommission record + เพิ่มเงินเข้า wallet
      */
     protected function createCommissionAndPay(

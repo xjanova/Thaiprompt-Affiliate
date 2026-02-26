@@ -247,18 +247,26 @@ class FortuneFixMissingMembers extends Command
             }
 
             $binaryService = app(MlmBinaryService::class);
-            $placement = $binaryService->findPlacementPosition($sponsor);
+            $placement = null;
+            try {
+                $placement = $binaryService->findPlacementPosition($sponsor);
+            } catch (\Exception $e) {
+                // binary placement อาจ error — ใช้ fallback
+            }
+
+            $binaryParentId = $placement['parent_id'] ?? $sponsor->id;
+            $binaryPosition = $placement['position'] ?? 'left';
 
             $member = MlmMember::create([
                 'user_id' => $user->id,
                 'mlm_plan_id' => $defaultPlan->id,
                 'unilevel_sponsor_id' => $sponsor->id,
-                'unilevel_level' => $sponsor->unilevel_level + 1,
-                'unilevel_path' => $sponsor->unilevel_path.'/'.$sponsor->id,
+                'unilevel_level' => ($sponsor->unilevel_level ?? 0) + 1,
+                'unilevel_path' => trim(($sponsor->unilevel_path ?? '').'/'.$sponsor->id, '/'),
                 'original_sponsor_id' => $sponsor->id,
                 'binary_sponsor_id' => $sponsor->id,
-                'binary_parent_id' => $placement['parent_id'],
-                'binary_position' => $placement['position'],
+                'binary_parent_id' => $binaryParentId,
+                'binary_position' => $binaryPosition,
                 'status' => 'active',
                 'joined_at' => now(),
                 'member_code' => MlmMember::generateMemberCode(),
@@ -267,9 +275,9 @@ class FortuneFixMissingMembers extends Command
 
             $sponsor->increment('total_direct_referrals');
 
-            $binaryParent = MlmMember::find($placement['parent_id']);
+            $binaryParent = MlmMember::find($binaryParentId);
             if ($binaryParent) {
-                if ($placement['position'] === 'left') {
+                if ($binaryPosition === 'left') {
                     $binaryParent->increment('left_leg_members');
                 } else {
                     $binaryParent->increment('right_leg_members');
@@ -352,6 +360,9 @@ class FortuneFixMissingMembers extends Command
 
     /**
      * จ่ายคอมมิชชั่นย้อนหลังสำหรับ readings ที่จ่ายเงินแล้วแต่ยังไม่มี FortuneCommission
+     *
+     * ⚠️ RETROACTIVE FIX: ข้าม active check เพราะเป็นการแก้ข้อมูลย้อนหลัง
+     * sponsor อาจไม่ผ่าน retention check ในปัจจุบัน แต่สมควรได้รับคอมมิชชั่นจาก reading ที่เกิดขึ้นก่อนหน้า
      */
     private function distributeRetroactiveCommissions(bool $dryRun): void
     {
@@ -380,6 +391,8 @@ class FortuneFixMissingMembers extends Command
 
         $this->warn("  พบ {$readings->count()} readings ที่ยังไม่จ่ายคอมมิชชั่น");
 
+        $readingPrice = (float) ($settings->fortune_reading_price ?? 39);
+
         foreach ($readings as $reading) {
             $mlmMember = MlmMember::where('user_id', $reading->user_id)->first();
 
@@ -396,25 +409,46 @@ class FortuneFixMissingMembers extends Command
             }
 
             $sponsor = MlmMember::with('user')->find($mlmMember->unilevel_sponsor_id);
-            $sponsorName = $sponsor?->user?->name ?? '?';
+            if (! $sponsor || ! $sponsor->user) {
+                $this->warn("    Reading #{$reading->id}: sponsor ไม่พบ — ข้าม");
+
+                continue;
+            }
+
+            $sponsorName = $sponsor->user->name;
 
             if ($dryRun) {
-                $this->info("    [DRY RUN] Reading #{$reading->id}: จ่ายคอม {$reading->amount_paid} บาท → sponsor: {$sponsorName}");
+                $this->info("    [DRY RUN] Reading #{$reading->id}: จ่ายคอม → L1 sponsor: {$sponsorName}");
 
                 continue;
             }
 
             try {
-                $commissionService = app(FortuneCommissionService::class);
-                $commissionService->distributeCommissions($reading, $mlmMember, $settings);
-
-                // เช็คว่าจ่ายสำเร็จไหม
-                $paid = FortuneCommission::where('fortune_reading_id', $reading->id)->exists();
-                if ($paid) {
+                // จ่าย L1 ตรง (ข้าม active check — retroactive fix)
+                $l1Amount = $settings->getFortuneLevel1Amount($readingPrice);
+                if ($l1Amount > 0) {
+                    $commissionService = app(FortuneCommissionService::class);
+                    $commissionService->forceCreateCommission(
+                        $reading, $sponsor, $mlmMember, 1, $l1Amount, $readingPrice, $settings
+                    );
                     $this->commissionsDistributed++;
-                    $this->info("    ✅ Reading #{$reading->id}: จ่ายคอมสำเร็จ → {$sponsorName}");
-                } else {
-                    $this->warn("    ⚠️ Reading #{$reading->id}: จ่ายไม่ได้ (sponsor อาจไม่ active)");
+                    $this->info("    ✅ Reading #{$reading->id}: L1 จ่าย {$l1Amount} บาท → {$sponsorName}");
+                }
+
+                // จ่าย L2 (ถ้ามี grandparent)
+                if ($sponsor->unilevel_sponsor_id) {
+                    $grandparent = MlmMember::with('user')->find($sponsor->unilevel_sponsor_id);
+                    if ($grandparent && $grandparent->user) {
+                        $l2Amount = $settings->getFortuneLevel2Amount($readingPrice);
+                        if ($l2Amount > 0) {
+                            $commissionService = app(FortuneCommissionService::class);
+                            $commissionService->forceCreateCommission(
+                                $reading, $grandparent, $mlmMember, 2, $l2Amount, $readingPrice, $settings
+                            );
+                            $this->commissionsDistributed++;
+                            $this->info("    ✅ Reading #{$reading->id}: L2 จ่าย {$l2Amount} บาท → {$grandparent->user->name}");
+                        }
+                    }
                 }
             } catch (\Exception $e) {
                 $this->error("    ❌ Reading #{$reading->id}: error — {$e->getMessage()}");
