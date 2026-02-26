@@ -323,6 +323,12 @@ class FortuneFixMissingMembers extends Command
             return null;
         }
 
+        // สร้าง member_code ที่ไม่ซ้ำ (ADMIN-0001 อาจถูกใช้ไปแล้ว)
+        $memberCode = 'ADMIN-0001';
+        if (MlmMember::where('member_code', $memberCode)->exists()) {
+            $memberCode = 'ROOT-ADMIN-' . $superAdmin->id;
+        }
+
         $member = MlmMember::create([
             'user_id' => $superAdmin->id,
             'mlm_plan_id' => $defaultPlan->id,
@@ -335,7 +341,7 @@ class FortuneFixMissingMembers extends Command
             'binary_position' => null,
             'status' => 'active',
             'joined_at' => now(),
-            'member_code' => 'ADMIN-0001',
+            'member_code' => $memberCode,
             'is_qualified' => true,
         ]);
 
