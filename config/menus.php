@@ -296,11 +296,6 @@ return [
                 ['label' => 'บัญชีธนาคาร', 'route' => 'admin.payment-bank-accounts.index', 'icon' => 'fas fa-university', 'description' => 'จัดการบัญชีธนาคารรับชำระเงิน + PromptPay + SMS Checker'],
                 ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index', 'icon' => 'fas fa-cog'],
                 ['label' => 'ตั้งค่า Cashback', 'route' => 'admin.cashback.index', 'icon' => 'fas fa-percentage'],
-                ['label' => '---', 'route' => null], // Divider
-                ['label' => 'จ่ายเงินออก', 'route' => 'admin.platform-revenue.payouts.index', 'icon' => 'fas fa-hand-holding-usd', 'description' => 'จัดการการจ่ายเงิน'],
-                ['label' => 'รายได้แพลตฟอร์ม', 'route' => 'admin.platform-revenue.index', 'icon' => 'fas fa-chart-line', 'description' => 'สถิติรายได้ระบบ'],
-                ['label' => 'จัดการหนี้สิน', 'route' => 'admin.platform-revenue.debts.index', 'icon' => 'fas fa-file-invoice-dollar', 'description' => 'ติดตามหนี้สิน'],
-                ['label' => 'HD Wallets', 'route' => 'admin.crypto.hd-wallets.index', 'icon' => 'fas fa-key', 'description' => 'Hierarchical Deterministic'],
             ],
         ],
 
@@ -317,7 +312,6 @@ return [
                 ['label' => 'ธุรกรรม', 'route' => 'admin.crypto.transactions', 'icon' => 'fas fa-exchange-alt'],
                 ['label' => 'คำขอถอน', 'route' => 'admin.crypto.withdrawals', 'icon' => 'fas fa-arrow-circle-up'],
                 ['label' => 'จัดการเหรียญ/สกุลเงิน', 'route' => 'admin.crypto.currencies', 'icon' => 'fas fa-coins'],
-                ['label' => 'ตั้งค่ากระเป๋าเงิน', 'route' => 'admin.wallet-settings.index', 'icon' => 'fas fa-cog'],
                 ['label' => 'ตั้งค่าคริปโต', 'route' => 'admin.crypto.settings', 'icon' => 'fas fa-sliders-h'],
             ],
         ],
