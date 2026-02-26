@@ -74,16 +74,42 @@ class FortuneAffiliateService
             $existingUser = $this->findExistingUser($platformUserId, $platform, $reading);
 
             if ($existingUser) {
-                // User มีอยู่แล้ว — link FortuneReading เท่านั้น
+                // User มีอยู่แล้ว — link FortuneReading
                 if (! $reading->user_id) {
                     $reading->update(['user_id' => $existingUser->id]);
                 }
 
-                Log::info('Fortune Affiliate: User มีอยู่แล้ว ข้ามการสร้าง', [
-                    'user_id' => $existingUser->id,
-                    'platform' => $platform,
-                    'platform_user_id' => $platformUserId,
-                ]);
+                // ตรวจว่ามี MlmMember หรือยัง — ถ้ายังไม่มีต้องสร้างให้
+                $existingMember = MlmMember::where('user_id', $existingUser->id)->first();
+                if (! $existingMember) {
+                    Log::info('Fortune Affiliate: User มีอยู่แล้วแต่ยังไม่มี MlmMember — สร้างให้', [
+                        'user_id' => $existingUser->id,
+                        'platform_user_id' => $platformUserId,
+                    ]);
+
+                    DB::reconnect();
+                    $existingMember = $this->createMlmMember($existingUser, $platformUserId);
+
+                    // ส่ง Flex Messages ถ้าเป็น LINE
+                    if ($platform === 'line' && $lineService && $existingMember) {
+                        try {
+                            $this->sendWelcomeFlexMessage($platformUserId, $existingUser, $existingMember, $lineService);
+                            usleep(100000);
+                            $referralLink = $this->generateReferralLink($existingUser, $existingMember);
+                            $this->sendAffiliateInviteFlexMessage($platformUserId, $existingUser, $referralLink, $lineService);
+                        } catch (\Exception $flexErr) {
+                            Log::warning('Fortune Affiliate: ส่ง Flex Message ไม่สำเร็จ (existing user)', [
+                                'user_id' => $existingUser->id,
+                                'error' => $flexErr->getMessage(),
+                            ]);
+                        }
+                    }
+                } else {
+                    Log::info('Fortune Affiliate: User มีอยู่แล้ว + มี MlmMember แล้ว', [
+                        'user_id' => $existingUser->id,
+                        'member_id' => $existingMember->id,
+                    ]);
+                }
 
                 return $existingUser;
             }
