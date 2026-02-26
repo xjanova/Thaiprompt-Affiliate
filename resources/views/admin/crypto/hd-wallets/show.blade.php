@@ -20,7 +20,7 @@
                     @endif
                     {{ $wallet->name }}
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 dark:text-gray-400 mt-1">รายละเอียดและข้อมูลสถิติของกระเป๋า</p>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">รายละเอียดและข้อมูลสถิติของกระเป๋า</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -113,7 +113,7 @@
                     {{ strtoupper(substr($wallet->user->name, 0, 1)) }}
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">ชื่อผู้ใช้</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">ชื่อผู้ใช้</p>
                     <p class="text-lg font-bold text-gray-900 dark:text-white">{{ $wallet->user->name }}</p>
                 </div>
             </div>
@@ -122,7 +122,7 @@
                     <i class="fas fa-envelope text-2xl text-blue-600"></i>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">อีเมล</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">อีเมล</p>
                     <p class="text-lg font-semibold text-gray-900 dark:text-white">{{ $wallet->user->email }}</p>
                 </div>
             </div>
@@ -169,30 +169,30 @@
                         {{ $value }}
                     @endif
                 </p>
-                <p class="text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ $label }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ $label }}</p>
             </div>
         @endforeach
     </div>
 
     <!-- Child Wallets (if master) -->
-    @if($wallet->is_master_wallet && $wallet->childWallets->count() > 0)
-    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden" border border-white/20 dark:border-white/10>
+    @if($wallet->is_master_wallet && $wallet->derivedWallets->count() > 0)
+    <div class="glass-fusion dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-white/20 dark:border-white/10">
         <div class="bg-gradient-to-r from-emerald-500 to-green-600 px-6 py-4">
             <h3 class="text-xl font-bold text-white flex items-center">
                 <i class="fas fa-sitemap mr-2"></i>
-                Child Wallets ({{ $wallet->childWallets->count() }})
+                Child Wallets ({{ $wallet->derivedWallets->count() }})
             </h3>
         </div>
         <div class="p-6">
             <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                @foreach($wallet->childWallets as $childWallet)
-                <a href="{{ route('admin.crypto.hd-wallets.show', $childWallet->id) }}" class="block p-4 bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-700 rounded-xl hover:shadow-lg hover:scale-105 transition-all">
+                @foreach($wallet->derivedWallets as $childWallet)
+                <a href="{{ route('admin.crypto.hd-wallets.show', $childWallet->id) }}" class="block p-4 bg-gray-100/50 dark:bg-gray-700 rounded-xl hover:shadow-lg hover:scale-105 transition-all">
                     <div class="flex items-center justify-between mb-3">
                         <p class="font-semibold text-gray-900 dark:text-white">{{ $childWallet->name }}</p>
                         <i class="fas fa-arrow-right text-emerald-600"></i>
                     </div>
                     <div class="flex items-center justify-between text-sm">
-                        <span class="text-gray-600 dark:text-gray-400 dark:text-gray-400">Index: {{ $childWallet->derivation_index }}</span>
+                        <span class="text-gray-600 dark:text-gray-400">Index: {{ $childWallet->derivation_index }}</span>
                         <span class="px-2 py-1 bg-{{ $childWallet->status === 'active' ? 'green' : 'yellow' }}-100 text-{{ $childWallet->status === 'active' ? 'green' : 'yellow' }}-800 rounded text-xs">
                             {{ $childWallet->status }}
                         </span>
@@ -224,7 +224,7 @@
                             </div>
                             <div>
                                 <p class="font-bold text-gray-900 dark:text-white">{{ $address->currency->name ?? 'Bitcoin' }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-400">{{ $address->currency->symbol ?? 'BTC' }}</p>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">{{ $address->currency->symbol ?? 'BTC' }}</p>
                             </div>
                         </div>
                         <button onclick="copyAddress('{{ $address->address }}')" class="px-4 py-2 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:hover:bg-blue-800 text-blue-700 dark:text-blue-300 rounded-xl transition-all">
@@ -254,10 +254,10 @@
             <table class="w-full">
                 <thead class="bg-gray-100/50 dark:bg-gray-800/50/50 dark:bg-gray-800/50 dark:bg-gray-900">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">ประเภท</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">จำนวน</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">สถานะ</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 dark:text-gray-400 uppercase">วันที่</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">ประเภท</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">จำนวน</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">สถานะ</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase">วันที่</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -282,7 +282,7 @@
                                 {{ $transaction->status }}
                             </span>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">
+                        <td class="px-6 py-4 text-sm text-gray-600 dark:text-gray-400">
                             {{ $transaction->created_at->format('d/m/Y H:i') }}
                         </td>
                     </tr>

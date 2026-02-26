@@ -29,7 +29,7 @@
                     </div>
                     <div class="px-6 py-3 glass-fusion backdrop-blur-sm rounded-xl" border border-white/20 dark:border-white/10>
                         <p class="text-sm text-yellow-100 mb-1">Total Child Wallets</p>
-                        <p class="text-3xl font-bold">{{ $masterWallets->sum('child_wallets_count') }}</p>
+                        <p class="text-3xl font-bold">{{ $masterWallets->sum('derived_wallets_count') }}</p>
                     </div>
                 </div>
             </div>
@@ -109,7 +109,7 @@
                 <div class="grid grid-cols-3 gap-4 mb-6">
                     <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
                         <i class="fas fa-layer-group text-2xl text-blue-600 mb-2"></i>
-                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $wallet->child_wallets_count }}</p>
+                        <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ $wallet->derived_wallets_count }}</p>
                         <p class="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-400">Child Wallets</p>
                     </div>
                     <div class="text-center p-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">

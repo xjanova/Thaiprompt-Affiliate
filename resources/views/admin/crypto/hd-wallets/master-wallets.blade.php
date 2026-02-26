@@ -73,7 +73,7 @@
                                         <span class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ $wallet->balance ?? '0' }} {{ $wallet->currency ?? 'BTC' }}</span>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-xs font-semibold">{{ $wallet->child_wallets_count ?? '0' }} wallets</span></td>
+                                <td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 rounded-full text-xs font-semibold">{{ $wallet->derived_wallets_count ?? '0' }} wallets</span></td>
                                 <td class="px-6 py-4 whitespace-nowrap"><span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold {{ ($wallet->status ?? 'active') == 'active' ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300' : 'bg-gray-100/50 dark:bg-gray-800/50 dark:bg-gray-700 text-gray-900 dark:text-white dark:text-gray-300' }}">{{ ucfirst($wallet->status ?? 'Active') }}</span></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400 dark:text-gray-400">{{ isset($wallet->created_at) ? $wallet->created_at->format('M d, Y') : 'N/A' }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right">

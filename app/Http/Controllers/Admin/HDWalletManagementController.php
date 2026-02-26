@@ -28,8 +28,8 @@ class HDWalletManagementController extends Controller
      */
     public function index(Request $request)
     {
-        $query = CryptoWallet::with(['user', 'childWallets', 'masterWallet'])
-            ->withCount('childWallets');
+        $query = CryptoWallet::with(['user', 'derivedWallets', 'masterWallet'])
+            ->withCount('derivedWallets');
 
         // Filter by wallet type
         if ($request->filled('type')) {
@@ -78,7 +78,7 @@ class HDWalletManagementController extends Controller
         $wallet = CryptoWallet::with([
             'user',
             'masterWallet',
-            'childWallets.cryptoAddresses.currency',
+            'derivedWallets.cryptoAddresses.currency',
             'cryptoAddresses.currency',
             'cryptoTransactions',
         ])->findOrFail($id);
@@ -100,7 +100,7 @@ class HDWalletManagementController extends Controller
     {
         $query = CryptoWallet::masterWallets()
             ->with(['user'])
-            ->withCount('childWallets');
+            ->withCount('derivedWallets');
 
         // Search
         if ($request->filled('search')) {

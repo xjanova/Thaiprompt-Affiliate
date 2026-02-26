@@ -308,9 +308,12 @@ class CryptoWallet extends Model
     }
 
     /**
-     * Child wallets (for master wallets)
+     * Wallet ลูกที่ derive จาก master wallet นี้ (relationship)
+     *
+     * ⚠️ ใช้ชื่อ derivedWallets() เพื่อไม่ให้ชนกับ scopeChildWallets()
+     * เรียกใช้: $masterWallet->derivedWallets
      */
-    public function childWallets()
+    public function derivedWallets()
     {
         return $this->hasMany(CryptoWallet::class, 'master_wallet_id')
             ->orderBy('derivation_index');
