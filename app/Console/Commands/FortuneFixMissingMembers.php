@@ -297,15 +297,51 @@ class FortuneFixMissingMembers extends Command
 
     /**
      * หา Admin MlmMember (Super Admin user_id = 1)
+     * ถ้ายังไม่มี → สร้างให้เป็น root ของ MLM tree
      */
     private function getAdminSponsor(): ?MlmMember
     {
         $superAdmin = User::find(1);
         if (! $superAdmin) {
+            $this->error('  ❌ ไม่พบ Super Admin (User ID 1)');
+
             return null;
         }
 
-        return MlmMember::where('user_id', $superAdmin->id)->first();
+        $member = MlmMember::where('user_id', $superAdmin->id)->first();
+        if ($member) {
+            return $member;
+        }
+
+        // สร้าง Admin MlmMember เป็น root
+        $this->warn('  ⚠️ Admin ยังไม่มี MlmMember — กำลังสร้างเป็น root...');
+
+        $defaultPlan = MlmPlan::where('is_default', true)->first();
+        if (! $defaultPlan) {
+            $this->error('  ❌ ไม่พบ default MLM plan');
+
+            return null;
+        }
+
+        $member = MlmMember::create([
+            'user_id' => $superAdmin->id,
+            'mlm_plan_id' => $defaultPlan->id,
+            'unilevel_sponsor_id' => null,
+            'unilevel_level' => 0,
+            'unilevel_path' => '',
+            'original_sponsor_id' => null,
+            'binary_sponsor_id' => null,
+            'binary_parent_id' => null,
+            'binary_position' => null,
+            'status' => 'active',
+            'joined_at' => now(),
+            'member_code' => 'ADMIN-0001',
+            'is_qualified' => true,
+        ]);
+
+        $this->info("  ✅ สร้าง Admin MlmMember สำเร็จ: {$member->member_code} (ID: {$member->id})");
+
+        return $member;
     }
 
     /**
