@@ -131,9 +131,10 @@ class FortuneDebugCommission extends Command
         // Level 2
         $l2Enabled = $settings->fortune_level2_enabled ?? false;
         $l2Amount = $settings->fortune_level2_commission_amount ?? 0;
+        $l2Type = $settings->fortune_level2_commission_type ?? 'fixed';
         $checks[] = [
             'Level 2 Commission',
-            $l2Enabled ? "{$l2Amount} ({$settings->fortune_level2_commission_type ?? 'fixed'})" : 'DISABLED',
+            $l2Enabled ? "{$l2Amount} ({$l2Type})" : 'DISABLED',
             $l2Enabled ? '✅ เปิด' : '⚠️ ปิด',
         ];
 
@@ -534,7 +535,8 @@ class FortuneDebugCommission extends Command
             return;
         }
 
-        $this->info("  💰 ยอดเงินใน Wallet: {$wallet->balance} {$wallet->currency ?? 'THB'}");
+        $currency = $wallet->currency ?? 'THB';
+        $this->info("  💰 ยอดเงินใน Wallet: {$wallet->balance} {$currency}");
 
         $transactions = WalletTransaction::where('wallet_id', $wallet->id)
             ->where('created_at', '>=', now()->subHours($hours))
