@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\FortuneReading;
+use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
+use App\Models\MlmProspect;
 use App\Services\FortuneChannelManager;
 use App\Services\LineFortuneService;
 use App\Services\LineGatekeeperService;
@@ -116,6 +118,15 @@ class LineFortuneWebhookController extends Controller
 
         $messageText = $event['message']['text'] ?? '';
 
+        // ========================================
+        // จับคู่ FortuneReferral จาก ref_{token} (แม่นยำ 100%)
+        // ========================================
+        if (preg_match('/^ref_([A-Za-z0-9]{32})$/i', trim($messageText), $matches)) {
+            $this->handleReferralTokenMessage($userId, $matches[1], $replyToken);
+
+            return;
+        }
+
         try {
             // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อน (ทุก user รวมกัน)
             if (LineGatekeeperService::isSystemThrottled()) {
@@ -227,45 +238,9 @@ class LineFortuneWebhookController extends Controller
         }
 
         // ========================================
-        // จับคู่ FortuneReferral (ถ้ามีคนเชิญ)
+        // การจับคู่ referral ย้ายไป handleReferralTokenMessage() แล้ว
+        // เพื่อนจะส่ง "ref_{token}" มาทาง message event → จับคู่ 100%
         // ========================================
-        // ⚠️ LINE API ไม่ส่ง referral token ตอน follow event
-        // ดังนั้นใช้วิธีจับคู่จาก: 1) IP ที่เคยเข้า landing page, 2) referral ล่าสุดที่ยังว่าง
-        // จำกัดเวลาไว้ 10 นาที (เพื่อลดโอกาส match ผิดคน)
-        try {
-            // ลำดับความสำคัญ: 1) referral ที่มี IP match (แม่นยำกว่า)
-            $referral = \App\Models\FortuneReferral::where('status', \App\Models\FortuneReferral::STATUS_PENDING)
-                ->whereNull('referred_line_user_id')
-                ->where('expires_at', '>', now())
-                ->whereNotNull('ip_address') // มี IP = เคยเข้า landing page
-                ->where('updated_at', '>=', now()->subMinutes(10)) // จำกัด 10 นาที
-                ->latest('updated_at')
-                ->first();
-
-            // 2) Fallback: referral ล่าสุดที่ยังไม่มีคนจับคู่ (ภายใน 10 นาที)
-            if (! $referral) {
-                $referral = \App\Models\FortuneReferral::where('status', \App\Models\FortuneReferral::STATUS_PENDING)
-                    ->whereNull('referred_line_user_id')
-                    ->where('expires_at', '>', now())
-                    ->where('created_at', '>=', now()->subMinutes(10))
-                    ->latest()
-                    ->first();
-            }
-
-            if ($referral) {
-                $referral->markAsFollowed($userId);
-                Log::info('LINE Webhook: จับคู่ referral สำเร็จ', [
-                    'referral_id' => $referral->id,
-                    'referrer_user_id' => $referral->referrer_user_id,
-                    'new_follower_line_id' => $userId,
-                    'match_method' => $referral->ip_address ? 'ip_match' : 'latest_pending',
-                ]);
-            }
-        } catch (\Exception $refErr) {
-            Log::debug('LINE Webhook: ตรวจ referral ไม่สำเร็จ (ไม่กระทบ welcome)', [
-                'error' => $refErr->getMessage(),
-            ]);
-        }
 
         // ส่ง Welcome Message พร้อมชื่อ
         $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName);
@@ -279,6 +254,116 @@ class LineFortuneWebhookController extends Controller
                 'contents' => $welcomeFlex,
             ],
         ]);
+    }
+
+    /**
+     * จับคู่ referral จาก token ที่ฝังในข้อความ (แม่นยำ 100%)
+     *
+     * เมื่อเพื่อนกด LINE deep link → ข้อความ "ref_{token}" ถูก pre-fill
+     * เพื่อนกดส่ง → method นี้จับคู่ token กับ FortuneReferral ได้ทันที
+     */
+    protected function handleReferralTokenMessage(string $lineUserId, string $token, ?string $replyToken): void
+    {
+        try {
+            // 1. หา FortuneReferral จาก token
+            $referral = FortuneReferral::where('referral_token', $token)
+                ->where('status', FortuneReferral::STATUS_PENDING)
+                ->where('expires_at', '>', now())
+                ->first();
+
+            if (! $referral) {
+                // token หมดอายุหรือไม่ถูกต้อง
+                Log::info('LINE Webhook: ref_ token ไม่ถูกต้องหรือหมดอายุ', [
+                    'token' => $token,
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                if ($replyToken) {
+                    $this->lineService->replyMessage($replyToken, [
+                        ['type' => 'text', 'text' => "⏰ ลิงก์เชิญนี้หมดอายุแล้วค่ะ\n\nกรุณาขอลิงก์ใหม่จากผู้เชิญนะคะ\n\nหรือพิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยค่ะ 🔮"],
+                    ]);
+                }
+
+                return;
+            }
+
+            // 2. ตรวจว่า LINE user นี้ถูกจับคู่กับ referral อื่นอยู่แล้วหรือไม่
+            $existingReferral = FortuneReferral::where('referred_line_user_id', $lineUserId)
+                ->whereIn('status', [FortuneReferral::STATUS_FOLLOWED, FortuneReferral::STATUS_CONVERTED])
+                ->first();
+
+            if ($existingReferral) {
+                Log::info('LINE Webhook: LINE user มี referral อยู่แล้ว', [
+                    'existing_referral_id' => $existingReferral->id,
+                    'line_user_id' => $lineUserId,
+                ]);
+
+                if ($replyToken) {
+                    $this->lineService->replyMessage($replyToken, [
+                        ['type' => 'text', 'text' => "🔮 คุณเข้าระบบแล้วค่ะ\n\nพิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยนะคะ ✨"],
+                    ]);
+                }
+
+                return;
+            }
+
+            // 3. ดึง LINE profile
+            $userName = '';
+            try {
+                $profile = $this->lineService->getUserProfile($lineUserId);
+                $userName = $profile['name'] ?? '';
+            } catch (\Exception $e) {
+                // ไม่กระทบ flow หลัก
+            }
+
+            // 4. Mark referral as "followed" + บันทึก LINE user ID
+            $referral->markAsFollowed($lineUserId);
+
+            // 5. อัพเดท MlmProspect ที่เชื่อมกัน
+            if ($referral->mlm_prospect_id) {
+                $prospect = MlmProspect::find($referral->mlm_prospect_id);
+                if ($prospect) {
+                    $prospect->update([
+                        'line_user_id' => $lineUserId,
+                        'line_display_name' => $userName ?: null,
+                        'line_picture_url' => $profile['pictureUrl'] ?? null,
+                        'clicked_at' => now(),
+                        'status' => 'in_progress',
+                        'is_locked' => true,
+                        'locked_until' => now()->addHours(24),
+                    ]);
+                }
+            }
+
+            Log::info('LINE Webhook: จับคู่ referral สำเร็จ 100% ผ่าน deep link token', [
+                'referral_id' => $referral->id,
+                'referrer_user_id' => $referral->referrer_user_id,
+                'new_follower_line_id' => $lineUserId,
+                'display_name' => $userName,
+            ]);
+
+            // 6. ส่ง Welcome + แนะนำให้ดูดวง
+            $referrerName = $referral->referrerUser?->name ?? 'เพื่อน';
+
+            if ($replyToken) {
+                $this->lineService->replyMessage($replyToken, [
+                    ['type' => 'text', 'text' => "🎉 ยินดีต้อนรับค่ะ".($userName ? " คุณ{$userName}" : '')."\n\nคุณ{$referrerName} เชิญคุณมาดูดวงค่ะ\n\n🔮 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยนะคะ ✨"],
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('LINE Webhook: handleReferralTokenMessage ล้มเหลว', [
+                'token' => $token,
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            if ($replyToken) {
+                $this->lineService->replyMessage($replyToken, [
+                    ['type' => 'text', 'text' => "🔮 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨"],
+                ]);
+            }
+        }
     }
 
     /**

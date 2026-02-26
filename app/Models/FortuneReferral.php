@@ -35,6 +35,7 @@ class FortuneReferral extends Model
         'referral_token',
         'referrer_user_id',
         'referrer_mlm_member_id',
+        'mlm_prospect_id',
         'referred_line_user_id',
         'referred_user_id',
         'status',
@@ -89,6 +90,14 @@ class FortuneReferral extends Model
     public function referredUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'referred_user_id');
+    }
+
+    /**
+     * MlmProspect ที่เชื่อมกัน (แสดงในหน้าผู้มุ่งหวัง)
+     */
+    public function prospect(): BelongsTo
+    {
+        return $this->belongsTo(MlmProspect::class, 'mlm_prospect_id');
     }
 
     // ============================
@@ -210,15 +219,32 @@ class FortuneReferral extends Model
 
     /**
      * สร้าง referral record สำหรับคนเชิญ
+     *
+     * หมดอายุ 24 ชม. (1 วัน) เพื่อจำกัดเวลารับเชิญ
      */
-    public static function createForUser(User $user, ?MlmMember $member = null): self
+    public static function createForUser(User $user, ?MlmMember $member = null, ?int $prospectId = null): self
     {
         return self::create([
             'referral_token' => self::generateToken(),
             'referrer_user_id' => $user->id,
             'referrer_mlm_member_id' => $member?->id,
+            'mlm_prospect_id' => $prospectId,
             'status' => self::STATUS_PENDING,
-            'expires_at' => now()->addDays(30),
+            'expires_at' => now()->addHours(24),
         ]);
+    }
+
+    /**
+     * สร้าง LINE deep link URL ที่ฝัง referral token ลงในข้อความ
+     *
+     * เมื่อเพื่อนกด → LINE เปิดแชท OA พร้อม pre-fill "ref_{token}"
+     * เพื่อนกดส่ง → webhook รับ message → parse token → จับคู่ 100%
+     */
+    public function generateDeepLink(string $botBasicId): string
+    {
+        // ลบ @ นำหน้าแล้วใส่ %40 แทน (URL encode)
+        $basicId = ltrim($botBasicId, '@');
+
+        return 'https://line.me/R/oaMessage/%40'.$basicId.'/?ref_'.$this->referral_token;
     }
 }

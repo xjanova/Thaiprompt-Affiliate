@@ -94,6 +94,22 @@ class MlmProspect extends Model
     }
 
     /**
+     * FortuneReferral ที่เชื่อมกัน (prospect จากระบบดูดวง)
+     */
+    public function fortuneReferral()
+    {
+        return $this->hasOne(FortuneReferral::class, 'mlm_prospect_id');
+    }
+
+    /**
+     * Scope: เฉพาะ prospect ที่มาจากระบบดูดวง
+     */
+    public function scopeFortuneType($query)
+    {
+        return $query->whereHas('fortuneReferral');
+    }
+
+    /**
      * Generate unique referral token
      */
     public static function generateReferralToken(): string

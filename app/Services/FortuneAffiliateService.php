@@ -8,6 +8,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
+use App\Models\MlmProspect;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -680,7 +681,12 @@ class FortuneAffiliateService
     // ============================================================
 
     /**
-     * สร้างลิงก์เชิญเพื่อนพร้อม referral tracking
+     * สร้างลิงก์เชิญเพื่อนพร้อม referral tracking + MlmProspect
+     *
+     * สร้าง FortuneReferral คู่กับ MlmProspect เพื่อ:
+     * 1. จับคู่ 100% ผ่าน LINE deep link (ref_{token})
+     * 2. แสดงในหน้า "ผู้มุ่งหวัง" ของ user
+     * 3. หมดอายุ 24 ชม.
      */
     public function generateReferralLink(User $user, ?MlmMember $member = null): string
     {
@@ -689,8 +695,29 @@ class FortuneAffiliateService
             $member = MlmMember::where('user_id', $user->id)->first();
         }
 
-        // สร้าง FortuneReferral record
-        $referral = FortuneReferral::createForUser($user, $member);
+        // สร้าง MlmProspect คู่กัน (แสดงในหน้าผู้มุ่งหวัง)
+        $prospect = null;
+        if ($member) {
+            $prospect = MlmProspect::create([
+                'sponsor_mlm_member_id' => $member->id,
+                'sponsor_user_id' => $user->id,
+                'referral_token' => FortuneReferral::generateToken(),
+                'status' => 'pending',
+                'is_locked' => false,
+                'notes' => 'จากระบบเชิญเพื่อนดูดวง',
+            ]);
+        }
+
+        // สร้าง FortuneReferral record (หมดอายุ 24 ชม.) + เชื่อมกับ prospect
+        $referral = FortuneReferral::createForUser($user, $member, $prospect?->id);
+
+        // อัพเดท invitation_url ใน prospect
+        if ($prospect) {
+            $prospect->update([
+                'referral_token' => $referral->referral_token,
+                'invitation_url' => url('/fortune/invite/'.$referral->referral_token),
+            ]);
+        }
 
         return url('/fortune/invite/'.$referral->referral_token);
     }

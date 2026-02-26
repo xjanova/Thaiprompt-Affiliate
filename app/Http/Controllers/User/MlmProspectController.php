@@ -37,9 +37,11 @@ class MlmProspectController extends Controller
         }
 
         $status = $request->input('status');
+        $type = $request->input('type');
         $prospects = $this->prospectService->getProspectsForSponsor(
             $mlmMember->id,
-            $status
+            $status,
+            $type
         );
 
         $stats = $this->prospectService->getProspectStats($mlmMember->id);

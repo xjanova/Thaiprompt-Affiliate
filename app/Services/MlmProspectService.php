@@ -183,14 +183,20 @@ class MlmProspectService
     public function getProspectsForSponsor(
         int $sponsorMemberId,
         ?string $status = null,
+        ?string $type = null,
         int $perPage = 15
     ) {
         $query = MlmProspect::where('sponsor_mlm_member_id', $sponsorMemberId)
-            ->with(['registeredUser', 'sponsorUser'])
+            ->with(['registeredUser', 'sponsorUser', 'fortuneReferral'])
             ->orderBy('created_at', 'desc');
 
         if ($status) {
             $query->where('status', $status);
+        }
+
+        // กรองตามประเภท: fortune = เฉพาะจากระบบดูดวง
+        if ($type === 'fortune') {
+            $query->whereHas('fortuneReferral');
         }
 
         return $query->paginate($perPage);

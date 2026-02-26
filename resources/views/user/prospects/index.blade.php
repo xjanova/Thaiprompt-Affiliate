@@ -198,6 +198,19 @@
                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition">
             </div>
 
+            {{-- Type Filter --}}
+            <div class="md:w-40">
+                <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    ประเภท
+                </label>
+                <select name="type"
+                        id="type"
+                        class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition">
+                    <option value="">ทั้งหมด</option>
+                    <option value="fortune" {{ request('type') === 'fortune' ? 'selected' : '' }}>ดูดวง</option>
+                </select>
+            </div>
+
             {{-- Status Filter --}}
             <div class="md:w-48">
                 <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -314,8 +327,13 @@
                                             @endif
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
                                                 {{ $prospect->line_display_name ?? 'รอการคลิกลิงก์' }}
+                                                @if($prospect->fortuneReferral)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                                        ดูดวง
+                                                    </span>
+                                                @endif
                                             </div>
                                             @if($prospect->line_user_id)
                                                 <div class="text-xs text-gray-500 dark:text-gray-400 font-mono">
@@ -333,13 +351,25 @@
                                 {{-- Status --}}
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php
-                                        $statusConfig = [
-                                            'pending' => ['color' => 'yellow', 'bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอดำเนินการ', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
-                                            'in_progress' => ['color' => 'indigo', 'bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'กำลังดำเนินการ', 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z'],
-                                            'completed' => ['color' => 'green', 'bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สำเร็จ', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-                                            'expired' => ['color' => 'red', 'bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ', 'icon' => 'M6 18L18 6M6 6l12 12'],
-                                        ];
-                                        $config = $statusConfig[$prospect->status] ?? ['bg' => 'bg-gray-100 dark:bg-gray-700', 'text' => 'text-gray-800 dark:text-gray-300', 'label' => $prospect->status, 'icon' => 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'];
+                                        // สถานะเฉพาะสำหรับ fortune referral
+                                        if ($prospect->fortuneReferral) {
+                                            $frStatus = $prospect->fortuneReferral->status;
+                                            $statusConfig = [
+                                                'pending' => ['color' => 'yellow', 'bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอกดลิงก์', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+                                                'followed' => ['color' => 'indigo', 'bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'add LINE แล้ว', 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z'],
+                                                'converted' => ['color' => 'green', 'bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สมัครสมาชิกแล้ว', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+                                                'expired' => ['color' => 'red', 'bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ', 'icon' => 'M6 18L18 6M6 6l12 12'],
+                                            ];
+                                            $config = $statusConfig[$frStatus] ?? $statusConfig['pending'];
+                                        } else {
+                                            $statusConfig = [
+                                                'pending' => ['color' => 'yellow', 'bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอดำเนินการ', 'icon' => 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+                                                'in_progress' => ['color' => 'indigo', 'bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'กำลังดำเนินการ', 'icon' => 'M13 10V3L4 14h7v7l9-11h-7z'],
+                                                'completed' => ['color' => 'green', 'bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สำเร็จ', 'icon' => 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
+                                                'expired' => ['color' => 'red', 'bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ', 'icon' => 'M6 18L18 6M6 6l12 12'],
+                                            ];
+                                            $config = $statusConfig[$prospect->status] ?? ['bg' => 'bg-gray-100 dark:bg-gray-700', 'text' => 'text-gray-800 dark:text-gray-300', 'label' => $prospect->status, 'icon' => 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'];
+                                        }
                                     @endphp
                                     <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold {{ $config['bg'] }} {{ $config['text'] }}">
                                         <svg class="w-3.5 h-3.5 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,9 +377,18 @@
                                         </svg>
                                         {{ $config['label'] }}
                                     </span>
-                                    @if($prospect->expires_at && $prospect->status !== 'completed')
+                                    @if($prospect->fortuneReferral && $prospect->fortuneReferral->expires_at && $prospect->fortuneReferral->status !== 'converted')
+                                        @php $frExpires = $prospect->fortuneReferral->expires_at; @endphp
+                                        <div class="mt-1 text-xs {{ $frExpires->isPast() ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-gray-400' }}">
+                                            @if($frExpires->isPast())
+                                                หมดอายุแล้ว
+                                            @else
+                                                เหลือ {{ $frExpires->diffForHumans(null, true) }}
+                                            @endif
+                                        </div>
+                                    @elseif($prospect->locked_until && $prospect->status !== 'completed')
                                         <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                            หมดอายุ: {{ \Carbon\Carbon::parse($prospect->expires_at)->format('d/m/Y') }}
+                                            หมดอายุ: {{ \Carbon\Carbon::parse($prospect->locked_until)->format('d/m/Y') }}
                                         </div>
                                     @endif
                                 </td>
@@ -427,8 +466,13 @@
                                     @endif
                                 </div>
                                 <div class="ml-3">
-                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
                                         {{ $prospect->line_display_name ?? 'รอการคลิกลิงก์' }}
+                                        @if($prospect->fortuneReferral)
+                                            <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
+                                                ดูดวง
+                                            </span>
+                                        @endif
                                     </div>
                                     <div class="text-xs text-gray-500 dark:text-gray-400">
                                         {{ $prospect->created_at->format('d/m/Y H:i') }}
@@ -436,13 +480,24 @@
                                 </div>
                             </div>
                             @php
-                                $statusConfig = [
-                                    'pending' => ['bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอ'],
-                                    'in_progress' => ['bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'กำลังดำเนินการ'],
-                                    'completed' => ['bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สำเร็จ'],
-                                    'expired' => ['bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ'],
-                                ];
-                                $config = $statusConfig[$prospect->status] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-800', 'label' => $prospect->status];
+                                if ($prospect->fortuneReferral) {
+                                    $frStatus = $prospect->fortuneReferral->status;
+                                    $statusConfig = [
+                                        'pending' => ['bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอกดลิงก์'],
+                                        'followed' => ['bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'add LINE'],
+                                        'converted' => ['bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สมัครแล้ว'],
+                                        'expired' => ['bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ'],
+                                    ];
+                                    $config = $statusConfig[$frStatus] ?? $statusConfig['pending'];
+                                } else {
+                                    $statusConfig = [
+                                        'pending' => ['bg' => 'bg-yellow-100 dark:bg-yellow-900/30', 'text' => 'text-yellow-800 dark:text-yellow-300', 'label' => 'รอ'],
+                                        'in_progress' => ['bg' => 'bg-indigo-100 dark:bg-indigo-900/30', 'text' => 'text-indigo-800 dark:text-indigo-300', 'label' => 'กำลังดำเนินการ'],
+                                        'completed' => ['bg' => 'bg-green-100 dark:bg-green-900/30', 'text' => 'text-green-800 dark:text-green-300', 'label' => 'สำเร็จ'],
+                                        'expired' => ['bg' => 'bg-red-100 dark:bg-red-900/30', 'text' => 'text-red-800 dark:text-red-300', 'label' => 'หมดอายุ'],
+                                    ];
+                                    $config = $statusConfig[$prospect->status] ?? ['bg' => 'bg-gray-100', 'text' => 'text-gray-800', 'label' => $prospect->status];
+                                }
                             @endphp
                             <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold {{ $config['bg'] }} {{ $config['text'] }}">
                                 {{ $config['label'] }}
