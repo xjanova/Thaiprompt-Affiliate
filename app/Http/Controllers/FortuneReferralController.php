@@ -60,13 +60,17 @@ class FortuneReferralController extends Controller
         $lineAddFriendUrl = null;
         $lineQrCodeUrl = null;
 
-        // ดึง LINE Channel ID จาก fortune settings → ใช้สร้าง add friend URL
-        if ($settings->line_channel_id) {
-            // ใช้ LINE OA ID ที่ตั้งค่าไว้
-            // Format: https://line.me/R/ti/p/{LINE_OA_ID}
-            // สำหรับ LINE OA ที่ใช้กับระบบดูดวงโดยเฉพาะ
-            // ถ้ามี messaging_channel_id → สร้าง QR Code URL
-            $lineAddFriendUrl = 'https://line.me/R/ti/p/'.$settings->line_channel_id;
+        // ใช้ LINE Bot Basic ID (เช่น @002dqcls) สร้างลิงก์เพิ่มเพื่อน
+        // ⚠️ line_channel_id คือ Messaging API Channel ID (ตัวเลข) → ใช้สำหรับ API เท่านั้น
+        // ⚠️ line_bot_basic_id คือ LINE OA Basic ID (@xxx) → ใช้สำหรับลิงก์เพิ่มเพื่อน
+        $basicId = $settings->line_bot_basic_id;
+
+        if ($basicId) {
+            // ถ้าไม่มี @ นำหน้า ให้เติมให้
+            if (! str_starts_with($basicId, '@')) {
+                $basicId = '@'.$basicId;
+            }
+            $lineAddFriendUrl = 'https://line.me/R/ti/p/'.$basicId;
         }
 
         Log::info('Fortune Referral: เปิด landing page', [

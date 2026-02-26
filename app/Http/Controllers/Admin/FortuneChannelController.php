@@ -52,6 +52,7 @@ class FortuneChannelController extends Controller
             // LINE Settings
             'line_enabled' => 'boolean',
             'line_channel_id' => 'nullable|string|max:100',
+            'line_bot_basic_id' => 'nullable|string|max:100',
             'line_channel_secret' => 'nullable|string|max:255',
             'line_channel_access_token' => 'nullable|string',
             'line_flex_primary_color' => 'nullable|string|max:7',

@@ -104,6 +104,7 @@ class FortuneTellingSetting extends Model
         // LINE Official Account Settings
         'line_enabled',
         'line_channel_id',
+        'line_bot_basic_id',
         'line_channel_secret',
         'line_channel_access_token',
         'enabled_platforms',

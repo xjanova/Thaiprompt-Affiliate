@@ -1137,12 +1137,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
         ];
 
         // ถ้ามี LINE → ใส่ปุ่มเพิ่มเพื่อน LINE (URL button)
-        $lineChannelId = $this->settings->line_channel_id ?? null;
-        if (! empty($lineChannelId)) {
+        // ⚠️ ใช้ line_bot_basic_id (@xxx) ไม่ใช่ line_channel_id (ตัวเลข)
+        $basicId = $this->settings->line_bot_basic_id ?? null;
+        if (! empty($basicId)) {
+            if (! str_starts_with($basicId, '@')) {
+                $basicId = '@' . $basicId;
+            }
             $actions[] = [
                 'type' => 'web_url',
                 'title' => '💚 เพิ่มเพื่อน LINE',
-                'url' => 'https://line.me/R/ti/p/' . $lineChannelId,
+                'url' => 'https://line.me/R/ti/p/' . $basicId,
             ];
         } else {
             // ถ้าไม่มี LINE → ใส่ปุ่มเช็คสิทธิ์แทน

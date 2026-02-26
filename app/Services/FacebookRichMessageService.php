@@ -736,13 +736,18 @@ class FacebookRichMessageService
      */
     public function getLineAddFriendUrl(): ?string
     {
-        $lineChannelId = $this->settings->line_channel_id ?? null;
+        // ⚠️ ใช้ line_bot_basic_id (@xxx) ไม่ใช่ line_channel_id (ตัวเลข)
+        $basicId = $this->settings->line_bot_basic_id ?? null;
 
-        if (empty($lineChannelId)) {
+        if (empty($basicId)) {
             return null;
         }
 
-        return 'https://line.me/R/ti/p/' . $lineChannelId;
+        if (! str_starts_with($basicId, '@')) {
+            $basicId = '@' . $basicId;
+        }
+
+        return 'https://line.me/R/ti/p/' . $basicId;
     }
 
     /**
