@@ -429,32 +429,254 @@ class StoreLayoutSetting extends Model
     }
 
     /**
-     * ดึง layout styles ที่รองรับ
+     * ดึง layout styles ที่รองรับ (ใช้ข้อมูลจาก presets)
      */
     public static function getLayoutStyles(): array
+    {
+        $presets = static::getLayoutPresets();
+        $styles = [];
+        foreach ($presets as $key => $preset) {
+            $styles[$key] = [
+                'name' => $preset['name'],
+                'description' => $preset['description'],
+                'icon' => $preset['icon'],
+            ];
+        }
+
+        return $styles;
+    }
+
+    /**
+     * ดึง preset definitions สำหรับ layout templates ทั้ง 4 แบบ
+     *
+     * แต่ละ preset กำหนด: สี, header style, product card, sections order/visibility
+     * ไม่รวม: รูปภาพ, social links, ข้อความ (ไม่ถูกเขียนทับเมื่อ apply)
+     */
+    public static function getLayoutPresets(): array
     {
         return [
             'modern' => [
                 'name' => 'Modern',
-                'description' => 'สไตล์โมเดิร์น สะอาดตา เน้นสินค้า',
-                'preview' => '/images/layouts/modern.jpg',
+                'description' => 'สไตล์โมเดิร์น Glassmorphism การ์ดโปร่งแสง มุมโค้ง',
+                'icon' => '🌟',
+                'colors' => [
+                    'primary_color' => '#6366f1',
+                    'secondary_color' => '#8b5cf6',
+                    'accent_color' => '#ec4899',
+                    'text_color' => '#1f2937',
+                    'background_color' => '#ffffff',
+                ],
+                'header_style' => 'gradient',
+                'header_height' => 220,
+                'product_card_style' => 'default',
+                'products_per_row' => 4,
+                'sidebar_position' => 'left',
+                'show_sidebar' => true,
+                'categories_style' => 'grid',
+                'sections_order' => ['header', 'slider', 'featured_products', 'categories', 'all_products', 'promotion', 'footer'],
+                'sections_visibility' => [
+                    'header' => true, 'slider' => false, 'promotion' => false,
+                    'featured_products' => true, 'categories' => true,
+                    'all_products' => true, 'footer' => true,
+                ],
             ],
             'classic' => [
                 'name' => 'Classic',
-                'description' => 'สไตล์คลาสสิก เรียบง่าย ใช้งานง่าย',
-                'preview' => '/images/layouts/classic.jpg',
+                'description' => 'สไตล์คลาสสิก เรียบง่าย มุมเหลี่ยม สะอาดตา',
+                'icon' => '🏛️',
+                'colors' => [
+                    'primary_color' => '#2563eb',
+                    'secondary_color' => '#1e40af',
+                    'accent_color' => '#dc2626',
+                    'text_color' => '#111827',
+                    'background_color' => '#f9fafb',
+                ],
+                'header_style' => 'solid',
+                'header_height' => 180,
+                'product_card_style' => 'minimal',
+                'products_per_row' => 4,
+                'sidebar_position' => 'left',
+                'show_sidebar' => true,
+                'categories_style' => 'list',
+                'sections_order' => ['header', 'slider', 'categories', 'featured_products', 'all_products', 'promotion', 'footer'],
+                'sections_visibility' => [
+                    'header' => true, 'slider' => false, 'promotion' => false,
+                    'featured_products' => true, 'categories' => true,
+                    'all_products' => true, 'footer' => true,
+                ],
             ],
             'minimal' => [
                 'name' => 'Minimal',
-                'description' => 'สไตล์มินิมอล เรียบหรู ดูดี',
-                'preview' => '/images/layouts/minimal.jpg',
+                'description' => 'สไตล์มินิมอล เรียบหรู เน้นช่องว่าง ตัวอักษรบาง',
+                'icon' => '✨',
+                'colors' => [
+                    'primary_color' => '#0f172a',
+                    'secondary_color' => '#334155',
+                    'accent_color' => '#f59e0b',
+                    'text_color' => '#334155',
+                    'background_color' => '#ffffff',
+                ],
+                'header_style' => 'transparent',
+                'header_height' => 160,
+                'product_card_style' => 'minimal',
+                'products_per_row' => 3,
+                'sidebar_position' => 'left',
+                'show_sidebar' => false,
+                'categories_style' => 'list',
+                'sections_order' => ['header', 'featured_products', 'all_products', 'footer'],
+                'sections_visibility' => [
+                    'header' => true, 'slider' => false, 'promotion' => false,
+                    'featured_products' => true, 'categories' => false,
+                    'all_products' => true, 'footer' => true,
+                ],
             ],
             'bold' => [
                 'name' => 'Bold',
-                'description' => 'สไตล์โดดเด่น สีสันสดใส',
-                'preview' => '/images/layouts/bold.jpg',
+                'description' => 'สไตล์โดดเด่น สีสันสดใส ตัวอักษรใหญ่ เน้น visual',
+                'icon' => '🔥',
+                'colors' => [
+                    'primary_color' => '#dc2626',
+                    'secondary_color' => '#ea580c',
+                    'accent_color' => '#facc15',
+                    'text_color' => '#0f172a',
+                    'background_color' => '#fffbeb',
+                ],
+                'header_style' => 'gradient',
+                'header_height' => 280,
+                'product_card_style' => 'detailed',
+                'products_per_row' => 3,
+                'sidebar_position' => 'right',
+                'show_sidebar' => true,
+                'categories_style' => 'grid',
+                'sections_order' => ['header', 'slider', 'promotion', 'featured_products', 'categories', 'all_products', 'footer'],
+                'sections_visibility' => [
+                    'header' => true, 'slider' => false, 'promotion' => false,
+                    'featured_products' => true, 'categories' => true,
+                    'all_products' => true, 'footer' => true,
+                ],
             ],
         ];
+    }
+
+    /**
+     * ใช้ preset template — ตั้งค่าสี, header, layout
+     * ไม่เขียนทับ: รูปภาพ, social links, ข้อความ, SEO, custom code
+     */
+    public function applyPreset(string $style): bool
+    {
+        $presets = static::getLayoutPresets();
+        if (! isset($presets[$style])) {
+            return false;
+        }
+
+        $preset = $presets[$style];
+
+        $fieldsToUpdate = [
+            'layout_style' => $style,
+            'primary_color' => $preset['colors']['primary_color'],
+            'secondary_color' => $preset['colors']['secondary_color'],
+            'accent_color' => $preset['colors']['accent_color'],
+            'text_color' => $preset['colors']['text_color'],
+            'background_color' => $preset['colors']['background_color'],
+            'header_style' => $preset['header_style'],
+            'header_height' => $preset['header_height'],
+            'product_card_style' => $preset['product_card_style'],
+            'products_per_row' => $preset['products_per_row'],
+            'sidebar_position' => $preset['sidebar_position'],
+            'show_sidebar' => $preset['show_sidebar'],
+            'categories_style' => $preset['categories_style'],
+            'sections_order' => $preset['sections_order'],
+            'sections_visibility' => $preset['sections_visibility'],
+        ];
+
+        return $this->update($fieldsToUpdate);
+    }
+
+    /**
+     * ดึง Tailwind class strings ตาม layout_style
+     *
+     * ใช้ใน section partials เพื่อ render ตาม template ที่เลือก
+     */
+    public function getLayoutClassesAttribute(): array
+    {
+        return match ($this->layout_style) {
+            'classic' => [
+                'card' => 'bg-white dark:bg-gray-800 rounded-none shadow border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300',
+                'card_hover' => 'hover:shadow-md',
+                'section_spacing' => 'py-8',
+                'heading' => 'text-2xl font-bold',
+                'container' => 'container mx-auto px-4',
+                'border_radius' => 'rounded-none',
+                'header_text' => 'text-3xl md:text-4xl font-bold',
+                'badge' => 'bg-green-600 px-3 py-1 rounded-sm text-sm',
+                'button' => 'rounded-sm',
+                'stats_bg' => 'bg-white/30 px-3 py-1.5 rounded-sm border border-white/30',
+                'logo_size' => 'w-24 h-24 md:w-32 md:h-32',
+                'logo_radius' => 'rounded-lg',
+                'wave_divider' => false,
+                'backdrop_blur' => '',
+                'category_card' => 'bg-white dark:bg-gray-800 rounded-none p-4 text-center shadow border border-gray-200 dark:border-gray-700',
+                'sidebar_card' => 'bg-white dark:bg-gray-800 rounded-none shadow border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-4',
+                'footer_style' => 'border-t-2 border-gray-300 dark:border-gray-600',
+            ],
+            'minimal' => [
+                'card' => 'bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden transition-all duration-300',
+                'card_hover' => 'hover:shadow-sm hover:border-gray-200',
+                'section_spacing' => 'py-12',
+                'heading' => 'text-xl font-light tracking-wide uppercase',
+                'container' => 'max-w-6xl mx-auto px-6',
+                'border_radius' => 'rounded-lg',
+                'header_text' => 'text-2xl md:text-3xl font-light tracking-wide',
+                'badge' => 'bg-gray-800 px-3 py-1 rounded-full text-xs',
+                'button' => 'rounded-full',
+                'stats_bg' => 'bg-white/10 px-3 py-1.5 rounded-full border border-white/20',
+                'logo_size' => 'w-20 h-20 md:w-24 md:h-24',
+                'logo_radius' => 'rounded-full',
+                'wave_divider' => false,
+                'backdrop_blur' => '',
+                'category_card' => 'bg-white dark:bg-gray-800 rounded-lg p-4 text-center border border-gray-100 dark:border-gray-800',
+                'sidebar_card' => 'bg-white dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden sticky top-4',
+                'footer_style' => 'border-t border-gray-100 dark:border-gray-800',
+            ],
+            'bold' => [
+                'card' => 'bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-2 border-transparent overflow-hidden transition-all duration-300',
+                'card_hover' => 'hover:shadow-2xl hover:-translate-y-2',
+                'section_spacing' => 'py-10',
+                'heading' => 'text-3xl md:text-4xl font-black',
+                'container' => 'container mx-auto px-4',
+                'border_radius' => 'rounded-2xl',
+                'header_text' => 'text-4xl md:text-6xl font-black',
+                'badge' => 'bg-yellow-500 text-black px-4 py-2 rounded-xl font-black text-sm',
+                'button' => 'rounded-xl',
+                'stats_bg' => 'bg-white/25 backdrop-blur-sm px-5 py-3 rounded-2xl border-2 border-white/40',
+                'logo_size' => 'w-32 h-32 md:w-40 md:h-40',
+                'logo_radius' => 'rounded-3xl',
+                'wave_divider' => true,
+                'backdrop_blur' => 'backdrop-blur-sm',
+                'category_card' => 'bg-white dark:bg-gray-800 rounded-2xl p-5 text-center shadow-lg border-2 border-transparent hover:border-yellow-400',
+                'sidebar_card' => 'bg-white dark:bg-gray-800 rounded-2xl shadow-xl border-2 border-gray-100 dark:border-gray-700 overflow-hidden sticky top-4',
+                'footer_style' => 'border-t-4 border-gray-200 dark:border-gray-700',
+            ],
+            default => [ // modern
+                'card' => 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl shadow-lg overflow-hidden transition-all duration-300',
+                'card_hover' => 'hover:shadow-xl hover:-translate-y-1',
+                'section_spacing' => 'py-8',
+                'heading' => 'text-2xl md:text-3xl font-bold',
+                'container' => 'container mx-auto px-4',
+                'border_radius' => 'rounded-xl',
+                'header_text' => 'text-3xl md:text-5xl font-black tracking-tight drop-shadow-lg',
+                'badge' => 'bg-emerald-500/80 backdrop-blur-lg px-4 py-2 rounded-full border border-white/30 text-sm',
+                'button' => 'rounded-lg',
+                'stats_bg' => 'bg-white/20 backdrop-blur-lg px-4 py-2 rounded-xl border border-white/30',
+                'logo_size' => 'w-28 h-28 md:w-36 md:h-36',
+                'logo_radius' => 'rounded-3xl',
+                'wave_divider' => true,
+                'backdrop_blur' => 'backdrop-blur-lg',
+                'category_card' => 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-xl p-4 text-center shadow-md border border-gray-100 dark:border-gray-700',
+                'sidebar_card' => 'bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-4',
+                'footer_style' => 'border-t border-gray-200 dark:border-gray-700',
+            ],
+        };
     }
 
     /**

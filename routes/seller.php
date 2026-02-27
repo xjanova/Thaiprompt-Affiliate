@@ -212,6 +212,9 @@ Route::middleware(['kyc.verified', 'has.vendor.store'])->group(function () {
             Route::post('/upload-header-image', [StoreLayoutController::class, 'uploadHeaderImage'])->name('upload-header-image');
             Route::post('/upload-promotion-image', [StoreLayoutController::class, 'uploadPromotionImage'])->name('upload-promotion-image');
 
+            // ใช้เทมเพลต Layout
+            Route::post('/apply-template', [StoreLayoutController::class, 'applyTemplate'])->name('apply-template');
+
             // เผยแพร่/ยกเลิก/รีเซ็ต
             Route::post('/publish', [StoreLayoutController::class, 'publish'])->name('publish');
             Route::post('/unpublish', [StoreLayoutController::class, 'unpublish'])->name('unpublish');

@@ -132,37 +132,32 @@ class VendorStoreController extends Controller
             'rating_count' => $store->rating_count ?? 0,
         ];
 
-        // ดึง layout settings (ไม่ว่าจะ publish หรือยัง — บันทึกแล้วใช้ได้เลย)
-        $layoutSettings = StoreLayoutSetting::getForUser($store->user_id);
+        // ดึงหรือสร้าง layout settings — ทุกร้านมี StoreLayoutSetting เสมอ
+        $layoutSettings = StoreLayoutSetting::getOrCreateForUser($store->user_id);
 
-        // ถ้ามี layout settings ให้ใช้ view แบบ custom (รองรับ slider, sections, footer ฯลฯ)
-        if ($layoutSettings) {
-            // ดึงสินค้าแนะนำ (featured products)
-            $featuredProducts = null;
-            if ($layoutSettings->show_featured_products) {
+        // ดึงสินค้าแนะนำ (featured products)
+        $featuredProducts = null;
+        if ($layoutSettings->show_featured_products) {
+            $featuredProducts = Product::where('seller_id', $store->user_id)
+                ->where('is_active', true)
+                ->where('is_featured', true)
+                ->with(['category', 'images'])
+                ->take($layoutSettings->featured_products_count ?? 8)
+                ->get();
+
+            // ถ้าไม่มีสินค้า featured ให้ดึงสินค้าล่าสุดแทน
+            if ($featuredProducts->isEmpty()) {
                 $featuredProducts = Product::where('seller_id', $store->user_id)
                     ->where('is_active', true)
-                    ->where('is_featured', true)
                     ->with(['category', 'images'])
+                    ->latest()
                     ->take($layoutSettings->featured_products_count ?? 8)
                     ->get();
-
-                // ถ้าไม่มีสินค้า featured ให้ดึงสินค้าล่าสุดแทน
-                if ($featuredProducts->isEmpty()) {
-                    $featuredProducts = Product::where('seller_id', $store->user_id)
-                        ->where('is_active', true)
-                        ->with(['category', 'images'])
-                        ->latest()
-                        ->take($layoutSettings->featured_products_count ?? 8)
-                        ->get();
-                }
             }
-
-            return view('vendor-store.show-custom', compact(
-                'store', 'products', 'categories', 'stats', 'layoutSettings', 'featuredProducts'
-            ));
         }
 
-        return view('vendor-store.show', compact('store', 'products', 'categories', 'stats'));
+        return view('vendor-store.show-custom', compact(
+            'store', 'products', 'categories', 'stats', 'layoutSettings', 'featuredProducts'
+        ));
     }
 }

@@ -582,6 +582,39 @@ class StoreLayoutController extends Controller
     }
 
     /**
+     * ใช้เทมเพลต Layout ที่เลือก
+     *
+     * จะเขียนทับเฉพาะค่าสี, header style, product card, layout settings
+     * แต่ไม่เขียนทับ: รูปภาพ, ข้อความ, social links, SEO, custom code
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function applyTemplate(Request $request)
+    {
+        $request->validate([
+            'template' => 'required|string|in:modern,classic,minimal,bold',
+        ]);
+
+        $user = auth()->user();
+        $layoutSettings = StoreLayoutSetting::getOrCreateForUser($user->id);
+
+        $success = $layoutSettings->applyPreset($request->template);
+
+        if (! $success) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบเทมเพลตที่เลือก',
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ใช้เทมเพลต "' . $request->template . '" สำเร็จ',
+            'data' => $layoutSettings->fresh(),
+        ]);
+    }
+
+    /**
      * ดึงข้อมูล Preview (สำหรับ iframe preview)
      *
      * @return \Illuminate\View\View

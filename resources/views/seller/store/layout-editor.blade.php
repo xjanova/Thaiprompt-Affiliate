@@ -189,35 +189,65 @@
                         </div>
                     </div>
 
-                    {{-- Layout Style --}}
+                    {{-- Layout Templates --}}
                     <div class="space-y-4 pt-6">
                         <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-200 flex items-center gap-2">
-                            <span>📐</span> รูปแบบ Layout
+                            <span>📐</span> เทมเพลต Layout
                         </h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                            เลือกเทมเพลตแล้วกด "ใช้เทมเพลต" เพื่อปรับสี, Header, Product Card ให้ตรงตามแบบ (รูปภาพ/ข้อความ/Social ไม่ถูกเปลี่ยน)
+                        </p>
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            @php $presets = \App\Models\StoreLayoutSetting::getLayoutPresets(); @endphp
                             @foreach($layoutStyles as $key => $style)
-                            <label :class="settings.layout_style === '{{ $key }}'
+                            @php $preset = $presets[$key] ?? null; @endphp
+                            <div :class="settings.layout_style === '{{ $key }}'
                                        ? 'ring-2 ring-indigo-500 bg-indigo-50 dark:bg-indigo-900/30'
                                        : 'hover:bg-gray-50 dark:hover:bg-slate-700'"
-                                   class="relative block p-4 rounded-xl border-2 border-gray-200 dark:border-slate-600 cursor-pointer transition">
-                                <input type="radio" x-model="settings.layout_style" value="{{ $key }}"
-                                       @change="updatePreview()" class="sr-only">
-                                <div class="text-center">
-                                    <div class="w-full h-20 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-700 dark:to-slate-600 rounded-lg mb-2 flex items-center justify-center text-3xl">
-                                        @if($key === 'modern') 🌟
-                                        @elseif($key === 'classic') 🏛️
-                                        @elseif($key === 'minimal') ✨
-                                        @else 🔥
+                                 class="relative block p-4 rounded-xl border-2 border-gray-200 dark:border-slate-600 transition">
+                                {{-- Radio + Click area --}}
+                                <label class="cursor-pointer block">
+                                    <input type="radio" x-model="settings.layout_style" value="{{ $key }}"
+                                           @change="updatePreview()" class="sr-only">
+                                    <div class="text-center">
+                                        {{-- Preview gradient bar --}}
+                                        @if($preset)
+                                        <div class="w-full h-16 rounded-lg mb-2 flex items-center justify-center text-3xl overflow-hidden"
+                                             style="background: linear-gradient(135deg, {{ $preset['colors']['primary_color'] }}, {{ $preset['colors']['secondary_color'] }})">
+                                            <span class="text-white drop-shadow-lg">
+                                                @if($key === 'modern') 🌟
+                                                @elseif($key === 'classic') 🏛️
+                                                @elseif($key === 'minimal') ✨
+                                                @else 🔥
+                                                @endif
+                                            </span>
+                                        </div>
+                                        {{-- Color swatches --}}
+                                        <div class="flex justify-center gap-1 mb-2">
+                                            <span class="w-5 h-5 rounded-full border border-gray-200" style="background: {{ $preset['colors']['primary_color'] }}"></span>
+                                            <span class="w-5 h-5 rounded-full border border-gray-200" style="background: {{ $preset['colors']['secondary_color'] }}"></span>
+                                            <span class="w-5 h-5 rounded-full border border-gray-200" style="background: {{ $preset['colors']['accent_color'] }}"></span>
+                                        </div>
                                         @endif
+                                        <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ $style['name'] }}</span>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $style['description'] }}</p>
                                     </div>
-                                    <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">{{ $style['name'] }}</span>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $style['description'] }}</p>
-                                </div>
+                                </label>
+                                {{-- Apply Template Button --}}
+                                <button @click="applyTemplate('{{ $key }}')"
+                                        :disabled="saving"
+                                        class="mt-3 w-full text-xs font-semibold py-2 px-3 rounded-lg transition
+                                               bg-indigo-500 hover:bg-indigo-600 text-white
+                                               disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <span x-show="!saving">ใช้เทมเพลตนี้</span>
+                                    <span x-show="saving" x-cloak>กำลังใช้...</span>
+                                </button>
+                                {{-- Active check --}}
                                 <div x-show="settings.layout_style === '{{ $key }}'"
                                      class="absolute top-2 right-2 w-6 h-6 bg-indigo-500 text-white rounded-full flex items-center justify-center text-sm">
                                     ✓
                                 </div>
-                            </label>
+                            </div>
                             @endforeach
                         </div>
                     </div>
@@ -922,6 +952,33 @@ function layoutEditor() {
             } catch (error) {
                 this.showToast('เกิดข้อผิดพลาด', 'error');
             }
+        },
+
+        async applyTemplate(templateKey) {
+            if (!confirm('ใช้เทมเพลต "' + templateKey + '"?\n\nจะเปลี่ยนแปลง: สี, Header, Product Card, Layout\nจะไม่เปลี่ยนแปลง: รูปภาพ, ข้อความ, Social Links, SEO, Custom Code')) return;
+
+            this.saving = true;
+            try {
+                const response = await fetch('{{ route("seller.store.layout.apply-template") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ template: templateKey })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.settings = data.data;
+                    this.showToast('ใช้เทมเพลตสำเร็จ!');
+                    this.updatePreview();
+                } else {
+                    this.showToast(data.message || 'เกิดข้อผิดพลาด', 'error');
+                }
+            } catch (error) {
+                this.showToast('เกิดข้อผิดพลาด: ' + error.message, 'error');
+            }
+            this.saving = false;
         },
 
         async resetLayout() {
