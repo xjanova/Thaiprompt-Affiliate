@@ -28,7 +28,9 @@
     <meta name="twitter:title" content="Snake.io - เกมงูออนไลน์ Multiplayer">
     <meta name="twitter:description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริง Multiplayer">
     <meta name="twitter:image" content="{{ asset('images/games/snake-io-og.png') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -1344,9 +1346,9 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="/js/optimized-touch-input.js"></script>
-    <script src="/js/snake-multiplayer.js"></script>
-    <script src="/js/snake-sync-client.js"></script>
+    <script defer src="/js/optimized-touch-input.js"></script>
+    <script defer src="/js/snake-multiplayer.js"></script>
+    <script defer src="/js/snake-sync-client.js"></script>
 
     <script>
         /**
@@ -1479,10 +1481,27 @@
                         musicPlayer.enabled = data.music.enabled !== false;
                         musicPlayer.defaultVolume = data.music.default_volume || 0.5;
                         musicPlayer.volume = musicPlayer.defaultVolume;
-                        musicPlayer.titleTracks = data.music.title_tracks || [];
-                        musicPlayer.gameplayTracks = data.music.gameplay_tracks || [];
+
+                        // ✅ FIX: ป้องกัน tracks เป็น string แทน array (double-encoded JSON)
+                        let titleTracks = data.music.title_tracks || [];
+                        if (typeof titleTracks === 'string') {
+                            try { titleTracks = JSON.parse(titleTracks); } catch(e) { titleTracks = []; }
+                        }
+                        let gameplayTracks = data.music.gameplay_tracks || [];
+                        if (typeof gameplayTracks === 'string') {
+                            try { gameplayTracks = JSON.parse(gameplayTracks); } catch(e) { gameplayTracks = []; }
+                        }
+
+                        musicPlayer.titleTracks = Array.isArray(titleTracks) ? titleTracks : [];
+                        musicPlayer.gameplayTracks = Array.isArray(gameplayTracks) ? gameplayTracks : [];
                         musicPlayer.sfxEnabled = data.music.sfx_enabled !== false;
                         musicPlayer.sfxVolume = data.music.sfx_default_volume || 0.7;
+
+                        console.log('[Music] Tracks loaded:', {
+                            title: musicPlayer.titleTracks.length,
+                            gameplay: musicPlayer.gameplayTracks.length,
+                            tracks: [...musicPlayer.titleTracks, ...musicPlayer.gameplayTracks]
+                        });
                     }
 
                     console.log('[Config] ✅ โหลด config จาก API สำเร็จทั้งหมด:', {
@@ -2070,6 +2089,11 @@
         // Custom colors selected by user
         let customColors = [0x00ff00, 0x00aa00, 0x00dd00];
 
+        // ✅ Performance: แชร์ Geometry เดียวกัน (ลด memory + draw calls)
+        let sharedSegmentGeometry = null; // สร้างตอน init()
+        let sharedFoodGeometry = null;
+        let sharedPowerupGeometry = null;
+
         class Snake {
             constructor(x, z, isPlayer = false, name = 'Bot', skinKey = 'classic') {
                 this.isPlayer = isPlayer;
@@ -2118,9 +2142,9 @@
                 this.invincible = true; // ทั้งผู้เล่นและบอทมี invincibility ตอนเกิด
                 this.invincibleUntil = Date.now() + 5000; // 5 วินาที
 
-                // Create initial segments
+                // Create initial segments (✅ ใช้ shared geometry)
                 for (let i = 0; i < this.length; i++) {
-                    const geometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
+                    const geometry = sharedSegmentGeometry || new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
                     // ใช้สีสลับถ้ามีหลายสี
                     let segmentColor = i === 0 ? this.skin.primary : this.skin.secondary;
                     if (this.skin.colors && this.skin.colors.length > 0 && i > 0) {
@@ -2362,7 +2386,7 @@
             grow(amount = 1) {
                 for (let i = 0; i < amount; i++) {
                     const lastSegment = this.segments[this.segments.length - 1];
-                    const geometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
+                    const geometry = sharedSegmentGeometry || new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
 
                     // ใช้สีสลับตามปล้อง (ถ้ามี 3 สี)
                     let segmentColor = this.skin.secondary;
@@ -2426,8 +2450,7 @@
                     this.segmentPositions.pop();
                     scene.remove(lastSegment);
 
-                    // อย่าลืม dispose geometry และ material เพื่อไม่ให้ memory leak
-                    lastSegment.geometry.dispose();
+                    // ✅ dispose เฉพาะ material (ไม่ dispose shared geometry)
                     lastSegment.material.dispose();
                 }
 
@@ -2505,10 +2528,18 @@
                     return;
                 }
 
-                renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+                // ✅ Performance: ตรวจจับ mobile + จำกัด pixel ratio
+                const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+                const maxPixelRatio = isMobile ? 1.5 : 2; // จำกัด pixel ratio (ลดภาระ GPU)
+
+                renderer = new THREE.WebGLRenderer({
+                    canvas,
+                    antialias: !isMobile, // ปิด antialias บนมือถือ (ประหยัด GPU)
+                    powerPreference: 'high-performance',
+                });
                 renderer.setSize(window.innerWidth, window.innerHeight);
-                renderer.shadowMap.enabled = true;
-                renderer.setPixelRatio(window.devicePixelRatio);
+                renderer.shadowMap.enabled = !isMobile; // ปิดเงาบนมือถือ
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio));
 
             // Lights
             const ambientLight = new THREE.AmbientLight(0x404080, 0.6);
@@ -2516,8 +2547,13 @@
 
             const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
             directionalLight.position.set(50, 50, 50);
-            directionalLight.castShadow = true;
+            directionalLight.castShadow = !isMobile; // ✅ ปิดเงาบนมือถือ
             scene.add(directionalLight);
+
+            // ✅ Performance: สร้าง shared geometries (ใช้ร่วมกันทั้งเกม)
+            sharedSegmentGeometry = new THREE.SphereGeometry(CONFIG.SEGMENT_SIZE, 8, 8);
+            sharedFoodGeometry = new THREE.SphereGeometry(0.3, 6, 6);
+            sharedPowerupGeometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
 
             // Ground
             const groundGeometry = new THREE.PlaneGeometry(CONFIG.WORLD_SIZE, CONFIG.WORLD_SIZE);
@@ -2844,7 +2880,7 @@
         }
 
         function createFood(x = null, z = null, fromDeath = false) {
-            const geometry = new THREE.SphereGeometry(0.3, 6, 6);
+            const geometry = sharedFoodGeometry || new THREE.SphereGeometry(0.3, 6, 6);
             // ✅ อาหารจากตาย = RGB เรืองแสง, อาหารธรรมดา = เหลือง/ชมพู
             const color = fromDeath ? 0xff0000 : // เริ่มจากสีแดง (RGB จะเปลี่ยนทุกเฟรม)
                           (Math.random() > 0.7 ? 0xffff00 : 0xff00ff);
@@ -2902,8 +2938,8 @@
             const x = (Math.random() - 0.5) * halfWorld * 2;
             const z = (Math.random() - 0.5) * halfWorld * 2;
 
-            // Create spinning cube for powerup
-            const geometry = new THREE.BoxGeometry(0.8, 0.8, 0.8);
+            // Create spinning cube for powerup (✅ ใช้ shared geometry)
+            const geometry = sharedPowerupGeometry || new THREE.BoxGeometry(0.8, 0.8, 0.8);
             const material = new THREE.MeshPhongMaterial({
                 color: type.color,
                 emissive: type.color,
@@ -3430,6 +3466,9 @@
 
         async function startGame() {
             console.log('Starting game...');
+
+            // ✅ Performance: หยุด title animation (ประหยัด CPU)
+            if (window.stopTitleAnimation) window.stopTitleAnimation();
 
             // ✅ โหลด config จาก API ก่อนเริ่มเกม
             await loadGameConfig();
@@ -4116,7 +4155,12 @@
             return blended;
         }
 
+        // ✅ Performance: ตัวนับเฟรมสำหรับ throttle bot AI
+        let botAIFrameCount = 0;
+
         function updateBots(now) {
+            botAIFrameCount++;
+
             // ✅ อัปเดตเฉพาะบอทที่มีชีวิต และลบบอทที่ตายออกจาก array
             bots = bots.filter(bot => {
                 if (!bot || !bot.alive) {
@@ -4130,72 +4174,78 @@
                 return true; // เก็บไว้
             });
 
+            // ✅ Performance: รัน AI เต็มรูปแบบทุก 3 เฟรม (ลด CPU 66%)
+            const runFullAI = (botAIFrameCount % 3 === 0);
+
             // อัปเดตบอทที่ยังมีชีวิต
             bots.forEach(bot => {
                 const head = bot.segments[0].position;
 
-                // ✅ พฤติกรรม 1: ตรวจสอบโอกาสตัดหน้า (Aggressive AI)
-                const cutoffTarget = findCutoffTarget(bot);
+                // ✅ Performance: รัน AI เต็มรูปแบบเฉพาะบางเฟรม
+                if (runFullAI) {
+                    // ✅ พฤติกรรม 1: ตรวจสอบโอกาสตัดหน้า (Aggressive AI)
+                    const cutoffTarget = findCutoffTarget(bot);
 
-                let targetDirection = null;
+                    let targetDirection = null;
 
-                if (cutoffTarget) {
-                    // ✅ มีเป้าหมายให้ตัดหน้า - เข้าใส่!
-                    const targetHead = cutoffTarget.segments[0].position;
+                    if (cutoffTarget) {
+                        // ✅ มีเป้าหมายให้ตัดหน้า - เข้าใส่!
+                        const targetHead = cutoffTarget.segments[0].position;
 
-                    // คำนวณตำแหน่งตัดหน้า (ข้างหน้าเป้าหมายเล็กน้อย)
-                    const targetFuturePos = new THREE.Vector3()
-                        .copy(targetHead)
-                        .add(cutoffTarget.direction.clone().multiplyScalar(3));
+                        // คำนวณตำแหน่งตัดหน้า (ข้างหน้าเป้าหมายเล็กน้อย)
+                        const targetFuturePos = new THREE.Vector3()
+                            .copy(targetHead)
+                            .add(cutoffTarget.direction.clone().multiplyScalar(3));
 
-                    targetDirection = new THREE.Vector3()
-                        .subVectors(targetFuturePos, head)
-                        .normalize();
-
-                    // ✅ ใช้ boost เพื่อเร่งตัดหน้า!
-                    if (bot.score >= 10) { // ต้องมีแต้มพอ
-                        bot.isBoosting = true;
-                    }
-                } else {
-                    // ไม่มีเป้าหมายตัดหน้า - หยุด boost
-                    bot.isBoosting = false;
-
-                    // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
-                    let nearestFood = null;
-                    let nearestDistance = Infinity;
-
-                    foods.forEach(food => {
-                        const distance = head.distanceTo(food.position);
-                        if (distance < nearestDistance) {
-                            nearestDistance = distance;
-                            nearestFood = food;
-                        }
-                    });
-
-                    if (nearestFood) {
                         targetDirection = new THREE.Vector3()
-                            .subVectors(nearestFood.position, head)
+                            .subVectors(targetFuturePos, head)
                             .normalize();
-                    }
-                }
 
-                // ✅ พฤติกรรม 3: หลบอันตราย (Collision Avoidance) - สำคัญที่สุด!
-                if (targetDirection) {
-                    const danger = detectDangerAhead(bot, targetDirection);
-
-                    if (danger) {
-                        // มีอันตราย! หลบ!
-                        const dangerPos = danger.snake.segments[danger.segmentIndex].position;
-                        targetDirection = getAvoidanceDirection(targetDirection, dangerPos, head);
-
-                        // ✅ ถ้าอันตรายใกล้มาก ให้ใช้ boost หนี!
-                        if (danger.distance < 2 && bot.score >= 5) {
+                        // ✅ ใช้ boost เพื่อเร่งตัดหน้า!
+                        if (bot.score >= 10) { // ต้องมีแต้มพอ
                             bot.isBoosting = true;
                         }
+                    } else {
+                        // ไม่มีเป้าหมายตัดหน้า - หยุด boost
+                        bot.isBoosting = false;
+
+                        // ✅ พฤติกรรม 2: หาอาหารใกล้ที่สุด
+                        let nearestFood = null;
+                        let nearestDistance = Infinity;
+
+                        foods.forEach(food => {
+                            const distance = head.distanceTo(food.position);
+                            if (distance < nearestDistance) {
+                                nearestDistance = distance;
+                                nearestFood = food;
+                            }
+                        });
+
+                        if (nearestFood) {
+                            targetDirection = new THREE.Vector3()
+                                .subVectors(nearestFood.position, head)
+                                .normalize();
+                        }
                     }
 
-                    bot.targetDirection.copy(targetDirection);
-                }
+                    // ✅ พฤติกรรม 3: หลบอันตราย (Collision Avoidance) - สำคัญที่สุด!
+                    if (targetDirection) {
+                        const danger = detectDangerAhead(bot, targetDirection);
+
+                        if (danger) {
+                            // มีอันตราย! หลบ!
+                            const dangerPos = danger.snake.segments[danger.segmentIndex].position;
+                            targetDirection = getAvoidanceDirection(targetDirection, dangerPos, head);
+
+                            // ✅ ถ้าอันตรายใกล้มาก ให้ใช้ boost หนี!
+                            if (danger.distance < 2 && bot.score >= 5) {
+                                bot.isBoosting = true;
+                            }
+                        }
+
+                        bot.targetDirection.copy(targetDirection);
+                    }
+                } // end runFullAI
 
                 // อัปเดตตำแหน่งบอท (ส่ง now เข้าไป)
                 bot.update(now);
@@ -4875,7 +4925,12 @@
                 snakes.push(new AnimatedSnake());
             }
 
+            // ✅ เก็บ animation ID เพื่อหยุดได้
+            let titleAnimId = null;
+
             function animate() {
+                titleAnimId = requestAnimationFrame(animate);
+
                 ctx.fillStyle = 'rgba(10, 10, 26, 0.1)';
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -4883,11 +4938,17 @@
                     snake.update();
                     snake.draw();
                 });
-
-                requestAnimationFrame(animate);
             }
 
             animate();
+
+            // ✅ เปิด API ให้หยุด animation จากภายนอก
+            window.stopTitleAnimation = function() {
+                if (titleAnimId) {
+                    cancelAnimationFrame(titleAnimId);
+                    titleAnimId = null;
+                }
+            };
 
             window.addEventListener('resize', () => {
                 canvas.width = window.innerWidth;
