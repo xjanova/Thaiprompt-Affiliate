@@ -619,6 +619,7 @@ class WalletController extends Controller
             'amount' => 'required|numeric|min:1|max:1000000',
         ], [
             'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.numeric' => 'จำนวนเงินต้องเป็นตัวเลขเท่านั้น',
             'amount.min' => 'จำนวนเงินขั้นต่ำ 1 บาท',
             'amount.max' => 'จำนวนเงินสูงสุด 1,000,000 บาท',
         ]);
@@ -627,12 +628,14 @@ class WalletController extends Controller
             $user = auth()->user();
             $amount = (float) $request->amount;
 
-            // 1. สร้าง PaymentTransaction จริง (เหมือน processTopup + processTopupPayment)
+            // ─── ขั้นตอนที่ 1: สร้าง PaymentTransaction (แบบเดียวกับ processTopup) ───
+            // ⚠️ ตั้ง payment_method = 'pending' ก่อน เพื่อป้องกัน model boot event
+            // สร้าง unique amount ซ้ำซ้อนกับ PaymentService::processPayment()
             $transaction = PaymentTransaction::create([
                 'user_id' => $user->id,
                 'store_id' => VendorStore::getPlatformStoreId(),
                 'type' => 'wallet_topup',
-                'payment_method' => 'promptpay', // ✅ ตั้งเป็น promptpay ทันที
+                'payment_method' => 'pending',
                 'status' => 'pending',
                 'amount' => $amount,
                 'currency' => 'THB',
@@ -644,13 +647,20 @@ class WalletController extends Controller
                 ],
             ]);
 
-            Log::info('Deposit PromptPay Transaction Created', [
+            Log::info('Deposit PromptPay: Transaction Created', [
                 'transaction_id' => $transaction->transaction_id,
                 'user_id' => $user->id,
                 'amount' => $amount,
             ]);
 
-            // 2. ประมวลผลผ่าน PaymentService — สร้าง unique amount + QR Code
+            // ─── ขั้นตอนที่ 2: อัปเดต payment_method เป็น promptpay ───
+            // (เหมือน processTopupPayment ที่ทำก่อนเรียก processPayment)
+            $transaction->update([
+                'payment_method' => 'promptpay',
+            ]);
+
+            // ─── ขั้นตอนที่ 3: ประมวลผลผ่าน PaymentService ───
+            // จะสร้าง unique amount + QR Code + ตั้งสถานะเป็น processing
             $paymentService = app(PaymentService::class);
             $result = $paymentService->processPayment($transaction, [
                 'ip_address' => $request->ip(),
@@ -658,12 +668,17 @@ class WalletController extends Controller
             ]);
 
             if (! $result['success']) {
+                Log::warning('Deposit PromptPay: processPayment failed', [
+                    'transaction_id' => $transaction->transaction_id,
+                    'message' => $result['message'] ?? 'unknown',
+                ]);
+
                 return redirect()->back()
-                    ->with('error', $result['message'] ?? 'ไม่สามารถสร้าง QR Code ได้')
+                    ->with('error', $result['message'] ?? 'ไม่สามารถสร้าง QR Code ได้ กรุณาลองใหม่อีกครั้ง')
                     ->withInput();
             }
 
-            // 3. แสดงหน้า topup-promptpay (มี polling ตรวจสอบสถานะอัตโนมัติ)
+            // ─── ขั้นตอนที่ 4: แสดงหน้า QR Code (ใช้ view เดียวกับ topup) ───
             $updatedTransaction = $result['transaction'];
 
             return view('user.wallet.topup-promptpay', [
@@ -678,9 +693,12 @@ class WalletController extends Controller
                 'user_id' => auth()->id(),
                 'amount' => $request->amount,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
-            return redirect()->back()->with('error', $e->getMessage())->withInput();
+            return redirect()->back()
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage())
+                ->withInput();
         }
     }
 

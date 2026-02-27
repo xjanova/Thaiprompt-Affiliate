@@ -4,6 +4,36 @@
 
 @section('content')
 <div class="space-y-6 pb-20 lg:pb-6">
+    {{-- Flash Messages --}}
+    @if(session('error'))
+        <div class="p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">❌</span>
+                <p class="text-sm font-medium text-red-800 dark:text-red-200">{{ session('error') }}</p>
+            </div>
+        </div>
+    @endif
+    @if(session('success'))
+        <div class="p-4 bg-green-100 dark:bg-green-900/30 border-2 border-green-300 dark:border-green-600 rounded-xl">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl">✅</span>
+                <p class="text-sm font-medium text-green-800 dark:text-green-200">{{ session('success') }}</p>
+            </div>
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="p-4 bg-red-100 dark:bg-red-900/30 border-2 border-red-300 dark:border-red-600 rounded-xl">
+            <div class="flex items-start gap-3">
+                <span class="text-2xl">⚠️</span>
+                <ul class="text-sm text-red-800 dark:text-red-200 list-disc list-inside">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
     {{-- Premium Hero Header (Green-Emerald-Teal for Deposit) --}}
     <div class="relative overflow-hidden bg-gradient-to-r from-green-600 via-emerald-600 to-teal-600 dark:from-green-800 dark:via-emerald-800 dark:to-teal-800 rounded-2xl shadow-2xl p-8">
         {{-- Animated Background Orbs --}}
