@@ -230,26 +230,29 @@
 
 @push('scripts')
 <script>
-// Countdown Timer
-let timeLeft = {{ isset($result['expires_at']) ? $result['expires_at']->diffInSeconds(now()) : 900 }};
+// Countdown Timer — ใช้ JavaScript Date เพื่อความแม่นยำ (ไม่พึ่ง server-side diffInSeconds)
+const expiresAt = new Date('{{ $result['expires_at']->toIso8601String() }}');
 
 function updateCountdown() {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    document.getElementById('countdown').textContent =
-        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    const now = new Date();
+    const diff = expiresAt - now; // milliseconds
 
-    if (timeLeft <= 0) {
+    if (diff <= 0) {
         document.getElementById('countdown').textContent = 'หมดเวลา';
+        document.getElementById('countdown').classList.remove('text-red-600');
         document.getElementById('countdown').classList.add('text-gray-400');
         return;
     }
 
-    if (timeLeft <= 60) {
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    document.getElementById('countdown').textContent =
+        `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+    if (diff <= 60000) {
         document.getElementById('countdown').classList.add('animate-pulse');
     }
 
-    timeLeft--;
     setTimeout(updateCountdown, 1000);
 }
 
