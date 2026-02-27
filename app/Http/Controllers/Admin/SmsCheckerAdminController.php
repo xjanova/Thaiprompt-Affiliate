@@ -736,6 +736,65 @@ class SmsCheckerAdminController extends Controller
     }
 
     /**
+     * ยืนยันการชำระเงิน Wallet Topup ด้วยมือ (กรณี auto-complete ล้มเหลว)
+     *
+     * ใช้สำหรับ recovery เมื่อ SMS match สำเร็จ แต่ completePayment() ล้มเหลว
+     * จะเรียก PaymentService::completePayment() ใหม่อีกครั้ง
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function retryCompleteTransaction(Request $request, int $transactionId)
+    {
+        try {
+            $transaction = \App\Models\PaymentTransaction::findOrFail($transactionId);
+
+            // ตรวจสอบว่าเป็น wallet_topup เท่านั้น
+            if ($transaction->type !== 'wallet_topup') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ใช้ได้เฉพาะ wallet_topup transactions เท่านั้น',
+                ], 400);
+            }
+
+            // ตรวจสอบว่ายังไม่ completed
+            if ($transaction->isCompleted()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Transaction นี้ completed แล้ว',
+                ]);
+            }
+
+            // เรียก completePayment ใหม่
+            $paymentService = app(\App\Services\Payment\PaymentService::class);
+            $result = $paymentService->completePayment($transaction);
+
+            Log::info('[SMS Checker] Admin retry completePayment สำเร็จ', [
+                'transaction_id' => $transaction->id,
+                'admin_id' => auth()->id(),
+                'result' => $result,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'เติมเงินสำเร็จ! Transaction #'.$transaction->id.' completed',
+                'transaction_status' => $transaction->fresh()->status,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('[SMS Checker] Admin retry completePayment ล้มเหลว', [
+                'transaction_id' => $transactionId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Debug page for fortune reading → SmsChecker order transformation.
      * Shows what the API would return and identifies potential issues.
      */
