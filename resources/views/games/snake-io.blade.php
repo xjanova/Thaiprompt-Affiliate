@@ -2194,6 +2194,39 @@
                 scene.add(this.nameSprite);
             }
 
+            /**
+             * อัปเดตสี skin ของหนอนที่สร้างไว้แล้ว
+             * ใช้เมื่อโหลด skin จาก server หลังจากหนอนถูกสร้างแล้ว
+             */
+            applySkin(skinKey) {
+                // ตรวจสอบว่าเป็น custom colors หรือ preset skin
+                if (typeof skinKey === 'string' && skinKey.includes('#')) {
+                    this.skinKey = 'custom';
+                    this.skin = SKINS.custom;
+                } else {
+                    this.skinKey = skinKey;
+                    this.skin = SKINS[skinKey] || SKINS.classic;
+                }
+
+                // อัปเดต material ของทุก segment
+                this.segments.forEach((segment, i) => {
+                    let segmentColor = i === 0 ? this.skin.primary : this.skin.secondary;
+                    if (this.skin.colors && this.skin.colors.length > 0 && i > 0) {
+                        const colorIndex = i % this.skin.colors.length;
+                        segmentColor = this.skin.colors[colorIndex];
+                    }
+
+                    segment.material.color.setHex(segmentColor);
+                    if (this.isPlayer) {
+                        segment.material.emissive.setHex(segmentColor);
+                    } else if (i === 0) {
+                        segment.material.emissive.setHex(segmentColor);
+                    }
+                });
+
+                console.log('[Skin] อัปเดตสีหนอนสำเร็จ:', skinKey);
+            }
+
             update(now = Date.now()) {
                 if (!this.alive) return;
 
@@ -2439,7 +2472,7 @@
             }
         }
 
-        function init() {
+        async function init() {
             console.log('Initializing game...');
 
             // Check if THREE.js is loaded
@@ -2703,9 +2736,14 @@
             // Start animation loop
             animate();
 
-            // ✅ โหลดสี skin ที่สมาชิกบันทึกไว้
+            // ✅ โหลดสี skin ที่สมาชิกบันทึกไว้ (await ก่อน startGame จะถูกเรียก)
             if (isAuthenticated) {
-                loadSavedSkin();
+                try {
+                    await loadSavedSkin();
+                    console.log('[Skin] โหลดสีสำเร็จ, selectedSkin =', selectedSkin);
+                } catch (e) {
+                    console.warn('[Skin] โหลดสีล้มเหลว, ใช้ classic:', e.message);
+                }
             }
 
             console.log('Game initialization complete!');
@@ -3502,9 +3540,9 @@
                 // ✅ เริ่มตรวจสอบสถานะ service ทุก 10 วินาที
                 startServicePolling();
 
-                // Create player
+                // Create player (selectedSkin ถูกโหลดจาก server แล้วก่อนถึงจุดนี้)
                 player = new Snake(0, 0, true, playerName, selectedSkin);
-                console.log('Player created:', playerName);
+                console.log('Player created:', playerName, '| Skin:', selectedSkin);
 
                 // Spawn bots (30 บอท)
                 const botsNeeded = CONFIG.BOT_COUNT;

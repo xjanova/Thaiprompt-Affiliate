@@ -302,16 +302,23 @@ class SnakeGameController extends Controller
             DB::beginTransaction();
 
             try {
+                // บันทึก balance ก่อนหัก
+                $balanceBefore = $wallet->balance;
+
                 // หักแต้มจาก wallet
                 $wallet->decrement('balance', 1);
 
-                // บันทึก transaction
+                // บันทึก transaction (ใช้ enum ที่ถูกต้อง + fields ที่จำเป็น)
                 WalletTransaction::create([
                     'wallet_id' => $wallet->id,
-                    'type' => 'expense',
+                    'user_id' => $user->id,
+                    'type' => 'fee',
                     'amount' => 1,
+                    'balance_before' => $balanceBefore,
+                    'balance_after' => $balanceBefore - 1,
                     'description' => 'บันทึกคะแนนเกม Snake.io - Score: '.$validated['score'],
                     'status' => 'completed',
+                    'completed_at' => now(),
                 ]);
 
                 // บันทึกคะแนนลง leaderboard

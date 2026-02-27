@@ -2634,6 +2634,16 @@ Route::prefix('games')->name('games.')->group(function () {
             ->name('index');
         Route::put('/update', [App\Http\Controllers\Admin\GameSettingsController::class, 'update'])
             ->name('update');
+
+        // ✅ อัพโหลด/ลบไฟล์เสียง (เพลง/เอฟเฟค)
+        Route::post('/upload-audio', [App\Http\Controllers\Admin\GameSettingsController::class, 'uploadAudio'])
+            ->name('upload-audio');
+        Route::delete('/delete-audio', [App\Http\Controllers\Admin\GameSettingsController::class, 'deleteAudio'])
+            ->name('delete-audio');
+
+        // ✅ Seed ข้อมูล Music Settings (ถ้ายังไม่มี)
+        Route::post('/seed-music', [App\Http\Controllers\Admin\GameSettingsController::class, 'seedMusic'])
+            ->name('seed-music');
     });
 
     // ⚠️ Wildcard routes ต้องอยู่ท้ายสุด! (ไม่งั้นจะจับ /game-settings, /snake-io ไปก่อน)
