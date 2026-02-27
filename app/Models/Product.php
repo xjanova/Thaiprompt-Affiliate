@@ -129,6 +129,31 @@ class Product extends Model
     ];
 
     /**
+     * Accessor: แปลง main_image_url เป็น URL ที่ใช้งานได้
+     *
+     * รองรับทั้ง full URL (https://...) และ relative path (products/xxx.webp)
+     * แก้ปัญหา: ภาพไม่แสดงในหน้า shop/show เพราะ relative path ถูก resolve
+     * ผิดเป็น /shop/products/xxx.webp แทน /storage/products/xxx.webp
+     *
+     * @param string|null $value ค่า raw จาก database
+     * @return string|null URL ที่ใช้งานได้
+     */
+    public function getMainImageUrlAttribute($value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        // เป็น full URL อยู่แล้ว (https://... หรือ http://...)
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            return $value;
+        }
+
+        // เป็น relative path → แปลงด้วย Storage::url()
+        return Storage::url($value);
+    }
+
+    /**
      * Boot the model
      */
     protected static function boot()
