@@ -189,7 +189,16 @@ class SmsPaymentNotification extends Model
                 if ($autoConfirm && $uniqueAmount->transaction_id) {
                     $transaction = PaymentTransaction::find($uniqueAmount->transaction_id);
                     if ($transaction && in_array($transaction->status, ['pending', 'processing'])) {
-                        app(PaymentService::class)->completePayment($transaction);
+                        try {
+                            app(PaymentService::class)->completePayment($transaction);
+                        } catch (\Exception $e) {
+                            // Log error แต่ไม่ rollback การจับคู่ — admin สามารถ approve ด้วยมือได้
+                            \Illuminate\Support\Facades\Log::error('SMS Payment: completePayment ล้มเหลว (Step 1)', [
+                                'notification_id' => $this->id,
+                                'transaction_id' => $transaction->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
 
@@ -227,7 +236,15 @@ class SmsPaymentNotification extends Model
                 }
 
                 if ($autoConfirm) {
-                    app(PaymentService::class)->completePayment($transaction);
+                    try {
+                        app(PaymentService::class)->completePayment($transaction);
+                    } catch (\Exception $e) {
+                        \Illuminate\Support\Facades\Log::error('SMS Payment: completePayment ล้มเหลว (Step 2 fallback)', [
+                            'notification_id' => $this->id,
+                            'transaction_id' => $transaction->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
 
                 \Illuminate\Support\Facades\Log::info('SMS Payment: จับคู่ผ่าน PaymentTransaction fallback (UniquePaymentAmount หมดอายุ)', [
@@ -259,7 +276,15 @@ class SmsPaymentNotification extends Model
                     $this->save();
 
                     if ($autoConfirm) {
-                        app(PaymentService::class)->completePayment($transaction);
+                        try {
+                            app(PaymentService::class)->completePayment($transaction);
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error('SMS Payment: completePayment ล้มเหลว (Step 3 ref match)', [
+                                'notification_id' => $this->id,
+                                'transaction_id' => $transaction->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
 
                     return true;

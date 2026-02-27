@@ -964,21 +964,36 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        // Mark UniquePaymentAmount as used (เหมือน xmanstudio)
-        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
-            ->whereIn('status', ['reserved', 'expired'])
-            ->first();
-        if ($uniqueAmount) {
-            $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
-        }
+        // ใช้ DB transaction ครอบทั้งหมดเพื่อให้ rollback ได้ถ้า completePayment ล้มเหลว
+        try {
+            \DB::transaction(function () use ($model) {
+                // Mark UniquePaymentAmount as used (เหมือน xmanstudio)
+                $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
+                    ->whereIn('status', ['reserved', 'expired'])
+                    ->first();
+                if ($uniqueAmount) {
+                    $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                }
 
-        // Update SMS notification status to confirmed (ถ้ามี)
-        $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
-        if ($notification) {
-            $notification->update(['status' => 'confirmed']);
-        }
+                // Update SMS notification status to confirmed (ถ้ามี)
+                $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+                if ($notification) {
+                    $notification->update(['status' => 'confirmed']);
+                }
 
-        app(PaymentService::class)->completePayment($model);
+                app(PaymentService::class)->completePayment($model);
+            });
+        } catch (\Exception $e) {
+            Log::error('SMS Payment: approve order ล้มเหลว', [
+                'transaction_id' => $model->transaction_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to complete payment: '.$e->getMessage(),
+            ], 500);
+        }
 
         // ส่ง FCM push ให้แอพอัพเดทสถานะทันที (เหมือน xmanstudio)
         try {
@@ -1356,22 +1371,32 @@ class SmsPaymentController extends Controller
                     continue;
                 }
                 if (in_array($model->status, ['pending', 'processing'])) {
-                    // Mark UniquePaymentAmount as used
-                    $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
-                        ->whereIn('status', ['reserved', 'expired'])
-                        ->first();
-                    if ($uniqueAmount) {
-                        $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
-                    }
+                    try {
+                        \DB::transaction(function () use ($model, $paymentService) {
+                            // Mark UniquePaymentAmount as used
+                            $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
+                                ->whereIn('status', ['reserved', 'expired'])
+                                ->first();
+                            if ($uniqueAmount) {
+                                $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                            }
 
-                    // Update SMS notification status
-                    $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
-                    if ($notification) {
-                        $notification->update(['status' => 'confirmed']);
-                    }
+                            // Update SMS notification status
+                            $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+                            if ($notification) {
+                                $notification->update(['status' => 'confirmed']);
+                            }
 
-                    $paymentService->completePayment($model);
-                    $approved++;
+                            $paymentService->completePayment($model);
+                        });
+                        $approved++;
+                    } catch (\Exception $e) {
+                        Log::error('SMS Payment: bulk approve ล้มเหลว', [
+                            'transaction_id' => $model->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                        $failed++;
+                    }
                 } else {
                     $failed++;
                 }
@@ -1593,15 +1618,17 @@ class SmsPaymentController extends Controller
             $autoConfirm = config('smschecker.auto_confirm_matched', true);
             if ($autoConfirm && in_array($transaction->status, ['pending', 'processing'])) {
                 try {
-                    // Mark UniquePaymentAmount as used
-                    $uniqueAmount = UniquePaymentAmount::where('transaction_id', $transaction->id)
-                        ->whereIn('status', ['reserved', 'expired'])
-                        ->first();
-                    if ($uniqueAmount) {
-                        $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
-                    }
+                    \DB::transaction(function () use ($transaction) {
+                        // Mark UniquePaymentAmount as used
+                        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $transaction->id)
+                            ->whereIn('status', ['reserved', 'expired'])
+                            ->first();
+                        if ($uniqueAmount) {
+                            $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                        }
 
-                    app(PaymentService::class)->completePayment($transaction);
+                        app(PaymentService::class)->completePayment($transaction);
+                    });
                     $transaction = $transaction->fresh();
 
                     // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
@@ -2112,21 +2139,36 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
-        // Mark UniquePaymentAmount as used (เหมือน approveOrder)
-        $uniqueAmount = UniquePaymentAmount::where('transaction_id', $txn->id)
-            ->whereIn('status', ['reserved', 'expired'])
-            ->first();
-        if ($uniqueAmount) {
-            $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
-        }
+        // ใช้ DB transaction ครอบทั้งหมดเพื่อให้ rollback ได้ถ้า completePayment ล้มเหลว
+        try {
+            \DB::transaction(function () use ($txn) {
+                // Mark UniquePaymentAmount as used (เหมือน approveOrder)
+                $uniqueAmount = UniquePaymentAmount::where('transaction_id', $txn->id)
+                    ->whereIn('status', ['reserved', 'expired'])
+                    ->first();
+                if ($uniqueAmount) {
+                    $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
+                }
 
-        // Update SMS notification status to confirmed (ถ้ามี)
-        $notification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
-        if ($notification) {
-            $notification->update(['status' => 'confirmed']);
-        }
+                // Update SMS notification status to confirmed (ถ้ามี)
+                $notification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+                if ($notification) {
+                    $notification->update(['status' => 'confirmed']);
+                }
 
-        app(PaymentService::class)->completePayment($txn);
+                app(PaymentService::class)->completePayment($txn);
+            });
+        } catch (\Exception $e) {
+            Log::error('SMS Payment: encrypted approve ล้มเหลว', [
+                'transaction_id' => $txn->transaction_id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to complete payment: '.$e->getMessage(),
+            ], 500);
+        }
 
         // ส่ง FCM push ให้แอพอัพเดทสถานะทันที
         try {

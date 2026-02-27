@@ -40,6 +40,9 @@ class Order extends Model
         'has_unread_messages',
         'last_message_at',
         'cancellation_reason',
+        'cashback_amount',
+        'cashback_processed',
+        'cashback_processed_at',
     ];
 
     protected $casts = [
@@ -50,6 +53,9 @@ class Order extends Model
         'total_amount' => 'decimal:2',
         'platform_commission' => 'decimal:2',
         'seller_earning' => 'decimal:2',
+        'cashback_amount' => 'decimal:2',
+        'cashback_processed' => 'boolean',
+        'cashback_processed_at' => 'datetime',
         'paid_at' => 'datetime',
         'shipped_at' => 'datetime',
         'delivered_at' => 'datetime',

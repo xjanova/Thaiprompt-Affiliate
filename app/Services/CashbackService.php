@@ -138,11 +138,14 @@ class CashbackService
                     Log::info('No cashback applicable for order', ['order_id' => $order->id]);
 
                     // Mark as processed even if no cashback
-                    $order->update([
-                        'cashback_amount' => 0,
-                        'cashback_processed' => true,
-                        'cashback_processed_at' => now(),
-                    ]);
+                    // ใช้ withoutEvents() ป้องกัน OrderObserver ถูกเรียกซ้ำ (infinite recursion)
+                    Order::withoutEvents(function () use ($order) {
+                        $order->update([
+                            'cashback_amount' => 0,
+                            'cashback_processed' => true,
+                            'cashback_processed_at' => now(),
+                        ]);
+                    });
 
                     return null;
                 }
@@ -165,11 +168,14 @@ class CashbackService
                 );
 
                 // Update order cashback status
-                $order->update([
-                    'cashback_amount' => $cashbackAmount,
-                    'cashback_processed' => true,
-                    'cashback_processed_at' => now(),
-                ]);
+                // ใช้ withoutEvents() ป้องกัน OrderObserver ถูกเรียกซ้ำ (infinite recursion)
+                Order::withoutEvents(function () use ($order, $cashbackAmount) {
+                    $order->update([
+                        'cashback_amount' => $cashbackAmount,
+                        'cashback_processed' => true,
+                        'cashback_processed_at' => now(),
+                    ]);
+                });
 
                 Log::info('Cashback processed successfully', [
                     'order_id' => $order->id,
