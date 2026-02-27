@@ -1840,26 +1840,44 @@
         // ✅ Music Session ID — ป้องกัน race condition เพลงซ้อน
         let _musicSessionId = 0;
 
-        // ✅ เล่นเพลง BGM
-        function playMusic(mode) {
+        /**
+         * ✅ เล่นเพลง BGM — รองรับ crossfade เมื่อเปลี่ยนโหมด
+         * @param {string} mode 'title' | 'gameplay'
+         * @param {boolean} fade ใช้ fade effect หรือไม่ (default: false)
+         */
+        function playMusic(mode, fade = false) {
             if (!musicPlayer.enabled) return;
 
-            // เพิ่ม session ID ทุกครั้งที่เรียก playMusic → audio เก่าที่ค้างจะรู้ว่าหมดอายุ
+            if (fade && musicPlayer.isPlaying && musicPlayer.currentAudio) {
+                // ✅ Crossfade: fade out เพลงเก่า → เล่นเพลงใหม่พร้อม fade in
+                fadeOutMusic(MUSIC_FADE_DURATION).then(() => {
+                    _startNewMusic(mode, true);
+                });
+            } else if (fade) {
+                // ✅ ไม่มีเพลงเล่นอยู่ แต่ขอ fade → หยุดทันที + fade in เพลงใหม่
+                stopMusicImmediate();
+                _startNewMusic(mode, true);
+            } else {
+                // หยุดทันที แล้วเล่นเพลงใหม่ (ไม่ fade)
+                stopMusicImmediate();
+                _startNewMusic(mode, false);
+            }
+        }
+
+        /**
+         * เริ่มเล่นเพลงใหม่ (internal — ใช้หลัง stop/fade)
+         */
+        function _startNewMusic(mode, withFadeIn) {
+            // กำหนด session ID ใหม่ *หลัง* stop เพื่อป้องกัน self-invalidation
             _musicSessionId++;
             const mySession = _musicSessionId;
 
-            // หยุดเพลงเก่า
-            stopMusic();
-
             musicPlayer.currentMode = mode;
-            musicErrorCount = 0; // reset error count เมื่อเปลี่ยนโหมด
-
-            // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน (ป้องกัน race condition)
-            if (_musicSessionId !== mySession) return;
+            musicErrorCount = 0;
 
             const tracks = mode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
 
-            // ✅ FIX: ถ้าไม่มี tracks → เล่น procedural music
+            // ถ้าไม่มี tracks → เล่น procedural music
             if (!tracks || tracks.length === 0) {
                 console.log('[Music] ไม่มี tracks - เล่น procedural music');
                 playProceduralMusic();
@@ -1873,6 +1891,8 @@
                 musicPlayer.currentTrackIndex = 0;
             }
 
+            // ✅ เก็บ flag ไว้ให้ playTrackAtIndex รู้ว่าต้อง fade in
+            musicPlayer._pendingFadeIn = withFadeIn;
             playTrackAtIndex(musicPlayer.currentTrackIndex);
         }
 
@@ -1901,7 +1921,10 @@
 
                 const track = tracks[index];
                 const audio = new Audio(track.url);
-                audio.volume = musicPlayer.muted ? 0 : musicPlayer.volume;
+                const shouldFadeIn = musicPlayer._pendingFadeIn;
+                musicPlayer._pendingFadeIn = false; // ใช้แล้วรีเซ็ต
+                // ✅ ถ้า fade in → เริ่มจากเสียงเงียบ, ถ้าไม่ → ใช้ volume ปกติ
+                audio.volume = shouldFadeIn ? 0 : (musicPlayer.muted ? 0 : musicPlayer.volume);
                 audio.loop = (musicPlayer.playMode === 'loop');
 
                 // เมื่อเพลงจบ → เล่นเพลงถัดไป
@@ -1946,8 +1969,14 @@
                     }
                     musicPlayer.isPlaying = true;
                     musicErrorCount = 0; // reset เมื่อเล่นได้สำเร็จ
+
+                    // ✅ Fade in ถ้าต้องการ
+                    if (shouldFadeIn) {
+                        fadeInMusic(MUSIC_FADE_DURATION);
+                    }
+
                     updateMusicUI();
-                    console.log(`[Music] กำลังเล่น: ${track.name}`);
+                    console.log(`[Music] กำลังเล่น: ${track.name}${shouldFadeIn ? ' (fade in)' : ''}`);
                 }).catch(e => {
                     if (_musicSessionId !== mySession) return;
                     console.warn('[Music] ไม่สามารถเล่นเพลงได้:', e.message);
@@ -2120,9 +2149,19 @@
             }
         }
 
-        function stopMusic() {
-            // ✅ เพิ่ม session ID — ทำให้ audio ที่กำลัง pending (play promise) หยุดเองเมื่อ resolve
+        // ✅ Fade duration สำหรับการเปลี่ยนเพลง (ms)
+        const MUSIC_FADE_DURATION = 800;
+        let _fadeInterval = null;
+
+        /**
+         * หยุดเพลงทันที (ไม่ fade)
+         */
+        function stopMusicImmediate() {
+            // เพิ่ม session ID — ทำให้ audio ที่กำลัง pending หยุดเองเมื่อ resolve
             _musicSessionId++;
+
+            // หยุด fade ที่ค้างอยู่
+            if (_fadeInterval) { clearInterval(_fadeInterval); _fadeInterval = null; }
 
             // หยุด HTML5 Audio
             if (musicPlayer.currentAudio) {
@@ -2132,11 +2171,90 @@
                 } catch(e) { /* ignore */ }
                 musicPlayer.currentAudio = null;
             }
-            // ✅ หยุด procedural music ด้วย
+            // หยุด procedural music ด้วย
             stopProceduralMusic();
             musicPlayer.isPlaying = false;
-            musicErrorCount = 0; // reset error count
+            musicErrorCount = 0;
             updateMusicUI();
+        }
+
+        /**
+         * หยุดเพลงแบบ Fade out (ค่อยๆ เบาลงแล้วหยุด)
+         * @param {number} duration ระยะเวลา fade (ms)
+         * @returns {Promise} resolve เมื่อ fade เสร็จ
+         */
+        function fadeOutMusic(duration = MUSIC_FADE_DURATION) {
+            return new Promise((resolve) => {
+                const audio = musicPlayer.currentAudio;
+
+                // ถ้าไม่มีเพลงเล่นอยู่ → หยุดทันที
+                if (!audio || !musicPlayer.isPlaying) {
+                    stopMusicImmediate();
+                    resolve();
+                    return;
+                }
+
+                // หยุด fade เก่าที่ค้าง
+                if (_fadeInterval) { clearInterval(_fadeInterval); _fadeInterval = null; }
+
+                const startVol = audio.volume;
+                const steps = 20; // จำนวนขั้น fade
+                const stepTime = duration / steps;
+                const volStep = startVol / steps;
+                let currentStep = 0;
+
+                _fadeInterval = setInterval(() => {
+                    currentStep++;
+                    const newVol = Math.max(0, startVol - (volStep * currentStep));
+                    try { audio.volume = newVol; } catch(e) { /* ignore */ }
+
+                    if (currentStep >= steps) {
+                        clearInterval(_fadeInterval);
+                        _fadeInterval = null;
+                        stopMusicImmediate();
+                        resolve();
+                    }
+                }, stepTime);
+            });
+        }
+
+        /**
+         * Fade in เพลงปัจจุบัน (ค่อยๆ ดังขึ้น)
+         * @param {number} duration ระยะเวลา fade (ms)
+         */
+        function fadeInMusic(duration = MUSIC_FADE_DURATION) {
+            const audio = musicPlayer.currentAudio;
+            if (!audio) return;
+
+            const targetVol = musicPlayer.muted ? 0 : musicPlayer.volume;
+            audio.volume = 0; // เริ่มจากเสียงเงียบ
+
+            // หยุด fade เก่าที่ค้าง
+            if (_fadeInterval) { clearInterval(_fadeInterval); _fadeInterval = null; }
+
+            const steps = 20;
+            const stepTime = duration / steps;
+            const volStep = targetVol / steps;
+            let currentStep = 0;
+
+            _fadeInterval = setInterval(() => {
+                currentStep++;
+                const newVol = Math.min(targetVol, volStep * currentStep);
+                try { audio.volume = newVol; } catch(e) { /* ignore */ }
+
+                if (currentStep >= steps) {
+                    clearInterval(_fadeInterval);
+                    _fadeInterval = null;
+                    try { audio.volume = targetVol; } catch(e) { /* ignore */ }
+                }
+            }, stepTime);
+        }
+
+        /**
+         * stopMusic — wrapper ที่เรียกหยุดทันที (backward compatible)
+         */
+        function stopMusic() {
+            stopMusicImmediate();
         }
 
         function toggleMusic() {
@@ -3904,7 +4022,6 @@
             // ซ่อน music hint
             const musicHint = document.getElementById('music-hint');
             if (musicHint) musicHint.style.display = 'none';
-            stopMusic(); // หยุดเพลงทุกชนิดที่กำลังเล่นอยู่
 
             // ✅ โหลด config จาก API ก่อนเริ่มเกม
             await loadGameConfig();
@@ -3912,8 +4029,8 @@
             // Initialize audio on user interaction
             initAudio();
 
-            // ✅ เปลี่ยนเพลงเป็น gameplay mode (เพลงเดียวเท่านั้น)
-            playMusic('gameplay');
+            // ✅ เปลี่ยนเพลงเป็น gameplay mode พร้อม crossfade (จะ fade out เพลง title เอง)
+            playMusic('gameplay', true);
 
             playerName = document.getElementById('player-name').value.trim() ||
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
@@ -4080,8 +4197,8 @@
             gameOver = true;
             gameStarted = false;
 
-            // ✅ หยุดเพลง gameplay
-            stopMusic();
+            // ✅ Fade out เพลง gameplay เมื่อจบเกม
+            fadeOutMusic(1200);
 
             // หยุดตรวจสอบการเชื่อมต่อ
             stopConnectionMonitoring();
@@ -4461,8 +4578,8 @@
                 createFood();
             }
 
-            // ✅ เล่นเพลง Title อีกครั้ง
-            playMusic('title');
+            // ✅ เล่นเพลง Title อีกครั้ง พร้อม fade in
+            playMusic('title', true);
         }
 
         function getRank() {
