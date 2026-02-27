@@ -1912,15 +1912,20 @@
             const mySession = _musicSessionId;
 
             try {
-                // ✅ หยุด audio ตัวเก่าก่อนสร้างตัวใหม่ (ป้องกัน orphan)
+                // ✅ FIX: หยุด audio ตัวเก่าก่อนสร้างตัวใหม่
+                // ❌ ห้าม set src = '' ที่นี่! เพราะจะ trigger error event บน audio เก่า
+                //    ซึ่งทำให้ error handler เรียก playNextTrack() → วนลูปสลับเพลงไม่หยุด
+                // ✅ แค่ pause() + mark abandoned + null ref — GC จะจัดการเอง
                 if (musicPlayer.currentAudio) {
-                    musicPlayer.currentAudio.pause();
-                    musicPlayer.currentAudio.src = '';
+                    const oldAudio = musicPlayer.currentAudio;
+                    oldAudio._abandoned = true; // ทำเครื่องหมายว่าถูกทิ้งแล้ว
+                    oldAudio.pause();
                     musicPlayer.currentAudio = null;
                 }
 
                 const track = tracks[index];
                 const audio = new Audio(track.url);
+                audio._abandoned = false; // เริ่มต้น: ยังใช้งานอยู่
                 const shouldFadeIn = musicPlayer._pendingFadeIn;
                 musicPlayer._pendingFadeIn = false; // ใช้แล้วรีเซ็ต
                 // ✅ ถ้า fade in → เริ่มจากเสียงเงียบ, ถ้าไม่ → ใช้ volume ปกติ
@@ -1929,20 +1934,24 @@
 
                 // เมื่อเพลงจบ → เล่นเพลงถัดไป
                 audio.addEventListener('ended', () => {
-                    // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน
+                    // ✅ ตรวจสอบ 3 ชั้น: session + abandoned flag + ยังเป็น current audio
                     if (_musicSessionId !== mySession) return;
+                    if (audio._abandoned) return;
+                    if (musicPlayer.currentAudio !== audio) return;
                     musicErrorCount = 0; // reset error count เมื่อเพลงจบปกติ
                     if (musicPlayer.playMode === 'loop') return;
                     playNextTrack();
                 });
 
                 audio.addEventListener('error', () => {
-                    // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน
+                    // ✅ ตรวจสอบ 3 ชั้น: session + abandoned flag + ยังเป็น current audio
                     if (_musicSessionId !== mySession) return;
+                    if (audio._abandoned) return;
+                    if (musicPlayer.currentAudio !== audio) return;
                     console.warn('[Music] โหลดเพลงไม่สำเร็จ:', track.url);
                     musicErrorCount++;
 
-                    // ✅ FIX: ป้องกัน infinite error loop
+                    // ✅ ป้องกัน infinite error loop
                     if (musicErrorCount >= MAX_MUSIC_ERRORS) {
                         console.warn('[Music] ไฟล์เพลงโหลดไม่ได้ทั้งหมด - เปลี่ยนเป็น procedural music');
                         musicErrorCount = 0;
@@ -1952,6 +1961,8 @@
 
                     setTimeout(() => {
                         if (_musicSessionId !== mySession) return;
+                        if (audio._abandoned) return;
+                        if (musicPlayer.currentAudio !== audio) return;
                         playNextTrack();
                     }, 500);
                 });
@@ -1962,9 +1973,9 @@
 
                 audio.play().then(() => {
                     // ✅ ตรวจว่ายังเป็น session เดียวกัน — ถ้าไม่ใช่ ให้หยุดทันที
-                    if (_musicSessionId !== mySession) {
+                    if (_musicSessionId !== mySession || audio._abandoned) {
+                        audio._abandoned = true;
                         audio.pause();
-                        audio.src = '';
                         return;
                     }
                     musicPlayer.isPlaying = true;
@@ -1978,7 +1989,7 @@
                     updateMusicUI();
                     console.log(`[Music] กำลังเล่น: ${track.name}${shouldFadeIn ? ' (fade in)' : ''}`);
                 }).catch(e => {
-                    if (_musicSessionId !== mySession) return;
+                    if (_musicSessionId !== mySession || audio._abandoned) return;
                     console.warn('[Music] ไม่สามารถเล่นเพลงได้:', e.message);
                     musicErrorCount++;
                     if (musicErrorCount >= MAX_MUSIC_ERRORS) {
@@ -2166,7 +2177,10 @@
             // หยุด HTML5 Audio
             if (musicPlayer.currentAudio) {
                 try {
+                    musicPlayer.currentAudio._abandoned = true; // ✅ mark ว่าถูกทิ้ง
                     musicPlayer.currentAudio.pause();
+                    // ✅ ปลอดภัยที่จะ set src='' ที่นี่ เพราะ _musicSessionId เพิ่มแล้ว
+                    //    + _abandoned = true → event handler จะ return ทันที
                     musicPlayer.currentAudio.src = '';
                 } catch(e) { /* ignore */ }
                 musicPlayer.currentAudio = null;
@@ -4359,6 +4373,71 @@
             }
         }
 
+        /**
+         * ดึง CSRF token จาก meta tag หรือ cookie
+         * @returns {string} CSRF token
+         */
+        function getCsrfToken() {
+            // ลองจาก meta tag ก่อน
+            const meta = document.querySelector('meta[name="csrf-token"]');
+            if (meta && meta.content) return meta.content;
+
+            // fallback: ดึงจาก XSRF-TOKEN cookie (Laravel ตั้งไว้)
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            if (match) return decodeURIComponent(match[1]);
+
+            return '';
+        }
+
+        /**
+         * ส่ง POST request พร้อม CSRF token + auto-retry ถ้า 419
+         * @param {string} url
+         * @param {object} data
+         * @param {number} retries จำนวนครั้งที่ retry (default 1)
+         * @returns {Promise<Response>}
+         */
+        async function fetchWithCsrf(url, data, retries = 1) {
+            const doFetch = () => fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': getCsrfToken(),
+                    'X-XSRF-TOKEN': getCsrfToken(),
+                },
+                credentials: 'same-origin',
+                body: JSON.stringify(data)
+            });
+
+            let response = await doFetch();
+
+            // ถ้า 419 (CSRF mismatch) → รีเฟรช token แล้วลองอีกครั้ง
+            if (response.status === 419 && retries > 0) {
+                console.warn('[CSRF] Token mismatch — กำลัง refresh แล้วลองใหม่...');
+                try {
+                    // ดึง token ใหม่จากหน้าเว็บ
+                    const refreshResp = await fetch(window.location.href, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'text/html' }
+                    });
+                    const html = await refreshResp.text();
+                    const tokenMatch = html.match(/<meta name="csrf-token" content="([^"]+)"/);
+                    if (tokenMatch) {
+                        // อัปเดต meta tag ด้วย token ใหม่
+                        const metaEl = document.querySelector('meta[name="csrf-token"]');
+                        if (metaEl) metaEl.content = tokenMatch[1];
+                        console.log('[CSRF] Token refreshed สำเร็จ');
+                    }
+                } catch (e) {
+                    console.warn('[CSRF] ไม่สามารถ refresh token:', e);
+                }
+                response = await doFetch();
+            }
+
+            return response;
+        }
+
         async function handleSaveScore() {
             if (!isAuthenticated) {
                 alert('กรุณาเข้าสู่ระบบก่อนบันทึกคะแนน');
@@ -4375,25 +4454,25 @@
             saveBtnEl.textContent = '⏳ กำลังบันทึก...';
 
             try {
-                // ✅ บันทึกคะแนนและหัก wallet (แก้ไข URL ให้ถูกต้อง)
-                const response = await fetch('/api/games/snake-io/save-score', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        score: score,
-                        length: player.length,
-                        rank: getRank()
-                    })
+                // ✅ บันทึกคะแนนและหัก wallet — ใช้ fetchWithCsrf ที่ auto-retry 419
+                const response = await fetchWithCsrf('/api/games/snake-io/save-score', {
+                    score: score,
+                    length: player.length,
+                    rank: getRank()
                 });
 
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.message || 'บันทึกคะแนนล้มเหลว');
+                    let errorMsg = 'บันทึกคะแนนล้มเหลว';
+                    try {
+                        const errorData = await response.json();
+                        errorMsg = errorData.message || errorMsg;
+                    } catch(e) {}
+
+                    // ข้อความเฉพาะสำหรับ 419 (session หมดอายุ)
+                    if (response.status === 419) {
+                        errorMsg = 'Session หมดอายุ กรุณารีเฟรชหน้าเว็บแล้วลองใหม่';
+                    }
+                    throw new Error(errorMsg);
                 }
 
                 const result = await response.json();
@@ -4432,16 +4511,9 @@
             statusEl.textContent = '';
 
             try {
-                const response = await fetch('/api/games/snake-io/save-skin-preference', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({
-                        skin: selectedSkin
-                    })
+                // ✅ ใช้ fetchWithCsrf ที่ auto-retry 419
+                const response = await fetchWithCsrf('/api/games/snake-io/save-skin-preference', {
+                    skin: selectedSkin
                 });
 
                 const data = await response.json();

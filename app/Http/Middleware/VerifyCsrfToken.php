@@ -18,6 +18,8 @@ class VerifyCsrfToken extends Middleware
         'webhook/*',            // All webhook endpoints (payment gateways)
         '/api/webhook/*',       // Payment gateway webhooks
         'api/webhook/*',
+        'api/games/snake-io/*', // Snake.io game API (XHR/fetch จากในเกม — session อาจหมดอายุระหว่างเล่น)
+        'games/snake-io/*',     // กรณี prefix ไม่มี /api/
     ];
 
     /**
