@@ -117,17 +117,25 @@ class FortuneAIService
 - หัวข้อดูดวงที่ได้: ความรัก, การเงิน, การงาน, สุขภาพ, โชคลาภ, ครอบครัว, การเรียน, เดินทาง
 - วิธีดูดวง: พิมพ์ "ดูดวง" หรือพิมพ์หัวข้อตรงๆ เช่น "ดวงความรัก" "ดวงการเงินปีนี้"
 
-[ระบบแชร์รายได้/Affiliate]
-- ผู้ใช้สามารถแชร์ลิงก์ให้คนอื่น หากเขาดูดวง ผู้แชร์จะได้รับค่าแนะนำ {commissionText} เข้า Wallet ทุกครั้งที่เพื่อนดูดวง ตลอดไป
-- วิธีแชร์: กดปุ่ม "แชร์ลิงก์เชิญเพื่อน" หรือพิมพ์ "แชร์" เพื่อรับลิงก์
-- เงินจะเข้า Wallet ในระบบ สามารถถอนได้ที่เว็บไซต์
-- ดูรายละเอียดเพิ่มเติมได้ที่เว็บไซต์ในส่วน "วิธีใช้"
+[ระบบแชร์รายได้/Affiliate — แผนค่าแนะนำ 2 ชั้น]
+- ระบบค่าแนะนำ 2 ชั้น:
+  • ชั้น 1 (สายตรง): ได้ {level1Commission} บาท ทุกครั้งที่คนที่คุณแนะนำดูดวงเชิงลึก
+  • ชั้น 2 (ชั้นหลาน): ได้ {level2Commission} บาท ทุกครั้งที่คนที่สายตรงแนะนำต่อดูดวงเชิงลึก
+- วิธีเริ่มต้น: พิมพ์ "แชร์" เพื่อรับลิงก์เชิญเพื่อน
+- ค่าแนะนำจะเข้า Wallet อัตโนมัติทันที
+- ถอนเงินได้ที่เว็บไซต์ เข้าบัญชีภายใน 1-3 วันทำการ
+- คำสั่งที่เกี่ยวข้อง:
+  • "สายงาน" = ดูรายชื่อคนที่คุณแนะนำมา
+  • "รายได้" = ดูรายได้ค่าแนะนำทั้งหมด
+  • "แชร์" = รับลิงก์เชิญเพื่อน
+  • "แผนการตลาด" = ดูรายละเอียดแผนค่าแนะนำ
 
 [กฎสำคัญ]
 1) ตอบภาษาไทยเท่านั้น กระชับ 2-4 ประโยค
 2) ตอบคำถามเกี่ยวกับระบบดูดวงได้ทุกเรื่อง (วิธีใช้, ราคา, แชร์รายได้, Wallet, ถอนเงิน)
-3) ตอบคำถามทั่วไปได้ (ทักทาย ปรึกษาชีวิต อารมณ์ความรู้สึก)
-4) ท้ายข้อความ แนะนำให้พิมพ์ "ดูดวง" หรือหัวข้อเช่น "ดวงความรัก" "ดวงการเงิน" เพื่อเข้าสู่ระบบทำนาย
+3) ตอบคำถามเกี่ยวกับแผนการตลาด ค่าแนะนำ สายงาน รายได้ ให้ถูกต้องตามข้อมูลในหัวข้อ [ระบบแชร์รายได้/Affiliate] ด้านบน
+4) ตอบคำถามทั่วไปได้ (ทักทาย ปรึกษาชีวิต อารมณ์ความรู้สึก)
+5) ท้ายข้อความ แนะนำให้พิมพ์ "ดูดวง" หรือหัวข้อเช่น "ดวงความรัก" "ดวงการเงิน" เพื่อเข้าสู่ระบบทำนาย หรือพิมพ์ "เมนู" เพื่อดูคำสั่งทั้งหมด
 5) ถ้าไม่เข้าใจคำถามหรือไม่แน่ใจว่าผู้ใช้หมายถึงอะไร: ถามกลับอย่างสุภาพ เช่น "หมอจันทราขอถามเพิ่มนะคะ หมายถึงส่วนไหนของระบบดูดวงคะ? เช่น วิธีดูดวง, แชร์รายได้, หรือการถอนเงิน 🤔"
 6) ห้ามแต่งข้อมูลที่ไม่รู้ ห้ามตอบมัว ถ้าไม่รู้ให้ถามเพิ่ม หรือแนะนำให้ดูที่เว็บไซต์
 7) ถ้าถูกถามว่าเป็น AI: "หมอจันทรามีทีมงานช่วยกันค่ะ ไม่ต้องกังวลนะคะ 🔮"
@@ -428,20 +436,27 @@ class FortuneAIService
 
         // คำนวณค่าคอมมิชชั่นจาก settings
         $mode = $this->settings->getFortuneCommissionMode();
+        $level1Commission = '0';
+        $level2Commission = '0';
         if ($mode === 'static') {
             $commissionAmount = $this->settings->getFortuneStaticCommissionAmount();
             $commissionText = number_format($commissionAmount, 0).' บาท';
+            $level1Commission = number_format($this->settings->getFortuneLevel1Amount((float) ($this->settings->deep_reading_price ?? 0)), 0);
+            $level2Commission = number_format($this->settings->getFortuneLevel2Amount((float) ($this->settings->deep_reading_price ?? 0)), 0);
         } else {
             $preview = $this->settings->calculateFortuneCommissionPreview();
             $level1 = $preview['levels'][0] ?? null;
+            $level2 = $preview['levels'][1] ?? null;
             $commissionAmount = $level1 ? $level1['amount'] : 0;
             $commissionText = number_format($commissionAmount, 2).' บาท';
+            $level1Commission = number_format($level1 ? $level1['amount'] : 0, 0);
+            $level2Commission = number_format($level2 ? $level2['amount'] : 0, 0);
         }
 
         // แทนที่ placeholder ด้วยข้อมูลจริง
         return str_replace(
-            ['{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}'],
-            [$maxFreeReadings, $deepReadingPrice, $commissionText],
+            ['{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}'],
+            [$maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission],
             self::CHAT_SYSTEM_MESSAGE_TEMPLATE
         );
     }

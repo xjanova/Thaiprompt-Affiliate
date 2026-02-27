@@ -397,6 +397,21 @@ class FortuneConversationService
                 return $this->handleShareRequest($facebookUserId);
             }
 
+            // ✅ ตรวจสอบคำสั่ง "สายงาน" → ดูรายชื่อคนที่แนะนำ (downline)
+            if ($this->isDownlineRequest($messageText)) {
+                return $this->handleDownlineRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "รายได้" → ดูรายได้ค่าแนะนำจากสายงาน
+            if ($this->isEarningsRequest($messageText)) {
+                return $this->handleEarningsRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "แผนการตลาด" → แสดงรายละเอียดค่าคอมมิชชั่น
+            if ($this->isMarketingPlanRequest($messageText)) {
+                return $this->handleMarketingPlanRequest($facebookUserId);
+            }
+
             // ✅ ตรวจสอบคำสั่ง "ฝากคำถาม" → เข้าโหมดฝากคำถามถึงแอดมิน
             if ($this->isLeaveQuestionRequest($messageText)) {
                 return $this->handleManualLeaveQuestion($facebookUserId, $userProfile);
@@ -4343,7 +4358,13 @@ class FortuneConversationService
                 ."💰 เช็คสิทธิ์/Wallet — พิมพ์ \"เช็คสิทธิ์\"\n"
                 ."🏦 ดูบัญชี — พิมพ์ \"บัญชี\"\n"
                 ."🔗 แชร์เชิญเพื่อน — พิมพ์ \"แชร์\"\n"
-                ."📝 ฝากคำถาม — พิมพ์ \"ฝากคำถาม\"\n"
+                ."📝 ฝากคำถาม — พิมพ์ \"ฝากคำถาม\"\n\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."📊 ระบบค่าแนะนำ\n"
+                ."─────────────────\n"
+                ."👥 ดูสายงาน — พิมพ์ \"สายงาน\"\n"
+                ."💵 ดูรายได้ — พิมพ์ \"รายได้\"\n"
+                ."💰 แผนค่าแนะนำ — พิมพ์ \"แผนการตลาด\"\n"
                 ."━━━━━━━━━━━━━━━━━\n\n"
                 ."✨ เลือกเรื่องที่สนใจแล้วพิมพ์มาได้เลยค่ะ 🙏";
 
@@ -6538,5 +6559,462 @@ PROMPT;
                 ."ระหว่างนี้ พิมพ์ถามหมอจันทราได้เลยค่ะ ✨",
             'reading' => null,
         ];
+    }
+
+    // ============================================================
+    // คำสั่ง "สายงาน" — ดูรายชื่อคนที่แนะนำมา (downline)
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูสายงานหรือไม่
+     */
+    protected function isDownlineRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $exactKeywords = [
+            'สายงาน', 'ดูสายงาน', 'ทีม', 'ดูทีม',
+            'คนที่แนะนำ', 'downline', 'ทีมงานฉัน',
+            'สมาชิก', 'ดูสมาชิก', 'ลูกทีม', 'ดูลูกทีม',
+            'คนในทีม', 'รายชื่อทีม',
+        ];
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "สายงาน" — แสดงรายชื่อ direct referrals
+     */
+    protected function handleDownlineRequest(string $facebookUserId): array
+    {
+        try {
+            // ค้นหา User จาก line_user_id
+            $user = $this->findUserByPlatformId($facebookUserId);
+
+            if (! $user) {
+                return [
+                    'action' => 'downline_no_user',
+                    'message' => "👥 ดูสายงาน\n\n"
+                        ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
+                        ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
+                        ."พิมพ์คำถามมาได้เลยค่ะ 🔮",
+                    'reading' => null,
+                ];
+            }
+
+            $userName = $user->name ?? 'คุณ';
+
+            // ดึง direct referrals (คนที่ user แนะนำมา)
+            $referrals = \App\Models\User::where('sponsor_id', $user->id)
+                ->orderBy('created_at', 'desc')
+                ->limit(20)
+                ->get();
+
+            if ($referrals->isEmpty()) {
+                // ดึงค่าคอมมิชชั่นสำหรับแสดง
+                $commissionAmount = $this->getLevel1CommissionText();
+
+                return [
+                    'action' => 'downline_empty',
+                    'message' => "👥 สายงานของคุณ{$userName}\n"
+                        ."═══════════════════════\n\n"
+                        ."ยังไม่มีสมาชิกในสายงานค่ะ\n\n"
+                        ."💡 เริ่มสร้างทีมได้ง่ายๆ!\n"
+                        ."1. พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
+                        ."2. ส่งลิงก์ให้เพื่อน\n"
+                        ."3. เพื่อนดูดวง = คุณได้ค่าแนะนำ!\n\n"
+                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง ตลอดไป!",
+                    'reading' => null,
+                ];
+            }
+
+            // นับ active (ดูดวงภายใน 30 วัน)
+            $thirtyDaysAgo = now()->subDays(30);
+            $activeCount = 0;
+            $lines = [];
+
+            foreach ($referrals as $index => $ref) {
+                // นับจำนวนดูดวงของ referral
+                $readingCount = FortuneReading::where(function ($q) use ($ref) {
+                    $q->where('user_id', $ref->id)
+                      ->orWhere('facebook_user_id', $ref->line_user_id ?? '');
+                })->count();
+
+                // เช็ค active
+                $lastReading = FortuneReading::where(function ($q) use ($ref) {
+                    $q->where('user_id', $ref->id)
+                      ->orWhere('facebook_user_id', $ref->line_user_id ?? '');
+                })->latest()->first();
+
+                $isActive = $lastReading && $lastReading->created_at >= $thirtyDaysAgo;
+                if ($isActive) {
+                    $activeCount++;
+                }
+
+                $icon = $isActive ? '🟢' : '🔴';
+                $name = $ref->name ?? 'ไม่ระบุชื่อ';
+                $joinDate = $ref->created_at?->locale('th')->translatedFormat('j M y') ?? '-';
+                $lines[] = ($index + 1).". {$icon} {$name} — สมัคร {$joinDate} (ดูดวง {$readingCount} ครั้ง)";
+            }
+
+            $totalReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
+            $listText = implode("\n", $lines);
+
+            $message = "👥 สายงานของคุณ{$userName}\n"
+                ."═══════════════════════\n\n"
+                ."📊 สรุป\n"
+                ."• สมาชิกสายตรง: {$totalReferrals} คน\n"
+                ."• Active (30 วัน): {$activeCount} คน\n\n"
+                ."📋 รายชื่อสายตรง\n"
+                ."{$listText}\n\n"
+                ."🟢 = Active (ดูดวงภายใน 30 วัน)\n"
+                ."🔴 = ไม่ Active\n\n"
+                ."💡 แชร์ลิงก์เพิ่มเพื่อสร้างทีม → พิมพ์ \"แชร์\"";
+
+            if ($totalReferrals > 20) {
+                $message .= "\n📌 แสดง 20 คนล่าสุด (ทั้งหมด {$totalReferrals} คน)";
+            }
+
+            Log::info('Fortune: แสดงสายงาน', [
+                'user_id' => $facebookUserId,
+                'total_referrals' => $totalReferrals,
+                'active_count' => $activeCount,
+            ]);
+
+            return [
+                'action' => 'downline_list',
+                'message' => $message,
+                'reading' => null,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleDownlineRequest error', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'downline_error',
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลสายงานได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'reading' => null,
+            ];
+        }
+    }
+
+    // ============================================================
+    // คำสั่ง "รายได้" — ดูรายได้ค่าแนะนำจากสายงาน
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูรายได้หรือไม่
+     */
+    protected function isEarningsRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $exactKeywords = [
+            'รายได้', 'ดูรายได้', 'ค่าแนะนำ', 'คอมมิชชั่น',
+            'commission', 'earnings', 'ค่าคอม', 'เงินที่ได้',
+            'ดูค่าแนะนำ', 'รายได้ของฉัน', 'เช็ครายได้',
+        ];
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "รายได้" — แสดงรายได้ค่าแนะนำ
+     */
+    protected function handleEarningsRequest(string $facebookUserId): array
+    {
+        try {
+            $user = $this->findUserByPlatformId($facebookUserId);
+
+            if (! $user) {
+                return [
+                    'action' => 'earnings_no_user',
+                    'message' => "💵 ดูรายได้\n\n"
+                        ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
+                        ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
+                        ."พิมพ์คำถามมาได้เลยค่ะ 🔮",
+                    'reading' => null,
+                ];
+            }
+
+            $userName = $user->name ?? 'คุณ';
+
+            // ดึง wallet balance
+            $walletBalance = 0;
+            if ($user->wallet) {
+                $walletBalance = $user->wallet->balance ?? 0;
+            }
+
+            // ดึงรายได้จาก FortuneCommission (ถ้ามี table)
+            $totalEarnings = 0;
+            $monthEarnings = 0;
+            $todayEarnings = 0;
+            $recentCommissions = collect();
+
+            try {
+                // ลองดึงจาก fortune_commissions ก่อน
+                $totalEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                    ->whereIn('status', ['approved', 'paid'])
+                    ->sum('amount');
+
+                $monthEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                    ->whereIn('status', ['approved', 'paid'])
+                    ->whereMonth('created_at', now()->month)
+                    ->whereYear('created_at', now()->year)
+                    ->sum('amount');
+
+                $todayEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                    ->whereIn('status', ['approved', 'paid'])
+                    ->whereDate('created_at', now()->toDateString())
+                    ->sum('amount');
+
+                $recentCommissions = \App\Models\FortuneCommission::where('user_id', $user->id)
+                    ->whereIn('status', ['approved', 'paid'])
+                    ->with('fromUser:id,name')
+                    ->orderBy('created_at', 'desc')
+                    ->limit(5)
+                    ->get();
+            } catch (\Exception $e) {
+                // Fallback: ดึงจาก WalletTransaction
+                if ($user->wallet) {
+                    $walletId = $user->wallet->id;
+                    $totalEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
+                        ->where('type', 'credit')
+                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                        ->sum('amount');
+
+                    $monthEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
+                        ->where('type', 'credit')
+                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                        ->whereMonth('created_at', now()->month)
+                        ->whereYear('created_at', now()->year)
+                        ->sum('amount');
+
+                    $todayEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
+                        ->where('type', 'credit')
+                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                        ->whereDate('created_at', now()->toDateString())
+                        ->sum('amount');
+                }
+            }
+
+            // ถ้าไม่มีรายได้เลย
+            if ($totalEarnings <= 0 && $walletBalance <= 0) {
+                $commissionAmount = $this->getLevel1CommissionText();
+
+                return [
+                    'action' => 'earnings_empty',
+                    'message' => "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
+                        ."═══════════════════════\n\n"
+                        ."ยังไม่มีรายได้ค่าแนะนำค่ะ\n\n"
+                        ."💡 เริ่มสร้างรายได้ได้ง่ายๆ!\n"
+                        ."1. พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
+                        ."2. เพื่อนดูดวงเชิงลึก = คุณได้ {$commissionAmount} บาท\n"
+                        ."3. ค่าแนะนำเข้า Wallet อัตโนมัติ\n\n"
+                        ."💰 พิมพ์ \"แผนการตลาด\" เพื่อดูรายละเอียดค่าแนะนำ",
+                    'reading' => null,
+                ];
+            }
+
+            // สร้างข้อความรายได้
+            $message = "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
+                ."═══════════════════════\n\n"
+                ."💰 Wallet: ".number_format($walletBalance, 2)." บาท\n"
+                ."📈 รายได้รวมทั้งหมด: ".number_format($totalEarnings, 2)." บาท\n"
+                ."📅 เดือนนี้: ".number_format($monthEarnings, 2)." บาท\n"
+                ."📆 วันนี้: ".number_format($todayEarnings, 2)." บาท\n";
+
+            // แสดง 5 รายการล่าสุด
+            if ($recentCommissions->isNotEmpty()) {
+                $message .= "\n📋 5 รายการล่าสุด\n";
+                foreach ($recentCommissions as $index => $comm) {
+                    $fromName = $comm->fromUser?->name ?? 'ผู้ใช้';
+                    $amount = number_format($comm->amount, 0);
+                    $date = $comm->created_at?->locale('th')->translatedFormat('j M') ?? '-';
+                    $levelText = $comm->level == 2 ? ' (ชั้น 2)' : '';
+                    $message .= ($index + 1).". +{$amount}฿ จาก {$fromName}{$levelText} ({$date})\n";
+                }
+            }
+
+            $message .= "\n💡 แชร์เพิ่ม → รายได้เพิ่ม! พิมพ์ \"แชร์\"";
+
+            Log::info('Fortune: แสดงรายได้', [
+                'user_id' => $facebookUserId,
+                'total_earnings' => $totalEarnings,
+                'wallet_balance' => $walletBalance,
+            ]);
+
+            return [
+                'action' => 'earnings_info',
+                'message' => $message,
+                'reading' => null,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleEarningsRequest error', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'earnings_error',
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลรายได้ได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'reading' => null,
+            ];
+        }
+    }
+
+    // ============================================================
+    // คำสั่ง "แผนการตลาด" — แสดงรายละเอียดแผนค่าแนะนำ
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเป็นคำขอดูแผนการตลาดหรือไม่
+     */
+    protected function isMarketingPlanRequest(string $text): bool
+    {
+        $text = mb_strtolower(trim($text));
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
+
+        $exactKeywords = [
+            'แผนการตลาด', 'แผนรายได้', 'marketing',
+            'ค่าแนะนำเท่าไหร่', 'ได้เท่าไหร่',
+            'แผนค่าแนะนำ', 'วิธีสร้างรายได้', 'แผนธุรกิจ',
+        ];
+
+        foreach ($exactKeywords as $keyword) {
+            if ($text === $keyword || $textNormalized === $keyword) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการคำสั่ง "แผนการตลาด" — แสดงรายละเอียดค่าคอมมิชชั่น
+     */
+    protected function handleMarketingPlanRequest(string $facebookUserId): array
+    {
+        try {
+            $brandName = $this->settings->getFortuneBrandName();
+            $price = number_format($this->getDeepReadingPrice(), 0);
+
+            // ดึงค่าคอมมิชชั่น Level 1 + Level 2
+            $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
+            $level1Amount = number_format($this->settings->getFortuneLevel1Amount($readingPrice), 0);
+            $level2Amount = number_format($this->settings->getFortuneLevel2Amount($readingPrice), 0);
+            $level2Enabled = $this->settings->fortune_level2_enabled ?? true;
+
+            // ตัวอย่างรายได้: 10 คน × 3 ครั้ง/เดือน × level1
+            $level1Raw = $this->settings->getFortuneLevel1Amount($readingPrice);
+            $exampleMonthly = 10 * 3 * $level1Raw;
+
+            $message = "💰 แผนค่าแนะนำ {$brandName}\n"
+                ."═══════════════════════\n\n"
+                ."📌 ราคาดูดวงเชิงลึก: {$price} บาท/ครั้ง\n\n"
+                ."🏆 ค่าแนะนำ 2 ชั้น:\n"
+                ."┌─ ชั้น 1 (สายตรง): {$level1Amount} บาท/ครั้ง\n"
+                ."│  คุณแนะนำเพื่อน → เพื่อนดูดวง → คุณได้ค่าแนะนำ\n"
+                ."│\n";
+
+            if ($level2Enabled) {
+                $message .= "└─ ชั้น 2 (ชั้นหลาน): {$level2Amount} บาท/ครั้ง\n"
+                    ."   เพื่อนแนะนำต่อ → คนนั้นดูดวง → คุณยังได้ค่าแนะนำ\n\n";
+            } else {
+                $message .= "└─ (ค่าแนะนำชั้นเดียว)\n\n";
+            }
+
+            $message .= "📊 ตัวอย่างรายได้:\n"
+                ."• แนะนำ 10 คน แต่ละคนดูดวง 3 ครั้ง/เดือน\n"
+                ."  = 10 × 3 × {$level1Amount} = ".number_format($exampleMonthly, 0)." บาท/เดือน\n\n"
+                ."✅ ค่าแนะนำเข้า Wallet อัตโนมัติทันที\n"
+                ."✅ ถอนเงินได้ที่เว็บไซต์ เข้าบัญชี 1-3 วันทำการ\n"
+                ."✅ ได้ค่าแนะนำตลอดไป ไม่มีหมดอายุ\n\n"
+                ."🚀 เริ่มต้น: พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน";
+
+            Log::info('Fortune: แสดงแผนการตลาด', ['user_id' => $facebookUserId]);
+
+            return [
+                'action' => 'marketing_plan',
+                'message' => $message,
+                'reading' => null,
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleMarketingPlanRequest error', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'marketing_plan_error',
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลแผนการตลาดได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'reading' => null,
+            ];
+        }
+    }
+
+    // ============================================================
+    // Helper methods สำหรับคำสั่งใหม่
+    // ============================================================
+
+    /**
+     * ค้นหา User จาก platform user ID (LINE/Facebook)
+     * ค้นหาหลายวิธีเพื่อให้ครอบคลุม
+     */
+    protected function findUserByPlatformId(string $platformUserId): ?\App\Models\User
+    {
+        // ลองหาจาก line_user_id
+        $user = \App\Models\User::where('line_user_id', $platformUserId)->first();
+        if ($user) {
+            return $user;
+        }
+
+        // Fallback: ค้นหาจาก email pattern
+        $user = \App\Models\User::where('email', 'line_'.$platformUserId.'@thaiprompt.local')->first();
+        if ($user) {
+            return $user;
+        }
+
+        // Fallback: ค้นหาจาก FortuneReading ที่ link กับ user
+        $linkedReading = FortuneReading::where('facebook_user_id', $platformUserId)
+            ->whereNotNull('user_id')
+            ->latest()
+            ->first();
+
+        if ($linkedReading && $linkedReading->user_id) {
+            return \App\Models\User::find($linkedReading->user_id);
+        }
+
+        return null;
+    }
+
+    /**
+     * ดึงข้อความค่าแนะนำ Level 1 (สำหรับแสดงในข้อความต่างๆ)
+     */
+    protected function getLevel1CommissionText(): string
+    {
+        $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
+        $amount = $this->settings->getFortuneLevel1Amount($readingPrice);
+
+        return number_format($amount, 0);
     }
 }
