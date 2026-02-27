@@ -1363,6 +1363,17 @@
                     </div>
                 @endguest
 
+                <!-- 🎵 Music Hint (แสดงเมื่อ autoplay ถูกบล็อค) -->
+                <div id="music-hint" style="
+                    display: none; align-items: center; justify-content: center; gap: 8px;
+                    margin-top: 20px; padding: 10px 20px;
+                    background: rgba(0, 255, 204, 0.1); border: 1px solid rgba(0, 255, 204, 0.3);
+                    border-radius: 20px; cursor: pointer; animation: pulse 2s ease-in-out infinite;
+                " onclick="if(window._onFirstUserInteract) window._onFirstUserInteract()">
+                    <span style="font-size: 20px;">🎵</span>
+                    <span style="color: #00ffcc; font-size: 13px;">แตะเพื่อเปิดเพลง</span>
+                </div>
+
                 <p class="title-version">
                     Version 2.6.0 - Advanced AI<br>
                     🎮 Created by XMAN STUDIO © 2025
@@ -1826,15 +1837,25 @@
             }
         }
 
+        // ✅ Music Session ID — ป้องกัน race condition เพลงซ้อน
+        let _musicSessionId = 0;
+
         // ✅ เล่นเพลง BGM
         function playMusic(mode) {
             if (!musicPlayer.enabled) return;
+
+            // เพิ่ม session ID ทุกครั้งที่เรียก playMusic → audio เก่าที่ค้างจะรู้ว่าหมดอายุ
+            _musicSessionId++;
+            const mySession = _musicSessionId;
 
             // หยุดเพลงเก่า
             stopMusic();
 
             musicPlayer.currentMode = mode;
             musicErrorCount = 0; // reset error count เมื่อเปลี่ยนโหมด
+
+            // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน (ป้องกัน race condition)
+            if (_musicSessionId !== mySession) return;
 
             const tracks = mode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
 
@@ -1867,7 +1888,17 @@
                 return;
             }
 
+            // ✅ จำ session ID ณ ตอนสร้าง — ถ้าเปลี่ยนไปแล้วจะไม่ทำอะไร
+            const mySession = _musicSessionId;
+
             try {
+                // ✅ หยุด audio ตัวเก่าก่อนสร้างตัวใหม่ (ป้องกัน orphan)
+                if (musicPlayer.currentAudio) {
+                    musicPlayer.currentAudio.pause();
+                    musicPlayer.currentAudio.src = '';
+                    musicPlayer.currentAudio = null;
+                }
+
                 const track = tracks[index];
                 const audio = new Audio(track.url);
                 audio.volume = musicPlayer.muted ? 0 : musicPlayer.volume;
@@ -1875,12 +1906,16 @@
 
                 // เมื่อเพลงจบ → เล่นเพลงถัดไป
                 audio.addEventListener('ended', () => {
+                    // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน
+                    if (_musicSessionId !== mySession) return;
                     musicErrorCount = 0; // reset error count เมื่อเพลงจบปกติ
                     if (musicPlayer.playMode === 'loop') return;
                     playNextTrack();
                 });
 
                 audio.addEventListener('error', () => {
+                    // ✅ ตรวจสอบว่ายังเป็น session เดียวกัน
+                    if (_musicSessionId !== mySession) return;
                     console.warn('[Music] โหลดเพลงไม่สำเร็จ:', track.url);
                     musicErrorCount++;
 
@@ -1892,24 +1927,35 @@
                         return;
                     }
 
-                    setTimeout(() => playNextTrack(), 500);
+                    setTimeout(() => {
+                        if (_musicSessionId !== mySession) return;
+                        playNextTrack();
+                    }, 500);
                 });
 
+                // ✅ กำหนด currentAudio ก่อนเรียก play (ป้องกัน orphan)
+                musicPlayer.currentAudio = audio;
+                musicPlayer.currentTrackIndex = index;
+
                 audio.play().then(() => {
+                    // ✅ ตรวจว่ายังเป็น session เดียวกัน — ถ้าไม่ใช่ ให้หยุดทันที
+                    if (_musicSessionId !== mySession) {
+                        audio.pause();
+                        audio.src = '';
+                        return;
+                    }
                     musicPlayer.isPlaying = true;
                     musicErrorCount = 0; // reset เมื่อเล่นได้สำเร็จ
                     updateMusicUI();
                     console.log(`[Music] กำลังเล่น: ${track.name}`);
                 }).catch(e => {
+                    if (_musicSessionId !== mySession) return;
                     console.warn('[Music] ไม่สามารถเล่นเพลงได้:', e.message);
                     musicErrorCount++;
                     if (musicErrorCount >= MAX_MUSIC_ERRORS) {
                         playProceduralMusic();
                     }
                 });
-
-                musicPlayer.currentAudio = audio;
-                musicPlayer.currentTrackIndex = index;
             } catch (error) {
                 console.warn('[Music] Error:', error);
                 playProceduralMusic();
@@ -2075,10 +2121,15 @@
         }
 
         function stopMusic() {
+            // ✅ เพิ่ม session ID — ทำให้ audio ที่กำลัง pending (play promise) หยุดเองเมื่อ resolve
+            _musicSessionId++;
+
             // หยุด HTML5 Audio
             if (musicPlayer.currentAudio) {
-                musicPlayer.currentAudio.pause();
-                musicPlayer.currentAudio.src = '';
+                try {
+                    musicPlayer.currentAudio.pause();
+                    musicPlayer.currentAudio.src = '';
+                } catch(e) { /* ignore */ }
                 musicPlayer.currentAudio = null;
             }
             // ✅ หยุด procedural music ด้วย
@@ -2743,6 +2794,8 @@
             }
 
             die() {
+                // ✅ ป้องกันเรียก die() ซ้ำ (ถ้าตายแล้วไม่ต้องทำอะไร)
+                if (!this.alive) return;
                 this.alive = false;
 
                 // Play death sound
@@ -2755,9 +2808,11 @@
                     createFood(segment.position.x, segment.position.z, true);
                     scene.remove(segment);
                 });
+                this.segments = []; // ✅ เคลียร์ segments ป้องกันซ้ำ
 
                 if (this.nameSprite) {
                     scene.remove(this.nameSprite);
+                    this.nameSprite = null;
                 }
 
                 // Remove from arrays
@@ -3840,13 +3895,24 @@
             // ✅ Performance: หยุด title animation (ประหยัด CPU)
             if (window.stopTitleAnimation) window.stopTitleAnimation();
 
+            // 🎵 ป้องกันเพลงซ้อน: หยุดเพลงเก่าทั้งหมดก่อน + ลบ listener ที่ค้าง
+            window._musicUserStarted = true; // ป้องกัน onFirstUserInteract ทำงานซ้อน
+            if (window._onFirstUserInteract) {
+                document.removeEventListener('click', window._onFirstUserInteract);
+                document.removeEventListener('touchstart', window._onFirstUserInteract);
+            }
+            // ซ่อน music hint
+            const musicHint = document.getElementById('music-hint');
+            if (musicHint) musicHint.style.display = 'none';
+            stopMusic(); // หยุดเพลงทุกชนิดที่กำลังเล่นอยู่
+
             // ✅ โหลด config จาก API ก่อนเริ่มเกม
             await loadGameConfig();
 
             // Initialize audio on user interaction
             initAudio();
 
-            // ✅ เปลี่ยนเพลงเป็น gameplay mode
+            // ✅ เปลี่ยนเพลงเป็น gameplay mode (เพลงเดียวเท่านั้น)
             playMusic('gameplay');
 
             playerName = document.getElementById('player-name').value.trim() ||
@@ -4297,16 +4363,26 @@
             // ✅ หยุดตรวจสอบสถานะ service
             stopServicePolling();
 
-            // Clean up
-            if (player) player.die();
+            // Clean up — ลบ player จาก scene (ไม่เรียก die() ซ้ำ เพราะตายไปแล้ว)
+            if (player) {
+                player.segments.forEach(seg => scene.remove(seg));
+                player.segments = [];
+                if (player.nameSprite) { scene.remove(player.nameSprite); player.nameSprite = null; }
+                player = null;
+            }
             bots.forEach(bot => {
                 bot.segments.forEach(seg => scene.remove(seg));
+                bot.segments = []; // ✅ เคลียร์ segments ป้องกันซ้ำ
                 if (bot.nameSprite) scene.remove(bot.nameSprite);
             });
             bots = [];
 
             foods.forEach(food => scene.remove(food));
             foods = [];
+
+            // ✅ ลบ powerups ด้วย (ป้องกัน object ค้างใน scene)
+            powerups.forEach(p => scene.remove(p));
+            powerups = [];
 
             // ✅ ทำลาย touch manager ป้องกัน memory leak
             if (touchInputManager) {
@@ -4375,9 +4451,10 @@
             // 🏆 รีโหลด leaderboard เมื่อกลับหน้า title (อาจมีคะแนนใหม่)
             loadTitleLeaderboard();
 
-            // 🏆 ซ่อน Top 3 In-Game
+            // 🏆 ซ่อน Top 3 In-Game + รีเซ็ต key
             const top3El = document.getElementById('ingame-top3');
             if (top3El) top3El.innerHTML = '';
+            top3LastKey = '';
 
             // Respawn food
             for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
@@ -5346,9 +5423,11 @@
             // 🏆 โหลด Top 100 Leaderboard สำหรับหน้า Title
             loadTitleLeaderboard();
 
-            // 🎵 โหลด Config ทันที (เพื่อให้เพลงพร้อมเล่นเมื่อ user คลิก)
+            // 🎵 โหลด Config ทันที → พยายาม autoplay เพลง
             loadGameConfig().then(() => {
                 console.log('[Init] Config loaded - music tracks ready');
+                // พยายาม autoplay ทันที (จะสำเร็จถ้าผู้ใช้เคย interact กับเว็บมาก่อน)
+                if (window._tryAutoplayMusic) window._tryAutoplayMusic();
             }).catch(err => {
                 console.warn('[Init] Config load failed (will retry on game start):', err.message);
             });
@@ -5380,29 +5459,61 @@
                 });
             }
 
-            // ✅ เริ่มเพลง Title เมื่อผู้ใช้ interact ครั้งแรก (autoplay blocked)
-            // 🎵 FIX: รอ config โหลดเสร็จก่อนเล่นเพลง (ไม่งั้น tracks จะยังว่างอยู่)
-            async function startTitleMusic() {
-                document.removeEventListener('click', startTitleMusic);
-                document.removeEventListener('touchstart', startTitleMusic);
+            // 🎵 พยายาม autoplay เพลง (จะสำเร็จถ้า browser อนุญาต)
+            window._tryAutoplayMusic = function() {
+                if (window._musicUserStarted) return;
+                if (gameStarted) return; // ถ้าเกมเริ่มแล้ว ไม่ต้อง autoplay title
+                initAudio();
+                if (musicPlayer.titleTracks.length > 0) {
+                    const testAudio = new Audio(musicPlayer.titleTracks[0].url);
+                    testAudio.volume = musicPlayer.volume;
+                    testAudio.play().then(() => {
+                        // ✅ ตรวจสอบสถานะอีกครั้ง — อาจเปลี่ยนระหว่างรอ play
+                        if (window._musicUserStarted || gameStarted) {
+                            testAudio.pause();
+                            testAudio.src = '';
+                            return;
+                        }
+                        console.log('[Music] ✅ Autoplay สำเร็จ!');
+                        window._musicUserStarted = true;
+                        // หยุด testAudio ชั่วคราว แล้วเล่นผ่าน playMusic ให้จัดการ
+                        testAudio.pause();
+                        testAudio.src = '';
+                        playMusic('title');
+                        const hint = document.getElementById('music-hint');
+                        if (hint) hint.style.display = 'none';
+                    }).catch(() => {
+                        testAudio.pause();
+                        testAudio.src = '';
+                        console.log('[Music] Browser บล็อค autoplay - รอ user คลิก');
+                        const hint = document.getElementById('music-hint');
+                        if (hint) hint.style.display = 'flex';
+                    });
+                } else {
+                    const hint = document.getElementById('music-hint');
+                    if (hint) hint.style.display = 'flex';
+                }
+            };
+
+            // ✅ เริ่มเพลงเมื่อผู้ใช้ interact ครั้งแรก (ถ้า autoplay ไม่สำเร็จ)
+            window._onFirstUserInteract = function() {
+                if (window._musicUserStarted) return;
+                window._musicUserStarted = true;
+                document.removeEventListener('click', window._onFirstUserInteract);
+                document.removeEventListener('touchstart', window._onFirstUserInteract);
 
                 initAudio();
+                const hint = document.getElementById('music-hint');
+                if (hint) hint.style.display = 'none';
 
-                // ถ้า tracks ยังว่าง → รอ config โหลด (สูงสุด 3 วินาที)
-                if (musicPlayer.titleTracks.length === 0 && musicPlayer.gameplayTracks.length === 0) {
-                    console.log('[Music] Tracks ยังว่าง - รอ config...');
-                    try {
-                        await loadGameConfig();
-                    } catch(e) {
-                        console.warn('[Music] Config load failed:', e.message);
-                    }
-                }
+                // ถ้าเกมเริ่มไปแล้ว → ไม่ต้องเล่น title music
+                if (gameStarted) return;
 
-                console.log('[Music] เริ่มเล่น title music - tracks:', musicPlayer.titleTracks.length);
+                console.log('[Music] User interact → เล่น title music');
                 playMusic('title');
-            }
-            document.addEventListener('click', startTitleMusic, { once: true });
-            document.addEventListener('touchstart', startTitleMusic, { once: true });
+            };
+            document.addEventListener('click', window._onFirstUserInteract);
+            document.addEventListener('touchstart', window._onFirstUserInteract);
 
             // ✅ Landscape lock - ลองขอ screen orientation lock
             if (screen.orientation && screen.orientation.lock) {
