@@ -967,6 +967,22 @@ return [
         ],
 
         [
+            'id' => 'direct-payment',
+            'label' => 'รับชำระเงินตรง',
+            'icon' => '🏦',
+            'route' => null,
+            'order' => 4.5,
+            'permissions' => [],
+            'badge' => 'Enterprise',
+            'badge_color' => 'bg-gradient-to-r from-yellow-500 to-amber-500',
+            'submenu' => [
+                ['label' => '📊 ภาพรวม', 'route' => 'seller.sms-gateway.index', 'description' => 'แดชบอร์ดระบบรับชำระเงินตรง'],
+                ['label' => '📱 อุปกรณ์', 'route' => 'seller.sms-gateway.devices', 'description' => 'จัดการอุปกรณ์ SMS Checker'],
+                ['label' => '🏦 บัญชีธนาคาร', 'route' => 'seller.sms-gateway.bank-accounts', 'description' => 'จัดการบัญชีรับชำระเงิน'],
+            ],
+        ],
+
+        [
             'id' => 'commissions',
             'label' => 'คอมมิชชั่น',
             'icon' => '💵',

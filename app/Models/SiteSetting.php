@@ -101,6 +101,8 @@ class SiteSetting extends Model
         'app_playstore_enabled',
         'app_appstore_url',
         'app_appstore_enabled',
+        // SMS Checker App Download
+        'smschecker_app_download_url',
     ];
 
     /**

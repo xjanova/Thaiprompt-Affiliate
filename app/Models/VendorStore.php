@@ -432,6 +432,15 @@ class VendorStore extends Model
     }
 
     /**
+     * เช็คว่าร้านค้ามีสิทธิ์รับชำระเงินเข้าบัญชีตนเอง (Direct Payment)
+     * เปิดให้เฉพาะแพคเกจที่มี allow_direct_payment = true (Enterprise)
+     */
+    public function allowsDirectPayment(): bool
+    {
+        return $this->package && $this->package->allow_direct_payment;
+    }
+
+    /**
      * ตรวจสอบว่าร้านค้ามีสิทธิ์ใช้ SMS Payment Gateway หรือไม่
      * เช็ค: 1) Official Shop 2) Premium Store 3) Active Subscription
      */

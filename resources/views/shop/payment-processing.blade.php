@@ -222,14 +222,51 @@ if (in_array($transaction->payment_method, ['promptpay', 'bank_transfer'])) {
                         ])
                     </div>
 
-                    <!-- Bank Account Info (ดึงจากฐานข้อมูลอัตโนมัติ) -->
+                    <!-- Bank Account Info — Enterprise store ใช้บัญชีร้าน / อื่นๆ ใช้บัญชี platform -->
                     @php
-                        $bankAccounts = \App\Models\PaymentBankAccount::where('is_active', true)
-                            ->orderByDesc('is_default')
-                            ->orderBy('sort_order')
-                            ->get();
-                        $defaultAccount = $bankAccounts->firstWhere('is_default', true) ?? $bankAccounts->first();
+                        $showSellerBank = false;
+                        $sellerStoreName = null;
+
+                        // เช็คว่า order นี้มาจากร้าน Enterprise ที่มี Direct Payment หรือไม่
+                        if (isset($transaction) && $transaction->store_id) {
+                            $paymentStore = \App\Models\VendorStore::with('package')->find($transaction->store_id);
+                            if ($paymentStore && $paymentStore->allowsDirectPayment()) {
+                                $sellerBankAccounts = \App\Models\SmsGatewayBankAccount::where('store_id', $transaction->store_id)
+                                    ->where('is_active', true)
+                                    ->orderByDesc('is_primary')
+                                    ->orderBy('sort_order')
+                                    ->get();
+                                if ($sellerBankAccounts->isNotEmpty()) {
+                                    $showSellerBank = true;
+                                    $sellerStoreName = $paymentStore->store_name;
+                                    $bankAccounts = $sellerBankAccounts;
+                                    $defaultAccount = $sellerBankAccounts->firstWhere('is_primary', true) ?? $sellerBankAccounts->first();
+                                }
+                            }
+                        }
+
+                        // ถ้าไม่ใช่ Enterprise หรือร้านไม่มีบัญชี → ใช้บัญชี platform
+                        if (! $showSellerBank) {
+                            $bankAccounts = \App\Models\PaymentBankAccount::where('is_active', true)
+                                ->orderByDesc('is_default')
+                                ->orderBy('sort_order')
+                                ->get();
+                            $defaultAccount = $bankAccounts->firstWhere('is_default', true) ?? $bankAccounts->first();
+                        }
                     @endphp
+
+                    @if($showSellerBank && $sellerStoreName)
+                    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3 mb-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <span class="text-sm font-semibold text-amber-800 dark:text-amber-300">
+                                โอนเงินไปยังบัญชีของร้าน {{ $sellerStoreName }} โดยตรง
+                            </span>
+                        </div>
+                    </div>
+                    @endif
 
                     @if($defaultAccount)
                     <div class="bg-gray-50 dark:bg-gray-900 rounded-xl p-6 mb-6">

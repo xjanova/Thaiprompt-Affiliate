@@ -70,6 +70,18 @@ class VendorPackageSeeder extends Seeder
         if ($skipped > 0) {
             $this->command->info("   ⏭️  Skipped {$skipped} existing packages (preserved).");
         }
+
+        // อัพเดท allow_direct_payment สำหรับ Enterprise ที่มีอยู่แล้ว
+        $updated = VendorPackage::where('package_slug', 'enterprise')
+            ->where(function ($q) {
+                $q->whereNull('allow_direct_payment')
+                    ->orWhere('allow_direct_payment', false);
+            })
+            ->update(['allow_direct_payment' => true]);
+
+        if ($updated > 0) {
+            $this->command->info("   🔄 อัพเดท allow_direct_payment = true สำหรับ Enterprise package");
+        }
     }
 
     /**
@@ -109,6 +121,7 @@ class VendorPackageSeeder extends Seeder
                 'allow_bulk_operations' => false,
                 'allow_ai_bot' => false,
                 'allow_marketing_tools' => false,
+                'allow_direct_payment' => false,
                 'priority_support' => false,
                 'trial_days' => 0,
                 'badge' => null,
@@ -152,6 +165,7 @@ class VendorPackageSeeder extends Seeder
                 'allow_bulk_operations' => true,
                 'allow_ai_bot' => false,
                 'allow_marketing_tools' => true,
+                'allow_direct_payment' => false,
                 'priority_support' => false,
                 'trial_days' => 14,
                 'badge' => 'ยอดนิยม',
@@ -200,6 +214,7 @@ class VendorPackageSeeder extends Seeder
                 'allow_bulk_operations' => true,
                 'allow_ai_bot' => true,
                 'allow_marketing_tools' => true,
+                'allow_direct_payment' => false,
                 'priority_support' => true,
                 'trial_days' => 30,
                 'badge' => 'คุ้มที่สุด',
@@ -218,6 +233,8 @@ class VendorPackageSeeder extends Seeder
                     'ทุกอย่างใน Premium',
                     'ไม่จำกัดทุกอย่าง',
                     'พื้นที่จัดเก็บไม่จำกัด',
+                    'รับชำระเงินเข้าบัญชีตนเองโดยตรง',
+                    'จับคู่แอป SMS Checker เพื่อยืนยันอัตโนมัติ',
                     'Account Manager เฉพาะ',
                     'Custom Development',
                     'ความปลอดภัยขั้นสูง',
@@ -243,6 +260,7 @@ class VendorPackageSeeder extends Seeder
                 'allow_bulk_operations' => true,
                 'allow_ai_bot' => true,
                 'allow_marketing_tools' => true,
+                'allow_direct_payment' => true,
                 'priority_support' => true,
                 'trial_days' => 30,
                 'badge' => 'องค์กร',

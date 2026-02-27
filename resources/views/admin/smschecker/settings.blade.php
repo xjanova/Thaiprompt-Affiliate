@@ -37,7 +37,7 @@
                     <div>
                         <h3 class="font-semibold text-gray-900 dark:text-white mb-1">ดาวน์โหลดแอพ SmsChecker</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">ติดตั้งแอพ SmsChecker บนมือถือ Android ที่รับ SMS จากธนาคาร</p>
-                        <a href="https://github.com/xjanova/SmsChecker/releases/latest" target="_blank"
+                        <a href="{{ $appDownloadUrl }}" target="_blank"
                            class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-xl transition-colors">
                             <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
@@ -450,6 +450,113 @@
                     <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">{{ $settings['rate_limit_per_minute'] }} ครั้ง/นาที</p>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- App Download URL --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-emerald-500 to-green-600">
+            <h2 class="text-lg font-semibold text-white flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                URL ดาวน์โหลดแอป SmsChecker
+            </h2>
+        </div>
+        <div class="p-6" x-data="appDownloadForm()">
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                ตั้งค่า URL ดาวน์โหลดแอป SmsChecker สำหรับแอดมินและร้านค้า Enterprise
+            </p>
+            <form @submit.prevent="saveUrl">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">URL ดาวน์โหลดแอป</label>
+                    <input type="url" name="smschecker_app_download_url" x-model="downloadUrl"
+                        class="w-full px-4 py-3 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-mono text-gray-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                        placeholder="https://github.com/xjanova/SmsChecker/releases/latest">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">URL ที่ร้านค้า Enterprise ใช้ดาวน์โหลดแอป (เว้นว่างเพื่อใช้ค่าเริ่มต้น GitHub)</p>
+                </div>
+
+                {{-- Status Message --}}
+                <div x-show="message" x-transition
+                    :class="messageType === 'success'
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800'"
+                    class="mb-4 px-4 py-3 rounded-xl text-sm">
+                    <span x-text="message"></span>
+                </div>
+
+                <button type="submit" :disabled="saving"
+                    class="inline-flex items-center px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-medium rounded-xl transition-colors">
+                    <template x-if="!saving">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </template>
+                    <template x-if="saving">
+                        <svg class="w-5 h-5 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                        </svg>
+                    </template>
+                    <span x-text="saving ? 'กำลังบันทึก...' : 'บันทึก URL'"></span>
+                </button>
+            </form>
+
+            <script>
+            function appDownloadForm() {
+                return {
+                    downloadUrl: '{{ $appDownloadUrl }}',
+                    saving: false,
+                    message: '',
+                    messageType: 'success',
+
+                    async saveUrl() {
+                        this.saving = true;
+                        this.message = '';
+
+                        try {
+                            // ขอ CSRF token ใหม่
+                            const tokenRes = await fetch('{{ route("admin.smschecker.settings") }}', {
+                                method: 'GET', credentials: 'same-origin',
+                                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                            });
+                            const html = await tokenRes.text();
+                            const match = html.match(/name="_token"\s+value="([^"]+)"/);
+                            const token = match ? match[1] : null;
+
+                            if (!token) throw new Error('Session หมดอายุ กรุณา login ใหม่');
+
+                            const res = await fetch('{{ route("admin.smschecker.settings-download-url") }}', {
+                                method: 'POST', credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/x-www-form-urlencoded',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: '_token=' + encodeURIComponent(token) + '&smschecker_app_download_url=' + encodeURIComponent(this.downloadUrl)
+                            });
+
+                            if (res.ok) {
+                                const data = await res.json().catch(() => null);
+                                this.message = data?.message || 'บันทึก URL เรียบร้อยแล้ว';
+                                this.messageType = data?.success !== false ? 'success' : 'error';
+                            } else if (res.status === 419) {
+                                this.message = 'Session หมดอายุ กำลัง refresh...';
+                                this.messageType = 'error';
+                                setTimeout(() => window.location.reload(), 1500);
+                            } else {
+                                throw new Error('เกิดข้อผิดพลาด (HTTP ' + res.status + ')');
+                            }
+                        } catch (err) {
+                            this.message = err.message || 'เกิดข้อผิดพลาด';
+                            this.messageType = 'error';
+                        } finally {
+                            this.saving = false;
+                        }
+                    }
+                };
+            }
+            </script>
         </div>
     </div>
 

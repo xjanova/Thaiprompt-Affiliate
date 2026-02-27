@@ -409,6 +409,7 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::post('/settings', [SmsCheckerAdminController::class, 'updateSettings'])->name('settings-update');
     Route::post('/settings/fcm', [SmsCheckerAdminController::class, 'updateFcmSettings'])->name('settings-fcm');
     Route::post('/settings/fcm-test', [SmsCheckerAdminController::class, 'testFcm'])->name('settings-fcm-test');
+    Route::post('/settings/download-url', [SmsCheckerAdminController::class, 'updateDownloadUrl'])->name('settings-download-url');
     Route::get('/devices', [SmsCheckerAdminController::class, 'devices'])->name('devices');
     Route::get('/devices/create', [SmsCheckerAdminController::class, 'createDevice'])->name('device-create');
     Route::post('/devices', [SmsCheckerAdminController::class, 'storeDevice'])->name('device-store');

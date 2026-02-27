@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Models\SiteSetting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsGatewayBankAccount;
+use App\Models\VendorPackage;
 use App\Models\VendorStore;
 use App\Services\SmsGatewaySubscriptionService;
 use Illuminate\Http\Request;
@@ -20,6 +22,9 @@ use Illuminate\Support\Facades\Validator;
  * - สมัคร/ยกเลิก subscription
  * - จัดการอุปกรณ์ SMS Checker (เพิ่ม/ลบ/ดู QR)
  * - จัดการบัญชีธนาคาร
+ *
+ * เฉพาะ Enterprise package เท่านั้นที่มีสิทธิ์ Direct Payment
+ * แพคเกจอื่น → แสดงหน้าโฆษณาอัพเกรด
  */
 class SmsGatewaySellerController extends Controller
 {
@@ -32,7 +37,39 @@ class SmsGatewaySellerController extends Controller
      */
     private function getStore(): ?VendorStore
     {
-        return VendorStore::where('user_id', Auth::id())->first();
+        return VendorStore::where('user_id', Auth::id())->with('package')->first();
+    }
+
+    /**
+     * ดึง URL ดาวน์โหลดแอป SMS Checker (จาก admin settings)
+     */
+    private function getAppDownloadUrl(): string
+    {
+        return SiteSetting::getSetting()->smschecker_app_download_url
+            ?? 'https://github.com/xjanova/SmsChecker/releases/latest';
+    }
+
+    /**
+     * เช็คว่าร้านค้ามีสิทธิ์ Direct Payment หรือไม่
+     * ถ้าไม่มี → return ข้อมูลสำหรับ upgrade promo
+     * ถ้ามี → return null
+     */
+    private function checkDirectPaymentAccess(VendorStore $store): ?array
+    {
+        if ($store->allowsDirectPayment()) {
+            return null; // มีสิทธิ์
+        }
+
+        // ดึงข้อมูล Enterprise package สำหรับโฆษณา
+        $enterprisePackage = VendorPackage::where('package_slug', 'enterprise')
+            ->where('is_active', true)
+            ->first();
+
+        return [
+            'needs_upgrade' => true,
+            'enterprise_package' => $enterprisePackage,
+            'current_package' => $store->package,
+        ];
     }
 
     // ========================================
@@ -41,6 +78,7 @@ class SmsGatewaySellerController extends Controller
 
     /**
      * หน้าหลัก SMS Gateway — สถานะ + pricing plans
+     * Enterprise → แสดง dashboard / Non-Enterprise → แสดงโฆษณาอัพเกรด
      *
      * GET /seller/sms-gateway
      */
@@ -51,10 +89,20 @@ class SmsGatewaySellerController extends Controller
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
+        // เช็คสิทธิ์ Direct Payment
+        $upgradeInfo = $this->checkDirectPaymentAccess($store);
+        if ($upgradeInfo) {
+            return view('seller.sms-gateway.upgrade-promo', array_merge(
+                $upgradeInfo,
+                ['store' => $store]
+            ));
+        }
+
         $status = $this->subscriptionService->getStoreDashboardStatus($store->id);
         $plans = $this->subscriptionService->getAvailablePlans();
+        $downloadUrl = $this->getAppDownloadUrl();
 
-        return view('seller.sms-gateway.index', compact('store', 'status', 'plans'));
+        return view('seller.sms-gateway.index', compact('store', 'status', 'plans', 'downloadUrl'));
     }
 
     /**
@@ -169,13 +217,20 @@ class SmsGatewaySellerController extends Controller
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
+        // เช็คสิทธิ์ Direct Payment
+        if (! $store->allowsDirectPayment()) {
+            return redirect()->route('seller.sms-gateway.index')
+                ->with('error', 'กรุณาอัพเกรดเป็นแพ็คเกจ Enterprise เพื่อใช้งาน');
+        }
+
         $devices = SmsCheckerDevice::forStore($store->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
         $status = $this->subscriptionService->getStoreDashboardStatus($store->id);
+        $downloadUrl = $this->getAppDownloadUrl();
 
-        return view('seller.sms-gateway.devices', compact('store', 'devices', 'status'));
+        return view('seller.sms-gateway.devices', compact('store', 'devices', 'status', 'downloadUrl'));
     }
 
     /**
@@ -190,7 +245,12 @@ class SmsGatewaySellerController extends Controller
             return back()->with('error', 'ไม่พบร้านค้า');
         }
 
-        // เช็คสิทธิ์
+        // เช็คสิทธิ์ Direct Payment (Enterprise)
+        if (! $store->allowsDirectPayment()) {
+            return back()->with('error', 'กรุณาอัพเกรดเป็นแพ็คเกจ Enterprise เพื่อใช้งาน');
+        }
+
+        // เช็คสิทธิ์ SMS Gateway
         if (! $this->subscriptionService->hasAccess($store->id)) {
             return back()->with('error', 'กรุณาสมัคร SMS Gateway ก่อน');
         }
@@ -277,6 +337,12 @@ class SmsGatewaySellerController extends Controller
             return redirect()->route('seller.dashboard')->with('error', 'ไม่พบร้านค้า');
         }
 
+        // เช็คสิทธิ์ Direct Payment
+        if (! $store->allowsDirectPayment()) {
+            return redirect()->route('seller.sms-gateway.index')
+                ->with('error', 'กรุณาอัพเกรดเป็นแพ็คเกจ Enterprise เพื่อใช้งาน');
+        }
+
         $accounts = SmsGatewayBankAccount::forStore($store->id)
             ->ordered()
             ->get();
@@ -294,6 +360,11 @@ class SmsGatewaySellerController extends Controller
         $store = $this->getStore();
         if (! $store) {
             return back()->with('error', 'ไม่พบร้านค้า');
+        }
+
+        // เช็คสิทธิ์ Direct Payment
+        if (! $store->allowsDirectPayment()) {
+            return back()->with('error', 'กรุณาอัพเกรดเป็นแพ็คเกจ Enterprise เพื่อใช้งาน');
         }
 
         $validator = Validator::make($request->all(), [

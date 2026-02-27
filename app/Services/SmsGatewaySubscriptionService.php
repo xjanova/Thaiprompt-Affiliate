@@ -114,12 +114,19 @@ class SmsGatewaySubscriptionService
         }
 
         // เช็ค Premium Store
-        return PremiumStore::where('store_id', $storeId)
+        $isPremium = PremiumStore::where('store_id', $storeId)
             ->where('status', 'active')
             ->where(function ($q) {
                 $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
             })
             ->exists();
+
+        if ($isPremium) {
+            return true;
+        }
+
+        // เช็ค VendorPackage allow_direct_payment (Enterprise)
+        return $store->allowsDirectPayment();
     }
 
     /**
@@ -128,6 +135,17 @@ class SmsGatewaySubscriptionService
     public function hasAccess(?int $storeId): bool
     {
         return SmsGatewaySubscription::storeHasAccess($storeId);
+    }
+
+    /**
+     * เช็คว่าร้านค้ามีสิทธิ์ Direct Payment ผ่าน VendorPackage หรือไม่
+     * เฉพาะแพคเกจ Enterprise ที่มี allow_direct_payment = true
+     */
+    public function hasDirectPaymentAccess(int $storeId): bool
+    {
+        $store = VendorStore::with('package')->find($storeId);
+
+        return $store && $store->allowsDirectPayment();
     }
 
     /**
@@ -220,6 +238,7 @@ class SmsGatewaySubscriptionService
         return [
             'has_access' => $hasAccess,
             'is_exempt' => $isExempt,
+            'has_direct_payment' => $this->hasDirectPaymentAccess($storeId),
             'subscription' => $subscription,
             'max_devices' => $maxDevices === -1 ? 'ไม่จำกัด' : $maxDevices,
             'current_devices' => $currentDevices,

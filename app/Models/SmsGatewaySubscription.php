@@ -203,6 +203,11 @@ class SmsGatewaySubscription extends Model
             return true;
         }
 
+        // เช็ค VendorPackage allow_direct_payment (Enterprise)
+        if ($store->allowsDirectPayment()) {
+            return true;
+        }
+
         // เช็ค Active Subscription
         return static::forStore($storeId)
             ->where(function ($q) {

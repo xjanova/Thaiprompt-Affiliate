@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Models\SiteSetting;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
 use App\Models\UniquePaymentAmount;
@@ -408,9 +409,15 @@ class SmsCheckerAdminController extends Controller
             }
         }
 
+        // URL ดาวน์โหลดแอป SmsChecker (ตั้งค่าได้จาก admin)
+        $siteSettings = SiteSetting::getSetting();
+        $appDownloadUrl = $siteSettings->smschecker_app_download_url
+            ?: 'https://github.com/xjanova/SmsChecker/releases/latest';
+
         return view('admin.smschecker.settings', compact(
             'settings', 'supportedBanks',
-            'fcmEnabled', 'fcmProjectId', 'fcmCredentialsPath', 'fcmServiceAccount'
+            'fcmEnabled', 'fcmProjectId', 'fcmCredentialsPath', 'fcmServiceAccount',
+            'appDownloadUrl'
         ));
     }
 
@@ -494,6 +501,43 @@ class SmsCheckerAdminController extends Controller
         $successMsg = 'บันทึกการตั้งค่า FCM เรียบร้อยแล้ว';
 
         // ถ้าเป็น AJAX request → return JSON (ป้องกัน session หมดอายุจาก form submit)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $successMsg,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.smschecker.settings')
+            ->with('success', $successMsg);
+    }
+
+    /**
+     * บันทึก URL ดาวน์โหลดแอป SmsChecker
+     *
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function updateDownloadUrl(Request $request)
+    {
+        $request->validate([
+            'smschecker_app_download_url' => 'nullable|url|max:500',
+        ]);
+
+        $siteSettings = SiteSetting::getSetting();
+        $siteSettings->smschecker_app_download_url = $request->input('smschecker_app_download_url') ?: null;
+        $siteSettings->save();
+
+        // ล้าง cache ของ SiteSetting
+        cache()->forget('site_settings');
+
+        $successMsg = 'บันทึก URL ดาวน์โหลดแอป SmsChecker เรียบร้อยแล้ว';
+
+        Log::info('SmsChecker: Download URL updated', [
+            'admin_id' => auth()->id(),
+            'url' => $request->input('smschecker_app_download_url'),
+        ]);
+
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
                 'success' => true,
