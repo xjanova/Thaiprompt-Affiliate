@@ -605,24 +605,81 @@ class WalletController extends Controller
     }
 
     /**
-     * Process PromptPay deposit
+     * ฝากเงินผ่าน PromptPay — สร้าง PaymentTransaction จริง + SMS Payment Checker
+     *
+     * Flow: สร้าง PaymentTransaction → สร้าง unique amount (ทศนิยมสำหรับ SMS matching)
+     * → สร้าง QR Code EMVCo → แสดงหน้า topup-promptpay (มี polling อัตโนมัติ)
+     * → SMS Checker จับคู่ยอดเงิน → auto-complete → เงินเข้า wallet
+     *
+     * ใช้ flow เดียวกับระบบ Topup และ Checkout (PaymentService + PromptPayProvider)
      */
     public function depositPromptPay(Request $request)
     {
         $request->validate([
             'amount' => 'required|numeric|min:1|max:1000000',
+        ], [
+            'amount.required' => 'กรุณาระบุจำนวนเงิน',
+            'amount.min' => 'จำนวนเงินขั้นต่ำ 1 บาท',
+            'amount.max' => 'จำนวนเงินสูงสุด 1,000,000 บาท',
         ]);
 
         try {
             $user = auth()->user();
-            $result = $this->paymentGatewayService->processPromptPayDeposit(
-                $user,
-                $request->amount,
-                ['ip_address' => $request->ip()]
-            );
+            $amount = (float) $request->amount;
 
-            return view('user.wallet.deposit-promptpay', compact('result'));
+            // 1. สร้าง PaymentTransaction จริง (เหมือน processTopup + processTopupPayment)
+            $transaction = PaymentTransaction::create([
+                'user_id' => $user->id,
+                'store_id' => VendorStore::getPlatformStoreId(),
+                'type' => 'wallet_topup',
+                'payment_method' => 'promptpay', // ✅ ตั้งเป็น promptpay ทันที
+                'status' => 'pending',
+                'amount' => $amount,
+                'currency' => 'THB',
+                'expired_at' => now()->addMinutes(30),
+                'metadata' => [
+                    'source' => 'deposit_promptpay',
+                    'ip_address' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ],
+            ]);
+
+            Log::info('Deposit PromptPay Transaction Created', [
+                'transaction_id' => $transaction->transaction_id,
+                'user_id' => $user->id,
+                'amount' => $amount,
+            ]);
+
+            // 2. ประมวลผลผ่าน PaymentService — สร้าง unique amount + QR Code
+            $paymentService = app(PaymentService::class);
+            $result = $paymentService->processPayment($transaction, [
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            if (! $result['success']) {
+                return redirect()->back()
+                    ->with('error', $result['message'] ?? 'ไม่สามารถสร้าง QR Code ได้')
+                    ->withInput();
+            }
+
+            // 3. แสดงหน้า topup-promptpay (มี polling ตรวจสอบสถานะอัตโนมัติ)
+            $updatedTransaction = $result['transaction'];
+
+            return view('user.wallet.topup-promptpay', [
+                'transaction' => $updatedTransaction,
+                'qrCode' => $result['data']['qr_code'] ?? '',
+                'refNo' => $result['data']['ref_no'] ?? null,
+                'response' => $result['data']['response'] ?? [],
+            ]);
+
         } catch (Exception $e) {
+            Log::error('Deposit PromptPay Error', [
+                'user_id' => auth()->id(),
+                'amount' => $request->amount,
+                'error' => $e->getMessage(),
+            ]);
+
             return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }
