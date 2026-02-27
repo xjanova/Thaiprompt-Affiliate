@@ -51,6 +51,7 @@ jobs:
             echo "============================================"
             echo "🔧 Server Maintenance — $(date '+%Y-%m-%d %H:%M:%S')"
             echo "🎯 Action: ${{ inputs.action }}"
+            echo "👤 User: $(whoami)"
             echo "============================================"
             echo ""
 
@@ -67,13 +68,13 @@ jobs:
 
                 # ขั้นตอนที่ 2: หยุด system Apache (ถ้ากำลังรัน)
                 echo "⏹️ ขั้นตอนที่ 2: หยุด system Apache service..."
-                systemctl stop apache2 2>/dev/null && echo "✅ หยุด apache2 service แล้ว" || echo "ℹ️ apache2 service ไม่ได้รัน"
-                systemctl disable apache2 2>/dev/null && echo "✅ disable apache2 service แล้ว" || echo "ℹ️ ไม่สามารถ disable ได้"
+                sudo systemctl stop apache2 2>/dev/null && echo "✅ หยุด apache2 service แล้ว" || echo "ℹ️ apache2 service ไม่ได้รัน"
+                sudo systemctl disable apache2 2>/dev/null && echo "✅ disable apache2 service แล้ว" || echo "ℹ️ ไม่สามารถ disable ได้"
                 echo ""
 
                 # ขั้นตอนที่ 3: ลบ system Apache packages
                 echo "🗑️ ขั้นตอนที่ 3: ลบ system Apache packages..."
-                apt-get remove --purge -y \
+                sudo apt-get remove --purge -y \
                   apache2 \
                   apache2-bin \
                   apache2-data \
@@ -85,15 +86,15 @@ jobs:
 
                 # ขั้นตอนที่ 4: ลบ dependencies ที่ไม่ใช้
                 echo "🧹 ขั้นตอนที่ 4: ลบ dependencies ที่ไม่จำเป็น..."
-                apt-get autoremove -y 2>&1
-                apt-get autoclean -y 2>&1
+                sudo apt-get autoremove -y 2>&1
+                sudo apt-get autoclean -y 2>&1
                 echo ""
 
                 # ขั้นตอนที่ 5: ตรวจสอบว่าลบสำเร็จ
                 echo "✅ ขั้นตอนที่ 5: ตรวจสอบหลังลบ..."
-                if dpkg -l | grep -q "apache2-bin"; then
+                if dpkg -l 2>/dev/null | grep -q "ii.*apache2-bin"; then
                   echo "❌ ยังมี apache2-bin อยู่! ลองใช้ dpkg --force-remove..."
-                  dpkg --force-remove-reinstreq --remove apache2-bin 2>&1 || true
+                  sudo dpkg --force-remove-reinstreq --remove apache2-bin 2>&1 || true
                 else
                   echo "✅ ลบ apache2-bin สำเร็จ!"
                 fi
@@ -101,81 +102,85 @@ jobs:
 
                 # ขั้นตอนที่ 6: Rebuild Apache ผ่าน CustomBuild
                 echo "🔨 ขั้นตอนที่ 6: Rebuild Apache ผ่าน DirectAdmin CustomBuild..."
-                if [ -d "/usr/local/directadmin/custombuild" ]; then
-                  cd /usr/local/directadmin/custombuild
-
+                CUSTOMBUILD_DIR="/usr/local/directadmin/custombuild"
+                if sudo test -d "$CUSTOMBUILD_DIR"; then
                   echo "📦 อัพเดท CustomBuild..."
-                  ./build update 2>&1
+                  sudo "$CUSTOMBUILD_DIR/build" update 2>&1
 
                   echo ""
                   echo "🔨 Rebuild Apache..."
-                  ./build apache 2>&1
+                  sudo "$CUSTOMBUILD_DIR/build" apache 2>&1
 
                   echo ""
                   echo "🔨 Rebuild PHP (recompile with new Apache)..."
-                  ./build php n 2>&1
+                  sudo "$CUSTOMBUILD_DIR/build" php n 2>&1
 
                   echo ""
                   echo "📋 ตรวจสอบ CustomBuild versions..."
-                  ./build versions 2>&1
+                  sudo "$CUSTOMBUILD_DIR/build" versions 2>&1
                 else
-                  echo "❌ ไม่พบ CustomBuild directory: /usr/local/directadmin/custombuild"
+                  echo "❌ ไม่พบ CustomBuild directory: $CUSTOMBUILD_DIR"
                   echo "กรุณาตรวจสอบ DirectAdmin installation"
                   exit 1
                 fi
                 echo ""
 
-                # ขั้นตอนที่ 7: Restart services
-                echo "🔄 ขั้นตอนที่ 7: Restart services..."
-                if [ -x "/usr/local/directadmin/custombuild/build" ]; then
-                  cd /usr/local/directadmin/custombuild
-                  ./build rewrite_confs 2>&1
+                # ขั้นตอนที่ 7: Rewrite configs + Restart services
+                echo "🔄 ขั้นตอนที่ 7: Rewrite configs + Restart services..."
+                if sudo test -x "$CUSTOMBUILD_DIR/build"; then
+                  sudo "$CUSTOMBUILD_DIR/build" rewrite_confs 2>&1
                 fi
 
                 # Restart DirectAdmin's Apache (httpd)
-                systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
-                  service httpd restart 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                sudo systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  sudo service httpd restart 2>/dev/null && echo "✅ Restart httpd (service) สำเร็จ" || \
                   echo "⚠️ ไม่สามารถ restart httpd"
 
                 # Restart DirectAdmin
-                systemctl restart directadmin 2>/dev/null && echo "✅ Restart directadmin สำเร็จ" || \
-                  service directadmin restart 2>/dev/null || echo "⚠️ ไม่สามารถ restart directadmin"
+                sudo systemctl restart directadmin 2>/dev/null && echo "✅ Restart directadmin สำเร็จ" || \
+                  sudo service directadmin restart 2>/dev/null && echo "✅ Restart directadmin (service) สำเร็จ" || \
+                  echo "⚠️ ไม่สามารถ restart directadmin"
                 echo ""
 
                 # ขั้นตอนที่ 8: ตรวจสอบ final status
                 echo "📊 ขั้นตอนที่ 8: Final Status..."
-                echo "--- Apache Status ---"
-                httpd -v 2>/dev/null || /usr/local/apache/bin/httpd -v 2>/dev/null || echo "ไม่พบ Apache/httpd"
+                echo "--- Apache Version ---"
+                /usr/local/apache/bin/httpd -v 2>/dev/null || sudo httpd -v 2>/dev/null || echo "ไม่พบ Apache/httpd"
                 echo ""
                 echo "--- Service Status ---"
-                systemctl is-active httpd 2>/dev/null || service httpd status 2>/dev/null | head -5 || echo "httpd status unknown"
+                sudo systemctl is-active httpd 2>/dev/null || echo "httpd: unknown"
+                sudo systemctl is-active directadmin 2>/dev/null || echo "directadmin: unknown"
                 echo ""
-                echo "--- DirectAdmin Apache check ---"
-                ls -la /usr/local/apache/bin/httpd 2>/dev/null || echo "ไม่พบ DirectAdmin Apache binary"
+                echo "--- DirectAdmin Apache binary ---"
+                ls -la /usr/local/apache/bin/httpd 2>/dev/null || echo "ไม่พบ /usr/local/apache/bin/httpd"
+                echo ""
+                echo "--- System Apache packages (ควรว่าง) ---"
+                dpkg -l 2>/dev/null | grep -i "ii.*apache2" || echo "✅ ไม่มี system Apache packages แล้ว"
                 echo ""
 
                 # ตรวจสอบว่าเว็บยังทำงาน
                 echo "--- Website Health Check ---"
-                if curl -s -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null | grep -qE "200|301|302"; then
-                  echo "✅ เว็บไซต์ตอบสนองปกติ"
+                HTTP_CODE=$(curl -sk -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null || echo "000")
+                if echo "$HTTP_CODE" | grep -qE "200|301|302"; then
+                  echo "✅ เว็บไซต์ตอบสนองปกติ (HTTP $HTTP_CODE)"
                 else
-                  echo "⚠️ เว็บไซต์อาจยังไม่พร้อม กรุณาตรวจสอบอีกครั้ง"
+                  echo "⚠️ HTTP $HTTP_CODE — เว็บไซต์อาจยังไม่พร้อม กรุณารอสักครู่แล้วตรวจสอบอีกครั้ง"
                 fi
                 ;;
 
               custombuild-status)
                 echo "📋 CustomBuild Status"
                 echo "---"
-                if [ -d "/usr/local/directadmin/custombuild" ]; then
-                  cd /usr/local/directadmin/custombuild
+                CUSTOMBUILD_DIR="/usr/local/directadmin/custombuild"
+                if sudo test -d "$CUSTOMBUILD_DIR"; then
                   echo "=== Versions ==="
-                  ./build versions 2>&1
+                  sudo "$CUSTOMBUILD_DIR/build" versions 2>&1
                   echo ""
-                  echo "=== Options ==="
-                  ./build options | head -50
+                  echo "=== Options (top 50) ==="
+                  sudo "$CUSTOMBUILD_DIR/build" options 2>&1 | head -50
                   echo ""
                   echo "=== Apache System Packages ==="
-                  dpkg -l | grep -i apache2 || echo "ไม่มี system Apache packages (ปกติ)"
+                  dpkg -l 2>/dev/null | grep -i "ii.*apache2" || echo "✅ ไม่มี system Apache packages (ปกติ)"
                 else
                   echo "❌ ไม่พบ CustomBuild directory"
                 fi
@@ -184,33 +189,37 @@ jobs:
               restart-apache)
                 echo "🔄 Restart Apache (DirectAdmin httpd)"
                 echo "---"
-                systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
-                  service httpd restart 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                sudo systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  sudo service httpd restart 2>/dev/null && echo "✅ Restart httpd (service) สำเร็จ" || \
                   echo "❌ ไม่สามารถ restart httpd"
                 echo ""
                 echo "--- Apache Status ---"
-                systemctl status httpd 2>/dev/null | head -10 || service httpd status 2>/dev/null | head -10 || echo "status unknown"
+                sudo systemctl status httpd 2>/dev/null | head -15 || sudo service httpd status 2>/dev/null | head -15 || echo "status unknown"
                 ;;
 
               restart-services)
                 echo "🔄 Restart All Services"
                 echo "---"
                 echo "Restarting httpd..."
-                systemctl restart httpd 2>/dev/null || service httpd restart 2>/dev/null || echo "⚠️ httpd restart failed"
+                sudo systemctl restart httpd 2>/dev/null && echo "  ✅ httpd restarted" || echo "  ⚠️ httpd restart failed"
                 echo "Restarting php-fpm..."
-                systemctl restart php-fpm* 2>/dev/null || service php-fpm83 restart 2>/dev/null || echo "⚠️ php-fpm restart failed"
+                sudo systemctl restart php-fpm* 2>/dev/null && echo "  ✅ php-fpm restarted" || echo "  ⚠️ php-fpm restart failed"
                 echo "Restarting directadmin..."
-                systemctl restart directadmin 2>/dev/null || service directadmin restart 2>/dev/null || echo "⚠️ directadmin restart failed"
+                sudo systemctl restart directadmin 2>/dev/null && echo "  ✅ directadmin restarted" || echo "  ⚠️ directadmin restart failed"
                 echo "Restarting mysql/mariadb..."
-                systemctl restart mysqld 2>/dev/null || systemctl restart mariadb 2>/dev/null || echo "⚠️ mysql restart failed"
-                echo ""
-                echo "✅ Restart complete"
+                sudo systemctl restart mysqld 2>/dev/null && echo "  ✅ mysqld restarted" || \
+                  sudo systemctl restart mariadb 2>/dev/null && echo "  ✅ mariadb restarted" || \
+                  echo "  ⚠️ mysql/mariadb restart failed"
                 echo ""
                 echo "--- Service Status ---"
-                for svc in httpd php-fpm83 directadmin mysqld mariadb; do
-                  STATUS=$(systemctl is-active $svc 2>/dev/null || echo "inactive")
-                  echo "$svc: $STATUS"
+                for svc in httpd php-fpm83 php-fpm84 directadmin mysqld mariadb; do
+                  STATUS=$(sudo systemctl is-active $svc 2>/dev/null || echo "not-found")
+                  if [ "$STATUS" != "not-found" ]; then
+                    echo "  $svc: $STATUS"
+                  fi
                 done
+                echo ""
+                echo "✅ Restart complete"
                 ;;
 
               custom-command)
