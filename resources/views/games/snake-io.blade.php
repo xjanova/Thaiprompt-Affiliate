@@ -934,18 +934,18 @@
         /* Connection Status Indicator */
         #connection-status {
             position: absolute;
-            top: 55px;
+            bottom: 10px;
             left: 10px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.6);
             backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 15px;
-            padding: 4px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 3px 10px;
             display: none;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: bold;
             z-index: 50;
             transition: all 0.3s ease;
