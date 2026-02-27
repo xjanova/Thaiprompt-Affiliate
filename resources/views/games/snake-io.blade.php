@@ -206,6 +206,269 @@
             font-weight: bold;
         }
 
+        /* 🏆 Title Screen - Top 100 Leaderboard */
+        .title-leaderboard {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 320px;
+            max-height: 70vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            border: 2px solid rgba(0, 255, 255, 0.4);
+            border-radius: 16px;
+            padding: 0;
+            overflow: hidden;
+            z-index: 110;
+            animation: slideInRight 0.8s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateY(-50%) translateX(40px); }
+            to { opacity: 1; transform: translateY(-50%) translateX(0); }
+        }
+
+        .title-lb-header {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.3), rgba(255, 165, 0, 0.2));
+            padding: 14px 16px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+        }
+
+        .title-lb-header h3 {
+            color: #ffd700;
+            font-size: 18px;
+            margin: 0;
+            text-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
+            letter-spacing: 2px;
+        }
+
+        .title-lb-scroll {
+            max-height: calc(70vh - 60px);
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .title-lb-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .title-lb-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .title-lb-scroll::-webkit-scrollbar-thumb {
+            background: rgba(0, 255, 255, 0.3);
+            border-radius: 2px;
+        }
+
+        .title-lb-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            margin: 3px 0;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .title-lb-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .title-lb-item .lb-rank {
+            width: 28px;
+            font-weight: 700;
+            text-align: center;
+            flex-shrink: 0;
+        }
+
+        .title-lb-item .lb-name {
+            flex: 1;
+            color: #e0e0e0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 8px;
+        }
+
+        .title-lb-item .lb-score {
+            color: #00ffff;
+            font-weight: 700;
+            flex-shrink: 0;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* อันดับ 1-3 พิเศษ */
+        .title-lb-item.rank-1 {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.25), rgba(255, 165, 0, 0.15));
+            border: 1px solid rgba(255, 215, 0, 0.4);
+        }
+        .title-lb-item.rank-1 .lb-rank { color: #ffd700; font-size: 16px; }
+        .title-lb-item.rank-1 .lb-name { color: #fff; font-weight: 700; }
+        .title-lb-item.rank-1 .lb-score { color: #ffd700; }
+
+        .title-lb-item.rank-2 {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.2), rgba(169, 169, 169, 0.1));
+            border: 1px solid rgba(192, 192, 192, 0.3);
+        }
+        .title-lb-item.rank-2 .lb-rank { color: #c0c0c0; font-size: 15px; }
+        .title-lb-item.rank-2 .lb-name { color: #e8e8e8; font-weight: 600; }
+        .title-lb-item.rank-2 .lb-score { color: #c0c0c0; }
+
+        .title-lb-item.rank-3 {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.2), rgba(184, 115, 51, 0.1));
+            border: 1px solid rgba(205, 127, 50, 0.3);
+        }
+        .title-lb-item.rank-3 .lb-rank { color: #cd7f32; font-size: 15px; }
+        .title-lb-item.rank-3 .lb-name { color: #e0d0c0; font-weight: 600; }
+        .title-lb-item.rank-3 .lb-score { color: #cd7f32; }
+
+        .title-lb-empty {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .title-lb-loading {
+            text-align: center;
+            padding: 30px;
+            color: #00ffff;
+        }
+
+        .title-lb-loading .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-top-color: #00ffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* 🏆 In-Game Top 3 Crown Display */
+        .ingame-top3 {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 90;
+            pointer-events: none;
+        }
+
+        .top3-card {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+            backdrop-filter: blur(8px);
+            animation: top3SlideIn 0.6s ease-out both;
+            white-space: nowrap;
+        }
+
+        .top3-card:nth-child(1) { animation-delay: 0s; }
+        .top3-card:nth-child(2) { animation-delay: 0.1s; }
+        .top3-card:nth-child(3) { animation-delay: 0.2s; }
+
+        @keyframes top3SlideIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .top3-card.gold {
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.35), rgba(255, 165, 0, 0.2));
+            border: 1.5px solid rgba(255, 215, 0, 0.6);
+            color: #ffd700;
+            text-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+        }
+
+        .top3-card.silver {
+            background: linear-gradient(135deg, rgba(192, 192, 192, 0.3), rgba(169, 169, 169, 0.15));
+            border: 1.5px solid rgba(192, 192, 192, 0.5);
+            color: #e0e0e0;
+            text-shadow: 0 0 6px rgba(192, 192, 192, 0.4);
+        }
+
+        .top3-card.bronze {
+            background: linear-gradient(135deg, rgba(205, 127, 50, 0.3), rgba(184, 115, 51, 0.15));
+            border: 1.5px solid rgba(205, 127, 50, 0.5);
+            color: #e8a060;
+            text-shadow: 0 0 6px rgba(205, 127, 50, 0.4);
+        }
+
+        .top3-medal {
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .top3-name {
+            max-width: 80px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .top3-score {
+            font-variant-numeric: tabular-nums;
+            opacity: 0.9;
+        }
+
+        /* Responsive: ซ่อน leaderboard title screen บน mobile */
+        @media (max-width: 768px) {
+            .title-leaderboard {
+                position: relative;
+                right: auto;
+                top: auto;
+                transform: none;
+                width: 90%;
+                max-width: 340px;
+                max-height: 35vh;
+                margin: 15px auto 0;
+                animation: fadeInUp 0.6s ease-out;
+            }
+
+            .title-lb-scroll {
+                max-height: calc(35vh - 50px);
+            }
+
+            .title-content {
+                padding-top: 10px;
+            }
+
+            .title-logo {
+                font-size: 48px !important;
+            }
+
+            .title-subtitle {
+                font-size: 14px !important;
+                margin-bottom: 15px !important;
+            }
+
+            .ingame-top3 {
+                top: 55px;
+                gap: 4px;
+            }
+
+            .top3-card {
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+
+            .top3-name {
+                max-width: 50px;
+            }
+        }
+
         /* ✨ Title Screen - หน้าแรกสะอาด */
         #title-screen {
             position: absolute;
@@ -1075,11 +1338,14 @@
             </div>
         </div>
 
-        <!-- Leaderboard -->
+        <!-- Leaderboard (sidebar) -->
         <div class="leaderboard">
             <h3>🏆 TOP PLAYERS</h3>
             <div id="leaderboard-list"></div>
         </div>
+
+        <!-- 🏆 In-Game Top 3 Display (แสดงตลอดระหว่างเล่น) -->
+        <div class="ingame-top3" id="ingame-top3"></div>
 
         <!-- Power-up Indicators -->
         <div class="powerup-indicators" id="powerup-indicators"></div>
@@ -1110,6 +1376,18 @@
                     Version 2.6.0 - Advanced AI<br>
                     🎮 Created by XMAN STUDIO © 2025
                 </p>
+            </div>
+
+            <!-- 🏆 Top 100 Leaderboard -->
+            <div class="title-leaderboard" id="title-leaderboard">
+                <div class="title-lb-header">
+                    <h3>🏆 TOP 100 PLAYERS</h3>
+                </div>
+                <div class="title-lb-scroll" id="title-lb-list">
+                    <div class="title-lb-loading">
+                        <span class="spinner"></span> กำลังโหลด...
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -2493,6 +2771,94 @@
                     if (index > -1) bots.splice(index, 1);
                 }
             }
+        }
+
+        /**
+         * 🏆 โหลด Top 100 Leaderboard สำหรับหน้า Title Screen
+         * ดึงข้อมูลจาก API /games/snake-io/leaderboard
+         */
+        async function loadTitleLeaderboard() {
+            const listEl = document.getElementById('title-lb-list');
+            if (!listEl) return;
+
+            try {
+                const response = await fetch('/games/snake-io/leaderboard', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+
+                const data = await response.json();
+                const entries = Array.isArray(data) ? data : [];
+
+                if (entries.length === 0) {
+                    listEl.innerHTML = '<div class="title-lb-empty">ยังไม่มีคะแนนที่บันทึก<br>เล่นแล้วบันทึกคะแนนเลย!</div>';
+                    return;
+                }
+
+                // สร้าง HTML สำหรับแต่ละอันดับ
+                const medals = ['🥇', '🥈', '🥉'];
+                listEl.innerHTML = entries.map((entry, index) => {
+                    const rankNum = index + 1;
+                    const rankClass = rankNum <= 3 ? ` rank-${rankNum}` : '';
+                    const rankDisplay = rankNum <= 3 ? medals[rankNum - 1] : rankNum;
+                    const playerName = entry.user ? entry.user.name : 'Unknown';
+                    const score = Number(entry.score).toLocaleString();
+
+                    return `<div class="title-lb-item${rankClass}">
+                        <span class="lb-rank">${rankDisplay}</span>
+                        <span class="lb-name">${playerName}</span>
+                        <span class="lb-score">${score}</span>
+                    </div>`;
+                }).join('');
+
+                console.log('[Leaderboard] โหลด Top 100 สำเร็จ:', entries.length, 'รายการ');
+
+            } catch (err) {
+                console.warn('[Leaderboard] ไม่สามารถโหลด Top 100:', err.message);
+                listEl.innerHTML = '<div class="title-lb-empty">ไม่สามารถโหลด Leaderboard ได้<br>ลองรีเฟรชหน้า</div>';
+            }
+        }
+
+        /**
+         * 🏆 อัปเดต Top 3 In-Game Display
+         * แสดง 3 อันดับแรกตลอดเวลาระหว่างเล่น (สวยงาม)
+         */
+        let top3UpdateCounter = 0;
+        function updateInGameTop3() {
+            // อัปเดตทุก 10 frames เพื่อประหยัด performance
+            top3UpdateCounter++;
+            if (top3UpdateCounter % 10 !== 0) return;
+
+            const container = document.getElementById('ingame-top3');
+            if (!container) return;
+
+            // รวมผู้เล่นทั้งหมด (ตัวเอง + bots + online)
+            const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            for (const [, onlineSnake] of otherPlayerSnakes) {
+                if (onlineSnake && onlineSnake.alive) {
+                    allSnakes.push(onlineSnake);
+                }
+            }
+            allSnakes.sort((a, b) => b.score - a.score);
+
+            const top3 = allSnakes.slice(0, 3);
+            const medals = ['🥇', '🥈', '🥉'];
+            const classes = ['gold', 'silver', 'bronze'];
+
+            container.innerHTML = top3.map((snake, i) => {
+                const name = snake.name || 'Unknown';
+                const shortName = name.length > 8 ? name.substring(0, 8) + '…' : name;
+                const isYou = snake.isPlayer ? ' ⭐' : '';
+
+                return `<div class="top3-card ${classes[i]}">
+                    <span class="top3-medal">${medals[i]}</span>
+                    <span class="top3-name">${shortName}${isYou}</span>
+                    <span class="top3-score">${snake.score}</span>
+                </div>`;
+            }).join('');
         }
 
         async function init() {
@@ -4002,6 +4368,13 @@
             // ✨ แสดง Title Screen (ไม่ใช่ start-screen แล้ว)
             document.getElementById('title-screen').classList.remove('hidden');
 
+            // 🏆 รีโหลด leaderboard เมื่อกลับหน้า title (อาจมีคะแนนใหม่)
+            loadTitleLeaderboard();
+
+            // 🏆 ซ่อน Top 3 In-Game
+            const top3El = document.getElementById('ingame-top3');
+            if (top3El) top3El.innerHTML = '';
+
             // Respawn food
             for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
                 createFood();
@@ -4456,6 +4829,9 @@
             checkAllSnakeCollisions();
 
             updateLeaderboard();
+
+            // 🏆 อัปเดต Top 3 In-Game Display
+            updateInGameTop3();
 
             // Update powerup UI timers
             if (Object.values(activePowerups).some(p => p !== null)) {
@@ -4962,6 +5338,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             // ✨ เริ่ม Title Background Animation
             initTitleAnimation();
+
+            // 🏆 โหลด Top 100 Leaderboard สำหรับหน้า Title
+            loadTitleLeaderboard();
 
             // Fullscreen toggle
             const fullscreenBtn = document.getElementById('fullscreen-toggle');
