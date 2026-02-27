@@ -46,10 +46,18 @@
     <x-arrow-x.card-v3 class="p-6">
         <h2 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-6">เลือกช่องทางการชำระเงิน</h2>
 
+        {{-- ⚠️ แจ้งเตือน: ยอดต่ำกว่า 100 บาท ต้องใช้ PromptPay เท่านั้น --}}
+        <div id="low-amount-notice" class="hidden mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border-2 border-amber-300 dark:border-amber-600 rounded-lg">
+            <p class="text-sm text-amber-800 dark:text-amber-200 font-medium">
+                ⚠️ <strong>ยอดเงินต่ำกว่า 100 บาท</strong> — กรุณาใช้ช่องทาง <strong>พร้อมเพย์</strong> เท่านั้น (โอนผ่านธนาคารไม่รองรับยอดต่ำกว่า 100 บาท เนื่องจากระบบ SMS แจ้งเตือนไม่ทำงาน)
+            </p>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             @foreach($availableGateways as $key => $gateway)
                 @if($gateway['enabled'])
-                    <div class="border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 cursor-pointer transition group"
+                    <div id="gateway-card-{{ $key }}"
+                         class="border-2 border-gray-300 dark:border-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 bg-gradient-to-br from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 rounded-xl p-6 cursor-pointer transition group"
                          onclick="selectPaymentMethod('{{ $key }}')">
                         <div class="flex items-start gap-4">
                             <div class="text-5xl">{{ $gateway['icon'] }}</div>
@@ -69,6 +77,10 @@
                                     <div class="mt-3">
                                         <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-semibold">
                                             ⏰ รออนุมัติ
+                                        </span>
+                                        {{-- แจ้งเตือนขั้นต่ำ 100 บาท --}}
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs font-semibold ml-1">
+                                            ขั้นต่ำ ฿100
                                         </span>
                                     </div>
                                 @endif
@@ -121,6 +133,13 @@
     <x-arrow-x.card-v3 id="bank_transfer-form" class="p-6 hidden">
         <h3 class="text-xl font-bold text-gray-900 dark:text-gray-100 mb-4">🏦 โอนผ่านธนาคาร</h3>
 
+        {{-- ⚠️ แจ้งขั้นต่ำ 100 บาท --}}
+        <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-600 rounded-lg">
+            <p class="text-sm text-amber-800 dark:text-amber-200">
+                ⚠️ ขั้นต่ำ <strong>100 บาท</strong> — ยอดต่ำกว่า 100 บาท กรุณาใช้ <a href="javascript:selectPaymentMethod('promptpay')" class="text-indigo-600 dark:text-indigo-400 underline font-semibold">พร้อมเพย์</a> แทน
+            </p>
+        </div>
+
         <form method="POST" action="{{ route('user.wallet.deposit.bank-transfer') }}" enctype="multipart/form-data" class="space-y-4">
             @csrf
             <div>
@@ -128,10 +147,10 @@
                 <input type="number"
                        name="amount"
                        step="0.01"
-                       min="1"
+                       min="100"
                        required
                        class="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                       placeholder="ระบุจำนวนเงิน">
+                       placeholder="ขั้นต่ำ 100 บาท">
             </div>
 
             <div>
@@ -231,6 +250,11 @@
 
 @push('scripts')
 <script>
+/**
+ * ค่าขั้นต่ำสำหรับโอนผ่านธนาคาร (SMS ไม่แจ้งเตือนถ้ายอดต่ำกว่านี้)
+ */
+const BANK_TRANSFER_MIN_AMOUNT = 100;
+
 function selectPaymentMethod(method) {
     hideAllForms();
 
@@ -248,6 +272,53 @@ function hideAllForms() {
         form.classList.add('hidden');
     });
 }
+
+/**
+ * ✅ ตรวจสอบยอดเงินใน PromptPay form แบบ realtime
+ * ถ้ายอดต่ำกว่า 100 → ซ่อน bank transfer card + แสดงข้อความแจ้ง
+ * ถ้ายอด >= 100 → แสดง bank transfer card ปกติ
+ */
+function checkAmountForBankTransfer(amount) {
+    const bankCard = document.getElementById('gateway-card-bank_transfer');
+    const notice = document.getElementById('low-amount-notice');
+
+    if (!bankCard || !notice) return;
+
+    if (amount > 0 && amount < BANK_TRANSFER_MIN_AMOUNT) {
+        // ยอดต่ำกว่า 100 → ซ่อน bank transfer + แจ้งเตือน
+        bankCard.classList.add('opacity-50', 'pointer-events-none');
+        bankCard.title = 'ยอดต่ำกว่า 100 บาท กรุณาใช้พร้อมเพย์';
+        notice.classList.remove('hidden');
+    } else {
+        // ยอดปกติ → แสดง bank transfer
+        bankCard.classList.remove('opacity-50', 'pointer-events-none');
+        bankCard.title = '';
+        notice.classList.add('hidden');
+    }
+}
+
+// ฟังการพิมพ์จำนวนเงินในฟอร์ม PromptPay
+document.addEventListener('DOMContentLoaded', function() {
+    const promptPayAmountInput = document.querySelector('#promptpay-form input[name="amount"]');
+    if (promptPayAmountInput) {
+        promptPayAmountInput.addEventListener('input', function() {
+            checkAmountForBankTransfer(parseFloat(this.value) || 0);
+        });
+    }
+
+    // ฟังการพิมพ์จำนวนเงินในฟอร์ม Bank Transfer ด้วย (ป้องกัน submit ถ้า < 100)
+    const bankForm = document.querySelector('#bank_transfer-form form');
+    if (bankForm) {
+        bankForm.addEventListener('submit', function(e) {
+            const amount = parseFloat(bankForm.querySelector('input[name="amount"]').value) || 0;
+            if (amount < BANK_TRANSFER_MIN_AMOUNT) {
+                e.preventDefault();
+                alert('ยอดขั้นต่ำสำหรับโอนผ่านธนาคาร คือ ' + BANK_TRANSFER_MIN_AMOUNT + ' บาท\nกรุณาใช้ช่องทาง พร้อมเพย์ แทน');
+                return false;
+            }
+        });
+    }
+});
 </script>
 @endpush
 

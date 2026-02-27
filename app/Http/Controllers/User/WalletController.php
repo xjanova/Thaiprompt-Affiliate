@@ -629,13 +629,18 @@ class WalletController extends Controller
 
     /**
      * Process Bank Transfer deposit
+     *
+     * ⚠️ ขั้นต่ำ 100 บาท - เนื่องจาก SMS แจ้งเตือนไม่ทำงานถ้ายอดต่ำกว่า 100 บาท
+     * ยอดต่ำกว่า 100 บาท → ต้องใช้ PromptPay เท่านั้น
      */
     public function depositBankTransfer(Request $request)
     {
         $request->validate([
-            'amount' => 'required|numeric|min:1|max:1000000',
+            'amount' => 'required|numeric|min:100|max:1000000',
             'slip' => 'required|image|mimes:jpeg,png,jpg|max:5120', // 5MB max
             'note' => 'nullable|string|max:500',
+        ], [
+            'amount.min' => 'ยอดขั้นต่ำสำหรับโอนผ่านธนาคาร คือ 100 บาท กรุณาใช้ช่องทางพร้อมเพย์สำหรับยอดต่ำกว่า 100 บาท',
         ]);
 
         try {
