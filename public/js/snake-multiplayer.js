@@ -1,28 +1,32 @@
 /**
- * Snake.io Multiplayer Manager (WebSocket Edition)
+ * Snake.io Multiplayer Manager (Polling Edition)
  *
- * จัดการการเชื่อมต่อ multiplayer ผ่าน Laravel Reverb WebSocket
+ * จัดการการเชื่อมต่อ multiplayer ผ่าน HTTP Polling
+ * - ใช้ polling ทุก 1.5 วินาทีเพื่อดึงสถานะห้อง
+ * - throttle การอัปเดตสถานะเพื่อไม่ให้เซิร์ฟเวอร์โอเวอร์โหลด
+ * - รองรับ custom server config
  */
 class SnakeMultiplayerManager {
     constructor(apiBaseUrl = '/api/games/snake-io', serverConfig = null) {
         // ✅ รองรับการตั้งค่า server แบบ custom (IP + Port)
         if (serverConfig && serverConfig.ip && serverConfig.port) {
-            // ใช้ full URL จาก server config
             this.apiBaseUrl = `http://${serverConfig.ip}:${serverConfig.port}/api/games/snake-io`;
             console.log('[Multiplayer] ใช้ custom server:', this.apiBaseUrl);
         } else {
-            // ใช้ relative path (สำหรับ localhost หรือ same domain)
             this.apiBaseUrl = apiBaseUrl;
         }
 
         this.roomId = null;
         this.playerId = null;
         this.roomCode = null;
-        this.channel = null; // WebSocket channel
         this.otherPlayers = new Map(); // Map<playerId, playerData>
         this.serverItems = new Map(); // Map<itemId, itemData>
 
-        // Callbacks สำหรับการรับ real-time events
+        // ✅ Throttle: ป้องกันการส่ง HTTP request ถี่เกินไป
+        this.lastUpdateTime = 0;
+        this.updateThrottleMs = 200; // ส่งได้ทุก 200ms (5 ครั้ง/วินาที สูงสุด)
+
+        // Callbacks สำหรับการรับ events
         this.onPlayerJoinedCallback = null;
         this.onPlayerLeftCallback = null;
         this.onPlayerMovedCallback = null;
@@ -63,7 +67,7 @@ class SnakeMultiplayerManager {
 
             console.log('[Multiplayer] เข้าร่วมห้อง:', this.roomCode, 'Player ID:', this.playerId);
 
-            // เชื่อมต่อ WebSocket channel (ใช้ polling แทน)
+            // เริ่ม polling
             this.connectWebSocket();
 
             return data;
@@ -74,20 +78,19 @@ class SnakeMultiplayerManager {
     }
 
     /**
-     * เชื่อมต่อ WebSocket channel (ใช้ Polling แทน WebSocket)
+     * เริ่ม polling สำหรับ room state
      */
     connectWebSocket() {
         console.log('[Multiplayer] เริ่ม polling สำหรับ room:', this.roomId);
 
-        // ✅ ใช้ Polling แทน WebSocket (ไม่ต้องใช้ Laravel Echo)
-        // โพลทุก 2 วินาที (เพื่อป้องกันเกมค้าง)
+        // ✅ Polling ทุก 1.5 วินาที (ลดจาก 2 วินาที)
         this.pollingInterval = setInterval(async () => {
             try {
                 await this.pollRoomState();
             } catch (error) {
-                console.error('[Multiplayer] Polling error:', error);
+                // Silent fail - ไม่ให้ error ซ้ำเยอะ
             }
-        }, 2000); // ✅ 2 วินาที (ปรับลดจาก 1 วินาที เพื่อไม่ให้เกมค้าง)
+        }, 1500);
     }
 
     /**
@@ -116,22 +119,27 @@ class SnakeMultiplayerManager {
 
             if (roomState.players && Array.isArray(roomState.players)) {
                 roomState.players.forEach(playerData => {
+                    // ✅ FIX: ใช้ 'id' ที่ server ส่งมา (ไม่ใช่ 'player_id')
+                    const pid = playerData.id || playerData.player_id;
+
                     // ข้ามตัวเอง
-                    if (playerData.player_id === this.playerId) {
+                    if (pid === this.playerId) {
                         return;
                     }
 
-                    newPlayerIds.add(playerData.player_id);
+                    newPlayerIds.add(pid);
 
                     // อัปเดตหรือสร้างผู้เล่นใหม่
-                    if (!this.otherPlayers.has(playerData.player_id)) {
+                    if (!this.otherPlayers.has(pid)) {
                         // ผู้เล่นใหม่เข้ามา
-                        console.log('[Multiplayer] ผู้เล่นใหม่เข้าร่วม:', playerData.player_name);
+                        const pname = playerData.name || playerData.player_name || 'Player';
+                        console.log('[Multiplayer] ผู้เล่นใหม่เข้าร่วม:', pname);
                     }
 
-                    this.otherPlayers.set(playerData.player_id, {
-                        id: playerData.player_id,
-                        name: playerData.player_name || 'Player',
+                    this.otherPlayers.set(pid, {
+                        id: pid,
+                        // ✅ FIX: ใช้ 'name' ที่ server ส่งมา (ไม่ใช่ 'player_name')
+                        name: playerData.name || playerData.player_name || 'Player',
                         skin: playerData.skin || 'classic',
                         position: playerData.position || { x: 0, y: 0, z: 0 },
                         direction: playerData.direction || { x: 1, y: 0, z: 0 },
@@ -151,12 +159,12 @@ class SnakeMultiplayerManager {
             }
 
         } catch (error) {
-            // Silent fail - ไม่ให้ error ซ้ำเยอะ
+            // Silent fail
         }
     }
 
     /**
-     * ยกเลิกการเชื่อมต่อ WebSocket
+     * ยกเลิก polling
      */
     disconnectWebSocket() {
         if (this.pollingInterval) {
@@ -195,9 +203,17 @@ class SnakeMultiplayerManager {
 
     /**
      * อัปเดตสถานะผู้เล่น (ส่งไปยัง server)
+     * ✅ มี throttle ป้องกันการส่งถี่เกินไป (ทุก 200ms)
      */
     async updatePlayerState(position, direction, score, length) {
         if (!this.playerId) return;
+
+        // ✅ Throttle: ส่งได้ทุก 200ms เท่านั้น
+        const now = Date.now();
+        if (now - this.lastUpdateTime < this.updateThrottleMs) {
+            return; // ข้าม - ยังไม่ถึงเวลาส่ง
+        }
+        this.lastUpdateTime = now;
 
         try {
             await fetch(`${this.apiBaseUrl}/update-state`, {
@@ -223,7 +239,7 @@ class SnakeMultiplayerManager {
                 }),
             });
         } catch (error) {
-            console.error('[Multiplayer] อัปเดตสถานะล้มเหลว:', error);
+            // Silent fail - ไม่บล็อก game loop
         }
     }
 
@@ -333,49 +349,6 @@ class SnakeMultiplayerManager {
         } catch (error) {
             console.error('[Multiplayer] ตรวจสอบ wallet ล้มเหลว:', error);
             return { success: false, authenticated: false };
-        }
-    }
-
-    /**
-     * อัปเดตข้อมูลผู้เล่นคนอื่น
-     */
-    updateOtherPlayers(players) {
-        // ล้างผู้เล่นเก่า
-        const currentPlayerIds = new Set();
-
-        players.forEach(playerData => {
-            // ข้ามตัวเอง
-            if (playerData.id === this.playerId) return;
-
-            currentPlayerIds.add(playerData.id);
-            this.otherPlayers.set(playerData.id, playerData);
-        });
-
-        // ลบผู้เล่นที่ออกไปแล้ว
-        for (const [playerId] of this.otherPlayers) {
-            if (!currentPlayerIds.has(playerId)) {
-                this.otherPlayers.delete(playerId);
-            }
-        }
-    }
-
-    /**
-     * อัปเดตข้อมูลไอเทม
-     */
-    updateItems(items) {
-        // ล้างไอเทมเก่า
-        const currentItemIds = new Set();
-
-        items.forEach(itemData => {
-            currentItemIds.add(itemData.id);
-            this.serverItems.set(itemData.id, itemData);
-        });
-
-        // ลบไอเทมที่หมดอายุ
-        for (const [itemId] of this.serverItems) {
-            if (!currentItemIds.has(itemId)) {
-                this.serverItems.delete(itemId);
-            }
         }
     }
 

@@ -1,11 +1,12 @@
 /**
  * Snake Game Sync Client
  *
- * Client สำหรับเชื่อมต่อกับ SnakeGameSyncService
- * - Lightweight และรวดเร็ว
- * - ใช้ Cache/Redis แทน database
+ * Client สำหรับเชื่อมต่อกับ SnakeGameSyncService (Cache-based)
+ * - Lightweight และรวดเร็ว (ไม่เขียน database)
+ * - รองรับทั้ง Redis และ File cache driver
+ * - Sync ทุก 1.5 วินาที (ส่งสถานะ + รับข้อมูลผู้เล่นอื่น)
  * - มี fail-safe - ถ้า error ก็ไม่กระทบเกม
- * - Optional multiplayer - เล่นแบบ offline ได้เสมอ
+ * - เก็บรายชื่อผู้เล่นอื่น สำหรับ rendering
  */
 class SnakeSyncClient {
     constructor() {
@@ -18,14 +19,20 @@ class SnakeSyncClient {
         this.syncInterval = null;
         this.csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
+        // ✅ เก็บสถานะปัจจุบันของผู้เล่น สำหรับส่งใน sync loop
+        this.currentState = null;
+
+        // ✅ เก็บรายชื่อผู้เล่นอื่นที่ active (สำหรับ rendering)
+        this.otherPlayersMap = new Map();
+
         // Callbacks
         this.onPlayersUpdate = null; // เรียกเมื่อได้ข้อมูลผู้เล่นคนอื่น
         this.onConnectionChange = null; // เรียกเมื่อสถานะการเชื่อมต่อเปลี่ยน
         this.onError = null; // เรียกเมื่อเกิด error
 
         // Config
-        this.syncIntervalMs = 3000; // sync ทุก 3 วินาที (ช้ากว่าเดิมเพื่อไม่ให้เกมค้าง)
-        this.maxRetries = 2; // พยายาม 2 ครั้งแล้วปิด
+        this.syncIntervalMs = 1500; // ✅ sync ทุก 1.5 วินาที (ลดจาก 3 วินาที)
+        this.maxRetries = 5; // ✅ พยายาม 5 ครั้ง (เพิ่มจาก 2)
         this.retryCount = 0;
     }
 
@@ -83,13 +90,28 @@ class SnakeSyncClient {
     }
 
     /**
-     * อัปเดตสถานะผู้เล่น (เรียกจากเกม)
+     * ตั้งค่าสถานะปัจจุบันของผู้เล่น (เรียกจาก game loop ทุก frame)
+     * ✅ ไม่ส่ง HTTP request - แค่เก็บข้อมูลไว้ให้ sync loop ส่งทีหลัง
      *
      * @param {Object} state {position, direction, score, length, is_alive}
+     */
+    setCurrentState(state) {
+        this.currentState = {
+            position: state.position || { x: 0, y: 0, z: 0 },
+            direction: state.direction || { x: 1, y: 0, z: 0 },
+            score: state.score || 0,
+            length: state.length || 5,
+            is_alive: state.is_alive !== undefined ? state.is_alive : true,
+        };
+    }
+
+    /**
+     * ส่งสถานะปัจจุบันไปยัง server (เรียกจาก sync loop)
+     *
      * @returns {Promise<boolean>}
      */
-    async updateState(state) {
-        if (!this.isConnected || !this.playerId) {
+    async sendStateUpdate() {
+        if (!this.isConnected || !this.playerId || !this.currentState) {
             return false;
         }
 
@@ -102,11 +124,11 @@ class SnakeSyncClient {
                 },
                 body: JSON.stringify({
                     player_id: this.playerId,
-                    position: state.position || { x: 0, y: 0, z: 0 },
-                    direction: state.direction || { x: 1, y: 0, z: 0 },
-                    score: state.score || 0,
-                    length: state.length || 5,
-                    is_alive: state.is_alive !== undefined ? state.is_alive : true,
+                    position: this.currentState.position,
+                    direction: this.currentState.direction,
+                    score: this.currentState.score,
+                    length: this.currentState.length,
+                    is_alive: this.currentState.is_alive,
                 }),
             });
 
@@ -115,7 +137,7 @@ class SnakeSyncClient {
             }
 
             const data = await response.json();
-            this.retryCount = 0; // Reset retry count on success
+            this.retryCount = 0;
             return data.success;
         } catch (error) {
             console.warn('[SnakeSync] อัปเดตสถานะล้มเหลว:', error.message);
@@ -125,11 +147,11 @@ class SnakeSyncClient {
     }
 
     /**
-     * ดึงผู้เล่น active ทั้งหมด
+     * ดึงผู้เล่น active ทั้งหมดจาก server
      *
      * @returns {Promise<Array>} รายการผู้เล่น
      */
-    async getActivePlayers() {
+    async fetchActivePlayers() {
         if (!this.isConnected || !this.playerId) {
             return [];
         }
@@ -147,9 +169,12 @@ class SnakeSyncClient {
             }
 
             const data = await response.json();
-            this.retryCount = 0; // Reset retry count on success
+            this.retryCount = 0;
 
             if (data.success && data.players) {
+                // ✅ อัปเดต otherPlayersMap สำหรับ rendering
+                this.updateOtherPlayersMap(data.players);
+
                 // Notify callback
                 if (this.onPlayersUpdate) {
                     this.onPlayersUpdate(data.players);
@@ -163,6 +188,45 @@ class SnakeSyncClient {
             this.handleError(error);
             return [];
         }
+    }
+
+    /**
+     * ✅ อัปเดต Map ของผู้เล่นอื่น (สำหรับ rendering)
+     * แปลง server data ให้อยู่ในรูปแบบที่ renderOtherPlayers() ใช้ได้
+     */
+    updateOtherPlayersMap(players) {
+        const newPlayerIds = new Set();
+
+        players.forEach(p => {
+            const pid = p.player_id;
+            newPlayerIds.add(pid);
+
+            this.otherPlayersMap.set(pid, {
+                id: pid,
+                name: p.player_name || 'Player',
+                skin: p.skin || 'classic',
+                position: p.position || { x: 0, y: 0, z: 0 },
+                direction: p.direction || { x: 1, y: 0, z: 0 },
+                score: p.score || 0,
+                length: p.length || 5,
+                is_alive: p.is_alive !== false,
+            });
+        });
+
+        // ลบผู้เล่นที่ออกไปแล้ว
+        for (const [playerId] of this.otherPlayersMap) {
+            if (!newPlayerIds.has(playerId)) {
+                this.otherPlayersMap.delete(playerId);
+            }
+        }
+    }
+
+    /**
+     * ✅ ดึงรายการผู้เล่นอื่น (สำหรับ rendering - compatible กับ multiplayerManager.getOtherPlayers())
+     * @returns {Array} รายการผู้เล่น
+     */
+    getOtherPlayers() {
+        return Array.from(this.otherPlayersMap.values());
     }
 
     /**
@@ -200,7 +264,7 @@ class SnakeSyncClient {
         }
 
         try {
-            // หยุด sync loop
+            // หยุด sync loop ก่อน
             this.stopSyncLoop();
 
             await fetch(`${this.apiBaseUrl}/leave`, {
@@ -217,6 +281,7 @@ class SnakeSyncClient {
             console.log('[SnakeSync] ออกจากเกม');
 
             this.isConnected = false;
+            this.otherPlayersMap.clear();
             this.notifyConnectionChange(false);
         } catch (error) {
             console.warn('[SnakeSync] ออกจากเกมล้มเหลว:', error.message);
@@ -252,7 +317,11 @@ class SnakeSyncClient {
     }
 
     /**
-     * เริ่ม sync loop (ดึงผู้เล่นคนอื่นทุก 3 วินาที)
+     * ✅ เริ่ม sync loop (ทุก 1.5 วินาที)
+     * ทำ 3 อย่างในแต่ละรอบ:
+     * 1. ส่งสถานะปัจจุบันไป server (ถ้ามี)
+     * 2. ดึงข้อมูลผู้เล่นอื่น
+     * 3. Ping เพื่อรักษา session
      */
     startSyncLoop() {
         // หยุด loop เดิม (ถ้ามี)
@@ -262,15 +331,27 @@ class SnakeSyncClient {
 
         this.syncInterval = setInterval(async () => {
             try {
-                // Ping เพื่อรักษา session
-                await this.ping();
+                // 1. ส่งสถานะปัจจุบัน (ถ้ามี)
+                if (this.currentState) {
+                    await this.sendStateUpdate();
+                }
 
-                // ดึงผู้เล่นคนอื่น
-                await this.getActivePlayers();
+                // 2. ดึงผู้เล่นคนอื่น
+                await this.fetchActivePlayers();
+
             } catch (error) {
                 console.warn('[SnakeSync] Sync loop error:', error.message);
             }
         }, this.syncIntervalMs);
+
+        // ✅ Ping แยก loop ทุก 10 วินาที (ไม่ต้อง ping ทุก sync)
+        this.pingInterval = setInterval(async () => {
+            try {
+                await this.ping();
+            } catch (error) {
+                // silent fail
+            }
+        }, 10000);
     }
 
     /**
@@ -280,8 +361,12 @@ class SnakeSyncClient {
         if (this.syncInterval) {
             clearInterval(this.syncInterval);
             this.syncInterval = null;
-            console.log('[SnakeSync] หยุด sync loop');
         }
+        if (this.pingInterval) {
+            clearInterval(this.pingInterval);
+            this.pingInterval = null;
+        }
+        console.log('[SnakeSync] หยุด sync loop');
     }
 
     /**
@@ -308,6 +393,7 @@ class SnakeSyncClient {
         this.stopSyncLoop();
         this.isConnected = false;
         this.playerId = null;
+        this.otherPlayersMap.clear();
         this.notifyConnectionChange(false);
         console.log('[SnakeSync] ตัดการเชื่อมต่อ - เล่นแบบ offline');
     }
@@ -354,5 +440,12 @@ class SnakeSyncClient {
      */
     getPlayerId() {
         return this.playerId;
+    }
+
+    /**
+     * ดึงจำนวนผู้เล่นอื่นที่เห็น
+     */
+    getOtherPlayerCount() {
+        return this.otherPlayersMap.size;
     }
 }
