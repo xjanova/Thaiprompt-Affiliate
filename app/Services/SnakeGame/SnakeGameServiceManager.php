@@ -36,7 +36,7 @@ class SnakeGameServiceManager
      */
     public function isOnline(): bool
     {
-        return Cache::get(self::CACHE_SERVICE_STATUS, self::STATUS_OFFLINE) === self::STATUS_ONLINE;
+        return Cache::get(self::CACHE_SERVICE_STATUS, self::STATUS_ONLINE) === self::STATUS_ONLINE;
     }
 
     /**

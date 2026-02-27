@@ -23,8 +23,8 @@ class SnakeGameSyncController extends Controller
     {
         $this->syncService = $syncService;
 
-        // Rate limiting: 120 requests/minute ต่อ IP
-        $this->middleware('throttle:120,1');
+        // Rate limiting: 180 requests/minute ต่อ IP (เพิ่มจาก 120 เพื่อรองรับ sync ทุก 1.5 วินาที)
+        $this->middleware('throttle:180,1');
     }
 
     /**
