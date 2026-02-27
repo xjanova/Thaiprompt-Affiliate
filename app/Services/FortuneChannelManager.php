@@ -1069,9 +1069,10 @@ class FortuneChannelManager
 
         // ส่ง Birth Chart ก่อนบิล (ถ้ามี) เพื่อให้ผู้ใช้เห็นภาพดวงดาวก่อนชำระเงิน
         $chartUrl = $result['chart_image_url'] ?? null;
+        $qrImageUrl = $result['payment_qr_url'] ?? null;
         $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
 
-        // ⚡ ใช้ replyToken ส่ง chart+payment รวมกัน (เร็วมาก!)
+        // ⚡ ใช้ replyToken ส่ง chart + QR + payment รวมกัน (เร็วมาก! LINE จำกัด 5 messages)
         if ($replyToken) {
             $replyMessages = [];
             if ($chartUrl) {
@@ -1079,6 +1080,14 @@ class FortuneChannelManager
                     'type' => 'image',
                     'originalContentUrl' => $chartUrl,
                     'previewImageUrl' => $chartUrl,
+                ];
+            }
+            // ส่ง PromptPay QR Code (Dynamic — มียอดเงินฝังอยู่ สแกนจ่ายได้เลย)
+            if ($qrImageUrl) {
+                $replyMessages[] = [
+                    'type' => 'image',
+                    'originalContentUrl' => $qrImageUrl,
+                    'previewImageUrl' => $qrImageUrl,
                 ];
             }
             $replyMessages[] = [
@@ -1102,6 +1111,18 @@ class FortuneChannelManager
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
+        // ส่ง PromptPay QR Code ผ่าน pushMessage (fallback)
+        if ($qrImageUrl) {
+            try {
+                $lineService->sendImage($userId, $qrImageUrl);
+                usleep(1000000); // 1s — ป้องกัน LINE rate limit
+            } catch (\Exception $qrErr) {
+                Log::warning('FortuneChannelManager LINE: ส่ง PromptPay QR ไม่สำเร็จ', [
+                    'error' => $qrErr->getMessage(),
                 ]);
             }
         }
@@ -1462,6 +1483,27 @@ class FortuneChannelManager
         $remainingMinutes = $uniquePayment?->expires_at ? max(0, (int) now()->diffInMinutes($uniquePayment->expires_at, false)) : 0;
 
         $flex = $lineService->buildWaitingPaymentFlexMessage($amount, $billRef, $expiresAt, $remainingMinutes);
+
+        // ส่ง PromptPay QR Code ซ้ำ (ถ้ามี) เพื่อให้ผู้ใช้สแกนจ่ายได้สะดวก
+        $qrImageUrl = $result['payment_qr_url'] ?? null;
+        if ($qrImageUrl && $replyToken) {
+            $replyMessages = [
+                [
+                    'type' => 'image',
+                    'originalContentUrl' => $qrImageUrl,
+                    'previewImageUrl' => $qrImageUrl,
+                ],
+                [
+                    'type' => 'flex',
+                    'altText' => '💰 ยอดชำระ ฿'.number_format($amount, 2),
+                    'contents' => $flex,
+                ],
+            ];
+            $sent = $lineService->replyMessage($replyToken, $replyMessages);
+            if ($sent) {
+                return true;
+            }
+        }
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, "💰 ยอดชำระ ฿".number_format($amount, 2), $replyToken);
     }

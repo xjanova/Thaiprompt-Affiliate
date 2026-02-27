@@ -333,6 +333,205 @@ class FortuneConversationService
     }
 
     /**
+     * สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน (EMVCo standard)
+     *
+     * สร้าง QR Code ที่มียอดเงินฝังอยู่ → ผู้ใช้สแกนจ่ายได้เลย
+     * ใช้ PromptPayProvider เดียวกับระบบ Checkout ของ E-commerce
+     *
+     * LINE ไม่รับ data URI → save เป็นไฟล์ PNG แล้ว return URL สาธารณะ
+     *
+     * @param float $amount ยอดเงินที่ต้องชำระ (unique amount รวมทศนิยม)
+     * @param int|null $readingId ID ของ FortuneReading (ใช้ตั้งชื่อไฟล์)
+     * @return string|null URL สาธารณะของ QR Code หรือ null ถ้าสร้างไม่ได้
+     */
+    protected function generatePromptPayQrImage(float $amount, ?int $readingId = null): ?string
+    {
+        try {
+            $provider = new \App\Services\Payment\PromptPayProvider();
+
+            // สร้าง QR Code เป็น data URI (SVG base64)
+            $dataUri = $provider->generateQrDataUri($amount);
+            if (empty($dataUri)) {
+                Log::warning('Fortune QR: PromptPay ไม่ได้ตั้งค่า — ไม่สามารถสร้าง QR ได้');
+
+                return null;
+            }
+
+            // ถ้าเป็น URL สาธารณะอยู่แล้ว (Google Charts fallback) → ใช้ได้เลย
+            if (str_starts_with($dataUri, 'https://')) {
+                return $dataUri;
+            }
+
+            // แปลง data URI (SVG/PNG) → save เป็นไฟล์ PNG สาธารณะ
+            // เพราะ LINE Messaging API ต้องการ URL ที่เข้าถึงได้จริง
+            $filename = 'fortune_pp_'.($readingId ?? uniqid()).'.png';
+            $directory = 'qrcodes/fortune';
+            $fullDir = storage_path('app/public/'.$directory);
+
+            if (! file_exists($fullDir)) {
+                mkdir($fullDir, 0755, true);
+            }
+
+            $fullPath = $fullDir.'/'.$filename;
+
+            // สร้าง EMVCo payload แล้ว render เป็น PNG ด้วย QrCode library
+            $emvPayload = $provider->buildPromptPayPayload(
+                $this->getPromptPayId(),
+                $this->getPromptPayType(),
+                $amount
+            );
+
+            if (empty($emvPayload)) {
+                return null;
+            }
+
+            // ลองใช้ BaconQrCode สร้าง PNG โดยตรง
+            if (class_exists(\BaconQrCode\Renderer\ImageRenderer::class)) {
+                $renderer = new \BaconQrCode\Renderer\ImageRenderer(
+                    new \BaconQrCode\Renderer\RendererStyle\RendererStyle(
+                        400, 1, null, null,
+                        \BaconQrCode\Renderer\RendererStyle\Fill::uniformColor(
+                            new \BaconQrCode\Renderer\Color\Rgb(255, 255, 255),
+                            new \BaconQrCode\Renderer\Color\Rgb(0, 0, 0)
+                        )
+                    ),
+                    new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
+                );
+
+                $writer = new \BaconQrCode\Writer($renderer);
+                $svg = $writer->writeString(
+                    $emvPayload,
+                    \BaconQrCode\Encoder\Encoder::DEFAULT_BYTE_MODE_ECODING,
+                    \BaconQrCode\Common\ErrorCorrectionLevel::H()
+                );
+
+                // Save SVG แทน (LINE รองรับ SVG ผ่าน URL)
+                $svgFilename = 'fortune_pp_'.($readingId ?? uniqid()).'.svg';
+                $svgPath = $fullDir.'/'.$svgFilename;
+                file_put_contents($svgPath, $svg);
+
+                $publicUrl = asset('storage/'.$directory.'/'.$svgFilename);
+
+                Log::info('Fortune QR: สร้าง PromptPay QR Code สำเร็จ (BaconQrCode)', [
+                    'amount' => $amount,
+                    'reading_id' => $readingId,
+                    'url' => $publicUrl,
+                ]);
+
+                return $publicUrl;
+            }
+
+            // Fallback: ใช้ SimpleSoftwareIO/QrCode (ถ้ามี)
+            if (class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
+                \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+                    ->size(400)
+                    ->margin(2)
+                    ->errorCorrection('H')
+                    ->generate($emvPayload, $fullPath);
+
+                $publicUrl = asset('storage/'.$directory.'/'.$filename);
+
+                Log::info('Fortune QR: สร้าง PromptPay QR Code สำเร็จ (SimpleSoftwareIO)', [
+                    'amount' => $amount,
+                    'reading_id' => $readingId,
+                    'url' => $publicUrl,
+                ]);
+
+                return $publicUrl;
+            }
+
+            // Fallback สุดท้าย: Google Charts API (ต้องมี internet)
+            $encodedPayload = urlencode($emvPayload);
+            $googleUrl = "https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl={$encodedPayload}&choe=UTF-8";
+
+            Log::info('Fortune QR: ใช้ Google Charts fallback', [
+                'amount' => $amount,
+                'reading_id' => $readingId,
+            ]);
+
+            return $googleUrl;
+
+        } catch (\Exception $e) {
+            Log::error('Fortune QR: สร้าง PromptPay QR ล้มเหลว', [
+                'amount' => $amount,
+                'reading_id' => $readingId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ดึง PromptPay ID จากบัญชีธนาคารที่ตั้งค่าไว้
+     *
+     * ลำดับ: 1) บัญชีธนาคารดูดวง 2) บัญชี SMS Checker 3) PaymentGateway config
+     *
+     * @return string PromptPay ID (เบอร์โทรหรือบัตรประชาชน)
+     */
+    protected function getPromptPayId(): string
+    {
+        // 1. เช็คบัญชีธนาคารดูดวง
+        $accounts = $this->settings->getFortuneBankAccounts();
+        foreach ($accounts as $account) {
+            if (method_exists($account, 'hasPromptpay') && $account->hasPromptpay()) {
+                return $account->promptpay_id;
+            }
+        }
+
+        // 2. เช็คบัญชี active ที่มี PromptPay
+        $bankAccount = \App\Models\PaymentBankAccount::active()
+            ->hasPromptpay()
+            ->orderByDesc('is_default')
+            ->first();
+
+        if ($bankAccount) {
+            return $bankAccount->promptpay_id;
+        }
+
+        // 3. Fallback: PaymentGateway config
+        try {
+            $gateway = \App\Models\PaymentGateway::findByCode('promptpay');
+
+            return $gateway?->getCredential('promptpay_id') ?? '';
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+
+    /**
+     * ดึงประเภท PromptPay (phone, citizen_id, ewallet)
+     *
+     * @return string ประเภท PromptPay
+     */
+    protected function getPromptPayType(): string
+    {
+        $accounts = $this->settings->getFortuneBankAccounts();
+        foreach ($accounts as $account) {
+            if (method_exists($account, 'hasPromptpay') && $account->hasPromptpay()) {
+                return $account->promptpay_type ?? 'phone';
+            }
+        }
+
+        $bankAccount = \App\Models\PaymentBankAccount::active()
+            ->hasPromptpay()
+            ->orderByDesc('is_default')
+            ->first();
+
+        if ($bankAccount) {
+            return $bankAccount->promptpay_type ?? 'phone';
+        }
+
+        try {
+            $gateway = \App\Models\PaymentGateway::findByCode('promptpay');
+
+            return $gateway?->getCredential('promptpay_type') ?? 'phone';
+        } catch (\Exception $e) {
+            return 'phone';
+        }
+    }
+
+    /**
      * ประมวลผลข้อความจาก Messenger
      *
      * @return array ผลลัพธ์ ['action' => '...', 'message' => '...', 'reading' => FortuneReading|null]
@@ -2301,11 +2500,17 @@ class FortuneConversationService
         }
         $message .= "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก";
 
+        // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน
+        $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
+        if (! $qrImageUrl) {
+            $qrImageUrl = $this->getPaymentQrImageUrl();
+        }
+
         return [
             'action' => 'waiting_payment',
             'message' => $message,
             'reading' => $reading,
-            'payment_qr_url' => $this->getPaymentQrImageUrl(),
+            'payment_qr_url' => $qrImageUrl,
         ];
     }
 
@@ -2384,8 +2589,15 @@ class FortuneConversationService
                 ]);
             }
 
-            // ดึง QR Code URL สำหรับชำระเงิน (ถ้ามี)
-            $qrImageUrl = $this->getPaymentQrImageUrl();
+            // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน (สแกนจ่ายได้เลย)
+            $qrImageUrl = $this->generatePromptPayQrImage(
+                (float) $uniqueAmount->unique_amount,
+                $reading->id
+            );
+            // Fallback: ใช้ static QR จากการตั้งค่า (ถ้า dynamic สร้างไม่ได้)
+            if (! $qrImageUrl) {
+                $qrImageUrl = $this->getPaymentQrImageUrl();
+            }
 
             return [
                 'action' => 'pending_payment',
