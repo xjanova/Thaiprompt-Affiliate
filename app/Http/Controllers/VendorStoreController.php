@@ -132,11 +132,11 @@ class VendorStoreController extends Controller
             'rating_count' => $store->rating_count ?? 0,
         ];
 
-        // ดึง layout settings ที่เผยแพร่แล้ว (ถ้ามี)
-        $layoutSettings = StoreLayoutSetting::getPublishedForUser($store->user_id);
+        // ดึง layout settings (ไม่ว่าจะ publish หรือยัง — บันทึกแล้วใช้ได้เลย)
+        $layoutSettings = StoreLayoutSetting::getForUser($store->user_id);
 
-        // ถ้ามี custom layout ที่เผยแพร่แล้ว ให้ใช้ view แบบ custom
-        if ($layoutSettings && $layoutSettings->is_published) {
+        // ถ้ามี layout settings ให้ใช้ view แบบ custom (รองรับ slider, sections, footer ฯลฯ)
+        if ($layoutSettings) {
             // ดึงสินค้าแนะนำ (featured products)
             $featuredProducts = null;
             if ($layoutSettings->show_featured_products) {

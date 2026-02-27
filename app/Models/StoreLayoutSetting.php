@@ -381,6 +381,14 @@ class StoreLayoutSetting extends Model
     }
 
     /**
+     * ดึง settings สำหรับ user (ไม่ว่าจะ publish หรือยัง)
+     */
+    public static function getForUser(int $userId): ?static
+    {
+        return static::forUser($userId)->first();
+    }
+
+    /**
      * ดึง settings ที่เผยแพร่แล้วสำหรับ user
      */
     public static function getPublishedForUser(int $userId): ?static
