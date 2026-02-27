@@ -3,620 +3,581 @@
 @section('title', 'Snake.io Service Monitor')
 
 @section('content')
-<div class="container-fluid py-4">
-    {{-- Header with Service Control --}}
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card bg-gradient-dark dark:bg-gray-800">
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <h2 class="text-white mb-0">
-                                🐍 Snake.io Service Monitor
-                            </h2>
-                            <p class="text-white-50 mb-0">
-                                Real-time multiplayer service monitoring
-                            </p>
-                        </div>
-                        <div class="col-md-6 text-md-end">
-                            {{-- Service Status Badge --}}
-                            <span id="service-status-badge" class="badge badge-lg
-                                {{ $status['is_online'] ? 'bg-success' : 'bg-secondary' }} me-2">
-                                <i class="fas {{ $status['is_online'] ? 'fa-circle' : 'fa-stop-circle' }} me-1"></i>
-                                <span id="status-text">{{ $status['is_online'] ? 'ONLINE' : 'OFFLINE' }}</span>
-                            </span>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6" x-data="snakeMonitor()">
 
-                            {{-- Start/Stop Buttons --}}
-                            @if($status['is_online'])
-                                <button onclick="stopService()" class="btn btn-warning btn-lg">
-                                    <i class="fas fa-stop me-1"></i> Stop Service
-                                </button>
-                            @else
-                                <button onclick="startService()" class="btn btn-success btn-lg">
-                                    <i class="fas fa-play me-1"></i> Start Service
-                                </button>
-                            @endif
-                        </div>
-                    </div>
+    {{-- ═══════════ Header ═══════════ --}}
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 p-6 shadow-xl">
+        {{-- พื้นหลัง pattern งู --}}
+        <div class="absolute inset-0 opacity-10">
+            <svg class="w-full h-full" viewBox="0 0 400 200" fill="none">
+                <path d="M0,100 Q50,50 100,100 T200,100 T300,100 T400,100" stroke="white" stroke-width="8" fill="none"/>
+                <circle cx="380" cy="100" r="15" fill="white"/>
+                <circle cx="372" cy="94" r="3" fill="black"/>
+            </svg>
+        </div>
+
+        <div class="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+                <h1 class="text-2xl sm:text-3xl font-bold text-white flex items-center gap-3">
+                    🐍 Snake.io Monitor
+                </h1>
+                <p class="text-green-100 text-sm mt-1">ระบบติดตามเกม Multiplayer แบบ Real-time</p>
+            </div>
+            <div class="flex items-center gap-3">
+                {{-- สถานะ Service --}}
+                <span id="service-status-badge"
+                      class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg
+                             {{ $status['is_online'] ? 'bg-green-400/90 text-green-900' : 'bg-gray-400/90 text-gray-800' }}">
+                    <span class="relative flex h-3 w-3">
+                        @if($status['is_online'])
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-600 opacity-75"></span>
+                        @endif
+                        <span class="relative inline-flex rounded-full h-3 w-3 {{ $status['is_online'] ? 'bg-green-700' : 'bg-gray-600' }}"></span>
+                    </span>
+                    <span id="status-text">{{ $status['is_online'] ? 'ONLINE' : 'OFFLINE' }}</span>
+                </span>
+
+                {{-- ปุ่ม Start/Stop --}}
+                @if($status['is_online'])
+                <button @click="stopService()"
+                        class="px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl font-semibold text-sm shadow-lg transition-all duration-200 hover:scale-105">
+                    ⏹️ หยุด Service
+                </button>
+                @else
+                <button @click="startService()"
+                        class="px-5 py-2.5 bg-emerald-400 hover:bg-emerald-500 text-emerald-900 rounded-xl font-semibold text-sm shadow-lg transition-all duration-200 hover:scale-105">
+                    ▶️ เริ่ม Service
+                </button>
+                @endif
+            </div>
+        </div>
+    </div>
+
+    {{-- ═══════════ Stats Cards ═══════════ --}}
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {{-- ผู้เล่นออนไลน์ --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xl shadow-lg">
+                    👥
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">ผู้เล่นออนไลน์</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-players" x-text="stats.totalPlayers">{{ $status['total_players'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- ห้องที่เปิดอยู่ --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white text-xl shadow-lg">
+                    🚪
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">ห้องที่เปิดอยู่</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-rooms" x-text="stats.totalRooms">{{ $status['total_rooms'] }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- กิจกรรมน่าสงสัย --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xl shadow-lg">
+                    ⚠️
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">กิจกรรมน่าสงสัย</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-suspicious" x-text="stats.suspicious">{{ count($suspiciousActivities) }}</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- คะแนนสูงสุด --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl p-5 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center text-white text-xl shadow-lg">
+                    🏆
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 font-medium">คะแนนสูงสุด</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format(collect($topScores)->first()?->score ?? 0) }}</p>
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Stats Cards --}}
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card dark:bg-gray-800">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar avatar-lg bg-gradient-primary rounded-3">
-                                <i class="fas fa-users text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Online Players</h6>
-                            <h3 class="mb-0 dark:text-white" id="total-players">{{ $status['total_players'] }}</h3>
-                        </div>
-                    </div>
-                </div>
+    {{-- ═══════════ ผู้เล่นที่กำลังเล่น (Real-time) ═══════════ --}}
+    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                🎮 ผู้เล่นที่กำลังเล่นอยู่
+                <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300"
+                      id="sync-players-count" x-text="syncPlayers.length">{{ count($syncPlayers ?? []) }}</span>
+            </h3>
+            <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                <span class="inline-flex h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+                Real-time Sync — อัปเดตทุก 5 วินาที
+            </div>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">Player ID</th>
+                        <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ชื่อ</th>
+                        <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">สกิน</th>
+                        <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ตำแหน่ง (X, Z)</th>
+                        <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">คะแนน</th>
+                        <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">ความยาว</th>
+                        <th class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 font-semibold">สถานะ</th>
+                    </tr>
+                </thead>
+                <tbody id="sync-players-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                    <template x-if="syncPlayers.length > 0">
+                        <template x-for="sp in syncPlayers" :key="sp.player_id">
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300 font-mono text-xs" x-text="(sp.player_id || '').substring(0, 20)"></td>
+                                <td class="px-4 py-3 text-gray-900 dark:text-white font-medium" x-text="sp.player_name || 'Player'"></td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300" x-text="sp.skin || 'classic'"></td>
+                                <td class="px-4 py-3 text-gray-600 dark:text-gray-300 font-mono text-xs" x-text="Math.round(sp.position?.x || 0) + ', ' + Math.round(sp.position?.z || 0)"></td>
+                                <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white" x-text="sp.score || 0"></td>
+                                <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-300" x-text="sp.length || 5"></td>
+                                <td class="px-4 py-3 text-center">
+                                    <span x-show="sp.is_alive !== false" class="px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300">🟢 มีชีวิต</span>
+                                    <span x-show="sp.is_alive === false" class="px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">💀 ตาย</span>
+                                </td>
+                            </tr>
+                        </template>
+                    </template>
+                    <template x-if="syncPlayers.length === 0">
+                        <tr>
+                            <td colspan="7" class="px-4 py-12 text-center">
+                                <div class="flex flex-col items-center gap-2 text-gray-400 dark:text-gray-500">
+                                    <span class="text-4xl">🎮</span>
+                                    <p class="font-medium">ยังไม่มีผู้เล่นที่กำลังเล่นอยู่</p>
+                                    <p class="text-xs">เมื่อมีคนเข้าเล่น จะแสดงข้อมูลที่นี่</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {{-- ═══════════ ผู้เล่นออนไลน์ + ห้อง (2 คอลัมน์) ═══════════ --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {{-- ผู้เล่นออนไลน์ --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    👥 ผู้เล่นออนไลน์ (Connected)
+                </h3>
+            </div>
+            <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ชื่อผู้เล่น</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">IP</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ห้อง</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">คะแนน</th>
+                            <th class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 font-semibold">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="players-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($onlinePlayers as $player)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">{{ $player['username'] }}</td>
+                            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">{{ $player['ip_address'] }}</td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300">{{ $player['room_id'] ?? '-' }}</td>
+                            <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">{{ $player['score'] }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <button @click="kickPlayer({{ $player['user_id'] }})"
+                                        class="px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg text-xs font-medium transition">
+                                    ⛔ Kick
+                                </button>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
+                                <span class="text-2xl block mb-1">😴</span>
+                                ไม่มีผู้เล่นออนไลน์
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card dark:bg-gray-800">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar avatar-lg bg-gradient-success rounded-3">
-                                <i class="fas fa-door-open text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Active Rooms</h6>
-                            <h3 class="mb-0 dark:text-white" id="total-rooms">{{ $status['total_rooms'] }}</h3>
-                        </div>
-                    </div>
-                </div>
+        {{-- ห้องที่เปิดอยู่ --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    🚪 ห้องที่เปิดอยู่
+                </h3>
             </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card dark:bg-gray-800">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar avatar-lg bg-gradient-warning rounded-3">
-                                <i class="fas fa-exclamation-triangle text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Suspicious Activities</h6>
-                            <h3 class="mb-0 dark:text-white" id="total-suspicious">{{ count($suspiciousActivities) }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card dark:bg-gray-800">
-                <div class="card-body">
-                    <div class="d-flex">
-                        <div class="flex-shrink-0">
-                            <div class="avatar avatar-lg bg-gradient-info rounded-3">
-                                <i class="fas fa-trophy text-white"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Top Score</h6>
-                            <h3 class="mb-0 dark:text-white">{{ $topScores->first()->score ?? 0 }}</h3>
-                        </div>
-                    </div>
-                </div>
+            <div class="overflow-x-auto max-h-80 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">Room ID</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ชื่อห้อง</th>
+                            <th class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 font-semibold">ผู้เล่น</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">สร้างเมื่อ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rooms-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($rooms as $room)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">{{ Str::limit($room['room_id'], 15) }}</td>
+                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">{{ $room['name'] }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                                    {{ $room['current_players'] }}/{{ $room['max_players'] }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{{ \Carbon\Carbon::parse($room['created_at'])->diffForHumans() }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
+                                <span class="text-2xl block mb-1">🏠</span>
+                                ยังไม่มีห้องที่เปิดอยู่
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 
-    {{-- Main Content --}}
-    <div class="row">
-        {{-- Online Players --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card dark:bg-gray-800">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0 dark:text-white">
-                        <i class="fas fa-users text-primary me-2"></i>
-                        Online Players
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm" id="players-table">
-                            <thead>
-                                <tr class="dark:text-gray-300">
-                                    <th>Username</th>
-                                    <th>IP Address</th>
-                                    <th>Room</th>
-                                    <th>Score</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="players-body">
-                                @forelse($onlinePlayers as $player)
-                                <tr class="dark:text-gray-400">
-                                    <td>{{ $player['username'] }}</td>
-                                    <td><code>{{ $player['ip_address'] }}</code></td>
-                                    <td>{{ $player['room_id'] ?? '-' }}</td>
-                                    <td>{{ $player['score'] }}</td>
-                                    <td>
-                                        <button class="btn btn-sm btn-danger" onclick="kickPlayer({{ $player['user_id'] }})">
-                                            <i class="fas fa-times"></i> Kick
-                                        </button>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">
-                                        No online players
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+    {{-- ═══════════ Leaderboard + Suspicious (2 คอลัมน์) ═══════════ --}}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {{-- 🏆 Top Scores (Leaderboard) --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    🏆 กระดานผู้นำ (Leaderboard)
+                </h3>
+            </div>
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-center text-gray-500 dark:text-gray-400 font-semibold w-12">#</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ผู้เล่น</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">คะแนน</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">เวลาเล่น</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">วันที่</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($topScores as $index => $entry)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors {{ $index < 3 ? 'bg-yellow-50/50 dark:bg-yellow-900/10' : '' }}">
+                            <td class="px-4 py-3 text-center">
+                                @if($index === 0)
+                                    <span class="text-xl">🥇</span>
+                                @elseif($index === 1)
+                                    <span class="text-xl">🥈</span>
+                                @elseif($index === 2)
+                                    <span class="text-xl">🥉</span>
+                                @else
+                                    <span class="text-gray-500 dark:text-gray-400 font-bold">{{ $index + 1 }}</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">{{ $entry->user->name ?? 'Unknown' }}</td>
+                            <td class="px-4 py-3 text-right font-bold text-amber-600 dark:text-amber-400">{{ number_format($entry->score) }}</td>
+                            <td class="px-4 py-3 text-right text-gray-600 dark:text-gray-300">
+                                @if($entry->playtime_seconds >= 60)
+                                    {{ floor($entry->playtime_seconds / 60) }} นาที {{ $entry->playtime_seconds % 60 }} วิ
+                                @else
+                                    {{ $entry->playtime_seconds }} วินาที
+                                @endif
+                            </td>
+                            <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{{ $entry->created_at->diffForHumans() }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
+                                <span class="text-2xl block mb-1">🏆</span>
+                                ยังไม่มีคะแนนในกระดานผู้นำ
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        {{-- Active Rooms --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card dark:bg-gray-800">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0 dark:text-white">
-                        <i class="fas fa-door-open text-success me-2"></i>
-                        Active Rooms
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm" id="rooms-table">
-                            <thead>
-                                <tr class="dark:text-gray-300">
-                                    <th>Room ID</th>
-                                    <th>Name</th>
-                                    <th>Players</th>
-                                    <th>Created</th>
-                                </tr>
-                            </thead>
-                            <tbody id="rooms-body">
-                                @forelse($rooms as $room)
-                                <tr class="dark:text-gray-400">
-                                    <td><code>{{ Str::limit($room['room_id'], 15) }}</code></td>
-                                    <td>{{ $room['name'] }}</td>
-                                    <td>
-                                        <span class="badge bg-primary">
-                                            {{ $room['current_players'] }}/{{ $room['max_players'] }}
-                                        </span>
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($room['created_at'])->diffForHumans() }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">
-                                        No active rooms
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+        {{-- ⚠️ Suspicious Activities --}}
+        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                    ⚠️ กิจกรรมน่าสงสัย
+                </h3>
+                <button @click="clearSuspicious()"
+                        class="px-3 py-1.5 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 dark:hover:bg-red-900/50 text-red-700 dark:text-red-400 rounded-lg text-xs font-medium transition">
+                    🗑️ ล้างทั้งหมด
+                </button>
             </div>
-        </div>
-
-        {{-- ✅ Real-time Sync Players (ผู้เล่นที่กำลังเล่นจริง) --}}
-        <div class="col-12 mb-4">
-            <div class="card dark:bg-gray-800">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0 dark:text-white">
-                        <i class="fas fa-gamepad text-info me-2"></i>
-                        ผู้เล่นที่กำลังเล่นอยู่ (Real-time Sync)
-                        <span class="badge bg-info ms-2" id="sync-players-count">{{ count($syncPlayers ?? []) }}</span>
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm" id="sync-players-table">
-                            <thead>
-                                <tr class="dark:text-gray-300">
-                                    <th>Player ID</th>
-                                    <th>ชื่อ</th>
-                                    <th>สกิน</th>
-                                    <th>ตำแหน่ง (X, Z)</th>
-                                    <th>คะแนน</th>
-                                    <th>ความยาว</th>
-                                    <th>สถานะ</th>
-                                </tr>
-                            </thead>
-                            <tbody id="sync-players-body">
-                                @forelse($syncPlayers ?? [] as $sp)
-                                <tr class="dark:text-gray-400">
-                                    <td><code>{{ Str::limit($sp['player_id'] ?? '', 20) }}</code></td>
-                                    <td>{{ $sp['player_name'] ?? 'Player' }}</td>
-                                    <td>{{ $sp['skin'] ?? 'classic' }}</td>
-                                    <td>{{ round($sp['position']['x'] ?? 0) }}, {{ round($sp['position']['z'] ?? 0) }}</td>
-                                    <td><strong>{{ $sp['score'] ?? 0 }}</strong></td>
-                                    <td>{{ $sp['length'] ?? 5 }}</td>
-                                    <td>
-                                        @if($sp['is_alive'] ?? true)
-                                            <span class="badge bg-success">มีชีวิต</span>
-                                        @else
-                                            <span class="badge bg-danger">ตาย</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="7" class="text-center text-muted">
-                                        ไม่มีผู้เล่นที่กำลังเล่นอยู่
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Top Scores --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card dark:bg-gray-800">
-                <div class="card-header bg-transparent">
-                    <h5 class="mb-0 dark:text-white">
-                        <i class="fas fa-trophy text-warning me-2"></i>
-                        Top Scores (Leaderboard)
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm">
-                            <thead>
-                                <tr class="dark:text-gray-300">
-                                    <th>#</th>
-                                    <th>Player</th>
-                                    <th>Score</th>
-                                    <th>Length</th>
-                                    <th>Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($topScores as $index => $entry)
-                                <tr class="dark:text-gray-400">
-                                    <td>
-                                        @if($index === 0)
-                                            <i class="fas fa-crown text-warning"></i>
-                                        @else
-                                            {{ $index + 1 }}
-                                        @endif
-                                    </td>
-                                    <td>{{ $entry->user->name ?? 'Unknown' }}</td>
-                                    <td><strong>{{ number_format($entry->score) }}</strong></td>
-                                    <td>{{ $entry->wave_reached }} ข้อ</td>
-                                    <td>{{ $entry->created_at->diffForHumans() }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="5" class="text-center text-muted">
-                                        No scores yet
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Suspicious Activities --}}
-        <div class="col-lg-6 mb-4">
-            <div class="card dark:bg-gray-800">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 dark:text-white">
-                        <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                        Suspicious Activities
-                    </h5>
-                    <button class="btn btn-sm btn-outline-danger" onclick="clearSuspicious()">
-                        <i class="fas fa-trash"></i> Clear
-                    </button>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-sm" id="suspicious-table">
-                            <thead>
-                                <tr class="dark:text-gray-300">
-                                    <th>User ID</th>
-                                    <th>Type</th>
-                                    <th>Details</th>
-                                    <th>Time</th>
-                                </tr>
-                            </thead>
-                            <tbody id="suspicious-body">
-                                @forelse($suspiciousActivities as $activity)
-                                <tr class="dark:text-gray-400">
-                                    <td>{{ $activity['user_id'] }}</td>
-                                    <td>
-                                        <span class="badge bg-warning">{{ $activity['type'] }}</span>
-                                    </td>
-                                    <td>
-                                        <small>{{ json_encode($activity['data']) }}</small>
-                                    </td>
-                                    <td>{{ \Carbon\Carbon::parse($activity['timestamp'])->diffForHumans() }}</td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="4" class="text-center text-muted">
-                                        No suspicious activities
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+            <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700/50 text-xs uppercase tracking-wider sticky top-0">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">User ID</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">ประเภท</th>
+                            <th class="px-4 py-3 text-left text-gray-500 dark:text-gray-400 font-semibold">รายละเอียด</th>
+                            <th class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 font-semibold">เวลา</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suspicious-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                        @forelse($suspiciousActivities as $activity)
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 font-mono text-xs">{{ $activity['user_id'] }}</td>
+                            <td class="px-4 py-3">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                                    {{ $activity['type'] }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-600 dark:text-gray-400 text-xs max-w-xs truncate">
+                                {{ json_encode($activity['data']) }}
+                            </td>
+                            <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">{{ \Carbon\Carbon::parse($activity['timestamp'])->diffForHumans() }}</td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="4" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500">
+                                <span class="text-2xl block mb-1">✅</span>
+                                ไม่พบกิจกรรมน่าสงสัย
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
 </div>
 
+{{-- ═══════════ Alpine.js Component ═══════════ --}}
 <script>
-/**
- * Auto-refresh ทุก 5 วินาที
- */
-let refreshInterval;
+function snakeMonitor() {
+    return {
+        stats: {
+            totalPlayers: {{ $status['total_players'] }},
+            totalRooms: {{ $status['total_rooms'] }},
+            suspicious: {{ count($suspiciousActivities) }},
+        },
+        syncPlayers: @json($syncPlayers ?? []),
+        refreshInterval: null,
 
-function startAutoRefresh() {
-    refreshInterval = setInterval(refreshData, 5000);
-}
+        init() {
+            this.startAutoRefresh();
+        },
 
-function stopAutoRefresh() {
-    if (refreshInterval) {
-        clearInterval(refreshInterval);
-    }
-}
+        destroy() {
+            this.stopAutoRefresh();
+        },
 
-/**
- * ดึงข้อมูลใหม่จาก API
- */
-async function refreshData() {
-    try {
-        const response = await fetch('/api/admin/games/snake-io/status', {
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
+        startAutoRefresh() {
+            this.refreshInterval = setInterval(() => this.refreshData(), 5000);
+        },
+
+        stopAutoRefresh() {
+            if (this.refreshInterval) {
+                clearInterval(this.refreshInterval);
             }
-        });
+        },
 
-        const data = await response.json();
+        async refreshData() {
+            try {
+                const response = await fetch('/api/admin/games/snake-io/status', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
 
-        if (data.success) {
-            // อัพเดท stats
-            document.getElementById('total-players').textContent = data.status.total_players;
-            document.getElementById('total-rooms').textContent = data.status.total_rooms;
+                if (data.success) {
+                    // อัปเดต stats
+                    this.stats.totalPlayers = data.status?.total_players ?? 0;
+                    this.stats.totalRooms = data.status?.total_rooms ?? 0;
 
-            // อัพเดท status badge
-            updateStatusBadge(data.status.is_online);
+                    // อัปเดต sync players
+                    if (data.sync_players) {
+                        this.syncPlayers = data.sync_players;
+                    }
 
-            // อัพเดท tables
-            updatePlayersTable(data.players);
-            updateRoomsTable(data.rooms);
+                    // อัปเดต status badge
+                    this.updateStatusBadge(data.status?.is_online);
 
-            // ✅ อัพเดทตาราง sync players (ผู้เล่นที่กำลังเล่นจริง)
-            if (data.sync_players) {
-                updateSyncPlayersTable(data.sync_players);
-                document.getElementById('sync-players-count').textContent = data.sync_players.length;
+                    // อัปเดตตาราง HTML (players + rooms)
+                    if (data.players) this.updatePlayersTable(data.players);
+                    if (data.rooms) this.updateRoomsTable(data.rooms);
+                }
+            } catch (error) {
+                console.error('Failed to refresh data:', error);
             }
-        }
-    } catch (error) {
-        console.error('Failed to refresh data:', error);
-    }
-}
+        },
 
-/**
- * อัพเดท status badge
- */
-function updateStatusBadge(isOnline) {
-    const badge = document.getElementById('service-status-badge');
-    const statusText = document.getElementById('status-text');
+        updateStatusBadge(isOnline) {
+            const badge = document.getElementById('service-status-badge');
+            const statusText = document.getElementById('status-text');
+            if (!badge || !statusText) return;
 
-    if (isOnline) {
-        badge.className = 'badge badge-lg bg-success me-2';
-        badge.querySelector('i').className = 'fas fa-circle me-1';
-        statusText.textContent = 'ONLINE';
-    } else {
-        badge.className = 'badge badge-lg bg-secondary me-2';
-        badge.querySelector('i').className = 'fas fa-stop-circle me-1';
-        statusText.textContent = 'OFFLINE';
-    }
-}
-
-/**
- * อัพเดทตารางผู้เล่น
- */
-function updatePlayersTable(players) {
-    const tbody = document.getElementById('players-body');
-
-    if (players.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No online players</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = players.map(player => `
-        <tr class="dark:text-gray-400">
-            <td>${player.username}</td>
-            <td><code>${player.ip_address}</code></td>
-            <td>${player.room_id || '-'}</td>
-            <td>${player.score}</td>
-            <td>
-                <button class="btn btn-sm btn-danger" onclick="kickPlayer(${player.user_id})">
-                    <i class="fas fa-times"></i> Kick
-                </button>
-            </td>
-        </tr>
-    `).join('');
-}
-
-/**
- * อัพเดทตารางห้อง
- */
-function updateRoomsTable(rooms) {
-    const tbody = document.getElementById('rooms-body');
-
-    if (rooms.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No active rooms</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = rooms.map(room => `
-        <tr class="dark:text-gray-400">
-            <td><code>${room.room_id.substring(0, 15)}</code></td>
-            <td>${room.name}</td>
-            <td>
-                <span class="badge bg-primary">
-                    ${room.current_players}/${room.max_players}
-                </span>
-            </td>
-            <td>${timeAgo(room.created_at)}</td>
-        </tr>
-    `).join('');
-}
-
-/**
- * Start service
- */
-async function startService() {
-    if (!confirm('Start multiplayer service?')) return;
-
-    try {
-        const response = await fetch('/api/admin/games/snake-io/start', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
+            if (isOnline) {
+                badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg bg-green-400/90 text-green-900';
+                statusText.textContent = 'ONLINE';
+            } else {
+                badge.className = 'inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg bg-gray-400/90 text-gray-800';
+                statusText.textContent = 'OFFLINE';
             }
-        });
+        },
 
-        const data = await response.json();
+        updatePlayersTable(players) {
+            const tbody = document.getElementById('players-body');
+            if (!tbody) return;
 
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        }
-    } catch (error) {
-        alert('Failed to start service: ' + error.message);
-    }
-}
-
-/**
- * Stop service
- */
-async function stopService() {
-    if (!confirm('Stop multiplayer service? Players will switch to offline mode.')) return;
-
-    try {
-        const response = await fetch('/api/admin/games/snake-io/stop', {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
+            if (!players || players.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500"><span class="text-2xl block mb-1">😴</span>ไม่มีผู้เล่นออนไลน์</td></tr>';
+                return;
             }
-        });
 
-        const data = await response.json();
+            tbody.innerHTML = players.map(p => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">${p.username}</td>
+                    <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">${p.ip_address}</td>
+                    <td class="px-4 py-3 text-gray-600 dark:text-gray-300">${p.room_id || '-'}</td>
+                    <td class="px-4 py-3 text-right font-bold text-gray-900 dark:text-white">${p.score}</td>
+                    <td class="px-4 py-3 text-center">
+                        <button onclick="document.querySelector('[x-data]').__x.$data.kickPlayer(${p.user_id})"
+                                class="px-3 py-1 bg-red-100 hover:bg-red-200 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-lg text-xs font-medium transition">
+                            ⛔ Kick
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        },
 
-        if (data.success) {
-            alert(data.message);
-            location.reload();
-        }
-    } catch (error) {
-        alert('Failed to stop service: ' + error.message);
-    }
-}
+        updateRoomsTable(rooms) {
+            const tbody = document.getElementById('rooms-body');
+            if (!tbody) return;
 
-/**
- * Kick player
- */
-async function kickPlayer(userId) {
-    if (!confirm(`Kick player ${userId}?`)) return;
-
-    try {
-        const response = await fetch(`/api/admin/games/snake-io/kick/${userId}`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                'Accept': 'application/json',
+            if (!rooms || rooms.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="px-4 py-10 text-center text-gray-400 dark:text-gray-500"><span class="text-2xl block mb-1">🏠</span>ยังไม่มีห้องที่เปิดอยู่</td></tr>';
+                return;
             }
-        });
 
-        const data = await response.json();
+            tbody.innerHTML = rooms.map(r => `
+                <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                    <td class="px-4 py-3 text-gray-500 dark:text-gray-400 font-mono text-xs">${(r.room_id || '').substring(0, 15)}</td>
+                    <td class="px-4 py-3 text-gray-900 dark:text-white font-medium">${r.name}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">${r.current_players}/${r.max_players}</span>
+                    </td>
+                    <td class="px-4 py-3 text-right text-gray-500 dark:text-gray-400 text-xs">${this.timeAgo(r.created_at)}</td>
+                </tr>
+            `).join('');
+        },
 
-        if (data.success) {
-            alert(data.message);
-            refreshData();
-        }
-    } catch (error) {
-        alert('Failed to kick player: ' + error.message);
-    }
+        timeAgo(timestamp) {
+            const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
+            if (seconds < 60) return seconds + ' วินาทีที่แล้ว';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' นาทีที่แล้ว';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' ชม.ที่แล้ว';
+            return Math.floor(seconds / 86400) + ' วันที่แล้ว';
+        },
+
+        async startService() {
+            if (!confirm('เริ่ม Multiplayer Service?')) return;
+            try {
+                const response = await fetch('/api/admin/games/snake-io/start', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + (data.message || 'Unknown'));
+                }
+            } catch (error) {
+                alert('ไม่สามารถเริ่ม Service: ' + error.message);
+            }
+        },
+
+        async stopService() {
+            if (!confirm('หยุด Multiplayer Service? ผู้เล่นจะเปลี่ยนเป็นโหมดออฟไลน์')) return;
+            try {
+                const response = await fetch('/api/admin/games/snake-io/stop', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + (data.message || 'Unknown'));
+                }
+            } catch (error) {
+                alert('ไม่สามารถหยุด Service: ' + error.message);
+            }
+        },
+
+        async kickPlayer(userId) {
+            if (!confirm(`Kick ผู้เล่น #${userId}?`)) return;
+            try {
+                const response = await fetch(`/api/admin/games/snake-io/kick/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.refreshData();
+                }
+            } catch (error) {
+                alert('ไม่สามารถ Kick ผู้เล่น: ' + error.message);
+            }
+        },
+
+        async clearSuspicious() {
+            if (!confirm('ล้างกิจกรรมน่าสงสัยทั้งหมด?')) return;
+            try {
+                const response = await fetch('/api/admin/games/snake-io/clear-data', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content,
+                        'Accept': 'application/json',
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.stats.suspicious = 0;
+                    location.reload();
+                }
+            } catch (error) {
+                alert('เกิดข้อผิดพลาด: ' + error.message);
+            }
+        },
+    };
 }
-
-/**
- * Helper: time ago
- */
-function timeAgo(timestamp) {
-    const seconds = Math.floor((new Date() - new Date(timestamp)) / 1000);
-
-    if (seconds < 60) return `${seconds}s ago`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-    return `${Math.floor(seconds / 86400)}d ago`;
-}
-
-/**
- * ✅ อัพเดทตารางผู้เล่น Sync (ที่กำลังเล่นจริง)
- */
-function updateSyncPlayersTable(syncPlayers) {
-    const tbody = document.getElementById('sync-players-body');
-    if (!tbody) return;
-
-    if (!syncPlayers || syncPlayers.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">ไม่มีผู้เล่นที่กำลังเล่นอยู่</td></tr>';
-        return;
-    }
-
-    tbody.innerHTML = syncPlayers.map(sp => `
-        <tr class="dark:text-gray-400">
-            <td><code>${(sp.player_id || '').substring(0, 20)}</code></td>
-            <td>${sp.player_name || 'Player'}</td>
-            <td>${sp.skin || 'classic'}</td>
-            <td>${Math.round(sp.position?.x || 0)}, ${Math.round(sp.position?.z || 0)}</td>
-            <td><strong>${sp.score || 0}</strong></td>
-            <td>${sp.length || 5}</td>
-            <td>
-                ${(sp.is_alive !== false) ? '<span class="badge bg-success">มีชีวิต</span>' : '<span class="badge bg-danger">ตาย</span>'}
-            </td>
-        </tr>
-    `).join('');
-}
-
-// Start auto-refresh on page load
-document.addEventListener('DOMContentLoaded', () => {
-    startAutoRefresh();
-});
-
-// Stop auto-refresh when leaving page
-window.addEventListener('beforeunload', () => {
-    stopAutoRefresh();
-});
 </script>
 @endsection
