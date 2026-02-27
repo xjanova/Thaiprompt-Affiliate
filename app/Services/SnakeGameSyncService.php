@@ -11,16 +11,17 @@ use Illuminate\Support\Facades\Log;
  * บริการจัดการ sync สำหรับเกม Snake.io โดยเฉพาะ
  * - ใช้ Cache แทน database (เร็วกว่า)
  * - รองรับทั้ง Redis และ File cache driver
- * - ใช้ Player Registry สำหรับติดตามผู้เล่นที่ active
- * - TTL 30 วินาที (ลบข้อมูลเก่าอัตโนมัติ)
+ * - ใช้ Player Registry แบ่งตาม room_id สำหรับติดตามผู้เล่นที่ active
+ * - TTL 60 วินาที (เพิ่มจาก 30 เพื่อลดปัญหาเน็ตหลุด)
  * - Lightweight - ไม่ทำให้เกมค้าง
  */
 class SnakeGameSyncService
 {
     /**
      * TTL สำหรับข้อมูลผู้เล่น (วินาที)
+     * เพิ่มจาก 30 เป็น 60 เพื่อลดปัญหาเน็ตหลุดชั่วคราว
      */
-    const PLAYER_TTL = 30;
+    const PLAYER_TTL = 60;
 
     /**
      * TTL สำหรับ session (วินาที)
@@ -34,9 +35,19 @@ class SnakeGameSyncService
 
     /**
      * Key สำหรับเก็บรายชื่อผู้เล่นทั้งหมด (Player Registry)
-     * ใช้แทน Redis pattern search เพื่อรองรับทุก cache driver
+     * ✅ เปลี่ยนเป็นแบ่งตาม room เพื่อให้ผู้เล่นเห็นเฉพาะคนในห้องเดียวกัน
      */
-    const PLAYERS_REGISTRY_KEY = 'snake_game:players_registry';
+    const PLAYERS_REGISTRY_PREFIX = 'snake_game:room_registry:';
+
+    /**
+     * Key เดิมสำหรับ global registry (backward compatible)
+     */
+    const GLOBAL_REGISTRY_KEY = 'snake_game:players_registry';
+
+    /**
+     * Default room สำหรับผู้เล่นที่ไม่ระบุห้อง
+     */
+    const DEFAULT_ROOM = 'default';
 
     /**
      * สร้าง game session ใหม่
@@ -44,14 +55,18 @@ class SnakeGameSyncService
      * @param  string  $playerId  ไอดีผู้เล่น (unique)
      * @param  string  $playerName  ชื่อผู้เล่น
      * @param  string  $skin  สกินที่ใช้
+     * @param  string  $roomId  ไอดีห้อง (ถ้าไม่ระบุจะใช้ default)
      * @return array session data
      */
-    public function createSession(string $playerId, string $playerName, string $skin): array
+    public function createSession(string $playerId, string $playerName, string $skin, string $roomId = ''): array
     {
+        $roomId = $roomId ?: self::DEFAULT_ROOM;
+
         $sessionData = [
             'player_id' => $playerId,
             'player_name' => $playerName,
             'skin' => $skin,
+            'room_id' => $roomId,
             'created_at' => now()->timestamp,
             'last_ping' => now()->timestamp,
         ];
@@ -60,11 +75,12 @@ class SnakeGameSyncService
         $key = $this->getSessionKey($playerId);
         Cache::put($key, $sessionData, self::SESSION_TTL);
 
-        // สร้าง initial state พร้อมชื่อและสกิน
+        // สร้าง initial state พร้อมชื่อ, สกิน, และห้อง
         $initialState = [
             'player_id' => $playerId,
             'player_name' => $playerName,
             'skin' => $skin,
+            'room_id' => $roomId,
             'position' => ['x' => 0, 'y' => 0, 'z' => 0],
             'direction' => ['x' => 1, 'y' => 0, 'z' => 0],
             'score' => 0,
@@ -76,10 +92,10 @@ class SnakeGameSyncService
         // เก็บ state เริ่มต้น
         Cache::put($this->getPlayerStateKey($playerId), $initialState, self::PLAYER_TTL);
 
-        // ลงทะเบียนใน Player Registry
-        $this->addToRegistry($playerId);
+        // ลงทะเบียนใน Room Registry
+        $this->addToRegistry($playerId, $roomId);
 
-        Log::info("[SnakeSync] สร้าง session: {$playerId} ({$playerName})");
+        Log::info("[SnakeSync] สร้าง session: {$playerId} ({$playerName}) ห้อง: {$roomId}");
 
         return $sessionData;
     }
@@ -93,15 +109,17 @@ class SnakeGameSyncService
     public function updatePlayerState(string $playerId, array $state): bool
     {
         try {
-            // ดึงข้อมูลจาก session เพื่อรวมชื่อและสกิน
+            // ดึงข้อมูลจาก session เพื่อรวมชื่อ, สกิน, และห้อง
             $session = Cache::get($this->getSessionKey($playerId));
             $playerName = $session['player_name'] ?? 'Player';
             $skin = $session['skin'] ?? 'classic';
+            $roomId = $session['room_id'] ?? self::DEFAULT_ROOM;
 
             $playerData = [
                 'player_id' => $playerId,
                 'player_name' => $playerName,
                 'skin' => $skin,
+                'room_id' => $roomId,
                 'position' => $state['position'] ?? ['x' => 0, 'y' => 0, 'z' => 0],
                 'direction' => $state['direction'] ?? ['x' => 1, 'y' => 0, 'z' => 0],
                 'score' => $state['score'] ?? 0,
@@ -118,7 +136,7 @@ class SnakeGameSyncService
             $this->pingSession($playerId);
 
             // อัปเดต timestamp ใน registry
-            $this->addToRegistry($playerId);
+            $this->addToRegistry($playerId, $roomId);
 
             return true;
         } catch (\Exception $e) {
@@ -129,16 +147,26 @@ class SnakeGameSyncService
     }
 
     /**
-     * ดึงผู้เล่นที่ active ทั้งหมด (ไม่รวมตัวเอง)
-     * ใช้ Player Registry แทน Redis pattern search เพื่อรองรับทุก cache driver
+     * ดึงผู้เล่นที่ active ทั้งหมดในห้องเดียวกัน (ไม่รวมตัวเอง)
+     * ✅ FIX: กรองเฉพาะผู้เล่นในห้องเดียวกัน
      *
      * @param  string  $excludePlayerId  ไอดีที่ไม่ต้องการ (ตัวเอง)
      * @param  int  $limit  จำนวนสูงสุด
+     * @param  string  $roomId  ห้องที่ต้องการ (ถ้าไม่ระบุจะดึงจาก session)
      */
-    public function getActivePlayers(string $excludePlayerId, int $limit = 10): array
+    public function getActivePlayers(string $excludePlayerId, int $limit = 10, string $roomId = ''): array
     {
         try {
-            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            // ถ้าไม่ระบุห้อง ดึงจาก session
+            if (empty($roomId)) {
+                $session = Cache::get($this->getSessionKey($excludePlayerId));
+                $roomId = $session['room_id'] ?? self::DEFAULT_ROOM;
+            }
+
+            // ดึง registry ของห้องนี้
+            $registryKey = self::PLAYERS_REGISTRY_PREFIX . $roomId;
+            $registry = Cache::get($registryKey, []);
+
             $players = [];
             $count = 0;
             $staleIds = [];
@@ -179,7 +207,7 @@ class SnakeGameSyncService
                 foreach ($staleIds as $staleId) {
                     unset($registry[$staleId]);
                 }
-                Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+                Cache::put($registryKey, $registry, self::SESSION_TTL);
             }
 
             return $players;
@@ -196,14 +224,18 @@ class SnakeGameSyncService
     public function playerDied(string $playerId): bool
     {
         try {
+            // ดึง room_id จาก session ก่อนลบ
+            $session = Cache::get($this->getSessionKey($playerId));
+            $roomId = $session['room_id'] ?? self::DEFAULT_ROOM;
+
             // ลบสถานะผู้เล่น
             $key = $this->getPlayerStateKey($playerId);
             Cache::forget($key);
 
-            // ลบจาก registry
-            $this->removeFromRegistry($playerId);
+            // ลบจาก room registry
+            $this->removeFromRegistry($playerId, $roomId);
 
-            Log::info("[SnakeSync] ผู้เล่นตาย: {$playerId}");
+            Log::info("[SnakeSync] ผู้เล่นตาย: {$playerId} ห้อง: {$roomId}");
 
             return true;
         } catch (\Exception $e) {
@@ -219,12 +251,16 @@ class SnakeGameSyncService
     public function leaveGame(string $playerId): bool
     {
         try {
+            // ดึง room_id จาก session ก่อนลบ
+            $session = Cache::get($this->getSessionKey($playerId));
+            $roomId = $session['room_id'] ?? self::DEFAULT_ROOM;
+
             // ลบทั้ง session, state, และ registry
             Cache::forget($this->getSessionKey($playerId));
             Cache::forget($this->getPlayerStateKey($playerId));
-            $this->removeFromRegistry($playerId);
+            $this->removeFromRegistry($playerId, $roomId);
 
-            Log::info("[SnakeSync] ผู้เล่นออก: {$playerId}");
+            Log::info("[SnakeSync] ผู้เล่นออก: {$playerId} ห้อง: {$roomId}");
 
             return true;
         } catch (\Exception $e) {
@@ -264,19 +300,18 @@ class SnakeGameSyncService
     public function cleanup(): int
     {
         try {
-            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            // ทำความสะอาดทั้ง global registry (backward compat) และ room registries
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
             $deletedCount = 0;
             $now = now()->timestamp;
 
-            foreach ($registry as $playerId => $joinTime) {
-                // ตรวจสอบว่า session ยังอยู่หรือไม่
+            foreach ($globalRegistry as $playerId => $joinTime) {
                 $session = Cache::get($this->getSessionKey($playerId));
                 $state = Cache::get($this->getPlayerStateKey($playerId));
 
                 $shouldRemove = false;
 
                 if (! $session && ! $state) {
-                    // ทั้ง session และ state หมดอายุแล้ว
                     $shouldRemove = true;
                 } elseif ($session) {
                     $lastPing = $session['last_ping'] ?? 0;
@@ -288,13 +323,13 @@ class SnakeGameSyncService
                 if ($shouldRemove) {
                     Cache::forget($this->getSessionKey($playerId));
                     Cache::forget($this->getPlayerStateKey($playerId));
-                    unset($registry[$playerId]);
+                    unset($globalRegistry[$playerId]);
                     $deletedCount++;
                 }
             }
 
-            // อัปเดต registry
-            Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+            // อัปเดต global registry
+            Cache::put(self::GLOBAL_REGISTRY_KEY, $globalRegistry, self::SESSION_TTL);
 
             if ($deletedCount > 0) {
                 Log::info("[SnakeSync] ทำความสะอาด: ลบ {$deletedCount} รายการ");
@@ -309,12 +344,39 @@ class SnakeGameSyncService
     }
 
     /**
-     * ดึงจำนวนผู้เล่น active
+     * ดึงจำนวนผู้เล่น active ทั้งหมด (ทุกห้อง)
      */
     public function getActivePlayerCount(): int
     {
         try {
-            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+            $count = 0;
+            $now = now()->timestamp;
+
+            foreach ($globalRegistry as $playerId => $joinTime) {
+                $playerData = Cache::get($this->getPlayerStateKey($playerId));
+                if ($playerData) {
+                    $timeSinceUpdate = $now - ($playerData['updated_at'] ?? 0);
+                    if ($timeSinceUpdate <= self::PLAYER_TTL) {
+                        $count++;
+                    }
+                }
+            }
+
+            return $count;
+        } catch (\Exception $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * ดึงจำนวนผู้เล่น active ในห้องที่ระบุ
+     */
+    public function getActivePlayerCountInRoom(string $roomId): int
+    {
+        try {
+            $registryKey = self::PLAYERS_REGISTRY_PREFIX . $roomId;
+            $registry = Cache::get($registryKey, []);
             $count = 0;
             $now = now()->timestamp;
 
@@ -335,48 +397,74 @@ class SnakeGameSyncService
     }
 
     /**
-     * เพิ่มผู้เล่นเข้า Player Registry (ใช้ lock ป้องกัน race condition)
+     * เพิ่มผู้เล่นเข้า Room Registry + Global Registry (ใช้ lock ป้องกัน race condition)
      */
-    protected function addToRegistry(string $playerId): void
+    protected function addToRegistry(string $playerId, string $roomId = ''): void
     {
-        $lock = Cache::lock('snake_registry_lock', 3);
+        $roomId = $roomId ?: self::DEFAULT_ROOM;
+        $registryKey = self::PLAYERS_REGISTRY_PREFIX . $roomId;
+
+        $lock = Cache::lock('snake_registry_lock_' . $roomId, 3);
 
         if ($lock->get()) {
             try {
-                $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+                // เพิ่มเข้า room registry
+                $registry = Cache::get($registryKey, []);
                 $registry[$playerId] = now()->timestamp;
-                Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+                Cache::put($registryKey, $registry, self::SESSION_TTL);
+
+                // เพิ่มเข้า global registry ด้วย (สำหรับ stats/cleanup)
+                $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+                $globalRegistry[$playerId] = now()->timestamp;
+                Cache::put(self::GLOBAL_REGISTRY_KEY, $globalRegistry, self::SESSION_TTL);
             } finally {
                 $lock->release();
             }
         } else {
-            // ถ้าไม่ได้ lock ให้ทำแบบเดิม (fallback สำหรับ file cache ที่ไม่รองรับ lock)
-            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            // fallback สำหรับ file cache ที่ไม่รองรับ lock
+            $registry = Cache::get($registryKey, []);
             $registry[$playerId] = now()->timestamp;
-            Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+            Cache::put($registryKey, $registry, self::SESSION_TTL);
+
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+            $globalRegistry[$playerId] = now()->timestamp;
+            Cache::put(self::GLOBAL_REGISTRY_KEY, $globalRegistry, self::SESSION_TTL);
         }
     }
 
     /**
-     * ลบผู้เล่นออกจาก Player Registry (ใช้ lock ป้องกัน race condition)
+     * ลบผู้เล่นออกจาก Room Registry + Global Registry (ใช้ lock ป้องกัน race condition)
      */
-    protected function removeFromRegistry(string $playerId): void
+    protected function removeFromRegistry(string $playerId, string $roomId = ''): void
     {
-        $lock = Cache::lock('snake_registry_lock', 3);
+        $roomId = $roomId ?: self::DEFAULT_ROOM;
+        $registryKey = self::PLAYERS_REGISTRY_PREFIX . $roomId;
+
+        $lock = Cache::lock('snake_registry_lock_' . $roomId, 3);
 
         if ($lock->get()) {
             try {
-                $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+                // ลบจาก room registry
+                $registry = Cache::get($registryKey, []);
                 unset($registry[$playerId]);
-                Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+                Cache::put($registryKey, $registry, self::SESSION_TTL);
+
+                // ลบจาก global registry
+                $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+                unset($globalRegistry[$playerId]);
+                Cache::put(self::GLOBAL_REGISTRY_KEY, $globalRegistry, self::SESSION_TTL);
             } finally {
                 $lock->release();
             }
         } else {
             // fallback
-            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            $registry = Cache::get($registryKey, []);
             unset($registry[$playerId]);
-            Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+            Cache::put($registryKey, $registry, self::SESSION_TTL);
+
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+            unset($globalRegistry[$playerId]);
+            Cache::put(self::GLOBAL_REGISTRY_KEY, $globalRegistry, self::SESSION_TTL);
         }
     }
 

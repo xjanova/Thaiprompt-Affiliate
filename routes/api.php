@@ -1213,28 +1213,33 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
 
 // ✅ Game Configuration API - ดึงค่า config จาก database
 Route::get('/games/config', function () {
-    // ดึงค่า config ทั้งหมดของเกมจากทุกกลุ่ม
-    $groups = [
-        'snake_io_server',
-        'snake_io_world',
-        'snake_io_movement',
-        'snake_io_camera',
-        'snake_io_scoring',
-        'snake_io_food',
-        'snake_io_bots',
-        'snake_io_powerups',
-        'snake_io_powerup_magnet',
-        'snake_io_powerup_speed',
-        'snake_io_powerup_multiplier',
-        'snake_io_powerup_zoom',
-        'snake_io_music',
-    ];
+    try {
+        // ดึงค่า config ทั้งหมดของเกมจากทุกกลุ่ม
+        $groups = [
+            'snake_io_server',
+            'snake_io_world',
+            'snake_io_movement',
+            'snake_io_camera',
+            'snake_io_scoring',
+            'snake_io_food',
+            'snake_io_bots',
+            'snake_io_powerups',
+            'snake_io_powerup_magnet',
+            'snake_io_powerup_speed',
+            'snake_io_powerup_multiplier',
+            'snake_io_powerup_zoom',
+            'snake_io_music',
+        ];
 
-    $allConfig = [];
-    foreach ($groups as $group) {
-        $groupConfig = \App\Models\GameSetting::getGroup($group);
-        $allConfig = array_merge($allConfig, $groupConfig);
-    }
+        $allConfig = [];
+
+        // ✅ ตรวจสอบว่าตาราง game_settings มีอยู่จริง
+        if (\Illuminate\Support\Facades\Schema::hasTable('game_settings')) {
+            foreach ($groups as $group) {
+                $groupConfig = \App\Models\GameSetting::getGroup($group);
+                $allConfig = array_merge($allConfig, $groupConfig);
+            }
+        }
 
     // จัดรูปแบบ response ให้เป็น camelCase และจัดกลุ่ม
     return response()->json([
@@ -1349,6 +1354,38 @@ Route::get('/games/config', function () {
             ],
         ],
     ]);
+
+    } catch (\Exception $e) {
+        // ✅ ถ้า database ไม่พร้อม ส่งค่า default กลับเป็น JSON (ไม่ใช่ HTML error)
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'server' => [
+                    'ip' => '123.253.62.251',
+                    'port' => 8080,
+                    'ws_port' => 6001,
+                    'enabled' => true,
+                    'max_players_per_room' => 30,
+                ],
+                'world' => ['size' => 200, 'initial_snake_length' => 5, 'segment_size' => 0.5, 'collision_distance' => 0.6],
+                'movement' => ['speed' => 0.15, 'boost_speed' => 0.3, 'turn_speed' => 0.05],
+                'camera' => ['initial_distance' => 15, 'zoomed_out_distance' => 50, 'zoom_speed' => 0.05],
+                'scoring' => ['food_value' => 1, 'points_per_growth' => 10, 'score_multiplier_base' => 1, 'save_score_enabled' => true],
+                'food' => ['count' => 100, 'spawn_rate' => 0.5, 'lifetime' => 0, 'value_min' => 1, 'value_max' => 1],
+                'bots' => ['count' => 30, 'max_spawn_per_frame' => 2, 'intelligence_level' => 5],
+                'powerups' => [
+                    'max_count' => 4, 'spawn_rate' => 0.02, 'global_lifetime' => 30000,
+                    'magnet' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'range' => 10],
+                    'speed' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'multiplier' => 2],
+                    'multiplier' => ['enabled' => true, 'duration' => 10000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'value' => 2],
+                    'zoom' => ['enabled' => true, 'duration' => 15000, 'spawn_chance' => 0.25, 'lifetime' => 30000, 'distance' => 50],
+                ],
+                'music' => ['enabled' => true, 'default_volume' => 0.5, 'title_tracks' => [], 'gameplay_tracks' => [], 'sfx_enabled' => true, 'sfx_default_volume' => 0.7],
+            ],
+            'fallback' => true,
+            'error' => $e->getMessage(),
+        ]);
+    }
 })->name('api.games.config');
 
 // ✅ Admin API Routes for Snake.io Service Monitor

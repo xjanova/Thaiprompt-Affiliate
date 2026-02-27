@@ -1542,13 +1542,20 @@
         function playMusic(mode) {
             if (!musicPlayer.enabled) return;
 
-            const tracks = mode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
-            if (!tracks || tracks.length === 0) return;
-
             // หยุดเพลงเก่า
             stopMusic();
 
             musicPlayer.currentMode = mode;
+            musicErrorCount = 0; // reset error count เมื่อเปลี่ยนโหมด
+
+            const tracks = mode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+
+            // ✅ FIX: ถ้าไม่มี tracks → เล่น procedural music
+            if (!tracks || tracks.length === 0) {
+                console.log('[Music] ไม่มี tracks - เล่น procedural music');
+                playProceduralMusic();
+                return;
+            }
 
             // เลือกเพลงตาม playMode
             if (musicPlayer.playMode === 'shuffle') {
@@ -1560,9 +1567,17 @@
             playTrackAtIndex(musicPlayer.currentTrackIndex);
         }
 
+        // ✅ ตัวนับ error ป้องกัน infinite loop
+        let musicErrorCount = 0;
+        const MAX_MUSIC_ERRORS = 5;
+
         function playTrackAtIndex(index) {
             const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
-            if (!tracks || index >= tracks.length || index < 0) return;
+            if (!tracks || index >= tracks.length || index < 0) {
+                // ✅ ถ้าไม่มี track เลย → เล่นเพลง procedural แทน
+                playProceduralMusic();
+                return;
+            }
 
             try {
                 const track = tracks[index];
@@ -1572,34 +1587,53 @@
 
                 // เมื่อเพลงจบ → เล่นเพลงถัดไป
                 audio.addEventListener('ended', () => {
-                    if (musicPlayer.playMode === 'loop') return; // loop จัดการเอง
+                    musicErrorCount = 0; // reset error count เมื่อเพลงจบปกติ
+                    if (musicPlayer.playMode === 'loop') return;
                     playNextTrack();
                 });
 
                 audio.addEventListener('error', () => {
                     console.warn('[Music] โหลดเพลงไม่สำเร็จ:', track.url);
-                    // ลองเพลงถัดไป
+                    musicErrorCount++;
+
+                    // ✅ FIX: ป้องกัน infinite error loop
+                    if (musicErrorCount >= MAX_MUSIC_ERRORS) {
+                        console.warn('[Music] ไฟล์เพลงโหลดไม่ได้ทั้งหมด - เปลี่ยนเป็น procedural music');
+                        musicErrorCount = 0;
+                        playProceduralMusic();
+                        return;
+                    }
+
                     setTimeout(() => playNextTrack(), 500);
                 });
 
                 audio.play().then(() => {
                     musicPlayer.isPlaying = true;
+                    musicErrorCount = 0; // reset เมื่อเล่นได้สำเร็จ
                     updateMusicUI();
                     console.log(`[Music] กำลังเล่น: ${track.name}`);
                 }).catch(e => {
-                    console.warn('[Music] ไม่สามารถเล่นเพลงได้ (ต้องมี user interaction):', e.message);
+                    console.warn('[Music] ไม่สามารถเล่นเพลงได้:', e.message);
+                    musicErrorCount++;
+                    if (musicErrorCount >= MAX_MUSIC_ERRORS) {
+                        playProceduralMusic();
+                    }
                 });
 
                 musicPlayer.currentAudio = audio;
                 musicPlayer.currentTrackIndex = index;
             } catch (error) {
                 console.warn('[Music] Error:', error);
+                playProceduralMusic();
             }
         }
 
         function playNextTrack() {
             const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
-            if (!tracks || tracks.length === 0) return;
+            if (!tracks || tracks.length === 0) {
+                playProceduralMusic();
+                return;
+            }
 
             let nextIndex;
             if (musicPlayer.playMode === 'shuffle') {
@@ -1610,13 +1644,159 @@
             playTrackAtIndex(nextIndex);
         }
 
+        /**
+         * ✅ Procedural Music Generator
+         * สร้างเพลง BGM แบบ synthesize เมื่อไฟล์ MP3 ไม่มี
+         * ใช้ Web Audio API สร้าง ambient/chiptune music
+         */
+        let proceduralMusicNodes = null;
+
+        function playProceduralMusic() {
+            if (!audioContext || !musicPlayer.enabled) return;
+            if (audioContext.state === 'suspended') audioContext.resume();
+
+            // หยุด procedural music เก่า (ถ้ามี)
+            stopProceduralMusic();
+
+            try {
+                const vol = musicPlayer.muted ? 0 : musicPlayer.volume * 0.3; // เบาลงเพื่อไม่รบกวน
+                const isTitle = musicPlayer.currentMode === 'title';
+
+                // สร้าง master gain
+                const masterGain = audioContext.createGain();
+                masterGain.gain.setValueAtTime(vol, audioContext.currentTime);
+                masterGain.connect(audioContext.destination);
+
+                // สร้าง nodes array เก็บไว้สำหรับ cleanup
+                const nodes = { oscillators: [], gains: [], masterGain, interval: null };
+
+                if (isTitle) {
+                    // Title: Ambient drone + slow arpeggio (สงบ, mysterious)
+                    // Drone bass
+                    const drone = audioContext.createOscillator();
+                    drone.type = 'sine';
+                    drone.frequency.setValueAtTime(55, audioContext.currentTime); // A1
+                    const droneGain = audioContext.createGain();
+                    droneGain.gain.setValueAtTime(0.4, audioContext.currentTime);
+                    drone.connect(droneGain);
+                    droneGain.connect(masterGain);
+                    drone.start();
+                    nodes.oscillators.push(drone);
+                    nodes.gains.push(droneGain);
+
+                    // Pad chord
+                    const padNotes = [130.81, 164.81, 196.00]; // C3, E3, G3
+                    padNotes.forEach(freq => {
+                        const osc = audioContext.createOscillator();
+                        osc.type = 'triangle';
+                        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+                        const g = audioContext.createGain();
+                        g.gain.setValueAtTime(0.15, audioContext.currentTime);
+                        osc.connect(g);
+                        g.connect(masterGain);
+                        osc.start();
+                        nodes.oscillators.push(osc);
+                        nodes.gains.push(g);
+                    });
+
+                    // Slow arpeggio (ทุก 2 วินาที)
+                    const arpeggioNotes = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C4-E4-G4-C5-G4-E4
+                    let noteIdx = 0;
+                    nodes.interval = setInterval(() => {
+                        if (!audioContext || !musicPlayer.isPlaying) return;
+                        const osc = audioContext.createOscillator();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(arpeggioNotes[noteIdx % arpeggioNotes.length], audioContext.currentTime);
+                        const g = audioContext.createGain();
+                        g.gain.setValueAtTime(0.2 * (musicPlayer.muted ? 0 : musicPlayer.volume), audioContext.currentTime);
+                        g.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 1.8);
+                        osc.connect(g);
+                        g.connect(masterGain);
+                        osc.start();
+                        osc.stop(audioContext.currentTime + 2);
+                        noteIdx++;
+                    }, 2000);
+                } else {
+                    // Gameplay: Upbeat chiptune bass + rhythm (สนุก, ตื่นเต้น)
+                    // Bass pattern
+                    const bassNotes = [65.41, 73.42, 82.41, 73.42]; // C2, D2, E2, D2
+                    let bassIdx = 0;
+                    nodes.interval = setInterval(() => {
+                        if (!audioContext || !musicPlayer.isPlaying) return;
+                        const currentVol = musicPlayer.muted ? 0 : musicPlayer.volume * 0.3;
+
+                        // Bass note
+                        const bass = audioContext.createOscillator();
+                        bass.type = 'square';
+                        bass.frequency.setValueAtTime(bassNotes[bassIdx % bassNotes.length], audioContext.currentTime);
+                        const bg = audioContext.createGain();
+                        bg.gain.setValueAtTime(0.25 * currentVol, audioContext.currentTime);
+                        bg.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.2);
+                        bass.connect(bg);
+                        bg.connect(audioContext.destination);
+                        bass.start();
+                        bass.stop(audioContext.currentTime + 0.25);
+
+                        // Melody note (octave up)
+                        if (bassIdx % 2 === 0) {
+                            const mel = audioContext.createOscillator();
+                            mel.type = 'square';
+                            const melodyNotes = [523.25, 587.33, 659.25, 783.99, 659.25, 587.33];
+                            mel.frequency.setValueAtTime(melodyNotes[bassIdx % melodyNotes.length], audioContext.currentTime);
+                            const mg = audioContext.createGain();
+                            mg.gain.setValueAtTime(0.12 * currentVol, audioContext.currentTime);
+                            mg.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.15);
+                            mel.connect(mg);
+                            mg.connect(audioContext.destination);
+                            mel.start();
+                            mel.stop(audioContext.currentTime + 0.2);
+                        }
+
+                        bassIdx++;
+                    }, 250); // 240 BPM feel
+                }
+
+                proceduralMusicNodes = nodes;
+                musicPlayer.isPlaying = true;
+                musicPlayer.currentAudio = { // fake Audio interface สำหรับ toggle/volume
+                    pause: () => stopProceduralMusic(),
+                    play: () => playProceduralMusic(),
+                    set volume(v) { if (nodes.masterGain) nodes.masterGain.gain.setValueAtTime(v * 0.3, audioContext.currentTime); },
+                    get volume() { return musicPlayer.volume; },
+                    set src(v) { /* no-op */ },
+                };
+                updateMusicUI();
+                console.log(`[Music] กำลังเล่น: Procedural ${isTitle ? 'Ambient' : 'Chiptune'}`);
+            } catch (error) {
+                console.warn('[Music] Procedural music error:', error);
+            }
+        }
+
+        function stopProceduralMusic() {
+            if (proceduralMusicNodes) {
+                try {
+                    proceduralMusicNodes.oscillators.forEach(osc => {
+                        try { osc.stop(); } catch(e) {}
+                    });
+                    if (proceduralMusicNodes.interval) {
+                        clearInterval(proceduralMusicNodes.interval);
+                    }
+                } catch(e) {}
+                proceduralMusicNodes = null;
+            }
+        }
+
         function stopMusic() {
+            // หยุด HTML5 Audio
             if (musicPlayer.currentAudio) {
                 musicPlayer.currentAudio.pause();
                 musicPlayer.currentAudio.src = '';
                 musicPlayer.currentAudio = null;
             }
+            // ✅ หยุด procedural music ด้วย
+            stopProceduralMusic();
             musicPlayer.isPlaying = false;
+            musicErrorCount = 0; // reset error count
             updateMusicUI();
         }
 
@@ -2955,17 +3135,23 @@
             updateConnectionStatus('offline', '⚡ RECONNECTING...');
 
             try {
-                // ✅ Reconnect sync client ก่อน (primary) - ทำความสะอาด session เก่า
+                // ✅ Reconnect sync client - ดึง room_id เก่าก่อนทำความสะอาด
+                let oldRoomId = null;
                 if (syncClient) {
+                    oldRoomId = syncClient.getRoomId();
                     try { await syncClient.leave(); } catch(e) {}
                     syncClient = null;
                 }
+                // ดึงจาก multiplayerManager ด้วย
+                if (!oldRoomId && multiplayerManager && multiplayerManager.roomCode) {
+                    oldRoomId = multiplayerManager.roomCode;
+                }
 
                 syncClient = new SnakeSyncClient();
-                const syncJoined = await syncClient.join(playerName, selectedSkin);
+                const syncJoined = await syncClient.join(playerName, selectedSkin, oldRoomId);
 
                 if (syncJoined) {
-                    console.log('[Connection] Sync reconnect สำเร็จ!');
+                    console.log('[Connection] Sync reconnect สำเร็จ! ห้อง:', syncClient.getRoomId());
                     reconnectAttempts = 0;
                     updateConnectionStatus('online', '🌐 ONLINE MODE');
                     return true;
@@ -3090,21 +3276,8 @@
                 console.log('[Service] กำลังเชื่อมต่อ multiplayer...');
                 updateConnectionStatus('offline', '⚡ CONNECTING...');
 
-                // ✅ เชื่อมต่อ Sync Client ก่อน (สำคัญที่สุดสำหรับ real-time)
-                syncClient = new SnakeSyncClient();
-                const syncJoined = await syncClient.join(playerName, selectedSkin);
-
-                if (syncJoined) {
-                    console.log('🌐 [Service] Sync เชื่อมต่อสำเร็จ!');
-                    updateConnectionStatus('online', '🌐 ONLINE MODE');
-                    startConnectionMonitoring();
-                    reconnectAttempts = 0;
-                } else {
-                    syncClient = null;
-                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
-                }
-
-                // ✅ เชื่อมต่อ DB Manager (optional - สำหรับ room/score)
+                // ✅ เชื่อมต่อ DB Manager ก่อน (เพื่อได้ room_code)
+                let roomCodeConnect = null;
                 try {
                     multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
                         ip: CONFIG.GAME_SERVER_IP,
@@ -3115,13 +3288,28 @@
                         setTimeout(() => reject(new Error('Connection timeout')), 5000)
                     );
 
-                    await Promise.race([
+                    const joinRes = await Promise.race([
                         multiplayerManager.joinGame(playerName, selectedSkin),
                         timeoutPromise
                     ]);
+                    roomCodeConnect = joinRes.room_code;
                 } catch (dbError) {
                     console.warn('[Service] DB join ล้มเหลว (ไม่กระทบเกม):', dbError.message);
                     multiplayerManager = null;
+                }
+
+                // ✅ เชื่อมต่อ Sync Client พร้อม room_id
+                syncClient = new SnakeSyncClient();
+                const syncJoined = await syncClient.join(playerName, selectedSkin, roomCodeConnect);
+
+                if (syncJoined) {
+                    console.log('🌐 [Service] Sync เชื่อมต่อสำเร็จ! ห้อง:', syncClient.getRoomId());
+                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                    startConnectionMonitoring();
+                    reconnectAttempts = 0;
+                } else {
+                    syncClient = null;
+                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                 }
 
             } catch (error) {
@@ -3244,20 +3432,8 @@
                             console.log('[Multiplayer] Service เปิดอยู่ - กำลังเชื่อมต่อ...');
                             updateConnectionStatus('offline', '⚡ CONNECTING...');
 
-                            // ✅ เชื่อมต่อ Sync Client (Cache-based - สำหรับ real-time sync)
-                            syncClient = new SnakeSyncClient();
-                            const syncJoined = await syncClient.join(playerName, selectedSkin);
-
-                            if (syncJoined) {
-                                console.log('🌐 [SnakeSync] เชื่อมต่อ sync สำเร็จ!');
-                                isOnline = true;
-                                updateConnectionStatus('online', '🌐 ONLINE MODE');
-                            } else {
-                                console.warn('[SnakeSync] Sync join ล้มเหลว');
-                                syncClient = null;
-                            }
-
-                            // ✅ เชื่อมต่อ DB Multiplayer Manager (สำหรับ room, score, wallet)
+                            // ✅ เชื่อมต่อ DB Multiplayer Manager ก่อน (เพื่อได้ room_code)
+                            let roomCode = null;
                             try {
                                 multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
                                     ip: CONFIG.GAME_SERVER_IP,
@@ -3273,10 +3449,24 @@
                                     timeoutPromise
                                 ]);
 
-                                console.log('🌐 [Multiplayer] เข้าร่วมห้อง:', joinResult.room_code);
+                                roomCode = joinResult.room_code;
+                                console.log('🌐 [Multiplayer] เข้าร่วมห้อง:', roomCode);
                             } catch (dbError) {
                                 console.warn('[Multiplayer] DB join ล้มเหลว (ไม่กระทบเกม):', dbError.message);
                                 multiplayerManager = null;
+                            }
+
+                            // ✅ เชื่อมต่อ Sync Client พร้อม room_id (ให้เห็นเฉพาะคนในห้องเดียวกัน)
+                            syncClient = new SnakeSyncClient();
+                            const syncJoined = await syncClient.join(playerName, selectedSkin, roomCode);
+
+                            if (syncJoined) {
+                                console.log('🌐 [SnakeSync] เชื่อมต่อ sync สำเร็จ! ห้อง:', syncClient.getRoomId());
+                                isOnline = true;
+                                updateConnectionStatus('online', '🌐 ONLINE MODE');
+                            } else {
+                                console.warn('[SnakeSync] Sync join ล้มเหลว');
+                                syncClient = null;
                             }
 
                             // ถ้า sync สำเร็จ = ถือว่า online

@@ -43,10 +43,13 @@ class GameRoomManager
      */
     public function findOrCreateAvailableRoom(int $gameId): GameRoom
     {
-        // ค้นหาห้องที่รอผู้เล่นและยังไม่เต็ม
+        // ค้นหาห้องที่ยังไม่เต็ม (ทั้ง waiting และ active)
+        // ⚠️ FIX: เดิมค้นแค่ 'waiting' ทำให้ห้องมีได้แค่ 2 คน
+        // เพราะห้องเปลี่ยนเป็น 'active' เมื่อมี 2 คน แล้วคนที่ 3 หาห้องไม่เจอ
         $room = GameRoom::where('game_id', $gameId)
-            ->where('status', 'waiting')
+            ->whereIn('status', ['waiting', 'active'])
             ->where('current_players', '<', self::MAX_PLAYERS_PER_ROOM)
+            ->orderBy('current_players', 'desc') // เข้าห้องที่มีคนมากสุดก่อน (เล่นสนุกกว่า)
             ->first();
 
         // ถ้าไม่มีห้องว่าง สร้างห้องใหม่

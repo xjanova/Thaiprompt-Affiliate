@@ -4,7 +4,9 @@
  * Client สำหรับเชื่อมต่อกับ SnakeGameSyncService (Cache-based)
  * - Lightweight และรวดเร็ว (ไม่เขียน database)
  * - รองรับทั้ง Redis และ File cache driver
- * - Sync ทุก 1.5 วินาที (ส่งสถานะ + รับข้อมูลผู้เล่นอื่น)
+ * - ✅ รองรับ room_id เพื่อแยกผู้เล่นตามห้อง
+ * - Sync ทุก 1 วินาที (ปรับจาก 1.5 ให้เร็วขึ้น)
+ * - ส่ง update + fetch พร้อมกัน (parallel) แทน sequential
  * - มี fail-safe - ถ้า error ก็ไม่กระทบเกม
  * - เก็บรายชื่อผู้เล่นอื่น สำหรับ rendering
  */
@@ -14,6 +16,7 @@ class SnakeSyncClient {
         this.playerId = null;
         this.playerName = null;
         this.skin = null;
+        this.roomId = null; // ✅ เก็บ room_id
         this.isConnected = false;
         this.lastSyncTime = 0;
         this.syncInterval = null;
@@ -31,8 +34,8 @@ class SnakeSyncClient {
         this.onError = null; // เรียกเมื่อเกิด error
 
         // Config
-        this.syncIntervalMs = 1500; // ✅ sync ทุก 1.5 วินาที (ลดจาก 3 วินาที)
-        this.maxRetries = 5; // ✅ พยายาม 5 ครั้ง (เพิ่มจาก 2)
+        this.syncIntervalMs = 1000; // ✅ sync ทุก 1 วินาที (ลดจาก 1.5 ให้ responsive ขึ้น)
+        this.maxRetries = 5;
         this.retryCount = 0;
     }
 
@@ -41,20 +44,28 @@ class SnakeSyncClient {
      *
      * @param {string} playerName ชื่อผู้เล่น
      * @param {string} skin สกินที่ใช้
+     * @param {string} roomId ห้องที่ต้องการเข้า (optional)
      * @returns {Promise<boolean>} สำเร็จหรือไม่
      */
-    async join(playerName, skin) {
+    async join(playerName, skin, roomId) {
         try {
+            const body = {
+                player_name: playerName,
+                skin: skin || 'classic',
+            };
+
+            // ✅ ส่ง room_id ถ้ามี
+            if (roomId) {
+                body.room_id = roomId;
+            }
+
             const response = await fetch(`${this.apiBaseUrl}/join`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': this.csrfToken,
                 },
-                body: JSON.stringify({
-                    player_name: playerName,
-                    skin: skin || 'classic',
-                }),
+                body: JSON.stringify(body),
             });
 
             if (!response.ok) {
@@ -67,10 +78,11 @@ class SnakeSyncClient {
                 this.playerId = data.player_id;
                 this.playerName = playerName;
                 this.skin = skin;
+                this.roomId = data.room_id || roomId || 'default'; // ✅ เก็บ room_id
                 this.isConnected = true;
                 this.retryCount = 0;
 
-                console.log('[SnakeSync] เข้าร่วมสำเร็จ:', this.playerId);
+                console.log('[SnakeSync] เข้าร่วมสำเร็จ:', this.playerId, 'ห้อง:', this.roomId);
 
                 // เริ่ม sync loop
                 this.startSyncLoop();
@@ -147,7 +159,7 @@ class SnakeSyncClient {
     }
 
     /**
-     * ดึงผู้เล่น active ทั้งหมดจาก server
+     * ดึงผู้เล่น active ทั้งหมดจาก server (เฉพาะห้องเดียวกัน)
      *
      * @returns {Promise<Array>} รายการผู้เล่น
      */
@@ -317,11 +329,8 @@ class SnakeSyncClient {
     }
 
     /**
-     * ✅ เริ่ม sync loop (ทุก 1.5 วินาที)
-     * ทำ 3 อย่างในแต่ละรอบ:
-     * 1. ส่งสถานะปัจจุบันไป server (ถ้ามี)
-     * 2. ดึงข้อมูลผู้เล่นอื่น
-     * 3. Ping เพื่อรักษา session
+     * ✅ เริ่ม sync loop (ทุก 1 วินาที)
+     * ✅ FIX: ส่ง update + fetch พร้อมกัน (parallel) แทน sequential
      */
     startSyncLoop() {
         // หยุด loop เดิม (ถ้ามี)
@@ -331,13 +340,18 @@ class SnakeSyncClient {
 
         this.syncInterval = setInterval(async () => {
             try {
+                // ✅ FIX: ส่ง update + fetch พร้อมกัน (ลด latency ลงครึ่งหนึ่ง)
+                const promises = [];
+
                 // 1. ส่งสถานะปัจจุบัน (ถ้ามี)
                 if (this.currentState) {
-                    await this.sendStateUpdate();
+                    promises.push(this.sendStateUpdate());
                 }
 
-                // 2. ดึงผู้เล่นคนอื่น
-                await this.fetchActivePlayers();
+                // 2. ดึงผู้เล่นคนอื่น (ทำพร้อมกัน)
+                promises.push(this.fetchActivePlayers());
+
+                await Promise.allSettled(promises);
 
             } catch (error) {
                 console.warn('[SnakeSync] Sync loop error:', error.message);
@@ -393,6 +407,7 @@ class SnakeSyncClient {
         this.stopSyncLoop();
         this.isConnected = false;
         this.playerId = null;
+        this.roomId = null;
         this.otherPlayersMap.clear();
         this.notifyConnectionChange(false);
         console.log('[SnakeSync] ตัดการเชื่อมต่อ - เล่นแบบ offline');
@@ -440,6 +455,13 @@ class SnakeSyncClient {
      */
     getPlayerId() {
         return this.playerId;
+    }
+
+    /**
+     * ดึง room ID
+     */
+    getRoomId() {
+        return this.roomId;
     }
 
     /**

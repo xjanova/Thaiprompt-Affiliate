@@ -13,6 +13,7 @@ use Illuminate\Support\Str;
  * จัดการ API endpoints สำหรับ sync เกม Snake.io
  * - Lightweight และรวดเร็ว
  * - ใช้ Cache แทน database
+ * - รองรับ room_id เพื่อแยกผู้เล่นตามห้อง
  * - มี rate limiting
  */
 class SnakeGameSyncController extends Controller
@@ -23,8 +24,8 @@ class SnakeGameSyncController extends Controller
     {
         $this->syncService = $syncService;
 
-        // Rate limiting: 180 requests/minute ต่อ IP (เพิ่มจาก 120 เพื่อรองรับ sync ทุก 1.5 วินาที)
-        $this->middleware('throttle:180,1');
+        // Rate limiting: 360 requests/minute ต่อ IP (เพิ่มจาก 180 เพื่อรองรับหลายคนจาก IP เดียว)
+        $this->middleware('throttle:360,1');
     }
 
     /**
@@ -38,21 +39,24 @@ class SnakeGameSyncController extends Controller
             $validated = $request->validate([
                 'player_name' => 'required|string|max:20',
                 'skin' => 'nullable|string|max:100',
+                'room_id' => 'nullable|string|max:50',
             ]);
 
             // สร้าง unique player ID
             $playerId = 'player_'.Str::uuid();
 
-            // สร้าง session
+            // สร้าง session พร้อม room_id
             $session = $this->syncService->createSession(
                 $playerId,
                 $validated['player_name'],
-                $validated['skin'] ?? 'classic'
+                $validated['skin'] ?? 'classic',
+                $validated['room_id'] ?? ''
             );
 
             return response()->json([
                 'success' => true,
                 'player_id' => $playerId,
+                'room_id' => $session['room_id'] ?? 'default',
                 'session' => $session,
                 'message' => 'เข้าร่วมเกมสำเร็จ',
             ]);
@@ -114,13 +118,14 @@ class SnakeGameSyncController extends Controller
     }
 
     /**
-     * ดึงผู้เล่น active ทั้งหมด (ไม่รวมตัวเอง)
+     * ดึงผู้เล่น active ทั้งหมดในห้องเดียวกัน (ไม่รวมตัวเอง)
      *
      * GET /api/snake-sync/players/{playerId}
      */
     public function getActivePlayers(string $playerId): JsonResponse
     {
         try {
+            // ✅ getActivePlayers จะดึง room_id จาก session อัตโนมัติ
             $players = $this->syncService->getActivePlayers($playerId, 10);
 
             return response()->json([
