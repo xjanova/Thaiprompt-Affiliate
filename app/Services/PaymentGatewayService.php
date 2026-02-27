@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\WalletSetting;
+use App\Services\Payment\PromptPayProvider;
 use Exception;
 use Illuminate\Support\Facades\Log;
 
@@ -206,13 +207,33 @@ class PaymentGatewayService
     }
 
     /**
-     * Generate PromptPay QR Code
+     * สร้าง PromptPay QR Code จริง ผ่าน PromptPayProvider
+     *
+     * ใช้ EMVCo payload ตามมาตรฐาน BOT + BaconQrCode render เป็น SVG
+     * Fallback เป็น Google Charts API ถ้าไม่มี library
+     *
+     * @param float $amount จำนวนเงิน (บาท)
+     * @param array $metadata ข้อมูลเพิ่มเติม
+     * @return string data URI ของ QR Code หรือ URL ของ QR Code
      */
     protected function generatePromptPayQRCode(float $amount, array $metadata = []): string
     {
-        // In production, integrate with PromptPay QR Code generator
-        // For now, return a placeholder
-        return 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+        try {
+            $provider = app(PromptPayProvider::class);
+            $qrDataUri = $provider->generateQrDataUri($amount);
+
+            if (! empty($qrDataUri)) {
+                return $qrDataUri;
+            }
+
+            Log::warning('PromptPay QR Code: generateQrDataUri คืนค่าว่าง — อาจยังไม่ได้ตั้งค่า PromptPay ID');
+
+            return '';
+        } catch (\Exception $e) {
+            Log::error('PromptPay QR Code generation failed: '.$e->getMessage());
+
+            return '';
+        }
     }
 
     /**

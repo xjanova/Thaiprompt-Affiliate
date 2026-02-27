@@ -78,10 +78,32 @@
 
         <div class="flex flex-col items-center">
             <!-- QR Code Display -->
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg border-4 border-indigo-100">
-                <img src="{{ $result['qr_code'] }}"
-                     alt="PromptPay QR Code"
-                     class="w-64 h-64 md:w-80 md:h-80">
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-4 border-green-200 inline-block">
+                @php
+                    $qrCode = $result['qr_code'] ?? '';
+                @endphp
+                @if(!empty($qrCode) && (str_starts_with($qrCode, 'data:image/') || str_starts_with($qrCode, 'https://')))
+                    {{-- QR Code เป็น data URI (BaconQrCode) หรือ URL (Google Charts) → ใช้เป็น src โดยตรง --}}
+                    <img src="{{ $qrCode }}"
+                         alt="PromptPay QR Code"
+                         class="w-64 h-64 md:w-80 md:h-80"
+                         onerror="this.parentElement.innerHTML='<div class=\'w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg\'><p class=\'text-gray-500 text-center p-4\'>ไม่สามารถโหลด QR Code ได้</p></div>'">
+                @elseif(!empty($qrCode))
+                    {{-- QR Code เป็น raw payload text → สร้างผ่าน api.qrserver.com --}}
+                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data={{ urlencode($qrCode) }}"
+                         alt="PromptPay QR Code"
+                         class="w-64 h-64 md:w-80 md:h-80"
+                         onerror="this.parentElement.innerHTML='<div class=\'w-64 h-64 flex items-center justify-center bg-gray-100 rounded-lg\'><p class=\'text-gray-500 text-center p-4\'>ไม่สามารถโหลด QR Code ได้</p></div>'">
+                @else
+                    {{-- ไม่มี QR Code → แสดงข้อความแจ้ง --}}
+                    <div class="w-64 h-64 md:w-80 md:h-80 bg-gray-100 dark:bg-gray-800 flex items-center justify-center rounded-lg">
+                        <div class="text-center p-4">
+                            <p class="text-5xl mb-3">⚠️</p>
+                            <p class="text-gray-600 dark:text-gray-400 font-semibold">ไม่สามารถสร้าง QR Code ได้</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-500 mt-2">กรุณาตรวจสอบการตั้งค่า PromptPay<br>หรือติดต่อผู้ดูแลระบบ</p>
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <div class="mt-6 text-center">
