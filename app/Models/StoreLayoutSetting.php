@@ -353,15 +353,31 @@ class StoreLayoutSetting extends Model
 
     /**
      * ดึงหรือสร้าง settings สำหรับ user
+     *
+     * ถ้าสร้างใหม่ จะ inherit สีจาก VendorStore อัตโนมัติ
      */
     public static function getOrCreateForUser(int $userId): static
     {
-        return static::firstOrCreate(
-            ['user_id' => $userId],
-            [
-                'is_published' => false,
-            ]
-        );
+        $existing = static::where('user_id', $userId)->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        // สร้างใหม่ — inherit สีจาก VendorStore ถ้ามี
+        $defaults = ['is_published' => false];
+        $store = VendorStore::where('user_id', $userId)->first();
+
+        if ($store) {
+            if ($store->primary_color) {
+                $defaults['primary_color'] = $store->primary_color;
+            }
+            if ($store->secondary_color) {
+                $defaults['secondary_color'] = $store->secondary_color;
+            }
+        }
+
+        return static::create(array_merge(['user_id' => $userId], $defaults));
     }
 
     /**

@@ -6,11 +6,23 @@
 <meta name="description" content="{{ $store->store_description ?? 'ร้านค้าออนไลน์' }}">
 @endsection
 
+@push('styles')
+<style>
+    :root {
+        --store-primary: {{ $store->primary_color ?? '#6366f1' }};
+        --store-secondary: {{ $store->secondary_color ?? '#8b5cf6' }};
+    }
+</style>
+@if($store->custom_css)
+<style>{!! $store->custom_css !!}</style>
+@endif
+@endpush
+
 @section('content')
 <div class="min-h-screen bg-transparent">
 
     <!-- Premium Store Header -->
-    <div class="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600">
+    <div class="relative overflow-hidden" style="background: linear-gradient(135deg, {{ $store->primary_color ?? '#6366f1' }}, {{ $store->secondary_color ?? '#8b5cf6' }})">
         <!-- Background Pattern -->
         @if($store->store_banner)
             <div class="absolute inset-0">
@@ -52,7 +64,7 @@
                             {{ $store->store_name }}
                         </h1>
                         @if($store->store_description)
-                            <p class="text-xl md:text-2xl text-purple-100 mb-6 font-medium">
+                            <p class="text-xl md:text-2xl text-white/80 mb-6 font-medium">
                                 {{ $store->store_description }}
                             </p>
                         @endif
@@ -138,7 +150,7 @@
             <aside class="lg:w-80 flex-shrink-0">
                 <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 overflow-hidden sticky top-4">
                     <!-- Filters Header -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-4">
+                    <div class="text-white px-6 py-4" style="background: linear-gradient(135deg, {{ $store->primary_color ?? '#6366f1' }}, {{ $store->secondary_color ?? '#8b5cf6' }})">
                         <h2 class="text-lg font-bold flex items-center gap-2">
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd"/>
@@ -151,26 +163,26 @@
                         <!-- Search -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
                                 </svg>
                                 ค้นหาสินค้า
                             </label>
                             <input type="text" name="search" value="{{ request('search') }}"
                                    placeholder="ชื่อสินค้า..."
-                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all placeholder-gray-400">
+                                   class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all placeholder-gray-400">
                         </div>
 
                         <!-- Categories -->
                         @if($categories->count() > 0)
                             <div>
                                 <label class="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                    <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                                         <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
                                     </svg>
                                     หมวดหมู่
                                 </label>
-                                <select name="category" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all font-medium">
+                                <select name="category" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all font-medium">
                                     <option value="">ทั้งหมด</option>
                                     @foreach($categories as $category)
                                         <option value="{{ $category->slug }}" {{ request('category') == $category->slug ? 'selected' : '' }}>
@@ -184,7 +196,7 @@
                         <!-- Price Range -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"/>
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"/>
                                 </svg>
@@ -193,25 +205,25 @@
                             <div class="space-y-3">
                                 <input type="number" name="min_price" value="{{ request('min_price') }}"
                                        placeholder="ต่ำสุด"
-                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all placeholder-gray-400">
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all placeholder-gray-400">
                                 <div class="flex items-center justify-center">
                                     <div class="h-0.5 w-4 bg-gray-300"></div>
                                 </div>
                                 <input type="number" name="max_price" value="{{ request('max_price') }}"
                                        placeholder="สูงสุด"
-                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all placeholder-gray-400">
+                                       class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all placeholder-gray-400">
                             </div>
                         </div>
 
                         <!-- Sort -->
                         <div>
                             <label class="block text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
-                                <svg class="w-4 h-4 text-indigo-600" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-4 h-4 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M3 3a1 1 0 000 2h11a1 1 0 100-2H3zM3 7a1 1 0 000 2h7a1 1 0 100-2H3zM3 11a1 1 0 100 2h4a1 1 0 100-2H3zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z"/>
                                 </svg>
                                 เรียงตาม
                             </label>
-                            <select name="sort" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 transition-all font-medium">
+                            <select name="sort" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-4 focus:ring-gray-100 transition-all font-medium">
                                 <option value="latest" {{ request('sort') == 'latest' ? 'selected' : '' }}>ล่าสุด</option>
                                 <option value="popular" {{ request('sort') == 'popular' ? 'selected' : '' }}>ยอดนิยม</option>
                                 <option value="price_low" {{ request('sort') == 'price_low' ? 'selected' : '' }}>ราคาต่ำ-สูง</option>
@@ -223,7 +235,7 @@
 
                         <!-- Buttons -->
                         <div class="flex flex-col gap-3 pt-4 border-t-2 border-gray-100">
-                            <button type="submit" class="w-full px-6 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                            <button type="submit" class="w-full px-6 py-3.5 hover:opacity-90 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2" style="background: linear-gradient(135deg, {{ $store->primary_color ?? '#6366f1' }}, {{ $store->secondary_color ?? '#8b5cf6' }})">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/>
                                 </svg>
@@ -249,12 +261,12 @@
                 <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg p-6 mb-6 border border-gray-100 dark:border-gray-700">
                     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                         <div class="flex items-center gap-3">
-                            <div class="w-12 h-12 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-xl flex items-center justify-center">
-                                <span class="text-xl font-black text-indigo-600">{{ $products->total() }}</span>
+                            <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, {{ ($store->primary_color ?? '#6366f1') . '33' }}, {{ ($store->secondary_color ?? '#8b5cf6') . '33' }})">
+                                <span class="text-xl font-black text-gray-600">{{ $products->total() }}</span>
                             </div>
                             <div>
                                 <div class="text-gray-900 font-bold">
-                                    พบ <span class="text-indigo-600">{{ number_format($products->total()) }}</span> สินค้า
+                                    พบ <span class="text-gray-600">{{ number_format($products->total()) }}</span> สินค้า
                                 </div>
                                 <div class="text-sm text-gray-500">
                                     แสดง {{ $products->count() }} รายการ
@@ -295,7 +307,7 @@
                         </p>
                         @if(request()->hasAny(['search', 'category', 'min_price', 'max_price']))
                             <a href="{{ route('store.show', $store->store_slug) }}"
-                               class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all">
+                               class="inline-flex items-center gap-2 px-8 py-3 hover:opacity-90 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all" style="background: linear-gradient(135deg, {{ $store->primary_color ?? '#6366f1' }}, {{ $store->secondary_color ?? '#8b5cf6' }})">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                     <path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/>
                                 </svg>
@@ -314,7 +326,7 @@
             <div class="container mx-auto px-4 py-12">
                 <div class="max-w-5xl mx-auto">
                     <h3 class="text-2xl font-black text-gray-900 mb-8 flex items-center gap-3">
-                        <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, {{ $store->primary_color ?? '#6366f1' }}, {{ $store->secondary_color ?? '#8b5cf6' }})">
                             <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                             </svg>
