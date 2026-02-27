@@ -117,6 +117,8 @@
 
                             @if($setting->type === 'boolean')
                                 {{-- Boolean Toggle --}}
+                                {{-- ⚠️ hidden ต้องอยู่ก่อน checkbox เพื่อให้ checkbox override ได้เมื่อ checked --}}
+                                <input type="hidden" name="{{ $setting->key }}" value="false">
                                 <label class="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -130,11 +132,24 @@
                                         {{ $setting->value === 'true' ? 'เปิด' : 'ปิด' }}
                                     </span>
                                 </label>
-                                <input type="hidden" name="{{ $setting->key }}" value="false">
 
                             @elseif($setting->type === 'json')
                                 {{-- JSON Music Track Manager --}}
-                                <div x-data="audioTrackManager('{{ $setting->key }}', {{ $setting->value ?? '[]' }})" class="space-y-4">
+                                @php
+                                    // ป้องกัน double-encoded JSON: decode จนกว่าจะได้ array
+                                    $tracksRaw = $setting->value ?? '[]';
+                                    $tracksDecoded = json_decode($tracksRaw, true);
+                                    // ถ้า decode แล้วได้ string อีก → double-encoded → decode ซ้ำ
+                                    if (is_string($tracksDecoded)) {
+                                        $tracksDecoded = json_decode($tracksDecoded, true);
+                                    }
+                                    // ตรวจสอบว่าเป็น array จริง
+                                    if (!is_array($tracksDecoded)) {
+                                        $tracksDecoded = [];
+                                    }
+                                    $tracksJson = json_encode($tracksDecoded);
+                                @endphp
+                                <div x-data="audioTrackManager('{{ $setting->key }}', {{ $tracksJson }})" class="space-y-4">
                                     {{-- รายการ tracks ปัจจุบัน --}}
                                     <div class="space-y-2">
                                         <template x-for="(track, index) in tracks" :key="index">

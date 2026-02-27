@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\GameSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -47,6 +49,15 @@ class GameSettingsController extends Controller
                 $setting = GameSetting::where('key', $key)->first();
 
                 if ($setting) {
+                    // สำหรับ type json: ค่าจากฟอร์มจะเป็น JSON string อยู่แล้ว
+                    // ต้อง decode ก่อนส่งเข้า set() เพื่อป้องกัน double-encoding
+                    if ($setting->type === 'json' && is_string($value)) {
+                        $decoded = json_decode($value, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $value = $decoded;
+                        }
+                    }
+
                     // อัพเดทค่า
                     GameSetting::set($key, $value, $setting->type, $setting->group);
                 }
@@ -74,10 +85,23 @@ class GameSettingsController extends Controller
     {
         try {
             $request->validate([
-                'audio_file' => 'required|file|mimes:mp3,wav,ogg,m4a|max:10240', // จำกัด 10MB
+                'audio_file' => 'required|file|max:10240', // จำกัด 10MB
                 'setting_key' => 'required|string',
                 'track_name' => 'required|string|max:100',
             ]);
+
+            // ตรวจสอบ mime type แยก (เพราะ mimes validation อาจไม่รองรับบาง extension)
+            $file = $request->file('audio_file');
+            $allowedMimes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/ogg', 'audio/x-m4a', 'audio/mp4', 'audio/x-wav', 'audio/wave', 'audio/aac', 'audio/x-aac', 'video/mp4'];
+            $allowedExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'aac'];
+
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (! in_array($ext, $allowedExtensions)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไฟล์ไม่รองรับ (Extension: .'.$ext.') รองรับ: '.implode(', ', $allowedExtensions),
+                ], 422);
+            }
 
             $settingKey = $request->input('setting_key');
             $trackName = $request->input('track_name');
@@ -90,7 +114,7 @@ class GameSettingsController extends Controller
             if (! $setting) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'ไม่พบการตั้งค่า: '.$settingKey,
+                    'message' => 'ไม่พบการตั้งค่า: '.$settingKey.' (ลองกดปุ่ม "สร้าง Music Settings" ก่อน)',
                 ], 404);
             }
 
@@ -100,22 +124,48 @@ class GameSettingsController extends Controller
                 Storage::makeDirectory($uploadDir);
             }
 
+            // ตรวจสอบ storage symlink
+            $symlinkPath = public_path('storage');
+            if (! file_exists($symlinkPath)) {
+                // สร้าง symlink อัตโนมัติ
+                try {
+                    Artisan::call('storage:link');
+                } catch (\Exception $e) {
+                    Log::warning('ไม่สามารถสร้าง storage symlink: '.$e->getMessage());
+                }
+            }
+
             // อัพโหลดไฟล์
-            $file = $request->file('audio_file');
             $fileName = time().'_'.preg_replace('/[^a-zA-Z0-9._-]/', '', $file->getClientOriginalName());
             $path = $file->storeAs($uploadDir, $fileName);
+
+            if (! $path) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่สามารถบันทึกไฟล์ได้ ตรวจสอบ permission ของ storage',
+                ], 500);
+            }
 
             // สร้าง public URL
             $publicUrl = '/storage/audio/games/snake-io/'.$fileName;
 
             // อัพเดท JSON tracks ใน setting
-            $tracks = json_decode($setting->value, true) ?? [];
+            // ⚠️ ป้องกัน double-encoded JSON: ถ้า value เป็น string ที่ไม่ใช่ valid JSON array → ใช้ array ว่าง
+            $currentValue = $setting->value;
+            $tracks = [];
+            if (is_string($currentValue)) {
+                $decoded = json_decode($currentValue, true);
+                if (is_array($decoded)) {
+                    $tracks = $decoded;
+                }
+            }
+
             $tracks[] = [
                 'name' => $trackName,
                 'url' => $publicUrl,
             ];
 
-            // บันทึก setting
+            // บันทึก setting (ส่ง array เข้าไป → set() จะ json_encode ให้)
             GameSetting::set($settingKey, $tracks, 'json', $setting->group);
             GameSetting::clearCache();
 
@@ -134,6 +184,10 @@ class GameSettingsController extends Controller
                 'message' => 'ข้อมูลไม่ถูกต้อง: '.implode(', ', $e->validator->errors()->all()),
             ], 422);
         } catch (\Exception $e) {
+            Log::error('Upload audio error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
@@ -169,8 +223,19 @@ class GameSettingsController extends Controller
                 ], 404);
             }
 
-            // ดึง tracks ปัจจุบัน
-            $tracks = json_decode($setting->value, true) ?? [];
+            // ดึง tracks ปัจจุบัน (ป้องกัน double-encoded JSON)
+            $tracks = [];
+            $currentValue = $setting->value;
+            if (is_string($currentValue)) {
+                $decoded = json_decode($currentValue, true);
+                // ถ้า decode แล้วได้ string อีก → double-encoded → decode อีกรอบ
+                if (is_string($decoded)) {
+                    $decoded = json_decode($decoded, true);
+                }
+                if (is_array($decoded)) {
+                    $tracks = $decoded;
+                }
+            }
 
             if (! isset($tracks[$trackIndex])) {
                 return response()->json([

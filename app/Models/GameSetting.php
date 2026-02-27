@@ -129,6 +129,15 @@ class GameSetting extends Model
     protected static function toString($value, string $type): string
     {
         if ($type === 'json') {
+            // ถ้า value เป็น string อยู่แล้ว ตรวจสอบว่าเป็น valid JSON หรือไม่
+            // ป้องกัน double-encoding (เช่น จากฟอร์มที่ส่ง JSON string มา)
+            if (is_string($value)) {
+                json_decode($value);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    return $value; // เป็น JSON string อยู่แล้ว ไม่ต้อง encode ซ้ำ
+                }
+            }
+
             return json_encode($value);
         }
 
