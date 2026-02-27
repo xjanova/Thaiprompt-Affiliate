@@ -2034,6 +2034,35 @@
                 }
             }, { passive: false });
 
+            // ✅ ทำความสะอาดเมื่อปิดแท็บ/เปลี่ยนหน้า (ป้องกัน ghost players)
+            window.addEventListener('beforeunload', function() {
+                if (syncClient && syncClient.isOnline() && syncClient.playerId) {
+                    // ใช้ sendBeacon เพื่อส่ง request แม้แท็บจะปิด
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    navigator.sendBeacon('/api/snake-sync/leave', new Blob(
+                        [JSON.stringify({ player_id: syncClient.playerId })],
+                        { type: 'application/json' }
+                    ));
+                }
+                if (multiplayerManager && multiplayerManager.playerId) {
+                    navigator.sendBeacon('/api/games/snake-io/leave', new Blob(
+                        [JSON.stringify({ player_id: multiplayerManager.playerId })],
+                        { type: 'application/json' }
+                    ));
+                }
+            });
+
+            // ✅ หยุด sync เมื่อแท็บถูกซ่อน (ประหยัด bandwidth)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    if (syncClient) syncClient.stopSyncLoop();
+                } else {
+                    if (syncClient && syncClient.isOnline() && gameStarted && !gameOver) {
+                        syncClient.startSyncLoop();
+                    }
+                }
+            });
+
             // ✨ UI Events - รองรับ Title Screen + Character Setup Screen
             // 1. Play Button → แสดงหน้า Character Setup
             document.getElementById('play-btn').addEventListener('click', function() {
@@ -2454,8 +2483,22 @@
                         playSound('kill');
                     }
                     victim.die();
-                    // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                     return; // Only one death per frame
+                }
+            }
+
+            // ✅ Check player vs online players (ชนกับผู้เล่นออนไลน์)
+            for (const [playerId, onlineSnake] of otherPlayerSnakes) {
+                if (!onlineSnake.alive) continue;
+
+                const victim = checkSnakeCollision(player, onlineSnake);
+                if (victim) {
+                    if (victim === player) {
+                        // ผู้เล่นตาย จากการชนผู้เล่นออนไลน์
+                        victim.die();
+                    }
+                    // ถ้า victim เป็นผู้เล่นออนไลน์ ไม่ kill ฝั่งเรา (server จัดการ)
+                    return;
                 }
             }
 
@@ -2471,7 +2514,6 @@
                     const victim = checkSnakeCollision(bot1, bot2);
                     if (victim) {
                         victim.die();
-                        // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                         return; // Only one death per frame
                     }
                 }
@@ -2556,9 +2598,10 @@
             updateConnectionStatus('offline', '⚡ RECONNECTING...');
 
             try {
-                // ✅ Reconnect sync client ก่อน (primary)
+                // ✅ Reconnect sync client ก่อน (primary) - ทำความสะอาด session เก่า
                 if (syncClient) {
-                    syncClient.stopSyncLoop();
+                    try { await syncClient.leave(); } catch(e) {}
+                    syncClient = null;
                 }
 
                 syncClient = new SnakeSyncClient();
@@ -2987,10 +3030,10 @@
                 await multiplayerManager.playerDied();
             }
 
-            // ✅ แจ้ง sync client
+            // ✅ แจ้ง sync client (playerDied ลบ session แล้ว ไม่ต้อง leave ซ้ำ)
             if (syncClient) {
                 await syncClient.playerDied();
-                await syncClient.leave();
+                syncClient.stopSyncLoop();
                 syncClient = null;
             }
 
@@ -3277,6 +3320,14 @@
                 syncClient = null;
             }
 
+            // ✅ ลบงูของผู้เล่นออนไลน์ทั้งหมด (ป้องกัน memory leak + ghost snakes)
+            for (const [playerId, snake] of otherPlayerSnakes) {
+                snake.segments.forEach(seg => scene.remove(seg));
+                if (snake.nameSprite) scene.remove(snake.nameSprite);
+                if (snake.outline) scene.remove(snake.outline);
+            }
+            otherPlayerSnakes.clear();
+
             // ซ่อนสถานะการเชื่อมต่อ
             const statusEl = document.getElementById('connection-status');
             statusEl.classList.remove('show', 'online', 'offline');
@@ -3322,13 +3373,25 @@
         }
 
         function getRank() {
-            const allSnakes = [player, ...bots].filter(s => s.alive);
+            // ✅ รวมผู้เล่นออนไลน์ด้วย
+            const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            for (const [, onlineSnake] of otherPlayerSnakes) {
+                if (onlineSnake && onlineSnake.alive) {
+                    allSnakes.push(onlineSnake);
+                }
+            }
             allSnakes.sort((a, b) => b.score - a.score);
             return allSnakes.indexOf(player) + 1;
         }
 
         function updateLeaderboard() {
+            // ✅ รวมผู้เล่นออนไลน์ใน leaderboard ด้วย
             const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            for (const [, onlineSnake] of otherPlayerSnakes) {
+                if (onlineSnake && onlineSnake.alive) {
+                    allSnakes.push(onlineSnake);
+                }
+            }
             allSnakes.sort((a, b) => b.score - a.score);
 
             const list = document.getElementById('leaderboard-list');
@@ -4001,8 +4064,8 @@
                     snake.length = playerData.length || snake.length;
                     snake.alive = playerData.is_alive !== undefined ? playerData.is_alive : snake.alive;
 
-                    // ✅ Position Correction (จาก server เป็นครั้งคราว ทุก 500ms)
-                    if (playerData.position && playerData.positionUpdate) {
+                    // ✅ Position Correction (จาก server ทุกครั้งที่มีข้อมูลตำแหน่ง)
+                    if (playerData.position) {
                         const serverPos = new THREE.Vector3(
                             playerData.position.x,
                             0.5,

@@ -264,10 +264,12 @@ class SnakeMultiplayerManager {
             const data = await response.json();
             console.log('[Multiplayer] ผู้เล่นตาย - คะแนนสุดท้าย:', data.final_score);
 
-            this.disconnectWebSocket();
+            // ✅ ออกจากห้องด้วย (ลดจำนวนผู้เล่นในห้อง)
+            await this.leaveGame();
             return data;
         } catch (error) {
             console.error('[Multiplayer] แจ้งการตายล้มเหลว:', error);
+            this.disconnectWebSocket();
         }
     }
 
