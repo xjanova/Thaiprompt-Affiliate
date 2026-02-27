@@ -464,6 +464,65 @@ class GameSettingsSeeder extends Seeder
             ],
 
             // ==========================================
+            // 🎵 Music & Sound Settings
+            // ==========================================
+            [
+                'key' => 'music_enabled',
+                'value' => 'true',
+                'type' => 'boolean',
+                'group' => 'snake_io_music',
+                'description' => 'เปิด/ปิดระบบเพลงในเกม',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'music_title_tracks',
+                'value' => json_encode([
+                    ['name' => 'Neon Dreams', 'url' => '/audio/games/snake-io/title-1.mp3'],
+                    ['name' => 'Cyber Wave', 'url' => '/audio/games/snake-io/title-2.mp3'],
+                ]),
+                'type' => 'json',
+                'group' => 'snake_io_music',
+                'description' => 'รายการเพลงสำหรับหน้า Title Screen (JSON array: [{name, url}])',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'music_gameplay_tracks',
+                'value' => json_encode([
+                    ['name' => 'Electric Rush', 'url' => '/audio/games/snake-io/gameplay-1.mp3'],
+                    ['name' => 'Pixel Battle', 'url' => '/audio/games/snake-io/gameplay-2.mp3'],
+                    ['name' => 'Digital Arena', 'url' => '/audio/games/snake-io/gameplay-3.mp3'],
+                ]),
+                'type' => 'json',
+                'group' => 'snake_io_music',
+                'description' => 'รายการเพลงสำหรับระหว่างเล่น (JSON array: [{name, url}])',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'music_default_volume',
+                'value' => '0.5',
+                'type' => 'float',
+                'group' => 'snake_io_music',
+                'description' => 'ระดับเสียงเพลงเริ่มต้น (0.0 - 1.0)',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'sfx_enabled',
+                'value' => 'true',
+                'type' => 'boolean',
+                'group' => 'snake_io_music',
+                'description' => 'เปิด/ปิดเอฟเฟกต์เสียง (เก็บไอเท็ม, ตาย, ฯลฯ)',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'sfx_default_volume',
+                'value' => '0.7',
+                'type' => 'float',
+                'group' => 'snake_io_music',
+                'description' => 'ระดับเสียงเอฟเฟกต์เริ่มต้น (0.0 - 1.0)',
+                'is_active' => true,
+            ],
+
+            // ==========================================
             // ⚙️ General Game Settings
             // ==========================================
             [
