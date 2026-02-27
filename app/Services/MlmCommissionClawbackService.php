@@ -260,7 +260,7 @@ class MlmCommissionClawbackService
         Order $order,
         ?int $adminId
     ): WalletDebt {
-        return WalletDebt::createDebt(
+        $debt = WalletDebt::createDebt(
             $userId,
             $amount,
             'MlmClawback',
@@ -274,6 +274,18 @@ class MlmCommissionClawbackService
                 'created_at' => now()->toIso8601String(),
             ]
         );
+
+        // ส่ง Notification แจ้งหนี้ใหม่
+        try {
+            $user = User::find($userId);
+            if ($user) {
+                app(NotificationService::class)->notifyDebtCreated($user, $debt);
+            }
+        } catch (\Exception $e) {
+            Log::warning('ส่ง Notification หนี้ MLM ล้มเหลว', ['debt_id' => $debt->id]);
+        }
+
+        return $debt;
     }
 
     /**
@@ -390,6 +402,16 @@ class MlmCommissionClawbackService
 
                 $result['action'] = 'debt_created';
                 $result['debt_id'] = $debt->id;
+
+                // ส่ง Notification แจ้งหนี้ใหม่
+                try {
+                    $debtUser = User::find($commission->user_id);
+                    if ($debtUser) {
+                        app(NotificationService::class)->notifyDebtCreated($debtUser, $debt);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('ส่ง Notification หนี้ MLM ล้มเหลว', ['debt_id' => $debt->id]);
+                }
             }
 
             Log::info('Single MLM commission clawback', $result);

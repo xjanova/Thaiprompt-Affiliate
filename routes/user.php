@@ -139,6 +139,9 @@ Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid')->group(
     // Transaction Routes
     Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
 
+    // Debt Routes — หนี้ค้างชำระ
+    Route::get('/debts', [WalletController::class, 'debts'])->name('debts');
+
     // AJAX: ดึงยอดคงเหลือสำหรับ topbar (lightweight)
     Route::get('/balance-ajax', [WalletController::class, 'getBalanceAjax'])->name('balance-ajax');
 

@@ -40,6 +40,10 @@ class Order extends Model
         'has_unread_messages',
         'last_message_at',
         'cancellation_reason',
+        'refund_reason',
+        'refunded_at',
+        'refunded_by',
+        'cancelled_at',
         'cashback_amount',
         'cashback_processed',
         'cashback_processed_at',
@@ -63,6 +67,8 @@ class Order extends Model
         'last_message_at' => 'datetime',
         'has_unread_messages' => 'boolean',
         'shipping_address_snapshot' => 'array',
+        'refunded_at' => 'datetime',
+        'cancelled_at' => 'datetime',
     ];
 
     /**
@@ -361,18 +367,64 @@ class Order extends Model
     }
 
     /**
-     * Cancel order
+     * ยกเลิกคำสั่งซื้อ
+     *
+     * - สำหรับ pending (ยังไม่จ่าย): เปลี่ยนสถานะเป็น cancelled + คืน stock
+     * - สำหรับ paid/processing (จ่ายแล้ว): เรียก RefundService ดำเนินการคืนเงิน
+     *   + clawback commission + reverse cashback + คืน stock
+     *
+     * @param string|null $reason เหตุผลในการยกเลิก
+     * @param int|null $adminId Admin ID ถ้ายกเลิกโดย Admin
      */
-    public function cancel(?string $reason = null): void
+    public function cancel(?string $reason = null, ?int $adminId = null): void
     {
+        $previousStatus = $this->status;
+
+        // Restore stock สำหรับทุกสินค้า
+        foreach ($this->items as $item) {
+            if ($item->product) {
+                $item->product->increaseStock($item->quantity);
+            }
+        }
+
+        // ถ้า order จ่ายเงินแล้ว → ดำเนินการคืนเงินอัตโนมัติ
+        if (in_array($previousStatus, ['paid', 'processing'])) {
+            try {
+                $refundService = app(\App\Services\RefundService::class);
+                // RefundService จะ update status เป็น 'refunded' และจัดการ:
+                // - คืนเงินให้ลูกค้า
+                // - clawback cashback
+                // - clawback seller earnings
+                // - clawback MLM commission
+                // - ปรับ platform wallets
+                $refundService->processFullRefund(
+                    $this,
+                    $adminId,
+                    $reason ?? 'ยกเลิกโดยลูกค้า'
+                );
+
+                // อัพเดทข้อมูลยกเลิกเพิ่มเติม
+                $this->refresh();
+                $this->cancellation_reason = $reason;
+                $this->cancelled_at = now();
+                $this->save();
+
+                return;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Order cancel refund failed', [
+                    'order_id' => $this->id,
+                    'previous_status' => $previousStatus,
+                    'error' => $e->getMessage(),
+                ]);
+                // ถ้า refund ล้มเหลว → ยังคง cancel order แต่ log error ไว้
+            }
+        }
+
+        // กรณี pending (ยังไม่จ่าย) หรือ refund ล้มเหลว
         $this->status = 'cancelled';
         $this->cancellation_reason = $reason;
+        $this->cancelled_at = now();
         $this->save();
-
-        // Restore stock for all items
-        foreach ($this->items as $item) {
-            $item->product->increaseStock($item->quantity);
-        }
     }
 
     /**

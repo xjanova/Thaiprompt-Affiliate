@@ -80,7 +80,14 @@ class DebtCollectionService
                 'source' => "{$sourceType}#{$sourceId}",
             ]);
 
-            // TODO: ส่ง Notification ให้ User
+            // ส่ง Notification แจ้งหนี้ใหม่
+            try {
+                if ($user) {
+                    app(NotificationService::class)->notifyDebtCreated($user, $debt);
+                }
+            } catch (\Exception $e) {
+                Log::warning('ส่ง Notification หนี้ใหม่ล้มเหลว', ['debt_id' => $debt->id, 'error' => $e->getMessage()]);
+            }
 
             return $debt;
         });
@@ -146,6 +153,19 @@ class DebtCollectionService
         $toDeduct = min($totalDebt, $maxDeduction);
 
         $result = WalletDebt::deductAllDebts($userId, $toDeduct, $earningId);
+
+        // ส่ง Notification แจ้งว่าถูกหักหนี้จากรายได้
+        if ($result['total_deducted'] > 0) {
+            try {
+                $user = User::find($userId);
+                if ($user) {
+                    $remainingDebt = WalletDebt::getTotalDebtForUser($userId);
+                    app(NotificationService::class)->notifyDebtCollected($user, $result['total_deducted'], $remainingDebt);
+                }
+            } catch (\Exception $e) {
+                Log::warning('ส่ง Notification หักหนี้ล้มเหลว', ['user_id' => $userId, 'error' => $e->getMessage()]);
+            }
+        }
 
         return [
             'has_debt' => true,
@@ -246,6 +266,16 @@ class DebtCollectionService
                 'reason' => $reason,
             ]);
         });
+
+        // ส่ง Notification แจ้งว่าหนี้ถูกยกเว้น
+        try {
+            $user = User::find($debt->user_id);
+            if ($user) {
+                app(NotificationService::class)->notifyDebtWaived($user, $debt->fresh());
+            }
+        } catch (\Exception $e) {
+            Log::warning('ส่ง Notification ยกเว้นหนี้ล้มเหลว', ['debt_id' => $debt->id]);
+        }
 
         return $debt->fresh();
     }

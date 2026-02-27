@@ -8,7 +8,9 @@ use App\Models\PaymentTransaction;
 use App\Models\VendorStore;
 use App\Models\Wallet;
 use App\Models\WalletSetting;
+use App\Models\WalletDebt;
 use App\Services\CashbackService;
+use App\Services\DebtCollectionService;
 use App\Services\Payment\PaymentService;
 use App\Services\PaymentGatewayService;
 use App\Services\WalletService;
@@ -98,6 +100,9 @@ class WalletController extends Controller
             })->sum('amount'),
         ];
 
+        // ดึงข้อมูลหนี้ค้างชำระ (ถ้ามี)
+        $debtSummary = app(DebtCollectionService::class)->getUserDebtSummary($user->id);
+
         return view('user.wallet.index', compact(
             'wallet',
             'statistics',
@@ -105,7 +110,8 @@ class WalletController extends Controller
             'paymentMethods',
             'availableGateways',
             'cashbackStats',
-            'adminStats'
+            'adminStats',
+            'debtSummary'
         ));
     }
 
@@ -1054,6 +1060,26 @@ class WalletController extends Controller
                 'has_enough_balance' => $hasEnoughBalance,
             ],
         ]);
+    }
+
+    /**
+     * แสดงหน้าหนี้ค้างชำระของ User
+     */
+    public function debts(Request $request)
+    {
+        $user = auth()->user();
+        $debtSummary = app(DebtCollectionService::class)->getUserDebtSummary($user->id);
+
+        // ดึงรายการหนี้ พร้อม filter
+        $query = WalletDebt::forUser($user->id);
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $debts = $query->latest()->paginate(15);
+
+        return view('user.wallet.debts', compact('debtSummary', 'debts'));
     }
 
     /**

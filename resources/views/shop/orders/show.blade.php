@@ -763,15 +763,32 @@
 
                 <!-- ยกเลิกคำสั่งซื้อ -->
                 @if($order->canBeCancelled())
-                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-red-200 dark:border-red-800 overflow-hidden">
+                <div id="cancel-section" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg border border-red-200 dark:border-red-800 overflow-hidden">
                     <div class="p-6">
                         <h3 class="font-bold text-gray-900 dark:text-gray-100 mb-3">ยกเลิกคำสั่งซื้อ</h3>
-                        <form action="{{ route('orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำสั่งซื้อนี้?')">
+                        @if(in_array($order->status, ['paid', 'processing']))
+                            <div class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl">
+                                <p class="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                                    <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    คำสั่งซื้อนี้ชำระเงินแล้ว — หากยกเลิก ระบบจะคืนเงินเข้า Wallet อัตโนมัติ
+                                </p>
+                            </div>
+                        @endif
+                        <form action="{{ route('orders.cancel', $order->id) }}" method="POST" onsubmit="return confirm('คุณแน่ใจหรือไม่ว่าต้องการยกเลิกคำสั่งซื้อนี้?{{ in_array($order->status, ['paid', 'processing']) ? '\n\nคำสั่งซื้อนี้ชำระเงินแล้ว ระบบจะดำเนินการคืนเงินให้อัตโนมัติ' : '' }}')">
                             @csrf
                             <textarea name="reason"
-                                      class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-red-500 dark:focus:border-red-400 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all mb-3"
+                                      required
+                                      class="w-full px-4 py-3 rounded-xl border-2 {{ $errors->has('reason') ? 'border-red-500 dark:border-red-400' : 'border-gray-200 dark:border-gray-600' }} bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-red-500 dark:focus:border-red-400 focus:ring-4 focus:ring-red-100 dark:focus:ring-red-900/50 transition-all mb-1"
                                       rows="3"
-                                      placeholder="เหตุผลในการยกเลิก (ถ้ามี)"></textarea>
+                                      placeholder="กรุณาระบุเหตุผลในการยกเลิก">{{ old('reason') }}</textarea>
+                            @error('reason')
+                                <p class="text-red-500 dark:text-red-400 text-sm mb-3">{{ $message }}</p>
+                            @enderror
+                            @if(!$errors->has('reason'))
+                                <div class="mb-3"></div>
+                            @endif
                             <button type="submit"
                                     class="w-full px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
                                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

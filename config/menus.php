@@ -1110,7 +1110,7 @@ return [
             'order' => 4,
             'permissions' => [],
             'submenu' => [
-                ['label' => 'ช๊อปสินค้า', 'route' => 'shop.index'],
+                ['label' => 'ช๊อปสินค้า', 'route' => 'storefront.index'],
                 ['label' => 'คำสั่งซื้อของฉัน', 'route' => 'orders.index'],
             ],
         ],
@@ -1265,6 +1265,7 @@ return [
                 ['label' => 'ถอนเงิน', 'route' => 'user.wallet.withdraw'],
                 ['label' => 'โอนเงิน', 'route' => 'user.wallet.transfer'],
                 ['label' => 'ประวัติธุรกรรม', 'route' => 'user.wallet.transactions'],
+                ['label' => '⚠️ หนี้ค้างชำระ', 'route' => 'user.wallet.debts'],
             ],
         ],
 

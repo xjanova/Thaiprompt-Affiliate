@@ -331,6 +331,7 @@ class RefundService
 
             $result['debt_id'] = $debt->id;
             $result['status'] = 'partial_debt';
+            $this->notifyDebtCreated($order->user_id, $debt);
 
         } else {
             // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
@@ -350,6 +351,7 @@ class RefundService
 
             $result['debt_id'] = $debt->id;
             $result['status'] = 'full_debt';
+            $this->notifyDebtCreated($order->user_id, $debt);
         }
 
         // อัพเดทสถานะ cashback ใน Order
@@ -492,6 +494,7 @@ class RefundService
                 ['order_number' => $order->order_number]
             );
             $result['debt_id'] = $debt->id;
+            $this->notifyDebtCreated($userId, $debt);
 
             return $result;
         }
@@ -522,6 +525,7 @@ class RefundService
                 ['order_number' => $order->order_number, 'partial_deducted' => $walletBalance]
             );
             $result['debt_id'] = $debt->id;
+            $this->notifyDebtCreated($userId, $debt);
 
         } else {
             // ไม่มีเงินเลย → สร้างหนี้ทั้งหมด
@@ -536,6 +540,7 @@ class RefundService
                 ['order_number' => $order->order_number]
             );
             $result['debt_id'] = $debt->id;
+            $this->notifyDebtCreated($userId, $debt);
         }
 
         return $result;
@@ -764,5 +769,20 @@ class RefundService
             'debts_collected' => WalletDebt::whereIn('source_type', ['SellerClawback', 'MlmClawback'])
                 ->sum('deducted_amount'),
         ];
+    }
+
+    /**
+     * ส่ง Notification แจ้งหนี้ใหม่ (helper method)
+     */
+    protected function notifyDebtCreated(int $userId, WalletDebt $debt): void
+    {
+        try {
+            $user = User::find($userId);
+            if ($user) {
+                app(NotificationService::class)->notifyDebtCreated($user, $debt);
+            }
+        } catch (\Exception $e) {
+            Log::warning('ส่ง Notification หนี้ใหม่ล้มเหลว', ['debt_id' => $debt->id, 'error' => $e->getMessage()]);
+        }
     }
 }

@@ -197,6 +197,18 @@ class WalletDebt extends Model
 
             $this->save();
 
+            // ส่ง Notification เมื่อชำระหนี้ครบ
+            if ($this->remaining_amount <= 0) {
+                try {
+                    $user = $this->user;
+                    if ($user) {
+                        app(\App\Services\NotificationService::class)->notifyDebtFullyPaid($user, $this);
+                    }
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::warning('ส่ง Notification ชำระหนี้ครบล้มเหลว', ['debt_id' => $this->id]);
+                }
+            }
+
             return $actualDeduction;
         });
     }

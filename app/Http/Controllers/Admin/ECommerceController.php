@@ -14,6 +14,7 @@ use App\Models\ProductReview;
 use App\Models\ShippingProvider;
 use App\Models\User;
 use App\Services\ImageUploadService;
+use App\Services\RefundService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -600,7 +601,11 @@ class ECommerceController extends Controller
     }
 
     /**
-     * Update order status
+     * อัพเดทสถานะคำสั่งซื้อ
+     *
+     * จัดการ cancelled/refunded อย่างถูกต้อง:
+     * - cancelled: เรียก Order::cancel() → restore stock + refund ถ้าจ่ายแล้ว
+     * - refunded: เรียก RefundService → คืนเงิน + clawback commission/cashback
      */
     public function updateOrderStatus(Request $request, Order $order)
     {
@@ -609,15 +614,53 @@ class ECommerceController extends Controller
             'admin_notes' => 'nullable|string',
         ]);
 
-        $order->update($validated);
+        $newStatus = $validated['status'];
+        $adminNotes = $validated['admin_notes'] ?? null;
 
-        // If status is shipped, update shipped_at timestamp
-        if ($validated['status'] === 'shipped' && ! $order->shipped_at) {
+        // บันทึก admin notes ถ้ามี
+        if ($adminNotes) {
+            $order->update(['admin_notes' => $adminNotes]);
+        }
+
+        // จัดการ "ยกเลิก" อย่างถูกต้อง
+        if ($newStatus === 'cancelled') {
+            if (! $order->canBeCancelled()) {
+                return redirect()->back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: ' . $order->status_label . ')');
+            }
+            $order->cancel($adminNotes ?? 'ยกเลิกโดย Admin', auth()->id());
+
+            return redirect()->back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว' . (in_array($order->fresh()->status, ['refunded']) ? ' (คืนเงินแล้ว)' : ''));
+        }
+
+        // จัดการ "คืนเงิน" อย่างถูกต้อง
+        if ($newStatus === 'refunded') {
+            if (! $order->canBeRefunded()) {
+                return redirect()->back()->with('error', 'ไม่สามารถคืนเงินคำสั่งซื้อในสถานะนี้ได้ (สถานะปัจจุบัน: ' . $order->status_label . ')');
+            }
+
+            try {
+                $refundService = app(RefundService::class);
+                $refundService->processFullRefund($order, auth()->id(), $adminNotes ?? 'คืนเงินโดย Admin');
+
+                return redirect()->back()->with('success', 'คืนเงินคำสั่งซื้อเรียบร้อยแล้ว');
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Admin refund failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return redirect()->back()->with('error', 'เกิดข้อผิดพลาดในการคืนเงิน: ' . $e->getMessage());
+            }
+        }
+
+        // อัพเดทสถานะปกติ (pending, processing, shipped, completed)
+        $order->update(['status' => $newStatus]);
+
+        if ($newStatus === 'shipped' && ! $order->shipped_at) {
             $order->update(['shipped_at' => now()]);
         }
 
-        // If status is completed, update delivered_at timestamp
-        if ($validated['status'] === 'completed' && ! $order->delivered_at) {
+        if ($newStatus === 'completed' && ! $order->delivered_at) {
             $order->update(['delivered_at' => now()]);
         }
 

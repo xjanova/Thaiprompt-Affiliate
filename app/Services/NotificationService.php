@@ -545,6 +545,7 @@ class NotificationService
             'system' => '⚙️',
             'alert' => '⚠️',
             'announcement' => '📢',
+            'debt' => '🔴',
             default => '🔔',
         };
     }
@@ -566,6 +567,7 @@ class NotificationService
             'system' => 'gray',
             'alert' => 'red',
             'announcement' => 'blue',
+            'debt' => 'red',
             default => 'blue',
         };
     }
@@ -947,5 +949,109 @@ class NotificationService
         );
 
         return $notifications;
+    }
+
+    // ========================================
+    // Debt Notifications — แจ้งเตือนเกี่ยวกับหนี้
+    // ========================================
+
+    /**
+     * แจ้งเตือน: มีหนี้ค้างชำระใหม่
+     */
+    public function notifyDebtCreated(User $user, \App\Models\WalletDebt $debt): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $debt,
+            'debt',
+            'มีหนี้ค้างชำระใหม่',
+            'คุณมีหนี้ค้างชำระจำนวน ฿'.number_format($debt->original_amount, 2).' เหตุผล: '.($debt->reason ?? 'ไม่ระบุ'),
+            [
+                'debt_id' => $debt->id,
+                'amount' => $debt->original_amount,
+                'source_type' => $debt->source_type,
+            ],
+            route('user.wallet.debts'),
+            'ดูรายการหนี้',
+            'high',
+            true,
+            true,
+            '🔴',
+            'red'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: หักหนี้จากรายได้
+     */
+    public function notifyDebtCollected(User $user, float $amountCollected, float $remaining): Notification
+    {
+        return $this->create(
+            $user,
+            'debt',
+            'หักหนี้จากรายได้',
+            'ระบบหักหนี้จำนวน ฿'.number_format($amountCollected, 2).' จากรายได้ของคุณ ยอดหนี้คงเหลือ ฿'.number_format($remaining, 2),
+            [
+                'collected' => $amountCollected,
+                'remaining' => $remaining,
+            ],
+            route('user.wallet.debts'),
+            'ดูรายละเอียด',
+            'normal',
+            false,
+            false,
+            '💳',
+            'orange'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: ชำระหนี้ครบแล้ว
+     */
+    public function notifyDebtFullyPaid(User $user, \App\Models\WalletDebt $debt): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $debt,
+            'debt',
+            'ชำระหนี้ครบแล้ว!',
+            'หนี้จำนวน ฿'.number_format($debt->original_amount, 2).' ได้ชำระครบแล้ว ขอบคุณ',
+            [
+                'debt_id' => $debt->id,
+                'original_amount' => $debt->original_amount,
+            ],
+            route('user.wallet.debts'),
+            'ดูประวัติ',
+            'normal',
+            false,
+            false,
+            '✅',
+            'green'
+        );
+    }
+
+    /**
+     * แจ้งเตือน: หนี้ได้รับการยกเว้น
+     */
+    public function notifyDebtWaived(User $user, \App\Models\WalletDebt $debt): Notification
+    {
+        return $this->createForModel(
+            $user,
+            $debt,
+            'debt',
+            'หนี้ได้รับการยกเว้น',
+            'หนี้จำนวน ฿'.number_format($debt->remaining_amount, 2).' ได้รับการยกเว้น'.($debt->waive_reason ? ' เหตุผล: '.$debt->waive_reason : ''),
+            [
+                'debt_id' => $debt->id,
+                'waived_amount' => $debt->remaining_amount,
+            ],
+            route('user.wallet.debts'),
+            'ดูรายละเอียด',
+            'normal',
+            false,
+            false,
+            '🟡',
+            'yellow'
+        );
     }
 }

@@ -140,6 +140,32 @@
         </a>
     </div>
 
+    {{-- Debt Warning Card (แสดงเฉพาะเมื่อมีหนี้ active) --}}
+    @if(isset($debtSummary) && $debtSummary['has_active_debt'])
+    <a href="{{ route('user.wallet.debts') }}" class="block group">
+        <div class="relative overflow-hidden bg-gradient-to-r from-red-500 via-orange-500 to-amber-500 dark:from-red-700 dark:via-orange-700 dark:to-amber-700 rounded-2xl shadow-xl p-6 text-white transition-all duration-300 group-hover:shadow-2xl group-hover:scale-[1.01]">
+            <div class="absolute -right-6 -top-6 opacity-10">
+                <i class="fas fa-exclamation-triangle text-9xl text-white"></i>
+            </div>
+            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="bg-white/20 backdrop-blur-sm p-3 rounded-xl">
+                        <i class="fas fa-file-invoice-dollar text-2xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold">คุณมีหนี้ค้างชำระ</h3>
+                        <p class="text-white/80 text-sm">{{ $debtSummary['debt_count'] }} รายการ &middot; ระบบจะหักจากรายได้อัตโนมัติ 50%</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <p class="text-3xl font-bold">฿{{ number_format($debtSummary['total_debt'], 2) }}</p>
+                    <p class="text-white/70 text-xs mt-1">ดูรายละเอียด <i class="fas fa-arrow-right ml-1"></i></p>
+                </div>
+            </div>
+        </div>
+    </a>
+    @endif
+
     {{-- Statistics Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-arrow-x.stats.card-3d

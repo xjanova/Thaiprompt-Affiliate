@@ -78,7 +78,10 @@ class OrderController extends Controller
     }
 
     /**
-     * Cancel order
+     * ยกเลิกคำสั่งซื้อ
+     *
+     * - pending: ยกเลิก + คืน stock
+     * - paid/processing: ยกเลิก + คืน stock + คืนเงิน + clawback commission
      */
     public function cancel(Request $request, $id)
     {
@@ -90,11 +93,18 @@ class OrderController extends Controller
             return back()->with('error', 'ไม่สามารถยกเลิกคำสั่งซื้อนี้ได้');
         }
 
+        $wasPaid = in_array($order->status, ['paid', 'processing']);
+
         $request->validate([
             'reason' => 'required|string|max:500',
         ]);
 
         $order->cancel($request->reason);
+
+        // แสดงข้อความที่เหมาะสม
+        if ($wasPaid) {
+            return back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว — ระบบดำเนินการคืนเงินเข้า Wallet ให้แล้ว');
+        }
 
         return back()->with('success', 'ยกเลิกคำสั่งซื้อเรียบร้อยแล้ว');
     }

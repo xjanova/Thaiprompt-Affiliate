@@ -111,17 +111,15 @@ class StoreController extends Controller
 
         $store->update($validated);
 
-        // ซิงค์สีกับ StoreLayoutSetting (ถ้ามี)
+        // ซิงค์สีกับ StoreLayoutSetting (สร้างอัตโนมัติถ้ายังไม่มี)
         $colorFields = array_filter([
             'primary_color' => $validated['primary_color'] ?? null,
             'secondary_color' => $validated['secondary_color'] ?? null,
         ]);
 
         if (! empty($colorFields)) {
-            $layoutSettings = \App\Models\StoreLayoutSetting::where('user_id', $user->id)->first();
-            if ($layoutSettings) {
-                $layoutSettings->update($colorFields);
-            }
+            $layoutSettings = \App\Models\StoreLayoutSetting::getOrCreateForUser($user->id);
+            $layoutSettings->update($colorFields);
         }
 
         return redirect()->route('seller.store.settings')

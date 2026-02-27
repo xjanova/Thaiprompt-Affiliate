@@ -134,11 +134,20 @@
                 </svg>
                 <span data-translate>อัปเดตสถานะคำสั่งซื้อ</span>
             </h3>
-            <form action="{{ route('admin.ecommerce.orders.status.update', $order) }}" method="POST" class="space-y-4">
+            <form action="{{ route('admin.ecommerce.orders.status.update', $order) }}" method="POST" class="space-y-4"
+                  x-data="{ selectedStatus: '{{ $order->status }}' }"
+                  @submit.prevent="
+                    if (selectedStatus === 'cancelled') {
+                        if (!confirm('ยืนยันยกเลิกคำสั่งซื้อ?\n\n{{ in_array($order->status, ['paid', 'processing']) ? '- ระบบจะคืนเงิน ฿' . number_format($order->total_amount, 2) . ' เข้า Wallet ลูกค้า\n- Clawback Commission/Cashback ที่แจกไปแล้ว\n- คืน Stock สินค้า' : '- คืน Stock สินค้า' }}')) return;
+                    } else if (selectedStatus === 'refunded') {
+                        if (!confirm('ยืนยันคืนเงินคำสั่งซื้อ?\n\n- คืนเงิน ฿{{ number_format($order->total_amount, 2) }} เข้า Wallet ลูกค้า\n- Clawback Commission/Cashback ที่แจกไปแล้ว\n- อาจสร้างหนี้ (Debt) ถ้าผู้ขายถอนเงินไปแล้ว')) return;
+                    }
+                    $el.submit();
+                  ">
                 @csrf
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-translate>สถานะปัจจุบัน</label>
-                    <select name="status" class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-orange-500 focus:border-orange-500">
+                    <select name="status" x-model="selectedStatus" class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-orange-500 focus:border-orange-500">
                         @php
                             $statuses = [
                                 'pending' => 'รอดำเนินการ',
@@ -154,12 +163,40 @@
                         @endforeach
                     </select>
                 </div>
+
+                {{-- คำเตือนเมื่อเลือกยกเลิก/คืนเงิน --}}
+                <div x-show="selectedStatus === 'cancelled'" x-cloak
+                     class="p-3 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+                    <p class="font-semibold mb-1">คำเตือน: การยกเลิกคำสั่งซื้อ</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>คืน Stock สินค้าทั้งหมด</li>
+                        @if(in_array($order->status, ['paid', 'processing']))
+                            <li>คืนเงิน ฿{{ number_format($order->total_amount, 2) }} เข้า Wallet ลูกค้าอัตโนมัติ</li>
+                            <li>Clawback Commission/Cashback ที่แจกไปแล้ว</li>
+                        @endif
+                    </ul>
+                </div>
+
+                <div x-show="selectedStatus === 'refunded'" x-cloak
+                     class="p-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg text-sm text-amber-700 dark:text-amber-300">
+                    <p class="font-semibold mb-1">คำเตือน: การคืนเงิน</p>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li>คืนเงิน ฿{{ number_format($order->total_amount, 2) }} เข้า Wallet ลูกค้า</li>
+                        <li>Clawback Commission/Cashback ที่แจกไปแล้ว</li>
+                        <li>หักเงินจาก Wallet ผู้ขาย (หรือสร้างหนี้ถ้ายอดไม่พอ)</li>
+                    </ul>
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1" data-translate>หมายเหตุแอดมิน</label>
-                    <textarea name="admin_notes" rows="2" class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-orange-500 focus:border-orange-500" placeholder="หมายเหตุเพิ่มเติม (ไม่บังคับ)">{{ $order->admin_notes }}</textarea>
+                    <textarea name="admin_notes" rows="2"
+                              class="w-full rounded-lg border-gray-300 dark:border-slate-600 dark:bg-slate-700 dark:text-white shadow-sm focus:ring-orange-500 focus:border-orange-500"
+                              :placeholder="(selectedStatus === 'cancelled' || selectedStatus === 'refunded') ? 'กรุณาระบุเหตุผล' : 'หมายเหตุเพิ่มเติม (ไม่บังคับ)'"
+                              :required="selectedStatus === 'cancelled' || selectedStatus === 'refunded'">{{ $order->admin_notes }}</textarea>
                 </div>
-                <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-lg hover:from-orange-600 hover:to-pink-700 transition-all duration-200 shadow-lg font-medium">
-                    <span data-translate>บันทึกสถานะคำสั่งซื้อ</span>
+                <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-orange-500 to-pink-600 text-white rounded-lg hover:from-orange-600 hover:to-pink-700 transition-all duration-200 shadow-lg font-medium"
+                        :class="{ 'from-red-500 to-red-600 hover:from-red-600 hover:to-red-700': selectedStatus === 'cancelled', 'from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700': selectedStatus === 'refunded' }">
+                    <span x-text="selectedStatus === 'cancelled' ? 'ยกเลิกคำสั่งซื้อ' : (selectedStatus === 'refunded' ? 'คืนเงินคำสั่งซื้อ' : 'บันทึกสถานะคำสั่งซื้อ')"></span>
                 </button>
             </form>
         </div>
@@ -272,6 +309,38 @@
             </table>
         </div>
     </div>
+
+    {{-- ข้อมูลการยกเลิก/คืนเงิน --}}
+    @if(in_array($order->status, ['cancelled', 'refunded']))
+    <div class="bg-red-50 dark:bg-red-900/20 rounded-xl shadow-lg p-6 border border-red-200 dark:border-red-800">
+        <h3 class="font-semibold text-red-800 dark:text-red-300 mb-3 flex items-center gap-2">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+            </svg>
+            {{ $order->status === 'refunded' ? 'ข้อมูลการคืนเงิน' : 'ข้อมูลการยกเลิก' }}
+        </h3>
+        <div class="space-y-2 text-sm">
+            @if($order->cancellation_reason)
+                <p><span class="font-semibold text-red-700 dark:text-red-300">เหตุผลการยกเลิก:</span> <span class="text-red-600 dark:text-red-400">{{ $order->cancellation_reason }}</span></p>
+            @endif
+            @if($order->refund_reason)
+                <p><span class="font-semibold text-red-700 dark:text-red-300">เหตุผลการคืนเงิน:</span> <span class="text-red-600 dark:text-red-400">{{ $order->refund_reason }}</span></p>
+            @endif
+            @if($order->cancelled_at)
+                <p><span class="font-semibold text-red-700 dark:text-red-300">ยกเลิกเมื่อ:</span> <span class="text-red-600 dark:text-red-400">{{ $order->cancelled_at->format('d/m/Y H:i') }}</span></p>
+            @endif
+            @if($order->refunded_at)
+                <p><span class="font-semibold text-red-700 dark:text-red-300">คืนเงินเมื่อ:</span> <span class="text-red-600 dark:text-red-400">{{ $order->refunded_at->format('d/m/Y H:i') }}</span></p>
+            @endif
+            @if($order->refunded_by)
+                @php $refundedByUser = \App\Models\User::find($order->refunded_by); @endphp
+                @if($refundedByUser)
+                    <p><span class="font-semibold text-red-700 dark:text-red-300">คืนเงินโดย:</span> <span class="text-red-600 dark:text-red-400">{{ $refundedByUser->name }}</span></p>
+                @endif
+            @endif
+        </div>
+    </div>
+    @endif
 
     {{-- หมายเหตุแอดมิน --}}
     @if($order->admin_notes)

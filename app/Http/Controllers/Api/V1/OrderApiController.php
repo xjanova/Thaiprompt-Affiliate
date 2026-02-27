@@ -285,13 +285,17 @@ class OrderApiController extends Controller
                 ], 400);
             }
 
-            // ใช้ cancel() method ของ Model เพื่อคืน stock อัตโนมัติ
+            // ใช้ cancel() method ของ Model — จะ restore stock + refund อัตโนมัติ (ถ้าจ่ายแล้ว)
+            $wasPaid = in_array($order->status, ['paid', 'processing']);
             $reason = $request->input('reason', 'ยกเลิกโดยลูกค้า');
             $order->cancel($reason);
 
             return response()->json([
                 'success' => true,
-                'message' => 'ยกเลิกคำสั่งซื้อสำเร็จ',
+                'message' => $wasPaid
+                    ? 'ยกเลิกคำสั่งซื้อสำเร็จ — ระบบดำเนินการคืนเงินเข้า Wallet ให้แล้ว'
+                    : 'ยกเลิกคำสั่งซื้อสำเร็จ',
+                'refunded' => $wasPaid,
             ]);
         } catch (Exception $e) {
             Log::error('Failed to cancel order', ['order_id' => $id, 'error' => $e->getMessage()]);

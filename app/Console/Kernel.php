@@ -421,6 +421,21 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Horoscope Public] สร้างดวงรายวันล้มเหลว');
             });
+
+        // ========================================
+        // Debt Collection - เก็บหนี้อัตโนมัติจาก earnings
+        // ========================================
+
+        $schedule->command('debt:collect-batch --limit=50')
+            ->everyThirtyMinutes()
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Debt Collection] Batch completed');
+            })
+            ->onFailure(function () {
+                \Log::error('[Debt Collection] Batch failed');
+            });
     }
 
     /**
