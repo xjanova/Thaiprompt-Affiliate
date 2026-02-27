@@ -2620,26 +2620,28 @@ Route::prefix('games')->name('games.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\GameController::class, 'index'])->name('index');
     Route::get('/create', [App\Http\Controllers\Admin\GameController::class, 'create'])->name('create');
     Route::post('/', [App\Http\Controllers\Admin\GameController::class, 'store'])->name('store');
-    Route::get('/{game}', [App\Http\Controllers\Admin\GameController::class, 'show'])->name('show');
-    Route::get('/{game}/edit', [App\Http\Controllers\Admin\GameController::class, 'edit'])->name('edit');
-    Route::put('/{game}', [App\Http\Controllers\Admin\GameController::class, 'update'])->name('update');
-    Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
-    Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
     Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
 
-    // ✅ Snake.io Multiplayer Service Monitor
+    // ✅ Snake.io Multiplayer Service Monitor (ต้องอยู่ก่อน wildcard /{game})
     Route::prefix('snake-io')->name('snake-io.')->group(function () {
         Route::get('/monitor', [App\Http\Controllers\Admin\SnakeGameAdminController::class, 'dashboard'])
             ->name('monitor');
     });
 
-    // ✅ Game Settings Management (IP, Port, Server Configuration)
+    // ✅ Game Settings Management — ต้องอยู่ก่อน wildcard /{game}
     Route::prefix('game-settings')->name('game-settings.')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\GameSettingsController::class, 'index'])
             ->name('index');
         Route::put('/update', [App\Http\Controllers\Admin\GameSettingsController::class, 'update'])
             ->name('update');
     });
+
+    // ⚠️ Wildcard routes ต้องอยู่ท้ายสุด! (ไม่งั้นจะจับ /game-settings, /snake-io ไปก่อน)
+    Route::get('/{game}', [App\Http\Controllers\Admin\GameController::class, 'show'])->name('show');
+    Route::get('/{game}/edit', [App\Http\Controllers\Admin\GameController::class, 'edit'])->name('edit');
+    Route::put('/{game}', [App\Http\Controllers\Admin\GameController::class, 'update'])->name('update');
+    Route::delete('/{game}', [App\Http\Controllers\Admin\GameController::class, 'destroy'])->name('destroy');
+    Route::patch('/{game}/toggle-active', [App\Http\Controllers\Admin\GameController::class, 'toggleActive'])->name('toggle-active');
 });
 
 // Arrow X Theme System Routes

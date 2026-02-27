@@ -23,7 +23,7 @@
                 </h1>
                 <p class="text-green-100 text-sm mt-1">ระบบติดตามเกม Multiplayer แบบ Real-time</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-2 sm:gap-3">
                 {{-- สถานะ Service --}}
                 <span id="service-status-badge"
                       class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold shadow-lg
@@ -36,6 +36,12 @@
                     </span>
                     <span id="status-text">{{ $status['is_online'] ? 'ONLINE' : 'OFFLINE' }}</span>
                 </span>
+
+                {{-- ปุ่มตั้งค่าเกม --}}
+                <a href="{{ route('admin.games.game-settings.index') }}"
+                   class="px-5 py-2.5 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-xl font-semibold text-sm shadow-lg transition-all duration-200 hover:scale-105 border border-white/30">
+                    ⚙️ ตั้งค่าเกม
+                </a>
 
                 {{-- ปุ่ม Start/Stop --}}
                 @if($status['is_online'])
