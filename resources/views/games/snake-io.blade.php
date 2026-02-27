@@ -7,6 +7,27 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Snake.io - Thai Prompt Games</title>
+
+    <!-- SEO & Social Sharing -->
+    <meta name="description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริงแบบ Multiplayer เก็บอาหาร โตขึ้น หลบงูคนอื่น ใครยาวที่สุดชนะ!">
+    <meta name="keywords" content="snake.io, เกมงู, multiplayer, online game, Thai Prompt Games, เกมออนไลน์">
+
+    <!-- Open Graph (Facebook, LINE, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Snake.io - เกมงูออนไลน์ Multiplayer">
+    <meta property="og:description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริงแบบ Multiplayer เก็บอาหาร โตขึ้น หลบงูคนอื่น ใครยาวที่สุดชนะ!">
+    <meta property="og:image" content="{{ asset('images/games/snake-io-og.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:site_name" content="Thai Prompt Games">
+    <meta property="og:locale" content="th_TH">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Snake.io - เกมงูออนไลน์ Multiplayer">
+    <meta name="twitter:description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริง Multiplayer">
+    <meta name="twitter:image" content="{{ asset('images/games/snake-io-og.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
