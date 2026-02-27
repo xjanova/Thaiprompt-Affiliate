@@ -68,7 +68,7 @@ class ForumPostController extends Controller
             'thread_id' => $thread->id,
             'user_id' => Auth::id(),
             'parent_id' => $validated['parent_id'] ?? null,
-            'content' => clean($validated['content']),
+            'content' => strip_tags($validated['content'], '<p><br><b><i><u><strong><em><ul><ol><li><a><h2><h3><h4><blockquote><code><pre>'),
         ]);
 
         // ตรวจสอบและให้โทรฟี่
@@ -106,7 +106,7 @@ class ForumPostController extends Controller
         ]);
 
         $post->update([
-            'content' => clean($validated['content']),
+            'content' => strip_tags($validated['content'], '<p><br><b><i><u><strong><em><ul><ol><li><a><h2><h3><h4><blockquote><code><pre>'),
         ]);
 
         if ($request->expectsJson()) {

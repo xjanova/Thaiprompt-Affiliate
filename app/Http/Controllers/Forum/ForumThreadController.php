@@ -150,7 +150,7 @@ class ForumThreadController extends Controller
             'category_id' => $validated['category_id'],
             'user_id' => Auth::id(),
             'title' => $validated['title'],
-            'content' => clean($validated['content']), // Sanitize HTML
+            'content' => strip_tags($validated['content'], '<p><br><b><i><u><strong><em><ul><ol><li><a><h2><h3><h4><blockquote><code><pre>'), // Sanitize HTML
             'excerpt' => Str::limit(strip_tags($validated['content']), 200),
         ]);
 
@@ -203,7 +203,7 @@ class ForumThreadController extends Controller
 
         $thread->update([
             'title' => $validated['title'],
-            'content' => clean($validated['content']),
+            'content' => strip_tags($validated['content'], '<p><br><b><i><u><strong><em><ul><ol><li><a><h2><h3><h4><blockquote><code><pre>'),
             'excerpt' => Str::limit(strip_tags($validated['content']), 200),
         ]);
 

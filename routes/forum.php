@@ -36,7 +36,12 @@ Route::prefix('forum')->name('forum.')->group(function () {
     // หมวดหมู่
     Route::get('/category/{slug}', [ForumCategoryController::class, 'show'])->name('category');
 
-    // ดูกระทู้
+    // สร้างกระทู้ (ต้อง login) — ⚠️ ต้องอยู่ก่อน /thread/{slug} ไม่งั้น {slug} จะจับ "create" ไปก่อน
+    Route::get('/thread/create', [ForumThreadController::class, 'create'])
+        ->middleware(['auth', 'verified'])
+        ->name('thread.create');
+
+    // ดูกระทู้ (wildcard — ต้องอยู่หลัง routes เฉพาะเจาะจง)
     Route::get('/thread/{slug}', [ForumThreadController::class, 'show'])->name('thread.show');
 
 });
@@ -54,8 +59,7 @@ Route::prefix('forum')->name('forum.')->middleware(['auth', 'verified'])->group(
     Route::get('/my-posts', [ForumController::class, 'myPosts'])->name('my-posts');
     Route::get('/notifications', [ForumController::class, 'notifications'])->name('notifications');
 
-    // สร้างกระทู้
-    Route::get('/thread/create', [ForumThreadController::class, 'create'])->name('thread.create');
+    // สร้างกระทู้ (GET อยู่ใน public group เพราะต้องอยู่ก่อน /thread/{slug})
     Route::post('/thread', [ForumThreadController::class, 'store'])->name('thread.store');
 
     // แก้ไข/ลบกระทู้
