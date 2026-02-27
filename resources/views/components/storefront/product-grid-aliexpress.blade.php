@@ -46,7 +46,7 @@
     @endphp
 
     <div class="group">
-        <a href="{{ route('shop.show', $product->slug) }}"
+        <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
            class="block bg-white dark:bg-gray-800
                  rounded-xl md:rounded-2xl overflow-hidden
                  shadow hover:shadow-xl

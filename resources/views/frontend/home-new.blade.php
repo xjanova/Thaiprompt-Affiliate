@@ -1060,16 +1060,16 @@
                         </p>
 
                         <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🤖 AI Chatbot</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.category', 'trading') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">📈 Trading Bot</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.category', 'software') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">💻 ซอฟต์แวร์/โปรแกรม</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
                                 <span class="text-sm font-bold text-white">🏬 ดูทั้งหมด →</span>
                             </a>
                         </div>
@@ -1179,7 +1179,7 @@
                             <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏪 ร้านค้าออนไลน์</span>
                             </a>
-                            <a href="{{ route('marketplace.v3.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
+                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
                                 <span class="text-sm font-semibold text-slate-100">🏬 Unified Marketplace</span>
                             </a>
                             <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
@@ -1603,7 +1603,7 @@
                     <li><a href="{{ route('documents.mlm-commission') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> ระบบ Affiliate
                     </a></li>
-                    <li><a href="{{ route('marketplace.v3.category', 'chatbot') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
+                    <li><a href="{{ route('storefront.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
                         <i class="fas fa-chevron-right text-xs text-blue-400"></i> AI Bot Marketplace
                     </a></li>
                     <li><a href="#app-download" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">

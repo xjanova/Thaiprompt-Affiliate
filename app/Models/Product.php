@@ -137,7 +137,18 @@ class Product extends Model
 
         static::creating(function ($product) {
             if (empty($product->slug)) {
-                $product->slug = Str::slug($product->name);
+                $slug = Str::slug($product->name);
+                // Str::slug ไม่รองรับภาษาไทย — ถ้าผลลัพธ์ว่าง ใช้ชื่อสินค้าแปลงเป็น URL-safe แทน
+                if (empty($slug)) {
+                    $slug = preg_replace('/\s+/', '-', trim($product->name));
+                    $slug = preg_replace('/[^\p{L}\p{N}\-]/u', '', $slug);
+                    $slug = mb_strtolower($slug);
+                }
+                // ถ้ายังว่างอยู่ ใช้ random string
+                if (empty($slug)) {
+                    $slug = 'product-' . Str::random(8);
+                }
+                $product->slug = $slug;
             }
             if (empty($product->sku)) {
                 $product->sku = 'PRD-'.strtoupper(Str::random(8));

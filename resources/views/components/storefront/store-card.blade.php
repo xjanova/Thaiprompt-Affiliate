@@ -149,7 +149,7 @@
         @if($products->count() > 0)
         <div class="grid grid-cols-3 gap-2 mb-4">
             @foreach($products->take(3) as $product)
-            <a href="{{ route('shop.show', $product->slug) }}"
+            <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
                class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-700
                        ring-2 ring-transparent hover:ring-purple-400
                        transition-all block">

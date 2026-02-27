@@ -148,7 +148,13 @@ class ShopController extends Controller
             'variants',
             'approvedReviews.user',
         ])
-            ->where('slug', $slug)
+            ->where(function ($query) use ($slug) {
+                // ค้นหาด้วย slug ก่อน ถ้าไม่เจอลองค้นหาด้วย ID (กรณี slug ว่าง เช่น ชื่อสินค้าภาษาไทย)
+                $query->where('slug', $slug);
+                if (is_numeric($slug)) {
+                    $query->orWhere('id', $slug);
+                }
+            })
             ->firstOrFail();
 
         // Increment view count

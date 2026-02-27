@@ -72,7 +72,7 @@
                     <div class="flex flex-col sm:flex-row gap-6">
                         <!-- Product Image -->
                         <div class="flex-shrink-0">
-                            <a href="{{ route('shop.show', $product->slug) }}" class="block">
+                            <a href="{{ route('shop.show', $product->slug ?: $product->id) }}" class="block">
                                 <div class="w-full sm:w-32 aspect-square bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-xl overflow-hidden">
                                     @if($product->main_image_url)
                                         <img src="{{ $product->main_image_url }}"
@@ -92,7 +92,7 @@
                             <div class="flex flex-col h-full">
                                 <!-- Product Name & Category -->
                                 <div class="flex-1">
-                                    <a href="{{ route('shop.show', $product->slug) }}"
+                                    <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
                                        class="text-lg font-bold text-gray-900 dark:text-gray-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition line-clamp-2">
                                         {{ $product->name }}
                                     </a>

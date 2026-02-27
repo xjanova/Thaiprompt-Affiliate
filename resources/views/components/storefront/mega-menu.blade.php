@@ -179,7 +179,7 @@
 
                         <div class="grid grid-cols-4 gap-3">
                             @foreach($category->products->take(4) as $product)
-                            <a href="{{ route('shop.show', $product->slug) }}"
+                            <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
                                class="group">
                                 <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-2
                                            ring-2 ring-transparent group-hover:ring-orange-500 transition-all">

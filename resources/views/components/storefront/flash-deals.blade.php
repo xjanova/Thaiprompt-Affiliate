@@ -118,7 +118,7 @@
                 @endphp
 
                 <div class="flex-shrink-0 w-48 md:w-56 snap-start group">
-                    <a href="{{ route('shop.show', $product->slug) }}" class="block">
+                    <a href="{{ route('shop.show', $product->slug ?: $product->id) }}" class="block">
                         <div class="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden
                                    shadow-xl hover:shadow-2xl
                                    transform hover:scale-105 hover:-translate-y-2

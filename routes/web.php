@@ -1128,22 +1128,20 @@ Route::prefix('nfc')->name('nfc.')->group(function () {
 |
 */
 
-use App\Http\Controllers\UnifiedMarketplaceController;
-
-// ⚠️ E-commerce Critical: Unified marketplace ต้องถูก index โดย search engines
+// Unified Marketplace → Redirect ไป Storefront (ลบระบบ marketplace แล้ว ใช้ storefront แทน)
 Route::prefix('marketplace')->name('marketplace.v3.')->group(function () {
-    // หน้าหลัก marketplace
-    Route::match(['GET', 'HEAD'], '/', [UnifiedMarketplaceController::class, 'index'])->name('index');
-
-    // หมวดหมู่
-    Route::match(['GET', 'HEAD'], '/category/{category}', [UnifiedMarketplaceController::class, 'category'])->name('category');
-
-    // ค้นหา
-    Route::match(['GET', 'HEAD'], '/search', [UnifiedMarketplaceController::class, 'search'])->name('search');
-
-    // รายละเอียดสินค้า
-    Route::match(['GET', 'HEAD'], '/{type}/{slug}', [UnifiedMarketplaceController::class, 'show'])->name('show')
-        ->where('type', 'chatbot|trading|software');
+    Route::match(['GET', 'HEAD'], '/', function () {
+        return redirect()->route('storefront.index');
+    })->name('index');
+    Route::match(['GET', 'HEAD'], '/category/{category}', function ($category) {
+        return redirect()->route('storefront.index', ['category' => $category]);
+    })->name('category');
+    Route::match(['GET', 'HEAD'], '/search', function (\Illuminate\Http\Request $request) {
+        return redirect()->route('storefront.index', ['q' => $request->q]);
+    })->name('search');
+    Route::match(['GET', 'HEAD'], '/{type}/{slug}', function ($type, $slug) {
+        return redirect()->route('shop.show', $slug);
+    })->name('show')->where('type', 'chatbot|trading|software');
 });
 
 /*

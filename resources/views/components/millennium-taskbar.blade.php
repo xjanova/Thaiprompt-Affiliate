@@ -157,7 +157,7 @@
             ['icon' => '🏠', 'label' => 'หน้าแรก', 'url' => route('home'), 'color' => 'from-blue-600 to-cyan-600'],
             ['icon' => '📚', 'label' => 'คู่มือและความช่วยเหลือ', 'url' => route('wiki.index'), 'color' => 'from-purple-600 to-pink-600', 'highlight' => true],
             ['icon' => '🇹🇭', 'label' => 'เรื่องราว ThaiPrompt', 'url' => route('wiki.index') . '#story', 'color' => 'from-amber-500 to-orange-600', 'highlight' => true],
-            ['icon' => '🛒', 'label' => 'ตลาดสินค้า', 'url' => route('marketplace.v3.index'), 'color' => 'from-green-600 to-emerald-600'],
+            ['icon' => '🛒', 'label' => 'ร้านค้า', 'url' => route('storefront.index'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏨', 'label' => 'จองโรงแรม', 'url' => route('hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
             ['icon' => '🤖', 'label' => 'AI Marketplace', 'url' => route('ai-marketplace.index'), 'color' => 'from-violet-600 to-purple-600'],
             ['icon' => '🔐', 'label' => 'เข้าสู่ระบบ', 'url' => route('login'), 'color' => 'from-indigo-600 to-blue-600'],

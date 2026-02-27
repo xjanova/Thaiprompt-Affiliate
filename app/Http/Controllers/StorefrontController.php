@@ -437,7 +437,7 @@ class StorefrontController extends Controller
                 'pv' => $totalPv,
                 'commission_rate' => $product->commission_rate ?? 0,
                 'free_shipping' => $product->price >= 500,
-                'url' => route('shop.show', $product->slug),
+                'url' => route('shop.show', $product->slug ?: $product->id),
             ];
         });
 

@@ -203,7 +203,7 @@
                             </div>
 
                             <!-- CTA Button -->
-                            <a href="{{ route('shop.show', $product->slug) }}"
+                            <a href="{{ route('shop.show', $product->slug ?: $product->id) }}"
                                target="_blank"
                                class="block w-full px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all text-center font-semibold">
                                 🚀 ดูสินค้าและแชร์

@@ -359,8 +359,8 @@
                     <a href="{{ route('wiki.index') }}" class="text-gray-900 dark:text-white font-medium transition-colors dark:drop-shadow border-b-2 border-gray-900 dark:border-white pb-1">
                         <i class="fas fa-book mr-2"></i>Wiki
                     </a>
-                    <a href="{{ route('marketplace.v3.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
-                        <i class="fas fa-store mr-2"></i>Marketplace
+                    <a href="{{ route('storefront.index') }}" class="text-gray-600 dark:text-white/80 hover:text-gray-900 dark:hover:text-white font-medium transition-colors dark:drop-shadow">
+                        <i class="fas fa-store mr-2"></i>ร้านค้า
                     </a>
                 </nav>
 
@@ -457,7 +457,7 @@
                 </div>
                 <div class="flex items-center gap-6">
                     <a href="{{ route('wiki.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Wiki</a>
-                    <a href="{{ route('marketplace.v3.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Marketplace</a>
+                    <a href="{{ route('storefront.index') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">ร้านค้า</a>
                     @auth
                     <a href="{{ route('user.dashboard') }}" class="text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white text-sm transition-colors">Dashboard</a>
                     @endauth

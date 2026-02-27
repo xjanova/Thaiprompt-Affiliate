@@ -24,7 +24,7 @@
         <ol class="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <li><a href="{{ route('home') }}" class="hover:text-purple-600 dark:hover:text-purple-400">หน้าแรก</a></li>
             <li><i class="fas fa-chevron-right text-xs"></i></li>
-            <li><a href="{{ route('marketplace.v3.index') }}" class="hover:text-purple-600 dark:hover:text-purple-400">ร้านค้า</a></li>
+            <li><a href="{{ route('storefront.index') }}" class="hover:text-purple-600 dark:hover:text-purple-400">ร้านค้า</a></li>
             @if($product->category)
             <li><i class="fas fa-chevron-right text-xs"></i></li>
             <li><a href="{{ route('marketplace.category', $product->category->slug) }}" class="hover:text-purple-600 dark:hover:text-purple-400">{{ $product->category->name }}</a></li>

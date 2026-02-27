@@ -5,7 +5,7 @@
 ])
 
 <div class="group relative bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-gray-100/50 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-600">
-    <a href="{{ route('shop.show', $product->slug) }}" class="block">
+    <a href="{{ route('shop.show', $product->slug ?: $product->id) }}" class="block">
         <!-- Product Image -->
         <div class="relative bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-700 dark:via-gray-800 dark:to-gray-700 aspect-square overflow-hidden">
             @if($product->main_image_url)

@@ -164,7 +164,7 @@
 
             {{-- Continue Shopping --}}
             <div class="text-center pt-4">
-                <a href="{{ route('marketplace.v3.index') }}"
+                <a href="{{ route('storefront.index') }}"
                    class="inline-flex items-center gap-2 px-6 py-3
                           text-purple-600 dark:text-purple-400
                           hover:bg-purple-50 dark:hover:bg-purple-900/20
@@ -348,7 +348,7 @@
             คุณยังไม่มีสินค้าในตะกร้า เริ่มเลือกซื้อสินค้ากันเถอะ!
         </p>
 
-        <a href="{{ route('marketplace.v3.index') }}"
+        <a href="{{ route('storefront.index') }}"
            class="inline-flex items-center gap-2 px-8 py-4
                   bg-gradient-to-r from-purple-600 to-pink-600
                   hover:from-purple-700 hover:to-pink-700

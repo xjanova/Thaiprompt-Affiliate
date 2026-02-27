@@ -7,7 +7,7 @@
     <!-- Breadcrumb -->
     <nav aria-label="breadcrumb" class="mb-3">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('marketplace.v3.index') }}">ตลาดบอท</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('storefront.index') }}">ตลาดบอท</a></li>
             <li class="breadcrumb-item active">{{ $bot->name }}</li>
         </ol>
     </nav>

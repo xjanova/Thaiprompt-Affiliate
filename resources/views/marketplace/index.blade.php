@@ -42,7 +42,7 @@
     <div class="container mx-auto px-4 py-8 -mt-10 relative z-10">
         <!-- Search & Filters Card -->
         <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 mb-8 border border-gray-100">
-            <form method="GET" action="{{ route('marketplace.v3.index') }}">
+            <form method="GET" action="{{ route('storefront.index') }}">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
                     <!-- Search -->
                     <div class="lg:col-span-2">
@@ -213,7 +213,7 @@
                 </div>
                 <h3 class="text-2xl font-bold text-gray-800 mb-2">ไม่พบบอทที่ตรงกับเงื่อนไข</h3>
                 <p class="text-gray-600 mb-6">ลองปรับเปลี่ยนตัวกรองหรือค้นหาด้วยคำค้นอื่น</p>
-                <a href="{{ route('marketplace.v3.index') }}" class="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
+                <a href="{{ route('storefront.index') }}" class="inline-block px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">
                     ดูบอททั้งหมด
                 </a>
             </div>
