@@ -934,19 +934,18 @@
         /* Connection Status Indicator */
         #connection-status {
             position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 25px;
-            padding: 8px 20px;
+            top: 55px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 4px 12px;
             display: none;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-family: 'Orbitron', 'Noto Sans Thai', sans-serif;
-            font-size: 12px;
+            font-size: 10px;
             font-weight: bold;
             z-index: 50;
             transition: all 0.3s ease;
@@ -1538,8 +1537,9 @@
                 @endauth
             </div>
 
-            <div style="margin-top: 20px;">
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                 <button class="btn" id="restart-btn">🔄 PLAY AGAIN</button>
+                <button class="btn" id="back-title-btn" style="background: linear-gradient(135deg, #666, #444);">🏠 กลับหน้าหลัก</button>
             </div>
         </div>
 
@@ -1547,7 +1547,7 @@
         <div id="controls">
             <span class="key">↑</span> <span class="key">↓</span> <span class="key">←</span> <span class="key">→</span> or
             <span class="key">MOUSE</span> to move |
-            <span class="key">SPACE</span> boost
+            <span class="key">SPACE</span> / <span class="key">RIGHT CLICK</span> boost
         </div>
 
         <!-- Controls (Mobile) -->
@@ -2984,6 +2984,12 @@
                     </div>`;
                 }).join('');
 
+                // ✅ Cache top 3 สำหรับแสดงระหว่างเล่น (server leaderboard)
+                _serverTop3Cache = entries.slice(0, 3).map(e => ({
+                    name: e.user ? e.user.name : 'Unknown',
+                    score: e.score
+                }));
+
                 console.log('[Leaderboard] โหลด Top 100 สำเร็จ:', entries.length, 'รายการ');
 
             } catch (err) {
@@ -2994,46 +3000,34 @@
 
         /**
          * 🏆 อัปเดต Top 3 In-Game Display
-         * แสดง 3 อันดับแรกตลอดเวลาระหว่างเล่น (สวยงาม)
-         * ✅ FIX: อัปเดตเฉพาะเมื่อข้อมูลเปลี่ยน (ไม่กระพริบ)
+         * แสดง Top 3 จาก Server Leaderboard (คะแนนที่บันทึกไว้) ไม่ใช่ห้องปัจจุบัน
+         * ✅ โหลดจาก cache ที่ loadTitleLeaderboard() ดึงมา
          */
-        let top3UpdateCounter = 0;
-        let top3LastKey = ''; // เก็บ key ล่าสุดเพื่อเปรียบเทียบ
-        function updateInGameTop3() {
-            // อัปเดตทุก 10 frames เพื่อประหยัด performance
-            top3UpdateCounter++;
-            if (top3UpdateCounter % 10 !== 0) return;
+        let top3LastKey = '';
+        let _serverTop3Cache = []; // เก็บ top 3 จาก server
 
+        function updateInGameTop3() {
             const container = document.getElementById('ingame-top3');
             if (!container) return;
 
-            // รวมผู้เล่นทั้งหมด (ตัวเอง + bots + online)
-            const allSnakes = [player, ...bots].filter(s => s && s.alive);
-            for (const [, onlineSnake] of otherPlayerSnakes) {
-                if (onlineSnake && onlineSnake.alive) {
-                    allSnakes.push(onlineSnake);
-                }
-            }
-            allSnakes.sort((a, b) => b.score - a.score);
+            // ใช้ข้อมูลจาก server cache (โหลดตอนเริ่มเกม)
+            if (_serverTop3Cache.length === 0) return;
 
-            const top3 = allSnakes.slice(0, 3);
             const medals = ['🥇', '🥈', '🥉'];
             const classes = ['gold', 'silver', 'bronze'];
+            const top3 = _serverTop3Cache.slice(0, 3);
 
-            // ✅ สร้าง key เปรียบเทียบ: ชื่อ+คะแนน → อัปเดตเฉพาะเมื่อเปลี่ยน (ไม่กระพริบ)
-            const newKey = top3.map(s => `${s.name}:${s.score}`).join('|');
-            if (newKey === top3LastKey) return; // ข้อมูลไม่เปลี่ยน → ไม่ต้องอัปเดต DOM
+            // ✅ เปรียบเทียบ key → อัปเดตเฉพาะเมื่อเปลี่ยน (ไม่กระพริบ)
+            const newKey = top3.map(e => `${e.name}:${e.score}`).join('|');
+            if (newKey === top3LastKey) return;
             top3LastKey = newKey;
 
-            container.innerHTML = top3.map((snake, i) => {
-                const name = snake.name || 'Unknown';
-                const shortName = name.length > 8 ? name.substring(0, 8) + '…' : name;
-                const isYou = snake.isPlayer ? ' ⭐' : '';
-
+            container.innerHTML = top3.map((entry, i) => {
+                const shortName = entry.name.length > 8 ? entry.name.substring(0, 8) + '…' : entry.name;
                 return `<div class="top3-card ${classes[i]}">
                     <span class="top3-medal">${medals[i]}</span>
-                    <span class="top3-name">${shortName}${isYou}</span>
-                    <span class="top3-score">${snake.score}</span>
+                    <span class="top3-name">${shortName}</span>
+                    <span class="top3-score">${Number(entry.score).toLocaleString()}</span>
                 </div>`;
             }).join('');
         }
@@ -3170,6 +3164,27 @@
             document.addEventListener('keyup', onKeyUp);
             document.addEventListener('mousemove', onMouseMove);
 
+            // ✅ คลิกขวาเมาส์ = เร่งสปีด (boost)
+            document.addEventListener('mousedown', function(e) {
+                if (e.button === 2 && player && player.alive && gameStarted && !gameOver) {
+                    if (!player.isBoosting) {
+                        player.isBoosting = true;
+                        playSound('boost');
+                    }
+                }
+            });
+            document.addEventListener('mouseup', function(e) {
+                if (e.button === 2 && player) {
+                    player.isBoosting = false;
+                }
+            });
+            // ป้องกัน context menu (เมนูคลิกขวา) ระหว่างเล่น
+            document.addEventListener('contextmenu', function(e) {
+                if (gameStarted && !gameOver) {
+                    e.preventDefault();
+                }
+            });
+
             // Touch event listeners for mobile/tablet
             canvas.addEventListener('touchstart', onTouchStart, { passive: false });
             canvas.addEventListener('touchmove', onTouchMove, { passive: false });
@@ -3230,6 +3245,11 @@
 
             // 4. Restart Button → เล่นใหม่
             document.getElementById('restart-btn').addEventListener('click', restartGame);
+
+            // 5. Back to Title Button → กลับหน้า Title (จาก game over)
+            document.getElementById('back-title-btn').addEventListener('click', function() {
+                restartGame();
+            });
 
             // ✅ Save score buttons (สำหรับสมาชิกเท่านั้น - ต้องมี null check)
             const saveScoreBtn = document.getElementById('save-score-btn');
@@ -3495,6 +3515,41 @@
             powerup.userData.type = type.name;
             powerup.userData.icon = type.icon;
             powerup.userData.duration = type.duration;
+
+            // ✅ เพิ่มป้ายชื่อไอเท็มลอยเหนือ powerup (จำได้ง่าย)
+            const labelCanvas = document.createElement('canvas');
+            labelCanvas.width = 128;
+            labelCanvas.height = 64;
+            const ctx = labelCanvas.getContext('2d');
+
+            // วาดพื้นหลังโปร่งใส + icon + ชื่อ
+            ctx.clearRect(0, 0, 128, 64);
+
+            // วาด icon ใหญ่ตรงกลาง
+            ctx.font = '32px serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(type.icon, 64, 34);
+
+            // วาดชื่อด้านล่าง
+            const labelNames = { magnet: 'MAGNET', speed: 'SPEED', multiplier: 'x2', zoom: 'ZOOM' };
+            ctx.font = 'bold 14px Orbitron, sans-serif';
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.strokeText(labelNames[type.name] || type.name.toUpperCase(), 64, 56);
+            ctx.fillText(labelNames[type.name] || type.name.toUpperCase(), 64, 56);
+
+            const labelTexture = new THREE.CanvasTexture(labelCanvas);
+            const labelMaterial = new THREE.SpriteMaterial({
+                map: labelTexture,
+                transparent: true,
+                depthTest: false
+            });
+            const labelSprite = new THREE.Sprite(labelMaterial);
+            labelSprite.position.set(x, 2.5, z);
+            labelSprite.scale.set(2.5, 1.25, 1);
+            scene.add(labelSprite);
+            powerup.userData.labelSprite = labelSprite;
 
             scene.add(powerup);
             powerups.push(powerup);
@@ -4497,8 +4552,11 @@
             foods.forEach(food => scene.remove(food));
             foods = [];
 
-            // ✅ ลบ powerups ด้วย (ป้องกัน object ค้างใน scene)
-            powerups.forEach(p => scene.remove(p));
+            // ✅ ลบ powerups + label sprites (ป้องกัน object ค้างใน scene)
+            powerups.forEach(p => {
+                if (p.userData.labelSprite) scene.remove(p.userData.labelSprite);
+                scene.remove(p);
+            });
             powerups = [];
 
             // ✅ ทำลาย touch manager ป้องกัน memory leak
@@ -4851,10 +4909,14 @@
             // ✅ แคช timestamp เพื่อลด Date.now() calls (ป้องกันเกมค้าง)
             const now = Date.now();
 
-            // Animate powerups (spin)
+            // Animate powerups (spin + label ลอยตาม)
             powerups.forEach(powerup => {
                 powerup.rotation.y += 0.05;
                 powerup.position.y = 0.8 + Math.sin(now * 0.003) * 0.2;
+                // ✅ อัพเดทตำแหน่ง label ให้ลอยเหนือ powerup
+                if (powerup.userData.labelSprite) {
+                    powerup.userData.labelSprite.position.y = powerup.position.y + 1.7;
+                }
             });
 
             // ✅ Sync สถานะผู้เล่นกับ server
@@ -4987,6 +5049,10 @@
                     if (head.distanceTo(powerup.position) < 1.5) {
                         playSound('powerup'); // ✅ เสียงเก็บพาวเวอร์อัพ
                         activatePowerup(powerup.userData.type);
+                        // ✅ ลบ label sprite ด้วย
+                        if (powerup.userData.labelSprite) {
+                            scene.remove(powerup.userData.labelSprite);
+                        }
                         scene.remove(powerup);
                         powerups.splice(i, 1);
                     }
