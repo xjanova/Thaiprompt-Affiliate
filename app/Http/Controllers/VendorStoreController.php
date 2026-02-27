@@ -6,6 +6,9 @@ use App\Models\Product;
 use App\Models\ProductCategory;
 use App\Models\StoreLayoutSetting;
 use App\Models\VendorStore;
+use App\Services\CashbackService;
+use App\Services\ShippingService;
+use App\Services\WalletService;
 use Illuminate\Http\Request;
 
 class VendorStoreController extends Controller
@@ -158,6 +161,83 @@ class VendorStoreController extends Controller
 
         return view('vendor-store.show-custom', compact(
             'store', 'products', 'categories', 'stats', 'layoutSettings', 'featuredProducts'
+        ));
+    }
+
+    /**
+     * แสดงรายละเอียดสินค้าในบริบทของร้านค้า — ใช้ธีมร้านค้าทั้งหมด
+     *
+     * @param string $storeSlug slug ของร้านค้า
+     * @param string $productSlug slug ของสินค้า
+     * @return \Illuminate\View\View
+     */
+    public function showProduct(string $storeSlug, string $productSlug)
+    {
+        // ดึงข้อมูลร้านค้า
+        $store = VendorStore::where('store_slug', $storeSlug)
+            ->where('is_active', true)
+            ->firstOrFail();
+
+        // ดึงสินค้า — ต้องเป็นของร้านนี้เท่านั้น
+        $product = Product::with([
+            'category',
+            'seller',
+            'images',
+            'variants',
+            'approvedReviews.user',
+        ])
+            ->where('seller_id', $store->user_id)
+            ->where(function ($query) use ($productSlug) {
+                $query->where('slug', $productSlug);
+                if (is_numeric($productSlug)) {
+                    $query->orWhere('id', $productSlug);
+                }
+            })
+            ->firstOrFail();
+
+        // เพิ่ม view count
+        $product->incrementViewCount();
+
+        // สินค้าที่เกี่ยวข้อง (จากร้านเดียวกัน)
+        $relatedProducts = Product::with(['category', 'seller', 'images'])
+            ->where('seller_id', $store->user_id)
+            ->where('is_active', true)
+            ->where('id', '!=', $product->id)
+            ->when($product->category_id, function ($q) use ($product) {
+                $q->where('category_id', $product->category_id);
+            })
+            ->take(8)
+            ->get();
+
+        // เช็คว่า user ซื้อสินค้านี้หรือยัง (สำหรับรีวิว)
+        $hasPurchased = false;
+        if (auth()->check()) {
+            $hasPurchased = $product->orderItems()
+                ->whereHas('order', function ($q) {
+                    $q->where('user_id', auth()->id())
+                        ->where('status', 'completed');
+                })
+                ->exists();
+        }
+
+        // คำนวณ Cashback
+        $cashbackInfo = (new CashbackService(new WalletService))
+            ->calculateProductCashback($product, $product->price, 1);
+
+        // ข้อมูลค่าจัดส่ง
+        $shippingInfo = (new ShippingService)->getShippingDisplayInfo($product);
+
+        // ดึง layout settings ของร้าน
+        $layoutSettings = StoreLayoutSetting::getOrCreateForUser($store->user_id);
+
+        return view('vendor-store.product-show', compact(
+            'store',
+            'product',
+            'relatedProducts',
+            'hasPurchased',
+            'cashbackInfo',
+            'shippingInfo',
+            'layoutSettings'
         ));
     }
 }

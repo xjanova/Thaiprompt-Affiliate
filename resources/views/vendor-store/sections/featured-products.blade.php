@@ -32,7 +32,7 @@
 
             <div class="grid {{ $gridCols }} gap-4 md:gap-6">
                 @foreach($featuredProducts as $product)
-                    <a href="{{ $isPreview ? '#' : route('product.show', $product->slug ?? '#') }}"
+                    <a href="{{ $isPreview ? '#' : route('store.product', ['storeSlug' => $store->store_slug, 'productSlug' => $product->slug ?? '#']) }}"
                        class="product-card-{{ $productCardStyle }} block group {{ $lc['card_hover'] }}">
                         {{-- Product Image --}}
                         <div class="aspect-square relative overflow-hidden">

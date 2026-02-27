@@ -530,7 +530,8 @@ Route::prefix('storefront')->name('storefront.')->group(function () {
 // Store Pages (Individual Vendor Store Pages)
 // ⚠️ E-commerce Critical: หน้าร้านค้าแต่ละร้าน ต้องถูก index
 Route::prefix('store')->name('store.')->group(function () {
-    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\StorefrontController::class, 'showStore'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{slug}', [\App\Http\Controllers\VendorStoreController::class, 'show'])->name('show');
+    Route::match(['GET', 'HEAD'], '/{storeSlug}/product/{productSlug}', [\App\Http\Controllers\VendorStoreController::class, 'showProduct'])->name('product');
 });
 
 // Shop Routes (Legacy - Redirect to Storefront)
