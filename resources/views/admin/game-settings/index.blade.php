@@ -191,14 +191,23 @@
                                                     <p class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="track.url"></p>
                                                 </div>
 
-                                                {{-- ปุ่มเล่นทดสอบ --}}
+                                                {{-- ปุ่มเล่น/หยุดทดสอบ (สลับ Play/Stop) --}}
                                                 <button type="button"
-                                                        @click="playPreview(track.url)"
-                                                        class="flex-shrink-0 p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition"
-                                                        title="ทดสอบเล่น">
-                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        @click="togglePreview(track.url)"
+                                                        class="flex-shrink-0 p-2 rounded-lg transition"
+                                                        :class="previewingUrl === track.url
+                                                            ? 'text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                                            : 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30'"
+                                                        :title="previewingUrl === track.url ? 'หยุดเล่น' : 'ทดสอบเล่น'">
+                                                    {{-- Play icon --}}
+                                                    <svg x-show="previewingUrl !== track.url" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path>
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                    </svg>
+                                                    {{-- Stop icon --}}
+                                                    <svg x-show="previewingUrl === track.url" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"></path>
                                                     </svg>
                                                 </button>
 
@@ -465,6 +474,7 @@ document.addEventListener('alpine:init', () => {
         uploadMessage: '',
         uploadSuccess: false,
         previewAudio: null,
+        previewingUrl: '', // URL ที่กำลังเล่นอยู่ (ใช้สลับ Play/Stop)
 
         /**
          * เลือกไฟล์เสียง
@@ -568,29 +578,41 @@ document.addEventListener('alpine:init', () => {
         },
 
         /**
-         * เล่นทดสอบเสียง
+         * สลับเล่น/หยุดทดสอบเสียง (Play/Stop toggle)
          */
-        playPreview(url) {
-            // หยุดเพลงเก่า
+        togglePreview(url) {
+            // ถ้ากำลังเล่น URL เดียวกัน → หยุด
+            if (this.previewingUrl === url && this.previewAudio) {
+                this.previewAudio.pause();
+                this.previewAudio = null;
+                this.previewingUrl = '';
+                return;
+            }
+
+            // หยุดเพลงเก่า (ถ้ากำลังเล่นเพลงอื่น)
             if (this.previewAudio) {
                 this.previewAudio.pause();
                 this.previewAudio = null;
+                this.previewingUrl = '';
             }
 
+            // เล่นเพลงใหม่
             this.previewAudio = new Audio(url);
             this.previewAudio.volume = 0.5;
-            this.previewAudio.play().catch(err => {
-                console.warn('ไม่สามารถเล่นเสียงได้:', err);
-                alert('ไม่สามารถเล่นไฟล์เสียงนี้ได้ อาจยังไม่ได้อัพโหลดไฟล์จริง');
+            this.previewingUrl = url;
+
+            // เมื่อเพลงจบ → รีเซ็ตสถานะ
+            this.previewAudio.addEventListener('ended', () => {
+                this.previewingUrl = '';
+                this.previewAudio = null;
             });
 
-            // หยุดอัตโนมัติหลัง 10 วินาที
-            setTimeout(() => {
-                if (this.previewAudio) {
-                    this.previewAudio.pause();
-                    this.previewAudio = null;
-                }
-            }, 10000);
+            this.previewAudio.play().catch(err => {
+                console.warn('ไม่สามารถเล่นเสียงได้:', err);
+                this.previewingUrl = '';
+                this.previewAudio = null;
+                alert('ไม่สามารถเล่นไฟล์เสียงนี้ได้ อาจยังไม่ได้อัพโหลดไฟล์จริง');
+            });
         },
     }));
 });

@@ -373,17 +373,8 @@
             font-size: 13px;
             font-weight: 700;
             backdrop-filter: blur(8px);
-            animation: top3SlideIn 0.6s ease-out both;
             white-space: nowrap;
-        }
-
-        .top3-card:nth-child(1) { animation-delay: 0s; }
-        .top3-card:nth-child(2) { animation-delay: 0.1s; }
-        .top3-card:nth-child(3) { animation-delay: 0.2s; }
-
-        @keyframes top3SlideIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
+            transition: opacity 0.3s ease;
         }
 
         .top3-card.gold {
@@ -1572,7 +1563,7 @@
                 style="width:60px;height:4px;accent-color:#00ffcc;cursor:pointer;">
             <button onclick="toggleMute()" title="ปิด/เปิดเสียง"
                 style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:4px;">🔊</button>
-            <span id="music-track-name" style="color:rgba(255,255,255,0.6);font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+            <span id="music-track-name" style="color:#00ffcc;font-size:11px;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;"></span>
         </div>
 
         <!-- Sound Toggle -->
@@ -2151,10 +2142,16 @@
             if (volSlider) {
                 volSlider.value = musicPlayer.volume * 100;
             }
-            if (trackName && musicPlayer.currentAudio) {
-                const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
-                const track = tracks[musicPlayer.currentTrackIndex];
-                trackName.textContent = track ? track.name : '';
+            if (trackName) {
+                if (musicPlayer.currentAudio) {
+                    const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+                    const track = tracks[musicPlayer.currentTrackIndex];
+                    trackName.textContent = track ? `♪ ${track.name}` : '♪ Procedural';
+                } else if (musicPlayer.isPlaying) {
+                    trackName.textContent = '♪ Procedural';
+                } else {
+                    trackName.textContent = '';
+                }
             }
             if (modeBtn) {
                 const icons = { sequential: '➡️', shuffle: '🔀', loop: '🔁' };
@@ -2825,8 +2822,10 @@
         /**
          * 🏆 อัปเดต Top 3 In-Game Display
          * แสดง 3 อันดับแรกตลอดเวลาระหว่างเล่น (สวยงาม)
+         * ✅ FIX: อัปเดตเฉพาะเมื่อข้อมูลเปลี่ยน (ไม่กระพริบ)
          */
         let top3UpdateCounter = 0;
+        let top3LastKey = ''; // เก็บ key ล่าสุดเพื่อเปรียบเทียบ
         function updateInGameTop3() {
             // อัปเดตทุก 10 frames เพื่อประหยัด performance
             top3UpdateCounter++;
@@ -2847,6 +2846,11 @@
             const top3 = allSnakes.slice(0, 3);
             const medals = ['🥇', '🥈', '🥉'];
             const classes = ['gold', 'silver', 'bronze'];
+
+            // ✅ สร้าง key เปรียบเทียบ: ชื่อ+คะแนน → อัปเดตเฉพาะเมื่อเปลี่ยน (ไม่กระพริบ)
+            const newKey = top3.map(s => `${s.name}:${s.score}`).join('|');
+            if (newKey === top3LastKey) return; // ข้อมูลไม่เปลี่ยน → ไม่ต้องอัปเดต DOM
+            top3LastKey = newKey;
 
             container.innerHTML = top3.map((snake, i) => {
                 const name = snake.name || 'Unknown';
@@ -5342,6 +5346,13 @@
             // 🏆 โหลด Top 100 Leaderboard สำหรับหน้า Title
             loadTitleLeaderboard();
 
+            // 🎵 โหลด Config ทันที (เพื่อให้เพลงพร้อมเล่นเมื่อ user คลิก)
+            loadGameConfig().then(() => {
+                console.log('[Init] Config loaded - music tracks ready');
+            }).catch(err => {
+                console.warn('[Init] Config load failed (will retry on game start):', err.message);
+            });
+
             // Fullscreen toggle
             const fullscreenBtn = document.getElementById('fullscreen-toggle');
             if (fullscreenBtn) {
@@ -5370,11 +5381,25 @@
             }
 
             // ✅ เริ่มเพลง Title เมื่อผู้ใช้ interact ครั้งแรก (autoplay blocked)
-            function startTitleMusic() {
-                initAudio();
-                playMusic('title');
+            // 🎵 FIX: รอ config โหลดเสร็จก่อนเล่นเพลง (ไม่งั้น tracks จะยังว่างอยู่)
+            async function startTitleMusic() {
                 document.removeEventListener('click', startTitleMusic);
                 document.removeEventListener('touchstart', startTitleMusic);
+
+                initAudio();
+
+                // ถ้า tracks ยังว่าง → รอ config โหลด (สูงสุด 3 วินาที)
+                if (musicPlayer.titleTracks.length === 0 && musicPlayer.gameplayTracks.length === 0) {
+                    console.log('[Music] Tracks ยังว่าง - รอ config...');
+                    try {
+                        await loadGameConfig();
+                    } catch(e) {
+                        console.warn('[Music] Config load failed:', e.message);
+                    }
+                }
+
+                console.log('[Music] เริ่มเล่น title music - tracks:', musicPlayer.titleTracks.length);
+                playMusic('title');
             }
             document.addEventListener('click', startTitleMusic, { once: true });
             document.addEventListener('touchstart', startTitleMusic, { once: true });

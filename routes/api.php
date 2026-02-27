@@ -1237,7 +1237,11 @@ Route::get('/games/config', function () {
         if (\Illuminate\Support\Facades\Schema::hasTable('game_settings')) {
             foreach ($groups as $group) {
                 $groupConfig = \App\Models\GameSetting::getGroup($group);
-                $allConfig = array_merge($allConfig, $groupConfig);
+                // ✅ FIX: Collection ต้องแปลงเป็น array ก่อน array_merge (PHP 8.3 TypeError)
+                $configArray = $groupConfig instanceof \Illuminate\Support\Collection
+                    ? $groupConfig->toArray()
+                    : (array) $groupConfig;
+                $allConfig = array_merge($allConfig, $configArray);
             }
         }
 
