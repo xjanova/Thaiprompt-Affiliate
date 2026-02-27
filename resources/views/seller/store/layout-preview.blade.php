@@ -51,6 +51,32 @@
     .product-card-detailed {
         @apply bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl overflow-hidden transition-all duration-300 hover:shadow-2xl;
     }
+
+    /* สำหรับ Product Detail Preview */
+    .store-price-gradient {
+        background: linear-gradient(135deg, var(--store-primary), var(--store-secondary));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+    .store-price-box {
+        background: linear-gradient(135deg,
+            color-mix(in srgb, var(--store-primary) 10%, white),
+            color-mix(in srgb, var(--store-secondary) 10%, white)
+        );
+        border-color: color-mix(in srgb, var(--store-primary) 30%, white);
+    }
+    .store-tab-active {
+        border-color: var(--store-primary);
+        color: var(--store-primary);
+        background: color-mix(in srgb, var(--store-primary) 8%, white);
+    }
+    .store-thumbnail-active {
+        border-color: var(--store-primary) !important;
+    }
+    .store-badge-featured {
+        background: linear-gradient(135deg, var(--store-accent), color-mix(in srgb, var(--store-accent) 80%, #ff6600));
+    }
 </style>
 
 {{-- Custom CSS จากผู้ใช้ --}}
@@ -146,6 +172,12 @@
             ])
         @endif
     @endforeach
+
+    {{-- ส่วน Preview หน้ารายละเอียดสินค้า --}}
+    @include('vendor-store.sections.product-detail-preview', [
+        'store' => $store,
+        'layoutSettings' => $layoutSettings,
+    ])
 
 </div>
 @endsection
