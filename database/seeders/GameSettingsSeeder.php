@@ -58,6 +58,22 @@ class GameSettingsSeeder extends Seeder
                 'description' => 'จำนวนผู้เล่นสูงสุดต่อห้อง',
                 'is_active' => true,
             ],
+            [
+                'key' => 'snake_io_max_rooms',
+                'value' => '20',
+                'type' => 'integer',
+                'group' => 'snake_io_server',
+                'description' => 'จำนวนห้องสูงสุดทั้งเซิร์ฟเวอร์ (0 = ไม่จำกัด)',
+                'is_active' => true,
+            ],
+            [
+                'key' => 'snake_io_max_total_players',
+                'value' => '200',
+                'type' => 'integer',
+                'group' => 'snake_io_server',
+                'description' => 'จำนวนผู้เล่นสูงสุดทั้งเซิร์ฟเวอร์ (0 = ไม่จำกัด)',
+                'is_active' => true,
+            ],
 
             // ==========================================
             // 🌍 Game World Settings

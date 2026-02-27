@@ -15,17 +15,41 @@
             </p>
         </div>
 
-        {{-- ปุ่ม Seed Music (ถ้ายังไม่มีกลุ่ม music) --}}
-        @if(!isset($settings['snake_io_music']))
-            <form action="{{ route('admin.games.game-settings.seed-music') }}" method="POST" class="inline">
-                @csrf
-                <button type="submit"
-                        class="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg transform hover:scale-105 transition duration-200 flex items-center gap-2">
-                    <span class="text-xl">🎵</span>
-                    สร้าง Music Settings
-                </button>
-            </form>
-        @endif
+        <div class="flex flex-wrap gap-3">
+            {{-- ปุ่ม Seed Music (ถ้ายังไม่มีกลุ่ม music) --}}
+            @if(!isset($settings['snake_io_music']))
+                <form action="{{ route('admin.games.game-settings.seed-music') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit"
+                            class="px-6 py-3 bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-semibold rounded-lg shadow-lg transform hover:scale-105 transition duration-200 flex items-center gap-2">
+                        <span class="text-xl">🎵</span>
+                        สร้าง Music Settings
+                    </button>
+                </form>
+            @endif
+
+            {{-- ปุ่ม Seed Server Limits (ถ้ายังไม่มี max_rooms/max_total_players) --}}
+            @php
+                $hasMaxRooms = false;
+                $hasMaxPlayers = false;
+                if (isset($settings['snake_io_server'])) {
+                    foreach ($settings['snake_io_server'] as $s) {
+                        if ($s->key === 'snake_io_max_rooms') $hasMaxRooms = true;
+                        if ($s->key === 'snake_io_max_total_players') $hasMaxPlayers = true;
+                    }
+                }
+            @endphp
+            @if(!$hasMaxRooms || !$hasMaxPlayers)
+                <form action="{{ route('admin.games.game-settings.seed-server-limits') }}" method="POST" class="inline">
+                    @csrf
+                    <button type="submit"
+                            class="px-6 py-3 bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white font-semibold rounded-lg shadow-lg transform hover:scale-105 transition duration-200 flex items-center gap-2">
+                        <span class="text-xl">🔒</span>
+                        สร้าง Server Limits
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
 
     {{-- Success/Error Messages --}}

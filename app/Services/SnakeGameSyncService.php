@@ -397,6 +397,95 @@ class SnakeGameSyncService
     }
 
     /**
+     * ดึงรายการห้องที่มีผู้เล่น active (รวม player list ต่อห้อง)
+     *
+     * @return array รายการห้อง [{room_id, player_count, players: [{player_id, player_name, score, length, is_alive}]}]
+     */
+    public function getActiveRooms(): array
+    {
+        try {
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+            $rooms = [];
+            $now = now()->timestamp;
+
+            foreach ($globalRegistry as $playerId => $joinTime) {
+                $playerData = Cache::get($this->getPlayerStateKey($playerId));
+                if ($playerData) {
+                    $timeSinceUpdate = $now - ($playerData['updated_at'] ?? 0);
+                    if ($timeSinceUpdate <= self::PLAYER_TTL) {
+                        $roomId = $playerData['room_id'] ?? self::DEFAULT_ROOM;
+                        if (! isset($rooms[$roomId])) {
+                            $rooms[$roomId] = [
+                                'room_id' => $roomId,
+                                'player_count' => 0,
+                                'players' => [],
+                            ];
+                        }
+                        $rooms[$roomId]['player_count']++;
+                        $rooms[$roomId]['players'][] = [
+                            'player_id' => $playerData['player_id'] ?? $playerId,
+                            'player_name' => $playerData['player_name'] ?? 'Player',
+                            'skin' => $playerData['skin'] ?? 'classic',
+                            'score' => $playerData['score'] ?? 0,
+                            'length' => $playerData['length'] ?? 5,
+                            'is_alive' => $playerData['is_alive'] ?? true,
+                        ];
+                    }
+                }
+            }
+
+            return array_values($rooms);
+        } catch (\Exception $e) {
+            Log::warning("[SnakeSync] ดึงรายการห้องล้มเหลว: {$e->getMessage()}");
+
+            return [];
+        }
+    }
+
+    /**
+     * ดึงจำนวนห้องที่มีผู้เล่น active
+     */
+    public function getActiveRoomsCount(): int
+    {
+        return count($this->getActiveRooms());
+    }
+
+    /**
+     * ดึงผู้เล่น active ทั้งหมดจาก global registry (สำหรับ admin monitor)
+     *
+     * @param  int  $limit  จำนวนสูงสุด
+     * @return array รายการผู้เล่นทุกห้อง
+     */
+    public function getAllActivePlayers(int $limit = 100): array
+    {
+        try {
+            $globalRegistry = Cache::get(self::GLOBAL_REGISTRY_KEY, []);
+            $players = [];
+            $now = now()->timestamp;
+            $count = 0;
+
+            foreach ($globalRegistry as $playerId => $joinTime) {
+                if ($count >= $limit) {
+                    break;
+                }
+
+                $playerData = Cache::get($this->getPlayerStateKey($playerId));
+                if ($playerData) {
+                    $timeSinceUpdate = $now - ($playerData['updated_at'] ?? 0);
+                    if ($timeSinceUpdate <= self::PLAYER_TTL) {
+                        $players[] = $playerData;
+                        $count++;
+                    }
+                }
+            }
+
+            return $players;
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
      * เพิ่มผู้เล่นเข้า Room Registry + Global Registry (ใช้ lock ป้องกัน race condition)
      */
     protected function addToRegistry(string $playerId, string $roomId = ''): void

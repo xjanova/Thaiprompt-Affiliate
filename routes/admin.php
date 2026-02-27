@@ -2644,6 +2644,10 @@ Route::prefix('games')->name('games.')->group(function () {
         // ✅ Seed ข้อมูล Music Settings (ถ้ายังไม่มี)
         Route::post('/seed-music', [App\Http\Controllers\Admin\GameSettingsController::class, 'seedMusic'])
             ->name('seed-music');
+
+        // ✅ Seed ข้อมูล Server Limits (ถ้ายังไม่มี)
+        Route::post('/seed-server-limits', [App\Http\Controllers\Admin\GameSettingsController::class, 'seedServerLimits'])
+            ->name('seed-server-limits');
     });
 
     // ⚠️ Wildcard routes ต้องอยู่ท้ายสุด! (ไม่งั้นจะจับ /game-settings, /snake-io ไปก่อน)

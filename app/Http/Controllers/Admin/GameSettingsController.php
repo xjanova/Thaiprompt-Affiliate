@@ -275,6 +275,61 @@ class GameSettingsController extends Controller
     }
 
     /**
+     * Seed ข้อมูล Server Limits เริ่มต้น (ถ้ายังไม่มี)
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function seedServerLimits()
+    {
+        try {
+            $existingMaxRooms = GameSetting::where('key', 'snake_io_max_rooms')->exists();
+            $existingMaxPlayers = GameSetting::where('key', 'snake_io_max_total_players')->exists();
+
+            if ($existingMaxRooms && $existingMaxPlayers) {
+                return redirect()
+                    ->route('admin.games.game-settings.index')
+                    ->with('success', 'มี Server Limits Settings อยู่แล้ว');
+            }
+
+            $limitSettings = [
+                [
+                    'key' => 'snake_io_max_rooms',
+                    'value' => '20',
+                    'type' => 'integer',
+                    'group' => 'snake_io_server',
+                    'description' => 'จำนวนห้องสูงสุดทั้งเซิร์ฟเวอร์ (0 = ไม่จำกัด)',
+                    'is_active' => true,
+                ],
+                [
+                    'key' => 'snake_io_max_total_players',
+                    'value' => '200',
+                    'type' => 'integer',
+                    'group' => 'snake_io_server',
+                    'description' => 'จำนวนผู้เล่นสูงสุดทั้งเซิร์ฟเวอร์ (0 = ไม่จำกัด)',
+                    'is_active' => true,
+                ],
+            ];
+
+            foreach ($limitSettings as $data) {
+                GameSetting::updateOrCreate(
+                    ['key' => $data['key']],
+                    $data
+                );
+            }
+
+            GameSetting::clearCache();
+
+            return redirect()
+                ->route('admin.games.game-settings.index')
+                ->with('success', 'สร้าง Server Limits Settings สำเร็จ!');
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('admin.games.game-settings.index')
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Seed ข้อมูล Music Settings เริ่มต้น (ถ้ายังไม่มี)
      *
      * @return \Illuminate\Http\RedirectResponse
