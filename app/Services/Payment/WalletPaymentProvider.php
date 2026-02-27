@@ -42,17 +42,25 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 throw new Exception('Insufficient wallet balance');
             }
 
+            // บันทึก balance ก่อนหัก
+            $balanceBefore = $wallet->balance;
+
             // Deduct from wallet
             $wallet->decrement('balance', $transaction->amount);
 
             // Create wallet transaction
+            // ⚠️ ใช้ type='withdrawal' แทน 'payment' (ไม่มีใน enum)
+            // ⚠️ ใช้ status='completed' แทน 'approved' (ไม่มีใน enum)
             $walletTransaction = WalletTransaction::create([
                 'wallet_id' => $wallet->id,
-                'type' => 'payment',
-                'amount' => -$transaction->amount, // Negative for deduction
+                'user_id' => $transaction->user_id,
+                'type' => 'withdrawal',
+                'amount' => $transaction->amount,
+                'balance_before' => $balanceBefore,
                 'balance_after' => $wallet->balance,
                 'description' => $this->getTransactionDescription($transaction),
-                'status' => 'approved',
+                'status' => 'completed',
+                'completed_at' => now(),
                 'metadata' => [
                     'payment_transaction_id' => $transaction->id,
                     'order_id' => $transaction->order_id,
@@ -65,7 +73,7 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 'gateway_transaction_id' => $walletTransaction->id,
                 'response' => [
                     'wallet_id' => $wallet->id,
-                    'balance_before' => $wallet->balance + $transaction->amount,
+                    'balance_before' => $balanceBefore,
                     'balance_after' => $wallet->balance,
                 ],
             ];
@@ -93,17 +101,23 @@ class WalletPaymentProvider implements PaymentProviderInterface
                 throw new Exception('Wallet not found');
             }
 
+            // บันทึก balance ก่อนคืนเงิน
+            $balanceBefore = $wallet->balance;
+
             // Add refund amount to wallet
             $wallet->increment('balance', $amount);
 
             // Create refund wallet transaction
             $walletTransaction = WalletTransaction::create([
                 'wallet_id' => $wallet->id,
+                'user_id' => $transaction->user_id,
                 'type' => 'refund',
                 'amount' => $amount,
+                'balance_before' => $balanceBefore,
                 'balance_after' => $wallet->balance,
-                'description' => 'Refund for '.$this->getTransactionDescription($transaction),
-                'status' => 'approved',
+                'description' => 'คืนเงินสำหรับ '.$this->getTransactionDescription($transaction),
+                'status' => 'completed',
+                'completed_at' => now(),
                 'metadata' => [
                     'payment_transaction_id' => $transaction->id,
                     'order_id' => $transaction->order_id,

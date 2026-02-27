@@ -356,9 +356,25 @@ class PaymentService
     {
         $user = $transaction->user;
 
+        if (! $user) {
+            Log::error('completeWalletTopup: ไม่พบ user สำหรับ transaction', [
+                'transaction_id' => $transaction->id,
+                'user_id' => $transaction->user_id,
+            ]);
+            throw new \Exception('User not found for wallet topup transaction #'.$transaction->id);
+        }
+
         // ใช้ original_amount ถ้ามี (กรณี unique amount ถูกสร้าง) มิเช่นนั้นใช้ transaction amount
         $metadata = $transaction->metadata ?? [];
-        $depositAmount = $metadata['original_amount'] ?? $transaction->amount;
+        $depositAmount = (float) ($metadata['original_amount'] ?? $transaction->amount);
+
+        Log::info('completeWalletTopup: เริ่มเติมเงิน', [
+            'transaction_id' => $transaction->id,
+            'user_id' => $user->id,
+            'original_amount' => $metadata['original_amount'] ?? 'N/A (ใช้ transaction amount)',
+            'deposit_amount' => $depositAmount,
+            'transaction_amount' => $transaction->amount,
+        ]);
 
         // Get or create wallet
         $wallet = Wallet::firstOrCreate(
@@ -367,15 +383,20 @@ class PaymentService
         );
 
         // Create wallet transaction
+        // ⚠️ ต้องใส่ user_id, balance_before, status='completed' ให้ถูกต้องตาม schema
         $walletTransaction = WalletTransaction::create([
             'wallet_id' => $wallet->id,
+            'user_id' => $user->id,
             'type' => 'deposit',
             'amount' => $depositAmount,
+            'balance_before' => $wallet->balance,
             'balance_after' => $wallet->balance + $depositAmount,
-            'description' => 'Wallet top-up via '.$transaction->payment_method,
-            'status' => 'approved',
+            'description' => 'เติมเงินผ่าน '.$transaction->payment_method,
+            'status' => 'completed',
+            'completed_at' => now(),
             'metadata' => [
                 'payment_transaction_id' => $transaction->id,
+                'source' => $metadata['source'] ?? 'wallet_topup',
             ],
         ]);
 
@@ -384,6 +405,13 @@ class PaymentService
 
         // Link wallet transaction
         $transaction->update(['wallet_transaction_id' => $walletTransaction->id]);
+
+        Log::info('completeWalletTopup: เติมเงินสำเร็จ', [
+            'transaction_id' => $transaction->id,
+            'wallet_transaction_id' => $walletTransaction->id,
+            'deposit_amount' => $depositAmount,
+            'new_balance' => $wallet->fresh()->balance,
+        ]);
     }
 
     /**
@@ -554,11 +582,18 @@ class PaymentService
 
                 WalletTransaction::create([
                     'wallet_id' => $wallet->id,
+                    'user_id' => $transaction->user_id,
                     'type' => 'refund',
                     'amount' => $refundAmount,
+                    'balance_before' => $wallet->balance - $refundAmount,
                     'balance_after' => $wallet->balance,
-                    'description' => 'Refund for order #'.$transaction->order->order_number,
-                    'status' => 'approved',
+                    'description' => 'คืนเงินสำหรับคำสั่งซื้อ #'.$transaction->order->order_number,
+                    'status' => 'completed',
+                    'completed_at' => now(),
+                    'metadata' => [
+                        'payment_transaction_id' => $transaction->id,
+                        'refund_transaction_id' => $refund->id ?? null,
+                    ],
                 ]);
             }
 

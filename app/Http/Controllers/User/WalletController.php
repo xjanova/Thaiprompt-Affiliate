@@ -199,6 +199,7 @@ class WalletController extends Controller
                 'expired_at' => now()->addMinutes(30),
                 'metadata' => [
                     'source' => 'web',
+                    'original_amount' => $amount,
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ],
@@ -642,6 +643,7 @@ class WalletController extends Controller
                 'expired_at' => now()->addMinutes(30),
                 'metadata' => [
                     'source' => 'deposit_promptpay',
+                    'original_amount' => $amount,
                     'ip_address' => $request->ip(),
                     'user_agent' => $request->userAgent(),
                 ],
@@ -658,6 +660,7 @@ class WalletController extends Controller
             $transaction->update([
                 'payment_method' => 'promptpay',
             ]);
+            $transaction->refresh(); // โหลดข้อมูลใหม่จาก DB เพื่อให้ metadata สดใหม่
 
             // ─── ขั้นตอนที่ 3: ประมวลผลผ่าน PaymentService ───
             // จะสร้าง unique amount + QR Code + ตั้งสถานะเป็น processing
