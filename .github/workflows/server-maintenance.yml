@@ -1,0 +1,249 @@
+name: Server Maintenance
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Maintenance action to run'
+        required: true
+        default: 'fix-apache-custombuild'
+        type: choice
+        options:
+          - fix-apache-custombuild
+          - custombuild-status
+          - restart-apache
+          - restart-services
+          - custom-command
+      custom_command:
+        description: 'Custom command (only for "custom-command" action)'
+        required: false
+        default: ''
+      confirm:
+        description: 'Type "YES" to confirm destructive actions'
+        required: false
+        default: ''
+
+jobs:
+  maintenance:
+    name: Run Maintenance — ${{ inputs.action }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate confirmation for destructive actions
+        if: inputs.action == 'fix-apache-custombuild' && inputs.confirm != 'YES'
+        run: |
+          echo "::error::⚠️ กรุณาพิมพ์ 'YES' ใน confirm field เพื่อยืนยัน"
+          echo "Action 'fix-apache-custombuild' จะลบ system Apache packages และ rebuild ผ่าน CustomBuild"
+          exit 1
+
+      - name: Run maintenance via SSH
+        uses: appleboy/ssh-action@v1
+        env:
+          DEPLOY_DIR: ${{ vars.DEPLOY_PATH }}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          command_timeout: 30m
+          envs: DEPLOY_DIR
+          script: |
+            echo "============================================"
+            echo "🔧 Server Maintenance — $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "🎯 Action: ${{ inputs.action }}"
+            echo "============================================"
+            echo ""
+
+            case "${{ inputs.action }}" in
+              fix-apache-custombuild)
+                echo "🔧 แก้ไขปัญหา: Package 'apache2-bin' is installed on the system"
+                echo "---"
+                echo ""
+
+                # ขั้นตอนที่ 1: ตรวจสอบ packages ที่ติดตั้ง
+                echo "📋 ขั้นตอนที่ 1: ตรวจสอบ Apache system packages..."
+                dpkg -l | grep -i apache2 || echo "ไม่พบ Apache system packages"
+                echo ""
+
+                # ขั้นตอนที่ 2: หยุด system Apache (ถ้ากำลังรัน)
+                echo "⏹️ ขั้นตอนที่ 2: หยุด system Apache service..."
+                systemctl stop apache2 2>/dev/null && echo "✅ หยุด apache2 service แล้ว" || echo "ℹ️ apache2 service ไม่ได้รัน"
+                systemctl disable apache2 2>/dev/null && echo "✅ disable apache2 service แล้ว" || echo "ℹ️ ไม่สามารถ disable ได้"
+                echo ""
+
+                # ขั้นตอนที่ 3: ลบ system Apache packages
+                echo "🗑️ ขั้นตอนที่ 3: ลบ system Apache packages..."
+                apt-get remove --purge -y \
+                  apache2 \
+                  apache2-bin \
+                  apache2-data \
+                  apache2-utils \
+                  apache2-doc \
+                  libapache2-mod-* \
+                  2>&1 || echo "⚠️ บาง packages อาจไม่มีติดตั้ง"
+                echo ""
+
+                # ขั้นตอนที่ 4: ลบ dependencies ที่ไม่ใช้
+                echo "🧹 ขั้นตอนที่ 4: ลบ dependencies ที่ไม่จำเป็น..."
+                apt-get autoremove -y 2>&1
+                apt-get autoclean -y 2>&1
+                echo ""
+
+                # ขั้นตอนที่ 5: ตรวจสอบว่าลบสำเร็จ
+                echo "✅ ขั้นตอนที่ 5: ตรวจสอบหลังลบ..."
+                if dpkg -l | grep -q "apache2-bin"; then
+                  echo "❌ ยังมี apache2-bin อยู่! ลองใช้ dpkg --force-remove..."
+                  dpkg --force-remove-reinstreq --remove apache2-bin 2>&1 || true
+                else
+                  echo "✅ ลบ apache2-bin สำเร็จ!"
+                fi
+                echo ""
+
+                # ขั้นตอนที่ 6: Rebuild Apache ผ่าน CustomBuild
+                echo "🔨 ขั้นตอนที่ 6: Rebuild Apache ผ่าน DirectAdmin CustomBuild..."
+                if [ -d "/usr/local/directadmin/custombuild" ]; then
+                  cd /usr/local/directadmin/custombuild
+
+                  echo "📦 อัพเดท CustomBuild..."
+                  ./build update 2>&1
+
+                  echo ""
+                  echo "🔨 Rebuild Apache..."
+                  ./build apache 2>&1
+
+                  echo ""
+                  echo "🔨 Rebuild PHP (recompile with new Apache)..."
+                  ./build php n 2>&1
+
+                  echo ""
+                  echo "📋 ตรวจสอบ CustomBuild versions..."
+                  ./build versions 2>&1
+                else
+                  echo "❌ ไม่พบ CustomBuild directory: /usr/local/directadmin/custombuild"
+                  echo "กรุณาตรวจสอบ DirectAdmin installation"
+                  exit 1
+                fi
+                echo ""
+
+                # ขั้นตอนที่ 7: Restart services
+                echo "🔄 ขั้นตอนที่ 7: Restart services..."
+                if [ -x "/usr/local/directadmin/custombuild/build" ]; then
+                  cd /usr/local/directadmin/custombuild
+                  ./build rewrite_confs 2>&1
+                fi
+
+                # Restart DirectAdmin's Apache (httpd)
+                systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  service httpd restart 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  echo "⚠️ ไม่สามารถ restart httpd"
+
+                # Restart DirectAdmin
+                systemctl restart directadmin 2>/dev/null && echo "✅ Restart directadmin สำเร็จ" || \
+                  service directadmin restart 2>/dev/null || echo "⚠️ ไม่สามารถ restart directadmin"
+                echo ""
+
+                # ขั้นตอนที่ 8: ตรวจสอบ final status
+                echo "📊 ขั้นตอนที่ 8: Final Status..."
+                echo "--- Apache Status ---"
+                httpd -v 2>/dev/null || /usr/local/apache/bin/httpd -v 2>/dev/null || echo "ไม่พบ Apache/httpd"
+                echo ""
+                echo "--- Service Status ---"
+                systemctl is-active httpd 2>/dev/null || service httpd status 2>/dev/null | head -5 || echo "httpd status unknown"
+                echo ""
+                echo "--- DirectAdmin Apache check ---"
+                ls -la /usr/local/apache/bin/httpd 2>/dev/null || echo "ไม่พบ DirectAdmin Apache binary"
+                echo ""
+
+                # ตรวจสอบว่าเว็บยังทำงาน
+                echo "--- Website Health Check ---"
+                if curl -s -o /dev/null -w "%{http_code}" http://localhost 2>/dev/null | grep -qE "200|301|302"; then
+                  echo "✅ เว็บไซต์ตอบสนองปกติ"
+                else
+                  echo "⚠️ เว็บไซต์อาจยังไม่พร้อม กรุณาตรวจสอบอีกครั้ง"
+                fi
+                ;;
+
+              custombuild-status)
+                echo "📋 CustomBuild Status"
+                echo "---"
+                if [ -d "/usr/local/directadmin/custombuild" ]; then
+                  cd /usr/local/directadmin/custombuild
+                  echo "=== Versions ==="
+                  ./build versions 2>&1
+                  echo ""
+                  echo "=== Options ==="
+                  ./build options | head -50
+                  echo ""
+                  echo "=== Apache System Packages ==="
+                  dpkg -l | grep -i apache2 || echo "ไม่มี system Apache packages (ปกติ)"
+                else
+                  echo "❌ ไม่พบ CustomBuild directory"
+                fi
+                ;;
+
+              restart-apache)
+                echo "🔄 Restart Apache (DirectAdmin httpd)"
+                echo "---"
+                systemctl restart httpd 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  service httpd restart 2>/dev/null && echo "✅ Restart httpd สำเร็จ" || \
+                  echo "❌ ไม่สามารถ restart httpd"
+                echo ""
+                echo "--- Apache Status ---"
+                systemctl status httpd 2>/dev/null | head -10 || service httpd status 2>/dev/null | head -10 || echo "status unknown"
+                ;;
+
+              restart-services)
+                echo "🔄 Restart All Services"
+                echo "---"
+                echo "Restarting httpd..."
+                systemctl restart httpd 2>/dev/null || service httpd restart 2>/dev/null || echo "⚠️ httpd restart failed"
+                echo "Restarting php-fpm..."
+                systemctl restart php-fpm* 2>/dev/null || service php-fpm83 restart 2>/dev/null || echo "⚠️ php-fpm restart failed"
+                echo "Restarting directadmin..."
+                systemctl restart directadmin 2>/dev/null || service directadmin restart 2>/dev/null || echo "⚠️ directadmin restart failed"
+                echo "Restarting mysql/mariadb..."
+                systemctl restart mysqld 2>/dev/null || systemctl restart mariadb 2>/dev/null || echo "⚠️ mysql restart failed"
+                echo ""
+                echo "✅ Restart complete"
+                echo ""
+                echo "--- Service Status ---"
+                for svc in httpd php-fpm83 directadmin mysqld mariadb; do
+                  STATUS=$(systemctl is-active $svc 2>/dev/null || echo "inactive")
+                  echo "$svc: $STATUS"
+                done
+                ;;
+
+              custom-command)
+                CMD="${{ inputs.custom_command }}"
+                if [ -z "$CMD" ]; then
+                  echo "❌ ไม่ได้ระบุ custom command"
+                  exit 1
+                fi
+                echo "🔧 Running custom command..."
+                echo "Command: $CMD"
+                echo "---"
+                eval "$CMD" 2>&1
+                ;;
+
+              *)
+                echo "❌ Unknown action: ${{ inputs.action }}"
+                exit 1
+                ;;
+            esac
+
+            echo ""
+            echo "============================================"
+            echo "✅ Maintenance complete — $(date '+%Y-%m-%d %H:%M:%S')"
+            echo "============================================"
+
+      - name: Maintenance summary
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "## ✅ Maintenance Successful" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ❌ Maintenance Failed" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Action:** ${{ inputs.action }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
