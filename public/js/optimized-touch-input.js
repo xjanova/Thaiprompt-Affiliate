@@ -37,9 +37,11 @@ class OptimizedTouchInput {
         canvas.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
         canvas.addEventListener('touchend', this.handleTouchEnd.bind(this), { passive: false });
 
-        // Prevent default touch behavior
+        // ✅ ป้องกัน scroll แต่อนุญาต pinch-zoom (accessibility)
         document.addEventListener('touchmove', function(e) {
-            e.preventDefault();
+            if (e.touches.length === 1) {
+                e.preventDefault();
+            }
         }, { passive: false });
 
         this.isActive = true;

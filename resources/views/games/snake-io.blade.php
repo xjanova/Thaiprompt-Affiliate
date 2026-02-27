@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -938,6 +938,110 @@
                 bottom: 5px;
                 right: 50px;
             }
+        }
+
+        /* ============================================================
+         * ✅ Mobile/Tablet UX Fixes (v3.1.0)
+         * ============================================================ */
+
+        /* Safe area insets สำหรับ iPhone notch/Dynamic Island */
+        @supports(padding: max(0px)) {
+            #sound-toggle {
+                bottom: max(10px, env(safe-area-inset-bottom, 10px));
+                right: max(10px, env(safe-area-inset-right, 10px));
+            }
+            #fullscreen-toggle {
+                bottom: max(10px, env(safe-area-inset-bottom, 10px));
+                right: max(60px, calc(50px + env(safe-area-inset-right, 10px)));
+            }
+            #music-controls {
+                bottom: max(10px, env(safe-area-inset-bottom, 10px));
+                left: max(10px, env(safe-area-inset-left, 10px));
+            }
+            #game-version {
+                bottom: max(10px, env(safe-area-inset-bottom, 10px));
+                left: max(20px, env(safe-area-inset-left, 20px));
+            }
+        }
+
+        /* ปรับ touch targets ขั้นต่ำ 44px สำหรับ touchscreen */
+        @media (pointer: coarse) {
+            #music-controls button {
+                min-width: 40px;
+                min-height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            #music-volume {
+                height: 8px;
+                min-width: 50px;
+            }
+            input[type="color"] {
+                min-width: 50px !important;
+                min-height: 44px !important;
+            }
+            .skin-option {
+                min-width: 48px;
+                min-height: 48px;
+            }
+            #sound-toggle, #fullscreen-toggle {
+                min-width: 44px;
+                min-height: 44px;
+            }
+        }
+
+        /* จอเล็กมาก (320px เช่น iPhone SE) - landscape */
+        @media (max-width: 600px) and (max-height: 400px) and (orientation: landscape) {
+            .title-logo { font-size: 28px !important; }
+            .title-subtitle { font-size: 12px !important; margin-bottom: 10px !important; }
+            .name-input { min-width: 180px; font-size: 13px; padding: 8px 14px; }
+            .btn { font-size: 14px; padding: 8px 20px; }
+            .skin-option { width: 40px; height: 40px; }
+            .skin-selector { gap: 8px; }
+            #controls-mobile { font-size: 10px !important; bottom: 5px; }
+            #controls-mobile div:last-child { display: none; }
+            #game-version { font-size: 8px; bottom: 55px; }
+
+            /* Character setup ลดขนาด */
+            #character-setup-screen { padding: 10px !important; }
+            #character-setup-screen > div { max-width: 95vw !important; }
+            #character-setup-screen h3 { font-size: 12px !important; }
+            input[type="color"] { width: 40px !important; height: 36px !important; }
+
+            /* Game over ลดขนาด */
+            #game-over { width: 90vw !important; padding: 15px !important; }
+            #game-over h2 { font-size: 20px !important; }
+
+            /* Connection status ย้ายให้ไม่บัง */
+            #connection-status { font-size: 10px; padding: 4px 10px; }
+
+            /* Leaderboard ย่อ */
+            .leaderboard { max-height: 100px; }
+            .leaderboard-entry { padding: 3px 6px; margin: 1px 0; font-size: 10px; }
+        }
+
+        /* แท็บเล็ต landscape (iPad) */
+        @media (min-width: 768px) and (max-height: 1024px) and (orientation: landscape) {
+            .leaderboard { max-height: 250px; }
+        }
+
+        /* มือถือ portrait - ลดขนาด leaderboard */
+        @media (max-width: 768px) {
+            .leaderboard { max-height: 150px; }
+            .leaderboard-entry { padding: 4px 6px; margin: 2px 0; font-size: 11px; }
+        }
+
+        /* ซ่อน landscape lock overlay บน desktop/tablet ใหญ่ */
+        @media (min-width: 901px) {
+            #landscape-lock { display: none !important; }
+        }
+
+        /* Landscape lock responsive ย่อ */
+        @media (max-width: 480px) and (orientation: portrait) {
+            #landscape-lock h2 { font-size: 20px !important; }
+            #landscape-lock p { font-size: 12px !important; }
+            #landscape-lock > div:first-child { font-size: 48px !important; }
         }
     </style>
 </head>
@@ -2279,11 +2383,12 @@
             canvas.addEventListener('touchmove', onTouchMove, { passive: false });
             canvas.addEventListener('touchend', onTouchEnd, { passive: false });
 
-            // Prevent default touch behavior on the entire document
+            // Prevent default touch behavior (แต่อนุญาต pinch-zoom สำหรับ accessibility)
             document.addEventListener('touchmove', function(e) {
-                if (gameStarted) {
+                if (gameStarted && e.touches.length === 1) {
                     e.preventDefault();
                 }
+                // pinch-zoom (2 นิ้ว) จะไม่ถูกบล็อก
             }, { passive: false });
 
             // ✅ ทำความสะอาดเมื่อปิดแท็บ/เปลี่ยนหน้า (ป้องกัน ghost players)
@@ -3565,6 +3670,12 @@
 
             foods.forEach(food => scene.remove(food));
             foods = [];
+
+            // ✅ ทำลาย touch manager ป้องกัน memory leak
+            if (touchInputManager) {
+                touchInputManager.destroy();
+                touchInputManager = null;
+            }
 
             // Reset multiplayer
             if (multiplayerManager) {
