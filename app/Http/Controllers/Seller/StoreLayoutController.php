@@ -83,7 +83,7 @@ class StoreLayoutController extends Controller
             'show_store_description' => 'nullable|boolean',
             'show_store_stats' => 'nullable|boolean',
             // Layout Style
-            'layout_style' => 'nullable|string|in:modern,classic,minimal,bold',
+            'layout_style' => 'nullable|string|in:modern,classic,minimal,bold,lazada,shopee,aliexpress',
             'product_card_style' => 'nullable|string|in:default,minimal,detailed',
             'products_per_row' => 'nullable|integer|min:2|max:6',
             'sidebar_position' => 'nullable|string|in:left,right,none',
@@ -592,7 +592,7 @@ class StoreLayoutController extends Controller
     public function applyTemplate(Request $request)
     {
         $request->validate([
-            'template' => 'required|string|in:modern,classic,minimal,bold',
+            'template' => 'required|string|in:modern,classic,minimal,bold,lazada,shopee,aliexpress',
         ]);
 
         $user = auth()->user();

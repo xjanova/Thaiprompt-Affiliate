@@ -197,7 +197,7 @@
                         <p class="text-sm text-gray-500 dark:text-gray-400">
                             เลือกเทมเพลตแล้วกด "ใช้เทมเพลต" เพื่อปรับสี, Header, Product Card ให้ตรงตามแบบ (รูปภาพ/ข้อความ/Social ไม่ถูกเปลี่ยน)
                         </p>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                             @php $presets = \App\Models\StoreLayoutSetting::getLayoutPresets(); @endphp
                             @foreach($layoutStyles as $key => $style)
                             @php $preset = $presets[$key] ?? null; @endphp
@@ -214,13 +214,7 @@
                                         @if($preset)
                                         <div class="w-full h-16 rounded-lg mb-2 flex items-center justify-center text-3xl overflow-hidden"
                                              style="background: linear-gradient(135deg, {{ $preset['colors']['primary_color'] }}, {{ $preset['colors']['secondary_color'] }})">
-                                            <span class="text-white drop-shadow-lg">
-                                                @if($key === 'modern') 🌟
-                                                @elseif($key === 'classic') 🏛️
-                                                @elseif($key === 'minimal') ✨
-                                                @else 🔥
-                                                @endif
-                                            </span>
+                                            <span class="text-white drop-shadow-lg">{{ $preset['icon'] }}</span>
                                         </div>
                                         {{-- Color swatches --}}
                                         <div class="flex justify-center gap-1 mb-2">
