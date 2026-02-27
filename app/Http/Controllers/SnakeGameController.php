@@ -271,7 +271,7 @@ class SnakeGameController extends Controller
             'player_id' => 'nullable|integer|exists:game_room_players,id',
             'score' => 'required|integer|min:0',
             'length' => 'required|integer|min:1',
-            'rank' => 'nullable|integer|min:1',
+            'rank' => 'nullable|integer|min:0',
         ]);
 
         try {

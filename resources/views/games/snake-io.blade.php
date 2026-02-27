@@ -3973,15 +3973,16 @@
         }
 
         function getRank() {
-            // ✅ รวมผู้เล่นออนไลน์ด้วย
-            const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            // ✅ รวมผู้เล่นออนไลน์ด้วย (รวม player ทั้งที่ตายแล้วเพื่อคำนวณ rank)
+            const allSnakes = [player, ...bots].filter(s => s != null);
             for (const [, onlineSnake] of otherPlayerSnakes) {
-                if (onlineSnake && onlineSnake.alive) {
+                if (onlineSnake) {
                     allSnakes.push(onlineSnake);
                 }
             }
             allSnakes.sort((a, b) => b.score - a.score);
-            return allSnakes.indexOf(player) + 1;
+            const rank = allSnakes.indexOf(player) + 1;
+            return rank > 0 ? rank : 1; // ป้องกัน rank = 0
         }
 
         function updateLeaderboard() {
