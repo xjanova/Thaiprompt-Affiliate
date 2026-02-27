@@ -228,7 +228,7 @@ class SnakeGameSyncController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json([
-                'success' => true,
+                'success' => false,
                 'active_players' => 0,
             ]);
         }

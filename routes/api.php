@@ -1227,6 +1227,7 @@ Route::get('/games/config', function () {
         'snake_io_powerup_speed',
         'snake_io_powerup_multiplier',
         'snake_io_powerup_zoom',
+        'snake_io_music',
     ];
 
     $allConfig = [];
@@ -1335,6 +1336,16 @@ Route::get('/games/config', function () {
                     'lifetime' => (int) ($allConfig['zoom_lifetime'] ?? 30000),
                     'distance' => (int) ($allConfig['zoom_distance'] ?? 50),
                 ],
+            ],
+
+            // Music & Sound Settings
+            'music' => [
+                'enabled' => filter_var($allConfig['music_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'default_volume' => (float) ($allConfig['music_default_volume'] ?? 0.5),
+                'title_tracks' => json_decode($allConfig['music_title_tracks'] ?? '[]', true) ?: [],
+                'gameplay_tracks' => json_decode($allConfig['music_gameplay_tracks'] ?? '[]', true) ?: [],
+                'sfx_enabled' => filter_var($allConfig['sfx_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                'sfx_default_volume' => (float) ($allConfig['sfx_default_volume'] ?? 0.7),
             ],
         ],
     ]);

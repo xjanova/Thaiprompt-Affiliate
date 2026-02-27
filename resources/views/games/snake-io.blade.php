@@ -7,6 +7,27 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Snake.io - Thai Prompt Games</title>
+
+    <!-- SEO & Social Sharing -->
+    <meta name="description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริงแบบ Multiplayer เก็บอาหาร โตขึ้น หลบงูคนอื่น ใครยาวที่สุดชนะ!">
+    <meta name="keywords" content="snake.io, เกมงู, multiplayer, online game, Thai Prompt Games, เกมออนไลน์">
+
+    <!-- Open Graph (Facebook, LINE, etc.) -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Snake.io - เกมงูออนไลน์ Multiplayer">
+    <meta property="og:description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริงแบบ Multiplayer เก็บอาหาร โตขึ้น หลบงูคนอื่น ใครยาวที่สุดชนะ!">
+    <meta property="og:image" content="{{ asset('images/games/snake-io-og.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:site_name" content="Thai Prompt Games">
+    <meta property="og:locale" content="th_TH">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Snake.io - เกมงูออนไลน์ Multiplayer">
+    <meta name="twitter:description" content="เล่นเกมงู Snake.io ออนไลน์ฟรี! แข่งกับผู้เล่นจริง Multiplayer">
+    <meta name="twitter:image" content="{{ asset('images/games/snake-io-og.png') }}">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+Thai:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
@@ -1149,15 +1170,70 @@
             <div style="font-size: 10px; opacity: 0.7;">Swipe to move | 2 fingers to boost</div>
         </div>
 
+        <!-- ✅ Music Controls Panel -->
+        <div id="music-controls" style="
+            position: fixed; bottom: 10px; left: 10px; z-index: 100;
+            background: rgba(0,0,0,0.75); border-radius: 12px; padding: 6px 12px;
+            display: flex; align-items: center; gap: 6px;
+            backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.1);
+        ">
+            <button id="music-toggle-btn" onclick="toggleMusic()" title="เล่น/หยุดเพลง"
+                style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer;padding:4px;">🎵</button>
+            <button onclick="playNextTrack()" title="เพลงถัดไป"
+                style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:4px;">⏭</button>
+            <button id="music-mode-btn" onclick="setPlayMode(musicPlayer.playMode==='sequential'?'shuffle':musicPlayer.playMode==='shuffle'?'loop':'sequential')" title="โหมดเล่น"
+                style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:4px;">➡️</button>
+            <input id="music-volume" type="range" min="0" max="100" value="50"
+                oninput="setMusicVolume(this.value/100)"
+                style="width:60px;height:4px;accent-color:#00ffcc;cursor:pointer;">
+            <button onclick="toggleMute()" title="ปิด/เปิดเสียง"
+                style="background:none;border:none;color:#fff;font-size:14px;cursor:pointer;padding:4px;">🔊</button>
+            <span id="music-track-name" style="color:rgba(255,255,255,0.6);font-size:10px;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+        </div>
+
         <!-- Sound Toggle -->
         <button id="sound-toggle" title="Toggle Sound">🔊</button>
 
         <!-- ✅ Fullscreen Toggle -->
         <button id="fullscreen-toggle" title="Toggle Fullscreen">⛶</button>
 
+        <!-- ✅ Landscape Lock Overlay (แนวตั้ง → บังคับให้หมุนจอ) -->
+        <div id="landscape-lock" style="
+            display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:9999;
+            background:linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 100%);
+            color:#fff; flex-direction:column; justify-content:center; align-items:center; text-align:center;
+        ">
+            <div style="font-size:60px;margin-bottom:20px;animation:rotate-phone 2s ease-in-out infinite;">📱</div>
+            <h2 style="font-size:24px;margin-bottom:10px;color:#00ffcc;">กรุณาหมุนหน้าจอ</h2>
+            <p style="font-size:14px;color:rgba(255,255,255,0.6);">เกมนี้รองรับการเล่นแนวนอนเท่านั้น</p>
+            <p style="font-size:12px;color:rgba(255,255,255,0.4);margin-top:10px;">Please rotate your device to landscape</p>
+        </div>
+        <style>
+            @keyframes rotate-phone {
+                0%, 100% { transform: rotate(0deg); }
+                25% { transform: rotate(90deg); }
+                50% { transform: rotate(90deg); }
+                75% { transform: rotate(0deg); }
+            }
+            /* ซ่อนเกมเมื่อแนวตั้งบนมือถือ */
+            @media (max-width: 900px) and (orientation: portrait) {
+                #landscape-lock { display: flex !important; }
+                #game-container canvas,
+                .hud, #leaderboard-container, #music-controls, #sound-toggle, #fullscreen-toggle,
+                #title-screen, #character-setup-screen, #game-over { visibility: hidden; }
+            }
+            /* Music controls responsive */
+            @media (max-width: 768px) {
+                #music-controls { bottom: 5px; left: 5px; padding: 4px 8px; gap: 3px; }
+                #music-controls button { font-size: 14px !important; padding: 2px !important; }
+                #music-controls input[type=range] { width: 40px; }
+                #music-track-name { display: none; }
+            }
+        </style>
+
         <!-- Game Version -->
         <div id="game-version">
-            <span class="version-label">Snake.io</span> v3.0.0-mp |
+            <span class="version-label">Snake.io</span> v3.1.0-mp |
             <span style="color: rgba(0, 200, 255, 0.5);">Multiplayer</span> +
             <span style="color: rgba(0, 255, 100, 0.5);">Anti-cheat</span>
         </div>
@@ -1294,12 +1370,24 @@
                         POWERUP_TYPES.ZOOM.spawnChance = data.powerups.zoom.spawn_chance;
                     }
 
+                    // ✅ Music & Sound Settings
+                    if (data.music) {
+                        musicPlayer.enabled = data.music.enabled !== false;
+                        musicPlayer.defaultVolume = data.music.default_volume || 0.5;
+                        musicPlayer.volume = musicPlayer.defaultVolume;
+                        musicPlayer.titleTracks = data.music.title_tracks || [];
+                        musicPlayer.gameplayTracks = data.music.gameplay_tracks || [];
+                        musicPlayer.sfxEnabled = data.music.sfx_enabled !== false;
+                        musicPlayer.sfxVolume = data.music.sfx_default_volume || 0.7;
+                    }
+
                     console.log('[Config] ✅ โหลด config จาก API สำเร็จทั้งหมด:', {
                         server: { ip: CONFIG.GAME_SERVER_IP, port: CONFIG.GAME_SERVER_PORT },
                         world: { size: CONFIG.WORLD_SIZE, bot_count: CONFIG.BOT_COUNT },
                         food: { count: CONFIG.FOOD_COUNT, value: CONFIG.FOOD_VALUE },
                         camera: { initial: CONFIG.CAMERA_INITIAL_DISTANCE, zoomed: CONFIG.CAMERA_ZOOMED_OUT_DISTANCE },
                         powerups: POWERUP_TYPES,
+                        music: { tracks: musicPlayer.titleTracks.length + musicPlayer.gameplayTracks.length },
                     });
                 } else {
                     console.warn('[Config] ใช้ config default (API ไม่ตอบกลับ)');
@@ -1309,17 +1397,34 @@
             }
         }
 
-        // Audio System (16-bit style)
+        // ============================================================
+        // 🎵 Music & Sound System
+        // ============================================================
         let audioContext;
         let soundEnabled = true;
 
-        // Initialize audio context on user interaction
+        // ✅ Music Player State
+        const musicPlayer = {
+            enabled: true,
+            volume: 0.5,
+            defaultVolume: 0.5,
+            sfxEnabled: true,
+            sfxVolume: 0.7,
+            titleTracks: [],
+            gameplayTracks: [],
+            currentAudio: null,
+            currentTrackIndex: 0,
+            currentMode: 'title', // 'title' | 'gameplay'
+            playMode: 'sequential', // 'sequential' | 'shuffle' | 'loop'
+            isPlaying: false,
+            muted: false,
+        };
+
         function initAudio() {
             try {
                 if (!audioContext) {
                     audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                // Resume audio context if suspended
                 if (audioContext.state === 'suspended') {
                     audioContext.resume();
                 }
@@ -1329,73 +1434,241 @@
             }
         }
 
-        // 16-bit sound generator
-        function playSound(type) {
-            if (!soundEnabled || !audioContext) return;
+        // ✅ เล่นเพลง BGM
+        function playMusic(mode) {
+            if (!musicPlayer.enabled) return;
+
+            const tracks = mode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+            if (!tracks || tracks.length === 0) return;
+
+            // หยุดเพลงเก่า
+            stopMusic();
+
+            musicPlayer.currentMode = mode;
+
+            // เลือกเพลงตาม playMode
+            if (musicPlayer.playMode === 'shuffle') {
+                musicPlayer.currentTrackIndex = Math.floor(Math.random() * tracks.length);
+            } else {
+                musicPlayer.currentTrackIndex = 0;
+            }
+
+            playTrackAtIndex(musicPlayer.currentTrackIndex);
+        }
+
+        function playTrackAtIndex(index) {
+            const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+            if (!tracks || index >= tracks.length || index < 0) return;
 
             try {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
+                const track = tracks[index];
+                const audio = new Audio(track.url);
+                audio.volume = musicPlayer.muted ? 0 : musicPlayer.volume;
+                audio.loop = (musicPlayer.playMode === 'loop');
 
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
+                // เมื่อเพลงจบ → เล่นเพลงถัดไป
+                audio.addEventListener('ended', () => {
+                    if (musicPlayer.playMode === 'loop') return; // loop จัดการเอง
+                    playNextTrack();
+                });
+
+                audio.addEventListener('error', () => {
+                    console.warn('[Music] โหลดเพลงไม่สำเร็จ:', track.url);
+                    // ลองเพลงถัดไป
+                    setTimeout(() => playNextTrack(), 500);
+                });
+
+                audio.play().then(() => {
+                    musicPlayer.isPlaying = true;
+                    updateMusicUI();
+                    console.log(`[Music] กำลังเล่น: ${track.name}`);
+                }).catch(e => {
+                    console.warn('[Music] ไม่สามารถเล่นเพลงได้ (ต้องมี user interaction):', e.message);
+                });
+
+                musicPlayer.currentAudio = audio;
+                musicPlayer.currentTrackIndex = index;
+            } catch (error) {
+                console.warn('[Music] Error:', error);
+            }
+        }
+
+        function playNextTrack() {
+            const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+            if (!tracks || tracks.length === 0) return;
+
+            let nextIndex;
+            if (musicPlayer.playMode === 'shuffle') {
+                nextIndex = Math.floor(Math.random() * tracks.length);
+            } else {
+                nextIndex = (musicPlayer.currentTrackIndex + 1) % tracks.length;
+            }
+            playTrackAtIndex(nextIndex);
+        }
+
+        function stopMusic() {
+            if (musicPlayer.currentAudio) {
+                musicPlayer.currentAudio.pause();
+                musicPlayer.currentAudio.src = '';
+                musicPlayer.currentAudio = null;
+            }
+            musicPlayer.isPlaying = false;
+            updateMusicUI();
+        }
+
+        function toggleMusic() {
+            if (musicPlayer.isPlaying) {
+                if (musicPlayer.currentAudio) {
+                    musicPlayer.currentAudio.pause();
+                    musicPlayer.isPlaying = false;
+                }
+            } else {
+                if (musicPlayer.currentAudio) {
+                    musicPlayer.currentAudio.play();
+                    musicPlayer.isPlaying = true;
+                } else {
+                    playMusic(musicPlayer.currentMode);
+                }
+            }
+            updateMusicUI();
+        }
+
+        function toggleMute() {
+            musicPlayer.muted = !musicPlayer.muted;
+            if (musicPlayer.currentAudio) {
+                musicPlayer.currentAudio.volume = musicPlayer.muted ? 0 : musicPlayer.volume;
+            }
+            updateMusicUI();
+        }
+
+        function setMusicVolume(vol) {
+            musicPlayer.volume = Math.max(0, Math.min(1, vol));
+            if (musicPlayer.currentAudio && !musicPlayer.muted) {
+                musicPlayer.currentAudio.volume = musicPlayer.volume;
+            }
+            updateMusicUI();
+        }
+
+        function setPlayMode(mode) {
+            musicPlayer.playMode = mode;
+            if (musicPlayer.currentAudio) {
+                musicPlayer.currentAudio.loop = (mode === 'loop');
+            }
+            updateMusicUI();
+        }
+
+        function updateMusicUI() {
+            const btn = document.getElementById('music-toggle-btn');
+            const volSlider = document.getElementById('music-volume');
+            const trackName = document.getElementById('music-track-name');
+            const modeBtn = document.getElementById('music-mode-btn');
+
+            if (btn) {
+                btn.textContent = musicPlayer.muted ? '🔇' : (musicPlayer.isPlaying ? '🎵' : '🔈');
+                btn.title = musicPlayer.muted ? 'เปิดเสียง' : (musicPlayer.isPlaying ? 'หยุดเพลง' : 'เล่นเพลง');
+            }
+            if (volSlider) {
+                volSlider.value = musicPlayer.volume * 100;
+            }
+            if (trackName && musicPlayer.currentAudio) {
+                const tracks = musicPlayer.currentMode === 'title' ? musicPlayer.titleTracks : musicPlayer.gameplayTracks;
+                const track = tracks[musicPlayer.currentTrackIndex];
+                trackName.textContent = track ? track.name : '';
+            }
+            if (modeBtn) {
+                const icons = { sequential: '➡️', shuffle: '🔀', loop: '🔁' };
+                modeBtn.textContent = icons[musicPlayer.playMode] || '➡️';
+                modeBtn.title = musicPlayer.playMode === 'sequential' ? 'เล่นตามลำดับ' : musicPlayer.playMode === 'shuffle' ? 'สุ่มเพลง' : 'วนเพลง';
+            }
+        }
+
+        // ✅ SFX Sound Generator (เอฟเฟกต์เสียง)
+        function playSound(type) {
+            if (!soundEnabled || !audioContext) return;
+            if (!musicPlayer.sfxEnabled) return;
+
+            try {
+                const osc = audioContext.createOscillator();
+                const gain = audioContext.createGain();
+                osc.connect(gain);
+                gain.connect(audioContext.destination);
 
                 const now = audioContext.currentTime;
+                const vol = musicPlayer.sfxVolume;
 
-            switch(type) {
-                case 'eat':
-                    // Food collection sound - happy beep
-                    oscillator.frequency.setValueAtTime(800, now);
-                    oscillator.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
-                    gainNode.gain.setValueAtTime(0.3, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.1);
-                    break;
+                switch(type) {
+                    case 'eat':
+                        osc.frequency.setValueAtTime(800, now);
+                        osc.frequency.exponentialRampToValueAtTime(1200, now + 0.05);
+                        gain.gain.setValueAtTime(0.3 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                        osc.start(now);
+                        osc.stop(now + 0.1);
+                        break;
 
-                case 'grow':
-                    // Growth sound - power up
-                    oscillator.frequency.setValueAtTime(400, now);
-                    oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.15);
-                    gainNode.gain.setValueAtTime(0.2, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.15);
-                    break;
+                    case 'grow':
+                        osc.frequency.setValueAtTime(400, now);
+                        osc.frequency.exponentialRampToValueAtTime(800, now + 0.15);
+                        gain.gain.setValueAtTime(0.2 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        osc.start(now);
+                        osc.stop(now + 0.15);
+                        break;
 
-                case 'die':
-                    // Death sound - descending explosion
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(500, now);
-                    oscillator.frequency.exponentialRampToValueAtTime(100, now + 0.5);
-                    gainNode.gain.setValueAtTime(0.5, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.5);
-                    break;
+                    case 'die':
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(500, now);
+                        osc.frequency.exponentialRampToValueAtTime(100, now + 0.5);
+                        gain.gain.setValueAtTime(0.5 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+                        osc.start(now);
+                        osc.stop(now + 0.5);
+                        break;
 
-                case 'boost':
-                    // Boost sound - whoosh
-                    oscillator.type = 'sawtooth';
-                    oscillator.frequency.setValueAtTime(200, now);
-                    oscillator.frequency.exponentialRampToValueAtTime(400, now + 0.1);
-                    gainNode.gain.setValueAtTime(0.15, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.1);
-                    break;
+                    case 'boost':
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(200, now);
+                        osc.frequency.exponentialRampToValueAtTime(400, now + 0.1);
+                        gain.gain.setValueAtTime(0.15 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                        osc.start(now);
+                        osc.stop(now + 0.1);
+                        break;
 
-                case 'kill':
-                    // Kill enemy sound - victory beep
-                    oscillator.frequency.setValueAtTime(600, now);
-                    oscillator.frequency.setValueAtTime(700, now + 0.05);
-                    oscillator.frequency.setValueAtTime(800, now + 0.1);
-                    gainNode.gain.setValueAtTime(0.25, now);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
-                    oscillator.start(now);
-                    oscillator.stop(now + 0.2);
-                    break;
-            }
+                    case 'kill':
+                        osc.frequency.setValueAtTime(600, now);
+                        osc.frequency.setValueAtTime(700, now + 0.05);
+                        osc.frequency.setValueAtTime(800, now + 0.1);
+                        gain.gain.setValueAtTime(0.25 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+                        osc.start(now);
+                        osc.stop(now + 0.2);
+                        break;
+
+                    case 'powerup':
+                        // ✅ เสียงเก็บพาวเวอร์อัพ - arpeggio ขึ้น
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(523, now);
+                        osc.frequency.setValueAtTime(659, now + 0.06);
+                        osc.frequency.setValueAtTime(784, now + 0.12);
+                        osc.frequency.setValueAtTime(1047, now + 0.18);
+                        gain.gain.setValueAtTime(0.25 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                        osc.start(now);
+                        osc.stop(now + 0.3);
+                        break;
+
+                    case 'collect':
+                        // ✅ เสียงเก็บไอเทมพิเศษ - coin sound
+                        osc.type = 'square';
+                        osc.frequency.setValueAtTime(988, now);
+                        osc.frequency.setValueAtTime(1319, now + 0.05);
+                        gain.gain.setValueAtTime(0.2 * vol, now);
+                        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                        osc.start(now);
+                        osc.stop(now + 0.15);
+                        break;
+                }
             } catch (error) {
                 console.warn('Sound playback error:', error);
             }
@@ -2013,6 +2286,35 @@
                 }
             }, { passive: false });
 
+            // ✅ ทำความสะอาดเมื่อปิดแท็บ/เปลี่ยนหน้า (ป้องกัน ghost players)
+            window.addEventListener('beforeunload', function() {
+                if (syncClient && syncClient.isOnline() && syncClient.playerId) {
+                    // ใช้ sendBeacon เพื่อส่ง request แม้แท็บจะปิด
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    navigator.sendBeacon('/api/snake-sync/leave', new Blob(
+                        [JSON.stringify({ player_id: syncClient.playerId })],
+                        { type: 'application/json' }
+                    ));
+                }
+                if (multiplayerManager && multiplayerManager.playerId) {
+                    navigator.sendBeacon('/api/games/snake-io/leave', new Blob(
+                        [JSON.stringify({ player_id: multiplayerManager.playerId })],
+                        { type: 'application/json' }
+                    ));
+                }
+            });
+
+            // ✅ หยุด sync เมื่อแท็บถูกซ่อน (ประหยัด bandwidth)
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    if (syncClient) syncClient.stopSyncLoop();
+                } else {
+                    if (syncClient && syncClient.isOnline() && gameStarted && !gameOver) {
+                        syncClient.startSyncLoop();
+                    }
+                }
+            });
+
             // ✨ UI Events - รองรับ Title Screen + Character Setup Screen
             // 1. Play Button → แสดงหน้า Character Setup
             document.getElementById('play-btn').addEventListener('click', function() {
@@ -2433,8 +2735,22 @@
                         playSound('kill');
                     }
                     victim.die();
-                    // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                     return; // Only one death per frame
+                }
+            }
+
+            // ✅ Check player vs online players (ชนกับผู้เล่นออนไลน์)
+            for (const [playerId, onlineSnake] of otherPlayerSnakes) {
+                if (!onlineSnake.alive) continue;
+
+                const victim = checkSnakeCollision(player, onlineSnake);
+                if (victim) {
+                    if (victim === player) {
+                        // ผู้เล่นตาย จากการชนผู้เล่นออนไลน์
+                        victim.die();
+                    }
+                    // ถ้า victim เป็นผู้เล่นออนไลน์ ไม่ kill ฝั่งเรา (server จัดการ)
+                    return;
                 }
             }
 
@@ -2450,7 +2766,6 @@
                     const victim = checkSnakeCollision(bot1, bot2);
                     if (victim) {
                         victim.die();
-                        // ✅ ไม่สร้างบอทใหม่ทันที ให้ระบบ maintain bot count จัดการ
                         return; // Only one death per frame
                     }
                 }
@@ -2535,9 +2850,10 @@
             updateConnectionStatus('offline', '⚡ RECONNECTING...');
 
             try {
-                // ✅ Reconnect sync client ก่อน (primary)
+                // ✅ Reconnect sync client ก่อน (primary) - ทำความสะอาด session เก่า
                 if (syncClient) {
-                    syncClient.stopSyncLoop();
+                    try { await syncClient.leave(); } catch(e) {}
+                    syncClient = null;
                 }
 
                 syncClient = new SnakeSyncClient();
@@ -2790,6 +3106,9 @@
             // Initialize audio on user interaction
             initAudio();
 
+            // ✅ เปลี่ยนเพลงเป็น gameplay mode
+            playMusic('gameplay');
+
             playerName = document.getElementById('player-name').value.trim() ||
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
@@ -2953,6 +3272,9 @@
             gameOver = true;
             gameStarted = false;
 
+            // ✅ หยุดเพลง gameplay
+            stopMusic();
+
             // หยุดตรวจสอบการเชื่อมต่อ
             stopConnectionMonitoring();
 
@@ -2966,10 +3288,10 @@
                 await multiplayerManager.playerDied();
             }
 
-            // ✅ แจ้ง sync client
+            // ✅ แจ้ง sync client (playerDied ลบ session แล้ว ไม่ต้อง leave ซ้ำ)
             if (syncClient) {
                 await syncClient.playerDied();
-                await syncClient.leave();
+                syncClient.stopSyncLoop();
                 syncClient = null;
             }
 
@@ -3256,6 +3578,14 @@
                 syncClient = null;
             }
 
+            // ✅ ลบงูของผู้เล่นออนไลน์ทั้งหมด (ป้องกัน memory leak + ghost snakes)
+            for (const [playerId, snake] of otherPlayerSnakes) {
+                snake.segments.forEach(seg => scene.remove(seg));
+                if (snake.nameSprite) scene.remove(snake.nameSprite);
+                if (snake.outline) scene.remove(snake.outline);
+            }
+            otherPlayerSnakes.clear();
+
             // ซ่อนสถานะการเชื่อมต่อ
             const statusEl = document.getElementById('connection-status');
             statusEl.classList.remove('show', 'online', 'offline');
@@ -3298,16 +3628,31 @@
             for (let i = 0; i < CONFIG.FOOD_COUNT; i++) {
                 createFood();
             }
+
+            // ✅ เล่นเพลง Title อีกครั้ง
+            playMusic('title');
         }
 
         function getRank() {
-            const allSnakes = [player, ...bots].filter(s => s.alive);
+            // ✅ รวมผู้เล่นออนไลน์ด้วย
+            const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            for (const [, onlineSnake] of otherPlayerSnakes) {
+                if (onlineSnake && onlineSnake.alive) {
+                    allSnakes.push(onlineSnake);
+                }
+            }
             allSnakes.sort((a, b) => b.score - a.score);
             return allSnakes.indexOf(player) + 1;
         }
 
         function updateLeaderboard() {
+            // ✅ รวมผู้เล่นออนไลน์ใน leaderboard ด้วย
             const allSnakes = [player, ...bots].filter(s => s && s.alive);
+            for (const [, onlineSnake] of otherPlayerSnakes) {
+                if (onlineSnake && onlineSnake.alive) {
+                    allSnakes.push(onlineSnake);
+                }
+            }
             allSnakes.sort((a, b) => b.score - a.score);
 
             const list = document.getElementById('leaderboard-list');
@@ -3679,6 +4024,7 @@
                 for (let i = powerups.length - 1; i >= 0; i--) {
                     const powerup = powerups[i];
                     if (head.distanceTo(powerup.position) < 1.5) {
+                        playSound('powerup'); // ✅ เสียงเก็บพาวเวอร์อัพ
                         activatePowerup(powerup.userData.type);
                         scene.remove(powerup);
                         powerups.splice(i, 1);
@@ -3980,8 +4326,8 @@
                     snake.length = playerData.length || snake.length;
                     snake.alive = playerData.is_alive !== undefined ? playerData.is_alive : snake.alive;
 
-                    // ✅ Position Correction (จาก server เป็นครั้งคราว ทุก 500ms)
-                    if (playerData.position && playerData.positionUpdate) {
+                    // ✅ Position Correction (จาก server ทุกครั้งที่มีข้อมูลตำแหน่ง)
+                    if (playerData.position) {
                         const serverPos = new THREE.Vector3(
                             playerData.position.x,
                             0.5,
@@ -4240,6 +4586,23 @@
                     if (soundEnabled && audioContext && audioContext.state === 'suspended') {
                         audioContext.resume();
                     }
+                });
+            }
+
+            // ✅ เริ่มเพลง Title เมื่อผู้ใช้ interact ครั้งแรก (autoplay blocked)
+            function startTitleMusic() {
+                initAudio();
+                playMusic('title');
+                document.removeEventListener('click', startTitleMusic);
+                document.removeEventListener('touchstart', startTitleMusic);
+            }
+            document.addEventListener('click', startTitleMusic, { once: true });
+            document.addEventListener('touchstart', startTitleMusic, { once: true });
+
+            // ✅ Landscape lock - ลองขอ screen orientation lock
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock('landscape').catch(() => {
+                    // ไม่สามารถ lock ได้ - ใช้ CSS media query แทน
                 });
             }
         });

@@ -335,23 +335,49 @@ class SnakeGameSyncService
     }
 
     /**
-     * เพิ่มผู้เล่นเข้า Player Registry
+     * เพิ่มผู้เล่นเข้า Player Registry (ใช้ lock ป้องกัน race condition)
      */
     protected function addToRegistry(string $playerId): void
     {
-        $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
-        $registry[$playerId] = now()->timestamp;
-        Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+        $lock = Cache::lock('snake_registry_lock', 3);
+
+        if ($lock->get()) {
+            try {
+                $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+                $registry[$playerId] = now()->timestamp;
+                Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+            } finally {
+                $lock->release();
+            }
+        } else {
+            // ถ้าไม่ได้ lock ให้ทำแบบเดิม (fallback สำหรับ file cache ที่ไม่รองรับ lock)
+            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            $registry[$playerId] = now()->timestamp;
+            Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+        }
     }
 
     /**
-     * ลบผู้เล่นออกจาก Player Registry
+     * ลบผู้เล่นออกจาก Player Registry (ใช้ lock ป้องกัน race condition)
      */
     protected function removeFromRegistry(string $playerId): void
     {
-        $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
-        unset($registry[$playerId]);
-        Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+        $lock = Cache::lock('snake_registry_lock', 3);
+
+        if ($lock->get()) {
+            try {
+                $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+                unset($registry[$playerId]);
+                Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+            } finally {
+                $lock->release();
+            }
+        } else {
+            // fallback
+            $registry = Cache::get(self::PLAYERS_REGISTRY_KEY, []);
+            unset($registry[$playerId]);
+            Cache::put(self::PLAYERS_REGISTRY_KEY, $registry, self::SESSION_TTL);
+        }
     }
 
     /**

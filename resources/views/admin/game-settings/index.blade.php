@@ -53,6 +53,7 @@
                 'snake_io_powerup_speed' => ['icon' => '⚡', 'name' => 'Powerup: Speed Boost', 'color' => 'from-yellow-500 to-amber-500'],
                 'snake_io_powerup_multiplier' => ['icon' => '✖️', 'name' => 'Powerup: Score Multiplier', 'color' => 'from-green-500 to-emerald-500'],
                 'snake_io_powerup_zoom' => ['icon' => '🔍', 'name' => 'Powerup: Zoom Out', 'color' => 'from-cyan-500 to-blue-500'],
+                'snake_io_music' => ['icon' => '🎵', 'name' => 'Music & Sound Effects', 'color' => 'from-rose-500 to-pink-600'],
                 'general' => ['icon' => '⚙️', 'name' => 'General Game Settings', 'color' => 'from-gray-700 to-zinc-700'],
             ];
         @endphp

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Game;
 use App\Models\GameLeaderboard;
 use App\Services\SnakeGame\SnakeGameServiceManager;
+use App\Services\SnakeGameSyncService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
 
@@ -22,12 +23,18 @@ class SnakeGameAdminController extends Controller
     private SnakeGameServiceManager $serviceManager;
 
     /**
+     * Sync Service instance (สำหรับดึงข้อมูลผู้เล่นจริงจาก cache-based sync)
+     */
+    private SnakeGameSyncService $syncService;
+
+    /**
      * Constructor
      */
     public function __construct()
     {
         $this->middleware(['auth', 'role:admin']);
         $this->serviceManager = app(SnakeGameServiceManager::class);
+        $this->syncService = app(SnakeGameSyncService::class);
     }
 
     /**
@@ -41,6 +48,14 @@ class SnakeGameAdminController extends Controller
         $onlinePlayers = $this->serviceManager->getOnlinePlayers();
         $rooms = $this->serviceManager->getRooms();
         $suspicious = $this->serviceManager->getSuspiciousActivities();
+
+        // ✅ รวมผู้เล่นจาก Sync Service (cache-based real-time sync)
+        $syncPlayers = $this->syncService->getActivePlayers('', 50);
+        $syncPlayerCount = $this->syncService->getActivePlayerCount();
+
+        // อัปเดตจำนวนผู้เล่นใน status
+        $status['total_sync_players'] = $syncPlayerCount;
+        $status['total_players'] = max($status['total_players'], $syncPlayerCount);
 
         // ดึง top scores
         $game = Game::where('slug', 'snake-io')->first();
@@ -57,6 +72,7 @@ class SnakeGameAdminController extends Controller
             'pageTitle' => 'Snake.io Monitor',
             'status' => $status,
             'onlinePlayers' => $onlinePlayers,
+            'syncPlayers' => $syncPlayers,
             'rooms' => $rooms,
             'suspiciousActivities' => $suspicious,
             'topScores' => $topScores,
@@ -74,10 +90,17 @@ class SnakeGameAdminController extends Controller
         $onlinePlayers = $this->serviceManager->getOnlinePlayers();
         $rooms = $this->serviceManager->getRooms();
 
+        // ✅ รวมผู้เล่นจาก Sync Service (cache-based)
+        $syncPlayers = $this->syncService->getActivePlayers('', 50);
+        $syncPlayerCount = $this->syncService->getActivePlayerCount();
+        $status['total_sync_players'] = $syncPlayerCount;
+        $status['total_players'] = max($status['total_players'], $syncPlayerCount);
+
         return response()->json([
             'success' => true,
             'status' => $status,
             'players' => array_values($onlinePlayers),
+            'sync_players' => $syncPlayers,
             'rooms' => array_values($rooms),
         ]);
     }
@@ -123,10 +146,14 @@ class SnakeGameAdminController extends Controller
     {
         $players = $this->serviceManager->getOnlinePlayers();
 
+        // ✅ รวมผู้เล่นจาก Sync Service
+        $syncPlayers = $this->syncService->getActivePlayers('', 50);
+
         return response()->json([
             'success' => true,
             'players' => array_values($players),
-            'total' => count($players),
+            'sync_players' => $syncPlayers,
+            'total' => count($players) + count($syncPlayers),
         ]);
     }
 
@@ -186,9 +213,12 @@ class SnakeGameAdminController extends Controller
     {
         $this->serviceManager->clearAllData();
 
+        // ✅ ล้างข้อมูล Sync Service ด้วย
+        $this->syncService->cleanup();
+
         return response()->json([
             'success' => true,
-            'message' => 'All service data cleared',
+            'message' => 'All service data cleared (including sync data)',
         ]);
     }
 }

@@ -214,6 +214,61 @@
             </div>
         </div>
 
+        {{-- ✅ Real-time Sync Players (ผู้เล่นที่กำลังเล่นจริง) --}}
+        <div class="col-12 mb-4">
+            <div class="card dark:bg-gray-800">
+                <div class="card-header bg-transparent">
+                    <h5 class="mb-0 dark:text-white">
+                        <i class="fas fa-gamepad text-info me-2"></i>
+                        ผู้เล่นที่กำลังเล่นอยู่ (Real-time Sync)
+                        <span class="badge bg-info ms-2" id="sync-players-count">{{ count($syncPlayers ?? []) }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-sm" id="sync-players-table">
+                            <thead>
+                                <tr class="dark:text-gray-300">
+                                    <th>Player ID</th>
+                                    <th>ชื่อ</th>
+                                    <th>สกิน</th>
+                                    <th>ตำแหน่ง (X, Z)</th>
+                                    <th>คะแนน</th>
+                                    <th>ความยาว</th>
+                                    <th>สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sync-players-body">
+                                @forelse($syncPlayers ?? [] as $sp)
+                                <tr class="dark:text-gray-400">
+                                    <td><code>{{ Str::limit($sp['player_id'] ?? '', 20) }}</code></td>
+                                    <td>{{ $sp['player_name'] ?? 'Player' }}</td>
+                                    <td>{{ $sp['skin'] ?? 'classic' }}</td>
+                                    <td>{{ round($sp['position']['x'] ?? 0) }}, {{ round($sp['position']['z'] ?? 0) }}</td>
+                                    <td><strong>{{ $sp['score'] ?? 0 }}</strong></td>
+                                    <td>{{ $sp['length'] ?? 5 }}</td>
+                                    <td>
+                                        @if($sp['is_alive'] ?? true)
+                                            <span class="badge bg-success">มีชีวิต</span>
+                                        @else
+                                            <span class="badge bg-danger">ตาย</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">
+                                        ไม่มีผู้เล่นที่กำลังเล่นอยู่
+                                    </td>
+                                </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Top Scores --}}
         <div class="col-lg-6 mb-4">
             <div class="card dark:bg-gray-800">
@@ -356,6 +411,12 @@ async function refreshData() {
             // อัพเดท tables
             updatePlayersTable(data.players);
             updateRoomsTable(data.rooms);
+
+            // ✅ อัพเดทตาราง sync players (ผู้เล่นที่กำลังเล่นจริง)
+            if (data.sync_players) {
+                updateSyncPlayersTable(data.sync_players);
+                document.getElementById('sync-players-count').textContent = data.sync_players.length;
+            }
         }
     } catch (error) {
         console.error('Failed to refresh data:', error);
@@ -519,6 +580,33 @@ function timeAgo(timestamp) {
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+/**
+ * ✅ อัพเดทตารางผู้เล่น Sync (ที่กำลังเล่นจริง)
+ */
+function updateSyncPlayersTable(syncPlayers) {
+    const tbody = document.getElementById('sync-players-body');
+    if (!tbody) return;
+
+    if (!syncPlayers || syncPlayers.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">ไม่มีผู้เล่นที่กำลังเล่นอยู่</td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = syncPlayers.map(sp => `
+        <tr class="dark:text-gray-400">
+            <td><code>${(sp.player_id || '').substring(0, 20)}</code></td>
+            <td>${sp.player_name || 'Player'}</td>
+            <td>${sp.skin || 'classic'}</td>
+            <td>${Math.round(sp.position?.x || 0)}, ${Math.round(sp.position?.z || 0)}</td>
+            <td><strong>${sp.score || 0}</strong></td>
+            <td>${sp.length || 5}</td>
+            <td>
+                ${(sp.is_alive !== false) ? '<span class="badge bg-success">มีชีวิต</span>' : '<span class="badge bg-danger">ตาย</span>'}
+            </td>
+        </tr>
+    `).join('');
 }
 
 // Start auto-refresh on page load
