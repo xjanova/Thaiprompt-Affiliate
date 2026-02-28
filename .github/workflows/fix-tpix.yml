@@ -12,63 +12,80 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           command_timeout: 5m
           script: |
-            echo "=== 1. Who am I ==="
-            whoami
-            id
+            echo "=== 1. Check existing PHP-FPM pools ==="
+            ls -la /usr/local/php83/etc/php-fpm.d/ 2>/dev/null
+            echo "---"
+            ls -la /usr/local/php83/sockets/ 2>/dev/null
+            echo "---"
+            # Check what pools exist
+            grep -l "\[" /usr/local/php83/etc/php-fpm.d/*.conf 2>/dev/null | while read f; do
+              echo "$f: $(grep '^\[' $f | head -1)"
+            done
 
-            echo "=== 2. Add admin sudo ==="
-            sudo bash -c 'echo "admin ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/admin-deploy'
-            sudo chmod 440 /etc/sudoers.d/admin-deploy
-            echo "Added admin sudoers"
+            echo "=== 2. Check if admin pool exists ==="
+            cat /usr/local/php83/etc/php-fpm.d/admin.conf 2>/dev/null || echo "No admin.conf pool"
+            echo ""
 
-            echo "=== 3. Find PHP-FPM service ==="
-            sudo systemctl list-units --type=service | grep -i php
-
-            echo "=== 4. Restart PHP-FPM ==="
-            FPM_PID=$(sudo pgrep -f "php-fpm: master" | head -1)
-            if [ -n "$FPM_PID" ]; then
-              echo "Found PHP-FPM master at PID $FPM_PID"
-              sudo kill -USR2 $FPM_PID
-              echo "Sent USR2 signal"
+            echo "=== 3. Create admin PHP-FPM pool ==="
+            # Find an existing pool to use as template
+            TEMPLATE=$(ls /usr/local/php83/etc/php-fpm.d/*.conf 2>/dev/null | grep -v default | head -1)
+            echo "Template: $TEMPLATE"
+            if [ -n "$TEMPLATE" ]; then
+              echo "Using template pool config..."
+              cat "$TEMPLATE" | head -20
+              echo "..."
             fi
-            # Also try all possible service names
-            sudo systemctl restart php-fpm83.service 2>/dev/null && echo "Restarted php-fpm83" || true
-            sudo systemctl restart php83-fpm.service 2>/dev/null && echo "Restarted php83-fpm" || true
-            sudo systemctl restart php-fpm.service 2>/dev/null && echo "Restarted php-fpm" || true
+            echo ""
+
+            # Create admin pool
+            cat > /tmp/admin-fpm.conf << 'POOL'
+            [admin]
+            user = admin
+            group = admin
+            listen = /usr/local/php83/sockets/admin.sock
+            listen.owner = admin
+            listen.group = apache
+            listen.mode = 0660
+            pm = ondemand
+            pm.max_children = 5
+            pm.process_idle_timeout = 10s
+            pm.max_requests = 500
+            POOL
+            # Try to copy it (needs sudo or write access)
+            cp /tmp/admin-fpm.conf /usr/local/php83/etc/php-fpm.d/admin.conf 2>/dev/null || \
+            systemctl restart php-fpm83 2>/dev/null
+            echo "Pool config status: $?"
+
+            echo "=== 4. Verify pool file ==="
+            cat /usr/local/php83/etc/php-fpm.d/admin.conf 2>/dev/null || echo "Still no admin.conf"
+            echo ""
+
+            echo "=== 5. Restart PHP-FPM ==="
+            systemctl restart php-fpm83.service 2>/dev/null && echo "php-fpm83 restarted" || echo "Failed to restart"
             sleep 2
 
-            echo "=== 5. Restart Apache ==="
-            sudo systemctl restart httpd
-            sleep 2
-            echo "Apache restarted"
+            echo "=== 6. Check socket ==="
+            ls -la /usr/local/php83/sockets/ 2>/dev/null
+            ls -la /usr/local/php83/sockets/admin.sock 2>/dev/null || echo "STILL no admin.sock"
+            echo ""
 
-            echo "=== 6. Check tpix public_html ==="
-            ls -la /home/admin/domains/tpix.online/public_html/ | head -15
+            echo "=== 7. DirectAdmin rebuild ==="
+            # DA might need to rebuild PHP-FPM config
+            echo "action=rewrite&value=php-fpm83" >> /usr/local/directadmin/data/task.queue 2>/dev/null || true
+            echo "action=rewrite&value=httpd" >> /usr/local/directadmin/data/task.queue 2>/dev/null || true
+            sleep 5
+            echo "Checking socket after DA rebuild..."
+            ls -la /usr/local/php83/sockets/ 2>/dev/null
+            echo ""
 
-            echo "=== 7. Test PHP ==="
+            echo "=== 8. Test ==="
             echo '<?php echo "PHP_WORKS";' > /home/admin/domains/tpix.online/public_html/test.php
             chmod 644 /home/admin/domains/tpix.online/public_html/test.php
             chown admin:admin /home/admin/domains/tpix.online/public_html/test.php
-            echo "test.php response:"
             curl -s -H "Host: tpix.online" "http://127.0.0.1/test.php"
             echo ""
-            echo "--- root page ---"
-            curl -s -H "Host: tpix.online" "http://127.0.0.1/" | head -10
+            curl -s -H "Host: tpix.online" "http://127.0.0.1/" | head -5
             echo ""
             rm -f /home/admin/domains/tpix.online/public_html/test.php
-
-            echo "=== 8. Apache error log ==="
-            sudo tail -10 /var/log/httpd/domains/tpix.online.error.log 2>/dev/null || echo "No tpix error log"
-            echo "--- main ---"
-            sudo tail -5 /var/log/httpd/error_log 2>/dev/null
-
-            echo "=== 9. PHP-FPM log ==="
-            sudo tail -10 /usr/local/php83/var/log/php-fpm.log 2>/dev/null || echo "No FPM log at expected path"
-            sudo find /var/log/ -name "*php*fpm*" 2>/dev/null | head -5
-            sudo find /usr/local/php83/ -name "*.log" 2>/dev/null | head -5
-
-            echo "=== 10. Check PHP-FPM socket ==="
-            ls -la /usr/local/php83/sockets/ 2>/dev/null
-            sudo stat /usr/local/php83/sockets/admin.sock 2>/dev/null || echo "No admin.sock"
 
             echo "DONE"
