@@ -286,7 +286,7 @@ class FortuneHoroscopeCampaign extends Model
         if ($this->use_fortune_settings_tokens) {
             $settings = FortuneTellingSetting::getSettings();
 
-            return $settings->facebook_page_access_token ?? null;
+            return $settings->facebook_page_token ?? null;
         }
 
         return $this->facebook_page_token;
