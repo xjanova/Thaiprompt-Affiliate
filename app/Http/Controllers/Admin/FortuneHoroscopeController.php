@@ -275,6 +275,17 @@ class FortuneHoroscopeController extends Controller
             'post_format' => 'nullable|string|in:single,combined',
             'post_header_template' => 'nullable|string',
             'post_footer_template' => 'nullable|string',
+            // Smart Marketing fields
+            'enable_auto_hashtags' => 'boolean',
+            'custom_hashtags' => 'nullable|string',
+            'enable_cta' => 'boolean',
+            'cta_text' => 'nullable|string',
+            'enable_engagement_hooks' => 'boolean',
+            'page_name' => 'nullable|string|max:255',
+            'page_mention' => 'nullable|string|max:255',
+            // LINE Quota fields
+            'line_monthly_quota' => 'nullable|integer|min:0',
+            'line_quota_warning_threshold' => 'nullable|integer|min:0',
         ]);
 
         // boolean defaults
@@ -283,6 +294,9 @@ class FortuneHoroscopeController extends Controller
         $validated['use_fortune_settings_tokens'] = $request->boolean('use_fortune_settings_tokens', true);
         $validated['include_image'] = $request->boolean('include_image', true);
         $validated['include_lucky_info'] = $request->boolean('include_lucky_info', true);
+        $validated['enable_auto_hashtags'] = $request->boolean('enable_auto_hashtags', true);
+        $validated['enable_cta'] = $request->boolean('enable_cta', true);
+        $validated['enable_engagement_hooks'] = $request->boolean('enable_engagement_hooks', true);
 
         return $validated;
     }

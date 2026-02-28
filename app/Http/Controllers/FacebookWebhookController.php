@@ -422,11 +422,15 @@ class FacebookWebhookController extends Controller
         $this->facebookService->replyToComment($commentId, $commentReply);
 
         // 2. ส่ง inbox + Quick Replies
+        // ใช้ from_comment_engagement เพื่อ fallback เป็น MESSAGE_TAG
+        // กรณี user ไม่เคยทักเพจมาก่อน (ไม่มี conversation window)
         $quickReplies = [
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
         ];
-        $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies);
+        $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
+            'from_comment_engagement' => true,
+        ]);
 
         // 3. บันทึก engagement
         FortuneCommentEngagement::create([

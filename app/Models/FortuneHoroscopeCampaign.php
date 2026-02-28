@@ -44,6 +44,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon|null $last_posted_at
  * @property string|null $last_error
  * @property int|null $created_by
+ * @property bool $enable_auto_hashtags เปิด/ปิด AI สร้าง hashtags อัตโนมัติ
+ * @property string|null $custom_hashtags hashtags กำหนดเอง
+ * @property bool $enable_cta เปิด/ปิด Call-to-Action
+ * @property string|null $cta_text ข้อความ CTA
+ * @property bool $enable_engagement_hooks เปิด/ปิดข้อความ engagement
+ * @property string|null $page_name ชื่อเพจ/แบรนด์
+ * @property string|null $page_mention @mention เพจ
+ * @property int $line_monthly_quota โควต้า LINE broadcast ต่อเดือน
+ * @property int $line_used_this_month จำนวน broadcast ที่ใช้ไปเดือนนี้
+ * @property int $line_quota_warning_threshold เตือนเมื่อเหลือน้อยกว่า
+ * @property Carbon|null $line_quota_reset_at วันที่ reset โควต้า
  */
 class FortuneHoroscopeCampaign extends Model
 {
@@ -88,6 +99,17 @@ class FortuneHoroscopeCampaign extends Model
         'post_format',
         'post_header_template',
         'post_footer_template',
+        'enable_auto_hashtags',
+        'custom_hashtags',
+        'enable_cta',
+        'cta_text',
+        'enable_engagement_hooks',
+        'page_name',
+        'page_mention',
+        'line_monthly_quota',
+        'line_used_this_month',
+        'line_quota_warning_threshold',
+        'line_quota_reset_at',
         'status',
         'last_generated_at',
         'last_posted_at',
@@ -105,8 +127,15 @@ class FortuneHoroscopeCampaign extends Model
         'target_birth_days' => 'array',
         'include_image' => 'boolean',
         'include_lucky_info' => 'boolean',
+        'enable_auto_hashtags' => 'boolean',
+        'enable_cta' => 'boolean',
+        'enable_engagement_hooks' => 'boolean',
+        'line_monthly_quota' => 'integer',
+        'line_used_this_month' => 'integer',
+        'line_quota_warning_threshold' => 'integer',
         'last_generated_at' => 'datetime',
         'last_posted_at' => 'datetime',
+        'line_quota_reset_at' => 'datetime',
     ];
 
     protected $attributes = [
@@ -123,6 +152,12 @@ class FortuneHoroscopeCampaign extends Model
         'include_image' => true,
         'include_lucky_info' => true,
         'post_format' => 'combined',
+        'enable_auto_hashtags' => true,
+        'enable_cta' => true,
+        'enable_engagement_hooks' => true,
+        'line_monthly_quota' => 500,
+        'line_used_this_month' => 0,
+        'line_quota_warning_threshold' => 50,
     ];
 
     // ============================================================
@@ -323,6 +358,246 @@ class FortuneHoroscopeCampaign extends Model
         $this->update(['last_error' => $error]);
 
         return $this;
+    }
+
+    // ============================================================
+    // LINE Quota Management
+    // ============================================================
+
+    /**
+     * เช็คว่า LINE โควต้ายังเหลือหรือไม่
+     */
+    public function hasLineQuotaRemaining(): bool
+    {
+        $this->resetLineQuotaIfNeeded();
+
+        return $this->line_used_this_month < $this->line_monthly_quota;
+    }
+
+    /**
+     * คำนวณโควต้า LINE ที่เหลือ
+     */
+    public function getLineQuotaRemainingAttribute(): int
+    {
+        return max(0, $this->line_monthly_quota - $this->line_used_this_month);
+    }
+
+    /**
+     * เช็คว่าโควต้า LINE ใกล้หมดหรือยัง
+     */
+    public function isLineQuotaLow(): bool
+    {
+        return $this->line_quota_remaining <= $this->line_quota_warning_threshold;
+    }
+
+    /**
+     * ใช้โควต้า LINE 1 ครั้ง
+     */
+    public function incrementLineUsage(): self
+    {
+        $this->increment('line_used_this_month');
+
+        return $this->fresh();
+    }
+
+    /**
+     * รีเซ็ตโควต้า LINE ถ้าขึ้นเดือนใหม่
+     */
+    public function resetLineQuotaIfNeeded(): void
+    {
+        $resetAt = $this->line_quota_reset_at;
+
+        // ถ้ายังไม่เคย reset หรือ reset เดือนก่อน → reset
+        if (! $resetAt || $resetAt->month !== now()->month || $resetAt->year !== now()->year) {
+            $this->update([
+                'line_used_this_month' => 0,
+                'line_quota_reset_at' => now(),
+            ]);
+        }
+    }
+
+    /**
+     * ดึง platforms ที่เปิดใช้ (เช็ค LINE quota ด้วย)
+     */
+    public function getActivePlatforms(): array
+    {
+        $platforms = [];
+
+        if ($this->post_to_facebook) {
+            $platforms[] = 'facebook';
+        }
+
+        if ($this->post_to_line) {
+            // เช็ค LINE quota ก่อนอนุญาต
+            if ($this->hasLineQuotaRemaining()) {
+                $platforms[] = 'line';
+            } else {
+                \Illuminate\Support\Facades\Log::warning('FortuneHoroscope: LINE โควต้าหมด', [
+                    'campaign_id' => $this->id,
+                    'used' => $this->line_used_this_month,
+                    'quota' => $this->line_monthly_quota,
+                ]);
+            }
+        }
+
+        return $platforms;
+    }
+
+    // ============================================================
+    // Smart Marketing Helpers
+    // ============================================================
+
+    /**
+     * สร้าง Hashtags อัจฉริยะ ตามวัน/ดวง/เทรนด์
+     */
+    public function generateSmartHashtags(Carbon $targetDate, ?int $birthDay = null): string
+    {
+        $hashtags = [];
+
+        // === 1. Custom hashtags ที่ผู้ใช้กำหนดเอง (ใส่ทุกครั้ง) ===
+        if (! empty($this->custom_hashtags)) {
+            $customTags = array_filter(array_map('trim', preg_split('/[\s,]+/', $this->custom_hashtags)));
+            foreach ($customTags as $tag) {
+                // เติม # ถ้ายังไม่มี
+                $hashtags[] = str_starts_with($tag, '#') ? $tag : "#{$tag}";
+            }
+        }
+
+        // === 2. Auto hashtags จาก AI-based logic ===
+        if ($this->enable_auto_hashtags) {
+            // วันในสัปดาห์
+            $thaiDayNames = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+            $todayDow = $targetDate->dayOfWeek;
+            $todayThaiName = $thaiDayNames[$todayDow];
+
+            // Core hashtags (ใส่ทุกโพส)
+            $hashtags[] = '#ดวงรายวัน';
+            $hashtags[] = '#ดูดวง';
+            $hashtags[] = '#โหราศาสตร์ไทย';
+            $hashtags[] = '#หมอดู';
+
+            // วันเกิดถ้าระบุ
+            if ($birthDay !== null) {
+                $birthDayName = self::THAI_DAYS[$birthDay] ?? '';
+                if ($birthDayName) {
+                    $hashtags[] = "#คนเกิดวัน{$birthDayName}";
+                    $hashtags[] = "#ดวงวัน{$birthDayName}";
+                }
+            }
+
+            // วันในสัปดาห์ที่โพส
+            $hashtags[] = "#วัน{$todayThaiName}";
+
+            // เดือนไทย
+            $thaiMonths = [
+                1 => 'มกราคม', 2 => 'กุมภาพันธ์', 3 => 'มีนาคม',
+                4 => 'เมษายน', 5 => 'พฤษภาคม', 6 => 'มิถุนายน',
+                7 => 'กรกฎาคม', 8 => 'สิงหาคม', 9 => 'กันยายน',
+                10 => 'ตุลาคม', 11 => 'พฤศจิกายน', 12 => 'ธันวาคม',
+            ];
+            $monthName = $thaiMonths[$targetDate->month] ?? '';
+            if ($monthName) {
+                $hashtags[] = "#ดวง{$monthName}";
+            }
+
+            // พ.ศ.
+            $thaiYear = $targetDate->year + 543;
+            $hashtags[] = "#ดวง{$thaiYear}";
+
+            // Engagement hashtags (สร้าง engagement)
+            $engagementTags = [
+                '#เจ้าชนะ', '#ดวงดี', '#ดวงปัง', '#โชคลาภ',
+                '#การเงิน', '#ความรัก', '#การงาน',
+                '#เลขมงคล', '#สีมงคล', '#ทิศมงคล',
+                '#ดูดวงฟรี', '#ดูดวงวันนี้',
+            ];
+
+            // สุ่ม 3-5 engagement tags เพื่อให้หลากหลาย
+            $shuffled = collect($engagementTags)->shuffle();
+            $numTags = min(4, $shuffled->count());
+            foreach ($shuffled->take($numTags) as $tag) {
+                $hashtags[] = $tag;
+            }
+
+            // Trending day-specific tags
+            $daySpecificTags = $this->getDaySpecificTags($todayDow);
+            foreach ($daySpecificTags as $tag) {
+                $hashtags[] = $tag;
+            }
+
+            // Page/Brand tag
+            if (! empty($this->page_name)) {
+                $cleanName = str_replace(' ', '', $this->page_name);
+                $hashtags[] = "#{$cleanName}";
+            }
+        }
+
+        // ลบ duplicates, จำกัด 30 tags (FB limit)
+        $unique = array_unique($hashtags);
+
+        return implode(' ', array_slice($unique, 0, 30));
+    }
+
+    /**
+     * สร้าง Engagement Hook (ข้อความกระตุ้น)
+     */
+    public function generateEngagementHook(int $birthDay): string
+    {
+        if (! $this->enable_engagement_hooks) {
+            return '';
+        }
+
+        $dayName = self::THAI_DAYS[$birthDay] ?? '';
+        $hooks = [
+            "💬 คนเกิดวัน{$dayName} คอมเมนต์บอกหน่อย ตรงไหม? 👇",
+            "🔮 แท็กเพื่อนที่เกิดวัน{$dayName} ให้เขาได้อ่าน!",
+            "⭐ คนเกิดวัน{$dayName} กดไลค์ถ้าอยากรู้ดวงเพิ่ม!",
+            "🎯 ใครเกิดวัน{$dayName} คอมเมนต์ 🙏 ขอพรสิ่งดีๆ",
+            "💫 แชร์ให้เพื่อนที่เกิดวัน{$dayName} ได้รู้ดวงด้วย!",
+            "🌟 วันนี้คนเกิดวัน{$dayName} โชคดีมาก! กดแชร์เก็บไว้",
+            "✨ พิมพ์ชื่อคนที่เกิดวัน{$dayName} แล้วแท็กมาเลย!",
+        ];
+
+        // สุ่ม hook ต่างกันตามวัน
+        $index = (now()->dayOfYear + $birthDay) % count($hooks);
+
+        return $hooks[$index];
+    }
+
+    /**
+     * สร้าง CTA (Call-to-Action)
+     */
+    public function getCta(): string
+    {
+        if (! $this->enable_cta) {
+            return '';
+        }
+
+        if (! empty($this->cta_text)) {
+            return $this->cta_text;
+        }
+
+        // Default CTA
+        $mention = $this->page_mention ? " {$this->page_mention}" : '';
+
+        return "🔮 อยากรู้ดวงละเอียดกว่านี้? ทักมาเลย{$mention}\n📱 ดูดวงส่วนตัว AI ตอบทันที 24 ชม.";
+    }
+
+    /**
+     * Tags เฉพาะวัน (เทรนด์ตามวัน)
+     */
+    protected function getDaySpecificTags(int $dayOfWeek): array
+    {
+        return match ($dayOfWeek) {
+            0 => ['#วันอาทิตย์', '#สุขสันต์วันอาทิตย์'],
+            1 => ['#วันจันทร์', '#สดใสวันจันทร์', '#MondayMotivation'],
+            2 => ['#วันอังคาร'],
+            3 => ['#วันพุธ', '#กลางสัปดาห์'],
+            4 => ['#วันพฤหัสบดี', '#ใกล้วันหยุด'],
+            5 => ['#วันศุกร์', '#สุขสันต์วันศุกร์', '#TGIF'],
+            6 => ['#วันเสาร์', '#สุขสันต์วันหยุด', '#weekend'],
+            default => [],
+        };
     }
 
     /**

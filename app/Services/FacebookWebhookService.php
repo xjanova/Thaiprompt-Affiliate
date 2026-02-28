@@ -296,11 +296,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ส่งข้อความพร้อม Quick Reply buttons
      *
+     * รองรับ options:
+     * - messaging_type: 'RESPONSE' (default) หรือ 'MESSAGE_TAG'
+     * - message_tag: tag สำหรับ MESSAGE_TAG เช่น 'POST_PURCHASE_UPDATE'
+     * - from_comment_engagement: true เมื่อเรียกจาก comment engagement
+     *   → จะ fallback เป็น MESSAGE_TAG อัตโนมัติถ้า RESPONSE ล้มเหลว
+     *
      * @param  string  $recipientId  Facebook User ID
      * @param  string  $message  ข้อความหลัก
      * @param  array  $quickReplies  ปุ่ม quick reply [['title' => 'ข้อความ', 'payload' => 'DATA']]
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      */
-    public function sendQuickReplies(string $recipientId, string $message, array $quickReplies): bool
+    public function sendQuickReplies(string $recipientId, string $message, array $quickReplies, array $options = []): bool
     {
         try {
             $formattedReplies = array_map(function ($reply) {
@@ -311,16 +318,73 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ];
             }, array_slice($quickReplies, 0, 13)); // Facebook จำกัด 13 quick replies
 
-            Http::timeout(30)
-                ->post($this->graphUrl('/me/messages'), [
-                    'recipient' => ['id' => $recipientId],
-                    'message' => [
-                        'text' => $message,
-                        'quick_replies' => $formattedReplies,
-                    ],
-                    'messaging_type' => 'RESPONSE',
-                    'access_token' => $this->pageAccessToken,
-                ])->throw();
+            $messagingType = $options['messaging_type'] ?? 'RESPONSE';
+            $messageTag = $options['message_tag'] ?? null;
+            $fromCommentEngagement = $options['from_comment_engagement'] ?? false;
+
+            $payload = [
+                'recipient' => ['id' => $recipientId],
+                'message' => [
+                    'text' => $message,
+                    'quick_replies' => $formattedReplies,
+                ],
+                'messaging_type' => $messagingType,
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            if ($messagingType === 'MESSAGE_TAG' && $messageTag) {
+                $payload['tag'] = $messageTag;
+            }
+
+            $response = Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), $payload);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            // ตรวจสอบ error เพื่อ fallback
+            $errorBody = $response->json();
+            $errorSubcode = $errorBody['error']['error_subcode'] ?? 0;
+            $errorCode = $errorBody['error']['code'] ?? 0;
+
+            // กรณี comment engagement: user ไม่เคยทักเพจ หรือเกิน 24 ชม.
+            // → ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE
+            if ($fromCommentEngagement && $messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065, 2018001])) {
+                Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (comment engagement) → ลองใหม่ด้วย MESSAGE_TAG', [
+                    'recipient' => $recipientId,
+                    'error_subcode' => $errorSubcode,
+                ]);
+
+                $payload['messaging_type'] = 'MESSAGE_TAG';
+                $payload['tag'] = 'POST_PURCHASE_UPDATE';
+
+                $retryResponse = Http::timeout(30)
+                    ->post($this->graphUrl('/me/messages'), $payload);
+
+                if ($retryResponse->successful()) {
+                    return true;
+                }
+
+                Log::warning('⚠️ Quick Replies: MESSAGE_TAG fallback ล้มเหลวเช่นกัน', [
+                    'recipient' => $recipientId,
+                    'error' => $retryResponse->json()['error']['message'] ?? $retryResponse->body(),
+                ]);
+            }
+
+            // Token/Permission error → ไม่ต้อง fallback
+            if (in_array($errorCode, [190, 10, 200])) {
+                Log::error('❌ Quick Replies: Token/Permission Error', [
+                    'recipient' => $recipientId,
+                    'error_code' => $errorCode,
+                    'error' => $errorBody['error']['message'] ?? '',
+                ]);
+
+                return false;
+            }
+
+            // throw เพื่อให้ catch ข้างล่าง fallback เป็นข้อความธรรมดา
+            $response->throw();
 
             return true;
         } catch (Exception $e) {
@@ -914,9 +978,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $appSecret = $this->settings->facebook_app_secret;
 
         if (empty($appSecret) || empty($signature)) {
-            Log::warning('Webhook signature verification skipped: missing app_secret or signature');
+            // ⚠️ Production: ต้องมี app_secret → ปฏิเสธ request ถ้าไม่มี
+            if (app()->environment('production')) {
+                Log::error('❌ Webhook signature verification FAILED: missing app_secret or signature ใน production', [
+                    'has_app_secret' => ! empty($appSecret),
+                    'has_signature' => ! empty($signature),
+                ]);
 
-            return true; // อนุญาตผ่านถ้าไม่ได้ตั้งค่า (dev mode)
+                return false;
+            }
+
+            // Dev/Local: อนุญาตผ่านเพื่อความสะดวกในการพัฒนา
+            Log::warning('⚠️ Webhook signature verification skipped (dev mode): missing app_secret or signature');
+
+            return true;
         }
 
         // Facebook ส่ง format: "sha256=xxxxx"

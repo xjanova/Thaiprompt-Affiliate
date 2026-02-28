@@ -150,6 +150,51 @@
                             <span class="font-semibold text-gray-900 dark:text-white">💚 โพสลง LINE OA (Broadcast)</span>
                         </label>
 
+                        {{-- LINE Quota Warning --}}
+                        <div x-show="postToLine" x-transition
+                             class="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                            <div class="flex items-start gap-2">
+                                <span class="text-amber-600 dark:text-amber-400 text-lg">⚠️</span>
+                                <div class="text-xs">
+                                    <p class="font-semibold text-amber-800 dark:text-amber-200 mb-1">ข้อจำกัดโควต้า LINE Broadcast</p>
+                                    <ul class="text-amber-700 dark:text-amber-300 space-y-0.5 list-disc list-inside">
+                                        <li><strong>แพลนฟรี</strong>: ส่งได้ 500 ข้อความ/เดือน</li>
+                                        <li><strong>Light</strong>: 5,000 ข้อความ/เดือน</li>
+                                        <li><strong>Standard</strong>: 30,000 ข้อความ/เดือน</li>
+                                        <li>1 broadcast = จำนวนผู้ติดตาม × 1 ข้อความ</li>
+                                    </ul>
+                                    @if($isEdit && $campaign->post_to_line)
+                                        <div class="mt-2 pt-2 border-t border-amber-200 dark:border-amber-600">
+                                            <p class="font-semibold text-amber-800 dark:text-amber-200">
+                                                📊 ใช้ไปเดือนนี้: {{ $campaign->line_used_this_month }}/{{ $campaign->line_monthly_quota }}
+                                                <span class="{{ $campaign->isLineQuotaLow() ? 'text-red-600' : 'text-green-600' }}">
+                                                    (เหลือ {{ $campaign->line_quota_remaining }})
+                                                </span>
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- LINE Quota Settings --}}
+                        <div x-show="postToLine" x-transition class="mb-4 grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">โควต้าต่อเดือน</label>
+                                <input type="number" name="line_monthly_quota"
+                                       value="{{ old('line_monthly_quota', $campaign->line_monthly_quota ?? 500) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500"
+                                       min="0" step="1" placeholder="500">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 dark:text-gray-400 mb-1">เตือนเมื่อเหลือน้อยกว่า</label>
+                                <input type="number" name="line_quota_warning_threshold"
+                                       value="{{ old('line_quota_warning_threshold', $campaign->line_quota_warning_threshold ?? 50) }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-green-500"
+                                       min="0" step="1" placeholder="50">
+                            </div>
+                        </div>
+
                         <div x-show="postToLine && !useFortuneTokens" x-transition class="space-y-4">
                             <div>
                                 <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">LINE Channel Access Token</label>
@@ -370,7 +415,126 @@
             </div>
 
             {{-- ============================================================ --}}
-            {{-- Section 5: Prompt Templates --}}
+            {{-- Section 5: การตลาดอัจฉริยะ (Smart Marketing) --}}
+            {{-- ============================================================ --}}
+            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+                <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                    🚀 การตลาดอัจฉริยะ (Smart Marketing)
+                </h2>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    ระบบจะใช้ AI สร้าง hashtags, CTA, engagement hooks อัตโนมัติทุกโพส เพื่อเพิ่ม reach และ engagement
+                </p>
+
+                {{-- Page/Brand Info --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ชื่อเพจ/แบรนด์
+                        </label>
+                        <input type="text" name="page_name"
+                               value="{{ old('page_name', $campaign->page_name) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                               placeholder="เช่น แม่หมอจันทรา">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ใช้สร้าง #hashtag แบรนด์อัตโนมัติ</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            @mention เพจ (สำหรับ CTA)
+                        </label>
+                        <input type="text" name="page_mention"
+                               value="{{ old('page_mention', $campaign->page_mention) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500"
+                               placeholder="เช่น @แม่หมอจันทรา">
+                    </div>
+                </div>
+
+                {{-- Toggle Options --}}
+                <div class="space-y-4 mb-6">
+                    {{-- Auto Hashtags --}}
+                    <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="enable_auto_hashtags" value="0">
+                            <input type="checkbox" name="enable_auto_hashtags" value="1"
+                                   x-model="enableAutoHashtags"
+                                   class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                                   {{ old('enable_auto_hashtags', $campaign->enable_auto_hashtags ?? true) ? 'checked' : '' }}>
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white">#️⃣ Smart Hashtags อัตโนมัติ</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    AI สร้าง hashtags อัจฉริยะตามวัน/เดือน/เทรนด์ เช่น #ดวงรายวัน #คนเกิดวันจันทร์ #ดวง2569
+                                </p>
+                            </div>
+                        </label>
+
+                        <div x-show="enableAutoHashtags" x-transition class="mt-4">
+                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                Custom Hashtags เพิ่มเติม (ใส่ทุกโพส)
+                            </label>
+                            <textarea name="custom_hashtags" rows="2"
+                                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500"
+                                      placeholder="#แม่หมอจันทรา #ดูดวงออนไลน์ #หมอดูAI">{{ old('custom_hashtags', $campaign->custom_hashtags) }}</textarea>
+                            <p class="text-xs text-gray-400 mt-1">คั่นด้วยช่องว่างหรือเครื่องหมาย , (จะเติม # ให้อัตโนมัติ)</p>
+                        </div>
+                    </div>
+
+                    {{-- Engagement Hooks --}}
+                    <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="enable_engagement_hooks" value="0">
+                            <input type="checkbox" name="enable_engagement_hooks" value="1"
+                                   class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                                   {{ old('enable_engagement_hooks', $campaign->enable_engagement_hooks ?? true) ? 'checked' : '' }}>
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white">💬 Engagement Hooks (ข้อความกระตุ้น)</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    เพิ่มข้อความชวนคอมเมนต์/แชร์/แท็กเพื่อน เช่น "คนเกิดวันจันทร์ คอมเมนต์บอกหน่อย ตรงไหม?"
+                                </p>
+                            </div>
+                        </label>
+                    </div>
+
+                    {{-- CTA --}}
+                    <div class="p-4 border border-gray-200 dark:border-gray-600 rounded-lg">
+                        <label class="flex items-center gap-3 cursor-pointer">
+                            <input type="hidden" name="enable_cta" value="0">
+                            <input type="checkbox" name="enable_cta" value="1"
+                                   x-model="enableCta"
+                                   class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500"
+                                   {{ old('enable_cta', $campaign->enable_cta ?? true) ? 'checked' : '' }}>
+                            <div>
+                                <span class="font-semibold text-gray-900 dark:text-white">📢 Call-to-Action (CTA)</span>
+                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                    เพิ่มข้อความชวนทักมาดูดวงส่วนตัว เช่น "อยากรู้ดวงละเอียดกว่านี้? ทักมาเลย"
+                                </p>
+                            </div>
+                        </label>
+
+                        <div x-show="enableCta" x-transition class="mt-4">
+                            <label class="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+                                ข้อความ CTA กำหนดเอง (เว้นว่าง = ใช้ default)
+                            </label>
+                            <textarea name="cta_text" rows="2"
+                                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-purple-500"
+                                      placeholder="🔮 อยากรู้ดวงละเอียดกว่านี้? ทักมาเลย @เพจ">{{ old('cta_text', $campaign->cta_text) }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Preview Smart Tags Example --}}
+                <div class="p-4 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                    <p class="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-2">🔮 ตัวอย่าง Hashtags ที่จะถูกสร้างอัตโนมัติ:</p>
+                    <p class="text-xs text-purple-600 dark:text-purple-300 leading-relaxed">
+                        #ดวงรายวัน #ดูดวง #โหราศาสตร์ไทย #หมอดู #คนเกิดวันจันทร์ #ดวงวันจันทร์ #วันศุกร์
+                        #ดวงกุมภาพันธ์ #ดวง2569 #ดวงดี #โชคลาภ #สีมงคล #ดูดวงฟรี #TGIF
+                    </p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        * Hashtags จะเปลี่ยนตามวัน/เดือน/เทรนด์อัตโนมัติทุกโพส (สูงสุด 30 tags)
+                    </p>
+                </div>
+            </div>
+
+            {{-- ============================================================ --}}
+            {{-- Section 6: Prompt Templates --}}
             {{-- ============================================================ --}}
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
                 <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
@@ -462,6 +626,8 @@ function horoscopeCampaignForm() {
         postToFacebook: {{ old('post_to_facebook', $campaign->post_to_facebook) ? 'true' : 'false' }},
         postToLine: {{ old('post_to_line', $campaign->post_to_line) ? 'true' : 'false' }},
         useFortuneTokens: {{ old('use_fortune_settings_tokens', $campaign->use_fortune_settings_tokens ?? true) ? 'true' : 'false' }},
+        enableAutoHashtags: {{ old('enable_auto_hashtags', $campaign->enable_auto_hashtags ?? true) ? 'true' : 'false' }},
+        enableCta: {{ old('enable_cta', $campaign->enable_cta ?? true) ? 'true' : 'false' }},
     };
 }
 </script>

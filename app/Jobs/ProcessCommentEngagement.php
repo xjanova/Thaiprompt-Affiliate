@@ -102,11 +102,15 @@ class ProcessCommentEngagement implements ShouldQueue
             $facebookService->replyToComment($commentId, $commentReply);
 
             // 4. ส่ง inbox พร้อม Quick Replies
+            // ใช้ from_comment_engagement เพื่อ fallback เป็น MESSAGE_TAG
+            // กรณี user ไม่เคยทักเพจมาก่อน (ไม่มี conversation window)
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ];
-            $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies);
+            $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+                'from_comment_engagement' => true,
+            ]);
 
             // 5. บันทึก engagement
             FortuneCommentEngagement::create([

@@ -28,7 +28,8 @@ class FortuneHoroscopePublishService
      */
     public function createAndPublishPosts(FortuneHoroscopeCampaign $campaign, Carbon $targetDate): array
     {
-        $platforms = $campaign->getPlatforms();
+        // ใช้ getActivePlatforms() ที่เช็ค LINE quota ด้วย
+        $platforms = $campaign->getActivePlatforms();
         $errors = [];
         $postsCreated = 0;
         $postsPublished = 0;
@@ -235,6 +236,18 @@ class FortuneHoroscopePublishService
             throw new Exception($error);
         }
 
+        // อัพเดทโควต้า LINE ที่ใช้ไป
+        $campaign->incrementLineUsage();
+
+        // เตือนถ้าโควต้าใกล้หมด
+        if ($campaign->isLineQuotaLow()) {
+            Log::warning('FortuneHoroscope: LINE โควต้าใกล้หมด', [
+                'campaign_id' => $campaign->id,
+                'remaining' => $campaign->line_quota_remaining,
+                'threshold' => $campaign->line_quota_warning_threshold,
+            ]);
+        }
+
         return [
             'post_id' => null,
             'post_url' => null,
@@ -243,7 +256,15 @@ class FortuneHoroscopePublishService
     }
 
     /**
-     * รวมเนื้อหาทุกวันเกิดเป็น 1 โพส
+     * รวมเนื้อหาทุกวันเกิดเป็น 1 โพส (พร้อม Smart Marketing)
+     *
+     * โครงสร้างโพส:
+     * 1. Header (กำหนดเอง / default)
+     * 2. เนื้อหาดวง 7 วันเกิด + สีมงคล/เลขมงคล
+     * 3. Engagement Hook (กระตุ้นคอมเมนต์/แชร์)
+     * 4. CTA (Call-to-Action ชวนทักดูดวง)
+     * 5. Footer (กำหนดเอง)
+     * 6. Smart Hashtags (auto + custom)
      */
     public function composePostContent(
         FortuneHoroscopeCampaign $campaign,
@@ -253,12 +274,12 @@ class FortuneHoroscopePublishService
         $thaiDate = $targetDate->format('d/m/') . ($targetDate->year + 543);
         $parts = [];
 
-        // Header
+        // === 1. Header ===
         $header = $campaign->post_header_template ?? "🔮✨ ดวงรายวัน {target_date} ✨🔮";
         $parts[] = str_replace('{target_date}', $thaiDate, $header);
         $parts[] = '';
 
-        // เนื้อหาแต่ละวันเกิด
+        // === 2. เนื้อหาแต่ละวันเกิด ===
         foreach ($contents as $content) {
             $dayEmojis = ['☀️', '🌙', '🔴', '🟢', '🟠', '🔵', '🟣'];
             $emoji = $dayEmojis[$content->birth_day] ?? '⭐';
@@ -288,10 +309,36 @@ class FortuneHoroscopePublishService
             $parts[] = '';
         }
 
-        // Footer
+        // === 3. Engagement Hook (สุ่มข้อความกระตุ้น) ===
+        if ($campaign->enable_engagement_hooks && $contents->isNotEmpty()) {
+            // สุ่ม birthDay สำหรับ engagement hook
+            $randomContent = $contents->random();
+            $engagementHook = $campaign->generateEngagementHook($randomContent->birth_day);
+            if (! empty($engagementHook)) {
+                $parts[] = '━━━━━━━━━━━━━━━━━━━━━━';
+                $parts[] = $engagementHook;
+                $parts[] = '';
+            }
+        }
+
+        // === 4. CTA (Call-to-Action) ===
+        $cta = $campaign->getCta();
+        if (! empty($cta)) {
+            $parts[] = $cta;
+            $parts[] = '';
+        }
+
+        // === 5. Footer (กำหนดเอง) ===
         $footer = $campaign->post_footer_template ?? '';
         if (! empty($footer)) {
             $parts[] = str_replace('{target_date}', $thaiDate, $footer);
+            $parts[] = '';
+        }
+
+        // === 6. Smart Hashtags ===
+        $hashtags = $campaign->generateSmartHashtags($targetDate);
+        if (! empty($hashtags)) {
+            $parts[] = $hashtags;
         }
 
         return implode("\n", $parts);
