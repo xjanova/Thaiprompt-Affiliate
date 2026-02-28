@@ -468,9 +468,10 @@ class SnakeGameController extends Controller
                 'updated_at' => now()->toIso8601String(),
             ];
 
-            // บันทึกกลับเข้า database
-            $user->game_preferences = $preferences;
-            $user->save();
+            // บันทึกกลับเข้า database — ใช้ update เฉพาะ field เพื่อหลีกเลี่ยง side effects จาก saving hook
+            \App\Models\User::where('id', $user->id)->update([
+                'game_preferences' => json_encode($preferences),
+            ]);
 
             return response()->json([
                 'success' => true,

@@ -3470,20 +3470,17 @@
             }
 
             try {
-                const response = await fetch('/api/games/snake-io/save-skin-preference', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    },
-                    credentials: 'same-origin',
-                    body: JSON.stringify({ skin })
+                // ✅ ใช้ fetchWithCsrf เพื่อ auto-retry 419 + error handling ที่ดีกว่า
+                const response = await fetchWithCsrf('/api/games/snake-io/save-skin-preference', {
+                    skin: skin
                 });
 
                 if (response.ok) {
                     const data = await response.json();
                     console.log('[Skin] บันทึกสีสำเร็จ:', skin);
+                } else {
+                    const errorText = await response.text();
+                    console.warn('[Skin] บันทึกสีล้มเหลว HTTP', response.status, errorText.substring(0, 200));
                 }
             } catch (error) {
                 console.warn('[Skin] ไม่สามารถบันทึกสี:', error.message);
@@ -4599,6 +4596,13 @@
                 const response = await fetchWithCsrf('/api/games/snake-io/save-skin-preference', {
                     skin: selectedSkin
                 });
+
+                if (!response.ok) {
+                    // ถ้า response ไม่ ok → แสดง error
+                    let errMsg = `HTTP ${response.status}`;
+                    try { const errData = await response.json(); errMsg = errData.message || errMsg; } catch(e) {}
+                    throw new Error(errMsg);
+                }
 
                 const data = await response.json();
 
