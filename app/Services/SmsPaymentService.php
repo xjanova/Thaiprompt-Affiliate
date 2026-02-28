@@ -556,15 +556,42 @@ class SmsPaymentService
             'conversation_status' => $reading->conversation_status,
         ]);
 
-        // ✅ V3: ไม่ push ตอนรับชำระ — push แค่ครั้งเดียวตอนคำทำนายพร้อม (จาก process-deep/Job)
-        // ถ้า user ส่งข้อความมาระหว่างรอ → processMessage() จะแจ้ง "รับชำระแล้ว กำลังทำนาย" ผ่าน replyMessage (ฟรี!)
+        // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
+        // ใช้ message_tag: POST_PURCHASE_UPDATE เพื่อ push นอก messaging window ได้
         $reading->setConversationState('wait_message_sent', true);
         $reading->setConversationState('wait_message_sent_at', now()->toIso8601String());
 
-        Log::info('SMS Payment: V3 — ไม่ push "รอสักครู่" (push แค่ตอนคำทำนายพร้อม)', [
-            'reading_id' => $reading->id,
-            'platform' => $platform,
-        ]);
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $channelManager = new FortuneChannelManager($settings);
+
+            $userName = $reading->facebook_user_name ?? 'คุณ';
+            $paymentConfirmedMessage = "✅ ชำระเงินเรียบร้อยแล้วค่ะ คุณ{$userName}!\n\n"
+                .'💰 จำนวน: ฿'.number_format($amount, 2)."\n"
+                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                ."🔮 กำลังวิเคราะห์ดวงชะตาให้อย่างละเอียด...\n"
+                ."⏳ ใช้เวลาประมาณ 1-3 นาทีค่ะ\n\n"
+                .'จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมนะคะ ✨';
+
+            $pushSent = $channelManager->sendResponse($platform, $userId, [
+                'action' => 'payment_confirmed_wait',
+                'message' => $paymentConfirmedMessage,
+                'reading' => $reading,
+            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+            Log::info('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" สำเร็จ', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'sent' => $pushSent,
+            ]);
+        } catch (\Exception $pushErr) {
+            // Push ล้มเหลวไม่ critical — ผู้ใช้จะได้รับแจ้งเมื่อส่งข้อความมา
+            Log::warning('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" ล้มเหลว (ไม่ critical)', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $pushErr->getMessage(),
+            ]);
+        }
 
         // ✅ เช็คว่ามีคำทำนายพร้อมแล้วหรือยัง → ตั้ง flag เพื่อให้ replyMessage ส่งได้
         $reading->refresh();
