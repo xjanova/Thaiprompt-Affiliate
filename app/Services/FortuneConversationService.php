@@ -6807,101 +6807,49 @@ PROMPT;
     protected function handleDownlineRequest(string $facebookUserId): array
     {
         try {
-            // ค้นหา User จาก line_user_id
             $user = $this->findUserByPlatformId($facebookUserId);
 
-            if (! $user) {
-                return [
-                    'action' => 'downline_no_user',
-                    'message' => "👥 ดูสายงาน\n\n"
-                        ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
-                        ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
-                        ."พิมพ์คำถามมาได้เลยค่ะ 🔮",
-                    'reading' => null,
-                ];
-            }
+            // สร้าง URL ไปหน้าเว็บ ผังสายงาน + ค่าแนะนำ
+            $treeUrl = url('/user/fortune-referral/tree');
+            $commissionUrl = url('/user/fortune-referral/commissions');
+            $commissionAmount = $this->getLevel1CommissionText();
 
-            $userName = $user->name ?? 'คุณ';
+            if ($user) {
+                $userName = $user->name ?? 'คุณ';
+                $totalReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
 
-            // ดึง direct referrals (คนที่ user แนะนำมา)
-            $referrals = \App\Models\User::where('sponsor_id', $user->id)
-                ->orderBy('created_at', 'desc')
-                ->limit(20)
-                ->get();
+                $message = "👥 สายงานของคุณ{$userName}\n"
+                    ."═══════════════════════\n\n"
+                    ."📊 สมาชิกสายตรง: {$totalReferrals} คน\n\n"
+                    ."🔗 ดูรายละเอียดสายงานทั้งหมดได้ที่:\n"
+                    ."{$treeUrl}\n\n"
+                    ."💵 ดูรายได้ค่าแนะนำ:\n"
+                    ."{$commissionUrl}\n\n";
 
-            if ($referrals->isEmpty()) {
-                // ดึงค่าคอมมิชชั่นสำหรับแสดง
-                $commissionAmount = $this->getLevel1CommissionText();
-
-                return [
-                    'action' => 'downline_empty',
-                    'message' => "👥 สายงานของคุณ{$userName}\n"
-                        ."═══════════════════════\n\n"
-                        ."ยังไม่มีสมาชิกในสายงานค่ะ\n\n"
-                        ."💡 เริ่มสร้างทีมได้ง่ายๆ!\n"
-                        ."1. พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
-                        ."2. ส่งลิงก์ให้เพื่อน\n"
-                        ."3. เพื่อนดูดวง = คุณได้ค่าแนะนำ!\n\n"
-                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง ตลอดไป!",
-                    'reading' => null,
-                ];
-            }
-
-            // นับ active (ดูดวงภายใน 30 วัน)
-            $thirtyDaysAgo = now()->subDays(30);
-            $activeCount = 0;
-            $lines = [];
-
-            foreach ($referrals as $index => $ref) {
-                // นับจำนวนดูดวงของ referral
-                $readingCount = FortuneReading::where(function ($q) use ($ref) {
-                    $q->where('user_id', $ref->id)
-                      ->orWhere('facebook_user_id', $ref->line_user_id ?? '');
-                })->count();
-
-                // เช็ค active
-                $lastReading = FortuneReading::where(function ($q) use ($ref) {
-                    $q->where('user_id', $ref->id)
-                      ->orWhere('facebook_user_id', $ref->line_user_id ?? '');
-                })->latest()->first();
-
-                $isActive = $lastReading && $lastReading->created_at >= $thirtyDaysAgo;
-                if ($isActive) {
-                    $activeCount++;
+                if ($totalReferrals === 0) {
+                    $message .= "💡 ยังไม่มีสมาชิก — เริ่มสร้างทีม!\n"
+                        ."พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
+                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง ตลอดไป!";
+                } else {
+                    $message .= "💡 แชร์เพิ่ม → ทีมโต! พิมพ์ \"แชร์\"";
                 }
 
-                $icon = $isActive ? '🟢' : '🔴';
-                $name = $ref->name ?? 'ไม่ระบุชื่อ';
-                $joinDate = $ref->created_at?->locale('th')->translatedFormat('j M y') ?? '-';
-                $lines[] = ($index + 1).". {$icon} {$name} — สมัคร {$joinDate} (ดูดวง {$readingCount} ครั้ง)";
+                Log::info('Fortune: แสดงลิงก์สายงาน', [
+                    'user_id' => $facebookUserId,
+                    'total_referrals' => $totalReferrals,
+                ]);
+            } else {
+                // ยังไม่มีบัญชี → แนะนำสร้างก่อน
+                $message = "👥 ดูสายงาน\n\n"
+                    ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
+                    ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
+                    ."เมื่อมีบัญชีแล้วสามารถดูสายงานได้ที่:\n"
+                    ."{$treeUrl}\n\n"
+                    ."พิมพ์คำถามมาได้เลยค่ะ 🔮";
             }
-
-            $totalReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
-            $listText = implode("\n", $lines);
-
-            $message = "👥 สายงานของคุณ{$userName}\n"
-                ."═══════════════════════\n\n"
-                ."📊 สรุป\n"
-                ."• สมาชิกสายตรง: {$totalReferrals} คน\n"
-                ."• Active (30 วัน): {$activeCount} คน\n\n"
-                ."📋 รายชื่อสายตรง\n"
-                ."{$listText}\n\n"
-                ."🟢 = Active (ดูดวงภายใน 30 วัน)\n"
-                ."🔴 = ไม่ Active\n\n"
-                ."💡 แชร์ลิงก์เพิ่มเพื่อสร้างทีม → พิมพ์ \"แชร์\"";
-
-            if ($totalReferrals > 20) {
-                $message .= "\n📌 แสดง 20 คนล่าสุด (ทั้งหมด {$totalReferrals} คน)";
-            }
-
-            Log::info('Fortune: แสดงสายงาน', [
-                'user_id' => $facebookUserId,
-                'total_referrals' => $totalReferrals,
-                'active_count' => $activeCount,
-            ]);
 
             return [
-                'action' => 'downline_list',
+                'action' => 'downline_link',
                 'message' => $message,
                 'reading' => null,
             ];
@@ -6914,7 +6862,10 @@ PROMPT;
 
             return [
                 'action' => 'downline_error',
-                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลสายงานได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\n\n"
+                    ."🔗 ลองเข้าดูที่เว็บไซต์:\n"
+                    .url('/user/fortune-referral/tree')."\n\n"
+                    ."กรุณาลองใหม่อีกครั้งนะคะ 🙏",
                 'reading' => null,
             ];
         }
@@ -6955,126 +6906,59 @@ PROMPT;
         try {
             $user = $this->findUserByPlatformId($facebookUserId);
 
-            if (! $user) {
-                return [
-                    'action' => 'earnings_no_user',
-                    'message' => "💵 ดูรายได้\n\n"
-                        ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
-                        ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
-                        ."พิมพ์คำถามมาได้เลยค่ะ 🔮",
-                    'reading' => null,
-                ];
-            }
+            // สร้าง URL ไปหน้าเว็บ คอมมิชชั่น + สายงาน
+            $commissionUrl = url('/user/fortune-referral/commissions');
+            $treeUrl = url('/user/fortune-referral/tree');
+            $commissionAmount = $this->getLevel1CommissionText();
 
-            $userName = $user->name ?? 'คุณ';
+            if ($user) {
+                $userName = $user->name ?? 'คุณ';
 
-            // ดึง wallet balance
-            $walletBalance = 0;
-            if ($user->wallet) {
-                $walletBalance = $user->wallet->balance ?? 0;
-            }
+                // ดึงสรุปย่อเท่าที่จำเป็น (ไม่ต้องละเอียด — ดูเต็มที่เว็บ)
+                $walletBalance = $user->wallet?->balance ?? 0;
+                $totalEarnings = 0;
 
-            // ดึงรายได้จาก FortuneCommission (ถ้ามี table)
-            $totalEarnings = 0;
-            $monthEarnings = 0;
-            $todayEarnings = 0;
-            $recentCommissions = collect();
-
-            try {
-                // ลองดึงจาก fortune_commissions ก่อน
-                $totalEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
-                    ->whereIn('status', ['approved', 'paid'])
-                    ->sum('amount');
-
-                $monthEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
-                    ->whereIn('status', ['approved', 'paid'])
-                    ->whereMonth('created_at', now()->month)
-                    ->whereYear('created_at', now()->year)
-                    ->sum('amount');
-
-                $todayEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
-                    ->whereIn('status', ['approved', 'paid'])
-                    ->whereDate('created_at', now()->toDateString())
-                    ->sum('amount');
-
-                $recentCommissions = \App\Models\FortuneCommission::where('user_id', $user->id)
-                    ->whereIn('status', ['approved', 'paid'])
-                    ->with('fromUser:id,name')
-                    ->orderBy('created_at', 'desc')
-                    ->limit(5)
-                    ->get();
-            } catch (\Exception $e) {
-                // Fallback: ดึงจาก WalletTransaction
-                if ($user->wallet) {
-                    $walletId = $user->wallet->id;
-                    $totalEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
-                        ->where('type', 'credit')
-                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
+                try {
+                    $totalEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                        ->whereIn('status', ['approved', 'paid'])
                         ->sum('amount');
-
-                    $monthEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
-                        ->where('type', 'credit')
-                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
-                        ->whereMonth('created_at', now()->month)
-                        ->whereYear('created_at', now()->year)
-                        ->sum('amount');
-
-                    $todayEarnings = \App\Models\WalletTransaction::where('wallet_id', $walletId)
-                        ->where('type', 'credit')
-                        ->where('description', 'LIKE', '%คอมมิชชั่น%')
-                        ->whereDate('created_at', now()->toDateString())
-                        ->sum('amount');
+                } catch (\Exception $e) {
+                    // table อาจยังไม่มี — ข้ามไป
                 }
-            }
 
-            // ถ้าไม่มีรายได้เลย
-            if ($totalEarnings <= 0 && $walletBalance <= 0) {
-                $commissionAmount = $this->getLevel1CommissionText();
+                $message = "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
+                    ."═══════════════════════\n\n"
+                    ."💰 Wallet: ".number_format($walletBalance, 2)." บาท\n"
+                    ."📈 รายได้รวม: ".number_format($totalEarnings, 2)." บาท\n\n"
+                    ."🔗 ดูรายละเอียดรายได้ทั้งหมดได้ที่:\n"
+                    ."{$commissionUrl}\n\n"
+                    ."👥 ดูผังสายงาน:\n"
+                    ."{$treeUrl}\n\n";
 
-                return [
-                    'action' => 'earnings_empty',
-                    'message' => "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
-                        ."═══════════════════════\n\n"
-                        ."ยังไม่มีรายได้ค่าแนะนำค่ะ\n\n"
-                        ."💡 เริ่มสร้างรายได้ได้ง่ายๆ!\n"
-                        ."1. พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
-                        ."2. เพื่อนดูดวงเชิงลึก = คุณได้ {$commissionAmount} บาท\n"
-                        ."3. ค่าแนะนำเข้า Wallet อัตโนมัติ\n\n"
-                        ."💰 พิมพ์ \"แผนการตลาด\" เพื่อดูรายละเอียดค่าแนะนำ",
-                    'reading' => null,
-                ];
-            }
-
-            // สร้างข้อความรายได้
-            $message = "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
-                ."═══════════════════════\n\n"
-                ."💰 Wallet: ".number_format($walletBalance, 2)." บาท\n"
-                ."📈 รายได้รวมทั้งหมด: ".number_format($totalEarnings, 2)." บาท\n"
-                ."📅 เดือนนี้: ".number_format($monthEarnings, 2)." บาท\n"
-                ."📆 วันนี้: ".number_format($todayEarnings, 2)." บาท\n";
-
-            // แสดง 5 รายการล่าสุด
-            if ($recentCommissions->isNotEmpty()) {
-                $message .= "\n📋 5 รายการล่าสุด\n";
-                foreach ($recentCommissions as $index => $comm) {
-                    $fromName = $comm->fromUser?->name ?? 'ผู้ใช้';
-                    $amount = number_format($comm->amount, 0);
-                    $date = $comm->created_at?->locale('th')->translatedFormat('j M') ?? '-';
-                    $levelText = $comm->level == 2 ? ' (ชั้น 2)' : '';
-                    $message .= ($index + 1).". +{$amount}฿ จาก {$fromName}{$levelText} ({$date})\n";
+                if ($totalEarnings <= 0) {
+                    $message .= "💡 ยังไม่มีรายได้ — เริ่มสร้างรายได้!\n"
+                        ."พิมพ์ \"แชร์\" ส่งลิงก์ให้เพื่อน\n"
+                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง";
+                } else {
+                    $message .= "💡 แชร์เพิ่ม → รายได้เพิ่ม! พิมพ์ \"แชร์\"";
                 }
+
+                Log::info('Fortune: แสดงลิงก์รายได้', [
+                    'user_id' => $facebookUserId,
+                    'total_earnings' => $totalEarnings,
+                    'wallet_balance' => $walletBalance,
+                ]);
+            } else {
+                $message = "💵 ดูรายได้\n\n"
+                    ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
+                    ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
+                    ."เมื่อมีบัญชีแล้วสามารถดูรายได้ได้ที่:\n"
+                    ."{$commissionUrl}\n\n"
+                    ."พิมพ์คำถามมาได้เลยค่ะ 🔮";
             }
-
-            $message .= "\n💡 แชร์เพิ่ม → รายได้เพิ่ม! พิมพ์ \"แชร์\"";
-
-            Log::info('Fortune: แสดงรายได้', [
-                'user_id' => $facebookUserId,
-                'total_earnings' => $totalEarnings,
-                'wallet_balance' => $walletBalance,
-            ]);
 
             return [
-                'action' => 'earnings_info',
+                'action' => 'earnings_link',
                 'message' => $message,
                 'reading' => null,
             ];
@@ -7087,7 +6971,10 @@ PROMPT;
 
             return [
                 'action' => 'earnings_error',
-                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลรายได้ได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\n\n"
+                    ."🔗 ลองเข้าดูที่เว็บไซต์:\n"
+                    .url('/user/fortune-referral/commissions')."\n\n"
+                    ."กรุณาลองใหม่อีกครั้งนะคะ 🙏",
                 'reading' => null,
             ];
         }
