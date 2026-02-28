@@ -1520,14 +1520,29 @@
                 <div id="member-save-section">
                     <h3 style="color: #00ffff; margin-bottom: 15px;">💾 บันทึกคะแนนในสถิติเซิร์ฟเวอร์?</h3>
                     <p style="font-size: 14px; color: #ccc; margin-bottom: 10px;">
-                        ค่าบันทึก: <span style="color: #ffff00; font-weight: bold;">1 แต้ม</span>
+                        ค่าบันทึก: <span style="color: #ffff00; font-weight: bold;">1 แต้ม หรือ 1 เหรียญ</span>
                     </p>
-                    <div id="wallet-status" style="margin: 15px 0; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
+
+                    <!-- ✅ เลือกวิธีจ่าย: Wallet หรือ Coin -->
+                    <div id="payment-method-selector" style="margin: 12px 0; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                        <button type="button" id="pay-wallet-btn" class="btn"
+                            style="padding: 8px 16px; font-size: 13px; border: 2px solid transparent; background: linear-gradient(135deg, #ffaa00, #ff8800); transition: all 0.2s;"
+                            onclick="selectPaymentMethod('wallet')">
+                            💰 แต้ม <span id="pay-wallet-bal" style="opacity:0.8;">(...)</span>
+                        </button>
+                        <button type="button" id="pay-coin-btn" class="btn"
+                            style="padding: 8px 16px; font-size: 13px; border: 2px solid transparent; background: linear-gradient(135deg, #aa66ff, #6633cc); transition: all 0.2s;"
+                            onclick="selectPaymentMethod('coin')">
+                            🪙 เหรียญ <span id="pay-coin-bal" style="opacity:0.8;">(...)</span>
+                        </button>
+                    </div>
+
+                    <div id="wallet-status" style="margin: 10px 0; padding: 10px; background: rgba(255, 255, 255, 0.1); border-radius: 5px;">
                         <p style="color: #ccc; font-size: 14px;">⏳ กำลังโหลดข้อมูล...</p>
                     </div>
                     <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
                         <button class="btn" id="save-score-btn" style="background: linear-gradient(135deg, #00ff00, #00aa00);">
-                            ✅ บันทึกคะแนน (1 แต้ม)
+                            ✅ บันทึกคะแนน
                         </button>
                         <button class="btn" id="skip-save-btn" style="background: linear-gradient(135deg, #666, #444);">
                             ❌ ไม่บันทึก
@@ -4311,16 +4326,78 @@
             await checkWalletStatus();
         }
 
+        // ✅ เก็บวิธีจ่ายที่เลือก + ยอดคงเหลือ
+        let _selectedPayment = 'wallet'; // default
+        let _walletBalance = 0;
+        let _coinBalance = 0;
+
+        /**
+         * เลือกวิธีจ่ายค่าบันทึกคะแนน (wallet หรือ coin)
+         */
+        function selectPaymentMethod(method) {
+            _selectedPayment = method;
+            const walletBtn = document.getElementById('pay-wallet-btn');
+            const coinBtn = document.getElementById('pay-coin-btn');
+            const walletStatusEl = document.getElementById('wallet-status');
+            const saveBtnEl = document.getElementById('save-score-btn');
+
+            if (!walletBtn || !coinBtn) return;
+
+            // ✅ Highlight ปุ่มที่เลือก
+            if (method === 'wallet') {
+                walletBtn.style.border = '2px solid #fff';
+                walletBtn.style.transform = 'scale(1.05)';
+                coinBtn.style.border = '2px solid transparent';
+                coinBtn.style.transform = 'scale(1)';
+            } else {
+                coinBtn.style.border = '2px solid #fff';
+                coinBtn.style.transform = 'scale(1.05)';
+                walletBtn.style.border = '2px solid transparent';
+                walletBtn.style.transform = 'scale(1)';
+            }
+
+            // ✅ อัปเดตสถานะ + ปุ่มบันทึก
+            const bal = method === 'wallet' ? _walletBalance : _coinBalance;
+            const label = method === 'wallet' ? 'แต้ม' : 'เหรียญ';
+            const icon = method === 'wallet' ? '💰' : '🪙';
+            const color = method === 'wallet' ? '#ffaa00' : '#aa66ff';
+
+            if (bal >= 1) {
+                walletStatusEl.innerHTML = `
+                    <p style="color: #00ff00; font-size: 14px;">
+                        ${icon} ${label}คงเหลือ: <span style="font-weight: bold; font-size: 16px; color: ${color};">${bal.toFixed(2)}</span> ${label}
+                    </p>
+                    <p style="color: #ccc; font-size: 12px; margin-top: 5px;">
+                        หลังบันทึกจะเหลือ: ${(bal - 1).toFixed(2)} ${label}
+                    </p>
+                `;
+                saveBtnEl.disabled = false;
+                saveBtnEl.textContent = `✅ บันทึกคะแนน (1 ${label})`;
+            } else {
+                walletStatusEl.innerHTML = `
+                    <p style="color: #ff4444; font-size: 14px;">
+                        ⚠️ ${label}ไม่เพียงพอ!
+                    </p>
+                    <p style="color: #ccc; font-size: 13px; margin: 8px 0;">
+                        ${label}คงเหลือ: <span style="color: ${color}; font-weight: bold;">${bal.toFixed(2)}</span> ${label}<br>
+                        ต้องการ: <span style="color: #ff4444; font-weight: bold;">1</span> ${label}
+                    </p>
+                    ${method === 'wallet' ? '<a href="/user/wallet/topup" class="btn" style="background: linear-gradient(135deg, #ffaa00, #ff6600); text-decoration: none; display: inline-block; padding: 8px 16px; font-size: 13px; margin-top: 5px;">💳 เติมเงิน</a>' : '<p style="color:#ccc; font-size:12px; margin-top:5px;">ทำภารกิจหรือดูวิดีโอเพื่อรับเหรียญ</p>'}
+                `;
+                saveBtnEl.disabled = true;
+                saveBtnEl.textContent = `✅ บันทึกคะแนน (1 ${label})`;
+            }
+        }
+
         async function checkWalletStatus() {
             // สำหรับ Guest ไม่ต้องทำอะไร (UI แสดงอยู่แล้ว)
             if (!isAuthenticated) {
                 return;
             }
 
-            // สำหรับ Member - ดึงข้อมูล wallet
+            // สำหรับ Member - ดึงข้อมูล wallet + coin
             const walletStatusEl = document.getElementById('wallet-status');
             const saveBtnEl = document.getElementById('save-score-btn');
-            const skipBtnEl = document.getElementById('skip-save-btn');
 
             if (!walletStatusEl || !saveBtnEl) {
                 console.warn('[Wallet] ไม่พบ elements');
@@ -4328,60 +4405,43 @@
             }
 
             try {
-                // ดึงข้อมูล wallet จาก API
                 const response = await fetch('/api/games/snake-io/check-wallet', {
                     method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    },
+                    headers: { 'Accept': 'application/json' },
                     credentials: 'same-origin'
                 });
 
                 if (!response.ok) {
-                    throw new Error('ไม่สามารถดึงข้อมูล wallet ได้');
+                    throw new Error('ไม่สามารถดึงข้อมูลได้');
                 }
 
                 const data = await response.json();
-                const balance = parseFloat(data.balance || 0);
-                const canSave = data.can_save_score !== false;
-                const requiredPoints = 1;
+                _walletBalance = parseFloat(data.balance || 0);
+                _coinBalance = parseFloat(data.coin_balance || 0);
 
-                console.log('[Wallet] Balance:', balance, 'แต้ม', 'Can save:', canSave);
+                console.log('[Wallet] แต้ม:', _walletBalance, '| เหรียญ:', _coinBalance);
 
-                if (balance >= requiredPoints) {
-                    // แต้มพอ - อนุญาตให้บันทึก
-                    walletStatusEl.innerHTML = `
-                        <p style="color: #00ff00; font-size: 14px;">
-                            💰 แต้มคงเหลือ: <span style="font-weight: bold; font-size: 16px;">${balance.toFixed(2)}</span> แต้ม
-                        </p>
-                        <p style="color: #ccc; font-size: 12px; margin-top: 5px;">
-                            หลังบันทึกจะเหลือ: ${(balance - requiredPoints).toFixed(2)} แต้ม
-                        </p>
-                    `;
-                    saveBtnEl.disabled = false;
+                // ✅ อัปเดตยอดบนปุ่มเลือก
+                const walletBalEl = document.getElementById('pay-wallet-bal');
+                const coinBalEl = document.getElementById('pay-coin-bal');
+                if (walletBalEl) walletBalEl.textContent = `(${_walletBalance.toFixed(0)})`;
+                if (coinBalEl) coinBalEl.textContent = `(${_coinBalance.toFixed(0)})`;
+
+                // ✅ เลือกวิธีจ่ายอัตโนมัติ — เลือกอันที่มียอดพอ (wallet ก่อน)
+                if (_walletBalance >= 1) {
+                    selectPaymentMethod('wallet');
+                } else if (_coinBalance >= 1) {
+                    selectPaymentMethod('coin');
                 } else {
-                    // แต้มไม่พอ - ต้องเติมเงิน
-                    walletStatusEl.innerHTML = `
-                        <p style="color: #ff4444; font-size: 14px;">
-                            ⚠️ แต้มไม่เพียงพอ!
-                        </p>
-                        <p style="color: #ccc; font-size: 13px; margin: 8px 0;">
-                            แต้มคงเหลือ: <span style="color: #ffaa00; font-weight: bold;">${balance.toFixed(2)}</span> แต้ม<br>
-                            ต้องการ: <span style="color: #ff4444; font-weight: bold;">${requiredPoints}</span> แต้ม
-                        </p>
-                        <a href="/user/wallet/topup" class="btn" style="background: linear-gradient(135deg, #ffaa00, #ff6600); text-decoration: none; display: inline-block; padding: 8px 16px; font-size: 13px; margin-top: 5px;">
-                            💳 เติมเงิน
-                        </a>
-                    `;
-                    saveBtnEl.disabled = true;
+                    // ไม่มียอดพอทั้งคู่ — แสดง wallet เป็น default
+                    selectPaymentMethod('wallet');
                 }
+
             } catch (error) {
                 console.error('[Wallet] Error:', error);
                 walletStatusEl.innerHTML = `
                     <p style="color: #ff4444; font-size: 14px;">
-                        ⚠️ ไม่สามารถดึงข้อมูล wallet ได้
+                        ⚠️ ไม่สามารถดึงข้อมูลได้
                     </p>
                     <p style="color: #ccc; font-size: 12px; margin-top: 5px;">
                         ${error.message}
@@ -4472,11 +4532,12 @@
             saveBtnEl.textContent = '⏳ กำลังบันทึก...';
 
             try {
-                // ✅ บันทึกคะแนนและหัก wallet — ใช้ fetchWithCsrf ที่ auto-retry 419
+                // ✅ บันทึกคะแนนและหัก wallet/coin — ใช้ fetchWithCsrf ที่ auto-retry 419
                 const response = await fetchWithCsrf('/api/games/snake-io/save-score', {
                     score: score,
                     length: player.length,
-                    rank: getRank()
+                    rank: getRank(),
+                    payment_method: _selectedPayment  // wallet หรือ coin
                 });
 
                 if (!response.ok) {
@@ -4496,7 +4557,10 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert(`✅ บันทึกคะแนนสำเร็จ!\n\nคะแนน: ${score}\nความยาว: ${player.length}\n\n💰 แต้มคงเหลือ: ${result.remaining_balance} แต้ม`);
+                    // แสดงข้อความตามวิธีชำระเงินที่ใช้
+                    const payLabel = result.payment_label || (_selectedPayment === 'coin' ? 'เหรียญ' : 'แต้ม');
+                    const payIcon = _selectedPayment === 'coin' ? '🪙' : '💰';
+                    alert(`✅ บันทึกคะแนนสำเร็จ!\n\nคะแนน: ${score}\nความยาว: ${player.length}\n\n${payIcon} ${payLabel}คงเหลือ: ${result.remaining_balance} ${payLabel}`);
                     document.getElementById('save-score-section').style.display = 'none';
                 } else {
                     throw new Error(result.message || 'บันทึกล้มเหลว');
@@ -4693,6 +4757,21 @@
             const walletStatusEl = document.getElementById('wallet-status');
             if (walletStatusEl) {
                 walletStatusEl.innerHTML = '<p style="color: #ccc; font-size: 14px;">⏳ กำลังโหลดข้อมูล...</p>';
+            }
+
+            // ✅ รีเซ็ตตัวเลือกการชำระเงิน
+            _selectedPayment = 'wallet';
+            const payWalletBtn = document.getElementById('pay-wallet-btn');
+            const payCoinBtn = document.getElementById('pay-coin-btn');
+            if (payWalletBtn) {
+                payWalletBtn.style.borderColor = 'transparent';
+                const walBal = document.getElementById('pay-wallet-bal');
+                if (walBal) walBal.textContent = '(...)';
+            }
+            if (payCoinBtn) {
+                payCoinBtn.style.borderColor = 'transparent';
+                const coinBal = document.getElementById('pay-coin-bal');
+                if (coinBal) coinBal.textContent = '(...)';
             }
 
             // ✅ รีเซ็ตปุ่ม save และ skip
