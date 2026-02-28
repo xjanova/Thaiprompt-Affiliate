@@ -2448,6 +2448,17 @@
         let score = 0;
         let isAuthenticated = {{ Auth::check() ? 'true' : 'false' }};
 
+        // ✅ Session Keep-Alive: ป้องกัน session หมดอายุระหว่างเล่นเกมนานๆ
+        // ping ทุก 10 นาที เพื่อต่ออายุ session → Auth::check() ไม่ fail ตอน save score
+        let _sessionKeepAlive = null;
+        if (isAuthenticated) {
+            _sessionKeepAlive = setInterval(() => {
+                fetch('/api/games/snake-io/service-status', {
+                    credentials: 'same-origin'
+                }).catch(() => {}); // ไม่ต้อง handle error — แค่ ping ต่ออายุ session
+            }, 10 * 60 * 1000); // ทุก 10 นาที
+        }
+
         // Multiplayer Manager (DB-based - ใช้สำหรับ save score, wallet)
         let multiplayerManager = null;
         // ✅ Sync Client (Cache-based - ใช้สำหรับ real-time multiplayer sync)
@@ -5225,29 +5236,47 @@
 
         // ✅ FIX: Background Tab Support
         // requestAnimationFrame หยุดทำงานเมื่อแท็บถูกซ่อน
-        // ใช้ setInterval เป็น fallback เพื่อให้เกมดำเนินต่อ (บอท + sync ยังทำงาน)
+        // ใช้ setInterval เป็น fallback + ชดเชย frames ที่หายไป
+        // (Chrome throttle setInterval เหลือ ~1 ครั้ง/วินาที ในแท็บที่ซ่อน)
         let _bgInterval = null;
         let _isTabHidden = false;
+        let _lastBgTime = 0;
 
         function animate() {
             requestAnimationFrame(animate);
-            if (_isTabHidden) return; // ✅ ถ้าแท็บซ่อน → ให้ setInterval จัดการแทน
+            if (_isTabHidden) return; // ถ้าแท็บซ่อน → ให้ setInterval จัดการแทน
             update();
             renderer.render(scene, camera);
         }
 
         /**
          * Game loop สำหรับตอนแท็บถูกซ่อน
-         * - รัน update() ที่ ~10fps (ประหยัด CPU แต่เกมยังเดินต่อ)
-         * - ไม่ render (ไม่มีใครเห็น)
-         * - บอทยังวิ่ง, sync ยังส่ง state ให้คนอื่นเห็น
+         *
+         * ปัญหา: Chrome throttle setInterval เหลือ ~1 ครั้ง/วินาที
+         * แต่เกมทำงาน 60fps → ถ้าเรียก update() แค่ 1 ครั้ง/วินาที หนอนแทบไม่ขยับ
+         *
+         * แก้: ทุกครั้งที่ tick → คำนวณเวลาที่หายไป → เรียก update() หลายรอบชดเชย
+         * เช่น ถ้า 1 วินาทีผ่านไป → เรียก update() 15 ครั้ง (จำลอง ~15fps)
+         * → หนอนยังวิ่ง, บอทยังเล่น, sync ยังส่ง state
          */
         function startBackgroundLoop() {
             if (_bgInterval) return;
+            _lastBgTime = Date.now();
             _bgInterval = setInterval(() => {
                 if (!gameStarted || gameOver) return;
-                update();
-            }, 100); // ~10fps — เพียงพอให้เกมดำเนินต่อ
+
+                const now = Date.now();
+                const elapsed = now - _lastBgTime;
+                _lastBgTime = now;
+
+                // คำนวณจำนวน frames ที่ต้องชดเชย (~15fps target, cap ที่ 20 frames)
+                // 66ms = 1000/15 → 15fps
+                const steps = Math.min(Math.ceil(elapsed / 66), 20);
+
+                for (let i = 0; i < steps; i++) {
+                    update();
+                }
+            }, 100); // ตั้ง 100ms แต่ browser จะ throttle เป็น ~1000ms
         }
 
         function stopBackgroundLoop() {
