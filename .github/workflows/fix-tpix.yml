@@ -1,0 +1,74 @@
+name: Fix TPIX Server
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 5m
+          script: |
+            echo "=== 1. Who am I ==="
+            whoami
+            id
+
+            echo "=== 2. Add admin sudo ==="
+            sudo bash -c 'echo "admin ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/admin-deploy'
+            sudo chmod 440 /etc/sudoers.d/admin-deploy
+            echo "Added admin sudoers"
+
+            echo "=== 3. Find PHP-FPM service ==="
+            sudo systemctl list-units --type=service | grep -i php
+
+            echo "=== 4. Restart PHP-FPM ==="
+            FPM_PID=$(sudo pgrep -f "php-fpm: master" | head -1)
+            if [ -n "$FPM_PID" ]; then
+              echo "Found PHP-FPM master at PID $FPM_PID"
+              sudo kill -USR2 $FPM_PID
+              echo "Sent USR2 signal"
+            fi
+            # Also try all possible service names
+            sudo systemctl restart php-fpm83.service 2>/dev/null && echo "Restarted php-fpm83" || true
+            sudo systemctl restart php83-fpm.service 2>/dev/null && echo "Restarted php83-fpm" || true
+            sudo systemctl restart php-fpm.service 2>/dev/null && echo "Restarted php-fpm" || true
+            sleep 2
+
+            echo "=== 5. Restart Apache ==="
+            sudo systemctl restart httpd
+            sleep 2
+            echo "Apache restarted"
+
+            echo "=== 6. Check tpix public_html ==="
+            ls -la /home/admin/domains/tpix.online/public_html/ | head -15
+
+            echo "=== 7. Test PHP ==="
+            echo '<?php echo "PHP_WORKS";' > /home/admin/domains/tpix.online/public_html/test.php
+            chmod 644 /home/admin/domains/tpix.online/public_html/test.php
+            chown admin:admin /home/admin/domains/tpix.online/public_html/test.php
+            echo "test.php response:"
+            curl -s -H "Host: tpix.online" "http://127.0.0.1/test.php"
+            echo ""
+            echo "--- root page ---"
+            curl -s -H "Host: tpix.online" "http://127.0.0.1/" | head -10
+            echo ""
+            rm -f /home/admin/domains/tpix.online/public_html/test.php
+
+            echo "=== 8. Apache error log ==="
+            sudo tail -10 /var/log/httpd/domains/tpix.online.error.log 2>/dev/null || echo "No tpix error log"
+            echo "--- main ---"
+            sudo tail -5 /var/log/httpd/error_log 2>/dev/null
+
+            echo "=== 9. PHP-FPM log ==="
+            sudo tail -10 /usr/local/php83/var/log/php-fpm.log 2>/dev/null || echo "No FPM log at expected path"
+            sudo find /var/log/ -name "*php*fpm*" 2>/dev/null | head -5
+            sudo find /usr/local/php83/ -name "*.log" 2>/dev/null | head -5
+
+            echo "=== 10. Check PHP-FPM socket ==="
+            ls -la /usr/local/php83/sockets/ 2>/dev/null
+            sudo stat /usr/local/php83/sockets/admin.sock 2>/dev/null || echo "No admin.sock"
+
+            echo "DONE"
