@@ -2646,10 +2646,8 @@
                     scene.add(segment);
                 }
 
-                // Add name tag for players
-                if (this.isPlayer || Math.random() > 0.5) {
-                    this.createNameTag();
-                }
+                // ✅ FIX: แสดงชื่อทุกตัวเสมอ (ทั้ง player, bot, online players)
+                this.createNameTag();
             }
 
             createNameTag() {
@@ -2943,6 +2941,11 @@
                 this.segments = []; // ✅ เคลียร์ segments ป้องกันซ้ำ
 
                 if (this.nameSprite) {
+                    // ✅ คืน memory: dispose texture + material ก่อน remove
+                    if (this.nameSprite.material) {
+                        if (this.nameSprite.material.map) this.nameSprite.material.map.dispose();
+                        this.nameSprite.material.dispose();
+                    }
                     scene.remove(this.nameSprite);
                     this.nameSprite = null;
                 }
@@ -3230,14 +3233,18 @@
                 }
             });
 
-            // ✅ หยุด sync เมื่อแท็บถูกซ่อน (ประหยัด bandwidth)
+            // ✅ FIX: เมื่อแท็บถูกซ่อน → ใช้ background loop แทน rAF
+            // เกมยังเดินต่อ (บอทวิ่ง, sync ส่ง state) — คนอื่นจะไม่เห็นหนอนหยุดนิ่ง
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
-                    if (syncClient) syncClient.stopSyncLoop();
+                    _isTabHidden = true;
+                    startBackgroundLoop();
+                    // ✅ ไม่หยุด sync — ให้ส่ง state ต่อเพื่อให้คนอื่นเห็นว่ายังเล่นอยู่
+                    console.log('[Game] แท็บถูกซ่อน → เปลี่ยนเป็น background mode (10fps, ไม่ render)');
                 } else {
-                    if (syncClient && syncClient.isOnline() && gameStarted && !gameOver) {
-                        syncClient.startSyncLoop();
-                    }
+                    _isTabHidden = false;
+                    stopBackgroundLoop();
+                    console.log('[Game] กลับมาที่แท็บ → เปลี่ยนเป็น foreground mode (rAF + render)');
                 }
             });
 
@@ -5216,10 +5223,38 @@
             }
         }
 
+        // ✅ FIX: Background Tab Support
+        // requestAnimationFrame หยุดทำงานเมื่อแท็บถูกซ่อน
+        // ใช้ setInterval เป็น fallback เพื่อให้เกมดำเนินต่อ (บอท + sync ยังทำงาน)
+        let _bgInterval = null;
+        let _isTabHidden = false;
+
         function animate() {
             requestAnimationFrame(animate);
+            if (_isTabHidden) return; // ✅ ถ้าแท็บซ่อน → ให้ setInterval จัดการแทน
             update();
             renderer.render(scene, camera);
+        }
+
+        /**
+         * Game loop สำหรับตอนแท็บถูกซ่อน
+         * - รัน update() ที่ ~10fps (ประหยัด CPU แต่เกมยังเดินต่อ)
+         * - ไม่ render (ไม่มีใครเห็น)
+         * - บอทยังวิ่ง, sync ยังส่ง state ให้คนอื่นเห็น
+         */
+        function startBackgroundLoop() {
+            if (_bgInterval) return;
+            _bgInterval = setInterval(() => {
+                if (!gameStarted || gameOver) return;
+                update();
+            }, 100); // ~10fps — เพียงพอให้เกมดำเนินต่อ
+        }
+
+        function stopBackgroundLoop() {
+            if (_bgInterval) {
+                clearInterval(_bgInterval);
+                _bgInterval = null;
+            }
         }
 
         function onWindowResize() {
