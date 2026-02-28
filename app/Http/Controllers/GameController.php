@@ -217,6 +217,12 @@ class GameController extends Controller
             ->limit(100)
             ->get();
 
+        // ✅ เพิ่ม display_name — ใช้ player_name (ชื่อหนอน) ถ้ามี, ไม่งั้นใช้ชื่อบัญชี
+        $leaderboard->each(function ($entry) {
+            $entry->display_name = $entry->player_name
+                ?? ($entry->user ? $entry->user->name : 'Unknown');
+        });
+
         return response()->json($leaderboard);
     }
 

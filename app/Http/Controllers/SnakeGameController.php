@@ -275,6 +275,7 @@ class SnakeGameController extends Controller
             'length' => 'required|integer|min:1',
             'rank' => 'nullable|integer|min:0',
             'payment_method' => 'nullable|string|in:wallet,coin',
+            'player_name' => 'nullable|string|max:50',
         ]);
 
         // ✅ default เป็น wallet ถ้าไม่ระบุ (backward compatible)
@@ -358,9 +359,15 @@ class SnakeGameController extends Controller
                 // บันทึกคะแนนลง leaderboard
                 $game = Game::where('slug', 'snake-io')->firstOrFail();
 
+                // ✅ ใช้ชื่อหนอนที่ผู้เล่นตั้ง (ถ้ามี) ไม่งั้นใช้ชื่อบัญชี
+                $playerName = !empty($validated['player_name'])
+                    ? $validated['player_name']
+                    : ($user->name ?? 'Player');
+
                 \App\Models\GameLeaderboard::create([
                     'user_id' => $user->id,
                     'game_id' => $game->id,
+                    'player_name' => $playerName,
                     'score' => $validated['score'],
                     'wave_reached' => $validated['length'] ?? 1,
                     'ship_used' => 'snake',

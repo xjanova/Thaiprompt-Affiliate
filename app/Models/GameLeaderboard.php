@@ -12,6 +12,7 @@ class GameLeaderboard extends Model
     protected $fillable = [
         'user_id',
         'game_id',
+        'player_name',
         'score',
         'wave_reached',
         'ship_used',

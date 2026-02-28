@@ -3017,19 +3017,20 @@
                     const rankNum = index + 1;
                     const rankClass = rankNum <= 3 ? ` rank-${rankNum}` : '';
                     const rankDisplay = rankNum <= 3 ? medals[rankNum - 1] : rankNum;
-                    const playerName = entry.user ? entry.user.name : 'Unknown';
+                    // ✅ ใช้ display_name (ชื่อหนอน) ก่อน, fallback เป็นชื่อบัญชี
+                    const displayName = entry.display_name || entry.player_name || (entry.user ? entry.user.name : 'Unknown');
                     const score = Number(entry.score).toLocaleString();
 
                     return `<div class="title-lb-item${rankClass}">
                         <span class="lb-rank">${rankDisplay}</span>
-                        <span class="lb-name">${playerName}</span>
+                        <span class="lb-name">${displayName}</span>
                         <span class="lb-score">${score}</span>
                     </div>`;
                 }).join('');
 
                 // ✅ Cache top 3 สำหรับแสดงระหว่างเล่น (server leaderboard)
                 _serverTop3Cache = entries.slice(0, 3).map(e => ({
-                    name: e.user ? e.user.name : 'Unknown',
+                    name: e.display_name || e.player_name || (e.user ? e.user.name : 'Unknown'),
                     score: e.score
                 }));
 
@@ -4537,7 +4538,8 @@
                     score: score,
                     length: player.length,
                     rank: getRank(),
-                    payment_method: _selectedPayment  // wallet หรือ coin
+                    payment_method: _selectedPayment,  // wallet หรือ coin
+                    player_name: playerName             // ชื่อหนอนที่ผู้เล่นตั้ง
                 });
 
                 if (!response.ok) {
