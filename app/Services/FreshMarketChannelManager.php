@@ -2,20 +2,21 @@
 
 namespace App\Services;
 
-use App\Models\FreshMarketBuyerPreference;
 use App\Models\FreshMarketConversation;
 use App\Models\FreshMarketListing;
 use App\Models\FreshMarketReferral;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
-use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
  * FreshMarketChannelManager - จัดการการสนทนาตลาดสด
  *
- * Conversation State Machine สำหรับ LINE OA
- * ตาม pattern ของ FortuneChannelManager
+ * State Machine v2: Dispatcher Pattern
+ * route ตาม {state}:{inputType} ไปหา handler เฉพาะ
+ *
+ * บอทรู้ชัดเจนว่ากำลังทำอะไร ยูสเซอร์กำลังทำอะไร
+ * ทุกสถานะมี handler แยก + error recovery + timeout
  */
 class FreshMarketChannelManager
 {
@@ -35,26 +36,37 @@ class FreshMarketChannelManager
         $this->lineService = new FreshMarketLineService($this->settings);
     }
 
-    // ===== Main Entry Points =====
+    // ╔══════════════════════════════════════════╗
+    // ║  MAIN ENTRY POINTS                       ║
+    // ╚══════════════════════════════════════════╝
 
     /**
      * ประมวลผลข้อความจากผู้ใช้
-     *
-     * @param  string  $lineUserId  LINE User ID
-     * @param  string  $message  ข้อความ
-     * @param  array  $extra  ข้อมูลเพิ่มเติม (reply_token, user_profile)
-     * @return array{text: string, flex: ?array, quick_replies: ?array}
      */
     public function processMessage(string $lineUserId, string $message, array $extra = []): array
     {
         $conversation = FreshMarketConversation::getOrCreate($lineUserId);
         $replyToken = $extra['reply_token'] ?? null;
 
-        // ตรวจสอบ referral token
-        if (preg_match('/^ref_([A-Za-z0-9]{32})$/i', trim($message), $matches)) {
-            $result = $this->handleReferralToken($lineUserId, $matches[1], $conversation);
+        // 1. เช็ค timeout
+        $timeoutResult = $this->checkAndHandleTimeout($conversation);
+        if ($timeoutResult) {
+            if ($replyToken) {
+                $this->sendReply($replyToken, $timeoutResult);
+            }
 
-            // ✅ ส่ง reply สำหรับ referral token
+            return $timeoutResult;
+        }
+
+        // 2. เช็คคำสั่ง "ยกเลิก" (ทุกสถานะ)
+        if ($this->isCancel($message)) {
+            $wasInFlow = $conversation->conversation_state !== FreshMarketConversation::STATE_IDLE;
+            $conversation->resetToIdle();
+            $result = [
+                'text' => $wasInFlow
+                    ? "❌ ยกเลิกแล้วค่ะ\n\nมีอะไรให้พี่ตลาดช่วยพิมพ์มาได้เลยนะคะ 😊"
+                    : "มีอะไรให้พี่ตลาดช่วยค่ะ? 😊",
+            ];
             if ($replyToken) {
                 $this->sendReply($replyToken, $result);
             }
@@ -62,12 +74,20 @@ class FreshMarketChannelManager
             return $result;
         }
 
-        // เช็คคำสั่งพิเศษ
+        // 3. เช็ค referral token (ทุกสถานะ)
+        if (preg_match('/^ref_([A-Za-z0-9]{32})$/i', trim($message), $matches)) {
+            $result = $this->handleReferralToken($lineUserId, $matches[1], $conversation);
+            if ($replyToken) {
+                $this->sendReply($replyToken, $result);
+            }
+
+            return $result;
+        }
+
+        // 4. เช็คคำสั่งพิเศษ (ทุกสถานะ)
         $command = $this->detectCommand($message);
         if ($command) {
             $result = $this->handleCommand($command, $lineUserId, $conversation, $extra);
-
-            // ✅ ส่ง reply สำหรับคำสั่งพิเศษ (แก้บั๊กไม่ตอบกลับ)
             if ($replyToken) {
                 $this->sendReply($replyToken, $result);
             }
@@ -75,44 +95,17 @@ class FreshMarketChannelManager
             return $result;
         }
 
-        // บันทึกข้อความผู้ใช้
+        // 5. บันทึกข้อความผู้ใช้
         $conversation->addMessage('user', $message);
 
-        // ใช้ AI ตอบพร้อมบริบท
-        try {
-            $context = $this->buildContext($conversation);
+        // 6. Dispatch ตาม state
+        $result = $this->dispatchByState($conversation, 'text', $message, $extra);
 
-            $aiResult = $this->aiService->generateResponse(
-                $message,
-                $conversation->getContext(10),
-                $context
-            );
-
-            // บันทึกคำตอบ AI
-            $conversation->addMessage('assistant', $aiResult['response'], [
-                'tokens_used' => $aiResult['tokens_used'],
-                'ai_provider' => $aiResult['provider'],
-                'ai_model' => $aiResult['model'],
-            ]);
-
-            // วิเคราะห์ intent จาก AI
-            $intent = $this->aiService->parseSearchIntent($message);
-
-            // จัดการตาม intent
-            $result = $this->handleIntent($intent, $conversation, $aiResult['response'], $extra);
-        } catch (\Exception $e) {
-            // ✅ Fallback: ถ้า AI ล้มเหลว ยังตอบผู้ใช้ได้
-            Log::error('FreshMarketChannelManager: AI error', [
-                'user_id' => $lineUserId,
-                'error' => $e->getMessage(),
-            ]);
-
-            $result = [
-                'text' => "สวัสดีค่ะ! พี่ตลาดรับทราบข้อความแล้วค่ะ 😊\n\nตอนนี้ระบบ AI กำลังปรับปรุง ลองพิมพ์ \"ช่วยเหลือ\" เพื่อดูคำสั่งที่ใช้ได้ค่ะ",
-            ];
+        // 7. บันทึกคำตอบ + ส่งกลับ
+        if (! empty($result['text'])) {
+            $conversation->addMessage('assistant', $result['text'], $result['metadata'] ?? []);
         }
 
-        // ส่งข้อความกลับ
         if ($replyToken) {
             $this->sendReply($replyToken, $result);
         }
@@ -121,24 +114,27 @@ class FreshMarketChannelManager
     }
 
     /**
-     * ประมวลผลรูปภาพ (สำหรับลงขายสินค้า)
-     *
-     * @param  string  $lineUserId  LINE User ID
-     * @param  string  $messageId  LINE Message ID ของรูป
-     * @param  array  $extra  ข้อมูลเพิ่มเติม
-     * @return array
+     * ประมวลผลรูปภาพ
      */
     public function processImage(string $lineUserId, string $messageId, array $extra = []): array
     {
         $conversation = FreshMarketConversation::getOrCreate($lineUserId);
         $replyToken = $extra['reply_token'] ?? null;
 
+        // เช็ค timeout
+        $timeoutResult = $this->checkAndHandleTimeout($conversation);
+        if ($timeoutResult) {
+            if ($replyToken) {
+                $this->sendReply($replyToken, $timeoutResult);
+            }
+
+            return $timeoutResult;
+        }
+
         // ดาวน์โหลดรูปจาก LINE
         $imageContent = $this->lineService->getMessageContent($messageId);
-
         if (! $imageContent) {
             $result = ['text' => 'ขอโทษค่ะ ไม่สามารถรับรูปภาพได้ กรุณาลองส่งใหม่อีกครั้งค่ะ 🙏'];
-
             if ($replyToken) {
                 $this->sendReply($replyToken, $result);
             }
@@ -146,34 +142,19 @@ class FreshMarketChannelManager
             return $result;
         }
 
-        // อัพโหลดรูปไปเก็บ
+        // อัพโหลดรูป
         $imageUrl = $this->uploadImage($imageContent);
+        if (empty($imageUrl)) {
+            $result = ['text' => 'ขอโทษค่ะ ไม่สามารถบันทึกรูปภาพได้ กรุณาลองส่งใหม่ค่ะ 🙏'];
+            if ($replyToken) {
+                $this->sendReply($replyToken, $result);
+            }
 
-        // เก็บ URL รูปใน context
-        $currentContext = $conversation->context ?? [];
-        $pendingImages = $currentContext['pending_images'] ?? [];
-        $pendingImages[] = $imageUrl;
-        $conversation->updateState($conversation->conversation_state, [
-            'pending_images' => $pendingImages,
-        ]);
-
-        // ตอบกลับ
-        $imageCount = count($pendingImages);
-        $text = "📸 ได้รับรูปภาพที่ {$imageCount} แล้วค่ะ!\n\n";
-
-        // ถ้าเป็นรูปแรก ถามรายละเอียด
-        if ($imageCount === 1) {
-            $text .= "บอกพี่ตลาดได้เลยค่ะว่า:\n";
-            $text .= "• ชื่อสินค้า\n";
-            $text .= "• ราคา และหน่วย (เช่น กก. ถุง กำ)\n\n";
-            $text .= "หรือจะส่งรูปเพิ่มก็ได้ค่ะ (สูงสุด 5 รูป)";
-        } else {
-            $text .= "ส่งรูปเพิ่มได้อีก หรือบอกรายละเอียดสินค้าได้เลยค่ะ";
+            return $result;
         }
 
-        $conversation->updateState(FreshMarketConversation::STATE_LISTING);
-
-        $result = ['text' => $text];
+        // Dispatch ตาม state
+        $result = $this->dispatchByState($conversation, 'image', $imageUrl, $extra);
 
         if ($replyToken) {
             $this->sendReply($replyToken, $result);
@@ -184,74 +165,27 @@ class FreshMarketChannelManager
 
     /**
      * ประมวลผลพิกัด GPS
-     *
-     * @param  string  $lineUserId  LINE User ID
-     * @param  float  $lat  ละติจูด
-     * @param  float  $lng  ลองจิจูด
-     * @param  array  $extra  ข้อมูลเพิ่มเติม
-     * @return array
      */
     public function processLocation(string $lineUserId, float $lat, float $lng, array $extra = []): array
     {
         $conversation = FreshMarketConversation::getOrCreate($lineUserId);
         $replyToken = $extra['reply_token'] ?? null;
 
-        // อัพเดทพิกัด
-        $conversation->updateSearchLocation($lat, $lng);
-
-        $state = $conversation->conversation_state;
-
-        // ถ้ากำลังลงขาย → บันทึกพิกัดร้าน
-        if ($state === FreshMarketConversation::STATE_LISTING) {
-            $conversation->updateState($state, [
-                'listing_latitude' => $lat,
-                'listing_longitude' => $lng,
-            ]);
-
-            $result = [
-                'text' => "📍 ได้รับพิกัดแล้วค่ะ!\n\nบอกรายละเอียดสินค้าที่จะลงขายได้เลยค่ะ (ชื่อ, ราคา, หน่วย)",
-            ];
-
+        // เช็ค timeout
+        $timeoutResult = $this->checkAndHandleTimeout($conversation);
+        if ($timeoutResult) {
             if ($replyToken) {
-                $this->sendReply($replyToken, $result);
+                $this->sendReply($replyToken, $timeoutResult);
             }
 
-            return $result;
+            return $timeoutResult;
         }
 
-        // ถ้าเป็นผู้ซื้อ → ค้นหาสินค้าใกล้ตัว
-        $listings = $this->marketService->searchListings($lat, $lng);
+        // อัพเดทพิกัดในทุกกรณี
+        $conversation->updateSearchLocation($lat, $lng);
 
-        if ($listings->isEmpty()) {
-            $radius = $this->settings->default_search_radius_km;
-            $result = [
-                'text' => "📍 ได้รับตำแหน่งแล้วค่ะ\n\nยังไม่มีสินค้าในรัศมี {$radius} กม. ค่ะ 😅\nลองบอกพี่ตลาดว่าอยากได้อะไร จะช่วยหาให้ค่ะ!",
-            ];
-        } else {
-            // สร้าง Flex Carousel
-            $listingData = $listings->take(5)->map(function ($listing) {
-                return [
-                    'id' => $listing->id,
-                    'slug' => $listing->slug,
-                    'title' => $listing->title,
-                    'price' => $listing->price,
-                    'unit' => $listing->unit,
-                    'image' => $listing->primary_image,
-                    'distance' => number_format($listing->distance_km ?? 0, 1),
-                    'shop_name' => $listing->seller?->shop_name ?? 'ร้านค้า',
-                ];
-            })->toArray();
-
-            $flexCarousel = $this->lineService->buildListingsCarousel($listingData);
-
-            $result = [
-                'text' => "📍 สินค้าใกล้คุณ ({$listings->count()} รายการ)",
-                'flex' => $flexCarousel,
-                'flex_alt_text' => "สินค้าใกล้ตัว {$listings->count()} รายการ",
-            ];
-        }
-
-        $conversation->updateState(FreshMarketConversation::STATE_BROWSING);
+        // Dispatch ตาม state
+        $result = $this->dispatchByState($conversation, 'location', ['lat' => $lat, 'lng' => $lng], $extra);
 
         if ($replyToken) {
             $this->sendReply($replyToken, $result);
@@ -260,16 +194,12 @@ class FreshMarketChannelManager
         return $result;
     }
 
-    // ===== Follow/Unfollow =====
-
     /**
      * ผู้ใช้เพิ่มเพื่อน (Follow)
      */
     public function handleFollow(string $lineUserId, array $extra = []): void
     {
         $replyToken = $extra['reply_token'] ?? null;
-
-        // สร้าง conversation
         FreshMarketConversation::getOrCreate($lineUserId);
 
         // ตรวจสอบ referral
@@ -278,8 +208,7 @@ class FreshMarketChannelManager
             $referral->markAsFollowed($lineUserId);
         }
 
-        // ส่งข้อความต้อนรับ
-        $welcomeMessage = $this->settings->welcome_message ?? "สวัสดีค่ะ! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪";
+        $welcomeMessage = $this->settings->welcome_message ?? "สวัสดีค่ะ! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪\n\nวันนี้จะซื้อหรือจะขายคะ? 😊\n\n🛒 พิมพ์ \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ พิมพ์ \"ลงขาย\" - ลงขายสินค้า\n📋 พิมพ์ \"ช่วยเหลือ\" - ดูคำสั่งทั้งหมด";
 
         if ($replyToken) {
             $this->lineService->replyMessage($replyToken, [
@@ -296,42 +225,995 @@ class FreshMarketChannelManager
         Log::info('FreshMarket: User unfollowed', ['line_user_id' => $lineUserId]);
     }
 
-    // ===== Postback Actions =====
-
     /**
      * จัดการ Postback (กดปุ่ม Flex)
      */
     public function handlePostback(string $lineUserId, string $data, array $extra = []): void
     {
         $replyToken = $extra['reply_token'] ?? null;
+        $conversation = FreshMarketConversation::getOrCreate($lineUserId);
 
-        // Parse postback data
         parse_str($data, $params);
         $action = $params['action'] ?? '';
 
-        switch ($action) {
-            case 'order':
-                $this->handleOrderPostback($lineUserId, $params, $replyToken);
-                break;
+        $result = match ($action) {
+            'order' => $this->handleOrderSelectPostback($lineUserId, $params, $conversation),
+            'confirm_listing' => $this->handleListingConfirmPostback($conversation),
+            'edit_listing' => $this->handleListingEditPostback($conversation),
+            'confirm_order' => $this->handleConfirmOrderPostback($lineUserId, $params, $conversation),
+            'cancel_order' => $this->handleCancelOrderPostback($lineUserId, $params, $conversation),
+            'sell_more' => $this->handleSellMorePostback($conversation),
+            default => ['text' => 'ขอโทษค่ะ พี่ตลาดไม่เข้าใจคำสั่งนี้ 🤔'],
+        };
 
-            case 'confirm_order':
-                $this->handleConfirmOrderPostback($lineUserId, $params, $replyToken);
-                break;
-
-            case 'cancel_order':
-                $this->handleCancelOrderPostback($lineUserId, $params, $replyToken);
-                break;
-
-            default:
-                if ($replyToken) {
-                    $this->lineService->replyMessage($replyToken, [
-                        ['type' => 'text', 'text' => 'ขอโทษค่ะ พี่ตลาดไม่เข้าใจคำสั่งนี้ 🤔'],
-                    ]);
-                }
+        if ($replyToken && $result) {
+            $this->sendReply($replyToken, $result);
         }
     }
 
-    // ===== Internal Methods =====
+    // ╔══════════════════════════════════════════╗
+    // ║  CORE DISPATCHER                         ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * Dispatch ตาม {state}:{inputType}
+     */
+    protected function dispatchByState(FreshMarketConversation $conversation, string $inputType, mixed $inputData, array $extra): array
+    {
+        $state = $conversation->conversation_state ?? FreshMarketConversation::STATE_IDLE;
+
+        return match ("{$state}:{$inputType}") {
+            // === IDLE ===
+            'idle:text' => $this->handleIdle_Text($conversation, $inputData, $extra),
+            'idle:image' => $this->handleIdle_Image($conversation, $inputData, $extra),
+            'idle:location' => $this->handleIdle_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+
+            // === LISTING FLOW ===
+            'listing_photos:image' => $this->handleListingPhotos_Image($conversation, $inputData, $extra),
+            'listing_photos:text' => $this->handleListingPhotos_Text($conversation, $inputData, $extra),
+            'listing_photos:location' => $this->handleWrongInputType($conversation, 'location'),
+
+            'listing_details:text' => $this->handleListingDetails_Text($conversation, $inputData, $extra),
+            'listing_details:image' => $this->handleListingPhotos_Image($conversation, $inputData, $extra),
+            'listing_details:location' => $this->handleWrongInputType($conversation, 'location'),
+
+            'listing_location:location' => $this->handleListingLocation_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+            'listing_location:text' => $this->handleListingLocation_Text($conversation, $inputData, $extra),
+            'listing_location:image' => $this->handleWrongInputType($conversation, 'image'),
+
+            'listing_review:text' => $this->handleListingReview_Text($conversation, $inputData, $extra),
+            'listing_review:image' => $this->handleWrongInputType($conversation, 'image'),
+            'listing_review:location' => $this->handleWrongInputType($conversation, 'location'),
+
+            // === SEARCH FLOW ===
+            'search_location:location' => $this->handleSearchLocation_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+            'search_location:text' => $this->handleSearchLocation_Text($conversation, $inputData, $extra),
+            'search_browsing:text' => $this->handleSearchBrowsing_Text($conversation, $inputData, $extra),
+            'search_browsing:location' => $this->handleSearchLocation_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+
+            // === ORDER FLOW ===
+            'order_quantity:text' => $this->handleOrderQuantity_Text($conversation, $inputData, $extra),
+            'order_quantity:location' => $this->handleOrderQuantity_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+            'order_review:text' => $this->handleOrderReview_Text($conversation, $inputData, $extra),
+            'order_tracking:text' => $this->handleOrderTracking_Text($conversation, $inputData, $extra),
+
+            // === DEFAULT ===
+            default => $this->handleWrongInputType($conversation, $inputType),
+        };
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  IDLE HANDLERS                           ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * idle + text → AI chat ทั่วไป / detect intent
+     */
+    protected function handleIdle_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        try {
+            $context = $this->buildContext($conversation);
+            $aiResult = $this->aiService->generateResponse(
+                $message,
+                $conversation->getMessageHistory(10),
+                $context
+            );
+
+            return [
+                'text' => $aiResult['response'],
+                'metadata' => [
+                    'tokens_used' => $aiResult['tokens_used'],
+                    'ai_provider' => $aiResult['provider'],
+                    'ai_model' => $aiResult['model'],
+                ],
+            ];
+        } catch (\Exception $e) {
+            Log::error('FreshMarketChannelManager: AI error (idle)', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'text' => "สวัสดีค่ะ! พี่ตลาดรับทราบข้อความแล้วค่ะ 😊\n\nวันนี้จะซื้อหรือจะขายคะ?\n🛒 พิมพ์ \"อยากซื้อ\"\n🏷️ พิมพ์ \"ลงขาย\"\n📋 พิมพ์ \"ช่วยเหลือ\"",
+            ];
+        }
+    }
+
+    /**
+     * idle + image → เริ่ม listing flow อัตโนมัติ
+     */
+    protected function handleIdle_Image(FreshMarketConversation $conversation, string $imageUrl, array $extra): array
+    {
+        // เริ่ม listing flow ทันทีเมื่อส่งรูปมา
+        $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+            'listing' => [
+                'images' => [$imageUrl],
+                'image_count' => 1,
+                'started_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\n📸 ได้รับรูปที่ 1 แล้วค่ะ! เริ่มลงขายสินค้าให้เลยนะคะ\n\nส่งรูปเพิ่มได้อีก 4 รูป\nหรือพิมพ์ \"เสร็จ\" เพื่อไปขั้นตอนถัดไปค่ะ\n\nพิมพ์ \"ยกเลิก\" ถ้าไม่ได้ต้องการลงขาย",
+        ];
+    }
+
+    /**
+     * idle + location → เริ่ม search flow อัตโนมัติ
+     */
+    protected function handleIdle_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
+    {
+        return $this->searchNearbyAndRespond($conversation, $lat, $lng);
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  SELLER LISTING FLOW HANDLERS            ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * listing_photos + image → รับรูป เก็บใน context
+     */
+    protected function handleListingPhotos_Image(FreshMarketConversation $conversation, string $imageUrl, array $extra): array
+    {
+        $ctx = $conversation->getFlowContext('listing');
+        $images = $ctx['images'] ?? [];
+
+        // ป้องกันรูปซ้ำ
+        if (in_array($imageUrl, $images)) {
+            return ['text' => '📸 รูปนี้มีอยู่แล้วค่ะ ส่งรูปอื่นมาเพิ่มได้เลยค่ะ'];
+        }
+
+        $images[] = $imageUrl;
+        $imageCount = count($images);
+
+        // จำกัด 5 รูป
+        if ($imageCount > 5) {
+            $progress = $conversation->getProgressText();
+
+            return [
+                'text' => "{$progress}\n\n📸 รับได้สูงสุด 5 รูปค่ะ (ตอนนี้มี 5 รูปแล้ว)\n\nพิมพ์ \"เสร็จ\" เพื่อไปขั้นตอนถัดไปค่ะ",
+            ];
+        }
+
+        $conversation->setFlowContext('listing', [
+            'images' => $images,
+            'image_count' => $imageCount,
+            'started_at' => $ctx['started_at'] ?? now()->toIso8601String(),
+        ]);
+
+        $progress = $conversation->getProgressText();
+
+        // ครบ 5 รูป → auto-advance
+        if ($imageCount >= 5) {
+            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_DETAILS);
+            $newProgress = $conversation->getProgressText();
+
+            return [
+                'text' => "{$newProgress}\n\n📸 ได้ 5 รูปครบแล้วค่ะ!\n\n📝 บอกรายละเอียดสินค้าได้เลยค่ะ\n• ชื่อสินค้า\n• ราคา\n• หน่วย (กก./ถุง/กำ/ชิ้น)\n\nเช่น \"มะม่วงน้ำดอกไม้ 120 บาท/กก.\"",
+            ];
+        }
+
+        $remaining = 5 - $imageCount;
+
+        return [
+            'text' => "{$progress}\n\n📸 ได้รับรูปที่ {$imageCount} แล้วค่ะ!\n\nส่งรูปเพิ่มได้อีก {$remaining} รูป\nหรือพิมพ์ \"เสร็จ\" เพื่อไปขั้นตอนถัดไปค่ะ",
+        ];
+    }
+
+    /**
+     * listing_photos + text → "เสร็จ" ไป details หรือแนะนำ
+     */
+    protected function handleListingPhotos_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+        $ctx = $conversation->getFlowContext('listing');
+        $imageCount = $ctx['image_count'] ?? 0;
+
+        // เช็คคำสั่ง "เสร็จ"/"done"/"ต่อ"
+        if (in_array($msg, ['เสร็จ', 'done', 'ต่อ', 'ถัดไป', 'next', 'เสร็จแล้ว'])) {
+            if ($imageCount === 0) {
+                return [
+                    'text' => "⚠️ ยังไม่มีรูปสินค้าเลยค่ะ\n\n📸 กรุณาส่งรูปสินค้าอย่างน้อย 1 รูปก่อนนะคะ",
+                ];
+            }
+
+            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_DETAILS);
+            $progress = $conversation->getProgressText();
+
+            return [
+                'text' => "{$progress}\n\n📝 บอกรายละเอียดสินค้าได้เลยค่ะ\n• ชื่อสินค้า\n• ราคา\n• หน่วย (กก./ถุง/กำ/ชิ้น)\n\nเช่น \"ผักบุ้งจีน 25 บาท/กำ\"",
+            ];
+        }
+
+        // ข้อความอื่น → แนะนำ
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\nตอนนี้รอรูปสินค้าอยู่ค่ะ 📸\n".($imageCount > 0 ? "มีรูปแล้ว {$imageCount} รูป\n\n" : "\n")."• ส่งรูปมาได้เลยค่ะ (สูงสุด 5 รูป)\n• พิมพ์ \"เสร็จ\" เมื่อส่งรูปครบ\n• พิมพ์ \"ยกเลิก\" เพื่อเริ่มใหม่",
+        ];
+    }
+
+    /**
+     * listing_details + text → AI parse ชื่อ/ราคา/หน่วย
+     */
+    protected function handleListingDetails_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $ctx = $conversation->getFlowContext('listing');
+
+        // ใช้ AI สกัดข้อมูลจากข้อความ
+        try {
+            $parsed = $this->aiService->parseListingDetailsFromText($message, $ctx);
+        } catch (\Exception $e) {
+            $parsed = null;
+        }
+
+        // ถ้า parse ได้
+        if ($parsed && ! empty($parsed['title']) && ! empty($parsed['price'])) {
+            // Merge ข้อมูลที่ได้เข้า context
+            $conversation->setFlowContext('listing', [
+                'title' => $parsed['title'],
+                'price' => (float) $parsed['price'],
+                'unit' => $parsed['unit'] ?? 'ชิ้น',
+                'description' => $parsed['description'] ?? '',
+                'category_hint' => $parsed['category_hint'] ?? null,
+                'is_organic' => $parsed['is_organic'] ?? false,
+            ]);
+
+            // ไปขั้นตอนพิกัด
+            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_LOCATION);
+            $progress = $conversation->getProgressText();
+
+            $title = $parsed['title'];
+            $price = number_format($parsed['price'], 0);
+            $unit = $parsed['unit'] ?? 'ชิ้น';
+
+            return [
+                'text' => "{$progress}\n\n✅ ข้อมูลสินค้า:\n• ชื่อ: {$title}\n• ราคา: ฿{$price}/{$unit}\n\n📍 กดปุ่ม \"ส่งตำแหน่ง\" เพื่อระบุพิกัดร้านค่ะ\n\nหรือพิมพ์ \"ข้าม\" ถ้าจะใช้พิกัดเดิม",
+            ];
+        }
+
+        // ถ้า parse ไม่สำเร็จ → ถามเพิ่ม
+        $missing = [];
+        if (empty($parsed['title'] ?? $ctx['title'] ?? null)) {
+            $missing[] = '• ชื่อสินค้า';
+        }
+        if (empty($parsed['price'] ?? $ctx['price'] ?? null)) {
+            $missing[] = '• ราคา';
+        }
+        if (empty($parsed['unit'] ?? $ctx['unit'] ?? null)) {
+            $missing[] = '• หน่วย (กก./ถุง/กำ/ชิ้น)';
+        }
+
+        // ถ้ามีข้อมูลบางส่วน ให้ merge ไว้ก่อน
+        if ($parsed) {
+            $partialData = array_filter([
+                'title' => $parsed['title'] ?? null,
+                'price' => isset($parsed['price']) ? (float) $parsed['price'] : null,
+                'unit' => $parsed['unit'] ?? null,
+                'description' => $parsed['description'] ?? null,
+            ]);
+            if (! empty($partialData)) {
+                $conversation->setFlowContext('listing', $partialData);
+            }
+        }
+
+        $progress = $conversation->getProgressText();
+        $missingText = ! empty($missing) ? "\n\nยังขาด:\n".implode("\n", $missing) : '';
+
+        return [
+            'text' => "{$progress}\n\nพี่ตลาดต้องการข้อมูลเพิ่มค่ะ{$missingText}\n\nพิมพ์มาได้เลยค่ะ เช่น \"ผักบุ้งจีน 25 บาท/กำ\"",
+        ];
+    }
+
+    /**
+     * listing_location + location → รับพิกัด ไป review
+     */
+    protected function handleListingLocation_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
+    {
+        $conversation->setFlowContext('listing', [
+            'latitude' => $lat,
+            'longitude' => $lng,
+        ]);
+
+        return $this->showListingReview($conversation);
+    }
+
+    /**
+     * listing_location + text → "ข้าม" ใช้พิกัดเดิม
+     */
+    protected function handleListingLocation_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+
+        // "ข้าม" → ใช้พิกัดเดิมของ seller หรือพิกัดค้นหาล่าสุด
+        if (in_array($msg, ['ข้าม', 'skip', 'ใช้เดิม', 'ใช้พิกัดเดิม'])) {
+            $lat = $conversation->last_search_latitude;
+            $lng = $conversation->last_search_longitude;
+
+            // ลองหาจาก seller
+            if (! $lat && $conversation->seller_id) {
+                $seller = FreshMarketSeller::find($conversation->seller_id);
+                $lat = $seller?->latitude;
+                $lng = $seller?->longitude;
+            }
+
+            if ($lat && $lng) {
+                $conversation->setFlowContext('listing', [
+                    'latitude' => (float) $lat,
+                    'longitude' => (float) $lng,
+                ]);
+
+                return $this->showListingReview($conversation);
+            }
+
+            return [
+                'text' => "⚠️ ยังไม่มีพิกัดที่บันทึกไว้ค่ะ\n\n📍 กรุณากดปุ่ม \"ส่งตำแหน่ง\" เพื่อระบุพิกัดร้านค่ะ",
+            ];
+        }
+
+        // ข้อความอื่น → แนะนำ
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\nตอนนี้รอพิกัดร้านค่ะ 📍\n\n• กดปุ่ม \"+\" → \"ส่งตำแหน่ง\" ใน LINE\n• หรือพิมพ์ \"ข้าม\" ถ้าจะใช้พิกัดเดิม\n• พิมพ์ \"ยกเลิก\" เพื่อเริ่มใหม่",
+        ];
+    }
+
+    /**
+     * listing_review + text → "ยืนยัน"/"แก้ไข"
+     */
+    protected function handleListingReview_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+
+        // ยืนยัน
+        if (in_array($msg, ['ยืนยัน', 'ตกลง', 'ok', 'confirm', 'ใช่', 'โอเค'])) {
+            return $this->createListingFromContext($conversation);
+        }
+
+        // แก้ไข
+        if (in_array($msg, ['แก้ไข', 'edit', 'แก้', 'เปลี่ยน'])) {
+            return $this->handleListingEditPostback($conversation);
+        }
+
+        // ข้อความอื่น → แนะนำ
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\nกรุณาพิมพ์:\n• \"ยืนยัน\" - ลงขายสินค้า\n• \"แก้ไข\" - กลับไปแก้ไขข้อมูล\n• \"ยกเลิก\" - ยกเลิกการลงขาย",
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  BUYER SEARCH FLOW HANDLERS              ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * search_location + location → ค้นหาสินค้าใกล้ตัว
+     */
+    protected function handleSearchLocation_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
+    {
+        return $this->searchNearbyAndRespond($conversation, $lat, $lng);
+    }
+
+    /**
+     * search_location + text → ใช้เป็น query ค้นหา
+     */
+    protected function handleSearchLocation_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $progress = $conversation->getProgressText();
+
+        // ถ้ามีพิกัดเดิม ลองค้นหาด้วย query
+        if ($conversation->last_search_latitude) {
+            $conversation->update(['last_search_query' => $message]);
+
+            return $this->searchNearbyAndRespond(
+                $conversation,
+                (float) $conversation->last_search_latitude,
+                (float) $conversation->last_search_longitude,
+                ['query' => $message]
+            );
+        }
+
+        return [
+            'text' => "{$progress}\n\n📍 ส่งตำแหน่งมาให้พี่ตลาดก่อนนะคะ\nจะได้หาของใกล้บ้านให้ค่ะ\n\nกดปุ่ม \"+\" → \"ส่งตำแหน่ง\" ใน LINE",
+        ];
+    }
+
+    /**
+     * search_browsing + text → ค้นใหม่หรือถามเพิ่ม
+     */
+    protected function handleSearchBrowsing_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        // ลองค้นหาใหม่ด้วย query
+        if ($conversation->last_search_latitude) {
+            return $this->searchNearbyAndRespond(
+                $conversation,
+                (float) $conversation->last_search_latitude,
+                (float) $conversation->last_search_longitude,
+                ['query' => $message]
+            );
+        }
+
+        $conversation->transitionTo(FreshMarketConversation::STATE_SEARCH_LOCATION);
+
+        return [
+            'text' => "📍 ส่งตำแหน่งมาใหม่ จะค้นหา \"{$message}\" ใกล้บ้านให้ค่ะ",
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  BUYER ORDER FLOW HANDLERS               ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * order_quantity + text → AI parse จำนวนและวิธีรับ
+     */
+    protected function handleOrderQuantity_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $ctx = $conversation->getFlowContext('order');
+
+        // ลอง parse จำนวนจากข้อความ
+        $parsed = $this->parseOrderQuantityFromText($message, $ctx);
+
+        if ($parsed && ! empty($parsed['quantity'])) {
+            $quantity = (int) $parsed['quantity'];
+            $deliveryType = $parsed['delivery_type'] ?? 'pickup';
+            $unitPrice = $ctx['listing_price'] ?? 0;
+            $totalAmount = $unitPrice * $quantity;
+            $deliveryFee = $deliveryType === 'rider' ? 30 : 0;
+
+            $conversation->setFlowContext('order', [
+                'quantity' => $quantity,
+                'delivery_type' => $deliveryType,
+                'total_amount' => $totalAmount,
+                'delivery_fee' => $deliveryFee,
+            ]);
+
+            // ไปขั้นตอน review
+            $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_REVIEW);
+
+            return $this->showOrderReview($conversation);
+        }
+
+        // parse ไม่ได้ → ถามใหม่
+        $progress = $conversation->getProgressText();
+        $title = $ctx['listing_title'] ?? 'สินค้า';
+        $unit = $ctx['listing_unit'] ?? 'ชิ้น';
+
+        return [
+            'text' => "{$progress}\n\nจะสั่ง {$title} กี่ {$unit} คะ?\nแล้วจะนัดรับเองหรือให้ส่ง?\n\nเช่น \"3 {$unit} นัดรับ\" หรือ \"2 {$unit} ส่งให้\"",
+        ];
+    }
+
+    /**
+     * order_quantity + location → บันทึกเป็นที่อยู่จัดส่ง
+     */
+    protected function handleOrderQuantity_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
+    {
+        $conversation->setFlowContext('order', [
+            'buyer_latitude' => $lat,
+            'buyer_longitude' => $lng,
+            'delivery_type' => 'rider',
+        ]);
+
+        $progress = $conversation->getProgressText();
+        $ctx = $conversation->getFlowContext('order');
+        $title = $ctx['listing_title'] ?? 'สินค้า';
+        $unit = $ctx['listing_unit'] ?? 'ชิ้น';
+
+        return [
+            'text' => "{$progress}\n\n📍 บันทึกตำแหน่งจัดส่งแล้วค่ะ\n\nจะสั่ง {$title} กี่ {$unit} คะ?",
+        ];
+    }
+
+    /**
+     * order_review + text → "ยืนยัน"/"ยกเลิก"
+     */
+    protected function handleOrderReview_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+
+        if (in_array($msg, ['ยืนยัน', 'ตกลง', 'ok', 'confirm', 'ใช่', 'โอเค', 'สั่ง'])) {
+            return $this->createOrderFromContext($conversation);
+        }
+
+        if (in_array($msg, ['แก้ไข', 'edit', 'เปลี่ยนจำนวน'])) {
+            $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_QUANTITY);
+            $ctx = $conversation->getFlowContext('order');
+            $title = $ctx['listing_title'] ?? 'สินค้า';
+            $unit = $ctx['listing_unit'] ?? 'ชิ้น';
+
+            return [
+                'text' => "📝 จะสั่ง {$title} กี่ {$unit} คะ?\nนัดรับเองหรือให้ส่ง?",
+            ];
+        }
+
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\nกรุณาพิมพ์:\n• \"ยืนยัน\" - ยืนยันคำสั่งซื้อ\n• \"แก้ไข\" - เปลี่ยนจำนวน\n• \"ยกเลิก\" - ยกเลิก",
+        ];
+    }
+
+    /**
+     * order_tracking + text → แสดงสถานะ
+     */
+    protected function handleOrderTracking_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $ctx = $conversation->getFlowContext('order');
+        $orderNumber = $ctx['order_number'] ?? '-';
+        $orderStatus = $ctx['order_status'] ?? 'pending';
+
+        $statusLabels = [
+            'pending' => '⏳ รอผู้ขายรับออเดอร์',
+            'accepted' => '✅ ผู้ขายรับออเดอร์แล้ว',
+            'preparing' => '👨‍🍳 กำลังเตรียมสินค้า',
+            'ready' => '📦 สินค้าพร้อมแล้ว',
+            'delivering' => '🚗 กำลังจัดส่ง',
+            'delivered' => '🎉 ส่งถึงแล้ว',
+            'completed' => '✅ สำเร็จ',
+            'cancelled' => '❌ ยกเลิกแล้ว',
+        ];
+
+        $statusText = $statusLabels[$orderStatus] ?? $orderStatus;
+
+        // กลับ idle ถ้า order จบแล้ว
+        if (in_array($orderStatus, ['completed', 'cancelled', 'delivered'])) {
+            $conversation->resetToIdle();
+        }
+
+        return [
+            'text' => "📦 ออเดอร์ {$orderNumber}\n\nสถานะ: {$statusText}\n\nดูรายละเอียดเพิ่มเติม:\n".url('/taladsod/orders'),
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  POSTBACK HANDLERS                       ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * Postback: เลือกสินค้าสั่งซื้อ
+     */
+    protected function handleOrderSelectPostback(string $lineUserId, array $params, FreshMarketConversation $conversation): array
+    {
+        $listingId = $params['listing_id'] ?? null;
+        if (! $listingId) {
+            return ['text' => 'ไม่พบข้อมูลสินค้าค่ะ'];
+        }
+
+        $listing = FreshMarketListing::find($listingId);
+        if (! $listing || ! $listing->isAvailableForPurchase()) {
+            return ['text' => 'ขอโทษค่ะ สินค้านี้ไม่พร้อมขายแล้วค่ะ 😅'];
+        }
+
+        // เริ่ม order flow
+        $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_QUANTITY, [
+            'order' => [
+                'listing_id' => $listing->id,
+                'listing_title' => $listing->title,
+                'listing_price' => $listing->price,
+                'listing_unit' => $listing->unit,
+                'seller_shop_name' => $listing->seller?->shop_name ?? 'ร้านค้า',
+                'started_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\n🛒 {$listing->title}\n💰 ฿".number_format($listing->price, 0)." / {$listing->unit}\n🏪 ".($listing->seller?->shop_name ?? 'ร้านค้า')."\n\nจะสั่งกี่ {$listing->unit} คะ?\nนัดรับเองหรือให้ส่ง?\n\nเช่น \"3 {$listing->unit} นัดรับ\"",
+        ];
+    }
+
+    /**
+     * Postback: ยืนยัน listing
+     */
+    protected function handleListingConfirmPostback(FreshMarketConversation $conversation): array
+    {
+        return $this->createListingFromContext($conversation);
+    }
+
+    /**
+     * Postback: แก้ไข listing → กลับไป details
+     */
+    protected function handleListingEditPostback(FreshMarketConversation $conversation): array
+    {
+        $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_DETAILS);
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\n📝 บอกรายละเอียดใหม่ได้เลยค่ะ\n• ชื่อสินค้า\n• ราคา\n• หน่วย\n\nเช่น \"มะม่วง 150 บาท/กก.\"",
+        ];
+    }
+
+    /**
+     * Postback: ยืนยันออเดอร์
+     */
+    protected function handleConfirmOrderPostback(string $lineUserId, array $params, FreshMarketConversation $conversation): array
+    {
+        return $this->createOrderFromContext($conversation);
+    }
+
+    /**
+     * Postback: ยกเลิกออเดอร์
+     */
+    protected function handleCancelOrderPostback(string $lineUserId, array $params, FreshMarketConversation $conversation): array
+    {
+        $conversation->resetToIdle();
+
+        return ['text' => '❌ ยกเลิกคำสั่งซื้อเรียบร้อยค่ะ ไว้มาอุดหนุนใหม่นะคะ 😊'];
+    }
+
+    /**
+     * Postback: ลงขายเพิ่ม
+     */
+    protected function handleSellMorePostback(FreshMarketConversation $conversation): array
+    {
+        $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+            'listing' => [
+                'images' => [],
+                'image_count' => 0,
+                'started_at' => now()->toIso8601String(),
+            ],
+        ]);
+
+        $progress = $conversation->getProgressText();
+
+        return [
+            'text' => "{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  HELPER: LISTING CREATION                ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * แสดงหน้า review ก่อนลงขาย
+     */
+    protected function showListingReview(FreshMarketConversation $conversation): array
+    {
+        $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_REVIEW);
+        $ctx = $conversation->getFlowContext('listing');
+        $progress = $conversation->getProgressText();
+
+        $title = $ctx['title'] ?? 'สินค้า';
+        $price = number_format($ctx['price'] ?? 0, 0);
+        $unit = $ctx['unit'] ?? 'ชิ้น';
+        $description = $ctx['description'] ?? '-';
+        $imageCount = $ctx['image_count'] ?? 0;
+
+        $text = "{$progress}\n\n";
+        $text .= "📦 สรุปข้อมูลสินค้า:\n";
+        $text .= "━━━━━━━━━━━━━━━\n";
+        $text .= "📝 ชื่อ: {$title}\n";
+        $text .= "💰 ราคา: ฿{$price}/{$unit}\n";
+        $text .= "📸 รูป: {$imageCount} รูป\n";
+        if ($description && $description !== '-') {
+            $text .= "📋 รายละเอียด: {$description}\n";
+        }
+        $text .= "📍 มีพิกัดร้าน\n";
+        $text .= "━━━━━━━━━━━━━━━\n\n";
+        $text .= "พิมพ์ \"ยืนยัน\" เพื่อลงขาย\n";
+        $text .= "พิมพ์ \"แก้ไข\" เพื่อแก้ข้อมูล\n";
+        $text .= "พิมพ์ \"ยกเลิก\" เพื่อยกเลิก";
+
+        // สร้าง Flex message (ถ้า LINE Service รองรับ)
+        $flex = $this->lineService->buildListingReviewFlex($ctx);
+
+        $result = ['text' => $text];
+        if ($flex) {
+            $result['flex'] = $flex;
+            $result['flex_alt_text'] = "ตรวจสอบสินค้า: {$title}";
+        }
+
+        return $result;
+    }
+
+    /**
+     * สร้าง listing จาก context
+     */
+    protected function createListingFromContext(FreshMarketConversation $conversation): array
+    {
+        $ctx = $conversation->getFlowContext('listing');
+
+        // ตรวจสอบข้อมูลครบ
+        if (empty($ctx['title']) || empty($ctx['price'])) {
+            return ['text' => '⚠️ ข้อมูลไม่ครบค่ะ กรุณาบอกชื่อสินค้าและราคาก่อนนะคะ'];
+        }
+
+        try {
+            // หา/สร้าง seller
+            $seller = $this->resolveOrCreateSeller($conversation);
+
+            if (! $seller) {
+                return ['text' => '⚠️ ไม่สามารถสร้างร้านค้าได้ กรุณาลองใหม่ค่ะ'];
+            }
+
+            // สร้าง listing ผ่าน service
+            $listing = $this->marketService->createListing($seller, [
+                'title' => $ctx['title'],
+                'price' => $ctx['price'],
+                'unit' => $ctx['unit'] ?? 'ชิ้น',
+                'description' => $ctx['description'] ?? '',
+                'images' => $ctx['images'] ?? [],
+                'main_image_url' => $ctx['images'][0] ?? null,
+                'latitude' => $ctx['latitude'] ?? $seller->latitude,
+                'longitude' => $ctx['longitude'] ?? $seller->longitude,
+                'category_hint' => $ctx['category_hint'] ?? null,
+                'is_organic' => $ctx['is_organic'] ?? false,
+                'created_via' => 'line_chat',
+            ]);
+
+            // Transition ไป complete
+            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_COMPLETE, [
+                'listing' => array_merge($ctx, ['listing_id' => $listing->id]),
+            ]);
+
+            $progress = $conversation->getProgressText();
+
+            // Reset กลับ idle
+            $conversation->resetToIdle();
+
+            return [
+                'text' => "{$progress}\n\n🎉 ลงขายสินค้าเรียบร้อยแล้วค่ะ!\n\n📦 {$ctx['title']}\n💰 ฿".number_format($ctx['price'], 0)."/{$ctx['unit']}\n\nดูรายการสินค้าของคุณ:\n".url('/taladsod/seller-dashboard')."\n\nพิมพ์ \"ลงขาย\" เพื่อลงขายสินค้าเพิ่มค่ะ 😊",
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: สร้าง listing ล้มเหลว', [
+                'error' => $e->getMessage(),
+                'context' => $ctx,
+            ]);
+
+            return ['text' => "⚠️ เกิดข้อผิดพลาดในการลงขายค่ะ กรุณาลองใหม่\n\nพิมพ์ \"ลงขาย\" เพื่อเริ่มใหม่"];
+        }
+    }
+
+    /**
+     * หรือสร้าง seller จาก LINE profile
+     */
+    protected function resolveOrCreateSeller(FreshMarketConversation $conversation): ?FreshMarketSeller
+    {
+        // ถ้ามี seller_id แล้ว
+        if ($conversation->seller_id) {
+            return FreshMarketSeller::find($conversation->seller_id);
+        }
+
+        // หาจาก line_user_id
+        $seller = FreshMarketSeller::where('line_user_id', $conversation->line_user_id)->first();
+
+        if (! $seller) {
+            // สร้างใหม่จาก LINE profile
+            $profile = $this->lineService->getUserProfile($conversation->line_user_id);
+            $displayName = $profile['displayName'] ?? 'ร้านค้า';
+
+            $seller = FreshMarketSeller::create([
+                'user_id' => $conversation->user_id,
+                'line_user_id' => $conversation->line_user_id,
+                'shop_name' => "ร้าน {$displayName}",
+                'description' => "ร้านค้าของ {$displayName}",
+                'status' => 'active',
+                'latitude' => $conversation->last_search_latitude,
+                'longitude' => $conversation->last_search_longitude,
+            ]);
+        }
+
+        // บันทึก seller_id ใน conversation
+        $conversation->update(['seller_id' => $seller->id, 'role' => 'seller']);
+
+        return $seller;
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  HELPER: ORDER CREATION                  ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * แสดง order review
+     */
+    protected function showOrderReview(FreshMarketConversation $conversation): array
+    {
+        $ctx = $conversation->getFlowContext('order');
+        $progress = $conversation->getProgressText();
+
+        $title = $ctx['listing_title'] ?? 'สินค้า';
+        $quantity = $ctx['quantity'] ?? 1;
+        $unit = $ctx['listing_unit'] ?? 'ชิ้น';
+        $unitPrice = $ctx['listing_price'] ?? 0;
+        $total = $ctx['total_amount'] ?? ($unitPrice * $quantity);
+        $deliveryFee = $ctx['delivery_fee'] ?? 0;
+        $deliveryLabel = ($ctx['delivery_type'] ?? 'pickup') === 'rider' ? '🚗 ให้ส่ง' : '🏪 นัดรับเอง';
+
+        $text = "{$progress}\n\n";
+        $text .= "🧾 สรุปคำสั่งซื้อ:\n";
+        $text .= "━━━━━━━━━━━━━━━\n";
+        $text .= "📦 {$title} x{$quantity} {$unit}\n";
+        $text .= "💰 ฿".number_format($unitPrice, 0)." x {$quantity} = ฿".number_format($total, 0)."\n";
+        if ($deliveryFee > 0) {
+            $text .= "🚗 ค่าส่ง: ฿".number_format($deliveryFee, 0)."\n";
+            $text .= "💵 รวมทั้งหมด: ฿".number_format($total + $deliveryFee, 0)."\n";
+        }
+        $text .= "📍 {$deliveryLabel}\n";
+        $text .= "━━━━━━━━━━━━━━━\n\n";
+        $text .= "พิมพ์ \"ยืนยัน\" เพื่อสั่งซื้อ\n";
+        $text .= "พิมพ์ \"แก้ไข\" เพื่อเปลี่ยนจำนวน\n";
+        $text .= "พิมพ์ \"ยกเลิก\" เพื่อยกเลิก";
+
+        // Flex message
+        $flex = $this->lineService->buildOrderSummaryFlex([
+            'title' => $title,
+            'quantity' => $quantity,
+            'total' => $total + $deliveryFee,
+            'delivery_type_label' => $deliveryLabel,
+            'id' => 0,
+        ]);
+
+        $result = ['text' => $text];
+        if ($flex) {
+            $result['flex'] = $flex;
+            $result['flex_alt_text'] = "สรุปคำสั่งซื้อ: {$title}";
+        }
+
+        return $result;
+    }
+
+    /**
+     * สร้าง order จาก context
+     */
+    protected function createOrderFromContext(FreshMarketConversation $conversation): array
+    {
+        $ctx = $conversation->getFlowContext('order');
+
+        try {
+            $listing = FreshMarketListing::find($ctx['listing_id'] ?? 0);
+            if (! $listing) {
+                return ['text' => '⚠️ ไม่พบสินค้านี้แล้วค่ะ กรุณาค้นหาใหม่'];
+            }
+
+            $quantity = $ctx['quantity'] ?? 1;
+            $deliveryType = $ctx['delivery_type'] ?? 'pickup';
+            $totalAmount = $ctx['total_amount'] ?? ($listing->price * $quantity);
+
+            $order = $this->marketService->createOrder([
+                'listing_id' => $listing->id,
+                'buyer_line_user_id' => $conversation->line_user_id,
+                'buyer_id' => $conversation->user_id,
+                'seller_id' => $listing->seller_id,
+                'quantity' => $quantity,
+                'unit_price' => $listing->price,
+                'total_amount' => $totalAmount,
+                'delivery_type' => $deliveryType,
+                'delivery_fee' => $ctx['delivery_fee'] ?? 0,
+                'buyer_latitude' => $ctx['buyer_latitude'] ?? $conversation->last_search_latitude,
+                'buyer_longitude' => $ctx['buyer_longitude'] ?? $conversation->last_search_longitude,
+                'payment_method' => 'cod',
+            ]);
+
+            // Transition ไป tracking แล้ว idle
+            $conversation->setFlowContext('order', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'order_status' => 'pending',
+            ]);
+
+            $conversation->resetToIdle();
+
+            $orderNumber = $order->order_number ?? 'TSD-NEW';
+
+            return [
+                'text' => "✅ สั่งซื้อสำเร็จค่ะ!\n\n📦 หมายเลข: {$orderNumber}\n🛒 {$listing->title} x{$quantity}\n💰 ฿".number_format($totalAmount, 0)."\n\nรอผู้ขายรับออเดอร์ค่ะ\nพี่ตลาดจะแจ้งให้ทราบเมื่อมีอัพเดทนะคะ 😊",
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: สร้าง order ล้มเหลว', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['text' => "⚠️ เกิดข้อผิดพลาดในการสั่งซื้อค่ะ กรุณาลองใหม่\n\nส่งตำแหน่งมาใหม่เพื่อค้นหาสินค้าค่ะ"];
+        }
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  HELPER: SEARCH                          ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * ค้นหาสินค้าใกล้ตัวและส่งผลลัพธ์
+     */
+    protected function searchNearbyAndRespond(FreshMarketConversation $conversation, float $lat, float $lng, array $filters = []): array
+    {
+        $listings = $this->marketService->searchListings($lat, $lng, null, $filters);
+
+        if ($listings->isEmpty()) {
+            $radius = $this->settings->default_search_radius_km;
+            $conversation->transitionTo(FreshMarketConversation::STATE_SEARCH_BROWSING);
+
+            return [
+                'text' => "📍 ได้รับตำแหน่งแล้วค่ะ\n\nยังไม่มีสินค้าในรัศมี {$radius} กม. ค่ะ 😅\nลองบอกพี่ตลาดว่าอยากได้อะไร จะช่วยหาให้ค่ะ!",
+            ];
+        }
+
+        // สร้าง Flex Carousel
+        $listingData = $listings->take(5)->map(function ($listing) {
+            return [
+                'id' => $listing->id,
+                'slug' => $listing->slug,
+                'title' => $listing->title,
+                'price' => $listing->price,
+                'unit' => $listing->unit,
+                'image' => $listing->primary_image,
+                'distance' => number_format($listing->distance_km ?? 0, 1),
+                'shop_name' => $listing->seller?->shop_name ?? 'ร้านค้า',
+            ];
+        })->toArray();
+
+        $flexCarousel = $this->lineService->buildListingsCarousel($listingData);
+
+        $conversation->transitionTo(FreshMarketConversation::STATE_SEARCH_BROWSING, [
+            'search' => [
+                'latitude' => $lat,
+                'longitude' => $lng,
+                'result_count' => $listings->count(),
+                'result_listing_ids' => $listings->take(5)->pluck('id')->toArray(),
+            ],
+        ]);
+
+        return [
+            'text' => "📍 สินค้าใกล้คุณ ({$listings->count()} รายการ)\n\nกด \"สั่งซื้อ\" เพื่อสั่งซื้อได้เลยค่ะ",
+            'flex' => $flexCarousel,
+            'flex_alt_text' => "สินค้าใกล้ตัว {$listings->count()} รายการ",
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  UTILITY METHODS                         ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * ตรวจสอบและจัดการ timeout
+     */
+    protected function checkAndHandleTimeout(FreshMarketConversation $conversation): ?array
+    {
+        if (! $conversation->isExpired()) {
+            return null;
+        }
+
+        $state = $conversation->conversation_state;
+        $conversation->resetToIdle();
+
+        $flowName = match (true) {
+            str_starts_with($state, 'listing_') => 'การลงขายสินค้า',
+            str_starts_with($state, 'search_') => 'การค้นหาสินค้า',
+            str_starts_with($state, 'order_') => 'การสั่งซื้อ',
+            default => 'รายการ',
+        };
+
+        return [
+            'text' => "⏰ {$flowName}หมดเวลาแล้วค่ะ (ไม่มีการตอบกลับนาน)\n\nเริ่มใหม่ได้เลยนะคะ:\n🛒 \"อยากซื้อ\" - ค้นหาสินค้า\n🏷️ \"ลงขาย\" - ลงขายสินค้า\n📋 \"ช่วยเหลือ\" - ดูคำสั่งทั้งหมด",
+        ];
+    }
 
     /**
      * ตรวจจับคำสั่งพิเศษ
@@ -348,7 +1230,6 @@ class FreshMarketChannelManager
             'ซื้อ' => 'buy',
             'หาของ' => 'buy',
             'ค้นหา' => 'search',
-            'หา' => 'search',
             'ออเดอร์' => 'my_orders',
             'คำสั่งซื้อ' => 'my_orders',
             'ช่วยเหลือ' => 'help',
@@ -373,18 +1254,30 @@ class FreshMarketChannelManager
     {
         switch ($command) {
             case 'sell':
-                $conversation->updateState(FreshMarketConversation::STATE_LISTING, []);
+                $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+                    'listing' => [
+                        'images' => [],
+                        'image_count' => 0,
+                        'started_at' => now()->toIso8601String(),
+                    ],
+                ]);
+
+                $progress = $conversation->getProgressText();
 
                 return [
-                    'text' => "🏷️ ลงขายสินค้า\n\nพี่ตลาดพร้อมช่วยลงขายค่ะ!\n\n📸 ส่งรูปสินค้ามาเลยค่ะ\n📍 แล้วก็ส่งพิกัดร้านมาด้วยนะคะ\n💰 แล้วบอกราคาและหน่วยขาย\n\nเริ่มจากส่งรูปมาก่อนเลยค่ะ!",
+                    'text' => "🏷️ ลงขายสินค้า\n\n{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
                 ];
 
             case 'buy':
             case 'search':
-                $conversation->updateState(FreshMarketConversation::STATE_SEARCHING, []);
+                $conversation->transitionTo(FreshMarketConversation::STATE_SEARCH_LOCATION, [
+                    'search' => ['started_at' => now()->toIso8601String()],
+                ]);
+
+                $progress = $conversation->getProgressText();
 
                 return [
-                    'text' => "🛒 ค้นหาสินค้า\n\n📍 ส่งตำแหน่งมาให้พี่ตลาดเลยค่ะ\nจะได้หาของใกล้บ้านให้นะคะ\n\nหรือจะบอกว่าอยากได้อะไร พี่ตลาดจะช่วยหาให้ค่ะ 😊",
+                    'text' => "🛒 ค้นหาสินค้า\n\n{$progress}\n\n📍 ส่งตำแหน่งมาให้พี่ตลาดเลยค่ะ\nจะได้หาของใกล้บ้านให้นะคะ\n\nกดปุ่ม \"+\" → \"ส่งตำแหน่ง\" ใน LINE",
                 ];
 
             case 'my_orders':
@@ -394,7 +1287,7 @@ class FreshMarketChannelManager
 
             case 'help':
                 return [
-                    'text' => "📋 คำสั่งที่ใช้ได้\n\n🛒 \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ \"ลงขาย\" - ลงขายสินค้า\n📦 \"ออเดอร์\" - ดูออเดอร์\n📍 ส่งตำแหน่ง - หาสินค้าใกล้ตัว\n📸 ส่งรูป - ลงขายสินค้า\n\nหรือจะพิมพ์ถามอะไรก็ได้ค่ะ พี่ตลาดช่วยเองค่ะ 😊",
+                    'text' => "📋 คำสั่งที่ใช้ได้\n\n🛒 \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ \"ลงขาย\" - ลงขายสินค้า\n📦 \"ออเดอร์\" - ดูออเดอร์\n📍 ส่งตำแหน่ง - หาสินค้าใกล้ตัว\n📸 ส่งรูป - ลงขายสินค้า\n❌ \"ยกเลิก\" - ยกเลิกสิ่งที่ทำอยู่\n\nหรือจะพิมพ์ถามอะไรก็ได้ค่ะ พี่ตลาดช่วยเองค่ะ 😊",
                 ];
 
             case 'greeting':
@@ -408,42 +1301,73 @@ class FreshMarketChannelManager
     }
 
     /**
-     * จัดการ intent จาก AI
+     * ตรวจจับคำสั่ง "ยกเลิก"
      */
-    protected function handleIntent(array $intent, FreshMarketConversation $conversation, string $aiResponse, array $extra): array
+    protected function isCancel(string $message): bool
     {
-        // ถ้า AI ตอบแล้ว ใช้คำตอบ AI เป็นหลัก
-        return ['text' => $aiResponse];
+        $msg = mb_strtolower(trim($message));
+
+        return in_array($msg, ['ยกเลิก', 'cancel', 'เริ่มใหม่', 'reset', 'หยุด']);
     }
 
     /**
-     * สร้างบริบทสำหรับ AI
+     * จัดการ input ผิดประเภทสำหรับ state ปัจจุบัน
      */
-    protected function buildContext(FreshMarketConversation $conversation): array
+    protected function handleWrongInputType(FreshMarketConversation $conversation, string $inputType): array
     {
-        $context = [
-            'role' => $conversation->role,
-            'conversation_state' => $conversation->conversation_state,
-        ];
+        $state = $conversation->conversation_state;
+        $progress = $conversation->getProgressText();
 
-        // ถ้ามีพิกัดล่าสุด
-        if ($conversation->last_search_latitude) {
-            $listings = $this->marketService->searchListings(
-                $conversation->last_search_latitude,
-                $conversation->last_search_longitude,
-                5, // ค้นหาแค่ 5 กม. สำหรับบริบท
-            );
+        $guidance = match ($state) {
+            'listing_photos' => "ตอนนี้รอรูปสินค้าค่ะ 📸\n\n• ส่งรูปมาได้เลยค่ะ\n• พิมพ์ \"เสร็จ\" เมื่อส่งรูปครบ",
+            'listing_details' => "ตอนนี้รอข้อมูลสินค้าค่ะ 📝\n\n• พิมพ์ชื่อสินค้า ราคา หน่วย\n• เช่น \"ผักบุ้ง 25 บาท/กำ\"",
+            'listing_location' => "ตอนนี้รอพิกัดร้านค่ะ 📍\n\n• กดปุ่ม \"+\" → \"ส่งตำแหน่ง\"\n• หรือพิมพ์ \"ข้าม\"",
+            'listing_review' => "กรุณาพิมพ์ \"ยืนยัน\" หรือ \"แก้ไข\" ค่ะ",
+            'order_quantity' => "กรุณาบอกจำนวนที่ต้องการค่ะ\n\nเช่น \"3 กก. นัดรับ\"",
+            'order_review' => "กรุณาพิมพ์ \"ยืนยัน\" หรือ \"ยกเลิก\" ค่ะ",
+            default => "ไม่เข้าใจค่ะ ลองใหม่อีกครั้งนะคะ",
+        };
 
-            if ($listings->isNotEmpty()) {
-                $listingText = $listings->take(5)->map(function ($l) {
-                    return "- {$l->title} ฿{$l->price}/{$l->unit} ({$l->distance_km}กม.)";
-                })->implode("\n");
+        $result = '';
+        if ($progress) {
+            $result .= "{$progress}\n\n";
+        }
+        $result .= $guidance;
+        $result .= "\n\nพิมพ์ \"ยกเลิก\" เพื่อเริ่มใหม่";
 
-                $context['nearby_listings'] = $listingText;
-            }
+        return ['text' => $result];
+    }
+
+    /**
+     * Parse จำนวนและวิธีรับจากข้อความ
+     */
+    protected function parseOrderQuantityFromText(string $message, array $orderCtx): ?array
+    {
+        // ลอง parse ด้วย regex ก่อน (เร็วกว่า AI)
+        $quantity = null;
+        $deliveryType = null;
+
+        // หาตัวเลข
+        if (preg_match('/(\d+)/', $message, $matches)) {
+            $quantity = (int) $matches[1];
         }
 
-        return $context;
+        // หาวิธีรับ
+        $msg = mb_strtolower($message);
+        if (str_contains($msg, 'ส่ง') || str_contains($msg, 'rider') || str_contains($msg, 'จัดส่ง') || str_contains($msg, 'delivery')) {
+            $deliveryType = 'rider';
+        } elseif (str_contains($msg, 'รับ') || str_contains($msg, 'นัด') || str_contains($msg, 'pickup') || str_contains($msg, 'ไปรับ')) {
+            $deliveryType = 'pickup';
+        }
+
+        if ($quantity && $quantity > 0) {
+            return [
+                'quantity' => $quantity,
+                'delivery_type' => $deliveryType ?? 'pickup',
+            ];
+        }
+
+        return null;
     }
 
     /**
@@ -468,18 +1392,60 @@ class FreshMarketChannelManager
     }
 
     /**
+     * สร้างบริบทสำหรับ AI
+     */
+    protected function buildContext(FreshMarketConversation $conversation): array
+    {
+        $context = [
+            'role' => $conversation->role,
+            'conversation_state' => $conversation->conversation_state,
+            'state_step' => $conversation->state_step,
+            'state_total_steps' => $conversation->state_total_steps,
+        ];
+
+        // เพิ่ม flow context
+        if ($conversation->isInListingFlow()) {
+            $context['listing_data'] = $conversation->getFlowContext('listing');
+        }
+        if ($conversation->isInOrderFlow()) {
+            $context['order_data'] = $conversation->getFlowContext('order');
+        }
+
+        // สินค้าใกล้ตัว
+        if ($conversation->last_search_latitude) {
+            try {
+                $listings = $this->marketService->searchListings(
+                    (float) $conversation->last_search_latitude,
+                    (float) $conversation->last_search_longitude,
+                    5
+                );
+
+                if ($listings->isNotEmpty()) {
+                    $listingText = $listings->take(5)->map(function ($l) {
+                        return "- {$l->title} ฿{$l->price}/{$l->unit} ({$l->distance_km}กม.)";
+                    })->implode("\n");
+
+                    $context['nearby_listings'] = $listingText;
+                }
+            } catch (\Exception $e) {
+                // ไม่ต้อง error ถ้าหาสินค้าไม่ได้
+            }
+        }
+
+        return $context;
+    }
+
+    /**
      * ส่งข้อความกลับทาง LINE
      */
     protected function sendReply(string $replyToken, array $result): void
     {
         $messages = [];
 
-        // ข้อความ text
         if (! empty($result['text'])) {
             $messages[] = ['type' => 'text', 'text' => $result['text']];
         }
 
-        // Flex message
         if (! empty($result['flex'])) {
             $messages[] = [
                 'type' => 'flex',
@@ -494,83 +1460,17 @@ class FreshMarketChannelManager
     }
 
     /**
-     * จัดการ postback สั่งซื้อ
-     */
-    protected function handleOrderPostback(string $lineUserId, array $params, ?string $replyToken): void
-    {
-        $listingId = $params['listing_id'] ?? null;
-
-        if (! $listingId) {
-            return;
-        }
-
-        $listing = FreshMarketListing::find($listingId);
-
-        if (! $listing || ! $listing->isAvailableForPurchase()) {
-            if ($replyToken) {
-                $this->lineService->replyMessage($replyToken, [
-                    ['type' => 'text', 'text' => 'ขอโทษค่ะ สินค้านี้ไม่พร้อมขายแล้วค่ะ 😅'],
-                ]);
-            }
-
-            return;
-        }
-
-        $conversation = FreshMarketConversation::getOrCreate($lineUserId);
-        $conversation->updateState(FreshMarketConversation::STATE_ORDERING, [
-            'ordering_listing_id' => $listing->id,
-        ]);
-
-        $text = "🛒 สั่งซื้อ: {$listing->title}\n\n";
-        $text .= "💰 ราคา: ฿".number_format($listing->price, 0)." / {$listing->unit}\n";
-        $text .= "🏪 ร้าน: ".($listing->seller?->shop_name ?? 'ร้านค้า')."\n\n";
-        $text .= "จะสั่งกี่ {$listing->unit} คะ? แล้วจะนัดรับเองหรือให้ส่งคะ?";
-
-        if ($replyToken) {
-            $this->lineService->replyMessage($replyToken, [
-                ['type' => 'text', 'text' => $text],
-            ]);
-        }
-    }
-
-    /**
-     * จัดการ postback ยืนยันออเดอร์
-     */
-    protected function handleConfirmOrderPostback(string $lineUserId, array $params, ?string $replyToken): void
-    {
-        if ($replyToken) {
-            $this->lineService->replyMessage($replyToken, [
-                ['type' => 'text', 'text' => '✅ ยืนยันคำสั่งซื้อเรียบร้อยค่ะ! พี่ตลาดจะแจ้งผู้ขายให้ทันทีค่ะ 📞'],
-            ]);
-        }
-    }
-
-    /**
-     * จัดการ postback ยกเลิกออเดอร์
-     */
-    protected function handleCancelOrderPostback(string $lineUserId, array $params, ?string $replyToken): void
-    {
-        if ($replyToken) {
-            $this->lineService->replyMessage($replyToken, [
-                ['type' => 'text', 'text' => '❌ ยกเลิกคำสั่งซื้อเรียบร้อยค่ะ ไว้มาอุดหนุนใหม่นะคะ 😊'],
-            ]);
-        }
-    }
-
-    /**
      * อัพโหลดรูปภาพ
      */
     protected function uploadImage(string $imageContent): string
     {
         try {
-            // ใช้ ImageUploadService ถ้ามี
             if (class_exists(\App\Services\ImageUploadService::class)) {
                 $service = app(ImageUploadService::class);
 
                 return $service->uploadFromContent($imageContent, 'fresh-market');
             }
 
-            // Fallback: เก็บใน storage
             $filename = 'fresh-market/'.uniqid().'.jpg';
             \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $imageContent);
 

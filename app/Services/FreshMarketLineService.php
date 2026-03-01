@@ -422,6 +422,211 @@ class FreshMarketLineService
         ];
     }
 
+    // ===== Listing Review Flex =====
+
+    /**
+     * สร้าง Flex Message สรุปสินค้าก่อนลงขาย (ยืนยัน/แก้ไข/ยกเลิก)
+     */
+    public function buildListingReviewFlex(array $listing): ?array
+    {
+        $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $title = $listing['title'] ?? 'สินค้า';
+        $price = number_format($listing['price'] ?? 0, 0);
+        $unit = $listing['unit'] ?? 'ชิ้น';
+        $imageCount = $listing['image_count'] ?? 0;
+        $description = $listing['description'] ?? '';
+        $heroImage = $listing['images'][0] ?? null;
+
+        $bodyContents = [
+            [
+                'type' => 'text',
+                'text' => "📦 {$title}",
+                'weight' => 'bold',
+                'size' => 'lg',
+                'wrap' => true,
+            ],
+            [
+                'type' => 'text',
+                'text' => "฿{$price} / {$unit}",
+                'color' => $primaryColor,
+                'weight' => 'bold',
+                'size' => 'xl',
+                'margin' => 'sm',
+            ],
+            [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'margin' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => "📸 {$imageCount} รูป",
+                        'size' => 'sm',
+                        'color' => '#888888',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => '📍 มีพิกัดร้าน',
+                        'size' => 'sm',
+                        'color' => '#888888',
+                        'margin' => 'xs',
+                    ],
+                ],
+            ],
+        ];
+
+        if ($description) {
+            $bodyContents[] = [
+                'type' => 'text',
+                'text' => $description,
+                'size' => 'sm',
+                'color' => '#666666',
+                'margin' => 'md',
+                'wrap' => true,
+                'maxLines' => 2,
+            ];
+        }
+
+        $bubble = [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => $bodyContents,
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '✅ ยืนยันลงขาย',
+                            'data' => 'action=confirm_listing',
+                        ],
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'button',
+                                'style' => 'secondary',
+                                'action' => [
+                                    'type' => 'postback',
+                                    'label' => '✏️ แก้ไข',
+                                    'data' => 'action=edit_listing',
+                                ],
+                            ],
+                            [
+                                'type' => 'button',
+                                'style' => 'secondary',
+                                'action' => [
+                                    'type' => 'message',
+                                    'label' => '❌ ยกเลิก',
+                                    'text' => 'ยกเลิก',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        // เพิ่ม hero image ถ้ามี
+        if ($heroImage) {
+            $bubble['hero'] = [
+                'type' => 'image',
+                'url' => $heroImage,
+                'size' => 'full',
+                'aspectRatio' => '4:3',
+                'aspectMode' => 'cover',
+            ];
+        }
+
+        return $bubble;
+    }
+
+    /**
+     * สร้าง Flex Message ลงขายสำเร็จ (ดูรายการ/ลงขายเพิ่ม)
+     */
+    public function buildListingSuccessFlex(array $listing): array
+    {
+        $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $title = $listing['title'] ?? 'สินค้า';
+        $price = number_format($listing['price'] ?? 0, 0);
+        $unit = $listing['unit'] ?? 'ชิ้น';
+
+        return [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '🎉 ลงขายสำเร็จ!',
+                        'weight' => 'bold',
+                        'size' => 'lg',
+                        'color' => $primaryColor,
+                    ],
+                    ['type' => 'separator', 'margin' => 'md'],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => "📦 {$title}",
+                                'size' => 'md',
+                                'weight' => 'bold',
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => "💰 ฿{$price}/{$unit}",
+                                'color' => $primaryColor,
+                                'size' => 'md',
+                                'margin' => 'sm',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📸 ลงขายเพิ่ม',
+                            'data' => 'action=sell_more',
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '📋 ดูรายการ',
+                            'uri' => url('/taladsod/seller-dashboard'),
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
     // ===== Internal API Call =====
 
     /**

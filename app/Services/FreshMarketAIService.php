@@ -12,7 +12,9 @@ use Illuminate\Support\Facades\Log;
  *
  * ใช้ Groq Pool เดียวกับระบบดูดวง (AiApiKeyPoolService)
  * AI ชื่อ "พี่ตลาด" - ผู้ช่วยตลาดสด
- * ตาม pattern ของ FortuneAIService
+ *
+ * v2: State-aware prompts — AI รู้สถานะปัจจุบัน
+ * ตอบเฉพาะสิ่งที่เกี่ยวข้องกับขั้นตอนที่กำลังทำ
  */
 class FreshMarketAIService
 {
@@ -32,11 +34,10 @@ class FreshMarketAIService
     {
         $this->settings = $settings ?? FreshMarketSetting::getSettings();
 
-        // ดึง provider/model จาก settings
         $this->provider = $this->settings->ai_provider ?? 'groq';
         $this->model = $this->settings->ai_model ?? 'llama-3.3-70b-versatile';
 
-        // ใช้ API Key Pool (เดียวกับดูดวง)
+        // ใช้ API Key Pool
         try {
             $this->poolService = new AiApiKeyPoolService;
             $this->currentKey = $this->poolService->getKey($this->provider);
@@ -50,18 +51,18 @@ class FreshMarketAIService
     }
 
     /**
-     * สร้างคำตอบจาก AI
+     * สร้างคำตอบจาก AI (state-aware)
      *
-     * @param  string  $userMessage  ข้อความจากผู้ใช้
-     * @param  array  $conversationHistory  ประวัติสนทนา [{role, content}]
-     * @param  array  $context  บริบทเพิ่มเติม (สินค้าใกล้ตัว, สถานะ)
+     * @param string $userMessage ข้อความจากผู้ใช้
+     * @param array $conversationHistory ประวัติสนทนา
+     * @param array $context บริบท (role, conversation_state, nearby_listings, etc.)
      * @return array{response: string, tokens_used: int, provider: string, model: string}
      */
     public function generateResponse(string $userMessage, array $conversationHistory = [], array $context = []): array
     {
-        $systemPrompt = $this->buildSystemPrompt($context);
+        $state = $context['conversation_state'] ?? 'idle';
+        $systemPrompt = $this->buildStateAwarePrompt($state, $context);
 
-        // เตรียม messages สำหรับ AI
         $messages = [
             ['role' => 'system', 'content' => $systemPrompt],
         ];
@@ -71,34 +72,96 @@ class FreshMarketAIService
             $messages[] = $msg;
         }
 
-        // เพิ่มข้อความปัจจุบัน
         $messages[] = ['role' => 'user', 'content' => $userMessage];
 
         try {
             $result = $this->callAI($messages);
 
-            // บันทึกการใช้งาน key (สำเร็จ)
             if ($this->currentKey && $this->poolService) {
                 $this->poolService->markKeyUsed($this->currentKey, true);
             }
 
             return $result;
         } catch (\Exception $e) {
-            // บันทึก error
             if ($this->currentKey && $this->poolService) {
                 $this->poolService->markKeyUsed($this->currentKey, false, $e->getMessage());
             }
 
-            // ลอง key ถัดไป
             return $this->retryWithNextKey($messages, $e);
         }
     }
 
     /**
-     * แปลงข้อความแชทเป็นข้อมูลสินค้า (AI Parse Listing)
+     * สกัดข้อมูลสินค้าจากข้อความเดียว (สำหรับ listing_details state)
      *
-     * @param  array  $chatMessages  ข้อความที่มีรายละเอียดสินค้า
-     * @return array|null ข้อมูลสินค้า (title, price, unit, description) หรือ null ถ้าแปลงไม่ได้
+     * @param string $message ข้อความจากผู้ขาย
+     * @param array $existingData ข้อมูลที่มีอยู่แล้ว (จาก context)
+     * @return array|null {title, price, unit, description, category_hint, is_organic, complete}
+     */
+    public function parseListingDetailsFromText(string $message, array $existingData = []): ?array
+    {
+        $existingJson = ! empty($existingData) ? json_encode(array_filter([
+            'title' => $existingData['title'] ?? null,
+            'price' => $existingData['price'] ?? null,
+            'unit' => $existingData['unit'] ?? null,
+        ]), JSON_UNESCAPED_UNICODE) : 'ไม่มี';
+
+        $systemPrompt = <<<PROMPT
+คุณคือระบบสกัดข้อมูลสินค้าจากข้อความแชท ตอบเป็น JSON เท่านั้น
+
+ข้อมูลที่มีอยู่แล้ว: {$existingJson}
+
+จากข้อความผู้ขาย สกัดข้อมูล:
+{
+  "title": "ชื่อสินค้า",
+  "price": 0,
+  "unit": "หน่วย (กก./ถุง/กำ/ชิ้น/ลูก/แพ็ค/กล่อง/ขวด)",
+  "description": "คำอธิบายสั้นๆ (ถ้ามี)",
+  "category_hint": "หมวดหมู่ (ผักสด/ผลไม้/เนื้อสัตว์/อาหารทะเล/ของแห้ง/ขนม/เครื่องดื่ม/อาหารปรุงสำเร็จ)",
+  "is_organic": false
+}
+
+กฎ:
+- ราคา: ถ้าผู้ขายพิมพ์ "กิโลละ 120" → price=120, unit="กก."
+- ถ้าพิมพ์ "ถุงละ 50" → price=50, unit="ถุง"
+- ถ้าพิมพ์ "ออแกนิก" หรือ "ปลอดสาร" → is_organic=true
+- ถ้าข้อมูลไม่พอ (ไม่มีชื่อหรือราคา) ตอบ null
+- ตอบเฉพาะ JSON เท่านั้น ห้ามมีข้อความอื่น
+PROMPT;
+
+        try {
+            $result = $this->callAI([
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => $message],
+            ], 500);
+
+            $response = trim($result['response']);
+
+            if ($response === 'null' || $response === '{}') {
+                return null;
+            }
+
+            $response = preg_replace('/^```json\s*|```$/m', '', $response);
+            $data = json_decode(trim($response), true);
+
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                Log::warning('FreshMarketAI: parse listing details JSON ล้มเหลว', [
+                    'response' => $response,
+                ]);
+
+                return null;
+            }
+
+            return $data;
+        } catch (\Exception $e) {
+            Log::error('FreshMarketAI: Error parsing listing details', ['error' => $e->getMessage()]);
+
+            return null;
+        }
+    }
+
+    /**
+     * แปลงข้อความแชทเป็นข้อมูลสินค้า (backward compatibility)
      */
     public function parseListingFromChat(array $chatMessages): ?array
     {
@@ -132,21 +195,14 @@ PROMPT;
             $result = $this->callAI($messages, 500);
             $response = trim($result['response']);
 
-            // แปลง JSON
             if ($response === 'null') {
                 return null;
             }
 
-            // ลบ markdown code block ถ้ามี
             $response = preg_replace('/^```json\s*|```$/m', '', $response);
-
             $data = json_decode(trim($response), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
-                Log::warning('FreshMarketAI: แปลง JSON listing ไม่สำเร็จ', [
-                    'response' => $response,
-                ]);
-
                 return null;
             }
 
@@ -160,9 +216,6 @@ PROMPT;
 
     /**
      * แปลงความต้องการผู้ซื้อเป็น search filters
-     *
-     * @param  string  $message  ข้อความจากผู้ซื้อ
-     * @return array search filters (query, category, max_price, etc.)
      */
     public function parseSearchIntent(string $message): array
     {
@@ -197,8 +250,6 @@ PROMPT;
 
             return $data;
         } catch (\Exception $e) {
-            Log::error('FreshMarketAI: Error parsing search intent', ['error' => $e->getMessage()]);
-
             return ['query' => $message, 'intent' => 'search'];
         }
     }
@@ -206,40 +257,109 @@ PROMPT;
     // ===== Internal Methods =====
 
     /**
-     * สร้าง System Prompt พร้อมบริบท
+     * สร้าง System Prompt ตามสถานะปัจจุบัน (State-Aware)
+     *
+     * AI รู้ว่ากำลังอยู่ขั้นตอนไหน และตอบเฉพาะสิ่งที่เกี่ยวข้อง
      */
-    protected function buildSystemPrompt(array $context = []): string
+    protected function buildStateAwarePrompt(string $state, array $context = []): string
     {
-        $basePrompt = $this->settings->ai_system_prompt ?? 'คุณคือ "พี่ตลาด" ผู้ช่วย AI ของตลาดสดไทยพร้อม ตอบภาษาไทย';
+        $base = $this->settings->ai_system_prompt
+            ?? 'คุณคือ "พี่ตลาด" ผู้ช่วย AI ของตลาดสดไทยพร้อม ตอบภาษาไทย สั้นกระชับ ใจดี เป็นกันเอง';
 
-        // เพิ่มบริบท
+        $statePrompt = match ($state) {
+            'idle' => implode("\n", [
+                'ผู้ใช้ยังไม่ได้เริ่มทำอะไร',
+                'แนะนำว่าจะ "ลงขาย" สินค้า หรือ "อยากซื้อ" ของ',
+                'ถ้าผู้ใช้ถามเรื่องสินค้า ชวนให้ส่งตำแหน่งเพื่อหาของใกล้ตัว',
+                'ตอบสั้นๆ กระชับ ไม่เกิน 3 บรรทัด',
+            ]),
+
+            'listing_photos' => implode("\n", [
+                'สถานะ: กำลังรับรูปสินค้า (ขั้นตอนที่ 1/5)',
+                'รูปที่ได้รับ: '.($context['listing_data']['image_count'] ?? 0).' รูป',
+                'กระตุ้นให้ส่งรูปมาอีก หรือพิมพ์ "เสร็จ" เมื่อส่งรูปครบ',
+                'ห้ามถามรายละเอียดสินค้า ห้ามถามราคา ให้รอรูปก่อน',
+            ]),
+
+            'listing_details' => implode("\n", [
+                'สถานะ: รอข้อมูลสินค้า (ขั้นตอนที่ 2/5)',
+                'ต้องการ: ชื่อสินค้า, ราคา, หน่วย (กก./ถุง/กำ/ชิ้น)',
+                'ถ้าผู้ใช้พิมพ์ไม่ครบ ถามเฉพาะส่วนที่ขาด',
+                'ตอบเป็นภาษาไทยปกติ ไม่ต้องตอบเป็น JSON',
+            ]),
+
+            'listing_location' => implode("\n", [
+                'สถานะ: รอพิกัดร้าน (ขั้นตอนที่ 3/5)',
+                'บอกผู้ใช้ให้กดปุ่มส่งตำแหน่ง (Location) ใน LINE',
+                'ถ้าพิมพ์ "ข้าม" ใช้พิกัดร้านที่บันทึกไว้',
+                'ห้ามถามเรื่องอื่น โฟกัสเรื่องพิกัดเท่านั้น',
+            ]),
+
+            'listing_review' => implode("\n", [
+                'สถานะ: ยืนยันก่อนลงขาย (ขั้นตอนที่ 4/5)',
+                'แสดงสรุปข้อมูลสินค้า ถามว่า "ยืนยัน" หรือ "แก้ไข"',
+                'ข้อมูล: '.json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE),
+            ]),
+
+            'search_location' => implode("\n", [
+                'สถานะ: รอตำแหน่งผู้ซื้อ (ขั้นตอนที่ 1/2)',
+                'บอกให้ส่งตำแหน่งเพื่อหาสินค้าใกล้ตัว',
+                'ห้ามเสนอสินค้า เพราะยังไม่รู้ตำแหน่ง',
+            ]),
+
+            'search_browsing' => implode("\n", [
+                'สถานะ: แสดงผลค้นหา (ขั้นตอนที่ 2/2)',
+                'ผู้ใช้กำลังดูสินค้า ช่วยแนะนำเพิ่มเติมได้',
+                'ถ้าถามเรื่องสินค้า ตอบจากรายการที่มี',
+                ! empty($context['nearby_listings']) ? "สินค้าใกล้ตัว:\n{$context['nearby_listings']}" : '',
+            ]),
+
+            'order_quantity' => implode("\n", [
+                'สถานะ: รอจำนวนสั่งซื้อ (ขั้นตอนที่ 2/4)',
+                'สินค้า: '.($context['order_data']['listing_title'] ?? '').
+                    ' ฿'.($context['order_data']['listing_price'] ?? 0).
+                    '/'.($context['order_data']['listing_unit'] ?? ''),
+                'ถามจำนวนและวิธีรับ (นัดรับ/ส่ง)',
+                'ตอบภาษาไทยปกติ ไม่ต้อง JSON',
+            ]),
+
+            'order_review' => implode("\n", [
+                'สถานะ: ตรวจสอบคำสั่งซื้อ (ขั้นตอนที่ 3/4)',
+                'ถามว่า "ยืนยัน" หรือ "ยกเลิก"',
+            ]),
+
+            default => "สถานะ: {$state}",
+        };
+
+        // เพิ่มบริบทผู้ใช้
         $contextParts = [];
-
         if (! empty($context['role'])) {
-            $contextParts[] = "ผู้ใช้คนนี้เป็น: {$context['role']}";
+            $contextParts[] = "ผู้ใช้: {$context['role']}";
+        }
+        if (! empty($context['nearby_listings']) && $state === 'idle') {
+            $contextParts[] = "สินค้าใกล้ตัว:\n{$context['nearby_listings']}";
         }
 
-        if (! empty($context['conversation_state'])) {
-            $contextParts[] = "สถานะการสนทนา: {$context['conversation_state']}";
-        }
-
-        if (! empty($context['nearby_listings'])) {
-            $contextParts[] = "สินค้าใกล้ตัวที่มี:\n{$context['nearby_listings']}";
-        }
-
-        if (! empty($context['current_order'])) {
-            $contextParts[] = "ออเดอร์ปัจจุบัน:\n{$context['current_order']}";
-        }
-
+        $prompt = $base."\n\n--- สถานะ ---\n".$statePrompt;
         if (! empty($contextParts)) {
-            $basePrompt .= "\n\n--- บริบทปัจจุบัน ---\n".implode("\n", $contextParts);
+            $prompt .= "\n\n--- บริบท ---\n".implode("\n", $contextParts);
         }
 
-        return $basePrompt;
+        return $prompt;
     }
 
     /**
-     * เรียก AI API (Groq / OpenRouter / etc.)
+     * Backward compatibility: buildSystemPrompt
+     */
+    protected function buildSystemPrompt(array $context = []): string
+    {
+        $state = $context['conversation_state'] ?? 'idle';
+
+        return $this->buildStateAwarePrompt($state, $context);
+    }
+
+    /**
+     * เรียก AI API
      */
     protected function callAI(array $messages, int $maxTokens = 1024): array
     {
@@ -274,7 +394,7 @@ PROMPT;
     }
 
     /**
-     * ลอง key ถัดไปเมื่อ key ปัจจุบันมีปัญหา
+     * ลอง key ถัดไป
      */
     protected function retryWithNextKey(array $messages, \Exception $previousError): array
     {
@@ -300,7 +420,6 @@ PROMPT;
                 'original_error' => $previousError->getMessage(),
             ]);
 
-            // ตอบ fallback
             return [
                 'response' => 'ขอโทษค่ะ ตอนนี้ระบบ AI ไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้งค่ะ 🙏',
                 'tokens_used' => 0,
@@ -310,9 +429,6 @@ PROMPT;
         }
     }
 
-    /**
-     * API Endpoint ตาม provider
-     */
     protected function getApiEndpoint(): string
     {
         return match ($this->provider) {
@@ -323,9 +439,6 @@ PROMPT;
         };
     }
 
-    /**
-     * Headers ตาม provider
-     */
     protected function getApiHeaders(): array
     {
         $headers = [

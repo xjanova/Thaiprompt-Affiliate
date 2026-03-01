@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -9,11 +10,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * FreshMarketConversation - ประวัติสนทนา AI ตลาดสด
  *
+ * State Machine ใหม่: 13 สถานะแยกละเอียดตาม flow
+ * บอทรู้ชัดเจนว่ากำลังทำอะไร ยูสเซอร์กำลังทำอะไร
+ *
  * @property int $id
  * @property string $line_user_id
  * @property int|null $user_id
+ * @property int|null $seller_id
  * @property string $role buyer|seller
  * @property string $conversation_state
+ * @property \Carbon\Carbon|null $state_updated_at
+ * @property int $state_step
+ * @property int $state_total_steps
+ * @property string|null $previous_state
  * @property string|null $last_search_query
  * @property float|null $last_search_latitude
  * @property float|null $last_search_longitude
@@ -27,19 +36,101 @@ class FreshMarketConversation extends Model
 {
     protected $table = 'fresh_market_conversations';
 
-    /** สถานะการสนทนา */
-    public const STATE_NEW = 'new';
-    public const STATE_BROWSING = 'browsing';
-    public const STATE_SEARCHING = 'searching';
-    public const STATE_LISTING = 'listing';
-    public const STATE_ORDERING = 'ordering';
-    public const STATE_CHATTING = 'chatting';
+    // ===== IDLE =====
+    public const STATE_IDLE = 'idle';
+
+    // ===== SELLER LISTING FLOW (5 ขั้นตอน) =====
+    public const STATE_LISTING_PHOTOS = 'listing_photos';
+    public const STATE_LISTING_DETAILS = 'listing_details';
+    public const STATE_LISTING_LOCATION = 'listing_location';
+    public const STATE_LISTING_REVIEW = 'listing_review';
+    public const STATE_LISTING_COMPLETE = 'listing_complete';
+
+    // ===== BUYER SEARCH FLOW (2 ขั้นตอน) =====
+    public const STATE_SEARCH_LOCATION = 'search_location';
+    public const STATE_SEARCH_BROWSING = 'search_browsing';
+
+    // ===== BUYER ORDER FLOW (4 ขั้นตอน) =====
+    public const STATE_ORDER_SELECT = 'order_select';
+    public const STATE_ORDER_QUANTITY = 'order_quantity';
+    public const STATE_ORDER_REVIEW = 'order_review';
+    public const STATE_ORDER_TRACKING = 'order_tracking';
+
+    // ===== Backward compatibility aliases =====
+    public const STATE_NEW = 'idle';
+    public const STATE_BROWSING = 'search_browsing';
+    public const STATE_SEARCHING = 'search_location';
+    public const STATE_LISTING = 'listing_photos';
+    public const STATE_ORDERING = 'order_quantity';
+    public const STATE_CHATTING = 'idle';
+
+    /**
+     * Transition ที่อนุญาต: state ปัจจุบัน => [state ที่ไปได้]
+     */
+    public const VALID_TRANSITIONS = [
+        'idle' => ['listing_photos', 'search_location', 'search_browsing', 'idle'],
+
+        // Seller listing flow
+        'listing_photos' => ['listing_details', 'idle'],
+        'listing_details' => ['listing_location', 'listing_photos', 'idle'],
+        'listing_location' => ['listing_review', 'listing_details', 'idle'],
+        'listing_review' => ['listing_complete', 'listing_details', 'idle'],
+        'listing_complete' => ['idle', 'listing_photos'],
+
+        // Buyer search flow
+        'search_location' => ['search_browsing', 'idle'],
+        'search_browsing' => ['order_select', 'search_location', 'idle'],
+
+        // Buyer order flow
+        'order_select' => ['order_quantity', 'search_browsing', 'idle'],
+        'order_quantity' => ['order_review', 'order_select', 'idle'],
+        'order_review' => ['order_tracking', 'order_quantity', 'idle'],
+        'order_tracking' => ['idle', 'search_browsing'],
+    ];
+
+    /**
+     * Timeout ต่อสถานะ (นาที)
+     * ถ้าไม่มีในนี้ = ไม่หมดเวลา
+     */
+    public const TIMEOUT_MINUTES = [
+        'listing_photos' => 30,
+        'listing_details' => 30,
+        'listing_location' => 30,
+        'listing_review' => 30,
+        'search_location' => 15,
+        'search_browsing' => 15,
+        'order_select' => 10,
+        'order_quantity' => 10,
+        'order_review' => 5,
+    ];
+
+    /**
+     * ข้อมูล step/total/label ต่อสถานะ
+     */
+    public const STEP_INFO = [
+        'listing_photos' => ['step' => 1, 'total' => 5, 'label' => 'ส่งรูปสินค้า'],
+        'listing_details' => ['step' => 2, 'total' => 5, 'label' => 'รายละเอียดสินค้า'],
+        'listing_location' => ['step' => 3, 'total' => 5, 'label' => 'พิกัดร้าน'],
+        'listing_review' => ['step' => 4, 'total' => 5, 'label' => 'ตรวจสอบข้อมูล'],
+        'listing_complete' => ['step' => 5, 'total' => 5, 'label' => 'สำเร็จ'],
+        'search_location' => ['step' => 1, 'total' => 2, 'label' => 'ส่งตำแหน่ง'],
+        'search_browsing' => ['step' => 2, 'total' => 2, 'label' => 'ผลค้นหา'],
+        'order_select' => ['step' => 1, 'total' => 4, 'label' => 'เลือกสินค้า'],
+        'order_quantity' => ['step' => 2, 'total' => 4, 'label' => 'จำนวนและการจัดส่ง'],
+        'order_review' => ['step' => 3, 'total' => 4, 'label' => 'ตรวจสอบคำสั่งซื้อ'],
+        'order_tracking' => ['step' => 4, 'total' => 4, 'label' => 'ติดตามออเดอร์'],
+    ];
 
     protected $fillable = [
         'line_user_id',
         'user_id',
+        'seller_id',
         'role',
         'conversation_state',
+        'state_updated_at',
+        'state_step',
+        'state_total_steps',
+        'previous_state',
         'last_search_query',
         'last_search_latitude',
         'last_search_longitude',
@@ -57,7 +148,10 @@ class FreshMarketConversation extends Model
         'last_search_longitude' => 'decimal:8',
         'last_search_radius_km' => 'decimal:2',
         'message_count' => 'integer',
+        'state_step' => 'integer',
+        'state_total_steps' => 'integer',
         'last_message_at' => 'datetime',
+        'state_updated_at' => 'datetime',
     ];
 
     // ===== Relationships =====
@@ -67,12 +161,17 @@ class FreshMarketConversation extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function seller(): BelongsTo
+    {
+        return $this->belongsTo(FreshMarketSeller::class, 'seller_id');
+    }
+
     public function messages(): HasMany
     {
         return $this->hasMany(FreshMarketMessage::class, 'conversation_id');
     }
 
-    // ===== Methods =====
+    // ===== Factory Methods =====
 
     /**
      * ดึง conversation ล่าสุดของ LINE user หรือสร้างใหม่
@@ -83,10 +182,171 @@ class FreshMarketConversation extends Model
             ['line_user_id' => $lineUserId],
             [
                 'role' => $role,
-                'conversation_state' => self::STATE_NEW,
+                'conversation_state' => self::STATE_IDLE,
+                'state_updated_at' => now(),
             ]
         );
     }
+
+    // ===== State Machine Methods =====
+
+    /**
+     * เปลี่ยนสถานะอย่างปลอดภัย (validate transition)
+     *
+     * @param string $newState สถานะใหม่
+     * @param array $contextUpdate ข้อมูลเพิ่มเติมสำหรับ context
+     * @return bool สำเร็จหรือไม่
+     */
+    public function transitionTo(string $newState, array $contextUpdate = []): bool
+    {
+        $currentState = $this->conversation_state ?? self::STATE_IDLE;
+        $validTargets = self::VALID_TRANSITIONS[$currentState] ?? [self::STATE_IDLE];
+
+        // ตรวจสอบว่า transition นี้อนุญาตหรือไม่
+        if (! in_array($newState, $validTargets)) {
+            // fallback: อนุญาตกลับ idle เสมอ
+            if ($newState !== self::STATE_IDLE) {
+                return false;
+            }
+        }
+
+        // ดึงข้อมูล step
+        $stepInfo = self::STEP_INFO[$newState] ?? null;
+
+        // Merge context
+        $currentContext = $this->context ?? [];
+        if (! empty($contextUpdate)) {
+            $currentContext = array_merge($currentContext, $contextUpdate);
+        }
+
+        $this->update([
+            'previous_state' => $currentState,
+            'conversation_state' => $newState,
+            'state_updated_at' => now(),
+            'state_step' => $stepInfo['step'] ?? 0,
+            'state_total_steps' => $stepInfo['total'] ?? 0,
+            'context' => $currentContext,
+        ]);
+
+        return true;
+    }
+
+    /**
+     * ตรวจสอบว่า session หมดเวลาหรือไม่
+     */
+    public function isExpired(): bool
+    {
+        $state = $this->conversation_state ?? self::STATE_IDLE;
+        $timeout = self::TIMEOUT_MINUTES[$state] ?? null;
+
+        // ไม่มี timeout (idle, order_tracking, listing_complete)
+        if ($timeout === null) {
+            return false;
+        }
+
+        $stateUpdatedAt = $this->state_updated_at ?? $this->updated_at;
+
+        if (! $stateUpdatedAt) {
+            return false;
+        }
+
+        return Carbon::parse($stateUpdatedAt)->addMinutes($timeout)->isPast();
+    }
+
+    /**
+     * รีเซ็ตกลับสู่ idle
+     */
+    public function resetToIdle(): void
+    {
+        $this->update([
+            'previous_state' => $this->conversation_state,
+            'conversation_state' => self::STATE_IDLE,
+            'state_updated_at' => now(),
+            'state_step' => 0,
+            'state_total_steps' => 0,
+            'context' => null,
+        ]);
+    }
+
+    /**
+     * ดึง progress text ("📋 ขั้นตอนที่ 2/5: รายละเอียดสินค้า")
+     */
+    public function getProgressText(): string
+    {
+        $state = $this->conversation_state ?? self::STATE_IDLE;
+        $info = self::STEP_INFO[$state] ?? null;
+
+        if (! $info) {
+            return '';
+        }
+
+        return "📋 ขั้นตอนที่ {$info['step']}/{$info['total']}: {$info['label']}";
+    }
+
+    /**
+     * ดึง context สำหรับ flow เฉพาะ (listing/search/order)
+     */
+    public function getFlowContext(string $flowKey): array
+    {
+        $context = $this->context ?? [];
+
+        return $context[$flowKey] ?? [];
+    }
+
+    /**
+     * อัพเดท context สำหรับ flow เฉพาะ (merge ไม่ overwrite)
+     */
+    public function setFlowContext(string $flowKey, array $data): void
+    {
+        $context = $this->context ?? [];
+        $existing = $context[$flowKey] ?? [];
+        $context[$flowKey] = array_merge($existing, $data);
+
+        $this->update([
+            'context' => $context,
+            'state_updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าอยู่ใน listing flow หรือไม่
+     */
+    public function isInListingFlow(): bool
+    {
+        return in_array($this->conversation_state, [
+            self::STATE_LISTING_PHOTOS,
+            self::STATE_LISTING_DETAILS,
+            self::STATE_LISTING_LOCATION,
+            self::STATE_LISTING_REVIEW,
+            self::STATE_LISTING_COMPLETE,
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าอยู่ใน order flow หรือไม่
+     */
+    public function isInOrderFlow(): bool
+    {
+        return in_array($this->conversation_state, [
+            self::STATE_ORDER_SELECT,
+            self::STATE_ORDER_QUANTITY,
+            self::STATE_ORDER_REVIEW,
+            self::STATE_ORDER_TRACKING,
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าอยู่ใน search flow หรือไม่
+     */
+    public function isInSearchFlow(): bool
+    {
+        return in_array($this->conversation_state, [
+            self::STATE_SEARCH_LOCATION,
+            self::STATE_SEARCH_BROWSING,
+        ]);
+    }
+
+    // ===== Message Methods =====
 
     /**
      * เพิ่มข้อความใหม่
@@ -113,7 +373,7 @@ class FreshMarketConversation extends Model
     /**
      * ดึงบริบทข้อความล่าสุด (สำหรับส่งให้ AI)
      */
-    public function getContext(int $limit = 10): array
+    public function getMessageHistory(int $limit = 10): array
     {
         return $this->messages()
             ->orderByDesc('id')
@@ -129,7 +389,15 @@ class FreshMarketConversation extends Model
     }
 
     /**
-     * อัพเดทสถานะ + context
+     * Alias สำหรับ backward compatibility
+     */
+    public function getContext(int $limit = 10): array
+    {
+        return $this->getMessageHistory($limit);
+    }
+
+    /**
+     * อัพเดทสถานะ + context (backward compatibility)
      */
     public function updateState(string $state, array $context = []): void
     {
@@ -139,6 +407,7 @@ class FreshMarketConversation extends Model
         $this->update([
             'conversation_state' => $state,
             'context' => $mergedContext,
+            'state_updated_at' => now(),
         ]);
     }
 
