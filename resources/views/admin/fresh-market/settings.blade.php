@@ -91,22 +91,22 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel ID</label>
-                        <input type="text" name="channel_id"
-                               value="{{ $settings->channel_id ?? '' }}"
+                        <input type="text" name="line_channel_id"
+                               value="{{ $settings->line_channel_id ?? '' }}"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
                                placeholder="กรอก Channel ID">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Secret</label>
-                        <input type="password" name="channel_secret"
-                               value="{{ $settings->channel_secret ?? '' }}"
+                        <input type="password" name="line_channel_secret"
+                               value="{{ $settings->line_channel_secret ?? '' }}"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
                                placeholder="กรอก Channel Secret">
                     </div>
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Channel Access Token</label>
-                        <input type="password" name="channel_access_token"
-                               value="{{ $settings->channel_access_token ?? '' }}"
+                        <input type="password" name="line_channel_access_token"
+                               value="{{ $settings->line_channel_access_token ?? '' }}"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
                                placeholder="กรอก Channel Access Token">
                     </div>
@@ -131,23 +131,32 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ผู้ให้บริการ AI</label>
                         <select name="ai_provider"
                                 class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
+                            <option value="groq" {{ ($settings->ai_provider ?? 'groq') === 'groq' ? 'selected' : '' }}>Groq (แนะนำ)</option>
+                            <option value="openrouter" {{ ($settings->ai_provider ?? '') === 'openrouter' ? 'selected' : '' }}>OpenRouter</option>
                             <option value="openai" {{ ($settings->ai_provider ?? '') === 'openai' ? 'selected' : '' }}>OpenAI</option>
-                            <option value="anthropic" {{ ($settings->ai_provider ?? '') === 'anthropic' ? 'selected' : '' }}>Anthropic (Claude)</option>
-                            <option value="google" {{ ($settings->ai_provider ?? '') === 'google' ? 'selected' : '' }}>Google Gemini</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">โมเดล AI</label>
                         <input type="text" name="ai_model"
-                               value="{{ $settings->ai_model ?? 'gpt-4o-mini' }}"
+                               value="{{ $settings->ai_model ?? 'llama-3.3-70b-versatile' }}"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                               placeholder="เช่น gpt-4o-mini, claude-3-haiku">
+                               placeholder="เช่น llama-3.3-70b-versatile, gpt-4o-mini">
                     </div>
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">System Prompt</label>
-                        <textarea name="system_prompt" rows="8"
+                        <label class="flex items-center gap-2 mb-4">
+                            <input type="hidden" name="use_global_ai_settings" value="0">
+                            <input type="checkbox" name="use_global_ai_settings" value="1"
+                                   {{ ($settings->use_global_ai_settings ?? true) ? 'checked' : '' }}
+                                   class="rounded border-gray-300 dark:border-gray-600 text-green-600 focus:ring-green-500">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">ใช้ API Key Pool จากระบบหลัก (AiApiKeyPoolService)</span>
+                        </label>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">System Prompt (บทบาท "พี่ตลาด")</label>
+                        <textarea name="ai_system_prompt" rows="8"
                                   class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                                  placeholder="กำหนดบทบาทและคำสั่งสำหรับ AI แชทบอท...">{{ $settings->system_prompt ?? '' }}</textarea>
+                                  placeholder="กำหนดบทบาทและคำสั่งสำหรับ AI แชทบอท...">{{ $settings->ai_system_prompt ?? '' }}</textarea>
                         <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">กำหนดบทบาทและพฤติกรรมของ AI ในการตอบคำถามลูกค้า</p>
                     </div>
                 </div>
@@ -181,24 +190,38 @@
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">รูปแบบการเก็บค่าธรรมเนียม</label>
                         <div class="mt-2 space-y-3">
                             <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="per_order"
-                                       {{ ($settings->fee_mode ?? 'per_order') === 'per_order' ? 'checked' : '' }}
+                                <input type="radio" name="fee_mode" value="percentage"
+                                       {{ ($settings->fee_mode ?? 'both') === 'percentage' ? 'checked' : '' }}
                                        class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เก็บต่อคำสั่งซื้อ</span>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เก็บเปอร์เซ็นต์ต่อคำสั่งซื้อ</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="monthly"
-                                       {{ ($settings->fee_mode ?? '') === 'monthly' ? 'checked' : '' }}
+                                <input type="radio" name="fee_mode" value="subscription"
+                                       {{ ($settings->fee_mode ?? '') === 'subscription' ? 'checked' : '' }}
                                        class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">เก็บรายเดือน</span>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">สมัครสมาชิกรายเดือน</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="fee_mode" value="hybrid"
-                                       {{ ($settings->fee_mode ?? '') === 'hybrid' ? 'checked' : '' }}
+                                <input type="radio" name="fee_mode" value="both"
+                                       {{ ($settings->fee_mode ?? 'both') === 'both' ? 'checked' : '' }}
                                        class="text-green-600 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600">
-                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ผสม (รายเดือน + ต่อคำสั่งซื้อ)</span>
+                                <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">ผสม (สมาชิก + เปอร์เซ็นต์)</span>
                             </label>
                         </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนรายการขายฟรี (แพ็กเกจฟรี)</label>
+                        <input type="number" name="max_listings_free" min="1"
+                               value="{{ $settings->max_listings_free ?? 5 }}"
+                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">จำนวนรายการสินค้าที่ผู้ขายฟรีสามารถลงได้</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนรายการขาย (สมาชิก)</label>
+                        <input type="number" name="max_listings_subscribed" min="0"
+                               value="{{ $settings->max_listings_subscribed ?? 0 }}"
+                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">0 = ไม่จำกัด</p>
                     </div>
                 </div>
             </div>
