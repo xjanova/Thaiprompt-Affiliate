@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\LineOaSetting;
 use App\Models\LineRegistrationSession;
-use App\Models\LineSignupReward;
+
 use App\Models\User;
 use App\Services\LineService;
 use Illuminate\Http\JsonResponse;
@@ -54,8 +54,8 @@ class LineRegistrationController extends Controller
             $sponsor = User::find($session->sponsor_user_id);
         }
 
-        // ดึงข้อมูลรางวัลเมื่อสมัคร (สำหรับ free signup)
-        $signupRewards = LineSignupReward::getAvailableRewards(null, $sponsor !== null);
+        // รางวัลสมัครสมาชิก (ระบบเดิมถูกลบแล้ว)
+        $signupRewards = collect();
 
         Log::info('LINE Registration: Session created', [
             'session_token' => $session->session_token,

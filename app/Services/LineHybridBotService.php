@@ -228,8 +228,16 @@ class LineHybridBotService
             return ['success' => true, 'type' => 'basic_bot', 'handler' => 'reset'];
         }
 
-        $signupService = app(\App\Services\LineSignupService::class);
-        $signupService->resetConversation($prospect);
+        // รีเซ็ต prospect status (ระบบ LineSignupService เดิมถูกลบแล้ว)
+        $prospect->update([
+            'status' => 'expired',
+            'conversation_expired' => true,
+        ]);
+
+        $this->lineService->sendPushMessage(
+            $lineUserId,
+            "🔄 รีเซ็ตข้อมูลเรียบร้อยแล้วค่ะ\n\nหากต้องการสมัครสมาชิก กรุณาสมัครผ่านหน้าเว็บ:\n🔗 ".url('/register')
+        );
 
         return ['success' => true, 'type' => 'basic_bot', 'handler' => 'reset'];
     }

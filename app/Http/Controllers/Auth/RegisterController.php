@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LeadLock;
 use App\Models\LineLoginLog;
 use App\Models\LineOaSetting;
-use App\Models\LineSignupReward;
+
 use App\Models\MlmGlobalSetting;
 use App\Models\MlmMember;
 use App\Models\RecruitCustomization;
@@ -64,17 +64,12 @@ class RegisterController extends Controller
             }
         }
 
-        // ดึงรางวัลสมัครสมาชิก
-        $signupRewards = LineSignupReward::where('is_active', true)
-            ->orderBy('display_order')
-            ->get();
-
         return view('auth.register', [
             'referralCode' => $referralCode,
             'referrerName' => $referrerName,
             'referrerPicture' => $referrerPicture,
             'defaultSponsorName' => $defaultSponsorName,
-            'signupRewards' => $signupRewards,
+            'signupRewards' => collect(), // ระบบรางวัลสมัครถูกลบแล้ว
         ]);
     }
 

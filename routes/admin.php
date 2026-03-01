@@ -700,8 +700,7 @@ Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::get('/line-users', [LineOaController::class, 'getLineUsers'])->name('line-users');
     Route::get('/logs', [LineOaController::class, 'logs'])->name('logs');
 
-    // Analytics Dashboard (Legacy)
-    Route::get('/analytics', [\App\Http\Controllers\Admin\LineAnalyticsController::class, 'index'])->name('analytics');
+    // Analytics Dashboard (Legacy) → ถูกลบแล้ว ใช้ LINE Message Analytics แทน
 });
 
 // LINE Message Analytics (Phase 2 - New Smart Analytics)

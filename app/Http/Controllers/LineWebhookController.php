@@ -11,7 +11,7 @@ use App\Services\AI\ConversationManager;
 use App\Services\LineHybridBotService;
 use App\Services\LineKycService;
 use App\Services\LineService;
-use App\Services\LineSignupService;
+
 use App\Services\LineVoiceMessageService;
 use App\Services\MlmProspectService;
 use Illuminate\Http\Request;
@@ -184,9 +184,9 @@ class LineWebhookController extends Controller
         $prospect = $prospectService->getProspectByLineUserId($lineUserId);
 
         if ($prospect && in_array($prospect->status, ['pending', 'in_progress'])) {
-            // ยังอยู่ในกระบวนการสมัครสมาชิก → ตอบไปยัง signup flow
-            $signupService = app(LineSignupService::class);
-            $signupService->handleConversationMessage($prospect, $messageText);
+            // ระบบ LINE Signup Flow เดิมถูกลบแล้ว → แจ้งให้สมัครผ่านหน้าเว็บ
+            $lineService = app(LineService::class);
+            $lineService->sendPushMessage($lineUserId, "📝 กรุณาสมัครสมาชิกผ่านหน้าเว็บไซต์ค่ะ\n\n🔗 ".url('/register'));
 
             return;
         }
@@ -202,66 +202,12 @@ class LineWebhookController extends Controller
         }
 
         if ($isSignupRequest && ! $user) {
-            // ต้องการสมัครสมาชิก แต่ยังไม่มี user → สร้าง prospect ใหม่
+            // ระบบ LINE Signup Flow เดิมถูกลบแล้ว → แจ้งให้สมัครผ่านหน้าเว็บ
             $lineService = app(LineService::class);
-
-            // ดึง LINE profile
-            try {
-                $lineProfile = $lineService->getProfile($lineUserId);
-            } catch (\Exception $e) {
-                Log::error('Failed to get LINE profile', [
-                    'line_user_id' => $lineUserId,
-                    'error' => $e->getMessage(),
-                ]);
-                $lineProfile = [
-                    'displayName' => 'User',
-                    'pictureUrl' => null,
-                ];
-            }
-
-            // ✅ ดึง sponsor จาก LineRegistrationSession (ถ้ามี)
-            // สำหรับผู้ใช้ที่มาจากหน้าสมัครใหม่ที่มี referral code
-            $sponsorMlmMemberId = null;
-            $sponsorUserId = null;
-
-            $registrationSession = LineRegistrationSession::findByLineUserId($lineUserId);
-            if ($registrationSession) {
-                $sponsorMlmMemberId = $registrationSession->sponsor_mlm_member_id;
-                $sponsorUserId = $registrationSession->sponsor_user_id;
-
-                Log::info('Found sponsor from LineRegistrationSession', [
-                    'line_user_id' => $lineUserId,
-                    'session_id' => $registrationSession->id,
-                    'sponsor_user_id' => $sponsorUserId,
-                    'sponsor_mlm_member_id' => $sponsorMlmMemberId,
-                    'referral_code' => $registrationSession->referral_code,
-                ]);
-
-                // อัพเดทสถานะ session เป็น in_progress
-                $registrationSession->markAsInProgress();
-            }
-
-            // สร้าง prospect ใหม่ (พร้อม sponsor จาก session ถ้ามี)
-            $prospect = MlmProspect::create([
-                'line_user_id' => $lineUserId,
-                'line_display_name' => $lineProfile['displayName'] ?? 'User',
-                'line_picture_url' => $lineProfile['pictureUrl'] ?? null,
-                'sponsor_mlm_member_id' => $sponsorMlmMemberId,
-                'sponsor_user_id' => $sponsorUserId,
-                'status' => 'pending',
-                'conversation_started_at' => now(),
-            ]);
-
-            Log::info('Created prospect for signup', [
-                'prospect_id' => $prospect->id,
-                'line_user_id' => $lineUserId,
-                'has_sponsor' => $sponsorUserId !== null,
-                'sponsor_user_id' => $sponsorUserId,
-            ]);
-
-            // เริ่ม signup flow
-            $signupService = app(LineSignupService::class);
-            $signupService->startConversation($prospect);
+            $lineService->sendPushMessage(
+                $lineUserId,
+                "📝 สมัครสมาชิกได้ง่ายๆ ผ่านหน้าเว็บไซต์ค่ะ\n\n🔗 ".url('/register')."\n\nหรือกด Login with LINE ได้เลย!"
+            );
 
             return;
         }
