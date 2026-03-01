@@ -35,9 +35,9 @@ class FreshMarketSeeder extends Seeder
         }
 
         FreshMarketSetting::create([
-            'line_channel_id' => null,
-            'line_channel_secret' => null,
-            'line_channel_access_token' => null,
+            'line_channel_id' => env('FRESH_MARKET_LINE_CHANNEL_ID'),
+            'line_channel_secret' => env('FRESH_MARKET_LINE_CHANNEL_SECRET'),
+            'line_channel_access_token' => env('FRESH_MARKET_LINE_ACCESS_TOKEN'),
             'ai_provider' => 'groq',
             'ai_model' => 'llama-3.3-70b-versatile',
             'use_global_ai_settings' => true,

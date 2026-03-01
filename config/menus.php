@@ -206,6 +206,27 @@ return [
         ],
 
         [
+            'id' => 'fresh-market',
+            'label' => 'ตลาดสดไทยพร้อม',
+            'icon' => '🏪',
+            'route' => null,
+            'order' => 5.7,
+            'permissions' => [],
+            'badge' => 'NEW',
+            'badge_color' => 'bg-gradient-to-r from-green-500 to-emerald-500',
+            'submenu' => [
+                ['label' => '📊 แดชบอร์ด', 'route' => 'admin.fresh-market.dashboard'],
+                ['label' => '⚙️ ตั้งค่าระบบ', 'route' => 'admin.fresh-market.settings'],
+                ['label' => '📂 หมวดหมู่สินค้า', 'route' => 'admin.fresh-market.categories'],
+                ['label' => '👨‍🌾 ผู้ขาย', 'route' => 'admin.fresh-market.sellers'],
+                ['label' => '🥬 รายการสินค้า', 'route' => 'admin.fresh-market.listings'],
+                ['label' => '📦 ออเดอร์', 'route' => 'admin.fresh-market.orders'],
+                ['label' => '💰 คอมมิชชั่น', 'route' => 'admin.fresh-market.commissions'],
+                ['label' => '🤖 ทดสอบ LINE Bot', 'route' => 'admin.fresh-market.test-line'],
+            ],
+        ],
+
+        [
             'id' => 'ecommerce',
             'label' => 'อีคอมเมิร์ซ',
             'icon' => '🛒',
