@@ -3505,22 +3505,38 @@
             return food;
         }
 
-        // ✅ Helper สำหรับ WebSocket — spawn food ที่ตำแหน่งกำหนด
-        function spawnFoodAt(x, z, value = 1) {
+        // ✅ Helper สำหรับ WebSocket — spawn food ที่ตำแหน่งกำหนด พร้อม server ID
+        function spawnFoodAt(x, z, value = 1, serverId = null) {
             const food = createFood(x, z, value > 1);
-            if (food && value > 1) {
-                food.userData.value = value;
+            if (food) {
+                if (value > 1) food.userData.value = value;
+                if (serverId) food.userData.serverId = serverId;
             }
+            return food;
         }
 
-        // ✅ Helper สำหรับ WebSocket — ลบ food ตาม ID (ใช้ index หรือ position matching)
+        // ✅ Helper สำหรับ WebSocket — ลบ food ตาม server ID
         function removeFoodById(foodId) {
-            // ถ้า food มี ID ตรง
             const idx = foods.findIndex(f => f.userData.serverId === foodId);
             if (idx >= 0) {
                 scene.remove(foods[idx]);
                 foods.splice(idx, 1);
             }
+        }
+
+        // ✅ Helper สำหรับ WebSocket — ลบ food ทั้งหมด (ใช้ตอนเปลี่ยนจาก offline เป็น online)
+        function clearAllFood() {
+            foods.forEach(f => scene.remove(f));
+            foods.length = 0;
+        }
+
+        // ✅ Helper สำหรับ WebSocket — render food จาก server ทั้งหมด
+        function loadServerFood(serverFoods) {
+            clearAllFood();
+            serverFoods.forEach(f => {
+                spawnFoodAt(f.position.x, f.position.z, f.value || 1, f.id);
+            });
+            console.log(`[WS] โหลด food จาก server: ${serverFoods.length} ชิ้น`);
         }
 
         function createBot() {
@@ -4017,13 +4033,22 @@
                         wsClient.onPlayerDied = (playerId, killerId, droppedFood) => {
                             if (droppedFood) {
                                 droppedFood.forEach(f => {
-                                    spawnFoodAt(f.position.x, f.position.z, f.value || 2);
+                                    spawnFoodAt(f.position.x, f.position.z, f.value || 2, f.id);
                                 });
                             }
                         };
 
                         wsClient.onFoodCollected = (foodId, collectPlayerId) => {
                             removeFoodById(foodId);
+                        };
+
+                        // ✅ Food spawn จาก server (เมื่อ food ใหม่ถูกสร้าง)
+                        wsClient.onFoodSpawn = (newFoods) => {
+                            if (newFoods) {
+                                newFoods.forEach(f => {
+                                    spawnFoodAt(f.position.x, f.position.z, f.value || 1, f.id);
+                                });
+                            }
                         };
 
                         wsClient.onDisconnected = () => {
@@ -4049,6 +4074,11 @@
                         // ใช้ world size จาก server
                         if (welcomeData.worldSize) {
                             CONFIG.WORLD_SIZE = welcomeData.worldSize;
+                        }
+
+                        // ✅ โหลด food จาก server (แทนที่ client random food)
+                        if (welcomeData.foods && welcomeData.foods.length > 0) {
+                            loadServerFood(welcomeData.foods);
                         }
 
                         // เริ่ม connection monitoring
@@ -5395,15 +5425,15 @@
                         );
                     }
 
-                    // อัปเดต boost state
-                    if (playerData.isBoosting !== undefined) {
-                        snake.isBoosting = playerData.isBoosting;
+                    // อัปเดต boost state (normalized field: boosting)
+                    if (playerData.boosting !== undefined) {
+                        snake.isBoosting = playerData.boosting;
                     }
 
                     // อัปเดตข้อมูล meta
                     snake.score = playerData.score || snake.score;
                     snake.length = playerData.length || snake.length;
-                    snake.alive = playerData.is_alive !== undefined ? playerData.is_alive : snake.alive;
+                    snake.alive = playerData.alive !== undefined ? playerData.alive : snake.alive;
 
                     // ✅ Position Correction (จาก server ทุกครั้งที่มีข้อมูลตำแหน่ง)
                     if (playerData.position) {

@@ -195,9 +195,9 @@ public class GameServer
             : msg.PlayerName.Trim();
         if (name.Length > 20) name = name[..20];
 
-        // Validate skin
-        var validSkins = new[] { "classic", "fire", "ice", "gold", "rainbow" };
-        var skin = validSkins.Contains(msg.Skin) ? msg.Skin : "classic";
+        // Validate skin (รองรับทั้ง preset เช่น "classic" และ custom hex เช่น "#ff0000,#00ff00,#0000ff")
+        var skin = string.IsNullOrWhiteSpace(msg.Skin) ? "classic" : msg.Skin.Trim();
+        if (skin.Length > 50) skin = "classic"; // ป้องกัน payload ยาวเกิน
 
         // Find or create room
         var room = _rooms.FindOrCreateRoom(msg.RoomId);

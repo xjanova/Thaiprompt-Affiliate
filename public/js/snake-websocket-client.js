@@ -353,14 +353,21 @@ class SnakeWebSocketClient {
         this.playerId = msg.player_id;
         this.roomId = msg.room_id;
         this.worldSize = msg.world_size || 200;
-        this._tickIntervalMs = msg.tick_interval_ms || 33.33;
+
+        // Server ส่ง tick_rate (30) → คำนวณ interval (33.33ms)
+        if (msg.tick_rate) {
+            this._tickIntervalMs = 1000 / msg.tick_rate;
+        } else {
+            this._tickIntervalMs = msg.tick_interval_ms || 33.33;
+        }
 
         console.log(`[WS] Welcome! Player: ${this.playerId}, Room: ${this.roomId}, World: ${this.worldSize}`);
 
-        // Initialize food from welcome
-        if (msg.foods) {
+        // Initialize food from welcome (server ส่ง food_list)
+        const foods = msg.food_list || msg.foods || [];
+        if (foods.length > 0) {
             this._foods.clear();
-            for (const f of msg.foods) {
+            for (const f of foods) {
                 this._foods.set(f.id, {
                     id: f.id,
                     position: f.position,
@@ -370,9 +377,10 @@ class SnakeWebSocketClient {
             }
         }
 
-        // Initialize players from welcome
-        if (msg.players) {
-            for (const p of msg.players) {
+        // Initialize players from welcome (server ส่ง player_list)
+        const players = msg.player_list || msg.players || [];
+        if (players.length > 0) {
+            for (const p of players) {
                 this._otherPlayers.set(p.id, {
                     current: this._normalizePlayerState(p),
                     previous: null,
@@ -387,7 +395,7 @@ class SnakeWebSocketClient {
                 roomId: this.roomId,
                 worldSize: this.worldSize,
                 foods: Array.from(this._foods.values()),
-                players: msg.players || []
+                players: players
             });
         }
     }
@@ -457,8 +465,10 @@ class SnakeWebSocketClient {
     }
 
     _handlePlayerJoin(msg) {
-        console.log(`[WS] Player joined: ${msg.name} (${msg.player_id})`);
-        if (this.onPlayerJoined) this.onPlayerJoined(msg);
+        // Server ส่ง { type: "player_join", player: { id, name, ... } }
+        const playerData = msg.player || msg;
+        console.log(`[WS] Player joined: ${playerData.name} (${playerData.id})`);
+        if (this.onPlayerJoined) this.onPlayerJoined(playerData);
     }
 
     _handlePlayerLeave(msg) {
@@ -566,6 +576,7 @@ class SnakeWebSocketClient {
 
     /**
      * Normalize player state จาก server format
+     * Server ส่ง is_alive, is_boosting (snake_case) → normalize เป็น alive, boosting
      */
     _normalizePlayerState(p) {
         return {
@@ -576,8 +587,8 @@ class SnakeWebSocketClient {
             direction: p.direction || p.dir || { x: 1, y: 0, z: 0 },
             score: p.score || 0,
             length: p.length || p.len || 5,
-            alive: p.alive !== false,
-            boosting: p.boosting || p.boost || false,
+            alive: (p.is_alive !== undefined ? p.is_alive : p.alive) !== false,
+            boosting: p.is_boosting || p.boosting || p.boost || false,
             segments: p.segments || null
         };
     }
