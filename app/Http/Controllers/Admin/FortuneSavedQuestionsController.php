@@ -120,6 +120,23 @@ class FortuneSavedQuestionsController extends Controller
                 return ['sent' => false, 'error' => 'ไม่พบ User ID ของผู้ใช้ในระบบ'];
             }
 
+            // ✅ Safety net: ตรวจสอบ platform จาก user ID format
+            // LINE user ID: ขึ้นต้นด้วย "U" + 32 hex chars (33 ตัว)
+            // Facebook PSID: ตัวเลขล้วน 15-20 หลัก
+            $detectedPlatform = $this->detectPlatformFromUserId($userId);
+            if ($detectedPlatform !== $platform) {
+                Log::warning('Fortune SavedQuestion: platform ไม่ตรงกับ user ID format — ใช้ค่าที่ตรวจจับได้', [
+                    'question_id' => $question->id,
+                    'stored_platform' => $platform,
+                    'detected_platform' => $detectedPlatform,
+                    'user_id' => $userId,
+                ]);
+                $platform = $detectedPlatform;
+
+                // อัพเดท platform ที่ถูกต้องลง DB ด้วย
+                $question->update(['platform' => $platform]);
+            }
+
             // สร้างข้อความตอบกลับ
             $message = "📝 แอดมินตอบกลับคำถามของคุณค่ะ\n\n"
                 ."❓ คำถาม: {$question->question}\n\n"
@@ -261,5 +278,34 @@ class FortuneSavedQuestionsController extends Controller
         return redirect()
             ->route('admin.fortune.saved-questions.index')
             ->with('success', 'ลบคำถามเรียบร้อยแล้ว');
+    }
+
+    /**
+     * ตรวจจับ platform จาก user ID format
+     *
+     * LINE user ID: ขึ้นต้นด้วย "U" + hex 32 ตัว (รวม 33 ตัว) เช่น "U1234abcd..."
+     * Facebook PSID: ตัวเลขล้วน 15-20 หลัก เช่น "26165964502999706"
+     *
+     * @return string 'line' หรือ 'facebook'
+     */
+    protected function detectPlatformFromUserId(string $userId): string
+    {
+        // LINE user ID: ขึ้นต้นด้วย U + hex 32 ตัว
+        if (preg_match('/^U[0-9a-fA-F]{32}$/', $userId)) {
+            return 'line';
+        }
+
+        // Facebook PSID: ตัวเลขล้วน 10+ หลัก
+        if (preg_match('/^\d{10,}$/', $userId)) {
+            return 'facebook';
+        }
+
+        // ไม่แน่ใจ → ใช้ heuristic: ถ้าเป็นตัวเลขล้วน → facebook
+        if (ctype_digit($userId)) {
+            return 'facebook';
+        }
+
+        // Default: line
+        return 'line';
     }
 }

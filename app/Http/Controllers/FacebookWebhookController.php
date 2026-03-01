@@ -814,6 +814,9 @@ class FacebookWebhookController extends Controller
                 'sender_id' => $senderId,
             ]);
 
+            // ✅ ต้องตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
+            $this->conversationService->setPlatform('facebook');
+
             $result = $this->conversationService->processMessage($senderId, $messageText, $userProfile);
 
             // ปิด typing indicator
