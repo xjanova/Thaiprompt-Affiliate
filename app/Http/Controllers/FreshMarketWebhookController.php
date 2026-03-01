@@ -21,13 +21,25 @@ class FreshMarketWebhookController extends Controller
 
     protected FreshMarketLineService $lineService;
 
-    protected FreshMarketChannelManager $channelManager;
+    protected ?FreshMarketChannelManager $channelManager = null;
 
     public function __construct()
     {
         $this->settings = FreshMarketSetting::getSettings();
         $this->lineService = new FreshMarketLineService($this->settings);
-        $this->channelManager = new FreshMarketChannelManager($this->settings);
+        // ChannelManager จะสร้างเมื่อใช้งานจริง (lazy-load) เพื่อให้ webhook ตอบ 200 เร็ว
+    }
+
+    /**
+     * สร้าง ChannelManager แบบ lazy-load เพื่อไม่ให้ constructor ช้า
+     */
+    protected function getChannelManager(): FreshMarketChannelManager
+    {
+        if ($this->channelManager === null) {
+            $this->channelManager = new FreshMarketChannelManager($this->settings);
+        }
+
+        return $this->channelManager;
     }
 
     /**
@@ -128,18 +140,18 @@ class FreshMarketWebhookController extends Controller
         switch ($messageType) {
             case 'text':
                 $messageText = $event['message']['text'] ?? '';
-                $this->channelManager->processMessage($userId, $messageText, $extra);
+                $this->getChannelManager()->processMessage($userId, $messageText, $extra);
                 break;
 
             case 'image':
                 $messageId = $event['message']['id'] ?? '';
-                $this->channelManager->processImage($userId, $messageId, $extra);
+                $this->getChannelManager()->processImage($userId, $messageId, $extra);
                 break;
 
             case 'location':
                 $lat = $event['message']['latitude'] ?? 0;
                 $lng = $event['message']['longitude'] ?? 0;
-                $this->channelManager->processLocation($userId, $lat, $lng, $extra);
+                $this->getChannelManager()->processLocation($userId, $lat, $lng, $extra);
                 break;
 
             case 'sticker':
@@ -174,7 +186,7 @@ class FreshMarketWebhookController extends Controller
 
         Log::info('FreshMarketWebhook: ผู้ใช้เพิ่มเพื่อน', ['user_id' => $userId]);
 
-        $this->channelManager->handleFollow($userId, [
+        $this->getChannelManager()->handleFollow($userId, [
             'reply_token' => $replyToken,
         ]);
     }
@@ -192,7 +204,7 @@ class FreshMarketWebhookController extends Controller
 
         Log::info('FreshMarketWebhook: ผู้ใช้ลบเพื่อน', ['user_id' => $userId]);
 
-        $this->channelManager->handleUnfollow($userId);
+        $this->getChannelManager()->handleUnfollow($userId);
     }
 
     /**
@@ -213,7 +225,7 @@ class FreshMarketWebhookController extends Controller
             'data' => $data,
         ]);
 
-        $this->channelManager->handlePostback($userId, $data, [
+        $this->getChannelManager()->handlePostback($userId, $data, [
             'reply_token' => $replyToken,
         ]);
     }
