@@ -21,12 +21,38 @@ public class MainViewModel : INotifyPropertyChanged
     private string _statusText = "Stopped";
     private string _statusColor = "#FF5252";
 
-    // === Config ===
+    // === Config: Server ===
     private int _port = 8080;
     private int _maxPlayersPerRoom = 30;
+    private int _tickRate = 30;
+
+    // === Config: World ===
     private int _worldSize = 200;
     private int _foodCount = 100;
-    private int _tickRate = 30;
+    private int _foodRespawnThreshold = 80;
+    private int _maxFoodSpawnPerTick = 5;
+
+    // === Config: Snake ===
+    private double _snakeSpeed = 0.30;
+    private double _snakeBoostSpeed = 0.60;
+    private double _snakeTurnSpeed = 0.15;
+    private int _initialSnakeLength = 5;
+    private double _segmentSpacing = 0.5;
+    private double _foodCollisionRadius = 0.8;
+    private double _snakeCollisionRadius = 0.6;
+    private int _scorePerLength = 10;
+    private double _boostScoreCost = 2;
+
+    // === Config: Powerup & Death ===
+    private int _powerupExpireSeconds = 60;
+    private int _maxDroppedFoodOnDeath = 10;
+    private int _droppedFoodValue = 2;
+
+    // === Config: Anti-Cheat ===
+    private int _maxInputsPerSecond = 60;
+    private int _fullSyncInterval = 10;
+
+    // === Config: Database ===
     private string _dbProvider = "SQLite";
     private string _connectionString = "Data Source=snakegame.db";
 
@@ -53,11 +79,38 @@ public class MainViewModel : INotifyPropertyChanged
     public string StatusText { get => _statusText; set => SetField(ref _statusText, value); }
     public string StatusColor { get => _statusColor; set => SetField(ref _statusColor, value); }
 
+    // Server
     public int Port { get => _port; set => SetField(ref _port, value); }
     public int MaxPlayersPerRoom { get => _maxPlayersPerRoom; set => SetField(ref _maxPlayersPerRoom, value); }
+    public int TickRate { get => _tickRate; set => SetField(ref _tickRate, value); }
+
+    // World
     public int WorldSize { get => _worldSize; set => SetField(ref _worldSize, value); }
     public int FoodCount { get => _foodCount; set => SetField(ref _foodCount, value); }
-    public int TickRate { get => _tickRate; set => SetField(ref _tickRate, value); }
+    public int FoodRespawnThreshold { get => _foodRespawnThreshold; set => SetField(ref _foodRespawnThreshold, value); }
+    public int MaxFoodSpawnPerTick { get => _maxFoodSpawnPerTick; set => SetField(ref _maxFoodSpawnPerTick, value); }
+
+    // Snake
+    public double SnakeSpeed { get => _snakeSpeed; set => SetField(ref _snakeSpeed, value); }
+    public double SnakeBoostSpeed { get => _snakeBoostSpeed; set => SetField(ref _snakeBoostSpeed, value); }
+    public double SnakeTurnSpeed { get => _snakeTurnSpeed; set => SetField(ref _snakeTurnSpeed, value); }
+    public int InitialSnakeLength { get => _initialSnakeLength; set => SetField(ref _initialSnakeLength, value); }
+    public double SegmentSpacing { get => _segmentSpacing; set => SetField(ref _segmentSpacing, value); }
+    public double FoodCollisionRadius { get => _foodCollisionRadius; set => SetField(ref _foodCollisionRadius, value); }
+    public double SnakeCollisionRadius { get => _snakeCollisionRadius; set => SetField(ref _snakeCollisionRadius, value); }
+    public int ScorePerLength { get => _scorePerLength; set => SetField(ref _scorePerLength, value); }
+    public double BoostScoreCost { get => _boostScoreCost; set => SetField(ref _boostScoreCost, value); }
+
+    // Powerup & Death
+    public int PowerupExpireSeconds { get => _powerupExpireSeconds; set => SetField(ref _powerupExpireSeconds, value); }
+    public int MaxDroppedFoodOnDeath { get => _maxDroppedFoodOnDeath; set => SetField(ref _maxDroppedFoodOnDeath, value); }
+    public int DroppedFoodValue { get => _droppedFoodValue; set => SetField(ref _droppedFoodValue, value); }
+
+    // Anti-Cheat
+    public int MaxInputsPerSecond { get => _maxInputsPerSecond; set => SetField(ref _maxInputsPerSecond, value); }
+    public int FullSyncInterval { get => _fullSyncInterval; set => SetField(ref _fullSyncInterval, value); }
+
+    // Database
     public string DbProvider { get => _dbProvider; set => SetField(ref _dbProvider, value); }
     public string ConnectionString { get => _connectionString; set => SetField(ref _connectionString, value); }
 
@@ -119,12 +172,38 @@ public class MainViewModel : INotifyPropertyChanged
     {
         _server.UpdateConfig(c =>
         {
+            // Server
             c.Port = Port;
             c.MaxPlayersPerRoom = MaxPlayersPerRoom;
+            c.TickRate = TickRate;
+
+            // World
             c.WorldSize = WorldSize;
             c.InitialFoodCount = FoodCount;
-            c.FoodRespawnThreshold = (int)(FoodCount * 0.8);
-            c.TickRate = TickRate;
+            c.FoodRespawnThreshold = FoodRespawnThreshold;
+            c.MaxFoodSpawnPerTick = MaxFoodSpawnPerTick;
+
+            // Snake
+            c.SnakeSpeed = SnakeSpeed;
+            c.SnakeBoostSpeed = SnakeBoostSpeed;
+            c.SnakeTurnSpeed = SnakeTurnSpeed;
+            c.InitialSnakeLength = InitialSnakeLength;
+            c.SegmentSpacing = SegmentSpacing;
+            c.FoodCollisionRadius = FoodCollisionRadius;
+            c.SnakeCollisionRadius = SnakeCollisionRadius;
+            c.ScorePerLength = ScorePerLength;
+            c.BoostScoreCostPerSecond = BoostScoreCost;
+
+            // Powerup & Death
+            c.PowerupExpireSeconds = PowerupExpireSeconds;
+            c.MaxDroppedFoodOnDeath = MaxDroppedFoodOnDeath;
+            c.DroppedFoodValue = DroppedFoodValue;
+
+            // Anti-Cheat
+            c.MaxInputsPerSecond = MaxInputsPerSecond;
+            c.FullSyncInterval = FullSyncInterval;
+
+            // Database
             c.DbProvider = DbProvider.ToLower();
             c.ConnectionString = ConnectionString;
         });

@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:SnakeGameServer.ViewModels"
         xmlns:local="clr-namespace:SnakeGameServer"
         mc:Ignorable="d"
-        Title="Snake.io Game Server" Height="720" Width="1100"
+        Title="Snake.io Game Server" Height="800" Width="1280"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E2E" Foreground="White">
 
@@ -171,7 +171,7 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="180"/>   <!-- Rooms -->
                 <ColumnDefinition Width="*"/>     <!-- Players -->
-                <ColumnDefinition Width="220"/>   <!-- Settings -->
+                <ColumnDefinition Width="280"/>   <!-- Settings -->
             </Grid.ColumnDefinitions>
 
             <!-- ROOMS -->
@@ -226,36 +226,118 @@
             </Border>
 
             <!-- SETTINGS -->
-            <Border Grid.Column="2" Style="{StaticResource CardBorder}">
-                <ScrollViewer VerticalScrollBarVisibility="Auto">
-                    <StackPanel>
-                        <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="15"/>
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}"
+                    IsEnabled="{Binding IsRunning, Converter={x:Static local:InverseBoolConverter.Instance}}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="⚙ Game Settings" Style="{StaticResource HeaderText}" FontSize="15"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
 
-                        <TextBlock Text="Max Players/Room" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
-                        <TextBox Text="{Binding MaxPlayersPerRoom}" Style="{StaticResource InputField}"/>
+                            <!-- === SERVER === -->
+                            <Expander Header="🖥 Server" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Max Players/Room" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding MaxPlayersPerRoom}" Style="{StaticResource InputField}"/>
 
-                        <TextBlock Text="World Size" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
-                        <TextBox Text="{Binding WorldSize}" Style="{StaticResource InputField}"/>
+                                    <TextBlock Text="Tick Rate (fps)" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding TickRate}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
 
-                        <TextBlock Text="Food Count" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
-                        <TextBox Text="{Binding FoodCount}" Style="{StaticResource InputField}"/>
+                            <!-- === WORLD === -->
+                            <Expander Header="🌍 World &amp; Food" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="World Size" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding WorldSize}" Style="{StaticResource InputField}"/>
 
-                        <TextBlock Text="Tick Rate" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
-                        <TextBox Text="{Binding TickRate}" Style="{StaticResource InputField}"/>
+                                    <TextBlock Text="Food Count (initial)" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding FoodCount}" Style="{StaticResource InputField}"/>
 
-                        <TextBlock Text="Database" Foreground="#B0B0D0" Margin="0,10,0,2" FontSize="11"/>
-                        <ComboBox SelectedItem="{Binding DbProvider}" Background="#3D3D54" Foreground="Black"
-                                  FontSize="12">
-                            <ComboBoxItem Content="SQLite"/>
-                            <ComboBoxItem Content="MySQL"/>
-                            <ComboBoxItem Content="MSSQL"/>
-                        </ComboBox>
+                                    <TextBlock Text="Food Respawn Threshold" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding FoodRespawnThreshold}" Style="{StaticResource InputField}"/>
 
-                        <TextBlock Text="Connection String" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
-                        <TextBox Text="{Binding ConnectionString}" Style="{StaticResource InputField}"
-                                 TextWrapping="Wrap" Height="50" AcceptsReturn="True"/>
-                    </StackPanel>
-                </ScrollViewer>
+                                    <TextBlock Text="Max Food Spawn/Tick" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding MaxFoodSpawnPerTick}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <!-- === SNAKE === -->
+                            <Expander Header="🐍 Snake" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Speed (units/tick)" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding SnakeSpeed}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Boost Speed" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding SnakeBoostSpeed}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Turn Speed (lerp)" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding SnakeTurnSpeed}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Initial Length" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding InitialSnakeLength}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Segment Spacing" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding SegmentSpacing}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Food Pickup Radius" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding FoodCollisionRadius}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Snake Hit Radius" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding SnakeCollisionRadius}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Score per Length" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding ScorePerLength}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Boost Cost/sec" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding BoostScoreCost}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <!-- === POWERUP & DEATH === -->
+                            <Expander Header="⚡ Powerup &amp; Death" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Powerup Expire (sec)" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding PowerupExpireSeconds}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Max Dropped Food" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding MaxDroppedFoodOnDeath}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Dropped Food Value" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding DroppedFoodValue}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <!-- === ANTI-CHEAT === -->
+                            <Expander Header="🛡 Anti-Cheat" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Max Inputs/sec" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding MaxInputsPerSecond}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Full Sync Interval (ticks)" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding FullSyncInterval}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
+
+                            <!-- === DATABASE === -->
+                            <Expander Header="💾 Database" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Provider" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <ComboBox Background="#3D3D54" Foreground="Black" FontSize="12"
+                                              IsEditable="True" Text="{Binding DbProvider}">
+                                        <ComboBoxItem Content="SQLite"/>
+                                        <ComboBoxItem Content="MySQL"/>
+                                        <ComboBoxItem Content="MSSQL"/>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Connection String" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding ConnectionString}" Style="{StaticResource InputField}"
+                                             TextWrapping="Wrap" Height="50" AcceptsReturn="True"/>
+                                </StackPanel>
+                            </Expander>
+
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
             </Border>
         </Grid>
 

@@ -2622,12 +2622,6 @@ Route::prefix('games')->name('games.')->group(function () {
     Route::post('/', [App\Http\Controllers\Admin\GameController::class, 'store'])->name('store');
     Route::post('/update-order', [App\Http\Controllers\Admin\GameController::class, 'updateOrder'])->name('update-order');
 
-    // ✅ Snake.io Multiplayer Service Monitor (ต้องอยู่ก่อน wildcard /{game})
-    Route::prefix('snake-io')->name('snake-io.')->group(function () {
-        Route::get('/monitor', [App\Http\Controllers\Admin\SnakeGameAdminController::class, 'dashboard'])
-            ->name('monitor');
-    });
-
     // ✅ Game Settings Management — ต้องอยู่ก่อน wildcard /{game}
     Route::prefix('game-settings')->name('game-settings.')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\GameSettingsController::class, 'index'])
@@ -4139,4 +4133,47 @@ Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
 
     // สถิติรายได้
     Route::get('/revenue', [\App\Http\Controllers\Admin\SmsGatewayAdminController::class, 'revenue'])->name('revenue');
+});
+
+// ============================================
+// ตลาดสดไทยพร้อม (Fresh Market) 🏪
+// ============================================
+Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
+    // แดชบอร์ด
+    Route::get('/', [\App\Http\Controllers\Admin\FreshMarketController::class, 'dashboard'])->name('dashboard');
+
+    // ตั้งค่า
+    Route::get('/settings', [\App\Http\Controllers\Admin\FreshMarketController::class, 'settings'])->name('settings');
+    Route::put('/settings', [\App\Http\Controllers\Admin\FreshMarketController::class, 'updateSettings'])->name('settings.update');
+
+    // หมวดหมู่
+    Route::get('/categories', [\App\Http\Controllers\Admin\FreshMarketController::class, 'categories'])->name('categories');
+    Route::post('/categories', [\App\Http\Controllers\Admin\FreshMarketController::class, 'storeCategory'])->name('categories.store');
+    Route::put('/categories/{category}', [\App\Http\Controllers\Admin\FreshMarketController::class, 'updateCategory'])->name('categories.update');
+    Route::delete('/categories/{category}', [\App\Http\Controllers\Admin\FreshMarketController::class, 'destroyCategory'])->name('categories.destroy');
+    Route::post('/categories/reorder', [\App\Http\Controllers\Admin\FreshMarketController::class, 'reorderCategories'])->name('categories.reorder');
+
+    // ผู้ขาย
+    Route::get('/sellers', [\App\Http\Controllers\Admin\FreshMarketController::class, 'sellers'])->name('sellers');
+    Route::get('/sellers/{seller}', [\App\Http\Controllers\Admin\FreshMarketController::class, 'showSeller'])->name('sellers.show');
+    Route::post('/sellers/{seller}/verify', [\App\Http\Controllers\Admin\FreshMarketController::class, 'verifySeller'])->name('sellers.verify');
+    Route::post('/sellers/{seller}/suspend', [\App\Http\Controllers\Admin\FreshMarketController::class, 'suspendSeller'])->name('sellers.suspend');
+    Route::post('/sellers/{seller}/activate', [\App\Http\Controllers\Admin\FreshMarketController::class, 'activateSeller'])->name('sellers.activate');
+
+    // สินค้า
+    Route::get('/listings', [\App\Http\Controllers\Admin\FreshMarketController::class, 'listings'])->name('listings');
+    Route::get('/listings/{listing}', [\App\Http\Controllers\Admin\FreshMarketController::class, 'showListing'])->name('listings.show');
+    Route::post('/listings/{listing}/approve', [\App\Http\Controllers\Admin\FreshMarketController::class, 'approveListing'])->name('listings.approve');
+    Route::post('/listings/{listing}/suspend', [\App\Http\Controllers\Admin\FreshMarketController::class, 'suspendListing'])->name('listings.suspend');
+
+    // ออเดอร์
+    Route::get('/orders', [\App\Http\Controllers\Admin\FreshMarketController::class, 'orders'])->name('orders');
+    Route::get('/orders/{order}', [\App\Http\Controllers\Admin\FreshMarketController::class, 'showOrder'])->name('orders.show');
+
+    // คอมมิชชั่น & แคชแบ็ค
+    Route::get('/commissions', [\App\Http\Controllers\Admin\FreshMarketController::class, 'commissions'])->name('commissions');
+
+    // ทดสอบ LINE Bot
+    Route::get('/test-line', [\App\Http\Controllers\Admin\FreshMarketController::class, 'testLine'])->name('test-line');
+    Route::post('/test-line', [\App\Http\Controllers\Admin\FreshMarketController::class, 'sendTestLine'])->name('test-line.send');
 });

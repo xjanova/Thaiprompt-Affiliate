@@ -23,7 +23,7 @@ use App\Http\Controllers\Api\VideoQuestController;
 use App\Http\Controllers\Api\VideoRewardController;
 use App\Http\Controllers\Api\VideoWatchController;
 use App\Http\Controllers\LineWebhookController;
-use App\Http\Controllers\SnakeGameSyncController;
+// SnakeGameSyncController ถูกลบแล้ว — multiplayer ย้ายไป Dedicated Game Server
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -614,6 +614,28 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{keyword}', [\App\Http\Controllers\Api\V1\LineBotKeywordController::class, 'destroy'])->name('destroy');
         });
     });
+
+    // ===== Fresh Market API (ตลาดสดไทยพร้อม) =====
+    Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
+        // Public endpoints
+        Route::get('/categories', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'categories'])->name('categories');
+        Route::get('/listings', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'listings'])->name('listings');
+        Route::get('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showListing'])->name('listings.show');
+        Route::get('/nearby', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'nearby'])->name('nearby');
+        Route::get('/sellers/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showSeller'])->name('sellers.show');
+
+        // Auth endpoints
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/listings', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeListing'])->name('listings.store');
+            Route::put('/listings/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateListing'])->name('listings.update');
+            Route::post('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'storeOrder'])->name('orders.store');
+            Route::get('/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'orders'])->name('orders');
+            Route::get('/orders/{id}', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'showOrder'])->name('orders.show');
+            Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->name('orders.status');
+            Route::get('/seller/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrders'])->name('seller.orders');
+            Route::get('/seller/dashboard', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerDashboard'])->name('seller.dashboard');
+        });
+    });
 });
 
 // Public Crypto Wallet API (no auth required)
@@ -1158,35 +1180,9 @@ Route::prefix('v1/food-passport')->middleware(['auth:sanctum', 'food-passport.ra
 | Snake.io Multiplayer Game API
 |--------------------------------------------------------------------------
 */
-// ✅ Snake.io Game API - ใช้ web middleware สำหรับ browser session
+// ✅ Snake.io Game API - เฉพาะ save score + wallet + skin (multiplayer ย้ายไป Dedicated Server แล้ว)
 Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.')->group(function () {
-    // ⚡ Database Mode: ใช้ database เต็มรูปแบบ (save score, wallet, skin preferences)
-    // รองรับ multiplayer, leaderboard, wallet transactions
     $controller = \App\Http\Controllers\SnakeGameController::class;
-
-    // เข้าร่วมเกม (ไม่บังคับ auth)
-    Route::post('/join', [$controller, 'join'])
-        ->name('join');
-
-    // ออกจากห้อง
-    Route::post('/leave', [$controller, 'leave'])
-        ->name('leave');
-
-    // อัปเดตสถานะผู้เล่น
-    Route::post('/update-state', [$controller, 'updateState'])
-        ->name('update-state');
-
-    // ผู้เล่นตาย
-    Route::post('/player-died', [$controller, 'playerDied'])
-        ->name('player-died');
-
-    // เก็บไอเทม
-    Route::post('/collect-item', [$controller, 'collectItem'])
-        ->name('collect-item');
-
-    // ดึงสถานะห้อง
-    Route::get('/room-state/{roomId}', [$controller, 'getRoomState'])
-        ->name('room-state');
 
     // บันทึกคะแนน (ต้อง auth และมี wallet เพียงพอ)
     Route::post('/save-score', [$controller, 'saveScore'])
@@ -1196,19 +1192,15 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
     Route::get('/check-wallet', [$controller, 'checkWallet'])
         ->name('check-wallet');
 
-    // บันทึก skin preference (สำหรับสมาชิก) - ใช้ auth:web สำหรับ browser
+    // บันทึก skin preference (สำหรับสมาชิก)
     Route::post('/save-skin-preference', [$controller, 'saveSkinPreference'])
         ->middleware('auth:web')
         ->name('save-skin-preference');
 
-    // ดึง skin preference (สำหรับสมาชิก) - ใช้ auth:web สำหรับ browser
+    // ดึง skin preference (สำหรับสมาชิก)
     Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
         ->middleware('auth:web')
         ->name('get-skin-preference');
-
-    // ✅ Check service status (สำหรับ client polling)
-    Route::get('/service-status', [$controller, 'getServiceStatus'])
-        ->name('service-status');
 });
 
 // ✅ Game Configuration API - ดึงค่า config จาก database
@@ -1251,9 +1243,8 @@ Route::get('/games/config', function () {
             'data' => [
                 // Server Configuration
                 'server' => [
-                    'ip' => $allConfig['snake_io_server_ip'] ?? '123.253.62.251',
+                    'ip' => $allConfig['snake_io_server_ip'] ?? '123.253.62.250',
                     'port' => (int) ($allConfig['snake_io_server_port'] ?? 8080),
-                    'ws_port' => (int) ($allConfig['snake_io_ws_port'] ?? 6001),
                     'enabled' => filter_var($allConfig['snake_io_enabled'] ?? true, FILTER_VALIDATE_BOOLEAN),
                     'max_players_per_room' => (int) ($allConfig['snake_io_max_players_per_room'] ?? 30),
                 ],
@@ -1383,9 +1374,8 @@ Route::get('/games/config', function () {
             'success' => true,
             'data' => [
                 'server' => [
-                    'ip' => '123.253.62.251',
+                    'ip' => '123.253.62.250',
                     'port' => 8080,
-                    'ws_port' => 6001,
                     'enabled' => true,
                     'max_players_per_room' => 30,
                 ],
@@ -1410,66 +1400,8 @@ Route::get('/games/config', function () {
     }
 })->name('api.games.config');
 
-// ✅ Admin API Routes for Snake.io Service Monitor
-Route::middleware(['web', 'auth', 'role:admin'])
-    ->prefix('admin/games/snake-io')
-    ->name('api.admin.games.snake-io.')
-    ->group(function () {
-        $controller = \App\Http\Controllers\Admin\SnakeGameAdminController::class;
-
-        // Service control
-        Route::post('/start', [$controller, 'startService'])->name('start');
-        Route::post('/stop', [$controller, 'stopService'])->name('stop');
-        Route::get('/status', [$controller, 'getStatus'])->name('status');
-
-        // Players & Rooms
-        Route::get('/players', [$controller, 'getOnlinePlayers'])->name('players');
-        Route::get('/rooms', [$controller, 'getRooms'])->name('rooms');
-
-        // Admin actions
-        Route::post('/kick/{userId}', [$controller, 'kickPlayer'])->name('kick');
-        Route::get('/suspicious', [$controller, 'getSuspiciousActivities'])->name('suspicious');
-        Route::post('/clear-data', [$controller, 'clearData'])->name('clear-data');
-    });
-
-/*
-|--------------------------------------------------------------------------
-| Snake.io Sync Service API (NEW - Lightweight & Fast)
-|--------------------------------------------------------------------------
-*/
-// ✅ Snake Sync API - ใช้ Cache/Redis แทน database (เร็วกว่า, ไม่ทำให้เกมค้าง)
-// Rate limited: 120 requests/minute
-Route::prefix('snake-sync')->name('api.snake-sync.')->group(function () {
-    $controller = SnakeGameSyncController::class;
-
-    // เข้าร่วมเกม (สร้าง session)
-    Route::post('/join', [$controller, 'join'])
-        ->name('join');
-
-    // อัปเดตสถานะผู้เล่น
-    Route::post('/update', [$controller, 'updateState'])
-        ->name('update');
-
-    // ดึงผู้เล่น active ทั้งหมด (ไม่รวมตัวเอง)
-    Route::get('/players/{playerId}', [$controller, 'getActivePlayers'])
-        ->name('players');
-
-    // ผู้เล่นตาย
-    Route::post('/died', [$controller, 'playerDied'])
-        ->name('died');
-
-    // ออกจากเกม
-    Route::post('/leave', [$controller, 'leave'])
-        ->name('leave');
-
-    // Ping เพื่อรักษา session
-    Route::post('/ping', [$controller, 'ping'])
-        ->name('ping');
-
-    // ดึงสถิติ (จำนวนผู้เล่น active)
-    Route::get('/stats', [$controller, 'stats'])
-        ->name('stats');
-});
+// ✅ Admin Snake.io API ถูกย้ายไปที่ Dedicated Game Server (C# WPF) แล้ว
+// ✅ Snake Sync API ถูกย้ายไปที่ Dedicated Game Server (C# WebSocket) แล้ว
 
 // ============================================
 // Google Maps API (V1)
