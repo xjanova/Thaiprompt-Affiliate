@@ -52,42 +52,65 @@ class FreshMarketChannelManager
 
         // ตรวจสอบ referral token
         if (preg_match('/^ref_([A-Za-z0-9]{32})$/i', trim($message), $matches)) {
-            return $this->handleReferralToken($lineUserId, $matches[1], $conversation);
+            $result = $this->handleReferralToken($lineUserId, $matches[1], $conversation);
+
+            // ✅ ส่ง reply สำหรับ referral token
+            if ($replyToken) {
+                $this->sendReply($replyToken, $result);
+            }
+
+            return $result;
         }
 
         // เช็คคำสั่งพิเศษ
         $command = $this->detectCommand($message);
         if ($command) {
-            return $this->handleCommand($command, $lineUserId, $conversation, $extra);
+            $result = $this->handleCommand($command, $lineUserId, $conversation, $extra);
+
+            // ✅ ส่ง reply สำหรับคำสั่งพิเศษ (แก้บั๊กไม่ตอบกลับ)
+            if ($replyToken) {
+                $this->sendReply($replyToken, $result);
+            }
+
+            return $result;
         }
 
         // บันทึกข้อความผู้ใช้
         $conversation->addMessage('user', $message);
 
-        // ตรวจสอบ state ของการสนทนา
-        $state = $conversation->conversation_state;
-
         // ใช้ AI ตอบพร้อมบริบท
-        $context = $this->buildContext($conversation);
+        try {
+            $context = $this->buildContext($conversation);
 
-        $aiResult = $this->aiService->generateResponse(
-            $message,
-            $conversation->getContext(10),
-            $context
-        );
+            $aiResult = $this->aiService->generateResponse(
+                $message,
+                $conversation->getContext(10),
+                $context
+            );
 
-        // บันทึกคำตอบ AI
-        $conversation->addMessage('assistant', $aiResult['response'], [
-            'tokens_used' => $aiResult['tokens_used'],
-            'ai_provider' => $aiResult['provider'],
-            'ai_model' => $aiResult['model'],
-        ]);
+            // บันทึกคำตอบ AI
+            $conversation->addMessage('assistant', $aiResult['response'], [
+                'tokens_used' => $aiResult['tokens_used'],
+                'ai_provider' => $aiResult['provider'],
+                'ai_model' => $aiResult['model'],
+            ]);
 
-        // วิเคราะห์ intent จาก AI
-        $intent = $this->aiService->parseSearchIntent($message);
+            // วิเคราะห์ intent จาก AI
+            $intent = $this->aiService->parseSearchIntent($message);
 
-        // จัดการตาม intent
-        $result = $this->handleIntent($intent, $conversation, $aiResult['response'], $extra);
+            // จัดการตาม intent
+            $result = $this->handleIntent($intent, $conversation, $aiResult['response'], $extra);
+        } catch (\Exception $e) {
+            // ✅ Fallback: ถ้า AI ล้มเหลว ยังตอบผู้ใช้ได้
+            Log::error('FreshMarketChannelManager: AI error', [
+                'user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            $result = [
+                'text' => "สวัสดีค่ะ! พี่ตลาดรับทราบข้อความแล้วค่ะ 😊\n\nตอนนี้ระบบ AI กำลังปรับปรุง ลองพิมพ์ \"ช่วยเหลือ\" เพื่อดูคำสั่งที่ใช้ได้ค่ะ",
+            ];
+        }
 
         // ส่งข้อความกลับ
         if ($replyToken) {
