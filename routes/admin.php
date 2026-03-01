@@ -4176,4 +4176,5 @@ Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
     // ทดสอบ LINE Bot
     Route::get('/test-line', [\App\Http\Controllers\Admin\FreshMarketController::class, 'testLine'])->name('test-line');
     Route::post('/test-line', [\App\Http\Controllers\Admin\FreshMarketController::class, 'sendTestLine'])->name('test-line.send');
+    Route::post('/verify-line', [\App\Http\Controllers\Admin\FreshMarketController::class, 'verifyLineConnection'])->name('verify-line');
 });

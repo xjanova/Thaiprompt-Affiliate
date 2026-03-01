@@ -21,6 +21,11 @@ class FreshMarketLineService
 
     protected string $channelSecret;
 
+    /**
+     * เก็บ error ล่าสุดเพื่อแสดงให้ admin ดู
+     */
+    protected string $lastError = '';
+
     protected const API_ENDPOINT = 'https://api.line.me/v2/bot';
 
     protected const DATA_API_ENDPOINT = 'https://api-data.line.me/v2/bot';
@@ -30,6 +35,60 @@ class FreshMarketLineService
         $this->settings = $settings ?? FreshMarketSetting::getSettings();
         $this->channelAccessToken = $this->settings->line_channel_access_token ?? '';
         $this->channelSecret = $this->settings->line_channel_secret ?? '';
+    }
+
+    /**
+     * ดึง error ล่าสุด
+     */
+    public function getLastError(): string
+    {
+        return $this->lastError;
+    }
+
+    /**
+     * ตรวจสอบ Access Token โดยเรียก LINE API /info endpoint
+     *
+     * @return array{success: bool, data: array|null, error: string|null}
+     */
+    public function verifyToken(): array
+    {
+        if (empty($this->channelAccessToken)) {
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => 'Channel Access Token ยังไม่ได้ตั้งค่า',
+            ];
+        }
+
+        try {
+            // เรียก GET /v2/bot/info เพื่อดึงข้อมูล Bot
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$this->channelAccessToken}",
+            ])->get(self::API_ENDPOINT.'/info');
+
+            if ($response->successful()) {
+                return [
+                    'success' => true,
+                    'data' => $response->json(),
+                    'error' => null,
+                ];
+            }
+
+            $body = $response->json();
+            $errorMsg = $body['message'] ?? 'Unknown error';
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => "LINE API ตอบกลับ HTTP {$response->status()}: {$errorMsg}",
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => 'ไม่สามารถเชื่อมต่อ LINE API: '.$e->getMessage(),
+            ];
+        }
     }
 
     // ===== Signature Verification =====
@@ -371,6 +430,7 @@ class FreshMarketLineService
     protected function callApi(string $path, array $data): bool
     {
         if (empty($this->channelAccessToken)) {
+            $this->lastError = 'Channel Access Token ยังไม่ได้ตั้งค่า';
             Log::warning('FreshMarketLine: Channel access token ไม่ได้ตั้งค่า');
 
             return false;
@@ -383,6 +443,10 @@ class FreshMarketLineService
             ])->post(self::API_ENDPOINT.$path, $data);
 
             if (! $response->successful()) {
+                $body = $response->json();
+                $errorMsg = $body['message'] ?? $response->body();
+                $this->lastError = "LINE API HTTP {$response->status()}: {$errorMsg}";
+
                 Log::warning('FreshMarketLine: API call ล้มเหลว', [
                     'path' => $path,
                     'status' => $response->status(),
@@ -392,8 +456,12 @@ class FreshMarketLineService
                 return false;
             }
 
+            $this->lastError = '';
+
             return true;
         } catch (\Exception $e) {
+            $this->lastError = 'ไม่สามารถเชื่อมต่อ LINE API: '.$e->getMessage();
+
             Log::error('FreshMarketLine: Exception calling API', [
                 'path' => $path,
                 'error' => $e->getMessage(),

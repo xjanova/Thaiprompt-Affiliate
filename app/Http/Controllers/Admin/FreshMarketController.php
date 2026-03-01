@@ -411,9 +411,27 @@ class FreshMarketController extends Controller
         $lineService = new \App\Services\FreshMarketLineService;
         $result = $lineService->sendText($validated['user_id'], $validated['message']);
 
+        if ($result) {
+            return redirect()->back()->with('success', 'ส่งข้อความสำเร็จ!');
+        }
+
+        // แสดง error ละเอียดเพื่อให้ admin debug ได้
+        $error = $lineService->getLastError();
+
         return redirect()->back()->with(
-            $result ? 'success' : 'error',
-            $result ? 'ส่งข้อความสำเร็จ' : 'ส่งข้อความล้มเหลว'
+            'error',
+            'ส่งข้อความล้มเหลว: '.($error ?: 'ไม่ทราบสาเหตุ กรุณาตรวจสอบ log')
         );
+    }
+
+    /**
+     * ตรวจสอบการเชื่อมต่อ LINE OA (AJAX)
+     */
+    public function verifyLineConnection()
+    {
+        $lineService = new \App\Services\FreshMarketLineService;
+        $result = $lineService->verifyToken();
+
+        return response()->json($result);
     }
 }
