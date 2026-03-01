@@ -103,6 +103,9 @@ class AppServiceProvider extends ServiceProvider
         \App\Models\AiRentalDeployment::observe(\App\Observers\AiRentalDeploymentObserver::class);
         \App\Models\AiRentalBudgetLimit::observe(\App\Observers\AiRentalBudgetLimitObserver::class);
 
+        // Register MLM Member Observer — สร้าง FortuneReferral อัตโนมัติเมื่อมีสมาชิกใหม่
+        \App\Models\MlmMember::observe(\App\Observers\MlmMemberObserver::class);
+
         // ส่ง FCM push ไปยัง SmsChecker app เมื่อมีบิลใหม่
         // แอพจะโหลดบิลทันทีโดยไม่ต้องรอ periodic sync
         Event::listen(
