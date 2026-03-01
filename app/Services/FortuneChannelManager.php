@@ -305,6 +305,10 @@ class FortuneChannelManager
                 // แชร์ลิงก์เชิญเพื่อน
                 'share_link' => $this->sendFacebookShareResponse($fbService, $richService, $userId, $result),
 
+                // สายงาน/รายได้ → ส่ง text + Button Template (ปุ่มกดลิงก์)
+                'downline_info', 'earnings_info'
+                    => $this->sendFacebookButtonLinkResponse($fbService, $userId, $message, $result),
+
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
                 'keyword_matched', 'ai_chat_response', 'fortune_throttled', 'busy', 'busy_processing',
                 'bank_account_info', 'partial', 'processing', 'queued',
@@ -819,6 +823,9 @@ class FortuneChannelManager
 
                 // แชร์ลิงก์เชิญเพื่อน / ไม่มี user / error
                 'share_link', 'share_no_user', 'share_error' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // สายงาน/รายได้ → ส่ง Flex พร้อมปุ่มกดลิงก์ (ไม่ใช่ URL text)
+                'downline_info', 'earnings_info' => $this->sendLineButtonLinkResponse($lineService, $userId, $message, $result, $replyToken),
 
                 // AI ตอบไม่ได้ → ส่งข้อความพร้อม quick reply ให้เลือก "ฝาก/ไม่ฝาก"
                 // ใช้ replyMessage ก่อน (เร็ว + ฟรี) → fallback เป็น pushMessage
@@ -2136,6 +2143,123 @@ class FortuneChannelManager
         return $lineService->sendMessage($userId, $message, [
             'quick_replies' => $quickReplies,
         ]);
+    }
+
+    /**
+     * ส่ง LINE Flex Message พร้อมปุ่มลิงก์ (URI action)
+     *
+     * สำหรับ downline_info, earnings_info — แสดงข้อความ + ปุ่มกดไปเว็บ
+     */
+    protected function sendLineButtonLinkResponse(LineFortuneService $lineService, string $userId, string $message, array $result, ?string $replyToken = null): bool
+    {
+        $buttons = $result['buttons'] ?? [];
+        $brandName = $this->settings->getFortuneBrandName();
+        $primaryColor = $this->settings->getLineFlexPrimaryColor();
+
+        // สร้าง Flex buttons
+        $flexButtons = [];
+        foreach ($buttons as $btn) {
+            $flexButtons[] = [
+                'type' => 'button',
+                'style' => 'primary',
+                'color' => $primaryColor,
+                'height' => 'sm',
+                'margin' => 'sm',
+                'action' => [
+                    'type' => 'uri',
+                    'label' => mb_substr($btn['label'], 0, 20),
+                    'uri' => $btn['url'],
+                ],
+            ];
+        }
+
+        $flex = [
+            'type' => 'bubble',
+            'styles' => [
+                'header' => ['backgroundColor' => $primaryColor],
+            ],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $brandName,
+                        'color' => '#FFFFFF',
+                        'size' => 'sm',
+                        'weight' => 'bold',
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $message,
+                        'wrap' => true,
+                        'size' => 'sm',
+                        'color' => '#333333',
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'contents' => $flexButtons,
+            ],
+        ];
+
+        $altText = mb_substr($message, 0, 100);
+
+        // ✅ ใช้ replyMessage เท่านั้น — ไม่ push (ประหยัดโควต้า)
+        // เป็นการตอบ user message → replyToken ควรใช้ได้เสมอ
+        if ($replyToken) {
+            $sent = $lineService->replyWithFlex($replyToken, $flex, $altText);
+            if ($sent) {
+                return true;
+            }
+        }
+
+        // Fallback: ส่ง text ธรรมดา (ไม่ push Flex — ประหยัดโควต้า)
+        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+    }
+
+    /**
+     * ส่ง Facebook Button Template พร้อมปุ่มลิงก์ (web_url)
+     *
+     * สำหรับ downline_info, earnings_info — แสดงข้อความ + ปุ่มกดไปเว็บ
+     */
+    protected function sendFacebookButtonLinkResponse(FacebookWebhookService $fbService, string $userId, string $message, array $result): bool
+    {
+        $buttons = $result['buttons'] ?? [];
+
+        if (empty($buttons)) {
+            return $fbService->sendMessage($userId, $message);
+        }
+
+        // สร้าง Facebook web_url buttons (สูงสุด 3 ปุ่ม)
+        $fbButtons = [];
+        foreach (array_slice($buttons, 0, 3) as $btn) {
+            $fbButtons[] = [
+                'type' => 'web_url',
+                'url' => $btn['url'],
+                'title' => mb_substr($btn['label'], 0, 20),
+            ];
+        }
+
+        // ส่ง Button Template
+        try {
+            return $fbService->sendButtonTemplate($userId, mb_substr($message, 0, 640), $fbButtons);
+        } catch (\Exception $e) {
+            Log::warning('Facebook: Button Template ล้มเหลว — fallback text', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $fbService->sendMessage($userId, $message);
+        }
     }
 
     /**

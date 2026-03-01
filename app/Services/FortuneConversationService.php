@@ -347,23 +347,25 @@ class FortuneConversationService
     protected function generatePromptPayQrImage(float $amount, ?int $readingId = null): ?string
     {
         try {
-            $provider = new \App\Services\Payment\PromptPayProvider();
+            // ดึง PromptPay ID + Type
+            $promptPayId = $this->getPromptPayId();
+            $promptPayType = $this->getPromptPayType();
 
-            // สร้าง QR Code เป็น data URI (SVG base64)
-            $dataUri = $provider->generateQrDataUri($amount);
-            if (empty($dataUri)) {
+            if (empty($promptPayId)) {
                 Log::warning('Fortune QR: PromptPay ไม่ได้ตั้งค่า — ไม่สามารถสร้าง QR ได้');
 
                 return null;
             }
 
-            // ถ้าเป็น URL สาธารณะอยู่แล้ว (Google Charts fallback) → ใช้ได้เลย
-            if (str_starts_with($dataUri, 'https://')) {
-                return $dataUri;
+            // สร้าง EMVCo payload
+            $provider = new \App\Services\Payment\PromptPayProvider();
+            $emvPayload = $provider->buildPromptPayPayload($promptPayId, $promptPayType, $amount);
+
+            if (empty($emvPayload)) {
+                return null;
             }
 
-            // แปลง data URI (SVG/PNG) → save เป็นไฟล์ PNG สาธารณะ
-            // เพราะ LINE Messaging API ต้องการ URL ที่เข้าถึงได้จริง
+            // เตรียม directory สำหรับ save ไฟล์
             $filename = 'fortune_pp_'.($readingId ?? uniqid()).'.png';
             $directory = 'qrcodes/fortune';
             $fullDir = storage_path('app/public/'.$directory);
@@ -374,82 +376,80 @@ class FortuneConversationService
 
             $fullPath = $fullDir.'/'.$filename;
 
-            // สร้าง EMVCo payload แล้ว render เป็น PNG ด้วย QrCode library
-            $emvPayload = $provider->buildPromptPayPayload(
-                $this->getPromptPayId(),
-                $this->getPromptPayType(),
-                $amount
-            );
-
-            if (empty($emvPayload)) {
-                return null;
+            // ตรวจสอบ storage symlink (สร้างอัตโนมัติถ้ายังไม่มี)
+            $symlinkPath = public_path('storage');
+            if (! file_exists($symlinkPath)) {
+                try {
+                    \Artisan::call('storage:link');
+                } catch (\Exception $linkErr) {
+                    Log::warning('Fortune QR: สร้าง storage symlink ไม่ได้', [
+                        'error' => $linkErr->getMessage(),
+                    ]);
+                }
             }
 
-            // ลองใช้ BaconQrCode สร้าง PNG โดยตรง
-            if (class_exists(\BaconQrCode\Renderer\ImageRenderer::class)) {
-                $renderer = new \BaconQrCode\Renderer\ImageRenderer(
-                    new \BaconQrCode\Renderer\RendererStyle\RendererStyle(
-                        400, 1, null, null,
-                        \BaconQrCode\Renderer\RendererStyle\Fill::uniformColor(
-                            new \BaconQrCode\Renderer\Color\Rgb(255, 255, 255),
-                            new \BaconQrCode\Renderer\Color\Rgb(0, 0, 0)
-                        )
-                    ),
-                    new \BaconQrCode\Renderer\Image\SvgImageBackEnd()
-                );
-
-                $writer = new \BaconQrCode\Writer($renderer);
-                $svg = $writer->writeString(
+            // ✅ วิธีที่ 1: ใช้ BaconQrCode Encoder + PHP GD → สร้าง PNG โดยตรง
+            // GD extension มีอยู่แทบทุก PHP server — เชื่อถือได้สูงสุด
+            if (class_exists(\BaconQrCode\Encoder\Encoder::class) && function_exists('imagecreatetruecolor')) {
+                $qrCode = \BaconQrCode\Encoder\Encoder::encode(
                     $emvPayload,
-                    \BaconQrCode\Encoder\Encoder::DEFAULT_BYTE_MODE_ECODING,
-                    \BaconQrCode\Common\ErrorCorrectionLevel::H()
+                    \BaconQrCode\Common\ErrorCorrectionLevel::H(),
+                    \BaconQrCode\Encoder\Encoder::DEFAULT_BYTE_MODE_ECODING
                 );
 
-                // Save SVG แทน (LINE รองรับ SVG ผ่าน URL)
-                $svgFilename = 'fortune_pp_'.($readingId ?? uniqid()).'.svg';
-                $svgPath = $fullDir.'/'.$svgFilename;
-                file_put_contents($svgPath, $svg);
+                $matrix = $qrCode->getMatrix();
+                $matrixSize = $matrix->getWidth();
 
-                $publicUrl = asset('storage/'.$directory.'/'.$svgFilename);
+                // คำนวณขนาด module ให้ได้ภาพ ~400px
+                $moduleSize = max(1, (int) floor(400 / $matrixSize));
+                $margin = $moduleSize * 2; // ขอบ 2 modules
+                $realSize = ($moduleSize * $matrixSize) + ($margin * 2);
 
-                Log::info('Fortune QR: สร้าง PromptPay QR Code สำเร็จ (BaconQrCode)', [
-                    'amount' => $amount,
-                    'reading_id' => $readingId,
-                    'url' => $publicUrl,
-                ]);
+                $img = imagecreatetruecolor($realSize, $realSize);
+                $white = imagecolorallocate($img, 255, 255, 255);
+                $black = imagecolorallocate($img, 0, 0, 0);
+                imagefill($img, 0, 0, $white);
 
-                return $publicUrl;
-            }
+                for ($y = 0; $y < $matrixSize; $y++) {
+                    for ($x = 0; $x < $matrixSize; $x++) {
+                        if ($matrix->get($x, $y) === 1) {
+                            imagefilledrectangle(
+                                $img,
+                                $margin + ($x * $moduleSize),
+                                $margin + ($y * $moduleSize),
+                                $margin + (($x + 1) * $moduleSize) - 1,
+                                $margin + (($y + 1) * $moduleSize) - 1,
+                                $black
+                            );
+                        }
+                    }
+                }
 
-            // Fallback: ใช้ SimpleSoftwareIO/QrCode (ถ้ามี)
-            if (class_exists(\SimpleSoftwareIO\QrCode\Facades\QrCode::class)) {
-                \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-                    ->size(400)
-                    ->margin(2)
-                    ->errorCorrection('H')
-                    ->generate($emvPayload, $fullPath);
+                imagepng($img, $fullPath);
+                imagedestroy($img);
 
                 $publicUrl = asset('storage/'.$directory.'/'.$filename);
 
-                Log::info('Fortune QR: สร้าง PromptPay QR Code สำเร็จ (SimpleSoftwareIO)', [
+                Log::info('Fortune QR: สร้าง PromptPay QR PNG สำเร็จ (BaconQrCode+GD)', [
                     'amount' => $amount,
                     'reading_id' => $readingId,
+                    'size' => $realSize,
                     'url' => $publicUrl,
                 ]);
 
                 return $publicUrl;
             }
 
-            // Fallback สุดท้าย: Google Charts API (ต้องมี internet)
+            // ✅ วิธีที่ 2: ใช้ QR API สาธารณะ (ไม่ต้อง save ไฟล์)
             $encodedPayload = urlencode($emvPayload);
-            $googleUrl = "https://chart.googleapis.com/chart?cht=qr&chs=400x400&chl={$encodedPayload}&choe=UTF-8";
+            $apiUrl = "https://api.qrserver.com/v1/create-qr-code/?size=400x400&ecc=H&data={$encodedPayload}";
 
-            Log::info('Fortune QR: ใช้ Google Charts fallback', [
+            Log::info('Fortune QR: ใช้ QR API สาธารณะ', [
                 'amount' => $amount,
                 'reading_id' => $readingId,
             ]);
 
-            return $googleUrl;
+            return $apiUrl;
 
         } catch (\Exception $e) {
             Log::error('Fortune QR: สร้าง PromptPay QR ล้มเหลว', [
@@ -6809,49 +6809,56 @@ PROMPT;
         try {
             $user = $this->findUserByPlatformId($facebookUserId);
 
-            // สร้าง URL ไปหน้าเว็บ ผังสายงาน + ค่าแนะนำ
+            // URL สำหรับปุ่มกด
             $treeUrl = url('/user/fortune-referral/tree');
             $commissionUrl = url('/user/fortune-referral/commissions');
             $commissionAmount = $this->getLevel1CommissionText();
 
             if ($user) {
                 $userName = $user->name ?? 'คุณ';
-                $totalReferrals = \App\Models\User::where('sponsor_id', $user->id)->count();
 
-                $message = "👥 สายงานของคุณ{$userName}\n"
+                // ✅ นับจาก fortune_referrals (สายงานดูดวงเฉพาะ)
+                $totalReferrals = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
+                    ->whereIn('status', ['followed', 'converted'])
+                    ->count();
+
+                $convertedCount = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
+                    ->where('status', 'converted')
+                    ->count();
+
+                $message = "👥 สายงานดูดวงของคุณ{$userName}\n"
                     ."═══════════════════════\n\n"
-                    ."📊 สมาชิกสายตรง: {$totalReferrals} คน\n\n"
-                    ."🔗 ดูรายละเอียดสายงานทั้งหมดได้ที่:\n"
-                    ."{$treeUrl}\n\n"
-                    ."💵 ดูรายได้ค่าแนะนำ:\n"
-                    ."{$commissionUrl}\n\n";
+                    ."📊 สมาชิกสายตรง: {$totalReferrals} คน\n"
+                    ."💎 จ่ายเงินแล้ว: {$convertedCount} คน\n\n";
 
                 if ($totalReferrals === 0) {
                     $message .= "💡 ยังไม่มีสมาชิก — เริ่มสร้างทีม!\n"
                         ."พิมพ์ \"แชร์\" เพื่อรับลิงก์เชิญเพื่อน\n"
                         ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง ตลอดไป!";
                 } else {
-                    $message .= "💡 แชร์เพิ่ม → ทีมโต! พิมพ์ \"แชร์\"";
+                    $message .= "กดปุ่มด้านล่างเพื่อดูรายละเอียด 👇";
                 }
 
-                Log::info('Fortune: แสดงลิงก์สายงาน', [
+                Log::info('Fortune: แสดงสายงาน', [
                     'user_id' => $facebookUserId,
                     'total_referrals' => $totalReferrals,
+                    'converted' => $convertedCount,
                 ]);
             } else {
-                // ยังไม่มีบัญชี → แนะนำสร้างก่อน
                 $message = "👥 ดูสายงาน\n\n"
                     ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
                     ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
-                    ."เมื่อมีบัญชีแล้วสามารถดูสายงานได้ที่:\n"
-                    ."{$treeUrl}\n\n"
                     ."พิมพ์คำถามมาได้เลยค่ะ 🔮";
             }
 
             return [
-                'action' => 'downline_link',
+                'action' => 'downline_info',
                 'message' => $message,
                 'reading' => null,
+                'buttons' => [
+                    ['label' => '📊 ผังสายงาน', 'url' => $treeUrl],
+                    ['label' => '💵 รายได้ค่าแนะนำ', 'url' => $commissionUrl],
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -6861,12 +6868,12 @@ PROMPT;
             ]);
 
             return [
-                'action' => 'downline_error',
-                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\n\n"
-                    ."🔗 ลองเข้าดูที่เว็บไซต์:\n"
-                    .url('/user/fortune-referral/tree')."\n\n"
-                    ."กรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'action' => 'downline_info',
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
                 'reading' => null,
+                'buttons' => [
+                    ['label' => '📊 ดูสายงานที่เว็บ', 'url' => url('/user/fortune-referral/tree')],
+                ],
             ];
         }
     }
@@ -6906,7 +6913,7 @@ PROMPT;
         try {
             $user = $this->findUserByPlatformId($facebookUserId);
 
-            // สร้าง URL ไปหน้าเว็บ คอมมิชชั่น + สายงาน
+            // URL สำหรับปุ่มกด
             $commissionUrl = url('/user/fortune-referral/commissions');
             $treeUrl = url('/user/fortune-referral/tree');
             $commissionAmount = $this->getLevel1CommissionText();
@@ -6914,36 +6921,47 @@ PROMPT;
             if ($user) {
                 $userName = $user->name ?? 'คุณ';
 
-                // ดึงสรุปย่อเท่าที่จำเป็น (ไม่ต้องละเอียด — ดูเต็มที่เว็บ)
+                // ดึงสรุปรายได้
                 $walletBalance = $user->wallet?->balance ?? 0;
-                $totalEarnings = 0;
+                $paidEarnings = 0;
+                $approvedEarnings = 0;
 
                 try {
-                    $totalEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
-                        ->whereIn('status', ['approved', 'paid'])
+                    $paidEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                        ->where('status', 'paid')
+                        ->sum('amount');
+
+                    $approvedEarnings = \App\Models\FortuneCommission::where('user_id', $user->id)
+                        ->where('status', 'approved')
                         ->sum('amount');
                 } catch (\Exception $e) {
                     // table อาจยังไม่มี — ข้ามไป
                 }
 
+                $totalEarnings = $paidEarnings + $approvedEarnings;
+
                 $message = "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
                     ."═══════════════════════\n\n"
                     ."💰 Wallet: ".number_format($walletBalance, 2)." บาท\n"
-                    ."📈 รายได้รวม: ".number_format($totalEarnings, 2)." บาท\n\n"
-                    ."🔗 ดูรายละเอียดรายได้ทั้งหมดได้ที่:\n"
-                    ."{$commissionUrl}\n\n"
-                    ."👥 ดูผังสายงาน:\n"
-                    ."{$treeUrl}\n\n";
+                    ."📈 รายได้รวม: ".number_format($totalEarnings, 2)." บาท\n";
 
-                if ($totalEarnings <= 0) {
-                    $message .= "💡 ยังไม่มีรายได้ — เริ่มสร้างรายได้!\n"
-                        ."พิมพ์ \"แชร์\" ส่งลิงก์ให้เพื่อน\n"
-                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง";
-                } else {
-                    $message .= "💡 แชร์เพิ่ม → รายได้เพิ่ม! พิมพ์ \"แชร์\"";
+                if ($approvedEarnings > 0) {
+                    $message .= "   ✅ จ่ายแล้ว: ".number_format($paidEarnings, 2)." บาท\n"
+                        ."   ⏳ รออนุมัติ: ".number_format($approvedEarnings, 2)." บาท\n";
                 }
 
-                Log::info('Fortune: แสดงลิงก์รายได้', [
+                $message .= "\nกดปุ่มด้านล่างเพื่อดูรายละเอียด 👇";
+
+                if ($totalEarnings <= 0) {
+                    $message = "💵 รายได้ค่าแนะนำของคุณ{$userName}\n"
+                        ."═══════════════════════\n\n"
+                        ."💰 Wallet: ".number_format($walletBalance, 2)." บาท\n\n"
+                        ."💡 ยังไม่มีรายได้ — เริ่มสร้างรายได้!\n"
+                        ."พิมพ์ \"แชร์\" ส่งลิงก์ให้เพื่อน\n"
+                        ."💰 ค่าแนะนำ: {$commissionAmount} บาท/ครั้ง";
+                }
+
+                Log::info('Fortune: แสดงรายได้', [
                     'user_id' => $facebookUserId,
                     'total_earnings' => $totalEarnings,
                     'wallet_balance' => $walletBalance,
@@ -6952,15 +6970,17 @@ PROMPT;
                 $message = "💵 ดูรายได้\n\n"
                     ."❌ คุณยังไม่มีบัญชีในระบบค่ะ\n"
                     ."ลองดูดวงสักครั้งก่อนนะคะ ระบบจะสร้างบัญชีให้อัตโนมัติ\n\n"
-                    ."เมื่อมีบัญชีแล้วสามารถดูรายได้ได้ที่:\n"
-                    ."{$commissionUrl}\n\n"
                     ."พิมพ์คำถามมาได้เลยค่ะ 🔮";
             }
 
             return [
-                'action' => 'earnings_link',
+                'action' => 'earnings_info',
                 'message' => $message,
                 'reading' => null,
+                'buttons' => [
+                    ['label' => '💵 รายได้ค่าแนะนำ', 'url' => $commissionUrl],
+                    ['label' => '👥 ผังสายงาน', 'url' => $treeUrl],
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -6970,12 +6990,12 @@ PROMPT;
             ]);
 
             return [
-                'action' => 'earnings_error',
-                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\n\n"
-                    ."🔗 ลองเข้าดูที่เว็บไซต์:\n"
-                    .url('/user/fortune-referral/commissions')."\n\n"
-                    ."กรุณาลองใหม่อีกครั้งนะคะ 🙏",
+                'action' => 'earnings_info',
+                'message' => "ขออภัยค่ะ ไม่สามารถดึงข้อมูลได้ในขณะนี้\nกรุณาลองใหม่อีกครั้งนะคะ 🙏",
                 'reading' => null,
+                'buttons' => [
+                    ['label' => '💵 ดูรายได้ที่เว็บ', 'url' => url('/user/fortune-referral/commissions')],
+                ],
             ];
         }
     }
