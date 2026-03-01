@@ -25,7 +25,7 @@
                 </p>
             </div>
             <div class="flex gap-3">
-                <a href="{{ route('taladsod.create-listing') }}"
+                <a href="{{ route('taladsod.listing.create') }}"
                    class="px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center gap-2">
                     <i class="fas fa-plus"></i> ลงขายสินค้าใหม่
                 </a>
@@ -122,7 +122,7 @@
                     <h2 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
                         <i class="fas fa-box text-green-500"></i> สินค้าของฉัน
                     </h2>
-                    <a href="{{ route('taladsod.create-listing') }}"
+                    <a href="{{ route('taladsod.listing.create') }}"
                        class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
                         + เพิ่มสินค้า
                     </a>
@@ -152,12 +152,12 @@
                                 </div>
                                 {{-- ปุ่มจัดการ --}}
                                 <div class="flex items-center gap-2 flex-shrink-0">
-                                    <a href="{{ route('taladsod.edit-listing', $listing->id) }}"
+                                    <a href="{{ route('taladsod.listing.edit', $listing->id) }}"
                                        class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors"
                                        title="แก้ไข">
                                         <i class="fas fa-pen text-xs"></i>
                                     </a>
-                                    <form method="POST" action="{{ route('taladsod.delete-listing', $listing->id) }}" onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
+                                    <form method="POST" action="{{ route('taladsod.listing.destroy', $listing->id) }}" onsubmit="return confirm('ต้องการลบสินค้านี้หรือไม่?')">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit"
@@ -174,7 +174,7 @@
                     <div class="text-center py-10">
                         <div class="text-4xl mb-3">&#x1F4E6;</div>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">ยังไม่มีสินค้า</p>
-                        <a href="{{ route('taladsod.create-listing') }}"
+                        <a href="{{ route('taladsod.listing.create') }}"
                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
                             <i class="fas fa-plus"></i> ลงขายสินค้าแรก
                         </a>

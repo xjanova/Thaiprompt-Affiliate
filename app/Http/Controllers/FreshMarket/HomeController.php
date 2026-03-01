@@ -34,6 +34,9 @@ class HomeController extends Controller
      */
     public function landingBuyer()
     {
+        // บันทึกที่มาเพื่อ redirect ไป LINE ตลาดสดหลังสมัคร
+        session(['register_origin' => 'taladsod']);
+
         return view('taladsod.landing-buyer');
     }
 
@@ -42,6 +45,8 @@ class HomeController extends Controller
      */
     public function landingSeller()
     {
+        session(['register_origin' => 'taladsod']);
+
         return view('taladsod.landing-seller');
     }
 
@@ -50,6 +55,8 @@ class HomeController extends Controller
      */
     public function landingRider()
     {
+        session(['register_origin' => 'taladsod']);
+
         return view('taladsod.landing-rider');
     }
 

@@ -48,6 +48,8 @@ return [
         'channel_id' => env('LINE_CHANNEL_ID'),
         'channel_secret' => env('LINE_CHANNEL_SECRET'),
         'channel_access_token' => env('LINE_CHANNEL_ACCESS_TOKEN'),
+        'fresh_market_add_friend_url' => env('LINE_FRESH_MARKET_ADD_FRIEND_URL'),
+        'thaiprompt_add_friend_url' => env('LINE_THAIPROMPT_ADD_FRIEND_URL'),
     ],
 
     /*

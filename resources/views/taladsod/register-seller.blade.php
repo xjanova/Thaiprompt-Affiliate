@@ -111,7 +111,7 @@
             {{-- ===== ฟอร์มสมัคร ===== --}}
             <div class="lg:col-span-3 order-1 lg:order-2">
                 <form method="POST"
-                      action="{{ route('taladsod.store-seller') }}"
+                      action="{{ route('taladsod.register-seller.store') }}"
                       x-data="{ step: 1 }"
                       class="space-y-6">
                     @csrf

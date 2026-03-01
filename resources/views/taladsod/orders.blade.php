@@ -134,7 +134,7 @@
                                         ยกเลิก
                                     </button>
                                 @endif
-                                <a href="{{ route('taladsod.order-detail', $order->id) }}"
+                                <a href="{{ route('taladsod.orders.show', $order->id) }}"
                                    class="px-4 py-2 text-sm font-medium bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors">
                                     ดูรายละเอียด
                                 </a>

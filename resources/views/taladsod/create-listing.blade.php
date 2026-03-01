@@ -31,7 +31,7 @@
 
         {{-- ===== ฟอร์มลงขายสินค้า ===== --}}
         <form method="POST"
-              action="{{ route('taladsod.store-listing') }}"
+              action="{{ route('taladsod.listing.store') }}"
               enctype="multipart/form-data"
               x-data="listingForm()"
               class="space-y-6">

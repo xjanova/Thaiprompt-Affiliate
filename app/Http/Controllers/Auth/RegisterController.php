@@ -493,12 +493,12 @@ class RegisterController extends Controller
         // ถ้ามาจากหน้าตลาดสด → ส่งไปเพิ่มเพื่อน LINE ตลาดสด
         $origin = $request->session()->pull('register_origin', null);
         if ($origin === 'taladsod') {
-            $url = env('LINE_FRESH_MARKET_ADD_FRIEND_URL');
+            $url = config('services.line.fresh_market_add_friend_url');
             return $url ?: null;
         }
 
         // สมัครปกติ → ส่งไปเพิ่มเพื่อน LINE Thaiprompt OA
-        $url = env('LINE_THAIPROMPT_ADD_FRIEND_URL');
+        $url = config('services.line.thaiprompt_add_friend_url');
 
         return $url ?: null;
     }
