@@ -1,0 +1,28 @@
+## .NET Build output
+bin/
+obj/
+publish/
+
+## User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## NuGet
+*.nupkg
+**/packages/
+
+## VS / Rider
+.vs/
+.idea/
+*.DotSettings.user
+
+## Database files (runtime)
+*.db
+*.db-shm
+*.db-wal
+
+## Logs
+logs/
+*.log

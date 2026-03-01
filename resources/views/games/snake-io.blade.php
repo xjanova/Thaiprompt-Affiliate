@@ -1477,6 +1477,29 @@
                 </p>
             @endguest
 
+            <!-- Dedicated Server Connection (WebSocket) -->
+            <div id="ws-server-section" style="margin: 20px 0; padding: 15px; background: rgba(0, 255, 200, 0.08); border: 1px solid rgba(0, 255, 200, 0.3); border-radius: 10px; max-width: 500px;">
+                <h3 style="color: #00ffc8; font-size: 14px; margin-bottom: 12px;">🖥️ เชื่อมต่อ Game Server (Dedicated)</h3>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: center;">
+                    <div>
+                        <label style="color: #aaa; font-size: 11px;">Server IP</label><br>
+                        <input type="text" id="ws-server-ip" placeholder="เช่น 192.168.1.100"
+                               style="width: 160px; padding: 8px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #00ffc8; border-radius: 5px; font-size: 13px;"
+                               value="">
+                    </div>
+                    <div>
+                        <label style="color: #aaa; font-size: 11px;">Port</label><br>
+                        <input type="text" id="ws-server-port" placeholder="8080"
+                               style="width: 80px; padding: 8px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid #00ffc8; border-radius: 5px; font-size: 13px;"
+                               value="8080">
+                    </div>
+                </div>
+                <p style="color: #888; font-size: 11px; margin-top: 8px;">
+                    💡 กรอก IP และ Port ของ Game Server เพื่อเล่น Multiplayer แบบ smooth (30 tick/sec)<br>
+                    ปล่อยว่างเพื่อเล่นแบบ Offline กับ Bot
+                </p>
+            </div>
+
             <div style="display: flex; gap: 15px; margin-top: 30px;">
                 <button class="btn" id="back-to-title-btn" style="background: linear-gradient(135deg, #666, #444);">
                     ← ย้อนกลับ
@@ -1644,6 +1667,7 @@
     <script defer src="/js/optimized-touch-input.js"></script>
     <script defer src="/js/snake-multiplayer.js"></script>
     <script defer src="/js/snake-sync-client.js"></script>
+    <script defer src="/js/snake-websocket-client.js"></script>
 
     <script>
         /**
@@ -2478,6 +2502,8 @@
         let multiplayerManager = null;
         // ✅ Sync Client (Cache-based - ใช้สำหรับ real-time multiplayer sync)
         let syncClient = null;
+        // ✅ WebSocket Client (Dedicated Server - 30 tick/sec, server-authoritative)
+        let wsClient = null;
         let touchInputManager = null;
 
         // Connection monitoring
@@ -3518,6 +3544,25 @@
 
             scene.add(food);
             foods.push(food);
+            return food;
+        }
+
+        // ✅ Helper สำหรับ WebSocket — spawn food ที่ตำแหน่งกำหนด
+        function spawnFoodAt(x, z, value = 1) {
+            const food = createFood(x, z, value > 1);
+            if (food && value > 1) {
+                food.userData.value = value;
+            }
+        }
+
+        // ✅ Helper สำหรับ WebSocket — ลบ food ตาม ID (ใช้ index หรือ position matching)
+        function removeFoodById(foodId) {
+            // ถ้า food มี ID ตรง
+            const idx = foods.findIndex(f => f.userData.serverId === foodId);
+            if (idx >= 0) {
+                scene.remove(foods[idx]);
+                foods.splice(idx, 1);
+            }
         }
 
         function createBot() {
@@ -4043,13 +4088,19 @@
          * เมื่อ service ปิด จะตัดการเชื่อมต่อ multiplayer และเล่นกับ bots อย่างเดียว
          */
         async function switchToOfflineMode() {
-            if (!multiplayerManager && !syncClient) {
+            if (!multiplayerManager && !syncClient && !wsClient) {
                 console.log('[Service] อยู่ใน offline mode อยู่แล้ว');
                 return;
             }
 
             try {
                 console.log('[Service] กำลังตัดการเชื่อมต่อ multiplayer...');
+
+                // ✅ ตัดการเชื่อมต่อ WebSocket client
+                if (wsClient) {
+                    wsClient.leave();
+                    wsClient = null;
+                }
 
                 // ✅ ตัดการเชื่อมต่อ sync client
                 if (syncClient) {
@@ -4136,97 +4187,158 @@
                          (isAuthenticated ? '{{ Auth::user()->name ?? "Player" }}' : 'Player');
 
             try {
-                // ✅ เช็คสถานะ service ก่อนว่าเปิดหรือปิด
-                console.log('[Service] กำลังตรวจสอบสถานะ multiplayer service...');
-                updateConnectionStatus('offline', 'CHECKING SERVICE...');
+                // ✅ เช็คว่ามีการกรอก Dedicated Server IP หรือไม่
+                const wsServerIp = document.getElementById('ws-server-ip')?.value.trim();
+                const wsServerPort = document.getElementById('ws-server-port')?.value.trim() || '8080';
+                let useDedicatedServer = false;
 
-                try {
-                    // ตรวจสอบสถานะ service
-                    const serviceResponse = await fetch('/api/games/snake-io/service-status', {
-                        method: 'GET',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                        },
-                        signal: AbortSignal.timeout(3000)
-                    });
+                // ===== MODE 1: Dedicated WebSocket Server (ถ้ากรอก IP) =====
+                if (wsServerIp) {
+                    console.log(`[WS] กำลังเชื่อมต่อ Dedicated Server: ${wsServerIp}:${wsServerPort}...`);
+                    updateConnectionStatus('offline', '⚡ CONNECTING TO SERVER...');
 
-                    const serviceData = await serviceResponse.json();
-                    isServiceOnline = serviceData.success && serviceData.is_online;
+                    try {
+                        wsClient = new SnakeWebSocketClient();
 
-                    console.log('[Service] สถานะ service:', isServiceOnline ? 'ONLINE' : 'OFFLINE');
+                        // ตั้ง callbacks
+                        wsClient.onMyDeath = (killerId) => {
+                            console.log('[WS] ตายแล้ว! ถูกฆ่าโดย:', killerId);
+                            if (player) {
+                                player.alive = false;
+                                player.die();
+                            }
+                        };
 
-                    // ถ้า service เปิด = เชื่อมต่อ multiplayer
-                    if (isServiceOnline) {
-                        try {
-                            console.log('[Multiplayer] Service เปิดอยู่ - กำลังเชื่อมต่อ...');
-                            updateConnectionStatus('offline', '⚡ CONNECTING...');
-
-                            // ✅ เชื่อมต่อ DB Multiplayer Manager ก่อน (เพื่อได้ room_code)
-                            let roomCode = null;
-                            try {
-                                multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
-                                    ip: CONFIG.GAME_SERVER_IP,
-                                    port: CONFIG.GAME_SERVER_PORT
+                        wsClient.onPlayerDied = (playerId, killerId, droppedFood) => {
+                            // เพิ่ม dropped food เข้า scene
+                            if (droppedFood) {
+                                droppedFood.forEach(f => {
+                                    spawnFoodAt(f.position.x, f.position.z, f.value || 2);
                                 });
+                            }
+                        };
 
-                                const timeoutPromise = new Promise((_, reject) =>
-                                    setTimeout(() => reject(new Error('Connection timeout')), 5000)
-                                );
+                        wsClient.onFoodCollected = (foodId, collectPlayerId) => {
+                            // ลบ food ออกจาก scene
+                            removeFoodById(foodId);
+                        };
 
-                                const joinResult = await Promise.race([
-                                    multiplayerManager.joinGame(playerName, selectedSkin),
-                                    timeoutPromise
-                                ]);
+                        wsClient.onDisconnected = () => {
+                            isOnline = false;
+                            updateConnectionStatus('offline', '🔌 DISCONNECTED');
+                        };
 
-                                roomCode = joinResult.room_code;
-                                console.log('🌐 [Multiplayer] เข้าร่วมห้อง:', roomCode);
-                            } catch (dbError) {
-                                console.warn('[Multiplayer] DB join ล้มเหลว (ไม่กระทบเกม):', dbError.message);
+                        // เชื่อมต่อ WebSocket
+                        await wsClient.connect(wsServerIp, parseInt(wsServerPort));
+
+                        // Join game
+                        const welcomeData = await wsClient.join(playerName, selectedSkin);
+                        console.log('🌐 [WS] เข้าเกมสำเร็จ! Room:', welcomeData.roomId);
+
+                        isOnline = true;
+                        useDedicatedServer = true;
+                        isServiceOnline = true;
+                        updateConnectionStatus('online', '🌐 DEDICATED SERVER');
+
+                        // ใช้ world size จาก server
+                        if (welcomeData.worldSize) {
+                            CONFIG.WORLD_SIZE = welcomeData.worldSize;
+                        }
+
+                    } catch (wsError) {
+                        console.warn('[WS] เชื่อมต่อ Dedicated Server ไม่สำเร็จ:', wsError.message);
+                        wsClient = null;
+                        useDedicatedServer = false;
+                        updateConnectionStatus('offline', '❌ SERVER UNREACHABLE');
+                    }
+                }
+
+                // ===== MODE 2: Laravel HTTP Polling (fallback เมื่อไม่ได้กรอก IP หรือ WS ล้มเหลว) =====
+                if (!useDedicatedServer) {
+                    console.log('[Service] กำลังตรวจสอบสถานะ multiplayer service...');
+                    updateConnectionStatus('offline', 'CHECKING SERVICE...');
+
+                    try {
+                        const serviceResponse = await fetch('/api/games/snake-io/service-status', {
+                            method: 'GET',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                            },
+                            signal: AbortSignal.timeout(3000)
+                        });
+
+                        const serviceData = await serviceResponse.json();
+                        isServiceOnline = serviceData.success && serviceData.is_online;
+
+                        console.log('[Service] สถานะ service:', isServiceOnline ? 'ONLINE' : 'OFFLINE');
+
+                        if (isServiceOnline) {
+                            try {
+                                console.log('[Multiplayer] Service เปิดอยู่ - กำลังเชื่อมต่อ...');
+                                updateConnectionStatus('offline', '⚡ CONNECTING...');
+
+                                let roomCode = null;
+                                try {
+                                    multiplayerManager = new SnakeMultiplayerManager('/api/games/snake-io', {
+                                        ip: CONFIG.GAME_SERVER_IP,
+                                        port: CONFIG.GAME_SERVER_PORT
+                                    });
+
+                                    const timeoutPromise = new Promise((_, reject) =>
+                                        setTimeout(() => reject(new Error('Connection timeout')), 5000)
+                                    );
+
+                                    const joinResult = await Promise.race([
+                                        multiplayerManager.joinGame(playerName, selectedSkin),
+                                        timeoutPromise
+                                    ]);
+
+                                    roomCode = joinResult.room_code;
+                                    console.log('🌐 [Multiplayer] เข้าร่วมห้อง:', roomCode);
+                                } catch (dbError) {
+                                    console.warn('[Multiplayer] DB join ล้มเหลว:', dbError.message);
+                                    multiplayerManager = null;
+                                }
+
+                                syncClient = new SnakeSyncClient();
+                                const syncJoined = await syncClient.join(playerName, selectedSkin, roomCode);
+
+                                if (syncJoined) {
+                                    console.log('🌐 [SnakeSync] เชื่อมต่อ sync สำเร็จ! ห้อง:', syncClient.getRoomId());
+                                    isOnline = true;
+                                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                                } else {
+                                    syncClient = null;
+                                }
+
+                                if (syncClient && syncClient.isOnline()) {
+                                    updateConnectionStatus('online', '🌐 ONLINE MODE');
+                                    startConnectionMonitoring();
+                                } else {
+                                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
+                                }
+
+                            } catch (multiplayerError) {
+                                console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ:', multiplayerError.message);
                                 multiplayerManager = null;
-                            }
-
-                            // ✅ เชื่อมต่อ Sync Client พร้อม room_id (ให้เห็นเฉพาะคนในห้องเดียวกัน)
-                            syncClient = new SnakeSyncClient();
-                            const syncJoined = await syncClient.join(playerName, selectedSkin, roomCode);
-
-                            if (syncJoined) {
-                                console.log('🌐 [SnakeSync] เชื่อมต่อ sync สำเร็จ! ห้อง:', syncClient.getRoomId());
-                                isOnline = true;
-                                updateConnectionStatus('online', '🌐 ONLINE MODE');
-                            } else {
-                                console.warn('[SnakeSync] Sync join ล้มเหลว');
                                 syncClient = null;
-                            }
-
-                            // ถ้า sync สำเร็จ = ถือว่า online
-                            if (syncClient && syncClient.isOnline()) {
-                                updateConnectionStatus('online', '🌐 ONLINE MODE');
-                                startConnectionMonitoring();
-                            } else {
                                 updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                             }
-
-                        } catch (multiplayerError) {
-                            console.warn('[Multiplayer] เชื่อมต่อไม่สำเร็จ เล่นแบบ offline:', multiplayerError.message);
+                        } else {
+                            console.log('🤖 [Service] Service ปิดอยู่ - offline mode');
                             multiplayerManager = null;
                             syncClient = null;
                             updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                         }
-                    } else {
-                        // Service ปิด = เล่นแบบ offline
-                        console.log('🤖 [Service] Service ปิดอยู่ - เริ่มเกมแบบ offline mode');
+
+                    } catch (serviceError) {
+                        console.warn('[Service] ตรวจสอบสถานะไม่สำเร็จ:', serviceError.message);
+                        isServiceOnline = false;
                         multiplayerManager = null;
                         syncClient = null;
                         updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                     }
-
-                } catch (serviceError) {
-                    console.warn('[Service] ตรวจสอบสถานะ service ไม่สำเร็จ เล่นแบบ offline:', serviceError.message);
-                    isServiceOnline = false;
-                    multiplayerManager = null;
-                    syncClient = null;
-                    updateConnectionStatus('offline', '🤖 OFFLINE MODE');
                 }
 
                 // ✅ เริ่มตรวจสอบสถานะ service ทุก 10 วินาที
@@ -4307,6 +4419,12 @@
             document.getElementById('final-length').textContent = player.length;
             document.getElementById('final-rank').textContent = '#' + getRank();
             document.getElementById('game-over').classList.add('show');
+
+            // แจ้ง WebSocket client
+            if (wsClient) {
+                wsClient.leave();
+                wsClient = null;
+            }
 
             // แจ้ง multiplayer manager
             if (multiplayerManager) {
@@ -5098,25 +5216,52 @@
             if (player && player.alive) {
                 const headPos = player.segments[0].position;
 
-                // ✅ ใช้ Sync Client (Cache-based) - เก็บสถานะไว้ให้ sync loop ส่งเอง (ไม่ HTTP ทุก frame)
-                if (syncClient && syncClient.isOnline()) {
-                    syncClient.setCurrentState({
-                        position: { x: headPos.x, y: headPos.y, z: headPos.z },
-                        direction: { x: player.direction.x, y: player.direction.y, z: player.direction.z },
-                        score: player.score,
-                        length: player.length,
-                        is_alive: player.alive,
-                    });
-                }
+                // ✅ MODE 1: WebSocket Dedicated Server — ส่งแค่ direction (server-authoritative)
+                if (wsClient && wsClient.isOnline()) {
+                    // ส่ง direction เมื่อเปลี่ยน (ไม่ต้องส่งตำแหน่ง — server คำนวณเอง)
+                    wsClient.sendDirection(player.direction);
+                    wsClient.sendBoost(player.isBoosting);
 
-                // ✅ ใช้ DB Multiplayer Manager (throttled ทุก 200ms) - สำหรับ room sync
-                if (multiplayerManager) {
-                    multiplayerManager.updatePlayerState(
-                        headPos,
-                        player.direction,
-                        player.score,
-                        player.length
-                    );
+                    // ✅ รับ state จาก server แล้วปรับตำแหน่ง player ตาม server
+                    const myState = wsClient.getMyState();
+                    if (myState) {
+                        player.score = myState.score;
+                        player.length = myState.length;
+
+                        // Smooth correction ตำแหน่งจาก server
+                        if (myState.position) {
+                            const serverPos = new THREE.Vector3(myState.position.x, 0.5, myState.position.z);
+                            const dist = headPos.distanceTo(serverPos);
+                            if (dist > 3) {
+                                // Teleport ถ้าห่างเกินไป
+                                headPos.copy(serverPos);
+                            } else if (dist > 0.3) {
+                                // Smooth lerp
+                                headPos.lerp(serverPos, 0.15);
+                            }
+                        }
+                    }
+                }
+                // ✅ MODE 2: HTTP Polling fallback
+                else {
+                    if (syncClient && syncClient.isOnline()) {
+                        syncClient.setCurrentState({
+                            position: { x: headPos.x, y: headPos.y, z: headPos.z },
+                            direction: { x: player.direction.x, y: player.direction.y, z: player.direction.z },
+                            score: player.score,
+                            length: player.length,
+                            is_alive: player.alive,
+                        });
+                    }
+
+                    if (multiplayerManager) {
+                        multiplayerManager.updatePlayerState(
+                            headPos,
+                            player.direction,
+                            player.score,
+                            player.length
+                        );
+                    }
                 }
             }
 
@@ -5522,9 +5667,11 @@
          * - Smooth lerp correction เพื่อไม่ให้กระตุก
          */
         function renderOtherPlayers(now) {
-            // ✅ ใช้ Sync Client เป็นแหล่งข้อมูลหลัก, fallback ไป Multiplayer Manager
+            // ✅ ลำดับความสำคัญ: WebSocket Client → Sync Client → Multiplayer Manager
             let otherPlayers = [];
-            if (syncClient && syncClient.isOnline()) {
+            if (wsClient && wsClient.isOnline()) {
+                otherPlayers = wsClient.getOtherPlayers();
+            } else if (syncClient && syncClient.isOnline()) {
                 otherPlayers = syncClient.getOtherPlayers();
             } else if (multiplayerManager) {
                 otherPlayers = multiplayerManager.getOtherPlayers();

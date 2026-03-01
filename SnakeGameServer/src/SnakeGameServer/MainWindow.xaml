@@ -1,0 +1,301 @@
+<Window x:Class="SnakeGameServer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:SnakeGameServer.ViewModels"
+        xmlns:local="clr-namespace:SnakeGameServer"
+        mc:Ignorable="d"
+        Title="Snake.io Game Server" Height="720" Width="1100"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E2E" Foreground="White">
+
+    <Window.DataContext>
+        <vm:MainViewModel />
+    </Window.DataContext>
+
+    <Window.Resources>
+        <!-- Dark theme styles -->
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="#2D2D44"/>
+            <Setter Property="CornerRadius" Value="8"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Margin" Value="4"/>
+        </Style>
+
+        <Style x:Key="HeaderText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#B0B0D0"/>
+            <Setter Property="Margin" Value="0,0,0,6"/>
+        </Style>
+
+        <Style x:Key="ValueText" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="22"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+
+        <Style x:Key="ActionButton" TargetType="Button">
+            <Setter Property="Padding" Value="16,8"/>
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="InputField" TargetType="TextBox">
+            <Setter Property="Background" Value="#3D3D54"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderBrush" Value="#4D4D64"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="FontSize" Value="13"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>    <!-- Top bar -->
+            <RowDefinition Height="Auto"/>    <!-- Stats -->
+            <RowDefinition Height="*"/>       <!-- Main content -->
+            <RowDefinition Height="200"/>     <!-- Log -->
+            <RowDefinition Height="Auto"/>    <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- ==================== TOP BAR ==================== -->
+        <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Status indicator -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Ellipse Width="14" Height="14" Margin="0,0,8,0">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="{Binding StatusColor}"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <TextBlock Text="{Binding StatusText}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Port -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <TextBlock Text="Port:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#B0B0D0"/>
+                    <TextBox Text="{Binding Port}" Style="{StaticResource InputField}" Width="70"
+                             IsEnabled="{Binding IsRunning, Converter={x:Static local:InverseBoolConverter.Instance}}"/>
+                </StackPanel>
+
+                <!-- Uptime -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Uptime:" VerticalAlignment="Center" Margin="0,0,6,0" Foreground="#B0B0D0"/>
+                    <TextBlock Text="{Binding Uptime}" FontWeight="SemiBold" VerticalAlignment="Center" Foreground="#80CBC4"/>
+                </StackPanel>
+
+                <!-- Buttons -->
+                <Button Grid.Column="4" Content="Start Server" Command="{Binding StartCommand}"
+                        Style="{StaticResource ActionButton}" Background="#4CAF50" Margin="0,0,8,0"/>
+                <Button Grid.Column="5" Content="Stop Server" Command="{Binding StopCommand}"
+                        Style="{StaticResource ActionButton}" Background="#FF5252"/>
+            </Grid>
+        </Border>
+
+        <!-- ==================== STATS BAR ==================== -->
+        <UniformGrid Grid.Row="1" Columns="5" Margin="0,4">
+            <!-- Players -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Players Online" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Text="{Binding ConnectedPlayers}" Style="{StaticResource ValueText}" Foreground="#64FFDA"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Rooms -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Active Rooms" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Text="{Binding ActiveRooms}" Style="{StaticResource ValueText}" Foreground="#FFD54F"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Peak -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Peak Players" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Text="{Binding PeakPlayers}" Style="{StaticResource ValueText}" Foreground="#FF8A65"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Total Connections -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Total Connections" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Text="{Binding TotalConnections}" Style="{StaticResource ValueText}" Foreground="#81D4FA"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Tick -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Tick Duration" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Style="{StaticResource ValueText}" Foreground="#CE93D8">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:F1}ms">
+                                <Binding Path="TickDurationMs"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+        </UniformGrid>
+
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <Grid Grid.Row="2" Margin="0,4">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="180"/>   <!-- Rooms -->
+                <ColumnDefinition Width="*"/>     <!-- Players -->
+                <ColumnDefinition Width="220"/>   <!-- Settings -->
+            </Grid.ColumnDefinitions>
+
+            <!-- ROOMS -->
+            <Border Grid.Column="0" Style="{StaticResource CardBorder}">
+                <DockPanel>
+                    <TextBlock DockPanel.Dock="Top" Text="Rooms" Style="{StaticResource HeaderText}" FontSize="15"/>
+                    <ListBox ItemsSource="{Binding Rooms}" DisplayMemberPath="Display"
+                             Background="Transparent" Foreground="#E0E0F0" BorderThickness="0"
+                             FontSize="12"/>
+                </DockPanel>
+            </Border>
+
+            <!-- PLAYERS -->
+            <Border Grid.Column="1" Style="{StaticResource CardBorder}">
+                <DockPanel>
+                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                        <TextBlock Text="Connected Players" Style="{StaticResource HeaderText}" FontSize="15"/>
+                        <Button Content="Kick" Command="{Binding KickPlayerCommand}"
+                                Style="{StaticResource ActionButton}" Background="#FF5252"
+                                HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
+                    </Grid>
+                    <DataGrid ItemsSource="{Binding Players}" SelectedItem="{Binding SelectedPlayer}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              Background="Transparent" Foreground="White"
+                              RowBackground="#2D2D44" AlternatingRowBackground="#353552"
+                              GridLinesVisibility="None" BorderThickness="0"
+                              HeadersVisibility="Column" FontSize="12"
+                              ColumnHeaderHeight="28" RowHeight="26">
+                        <DataGrid.ColumnHeaderStyle>
+                            <Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#3D3D54"/>
+                                <Setter Property="Foreground" Value="#B0B0D0"/>
+                                <Setter Property="Padding" Value="8,4"/>
+                                <Setter Property="FontSize" Value="11"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="BorderBrush" Value="#4D4D64"/>
+                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                            </Style>
+                        </DataGrid.ColumnHeaderStyle>
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="90"/>
+                            <DataGridTextColumn Header="Room" Binding="{Binding RoomCode}" Width="65"/>
+                            <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="55"/>
+                            <DataGridTextColumn Header="Len" Binding="{Binding Length}" Width="40"/>
+                            <DataGridTextColumn Header="Kills" Binding="{Binding Kills}" Width="40"/>
+                            <DataGridTextColumn Header="Skin" Binding="{Binding Skin}" Width="55"/>
+                            <DataGridTextColumn Header="Time" Binding="{Binding ConnectedTime}" Width="50"/>
+                            <DataGridTextColumn Header="IP" Binding="{Binding Endpoint}" Width="*"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </DockPanel>
+            </Border>
+
+            <!-- SETTINGS -->
+            <Border Grid.Column="2" Style="{StaticResource CardBorder}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Settings" Style="{StaticResource HeaderText}" FontSize="15"/>
+
+                        <TextBlock Text="Max Players/Room" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
+                        <TextBox Text="{Binding MaxPlayersPerRoom}" Style="{StaticResource InputField}"/>
+
+                        <TextBlock Text="World Size" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
+                        <TextBox Text="{Binding WorldSize}" Style="{StaticResource InputField}"/>
+
+                        <TextBlock Text="Food Count" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
+                        <TextBox Text="{Binding FoodCount}" Style="{StaticResource InputField}"/>
+
+                        <TextBlock Text="Tick Rate" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
+                        <TextBox Text="{Binding TickRate}" Style="{StaticResource InputField}"/>
+
+                        <TextBlock Text="Database" Foreground="#B0B0D0" Margin="0,10,0,2" FontSize="11"/>
+                        <ComboBox SelectedItem="{Binding DbProvider}" Background="#3D3D54" Foreground="Black"
+                                  FontSize="12">
+                            <ComboBoxItem Content="SQLite"/>
+                            <ComboBoxItem Content="MySQL"/>
+                            <ComboBoxItem Content="MSSQL"/>
+                        </ComboBox>
+
+                        <TextBlock Text="Connection String" Foreground="#B0B0D0" Margin="0,6,0,2" FontSize="11"/>
+                        <TextBox Text="{Binding ConnectionString}" Style="{StaticResource InputField}"
+                                 TextWrapping="Wrap" Height="50" AcceptsReturn="True"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+
+        <!-- ==================== LOG ==================== -->
+        <Border Grid.Row="3" Style="{StaticResource CardBorder}">
+            <DockPanel>
+                <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
+                    <TextBlock Text="Server Log" Style="{StaticResource HeaderText}" FontSize="15"/>
+                    <Button Content="Clear" Command="{Binding ClearLogCommand}"
+                            Style="{StaticResource ActionButton}" Background="#555"
+                            HorizontalAlignment="Right" Padding="10,3" FontSize="10"/>
+                </Grid>
+                <ListBox ItemsSource="{Binding LogEntries}"
+                         Background="#1A1A2E" Foreground="#A0A0C0" BorderThickness="0"
+                         FontFamily="Consolas" FontSize="11"
+                         x:Name="LogListBox">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="4,1"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                </ListBox>
+            </DockPanel>
+        </Border>
+
+        <!-- ==================== FOOTER ==================== -->
+        <Border Grid.Row="4" Style="{StaticResource CardBorder}" Padding="8,4" Margin="4,0,4,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Snake.io Game Server v1.0" Foreground="#666" FontSize="11"/>
+                <TextBlock Text="  |  " Foreground="#444"/>
+                <TextBlock Text=".NET 8 + WPF + WebSocket" Foreground="#666" FontSize="11"/>
+                <TextBlock Text="  |  " Foreground="#444"/>
+                <TextBlock Foreground="#666" FontSize="11">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="Tick #{0}">
+                            <Binding Path="TickCount"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
