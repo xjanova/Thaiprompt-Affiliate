@@ -7,7 +7,13 @@ use App\Models\FreshMarketListing;
 use App\Models\FreshMarketReferral;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
+use App\Models\MlmMember;
+use App\Models\MlmPlan;
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 /**
  * FreshMarketChannelManager - จัดการการสนทนาตลาดสด
@@ -195,26 +201,233 @@ class FreshMarketChannelManager
     }
 
     /**
-     * ผู้ใช้เพิ่มเพื่อน (Follow)
+     * ผู้ใช้เพิ่มเพื่อน (Follow) → Auto-Register ทันที
+     *
+     * สร้าง User + MlmMember + FreshMarketSeller อัตโนมัติ
+     * ไม่ต้อง signup 8 ขั้นตอนอีกต่อไป
      */
     public function handleFollow(string $lineUserId, array $extra = []): void
     {
         $replyToken = $extra['reply_token'] ?? null;
-        FreshMarketConversation::getOrCreate($lineUserId);
 
-        // ตรวจสอบ referral
-        $referral = FreshMarketReferral::findByReferredLineUser($lineUserId);
-        if ($referral && $referral->status === 'pending') {
-            $referral->markAsFollowed($lineUserId);
+        // 1. ดึง LINE Profile
+        $profile = $this->lineService->getUserProfile($lineUserId);
+        $displayName = $profile['displayName'] ?? $profile['name'] ?? 'ผู้ใช้ใหม่';
+        $pictureUrl = $profile['pictureUrl'] ?? $profile['picture_url'] ?? null;
+
+        // 2. Auto-register (User + MLM + Seller)
+        $result = $this->autoRegisterUser($lineUserId, $displayName, $pictureUrl);
+
+        // 3. สร้าง/อัพเดท conversation
+        $conversation = FreshMarketConversation::getOrCreate($lineUserId);
+        if ($result['user']) {
+            $conversation->update([
+                'user_id' => $result['user']->id,
+                'seller_id' => $result['seller']?->id,
+            ]);
         }
 
-        $welcomeMessage = $this->settings->welcome_message ?? "สวัสดีค่ะ! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪\n\nวันนี้จะซื้อหรือจะขายคะ? 😊\n\n🛒 พิมพ์ \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ พิมพ์ \"ลงขาย\" - ลงขายสินค้า\n📋 พิมพ์ \"ช่วยเหลือ\" - ดูคำสั่งทั้งหมด";
+        // 4. ตรวจสอบ referral → mark converted
+        $referral = FreshMarketReferral::findByReferredLineUser($lineUserId);
+        if ($referral && in_array($referral->status, ['pending', 'followed'])) {
+            $referral->update([
+                'referred_user_id' => $result['user']?->id,
+                'status' => 'converted',
+            ]);
+        }
+
+        // 5. ส่ง welcome message (replyMessage = ฟรี!)
+        $greeting = $displayName !== 'ผู้ใช้ใหม่' ? " คุณ{$displayName}" : '';
+        $welcomeMessage = $this->settings->welcome_message
+            ?? "สวัสดีค่ะ{$greeting}! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪\n\n✅ สมัครสมาชิกอัตโนมัติเรียบร้อยแล้วค่ะ\n\nวันนี้จะซื้อหรือจะขายคะ? 😊\n\n🛒 พิมพ์ \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ พิมพ์ \"ลงขาย\" - ลงขายสินค้า\n📋 พิมพ์ \"ช่วยเหลือ\" - ดูคำสั่งทั้งหมด";
 
         if ($replyToken) {
             $this->lineService->replyMessage($replyToken, [
                 ['type' => 'text', 'text' => $welcomeMessage],
             ]);
         }
+
+        Log::info('FreshMarket: Auto-registered on follow', [
+            'line_user_id' => $lineUserId,
+            'display_name' => $displayName,
+            'user_id' => $result['user']?->id,
+            'seller_id' => $result['seller']?->id,
+            'mlm_member_id' => $result['mlm_member']?->id,
+            'is_new' => $result['is_new'],
+        ]);
+    }
+
+    /**
+     * Auto-register: สร้าง User + MlmMember + Seller อัตโนมัติ
+     *
+     * @return array{user: ?User, seller: ?FreshMarketSeller, mlm_member: ?MlmMember, is_new: bool}
+     */
+    protected function autoRegisterUser(string $lineUserId, string $displayName, ?string $pictureUrl): array
+    {
+        // เช็คว่ามี User อยู่แล้ว
+        $existingUser = User::where('line_user_id', $lineUserId)->first();
+        if ($existingUser) {
+            // อัพเดท LINE profile ล่าสุด
+            $existingUser->update(array_filter([
+                'line_display_name' => $displayName,
+                'line_picture_url' => $pictureUrl,
+            ]));
+
+            $seller = FreshMarketSeller::findByLineUserId($lineUserId);
+
+            return [
+                'user' => $existingUser,
+                'seller' => $seller,
+                'mlm_member' => null,
+                'is_new' => false,
+            ];
+        }
+
+        // สร้างใหม่ทั้งหมดใน transaction
+        try {
+            return DB::transaction(function () use ($lineUserId, $displayName, $pictureUrl) {
+                // 1. สร้าง User
+                $user = User::create([
+                    'name' => $displayName,
+                    'email' => "line_{$lineUserId}@thaiprompt.local",
+                    'password' => Hash::make(Str::random(16)),
+                    'line_user_id' => $lineUserId,
+                    'line_display_name' => $displayName,
+                    'line_picture_url' => $pictureUrl,
+                    'line_verified' => true,
+                    'line_linked_at' => now(),
+                ]);
+
+                // 2. สร้าง MlmMember (binary tree)
+                $mlmMember = $this->createMlmMember($user, $lineUserId);
+
+                // 3. สร้าง FreshMarketSeller
+                $seller = FreshMarketSeller::create([
+                    'user_id' => $user->id,
+                    'line_user_id' => $lineUserId,
+                    'shop_name' => $displayName,
+                    'line_display_name' => $displayName,
+                    'shop_image' => $pictureUrl,
+                    'mlm_member_id' => $mlmMember?->id,
+                    'is_active' => true,
+                    'subscription_type' => 'free',
+                ]);
+
+                return [
+                    'user' => $user,
+                    'seller' => $seller,
+                    'mlm_member' => $mlmMember,
+                    'is_new' => true,
+                ];
+            });
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: Auto-register failed', [
+                'line_user_id' => $lineUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['user' => null, 'seller' => null, 'mlm_member' => null, 'is_new' => false];
+        }
+    }
+
+    /**
+     * สร้าง MlmMember (binary tree) สำหรับผู้ใช้ใหม่
+     */
+    protected function createMlmMember(User $user, string $lineUserId): ?MlmMember
+    {
+        try {
+            // หา sponsor จาก referral (ถ้ามี)
+            $sponsor = null;
+            $referral = FreshMarketReferral::findByReferredLineUser($lineUserId);
+
+            if ($referral && $referral->referrer_user_id) {
+                $sponsor = MlmMember::where('user_id', $referral->referrer_user_id)
+                    ->where('status', 'active')
+                    ->first();
+            }
+
+            // Fallback: Super Admin
+            if (! $sponsor) {
+                $superAdmin = User::find(1);
+                $sponsor = $superAdmin ? MlmMember::where('user_id', $superAdmin->id)->first() : null;
+            }
+
+            if (! $sponsor) {
+                Log::warning('FreshMarket: ไม่มี sponsor สำหรับ MLM', ['user_id' => $user->id]);
+
+                return null;
+            }
+
+            // หาตำแหน่งใน binary tree
+            $placement = $this->findBinaryPlacement($sponsor);
+
+            // หา default MLM plan
+            $defaultPlan = MlmPlan::where('is_default', true)->first();
+
+            $member = MlmMember::create([
+                'user_id' => $user->id,
+                'mlm_plan_id' => $defaultPlan?->id,
+                'unilevel_sponsor_id' => $sponsor->id,
+                'unilevel_level' => ($sponsor->unilevel_level ?? 0) + 1,
+                'unilevel_path' => ($sponsor->unilevel_path ?? '') . '/' . $sponsor->id,
+                'binary_sponsor_id' => $sponsor->id,
+                'binary_parent_id' => $placement['parent_id'],
+                'binary_position' => $placement['position'],
+                'status' => 'active',
+                'joined_at' => now(),
+                'member_code' => MlmMember::generateMemberCode(),
+                'is_qualified' => true,
+            ]);
+
+            // อัพเดทสถิติ sponsor
+            $sponsor->increment('total_direct_referrals');
+
+            return $member;
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: MLM member creation failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * หาตำแหน่งว่างใน binary tree (ซ้าย-ขวา)
+     */
+    protected function findBinaryPlacement(MlmMember $sponsor): array
+    {
+        // ใช้ MlmBinaryService ถ้ามี
+        if (class_exists(\App\Services\MlmBinaryService::class)) {
+            try {
+                $binaryService = app(\App\Services\MlmBinaryService::class);
+
+                return $binaryService->findPlacementPosition($sponsor);
+            } catch (\Exception $e) {
+                // Fallback
+            }
+        }
+
+        // Fallback: หาตำแหน่งว่างง่ายๆ
+        $leftChild = MlmMember::where('binary_parent_id', $sponsor->id)
+            ->where('binary_position', 'left')
+            ->first();
+
+        if (! $leftChild) {
+            return ['parent_id' => $sponsor->id, 'position' => 'left'];
+        }
+
+        $rightChild = MlmMember::where('binary_parent_id', $sponsor->id)
+            ->where('binary_position', 'right')
+            ->first();
+
+        if (! $rightChild) {
+            return ['parent_id' => $sponsor->id, 'position' => 'right'];
+        }
+
+        // ทั้ง 2 ฝั่งเต็ม → ลงซ้ายสุด (spillover)
+        return $this->findBinaryPlacement($leftChild);
     }
 
     /**
@@ -267,6 +480,10 @@ class FreshMarketChannelManager
             'idle:text' => $this->handleIdle_Text($conversation, $inputData, $extra),
             'idle:image' => $this->handleIdle_Image($conversation, $inputData, $extra),
             'idle:location' => $this->handleIdle_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
+
+            // === SELLER OTP VERIFICATION ===
+            'seller_phone:text' => $this->handleSellerPhone_Text($conversation, $inputData, $extra),
+            'seller_otp:text' => $this->handleSellerOtp_Text($conversation, $inputData, $extra),
 
             // === LISTING FLOW ===
             'listing_photos:image' => $this->handleListingPhotos_Image($conversation, $inputData, $extra),
@@ -365,6 +582,196 @@ class FreshMarketChannelManager
     protected function handleIdle_Location(FreshMarketConversation $conversation, float $lat, float $lng, array $extra): array
     {
         return $this->searchNearbyAndRespond($conversation, $lat, $lng);
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  SELLER OTP VERIFICATION HANDLERS        ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * seller_phone + text → รับเบอร์โทร ส่ง OTP ทาง SMS
+     */
+    protected function handleSellerPhone_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $phone = preg_replace('/[^0-9]/', '', trim($message));
+
+        // ตรวจสอบรูปแบบเบอร์โทร (0xx-xxx-xxxx, 10 หลัก)
+        if (strlen($phone) !== 10 || ! preg_match('/^0[689]\d{8}$/', $phone)) {
+            return [
+                'text' => "⚠️ เบอร์โทรไม่ถูกต้องค่ะ\n\nกรุณาพิมพ์เบอร์มือถือ 10 หลัก\nเช่น 0812345678\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+            ];
+        }
+
+        // ส่ง OTP ทาง SMS
+        try {
+            $otpService = app(OtpService::class);
+
+            if (! $otpService->isConfigured()) {
+                // OTP ไม่พร้อม → ข้าม verify ไปลงขายเลย
+                Log::warning('FreshMarket: OTP service ไม่พร้อม, ข้าม verification');
+
+                $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
+                if ($seller) {
+                    $seller->update([
+                        'phone' => $phone,
+                        'phone_verified_at' => now(),
+                    ]);
+                }
+
+                $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+                    'listing' => [
+                        'images' => [],
+                        'image_count' => 0,
+                        'started_at' => now()->toIso8601String(),
+                    ],
+                ]);
+
+                $progress = $conversation->getProgressText();
+
+                return [
+                    'text' => "✅ บันทึกเบอร์โทรเรียบร้อยค่ะ\n\n{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)",
+                ];
+            }
+
+            $result = $otpService->sendOTP($phone, 'phone_verification');
+
+            if (! $result['success']) {
+                return [
+                    'text' => "⚠️ ส่ง OTP ไม่สำเร็จค่ะ: {$result['message']}\n\nกรุณาลองใหม่ หรือพิมพ์ \"ยกเลิก\"",
+                ];
+            }
+
+            // บันทึกเบอร์โทรใน context + seller
+            $conversation->setFlowContext('otp', ['phone' => $phone]);
+
+            $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
+            if ($seller) {
+                $seller->update(['phone' => $phone]);
+            }
+
+            // ไป seller_otp state
+            $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_OTP);
+
+            $formatted = substr($phone, 0, 3) . '-' . substr($phone, 3, 3) . '-' . substr($phone, 6);
+
+            return [
+                'text' => "📤 ส่งรหัส OTP ไปที่ {$formatted} แล้วค่ะ\n\nกรุณาพิมพ์รหัส 6 หลักที่ได้รับทาง SMS\n\nพิมพ์ \"ส่งใหม่\" ถ้าไม่ได้รับ\nพิมพ์ \"เปลี่ยนเบอร์\" ถ้าต้องการเปลี่ยน\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: OTP send error', ['error' => $e->getMessage()]);
+
+            return [
+                'text' => "⚠️ เกิดข้อผิดพลาดในการส่ง OTP ค่ะ\n\nกรุณาลองใหม่อีกครั้ง หรือพิมพ์ \"ยกเลิก\"",
+            ];
+        }
+    }
+
+    /**
+     * seller_otp + text → รับรหัส OTP ยืนยันตัวตน
+     */
+    protected function handleSellerOtp_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+        $otpCtx = $conversation->getFlowContext('otp');
+        $phone = $otpCtx['phone'] ?? null;
+
+        // "ส่งใหม่" → resend OTP
+        if (in_array($msg, ['ส่งใหม่', 'resend', 'ส่งอีกครั้ง', 'ขอใหม่'])) {
+            if (! $phone) {
+                $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_PHONE);
+
+                return [
+                    'text' => "📱 กรุณาพิมพ์เบอร์โทรมาใหม่ค่ะ\nเช่น 0812345678",
+                ];
+            }
+
+            try {
+                $otpService = app(OtpService::class);
+                $result = $otpService->sendOTP($phone, 'phone_verification');
+
+                if ($result['success']) {
+                    $formatted = substr($phone, 0, 3) . '-' . substr($phone, 3, 3) . '-' . substr($phone, 6);
+
+                    return [
+                        'text' => "📤 ส่งรหัส OTP ใหม่ไปที่ {$formatted} แล้วค่ะ\n\nกรุณาพิมพ์รหัส 6 หลักที่ได้รับ",
+                    ];
+                }
+
+                return [
+                    'text' => "⚠️ {$result['message']}\n\nกรุณารอสักครู่แล้วลองใหม่ค่ะ",
+                ];
+            } catch (\Exception $e) {
+                return [
+                    'text' => "⚠️ ส่ง OTP ไม่สำเร็จค่ะ กรุณาลองใหม่อีกครั้ง",
+                ];
+            }
+        }
+
+        // "เปลี่ยนเบอร์" → กลับ seller_phone
+        if (in_array($msg, ['เปลี่ยนเบอร์', 'เปลี่ยน', 'change'])) {
+            $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_PHONE);
+
+            return [
+                'text' => "📱 กรุณาพิมพ์เบอร์โทรใหม่ค่ะ\nเช่น 0812345678",
+            ];
+        }
+
+        // ตรวจ OTP code (6 หลัก)
+        $code = preg_replace('/[^0-9]/', '', $msg);
+        if (strlen($code) !== 6) {
+            return [
+                'text' => "⚠️ กรุณาพิมพ์รหัส OTP 6 หลักค่ะ\n\nพิมพ์ \"ส่งใหม่\" ถ้าไม่ได้รับ\nพิมพ์ \"เปลี่ยนเบอร์\" ถ้าต้องการเปลี่ยน\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+            ];
+        }
+
+        if (! $phone) {
+            $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_PHONE);
+
+            return [
+                'text' => "⚠️ ไม่พบข้อมูลเบอร์โทรค่ะ\n\n📱 กรุณาพิมพ์เบอร์โทรมาใหม่ค่ะ\nเช่น 0812345678",
+            ];
+        }
+
+        // Verify OTP
+        try {
+            $otpService = app(OtpService::class);
+            $result = $otpService->verifyOTP($phone, $code, 'phone_verification');
+
+            if (! $result['success']) {
+                return [
+                    'text' => "❌ รหัส OTP ไม่ถูกต้องหรือหมดอายุค่ะ\n\nกรุณาพิมพ์รหัส 6 หลักอีกครั้ง\nหรือพิมพ์ \"ส่งใหม่\" เพื่อขอรหัสใหม่",
+                ];
+            }
+
+            // OTP ถูกต้อง → อัพเดท seller
+            $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
+            if ($seller) {
+                $seller->update(['phone_verified_at' => now()]);
+            }
+
+            // เริ่มลงขาย → listing_photos
+            $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+                'listing' => [
+                    'images' => [],
+                    'image_count' => 0,
+                    'started_at' => now()->toIso8601String(),
+                ],
+            ]);
+
+            $progress = $conversation->getProgressText();
+
+            return [
+                'text' => "✅ ยืนยันเบอร์โทรเรียบร้อยค่ะ!\n\n{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: OTP verify error', ['error' => $e->getMessage()]);
+
+            return [
+                'text' => "⚠️ เกิดข้อผิดพลาดค่ะ กรุณาลองใหม่อีกครั้ง",
+            ];
+        }
     }
 
     // ╔══════════════════════════════════════════╗
@@ -1204,6 +1611,7 @@ class FreshMarketChannelManager
         $conversation->resetToIdle();
 
         $flowName = match (true) {
+            str_starts_with($state, 'seller_') => 'การยืนยันตัวตน',
             str_starts_with($state, 'listing_') => 'การลงขายสินค้า',
             str_starts_with($state, 'search_') => 'การค้นหาสินค้า',
             str_starts_with($state, 'order_') => 'การสั่งซื้อ',
@@ -1254,18 +1662,30 @@ class FreshMarketChannelManager
     {
         switch ($command) {
             case 'sell':
-                $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
-                    'listing' => [
-                        'images' => [],
-                        'image_count' => 0,
-                        'started_at' => now()->toIso8601String(),
-                    ],
-                ]);
+                // เช็ค phone verified ก่อนเริ่มลงขาย
+                $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
+                if ($seller && $seller->phone_verified_at) {
+                    // ยืนยันแล้ว → ไปลงขายเลย
+                    $conversation->transitionTo(FreshMarketConversation::STATE_LISTING_PHOTOS, [
+                        'listing' => [
+                            'images' => [],
+                            'image_count' => 0,
+                            'started_at' => now()->toIso8601String(),
+                        ],
+                    ]);
 
-                $progress = $conversation->getProgressText();
+                    $progress = $conversation->getProgressText();
+
+                    return [
+                        'text' => "🏷️ ลงขายสินค้า\n\n{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+                    ];
+                }
+
+                // ยังไม่ verify → ต้อง OTP ก่อน
+                $conversation->transitionTo(FreshMarketConversation::STATE_SELLER_PHONE);
 
                 return [
-                    'text' => "🏷️ ลงขายสินค้า\n\n{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+                    'text' => "🏷️ ลงขายสินค้า\n\n📱 ก่อนเริ่มลงขาย กรุณายืนยันเบอร์โทรศัพท์ค่ะ\n\nพิมพ์เบอร์โทรมาเลยค่ะ เช่น 0812345678\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
                 ];
 
             case 'buy':
@@ -1319,6 +1739,8 @@ class FreshMarketChannelManager
         $progress = $conversation->getProgressText();
 
         $guidance = match ($state) {
+            'seller_phone' => "ตอนนี้รอเบอร์โทรค่ะ 📱\n\n• พิมพ์เบอร์โทร 10 หลัก\n• เช่น 0812345678",
+            'seller_otp' => "ตอนนี้รอรหัส OTP ค่ะ 🔑\n\n• พิมพ์รหัส 6 หลักที่ได้รับทาง SMS\n• พิมพ์ \"ส่งใหม่\" ถ้าไม่ได้รับ",
             'listing_photos' => "ตอนนี้รอรูปสินค้าค่ะ 📸\n\n• ส่งรูปมาได้เลยค่ะ\n• พิมพ์ \"เสร็จ\" เมื่อส่งรูปครบ",
             'listing_details' => "ตอนนี้รอข้อมูลสินค้าค่ะ 📝\n\n• พิมพ์ชื่อสินค้า ราคา หน่วย\n• เช่น \"ผักบุ้ง 25 บาท/กำ\"",
             'listing_location' => "ตอนนี้รอพิกัดร้านค่ะ 📍\n\n• กดปุ่ม \"+\" → \"ส่งตำแหน่ง\"\n• หรือพิมพ์ \"ข้าม\"",

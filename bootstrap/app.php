@@ -85,7 +85,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.access' => \App\Http\Middleware\ApiAccessControl::class,
             // LINE OA Security middleware
             'line.webhook.throttle' => \App\Http\Middleware\LineWebhookThrottle::class,
-            'line.signup.throttle' => \App\Http\Middleware\LineSignupThrottle::class,
             // Provider LINE connection middleware
             'provider.line.required' => \App\Http\Middleware\EnsureProviderLineConnected::class,
             // User LINE connection middleware (general use)

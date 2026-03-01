@@ -57,6 +57,7 @@ class FreshMarketSeller extends Model
         'district',
         'sub_district',
         'phone',
+        'phone_verified_at',
         'line_display_name',
         'subscription_type',
         'subscription_expires_at',
@@ -73,6 +74,7 @@ class FreshMarketSeller extends Model
     ];
 
     protected $casts = [
+        'phone_verified_at' => 'datetime',
         'latitude' => 'decimal:8',
         'longitude' => 'decimal:8',
         'subscription_expires_at' => 'datetime',

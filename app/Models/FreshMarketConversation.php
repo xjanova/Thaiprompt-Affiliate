@@ -50,6 +50,10 @@ class FreshMarketConversation extends Model
     public const STATE_SEARCH_LOCATION = 'search_location';
     public const STATE_SEARCH_BROWSING = 'search_browsing';
 
+    // ===== SELLER VERIFICATION (ก่อนลงขาย) =====
+    public const STATE_SELLER_PHONE = 'seller_phone';
+    public const STATE_SELLER_OTP = 'seller_otp';
+
     // ===== BUYER ORDER FLOW (4 ขั้นตอน) =====
     public const STATE_ORDER_SELECT = 'order_select';
     public const STATE_ORDER_QUANTITY = 'order_quantity';
@@ -68,7 +72,11 @@ class FreshMarketConversation extends Model
      * Transition ที่อนุญาต: state ปัจจุบัน => [state ที่ไปได้]
      */
     public const VALID_TRANSITIONS = [
-        'idle' => ['listing_photos', 'search_location', 'search_browsing', 'idle'],
+        'idle' => ['listing_photos', 'seller_phone', 'search_location', 'search_browsing', 'idle'],
+
+        // Seller OTP verification
+        'seller_phone' => ['seller_otp', 'idle'],
+        'seller_otp' => ['listing_photos', 'seller_phone', 'idle'],
 
         // Seller listing flow
         'listing_photos' => ['listing_details', 'idle'],
@@ -93,6 +101,8 @@ class FreshMarketConversation extends Model
      * ถ้าไม่มีในนี้ = ไม่หมดเวลา
      */
     public const TIMEOUT_MINUTES = [
+        'seller_phone' => 10,
+        'seller_otp' => 5,
         'listing_photos' => 30,
         'listing_details' => 30,
         'listing_location' => 30,

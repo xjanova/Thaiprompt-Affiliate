@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
             // DemoUsersSeeder::class,             // ❌ ลบ - ใช้ ThaipromptMlmSeeder แทน
             TestUsersSeeder::class,             // สร้างผู้ใช้ทดสอบเพิ่มเติม (backward compatibility)
             KycVerificationSeeder::class,       // 🆕 KYC Demo Verification (pending, approved, rejected)
-            LineSignupSessionSeeder::class,     // 🆕 LINE Demo Signup Sessions (new, in_progress, completed)
 
             // 3. Content & Pages
             DemoPagesSeeder::class,             // สร้างหน้าเพจต่างๆ
@@ -53,10 +52,6 @@ class DatabaseSeeder extends Seeder
             EmailTemplateSeeder::class,         // Email Templates สำหรับระบบส่งอีเมล
             EmailProviderSeeder::class,         // Email Providers สำหรับระบบส่งอีเมล (SMTP, Gmail)
             LineOaSettingSeeder::class,         // LINE OA Settings Configuration
-            LineSignupTemplateSeeder::class,    // LINE Signup Templates (AI-Powered Membership Signup)
-            LineSignupFlowSeeder::class,        // 🆕 LINE Signup Flow Steps (Complete signup conversation flow)
-            LineSignupRewardSeeder::class,      // 🆕 LINE Signup Rewards (รางวัลการสมัครสมาชิก: แต้ม, TPIX, คูปอง, ฯลฯ)
-            LineSignupSettingSeeder::class,     // 🆕 LINE Signup Settings (การตั้งค่าระบบสมัครสมาชิก: OTP, Validation, Rewards, Gamification)
             LineBotAiSeeder::class,             // 🆕 LINE Bot AI Profiles (Demo bots: Affiliate, Support, Sales)
             LineBotKeywordSeeder::class,        // 🆕 LINE Hybrid Bot Keywords (Keyword-based responses + AI fallback)
             LineRecruitmentSeeder::class,       // 🆕 LINE Recruitment System (AI-powered recruitment with topic filtering)

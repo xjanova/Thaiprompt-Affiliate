@@ -387,15 +387,6 @@ Route::prefix('language')->name('language.')->group(function () {
     Route::get('/current', [\App\Http\Controllers\LanguageSwitcherController::class, 'current'])->name('current');
 });
 
-// LINE Signup via Invitation Link (Public Routes with Rate Limiting)
-// ⚠️ Affiliate: LINE signup links สำคัญสำหรับระบบ affiliate
-Route::prefix('line/signup')->name('line.signup.')->middleware(['line.signup.throttle'])->group(function () {
-    // สำหรับสแกน QR Code ด้วย member_code โดยตรง (สร้าง invitation อัตโนมัติ)
-    Route::match(['GET', 'HEAD'], '/invite/{memberCode}', [\App\Http\Controllers\LineSignupController::class, 'inviteByMemberCode'])->name('invite');
-    Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineSignupController::class, 'handleInvitation'])->name('invitation');
-    Route::match(['GET', 'HEAD'], '/callback', [\App\Http\Controllers\LineSignupController::class, 'handleCallback'])->name('callback');
-});
-
 // LINE Registration - บังคับเพิ่มเพื่อน LINE OA ก่อนสมัคร
 // ✅ ระบบใหม่: polling session + auto-redirect หลังสมัครเสร็จ
 Route::prefix('line/registration')->name('line.registration.')->group(function () {
@@ -413,26 +404,6 @@ Route::prefix('line/registration')->name('line.registration.')->group(function (
 
     // API: ยกเลิก session
     Route::post('/cancel/{token}', [\App\Http\Controllers\LineRegistrationController::class, 'cancelSession'])->name('cancel');
-});
-
-// LINE Membership Signup System (New AI-Powered Signup)
-// ⚠️ Affiliate: LINE membership signup สำคัญสำหรับระบบ affiliate
-Route::prefix('line/membership')->name('line.membership.')->group(function () {
-    // Public invitation routes
-    Route::match(['GET', 'HEAD'], '/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showInvitation'])->name('invitation');
-    Route::post('/invitation/{token}', [\App\Http\Controllers\LineMembershipSignupController::class, 'processInvitation'])->name('invitation.process');
-
-    // Progress tracking (for debugging)
-    Route::match(['GET', 'HEAD'], '/progress/{sessionToken}', [\App\Http\Controllers\LineMembershipSignupController::class, 'showProgress'])->name('progress');
-
-    // Authenticated routes
-    Route::middleware('auth')->group(function () {
-        // Create invitation link
-        Route::post('/invitations/create', [\App\Http\Controllers\LineMembershipSignupController::class, 'createInvitation'])->name('invitations.create');
-
-        // Analytics
-        Route::get('/analytics', [\App\Http\Controllers\LineMembershipSignupController::class, 'getAnalytics'])->name('analytics');
-    });
 });
 
 // OTP Routes

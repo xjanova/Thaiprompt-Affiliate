@@ -38,7 +38,6 @@ use App\Http\Controllers\Admin\LineMessageAnalyticsController;
 use App\Http\Controllers\Admin\LineOaController;
 use App\Http\Controllers\Admin\LineRecruitmentController;
 use App\Http\Controllers\Admin\LineRichMenuController;
-use App\Http\Controllers\Admin\LineSignupRewardController;
 use App\Http\Controllers\Admin\MlmGlobalSettingController;
 use App\Http\Controllers\Admin\NFCCardController;
 use App\Http\Controllers\Admin\NFCReaderController;
@@ -770,17 +769,6 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::delete('/{id}', [LineBroadcastController::class, 'destroy'])->name('destroy');
     });
 
-    // Signup Flow Management
-    Route::prefix('signup-flow')->name('signup-flow.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'index'])->name('index');
-        Route::get('/create', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'create'])->name('create');
-        Route::post('/', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'store'])->name('store');
-        Route::get('/{id}/edit', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'edit'])->name('edit');
-        Route::put('/{id}', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'update'])->name('update');
-        Route::delete('/{id}', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'destroy'])->name('destroy');
-        Route::post('/reorder', [\App\Http\Controllers\Admin\LineSignupFlowController::class, 'reorder'])->name('reorder');
-    });
-
     // Hybrid Bot Keywords Management
     Route::prefix('keywords')->name('keywords.')->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\LineBotKeywordController::class, 'index'])->name('index');
@@ -922,62 +910,13 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
     });
 });
 
-// LINE Membership Signup Management (AI-Powered Signup System)
-Route::prefix('line-membership-signup')->name('line-membership-signup.')->group(function () {
-    // Dashboard
-    Route::get('/', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'index'])->name('index');
-
-    // Settings Management
-    Route::get('/settings', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'index'])->name('settings');
-    Route::post('/settings', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'update'])->name('settings.update');
-    Route::post('/settings/reset', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'reset'])->name('settings.reset');
-    Route::post('/settings/test-connection', [\App\Http\Controllers\Admin\LineSignupSettingsController::class, 'testConnection'])->name('settings.test-connection');
-
-    // Sessions Management
-    Route::get('/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'sessions'])->name('sessions');
-    Route::get('/sessions/{session}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'showSession'])->name('sessions.show');
-
-    // Templates Management
-    Route::get('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'templates'])->name('templates');
-    Route::get('/templates/create', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'create'])->name('templates.create');
-    Route::post('/templates', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'store'])->name('templates.store');
-    Route::get('/templates/{template}/edit', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'edit'])->name('templates.edit');
-    Route::put('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'update'])->name('templates.update');
-    Route::post('/templates/{template}/reset', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'resetTemplate'])->name('templates.reset');
-    Route::post('/templates/{template}/duplicate', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'duplicateTemplate'])->name('templates.duplicate');
-    Route::delete('/templates/{template}', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'deleteTemplate'])->name('templates.delete');
-
-    // Invitations Management
-    Route::get('/invitations', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'invitations'])->name('invitations');
-
-    // Rewards Management (Full CRUD)
-    Route::prefix('rewards')->name('rewards.')->group(function () {
-        Route::get('/', [LineSignupRewardController::class, 'index'])->name('index');
-        Route::get('/create', [LineSignupRewardController::class, 'create'])->name('create');
-        Route::post('/', [LineSignupRewardController::class, 'store'])->name('store');
-        Route::get('/{reward}', [LineSignupRewardController::class, 'show'])->name('show');
-        Route::get('/{reward}/edit', [LineSignupRewardController::class, 'edit'])->name('edit');
-        Route::put('/{reward}', [LineSignupRewardController::class, 'update'])->name('update');
-        Route::delete('/{reward}', [LineSignupRewardController::class, 'destroy'])->name('destroy');
-        Route::post('/{reward}/toggle-active', [LineSignupRewardController::class, 'toggleActive'])->name('toggle-active');
-        Route::post('/update-order', [LineSignupRewardController::class, 'updateOrder'])->name('update-order');
-        Route::get('/statistics/overview', [LineSignupRewardController::class, 'statistics'])->name('statistics');
-    });
-
-    // Analytics API
-    Route::get('/analytics/data', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'analyticsData'])->name('analytics.data');
-
-    // Export
-    Route::get('/export/sessions', [\App\Http\Controllers\Admin\LineMembershipSignupAdminController::class, 'exportSessions'])->name('export.sessions');
-
-    // LINE Connections Management (ผู้ใช้ที่เชื่อมต่อ LINE)
-    Route::prefix('connections')->name('connections.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'index'])->name('index');
-        Route::get('/export', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'export'])->name('export');
-        Route::get('/{user}', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'show'])->name('show');
-        Route::post('/{user}/disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'disconnect'])->name('disconnect');
-        Route::post('/bulk-disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'bulkDisconnect'])->name('bulk-disconnect');
-    });
+// LINE Connections Management (ผู้ใช้ที่เชื่อมต่อ LINE)
+Route::prefix('line-connections')->name('line-connections.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'index'])->name('index');
+    Route::get('/export', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'export'])->name('export');
+    Route::get('/{user}', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'show'])->name('show');
+    Route::post('/{user}/disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'disconnect'])->name('disconnect');
+    Route::post('/bulk-disconnect', [\App\Http\Controllers\Admin\LineConnectionsController::class, 'bulkDisconnect'])->name('bulk-disconnect');
 });
 
 // LINE Recruitment Management (AI-Powered Recruitment System)

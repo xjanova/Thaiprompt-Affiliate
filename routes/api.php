@@ -38,11 +38,6 @@ Route::post('/webhook/line', [LineWebhookController::class, 'handle'])
     ->middleware(['line.webhook.throttle'])
     ->name('api.line.webhook');
 
-// LINE Membership Signup Webhook
-Route::post('/webhook/line-membership-signup', [\App\Http\Controllers\LineMembershipSignupController::class, 'webhook'])
-    ->middleware(['line.webhook.throttle'])
-    ->name('api.line.membership.signup.webhook');
-
 // GitHub Release Webhook (auto-clear version cache)
 Route::post('/webhooks/github/release', [\App\Http\Controllers\Api\WebhookController::class, 'handleGitHubRelease'])
     ->name('api.webhook.github.release');
@@ -126,13 +121,6 @@ Route::prefix('v1')->group(function () {
 
     // Ranks (public - for marketing tools)
     Route::get('/ranks', [RankController::class, 'index']);
-
-    // LINE Signup Rewards (public - for signup page)
-    Route::prefix('line-signup-rewards')->group(function () {
-        Route::get('/', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'index']);
-        Route::get('/package/{packageId}', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'byPackage']);
-        Route::get('/compare', [\App\Http\Controllers\Api\V1\LineSignupRewardApiController::class, 'compare']);
-    });
 
     // App Configuration (public)
     Route::prefix('app')->group(function () {
