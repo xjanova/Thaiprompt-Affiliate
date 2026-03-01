@@ -60,6 +60,10 @@ class FreshMarketConversation extends Model
     public const STATE_ORDER_REVIEW = 'order_review';
     public const STATE_ORDER_TRACKING = 'order_tracking';
 
+    // ===== RIDER REGISTRATION FLOW (2 ขั้นตอน) =====
+    public const STATE_RIDER_REGISTER = 'rider_register';
+    public const STATE_RIDER_CATEGORY = 'rider_category';
+
     // ===== Backward compatibility aliases =====
     public const STATE_NEW = 'idle';
     public const STATE_BROWSING = 'search_browsing';
@@ -72,7 +76,7 @@ class FreshMarketConversation extends Model
      * Transition ที่อนุญาต: state ปัจจุบัน => [state ที่ไปได้]
      */
     public const VALID_TRANSITIONS = [
-        'idle' => ['listing_photos', 'seller_phone', 'search_location', 'search_browsing', 'idle'],
+        'idle' => ['listing_photos', 'seller_phone', 'search_location', 'search_browsing', 'rider_register', 'idle'],
 
         // Seller OTP verification
         'seller_phone' => ['seller_otp', 'idle'],
@@ -94,6 +98,10 @@ class FreshMarketConversation extends Model
         'order_quantity' => ['order_review', 'order_select', 'idle'],
         'order_review' => ['order_tracking', 'order_quantity', 'idle'],
         'order_tracking' => ['idle', 'search_browsing'],
+
+        // Rider registration flow
+        'rider_register' => ['rider_category', 'seller_phone', 'idle'],
+        'rider_category' => ['seller_phone', 'rider_register', 'idle'],
     ];
 
     /**
@@ -112,6 +120,8 @@ class FreshMarketConversation extends Model
         'order_select' => 10,
         'order_quantity' => 10,
         'order_review' => 5,
+        'rider_register' => 10,
+        'rider_category' => 10,
     ];
 
     /**
@@ -129,6 +139,8 @@ class FreshMarketConversation extends Model
         'order_quantity' => ['step' => 2, 'total' => 4, 'label' => 'จำนวนและการจัดส่ง'],
         'order_review' => ['step' => 3, 'total' => 4, 'label' => 'ตรวจสอบคำสั่งซื้อ'],
         'order_tracking' => ['step' => 4, 'total' => 4, 'label' => 'ติดตามออเดอร์'],
+        'rider_register' => ['step' => 1, 'total' => 2, 'label' => 'เลือกประเภทไรเดอร์'],
+        'rider_category' => ['step' => 2, 'total' => 2, 'label' => 'เลือกหมวดหมู่บริการ'],
     ];
 
     protected $fillable = [

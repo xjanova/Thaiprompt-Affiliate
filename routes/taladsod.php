@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('taladsod')->name('taladsod.')->group(function () {
 
+    // ===== Landing Pages — Onboarding ก่อนเพิ่มเพื่อน LINE =====
+    Route::get('/start/buyer', [HomeController::class, 'landingBuyer'])->name('landing.buyer');
+    Route::get('/start/seller', [HomeController::class, 'landingSeller'])->name('landing.seller');
+    Route::get('/start/rider', [HomeController::class, 'landingRider'])->name('landing.rider');
+
     // ===== หน้าสาธารณะ (ไม่ต้อง login) =====
     Route::get('/', [HomeController::class, 'index'])->name('home');
     Route::get('/search', [HomeController::class, 'search'])->name('search');

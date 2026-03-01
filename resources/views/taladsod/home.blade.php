@@ -7,6 +7,7 @@
     - $featuredListings: สินค้าแนะนำ (collection)
     - $latestListings: สินค้าล่าสุด (collection)
     - $topSellers: ร้านค้ายอดนิยม (collection)
+    - $serviceProviders: ช่างบริการ (collection)
 --}}
 @extends('layouts.taladsod')
 
@@ -379,6 +380,115 @@
         @endif
     </section>
 
+    {{-- ===== ตลาดช่าง (Service Providers) ===== --}}
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
+        {{-- หัวข้อ Section --}}
+        <div class="flex items-center justify-between mb-6">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                <span class="text-blue-500">&#x1F527;</span> ตลาดช่าง — บริการถึงบ้าน
+            </h2>
+            <a href="{{ route('taladsod.search', ['type' => 'service']) }}"
+               class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
+                ดูทั้งหมด <i class="fas fa-arrow-right ml-1"></i>
+            </a>
+        </div>
+
+        {{-- หมวดหมู่บริการ --}}
+        <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 mb-6">
+            @php
+                $serviceCategories = [
+                    (object)['slug' => 'plumbing', 'name' => 'ช่างประปา', 'icon' => '&#x1F6B0;', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
+                    (object)['slug' => 'electrical', 'name' => 'ช่างไฟฟ้า', 'icon' => '&#x26A1;', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
+                    (object)['slug' => 'aircon', 'name' => 'ช่างแอร์', 'icon' => '&#x2744;', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
+                    (object)['slug' => 'beauty', 'name' => 'ช่างเสริมสวย', 'icon' => '&#x1F487;', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
+                    (object)['slug' => 'massage', 'name' => 'นวดแผนไทย', 'icon' => '&#x1F486;', 'color' => 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800'],
+                    (object)['slug' => 'cleaning', 'name' => 'ทำความสะอาด', 'icon' => '&#x1F9F9;', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
+                    (object)['slug' => 'repair', 'name' => 'ซ่อมบำรุง', 'icon' => '&#x1F6E0;', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
+                    (object)['slug' => 'gardening', 'name' => 'จัดสวน', 'icon' => '&#x1F333;', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
+                ];
+            @endphp
+
+            @foreach($serviceCategories as $svc)
+                <a href="{{ route('taladsod.search', ['type' => 'service', 'category' => $svc->slug]) }}"
+                   class="flex-shrink-0 w-24 sm:w-28 group">
+                    <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border {{ $svc->color }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
+                        <span class="text-3xl sm:text-4xl">{!! $svc->icon !!}</span>
+                        <span class="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $svc->name }}</span>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+
+        {{-- รายชื่อช่าง/ผู้ให้บริการ --}}
+        @if(isset($serviceProviders) && $serviceProviders->count() > 0)
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                @foreach($serviceProviders as $provider)
+                    <div class="group bg-white dark:bg-gray-800 rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden hover:scale-[1.03] hover:-translate-y-1 p-4 sm:p-5 text-center">
+                        {{-- รูปโปรไฟล์ --}}
+                        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-3 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg ring-4 ring-blue-100 dark:ring-blue-900/50">
+                            @if($provider->profile_photo ?? $provider->avatar ?? false)
+                                <img src="{{ $provider->profile_photo ?? $provider->avatar }}"
+                                     alt="{{ $provider->display_name ?? $provider->name }}"
+                                     class="w-full h-full rounded-full object-cover">
+                            @else
+                                <span class="text-2xl sm:text-3xl text-white font-bold">
+                                    {{ mb_substr($provider->display_name ?? $provider->name, 0, 1) }}
+                                </span>
+                            @endif
+                        </div>
+
+                        {{-- ชื่อ --}}
+                        <h3 class="font-semibold text-sm sm:text-base text-gray-900 dark:text-white mb-1 line-clamp-1">
+                            {{ $provider->display_name ?? $provider->name }}
+                        </h3>
+
+                        {{-- หมวดหมู่ --}}
+                        @if($provider->categories && $provider->categories->count() > 0)
+                            <p class="text-xs text-blue-600 dark:text-blue-400 mb-2 line-clamp-1">
+                                {{ $provider->categories->pluck('name')->implode(', ') }}
+                            </p>
+                        @endif
+
+                        {{-- ดาวรีวิว --}}
+                        <div class="flex items-center justify-center gap-0.5 mb-2">
+                            @for($i = 1; $i <= 5; $i++)
+                                @if($i <= floor($provider->rating ?? 0))
+                                    <i class="fas fa-star text-yellow-400 text-xs"></i>
+                                @elseif($i - 0.5 <= ($provider->rating ?? 0))
+                                    <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
+                                @else
+                                    <i class="far fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
+                                @endif
+                            @endfor
+                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($provider->rating ?? 0, 1) }}</span>
+                        </div>
+
+                        {{-- สถิติ --}}
+                        <div class="flex items-center justify-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+                            <span><i class="fas fa-briefcase text-blue-500 mr-1"></i>{{ number_format($provider->total_bookings ?? 0) }} งาน</span>
+                            @if($provider->isAlsoRider())
+                                <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
+                                    &#x1F6F5; ส่งของได้
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @else
+            {{-- สถานะว่างเปล่า --}}
+            <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
+                <div class="text-6xl mb-4">&#x1F527;</div>
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีช่างบริการ</h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ช่างบริการจะแสดงที่นี่เร็วๆ นี้</p>
+                <a href="{{ route('taladsod.landing.rider') }}"
+                   class="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all text-sm font-medium">
+                    <i class="fas fa-user-plus"></i> สมัครเป็นช่างบริการ
+                </a>
+            </div>
+        @endif
+    </section>
+
     {{-- ===== CTA Section ===== --}}
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
         <div class="bg-gradient-to-br from-green-500 via-green-600 to-teal-600 dark:from-green-700 dark:via-green-800 dark:to-teal-800 rounded-3xl overflow-hidden shadow-2xl relative">
@@ -420,8 +530,10 @@
                            class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-orange-500 hover:bg-orange-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-105 flex items-center justify-center gap-2">
                             <i class="fas fa-store"></i> ขายของกับเรา
                         </a>
-                        <a href="#"
-                           class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white text-lg font-bold rounded-2xl transition-all border border-white/30 flex items-center justify-center gap-2">
+                        <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="w-full sm:w-auto lg:w-full text-center px-8 py-4 bg-[#06C755] hover:bg-[#05b34d] text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2">
                             <i class="fab fa-line text-xl"></i> เพิ่มเพื่อน LINE
                         </a>
                     </div>

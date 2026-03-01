@@ -271,6 +271,13 @@ class RegisterController extends Controller
         // Regenerate session เพื่อป้องกัน session fixation + สร้าง CSRF token ใหม่
         $request->session()->regenerate();
 
+        // ส่งไปเพิ่มเพื่อน LINE OA ตามที่มาของการสมัคร
+        $addFriendUrl = $this->getAddFriendRedirectUrl($request);
+        if ($addFriendUrl) {
+            return redirect($addFriendUrl)
+                ->with('success', 'ลงทะเบียนสำเร็จ! กดเพิ่มเพื่อน LINE เพื่อเริ่มใช้งาน');
+        }
+
         return redirect()->route('user.home')
             ->with('success', 'ลงทะเบียนสำเร็จ! ยินดีต้อนรับสู่ระบบ MLM');
     }
@@ -473,5 +480,26 @@ class RegisterController extends Controller
                 'parent_member_id' => $parentMember?->id,
             ]);
         }
+    }
+
+    /**
+     * ดึง URL เพิ่มเพื่อน LINE OA ตามที่มาของการสมัคร
+     *
+     * @param Request $request
+     * @return string|null URL สำหรับ redirect ไปเพิ่มเพื่อน LINE หรือ null ถ้าไม่มี
+     */
+    private function getAddFriendRedirectUrl(Request $request): ?string
+    {
+        // ถ้ามาจากหน้าตลาดสด → ส่งไปเพิ่มเพื่อน LINE ตลาดสด
+        $origin = $request->session()->pull('register_origin', null);
+        if ($origin === 'taladsod') {
+            $url = env('LINE_FRESH_MARKET_ADD_FRIEND_URL');
+            return $url ?: null;
+        }
+
+        // สมัครปกติ → ส่งไปเพิ่มเพื่อน LINE Thaiprompt OA
+        $url = env('LINE_THAIPROMPT_ADD_FRIEND_URL');
+
+        return $url ?: null;
     }
 }

@@ -271,6 +271,147 @@
 </section>
 
 {{-- ================================================================
+    FRESH MARKET SECTION - ตลาดสดไทยพร้อม (ซื้อ ขาย ส่ง บริการ)
+================================================================ --}}
+<section id="fresh-market" class="py-20 lg:py-28 relative overflow-hidden z-10"
+         x-data="{ shown: false }"
+         x-intersect:enter="shown = true">
+
+    {{-- Background Effects --}}
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-950/20 to-transparent"></div>
+    <div class="absolute top-10 left-20 w-72 h-72 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
+    <div class="absolute bottom-10 right-20 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style="animation-delay: 1s;"></div>
+
+    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        {{-- Section Header --}}
+        <div class="text-center mb-12 lg:mb-16"
+             :class="shown ? 'animate-fade-in-up' : 'opacity-0'">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 backdrop-blur-sm mb-6">
+                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                <span class="text-sm font-medium text-green-300">Fresh Market Platform</span>
+            </div>
+            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
+                ตลาดสด<span class="text-green-400">ไทยพร้อม</span>
+            </h2>
+            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
+                ซื้อ ขาย ส่ง บริการ — ครบจบในที่เดียว ผ่าน LINE OA สมัครง่าย ใช้ได้ทันที
+            </p>
+        </div>
+
+        {{-- 3 Cards Grid --}}
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+
+            {{-- Card 1: ผู้ซื้อ (Buyer) --}}
+            <a href="{{ route('taladsod.landing.buyer') }}"
+               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-green-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-green-500/10"
+               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
+               style="animation-delay: 0.1s;">
+
+                {{-- Icon --}}
+                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
+                    </svg>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors">
+                    ช๊อปปิ้งตลาดสด
+                </h3>
+                <p class="text-slate-400 mb-6 leading-relaxed">
+                    เลือกซื้อของสดจากตลาดใกล้บ้าน ส่งถึงที่ พร้อม Cashback ทุกออเดอร์
+                </p>
+
+                <div class="flex items-center text-green-400 font-medium group-hover:gap-3 gap-2 transition-all">
+                    <span>ช๊อปเลย</span>
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+
+                {{-- Decorative Corner --}}
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-green-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
+            </a>
+
+            {{-- Card 2: ผู้ขาย/บริการ (Seller) --}}
+            <a href="{{ route('taladsod.landing.seller') }}"
+               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-orange-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-orange-500/10"
+               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
+               style="animation-delay: 0.2s;">
+
+                {{-- Icon --}}
+                <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-orange-400 transition-colors">
+                    เปิดร้าน/ให้บริการ
+                </h3>
+                <p class="text-slate-400 mb-6 leading-relaxed">
+                    เปิดร้านออนไลน์ฟรี ขายได้ทันที จัดการทุกอย่างผ่าน LINE พร้อม MLM Cashback
+                </p>
+
+                <div class="flex items-center text-orange-400 font-medium group-hover:gap-3 gap-2 transition-all">
+                    <span>เปิดร้านเลย</span>
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+
+                {{-- Decorative Corner --}}
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-orange-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
+            </a>
+
+            {{-- Card 3: ไรเดอร์/ช่าง (Rider) --}}
+            <a href="{{ route('taladsod.landing.rider') }}"
+               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/10"
+               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
+               style="animation-delay: 0.3s;">
+
+                {{-- Icon --}}
+                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+
+                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
+                    ไรเดอร์ & ช่างบริการ
+                </h3>
+                <p class="text-slate-400 mb-6 leading-relaxed">
+                    รับงานส่งของ หรือเป็นช่างบริการ (ประปา, แอร์, เสริมสวย) สร้างรายได้ทุกวัน
+                </p>
+
+                <div class="flex items-center text-blue-400 font-medium group-hover:gap-3 gap-2 transition-all">
+                    <span>สมัครเลย</span>
+                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                    </svg>
+                </div>
+
+                {{-- Decorative Corner --}}
+                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
+            </a>
+        </div>
+
+        {{-- Bottom CTA --}}
+        <div class="text-center mt-12"
+             :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
+             style="animation-delay: 0.4s;">
+            <a href="{{ route('taladsod.home') }}"
+               class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-500/30 hover:shadow-green-500/40 transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+                เข้าสู่ตลาดสดไทยพร้อม
+            </a>
+        </div>
+    </div>
+</section>
+
+{{-- ================================================================
     SIGNUP TUTORIAL SECTION - วิธีสมัครสมาชิก
 ================================================================ --}}
 <section id="signup-tutorial" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">

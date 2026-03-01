@@ -112,6 +112,8 @@ class ServiceProvider extends Model
         'bank_name',
         'bank_account_number',
         'bank_account_name',
+        'rider_id',
+        'accepts_delivery_jobs',
     ];
 
     protected $casts = [
@@ -138,6 +140,7 @@ class ServiceProvider extends Model
         'notification_settings' => 'array',
         'line_oa_linked_at' => 'datetime',
         'last_location_update' => 'datetime',
+        'accepts_delivery_jobs' => 'boolean',
     ];
 
     // ===========================================
@@ -210,9 +213,25 @@ class ServiceProvider extends Model
         return $this->hasMany(ServiceBookingNotification::class, 'provider_id');
     }
 
+    /**
+     * ไรเดอร์ที่เชื่อมกับ provider (ถ้าเป็นไรเดอร์เซอร์วิส)
+     */
+    public function rider(): BelongsTo
+    {
+        return $this->belongsTo(Rider::class);
+    }
+
     // ===========================================
     // Scopes
     // ===========================================
+
+    /**
+     * Scope: เฉพาะ provider ที่เป็นไรเดอร์ด้วย
+     */
+    public function scopeAlsoRider($query)
+    {
+        return $query->whereNotNull('rider_id');
+    }
 
     /**
      * Scope: เฉพาะ provider ที่พร้อมรับงาน
@@ -461,5 +480,25 @@ class ServiceProvider extends Model
         }
 
         return true;
+    }
+
+    // ===========================================
+    // Methods - Rider Integration
+    // ===========================================
+
+    /**
+     * ตรวจสอบว่าเป็นไรเดอร์ด้วยหรือไม่
+     */
+    public function isAlsoRider(): bool
+    {
+        return $this->rider_id !== null;
+    }
+
+    /**
+     * ตรวจสอบว่ารับงานส่งของด้วยหรือไม่
+     */
+    public function canDoDelivery(): bool
+    {
+        return $this->isAlsoRider() && $this->accepts_delivery_jobs;
     }
 }

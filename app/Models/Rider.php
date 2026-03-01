@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -44,6 +45,8 @@ class Rider extends Model
      */
     protected $fillable = [
         'user_id',
+        'line_user_id',
+        'fresh_market_linked',
         'full_name',
         'phone',
         'id_card_number',
@@ -60,6 +63,9 @@ class Rider extends Model
         'vehicle_registration_image',
         'profile_image',
         'status',
+        'rider_type',
+        'service_categories',
+        'service_provider_id',
         'availability',
         'rejection_reason',
         'gps_permission_granted',
@@ -73,6 +79,10 @@ class Rider extends Model
         'rating',
         'rating_count',
         'total_earnings',
+        'deposit_amount',
+        'deposit_paid_at',
+        'deposit_status',
+        'deposit_transaction_id',
         'last_latitude',
         'last_longitude',
         'last_location_update',
@@ -98,6 +108,10 @@ class Rider extends Model
         'approved_at' => 'datetime',
         'rating' => 'decimal:2',
         'total_earnings' => 'decimal:2',
+        'deposit_amount' => 'decimal:2',
+        'deposit_paid_at' => 'datetime',
+        'fresh_market_linked' => 'boolean',
+        'service_categories' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -160,6 +174,30 @@ class Rider extends Model
         return $this->hasMany(RiderLocation::class);
     }
 
+    /**
+     * ผู้ให้บริการ (ถ้าเป็นไรเดอร์เซอร์วิส)
+     */
+    public function serviceProvider(): BelongsTo
+    {
+        return $this->belongsTo(ServiceProvider::class);
+    }
+
+    /**
+     * ผู้ให้บริการที่เชื่อมกับไรเดอร์คนนี้
+     */
+    public function linkedServiceProvider(): HasOne
+    {
+        return $this->hasOne(ServiceProvider::class);
+    }
+
+    /**
+     * งานตลาดสด (ผ่าน rider_id ใน fresh_market_orders)
+     */
+    public function freshMarketOrders(): HasMany
+    {
+        return $this->hasMany(FreshMarketOrder::class);
+    }
+
     // =====================================================
     // Scopes
     // =====================================================
@@ -187,6 +225,41 @@ class Rider extends Model
     {
         return $query->approved()
             ->where('availability', 'online');
+    }
+
+    /**
+     * Scope สำหรับไรเดอร์ที่จ่ายค่าประกันแล้ว
+     */
+    public function scopeDepositPaid($query)
+    {
+        return $query->where('deposit_status', 'paid');
+    }
+
+    /**
+     * Scope สำหรับไรเดอร์ที่พร้อมรับงานส่งของ (approved + online + deposit paid)
+     */
+    public function scopeAvailableForDelivery($query)
+    {
+        return $query->approved()
+            ->where('availability', 'online')
+            ->where('deposit_status', 'paid')
+            ->whereIn('rider_type', ['delivery', 'both']);
+    }
+
+    /**
+     * Scope สำหรับไรเดอร์เซอร์วิส
+     */
+    public function scopeServiceRiders($query)
+    {
+        return $query->whereIn('rider_type', ['service', 'both']);
+    }
+
+    /**
+     * Scope สำหรับไรเดอร์ที่เชื่อมกับตลาดสด
+     */
+    public function scopeFreshMarketLinked($query)
+    {
+        return $query->where('fresh_market_linked', true);
     }
 
     /**
@@ -341,5 +414,111 @@ class Rider extends Model
             $updateData['permissions_granted_at'] = now();
             $this->update($updateData);
         }
+    }
+
+    // =====================================================
+    // Deposit & Integration Methods
+    // =====================================================
+
+    /**
+     * ตรวจสอบว่าจ่ายค่าประกันแล้วหรือยัง
+     */
+    public function hasDeposit(): bool
+    {
+        return $this->deposit_status === 'paid';
+    }
+
+    /**
+     * ตรวจสอบว่าไรเดอร์สามารถรับงานได้
+     */
+    public function canAcceptJobs(): bool
+    {
+        return $this->status === 'approved'
+            && $this->availability === 'online'
+            && $this->hasDeposit();
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นไรเดอร์เซอร์วิส (ช่าง)
+     */
+    public function isServiceRider(): bool
+    {
+        return in_array($this->rider_type, ['service', 'both']);
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นไรเดอร์ส่งของ
+     */
+    public function isDeliveryRider(): bool
+    {
+        return in_array($this->rider_type, ['delivery', 'both']);
+    }
+
+    /**
+     * ดึงหมวดหมู่บริการ
+     */
+    public function getServiceCategories(): array
+    {
+        return $this->service_categories ?? [];
+    }
+
+    /**
+     * ชื่อประเภทไรเดอร์ภาษาไทย
+     */
+    public function getRiderTypeTextAttribute(): string
+    {
+        return match ($this->rider_type) {
+            'delivery' => 'ไรเดอร์ส่งของ',
+            'service' => 'ช่างบริการ',
+            'both' => 'ไรเดอร์ + ช่างบริการ',
+            default => 'ไม่ระบุ',
+        };
+    }
+
+    /**
+     * ชื่อสถานะค่าประกันภาษาไทย
+     */
+    public function getDepositStatusTextAttribute(): string
+    {
+        return match ($this->deposit_status) {
+            'pending' => 'รอชำระ',
+            'paid' => 'ชำระแล้ว',
+            'refunded' => 'คืนเงินแล้ว',
+            default => 'ไม่ทราบ',
+        };
+    }
+
+    /**
+     * บันทึกการชำระค่าประกัน
+     */
+    public function markDepositPaid(string $transactionId, float $amount): void
+    {
+        $this->update([
+            'deposit_amount' => $amount,
+            'deposit_status' => 'paid',
+            'deposit_paid_at' => now(),
+            'deposit_transaction_id' => $transactionId,
+        ]);
+    }
+
+    /**
+     * คืนค่าประกัน
+     */
+    public function refundDeposit(): void
+    {
+        $this->update([
+            'deposit_status' => 'refunded',
+        ]);
+    }
+
+    /**
+     * เชื่อมกับตลาดสด
+     */
+    public function linkToFreshMarket(string $lineUserId): void
+    {
+        $this->update([
+            'line_user_id' => $lineUserId,
+            'fresh_market_linked' => true,
+        ]);
     }
 }

@@ -91,6 +91,12 @@ class FreshMarketOrder extends Model
         'mlm_commission_processed',
         'cancel_reason',
         'cancelled_by',
+        'rider_id',
+        'rider_assigned_at',
+        'rider_accepted_at',
+        'rider_picked_up_at',
+        'rider_delivered_at',
+        'delivery_distance_km',
     ];
 
     protected $casts = [
@@ -114,6 +120,11 @@ class FreshMarketOrder extends Model
         'completed_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'buyer_confirmed_at' => 'datetime',
+        'rider_assigned_at' => 'datetime',
+        'rider_accepted_at' => 'datetime',
+        'rider_picked_up_at' => 'datetime',
+        'rider_delivered_at' => 'datetime',
+        'delivery_distance_km' => 'decimal:2',
     ];
 
     /**
@@ -165,6 +176,14 @@ class FreshMarketOrder extends Model
     public function riderJob(): BelongsTo
     {
         return $this->belongsTo(RiderJob::class, 'rider_job_id');
+    }
+
+    /**
+     * ไรเดอร์ที่ถูก assign
+     */
+    public function rider(): BelongsTo
+    {
+        return $this->belongsTo(Rider::class);
     }
 
     // ===== Scopes =====
@@ -269,6 +288,25 @@ class FreshMarketOrder extends Model
     public function canBeCancelled(): bool
     {
         return in_array($this->order_status, ['pending', 'accepted']);
+    }
+
+    /**
+     * assign ไรเดอร์ให้ order
+     */
+    public function assignRider(Rider $rider): void
+    {
+        $this->update([
+            'rider_id' => $rider->id,
+            'rider_assigned_at' => now(),
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่ามีไรเดอร์แล้วหรือยัง
+     */
+    public function isRiderAssigned(): bool
+    {
+        return $this->rider_id !== null;
     }
 
     /**

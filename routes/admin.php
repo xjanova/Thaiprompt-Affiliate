@@ -755,6 +755,12 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
         Route::put('/{id}', [LineRichMenuController::class, 'update'])->name('update');
         Route::delete('/{id}', [LineRichMenuController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/set-default', [LineRichMenuController::class, 'setDefault'])->name('set-default');
+
+        // Thaiprompt OA Rich Menu Editor
+        Route::get('/thaiprompt', [\App\Http\Controllers\Admin\ThaipromptRichMenuController::class, 'editor'])->name('thaiprompt');
+        Route::get('/thaiprompt/config', [\App\Http\Controllers\Admin\ThaipromptRichMenuController::class, 'loadConfig'])->name('thaiprompt.config');
+        Route::post('/thaiprompt/deploy', [\App\Http\Controllers\Admin\ThaipromptRichMenuController::class, 'deploy'])->name('thaiprompt.deploy');
+        Route::post('/thaiprompt/upload-image', [\App\Http\Controllers\Admin\ThaipromptRichMenuController::class, 'uploadImage'])->name('thaiprompt.upload-image');
     });
 
     // Broadcast

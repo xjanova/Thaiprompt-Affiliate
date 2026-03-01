@@ -187,6 +187,14 @@ class RiderJob extends Model
         return $this->hasMany(RiderLocation::class, 'job_id');
     }
 
+    /**
+     * คำสั่งซื้อตลาดสดที่เชื่อมกับงานนี้
+     */
+    public function freshMarketOrder()
+    {
+        return $this->hasOne(FreshMarketOrder::class, 'rider_job_id');
+    }
+
     // =====================================================
     // Scopes
     // =====================================================
@@ -210,6 +218,14 @@ class RiderJob extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', 'completed');
+    }
+
+    /**
+     * Scope สำหรับงานตลาดสด
+     */
+    public function scopeFreshMarket($query)
+    {
+        return $query->where('job_type', 'fresh_market');
     }
 
     /**

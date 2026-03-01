@@ -8,6 +8,7 @@ use App\Models\FreshMarketListing;
 use App\Models\FreshMarketOrder;
 use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
+use App\Models\ServiceProvider;
 use App\Services\FreshMarketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,6 +25,32 @@ class HomeController extends Controller
     public function __construct()
     {
         $this->marketService = new FreshMarketService;
+    }
+
+    // ===== Landing Pages — Onboarding ก่อนเพิ่มเพื่อน LINE =====
+
+    /**
+     * Landing Page สำหรับผู้ซื้อ
+     */
+    public function landingBuyer()
+    {
+        return view('taladsod.landing-buyer');
+    }
+
+    /**
+     * Landing Page สำหรับผู้ขาย/ผู้ให้บริการ
+     */
+    public function landingSeller()
+    {
+        return view('taladsod.landing-seller');
+    }
+
+    /**
+     * Landing Page สำหรับไรเดอร์/ช่างบริการ
+     */
+    public function landingRider()
+    {
+        return view('taladsod.landing-rider');
     }
 
     // ===== หน้าสาธารณะ =====
@@ -59,12 +86,20 @@ class HomeController extends Controller
             ->limit(6)
             ->get();
 
+        // ช่างบริการ (ตลาดช่าง)
+        $serviceProviders = ServiceProvider::where('is_active', true)
+            ->where('status', 'available')
+            ->orderByDesc('rating')
+            ->limit(8)
+            ->get();
+
         return view('taladsod.home', compact(
             'settings',
             'categories',
             'featuredListings',
             'latestListings',
-            'topSellers'
+            'topSellers',
+            'serviceProviders'
         ));
     }
 
