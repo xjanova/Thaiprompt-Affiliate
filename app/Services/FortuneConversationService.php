@@ -6817,14 +6817,38 @@ PROMPT;
             if ($user) {
                 $userName = $user->name ?? 'คุณ';
 
-                // ✅ นับจาก fortune_referrals (สายงานดูดวงเฉพาะ)
-                $totalReferrals = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
+                // ✅ นับจากทั้ง FortuneReferral + MlmMember (ครอบคลุมทุกช่องทาง)
+                // 1) จาก fortune_referrals (ลิงก์แชร์ดูดวง)
+                $fortuneReferralUserIds = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
+                    ->whereIn('status', ['followed', 'converted'])
+                    ->whereNotNull('referred_user_id')
+                    ->pluck('referred_user_id')
+                    ->toArray();
+
+                $fortuneReferralCount = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
                     ->whereIn('status', ['followed', 'converted'])
                     ->count();
 
                 $convertedCount = \App\Models\FortuneReferral::where('referrer_user_id', $user->id)
                     ->where('status', 'converted')
                     ->count();
+
+                // 2) จาก MlmMember (ลิงก์ MLM ทั่วไป + ระบบอื่น)
+                $mlmDownlineUserIds = [];
+                try {
+                    $mlmMember = \App\Models\MlmMember::where('user_id', $user->id)->first();
+                    if ($mlmMember) {
+                        $mlmDownlineUserIds = \App\Models\MlmMember::where('unilevel_sponsor_id', $mlmMember->id)
+                            ->pluck('user_id')
+                            ->toArray();
+                    }
+                } catch (\Exception $e) {
+                    // table อาจยังไม่มี — ข้ามไป
+                }
+
+                // 3) รวมทั้ง 2 แหล่ง (ไม่นับซ้ำ)
+                $allDownlineUserIds = array_unique(array_merge($fortuneReferralUserIds, $mlmDownlineUserIds));
+                $totalReferrals = max($fortuneReferralCount, count($allDownlineUserIds));
 
                 $message = "👥 สายงานดูดวงของคุณ{$userName}\n"
                     ."═══════════════════════\n\n"
@@ -6843,6 +6867,8 @@ PROMPT;
                     'user_id' => $facebookUserId,
                     'total_referrals' => $totalReferrals,
                     'converted' => $convertedCount,
+                    'from_fortune_referral' => $fortuneReferralCount,
+                    'from_mlm_member' => count($mlmDownlineUserIds),
                 ]);
             } else {
                 $message = "👥 ดูสายงาน\n\n"

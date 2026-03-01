@@ -2860,6 +2860,64 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  string  $to  LINE User ID
      * @param  array  $messages  รายการข้อความ
      */
+    /**
+     * ส่ง push message แบบ admin priority — ข้าม Gatekeeper
+     *
+     * ใช้สำหรับ: แอดมินตอบคำถาม saved questions, แจ้งชำระเงิน, แจ้งคำทำนายพร้อม
+     * ข้อความเหล่านี้สำคัญและต้องส่งถึงผู้ใช้ทันที
+     */
+    public function sendAdminMessage(string $recipientId, string $message): bool
+    {
+        $messages = [
+            [
+                'type' => 'text',
+                'text' => $message,
+            ],
+        ];
+
+        return $this->pushMessagePriority($recipientId, $messages);
+    }
+
+    /**
+     * Push message แบบ priority — ข้าม Gatekeeper throttle
+     *
+     * ใช้สำหรับข้อความสำคัญที่ต้องส่งถึงผู้ใช้ทันที
+     */
+    protected function pushMessagePriority(string $to, array $messages): bool
+    {
+        // ✅ นับ push เข้า Gatekeeper แต่ไม่ block
+        LineGatekeeperService::recordLinePush();
+
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(15)
+                ->connectTimeout(8)
+                ->post(self::API_ENDPOINT.'/message/push', [
+                    'to' => $to,
+                    'messages' => $messages,
+                ]);
+
+            if (! $response->successful()) {
+                Log::error('LINE pushMessagePriority: ส่งไม่สำเร็จ', [
+                    'to' => $to,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('LINE pushMessagePriority: Exception', [
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     protected function pushMessage(string $to, array $messages): bool
     {
         // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อนส่ง

@@ -81,23 +81,32 @@ class FortuneSavedQuestionsController extends Controller
         );
 
         // ส่งคำตอบกลับหาผู้ใช้ (อัตโนมัติแยก platform)
-        $sent = $this->sendReplyToUser($question, $validated['admin_reply']);
+        $result = $this->sendReplyToUser($question, $validated['admin_reply']);
 
         $platformLabel = $question->platform === 'facebook' ? 'Facebook' : 'LINE';
 
-        $message = $sent
-            ? "ตอบคำถามและส่งกลับหาผู้ใช้ผ่าน {$platformLabel} เรียบร้อยแล้ว ✅"
-            : "บันทึกคำตอบแล้ว แต่ส่งข้อความกลับหาผู้ใช้ผ่าน {$platformLabel} ไม่สำเร็จ ⚠️";
+        if ($result['sent']) {
+            $message = "ส่งคำตอบกลับหาผู้ใช้ผ่าน {$platformLabel} สำเร็จ ✅";
+
+            return redirect()
+                ->route('admin.fortune.saved-questions.index')
+                ->with('success', $message);
+        }
+
+        $errorDetail = $result['error'] ? " ({$result['error']})" : '';
+        $message = "บันทึกคำตอบแล้ว แต่ส่งผ่าน {$platformLabel} ไม่สำเร็จ{$errorDetail} ⚠️";
 
         return redirect()
             ->route('admin.fortune.saved-questions.index')
-            ->with($sent ? 'success' : 'warning', $message);
+            ->with('error', $message);
     }
 
     /**
      * ส่งคำตอบกลับหาผู้ใช้ — อัตโนมัติแยก LINE / Facebook
+     *
+     * @return array{sent: bool, error: string|null}
      */
-    protected function sendReplyToUser(FortuneSavedQuestion $question, string $reply): bool
+    protected function sendReplyToUser(FortuneSavedQuestion $question, string $reply): array
     {
         try {
             $platform = $question->platform ?? 'line';
@@ -108,7 +117,7 @@ class FortuneSavedQuestionsController extends Controller
                     'question_id' => $question->id,
                 ]);
 
-                return false;
+                return ['sent' => false, 'error' => 'ไม่พบ User ID ของผู้ใช้ในระบบ'];
             }
 
             // สร้างข้อความตอบกลับ
@@ -130,7 +139,7 @@ class FortuneSavedQuestionsController extends Controller
                     'platform' => $platform,
                 ]);
 
-                return false;
+                return ['sent' => false, 'error' => "platform '{$platform}' ไม่รองรับ"];
             }
 
             if ($sent) {
@@ -140,9 +149,20 @@ class FortuneSavedQuestionsController extends Controller
                     'platform' => $platform,
                     'user_id' => $userId,
                 ]);
+            } else {
+                Log::warning('Fortune SavedQuestion: ส่งคำตอบกลับไม่สำเร็จ', [
+                    'question_id' => $question->id,
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                ]);
             }
 
-            return $sent;
+            $platformLabel = $platform === 'facebook' ? 'Facebook' : 'LINE';
+
+            return [
+                'sent' => $sent,
+                'error' => $sent ? null : "ส่งข้อความผ่าน {$platformLabel} API ไม่สำเร็จ — ดู Log เพิ่มเติม",
+            ];
         } catch (\Exception $e) {
             Log::error('Fortune SavedQuestion: ส่งคำตอบกลับหาผู้ใช้ไม่สำเร็จ', [
                 'question_id' => $question->id,
@@ -152,7 +172,7 @@ class FortuneSavedQuestionsController extends Controller
                 'trace' => mb_substr($e->getTraceAsString(), 0, 500),
             ]);
 
-            return false;
+            return ['sent' => false, 'error' => $e->getMessage()];
         }
     }
 
@@ -182,7 +202,7 @@ class FortuneSavedQuestionsController extends Controller
     }
 
     /**
-     * ส่งข้อความผ่าน LINE
+     * ส่งข้อความผ่าน LINE — ใช้ admin priority (ข้าม Gatekeeper)
      */
     protected function sendViaLine(string $userId, string $message, FortuneSavedQuestion $question): bool
     {
@@ -190,7 +210,9 @@ class FortuneSavedQuestionsController extends Controller
             $settings = FortuneTellingSetting::getSettings();
             $lineService = new LineFortuneService($settings);
 
-            return $lineService->sendMessage($userId, $message);
+            // ✅ ใช้ sendAdminMessage — ข้าม Gatekeeper throttle
+            // เพราะแอดมินตอบคำถามต้องส่งถึงผู้ใช้ทันที
+            return $lineService->sendAdminMessage($userId, $message);
         } catch (\Exception $e) {
             Log::error('Fortune SavedQuestion: ส่ง LINE ล้มเหลว', [
                 'question_id' => $question->id,
@@ -213,17 +235,20 @@ class FortuneSavedQuestionsController extends Controller
                 ->with('error', 'ยังไม่ได้ตอบคำถามนี้');
         }
 
-        $sent = $this->sendReplyToUser($question, $question->admin_reply);
+        $result = $this->sendReplyToUser($question, $question->admin_reply);
         $platformLabel = $question->platform === 'facebook' ? 'Facebook' : 'LINE';
+
+        if ($result['sent']) {
+            return redirect()
+                ->route('admin.fortune.saved-questions.index')
+                ->with('success', "ส่งคำตอบกลับหาผู้ใช้ผ่าน {$platformLabel} สำเร็จ ✅");
+        }
+
+        $errorDetail = $result['error'] ? " ({$result['error']})" : '';
 
         return redirect()
             ->route('admin.fortune.saved-questions.index')
-            ->with(
-                $sent ? 'success' : 'error',
-                $sent
-                    ? "ส่งคำตอบกลับหาผู้ใช้ผ่าน {$platformLabel} สำเร็จ ✅"
-                    : "ส่งคำตอบผ่าน {$platformLabel} ไม่สำเร็จ กรุณาลองใหม่"
-            );
+            ->with('error', "ส่งคำตอบผ่าน {$platformLabel} ไม่สำเร็จ{$errorDetail} กรุณาลองใหม่");
     }
 
     /**

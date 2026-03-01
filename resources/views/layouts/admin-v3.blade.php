@@ -146,6 +146,20 @@
         </template>
     </div>
 
+    {{-- ✅ Bridge: Laravel session flash → Alpine notify toast --}}
+    @if(session('success'))
+        <div x-data x-init="$dispatch('notify', { type: 'success', message: '{{ session('success') }}' })"></div>
+    @endif
+    @if(session('error'))
+        <div x-data x-init="$dispatch('notify', { type: 'error', message: '{{ session('error') }}' })"></div>
+    @endif
+    @if(session('warning'))
+        <div x-data x-init="$dispatch('notify', { type: 'warning', message: '{{ session('warning') }}' })"></div>
+    @endif
+    @if(session('info'))
+        <div x-data x-init="$dispatch('notify', { type: 'info', message: '{{ session('info') }}' })"></div>
+    @endif
+
     @stack('scripts')
 </body>
 </html>
