@@ -190,6 +190,9 @@ class DatabaseSeeder extends Seeder
             HoroscopeDreamCategorySeeder::class,    // 🌙 หมวดหมู่ทำนายฝัน 12 หมวด
             HoroscopeDreamDictionarySeeder::class,  // 💭 พจนานุกรมฝัน 100+ สัญลักษณ์ + เลขเด็ด
             HoroscopeSettingsSeeder::class,         // ⚙️ ค่าเริ่มต้นระบบดูดวงสาธารณะ
+
+            // 22. Fresh Market System (ตลาดสดไทยพร้อม)
+            FreshMarketSeeder::class,               // 🏪 ตลาดสดไทยพร้อม (Settings + 8 หมวดหมู่สินค้า)
         ]);
 
         $this->command->info('');

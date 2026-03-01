@@ -21,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Forum routes (Community Forum System)
             Route::middleware('web')->group(base_path('routes/forum.php'));
+
+            // Fresh Market routes (ตลาดสดไทยพร้อม)
+            Route::middleware('web')->group(base_path('routes/taladsod.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {

@@ -1249,6 +1249,21 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackRequestMetrics::class,
             \App\Http\Middleware\TrackPageView::class,
         ]);
+
+    // LINE Fresh Market Webhook (ตลาดสดไทยพร้อม - LINE OA แยกจากดูดวง)
+    // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook
+    Route::post('/line/taladsod', [\App\Http\Controllers\FreshMarketWebhookController::class, 'handle'])
+        ->name('line.taladsod')
+        ->withoutMiddleware([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\TrackVendorStoreVisit::class,
+            \App\Http\Middleware\TrackRequestMetrics::class,
+            \App\Http\Middleware\TrackPageView::class,
+        ]);
 });
 
 /*

@@ -11,20 +11,27 @@
     "file": "assets/crypto-Cy2q59CV.js",
     "name": "crypto"
   },
+  "_module.esm-iQWME055.js": {
+    "file": "assets/module.esm-iQWME055.js",
+    "name": "module.esm"
+  },
   "_threejs-CuOWkSyT.js": {
     "file": "assets/threejs-CuOWkSyT.js",
     "name": "threejs"
   },
   "resources/css/app.css": {
-    "file": "assets/app-CQTUtklm.css",
+    "file": "assets/app-US9ckURa.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-C0MU4YWl.js",
+    "file": "assets/app-BZHc0zzW.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "imports": [
+      "_module.esm-iQWME055.js"
+    ]
   },
   "resources/js/crypto/app.js": {
     "file": "assets/app-CkfBqTdi.js",
@@ -87,6 +94,15 @@
     "name": "service-worker-register",
     "src": "resources/js/service-worker-register.js",
     "isEntry": true
+  },
+  "resources/js/taladsod/app.js": {
+    "file": "assets/app-HM2k2OzE.js",
+    "name": "app",
+    "src": "resources/js/taladsod/app.js",
+    "isEntry": true,
+    "imports": [
+      "_module.esm-iQWME055.js"
+    ]
   },
   "resources/js/wealth-guide-pro.js": {
     "file": "assets/wealth-guide-pro-CUCQCyQO.js",
