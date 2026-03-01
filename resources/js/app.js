@@ -9,6 +9,12 @@
 // Import Alpine.js
 import Alpine from 'alpinejs';
 
+// Import Alpine Plugins
+import intersect from '@alpinejs/intersect';
+
+// ลงทะเบียน Alpine Plugins (ต้องทำก่อน Alpine.start())
+Alpine.plugin(intersect);
+
 // Import Alpine Stores (V3)
 import './alpine/stores/theme';
 import './alpine/stores/sidebar';
