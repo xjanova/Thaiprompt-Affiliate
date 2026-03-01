@@ -38,29 +38,29 @@
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">สถานะการเชื่อมต่อ LINE OA</h3>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->channel_id ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_id ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Channel ID</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->channel_id ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
+                        {{ ($settings->line_channel_id ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->channel_secret ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_secret ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Channel Secret</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->channel_secret ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
+                        {{ ($settings->line_channel_secret ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
                     </p>
                 </div>
             </div>
             <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
-                <div class="w-3 h-3 rounded-full {{ ($settings->channel_access_token ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
+                <div class="w-3 h-3 rounded-full {{ ($settings->line_channel_access_token ?? '') ? 'bg-green-500' : 'bg-red-500' }}"></div>
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">Access Token</p>
                     <p class="text-sm font-medium text-gray-900 dark:text-white">
-                        {{ ($settings->channel_access_token ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
+                        {{ ($settings->line_channel_access_token ?? '') ? 'กำหนดค่าแล้ว' : 'ยังไม่ได้กำหนดค่า' }}
                     </p>
                 </div>
             </div>
