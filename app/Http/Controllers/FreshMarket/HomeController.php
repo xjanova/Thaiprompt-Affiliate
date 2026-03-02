@@ -388,7 +388,14 @@ class HomeController extends Controller
      */
     public function sellerDashboard()
     {
-        $seller = FreshMarketSeller::where('user_id', auth()->id())->firstOrFail();
+        $seller = FreshMarketSeller::where('user_id', auth()->id())->first();
+
+        // ถ้ายังไม่ได้สมัครเป็นผู้ขาย → redirect ไปหน้าสมัคร
+        if (! $seller) {
+            return redirect()->route('taladsod.register-seller')
+                ->with('info', 'กรุณาสมัครเป็นผู้ขายก่อนค่ะ');
+        }
+
         $seller->load(['listings' => fn ($q) => $q->latest()->limit(10)]);
 
         $recentOrders = FreshMarketOrder::where('seller_id', $seller->id)
