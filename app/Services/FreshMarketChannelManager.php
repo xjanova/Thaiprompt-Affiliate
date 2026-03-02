@@ -2037,32 +2037,46 @@ class FreshMarketChannelManager
      */
     protected function sendReply(string $replyToken, array $result): void
     {
-        $messages = [];
-        $lastIndex = -1;
+        try {
+            $messages = [];
+            $lastIndex = -1;
 
-        if (! empty($result['text'])) {
-            $messages[] = ['type' => 'text', 'text' => $result['text']];
-            $lastIndex = count($messages) - 1;
-        }
+            if (! empty($result['text'])) {
+                $messages[] = ['type' => 'text', 'text' => mb_substr($result['text'], 0, 5000)];
+                $lastIndex = count($messages) - 1;
+            }
 
-        if (! empty($result['flex'])) {
-            $messages[] = [
-                'type' => 'flex',
-                'altText' => $result['flex_alt_text'] ?? 'ตลาดสดไทยพร้อม',
-                'contents' => $result['flex'],
-            ];
-            $lastIndex = count($messages) - 1;
-        }
+            if (! empty($result['flex'])) {
+                $messages[] = [
+                    'type' => 'flex',
+                    'altText' => $result['flex_alt_text'] ?? 'ตลาดสดไทยพร้อม',
+                    'contents' => $result['flex'],
+                ];
+                $lastIndex = count($messages) - 1;
+            }
 
-        // Quick Reply ติดกับ message สุดท้าย (LINE API requirement)
-        if (! empty($result['quick_replies']) && $lastIndex >= 0) {
-            $messages[$lastIndex]['quickReply'] = [
-                'items' => $this->buildQuickReplyItems($result['quick_replies']),
-            ];
-        }
+            // Quick Reply ติดกับ message สุดท้าย (LINE API requirement)
+            if (! empty($result['quick_replies']) && $lastIndex >= 0) {
+                $quickItems = $this->buildQuickReplyItems($result['quick_replies']);
+                if (! empty($quickItems)) {
+                    $messages[$lastIndex]['quickReply'] = ['items' => $quickItems];
+                }
+            }
 
-        if (! empty($messages)) {
-            $this->lineService->replyMessage($replyToken, $messages);
+            if (! empty($messages)) {
+                $this->lineService->replyMessage($replyToken, $messages);
+            }
+        } catch (\Exception $e) {
+            Log::error('FreshMarket sendReply error', ['error' => $e->getMessage()]);
+            // Fallback: ส่ง text ธรรมดาไม่มีปุ่ม
+            try {
+                $fallbackText = $result['text'] ?? 'ขอโทษค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่นะคะ 🙏';
+                $this->lineService->replyMessage($replyToken, [
+                    ['type' => 'text', 'text' => mb_substr($fallbackText, 0, 5000)],
+                ]);
+            } catch (\Exception $e2) {
+                Log::error('FreshMarket sendReply fallback error', ['error' => $e2->getMessage()]);
+            }
         }
     }
 

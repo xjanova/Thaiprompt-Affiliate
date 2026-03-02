@@ -184,7 +184,10 @@ class FreshMarketLineService
             try {
                 $response = Http::withHeaders([
                     'Authorization' => "Bearer {$this->channelAccessToken}",
-                ])->get(self::API_ENDPOINT."/profile/{$userId}");
+                ])
+                    ->connectTimeout(3)
+                    ->timeout(5)
+                    ->get(self::API_ENDPOINT."/profile/{$userId}");
 
                 if ($response->successful()) {
                     return $response->json();
@@ -645,7 +648,10 @@ class FreshMarketLineService
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->channelAccessToken}",
                 'Content-Type' => 'application/json',
-            ])->post(self::API_ENDPOINT.$path, $data);
+            ])
+                ->connectTimeout(5)
+                ->timeout(10)
+                ->post(self::API_ENDPOINT.$path, $data);
 
             if (! $response->successful()) {
                 $body = $response->json();
