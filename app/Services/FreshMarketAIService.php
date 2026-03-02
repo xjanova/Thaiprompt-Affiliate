@@ -67,8 +67,8 @@ class FreshMarketAIService
             ['role' => 'system', 'content' => $systemPrompt],
         ];
 
-        // เพิ่มประวัติสนทนา (จำกัดไม่เกิน 10 คู่)
-        foreach (array_slice($conversationHistory, -20) as $msg) {
+        // เพิ่มประวัติสนทนา (จำกัดตาม settings)
+        foreach (array_slice($conversationHistory, -12) as $msg) {
             $messages[] = $msg;
         }
 
@@ -315,90 +315,23 @@ PROMPT;
         // === AI Dynamic Buttons (Structured JSON Response) ===
         if ($this->settings->ai_can_suggest_buttons ?? true) {
             $maxButtons = $this->settings->ai_max_buttons ?? 4;
-            $base .= "\n\n--- รูปแบบการตอบ ---\nตอบเป็น JSON เท่านั้น:\n{\"text\": \"ข้อความตอบ\", \"buttons\": [\"ปุ่ม1\", \"ปุ่ม2\"]}";
-            $base .= "\n\nกฎปุ่ม:\n- buttons เป็น optional ใส่เฉพาะเมื่อเหมาะสม";
-            $base .= "\n- สูงสุด {$maxButtons} ปุ่ม แต่ละปุ่มไม่เกิน 20 ตัวอักษร";
-            $base .= "\n- ใส่ปุ่ม \"🔙 กลับเมนู\" เสมอเป็นปุ่มสุดท้าย";
-            $base .= "\n- ตัวอย่าง: {\"text\": \"มีผักสดหลายชนิดค่ะ\", \"buttons\": [\"🔍 ค้นหาผัก\", \"🛒 สั่งซื้อ\", \"🔙 กลับเมนู\"]}";
+            $base .= "\n\nตอบ JSON: {\"text\":\"ข้อความ\",\"buttons\":[\"ปุ่ม1\",\"🔙 กลับเมนู\"]}";
+            $base .= "\nปุ่มสูงสุด {$maxButtons} ไม่เกิน 20 ตัวอักษร ปุ่มสุดท้ายเป็น \"🔙 กลับเมนู\" เสมอ";
         }
 
         $statePrompt = match ($state) {
-            'idle' => implode("\n", [
-                'ผู้ใช้ยังไม่ได้เริ่มทำอะไร',
-                'แนะนำว่าจะ "ลงขาย" สินค้า หรือ "อยากซื้อ" ของ',
-                'ถ้าผู้ใช้ถามเรื่องสินค้า ชวนให้ส่งตำแหน่งเพื่อหาของใกล้ตัว',
-                'ตอบสั้นๆ กระชับ ไม่เกิน 3 บรรทัด',
-            ]),
-
-            'seller_phone' => implode("\n", [
-                'สถานะ: รอเบอร์โทรศัพท์เพื่อยืนยันตัวตน',
-                'ผู้ใช้ต้องพิมพ์เบอร์มือถือ 10 หลัก (เช่น 0812345678)',
-                'ถ้าพิมพ์ผิดรูปแบบ แนะนำให้พิมพ์ใหม่',
-                'ห้ามถามเรื่องอื่น โฟกัสเรื่องเบอร์โทรเท่านั้น',
-            ]),
-
-            'seller_otp' => implode("\n", [
-                'สถานะ: รอรหัส OTP 6 หลัก (ส่งทาง SMS)',
-                'ผู้ใช้ต้องพิมพ์ตัวเลข 6 หลักที่ได้รับ',
-                'ถ้ารหัสผิด แนะนำให้พิมพ์ "ส่งใหม่" เพื่อขอรหัสใหม่',
-                'พิมพ์ "เปลี่ยนเบอร์" ได้ถ้าต้องการเปลี่ยน',
-            ]),
-
-            'listing_photos' => implode("\n", [
-                'สถานะ: กำลังรับรูปสินค้า (ขั้นตอนที่ 1/5)',
-                'รูปที่ได้รับ: '.($context['listing_data']['image_count'] ?? 0).' รูป',
-                'กระตุ้นให้ส่งรูปมาอีก หรือพิมพ์ "เสร็จ" เมื่อส่งรูปครบ',
-                'ห้ามถามรายละเอียดสินค้า ห้ามถามราคา ให้รอรูปก่อน',
-            ]),
-
-            'listing_details' => implode("\n", [
-                'สถานะ: รอข้อมูลสินค้า (ขั้นตอนที่ 2/5)',
-                'ต้องการ: ชื่อสินค้า, ราคา, หน่วย (กก./ถุง/กำ/ชิ้น)',
-                'ถ้าผู้ใช้พิมพ์ไม่ครบ ถามเฉพาะส่วนที่ขาด',
-                'ตอบเป็นภาษาไทยปกติ ไม่ต้องตอบเป็น JSON',
-            ]),
-
-            'listing_location' => implode("\n", [
-                'สถานะ: รอพิกัดร้าน (ขั้นตอนที่ 3/5)',
-                'บอกผู้ใช้ให้กดปุ่มส่งตำแหน่ง (Location) ใน LINE',
-                'ถ้าพิมพ์ "ข้าม" ใช้พิกัดร้านที่บันทึกไว้',
-                'ห้ามถามเรื่องอื่น โฟกัสเรื่องพิกัดเท่านั้น',
-            ]),
-
-            'listing_review' => implode("\n", [
-                'สถานะ: ยืนยันก่อนลงขาย (ขั้นตอนที่ 4/5)',
-                'แสดงสรุปข้อมูลสินค้า ถามว่า "ยืนยัน" หรือ "แก้ไข"',
-                'ข้อมูล: '.json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE),
-            ]),
-
-            'search_location' => implode("\n", [
-                'สถานะ: รอตำแหน่งผู้ซื้อ (ขั้นตอนที่ 1/2)',
-                'บอกให้ส่งตำแหน่งเพื่อหาสินค้าใกล้ตัว',
-                'ห้ามเสนอสินค้า เพราะยังไม่รู้ตำแหน่ง',
-            ]),
-
-            'search_browsing' => implode("\n", [
-                'สถานะ: แสดงผลค้นหา (ขั้นตอนที่ 2/2)',
-                'ผู้ใช้กำลังดูสินค้า ช่วยแนะนำเพิ่มเติมได้',
-                'ถ้าถามเรื่องสินค้า ตอบจากรายการที่มี',
-                ! empty($context['nearby_listings']) ? "สินค้าใกล้ตัว:\n{$context['nearby_listings']}" : '',
-            ]),
-
-            'order_quantity' => implode("\n", [
-                'สถานะ: รอจำนวนสั่งซื้อ (ขั้นตอนที่ 2/4)',
-                'สินค้า: '.($context['order_data']['listing_title'] ?? '').
-                    ' ฿'.($context['order_data']['listing_price'] ?? 0).
-                    '/'.($context['order_data']['listing_unit'] ?? ''),
-                'ถามจำนวนและวิธีรับ (นัดรับ/ส่ง)',
-                'ตอบภาษาไทยปกติ ไม่ต้อง JSON',
-            ]),
-
-            'order_review' => implode("\n", [
-                'สถานะ: ตรวจสอบคำสั่งซื้อ (ขั้นตอนที่ 3/4)',
-                'ถามว่า "ยืนยัน" หรือ "ยกเลิก"',
-            ]),
-
-            default => "สถานะ: {$state}",
+            'idle' => 'idle: แนะนำ "ลงขาย" หรือ "อยากซื้อ" ตอบสั้นไม่เกิน 2 บรรทัด',
+            'seller_phone' => 'รอเบอร์โทร 10 หลัก โฟกัสเรื่องเบอร์เท่านั้น',
+            'seller_otp' => 'รอ OTP 6 หลัก พิมพ์ "ส่งใหม่" ขอรหัสใหม่ได้',
+            'listing_photos' => 'รับรูปสินค้า ('.($context['listing_data']['image_count'] ?? 0).' รูปแล้ว) พิมพ์ "เสร็จ" เมื่อครบ',
+            'listing_details' => 'รอข้อมูลสินค้า: ชื่อ ราคา หน่วย ตอบไทยปกติไม่ต้อง JSON',
+            'listing_location' => 'รอพิกัดร้าน กดส่งตำแหน่งใน LINE',
+            'listing_review' => 'ยืนยันก่อนลงขาย ถามว่า "ยืนยัน" หรือ "แก้ไข" ข้อมูล: '.json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE),
+            'search_location' => 'รอตำแหน่งผู้ซื้อ บอกให้ส่งตำแหน่ง',
+            'search_browsing' => 'แสดงผลค้นหา ช่วยแนะนำสินค้า'.(! empty($context['nearby_listings']) ? "\n{$context['nearby_listings']}" : ''),
+            'order_quantity' => 'รอจำนวนสั่งซื้อ: '.($context['order_data']['listing_title'] ?? '').' ฿'.($context['order_data']['listing_price'] ?? 0).'/'.($context['order_data']['listing_unit'] ?? '').' ตอบไทยปกติ',
+            'order_review' => 'ตรวจสอบคำสั่งซื้อ ถาม "ยืนยัน" หรือ "ยกเลิก"',
+            default => $state,
         };
 
         // เพิ่มบริบทผู้ใช้
@@ -431,7 +364,7 @@ PROMPT;
     /**
      * เรียก AI API
      */
-    protected function callAI(array $messages, int $maxTokens = 1024): array
+    protected function callAI(array $messages, int $maxTokens = 400): array
     {
         $endpoint = $this->getApiEndpoint();
         $headers = $this->getApiHeaders();
@@ -444,7 +377,8 @@ PROMPT;
         ];
 
         $response = Http::withHeaders($headers)
-            ->timeout(30)
+            ->connectTimeout(5)
+            ->timeout(15)
             ->post($endpoint, $payload);
 
         if (! $response->successful()) {

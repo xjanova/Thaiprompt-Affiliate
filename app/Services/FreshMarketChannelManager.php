@@ -624,7 +624,7 @@ class FreshMarketChannelManager
     {
         try {
             $context = $this->buildContext($conversation);
-            $maxMessages = $this->settings->ai_max_context_messages ?? 10;
+            $maxMessages = min($this->settings->ai_max_context_messages ?? 6, 8);
             $aiResult = $this->aiService->generateResponse(
                 $message,
                 $conversation->getMessageHistory($maxMessages),
@@ -1997,19 +1997,21 @@ class FreshMarketChannelManager
             $context['order_data'] = $conversation->getFlowContext('order');
         }
 
-        // สินค้าใกล้ตัว (เช็ค data access)
+        // สินค้าใกล้ตัว (เช็ค data access + cache 5 นาที)
         if ($conversation->last_search_latitude && ($this->settings->ai_can_access_listings ?? true)) {
             try {
-                $listings = $this->marketService->searchListings(
-                    (float) $conversation->last_search_latitude,
-                    (float) $conversation->last_search_longitude,
-                    5
-                );
+                $lat = round((float) $conversation->last_search_latitude, 3);
+                $lng = round((float) $conversation->last_search_longitude, 3);
+                $cacheKey = "fm:nearby:{$lat}:{$lng}";
 
-                if ($listings->isNotEmpty()) {
-                    $listingText = $listings->take(5)->map(function ($l) {
+                $listingText = cache()->remember($cacheKey, 300, function () use ($lat, $lng) {
+                    $listings = $this->marketService->searchListings($lat, $lng, 5);
+                    if ($listings->isEmpty()) {
+                        return null;
+                    }
+
+                    return $listings->take(5)->map(function ($l) {
                         $text = "- {$l->title}";
-                        // เฉพาะเมื่อ admin อนุญาตให้เข้าถึงราคา
                         if ($this->settings->ai_can_access_pricing ?? true) {
                             $text .= " ฿{$l->price}/{$l->unit}";
                         }
@@ -2017,7 +2019,9 @@ class FreshMarketChannelManager
 
                         return $text;
                     })->implode("\n");
+                });
 
+                if ($listingText) {
                     $context['nearby_listings'] = $listingText;
                 }
             } catch (\Exception $e) {
