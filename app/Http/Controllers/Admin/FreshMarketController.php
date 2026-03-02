@@ -70,13 +70,44 @@ class FreshMarketController extends Controller
     public function updateSettings(Request $request)
     {
         $validated = $request->validate([
+            // LINE
             'line_channel_id' => 'nullable|string|max:50',
             'line_channel_secret' => 'nullable|string|max:100',
             'line_channel_access_token' => 'nullable|string|max:500',
+            // AI Provider
             'ai_provider' => 'required|string|in:groq,openrouter,openai',
             'ai_model' => 'required|string|max:100',
             'use_global_ai_settings' => 'boolean',
             'ai_system_prompt' => 'nullable|string',
+            // Bot Personality
+            'bot_name' => 'nullable|string|max:50',
+            'bot_personality' => 'nullable|string|max:1000',
+            'bot_response_style' => 'nullable|string|in:friendly,formal,casual,funny',
+            'bot_temperature' => 'nullable|numeric|min:0|max:1',
+            // Greeting & Menu
+            'greeting_message_template' => 'nullable|string|max:2000',
+            'menu_label_buy' => 'nullable|string|max:20',
+            'menu_label_sell' => 'nullable|string|max:20',
+            'menu_label_rider' => 'nullable|string|max:20',
+            'menu_label_chat_ai' => 'nullable|string|max:20',
+            'menu_label_help' => 'nullable|string|max:20',
+            'ai_enabled_in_idle' => 'boolean',
+            // AI Scope
+            'ai_scope_description' => 'nullable|string|max:2000',
+            'ai_allowed_topics' => 'nullable|string',
+            'ai_blocked_topics' => 'nullable|string',
+            'ai_off_topic_message' => 'nullable|string|max:500',
+            // AI Dynamic Buttons
+            'ai_can_suggest_buttons' => 'boolean',
+            'ai_max_buttons' => 'nullable|integer|min:1|max:13',
+            // Data Access
+            'ai_can_access_listings' => 'boolean',
+            'ai_can_access_orders' => 'boolean',
+            'ai_can_access_user_profile' => 'boolean',
+            'ai_can_access_sellers' => 'boolean',
+            'ai_can_access_pricing' => 'boolean',
+            'ai_max_context_messages' => 'nullable|integer|min:1|max:50',
+            // ค่าธรรมเนียม
             'platform_fee_percentage' => 'required|numeric|min:0|max:50',
             'monthly_subscription_fee' => 'required|numeric|min:0',
             'fee_mode' => 'required|string|in:percentage,subscription,both',
@@ -94,6 +125,27 @@ class FreshMarketController extends Controller
             'brand_name' => 'required|string|max:100',
             'welcome_message' => 'nullable|string',
         ]);
+
+        // รวม menu_label_* เป็น JSON menu_button_labels
+        $menuLabels = [];
+        foreach (['buy', 'sell', 'rider', 'chat_ai', 'help'] as $key) {
+            $fieldName = "menu_label_{$key}";
+            if (! empty($validated[$fieldName])) {
+                $menuLabels[$key] = $validated[$fieldName];
+            }
+            unset($validated[$fieldName]);
+        }
+        if (! empty($menuLabels)) {
+            $validated['menu_button_labels'] = $menuLabels;
+        }
+
+        // แปลง JSON string → array สำหรับ topics
+        foreach (['ai_allowed_topics', 'ai_blocked_topics'] as $field) {
+            if (isset($validated[$field]) && is_string($validated[$field])) {
+                $decoded = json_decode($validated[$field], true);
+                $validated[$field] = is_array($decoded) ? $decoded : null;
+            }
+        }
 
         $settings = FreshMarketSetting::getSettings();
         $settings->update($validated);

@@ -236,15 +236,17 @@ class FreshMarketChannelManager
             ]);
         }
 
-        // 5. ส่ง welcome message (replyMessage = ฟรี!)
+        // 5. ส่ง welcome message พร้อมปุ่มเมนู (replyMessage = ฟรี!)
         $greeting = $displayName !== 'ผู้ใช้ใหม่' ? " คุณ{$displayName}" : '';
-        $welcomeMessage = $this->settings->welcome_message
-            ?? "สวัสดีค่ะ{$greeting}! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪\n\n✅ สมัครสมาชิกอัตโนมัติเรียบร้อยแล้วค่ะ\n\nวันนี้จะซื้อหรือจะขายคะ? 😊\n\n🛒 พิมพ์ \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ พิมพ์ \"ลงขาย\" - ลงขายสินค้า\n📋 พิมพ์ \"ช่วยเหลือ\" - ดูคำสั่งทั้งหมด";
+        $template = $this->settings->greeting_message_template
+            ?? "สวัสดีค่ะ{name}! ยินดีต้อนรับสู่ตลาดสดไทยพร้อม 🏪\n\n✅ สมัครสมาชิกอัตโนมัติเรียบร้อยแล้วค่ะ\n\nเลือกสิ่งที่ต้องการได้เลยนะคะ:";
+        $welcomeMessage = str_replace('{name}', $greeting, $template);
+
+        $welcomeResult = $this->buildGreetingWithButtons($conversation);
+        $welcomeResult['text'] = $welcomeMessage;
 
         if ($replyToken) {
-            $this->lineService->replyMessage($replyToken, [
-                ['type' => 'text', 'text' => $welcomeMessage],
-            ]);
+            $this->sendReply($replyToken, $welcomeResult);
         }
 
         Log::info('FreshMarket: Auto-registered on follow', [
@@ -450,6 +452,7 @@ class FreshMarketChannelManager
         $action = $params['action'] ?? '';
 
         $result = match ($action) {
+            'menu' => $this->handleMenuPostback($lineUserId, $params, $conversation),
             'order' => $this->handleOrderSelectPostback($lineUserId, $params, $conversation),
             'confirm_listing' => $this->handleListingConfirmPostback($conversation),
             'edit_listing' => $this->handleListingEditPostback($conversation),
@@ -462,6 +465,44 @@ class FreshMarketChannelManager
         if ($replyToken && $result) {
             $this->sendReply($replyToken, $result);
         }
+    }
+
+    /**
+     * จัดการ postback จากเมนูปุ่มหลัก
+     */
+    protected function handleMenuPostback(string $lineUserId, array $params, FreshMarketConversation $conversation): array
+    {
+        $choice = $params['choice'] ?? '';
+
+        return match ($choice) {
+            'buy' => $this->handleCommand('buy', $lineUserId, $conversation, []),
+            'sell' => $this->handleCommand('sell', $lineUserId, $conversation, []),
+            'rider' => $this->handleCommand('rider', $lineUserId, $conversation, []),
+            'chat_ai' => $this->enterAIChatMode($conversation),
+            'help' => $this->handleCommand('help', $lineUserId, $conversation, []),
+            'back_to_menu' => $this->buildGreetingWithButtons($conversation),
+            default => $this->buildGreetingWithButtons($conversation),
+        };
+    }
+
+    /**
+     * เข้าสู่โหมด AI chat — AI ตอบ free text + สร้างปุ่มเอง
+     */
+    protected function enterAIChatMode(FreshMarketConversation $conversation): array
+    {
+        $conversation->setFlowContext('ai_chat', [
+            'active' => true,
+            'started_at' => now()->toIso8601String(),
+        ]);
+
+        $botName = $this->settings->bot_name ?? 'พี่ตลาด';
+
+        return [
+            'text' => "💬 เข้าสู่โหมดคุยกับ{$botName}ค่ะ!\n\nถามอะไรก็ได้เกี่ยวกับตลาดสดนะคะ 😊\nพิมพ์ \"กลับเมนู\" เพื่อกลับหน้าหลัก",
+            'quick_replies' => [
+                ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+            ],
+        ];
     }
 
     // ╔══════════════════════════════════════════╗
@@ -524,35 +565,132 @@ class FreshMarketChannelManager
     // ╚══════════════════════════════════════════╝
 
     /**
-     * idle + text → AI chat ทั่วไป / detect intent
+     * idle + text → Button-first greeting / AI chat mode
+     *
+     * ลำดับ:
+     * 1. ถ้าอยู่ในโหมด AI chat → ส่งไป AI (พร้อมปุ่มที่ AI สร้างเอง)
+     * 2. ถ้า admin เปิด ai_enabled_in_idle → AI ตอบ free text
+     * 3. Default: แสดงเมนูปุ่มให้เลือก (บังคับกดปุ่ม)
      */
     protected function handleIdle_Text(FreshMarketConversation $conversation, string $message, array $extra): array
     {
+        // 1. ถ้าอยู่ในโหมด AI chat (ผู้ใช้กด "คุยกับ AI" แล้ว)
+        $flowContext = $conversation->getFlowContext('ai_chat');
+        if (! empty($flowContext['active'])) {
+            // ถ้าพิมพ์ "กลับเมนู" → ออกจาก AI chat
+            if (in_array(mb_strtolower(trim($message)), ['กลับเมนู', 'เมนู', 'menu'])) {
+                $conversation->clearFlowContext('ai_chat');
+
+                return $this->buildGreetingWithButtons($conversation);
+            }
+
+            return $this->handleAIChatResponse($conversation, $message, $extra);
+        }
+
+        // 2. ถ้า admin เปิดให้ AI ตอบ free text ใน idle
+        if ($this->settings->ai_enabled_in_idle ?? false) {
+            return $this->handleAIChatResponse($conversation, $message, $extra);
+        }
+
+        // 3. Default: แสดงเมนูปุ่มให้เลือก
+        return $this->buildGreetingWithButtons($conversation);
+    }
+
+    /**
+     * สร้าง greeting message พร้อม Quick Reply buttons
+     */
+    protected function buildGreetingWithButtons(FreshMarketConversation $conversation): array
+    {
+        $labels = $this->settings->menu_button_labels ?? [];
+        $greeting = $this->settings->greeting_message_template
+            ?? "สวัสดีค่ะ! พี่ตลาดพร้อมช่วยเหลือค่ะ 😊\n\nเลือกสิ่งที่ต้องการได้เลยนะคะ:";
+
+        return [
+            'text' => $greeting,
+            'quick_replies' => [
+                ['label' => $labels['buy'] ?? '🛒 ซื้อของ', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
+                ['label' => $labels['sell'] ?? '🏷️ ลงขาย', 'postback' => 'action=menu&choice=sell', 'display_text' => 'ลงขาย'],
+                ['label' => $labels['rider'] ?? '🏍️ ไรเดอร์', 'postback' => 'action=menu&choice=rider', 'display_text' => 'สมัครไรเดอร์'],
+                ['label' => $labels['chat_ai'] ?? '💬 คุยกับ AI', 'postback' => 'action=menu&choice=chat_ai', 'display_text' => 'คุยกับพี่ตลาด'],
+                ['label' => $labels['help'] ?? '📋 ช่วยเหลือ', 'postback' => 'action=menu&choice=help', 'display_text' => 'ช่วยเหลือ'],
+            ],
+        ];
+    }
+
+    /**
+     * ส่งข้อความไป AI พร้อม parse structured response (JSON with buttons)
+     */
+    protected function handleAIChatResponse(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
         try {
             $context = $this->buildContext($conversation);
+            $maxMessages = $this->settings->ai_max_context_messages ?? 10;
             $aiResult = $this->aiService->generateResponse(
                 $message,
-                $conversation->getMessageHistory(10),
+                $conversation->getMessageHistory($maxMessages),
                 $context
             );
 
-            return [
-                'text' => $aiResult['response'],
+            $response = $aiResult['response'];
+
+            // พยายาม parse JSON (AI structured response with buttons)
+            $parsed = $this->parseAIStructuredResponse($response);
+
+            $result = [
+                'text' => $parsed['text'],
                 'metadata' => [
                     'tokens_used' => $aiResult['tokens_used'],
                     'ai_provider' => $aiResult['provider'],
                     'ai_model' => $aiResult['model'],
                 ],
             ];
+
+            // ถ้า AI แนะนำปุ่ม → แปลงเป็น Quick Reply
+            if (! empty($parsed['buttons'])) {
+                $result['quick_replies'] = array_map(function ($btn) {
+                    // ปุ่ม "กลับเมนู" → ใช้ postback เพื่อ routing ชัดเจน
+                    if (is_string($btn) && (str_contains($btn, 'กลับเมนู') || str_contains($btn, 'เมนู'))) {
+                        return ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'];
+                    }
+
+                    return $btn; // Simple text button
+                }, $parsed['buttons']);
+            }
+
+            return $result;
         } catch (\Exception $e) {
-            Log::error('FreshMarketChannelManager: AI error (idle)', [
+            Log::error('FreshMarketChannelManager: AI chat error', [
                 'error' => $e->getMessage(),
             ]);
 
+            return $this->buildGreetingWithButtons($conversation);
+        }
+    }
+
+    /**
+     * Parse AI structured response (JSON with text + buttons)
+     *
+     * AI ตอบเป็น: {"text": "ข้อความ", "buttons": ["ปุ่ม1", "ปุ่ม2"]}
+     * Fallback: ถ้าไม่ใช่ JSON → ใช้ text ตรงๆ + ปุ่มกลับเมนู
+     */
+    protected function parseAIStructuredResponse(string $response): array
+    {
+        // ลอง parse JSON
+        $cleaned = preg_replace('/^```json\s*|```$/m', '', trim($response));
+        $data = json_decode($cleaned, true);
+
+        if (json_last_error() === JSON_ERROR_NONE && isset($data['text'])) {
             return [
-                'text' => "สวัสดีค่ะ! พี่ตลาดรับทราบข้อความแล้วค่ะ 😊\n\nวันนี้จะซื้อหรือจะขายคะ?\n🛒 พิมพ์ \"อยากซื้อ\"\n🏷️ พิมพ์ \"ลงขาย\"\n📋 พิมพ์ \"ช่วยเหลือ\"",
+                'text' => $data['text'],
+                'buttons' => $data['buttons'] ?? ['🔙 กลับเมนู'],
             ];
         }
+
+        // Fallback: ใช้ text ตรงๆ + ปุ่มกลับเมนู
+        return [
+            'text' => $response,
+            'buttons' => ['🔙 กลับเมนู'],
+        ];
     }
 
     /**
@@ -1631,13 +1769,20 @@ class FreshMarketChannelManager
         $message = mb_strtolower(trim($message));
 
         $commands = [
+            'กลับเมนู' => 'menu',
+            'เมนู' => 'menu',
+            'menu' => 'menu',
             'ลงขาย' => 'sell',
             'ขายของ' => 'sell',
             'อยากขาย' => 'sell',
             'อยากซื้อ' => 'buy',
+            'ซื้อของ' => 'buy',
             'ซื้อ' => 'buy',
             'หาของ' => 'buy',
             'ค้นหา' => 'search',
+            'สมัครไรเดอร์' => 'rider',
+            'ไรเดอร์' => 'rider',
+            'rider' => 'rider',
             'ออเดอร์' => 'my_orders',
             'คำสั่งซื้อ' => 'my_orders',
             'ช่วยเหลือ' => 'help',
@@ -1661,6 +1806,21 @@ class FreshMarketChannelManager
     protected function handleCommand(string $command, string $lineUserId, FreshMarketConversation $conversation, array $extra): array
     {
         switch ($command) {
+            case 'menu':
+                // กลับเมนูหลัก + ออก AI chat mode
+                $conversation->clearFlowContext('ai_chat');
+                $conversation->transitionTo('idle');
+
+                return $this->buildGreetingWithButtons($conversation);
+
+            case 'rider':
+                return [
+                    'text' => "🏍️ สมัครไรเดอร์\n\nสมัครเป็นไรเดอร์เซอร์วิสได้ที่:\n" . url('/taladsod/rider/register') . "\n\nรายได้ดี รับงานอิสระ! 💪",
+                    'quick_replies' => [
+                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                    ],
+                ];
+
             case 'sell':
                 // เช็ค phone verified ก่อนเริ่มลงขาย
                 $seller = FreshMarketSeller::findByLineUserId($conversation->line_user_id);
@@ -1707,16 +1867,20 @@ class FreshMarketChannelManager
 
             case 'help':
                 return [
-                    'text' => "📋 คำสั่งที่ใช้ได้\n\n🛒 \"อยากซื้อ\" - ค้นหาสินค้าใกล้ตัว\n🏷️ \"ลงขาย\" - ลงขายสินค้า\n📦 \"ออเดอร์\" - ดูออเดอร์\n📍 ส่งตำแหน่ง - หาสินค้าใกล้ตัว\n📸 ส่งรูป - ลงขายสินค้า\n❌ \"ยกเลิก\" - ยกเลิกสิ่งที่ทำอยู่\n\nหรือจะพิมพ์ถามอะไรก็ได้ค่ะ พี่ตลาดช่วยเองค่ะ 😊",
+                    'text' => "📋 วิธีใช้งาน\n\nกดปุ่มด้านล่างเพื่อเลือกสิ่งที่ต้องการได้เลยค่ะ\n\nหรือพิมพ์ข้อความเหล่านี้ก็ได้:\n🛒 \"ซื้อของ\" — ค้นหาสินค้าใกล้ตัว\n🏷️ \"ลงขาย\" — ลงขายสินค้า\n📦 \"ออเดอร์\" — ดูคำสั่งซื้อ\n💬 \"คุยกับ AI\" — ถามพี่ตลาด\n❌ \"ยกเลิก\" — ยกเลิกสิ่งที่ทำอยู่\n🔙 \"กลับเมนู\" — กลับหน้าหลัก",
+                    'quick_replies' => [
+                        ['label' => '🛒 ซื้อของ', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
+                        ['label' => '🏷️ ลงขาย', 'postback' => 'action=menu&choice=sell', 'display_text' => 'ลงขาย'],
+                        ['label' => '💬 คุยกับ AI', 'postback' => 'action=menu&choice=chat_ai', 'display_text' => 'คุยกับพี่ตลาด'],
+                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                    ],
                 ];
 
             case 'greeting':
-                return [
-                    'text' => "สวัสดีค่ะ! 🏪 พี่ตลาดยินดีให้บริการค่ะ\n\nวันนี้จะซื้อหรือจะขายคะ? 😊",
-                ];
+                return $this->buildGreetingWithButtons($conversation);
 
             default:
-                return ['text' => 'พี่ตลาดไม่เข้าใจค่ะ ลองพิมพ์ "ช่วยเหลือ" ดูนะคะ'];
+                return $this->buildGreetingWithButtons($conversation);
         }
     }
 
@@ -1825,16 +1989,16 @@ class FreshMarketChannelManager
             'state_total_steps' => $conversation->state_total_steps,
         ];
 
-        // เพิ่ม flow context
+        // เพิ่ม flow context (เช็ค data access)
         if ($conversation->isInListingFlow()) {
             $context['listing_data'] = $conversation->getFlowContext('listing');
         }
-        if ($conversation->isInOrderFlow()) {
+        if ($conversation->isInOrderFlow() && ($this->settings->ai_can_access_orders ?? false)) {
             $context['order_data'] = $conversation->getFlowContext('order');
         }
 
-        // สินค้าใกล้ตัว
-        if ($conversation->last_search_latitude) {
+        // สินค้าใกล้ตัว (เช็ค data access)
+        if ($conversation->last_search_latitude && ($this->settings->ai_can_access_listings ?? true)) {
             try {
                 $listings = $this->marketService->searchListings(
                     (float) $conversation->last_search_latitude,
@@ -1844,7 +2008,14 @@ class FreshMarketChannelManager
 
                 if ($listings->isNotEmpty()) {
                     $listingText = $listings->take(5)->map(function ($l) {
-                        return "- {$l->title} ฿{$l->price}/{$l->unit} ({$l->distance_km}กม.)";
+                        $text = "- {$l->title}";
+                        // เฉพาะเมื่อ admin อนุญาตให้เข้าถึงราคา
+                        if ($this->settings->ai_can_access_pricing ?? true) {
+                            $text .= " ฿{$l->price}/{$l->unit}";
+                        }
+                        $text .= " ({$l->distance_km}กม.)";
+
+                        return $text;
                     })->implode("\n");
 
                     $context['nearby_listings'] = $listingText;
@@ -1863,9 +2034,11 @@ class FreshMarketChannelManager
     protected function sendReply(string $replyToken, array $result): void
     {
         $messages = [];
+        $lastIndex = -1;
 
         if (! empty($result['text'])) {
             $messages[] = ['type' => 'text', 'text' => $result['text']];
+            $lastIndex = count($messages) - 1;
         }
 
         if (! empty($result['flex'])) {
@@ -1874,11 +2047,66 @@ class FreshMarketChannelManager
                 'altText' => $result['flex_alt_text'] ?? 'ตลาดสดไทยพร้อม',
                 'contents' => $result['flex'],
             ];
+            $lastIndex = count($messages) - 1;
+        }
+
+        // Quick Reply ติดกับ message สุดท้าย (LINE API requirement)
+        if (! empty($result['quick_replies']) && $lastIndex >= 0) {
+            $messages[$lastIndex]['quickReply'] = [
+                'items' => $this->buildQuickReplyItems($result['quick_replies']),
+            ];
         }
 
         if (! empty($messages)) {
             $this->lineService->replyMessage($replyToken, $messages);
         }
+    }
+
+    /**
+     * สร้าง Quick Reply items จาก array (รองรับ text, postback, message)
+     */
+    protected function buildQuickReplyItems(array $quickReplies): array
+    {
+        $items = [];
+
+        foreach ($quickReplies as $reply) {
+            if (is_string($reply)) {
+                // Simple text button
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'message',
+                        'label' => mb_substr($reply, 0, 20),
+                        'text' => $reply,
+                    ],
+                ];
+            } elseif (isset($reply['postback'])) {
+                // Postback button — routing ชัดเจน ไม่ต้อง text matching
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'postback',
+                        'label' => mb_substr($reply['label'], 0, 20),
+                        'data' => $reply['postback'],
+                        'displayText' => $reply['display_text'] ?? $reply['label'],
+                    ],
+                ];
+            } else {
+                // Message button with label/text
+                $label = $reply['label'] ?? $reply['text'] ?? '';
+                $items[] = [
+                    'type' => 'action',
+                    'action' => [
+                        'type' => 'message',
+                        'label' => mb_substr($label, 0, 20),
+                        'text' => $reply['text'] ?? $label,
+                    ],
+                ];
+            }
+        }
+
+        // LINE API: สูงสุด 13 Quick Reply items
+        return array_slice($items, 0, 13);
     }
 
     /**

@@ -31,6 +31,26 @@ use Illuminate\Database\Eloquent\Model;
  * @property string $line_flex_primary_color
  * @property string $brand_name
  * @property string|null $welcome_message
+ * @property string $bot_name ชื่อบอท
+ * @property string|null $bot_personality บุคลิกภาพ/อารมณ์
+ * @property string $bot_response_style สไตล์การตอบ (friendly/formal/casual/funny)
+ * @property float $bot_temperature อุณหภูมิ AI (0.0-1.0)
+ * @property string|null $greeting_message_template ข้อความต้อนรับ
+ * @property bool $greeting_flex_enabled ใช้ Flex Message สำหรับ greeting
+ * @property array|null $menu_button_labels ป้ายปุ่มเมนู
+ * @property bool $ai_enabled_in_idle AI ตอบ free text ใน idle
+ * @property string|null $ai_scope_description ขอบเขตการตอบ
+ * @property array|null $ai_allowed_topics หัวข้อที่ตอบได้
+ * @property array|null $ai_blocked_topics หัวข้อที่ห้ามตอบ
+ * @property string|null $ai_off_topic_message ข้อความเมื่อนอกขอบเขต
+ * @property bool $ai_can_suggest_buttons AI สร้างปุ่มในคำตอบได้
+ * @property int $ai_max_buttons จำนวนปุ่มสูงสุด
+ * @property bool $ai_can_access_listings เข้าถึงรายการสินค้า
+ * @property bool $ai_can_access_orders เข้าถึงคำสั่งซื้อ
+ * @property bool $ai_can_access_user_profile เข้าถึงโปรไฟล์ผู้ใช้
+ * @property bool $ai_can_access_sellers เข้าถึงข้อมูลผู้ขาย
+ * @property bool $ai_can_access_pricing เข้าถึงราคา
+ * @property int $ai_max_context_messages จำนวน context messages สูงสุด
  */
 class FreshMarketSetting extends Model
 {
@@ -65,6 +85,31 @@ class FreshMarketSetting extends Model
         'line_flex_primary_color',
         'brand_name',
         'welcome_message',
+        // Bot Personality
+        'bot_name',
+        'bot_personality',
+        'bot_response_style',
+        'bot_temperature',
+        // Greeting & Menu
+        'greeting_message_template',
+        'greeting_flex_enabled',
+        'menu_button_labels',
+        'ai_enabled_in_idle',
+        // AI Scope
+        'ai_scope_description',
+        'ai_allowed_topics',
+        'ai_blocked_topics',
+        'ai_off_topic_message',
+        // AI Dynamic Buttons
+        'ai_can_suggest_buttons',
+        'ai_max_buttons',
+        // Data Access Controls
+        'ai_can_access_listings',
+        'ai_can_access_orders',
+        'ai_can_access_user_profile',
+        'ai_can_access_sellers',
+        'ai_can_access_pricing',
+        'ai_max_context_messages',
     ];
 
     /**
@@ -89,6 +134,25 @@ class FreshMarketSetting extends Model
         'free_trial_days' => 'integer',
         'max_listings_free' => 'integer',
         'max_listings_subscribed' => 'integer',
+        // Bot Personality
+        'bot_temperature' => 'decimal:2',
+        // Greeting & Menu
+        'greeting_flex_enabled' => 'boolean',
+        'menu_button_labels' => 'json',
+        'ai_enabled_in_idle' => 'boolean',
+        // AI Scope
+        'ai_allowed_topics' => 'json',
+        'ai_blocked_topics' => 'json',
+        // AI Dynamic Buttons
+        'ai_can_suggest_buttons' => 'boolean',
+        'ai_max_buttons' => 'integer',
+        // Data Access Controls
+        'ai_can_access_listings' => 'boolean',
+        'ai_can_access_orders' => 'boolean',
+        'ai_can_access_user_profile' => 'boolean',
+        'ai_can_access_sellers' => 'boolean',
+        'ai_can_access_pricing' => 'boolean',
+        'ai_max_context_messages' => 'integer',
     ];
 
     /**

@@ -263,8 +263,64 @@ PROMPT;
      */
     protected function buildStateAwarePrompt(string $state, array $context = []): string
     {
-        $base = $this->settings->ai_system_prompt
+        $basePrompt = $this->settings->ai_system_prompt
             ?? 'คุณคือ "พี่ตลาด" ผู้ช่วย AI ของตลาดสดไทยพร้อม ตอบภาษาไทย สั้นกระชับ ใจดี เป็นกันเอง';
+
+        // === Bot Identity & Personality ===
+        $botName = $this->settings->bot_name ?? 'พี่ตลาด';
+        $personality = $this->settings->bot_personality ?? '';
+        $style = $this->settings->bot_response_style ?? 'friendly';
+
+        $base = "คุณคือ \"{$botName}\" สไตล์: {$style}";
+        if ($personality) {
+            $base .= "\nบุคลิกภาพ: {$personality}";
+        }
+        $base .= "\n\n".$basePrompt;
+
+        // === AI Scope / Boundaries ===
+        if ($scopeDesc = $this->settings->ai_scope_description) {
+            $base .= "\n\nขอบเขตการตอบ: {$scopeDesc}";
+        }
+        if ($allowedTopics = $this->settings->ai_allowed_topics) {
+            if (is_array($allowedTopics) && ! empty($allowedTopics)) {
+                $base .= "\nหัวข้อที่ตอบได้: ".implode(', ', $allowedTopics);
+            }
+        }
+        if ($blockedTopics = $this->settings->ai_blocked_topics) {
+            if (is_array($blockedTopics) && ! empty($blockedTopics)) {
+                $offTopicMsg = $this->settings->ai_off_topic_message ?? 'ขอโทษค่ะ หัวข้อนี้อยู่นอกขอบเขตบริการค่ะ';
+                $base .= "\nหัวข้อที่ห้ามตอบ: ".implode(', ', $blockedTopics);
+                $base .= "\nเมื่อถูกถามเรื่องที่ห้าม ตอบว่า: \"{$offTopicMsg}\"";
+            }
+        }
+
+        // === Data Access Controls ===
+        $dataAccessParts = [];
+        if ($this->settings->ai_can_access_listings ?? true) {
+            $dataAccessParts[] = 'รายการสินค้า';
+        }
+        if ($this->settings->ai_can_access_pricing ?? true) {
+            $dataAccessParts[] = 'ราคา';
+        }
+        if (! ($this->settings->ai_can_access_orders ?? false)) {
+            $dataAccessParts[] = 'ห้ามเปิดเผยข้อมูลคำสั่งซื้อ';
+        }
+        if (! ($this->settings->ai_can_access_user_profile ?? false)) {
+            $dataAccessParts[] = 'ห้ามเปิดเผยข้อมูลส่วนตัวผู้ใช้';
+        }
+        if (! empty($dataAccessParts)) {
+            $base .= "\n\nสิทธิ์ข้อมูล: ".implode(', ', $dataAccessParts);
+        }
+
+        // === AI Dynamic Buttons (Structured JSON Response) ===
+        if ($this->settings->ai_can_suggest_buttons ?? true) {
+            $maxButtons = $this->settings->ai_max_buttons ?? 4;
+            $base .= "\n\n--- รูปแบบการตอบ ---\nตอบเป็น JSON เท่านั้น:\n{\"text\": \"ข้อความตอบ\", \"buttons\": [\"ปุ่ม1\", \"ปุ่ม2\"]}";
+            $base .= "\n\nกฎปุ่ม:\n- buttons เป็น optional ใส่เฉพาะเมื่อเหมาะสม";
+            $base .= "\n- สูงสุด {$maxButtons} ปุ่ม แต่ละปุ่มไม่เกิน 20 ตัวอักษร";
+            $base .= "\n- ใส่ปุ่ม \"🔙 กลับเมนู\" เสมอเป็นปุ่มสุดท้าย";
+            $base .= "\n- ตัวอย่าง: {\"text\": \"มีผักสดหลายชนิดค่ะ\", \"buttons\": [\"🔍 ค้นหาผัก\", \"🛒 สั่งซื้อ\", \"🔙 กลับเมนู\"]}";
+        }
 
         $statePrompt = match ($state) {
             'idle' => implode("\n", [
@@ -384,7 +440,7 @@ PROMPT;
             'model' => $this->model,
             'messages' => $messages,
             'max_tokens' => $maxTokens,
-            'temperature' => 0.7,
+            'temperature' => (float) ($this->settings->bot_temperature ?? 0.7),
         ];
 
         $response = Http::withHeaders($headers)

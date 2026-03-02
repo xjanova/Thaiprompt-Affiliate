@@ -331,6 +331,20 @@ class FreshMarketConversation extends Model
     }
 
     /**
+     * ลบ context สำหรับ flow เฉพาะ
+     */
+    public function clearFlowContext(string $flowKey): void
+    {
+        $context = $this->context ?? [];
+        unset($context[$flowKey]);
+
+        $this->update([
+            'context' => $context,
+            'state_updated_at' => now(),
+        ]);
+    }
+
+    /**
      * ตรวจสอบว่าอยู่ใน listing flow หรือไม่
      */
     public function isInListingFlow(): bool
