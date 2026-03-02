@@ -35,7 +35,7 @@
     <div class="wiki-grid wiki-grid-4">
         <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
             <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">Total Endpoints</div>
-            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400 m-0">{{ $stats['api_endpoints'] ?? 500 }}+</h4>
+            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400 m-0">{{ $stats['api_endpoints'] ?? 1500 }}+</h4>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">REST Endpoints</p>
         </div>
 

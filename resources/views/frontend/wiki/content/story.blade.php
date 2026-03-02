@@ -656,7 +656,7 @@
             </div>
 
             <div class="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700 text-center text-gray-500 dark:text-gray-400 text-sm">
-                อัปเดตล่าสุด: พฤศจิกายน 2567 | เอกสารนี้เป็นส่วนหนึ่งของโครงการ ThaiPrompt
+                อัปเดตล่าสุด: มีนาคม 2569 | เอกสารนี้เป็นส่วนหนึ่งของโครงการ ThaiPrompt
             </div>
         </div>
     </section>

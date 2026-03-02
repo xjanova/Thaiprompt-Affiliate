@@ -294,7 +294,7 @@
                     </div>
                     <div class="flex-1">
                         <h2 class="text-xl font-bold">คู่มือการใช้งาน</h2>
-                        <p class="text-sm text-white/80">TP-Affiliate v{{ $stats['version'] ?? '3.0' }}</p>
+                        <p class="text-sm text-white/80">TP-Affiliate v{{ $stats['version'] ?? '3.485' }}</p>
                     </div>
                 </div>
 

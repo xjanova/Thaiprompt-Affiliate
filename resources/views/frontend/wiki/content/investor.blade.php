@@ -47,11 +47,11 @@
         <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/30 dark:to-secondary-800/20 border-2 border-secondary-500 rounded-xl p-8">
             <h3 class="font-bold mb-4 text-secondary-600 dark:text-secondary-400">📊 Key Metrics</h3>
             <ul class="space-y-3">
-                <li>📦 <strong>{{ $stats['database_models'] ?? 420 }}+</strong> Database Models</li>
-                <li>🎮 <strong>{{ $stats['http_controllers'] ?? 330 }}+</strong> HTTP Controllers</li>
-                <li>⚙️ <strong>{{ $stats['services_count'] ?? 240 }}+</strong> Business Services</li>
-                <li>🗄️ <strong>{{ $stats['database_tables'] ?? 540 }}+</strong> Database Tables</li>
-                <li>🌐 <strong>{{ $stats['api_endpoints'] ?? 500 }}+</strong> API Endpoints</li>
+                <li>📦 <strong>{{ $stats['database_models'] ?? 548 }}+</strong> Database Models</li>
+                <li>🎮 <strong>{{ $stats['http_controllers'] ?? 421 }}+</strong> HTTP Controllers</li>
+                <li>⚙️ <strong>{{ $stats['services_count'] ?? 295 }}+</strong> Business Services</li>
+                <li>🗄️ <strong>{{ $stats['database_tables'] ?? 694 }}+</strong> Database Tables</li>
+                <li>🌐 <strong>{{ $stats['api_endpoints'] ?? 1500 }}+</strong> API Endpoints</li>
             </ul>
         </div>
     </div>
@@ -113,7 +113,7 @@
     </h2>
 
     <div class="info-box tip">
-        <h4>💡 27+ Business Categories ในระบบเดียว</h4>
+        <h4>💡 30+ Business Categories ในระบบเดียว</h4>
         <p>ThaiPrompt รวมความสามารถของระบบต่างๆ ที่ปกติต้องซื้อแยก มารวมไว้ในแพลตฟอร์มเดียว</p>
     </div>
 
@@ -189,13 +189,13 @@
     <div class="wiki-grid wiki-grid-4">
         <div class="bg-gradient-to-br from-primary-50 to-primary-100 dark:from-primary-900/30 dark:to-primary-800/20 border-l-4 border-primary-500 p-6 rounded-lg">
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">Codebase Size</div>
-            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">{{ number_format(($stats['database_models'] ?? 420) + ($stats['http_controllers'] ?? 330) + ($stats['services_count'] ?? 240)) }}+</h4>
+            <h4 class="text-3xl font-extrabold text-primary-600 dark:text-primary-400">{{ number_format(($stats['database_models'] ?? 548) + ($stats['http_controllers'] ?? 421) + ($stats['services_count'] ?? 295)) }}+</h4>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">PHP Classes</p>
         </div>
 
         <div class="bg-gradient-to-br from-secondary-50 to-secondary-100 dark:from-secondary-900/30 dark:to-secondary-800/20 border-l-4 border-secondary-500 p-6 rounded-lg">
             <div class="text-sm text-gray-600 dark:text-gray-400 mb-2">API Coverage</div>
-            <h4 class="text-3xl font-extrabold text-secondary-600 dark:text-secondary-400">{{ $stats['api_endpoints'] ?? 500 }}+</h4>
+            <h4 class="text-3xl font-extrabold text-secondary-600 dark:text-secondary-400">{{ $stats['api_endpoints'] ?? 1500 }}+</h4>
             <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">REST Endpoints</p>
         </div>
 

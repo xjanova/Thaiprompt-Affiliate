@@ -66,7 +66,7 @@ class WikiController extends Controller
         return cache()->remember('wiki_system_stats', 3600, function () {
             // ดึง version จาก VERSION file
             $versionPath = base_path('VERSION');
-            $version = '3.232.0';
+            $version = '3.485.333';
 
             if (File::exists($versionPath)) {
                 $version = trim(File::get($versionPath));
@@ -116,9 +116,14 @@ class WikiController extends Controller
                 }
             }
 
-            // นับ API endpoints จาก routes
+            // นับ API endpoints จาก routes (ครอบคลุมทุก route files)
             $apiEndpoints = 0;
-            $routeFiles = ['api.php', 'admin.php', 'user.php', 'seller.php'];
+            $routeFiles = [
+                'api.php', 'admin.php', 'user.php', 'seller.php', 'web.php',
+                'hotel-admin.php', 'software_sales.php', 'bot_automation.php',
+                'pos.php', 'provider.php', 'sms_payment_api.php', 'forum.php',
+                'taladsod.php',
+            ];
             foreach ($routeFiles as $routeFile) {
                 $routePath = base_path("routes/{$routeFile}");
                 if (File::exists($routePath)) {
@@ -129,7 +134,7 @@ class WikiController extends Controller
             }
 
             // นับ Business Categories (จาก Models)
-            $businessCategories = 27; // จากการวิเคราะห์โครงสร้าง
+            $businessCategories = 30; // จากการวิเคราะห์โครงสร้าง (อัพเดท 2026-03)
 
             // ดึง Windows UI RGB colors (พร้อม fallback ถ้าตารางยังไม่มี)
             $windowsRgb = $this->getSafeWindowsRgb();

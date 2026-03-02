@@ -42,7 +42,7 @@
                 <p class="leading-relaxed text-gray-600 dark:text-gray-300 mt-4">
                     ThaiPrompt Affiliate เป็นแพลตฟอร์ม All-in-One สำหรับธุรกิจ MLM, E-commerce, AI Bot และอื่นๆ อีกมากมาย
                     พัฒนาด้วย Laravel 11 และ Modern Web Technologies ออกแบบมาเพื่อรองรับธุรกิจในประเทศไทยและอาเซียน
-                    โดยมีฟีเจอร์มากกว่า 27 หมวดหมู่ ครอบคลุมทุกความต้องการทางธุรกิจ
+                    โดยมีฟีเจอร์มากกว่า 30 หมวดหมู่ ครอบคลุมทุกความต้องการทางธุรกิจ
                 </p>
             </div>
         </div>
