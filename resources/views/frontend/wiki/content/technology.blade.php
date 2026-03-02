@@ -21,7 +21,7 @@
                 <h4 class="font-bold mb-3 text-gray-900 dark:text-white">Backend Framework</h4>
                 <ul class="space-y-2 text-gray-600 dark:text-gray-300">
                     <li><span class="font-semibold text-primary-600 dark:text-primary-400">Laravel 11.x</span> - Latest version</li>
-                    <li>PHP 8.3+ - Modern features</li>
+                    <li>PHP 8.1+ - Modern features (แนะนำ 8.3)</li>
                     <li>Eloquent ORM - Database abstraction</li>
                     <li>Queue Jobs - Async processing</li>
                     <li>RESTful API - Standard architecture</li>
@@ -37,7 +37,7 @@
                     <li>TailwindCSS - Utility-first CSS</li>
                     <li>Alpine.js - Lightweight reactivity</li>
                     <li>JavaScript ES6+ - Modern JS</li>
-                    <li>Livewire - Dynamic components</li>
+                    <li>SortableJS - Drag & drop</li>
                 </ul>
             </div>
 
@@ -50,7 +50,7 @@
                     <li>MariaDB - Alternative option</li>
                     <li>Redis - Cache & sessions</li>
                     <li>Database Migrations - Version control</li>
-                    <li>{{ $stats['database_tables'] ?? 127 }} Tables - Comprehensive schema</li>
+                    <li>{{ $stats['database_tables'] ?? 694 }} Tables - Comprehensive schema</li>
                 </ul>
             </div>
 
@@ -83,37 +83,37 @@
                 <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>📦 Database Models</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">{{ $stats['database_models'] ?? 89 }}</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">{{ $stats['database_models'] ?? 548 }}</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">Eloquent models for data access</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>🎮 HTTP Controllers</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-secondary-600 dark:text-secondary-400">{{ $stats['http_controllers'] ?? 142 }}</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-secondary-600 dark:text-secondary-400">{{ $stats['http_controllers'] ?? 421 }}</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">Request handlers and routing</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>⚙️ Service Classes</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-accent-600 dark:text-accent-400">{{ $stats['services_count'] ?? 67 }}</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-accent-600 dark:text-accent-400">{{ $stats['services_count'] ?? 295 }}</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">Business logic layer</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>🗃️ Database Tables</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">{{ $stats['database_tables'] ?? 127 }}</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">{{ $stats['database_tables'] ?? 694 }}</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">Database schema tables</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>🔄 API Endpoints</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-secondary-600 dark:text-secondary-400">380+</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-secondary-600 dark:text-secondary-400">{{ $stats['api_endpoints'] ?? 1500 }}+</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">RESTful API routes</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>📋 Blade Views</strong></td>
-                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-accent-600 dark:text-accent-400">250+</span></td>
+                        <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-accent-600 dark:text-accent-400">1,590+</span></td>
                         <td class="p-4 border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300">Frontend templates</td>
                         <td class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm">Active</span></td>
                     </tr>
@@ -220,7 +220,7 @@
                     <span class="font-bold text-blue-600 dark:text-blue-400">🌐 Presentation Layer</span>
                     <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-xs">Frontend</span>
                 </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400">Blade Views, Livewire Components, JavaScript, TailwindCSS - Handles user interface and interactions</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Blade Views, Alpine.js Components, JavaScript, TailwindCSS - Handles user interface and interactions</p>
             </div>
 
             <div class="bg-white dark:bg-gray-800 p-4 rounded-lg border-l-4 border-purple-500">
@@ -390,7 +390,7 @@
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>🐘 PHP Version</strong></td>
-                        <td colspan="3" class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">PHP 8.3+ (Required)</span></td>
+                        <td colspan="3" class="p-4 text-center border border-gray-200 dark:border-gray-700"><span class="font-bold text-primary-600 dark:text-primary-400">PHP 8.1+ (แนะนำ 8.3)</span></td>
                     </tr>
                     <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                         <td class="p-4 border border-gray-200 dark:border-gray-700"><strong>🗄️ Database</strong></td>

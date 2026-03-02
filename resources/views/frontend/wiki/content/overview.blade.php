@@ -22,7 +22,7 @@
 
             <div class="flex flex-wrap gap-3 justify-center">
                 <span class="px-4 py-1.5 bg-green-500/30 border border-green-400/50 rounded-full text-sm font-semibold backdrop-blur-sm">
-                    {{ $stats['version'] ?? '3.0' }}
+                    v{{ $stats['version'] ?? '3.485' }}
                 </span>
                 <span class="px-4 py-1.5 bg-blue-500/30 border border-blue-400/50 rounded-full text-sm font-semibold backdrop-blur-sm">
                     Updated {{ $stats['last_updated'] ?? date('Y-m-d') }}
@@ -39,7 +39,7 @@
         <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-xl hover:shadow-blue-500/20 transform hover:-translate-y-1 transition-all duration-300">
             <div class="text-4xl mb-3">📊</div>
             <div class="text-3xl md:text-4xl font-black bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                {{ $stats['database_models'] ?? '339' }}
+                {{ $stats['database_models'] ?? '548' }}
             </div>
             <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">Database Models</div>
         </div>
@@ -47,7 +47,7 @@
         <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-purple-500 dark:hover:border-purple-400 hover:shadow-xl hover:shadow-purple-500/20 transform hover:-translate-y-1 transition-all duration-300">
             <div class="text-4xl mb-3">⚙️</div>
             <div class="text-3xl md:text-4xl font-black bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
-                {{ $stats['http_controllers'] ?? '41' }}
+                {{ $stats['http_controllers'] ?? '421' }}
             </div>
             <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">Controllers</div>
         </div>
@@ -55,7 +55,7 @@
         <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-pink-500 dark:hover:border-pink-400 hover:shadow-xl hover:shadow-pink-500/20 transform hover:-translate-y-1 transition-all duration-300">
             <div class="text-4xl mb-3">🔧</div>
             <div class="text-3xl md:text-4xl font-black bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">
-                {{ $stats['services_count'] ?? '30' }}
+                {{ $stats['services_count'] ?? '295' }}
             </div>
             <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">Business Services</div>
         </div>
@@ -63,7 +63,7 @@
         <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-green-500 dark:hover:border-green-400 hover:shadow-xl hover:shadow-green-500/20 transform hover:-translate-y-1 transition-all duration-300">
             <div class="text-4xl mb-3">💾</div>
             <div class="text-3xl md:text-4xl font-black bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
-                {{ $stats['database_tables'] ?? '100' }}+
+                {{ $stats['database_tables'] ?? '694' }}+
             </div>
             <div class="text-sm text-gray-600 dark:text-gray-400 font-medium mt-1">Database Tables</div>
         </div>
@@ -327,7 +327,7 @@
             <div class="bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 rounded-xl p-5 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg transition-all">
                 <h4 class="text-base font-bold text-blue-600 dark:text-blue-400 mb-3">Backend</h4>
                 <ul class="space-y-1.5 text-sm text-gray-600 dark:text-gray-400">
-                    <li>Laravel 11.x (PHP 8.3+)</li>
+                    <li>Laravel 11.x (PHP 8.1+)</li>
                     <li>MySQL/MariaDB</li>
                     <li>Redis Cache</li>
                     <li>Queue Jobs</li>
