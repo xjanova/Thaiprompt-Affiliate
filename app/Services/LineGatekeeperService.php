@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
  *
  * ทำงาน 2 ระดับ:
  * 1. Global rate limit: จำกัด LINE push messages ทั้งระบบ (ทุก user รวมกัน)
- * 2. Global AI limit: จำกัด AI API calls ทั้งระบบ
+ * 2. Per-bot AI limit: จำกัด AI API calls แยกตามบอท (ดูดวง/ตลาดสด เป็นอิสระ)
  *
  * ถ้าเกิน limit → return false → caller ส่งข้อความ "รอสักครู่" แทน
  */
@@ -23,8 +23,15 @@ class LineGatekeeperService
     const LINE_PUSH_MAX_PER_MINUTE = 40; // push messages ทั้งระบบ / นาที
     const LINE_PUSH_MAX_PER_SECOND = 5;  // push messages ทั้งระบบ / วินาที
 
-    // ✅ AI API safe limits (Groq free tier)
-    const AI_MAX_PER_MINUTE = 25;  // AI calls ทั้งระบบ / นาที
+    // ✅ AI API limits แยกตามบอท (ไม่แย่งกัน)
+    const AI_LIMITS = [
+        'fortune' => 25,       // ดูดวง: 25 calls/นาที (เหมือนเดิม)
+        'fresh_market' => 15,  // ตลาดสด: 15 calls/นาที
+        'default' => 20,       // อื่นๆ
+    ];
+
+    // ✅ Backward compatibility: global limit (เก่า ยังใช้ได้)
+    const AI_MAX_PER_MINUTE = 25;
 
     // ✅ Cache keys
     const KEY_LINE_PUSH_MINUTE = 'gatekeeper:line_push:minute';
@@ -90,17 +97,22 @@ class LineGatekeeperService
     }
 
     /**
-     * ตรวจสอบว่าสามารถเรียก AI API ได้หรือไม่
+     * ตรวจสอบว่าสามารถเรียก AI API ได้หรือไม่ (แยกตามบอท)
      *
+     * @param  string  $botName  ชื่อบอท: 'fortune', 'fresh_market', etc.
      * @return bool true = เรียกได้, false = เกิน limit
      */
-    public static function canCallAI(): bool
+    public static function canCallAI(string $botName = 'default'): bool
     {
-        $perMinute = (int) Cache::get(self::KEY_AI_MINUTE, 0);
-        if ($perMinute >= self::AI_MAX_PER_MINUTE) {
-            Log::warning('Gatekeeper: AI API ถูก throttle', [
+        $limit = self::AI_LIMITS[$botName] ?? self::AI_LIMITS['default'];
+        $cacheKey = "gatekeeper:ai:{$botName}:minute";
+
+        $perMinute = (int) Cache::get($cacheKey, 0);
+        if ($perMinute >= $limit) {
+            Log::warning("Gatekeeper: AI API ถูก throttle ({$botName})", [
+                'bot' => $botName,
                 'current' => $perMinute,
-                'limit' => self::AI_MAX_PER_MINUTE,
+                'limit' => $limit,
             ]);
 
             return false;
@@ -110,15 +122,17 @@ class LineGatekeeperService
     }
 
     /**
-     * บันทึกว่าเรียก AI API แล้ว 1 ครั้ง
+     * บันทึกว่าเรียก AI API แล้ว 1 ครั้ง (แยกตามบอท)
+     *
+     * @param  string  $botName  ชื่อบอท: 'fortune', 'fresh_market', etc.
      */
-    public static function recordAICall(): void
+    public static function recordAICall(string $botName = 'default'): void
     {
-        $key = self::KEY_AI_MINUTE;
-        if (Cache::has($key)) {
-            Cache::increment($key);
+        $cacheKey = "gatekeeper:ai:{$botName}:minute";
+        if (Cache::has($cacheKey)) {
+            Cache::increment($cacheKey);
         } else {
-            Cache::put($key, 1, 60);
+            Cache::put($cacheKey, 1, 60);
         }
     }
 
@@ -142,15 +156,23 @@ class LineGatekeeperService
      */
     public static function getStats(): array
     {
+        $aiStats = [];
+        foreach (array_keys(self::AI_LIMITS) as $bot) {
+            $aiStats[$bot] = [
+                'current' => (int) Cache::get("gatekeeper:ai:{$bot}:minute", 0),
+                'limit' => self::AI_LIMITS[$bot],
+            ];
+        }
+
         return [
             'line_push_per_second' => (int) Cache::get(self::KEY_LINE_PUSH_SECOND, 0),
             'line_push_per_minute' => (int) Cache::get(self::KEY_LINE_PUSH_MINUTE, 0),
-            'ai_per_minute' => (int) Cache::get(self::KEY_AI_MINUTE, 0),
+            'ai_per_bot' => $aiStats,
             'is_throttled' => self::isSystemThrottled(),
             'limits' => [
                 'line_push_per_second' => self::LINE_PUSH_MAX_PER_SECOND,
                 'line_push_per_minute' => self::LINE_PUSH_MAX_PER_MINUTE,
-                'ai_per_minute' => self::AI_MAX_PER_MINUTE,
+                'ai_per_bot' => self::AI_LIMITS,
             ],
         ];
     }

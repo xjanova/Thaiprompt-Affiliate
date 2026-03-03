@@ -2063,7 +2063,7 @@ class FortuneConversationService
             $basicPrompt = $this->buildBasicPrompt($userProfile, $messageText, $userContext, $detectedCategory);
 
             // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก
-            if (! LineGatekeeperService::canCallAI()) {
+            if (! LineGatekeeperService::canCallAI('fortune')) {
                 Log::warning('Fortune: AI ทำนายพื้นฐานถูก throttle โดย Gatekeeper', [
                     'facebook_user_id' => $facebookUserId,
                 ]);
@@ -2091,7 +2091,7 @@ class FortuneConversationService
             );
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune basic)
-            LineGatekeeperService::recordAICall();
+            LineGatekeeperService::recordAICall('fortune');
 
             // ✅ บันทึกคำทำนายพื้นฐาน (ตั้ง responded_at ก่อน recordAICall)
             // เพื่อให้ countTodayReadings() นับ reading นี้ถูกต้อง
@@ -2716,7 +2716,7 @@ class FortuneConversationService
                 );
 
                 // ✅ Gatekeeper: เช็คทราฟฟิค AI ก่อนเรียกทุกคำถาม
-                if (! LineGatekeeperService::canCallAI()) {
+                if (! LineGatekeeperService::canCallAI('fortune')) {
                     Log::warning('Fortune: AI Deep Reading ถูก throttle ที่ข้อ '.$questionNum, [
                         'reading_id' => $reading->id ?? null,
                     ]);
@@ -2733,7 +2733,7 @@ class FortuneConversationService
                 );
 
                 // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune deep)
-                LineGatekeeperService::recordAICall();
+                LineGatekeeperService::recordAICall('fortune');
 
                 $deepReadings[] = [
                     'question_number' => $questionNum,
@@ -4208,7 +4208,7 @@ class FortuneConversationService
             }
 
             // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก
-            if (! LineGatekeeperService::canCallAI()) {
+            if (! LineGatekeeperService::canCallAI('fortune')) {
                 Log::warning('Fortune: AI Chat ถูก throttle โดย Gatekeeper', ['user_id' => $userId]);
 
                 return [
@@ -4237,7 +4237,7 @@ class FortuneConversationService
             }
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
-            LineGatekeeperService::recordAICall();
+            LineGatekeeperService::recordAICall('fortune');
 
             $responseText = trim($result['response'] ?? '');
 

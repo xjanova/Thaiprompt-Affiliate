@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\AiApiKey;
 use App\Models\FreshMarketSetting;
+use App\Services\LineGatekeeperService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -60,6 +61,18 @@ class FreshMarketAIService
      */
     public function generateResponse(string $userMessage, array $conversationHistory = [], array $context = []): array
     {
+        // ✅ เช็ค rate limit ก่อนเรียก AI (แยกบอทตลาดสดเป็นอิสระ)
+        if (! LineGatekeeperService::canCallAI('fresh_market')) {
+            Log::warning('FreshMarketAI: ถูก throttle โดย Gatekeeper');
+
+            return [
+                'response' => 'ขอโทษค่ะ ตอนนี้มีคนใช้งานเยอะ กรุณารอสักครู่แล้วลองใหม่นะคะ 🙏',
+                'tokens_used' => 0,
+                'provider' => $this->provider,
+                'model' => $this->model,
+            ];
+        }
+
         $state = $context['conversation_state'] ?? 'idle';
         $systemPrompt = $this->buildStateAwarePrompt($state, $context);
 
@@ -76,6 +89,9 @@ class FreshMarketAIService
 
         try {
             $result = $this->callAI($messages);
+
+            // ✅ บันทึก AI call สำเร็จ
+            LineGatekeeperService::recordAICall('fresh_market');
 
             return $result;
         } catch (\Exception $e) {
@@ -96,6 +112,13 @@ class FreshMarketAIService
      */
     public function parseListingDetailsFromText(string $message, array $existingData = []): ?array
     {
+        // ✅ เช็ค rate limit ก่อนเรียก AI
+        if (! LineGatekeeperService::canCallAI('fresh_market')) {
+            Log::warning('FreshMarketAI: parseListingDetails ถูก throttle');
+
+            return null;
+        }
+
         $existingJson = ! empty($existingData) ? json_encode(array_filter([
             'title' => $existingData['title'] ?? null,
             'price' => $existingData['price'] ?? null,
@@ -130,6 +153,9 @@ PROMPT;
                 ['role' => 'system', 'content' => $systemPrompt],
                 ['role' => 'user', 'content' => $message],
             ], 500);
+
+            // ✅ บันทึก AI call สำเร็จ
+            LineGatekeeperService::recordAICall('fresh_market');
 
             $response = trim($result['response']);
 
@@ -394,12 +420,33 @@ PROMPT;
     }
 
     /**
-     * ลอง key ถัดไป
+     * ลอง key ถัดไป (ลดเวลา retry ไม่ให้ block webhook นาน)
      */
     protected function retryWithNextKey(array $messages, \Exception $previousError): array
     {
         if (! $this->poolService) {
-            throw $previousError;
+            // ถ้าไม่มี pool service → ส่ง fallback ทันที (ไม่ throw เพื่อไม่ให้ webhook พัง)
+            return [
+                'response' => 'ขอโทษค่ะ ตอนนี้ระบบ AI ไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้งค่ะ 🙏',
+                'tokens_used' => 0,
+                'provider' => $this->provider,
+                'model' => $this->model,
+            ];
+        }
+
+        // ถ้า error เป็น timeout → ไม่ retry (ป้องกันค้าง 30 วินาที กระเทือนบอทดูดวง)
+        $errorMsg = $previousError->getMessage();
+        if (str_contains($errorMsg, 'timed out') || str_contains($errorMsg, 'timeout') || str_contains($errorMsg, 'cURL error 28')) {
+            Log::warning('FreshMarketAI: Timeout - ไม่ retry เพื่อไม่ให้กระเทือนระบบ', [
+                'error' => $errorMsg,
+            ]);
+
+            return [
+                'response' => 'ขอโทษค่ะ ระบบ AI ตอบช้ากว่าปกติ กรุณาลองใหม่อีกครั้งนะคะ 🙏',
+                'tokens_used' => 0,
+                'provider' => $this->provider,
+                'model' => $this->model,
+            ];
         }
 
         try {
@@ -410,6 +457,9 @@ PROMPT;
 
             $this->apiKey = $this->currentKey->api_key;
             $result = $this->callAI($messages);
+
+            // ✅ บันทึก AI call สำเร็จ (retry)
+            LineGatekeeperService::recordAICall('fresh_market');
 
             return $result;
         } catch (\Exception $e) {
