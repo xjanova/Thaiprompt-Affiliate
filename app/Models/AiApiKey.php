@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 
 /**
@@ -63,6 +64,7 @@ class AiApiKey extends Model
      * โหมดการวนใช้
      */
     public const ROTATION_MODES = [
+        'smart' => 'Smart (⭐ กระจาย load อัจฉริยะ — แนะนำ)',
         'round_robin' => 'Round Robin (วนตามลำดับ)',
         'least_used' => 'Least Used (ใช้น้อยสุดก่อน)',
         'priority' => 'Priority (ตาม priority สูง→ต่ำ)',
@@ -320,6 +322,14 @@ class AiApiKey extends Model
         // เกิน monthly limit
         if ($this->tokens_limit_monthly && $this->tokens_used_month >= $this->tokens_limit_monthly) {
             return false;
+        }
+
+        // ⭐ เกิน per-key rate limit ต่อนาที (ใช้ Cache real-time)
+        if ($this->rate_limit_per_minute) {
+            $rpm = (int) Cache::get("pool:rpm:{$this->provider}:{$this->id}", 0);
+            if ($rpm >= $this->rate_limit_per_minute) {
+                return false;
+            }
         }
 
         return true;

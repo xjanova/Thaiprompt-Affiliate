@@ -41,7 +41,7 @@ class FreshMarketAIService
         // ใช้ API Key Pool
         try {
             $this->poolService = new AiApiKeyPoolService;
-            $this->currentKey = $this->poolService->getKey($this->provider);
+            $this->currentKey = $this->poolService->acquireKey($this->provider);
         } catch (\Exception $e) {
             Log::warning('FreshMarketAI: Pool service ไม่พร้อม', ['error' => $e->getMessage()]);
             $this->poolService = null;
@@ -49,6 +49,20 @@ class FreshMarketAIService
         }
 
         $this->apiKey = $this->currentKey?->api_key ?? '';
+    }
+
+    /**
+     * ⭐ คืน key กลับ pool อัตโนมัติเมื่อ service ถูกทำลาย (จบ request)
+     */
+    public function __destruct()
+    {
+        if ($this->poolService && $this->currentKey) {
+            try {
+                $this->poolService->releaseKey($this->provider, $this->currentKey->id);
+            } catch (\Exception $e) {
+                // ไม่ throw ใน destructor
+            }
+        }
     }
 
     /**
@@ -450,7 +464,11 @@ PROMPT;
         }
 
         try {
-            $this->currentKey = $this->poolService->getKey($this->provider);
+            // ⭐ คืน key เก่า + จอง key ใหม่ (smart mode จะเลือก key ที่ว่าง)
+            if ($this->currentKey) {
+                $this->poolService->releaseKey($this->provider, $this->currentKey->id);
+            }
+            $this->currentKey = $this->poolService->acquireKey($this->provider);
             if (! $this->currentKey) {
                 throw $previousError;
             }

@@ -43,7 +43,7 @@ class FortuneAIService
         // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
         try {
             $this->poolService = new AiApiKeyPoolService;
-            $this->currentKey = $this->poolService->getKey($this->provider);
+            $this->currentKey = $this->poolService->acquireKey($this->provider);
         } catch (\Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
                 'error' => $e->getMessage(),
@@ -65,6 +65,21 @@ class FortuneAIService
             Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
                 'provider' => $this->provider,
             ]);
+        }
+    }
+
+    /**
+     * ⭐ คืน key กลับ pool อัตโนมัติเมื่อ service ถูกทำลาย (จบ request)
+     * ลด in-flight counter + บันทึก rpm
+     */
+    public function __destruct()
+    {
+        if ($this->poolService && $this->currentKey) {
+            try {
+                $this->poolService->releaseKey($this->provider, $this->currentKey->id);
+            } catch (\Exception $e) {
+                // ไม่ throw ใน destructor — log เฉยๆ
+            }
         }
     }
 

@@ -18,6 +18,9 @@ use Illuminate\Support\Facades\Log;
  * - priority: ตาม priority สูง → ต่ำ
  * - random: สุ่มเลือก
  * - failover: ใช้ตัวหลัก, สำรองเมื่อ error
+ * - smart: ⭐ Smart Load Balancing — กระจาย load อัจฉริยะ
+ *          ติดตาม in-flight requests + requests/นาที ต่อ key
+ *          เลือก key ที่มีภาระน้อยสุดเสมอ ไม่ซ้ำ key ที่กำลังถูกใช้
  */
 class AiApiKeyPoolService
 {
@@ -25,6 +28,13 @@ class AiApiKeyPoolService
      * Cache prefix สำหรับ round robin index
      */
     private const CACHE_PREFIX = 'ai_api_key_pool_';
+
+    /**
+     * Cache prefix สำหรับ Smart Load Balancing
+     */
+    private const INFLIGHT_PREFIX = 'pool:inflight:';  // {provider}:{key_id} — TTL 30s
+
+    private const RPM_PREFIX = 'pool:rpm:';            // {provider}:{key_id} — TTL 60s
 
     /**
      * ดึง API Key ที่พร้อมใช้งานสำหรับ provider
@@ -42,6 +52,7 @@ class AiApiKeyPoolService
             'priority' => $this->getPriorityKey($provider),
             'random' => $this->getRandomKey($provider),
             'failover' => $this->getFailoverKey($provider),
+            'smart' => $this->getSmartKey($provider),
             default => $this->getRoundRobinKey($provider),
         };
 
@@ -219,6 +230,171 @@ class AiApiKeyPoolService
         return $key;
     }
 
+    /**
+     * ⭐ Smart Load Balancing: เลือก key ที่ภาระน้อยสุด
+     *
+     * คำนวณ load score ต่อ key:
+     * - in_flight × 100  (key กำลังถูกใช้ = หลีกเลี่ยง)
+     * - rpm × 10          (ใช้บ่อย/นาที = กระจายออก)
+     * - errors × 50       (error เยอะ = หลีกเลี่ยง)
+     *
+     * เลือก key score ต่ำสุด → ถ้าเท่ากัน เลือกตัวที่ไม่ได้ใช้นานสุด
+     */
+    protected function getSmartKey(string $provider): ?AiApiKey
+    {
+        $keys = AiApiKey::forProvider($provider)
+            ->available()
+            ->get();
+
+        if ($keys->isEmpty()) {
+            return null;
+        }
+
+        // ⭐ กรอง keys ที่เกิน rate_limit_per_minute (ถ้ากำหนดไว้)
+        $eligibleKeys = $keys->filter(function ($key) use ($provider) {
+            if ($key->rate_limit_per_minute) {
+                $rpm = $this->getKeyRpm($provider, $key->id);
+                if ($rpm >= $key->rate_limit_per_minute) {
+                    return false; // key นี้เต็มโควต้า/นาที
+                }
+            }
+
+            return true;
+        });
+
+        // ถ้าทุก key เกิน limit → fallback ใช้ key ที่ rpm น้อยสุด
+        if ($eligibleKeys->isEmpty()) {
+            $eligibleKeys = $keys;
+        }
+
+        // คำนวณ load score และเลือก key ที่ดีที่สุด
+        $bestKey = null;
+        $bestScore = PHP_INT_MAX;
+        $bestLastUsed = now(); // ใหม่สุด = ไม่ดี
+
+        foreach ($eligibleKeys as $key) {
+            $score = $this->getKeyLoadScore($provider, $key);
+
+            // เลือก score ต่ำสุด, ถ้าเท่ากัน → เลือกตัวที่ไม่ได้ใช้นานสุด
+            if ($score < $bestScore
+                || ($score === $bestScore && ($key->last_used_at ?? now()->subYear()) < $bestLastUsed)) {
+                $bestKey = $key;
+                $bestScore = $score;
+                $bestLastUsed = $key->last_used_at ?? now()->subYear();
+            }
+        }
+
+        if ($bestKey) {
+            $this->setLastUsedKey($provider, $bestKey);
+
+            Log::debug('AI Pool Smart: เลือก key', [
+                'key_id' => $bestKey->id,
+                'key_name' => $bestKey->name,
+                'score' => $bestScore,
+                'inflight' => $this->getKeyInflight($provider, $bestKey->id),
+                'rpm' => $this->getKeyRpm($provider, $bestKey->id),
+            ]);
+        }
+
+        return $bestKey;
+    }
+
+    /**
+     * คำนวณ load score ของ key (ยิ่งต่ำยิ่งดี)
+     */
+    protected function getKeyLoadScore(string $provider, AiApiKey $key): int
+    {
+        $inflight = $this->getKeyInflight($provider, $key->id);
+        $rpm = $this->getKeyRpm($provider, $key->id);
+        $errors = $key->consecutive_errors ?? 0;
+
+        return ($inflight * 100) + ($rpm * 10) + ($errors * 50);
+    }
+
+    // ============================================================
+    // ⭐ Smart Key Acquire / Release (In-Flight Tracking)
+    // ============================================================
+
+    /**
+     * จอง key พร้อม in-flight tracking (ใช้แทน getKey สำหรับ smart mode)
+     *
+     * ❶ เลือก key ตาม rotation mode (รวม smart)
+     * ❷ Increment in-flight counter (atomic)
+     * ❸ คืน key — caller ต้องเรียก releaseKey() เมื่อเสร็จ!
+     *
+     * @param  string  $provider  ชื่อ provider
+     * @return AiApiKey|null
+     */
+    public function acquireKey(string $provider): ?AiApiKey
+    {
+        $key = $this->getKey($provider);
+
+        if ($key) {
+            // ✅ Increment in-flight counter (TTL 30s ป้องกัน leaked)
+            $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
+            if (Cache::has($inflightKey)) {
+                Cache::increment($inflightKey);
+            } else {
+                Cache::put($inflightKey, 1, 30);
+            }
+        }
+
+        return $key;
+    }
+
+    /**
+     * คืน key กลับ pool (ลด in-flight + บันทึก rpm)
+     *
+     * เรียกเมื่อ AI call เสร็จ (สำเร็จหรือล้มเหลว) — ควรอยู่ใน finally block
+     *
+     * @param  string  $provider  ชื่อ provider
+     * @param  int|null  $keyId  ID ของ key ที่จะคืน (null = ใช้ last used)
+     */
+    public function releaseKey(string $provider, ?int $keyId = null): void
+    {
+        if (! $keyId) {
+            $lastKey = $this->getLastUsedKey($provider);
+            $keyId = $lastKey?->id;
+        }
+
+        if (! $keyId) {
+            return;
+        }
+
+        // ✅ Decrement in-flight counter
+        $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$keyId}";
+        $current = (int) Cache::get($inflightKey, 0);
+        if ($current > 1) {
+            Cache::decrement($inflightKey);
+        } else {
+            Cache::forget($inflightKey);
+        }
+
+        // ✅ Increment requests per minute counter (TTL 60s)
+        $rpmKey = self::RPM_PREFIX."{$provider}:{$keyId}";
+        if (Cache::has($rpmKey)) {
+            Cache::increment($rpmKey);
+        } else {
+            Cache::put($rpmKey, 1, 60);
+        }
+    }
+
+    /**
+     * ดึงจำนวน in-flight requests ของ key
+     */
+    public function getKeyInflight(string $provider, int $keyId): int
+    {
+        return (int) Cache::get(self::INFLIGHT_PREFIX."{$provider}:{$keyId}", 0);
+    }
+
+    /**
+     * ดึงจำนวน requests per minute ของ key
+     */
+    public function getKeyRpm(string $provider, int $keyId): int
+    {
+        return (int) Cache::get(self::RPM_PREFIX."{$provider}:{$keyId}", 0);
+    }
+
     // ============================================================
     // Cache Management
     // ============================================================
@@ -295,7 +471,7 @@ class AiApiKeyPoolService
             ->orderBy('id')
             ->get();
 
-        return $keys->map(function ($key) {
+        return $keys->map(function ($key) use ($provider) {
             return [
                 'id' => $key->id,
                 'name' => $key->name,
@@ -318,6 +494,11 @@ class AiApiKeyPoolService
                 'last_error' => $key->last_error,
                 'last_error_at' => $key->last_error_at?->diffForHumans(),
                 'disabled_until' => $key->disabled_until?->diffForHumans(),
+                // ⭐ Smart Load Balancing stats (real-time)
+                'inflight' => $this->getKeyInflight($provider, $key->id),
+                'rpm' => $this->getKeyRpm($provider, $key->id),
+                'load_score' => $this->getKeyLoadScore($provider, $key),
+                'rate_limit_per_minute' => $key->rate_limit_per_minute,
             ];
         })->toArray();
     }
