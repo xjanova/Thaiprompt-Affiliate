@@ -61,9 +61,6 @@
     <x-spaceship-background />
 
     <div class="min-h-screen">
-        <!-- Millennium Taskbar (Replaces Navigation) -->
-        <x-millennium-taskbar type="user" />
-
         <!-- Page Heading -->
         @isset($header)
             <header class="bg-white dark:bg-gray-800 shadow">

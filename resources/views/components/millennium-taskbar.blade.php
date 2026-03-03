@@ -159,7 +159,7 @@
             ['icon' => '🇹🇭', 'label' => 'เรื่องราว ThaiPrompt', 'url' => route('wiki.index') . '#story', 'color' => 'from-amber-500 to-orange-600', 'highlight' => true],
             ['icon' => '🛒', 'label' => 'ร้านค้า', 'url' => route('storefront.index'), 'color' => 'from-green-600 to-emerald-600'],
             ['icon' => '🏨', 'label' => 'จองโรงแรม', 'url' => route('hotels.index'), 'color' => 'from-orange-600 to-amber-600'],
-            ['icon' => '🤖', 'label' => 'AI Marketplace', 'url' => route('ai-marketplace.index'), 'color' => 'from-violet-600 to-purple-600'],
+            ['icon' => '🤖', 'label' => 'AI Marketplace', 'url' => url('/ai-marketplace'), 'color' => 'from-violet-600 to-purple-600'],
             ['icon' => '🔐', 'label' => 'เข้าสู่ระบบ', 'url' => route('login'), 'color' => 'from-indigo-600 to-blue-600'],
             ['icon' => '📝', 'label' => 'สมัครสมาชิก', 'url' => route('register'), 'color' => 'from-pink-600 to-rose-600', 'highlight' => true],
         ];
