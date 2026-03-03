@@ -77,15 +77,11 @@ class FreshMarketAIService
         try {
             $result = $this->callAI($messages);
 
-            if ($this->currentKey && $this->poolService) {
-                $this->poolService->markKeyUsed($this->currentKey, true);
-            }
-
             return $result;
         } catch (\Exception $e) {
-            if ($this->currentKey && $this->poolService) {
-                $this->poolService->markKeyUsed($this->currentKey, false, $e->getMessage());
-            }
+            Log::warning('FreshMarketAI: callAI ล้มเหลว, ลอง key ถัดไป', [
+                'error' => $e->getMessage(),
+            ]);
 
             return $this->retryWithNextKey($messages, $e);
         }
@@ -414,8 +410,6 @@ PROMPT;
 
             $this->apiKey = $this->currentKey->api_key;
             $result = $this->callAI($messages);
-
-            $this->poolService->markKeyUsed($this->currentKey, true);
 
             return $result;
         } catch (\Exception $e) {
