@@ -2922,9 +2922,22 @@ class FortuneConversationService
 
                     // ส่ง LINE service เฉพาะเมื่อเป็น platform LINE
                     $lineServiceInstance = null;
-                    if ($affiliatePlatform === 'line' && $channelManager) {
-                        $lineServiceInstance = $channelManager->getPlatform('line');
-                        $lineServiceInstance = $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null;
+                    if ($affiliatePlatform === 'line') {
+                        // ลองดึงจาก channelManager ก่อน
+                        if ($channelManager) {
+                            $lineServiceInstance = $channelManager->getPlatform('line');
+                            $lineServiceInstance = $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null;
+                        }
+                        // Fallback: สร้าง LineFortuneService ตรงๆ (กรณี background job ที่ไม่มี channelManager)
+                        if (! $lineServiceInstance) {
+                            try {
+                                $lineServiceInstance = app(LineFortuneService::class);
+                            } catch (\Exception $lineErr) {
+                                Log::debug('Fortune Affiliate: สร้าง LineFortuneService ไม่ได้ — ข้าม Flex', [
+                                    'error' => $lineErr->getMessage(),
+                                ]);
+                            }
+                        }
                     }
 
                     $affiliateService->autoRegisterFromFortune(
@@ -2960,12 +2973,8 @@ class FortuneConversationService
                 try {
                     $affiliateServiceForPromo = app(FortuneAffiliateService::class);
 
-                    // ดึง LINE service สำหรับส่ง promo
+                    // ดึง LINE service สำหรับส่ง promo (ใช้ instance ที่สร้างไว้ข้างบน)
                     $lineServiceForPromo = $lineServiceInstance ?? null;
-                    if (! $lineServiceForPromo && $affiliatePlatform === 'line' && $channelManager) {
-                        $lineServiceForPromo = $channelManager->getPlatform('line');
-                        $lineServiceForPromo = $lineServiceForPromo instanceof LineFortuneService ? $lineServiceForPromo : null;
-                    }
 
                     $affiliateServiceForPromo->sendPostReadingAffiliatePromotion(
                         $reading,

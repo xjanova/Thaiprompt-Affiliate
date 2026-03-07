@@ -101,8 +101,10 @@ class FortuneProcessDeepReading extends Command
                 // ✅ สร้างคำทำนายด้วย AI (ไม่ push ให้ลูกค้าผ่าน pushMessage)
                 // แนวทาง V3: ไม่ใช้ pushMessage สำหรับ fortune delivery (โควต้าจำกัด!)
                 // → บันทึกลง DB เท่านั้น → เมื่อลูกค้าส่งข้อความมา จะส่งผ่าน replyMessage (ฟรี!)
+                // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
+                // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
                 $result = $conversationService->processPaymentConfirmed(
-                    $reading, $notification, null, null, null // ไม่ส่ง channelManager → ไม่ push
+                    $reading, $notification, null, $platform, $userId
                 );
 
                 $duration = round((microtime(true) - $startTime) * 1000, 2);

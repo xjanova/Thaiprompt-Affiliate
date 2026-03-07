@@ -302,12 +302,14 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
 
             // ✅ V3: ไม่ push เนื้อหาคำทำนาย → บันทึก DB เท่านั้น
             // เนื้อหาจริงจะส่งผ่าน replyMessage เมื่อ user ส่งข้อความมา (ฟรี!)
+            // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
+            // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
             $result = $conversationService->processPaymentConfirmed(
                 $reading,
                 $notification,
-                null, // ไม่ส่ง channelManager สำหรับ streaming → ไม่ push เนื้อหาคำทำนาย
-                null,
-                null
+                null, // channelManager = null → streaming ปิด
+                $this->platform,
+                $this->userId
             );
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
