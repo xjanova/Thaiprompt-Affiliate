@@ -7,25 +7,31 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="TP-Affiliate">
-    <meta name="theme-color" content="#8B5CF6">
-
-    {{-- PWA Manifest --}}
-    <link rel="manifest" href="/manifest.json">
-
-    <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
-
-    {{-- Favicon (จาก Theme Setting) --}}
     @php
+        // ดึงไอคอนจาก SiteSetting ที่แอดมินอัพโหลดไว้
+        $siteSetting = \App\Models\SiteSetting::getSetting();
+        $appName = $siteSetting->app_name ?: ($siteSetting->site_name ?: config('app.name'));
+        $appIcon = $siteSetting->app_icon_url;
+
+        // Favicon ดึงจาก ThemeSetting ก่อน ถ้าไม่มีใช้จาก SiteSetting
         $themeSetting = \App\Models\ThemeSetting::active();
         $faviconPath = $themeSetting && $themeSetting->favicon_path
             ? asset('storage/' . $themeSetting->favicon_path)
-            : asset('favicon.ico');
+            : $siteSetting->favicon_url;
     @endphp
-    <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" href="{{ $faviconPath }}">
-    <link rel="apple-touch-icon" sizes="192x192" href="/images/pwa/icon-192x192.png">
+    <meta name="apple-mobile-web-app-title" content="{{ $appName }}">
+    <meta name="theme-color" content="#8B5CF6">
+
+    {{-- PWA Manifest (dynamic - ดึงไอคอนจาก Admin Settings) --}}
+    <link rel="manifest" href="{{ route('manifest.json') }}">
+
+    <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
+
+    {{-- Favicon + App Icon จาก Admin --}}
+    <link rel="icon" href="{{ $faviconPath }}">
+    <link rel="shortcut icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" href="{{ $appIcon }}">
+    <link rel="apple-touch-icon" sizes="512x512" href="{{ $appIcon }}">
 
     {{-- Google Fonts (โหลดเฉพาะ weight ที่ใช้จริง เพื่อลดขนาดไฟล์) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
