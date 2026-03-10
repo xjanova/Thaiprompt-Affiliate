@@ -6,7 +6,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="TP-Affiliate">
+    <meta name="theme-color" content="#8B5CF6">
+
+    {{-- PWA Manifest --}}
+    <link rel="manifest" href="/manifest.json">
 
     <title>@yield('title', 'Dashboard') - {{ config('app.name') }}</title>
 
@@ -20,6 +25,7 @@
     <link rel="icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="apple-touch-icon" href="{{ $faviconPath }}">
+    <link rel="apple-touch-icon" sizes="192x192" href="/images/pwa/icon-192x192.png">
 
     {{-- Google Fonts (โหลดเฉพาะ weight ที่ใช้จริง เพื่อลดขนาดไฟล์) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -240,6 +246,127 @@
             detail: { message, type }
         }));
     };
+    </script>
+
+    {{-- PWA: Service Worker Registration + Install Prompt --}}
+    <div x-data="pwaInstall()" x-cloak>
+        {{-- Install Banner (แสดงเฉพาะเมื่อรองรับ PWA + ยังไม่ได้ install) --}}
+        <div x-show="showInstallBanner"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-full"
+             x-transition:enter-end="opacity-100 translate-y-0"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0 translate-y-full"
+             class="fixed bottom-20 left-4 right-4 md:left-auto md:right-4 md:w-96 z-[110] bg-gray-900 border border-purple-500/30 rounded-2xl shadow-2xl p-4">
+
+            <div class="flex items-start gap-3">
+                {{-- ไอคอน --}}
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-download text-white text-lg"></i>
+                </div>
+
+                {{-- ข้อความ --}}
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-white font-bold text-sm">ติดตั้งแอป TP-Affiliate</h3>
+                    <p class="text-gray-400 text-xs mt-0.5">เพิ่มลงหน้าจอหลักเพื่อเข้าถึงได้ง่ายขึ้น</p>
+                </div>
+
+                {{-- ปุ่มปิด --}}
+                <button @click="dismissInstall()" class="text-gray-500 hover:text-white p-1" type="button">
+                    <i class="fas fa-times text-sm"></i>
+                </button>
+            </div>
+
+            {{-- ปุ่ม Actions --}}
+            <div class="flex gap-2 mt-3">
+                <button @click="installApp()"
+                        class="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold rounded-xl active:scale-95 transition-transform"
+                        type="button">
+                    <i class="fas fa-plus mr-1"></i> ติดตั้ง
+                </button>
+                <button @click="dismissInstall()"
+                        class="px-4 py-2.5 bg-gray-800 text-gray-400 text-sm rounded-xl active:scale-95 transition-transform"
+                        type="button">
+                    ไว้ทีหลัง
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    /**
+     * PWA Install Prompt Component
+     * จัดการ beforeinstallprompt event และแสดง custom install banner
+     */
+    function pwaInstall() {
+        return {
+            deferredPrompt: null,
+            showInstallBanner: false,
+
+            init() {
+                // ลงทะเบียน Service Worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+                        .then((reg) => {
+                            // ตรวจหา update ใหม่
+                            reg.addEventListener('updatefound', () => {
+                                const newWorker = reg.installing;
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                                        window.showNotification && window.showNotification('อัพเดทแอปสำเร็จ! กรุณารีเฟรช', 'info');
+                                    }
+                                });
+                            });
+                        })
+                        .catch((err) => console.warn('SW registration failed:', err));
+                }
+
+                // จับ beforeinstallprompt event
+                window.addEventListener('beforeinstallprompt', (e) => {
+                    e.preventDefault();
+                    this.deferredPrompt = e;
+
+                    // เช็คว่าเคย dismiss ไปแล้วหรือยัง (ภายใน 7 วัน)
+                    const dismissed = localStorage.getItem('pwa-install-dismissed');
+                    if (dismissed) {
+                        const daysSince = (Date.now() - parseInt(dismissed)) / (1000 * 60 * 60 * 24);
+                        if (daysSince < 7) return;
+                    }
+
+                    // แสดง banner หลังจาก 5 วินาที (ให้ user ได้ใช้งานก่อน)
+                    setTimeout(() => {
+                        this.showInstallBanner = true;
+                    }, 5000);
+                });
+
+                // ตรวจจับว่า install สำเร็จ
+                window.addEventListener('appinstalled', () => {
+                    this.showInstallBanner = false;
+                    this.deferredPrompt = null;
+                    localStorage.removeItem('pwa-install-dismissed');
+                    window.showNotification && window.showNotification('ติดตั้งแอปสำเร็จ!', 'success');
+                });
+            },
+
+            async installApp() {
+                if (!this.deferredPrompt) return;
+
+                this.deferredPrompt.prompt();
+                const { outcome } = await this.deferredPrompt.userChoice;
+
+                if (outcome === 'accepted') {
+                    this.showInstallBanner = false;
+                }
+                this.deferredPrompt = null;
+            },
+
+            dismissInstall() {
+                this.showInstallBanner = false;
+                localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+            }
+        };
+    }
     </script>
 </body>
 </html>

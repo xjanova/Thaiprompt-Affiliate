@@ -1,39 +1,56 @@
 /**
- * Service Worker สำหรับ Offline Notifications
+ * Service Worker สำหรับ TP-Affiliate PWA
  *
  * คุณสมบัติ:
- * - Cache API responses สำหรับ notifications
- * - Serve cached data เมื่อ offline
- * - Background sync เมื่อ connection กลับมา
+ * - Cache static assets (CSS, JS, fonts, images)
+ * - Cache navigation pages สำหรับ offline
+ * - Network-first สำหรับ API requests
+ * - Offline fallback page
  * - Push notifications support
+ * - Background sync
  *
- * @version 1.0.0
+ * @version 2.0.0 - อัพเกรดเป็น full PWA
  */
 
-const CACHE_NAME = 'tp-affiliate-notifications-v1';
-const CACHE_EXPIRY = 5 * 60 * 1000; // 5 นาที
+const CACHE_VERSION = 'v2';
+const STATIC_CACHE = `tp-static-${CACHE_VERSION}`;
+const PAGES_CACHE = `tp-pages-${CACHE_VERSION}`;
+const API_CACHE = `tp-api-${CACHE_VERSION}`;
 
-// URL patterns ที่ต้อง cache
-const NOTIFICATION_URLS = [
+/** Static assets ที่ต้อง pre-cache ตอน install */
+const PRECACHE_ASSETS = [
+    '/offline',
+    '/images/logo.svg',
+    '/favicon.ico',
+];
+
+/** URL patterns สำหรับ API caching */
+const API_PATTERNS = [
     '/user/notifications/unread',
     '/seller/notifications/unread',
     '/admin/notifications/unread',
 ];
 
+/** Cache expiry สำหรับ API responses */
+const API_CACHE_EXPIRY = 5 * 60 * 1000; // 5 นาที
+
+/** Cache expiry สำหรับ pages */
+const PAGE_CACHE_EXPIRY = 30 * 60 * 1000; // 30 นาที
+
+/** Max items ใน dynamic caches */
+const MAX_CACHE_ITEMS = 50;
+
 /**
- * Install event - เตรียม cache
+ * Install event - pre-cache static assets
  */
 self.addEventListener('install', (event) => {
-    console.log('📦 Service Worker: Installing...');
-
     event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-            console.log('✅ Service Worker: Cache opened');
-            return cache;
+        caches.open(STATIC_CACHE).then((cache) => {
+            return cache.addAll(PRECACHE_ASSETS).catch((err) => {
+                console.warn('SW: บาง assets pre-cache ไม่ได้:', err);
+            });
         })
     );
-
-    // Force activate ทันที
     self.skipWaiting();
 });
 
@@ -41,186 +58,243 @@ self.addEventListener('install', (event) => {
  * Activate event - ลบ cache เก่า
  */
 self.addEventListener('activate', (event) => {
-    console.log('🔄 Service Worker: Activating...');
+    const validCaches = [STATIC_CACHE, PAGES_CACHE, API_CACHE];
 
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
-                cacheNames.map((cacheName) => {
-                    if (cacheName !== CACHE_NAME) {
-                        console.log('🗑️ Service Worker: Deleting old cache:', cacheName);
-                        return caches.delete(cacheName);
-                    }
-                })
+                cacheNames
+                    .filter((name) => !validCaches.includes(name))
+                    .map((name) => caches.delete(name))
             );
         })
     );
 
-    // Take control ทันที
     return self.clients.claim();
 });
 
 /**
- * Fetch event - Intercept requests และใช้ cache strategy
+ * Fetch event - จัดการ caching strategies
  */
 self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
+    const { request } = event;
+    const url = new URL(request.url);
 
-    // ตรวจสอบว่าเป็น notification request หรือไม่
-    const isNotificationRequest = NOTIFICATION_URLS.some(pattern =>
-        url.pathname.includes(pattern)
-    );
+    // ข้าม non-GET requests
+    if (request.method !== 'GET') return;
 
-    if (isNotificationRequest && event.request.method === 'GET') {
-        event.respondWith(
-            networkFirstStrategy(event.request)
-        );
+    // ข้าม chrome-extension, ws, etc.
+    if (!url.protocol.startsWith('http')) return;
+
+    // ข้าม third-party requests (fonts.googleapis, cdnjs, etc.) - ใช้ browser cache ปกติ
+    if (url.origin !== self.location.origin) {
+        // Cache Google Fonts stylesheets/files เท่านั้น
+        if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+            event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+        }
+        return;
+    }
+
+    // API requests - Network first + cache fallback
+    if (isApiRequest(url)) {
+        event.respondWith(networkFirst(request, API_CACHE, API_CACHE_EXPIRY));
+        return;
+    }
+
+    // Static assets (css, js, images, fonts) - Cache first
+    if (isStaticAsset(url)) {
+        event.respondWith(cacheFirst(request, STATIC_CACHE));
+        return;
+    }
+
+    // Navigation requests (HTML pages) - Network first + offline fallback
+    if (request.mode === 'navigate') {
+        event.respondWith(networkFirstWithOffline(request));
+        return;
     }
 });
 
 /**
- * Network-First Strategy
- * พยายาม fetch จาก network ก่อน หากล้มเหลวใช้ cache
- *
- * @param {Request} request
- * @returns {Promise<Response>}
+ * ตรวจสอบว่าเป็น API request หรือไม่
  */
-async function networkFirstStrategy(request) {
+function isApiRequest(url) {
+    return API_PATTERNS.some((pattern) => url.pathname.includes(pattern))
+        || url.pathname.startsWith('/api/');
+}
+
+/**
+ * ตรวจสอบว่าเป็น static asset หรือไม่
+ */
+function isStaticAsset(url) {
+    return url.pathname.startsWith('/build/')
+        || url.pathname.startsWith('/images/')
+        || url.pathname.startsWith('/icons/')
+        || url.pathname.match(/\.(css|js|woff2?|ttf|eot|svg|png|jpg|jpeg|gif|ico|webp)$/);
+}
+
+/**
+ * Cache-First Strategy - สำหรับ static assets
+ * ดึงจาก cache ก่อน ถ้าไม่มีค่อย fetch จาก network
+ */
+async function cacheFirst(request, cacheName) {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+
     try {
-        // พยายาม fetch จาก network
-        const networkResponse = await fetch(request);
+        const response = await fetch(request);
+        if (response.ok) {
+            const cache = await caches.open(cacheName);
+            cache.put(request, response.clone());
+        }
+        return response;
+    } catch (error) {
+        return new Response('', { status: 408 });
+    }
+}
 
-        if (networkResponse.ok) {
-            // บันทึกลง cache พร้อม timestamp
-            const cache = await caches.open(CACHE_NAME);
-            const clonedResponse = networkResponse.clone();
+/**
+ * Network-First Strategy - สำหรับ API requests
+ */
+async function networkFirst(request, cacheName, expiry) {
+    try {
+        const response = await fetch(request);
 
-            // เพิ่ม timestamp header
-            const headers = new Headers(clonedResponse.headers);
-            headers.append('sw-cached-at', Date.now().toString());
-
-            const responseWithTimestamp = new Response(clonedResponse.body, {
-                status: clonedResponse.status,
-                statusText: clonedResponse.statusText,
-                headers: headers
+        if (response.ok) {
+            const cache = await caches.open(cacheName);
+            const headers = new Headers(response.headers);
+            headers.set('sw-cached-at', Date.now().toString());
+            const cachedResponse = new Response(response.clone().body, {
+                status: response.status,
+                statusText: response.statusText,
+                headers,
             });
-
-            cache.put(request, responseWithTimestamp);
-            console.log('💾 Service Worker: Cached response for', request.url);
+            cache.put(request, cachedResponse);
+            trimCache(cacheName, MAX_CACHE_ITEMS);
         }
 
-        return networkResponse;
-
+        return response;
     } catch (error) {
-        console.log('📴 Service Worker: Network failed, trying cache...', error);
-
-        // หาก network ล้มเหลว ลอง cache
-        const cachedResponse = await caches.match(request);
-
-        if (cachedResponse) {
-            // ตรวจสอบว่า cache หมดอายุหรือยัง
-            const cachedAt = cachedResponse.headers.get('sw-cached-at');
-
-            if (cachedAt) {
-                const age = Date.now() - parseInt(cachedAt);
-
-                if (age < CACHE_EXPIRY) {
-                    console.log('✅ Service Worker: Serving from cache (age: ' + Math.round(age / 1000) + 's)');
-                    return cachedResponse;
-                } else {
-                    console.log('⏰ Service Worker: Cache expired, removing...');
-                    await caches.delete(request);
-                }
-            } else {
-                // ถ้าไม่มี timestamp ให้ใช้ cache ได้
-                return cachedResponse;
+        const cached = await caches.match(request);
+        if (cached) {
+            const cachedAt = parseInt(cached.headers.get('sw-cached-at') || '0');
+            if (Date.now() - cachedAt < expiry) {
+                return cached;
             }
         }
 
-        // ถ้าไม่มี cache หรือ cache หมดอายุ
-        console.error('❌ Service Worker: No cache available');
         return new Response(
             JSON.stringify({
                 success: false,
-                message: 'ไม่สามารถโหลดการแจ้งเตือนได้ (offline)',
-                notifications: [],
-                unread_count: 0
+                message: 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (offline)',
+                data: null,
             }),
-            {
-                status: 503,
-                headers: { 'Content-Type': 'application/json' }
-            }
+            { status: 503, headers: { 'Content-Type': 'application/json' } }
         );
     }
 }
 
 /**
- * Background Sync - Sync เมื่อ connection กลับมา
+ * Network-First + Offline Fallback - สำหรับ navigation
  */
-self.addEventListener('sync', (event) => {
-    console.log('🔄 Service Worker: Background sync triggered');
-
-    if (event.tag === 'sync-notifications') {
-        event.waitUntil(syncNotifications());
-    }
-});
-
-/**
- * Sync notifications เมื่อ online
- */
-async function syncNotifications() {
+async function networkFirstWithOffline(request) {
     try {
-        console.log('🔄 Syncing notifications...');
+        const response = await fetch(request);
 
-        // Fetch ข้อมูลใหม่สำหรับทุก route prefix
-        const syncPromises = NOTIFICATION_URLS.map(url => {
-            return fetch(url, {
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'Accept': 'application/json',
-                }
-            }).then(response => {
-                if (response.ok) {
-                    return caches.open(CACHE_NAME).then(cache => {
-                        cache.put(url, response.clone());
-                    });
-                }
-            }).catch(error => {
-                console.error('Failed to sync:', url, error);
-            });
-        });
+        if (response.ok) {
+            // Cache หน้าที่โหลดสำเร็จ
+            const cache = await caches.open(PAGES_CACHE);
+            cache.put(request, response.clone());
+            trimCache(PAGES_CACHE, MAX_CACHE_ITEMS);
+        }
 
-        await Promise.all(syncPromises);
-        console.log('✅ Notifications synced successfully');
-
+        return response;
     } catch (error) {
-        console.error('❌ Sync failed:', error);
-        throw error;
+        // ลองหาจาก cache
+        const cached = await caches.match(request);
+        if (cached) return cached;
+
+        // แสดงหน้า offline
+        const offlinePage = await caches.match('/offline');
+        if (offlinePage) return offlinePage;
+
+        return new Response(
+            '<html><body style="display:flex;align-items:center;justify-content:center;height:100vh;margin:0;background:#111827;color:white;font-family:sans-serif;text-align:center"><div><h1 style="font-size:48px;margin-bottom:16px">📴</h1><h2>ไม่มีอินเทอร์เน็ต</h2><p style="color:#9ca3af">กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วลองใหม่</p><button onclick="location.reload()" style="margin-top:24px;padding:12px 32px;background:#8B5CF6;color:white;border:none;border-radius:12px;font-size:16px;cursor:pointer">ลองใหม่</button></div></body></html>',
+            { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+        );
     }
 }
 
 /**
- * Push Notification Handler (สำหรับอนาคต)
+ * Stale-While-Revalidate Strategy - สำหรับ fonts
+ */
+async function staleWhileRevalidate(request, cacheName) {
+    const cached = await caches.match(request);
+
+    const fetchPromise = fetch(request).then((response) => {
+        if (response.ok) {
+            const cache = caches.open(cacheName);
+            cache.then((c) => c.put(request, response.clone()));
+        }
+        return response;
+    }).catch(() => cached);
+
+    return cached || fetchPromise;
+}
+
+/**
+ * จำกัดจำนวน items ใน cache
+ */
+async function trimCache(cacheName, maxItems) {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    if (keys.length > maxItems) {
+        await cache.delete(keys[0]);
+        trimCache(cacheName, maxItems);
+    }
+}
+
+/**
+ * Background Sync
+ */
+self.addEventListener('sync', (event) => {
+    if (event.tag === 'sync-notifications') {
+        event.waitUntil(syncData('notifications'));
+    }
+});
+
+async function syncData(type) {
+    if (type === 'notifications') {
+        const promises = API_PATTERNS.filter((u) => u.includes('notifications')).map((url) =>
+            fetch(url, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+            })
+                .then((r) => {
+                    if (r.ok) return caches.open(API_CACHE).then((c) => c.put(url, r.clone()));
+                })
+                .catch(() => {})
+        );
+        await Promise.all(promises);
+    }
+}
+
+/**
+ * Push Notification Handler
  */
 self.addEventListener('push', (event) => {
-    console.log('📬 Service Worker: Push notification received');
-
     const data = event.data ? event.data.json() : {};
 
     const options = {
         body: data.message || 'คุณมีการแจ้งเตือนใหม่',
-        icon: '/icons/notification-icon.png',
-        badge: '/icons/badge-icon.png',
+        icon: '/images/pwa/icon-192x192.png',
+        badge: '/images/pwa/icon-72x72.png',
         vibrate: [200, 100, 200],
         tag: data.id || 'notification',
         requireInteraction: data.is_important || false,
-        data: {
-            url: data.action_url || '/',
-        }
+        data: { url: data.action_url || '/user/dashboard' },
     };
 
     event.waitUntil(
-        self.registration.showNotification(data.title || 'การแจ้งเตือน', options)
+        self.registration.showNotification(data.title || 'TP-Affiliate', options)
     );
 });
 
@@ -228,22 +302,16 @@ self.addEventListener('push', (event) => {
  * Notification Click Handler
  */
 self.addEventListener('notificationclick', (event) => {
-    console.log('🖱️ Service Worker: Notification clicked');
-
     event.notification.close();
-
-    const urlToOpen = event.notification.data?.url || '/';
+    const urlToOpen = event.notification.data?.url || '/user/dashboard';
 
     event.waitUntil(
         clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            // ถ้ามี tab เปิดอยู่แล้ว ให้ focus
             for (const client of clientList) {
-                if (client.url === urlToOpen && 'focus' in client) {
+                if (client.url.includes(urlToOpen) && 'focus' in client) {
                     return client.focus();
                 }
             }
-
-            // ถ้าไม่มี ให้เปิด tab ใหม่
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }
@@ -252,22 +320,19 @@ self.addEventListener('notificationclick', (event) => {
 });
 
 /**
- * Message Handler - รับคำสั่งจาก client
+ * Message Handler
  */
 self.addEventListener('message', (event) => {
-    console.log('💬 Service Worker: Message received', event.data);
-
     if (event.data.action === 'skipWaiting') {
         self.skipWaiting();
     }
-
     if (event.data.action === 'clearCache') {
         event.waitUntil(
-            caches.delete(CACHE_NAME).then(() => {
-                console.log('🗑️ Cache cleared');
-            })
+            Promise.all([
+                caches.delete(STATIC_CACHE),
+                caches.delete(PAGES_CACHE),
+                caches.delete(API_CACHE),
+            ])
         );
     }
 });
-
-console.log('✅ Service Worker: Loaded successfully');
