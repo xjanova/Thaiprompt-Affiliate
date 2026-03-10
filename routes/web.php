@@ -100,6 +100,11 @@ Route::get('/debug/sms-checker-status', function () {
     return response()->json($data, 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 });
 
+// PWA Offline Fallback Page
+Route::get('/offline', function () {
+    return view('offline');
+})->name('offline');
+
 // Demo Routes
 Route::get('/demo/loading', function () {
     return view('demo-loading');
