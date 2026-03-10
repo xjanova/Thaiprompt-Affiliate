@@ -149,16 +149,23 @@
         centerActive: {{ $navigationItems['center']['active'] ?? 'false' ? 'true' : 'false' }}
     }"
     x-init="
-        // ซ่อน nav เมื่อ scroll ลง แสดงเมื่อ scroll ขึ้น
+        // ซ่อน nav เมื่อ scroll ลง แสดงเมื่อ scroll ขึ้น (throttled เพื่อ performance)
+        let scrollTicking = false;
         window.addEventListener('scroll', () => {
-            let currentScroll = window.pageYOffset;
-            if (currentScroll > lastScroll && currentScroll > 100) {
-                showNav = false;
-            } else {
-                showNav = true;
+            if (!scrollTicking) {
+                scrollTicking = true;
+                requestAnimationFrame(() => {
+                    let currentScroll = window.pageYOffset;
+                    if (currentScroll > lastScroll && currentScroll > 100) {
+                        showNav = false;
+                    } else {
+                        showNav = true;
+                    }
+                    lastScroll = currentScroll;
+                    scrollTicking = false;
+                });
             }
-            lastScroll = currentScroll;
-        });
+        }, { passive: true });
     "
     x-show="showNav"
     x-transition:enter="transition ease-out duration-300"
@@ -176,12 +183,10 @@
         <div class="absolute -top-4 left-4 right-4 h-4 bg-gradient-to-t from-black/10 to-transparent rounded-t-3xl"></div>
 
         <!-- Glassmorphism Background -->
-        <div class="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-2xl border-t border-white/20 dark:border-gray-700/30 shadow-[0_-8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.4)]">
+        <div class="relative bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg border-t border-white/20 dark:border-gray-700/30 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_-4px_16px_rgba(0,0,0,0.3)]">
 
-            <!-- Animated Gradient Border Top -->
-            <div class="absolute top-0 left-0 right-0 h-[2px] overflow-hidden">
-                <div class="h-full w-[200%] bg-gradient-to-r from-purple-500 via-pink-500 via-blue-500 to-purple-500 animate-gradient-x"></div>
-            </div>
+            <!-- Gradient Border Top (static เพื่อ performance) -->
+            <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 via-pink-500 to-blue-500"></div>
 
             <!-- Navigation Items Container -->
             <div class="relative flex items-end justify-between px-2 pt-1 pb-2">
@@ -224,8 +229,8 @@
                 <!-- Center Floating Action Button (QR Code) -->
                 @if($navigationItems['center'] ?? null)
                     <div class="relative -mt-6 z-20">
-                        <!-- Outer Glow Ring -->
-                        <div class="absolute inset-0 -m-1 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 opacity-30 blur-md animate-pulse"></div>
+                        <!-- Outer Glow Ring (static เพื่อ performance) -->
+                        <div class="absolute inset-0 -m-1 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 opacity-20 blur-sm"></div>
 
                         <!-- Button Container -->
                         <a
@@ -306,38 +311,6 @@
 
 <style>
     /**
-     * Gradient Animation
-     */
-    @keyframes gradient-x {
-        0%, 100% {
-            transform: translateX(0);
-        }
-        50% {
-            transform: translateX(-50%);
-        }
-    }
-
-    .animate-gradient-x {
-        animation: gradient-x 3s ease infinite;
-    }
-
-    /**
-     * Slow Spin Animation
-     */
-    @keyframes spin-slow {
-        from {
-            transform: rotate(0deg);
-        }
-        to {
-            transform: rotate(360deg);
-        }
-    }
-
-    .animate-spin-slow {
-        animation: spin-slow 8s linear infinite;
-    }
-
-    /**
      * Safe Area Inset Support
      * รองรับ notch และ home indicator บน iOS/Android
      */
@@ -358,22 +331,14 @@
     }
 
     /**
-     * Smooth Touch Feedback
+     * Smooth Touch Feedback - ใช้ CSS ที่เบาแทน animation
      */
     .nav-item {
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
     }
 
-    /**
-     * Active Item Bounce Animation
-     */
     .nav-item:active {
-        animation: tap-bounce 0.2s ease;
-    }
-
-    @keyframes tap-bounce {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(0.92); }
+        transform: scale(0.95);
     }
 </style>

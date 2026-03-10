@@ -31,12 +31,7 @@
     <div class="flex items-center gap-4">
         {{-- Mobile Menu Toggle (Burger Menu) - กระพริบทุก 30 วินาที + Tooltip ทุก 15 วัน --}}
         <div x-data="{
-            blinking: false,
             showTooltip: false,
-            startBlink() {
-                this.blinking = true;
-                setTimeout(() => { this.blinking = false; }, 1500);
-            },
             checkTooltip() {
                 const lastShown = localStorage.getItem('burgerTooltipLastShown');
                 const now = new Date().getTime();
@@ -46,24 +41,20 @@
                     // แสดง tooltip หลังจาก 2 วินาที
                     setTimeout(() => {
                         this.showTooltip = true;
-                        // ซ่อนหลัง 10 วินาที
+                        // ซ่อนหลัง 8 วินาที
                         setTimeout(() => {
                             this.showTooltip = false;
                             localStorage.setItem('burgerTooltipLastShown', now.toString());
-                        }, 10000);
+                        }, 8000);
                     }, 2000);
                 }
             }
         }"
-        x-init="
-            setInterval(() => { startBlink(); }, 30000);
-            checkTooltip();
-        "
+        x-init="checkTooltip()"
         class="md:hidden relative">
             <button @click="$store.sidebar.toggle(); showTooltip = false"
                     type="button"
-                    class="p-2 rounded-lg hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
-                    :class="blinking ? 'animate-blink-burger' : ''">
+                    class="p-2 rounded-lg hover:bg-white/20 transition-colors active:scale-95">
                 <i class="fas fa-bars text-white text-lg drop-shadow"></i>
             </button>
 
@@ -101,14 +92,13 @@
     </div>
 
     {{-- Right Section: Search, Notifications, Dark Mode, Profile --}}
-    <div class="flex items-center gap-2 md:gap-4">
-        {{-- 🇹🇭 Wiki Button - ลิงก์ไปหน้า Wiki หลัก (แสดงทุกขนาดหน้าจอ) --}}
+    <div class="flex items-center gap-1 sm:gap-2 md:gap-4">
+        {{-- 🇹🇭 Wiki Button - ลิงก์ไปหน้า Wiki หลัก --}}
         <a href="{{ route('wiki.index') }}"
-           class="inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl transition-all duration-300 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg hover:shadow-xl hover:shadow-orange-500/30 transform hover:scale-105 relative group"
+           class="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-bold rounded-lg sm:rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white shadow-lg relative"
            title="🇹🇭 เรื่องราว ThaiPrompt - ทำไมต้องมีระบบของคนไทย">
-            <span class="text-sm sm:text-base group-hover:scale-125 group-hover:rotate-12 transition-all duration-300">🇹🇭</span>
-            <span class="hidden xs:inline group-hover:translate-x-0.5 transition-transform duration-300">wiki</span>
-            <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full animate-ping"></span>
+            <span class="text-sm sm:text-base">🇹🇭</span>
+            <span class="hidden xs:inline">wiki</span>
             <span class="absolute -top-1 -right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-red-500 rounded-full"></span>
         </a>
 
@@ -141,39 +131,111 @@
             </div>
         @endif
 
-        {{-- Notifications (ใช้ Notification Bell V3 Component) --}}
+        {{-- Notifications (แสดงทุกขนาดจอ) --}}
         <x-arrow-x.navbar.notification-bell-v3 />
 
-        {{-- 💰 Wallet Balance Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
+        {{-- 💰 Wallet Balance Badge (แสดงทุกขนาดจอ) --}}
         <x-arrow-x.navbar.wallet-balance-badge-v3 />
 
-        {{-- 🪙 Video Coins Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
-        <x-arrow-x.navbar.coin-balance-badge-v3 />
+        {{-- 🪙 Video Coins Badge (ซ่อนบนมือถือ) --}}
+        <div class="hidden sm:block">
+            <x-arrow-x.navbar.coin-balance-badge-v3 />
+        </div>
 
-        {{-- 🛒 Cart Badge (แสดงเฉพาะเมื่อ login แล้ว) --}}
+        {{-- 🛒 Cart Badge (แสดงทุกขนาดจอ) --}}
         @auth
             <x-arrow-x.navbar.cart-badge-v3 />
         @endauth
 
-        {{-- Language Switcher --}}
-        <x-arrow-x.language-switcher />
+        {{-- Desktop-only: Language, Theme, Dark Mode --}}
+        <div class="hidden md:flex items-center gap-2">
+            {{-- Language Switcher --}}
+            <x-arrow-x.language-switcher />
 
-        {{-- Theme Customizer --}}
-        <button @click="$dispatch('toggle-customizer')"
-                type="button"
-                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
-                title="ปรับแต่งธีม">
-            <i class="fas fa-paint-brush text-white drop-shadow"></i>
-        </button>
+            {{-- Theme Customizer --}}
+            <button @click="$dispatch('toggle-customizer')"
+                    type="button"
+                    class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all"
+                    title="ปรับแต่งธีม">
+                <i class="fas fa-paint-brush text-white drop-shadow"></i>
+            </button>
 
-        {{-- Dark Mode Toggle --}}
-        <button @click="$store.theme.toggle()"
-                type="button"
-                class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all hover:scale-110 active:scale-95"
-                :title="$store.theme.isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
-            <i x-show="!$store.theme.isDark" class="fas fa-moon text-white drop-shadow"></i>
-            <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
-        </button>
+            {{-- Dark Mode Toggle --}}
+            <button @click="$store.theme.toggle()"
+                    type="button"
+                    class="p-3 rounded-xl glass-neu hover:bg-white/20 transition-all"
+                    :title="$store.theme.isDark ? 'เปลี่ยนเป็นโหมดสว่าง' : 'เปลี่ยนเป็นโหมดมืด'">
+                <i x-show="!$store.theme.isDark" class="fas fa-moon text-white drop-shadow"></i>
+                <i x-show="$store.theme.isDark" class="fas fa-sun text-yellow-300 drop-shadow"></i>
+            </button>
+        </div>
+
+        {{-- Mobile-only: "เพิ่มเติม" dropdown รวมปุ่มรอง --}}
+        <div class="md:hidden relative" x-data="{ moreOpen: false }">
+            <button @click="moreOpen = !moreOpen"
+                    type="button"
+                    class="p-2 rounded-xl glass-neu hover:bg-white/20 transition-all"
+                    title="เพิ่มเติม">
+                <i class="fas fa-ellipsis-v text-white drop-shadow"></i>
+            </button>
+
+            {{-- More Dropdown --}}
+            <div x-show="moreOpen"
+                 x-cloak
+                 @click.outside="moreOpen = false"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 class="absolute top-full right-0 mt-2 w-56 glass-dropdown rounded-xl shadow-2xl border border-white/30 overflow-hidden z-[9999]">
+
+                {{-- Wiki --}}
+                <a href="{{ route('wiki.index') }}"
+                   class="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all text-white text-sm">
+                    <span class="text-lg">🇹🇭</span>
+                    <span>Wiki ThaiPrompt</span>
+                </a>
+
+                {{-- Video Coins (ซ่อนบน sm) --}}
+                <div class="sm:hidden border-t border-white/10">
+                    <a href="{{ route('user.video-coins.index') }}"
+                       class="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all text-white text-sm">
+                        <div class="w-6 h-6 rounded bg-gradient-to-br from-yellow-400 to-orange-500 flex items-center justify-center">
+                            <span class="text-white text-xs font-black">C</span>
+                        </div>
+                        <span>Video Coins</span>
+                    </a>
+                </div>
+
+                <div class="border-t border-white/10"></div>
+
+                {{-- Dark Mode Toggle --}}
+                <button @click="$store.theme.toggle(); moreOpen = false"
+                        type="button"
+                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all text-white text-sm">
+                    <i class="fas fa-adjust w-6 text-center drop-shadow"></i>
+                    <span x-text="$store.theme.isDark ? 'โหมดสว่าง' : 'โหมดมืด'"></span>
+                </button>
+
+                {{-- Language Switcher --}}
+                <button @click="moreOpen = false; $nextTick(() => { $dispatch('open-language-switcher') })"
+                        type="button"
+                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all text-white text-sm">
+                    <i class="fas fa-globe w-6 text-center drop-shadow"></i>
+                    <span>เปลี่ยนภาษา</span>
+                </button>
+
+                {{-- Theme Customizer --}}
+                <button @click="$dispatch('toggle-customizer'); moreOpen = false"
+                        type="button"
+                        class="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition-all text-white text-sm">
+                    <i class="fas fa-paint-brush w-6 text-center drop-shadow"></i>
+                    <span>ปรับแต่งธีม</span>
+                </button>
+            </div>
+        </div>
 
         {{-- User Profile Dropdown with Dashboard Switcher (สำหรับผู้ใช้ที่ล็อกอินแล้ว) --}}
         @auth
@@ -412,28 +474,12 @@
 }
 
 /**
- * Blink Animation สำหรับ Burger Menu - กระพริบทุก 30 วินาที
+ * ลด animation บนมือถือเพื่อประหยัดแบตเตอรี่
  */
-@keyframes blink-burger {
-    0%, 100% {
-        opacity: 1;
-        transform: scale(1);
+@media (max-width: 767px) {
+    .glass-neu {
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
     }
-    25% {
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1.1);
-    }
-    75% {
-        opacity: 0.3;
-        transform: scale(0.95);
-    }
-}
-
-.animate-blink-burger {
-    animation: blink-burger 0.6s ease-in-out 3;
 }
 </style>

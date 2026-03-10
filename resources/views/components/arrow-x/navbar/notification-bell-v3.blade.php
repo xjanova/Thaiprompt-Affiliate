@@ -359,7 +359,7 @@ class="relative">
             x-text="unreadCount > 99 ? '99+' : unreadCount"
             aria-live="polite"
             :aria-label="`${unreadCount} รายการที่ยังไม่ได้อ่าน`"
-            class="absolute top-0 right-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-600 rounded-full shadow-lg animate-pulse"
+            class="absolute top-0 right-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-gradient-to-r from-red-500 to-pink-600 rounded-full shadow-lg"
         ></span>
 
         {{-- Offline Indicator --}}
@@ -409,10 +409,7 @@ class="relative">
 
             {{-- WebSocket Status --}}
             <div x-show="isOnline && useWebSocket" class="flex items-center gap-2 px-3 py-2 glass-neu rounded-lg text-xs text-green-300">
-                <span class="relative flex h-2 w-2">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-                </span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                 <span>🔔 Real-time WebSocket</span>
             </div>
         </div>
