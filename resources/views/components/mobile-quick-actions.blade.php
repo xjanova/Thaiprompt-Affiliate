@@ -98,17 +98,24 @@
         lastScroll: 0,
 
         init() {
-            // ซ่อน FAB เมื่อ scroll ลงเร็ว แสดงเมื่อ scroll ขึ้น
+            // ซ่อน FAB เมื่อ scroll ลงเร็ว แสดงเมื่อ scroll ขึ้น (throttled)
+            let fabScrollTicking = false;
             window.addEventListener('scroll', () => {
-                let currentScroll = window.pageYOffset;
-                if (currentScroll > this.lastScroll && currentScroll > 200) {
-                    this.showFab = false;
-                    this.fabOpen = false; // ปิดเมนูด้วยถ้ากำลังเปิดอยู่
-                } else {
-                    this.showFab = true;
+                if (!fabScrollTicking) {
+                    fabScrollTicking = true;
+                    requestAnimationFrame(() => {
+                        let currentScroll = window.pageYOffset;
+                        if (currentScroll > this.lastScroll && currentScroll > 200) {
+                            this.showFab = false;
+                            this.fabOpen = false;
+                        } else {
+                            this.showFab = true;
+                        }
+                        this.lastScroll = currentScroll;
+                        fabScrollTicking = false;
+                    });
                 }
-                this.lastScroll = currentScroll;
-            });
+            }, { passive: true });
         },
 
         toggleFab() {
@@ -148,8 +155,8 @@
                         <i class="{{ $action['icon'] }} text-lg"></i>
                     </div>
 
-                    <!-- Glow Effect -->
-                    <div class="absolute inset-0 bg-gradient-to-br {{ $action['color'] }} rounded-full blur-md opacity-50 group-hover:opacity-70 transition-opacity duration-200"></div>
+                    <!-- Glow Effect (ลดลงเพื่อ performance) -->
+                    <div class="absolute inset-0 bg-gradient-to-br {{ $action['color'] }} rounded-full blur-sm opacity-30"></div>
                 </div>
             </a>
         @endforeach
@@ -191,11 +198,8 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
         </svg>
 
-        <!-- Pulsing Ring -->
-        <div class="absolute inset-0 rounded-full bg-purple-500 animate-ping opacity-20"></div>
-
-        <!-- Glow Effect -->
-        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 blur-md opacity-50"></div>
+        <!-- Subtle Glow (static เพื่อ performance - ไม่ใช้ animate-ping) -->
+        <div class="absolute inset-0 rounded-full bg-gradient-to-br from-purple-600 to-blue-600 blur-sm opacity-30"></div>
     </button>
 
     <!-- Overlay - ปิดเมนูเมื่อคลิกนอกพื้นที่ -->
@@ -208,7 +212,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 -z-10 bg-black/20 backdrop-blur-[1px]">
+        class="fixed inset-0 -z-10 bg-black/20">
     </div>
 </div>
 

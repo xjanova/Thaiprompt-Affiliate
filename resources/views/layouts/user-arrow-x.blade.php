@@ -21,10 +21,10 @@
     <link rel="shortcut icon" type="image/x-icon" href="{{ $faviconPath }}">
     <link rel="apple-touch-icon" href="{{ $faviconPath }}">
 
-    {{-- Google Fonts --}}
+    {{-- Google Fonts (โหลดเฉพาะ weight ที่ใช้จริง เพื่อลดขนาดไฟล์) --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Noto+Sans+Thai:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     {{-- Font Awesome 6.5.1 --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -35,7 +35,7 @@
     {{-- Arrow X Theme Styles --}}
     <x-arrow-x.theme-styles />
 
-    {{-- Alpine.js x-cloak --}}
+    {{-- Alpine.js x-cloak + Mobile Performance Optimizations --}}
     <style>
         [x-cloak] {
             display: none !important;
@@ -45,6 +45,47 @@
         @media (max-width: 1023px) {
             body {
                 padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+            }
+        }
+
+        /**
+         * ปิด animation ที่ไม่จำเป็นบนมือถือ เพื่อลดการใช้ GPU/แบตเตอรี่
+         * - ปิด background circles animation
+         * - ลด backdrop-blur (หนักมากบนมือถือ)
+         * - ปิด animate-pulse ที่ไม่จำเป็น
+         */
+        @media (max-width: 767px) {
+            /* ปิด background circles ที่ทำให้ร้อน */
+            .mobile-hide-bg-effects {
+                display: none !important;
+            }
+
+            /* ลด blur effect ลง (ประหยัด GPU) */
+            .glass-fusion {
+                backdrop-filter: blur(4px) !important;
+                -webkit-backdrop-filter: blur(4px) !important;
+            }
+
+            /* ปิด continuous pulse animations */
+            .animate-pulse {
+                animation: none !important;
+            }
+
+            /* ปิด hover scale effects (ไม่มี hover บนมือถือ) */
+            .hover\:scale-105,
+            .hover\:scale-110,
+            .group-hover\:scale-110 {
+                --tw-scale-x: 1 !important;
+                --tw-scale-y: 1 !important;
+            }
+        }
+
+        /* รองรับ prefers-reduced-motion */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
     </style>
@@ -67,8 +108,8 @@
              : 'background: var(--arrow-x-primary-gradient, linear-gradient(to right, #9333EA, #EC4899, #F97316))'">
     </div>
 
-    {{-- Animated Background Circles ตามการตั้งค่า Theme Settings --}}
-    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
+    {{-- Animated Background Circles ตามการตั้งค่า Theme Settings (ปิดบนมือถือเพื่อ performance) --}}
+    <div class="fixed inset-0 -z-10 overflow-hidden pointer-events-none mobile-hide-bg-effects"
          :style="'display: ' + (window.getComputedStyle(document.documentElement).getPropertyValue('--bg-effects-enabled').trim() === '1' ? 'block' : 'none')">
         {{-- Circle 1 --}}
         <div class="absolute top-1/4 left-1/4 rounded-full animate-pulse transition-all duration-500"

@@ -37,7 +37,7 @@
 
         {{-- Translation Indicator (แสดงเมื่อกำลังแปล) --}}
         <div x-show="$store.language.isTranslating"
-             class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full animate-pulse shadow-lg shadow-blue-400/50">
+             class="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-600 rounded-full shadow-lg">
         </div>
     </button>
 
@@ -93,7 +93,7 @@
 
                     {{-- Check Icon (Current Language) --}}
                     <i x-show="$store.language.current === lang.code"
-                       class="fas fa-check text-green-400 drop-shadow-lg animate-pulse"></i>
+                       class="fas fa-check text-green-400 drop-shadow-lg"></i>
                 </button>
             </template>
         </div>

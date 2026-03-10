@@ -273,7 +273,7 @@ class="relative">
             x-transition
             aria-live="polite"
             :aria-label="`${cartCount} รายการในตะกร้า`"
-            class="absolute top-0 right-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-full shadow-lg animate-pulse"
+            class="absolute top-0 right-0 inline-flex items-center justify-center min-w-[20px] h-5 px-1 text-xs font-bold text-white bg-gradient-to-r from-orange-500 to-red-500 rounded-full shadow-lg"
         ></span>
 
         {{-- Offline Indicator --}}
