@@ -105,6 +105,89 @@ Route::get('/offline', function () {
     return view('offline');
 })->name('offline');
 
+// PWA Manifest - ดึงไอคอนจาก SiteSetting ที่แอดมินอัพโหลดไว้
+Route::get('/manifest.json', function () {
+    $site = \App\Models\SiteSetting::getSetting();
+    $appName = $site->app_name ?: ($site->site_name ?: config('app.name', 'TP-Affiliate'));
+    $appIcon = $site->app_icon_url;
+    $favicon = $site->favicon_url;
+    $logo = $site->logo_url;
+
+    return response()->json([
+        'name' => $appName . ' - ระบบ Affiliate Marketing',
+        'short_name' => $appName,
+        'description' => $site->app_description ?: ($site->site_description ?: 'ระบบ Affiliate Marketing ครบวงจร'),
+        'start_url' => '/user/dashboard?standalone=true',
+        'scope' => '/',
+        'display' => 'standalone',
+        'orientation' => 'any',
+        'background_color' => '#111827',
+        'theme_color' => '#8B5CF6',
+        'lang' => 'th',
+        'dir' => 'ltr',
+        'categories' => ['business', 'finance', 'shopping'],
+        'icons' => array_values(array_filter([
+            // ไอคอนแอปจาก admin (หลัก - 512x512)
+            $appIcon ? [
+                'src' => $appIcon,
+                'sizes' => '512x512',
+                'type' => 'image/webp',
+                'purpose' => 'any maskable',
+            ] : null,
+            // Favicon จาก admin
+            $favicon ? [
+                'src' => $favicon,
+                'sizes' => '64x64',
+                'type' => 'image/x-icon',
+                'purpose' => 'any',
+            ] : null,
+            // โลโก้จาก admin
+            $logo ? [
+                'src' => $logo,
+                'sizes' => '512x512',
+                'type' => str_contains($logo, '.svg') ? 'image/svg+xml' : 'image/webp',
+                'purpose' => 'any',
+            ] : null,
+            // Fallback SVG logo
+            [
+                'src' => '/images/logo.svg',
+                'sizes' => 'any',
+                'type' => 'image/svg+xml',
+                'purpose' => 'any',
+            ],
+        ])),
+        'shortcuts' => [
+            [
+                'name' => 'แดชบอร์ด',
+                'short_name' => 'หน้าแรก',
+                'description' => 'เปิดหน้าแดชบอร์ด',
+                'url' => '/user/dashboard',
+            ],
+            [
+                'name' => 'กระเป๋าเงิน',
+                'short_name' => 'กระเป๋า',
+                'description' => 'ดูยอดเงินและประวัติ',
+                'url' => '/user/wallet',
+            ],
+            [
+                'name' => 'คอมมิชชั่น',
+                'short_name' => 'คอมมิชชั่น',
+                'description' => 'ดูรายได้คอมมิชชั่น',
+                'url' => '/user/commissions',
+            ],
+        ],
+        'related_applications' => [],
+        'prefer_related_applications' => false,
+        'launch_handler' => [
+            'client_mode' => ['navigate-existing', 'auto'],
+        ],
+        'display_override' => ['standalone', 'minimal-ui'],
+    ], 200, [
+        'Content-Type' => 'application/manifest+json',
+        'Cache-Control' => 'public, max-age=3600',
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+})->name('manifest.json');
+
 // Demo Routes
 Route::get('/demo/loading', function () {
     return view('demo-loading');
