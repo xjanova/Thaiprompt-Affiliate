@@ -2912,21 +2912,21 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     protected function pushMessagePriority(string $to, array $messages): bool
     {
-        // ✅ Priority push: retry ทันที ไม่สนใจ backoff period
-        $maxRetries = LineGatekeeperService::MAX_RETRIES;
+        // ✅ Priority push: retry แค่ 2 ครั้ง ด้วย delay สั้น (ไม่ block นาน)
+        $maxRetries = 2;
 
         for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
             if ($attempt > 1) {
-                $delayMs = LineGatekeeperService::getRetryDelayMs($attempt);
-                usleep($delayMs * 1000);
+                // รอแค่ 200ms ก่อน retry
+                usleep(200_000);
             }
 
             LineGatekeeperService::recordLinePush();
 
             try {
                 $response = Http::withToken($this->channelAccessToken)
-                    ->timeout(15)
-                    ->connectTimeout(8)
+                    ->timeout(10)
+                    ->connectTimeout(5)
                     ->post(self::API_ENDPOINT.'/message/push', [
                         'to' => $to,
                         'messages' => $messages,
@@ -2941,9 +2941,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 $status = $response->status();
 
                 if ($status === 429 && $attempt < $maxRetries) {
-                    $retryAfter = (int) $response->header('retry-after', 0);
-                    LineGatekeeperService::recordLineRateLimit($retryAfter ?: null, $attempt);
-                    Log::warning("LINE pushMessagePriority: 429 → retry (attempt {$attempt}/{$maxRetries})", [
+                    Log::warning("LINE pushMessagePriority: 429 → retry (attempt {$attempt})", [
                         'to' => $to,
                     ]);
 
@@ -2954,13 +2952,12 @@ class LineFortuneService implements MessagingPlatformInterface
                     'to' => $to,
                     'status' => $status,
                     'body' => $response->body(),
-                    'attempt' => $attempt,
                 ]);
 
                 return false;
 
             } catch (\Exception $e) {
-                Log::error("LINE pushMessagePriority: Exception (attempt {$attempt}/{$maxRetries})", [
+                Log::error("LINE pushMessagePriority: Exception (attempt {$attempt})", [
                     'to' => $to,
                     'error' => $e->getMessage(),
                 ]);
@@ -2978,91 +2975,60 @@ class LineFortuneService implements MessagingPlatformInterface
 
     protected function pushMessage(string $to, array $messages): bool
     {
-        // ✅ V2 Adaptive Retry: ส่งเลย ถ้าโดน 429 จะ retry ด้วย exponential backoff
-        $maxRetries = LineGatekeeperService::MAX_RETRIES;
+        // ✅ V2: ส่งทันที ไม่ block ไม่ retry (เพื่อไม่ให้ webhook ช้า)
+        // ถ้าโดน 429 → return false → fortune:check-pending จะ retry ทีหลัง
+        LineGatekeeperService::recordLinePush();
 
-        for ($attempt = 1; $attempt <= $maxRetries; $attempt++) {
-            // ถ้าอยู่ใน backoff period (จาก 429 ก่อนหน้า) → รอก่อน
-            if ($attempt > 1 || ! LineGatekeeperService::canPushLine()) {
-                $delayMs = LineGatekeeperService::getRetryDelayMs($attempt);
-                Log::info("LINE pushMessage: รอ {$delayMs}ms ก่อน retry (attempt {$attempt}/{$maxRetries})", [
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(15)
+                ->connectTimeout(8)
+                ->post(self::API_ENDPOINT.'/message/push', [
                     'to' => $to,
+                    'messages' => $messages,
                 ]);
-                usleep($delayMs * 1000);
+
+            if ($response->successful()) {
+                LineGatekeeperService::clearLineBackoff();
+
+                return true;
             }
 
-            // นับ push สำหรับ monitoring
-            LineGatekeeperService::recordLinePush();
+            $status = $response->status();
 
-            try {
-                $response = Http::withToken($this->channelAccessToken)
-                    ->timeout(15)
-                    ->connectTimeout(8)
-                    ->post(self::API_ENDPOINT.'/message/push', [
-                        'to' => $to,
-                        'messages' => $messages,
-                    ]);
+            if ($status === 429) {
+                $retryAfter = (int) $response->header('retry-after', 0);
+                LineGatekeeperService::recordLineRateLimit($retryAfter ?: null, 1);
 
-                if ($response->successful()) {
-                    // ✅ สำเร็จ → ล้าง backoff
-                    LineGatekeeperService::clearLineBackoff();
-
-                    return true;
-                }
-
-                $status = $response->status();
-
-                if ($status === 429) {
-                    // 🔴 429 → บันทึก backoff จาก LINE + retry
-                    $retryAfter = (int) $response->header('retry-after', 0);
-                    LineGatekeeperService::recordLineRateLimit($retryAfter ?: null, $attempt);
-
-                    Log::warning("LINE pushMessage: HTTP 429 (attempt {$attempt}/{$maxRetries})", [
-                        'to' => $to,
-                        'retry_after' => $retryAfter,
-                        'response_body' => $response->body(),
-                        'headers' => [
-                            'x-line-request-id' => $response->header('x-line-request-id'),
-                            'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),
-                            'x-ratelimit-reset' => $response->header('x-ratelimit-reset'),
-                        ],
-                    ]);
-
-                    // ถ้ายังไม่ครบ retry → วนรอบต่อ
-                    if ($attempt < $maxRetries) {
-                        continue;
-                    }
-
-                    // ครบ retry แล้ว → return false (fortune:check-pending จะ retry ทีหลัง)
-                    return false;
-                }
-
-                // ❌ Error อื่น (400, 401, 500) → ไม่ retry
-                Log::error('LINE Push Message Error', [
+                Log::warning('LINE pushMessage: HTTP 429 rate limited', [
                     'to' => $to,
-                    'status' => $status,
-                    'body' => $response->body(),
-                    'attempt' => $attempt,
+                    'retry_after' => $retryAfter,
+                    'headers' => [
+                        'x-line-request-id' => $response->header('x-line-request-id'),
+                        'x-ratelimit-remaining' => $response->header('x-ratelimit-remaining'),
+                        'x-ratelimit-reset' => $response->header('x-ratelimit-reset'),
+                    ],
                 ]);
 
                 return false;
-
-            } catch (\Exception $e) {
-                Log::error("LINE pushMessage: Exception (attempt {$attempt}/{$maxRetries})", [
-                    'to' => $to,
-                    'error' => $e->getMessage(),
-                ]);
-
-                // Timeout/network error → retry ได้
-                if ($attempt < $maxRetries) {
-                    continue;
-                }
-
-                return false;
             }
+
+            Log::error('LINE Push Message Error', [
+                'to' => $to,
+                'status' => $status,
+                'body' => $response->body(),
+            ]);
+
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('LINE pushMessage: Exception', [
+                'to' => $to,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
         }
-
-        return false;
     }
 
     /**
