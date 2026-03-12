@@ -1330,6 +1330,205 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * ส่ง Flex คำทำนาย — แยก bubble อัตโนมัติถ้าข้อความยาวเกิน
+     *
+     * LINE Flex bubble มี JSON size limit ~50KB
+     * ถ้าข้อความยาว → แยกเป็นหลาย bubble ใน carousel
+     * ถ้า carousel ก็ใหญ่เกิน → fallback ส่งทีละ bubble
+     *
+     * @param  string  $userId  LINE user ID
+     * @param  int  $questionNum  ลำดับคำถาม
+     * @param  string  $question  คำถาม/หัวข้อ
+     * @param  string  $answer  คำตอบจาก AI
+     * @param  int  $totalQuestions  จำนวนคำถามทั้งหมด
+     * @param  string  $altText  ข้อความ alt สำหรับ notification
+     * @return bool ส่งสำเร็จหรือไม่
+     */
+    public function sendDeepReadingFlexSafe(string $userId, int $questionNum, string $question, string $answer, int $totalQuestions, string $altText = ''): bool
+    {
+        // กำหนด alt text
+        if (empty($altText)) {
+            $altText = "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}";
+        }
+
+        // ตัดข้อความยาวมากกว่า 10000 ตัวอักษร (ป้องกัน AI ตอบยาวเกิน)
+        $answer = mb_substr($answer, 0, 10000);
+
+        // ถ้าข้อความสั้น → ใช้ bubble เดียวตามปกติ (เร็วที่สุด)
+        $answerLen = mb_strlen($answer);
+        if ($answerLen <= 1500) {
+            $flex = $this->buildDeepReadingFlexMessage($questionNum, $question, $answer, $totalQuestions);
+            $jsonSize = strlen(json_encode($flex, JSON_UNESCAPED_UNICODE));
+
+            if ($jsonSize < 45000) {
+                $sent = $this->sendRichMessagePriority($userId, [
+                    'alt_text' => $altText,
+                    'contents' => $flex,
+                ]);
+                if ($sent) {
+                    return true;
+                }
+                Log::warning("LINE sendDeepReadingFlexSafe: single bubble ส่งไม่ได้ (json={$jsonSize}B) → fallback split", [
+                    'user_id' => $userId, 'answer_len' => $answerLen,
+                ]);
+            }
+        }
+
+        // ข้อความยาว → แบ่งเป็น chunks → carousel
+        $chunks = $this->splitTextForFlex($answer, 1200);
+
+        if (count($chunks) === 1) {
+            // มี chunk เดียว → ลอง bubble เดียว
+            $flex = $this->buildDeepReadingFlexMessage($questionNum, $question, $chunks[0], $totalQuestions);
+            $sent = $this->sendRichMessagePriority($userId, [
+                'alt_text' => $altText,
+                'contents' => $flex,
+            ]);
+            if ($sent) {
+                return true;
+            }
+        }
+
+        // หลาย chunks → สร้าง carousel
+        $bubbles = [];
+        foreach ($chunks as $i => $chunk) {
+            $partLabel = count($chunks) > 1
+                ? "{$question} (ต่อ ".($i + 1).'/'.count($chunks).')'
+                : $question;
+            $bubbles[] = $this->buildDeepReadingFlexMessage($questionNum, $partLabel, $chunk, $totalQuestions);
+        }
+
+        // ลอง carousel (max 12 bubbles)
+        $bubbles = array_slice($bubbles, 0, 12);
+        $carousel = [
+            'type' => 'carousel',
+            'contents' => $bubbles,
+        ];
+
+        $carouselJson = json_encode($carousel, JSON_UNESCAPED_UNICODE);
+        if (strlen($carouselJson) < 45000) {
+            $sent = $this->sendRichMessagePriority($userId, [
+                'alt_text' => $altText,
+                'contents' => $carousel,
+            ]);
+            if ($sent) {
+                return true;
+            }
+        }
+
+        // Carousel ใหญ่เกิน → ส่งทีละ bubble แยก
+        Log::info("LINE sendDeepReadingFlexSafe: carousel ใหญ่เกิน → ส่งทีละ bubble (".count($bubbles).' bubbles)', [
+            'user_id' => $userId, 'carousel_size' => strlen($carouselJson ?? ''),
+        ]);
+
+        $anySent = false;
+        foreach ($bubbles as $idx => $bubble) {
+            $partAlt = $altText." (ส่วนที่ ".($idx + 1).')';
+            $sent = $this->sendRichMessagePriority($userId, [
+                'alt_text' => $partAlt,
+                'contents' => $bubble,
+            ]);
+            if ($sent) {
+                $anySent = true;
+            }
+            if ($idx < count($bubbles) - 1) {
+                usleep(500_000); // 0.5s ระหว่าง bubble
+            }
+        }
+
+        if ($anySent) {
+            return true;
+        }
+
+        // Flex ทุกวิธีล้มเหลว → fallback ส่ง text ธรรมดา (ตัดไม่เกิน 5000)
+        Log::warning("LINE sendDeepReadingFlexSafe: Flex ทุกวิธีล้มเหลว → fallback text", [
+            'user_id' => $userId, 'answer_len' => $answerLen,
+        ]);
+        $textFallback = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n❓ {$question}\n\n{$answer}";
+
+        return $this->sendMessagePriority($userId, mb_substr($textFallback, 0, 5000));
+    }
+
+    /**
+     * ส่ง Flex ด้วย pushMessagePriority (มี retry)
+     *
+     * @param  string  $recipientId  LINE user ID
+     * @param  array  $richContent  ['alt_text' => ..., 'contents' => ...]
+     * @return bool
+     */
+    public function sendRichMessagePriority(string $recipientId, array $richContent): bool
+    {
+        $messages = [
+            [
+                'type' => 'flex',
+                'altText' => mb_substr($richContent['alt_text'] ?? 'ข้อความจากระบบดูดวง', 0, 400),
+                'contents' => $richContent['contents'] ?? $richContent,
+            ],
+        ];
+
+        return $this->pushMessagePriority($recipientId, $messages);
+    }
+
+    /**
+     * แบ่งข้อความยาวเป็น chunks สำหรับ Flex bubbles
+     *
+     * แบ่งตาม paragraph (\n\n) ก่อน ถ้ายาวเกินค่อย force split
+     *
+     * @param  string  $text  ข้อความที่จะแบ่ง
+     * @param  int  $maxChars  จำนวนตัวอักษรสูงสุดต่อ chunk
+     * @return array<string>
+     */
+    protected function splitTextForFlex(string $text, int $maxChars = 1200): array
+    {
+        $text = trim($text);
+        if (mb_strlen($text) <= $maxChars) {
+            return [$text];
+        }
+
+        // แบ่งตาม paragraph
+        $paragraphs = preg_split('/\n\n+/', $text);
+        $chunks = [];
+        $current = '';
+
+        foreach ($paragraphs as $para) {
+            $para = trim($para);
+            if ($para === '') {
+                continue;
+            }
+
+            // ถ้า paragraph เดียวยาวเกิน → force split ตาม newline/sentence
+            if (mb_strlen($para) > $maxChars) {
+                if ($current !== '') {
+                    $chunks[] = trim($current);
+                    $current = '';
+                }
+                // แบ่ง paragraph ยาวตามบรรทัด
+                $lines = explode("\n", $para);
+                foreach ($lines as $line) {
+                    if (mb_strlen($current) + mb_strlen($line) + 1 > $maxChars && $current !== '') {
+                        $chunks[] = trim($current);
+                        $current = '';
+                    }
+                    $current .= ($current !== '' ? "\n" : '').$line;
+                }
+                continue;
+            }
+
+            if (mb_strlen($current) + mb_strlen($para) + 2 > $maxChars && $current !== '') {
+                $chunks[] = trim($current);
+                $current = '';
+            }
+            $current .= ($current !== '' ? "\n\n" : '').$para;
+        }
+
+        if ($current !== '') {
+            $chunks[] = trim($current);
+        }
+
+        return $chunks ?: [$text];
+    }
+
+    /**
      * สร้าง Flex Message สำหรับข้อความขอบคุณปิดท้ายคำทำนายละเอียด
      *
      * มีปุ่ม "ดูดวงอีกครั้ง" + "เช็คสิทธิ์" เพื่อกระตุ้น engagement
@@ -3043,7 +3242,10 @@ class LineFortuneService implements MessagingPlatformInterface
                 Log::error('LINE pushMessagePriority: ส่งไม่สำเร็จ', [
                     'to' => $to,
                     'status' => $status,
-                    'body' => $response->body(),
+                    'body' => mb_substr($response->body(), 0, 500),
+                    'msg_json_size' => strlen(json_encode($messages, JSON_UNESCAPED_UNICODE)),
+                    'msg_count' => count($messages),
+                    'msg_types' => array_column($messages, 'type'),
                 ]);
 
                 return false;
@@ -3108,7 +3310,10 @@ class LineFortuneService implements MessagingPlatformInterface
             Log::error('LINE Push Message Error', [
                 'to' => $to,
                 'status' => $status,
-                'body' => $response->body(),
+                'body' => mb_substr($response->body(), 0, 500),
+                'msg_json_size' => strlen(json_encode($messages, JSON_UNESCAPED_UNICODE)),
+                'msg_count' => count($messages),
+                'msg_types' => array_column($messages, 'type'),
             ]);
 
             return false;

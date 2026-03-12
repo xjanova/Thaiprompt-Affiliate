@@ -3015,40 +3015,44 @@ class FortuneConversationService
 
                         $sendSuccess = false;
 
-                        // ⚡ สำหรับ LINE → ใช้ Flex Message การ์ดสวยๆ (แทน text ธรรมดา)
+                        // ⚡ สำหรับ LINE → ใช้ Flex Message การ์ดสวยๆ (แยก bubble อัตโนมัติถ้ายาว)
                         if ($platform === 'line') {
                             $lineService = $channelManager->getPlatform('line');
                             if ($lineService instanceof LineFortuneService) {
-                                $flex = $lineService->buildDeepReadingFlexMessage(
-                                    $questionNum, $question, $aiResult['response'], $totalQuestions
+                                // ✅ V3: ใช้ sendDeepReadingFlexSafe — แยก bubble + carousel + fallback text อัตโนมัติ
+                                $sendSuccess = $lineService->sendDeepReadingFlexSafe(
+                                    $userId, $questionNum, $question, $aiResult['response'], $totalQuestions,
+                                    "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}"
                                 );
-                                $sendSuccess = $lineService->sendRichMessage($userId, [
-                                    'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
-                                    'contents' => $flex,
-                                ]);
-
-                                // ⚠️ ถ้า Flex ส่งไม่ได้ → fallback ส่งเป็น text ธรรมดา (ดีกว่าไม่ส่ง!)
-                                if (! $sendSuccess) {
-                                    Log::warning("Fortune Deep Streaming: Flex ส่งไม่ได้ข้อที่ {$questionNum} → fallback text", [
-                                        'reading_id' => $reading->id,
-                                        'user_id' => $userId,
-                                    ]);
-                                    $textFallback = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
-                                        ."❓ {$question}\n\n"
-                                        .$aiResult['response'];
-                                    $sendSuccess = $lineService->sendMessage($userId, mb_substr($textFallback, 0, 5000));
-                                }
                             }
                         } else {
-                            // Facebook / platform อื่น → ส่งเป็น text
-                            $perQuestionMessage = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n"
-                                ."❓ {$question}\n\n"
-                                .$aiResult['response'];
+                            // Facebook / platform อื่น → ส่งเป็น text (แบ่งชิ้นถ้ายาวเกิน 1800 ตัวอักษร)
+                            $header = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n❓ {$question}\n\n";
+                            $fullMsg = $header.$aiResult['response'];
+                            $fbMaxLen = 1800;
 
-                            $sendSuccess = $channelManager->sendResponse($platform, $userId, [
-                                'action' => 'partial',
-                                'message' => $perQuestionMessage,
-                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                            if (mb_strlen($fullMsg) <= $fbMaxLen) {
+                                $sendSuccess = $channelManager->sendResponse($platform, $userId, [
+                                    'action' => 'partial',
+                                    'message' => $fullMsg,
+                                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                            } else {
+                                // แบ่งเป็น chunks ตาม paragraph
+                                $chunks = $this->splitLongMessageForFacebook($header, $aiResult['response'], $fbMaxLen);
+                                $sendSuccess = true;
+                                foreach ($chunks as $chunkIdx => $chunk) {
+                                    $partSent = $channelManager->sendResponse($platform, $userId, [
+                                        'action' => 'partial',
+                                        'message' => $chunk,
+                                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                                    if (! $partSent) {
+                                        $sendSuccess = false;
+                                    }
+                                    if ($chunkIdx < count($chunks) - 1) {
+                                        usleep(500_000); // 0.5s ระหว่าง chunks
+                                    }
+                                }
+                            }
                         }
 
                         if ($sendSuccess) {
@@ -3078,31 +3082,39 @@ class FortuneConversationService
                             if ($platform === 'line') {
                                 $lineService = $channelManager->getPlatform('line');
                                 if ($lineService instanceof LineFortuneService) {
-                                    // ส่งเป็น Flex สำหรับไพ่ยิปซี
-                                    $tarotFlex = $lineService->buildDeepReadingFlexMessage(
-                                        $questionNum, "🃏 วิเคราะห์ไพ่ {$cardNameTh}", $tarotAiResponse, $totalQuestions
+                                    // ✅ V3: ใช้ sendDeepReadingFlexSafe — แยก bubble + carousel + fallback text อัตโนมัติ
+                                    $tarotSendSuccess = $lineService->sendDeepReadingFlexSafe(
+                                        $userId, $questionNum, "🃏 วิเคราะห์ไพ่ {$cardNameTh}", $tarotAiResponse, $totalQuestions,
+                                        "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}: {$cardNameTh}"
                                     );
-                                    $tarotSendSuccess = $lineService->sendRichMessage($userId, [
-                                        'alt_text' => "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}: {$cardNameTh}",
-                                        'contents' => $tarotFlex,
-                                    ]);
-
-                                    if (! $tarotSendSuccess) {
-                                        $tarotText = "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}/{$totalQuestions}\n"
-                                            ."🎴 ไพ่: {$cardNameTh}\n\n"
-                                            .$tarotAiResponse;
-                                        $tarotSendSuccess = $lineService->sendMessage($userId, mb_substr($tarotText, 0, 5000));
-                                    }
                                 }
                             } else {
-                                $tarotMessage = "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}/{$totalQuestions}\n"
-                                    ."🎴 ไพ่: {$cardNameTh}\n\n"
-                                    .$tarotAiResponse;
+                                // Facebook: แบ่งชิ้นถ้ายาวเกิน 1800 ตัวอักษร
+                                $tarotHeader = "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}/{$totalQuestions}\n🎴 ไพ่: {$cardNameTh}\n\n";
+                                $fullTarotMsg = $tarotHeader.$tarotAiResponse;
+                                $fbMaxLen = 1800;
 
-                                $tarotSendSuccess = $channelManager->sendResponse($platform, $userId, [
-                                    'action' => 'partial',
-                                    'message' => $tarotMessage,
-                                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                                if (mb_strlen($fullTarotMsg) <= $fbMaxLen) {
+                                    $tarotSendSuccess = $channelManager->sendResponse($platform, $userId, [
+                                        'action' => 'partial',
+                                        'message' => $fullTarotMsg,
+                                    ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                                } else {
+                                    $tarotChunks = $this->splitLongMessageForFacebook($tarotHeader, $tarotAiResponse, $fbMaxLen);
+                                    $tarotSendSuccess = true;
+                                    foreach ($tarotChunks as $chunkIdx => $chunk) {
+                                        $partSent = $channelManager->sendResponse($platform, $userId, [
+                                            'action' => 'partial',
+                                            'message' => $chunk,
+                                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                                        if (! $partSent) {
+                                            $tarotSendSuccess = false;
+                                        }
+                                        if ($chunkIdx < count($tarotChunks) - 1) {
+                                            usleep(500_000);
+                                        }
+                                    }
+                                }
                             }
 
                             if ($tarotSendSuccess) {
@@ -6096,6 +6108,59 @@ PROMPT;
 - ใช้ \"หมอจันทรา\" แทนตัวเอง
 - ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ
 - ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี";
+    }
+
+    /**
+     * แบ่งข้อความยาวสำหรับ Facebook Messenger (max ~2000 chars ต่อ message)
+     *
+     * ส่ง header เฉพาะ chunk แรก, แบ่งตาม paragraph (\n\n)
+     *
+     * @param  string  $header  หัวข้อ (ส่งใน chunk แรก)
+     * @param  string  $body  เนื้อหาที่จะแบ่ง
+     * @param  int  $maxLen  ความยาวสูงสุดต่อ chunk
+     * @return array<string>
+     */
+    protected function splitLongMessageForFacebook(string $header, string $body, int $maxLen = 1800): array
+    {
+        $body = trim($body);
+        $headerLen = mb_strlen($header);
+
+        // ถ้าทั้งหมดสั้นพอ → ส่ง chunk เดียว
+        if ($headerLen + mb_strlen($body) <= $maxLen) {
+            return [$header.$body];
+        }
+
+        // แบ่งตาม paragraph
+        $paragraphs = preg_split('/\n\n+/', $body);
+        $chunks = [];
+        $current = $header; // chunk แรกมี header
+
+        foreach ($paragraphs as $para) {
+            $para = trim($para);
+            if ($para === '') {
+                continue;
+            }
+
+            $separator = ($current === $header) ? '' : "\n\n";
+
+            if (mb_strlen($current) + mb_strlen($separator) + mb_strlen($para) > $maxLen && $current !== $header && $current !== '') {
+                $chunks[] = trim($current);
+                $current = "(ต่อ) ".$para;
+            } else {
+                $current .= $separator.$para;
+            }
+        }
+
+        if (trim($current) !== '' && trim($current) !== trim($header)) {
+            $chunks[] = trim($current);
+        }
+
+        // ถ้าไม่มี chunks → ส่ง body ตัดที่ maxLen
+        if (empty($chunks)) {
+            return [$header.mb_substr($body, 0, $maxLen - $headerLen)];
+        }
+
+        return $chunks;
     }
 
     /**
