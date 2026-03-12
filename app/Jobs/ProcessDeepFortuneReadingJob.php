@@ -333,6 +333,12 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             . "🔮 พร้อมอ่านเลยไหมคะ?\n"
                             . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
 
+                        Log::info('ProcessDeepFortuneReadingJob: กำลัง push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                            'reading_id' => $this->readingId,
+                            'platform' => $this->platform,
+                            'user_id' => $this->userId,
+                        ]);
+
                         $notifySent = $channelManager->sendResponse($this->platform, $this->userId, [
                             'action' => 'fortune_ready_notification',
                             'message' => $readyMessage,
@@ -343,9 +349,11 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         $reading->setConversationState('reading_notification_sent', $notifySent);
                         $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
 
-                        Log::info('ProcessDeepFortuneReadingJob: push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                        Log::info('ProcessDeepFortuneReadingJob: push แจ้ง "คำทำนายพร้อมแล้ว" ผลลัพธ์', [
                             'reading_id' => $this->readingId,
                             'sent' => $notifySent,
+                            'platform' => $this->platform,
+                            'user_id' => $this->userId,
                         ]);
                     } catch (\Exception $notifyErr) {
                         Log::warning('ProcessDeepFortuneReadingJob: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [

@@ -845,7 +845,8 @@ class FortuneChannelManager
                 ),
 
                 // แจ้งเตือนคำทำนายพร้อม → ส่ง text + quick reply ให้กด "อ่านเลย"
-                'fortune_ready_notification' => $this->sendLineMessageWithQuickReply(
+                // ✅ ใช้ priority push (ข้าม Gatekeeper) เพราะลูกค้าจ่ายเงินแล้ว ต้องแจ้งให้ได้
+                'fortune_ready_notification' => $this->sendLinePriorityQuickReply(
                     $lineService, $userId, $message, $replyToken,
                     array_map(fn ($label) => ['label' => $label, 'text' => $label], $result['quick_replies'] ?? ['อ่านคำทำนาย'])
                 ),
@@ -2148,6 +2149,51 @@ class FortuneChannelManager
 
         // Fallback: pushMessage พร้อม quick replies
         return $lineService->sendMessage($userId, $message, [
+            'quick_replies' => $quickReplies,
+        ]);
+    }
+
+    /**
+     * ส่ง LINE Quick Reply แบบ priority (ข้าม Gatekeeper)
+     *
+     * ใช้สำหรับแจ้งเตือนสำคัญหลังชำระเงิน เช่น "คำทำนายพร้อมแล้ว"
+     * ✅ ลอง replyMessage ก่อน (ฟรี) → fallback pushMessagePriority (ข้าม Gatekeeper)
+     */
+    protected function sendLinePriorityQuickReply(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken, array $quickReplies): bool
+    {
+        // สร้าง Quick Reply items
+        $quickReplyItems = [];
+        foreach ($quickReplies as $reply) {
+            $quickReplyItems[] = [
+                'type' => 'action',
+                'action' => [
+                    'type' => 'message',
+                    'label' => $reply['label'] ?? $reply,
+                    'text' => $reply['text'] ?? $reply,
+                ],
+            ];
+        }
+
+        $textMessage = [
+            'type' => 'text',
+            'text' => $message,
+            'quickReply' => ['items' => $quickReplyItems],
+        ];
+
+        // ลอง replyMessage ก่อน (ฟรี)
+        if ($replyToken) {
+            $result = $lineService->replyMessage($replyToken, [$textMessage]);
+            if ($result) {
+                return true;
+            }
+        }
+
+        // ✅ Fallback: pushMessagePriority (ข้าม Gatekeeper — ลูกค้าจ่ายเงินแล้ว ต้องส่งให้ได้)
+        Log::info('LINE sendLinePriorityQuickReply: ใช้ priority push แจ้งคำทำนายพร้อม', [
+            'user_id' => $userId,
+        ]);
+
+        return $lineService->sendMessagePriority($userId, $message, [
             'quick_replies' => $quickReplies,
         ]);
     }

@@ -92,6 +92,33 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * ส่งข้อความแบบ priority (ข้าม Gatekeeper) — สำหรับแจ้งเตือนสำคัญหลังชำระเงิน
+     *
+     * @param string $recipientId LINE user ID
+     * @param string $message ข้อความ
+     * @param array $options quick_replies, etc.
+     * @return bool
+     */
+    public function sendMessagePriority(string $recipientId, string $message, array $options = []): bool
+    {
+        $messages = [
+            [
+                'type' => 'text',
+                'text' => $message,
+            ],
+        ];
+
+        // ถ้ามี quick replies
+        if (! empty($options['quick_replies'])) {
+            $messages[0]['quickReply'] = [
+                'items' => $this->buildQuickReplyItems($options['quick_replies']),
+            ];
+        }
+
+        return $this->pushMessagePriority($recipientId, $messages);
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function sendRichMessage(string $recipientId, array $richContent): bool
