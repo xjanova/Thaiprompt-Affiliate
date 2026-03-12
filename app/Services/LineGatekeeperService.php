@@ -6,67 +6,63 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
- * LINE Gatekeeper Service
+ * LINE Gatekeeper Service (V2 — Adaptive Retry)
  *
- * คุมทราฟฟิคภาพรวมทั้งระบบ — ป้องกัน LINE API rate limit + AI API overload
+ * เปลี่ยนจาก pre-emptive blocking → adaptive retry
  *
- * ทำงาน 2 ระดับ:
- * 1. Global rate limit: จำกัด LINE push messages ทั้งระบบ (ทุก user รวมกัน)
- * 2. Per-bot AI limit: จำกัด AI API calls แยกตามบอท (ดูดวง/ตลาดสด เป็นอิสระ)
+ * หลักการ:
+ * 1. LINE Push: ไม่ block ล่วงหน้า → ส่งเลย → ถ้าโดน 429 จะ retry ด้วย backoff
+ * 2. AI API: ยังคง rate limit เพราะควบคุมค่าใช้จ่าย (ไม่ใช่แค่ API limit)
+ * 3. บันทึก 429 จาก LINE จริง → ใช้ backoff ตาม retry-after header
  *
- * ถ้าเกิน limit → return false → caller ส่งข้อความ "รอสักครู่" แทน
+ * ข้อดีเทียบ V1:
+ * - ไม่ block ข้อความสำคัญ (แจ้งเตือนคำทำนาย, ชำระเงิน)
+ * - ใช้ข้อมูลจาก LINE จริง (429 + retry-after) แทนการเดา
+ * - Retry อัตโนมัติ 3 ครั้ง ด้วย exponential backoff
  */
 class LineGatekeeperService
 {
-    // ✅ LINE Push API safe limits (ต่ำกว่า official limit เพื่อความปลอดภัย)
-    // LINE official: ~60 requests/min per channel (แต่ enforcement varies)
-    const LINE_PUSH_MAX_PER_MINUTE = 40; // push messages ทั้งระบบ / นาที
-    const LINE_PUSH_MAX_PER_SECOND = 5;  // push messages ทั้งระบบ / วินาที
-
-    // ✅ AI API limits แยกตามบอท (ไม่แย่งกัน)
+    // ✅ AI API limits แยกตามบอท (ควบคุมค่าใช้จ่าย)
     const AI_LIMITS = [
-        'fortune' => 25,       // ดูดวง: 25 calls/นาที (เหมือนเดิม)
+        'fortune' => 25,       // ดูดวง: 25 calls/นาที
         'fresh_market' => 15,  // ตลาดสด: 15 calls/นาที
         'default' => 20,       // อื่นๆ
     ];
 
-    // ✅ Backward compatibility: global limit (เก่า ยังใช้ได้)
-    const AI_MAX_PER_MINUTE = 25;
+    // ✅ Retry config สำหรับ LINE push
+    const MAX_RETRIES = 3;
+    const BASE_BACKOFF_MS = 500;  // 500ms, 1s, 2s
 
     // ✅ Cache keys
     const KEY_LINE_PUSH_MINUTE = 'gatekeeper:line_push:minute';
     const KEY_LINE_PUSH_SECOND = 'gatekeeper:line_push:second';
+    const KEY_LINE_BACKOFF_UNTIL = 'gatekeeper:line:backoff_until';
+
+    // ✅ Backward compatibility constants
+    const LINE_PUSH_MAX_PER_MINUTE = 40;
+    const LINE_PUSH_MAX_PER_SECOND = 5;
+    const AI_MAX_PER_MINUTE = 25;
     const KEY_AI_MINUTE = 'gatekeeper:ai:minute';
     const KEY_THROTTLED_UNTIL = 'gatekeeper:throttled_until';
 
     /**
-     * ตรวจสอบว่าสามารถส่ง LINE push message ได้หรือไม่
+     * ตรวจสอบว่าควรรอก่อนส่ง LINE push หรือไม่
      *
-     * @return bool true = ส่งได้, false = เกิน limit
+     * V2: ไม่ block อีกต่อไป — แค่แนะนำว่าควรรอหรือเปล่า
+     * ถ้า LINE เคยตอบ 429 และยังอยู่ใน backoff period → return false
+     * นอกนั้น → return true เสมอ
+     *
+     * @return bool true = ส่งได้เลย, false = อยู่ใน backoff period (แต่ caller ตัดสินใจเอง)
      */
     public static function canPushLine(): bool
     {
-        // เช็ค per-second limit
-        $perSecond = (int) Cache::get(self::KEY_LINE_PUSH_SECOND, 0);
-        if ($perSecond >= self::LINE_PUSH_MAX_PER_SECOND) {
-            Log::warning('Gatekeeper: LINE push ถูก throttle (per-second)', [
-                'current' => $perSecond,
-                'limit' => self::LINE_PUSH_MAX_PER_SECOND,
+        // เช็คว่าอยู่ใน backoff period จาก 429 จริงหรือไม่
+        $backoffUntil = Cache::get(self::KEY_LINE_BACKOFF_UNTIL);
+        if ($backoffUntil && now()->timestamp < $backoffUntil) {
+            $waitSeconds = $backoffUntil - now()->timestamp;
+            Log::info('Gatekeeper: อยู่ใน backoff period จาก LINE 429', [
+                'wait_seconds' => $waitSeconds,
             ]);
-
-            return false;
-        }
-
-        // เช็ค per-minute limit
-        $perMinute = (int) Cache::get(self::KEY_LINE_PUSH_MINUTE, 0);
-        if ($perMinute >= self::LINE_PUSH_MAX_PER_MINUTE) {
-            Log::warning('Gatekeeper: LINE push ถูก throttle (per-minute)', [
-                'current' => $perMinute,
-                'limit' => self::LINE_PUSH_MAX_PER_MINUTE,
-            ]);
-
-            // บันทึกเวลา throttle เพื่อให้ webhook ใช้เช็ค
-            Cache::put(self::KEY_THROTTLED_UNTIL, now()->addSeconds(15)->timestamp, 15);
 
             return false;
         }
@@ -75,7 +71,7 @@ class LineGatekeeperService
     }
 
     /**
-     * บันทึกว่าส่ง LINE push message แล้ว 1 ครั้ง
+     * บันทึกว่าส่ง LINE push message แล้ว 1 ครั้ง (สำหรับ monitoring)
      */
     public static function recordLinePush(): void
     {
@@ -84,7 +80,7 @@ class LineGatekeeperService
         if (Cache::has($secondKey)) {
             Cache::increment($secondKey);
         } else {
-            Cache::put($secondKey, 1, 1); // TTL 1 วินาที
+            Cache::put($secondKey, 1, 1);
         }
 
         // Increment per-minute counter (TTL 60 วินาที)
@@ -92,12 +88,70 @@ class LineGatekeeperService
         if (Cache::has($minuteKey)) {
             Cache::increment($minuteKey);
         } else {
-            Cache::put($minuteKey, 1, 60); // TTL 60 วินาที
+            Cache::put($minuteKey, 1, 60);
         }
     }
 
     /**
+     * บันทึกว่า LINE ตอบ 429 — ตั้ง backoff period
+     *
+     * @param  int|null  $retryAfterSeconds  ค่าจาก retry-after header (ถ้ามี)
+     * @param  int  $attempt  ครั้งที่ retry (ใช้คำนวณ exponential backoff)
+     */
+    public static function recordLineRateLimit(?int $retryAfterSeconds = null, int $attempt = 1): void
+    {
+        // ใช้ retry-after จาก LINE ก่อน ถ้าไม่มีใช้ exponential backoff
+        if ($retryAfterSeconds && $retryAfterSeconds > 0) {
+            $backoffSeconds = $retryAfterSeconds;
+        } else {
+            // Exponential backoff: 1s, 2s, 4s (minimum)
+            $backoffSeconds = (int) pow(2, $attempt);
+        }
+
+        // จำกัด backoff สูงสุด 30 วินาที
+        $backoffSeconds = min($backoffSeconds, 30);
+
+        Cache::put(
+            self::KEY_LINE_BACKOFF_UNTIL,
+            now()->addSeconds($backoffSeconds)->timestamp,
+            $backoffSeconds
+        );
+
+        // อัพเดท throttled_until สำหรับ backward compatibility
+        Cache::put(self::KEY_THROTTLED_UNTIL, now()->addSeconds($backoffSeconds)->timestamp, $backoffSeconds);
+
+        Log::warning('Gatekeeper: LINE 429 → ตั้ง backoff', [
+            'backoff_seconds' => $backoffSeconds,
+            'retry_after_from_line' => $retryAfterSeconds,
+            'attempt' => $attempt,
+        ]);
+    }
+
+    /**
+     * ล้าง backoff (เรียกเมื่อ push สำเร็จ)
+     */
+    public static function clearLineBackoff(): void
+    {
+        Cache::forget(self::KEY_LINE_BACKOFF_UNTIL);
+        Cache::forget(self::KEY_THROTTLED_UNTIL);
+    }
+
+    /**
+     * คำนวณเวลารอก่อน retry (milliseconds)
+     *
+     * @param  int  $attempt  ครั้งที่ retry (1-based)
+     * @return int  milliseconds ที่ต้องรอ
+     */
+    public static function getRetryDelayMs(int $attempt): int
+    {
+        // Exponential backoff: 500ms, 1000ms, 2000ms
+        return self::BASE_BACKOFF_MS * (int) pow(2, $attempt - 1);
+    }
+
+    /**
      * ตรวจสอบว่าสามารถเรียก AI API ได้หรือไม่ (แยกตามบอท)
+     *
+     * ⚠️ AI limit ยังคงใช้ pre-emptive blocking เพราะเป็นการควบคุมค่าใช้จ่าย
      *
      * @param  string  $botName  ชื่อบอท: 'fortune', 'fresh_market', etc.
      * @return bool true = เรียกได้, false = เกิน limit
@@ -137,18 +191,15 @@ class LineGatekeeperService
     }
 
     /**
-     * ตรวจสอบว่าระบบกำลังถูก throttle อยู่หรือไม่ (สำหรับ webhook ใช้เช็คก่อน process)
+     * ตรวจสอบว่าระบบกำลังถูก throttle อยู่หรือไม่
      *
-     * @return bool true = ระบบกำลังถูก throttle
+     * V2: ใช้ backoff จาก LINE 429 จริง แทนการเดา
+     *
+     * @return bool true = ระบบกำลังอยู่ใน backoff period
      */
     public static function isSystemThrottled(): bool
     {
-        $throttledUntil = Cache::get(self::KEY_THROTTLED_UNTIL);
-        if ($throttledUntil && now()->timestamp < $throttledUntil) {
-            return true;
-        }
-
-        return false;
+        return ! self::canPushLine();
     }
 
     /**
@@ -164,14 +215,18 @@ class LineGatekeeperService
             ];
         }
 
+        $backoffUntil = Cache::get(self::KEY_LINE_BACKOFF_UNTIL);
+        $backoffRemaining = $backoffUntil ? max(0, $backoffUntil - now()->timestamp) : 0;
+
         return [
             'line_push_per_second' => (int) Cache::get(self::KEY_LINE_PUSH_SECOND, 0),
             'line_push_per_minute' => (int) Cache::get(self::KEY_LINE_PUSH_MINUTE, 0),
+            'line_backoff_remaining_seconds' => $backoffRemaining,
             'ai_per_bot' => $aiStats,
             'is_throttled' => self::isSystemThrottled(),
             'limits' => [
-                'line_push_per_second' => self::LINE_PUSH_MAX_PER_SECOND,
-                'line_push_per_minute' => self::LINE_PUSH_MAX_PER_MINUTE,
+                'max_retries' => self::MAX_RETRIES,
+                'base_backoff_ms' => self::BASE_BACKOFF_MS,
                 'ai_per_bot' => self::AI_LIMITS,
             ],
         ];
