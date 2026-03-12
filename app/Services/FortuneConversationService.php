@@ -2548,7 +2548,8 @@ class FortuneConversationService
             $cardNameEn = $card->getName('en');
             $position = $isReversed ? '(กลับหัว)' : '(หงาย)';
 
-            // เก็บไพ่ใน conversation state
+            // เก็บไพ่ใน conversation state (รวม image_url สำหรับส่งรูป)
+            $cardImageUrl = $card->image_url;
             $reading->addTarotCard($currentIndex, $card->id, $cardNameTh, $cardNameEn, $isReversed, $meaning);
 
             Log::info('Fortune: สุ่มไพ่ยิปซีได้', [
@@ -2557,6 +2558,7 @@ class FortuneConversationService
                 'card_id' => $card->id,
                 'card_name' => $cardNameEn,
                 'is_reversed' => $isReversed,
+                'has_image' => ! empty($cardImageUrl),
             ]);
 
             // แจ้งผลไพ่ พร้อมความหมาย แล้ววนกลับถามคำถามต่อ/สร้างบิล
@@ -2564,7 +2566,14 @@ class FortuneConversationService
             $tarotMessage .= "({$cardNameEn})\n\n";
             $tarotMessage .= "📖 ความหมาย: {$meaning}\n\n";
 
-            return $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount, $tarotMessage);
+            $result = $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount, $tarotMessage);
+
+            // ✅ เพิ่มรูปไพ่ยิปซีเข้าไปใน response (ส่งก่อนข้อความ)
+            if ($cardImageUrl) {
+                $result['tarot_image_url'] = $cardImageUrl;
+            }
+
+            return $result;
 
         } catch (\Exception $e) {
             Log::error('Fortune: handleTarotCardDraw ล้มเหลว', [

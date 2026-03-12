@@ -274,9 +274,9 @@ class FortuneChannelManager
                 // ขอวันเกิด → Birthdate prompt Template
                 'collecting_birthdate' => $this->sendFacebookBirthdateResponse($fbService, $richService, $userId, $result),
 
-                // เลือกคำถาม → Quick Replies
+                // เลือกคำถาม → Quick Replies (+ ส่งรูปไพ่ยิปซีก่อนถ้ามี)
                 'collecting_questions', 'need_more_questions', 'retry_question'
-                    => $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action),
+                    => $this->sendFacebookQuestionWithTarotImage($fbService, $richService, $userId, $message, $action, $result),
 
                 // เช็คสิทธิ์ → Check Remaining Template
                 'check_remaining' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
@@ -486,6 +486,27 @@ class FortuneChannelManager
     /**
      * Facebook: ส่งข้อความ + Quick Replies ตาม action
      */
+    /**
+     * Facebook: ส่งรูปไพ่ยิปซีก่อน + Quick Replies เลือกคำถาม
+     */
+    protected function sendFacebookQuestionWithTarotImage(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
+    {
+        // ✅ ส่งรูปไพ่ยิปซีก่อน (ถ้ามี)
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl) {
+            try {
+                $fbService->sendImage($userId, $tarotImageUrl);
+            } catch (\Exception $imgErr) {
+                Log::warning('Facebook: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                    'image_url' => $tarotImageUrl,
+                ]);
+            }
+        }
+
+        return $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action);
+    }
+
     protected function sendFacebookWithQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action): bool
     {
         $quickReplies = $richService->getQuickRepliesForAction($action);
@@ -1281,6 +1302,19 @@ class FortuneChannelManager
         $questionNumber = $result['question_number'] ?? 1;
         $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
 
+        // ✅ ส่งรูปไพ่ยิปซีก่อน Flex เลือกหมวด (ถ้ามี)
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl) {
+            try {
+                $lineService->sendImage($userId, $tarotImageUrl);
+            } catch (\Exception $imgErr) {
+                Log::warning('LINE QuestionSelection: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                    'image_url' => $tarotImageUrl,
+                ]);
+            }
+        }
+
         // ตรวจหาคำถามก่อนหน้า (ถ้าเป็นข้อ 2+)
         $previousQuestion = null;
         if ($reading && $questionNumber > 1) {
@@ -1298,6 +1332,7 @@ class FortuneChannelManager
             'reading_id' => $reading?->id,
             'reading_status' => $reading?->conversation_status,
             'collected_count' => $reading ? count($reading->getCollectedQuestions()) : 0,
+            'has_tarot_image' => ! empty($tarotImageUrl),
         ]);
 
         $questionFlex = $lineService->buildQuestionSelectionFlexMessage(
