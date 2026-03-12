@@ -669,45 +669,46 @@ class FortuneConversationService
                 }
             }
 
-            // ✅ NEW: เช็คคำทำนายที่กำลังประมวลผลอยู่ (PAID หรือ COMPLETED แต่ยังไม่มี deep_response)
-            // กรณี: PAID หมดอายุ (5 นาที) → ถูกเปลี่ยนเป็น COMPLETED แต่ AI ยังทำงานอยู่
-            // หรือ PAID ยังไม่หมดอายุแต่ user พิมพ์มาก่อน active conversation check
-            $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
-                ->where('is_paid', true)
-                ->where(function ($q) {
-                    // กรณี 1: สถานะ PAID (AI กำลังประมวลผล)
-                    $q->where('conversation_status', FortuneReading::STATUS_PAID)
-                    // กรณี 2: COMPLETED แต่ไม่มี deep_response (PAID หมดอายุก่อน AI เสร็จ)
-                        ->orWhere(function ($q2) {
-                            $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                                ->where(function ($q3) {
-                                    $q3->whereNull('deep_response')
-                                        ->orWhere('deep_response', '');
-                                });
-                        });
-                })
-                ->where('created_at', '>=', now()->subHours(1)) // ไม่เกิน 1 ชั่วโมง
-                ->latest()
-                ->first();
+            // ✅ เช็คคำทำนายที่กำลังประมวลผลอยู่ (PAID หรือ COMPLETED แต่ยังไม่มี deep_response)
+            // ⚠️ ข้ามถ้ามี active conversation อยู่ (ไม่งั้นจะ block คำถามข้อ 2+)
+            $hasActiveConversation = FortuneReading::findActiveConversation($facebookUserId);
 
-            if ($processingReading) {
-                $name = $processingReading->facebook_user_name ?? 'คุณ';
+            if (! $hasActiveConversation) {
+                $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                    ->where('is_paid', true)
+                    ->where(function ($q) {
+                        $q->where('conversation_status', FortuneReading::STATUS_PAID)
+                            ->orWhere(function ($q2) {
+                                $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                    ->where(function ($q3) {
+                                        $q3->whereNull('deep_response')
+                                            ->orWhere('deep_response', '');
+                                    });
+                            });
+                    })
+                    ->where('created_at', '>=', now()->subMinutes(10)) // ลดจาก 1 ชม. เป็น 10 นาที
+                    ->latest()
+                    ->first();
 
-                Log::info('Fortune processMessage: พบคำทำนายกำลังประมวลผล → แจ้งให้รอ', [
-                    'facebook_user_id' => $facebookUserId,
-                    'reading_id' => $processingReading->id,
-                    'status' => $processingReading->conversation_status,
-                    'bill_reference' => $processingReading->bill_reference,
-                ]);
+                if ($processingReading) {
+                    $name = $processingReading->facebook_user_name ?? 'คุณ';
 
-                return [
-                    'action' => 'processing',
-                    'message' => "🔮 คุณ{$name}คะ กำลังเตรียมคำทำนายอยู่ค่ะ\n\n"
-                        . '📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
-                        . "⏳ ใช้เวลาประมาณ 1-3 นาทีนะคะ\n\n"
-                        . "จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมค่ะ ✨",
-                    'reading' => $processingReading,
-                ];
+                    Log::info('Fortune processMessage: พบคำทำนายกำลังประมวลผล → แจ้งให้รอ', [
+                        'facebook_user_id' => $facebookUserId,
+                        'reading_id' => $processingReading->id,
+                        'status' => $processingReading->conversation_status,
+                        'bill_reference' => $processingReading->bill_reference,
+                    ]);
+
+                    return [
+                        'action' => 'processing',
+                        'message' => "🔮 คุณ{$name}คะ กำลังเตรียมคำทำนายอยู่ค่ะ\n\n"
+                            . '📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
+                            . "⏳ ใช้เวลาประมาณ 1-3 นาทีนะคะ\n\n"
+                            . "จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมค่ะ ✨",
+                        'reading' => $processingReading,
+                    ];
+                }
             }
 
             // ═══════════════════════════════════════════════════════════
