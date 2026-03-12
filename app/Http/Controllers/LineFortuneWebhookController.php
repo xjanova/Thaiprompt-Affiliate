@@ -387,6 +387,7 @@ class LineFortuneWebhookController extends Controller
                     FortuneReading::STATUS_BASIC_DONE,
                     FortuneReading::STATUS_COLLECTING_BIRTHDATE,
                     FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                    FortuneReading::STATUS_COLLECTING_TAROT,
                     FortuneReading::STATUS_NEW,
                 ])
                 ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);

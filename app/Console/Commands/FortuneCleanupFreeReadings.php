@@ -157,6 +157,7 @@ class FortuneCleanupFreeReadings extends Command
             FortuneReading::STATUS_AWAITING_CONFIRMATION,
             FortuneReading::STATUS_COLLECTING_BIRTHDATE,
             FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            FortuneReading::STATUS_COLLECTING_TAROT,
         ];
 
         $count = FortuneReading::whereIn('conversation_status', $incompleteStatuses)

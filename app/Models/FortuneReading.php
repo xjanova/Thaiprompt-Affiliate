@@ -66,6 +66,8 @@ class FortuneReading extends Model
 
     public const STATUS_COLLECTING_QUESTIONS = 'collecting_questions';
 
+    public const STATUS_COLLECTING_TAROT = 'collecting_tarot';
+
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
 
     public const STATUS_PAID = 'paid';
@@ -481,6 +483,7 @@ class FortuneReading extends Model
                 self::STATUS_BASIC_DONE,
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
+                self::STATUS_COLLECTING_TAROT,
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_PAID, // เพิ่ม: ระหว่าง AI กำลังประมวลผลคำทำนาย
             ])
@@ -492,6 +495,7 @@ class FortuneReading extends Model
                         self::STATUS_BASIC_DONE,
                         self::STATUS_COLLECTING_BIRTHDATE,
                         self::STATUS_COLLECTING_QUESTIONS,
+                        self::STATUS_COLLECTING_TAROT,
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
@@ -536,6 +540,7 @@ class FortuneReading extends Model
                 self::STATUS_BASIC_DONE,
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
+                self::STATUS_COLLECTING_TAROT,
                 self::STATUS_PENDING_PAYMENT,
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
@@ -621,6 +626,56 @@ class FortuneReading extends Model
     public function getCollectedQuestions(): array
     {
         return $this->getConversationState('collected_questions', []);
+    }
+
+    /**
+     * เพิ่มไพ่ยิปซีที่สุ่มได้เข้าไปใน state (เฉพาะแบบเสียเงิน)
+     *
+     * @param  int  $questionIndex  ลำดับคำถามที่ไพ่นี้ประกอบ (0-based)
+     * @param  int  $cardId  ID ของไพ่จาก TarotCard
+     * @param  string  $cardNameTh  ชื่อไพ่ภาษาไทย
+     * @param  string  $cardNameEn  ชื่อไพ่ภาษาอังกฤษ
+     * @param  bool  $isReversed  ไพ่กลับหัวหรือไม่
+     * @param  string  $meaning  ความหมายของไพ่ตามตำแหน่ง
+     * @return int จำนวนไพ่ที่เก็บไว้
+     */
+    public function addTarotCard(int $questionIndex, int $cardId, string $cardNameTh, string $cardNameEn, bool $isReversed, string $meaning): int
+    {
+        $cards = $this->getConversationState('collected_tarot_cards', []);
+        $cards[] = [
+            'question_index' => $questionIndex,
+            'card_id' => $cardId,
+            'card_name_th' => $cardNameTh,
+            'card_name_en' => $cardNameEn,
+            'is_reversed' => $isReversed,
+            'meaning' => $meaning,
+        ];
+        $this->setConversationState('collected_tarot_cards', $cards);
+
+        return count($cards);
+    }
+
+    /**
+     * ดึงไพ่ยิปซีที่เก็บไว้ทั้งหมด
+     */
+    public function getCollectedTarotCards(): array
+    {
+        return $this->getConversationState('collected_tarot_cards', []);
+    }
+
+    /**
+     * ดึงไพ่ยิปซีสำหรับคำถามข้อที่ระบุ (0-based index)
+     */
+    public function getTarotCardForQuestion(int $questionIndex): ?array
+    {
+        $cards = $this->getCollectedTarotCards();
+        foreach ($cards as $card) {
+            if (($card['question_index'] ?? -1) === $questionIndex) {
+                return $card;
+            }
+        }
+
+        return null;
     }
 
     /**

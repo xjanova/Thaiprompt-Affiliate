@@ -656,7 +656,7 @@ class FortuneConversationService
 
                 if ($readyForReply && ! $alreadySent) {
 
-                    // Step 2: แจ้งเตือนไปแล้ว → user ตอบกลับ → ส่งคำทำนายเต็ม!
+                    // ถ้าแจ้งเตือนไปแล้ว (push หรือ reply) → user ตอบกลับ → ส่งคำทำนายเต็มทันที!
                     if ($notificationSent) {
                         Log::info('Fortune processMessage: user ตอบกลับ → ส่งคำทำนายเต็มผ่าน replyMessage (ฟรี!)', [
                             'facebook_user_id' => $facebookUserId,
@@ -685,7 +685,8 @@ class FortuneConversationService
                         ];
                     }
 
-                    // Step 1: แจ้งเตือน "คำทำนายพร้อมแล้ว พร้อมอ่านเลยไหมคะ?"
+                    // ยังไม่เคยแจ้งเตือน → แจ้ง "คำทำนายพร้อมแล้ว จะอ่านเลยไหมคะ?"
+                    // (ไม่ว่า push จะส่งได้หรือไม่ — ใช้ replyMessage ฟรี เมื่อ user พิมพ์มา)
                     Log::info('Fortune processMessage: พบคำทำนายพร้อมส่ง → แจ้งเตือน user ผ่าน replyMessage', [
                         'facebook_user_id' => $facebookUserId,
                         'reading_id' => $unsentReading->id,
@@ -701,7 +702,7 @@ class FortuneConversationService
                         'action' => 'fortune_ready_notification',
                         'message' => "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
                             . '📋 เลขที่บิล: '.($unsentReading->bill_reference ?? '-')."\n\n"
-                            . "🔮 พร้อมอ่านเลยไหมคะ? พิมพ์อะไรก็ได้ หรือกด 'อ่านเลย' ด้านล่างค่ะ ✨",
+                            . "🔮 พร้อมอ่านเลยไหมคะ? พิมพ์ 'อ่านเลย' หรือกดปุ่มด้านล่างได้เลยค่ะ ✨",
                         'reading' => $unsentReading,
                         'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
                     ];
@@ -1461,6 +1462,7 @@ class FortuneConversationService
                 FortuneReading::STATUS_BASIC_DONE,
                 FortuneReading::STATUS_COLLECTING_BIRTHDATE,
                 FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                FortuneReading::STATUS_COLLECTING_TAROT,
                 FortuneReading::STATUS_PENDING_PAYMENT,
                 FortuneReading::STATUS_NEW,
             ])
@@ -2204,6 +2206,7 @@ class FortuneConversationService
             FortuneReading::STATUS_BASIC_DONE => $this->handleAfterBasic($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
+            FortuneReading::STATUS_COLLECTING_TAROT => $this->handleTarotCardDraw($reading, $messageText),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
             // PAID: AI กำลังประมวลผลคำทำนายอยู่ → แจ้งให้รอ
             FortuneReading::STATUS_PAID => [
@@ -2411,25 +2414,16 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            if ($questionCount < self::REQUIRED_QUESTIONS) {
-                $nextNumber = $questionCount + 1;
+            // ✅ หลังรับคำถาม → ให้สุ่มไพ่ยิปซีประกอบคำทำนาย (เฉพาะแบบเสียเงิน)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
 
-                return [
-                    'action' => 'need_more_questions',
-                    'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n".
-                                 "📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS." — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇",
-                    'reading' => $reading,
-                    'question_number' => $nextNumber,
-                ];
-            }
-
-            // ได้ครบ 2 คำถามแล้ว → สร้างบิลรอชำระ
-            Log::info('Fortune: ครบ 2 คำถาม กำลังสร้างบิล', [
-                'reading_id' => $reading->id,
-                'questions' => $collectedQuestions,
-            ]);
-
-            return $this->createPaymentBill($reading, $collectedQuestions);
+            return [
+                'action' => 'draw_tarot_card',
+                'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n"
+                    . "🃏 กดสุ่มไพ่ยิปซี 1 ใบ เพื่อประกอบคำทำนายข้อนี้ค่ะ ✨",
+                'reading' => $reading,
+                'question_number' => $questionCount,
+            ];
 
         } catch (\Exception $e) {
             Log::error('Fortune: handleQuestionInput ล้มเหลว', [
@@ -2442,6 +2436,105 @@ class FortuneConversationService
             // Re-throw เพื่อให้ processMessage catch handler จัดการ
             throw $e;
         }
+    }
+
+    /**
+     * จัดการสุ่มไพ่ยิปซี — สุ่มให้อัตโนมัติเมื่อ user กดปุ่ม/พิมพ์อะไรก็ได้
+     *
+     * สุ่มไพ่จาก TarotCard model → เก็บใน conversation_state
+     * แล้ววนกลับถามคำถามต่อ หรือสร้างบิลถ้าครบ
+     */
+    protected function handleTarotCardDraw(FortuneReading $reading, string $messageText): array
+    {
+        try {
+            $collectedQuestions = $reading->getCollectedQuestions();
+            $questionCount = count($collectedQuestions);
+            $currentIndex = $questionCount - 1; // 0-based index ของคำถามล่าสุด
+
+            // สุ่มไพ่ยิปซี 1 ใบ (ไม่ซ้ำกับที่เคยได้)
+            $existingCards = $reading->getCollectedTarotCards();
+            $usedCardIds = array_column($existingCards, 'card_id');
+
+            $card = \App\Models\TarotCard::active()
+                ->when(! empty($usedCardIds), fn ($q) => $q->whereNotIn('id', $usedCardIds))
+                ->inRandomOrder()
+                ->first();
+
+            if (! $card) {
+                // กรณีไพ่หมด (ไม่น่าเกิด — มี 78 ใบ) → ข้ามไป
+                Log::warning('Fortune: ไพ่ยิปซีหมด ข้ามขั้นตอน', ['reading_id' => $reading->id]);
+                return $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount);
+            }
+
+            // สุ่มตำแหน่งไพ่ (หงาย/คว่ำ)
+            $isReversed = (bool) random_int(0, 1);
+            $meaning = $card->getMeaning($isReversed, 'th');
+            $cardNameTh = $card->getName('th');
+            $cardNameEn = $card->getName('en');
+            $position = $isReversed ? '(กลับหัว)' : '(หงาย)';
+
+            // เก็บไพ่ใน conversation state
+            $reading->addTarotCard($currentIndex, $card->id, $cardNameTh, $cardNameEn, $isReversed, $meaning);
+
+            Log::info('Fortune: สุ่มไพ่ยิปซีได้', [
+                'reading_id' => $reading->id,
+                'question_index' => $currentIndex,
+                'card_id' => $card->id,
+                'card_name' => $cardNameEn,
+                'is_reversed' => $isReversed,
+            ]);
+
+            // แจ้งผลไพ่ แล้ววนกลับถามคำถามต่อ/สร้างบิล
+            $tarotMessage = "🃏✨ ได้ไพ่ *{$cardNameTh}* {$position}\n";
+            $tarotMessage .= "({$cardNameEn})\n\n";
+
+            return $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount, $tarotMessage);
+
+        } catch (\Exception $e) {
+            Log::error('Fortune: handleTarotCardDraw ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback: ข้ามขั้นตอนไพ่ไป
+            $collectedQuestions = $reading->getCollectedQuestions();
+            return $this->afterTarotCardDrawn($reading, $collectedQuestions, count($collectedQuestions));
+        }
+    }
+
+    /**
+     * หลังสุ่มไพ่เสร็จ → ถามคำถามต่อ หรือสร้างบิลถ้าครบ
+     */
+    protected function afterTarotCardDrawn(FortuneReading $reading, array $collectedQuestions, int $questionCount, string $prefixMessage = ''): array
+    {
+        if ($questionCount < self::REQUIRED_QUESTIONS) {
+            // ยังไม่ครบ → กลับไปถามคำถามต่อ
+            $nextNumber = $questionCount + 1;
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS]);
+
+            return [
+                'action' => 'need_more_questions',
+                'message' => $prefixMessage
+                    . "📝 คำถามข้อที่ {$nextNumber} จาก ".self::REQUIRED_QUESTIONS." — เลือกหมวดหรือพิมพ์เองได้เลยค่ะ 👇",
+                'reading' => $reading,
+                'question_number' => $nextNumber,
+            ];
+        }
+
+        // ครบแล้ว → สร้างบิล
+        Log::info('Fortune: ครบ 2 คำถาม + ไพ่ยิปซี กำลังสร้างบิล', [
+            'reading_id' => $reading->id,
+            'questions' => $collectedQuestions,
+            'tarot_cards' => $reading->getCollectedTarotCards(),
+        ]);
+
+        // เพิ่มข้อความไพ่ก่อนบิล (ถ้ามี)
+        $billResult = $this->createPaymentBill($reading, $collectedQuestions);
+        if (! empty($prefixMessage)) {
+            $billResult['message'] = $prefixMessage . $billResult['message'];
+        }
+
+        return $billResult;
     }
 
     /**
@@ -2705,14 +2798,18 @@ class FortuneConversationService
                 $questionNum = $index + 1;
                 $totalQuestions = count($questions);
 
-                // สร้าง prompt เฉพาะคำถามนี้ อิงวันเกิด+เพศ
+                // ดึงไพ่ยิปซีที่ผู้ใช้เปิดได้สำหรับคำถามนี้ (ถ้ามี)
+                $tarotCard = $reading->getTarotCardForQuestion($index);
+
+                // สร้าง prompt เฉพาะคำถามนี้ อิงวันเกิด+เพศ+ไพ่ยิปซี
                 $perQuestionPrompt = $this->buildPerQuestionDeepPrompt(
                     $userProfile,
                     $question,
                     $questionNum,
                     $totalQuestions,
                     $birthDate,
-                    $deepReadings
+                    $deepReadings,
+                    $tarotCard
                 );
 
                 // ✅ Gatekeeper: เช็คทราฟฟิค AI ก่อนเรียกทุกคำถาม
@@ -2739,6 +2836,7 @@ class FortuneConversationService
                     'question_number' => $questionNum,
                     'question' => $question,
                     'answer' => $aiResult['response'],
+                    'tarot_card' => $tarotCard,
                 ];
 
                 $totalTokens += $aiResult['tokens_used'] ?? 0;
@@ -5415,7 +5513,8 @@ PROMPT;
         int $questionNumber,
         int $totalQuestions,
         ?string $birthDate,
-        array $previousReadings = []
+        array $previousReadings = [],
+        ?array $tarotCard = null
     ): string {
         $name = $userProfile['name'] ?? 'คุณ';
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
@@ -5509,6 +5608,13 @@ PROMPT;
         // ลำดับที่ 1: ใช้ prompt จากการตั้งค่าระบบ (ถ้ามี)
         $customPrompt = $this->settings->deep_prompt_template;
         if (! empty(trim($customPrompt ?? ''))) {
+            // สร้างข้อมูลไพ่ยิปซีสำหรับ custom prompt
+            $tarotCardSection = '';
+            if (! empty($tarotCard)) {
+                $tarotPosition = $tarotCard['is_reversed'] ? 'กลับหัว (Reversed)' : 'หงาย (Upright)';
+                $tarotCardSection = "🃏 ไพ่ยิปซี: {$tarotCard['card_name_th']} ({$tarotCard['card_name_en']}) - {$tarotPosition}\nความหมาย: {$tarotCard['meaning']}\n→ นำไพ่นี้มาวิเคราะห์ร่วมกับดวงดาว";
+            }
+
             return $this->applyPromptVariables($customPrompt, [
                 '{name}' => $name,
                 '{gender_prefix}' => $genderPrefix,
@@ -5523,6 +5629,7 @@ PROMPT;
                 '{transit_info}' => $transitInfo,
                 '{previous_context}' => $previousContext,
                 '{user_profile}' => json_encode($userProfile ?? [], JSON_UNESCAPED_UNICODE),
+                '{tarot_card}' => $tarotCardSection,
             ]);
         }
 
@@ -5555,8 +5662,14 @@ PROMPT;
 {$transitInfo}
 คำถามที่ {$questionNumber}: {$question}
 {$previousContext}
+".(! empty($tarotCard) ? "
+🃏 **ไพ่ยิปซีที่ผู้ถามเปิดได้ประกอบคำถามนี้**:
+- ไพ่: {$tarotCard['card_name_th']} ({$tarotCard['card_name_en']})
+- ตำแหน่ง: ".($tarotCard['is_reversed'] ? 'กลับหัว (Reversed)' : 'หงาย (Upright)')."
+- ความหมาย: {$tarotCard['meaning']}
+→ ให้นำไพ่ยิปซีใบนี้มาวิเคราะห์ร่วมกับดวงดาว เช่น \"ไพ่[ชื่อ]ที่{$genderPrefix}{$name}เปิดได้สอดคล้องกับดาว[ชื่อ]ที่อยู่ภพ[ชื่อ]...\" ทำให้คำทำนายมีมิติและน่าสนใจยิ่งขึ้น
 
-[การเข้าใจบริบทคำถาม] วิเคราะห์คำถามให้ลึก: ถ้าคำถามบ่งบอกเรื่องความสัมพันธ์กับคู่รักเพศเดียวกัน = LGBTQ+ ให้ทำนายอย่างเคารพ เท่าเทียม ไม่ตัดสิน
+" : '')."[การเข้าใจบริบทคำถาม] วิเคราะห์คำถามให้ลึก: ถ้าคำถามบ่งบอกเรื่องความสัมพันธ์กับคู่รักเพศเดียวกัน = LGBTQ+ ให้ทำนายอย่างเคารพ เท่าเทียม ไม่ตัดสิน
 
 [โครงสร้างคำทำนาย - ต้องทำตามทุกข้อ ผู้ถามจ่ายเงินมา ต้องคุ้มค่า! ฟันธง!]
 
@@ -5643,6 +5756,11 @@ PROMPT;
         foreach ($deepReadings as $reading) {
             $combined .= "═══════════════════════\n";
             $combined .= "❓ คำถามที่ {$reading['question_number']}: {$reading['question']}\n";
+            if (! empty($reading['tarot_card'])) {
+                $tarot = $reading['tarot_card'];
+                $pos = ($tarot['is_reversed'] ?? false) ? 'กลับหัว' : 'หงาย';
+                $combined .= "🃏 ไพ่ยิปซี: {$tarot['card_name_th']} ({$pos})\n";
+            }
             $combined .= "═══════════════════════\n\n";
             $combined .= $reading['answer']."\n\n";
         }

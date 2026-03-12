@@ -320,6 +320,7 @@ class FortuneChannelManager
                 'error',
                 'ai_ask_save_question',
                 'fortune_ready_notification',
+                'draw_tarot_card',
                 'send_chart', 'deep_reading_result', 'reading_complete', 'reading_ready'
                     => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result),
 
@@ -730,6 +731,12 @@ class FortuneChannelManager
 
                 // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
                 'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
+
+                // สุ่มไพ่ยิปซี → ส่ง text + quick reply ให้กด "สุ่มไพ่"
+                'draw_tarot_card' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    [['label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']]
+                ),
 
                 // ยืนยันดูดวง → ถ้าเป็น "รอคำถาม" ส่ง TopicFlex / ถ้าเป็นปกติ ส่ง ConfirmationFlex
                 'awaiting_confirmation' => $this->sendLineAwaitingResponse($lineService, $userId, $result, $replyToken),
