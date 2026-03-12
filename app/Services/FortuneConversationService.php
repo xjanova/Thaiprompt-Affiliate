@@ -576,67 +576,16 @@ class FortuneConversationService
 
             try {
 
-            // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
-            if ($this->isCheckRemainingRequest($messageText)) {
-                return $this->handleCheckRemaining($facebookUserId);
-            }
+            // ═══════════════════════════════════════════════════════════
+            // 🔝 ลำดับที่ 1: เช็คคำทำนายที่รอส่ง/กำลังเตรียม (สำคัญสุด!)
+            // ═══════════════════════════════════════════════════════════
+            // เมื่อลูกค้าจ่ายเงินแล้ว คำทำนายต้องเป็นลำดับแรกเสมอ
+            // ไม่ว่าจะพิมพ์อะไรมา ต้องแจ้งสถานะคำทำนายก่อน
+            // ยกเว้นเฉพาะ "ไว้ดูทีหลัง" (ปฏิเสธชัดเจน) และ "ยกเลิก"
 
             // ✅ ตรวจสอบคำสั่ง "ไว้ดูทีหลัง" (จากปุ่ม quick reply หลังคำทำนายพร้อม)
             if ($this->isViewLaterRequest($messageText)) {
                 return $this->handleViewLater($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่งพิเศษ: ดูคำทำนายล่าสุด
-            if ($this->isViewLastReadingRequest($messageText)) {
-                return $this->handleViewLastReading($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "แชร์" → ส่งลิงก์เชิญเพื่อน
-            if ($this->isShareRequest($messageText)) {
-                return $this->handleShareRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "สายงาน" → ดูรายชื่อคนที่แนะนำ (downline)
-            if ($this->isDownlineRequest($messageText)) {
-                return $this->handleDownlineRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "รายได้" → ดูรายได้ค่าแนะนำจากสายงาน
-            if ($this->isEarningsRequest($messageText)) {
-                return $this->handleEarningsRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "แผนการตลาด" → แสดงรายละเอียดค่าคอมมิชชั่น
-            if ($this->isMarketingPlanRequest($messageText)) {
-                return $this->handleMarketingPlanRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "ฝากคำถาม" → เข้าโหมดฝากคำถามถึงแอดมิน
-            if ($this->isLeaveQuestionRequest($messageText)) {
-                return $this->handleManualLeaveQuestion($facebookUserId, $userProfile);
-            }
-
-            // ✅ ตรวจสอบว่าผู้ใช้อยู่ในโหมดฝากคำถาม → บันทึกคำถาม
-            $leaveQuestionResult = $this->handleLeaveQuestionMode($facebookUserId, $messageText, $userProfile);
-            if ($leaveQuestionResult) {
-                return $leaveQuestionResult;
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "ดูบัญชี" / "บัญชี" / "ธนาคาร" → แสดงบัญชีธนาคาร
-            // ทำงานได้ทุกสถานะ ไม่ว่าจะมี active conversation หรือไม่
-            if ($this->isBankAccountRequest($messageText)) {
-                return $this->handleBankAccountRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบคำสั่ง "เมนู" / "menu" / "help" → แสดงเมนูครบทุกบริการ
-            if ($this->isMenuRequest($messageText)) {
-                return $this->handleMenuRequest($facebookUserId);
-            }
-
-            // ✅ ตรวจสอบว่าผู้ใช้ตอบกลับปุ่ม "ฝากคำถามถึงแอดมิน" หรือ "ไม่ฝากคำถาม"
-            $pendingSaveResult = $this->handlePendingSaveResponse($facebookUserId, $messageText, $userProfile);
-            if ($pendingSaveResult) {
-                return $pendingSaveResult;
             }
 
             // ✅ V3: เช็คคำทำนายที่พร้อมส่งแต่ยังไม่ได้ส่ง (ไม่ใช้ push เลย — ส่งผ่าน replyMessage ฟรี!)
@@ -759,6 +708,67 @@ class FortuneConversationService
                         . "จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมค่ะ ✨",
                     'reading' => $processingReading,
                 ];
+            }
+
+            // ═══════════════════════════════════════════════════════════
+            // 🔽 ลำดับที่ 2: คำสั่งพิเศษ (เฉพาะเมื่อไม่มีคำทำนายค้างรอส่ง)
+            // ═══════════════════════════════════════════════════════════
+
+            // ✅ ตรวจสอบคำสั่งพิเศษ: เช็คสิทธิ์ดูดวง
+            if ($this->isCheckRemainingRequest($messageText)) {
+                return $this->handleCheckRemaining($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่งพิเศษ: ดูคำทำนายล่าสุด
+            if ($this->isViewLastReadingRequest($messageText)) {
+                return $this->handleViewLastReading($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "แชร์" → ส่งลิงก์เชิญเพื่อน
+            if ($this->isShareRequest($messageText)) {
+                return $this->handleShareRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "สายงาน" → ดูรายชื่อคนที่แนะนำ (downline)
+            if ($this->isDownlineRequest($messageText)) {
+                return $this->handleDownlineRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "รายได้" → ดูรายได้ค่าแนะนำจากสายงาน
+            if ($this->isEarningsRequest($messageText)) {
+                return $this->handleEarningsRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "แผนการตลาด" → แสดงรายละเอียดค่าคอมมิชชั่น
+            if ($this->isMarketingPlanRequest($messageText)) {
+                return $this->handleMarketingPlanRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "ฝากคำถาม" → เข้าโหมดฝากคำถามถึงแอดมิน
+            if ($this->isLeaveQuestionRequest($messageText)) {
+                return $this->handleManualLeaveQuestion($facebookUserId, $userProfile);
+            }
+
+            // ✅ ตรวจสอบว่าผู้ใช้อยู่ในโหมดฝากคำถาม → บันทึกคำถาม
+            $leaveQuestionResult = $this->handleLeaveQuestionMode($facebookUserId, $messageText, $userProfile);
+            if ($leaveQuestionResult) {
+                return $leaveQuestionResult;
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "ดูบัญชี" / "บัญชี" / "ธนาคาร" → แสดงบัญชีธนาคาร
+            if ($this->isBankAccountRequest($messageText)) {
+                return $this->handleBankAccountRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบคำสั่ง "เมนู" / "menu" / "help" → แสดงเมนูครบทุกบริการ
+            if ($this->isMenuRequest($messageText)) {
+                return $this->handleMenuRequest($facebookUserId);
+            }
+
+            // ✅ ตรวจสอบว่าผู้ใช้ตอบกลับปุ่ม "ฝากคำถามถึงแอดมิน" หรือ "ไม่ฝากคำถาม"
+            $pendingSaveResult = $this->handlePendingSaveResponse($facebookUserId, $messageText, $userProfile);
+            if ($pendingSaveResult) {
+                return $pendingSaveResult;
             }
 
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
@@ -1369,6 +1379,11 @@ class FortuneConversationService
             if (! empty($lastPaidReading->deep_response)) {
                 $name = $lastPaidReading->facebook_user_name ?? 'คุณ';
 
+                // ✅ FIX: ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
+                $lastPaidReading->setConversationState('reading_sent_directly', true);
+                $lastPaidReading->setConversationState('reading_ready_sent', true);
+                $lastPaidReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
                 $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
                 $message .= '📋 เลขที่บิล: '.($lastPaidReading->bill_reference ?? '-')."\n";
                 $message .= '📅 วันที่: '.$lastPaidReading->created_at->format('d/m/Y H:i')."\n";
@@ -1418,6 +1433,11 @@ class FortuneConversationService
         // กรณี 1: ชำระเงินแล้ว + มี deep_response
         if ($lastReading->is_paid && ! empty($lastReading->deep_response)) {
             $name = $lastReading->facebook_user_name ?? 'คุณ';
+
+            // ✅ FIX: ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
+            $lastReading->setConversationState('reading_sent_directly', true);
+            $lastReading->setConversationState('reading_ready_sent', true);
+            $lastReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
             $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
             $message .= '📋 เลขที่บิล: '.($lastReading->bill_reference ?? '-')."\n";
@@ -2538,9 +2558,10 @@ class FortuneConversationService
                 'is_reversed' => $isReversed,
             ]);
 
-            // แจ้งผลไพ่ แล้ววนกลับถามคำถามต่อ/สร้างบิล
+            // แจ้งผลไพ่ พร้อมความหมาย แล้ววนกลับถามคำถามต่อ/สร้างบิล
             $tarotMessage = "🃏✨ ได้ไพ่ *{$cardNameTh}* {$position}\n";
             $tarotMessage .= "({$cardNameEn})\n\n";
+            $tarotMessage .= "📖 ความหมาย: {$meaning}\n\n";
 
             return $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount, $tarotMessage);
 
@@ -5814,6 +5835,9 @@ PROMPT;
                 $tarot = $reading['tarot_card'];
                 $pos = ($tarot['is_reversed'] ?? false) ? 'กลับหัว' : 'หงาย';
                 $combined .= "🃏 ไพ่ยิปซี: {$tarot['card_name_th']} ({$pos})\n";
+                if (! empty($tarot['meaning'])) {
+                    $combined .= "📖 ความหมาย: {$tarot['meaning']}\n";
+                }
             }
             $combined .= "═══════════════════════\n\n";
             $combined .= $reading['answer']."\n\n";
