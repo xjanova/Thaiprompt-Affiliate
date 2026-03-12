@@ -556,13 +556,45 @@ class FortuneConversationService
                 ];
             }
 
-            // ✅ Cache-based mutex: ป้องกันข้อความซ้ำซ้อนจากผู้ใช้คนเดียวกัน
-            // เช่น กดปุ่มหลายครั้ง, ส่งข้อความพร้อมกัน, หรือ LINE retry
-            $lockKey = "fortune:processing:{$facebookUserId}";
-            $lock = Cache::lock($lockKey, 10); // 10 วินาที TTL
+            // ✅ Duplicate message filter: ป้องกันข้อความเดียวกันถูก process ซ้ำ
+            // เช่น LINE retry, กดปุ่มหลายครั้ง (ตรวจจากข้อความ hash)
+            // ⚠️ ไม่ block คำถามข้อถัดไป เพราะเช็ค message content ไม่ใช่ user ID
+            $msgHash = md5($facebookUserId.':'.$messageText);
+            $dedupKey = "fortune:dedup:{$msgHash}";
+            if (Cache::has($dedupKey)) {
+                Log::info('Fortune processMessage: ข้อความซ้ำ (dedup) ข้ามไป', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 30),
+                ]);
 
-            if (! $lock->get()) {
-                Log::info('Fortune processMessage: ข้อความซ้ำซ้อน (mutex locked) ข้ามไป', [
+                return [
+                    'action' => 'busy',
+                    'message' => null, // ไม่ตอบกลับข้อความซ้ำ
+                    'reading' => null,
+                ];
+            }
+            // ตั้ง dedup flag 5 วินาที (ข้อความเดียวกันที่มาภายใน 5 วินาทีจะถูกข้าม)
+            Cache::put($dedupKey, true, 5);
+
+            // ✅ Simple mutex: ป้องกัน concurrent processing สำหรับ user คนเดียวกัน
+            // ใช้ Cache::put แทน Cache::lock เพื่อให้ทำงานกับทุก cache driver
+            $lockKey = "fortune:processing:{$facebookUserId}";
+            $lockAcquired = false;
+
+            // พยายามขอ lock — ถ้าไม่ได้ รอแล้วลองใหม่
+            for ($lockAttempt = 0; $lockAttempt < 3; $lockAttempt++) {
+                if (! Cache::has($lockKey)) {
+                    Cache::put($lockKey, true, 8); // TTL 8 วินาที (auto-expire เป็น safety net)
+                    $lockAcquired = true;
+                    break;
+                }
+                if ($lockAttempt < 2) {
+                    usleep(600_000); // รอ 0.6 วินาที ก่อนลองใหม่
+                }
+            }
+
+            if (! $lockAcquired) {
+                Log::info('Fortune processMessage: concurrent processing (mutex) ข้ามไป', [
                     'facebook_user_id' => $facebookUserId,
                     'text_preview' => mb_substr($messageText, 0, 30),
                 ]);
@@ -933,13 +965,16 @@ class FortuneConversationService
 
             } finally {
                 // ปล่อย mutex lock เสมอ ไม่ว่า return หรือ exception
-                $lock->release();
+                // ใช้ Cache::forget แทน $lock->release() เพราะใช้ Cache::put mutex
+                if ($lockAcquired) {
+                    Cache::forget($lockKey);
+                }
             }
 
         } catch (\Exception $e) {
             // ปล่อย mutex lock กรณี exception หลุดจาก try ด้านใน
-            if (isset($lock) && $lock) {
-                try { $lock->release(); } catch (\Exception $lockErr) { /* ignore */ }
+            if ($lockAcquired ?? false) {
+                try { Cache::forget($lockKey); } catch (\Exception $lockErr) { /* ignore */ }
             }
             // ✅ จับ exception ทุกชนิดที่หลุดมา ไม่ให้ error bubble ไปถึง controller
             Log::error('Fortune processMessage: เกิดข้อผิดพลาด', [
