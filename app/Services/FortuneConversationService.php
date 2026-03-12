@@ -650,11 +650,22 @@ class FortuneConversationService
                 ->first();
 
             if ($unsentReading) {
-                $readyForReply = $unsentReading->getConversationState('reading_ready_for_reply', false);
                 $alreadySent = $unsentReading->getConversationState('reading_sent_directly', false);
                 $notificationSent = $unsentReading->getConversationState('reading_notification_sent', false);
 
-                if ($readyForReply && ! $alreadySent) {
+                // ✅ FIX: ไม่พึ่ง reading_ready_for_reply flag อีกต่อไป
+                // ถ้ามี COMPLETED + deep_response + ยังไม่ส่ง → ต้องจัดการเสมอ
+                // (flag อาจไม่ถูก set เนื่องจาก race condition ระหว่าง save กับ set flag)
+                if (! $alreadySent) {
+
+                    // ✅ ตั้ง flag ให้ถูกต้อง (self-healing)
+                    if (! $unsentReading->getConversationState('reading_ready_for_reply', false)) {
+                        $unsentReading->setConversationState('reading_ready_for_reply', true);
+                        $unsentReading->setConversationState('reading_ready_at', now()->toIso8601String());
+                        Log::info('Fortune processMessage: self-heal ตั้ง reading_ready_for_reply flag', [
+                            'reading_id' => $unsentReading->id,
+                        ]);
+                    }
 
                     // ถ้าแจ้งเตือนไปแล้ว (push หรือ reply) → user ตอบกลับ → ส่งคำทำนายเต็มทันที!
                     if ($notificationSent) {
@@ -707,6 +718,47 @@ class FortuneConversationService
                         'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
                     ];
                 }
+            }
+
+            // ✅ NEW: เช็คคำทำนายที่กำลังประมวลผลอยู่ (PAID หรือ COMPLETED แต่ยังไม่มี deep_response)
+            // กรณี: PAID หมดอายุ (5 นาที) → ถูกเปลี่ยนเป็น COMPLETED แต่ AI ยังทำงานอยู่
+            // หรือ PAID ยังไม่หมดอายุแต่ user พิมพ์มาก่อน active conversation check
+            $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('is_paid', true)
+                ->where(function ($q) {
+                    // กรณี 1: สถานะ PAID (AI กำลังประมวลผล)
+                    $q->where('conversation_status', FortuneReading::STATUS_PAID)
+                    // กรณี 2: COMPLETED แต่ไม่มี deep_response (PAID หมดอายุก่อน AI เสร็จ)
+                        ->orWhere(function ($q2) {
+                            $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->where(function ($q3) {
+                                    $q3->whereNull('deep_response')
+                                        ->orWhere('deep_response', '');
+                                });
+                        });
+                })
+                ->where('created_at', '>=', now()->subHours(1)) // ไม่เกิน 1 ชั่วโมง
+                ->latest()
+                ->first();
+
+            if ($processingReading) {
+                $name = $processingReading->facebook_user_name ?? 'คุณ';
+
+                Log::info('Fortune processMessage: พบคำทำนายกำลังประมวลผล → แจ้งให้รอ', [
+                    'facebook_user_id' => $facebookUserId,
+                    'reading_id' => $processingReading->id,
+                    'status' => $processingReading->conversation_status,
+                    'bill_reference' => $processingReading->bill_reference,
+                ]);
+
+                return [
+                    'action' => 'processing',
+                    'message' => "🔮 คุณ{$name}คะ กำลังเตรียมคำทำนายอยู่ค่ะ\n\n"
+                        . '📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
+                        . "⏳ ใช้เวลาประมาณ 1-3 นาทีนะคะ\n\n"
+                        . "จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมค่ะ ✨",
+                    'reading' => $processingReading,
+                ];
             }
 
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
@@ -1281,6 +1333,8 @@ class FortuneConversationService
             'ดูคำทำนาย', 'ดูผลทำนาย', 'ดูผล', 'ผลทำนาย', 'ผลดูดวง',
             'คำทำนายล่าสุด', 'ดูดวงล่าสุด', 'ดูผลดูดวง', 'ผลล่าสุด',
             'ดูผลล่าสุด', 'ขอดูผล', 'ขอดูคำทำนาย',
+            // ✅ เพิ่ม: รองรับปุ่ม quick reply "อ่านคำทำนาย" และคำขอ "อ่านเลย"
+            'อ่านคำทำนาย', 'อ่านเลย', 'อ่านผล', 'ขออ่าน',
         ];
         $text = mb_strtolower(trim($text));
 
