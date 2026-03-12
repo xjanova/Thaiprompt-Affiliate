@@ -62,6 +62,98 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * เช็คโควต้า LINE push message
+     *
+     * ดึงข้อมูลจาก LINE Messaging API:
+     * - /message/quota → จำนวน push ที่ใช้ได้ต่อเดือน
+     * - /message/quota/consumption → จำนวนที่ใช้ไปแล้ว
+     *
+     * @return array{quota: int, used: int, remaining: int, percentage: float, error: string|null}
+     */
+    public function getMessageQuota(): array
+    {
+        $result = [
+            'quota' => 0,
+            'used' => 0,
+            'remaining' => 0,
+            'percentage' => 0,
+            'error' => null,
+        ];
+
+        try {
+            // ดึง quota limit
+            $quotaResponse = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->get(self::API_ENDPOINT.'/message/quota');
+
+            if ($quotaResponse->successful()) {
+                $quotaData = $quotaResponse->json();
+                // type: "limited" มี value, type: "none" ไม่จำกัด
+                $result['quota'] = $quotaData['value'] ?? ($quotaData['type'] === 'none' ? 999999 : 0);
+            } else {
+                $result['error'] = 'ดึง quota ไม่สำเร็จ: '.$quotaResponse->status().' '.$quotaResponse->body();
+                return $result;
+            }
+
+            // ดึงจำนวนที่ใช้ไปแล้ว
+            $usageResponse = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->get(self::API_ENDPOINT.'/message/quota/consumption');
+
+            if ($usageResponse->successful()) {
+                $usageData = $usageResponse->json();
+                $result['used'] = $usageData['totalUsage'] ?? 0;
+                $result['remaining'] = max(0, $result['quota'] - $result['used']);
+                $result['percentage'] = $result['quota'] > 0
+                    ? round(($result['used'] / $result['quota']) * 100, 1)
+                    : 0;
+            } else {
+                $result['error'] = 'ดึง usage ไม่สำเร็จ: '.$usageResponse->status();
+            }
+        } catch (\Exception $e) {
+            $result['error'] = 'Exception: '.$e->getMessage();
+        }
+
+        return $result;
+    }
+
+    /**
+     * ทดสอบส่ง push message ไปหา user (สำหรับ debug)
+     *
+     * @param string $userId LINE user ID
+     * @param string $message ข้อความทดสอบ
+     * @return array{success: bool, status: int|null, body: string|null, error: string|null}
+     */
+    public function testPushMessage(string $userId, string $message = '🔔 ทดสอบ push notification'): array
+    {
+        try {
+            $response = Http::withToken($this->channelAccessToken)
+                ->timeout(10)
+                ->connectTimeout(5)
+                ->post(self::API_ENDPOINT.'/message/push', [
+                    'to' => $userId,
+                    'messages' => [
+                        ['type' => 'text', 'text' => $message],
+                    ],
+                ]);
+
+            return [
+                'success' => $response->successful(),
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'error' => $response->successful() ? null : $response->body(),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'status' => null,
+                'body' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function supportsRichMessage(): bool

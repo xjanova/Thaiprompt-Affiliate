@@ -337,6 +337,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             'reading_id' => $this->readingId,
                             'platform' => $this->platform,
                             'user_id' => $this->userId,
+                            'reading_platform_db' => $reading->platform,
+                            'reading_platform_user_id_db' => $reading->platform_user_id,
+                            'is_line_user' => preg_match('/^U[0-9a-f]{32}$/i', $this->userId),
                         ]);
 
                         $notifySent = $channelManager->sendResponse($this->platform, $this->userId, [
