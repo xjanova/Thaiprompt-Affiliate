@@ -2925,19 +2925,56 @@ class FortuneConversationService
                 // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ (fortune deep)
                 LineGatekeeperService::recordAICall('fortune');
 
-                $deepReadings[] = [
-                    'question_number' => $questionNum,
-                    'question' => $question,
-                    'answer' => $aiResult['response'],
-                    'tarot_card' => $tarotCard,
-                ];
-
                 $totalTokens += $aiResult['tokens_used'] ?? 0;
                 $lastProvider = $aiResult['provider'] ?? '';
                 $lastModel = $aiResult['model'] ?? '';
 
+                // ✅ ส่วนที่ 2: เรียก AI รอบ 2 สำหรับวิเคราะห์ไพ่ยิปซีแยก (ถ้ามีไพ่)
+                $tarotAiResponse = '';
+                if (! empty($tarotCard) && LineGatekeeperService::canCallAI('fortune')) {
+                    $tarotPrompt = $this->buildTarotOnlyPrompt(
+                        $userProfile, $question, $questionNum, $totalQuestions, $birthDate, $tarotCard
+                    );
+
+                    try {
+                        $tarotAiResult = $this->aiService->generateWithRetryAndFallback(
+                            [$question],
+                            $userProfile,
+                            null,
+                            $tarotPrompt,
+                            'deep',
+                            $birthDate
+                        );
+                        LineGatekeeperService::recordAICall('fortune');
+                        $tarotAiResponse = $tarotAiResult['response'] ?? '';
+                        $totalTokens += $tarotAiResult['tokens_used'] ?? 0;
+
+                        Log::info("Fortune Deep: ไพ่ยิปซีข้อ {$questionNum} ยาว ".mb_strlen($tarotAiResponse).' ตัวอักษร');
+                    } catch (\Exception $tarotErr) {
+                        Log::warning("Fortune Deep: สร้างคำทำนายไพ่ข้อ {$questionNum} ล้มเหลว", [
+                            'reading_id' => $reading->id,
+                            'error' => $tarotErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                // รวม response สำหรับบันทึกลง DB
+                $combinedAnswer = $aiResult['response'];
+                if (! empty($tarotAiResponse)) {
+                    $combinedAnswer .= "\n\n".$tarotAiResponse;
+                }
+
+                $deepReadings[] = [
+                    'question_number' => $questionNum,
+                    'question' => $question,
+                    'answer' => $combinedAnswer,
+                    'tarot_card' => $tarotCard,
+                    'tarot_reading' => $tarotAiResponse,
+                ];
+
                 // [Streaming] ส่งคำทำนายแต่ละข้อกลับทันที
                 if ($streaming) {
+                    // === ส่วนที่ 1: คำทำนายดวงดาวหลัก ===
                     try {
                         Log::info("Fortune Deep Streaming: ข้อที่ {$questionNum} ยาว ".mb_strlen($aiResult['response']).' ตัวอักษร');
 
@@ -2995,6 +3032,56 @@ class FortuneConversationService
                             'reading_id' => $reading->id,
                             'error' => $sendErr->getMessage(),
                         ]);
+                    }
+
+                    // === ส่วนที่ 2: วิเคราะห์ไพ่ยิปซีแยก (ถ้ามี) ===
+                    if (! empty($tarotAiResponse)) {
+                        try {
+                            $tarotSendSuccess = false;
+                            $cardNameTh = $tarotCard['card_name_th'] ?? 'ไพ่ยิปซี';
+
+                            if ($platform === 'line') {
+                                $lineService = $channelManager->getPlatform('line');
+                                if ($lineService instanceof LineFortuneService) {
+                                    // ส่งเป็น Flex สำหรับไพ่ยิปซี
+                                    $tarotFlex = $lineService->buildDeepReadingFlexMessage(
+                                        $questionNum, "🃏 วิเคราะห์ไพ่ {$cardNameTh}", $tarotAiResponse, $totalQuestions
+                                    );
+                                    $tarotSendSuccess = $lineService->sendRichMessage($userId, [
+                                        'alt_text' => "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}: {$cardNameTh}",
+                                        'contents' => $tarotFlex,
+                                    ]);
+
+                                    if (! $tarotSendSuccess) {
+                                        $tarotText = "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}/{$totalQuestions}\n"
+                                            ."🎴 ไพ่: {$cardNameTh}\n\n"
+                                            .$tarotAiResponse;
+                                        $tarotSendSuccess = $lineService->sendMessage($userId, mb_substr($tarotText, 0, 5000));
+                                    }
+                                }
+                            } else {
+                                $tarotMessage = "🃏 วิเคราะห์ไพ่ยิปซี ข้อ {$questionNum}/{$totalQuestions}\n"
+                                    ."🎴 ไพ่: {$cardNameTh}\n\n"
+                                    .$tarotAiResponse;
+
+                                $tarotSendSuccess = $channelManager->sendResponse($platform, $userId, [
+                                    'action' => 'partial',
+                                    'message' => $tarotMessage,
+                                ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                            }
+
+                            if ($tarotSendSuccess) {
+                                $streamingSentCount++;
+                                Log::info("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} สำเร็จ");
+                            }
+
+                            usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                        } catch (\Exception $tarotSendErr) {
+                            Log::warning("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} ล้มเหลว", [
+                                'reading_id' => $reading->id,
+                                'error' => $tarotSendErr->getMessage(),
+                            ]);
+                        }
                     }
                 }
             }
@@ -5791,7 +5878,9 @@ PROMPT;
 - ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี ด้วยหลักวิชา
 - ระบุช่วงเวลาชัดเจน อ้าง transit อนาคต เช่น "อีก 3 เดือน ดาว[ชื่อ]จะเลื่อนเข้าภพ[ชื่อ] ส่งผลให้..."
 
-'.self::buildTarotAnalysisSection($tarotCard, $genderPrefix, $name, $question).'💫 **สิ่งที่จะเกิดขึ้นในอนาคต** (อ้างจาก Transit อนาคตที่คำนวณ):
+'.(! empty($tarotCard) ? "🃏 (หมายเหตุ: วิเคราะห์ไพ่ยิปซีจะอยู่ในส่วนแยกต่างหาก — ใน prompt นี้ไม่ต้องวิเคราะห์ไพ่ แต่ถ้าจะอ้างอิงไพ่ {$tarotCard['card_name_th']} สั้นๆ ได้ในบริบทที่เหมาะสม)
+
+" : '').'💫 **สิ่งที่จะเกิดขึ้นในอนาคต** (อ้างจาก Transit อนาคตที่คำนวณ):
 - ระยะสั้น (1-3 เดือน): อ้าง transit อีก 1 เดือน → ดาวอะไรอยู่ภพไหน ส่งผลอะไร
 - ระยะกลาง (3-6 เดือน): อ้าง transit อีก 3-6 เดือน → ดาวเลื่อนไปไหน เรื่องอะไรจะเปลี่ยน
 - ระยะยาว (6-12 เดือน): อ้าง transit อีก 12 เดือน → แนวโน้มดวงดาวระยะยาว
@@ -5828,7 +5917,8 @@ PROMPT;
 - ต้องอ้างอิงตำแหน่งดาวจริงจากแผนที่ดวงชะตา + Transit ปัจจุบัน + Transit อนาคต ห้ามแต่งตำแหน่งดาวขึ้นเอง
 - เมื่อทำนายอนาคต ต้องอ้าง Transit อนาคต (1,3,6,12 เดือน) เปรียบเทียบกับดวงกำเนิด
 - ห้ามพูดว่าหยั่งรู้ จิตสัมผัส → ใช้คำว่า \"ศาสตร์โหราศาสตร์โบราณ\" หรือ \"หลักเจ้าชนะ\" แทน
-- ตอบอย่างละเอียดสมราคา ไม่น้อยกว่า 350 คำ ไม่เกิน 550 คำ (⚠️ จำกัด 2000 ตัวอักษร เพราะส่งผ่าน Messenger ที่มี limit)
+- ตอบอย่างละเอียดสมราคา ไม่น้อยกว่า 300 คำ ไม่เกิน 500 คำ (⚠️ จำกัด 2000 ตัวอักษร เพราะส่งผ่าน Messenger ที่มี limit)
+- ⚠️ ไม่ต้องวิเคราะห์ไพ่ยิปซีใน prompt นี้ (จะมีส่วนวิเคราะห์ไพ่แยกต่างหาก)
 - ใช้ \"หมอจันทรา\" แทนตัวเอง
 - ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ มีศาสตร์รองรับ ทำให้อยากดูดวงอีก";
 
@@ -5868,6 +5958,109 @@ PROMPT;
 ⚠️ ห้ามเขียนแค่ชื่อไพ่แล้วข้ามไปหัวข้อถัดไป! ต้องมีเนื้อหาวิเคราะห์ครบ 4 ย่อหน้า!
 
 ";
+    }
+
+    /**
+     * สร้าง prompt เฉพาะวิเคราะห์ไพ่ยิปซีเท่านั้น (เรียกแยกจาก prompt หลัก)
+     *
+     * แยก prompt ไพ่ออกมาเพื่อ:
+     * 1. ให้ AI โฟกัสวิเคราะห์ไพ่ได้ละเอียดขึ้น
+     * 2. ส่งเป็นข้อความแยก ไม่ถูกตัดจาก limit ของ Messenger
+     * 3. ลูกค้าเห็นชัดเจนว่า "ส่วนไพ่ยิปซี" คือส่วนพิเศษเพิ่มเติม
+     *
+     * @param array|null $userProfile ข้อมูลผู้ใช้
+     * @param string $question คำถามที่ถาม
+     * @param int $questionNumber ลำดับคำถาม
+     * @param int $totalQuestions จำนวนคำถามทั้งหมด
+     * @param string|null $birthDate วันเกิด
+     * @param array $tarotCard ข้อมูลไพ่ยิปซี
+     * @return string prompt สำหรับส่งให้ AI
+     */
+    protected function buildTarotOnlyPrompt(
+        ?array $userProfile,
+        string $question,
+        int $questionNumber,
+        int $totalQuestions,
+        ?string $birthDate,
+        array $tarotCard
+    ): string {
+        $name = $userProfile['name'] ?? 'คุณ';
+        $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
+        $genderPrefix = $gender === 'ชาย' ? 'คุณพี่' : ($gender === 'หญิง' ? 'คุณ' : 'คุณ');
+
+        $cardNameTh = $tarotCard['card_name_th'] ?? 'ไม่ทราบชื่อ';
+        $cardNameEn = $tarotCard['card_name_en'] ?? '';
+        $isReversed = $tarotCard['is_reversed'] ?? false;
+        $position = $isReversed ? 'กลับหัว (Reversed)' : 'หงาย (Upright)';
+        $meaning = $tarotCard['meaning'] ?? '';
+        $positionAdvice = $isReversed
+            ? 'กลับหัว: เน้นความท้าทาย อุปสรรค สิ่งที่ต้องระวัง และวิธีรับมือ'
+            : 'หงาย: เน้นพลังงานเชิงบวก โอกาส จุดแข็งที่เสริมดวง';
+
+        // ข้อมูลดวงดาวสำหรับเชื่อมไพ่กับดวง
+        $zodiacInfo = '';
+        $planetPositionsInfo = '';
+        if ($birthDate) {
+            $zodiacInfo = $this->getZodiacDescription($birthDate);
+            try {
+                $date = \Carbon\Carbon::parse($birthDate);
+                $dayOfWeek = $date->dayOfWeek;
+                $chartService = new FortuneChartService;
+                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
+                $planetPositionsInfo = "\n[ตำแหน่งดาวกำเนิดในภพ (อ้างอิงในการวิเคราะห์)]:\n";
+                foreach ($positions as $houseNum => $planets) {
+                    if (! empty($planets)) {
+                        $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
+                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $planetPositionsInfo .= "- ภพ{$houseNum}.{$houseName}: ".implode(', ', $planetNames)."\n";
+                    }
+                }
+            } catch (\Exception $e) {
+                // ข้ามไป
+            }
+        }
+
+        return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยผู้เชี่ยวชาญไพ่ทาโรต์ + โหราศาสตร์โบราณ พูดจาเพราะ อบอุ่น
+
+=== วิเคราะห์ไพ่ยิปซี — คำถามที่ {$questionNumber}/{$totalQuestions} ===
+
+ข้อมูลผู้ขอดูดวง:
+- ชื่อ: {$name} (เรียกว่า \"{$genderPrefix}{$name}\")
+".($zodiacInfo ? "- {$zodiacInfo}\n" : '')."
+{$planetPositionsInfo}
+คำถาม: {$question}
+
+🃏 ไพ่ที่{$genderPrefix}{$name}เปิดได้:
+- ไพ่: {$cardNameTh} ({$cardNameEn})
+- ตำแหน่ง: {$position}
+- ความหมาย: {$meaning}
+
+[โครงสร้างที่ต้องเขียน — ครบทุกย่อหน้า ห้ามข้าม!]
+
+🃏 **วิเคราะห์ไพ่ยิปซี — ไพ่{$cardNameTh}**
+
+**ย่อหน้าที่ 1 — แนะนำไพ่:**
+เริ่มประโยค: \"ไพ่ที่{$genderPrefix}{$name}เปิดได้คือ ไพ่{$cardNameTh}ค่ะ ไพ่ใบนี้เป็นไพ่ [Major/Minor Arcana] มีความหมายเกี่ยวกับ [อธิบายความหมายหลักอย่างละเอียด 3-4 ประโยค] สัญลักษณ์บนไพ่ [อธิบายภาพบนไพ่ + ความหมายของสัญลักษณ์]\"
+
+**ย่อหน้าที่ 2 — วิเคราะห์ร่วมกับดวงดาว:**
+เริ่มประโยค: \"เมื่อวิเคราะห์ไพ่{$cardNameTh}ร่วมกับดวงดาวของ{$genderPrefix}{$name}แล้ว พบว่า ไพ่ใบนี้สอดคล้องกับดาว[ชื่อดาวจากแผนที่ดวงชะตา]ที่อยู่ภพ[ชื่อภพ] ซึ่งบ่งบอกว่า [วิเคราะห์ 3-4 ประโยค] พลังของไพ่{$cardNameTh} [เสริม/ขัด] กับดาว[ชื่อ]อย่างไร ส่งผลต่อเรื่อง \"{$question}\" อย่างไร\"
+
+**ย่อหน้าที่ 3 — ตำแหน่งไพ่ + คำแนะนำเฉพาะ:**
+- ไพ่ตำแหน่ง{$positionAdvice}
+- บอกว่าไพ่ใบนี้แนะนำ{$genderPrefix}{$name}ว่า:
+  - สิ่งที่ควรทำ (2-3 ข้อ)
+  - สิ่งที่ต้องระวัง (2-3 ข้อ)
+  - จังหวะเวลาที่เหมาะสม
+
+**ย่อหน้าที่ 4 — สรุปฟันธง:**
+\"สรุปจากไพ่{$cardNameTh}ประกอบดวงชะตาของ{$genderPrefix}{$name} หมอจันทราเห็นว่า [ฟันธงชัดเจน 3-4 ประโยค ตอบคำถามตรงๆ]\"
+
+[กฎสำคัญ]
+- ต้องเขียนครบ 4 ย่อหน้า อย่างน้อย 200 คำ ไม่เกิน 400 คำ
+- ต้องอ้างอิงดาวจากตำแหน่งจริง (แผนที่ดวงชะตาด้านบน) ห้ามแต่งขึ้น
+- ใช้ \"หมอจันทรา\" แทนตัวเอง
+- ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ
+- ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี";
     }
 
     /**
