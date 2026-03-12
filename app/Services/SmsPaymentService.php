@@ -533,8 +533,13 @@ class SmsPaymentService
         }
 
         // ระบุ platform และ user ID ที่จะส่งข้อความ
-        $platform = $reading->platform ?? 'facebook';
+        // ✅ ตรวจจับ LINE user จาก ID format (U + 32 hex chars) เป็น fallback
+        // ป้องกันกรณี reading เก่าที่ยังไม่มี platform field
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform;
+        if (! $platform) {
+            $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? 'line' : 'facebook';
+        }
 
         Log::info('SMS Payment: พบ Fortune Reading ที่รอชำระ', [
             'notification_id' => $notification->id,

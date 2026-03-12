@@ -173,8 +173,8 @@ class FortuneBillingController extends Controller
         $hasQuestions = ! empty($reading->getCollectedQuestions());
 
         if ($hasQuestions) {
-            $platform = $reading->platform ?? 'facebook';
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+            $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
             if (! $userId) {
                 return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');
@@ -252,8 +252,8 @@ class FortuneBillingController extends Controller
             return back()->with('error', 'บิลนี้ไม่มีคำถาม — ไม่สามารถสร้างคำทำนายได้');
         }
 
-        $platform = $reading->platform ?? 'facebook';
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
         if (! $userId) {
             return back()->with('error', 'ไม่พบ User ID — ไม่สามารถส่งข้อความได้');

@@ -2470,8 +2470,12 @@ class FortuneChannelManager
      */
     public function sendDeepReadingAfterPayment(FortuneReading $reading): array
     {
-        $platform = $reading->platform ?? self::PLATFORM_FACEBOOK;
+        // ✅ ตรวจจับ LINE user จาก ID format เป็น fallback (กรณี reading เก่าที่ไม่มี platform)
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform;
+        if (! $platform) {
+            $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? self::PLATFORM_LINE : self::PLATFORM_FACEBOOK;
+        }
 
         // Dispatch background job → ไม่ติด web server timeout / webhook 5s timeout
         // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย → ส่ง Messenger → save DB

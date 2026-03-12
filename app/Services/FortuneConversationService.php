@@ -1606,6 +1606,8 @@ class FortuneConversationService
             'response_type' => 'private_message',
             'ai_response' => '',
             'ai_provider' => '',
+            'platform' => $this->currentPlatform,
+            'platform_user_id' => $facebookUserId,
         ]);
 
         // เก็บข้อความต้นฉบับไว้ใน state เพื่อส่งให้ AI ตอนยืนยัน
@@ -1931,6 +1933,8 @@ class FortuneConversationService
             'response_type' => 'private_message',
             'ai_response' => '',
             'ai_provider' => '',
+            'platform' => $this->currentPlatform,
+            'platform_user_id' => $facebookUserId,
         ]);
 
         // เก็บว่าเป็น "รอคำถาม" (ไม่ใช่รอยืนยัน)
@@ -2125,6 +2129,8 @@ class FortuneConversationService
                 'response_type' => 'private_message',
                 'ai_response' => '',
                 'ai_provider' => '',
+                'platform' => $this->currentPlatform,
+                'platform_user_id' => $facebookUserId,
             ]);
 
             // ✅ ดึงบริบทจากประวัติผู้ใช้ (Personalization)
@@ -2408,6 +2414,8 @@ class FortuneConversationService
                 'response_type' => 'private_message',
                 'ai_response' => '',
                 'ai_provider' => '',
+                'platform' => $this->currentPlatform,
+                'platform_user_id' => $facebookUserId,
             ]);
 
             Log::info('Fortune: เริ่ม deep reading flow ใหม่ (ข้าม free limit)', [
@@ -5842,13 +5850,22 @@ PROMPT;
             ? 'กลับหัว: เน้นความท้าทาย อุปสรรค สิ่งที่ต้องระวัง และวิธีรับมือ'
             : 'หงาย: เน้นพลังงานเชิงบวก โอกาส จุดแข็งที่เสริมดวง';
 
-        return "🃏 **วิเคราะห์ไพ่ยิปซี** (⚠️ ห้ามข้ามหัวข้อนี้! ต้องเขียนอย่างน้อย 80 คำ):
-- เริ่มต้นด้วย: \"ไพ่{$cardNameTh}ที่{$genderPrefix}{$name}เปิดได้...\"
-- อธิบายความหมายของไพ่ใบนี้ในบริบทของคำถาม \"{$question}\" อย่างละเอียด
-- เชื่อมโยงไพ่กับตำแหน่งดาวในแผนที่ดวงชะตา เช่น \"ไพ่นี้สอดคล้องกับดาว[ชื่อ]ที่อยู่ภพ[ชื่อ] ซึ่งบ่งบอกว่า...\"
+        return "🃏 **วิเคราะห์ไพ่ยิปซี** (⚠️ ห้ามข้ามหัวข้อนี้! ต้องเขียนอย่างน้อย 100 คำ):
+
+**ย่อหน้าที่ 1 — แนะนำไพ่:** เริ่มด้วยประโยคแบบนี้:
+\"ไพ่ที่{$genderPrefix}{$name}เปิดได้คือ ไพ่{$cardNameTh}ค่ะ ไพ่ใบนี้มีความหมายเกี่ยวกับ [อธิบายความหมายหลักของไพ่ 1-2 ประโยค]\"
+
+**ย่อหน้าที่ 2 — วิเคราะห์ร่วมกับดวงดาว:** ต้องมีประโยคที่เชื่อมไพ่กับดวงดาว เช่น:
+\"เมื่อวิเคราะห์ไพ่{$cardNameTh}ร่วมกับดวงดาวของ{$genderPrefix}{$name}แล้ว พบว่า ไพ่ใบนี้สอดคล้องกับดาว[ชื่อ]ที่อยู่ภพ[ชื่อ] ซึ่งบ่งบอกว่า...\" + ขยายว่าพลังของไพ่เสริม/ขัดกับดาวอย่างไร
+
+**ย่อหน้าที่ 3 — ตำแหน่งไพ่ + คำแนะนำ:**
 - ไพ่ตำแหน่ง{$positionAdvice}
-- สรุปว่าไพ่ใบนี้บอกอะไร{$genderPrefix}{$name}เกี่ยวกับเรื่องนี้ — ฟันธงชัดเจน
-- ⚠️ ต้องเขียนเนื้อหาวิเคราะห์ไพ่จริงๆ ห้ามแค่บอกชื่อไพ่แล้วข้ามไป!
+- บอกว่าไพ่ใบนี้แนะนำ{$genderPrefix}{$name}ว่าควรทำอะไร/ระวังอะไรในเรื่อง \"{$question}\"
+
+**ย่อหน้าที่ 4 — สรุปฟันธง:**
+\"สรุปจากไพ่{$cardNameTh}ประกอบดวงชะตาของ{$genderPrefix}{$name} หมอจันทราเห็นว่า [ฟันธงชัดเจน 1-2 ประโยค]\"
+
+⚠️ ห้ามเขียนแค่ชื่อไพ่แล้วข้ามไปหัวข้อถัดไป! ต้องมีเนื้อหาวิเคราะห์ครบ 4 ย่อหน้า!
 
 ";
     }

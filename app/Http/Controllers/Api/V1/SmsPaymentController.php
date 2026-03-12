@@ -899,8 +899,8 @@ class SmsPaymentController extends Controller
 
             // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
             // ใช้ queue job แทน sync call → ไม่ติด web server timeout
-            $platform = $model->platform ?? 'facebook';
             $userId = $model->platform_user_id ?? $model->facebook_user_id;
+            $platform = $model->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
             if ($userId) {
                 ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -1072,7 +1072,7 @@ class SmsPaymentController extends Controller
                     $reading->update(['conversation_status' => FortuneReading::STATUS_PAID]);
                 }
 
-                $platform = $reading->platform ?? 'facebook';
+                $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
                 ProcessDeepFortuneReadingJob::dispatchSmart(
                     $reading->id, null, $platform, $userId
@@ -1347,8 +1347,8 @@ class SmsPaymentController extends Controller
                 }
                 if (! $model->is_paid) {
                     // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
-                    $platform = $model->platform ?? 'facebook';
                     $userId = $model->platform_user_id ?? $model->facebook_user_id;
+                    $platform = $model->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
                     if ($userId) {
                         ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -1677,8 +1677,8 @@ class SmsPaymentController extends Controller
 
                         // Dispatch job สร้างคำทำนาย + ส่งข้อความ (เหมือน approveOrder)
                         // ถ้าไม่ dispatch ตรงนี้ → Android เห็น auto_approved → skip เรียก /approve → ไม่มีใครสร้างคำทำนาย
-                        $platform = $fortuneReading->platform ?? 'facebook';
                         $userId = $fortuneReading->platform_user_id ?? $fortuneReading->facebook_user_id;
+                        $platform = $fortuneReading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
                         if ($userId) {
                             \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
@@ -2295,8 +2295,8 @@ class SmsPaymentController extends Controller
 
         // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
         // ใช้ queue job แทน sync call → ไม่ติด web server timeout
-        $platform = $reading->platform ?? 'facebook';
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
         if ($userId) {
             ProcessDeepFortuneReadingJob::dispatchSmart(

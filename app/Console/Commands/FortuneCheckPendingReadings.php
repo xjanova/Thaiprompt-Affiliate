@@ -104,8 +104,8 @@ class FortuneCheckPendingReadings extends Command
         foreach ($pendingReadings as $reading) {
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
-            $platform = $reading->platform ?? 'facebook';
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+            $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
             // ตรวจสอบ retry count จาก conversation_state
             $retryCount = $reading->getConversationState('auto_retry_count', 0);

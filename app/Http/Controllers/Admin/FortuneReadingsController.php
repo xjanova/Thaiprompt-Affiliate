@@ -133,8 +133,8 @@ class FortuneReadingsController extends Controller
             return redirect()->back()->with('error', 'ไม่สามารถดำเนินการได้: ต้องเป็น deep reading ที่ชำระเงินแล้ว');
         }
 
-        $platform = $reading->platform ?? 'facebook';
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
         if (empty($userId)) {
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
@@ -188,8 +188,8 @@ class FortuneReadingsController extends Controller
             return redirect()->back()->with('error', 'ไม่มีคำทำนายเชิงลึก กรุณาใช้ปุ่ม "สร้างคำทำนายใหม่" แทน');
         }
 
-        $platform = $reading->platform ?? 'facebook';
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
         if (empty($userId)) {
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
