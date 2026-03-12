@@ -1478,6 +1478,14 @@ class LineFortuneService implements MessagingPlatformInterface
      * @param  int  $maxChars  จำนวนตัวอักษรสูงสุดต่อ chunk
      * @return array<string>
      */
+    /**
+     * Public wrapper สำหรับ splitTextForFlex — ใช้จาก FortuneChannelManager
+     */
+    public function splitTextForFlexPublic(string $text, int $maxChars = 1200): array
+    {
+        return $this->splitTextForFlex($text, $maxChars);
+    }
+
     protected function splitTextForFlex(string $text, int $maxChars = 1200): array
     {
         $text = trim($text);

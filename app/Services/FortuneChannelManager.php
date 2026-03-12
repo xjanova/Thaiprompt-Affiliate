@@ -1678,48 +1678,100 @@ class FortuneChannelManager
             // ✅ แสดงวันเวลาชำระเงินในคำทำนาย
             $paidAt = $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : ($reading->created_at ? $reading->created_at->format('d/m/Y H:i') : null);
             $fortuneBubbles = $lineService->buildSplitFortuneMessages($reading->deep_response, $userName, $reading->bill_reference, $paidAt);
-            $flexContent = null;
 
-            // ✅ รวมทุก bubble เป็น carousel เดียว
-            if (count($fortuneBubbles) > 1) {
-                $flexContent = ['type' => 'carousel', 'contents' => $fortuneBubbles];
-            } elseif (count($fortuneBubbles) === 1) {
-                $flexContent = $fortuneBubbles[0];
-            }
-
-            // ✅ ส่งคำทำนายผ่าน replyToken ก่อน (เชื่อถือได้ที่สุด)
+            // ✅ V3: ตรวจ JSON size ก่อนส่ง — ป้องกัน carousel > 50KB ที่ LINE reject
             $sent = false;
-            if ($flexContent && $replyToken) {
-                $sent = $lineService->replyWithFlex($replyToken, $flexContent, '🌟 คำทำนายเชิงลึก');
-                if ($sent) {
-                    $replyToken = null; // ใช้แล้ว
-                    Log::info('LINE view_reading_deep: ส่งคำทำนายผ่าน replyToken สำเร็จ', ['reading_id' => $reading->id ?? null]);
+
+            if (count($fortuneBubbles) === 1) {
+                // Bubble เดียว → ส่งตรง
+                $flexContent = $fortuneBubbles[0];
+                $jsonSize = strlen(json_encode($flexContent, JSON_UNESCAPED_UNICODE));
+
+                if ($jsonSize < 45000) {
+                    if ($replyToken) {
+                        $sent = $lineService->replyWithFlex($replyToken, $flexContent, '🌟 คำทำนายเชิงลึก');
+                        if ($sent) {
+                            $replyToken = null;
+                        }
+                    }
+                    if (! $sent) {
+                        $sent = $lineService->sendRichMessagePriority($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
+                    }
+                }
+            } elseif (count($fortuneBubbles) > 1) {
+                // หลาย bubbles → ลอง carousel ถ้า JSON ไม่เกิน 45KB
+                $carousel = ['type' => 'carousel', 'contents' => array_slice($fortuneBubbles, 0, 12)];
+                $carouselJson = json_encode($carousel, JSON_UNESCAPED_UNICODE);
+
+                if (strlen($carouselJson) < 45000) {
+                    // Carousel ขนาดพอดี → ส่ง carousel เดียว
+                    if ($replyToken) {
+                        $sent = $lineService->replyWithFlex($replyToken, $carousel, '🌟 คำทำนายเชิงลึก');
+                        if ($sent) {
+                            $replyToken = null;
+                        }
+                    }
+                    if (! $sent) {
+                        $sent = $lineService->sendRichMessagePriority($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $carousel]);
+                    }
+                } else {
+                    // ✅ Carousel ใหญ่เกิน → ส่งทีละ bubble (เหมือนที่แอดมิน resend ได้ครบ)
+                    Log::info('LINE view_reading_deep: carousel ใหญ่เกิน → ส่งทีละ bubble', [
+                        'reading_id' => $reading->id ?? null,
+                        'bubble_count' => count($fortuneBubbles),
+                        'carousel_json_size' => strlen($carouselJson),
+                    ]);
+
+                    $sent = true;
+                    foreach ($fortuneBubbles as $idx => $bubble) {
+                        $bubbleSent = false;
+                        // bubble แรก ลองใช้ replyToken (ฟรี)
+                        if ($idx === 0 && $replyToken) {
+                            $bubbleSent = $lineService->replyWithFlex($replyToken, $bubble, '🌟 คำทำนายเชิงลึก');
+                            if ($bubbleSent) {
+                                $replyToken = null;
+                            }
+                        }
+                        if (! $bubbleSent) {
+                            $bubbleSent = $lineService->sendRichMessagePriority($userId, [
+                                'alt_text' => '🌟 คำทำนายเชิงลึก (ส่วนที่ '.($idx + 1).')',
+                                'contents' => $bubble,
+                            ]);
+                        }
+                        if (! $bubbleSent) {
+                            $sent = false;
+                            Log::warning("LINE view_reading_deep: ส่ง bubble ที่ ".($idx + 1)." ไม่สำเร็จ", [
+                                'reading_id' => $reading->id ?? null,
+                            ]);
+                        }
+                        if ($idx < count($fortuneBubbles) - 1) {
+                            usleep(800_000); // 0.8s ระหว่าง bubble
+                        }
+                    }
                 }
             }
 
-            // ✅ Fallback: ถ้า reply ไม่สำเร็จ → ลอง push + retry 1 ครั้ง (เนื้อหาเสียเงิน สำคัญมาก)
-            if (! $sent && $flexContent) {
-                $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
-
-                // 🔄 Retry 1 ครั้ง — เนื้อหาเสียเงิน ต้องพยายามส่งให้ได้
-                if (! $sent) {
-                    Log::warning('LINE view_reading_deep: push ครั้งแรกไม่สำเร็จ → retry ใน 5 วิ', ['reading_id' => $reading->id ?? null]);
-                    sleep(5); // รอสักครู่ก่อน retry
-                    $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
+            // ✅ Fallback สุดท้าย: ถ้าทุก Flex ล้มเหลว → ส่งเป็น text ธรรมดา (ดีกว่าไม่ได้อ่าน)
+            if (! $sent) {
+                Log::warning('LINE view_reading_deep: Flex ทุกวิธีล้มเหลว → fallback text', [
+                    'reading_id' => $reading->id ?? null,
+                    'user_id' => $userId,
+                    'response_len' => mb_strlen($reading->deep_response),
+                ]);
+                // ตัดเป็น chunks ≤ 5000 ตัวอักษร แล้วส่งทีละ chunk
+                $textChunks = $lineService->splitTextForFlexPublic($reading->deep_response, 4800);
+                foreach ($textChunks as $idx => $chunk) {
+                    $header = $idx === 0 ? "🌟 คำทำนายเชิงลึกของคุณ{$userName}\n📋 {$reading->bill_reference}\n═══════════════════════\n\n" : "(ต่อ)\n\n";
+                    $lineService->sendMessagePriority($userId, mb_substr($header.$chunk, 0, 5000));
+                    if ($idx < count($textChunks) - 1) {
+                        usleep(500_000);
+                    }
                 }
+                $sent = true; // ถือว่าส่งแล้ว (อย่างน้อย text)
+            }
 
-                if (! $sent) {
-                    // 🔄 Retry ครั้งที่ 2 — รออีก 10 วิ
-                    Log::warning('LINE view_reading_deep: push ครั้งที่ 2 ไม่สำเร็จ → retry ใน 10 วิ', ['reading_id' => $reading->id ?? null]);
-                    sleep(10);
-                    $sent = $lineService->sendRichMessage($userId, ['alt_text' => '🌟 คำทำนายเชิงลึก', 'contents' => $flexContent]);
-                }
-
-                if ($sent) {
-                    Log::info('LINE view_reading_deep: ส่งคำทำนายผ่าน push สำเร็จ (retry)', ['reading_id' => $reading->id ?? null]);
-                } else {
-                    Log::error('LINE view_reading_deep: ส่งคำทำนายไม่สำเร็จทุกวิธี!', ['reading_id' => $reading->id ?? null, 'user_id' => $userId]);
-                }
+            if ($sent) {
+                Log::info('LINE view_reading_deep: ส่งคำทำนายสำเร็จ', ['reading_id' => $reading->id ?? null]);
             }
 
             // ส่ง chart image ทีหลัง (ไม่สำคัญเท่าคำทำนาย)
