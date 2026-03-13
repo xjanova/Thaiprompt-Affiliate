@@ -568,8 +568,8 @@ class FortuneConversationService
                 ]);
 
                 return [
-                    'action' => 'busy',
-                    'message' => null, // ไม่ตอบกลับข้อความซ้ำ
+                    'action' => 'dedup_skip', // ข้อความซ้ำ → ข้ามเงียบๆ ไม่ต้องส่งอะไร
+                    'message' => null,
                     'reading' => null,
                 ];
             }
@@ -2593,7 +2593,7 @@ class FortuneConversationService
 
             // เก็บไพ่ใน conversation state (รวม image_url สำหรับส่งรูป)
             $cardImageUrl = $card->image_url;
-            $reading->addTarotCard($currentIndex, $card->id, $cardNameTh, $cardNameEn, $isReversed, $meaning);
+            $reading->addTarotCard($currentIndex, $card->id, $cardNameTh, $cardNameEn, $isReversed, $meaning, $cardImageUrl);
 
             Log::info('Fortune: สุ่มไพ่ยิปซีได้', [
                 'reading_id' => $reading->id,
@@ -3071,6 +3071,21 @@ class FortuneConversationService
                             'reading_id' => $reading->id,
                             'error' => $sendErr->getMessage(),
                         ]);
+                    }
+
+                    // === ส่งรูปไพ่ยิปซี (ถ้ามี) ก่อนวิเคราะห์ ===
+                    if (! empty($tarotCard['image_url'])) {
+                        try {
+                            $platformService = $channelManager->getPlatform($platform);
+                            if ($platformService) {
+                                $platformService->sendImage($userId, $tarotCard['image_url']);
+                                usleep(800_000); // 0.8s ก่อนส่งข้อความ
+                            }
+                        } catch (\Exception $imgErr) {
+                            Log::warning("Fortune Deep Streaming: ส่งรูปไพ่ข้อ {$questionNum} ไม่สำเร็จ", [
+                                'error' => $imgErr->getMessage(),
+                            ]);
+                        }
                     }
 
                     // === ส่วนที่ 2: วิเคราะห์ไพ่ยิปซีแยก (ถ้ามี) ===

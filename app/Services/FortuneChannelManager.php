@@ -158,6 +158,11 @@ class FortuneChannelManager
         $action = $result['action'] ?? 'unknown';
         $message = $result['message'] ?? '';
 
+        // ✅ dedup_skip: ข้อความซ้ำ → ข้ามเงียบๆ ไม่ต้องส่งอะไร
+        if ($action === 'dedup_skip') {
+            return true;
+        }
+
         Log::info('FortuneChannelManager: sendResponse เริ่มส่ง', [
             'platform' => $platform,
             'user_id' => $userId,
@@ -320,9 +325,15 @@ class FortuneChannelManager
                 'error',
                 'ai_ask_save_question',
                 'fortune_ready_notification',
-                'draw_tarot_card',
                 'send_chart', 'deep_reading_result', 'reading_complete', 'reading_ready'
                     => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result),
+
+                // ✅ สุ่มไพ่ยิปซี → ส่ง Quick Reply พร้อมปุ่มเลือกไพ่
+                'draw_tarot_card' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🃏 สุ่มไพ่ยิปซี', 'payload' => 'DRAW_TAROT'],
+                    ['content_type' => 'text', 'title' => '🔮 เลือกไพ่ 1', 'payload' => 'DRAW_TAROT_1'],
+                    ['content_type' => 'text', 'title' => '✨ เลือกไพ่ 2', 'payload' => 'DRAW_TAROT_2'],
+                ]),
 
                 // อื่นๆ → ส่ง text ธรรมดา
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการค่ะ 🙏'),
@@ -426,13 +437,14 @@ class FortuneChannelManager
             }
         }
 
-        // ส่งข้อมูลบิลเป็น text (เพราะมีรายละเอียดเยอะ)
+        // ✅ ส่งข้อมูลบิล + QR เป็นชุดเดียว (ไม่ซ้ำกับ Payment Template)
+        // ส่งเฉพาะ text ข้อมูลบิล (ไม่ส่ง Payment Template อีก เพราะข้อมูลซ้ำ)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
             usleep(500000);
         }
 
-        // ส่งภาพ QR Code ชำระเงิน (ถ้ามี)
+        // ส่งภาพ QR Code ชำระเงิน (ถ้ามี) — ส่งครั้งเดียว
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
             try {
@@ -443,7 +455,7 @@ class FortuneChannelManager
             }
         }
 
-        // ส่ง Payment Template (ปุ่มแจ้งชำระ/เช็คสถานะ/ยกเลิก)
+        // ✅ ส่ง Payment Template เฉพาะปุ่มกด (ไม่มี QR ซ้ำ)
         if ($reading) {
             $paymentTemplate = $richService->buildPaymentTemplate($reading);
 
@@ -523,14 +535,7 @@ class FortuneChannelManager
      */
     protected function sendFacebookBirthdateResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
-        $message = $result['message'] ?? '';
-
-        // ส่ง text ข้อความเดิม (ถ้ามี)
-        if (! empty($message)) {
-            $fbService->sendMessage($userId, $message);
-            usleep(500000);
-        }
-
+        // ✅ ส่งเฉพาะ Button Template เท่านั้น (ไม่ส่ง text ก่อน — เพราะ template มีข้อความขอวันเกิดอยู่แล้ว)
         $template = $richService->buildBirthdatePromptTemplate($this->getReadingPrice());
 
         return $fbService->sendButtonTemplate($userId, $template);
@@ -753,11 +758,8 @@ class FortuneChannelManager
                 // ต้องการคำถามเพิ่ม → ส่ง Flex เลือกหมวด (ข้อถัดไป)
                 'need_more_questions' => $this->sendLineQuestionSelectionResponse($lineService, $userId, $result, $replyToken),
 
-                // สุ่มไพ่ยิปซี → ส่ง text + quick reply ให้กด "สุ่มไพ่"
-                'draw_tarot_card' => $this->sendLineMessageWithQuickReply(
-                    $lineService, $userId, $message, $replyToken,
-                    [['label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']]
-                ),
+                // สุ่มไพ่ยิปซี → ส่งรูปไพ่ (ถ้ามี) + text + quick reply
+                'draw_tarot_card' => $this->sendLineTarotCardResponse($lineService, $userId, $result, $replyToken),
 
                 // ยืนยันดูดวง → ถ้าเป็น "รอคำถาม" ส่ง TopicFlex / ถ้าเป็นปกติ ส่ง ConfirmationFlex
                 'awaiting_confirmation' => $this->sendLineAwaitingResponse($lineService, $userId, $result, $replyToken),
@@ -831,8 +833,8 @@ class FortuneChannelManager
                 // กำลังประมวลผล (AI ทำงานอยู่ / PAID status) → Flex แจ้งสถานะ ไม่มีปุ่มดูดวงใหม่
                 'processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
 
-                // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ ไม่มีปุ่ม
-                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ
+                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: 'กำลังประมวลผลอยู่ค่ะ กรุณารอสักครู่ 🙏', $replyToken),
 
                 // แสดงบัญชีธนาคาร → ส่ง text (ไม่มีปุ่มดูดวง)
                 'bank_account_info' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
@@ -1458,6 +1460,31 @@ class FortuneChannelManager
         $flex = $lineService->buildBirthdateRequestFlexMessage($deepPrice);
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, '🎂 กรุณาบอกวันเกิดค่ะ', $replyToken);
+    }
+
+    /**
+     * LINE: ส่งรูปไพ่ยิปซี + ข้อความ + quick reply (draw_tarot_card)
+     */
+    protected function sendLineTarotCardResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ✅ ส่งรูปไพ่ก่อน (ถ้ามี)
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl) {
+            try {
+                $lineService->sendImage($userId, $tarotImageUrl);
+                usleep(800_000);
+            } catch (\Exception $e) {
+                Log::warning('LINE: ส่งรูปไพ่ยิปซีไม่สำเร็จ', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ส่ง text + quick reply ปุ่มสุ่มไพ่
+        return $this->sendLineMessageWithQuickReply(
+            $lineService, $userId, $message, $replyToken,
+            [['label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']]
+        );
     }
 
     /**

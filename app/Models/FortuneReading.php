@@ -639,7 +639,7 @@ class FortuneReading extends Model
      * @param  string  $meaning  ความหมายของไพ่ตามตำแหน่ง
      * @return int จำนวนไพ่ที่เก็บไว้
      */
-    public function addTarotCard(int $questionIndex, int $cardId, string $cardNameTh, string $cardNameEn, bool $isReversed, string $meaning): int
+    public function addTarotCard(int $questionIndex, int $cardId, string $cardNameTh, string $cardNameEn, bool $isReversed, string $meaning, ?string $imageUrl = null): int
     {
         $cards = $this->getConversationState('collected_tarot_cards', []);
         $cards[] = [
@@ -649,6 +649,7 @@ class FortuneReading extends Model
             'card_name_en' => $cardNameEn,
             'is_reversed' => $isReversed,
             'meaning' => $meaning,
+            'image_url' => $imageUrl,
         ];
         $this->setConversationState('collected_tarot_cards', $cards);
 

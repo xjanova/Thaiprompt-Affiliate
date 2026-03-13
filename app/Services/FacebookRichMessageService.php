@@ -157,15 +157,9 @@ class FacebookRichMessageService
         $amountText = number_format($amount, 2);
         $billRef = $reading->bill_reference ?? "FR-{$reading->id}";
 
-        $text = "💳 รายละเอียดการชำระเงิน\n\n";
-        $text .= "📋 เลขที่บิล: {$billRef}\n";
-        $text .= "💰 จำนวนเงิน: {$amountText} บาท\n";
-
-        if ($bankInfo) {
-            $text .= "\n{$bankInfo}";
-        }
-
-        $text .= "\n⏰ กรุณาชำระภายใน 30 นาที";
+        $text = "📋 บิล: {$billRef} — {$amountText} บาท\n";
+        $text .= "⏰ กรุณาชำระภายใน 30 นาที\n";
+        $text .= "✅ โอนแล้วกดปุ่ม \"แจ้งชำระเงินแล้ว\" ด้านล่างค่ะ";
 
         // ตัดให้ไม่เกิน 640 ตัวอักษร (Facebook limit)
         $text = mb_substr($text, 0, 630);
