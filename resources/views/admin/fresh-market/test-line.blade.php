@@ -1,6 +1,6 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'ทดสอบ LINE - ตลาดสดไทยพร้อม')
+@section('title', 'ทดสอบ LINE - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="space-y-6" x-data="{
@@ -37,7 +37,7 @@
     {{-- ส่วนหัว --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ทดสอบส่งข้อความ LINE - ตลาดสดไทยพร้อม</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ทดสอบส่งข้อความ LINE - ตลาดสดไทยพร๊อม</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">ทดสอบการส่งข้อความผ่าน LINE OA ของตลาดสด</p>
         </div>
         <a href="{{ route('admin.fresh-market.settings') }}"
@@ -193,7 +193,7 @@
                     </label>
                     <textarea name="message" rows="5" required
                               class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500"
-                              placeholder="พิมพ์ข้อความที่ต้องการส่งทดสอบ...">{{ old('message', 'ทดสอบการส่งข้อความจากระบบตลาดสดไทยพร้อม') }}</textarea>
+                              placeholder="พิมพ์ข้อความที่ต้องการส่งทดสอบ...">{{ old('message', 'ทดสอบการส่งข้อความจากระบบตลาดสดไทยพร๊อม') }}</textarea>
                     @error('message')
                         <p class="text-xs text-red-500 mt-1">{{ $message }}</p>
                     @enderror

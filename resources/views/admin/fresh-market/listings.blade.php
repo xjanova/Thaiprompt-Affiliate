@@ -1,13 +1,13 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'จัดการรายการสินค้า - ตลาดสดไทยพร้อม')
+@section('title', 'จัดการรายการสินค้า - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="space-y-6">
     {{-- ส่วนหัว --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการรายการสินค้า - ตลาดสดไทยพร้อม</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">จัดการรายการสินค้า - ตลาดสดไทยพร๊อม</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">ดูและจัดการสินค้าทั้งหมดในระบบตลาดสด</p>
         </div>
         <a href="{{ route('admin.fresh-market.dashboard') }}"

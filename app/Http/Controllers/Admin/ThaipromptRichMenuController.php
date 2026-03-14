@@ -94,7 +94,7 @@ class ThaipromptRichMenuController extends Controller
             if ($result['success']) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Deploy Rich Menu ไทยพร้อมสำเร็จ!',
+                    'message' => 'Deploy Rich Menu ไทยพร๊อมสำเร็จ!',
                     'rich_menu_id' => $result['rich_menu_id'],
                     'image_url' => $result['menu']->image_path
                         ? Storage::disk('public')->url($result['menu']->image_path)

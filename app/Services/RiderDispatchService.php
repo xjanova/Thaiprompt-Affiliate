@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Models\FreshMarketOrder;
+use App\Models\FreshMarketSetting;
 use App\Models\Rider;
 use App\Models\RiderJob;
 use Illuminate\Support\Facades\DB;
+use App\Services\RiderGpsTrackingService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -18,27 +20,38 @@ class RiderDispatchService
     /**
      * ค่าส่งพื้นฐาน (บาท)
      */
-    protected float $baseFee = 30.0;
+    protected float $baseFee;
 
     /**
      * ค่าส่งต่อกิโลเมตร (บาท)
      */
-    protected float $perKmFee = 10.0;
+    protected float $perKmFee;
 
     /**
      * ค่าส่งขั้นต่ำ (บาท)
      */
-    protected float $minFee = 30.0;
+    protected float $minFee;
 
     /**
      * อัตราส่วนรายได้ไรเดอร์ (80%)
      */
-    protected float $riderEarningsRate = 0.80;
+    protected float $riderEarningsRate;
 
     /**
      * รัศมีค้นหาเริ่มต้น (กม.)
      */
-    protected float $defaultSearchRadius = 5.0;
+    protected float $defaultSearchRadius;
+
+    public function __construct()
+    {
+        // ดึงค่าจาก settings เพื่อให้ admin ปรับได้ หากไม่มีใช้ค่า default
+        $settings = FreshMarketSetting::getSettings();
+        $this->baseFee = $settings->delivery_base_fee ?? 30.0;
+        $this->perKmFee = $settings->delivery_per_km_fee ?? 10.0;
+        $this->minFee = $settings->delivery_min_fee ?? 30.0;
+        $this->riderEarningsRate = $settings->rider_earnings_rate ?? 0.80;
+        $this->defaultSearchRadius = $settings->default_search_radius_km ?? 5.0;
+    }
 
     /**
      * ค้นหาไรเดอร์ที่ใกล้ที่สุดสำหรับ order
@@ -158,6 +171,19 @@ class RiderDispatchService
                 'delivery_fee' => $deliveryFee,
                 'delivery_distance_km' => $distance,
             ]);
+
+            // สร้าง tracking token และส่ง LINE notification ให้ลูกค้า
+            try {
+                $gpsService = new RiderGpsTrackingService();
+                $buyerLineUserId = $order->buyer?->line_user_id ?? null;
+                $gpsService->generateTrackingToken($job, $buyerLineUserId);
+                $gpsService->sendTrackingLinkToBuyer($job->fresh());
+            } catch (\Throwable $e) {
+                Log::warning('RiderDispatch: ไม่สามารถสร้าง tracking token', [
+                    'job_id' => $job->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // ตั้งสถานะไรเดอร์เป็น busy
             $rider->setBusy();

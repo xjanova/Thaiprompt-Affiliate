@@ -207,7 +207,7 @@ return [
 
         [
             'id' => 'fresh-market',
-            'label' => 'ตลาดสดไทยพร้อม',
+            'label' => 'ตลาดสดไทยพร๊อม',
             'icon' => '🏪',
             'route' => null,
             'order' => 5.7,

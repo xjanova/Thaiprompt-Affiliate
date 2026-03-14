@@ -1,5 +1,5 @@
 /**
- * ตลาดสดไทยพร้อม - Fresh Market JavaScript
+ * ตลาดสดไทยพร๊อม - Fresh Market JavaScript
  *
  * Alpine.js components สำหรับหน้าเว็บตลาดสด
  * รวม: Geolocation, Search, Map, Gallery, Order

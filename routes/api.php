@@ -580,7 +580,7 @@ Route::prefix('v1')->group(function () {
         });
     });
 
-    // ===== Fresh Market API (ตลาดสดไทยพร้อม) =====
+    // ===== Fresh Market API (ตลาดสดไทยพร๊อม) =====
     Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
         // Public endpoints
         Route::get('/categories', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'categories'])->name('categories');
@@ -599,6 +599,16 @@ Route::prefix('v1')->group(function () {
             Route::put('/orders/{id}/status', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'updateOrderStatus'])->name('orders.status');
             Route::get('/seller/orders', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerOrders'])->name('seller.orders');
             Route::get('/seller/dashboard', [\App\Http\Controllers\Api\V1\FreshMarketApiController::class, 'sellerDashboard'])->name('seller.dashboard');
+
+            // ===== Rider GPS API =====
+            Route::prefix('rider/gps')->group(function () {
+                Route::post('/update', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'updateLocation']);
+                Route::post('/lost', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'reportGpsLost']);
+                Route::post('/confirm-off', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'confirmGpsOff']);
+                Route::post('/resume', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'resumeGps']);
+                Route::get('/customer/{jobId}', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'getCustomerLocation']);
+                Route::get('/tracking/{jobId}', [\App\Http\Controllers\Api\V1\RiderGpsController::class, 'getTrackingInfo']);
+            });
         });
     });
 });
@@ -1166,6 +1176,16 @@ Route::middleware(['web'])->prefix('games/snake-io')->name('api.games.snake-io.'
     Route::get('/get-skin-preference', [$controller, 'getSkinPreference'])
         ->middleware('auth:web')
         ->name('get-skin-preference');
+});
+
+// ✅ 8 Ball Pool Game API - wallet, betting, save result
+Route::middleware(['web'])->prefix('games/8ball-pool')->name('api.games.8ball-pool.')->group(function () {
+    $controller = \App\Http\Controllers\PoolGameController::class;
+
+    Route::get('/check-wallet', [$controller, 'checkWallet'])->name('check-wallet');
+    Route::post('/place-bet', [$controller, 'placeBet'])->middleware('auth:web')->name('place-bet');
+    Route::post('/settle-match', [$controller, 'settleMatch'])->middleware('auth:web')->name('settle-match');
+    Route::post('/save-result', [$controller, 'saveResult'])->middleware('auth:web')->name('save-result');
 });
 
 // ✅ Game Configuration API - ดึงค่า config จาก database

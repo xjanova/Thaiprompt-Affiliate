@@ -1,6 +1,6 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'แดชบอร์ด - ตลาดสดไทยพร้อม')
+@section('title', 'แดชบอร์ด - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="space-y-6">
@@ -9,7 +9,7 @@
         <div class="absolute top-0 right-0 -mt-4 -mr-4 w-40 h-40 bg-white opacity-10 rounded-full"></div>
         <div class="absolute bottom-0 left-0 -mb-4 -ml-4 w-32 h-32 bg-white opacity-10 rounded-full"></div>
         <div class="relative z-10">
-            <h1 class="text-3xl font-bold mb-2">ตลาดสดไทยพร้อม</h1>
+            <h1 class="text-3xl font-bold mb-2">ตลาดสดไทยพร๊อม</h1>
             <p class="text-green-100">ภาพรวมระบบจัดการตลาดสดออนไลน์</p>
         </div>
     </div>

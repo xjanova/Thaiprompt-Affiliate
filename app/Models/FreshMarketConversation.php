@@ -120,6 +120,7 @@ class FreshMarketConversation extends Model
         'order_select' => 10,
         'order_quantity' => 10,
         'order_review' => 5,
+        'order_tracking' => 60, // 1 ชม. แล้วกลับ idle อัตโนมัติ
         'rider_register' => 10,
         'rider_category' => 10,
     ];

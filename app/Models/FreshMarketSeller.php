@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
- * FreshMarketSeller - ผู้ขายในตลาดสดไทยพร้อม
+ * FreshMarketSeller - ผู้ขายในตลาดสดไทยพร๊อม
  *
  * @property int $id
  * @property int $user_id

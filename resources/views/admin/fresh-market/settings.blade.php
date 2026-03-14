@@ -1,6 +1,6 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'ตั้งค่าระบบ - ตลาดสดไทยพร้อม')
+@section('title', 'ตั้งค่าระบบ - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="space-y-6" x-data="{
@@ -15,7 +15,7 @@
     {{-- ส่วนหัว --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ตั้งค่าระบบ - ตลาดสดไทยพร้อม</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">ตั้งค่าระบบ - ตลาดสดไทยพร๊อม</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">กำหนดค่าต่างๆ สำหรับระบบตลาดสด</p>
         </div>
         <a href="{{ route('admin.fresh-market.dashboard') }}"
@@ -590,7 +590,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ชื่อแบรนด์</label>
                         <input type="text" name="brand_name"
-                               value="{{ $settings->brand_name ?? 'ตลาดสดไทยพร้อม' }}"
+                               value="{{ $settings->brand_name ?? 'ตลาดสดไทยพร๊อม' }}"
                                class="w-full rounded-xl border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white shadow-sm focus:border-green-500 focus:ring-green-500">
                     </div>
                     <div>

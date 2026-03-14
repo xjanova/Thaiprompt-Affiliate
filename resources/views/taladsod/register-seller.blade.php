@@ -1,11 +1,11 @@
 {{--
-    สมัครเป็นผู้ขาย - ตลาดสดไทยพร้อม
+    สมัครเป็นผู้ขาย - ตลาดสดไทยพร๊อม
 
     ตัวแปรที่ใช้: ไม่มี (หน้า public)
 --}}
 @extends('layouts.taladsod')
 
-@section('title', 'สมัครเป็นผู้ขาย - ตลาดสดไทยพร้อม')
+@section('title', 'สมัครเป็นผู้ขาย - ตลาดสดไทยพร๊อม')
 
 @section('content')
 
@@ -316,9 +316,9 @@
                                    required
                                    class="w-5 h-5 mt-0.5 rounded border-gray-300 dark:border-gray-600 text-green-500 focus:ring-green-500 focus:ring-offset-0">
                             <span class="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
-                                ข้าพเจ้ายอมรับ <a href="#" class="text-green-600 dark:text-green-400 hover:underline font-medium">ข้อกำหนดการให้บริการ</a>
-                                และ <a href="#" class="text-green-600 dark:text-green-400 hover:underline font-medium">นโยบายความเป็นส่วนตัว</a>
-                                ของตลาดสดไทยพร้อม
+                                ข้าพเจ้ายอมรับ <a href="{{ route('page.show', ['slug' => 'terms-of-service']) }}" target="_blank" class="text-green-600 dark:text-green-400 hover:underline font-medium">ข้อกำหนดการให้บริการ</a>
+                                และ <a href="{{ route('page.show', ['slug' => 'privacy-policy']) }}" target="_blank" class="text-green-600 dark:text-green-400 hover:underline font-medium">นโยบายความเป็นส่วนตัว</a>
+                                ของตลาดสดไทยพร๊อม
                             </span>
                         </label>
                     </div>

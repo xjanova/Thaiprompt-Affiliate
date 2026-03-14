@@ -11,7 +11,7 @@ use App\Models\FreshMarketSetting;
 use Illuminate\Http\Request;
 
 /**
- * FreshMarketController - Admin Panel ตลาดสดไทยพร้อม
+ * FreshMarketController - Admin Panel ตลาดสดไทยพร๊อม
  *
  * จัดการ: Dashboard, Settings, Categories, Sellers, Listings, Orders, Commissions
  */

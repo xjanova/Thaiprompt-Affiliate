@@ -1309,7 +1309,7 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackPageView::class,
         ]);
 
-    // LINE Fresh Market Webhook (ตลาดสดไทยพร้อม - LINE OA แยกจากดูดวง)
+    // LINE Fresh Market Webhook (ตลาดสดไทยพร๊อม - LINE OA แยกจากดูดวง)
     // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook
     Route::post('/line/taladsod', [\App\Http\Controllers\FreshMarketWebhookController::class, 'handle'])
         ->name('line.taladsod')

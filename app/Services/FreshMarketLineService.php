@@ -146,7 +146,7 @@ class FreshMarketLineService
     /**
      * ส่ง Flex Message
      */
-    public function sendFlexMessage(string $userId, array $flexContent, string $altText = 'ตลาดสดไทยพร้อม'): bool
+    public function sendFlexMessage(string $userId, array $flexContent, string $altText = 'ตลาดสดไทยพร๊อม'): bool
     {
         return $this->pushMessage($userId, [
             [
@@ -160,7 +160,7 @@ class FreshMarketLineService
     /**
      * ตอบกลับด้วย Flex Message
      */
-    public function replyFlexMessage(string $replyToken, array $flexContent, string $altText = 'ตลาดสดไทยพร้อม'): bool
+    public function replyFlexMessage(string $replyToken, array $flexContent, string $altText = 'ตลาดสดไทยพร๊อม'): bool
     {
         return $this->replyMessage($replyToken, [
             [
@@ -180,34 +180,41 @@ class FreshMarketLineService
     {
         $cacheKey = "fm_line_profile:{$userId}";
 
-        return Cache::remember($cacheKey, 86400, function () use ($userId) {
-            try {
-                $response = Http::withHeaders([
-                    'Authorization' => "Bearer {$this->channelAccessToken}",
-                ])
-                    ->connectTimeout(3)
-                    ->timeout(5)
-                    ->get(self::API_ENDPOINT."/profile/{$userId}");
+        // ตรวจสอบ cache ก่อน — ไม่ cache null เพื่อให้ retry ได้
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached;
+        }
 
-                if ($response->successful()) {
-                    return $response->json();
-                }
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => "Bearer {$this->channelAccessToken}",
+            ])
+                ->connectTimeout(3)
+                ->timeout(5)
+                ->get(self::API_ENDPOINT."/profile/{$userId}");
 
-                Log::warning('FreshMarketLine: ไม่สามารถดึงโปรไฟล์ได้', [
-                    'user_id' => $userId,
-                    'status' => $response->status(),
-                ]);
+            if ($response->successful()) {
+                $profile = $response->json();
+                Cache::put($cacheKey, $profile, 86400); // cache 24 ชม.
 
-                return null;
-            } catch (\Exception $e) {
-                Log::error('FreshMarketLine: Error ดึงโปรไฟล์', [
-                    'error' => $e->getMessage(),
-                    'user_id' => $userId,
-                ]);
-
-                return null;
+                return $profile;
             }
-        });
+
+            Log::warning('FreshMarketLine: ไม่สามารถดึงโปรไฟล์ได้', [
+                'user_id' => $userId,
+                'status' => $response->status(),
+            ]);
+
+            return null;
+        } catch (\Exception $e) {
+            Log::error('FreshMarketLine: Error ดึงโปรไฟล์', [
+                'error' => $e->getMessage(),
+                'user_id' => $userId,
+            ]);
+
+            return null;
+        }
     }
 
     // ===== Content API =====
@@ -220,7 +227,7 @@ class FreshMarketLineService
         try {
             $response = Http::withHeaders([
                 'Authorization' => "Bearer {$this->channelAccessToken}",
-            ])->get(self::DATA_API_ENDPOINT."/message/{$messageId}/content");
+            ])->connectTimeout(5)->timeout(15)->get(self::DATA_API_ENDPOINT."/message/{$messageId}/content");
 
             if ($response->successful()) {
                 return $response->body();
@@ -250,54 +257,75 @@ class FreshMarketLineService
     public function buildListingFlex(array $listing): array
     {
         $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $distance = $listing['distance'] ?? '?';
+        $shopName = mb_substr($listing['shop_name'] ?? 'ร้านค้า', 0, 20);
+        $title = mb_substr($listing['title'] ?? 'สินค้า', 0, 30);
+        $priceText = '฿' . number_format($listing['price'] ?? 0, 0) . '/' . ($listing['unit'] ?? 'ชิ้น');
 
         return [
             'type' => 'bubble',
+            'size' => 'kilo',
             'hero' => [
-                'type' => 'image',
-                'url' => $listing['image'] ?? 'https://via.placeholder.com/400x300',
-                'size' => 'full',
-                'aspectRatio' => '4:3',
-                'aspectMode' => 'cover',
-            ],
-            'body' => [
                 'type' => 'box',
                 'layout' => 'vertical',
                 'contents' => [
                     [
-                        'type' => 'text',
-                        'text' => $listing['title'] ?? 'สินค้า',
-                        'weight' => 'bold',
-                        'size' => 'lg',
-                        'wrap' => true,
+                        'type' => 'image',
+                        'url' => $listing['image'] ?? url('/images/fresh-market/default-product.png'),
+                        'size' => 'full',
+                        'aspectRatio' => '4:3',
+                        'aspectMode' => 'cover',
                     ],
-                    [
-                        'type' => 'text',
-                        'text' => '฿'.number_format($listing['price'] ?? 0, 0).' / '.($listing['unit'] ?? 'ชิ้น'),
-                        'color' => $primaryColor,
-                        'weight' => 'bold',
-                        'size' => 'xl',
-                        'margin' => 'sm',
-                    ],
+                    // Badge ระยะทาง (ซ้อนทับรูป)
                     [
                         'type' => 'box',
                         'layout' => 'horizontal',
-                        'margin' => 'md',
+                        'position' => 'absolute',
+                        'offsetTop' => '8px',
+                        'offsetEnd' => '8px',
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '📍 '.($listing['distance'] ?? '?').' กม.',
-                                'size' => 'sm',
-                                'color' => '#888888',
-                            ],
-                            [
-                                'type' => 'text',
-                                'text' => '🏪 '.($listing['shop_name'] ?? 'ร้านค้า'),
-                                'size' => 'sm',
-                                'color' => '#888888',
-                                'align' => 'end',
+                                'text' => "📍 {$distance} กม.",
+                                'size' => 'xxs',
+                                'color' => '#FFFFFF',
                             ],
                         ],
+                        'backgroundColor' => '#00000088',
+                        'cornerRadius' => '12px',
+                        'paddingAll' => '4px',
+                        'paddingStart' => '8px',
+                        'paddingEnd' => '8px',
+                    ],
+                ],
+                'paddingAll' => '0px',
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'paddingAll' => '12px',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $title,
+                        'weight' => 'bold',
+                        'size' => 'md',
+                        'wrap' => true,
+                        'maxLines' => 2,
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => $priceText,
+                        'color' => $primaryColor,
+                        'weight' => 'bold',
+                        'size' => 'lg',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "🏪 {$shopName}",
+                        'size' => 'xs',
+                        'color' => '#888888',
                     ],
                 ],
             ],
@@ -305,24 +333,28 @@ class FreshMarketLineService
                 'type' => 'box',
                 'layout' => 'horizontal',
                 'spacing' => 'sm',
+                'paddingAll' => '10px',
                 'contents' => [
                     [
                         'type' => 'button',
                         'style' => 'primary',
                         'color' => $primaryColor,
+                        'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
                             'label' => '🛒 สั่งซื้อ',
-                            'data' => 'action=order&listing_id='.($listing['id'] ?? 0),
+                            'data' => 'action=order&listing_id=' . ($listing['id'] ?? 0),
+                            'displayText' => 'สั่งซื้อ ' . $title,
                         ],
                     ],
                     [
                         'type' => 'button',
                         'style' => 'secondary',
+                        'height' => 'sm',
                         'action' => [
                             'type' => 'uri',
                             'label' => '📋 ดูเพิ่ม',
-                            'uri' => url('/taladsod/listing/'.($listing['slug'] ?? '')),
+                            'uri' => url('/taladsod/listing/' . ($listing['slug'] ?? '')),
                         ],
                     ],
                 ],
@@ -337,14 +369,20 @@ class FreshMarketLineService
     {
         $bubbles = [];
 
-        foreach (array_slice($listings, 0, 10) as $listing) {
+        // จำกัด 5 bubbles เพื่อไม่เกิน LINE 50KB limit (kilo size ~8KB/bubble)
+        foreach (array_slice($listings, 0, 5) as $listing) {
             $bubbles[] = $this->buildListingFlex($listing);
         }
 
-        return [
-            'type' => 'carousel',
-            'contents' => $bubbles,
-        ];
+        // ตรวจสอบขนาด — ถ้าเกิน 50KB ลด bubble ลง
+        $carousel = ['type' => 'carousel', 'contents' => $bubbles];
+        $size = strlen(json_encode($carousel));
+        if ($size > 49000) {
+            $carousel['contents'] = array_slice($bubbles, 0, 3);
+            Log::warning('FreshMarketLine: Carousel ใหญ่เกิน 50KB ลดเหลือ 3 bubbles', ['size' => $size]);
+        }
+
+        return $carousel;
     }
 
     /**
@@ -353,6 +391,43 @@ class FreshMarketLineService
     public function buildOrderSummaryFlex(array $order): array
     {
         $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $title = $order['title'] ?? 'สินค้า';
+        $quantity = $order['quantity'] ?? 1;
+        $unitPrice = $order['unit_price'] ?? 0;
+        $subtotal = $order['subtotal'] ?? ($unitPrice * $quantity);
+        $deliveryFee = $order['delivery_fee'] ?? 0;
+        $total = $order['total'] ?? ($subtotal + $deliveryFee);
+        $deliveryLabel = $order['delivery_type_label'] ?? '🏪 นัดรับเอง';
+        $unit = $order['unit'] ?? 'ชิ้น';
+
+        // สร้างรายละเอียดราคา
+        $priceRows = [
+            $this->buildFlexRow("📦 {$title}", "x{$quantity} {$unit}"),
+            $this->buildFlexRow('💵 ราคา/หน่วย', '฿' . number_format($unitPrice, 0)),
+            $this->buildFlexRow('🛒 ค่าสินค้า', '฿' . number_format($subtotal, 0)),
+        ];
+
+        if ($deliveryFee > 0) {
+            $priceRows[] = $this->buildFlexRow('🚚 ค่าจัดส่ง', '฿' . number_format($deliveryFee, 0));
+        }
+
+        $priceRows[] = ['type' => 'separator', 'margin' => 'md'];
+        $priceRows[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'md',
+            'contents' => [
+                ['type' => 'text', 'text' => '💰 รวมทั้งหมด', 'weight' => 'bold', 'size' => 'md', 'flex' => 0],
+                ['type' => 'text', 'text' => '฿' . number_format($total, 0), 'weight' => 'bold', 'size' => 'lg', 'color' => $primaryColor, 'align' => 'end'],
+            ],
+        ];
+        $priceRows[] = [
+            'type' => 'text',
+            'text' => "📍 {$deliveryLabel}",
+            'size' => 'sm',
+            'color' => '#888888',
+            'margin' => 'md',
+        ];
 
         return [
             'type' => 'bubble',
@@ -364,35 +439,16 @@ class FreshMarketLineService
                         'type' => 'text',
                         'text' => '🧾 สรุปคำสั่งซื้อ',
                         'weight' => 'bold',
-                        'size' => 'lg',
+                        'size' => 'xl',
+                        'color' => '#333333',
                     ],
                     ['type' => 'separator', 'margin' => 'md'],
                     [
                         'type' => 'box',
                         'layout' => 'vertical',
-                        'margin' => 'md',
-                        'contents' => [
-                            [
-                                'type' => 'text',
-                                'text' => ($order['title'] ?? 'สินค้า').' x'.($order['quantity'] ?? 1),
-                                'size' => 'md',
-                            ],
-                            [
-                                'type' => 'text',
-                                'text' => '💰 รวม ฿'.number_format($order['total'] ?? 0, 0),
-                                'color' => $primaryColor,
-                                'weight' => 'bold',
-                                'size' => 'lg',
-                                'margin' => 'sm',
-                            ],
-                            [
-                                'type' => 'text',
-                                'text' => '📍 '.($order['delivery_type_label'] ?? 'นัดรับ'),
-                                'size' => 'sm',
-                                'color' => '#888888',
-                                'margin' => 'sm',
-                            ],
-                        ],
+                        'margin' => 'lg',
+                        'spacing' => 'sm',
+                        'contents' => $priceRows,
                     ],
                 ],
             ],
@@ -405,19 +461,117 @@ class FreshMarketLineService
                         'type' => 'button',
                         'style' => 'primary',
                         'color' => $primaryColor,
+                        'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
-                            'label' => '✅ ยืนยัน',
-                            'data' => 'action=confirm_order&order_id='.($order['id'] ?? 0),
+                            'label' => '✅ ยืนยันสั่งซื้อ',
+                            'data' => 'action=confirm_order&order_id=' . ($order['id'] ?? 0),
+                            'displayText' => 'ยืนยัน',
                         ],
                     ],
                     [
                         'type' => 'button',
                         'style' => 'secondary',
+                        'height' => 'sm',
                         'action' => [
                             'type' => 'postback',
                             'label' => '❌ ยกเลิก',
-                            'data' => 'action=cancel_order&order_id='.($order['id'] ?? 0),
+                            'data' => 'action=cancel_order&order_id=' . ($order['id'] ?? 0),
+                            'displayText' => 'ยกเลิก',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex row แสดงราคา (label + value)
+     */
+    protected function buildFlexRow(string $label, string $value): array
+    {
+        return [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'margin' => 'sm',
+            'contents' => [
+                ['type' => 'text', 'text' => $label, 'size' => 'sm', 'color' => '#555555', 'flex' => 0],
+                ['type' => 'text', 'text' => $value, 'size' => 'sm', 'color' => '#333333', 'align' => 'end'],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message แจ้งสั่งซื้อสำเร็จ (สวยงาม พร้อมปุ่มติดตาม)
+     */
+    public function buildOrderConfirmationFlex(array $order): array
+    {
+        $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $orderNumber = $order['order_number'] ?? 'TSD-NEW';
+        $title = $order['title'] ?? 'สินค้า';
+        $quantity = $order['quantity'] ?? 1;
+        $unit = $order['unit'] ?? 'ชิ้น';
+        $total = $order['total'] ?? 0;
+        $deliveryLabel = $order['delivery_type_label'] ?? '🏪 นัดรับเอง';
+
+        return [
+            'type' => 'bubble',
+            'styles' => [
+                'header' => ['backgroundColor' => $primaryColor],
+            ],
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    ['type' => 'text', 'text' => '✅ สั่งซื้อสำเร็จ!', 'color' => '#FFFFFF', 'weight' => 'bold', 'size' => 'lg'],
+                    ['type' => 'text', 'text' => "หมายเลข: {$orderNumber}", 'color' => '#FFFFFFCC', 'size' => 'sm', 'margin' => 'sm'],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'contents' => [
+                    $this->buildFlexRow("📦 {$title}", "x{$quantity} {$unit}"),
+                    $this->buildFlexRow('💰 ยอดรวม', '฿' . number_format($total, 0)),
+                    $this->buildFlexRow('📍 วิธีรับ', $deliveryLabel),
+                    ['type' => 'separator', 'margin' => 'md'],
+                    [
+                        'type' => 'text',
+                        'text' => '⏳ รอผู้ขายรับออเดอร์ค่ะ',
+                        'size' => 'sm',
+                        'color' => '#FF8C00',
+                        'margin' => 'md',
+                        'weight' => 'bold',
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '📦 เช็คสถานะออเดอร์',
+                            'data' => 'action=track_order&order_id=' . ($order['id'] ?? 0),
+                            'displayText' => 'สถานะ',
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '🛒 สั่งเพิ่ม',
+                            'data' => 'action=menu&choice=buy',
+                            'displayText' => 'อยากซื้อ',
                         ],
                     ],
                 ],
@@ -654,8 +808,8 @@ class FreshMarketLineService
                 ->post(self::API_ENDPOINT.$path, $data);
 
             if (! $response->successful()) {
-                $body = $response->json();
-                $errorMsg = $body['message'] ?? $response->body();
+                $body = $response->json() ?? [];
+                $errorMsg = $body['message'] ?? mb_substr($response->body(), 0, 500);
                 $this->lastError = "LINE API HTTP {$response->status()}: {$errorMsg}";
 
                 Log::warning('FreshMarketLine: API call ล้มเหลว', [

@@ -10,11 +10,12 @@ use App\Models\FreshMarketSeller;
 use App\Services\FreshMarketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Fresh Market API Controller
  *
- * REST API สำหรับระบบตลาดสดไทยพร้อม
+ * REST API สำหรับระบบตลาดสดไทยพร๊อม
  * ใช้สำหรับ mobile app หรือ external integrations
  */
 class FreshMarketApiController extends Controller
@@ -427,7 +428,11 @@ class FreshMarketApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'อัพเดทสินค้าสำเร็จ',
-            'data' => $listing->fresh(),
+            'data' => $listing->fresh()->only([
+                'id', 'title', 'description', 'price', 'unit',
+                'quantity_available', 'main_image_url', 'is_organic',
+                'is_available', 'freshness_level', 'updated_at',
+            ]),
         ]);
     }
 
@@ -481,9 +486,15 @@ class FreshMarketApiController extends Controller
                 ],
             ], 201);
         } catch (\Exception $e) {
+            Log::error('FreshMarketAPI: สร้าง order ล้มเหลว', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id(),
+                'listing_id' => $validated['listing_id'],
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาด: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง',
             ], 500);
         }
     }
@@ -537,7 +548,7 @@ class FreshMarketApiController extends Controller
     {
         $order = FreshMarketOrder::where('id', $id)
             ->where('buyer_id', auth()->id())
-            ->with(['seller', 'listing', 'riderJob'])
+            ->with(['seller', 'listing', 'riderJob.rider'])
             ->first();
 
         if (!$order) {
@@ -618,6 +629,24 @@ class FreshMarketApiController extends Controller
 
         try {
             $action = $request->get('action');
+            $currentStatus = $order->order_status;
+
+            // ตรวจสอบ transition ที่อนุญาต
+            $validTransitions = [
+                'accept' => ['pending'],
+                'prepare' => ['accepted'],
+                'ready' => ['preparing'],
+                'deliver' => ['ready'],
+                'confirm' => ['delivering', 'ready'],
+                'cancel' => ['pending', 'accepted', 'preparing'],
+            ];
+
+            if (! isset($validTransitions[$action]) || ! in_array($currentStatus, $validTransitions[$action])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "ไม่สามารถ {$action} ได้ สถานะปัจจุบัน: {$currentStatus}",
+                ], 422);
+            }
 
             // ผู้ขาย actions
             if ($isSeller && in_array($action, ['accept', 'prepare', 'ready', 'deliver'])) {
@@ -650,9 +679,15 @@ class FreshMarketApiController extends Controller
                 ],
             ]);
         } catch (\Exception $e) {
+            Log::error('FreshMarketAPI: อัพเดทสถานะ order ล้มเหลว', [
+                'order_id' => $id,
+                'action' => $request->get('action'),
+                'error' => $e->getMessage(),
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการอัพเดทสถานะ',
             ], 400);
         }
     }

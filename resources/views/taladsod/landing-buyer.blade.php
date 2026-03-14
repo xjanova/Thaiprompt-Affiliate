@@ -57,7 +57,7 @@
                     </div>
                     <div class="text-4xl mb-4">📱</div>
                     <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">เพิ่มเพื่อน LINE</h3>
-                    <p class="text-gray-600 dark:text-gray-400">กดปุ่มด้านล่างเพื่อเพิ่มเพื่อน LINE ตลาดสดไทยพร้อม</p>
+                    <p class="text-gray-600 dark:text-gray-400">กดปุ่มด้านล่างเพื่อเพิ่มเพื่อน LINE ตลาดสดไทยพร๊อม</p>
                     {{-- Connector --}}
                     <div class="hidden md:block absolute top-8 left-full w-full h-0.5 bg-green-200 dark:bg-green-800 -translate-x-1/2"></div>
                 </div>
@@ -90,7 +90,7 @@
     <section class="py-16 bg-green-50 dark:bg-gray-900">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-                ทำไมต้องตลาดสด<span class="text-green-600 dark:text-green-400">ไทยพร้อม</span>?
+                ทำไมต้องตลาดสด<span class="text-green-600 dark:text-green-400">ไทยพร๊อม</span>?
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -135,7 +135,7 @@
             <div class="text-5xl mb-6">🛍️</div>
             <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">พร้อมช๊อปแล้วหรือยัง?</h2>
             <p class="text-lg text-green-100 mb-8">
-                กดเพิ่มเพื่อน LINE ตลาดสดไทยพร้อม เริ่มช๊อปปิ้งได้ทันที!
+                กดเพิ่มเพื่อน LINE ตลาดสดไทยพร๊อม เริ่มช๊อปปิ้งได้ทันที!
             </p>
             <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}"
                target="_blank"

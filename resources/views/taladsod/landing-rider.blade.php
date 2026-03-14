@@ -8,7 +8,7 @@
 
 @extends('layouts.taladsod')
 
-@section('title', 'สมัครเป็นไรเดอร์ & ช่างบริการ - ตลาดสดไทยพร้อม')
+@section('title', 'สมัครเป็นไรเดอร์ & ช่างบริการ - ตลาดสดไทยพร๊อม')
 
 @section('meta_description', 'สมัครเป็นไรเดอร์ส่งของ หรือช่างบริการ (ประปา แอร์ เสริมสวย หมอนวด) สร้างรายได้ทุกวัน เลือกเวลาทำงานเอง')
 
@@ -96,7 +96,7 @@
                         <div class="space-y-4">
                             <div class="flex items-start gap-3">
                                 <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
-                                <p class="text-gray-700 dark:text-gray-300">เพิ่มเพื่อน LINE ตลาดสดไทยพร้อม</p>
+                                <p class="text-gray-700 dark:text-gray-300">เพิ่มเพื่อน LINE ตลาดสดไทยพร๊อม</p>
                             </div>
                             <div class="flex items-start gap-3">
                                 <div class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
@@ -157,7 +157,7 @@
                         <div class="space-y-4">
                             <div class="flex items-start gap-3">
                                 <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">1</div>
-                                <p class="text-gray-700 dark:text-gray-300">เพิ่มเพื่อน LINE ตลาดสดไทยพร้อม</p>
+                                <p class="text-gray-700 dark:text-gray-300">เพิ่มเพื่อน LINE ตลาดสดไทยพร๊อม</p>
                             </div>
                             <div class="flex items-start gap-3">
                                 <div class="w-8 h-8 bg-indigo-600 text-white rounded-full flex items-center justify-center flex-shrink-0 text-sm font-bold">2</div>
@@ -188,7 +188,7 @@
     <section class="py-16 bg-blue-50 dark:bg-gray-900">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-                ทำไมเลือก<span class="text-blue-600 dark:text-blue-400">ไทยพร้อม</span>?
+                ทำไมเลือก<span class="text-blue-600 dark:text-blue-400">ไทยพร๊อม</span>?
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

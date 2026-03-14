@@ -271,7 +271,7 @@
 </section>
 
 {{-- ================================================================
-    FRESH MARKET SECTION - ตลาดสดไทยพร้อม (ซื้อ ขาย ส่ง บริการ)
+    FRESH MARKET SECTION - ตลาดสดไทยพร๊อม (ซื้อ ขาย ส่ง บริการ)
 ================================================================ --}}
 <section id="fresh-market" class="py-20 lg:py-28 relative overflow-hidden z-10"
          x-data="{ shown: false }"
@@ -292,7 +292,7 @@
                 <span class="text-sm font-medium text-green-300">Fresh Market Platform</span>
             </div>
             <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                ตลาดสด<span class="text-green-400">ไทยพร้อม</span>
+                ตลาดสด<span class="text-green-400">ไทยพร๊อม</span>
             </h2>
             <p class="text-lg text-slate-400 max-w-2xl mx-auto">
                 ซื้อ ขาย ส่ง บริการ — ครบจบในที่เดียว ผ่าน LINE OA สมัครง่าย ใช้ได้ทันที
@@ -405,7 +405,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
                 </svg>
-                เข้าสู่ตลาดสดไทยพร้อม
+                เข้าสู่ตลาดสดไทยพร๊อม
             </a>
         </div>
     </div>

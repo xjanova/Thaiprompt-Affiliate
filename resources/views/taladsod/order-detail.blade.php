@@ -1,5 +1,5 @@
 @extends('layouts.taladsod')
-@section('title', 'ออเดอร์ #' . $order->order_number . ' - ตลาดสดไทยพร้อม')
+@section('title', 'ออเดอร์ #' . $order->order_number . ' - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="max-w-3xl mx-auto px-4 py-8">

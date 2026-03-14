@@ -1,5 +1,5 @@
 {{--
-    หน้าแรก ตลาดสดไทยพร้อม
+    หน้าแรก ตลาดสดไทยพร๊อม
 
     ตัวแปรที่ใช้:
     - $settings: การตั้งค่าตลาดสด
@@ -144,7 +144,7 @@
                 <a href="{{ route('taladsod.search', ['category' => $category->slug]) }}"
                    class="flex-shrink-0 w-28 sm:w-32 group">
                     <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border {{ $category->color ?? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800' }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-4xl sm:text-5xl">{!! $category->icon ?? '&#x1F4E6;' !!}</span>
+                        <span class="text-4xl sm:text-5xl">{!! e($category->icon ?? '📦') !!}</span>
                         <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $category->name }}</span>
                     </div>
                 </a>

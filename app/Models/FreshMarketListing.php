@@ -265,6 +265,9 @@ class FreshMarketListing extends Model
         $this->decrement('quantity_available', $quantity);
         $this->increment('order_count');
 
+        // refresh เพื่อให้ได้ค่าล่าสุดหลัง decrement
+        $this->refresh();
+
         if ($this->quantity_available <= 0) {
             $this->update(['status' => 'sold_out', 'is_available' => false]);
         }

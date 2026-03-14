@@ -1,5 +1,5 @@
 {{--
-    Layout หลักของตลาดสดไทยพร้อม (Thai Fresh Market)
+    Layout หลักของตลาดสดไทยพร๊อม (Thai Fresh Market)
 
     ธีมสีหลัก:
     - เขียว (#22C55E) - ปุ่มหลักและสีเด่น
@@ -20,7 +20,7 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="theme-color" content="#22C55E">
 
-    <title>@yield('title', 'ตลาดสดไทยพร้อม') - {{ config('app.name', 'ไทยพร้อม') }}</title>
+    <title>@yield('title', 'ตลาดสดไทยพร๊อม') - {{ config('app.name', 'ไทยพร๊อม') }}</title>
 
     {{-- Meta Tags สำหรับ SEO --}}
     <meta name="description" content="@yield('meta_description', 'ตลาดสดออนไลน์ ค้นหาอาหารสดจากผู้ขายใกล้บ้านคุณ ผักสด ผลไม้ เนื้อสัตว์ อาหารทะเล')">
@@ -98,7 +98,7 @@
                     <a href="{{ route('taladsod.home') }}" class="flex items-center gap-2 group">
                         <span class="text-2xl group-hover:animate-swing transition-transform">&#x1F3EA;</span>
                         <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
-                            ตลาดสดไทยพร้อม
+                            ตลาดสดไทยพร๊อม
                         </span>
                     </a>
                 </div>
@@ -346,19 +346,19 @@
                 <div class="lg:col-span-1">
                     <div class="flex items-center gap-2 mb-4">
                         <span class="text-2xl">&#x1F3EA;</span>
-                        <span class="text-lg font-bold text-white">ตลาดสดไทยพร้อม</span>
+                        <span class="text-lg font-bold text-white">ตลาดสดไทยพร๊อม</span>
                     </div>
                     <p class="text-sm text-gray-400 leading-relaxed mb-4">
                         แพลตฟอร์มตลาดสดออนไลน์ เชื่อมต่อผู้ซื้อกับผู้ขายในละแวกใกล้เคียง สินค้าสดใหม่ทุกวัน ส่งตรงจากชาวสวนและเกษตรกรไทย
                     </p>
                     <div class="flex items-center gap-3">
-                        <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
+                        <a href="{{ config('services.social.facebook_url', 'https://facebook.com/thaiprompt') }}" target="_blank" rel="noopener" aria-label="Facebook" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
                             <i class="fab fa-facebook-f text-sm"></i>
                         </a>
-                        <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
+                        <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener" aria-label="LINE" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
                             <i class="fab fa-line text-sm"></i>
                         </a>
-                        <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
+                        <a href="{{ config('services.social.instagram_url', 'https://instagram.com/thaiprompt') }}" target="_blank" rel="noopener" aria-label="Instagram" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-green-500 flex items-center justify-center transition-colors">
                             <i class="fab fa-instagram text-sm"></i>
                         </a>
                     </div>
@@ -384,7 +384,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="#" class="hover:text-green-400 transition-colors flex items-center gap-2">
+                            <a href="{{ route('taladsod.landing.buyer') }}" class="hover:text-green-400 transition-colors flex items-center gap-2">
                                 <i class="fas fa-chevron-right text-xs text-green-500"></i> เกี่ยวกับเรา
                             </a>
                         </li>
@@ -426,7 +426,7 @@
                             <i class="fab fa-line text-green-400 mt-0.5"></i>
                             <div>
                                 <div class="text-gray-400">LINE Official</div>
-                                <a href="#" class="text-green-400 hover:text-green-300 font-medium">@taladsod-thaiprompt</a>
+                                <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener" class="text-green-400 hover:text-green-300 font-medium">@taladsod-thaiprompt</a>
                             </div>
                         </li>
                         <li class="flex items-start gap-2">
@@ -440,13 +440,13 @@
                             <i class="fas fa-phone text-green-400 mt-0.5"></i>
                             <div>
                                 <div class="text-gray-400">โทรศัพท์</div>
-                                <span class="font-medium">02-XXX-XXXX</span>
+                                <span class="font-medium">{{ config('app.support_phone', '') }}</span>
                             </div>
                         </li>
                     </ul>
 
                     {{-- ปุ่มเพิ่มเพื่อน LINE --}}
-                    <a href="#"
+                    <a href="{{ config('services.line.fresh_market_add_friend_url', env('LINE_FRESH_MARKET_ADD_FRIEND_URL', '#')) }}" target="_blank" rel="noopener"
                        class="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition-colors">
                         <i class="fab fa-line text-lg"></i> เพิ่มเพื่อน LINE
                     </a>
@@ -456,11 +456,11 @@
             {{-- Copyright --}}
             <div class="border-t border-gray-800 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <p class="text-sm text-gray-500">
-                    &copy; {{ date('Y') }} ตลาดสดไทยพร้อม สงวนลิขสิทธิ์ทุกประการ
+                    &copy; {{ date('Y') }} ตลาดสดไทยพร๊อม สงวนลิขสิทธิ์ทุกประการ
                 </p>
                 <div class="flex items-center gap-4 text-sm text-gray-500">
-                    <a href="#" class="hover:text-green-400 transition-colors">นโยบายความเป็นส่วนตัว</a>
-                    <a href="#" class="hover:text-green-400 transition-colors">ข้อกำหนดการใช้งาน</a>
+                    <a href="{{ route('page.show', ['slug' => 'privacy-policy']) }}" class="hover:text-green-400 transition-colors">นโยบายความเป็นส่วนตัว</a>
+                    <a href="{{ route('page.show', ['slug' => 'terms-of-service']) }}" class="hover:text-green-400 transition-colors">ข้อกำหนดการใช้งาน</a>
                 </div>
             </div>
         </div>
@@ -474,6 +474,7 @@
                 x-cloak
                 x-transition
                 @click="window.scrollTo({ top: 0, behavior: 'smooth' })"
+                aria-label="กลับด้านบน"
                 class="w-12 h-12 bg-green-500 hover:bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center transition-all hover:scale-110">
             <i class="fas fa-chevron-up"></i>
         </button>

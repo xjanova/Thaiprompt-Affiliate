@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * FreshMarketSetting - ตั้งค่าระบบตลาดสดไทยพร้อม
+ * FreshMarketSetting - ตั้งค่าระบบตลาดสดไทยพร๊อม
  *
  * @property int $id
  * @property string|null $line_channel_id
@@ -61,10 +61,16 @@ class FreshMarketSetting extends Model
      */
     protected static ?self $cachedInstance = null;
 
-    protected $fillable = [
-        'line_channel_id',
+    /**
+     * ฟิลด์ credentials ต้อง set ผ่าน method โดยตรง ไม่ให้ mass-assign
+     */
+    protected $guarded = [
         'line_channel_secret',
         'line_channel_access_token',
+    ];
+
+    protected $fillable = [
+        'line_channel_id',
         'ai_provider',
         'ai_model',
         'use_global_ai_settings',
@@ -110,6 +116,11 @@ class FreshMarketSetting extends Model
         'ai_can_access_sellers',
         'ai_can_access_pricing',
         'ai_max_context_messages',
+        // GPS Tracking Settings
+        'gps_update_interval_seconds',
+        'gps_lost_timeout_seconds',
+        'tracking_link_expiry_hours',
+        'gps_warning_max',
     ];
 
     /**
@@ -153,7 +164,21 @@ class FreshMarketSetting extends Model
         'ai_can_access_sellers' => 'boolean',
         'ai_can_access_pricing' => 'boolean',
         'ai_max_context_messages' => 'integer',
+        // GPS Tracking Settings
+        'gps_update_interval_seconds' => 'integer',
+        'gps_lost_timeout_seconds' => 'integer',
+        'tracking_link_expiry_hours' => 'integer',
+        'gps_warning_max' => 'integer',
     ];
+
+    /**
+     * ล้าง cache อัตโนมัติเมื่อมีการ save/update
+     */
+    protected static function booted(): void
+    {
+        static::saved(fn () => static::clearCache());
+        static::updated(fn () => static::clearCache());
+    }
 
     /**
      * ดึง settings แบบ singleton (cache ภายใน request)
@@ -168,10 +193,10 @@ class FreshMarketSetting extends Model
 
         if (! $settings) {
             $settings = self::create([
-                'brand_name' => 'ตลาดสดไทยพร้อม',
+                'brand_name' => 'ตลาดสดไทยพร๊อม',
                 'ai_provider' => 'groq',
                 'ai_model' => 'llama-3.3-70b-versatile',
-                'welcome_message' => 'สวัสดีค่ะ! ยินดีต้อนรับสู่ ตลาดสดไทยพร้อม 🌿 พี่ตลาดพร้อมช่วยคุณซื้อ-ขายสินค้าสดๆ ใกล้บ้านค่ะ',
+                'welcome_message' => 'สวัสดีค่ะ! ยินดีต้อนรับสู่ ตลาดสดไทยพร๊อม 🌿 พี่ตลาดพร้อมช่วยคุณซื้อ-ขายสินค้าสดๆ ใกล้บ้านค่ะ',
             ]);
         }
 

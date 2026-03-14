@@ -6,7 +6,7 @@
 
 @extends('layouts.admin')
 
-@section('title', 'Rich Menu Editor - ไทยพร้อม OA')
+@section('title', 'Rich Menu Editor - ไทยพร๊อม OA')
 
 @section('content')
 <div class="container mx-auto px-4 py-8" x-data="thaipromptRichMenuEditor()" x-init="loadConfig()">
@@ -14,7 +14,7 @@
     <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
         <div>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-                📱 Rich Menu Editor — ไทยพร้อม OA
+                📱 Rich Menu Editor — ไทยพร๊อม OA
             </h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">แก้ไขและ Deploy Rich Menu สำหรับ LINE Thaiprompt OA หลัก</p>
         </div>

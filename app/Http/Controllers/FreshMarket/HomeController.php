@@ -14,7 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 /**
- * HomeController - Frontend ตลาดสดไทยพร้อม
+ * HomeController - Frontend ตลาดสดไทยพร๊อม
  *
  * หน้าเว็บสาธารณะ: หน้าแรก, ค้นหา, สินค้า, ผู้ขาย, ออเดอร์, ลงขาย
  */
@@ -341,6 +341,38 @@ class HomeController extends Controller
         $order->load(['seller', 'listing', 'riderJob']);
 
         return view('taladsod.order-detail', compact('order'));
+    }
+
+    /**
+     * สั่งซื้อสินค้าจากหน้ารายละเอียด
+     */
+    public function storeOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'listing_id' => 'required|exists:fresh_market_listings,id',
+            'quantity' => 'required|integer|min:1',
+            'delivery_type' => 'required|in:pickup,rider',
+        ]);
+
+        $listing = FreshMarketListing::active()->inStock()->find($validated['listing_id']);
+
+        if (! $listing) {
+            return back()->with('error', 'สินค้านี้ไม่พร้อมขายแล้ว');
+        }
+
+        if ($listing->quantity_available < $validated['quantity']) {
+            return back()->with('error', 'สินค้าไม่เพียงพอ (เหลือ '.$listing->quantity_available.' '.$listing->unit.')');
+        }
+
+        try {
+            $order = $this->marketService->createOrder(auth()->user(), $listing, $validated);
+
+            return redirect()
+                ->route('taladsod.orders.show', $order)
+                ->with('success', 'สั่งซื้อสำเร็จ! หมายเลข: '.$order->order_number);
+        } catch (\Exception $e) {
+            return back()->with('error', 'เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่');
+        }
     }
 
     /**

@@ -10,7 +10,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Log;
 
 /**
- * FreshMarketWebhookController - LINE Webhook สำหรับตลาดสดไทยพร้อม
+ * FreshMarketWebhookController - LINE Webhook สำหรับตลาดสดไทยพร๊อม
  *
  * รับ Events จาก LINE OA ตลาดสด (แยก OA จากดูดวง)
  * ตาม pattern ของ LineFortuneWebhookController
@@ -72,15 +72,24 @@ class FreshMarketWebhookController extends Controller
         $data = json_decode($body, true);
         $events = $data['events'] ?? [];
 
+        $failedCount = 0;
         foreach ($events as $event) {
             try {
                 $this->handleEvent($event);
             } catch (\Exception $e) {
+                $failedCount++;
                 Log::error('FreshMarketWebhook: Error processing event', [
                     'error' => $e->getMessage(),
                     'event_type' => $event['type'] ?? 'unknown',
+                    'trace' => $e->getTraceAsString(),
                 ]);
             }
+        }
+
+        // LINE จะ retry ถ้า status ≠ 200 — คืน 200 เสมอเพื่อป้องกัน retry ซ้ำ
+        // แต่ log ไว้เพื่อ monitoring
+        if ($failedCount > 0) {
+            Log::warning("FreshMarketWebhook: {$failedCount}/" . count($events) . ' events failed');
         }
 
         return response('OK', 200);
@@ -115,10 +124,12 @@ class FreshMarketWebhookController extends Controller
             return;
         }
 
-        // Flood protection
+        // Flood protection (ใช้ increment เพื่อป้องกัน race condition)
         $floodKey = "fm_flood:{$userId}";
-        $floodCount = (int) cache()->get($floodKey, 0);
-        cache()->put($floodKey, $floodCount + 1, 10);
+        $floodCount = (int) cache()->increment($floodKey);
+        if ($floodCount === 1) {
+            cache()->put($floodKey, 1, now()->addSeconds(10));
+        }
 
         if ($floodCount >= 5) {
             Log::warning('FreshMarketWebhook: Flood detected', ['user_id' => $userId]);
@@ -132,6 +143,7 @@ class FreshMarketWebhookController extends Controller
             return;
         }
 
+        // ดึงโปรไฟล์ (cache อยู่แล้วใน LineService ไม่ต้อง call ทุกครั้ง)
         $extra = [
             'reply_token' => $replyToken,
             'user_profile' => $this->lineService->getUserProfile($userId),

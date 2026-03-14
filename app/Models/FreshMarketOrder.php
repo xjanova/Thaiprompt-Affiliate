@@ -134,12 +134,9 @@ class FreshMarketOrder extends Model
     {
         static::creating(function (self $order) {
             if (empty($order->order_number)) {
-                $order->order_number = 'TSD' . now()->format('ymd') . str_pad(
-                    self::whereDate('created_at', today())->count() + 1,
-                    4,
-                    '0',
-                    STR_PAD_LEFT
-                );
+                // ใช้ random suffix เพื่อป้องกัน race condition แทนการ count
+                $order->order_number = 'TSD' . now()->format('ymd')
+                    . strtoupper(\Illuminate\Support\Str::random(5));
             }
         });
     }

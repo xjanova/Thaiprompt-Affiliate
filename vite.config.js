@@ -18,7 +18,7 @@ export default defineConfig({
                 'resources/js/pos/database.js', // POS IndexedDB
                 'resources/js/pos/sync.js', // POS Sync Service
                 'resources/js/pos/hardware.js', // POS Hardware Integration
-                'resources/js/taladsod/app.js', // ตลาดสดไทยพร้อม - Fresh Market
+                'resources/js/taladsod/app.js', // ตลาดสดไทยพร๊อม - Fresh Market
             ],
             refresh: true,
         }),

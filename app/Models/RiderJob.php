@@ -75,6 +75,12 @@ class RiderJob extends Model
         'signature_image',
         'customer_rating',
         'customer_review',
+        'tracking_token',
+        'tracking_expires_at',
+        'gps_active',
+        'gps_lost_at',
+        'gps_warning_count',
+        'buyer_line_user_id',
     ];
 
     /**
@@ -102,6 +108,10 @@ class RiderJob extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'tracking_expires_at' => 'datetime',
+        'gps_active' => 'boolean',
+        'gps_lost_at' => 'datetime',
+        'gps_warning_count' => 'integer',
     ];
 
     /**
@@ -267,6 +277,7 @@ class RiderJob extends Model
         return match ($this->job_type) {
             'delivery' => 'ส่งของ',
             'food' => 'ส่งอาหาร',
+            'fresh_market' => 'ส่งของตลาดสด',
             'document' => 'ส่งเอกสาร',
             'service' => 'ให้บริการ',
             'pickup' => 'รับของ',
@@ -399,5 +410,60 @@ class RiderJob extends Model
 
         // เปลี่ยนสถานะไรเดอร์เป็น online
         $this->rider->goOnline();
+    }
+
+    // =====================================================
+    // GPS Tracking Methods
+    // =====================================================
+
+    /**
+     * ตรวจสอบว่า tracking token ยังใช้ได้
+     */
+    public function isTrackingValid(): bool
+    {
+        return $this->tracking_token
+            && ($this->tracking_expires_at === null || $this->tracking_expires_at->isFuture());
+    }
+
+    /**
+     * ตรวจสอบว่างานกำลังดำเนินอยู่ (สามารถติดตามได้)
+     */
+    public function isTrackable(): bool
+    {
+        return in_array($this->status, ['accepted', 'picking_up', 'picked_up', 'delivering']);
+    }
+
+    /**
+     * URL สำหรับติดตาม
+     */
+    public function getTrackingUrlAttribute(): ?string
+    {
+        if (!$this->tracking_token || !$this->isTrackingValid()) {
+            return null;
+        }
+        return url('/taladsod/track/' . $this->tracking_token);
+    }
+
+    /**
+     * หยุดงานเพราะ GPS หาย
+     */
+    public function pauseForGpsLoss(): void
+    {
+        $this->update([
+            'gps_active' => false,
+            'gps_lost_at' => now(),
+            'gps_warning_count' => ($this->gps_warning_count ?? 0) + 1,
+        ]);
+    }
+
+    /**
+     * กลับมาทำงานต่อหลัง GPS กลับมา
+     */
+    public function resumeFromGpsLoss(): void
+    {
+        $this->update([
+            'gps_active' => true,
+            'gps_lost_at' => null,
+        ]);
     }
 }

@@ -5,15 +5,20 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Fresh Market Routes (ตลาดสดไทยพร้อม)
+| Fresh Market Routes (ตลาดสดไทยพร๊อม)
 |--------------------------------------------------------------------------
 |
-| เส้นทางทั้งหมดของระบบตลาดสดไทยพร้อม
+| เส้นทางทั้งหมดของระบบตลาดสดไทยพร๊อม
 | URL Prefix: /taladsod
 |
 */
 
 Route::prefix('taladsod')->name('taladsod.')->group(function () {
+
+    // ===== ติดตามไรเดอร์ (ไม่ต้อง login — ใช้ token) =====
+    Route::get('/track/{token}', [\App\Http\Controllers\FreshMarket\RiderTrackingController::class, 'show'])->name('track.show');
+    Route::get('/track/{token}/location', [\App\Http\Controllers\FreshMarket\RiderTrackingController::class, 'getLocation'])->name('track.location');
+    Route::get('/track/{token}/route', [\App\Http\Controllers\FreshMarket\RiderTrackingController::class, 'getRoute'])->name('track.route');
 
     // ===== Landing Pages — Onboarding ก่อนเพิ่มเพื่อน LINE =====
     Route::get('/start/buyer', [HomeController::class, 'landingBuyer'])->name('landing.buyer');
@@ -36,6 +41,7 @@ Route::prefix('taladsod')->name('taladsod.')->group(function () {
         // ออเดอร์ของฉัน
         Route::get('/orders', [HomeController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [HomeController::class, 'orderDetail'])->name('orders.show');
+        Route::post('/orders', [HomeController::class, 'storeOrder'])->name('order.store');
 
         // สมัครเป็นผู้ขาย
         Route::get('/register-seller', [HomeController::class, 'registerSeller'])->name('register-seller');
@@ -50,5 +56,8 @@ Route::prefix('taladsod')->name('taladsod.')->group(function () {
         Route::get('/listings/{listing}/edit', [HomeController::class, 'editListing'])->name('listing.edit');
         Route::put('/listings/{listing}', [HomeController::class, 'updateListing'])->name('listing.update');
         Route::delete('/listings/{listing}', [HomeController::class, 'destroyListing'])->name('listing.destroy');
+
+        // ===== หน้าไรเดอร์ (ต้อง login) =====
+        Route::get('/rider/active-job/{job}', [\App\Http\Controllers\FreshMarket\RiderTrackingController::class, 'riderActiveJob'])->name('rider.active-job');
     });
 });

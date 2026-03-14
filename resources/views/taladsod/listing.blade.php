@@ -1,5 +1,5 @@
 {{--
-    หน้ารายละเอียดสินค้า - ตลาดสดไทยพร้อม
+    หน้ารายละเอียดสินค้า - ตลาดสดไทยพร๊อม
 
     ตัวแปรที่ใช้:
     - $listing: ข้อมูลสินค้า (model)
@@ -7,10 +7,10 @@
 --}}
 @extends('layouts.taladsod')
 
-@section('title', ($listing->title ?? 'รายละเอียดสินค้า') . ' - ตลาดสดไทยพร้อม')
+@section('title', ($listing->title ?? 'รายละเอียดสินค้า') . ' - ตลาดสดไทยพร๊อม')
 
 @section('meta')
-    <meta property="og:title" content="{{ $listing->title ?? 'สินค้า' }} - ตลาดสดไทยพร้อม">
+    <meta property="og:title" content="{{ $listing->title ?? 'สินค้า' }} - ตลาดสดไทยพร๊อม">
     <meta property="og:description" content="{{ Str::limit($listing->description ?? '', 150) }}">
     @if($listing->image_url ?? false)
         <meta property="og:image" content="{{ $listing->image_url }}">
@@ -224,24 +224,73 @@
                 </div>
 
                 {{-- ===== ปุ่มดำเนินการ ===== --}}
-                <div class="space-y-3">
+                <div class="space-y-3" x-data="{ showOrderForm: false, quantity: 1, deliveryType: 'pickup', ordering: false }">
                     {{-- ปุ่มสั่งซื้อ --}}
-                    <button class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2">
-                        &#x1F6D2; สั่งซื้อ
-                    </button>
+                    @auth
+                        <button @click="showOrderForm = !showOrderForm"
+                                class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2">
+                            &#x1F6D2; สั่งซื้อ
+                        </button>
+
+                        {{-- ฟอร์มสั่งซื้อ --}}
+                        <div x-show="showOrderForm" x-transition class="p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">จำนวน</label>
+                                <input type="number" x-model.number="quantity" min="1" max="{{ $listing->quantity_available }}"
+                                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">วิธีรับสินค้า</label>
+                                <select x-model="deliveryType"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+                                    <option value="pickup">รับเอง</option>
+                                    <option value="rider">ส่งโดยไรเดอร์</option>
+                                </select>
+                            </div>
+                            <form method="POST" action="{{ route('taladsod.order.store') }}" @submit="ordering = true">
+                                @csrf
+                                <input type="hidden" name="listing_id" value="{{ $listing->id }}">
+                                <input type="hidden" name="quantity" :value="quantity">
+                                <input type="hidden" name="delivery_type" :value="deliveryType">
+                                <button type="submit" :disabled="ordering"
+                                        class="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-xl transition-all">
+                                    <span x-show="!ordering">&#x2705; ยืนยันสั่งซื้อ &#x0E3F;<span x-text="({{ $listing->price }} * quantity).toLocaleString()"></span></span>
+                                    <span x-show="ordering">กำลังสั่งซื้อ...</span>
+                                </button>
+                            </form>
+                        </div>
+                    @else
+                        <a href="{{ route('login', ['redirect' => url()->current()]) }}"
+                           class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2">
+                            &#x1F6D2; เข้าสู่ระบบเพื่อสั่งซื้อ
+                        </a>
+                    @endauth
 
                     <div class="grid grid-cols-2 gap-3">
                         {{-- ปุ่มแชท LINE --}}
-                        <a href="{{ $listing->seller->line_url ?? '#' }}"
-                           class="py-3 bg-[#06C755] hover:bg-[#05A847] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
-                            &#x1F4AC; แชทผ่าน LINE
-                        </a>
+                        @if($listing->seller->line_url ?? false)
+                            <a href="{{ $listing->seller->line_url }}" target="_blank" rel="noopener"
+                               class="py-3 bg-[#06C755] hover:bg-[#05A847] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                                &#x1F4AC; แชทผ่าน LINE
+                            </a>
+                        @else
+                            <a href="{{ config('services.line.fresh_market_add_friend_url', '#') }}" target="_blank" rel="noopener"
+                               class="py-3 bg-[#06C755] hover:bg-[#05A847] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                                &#x1F4AC; เพิ่มเพื่อน LINE
+                            </a>
+                        @endif
 
                         {{-- ปุ่มโทร --}}
-                        <a href="tel:{{ $listing->seller->phone ?? '' }}"
-                           class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
-                            &#x1F4DE; โทร
-                        </a>
+                        @if($listing->seller->phone ?? false)
+                            <a href="tel:{{ $listing->seller->phone }}"
+                               class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                                &#x1F4DE; โทร
+                            </a>
+                        @else
+                            <span class="py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-medium rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base cursor-not-allowed">
+                                &#x1F4DE; ไม่มีเบอร์โทร
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -67,8 +67,8 @@ class ThaipromptRichMenuService
             $richMenuData = [
                 'size' => ['width' => self::WIDTH, 'height' => self::HEIGHT],
                 'selected' => true,
-                'name' => 'ไทยพร้อม - เมนูหลัก',
-                'chatBarText' => '📱 เมนูไทยพร้อม',
+                'name' => 'ไทยพร๊อม - เมนูหลัก',
+                'chatBarText' => '📱 เมนูไทยพร๊อม',
                 'areas' => $areas,
             ];
 
@@ -102,7 +102,7 @@ class ThaipromptRichMenuService
                 'description' => 'Rich Menu สำหรับ Thaiprompt OA หลัก',
                 'size' => 'full',
                 'selected' => true,
-                'chat_bar_text' => '📱 เมนูไทยพร้อม',
+                'chat_bar_text' => '📱 เมนูไทยพร๊อม',
                 'areas' => $areas,
                 'editor_config' => $config ?? $this->getDefaultEditorConfig(),
                 'editor_mode' => $editorMode,
@@ -134,7 +134,7 @@ class ThaipromptRichMenuService
     }
 
     /**
-     * คืน default editor config สำหรับ Rich Menu 6 ปุ่ม ไทยพร้อม
+     * คืน default editor config สำหรับ Rich Menu 6 ปุ่ม ไทยพร๊อม
      */
     public function getDefaultEditorConfig(): array
     {
@@ -145,7 +145,7 @@ class ThaipromptRichMenuService
                 'bg_gradient_start' => '#0f172a',
                 'bg_gradient_end' => '#1e3a5f',
                 'grid_line_color' => '#334155',
-                'branding_text' => '~~ ไทยพร้อม ~~',
+                'branding_text' => '~~ ไทยพร๊อม ~~',
                 'branding_color' => '#60A5FA',
             ],
             'buttons' => [
@@ -184,7 +184,7 @@ class ThaipromptRichMenuService
                 ],
                 [
                     'label' => 'ดูดวง',
-                    'subtitle' => 'ดูดวงไทยพร้อม',
+                    'subtitle' => 'ดูดวงไทยพร๊อม',
                     'icon' => 'crystal_ball',
                     'text_color' => '#F472B6',
                     'subtitle_color' => '#F9A8D4',

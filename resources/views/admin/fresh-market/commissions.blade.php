@@ -1,13 +1,13 @@
 @extends('layouts.admin-v3')
 
-@section('title', 'รายงานค่าธรรมเนียม - ตลาดสดไทยพร้อม')
+@section('title', 'รายงานค่าธรรมเนียม - ตลาดสดไทยพร๊อม')
 
 @section('content')
 <div class="space-y-6">
     {{-- ส่วนหัว --}}
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">รายงานค่าธรรมเนียม - ตลาดสดไทยพร้อม</h1>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">รายงานค่าธรรมเนียม - ตลาดสดไทยพร๊อม</h1>
             <p class="text-gray-600 dark:text-gray-400 mt-1">สรุปค่าธรรมเนียมแพลตฟอร์ม แคชแบ็ก และคอมมิชชั่น MLM</p>
         </div>
         <a href="{{ route('admin.fresh-market.dashboard') }}"

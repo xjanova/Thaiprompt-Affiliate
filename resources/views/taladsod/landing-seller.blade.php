@@ -8,7 +8,7 @@
 
 @extends('layouts.taladsod')
 
-@section('title', 'เปิดร้านออนไลน์ฟรี - ตลาดสดไทยพร้อม')
+@section('title', 'เปิดร้านออนไลน์ฟรี - ตลาดสดไทยพร๊อม')
 
 @section('meta_description', 'เปิดร้านออนไลน์ฟรี ขายได้ทันที จัดการทุกอย่างผ่าน LINE ไม่ต้องสร้างเว็บ ไม่มีค่าแรกเข้า พร้อม MLM Cashback')
 
@@ -94,7 +94,7 @@
     <section class="py-16 bg-orange-50 dark:bg-gray-900">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-12">
-                ข้อดีของการเปิดร้านกับ<span class="text-orange-600 dark:text-orange-400">ไทยพร้อม</span>
+                ข้อดีของการเปิดร้านกับ<span class="text-orange-600 dark:text-orange-400">ไทยพร๊อม</span>
             </h2>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

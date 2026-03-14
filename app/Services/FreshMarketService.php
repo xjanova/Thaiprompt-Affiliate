@@ -15,7 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
- * FreshMarketService - Core Business Logic ตลาดสดไทยพร้อม
+ * FreshMarketService - Core Business Logic ตลาดสดไทยพร๊อม
  *
  * จัดการ: สินค้า, ออเดอร์, ค้นหา, Escrow, MLM, Cashback, Rider
  */
@@ -342,10 +342,34 @@ class FreshMarketService
                 $order->listing->update(['status' => 'active', 'is_available' => true]);
             }
 
-            // คืนเงิน escrow (ถ้ามี)
+            // คืนเงิน escrow ให้ผู้ซื้อ (ถ้ามี)
             if ($order->escrow_status === 'held') {
-                $order->update(['escrow_status' => 'refunded']);
-                // TODO: เรียก WalletService::refund()
+                try {
+                    $buyerUser = $order->buyer;
+                    if ($buyerUser) {
+                        $walletService = app(WalletService::class);
+                        $wallet = $walletService->getOrCreateWallet($buyerUser);
+                        $walletService->deposit(
+                            $wallet,
+                            $order->total_amount + $order->delivery_fee,
+                            'คืนเงินตลาดสด #'.$order->order_number,
+                            FreshMarketOrder::class,
+                            $order->id
+                        );
+                    }
+
+                    $order->update(['escrow_status' => 'refunded', 'payment_status' => 'refunded']);
+
+                    Log::info('FreshMarket: คืนเงิน escrow สำเร็จ', [
+                        'order_id' => $order->id,
+                        'amount' => $order->total_amount + $order->delivery_fee,
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('FreshMarket: คืนเงิน escrow ล้มเหลว', [
+                        'order_id' => $order->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             Log::info('FreshMarket: ยกเลิก order', [
@@ -508,6 +532,15 @@ class FreshMarketService
                 return null;
             }
 
+            // ตรวจสอบพิกัดผู้ซื้อ
+            if (! $order->buyer_latitude || ! $order->buyer_longitude) {
+                Log::warning('FreshMarket: ไม่มีพิกัดผู้ซื้อ ไม่สามารถเรียก rider', [
+                    'order_id' => $order->id,
+                ]);
+
+                return null;
+            }
+
             $distanceKm = $this->haversineDistance(
                 $seller->latitude, $seller->longitude,
                 $order->buyer_latitude, $order->buyer_longitude
@@ -560,9 +593,9 @@ class FreshMarketService
     {
         $distanceKm = $this->haversineDistance($fromLat, $fromLng, $toLat, $toLng);
 
-        // อัตราค่าจัดส่ง (สามารถปรับใน settings ได้ในอนาคต)
-        $baseFee = 20.0; // ค่าพื้นฐาน
-        $perKmFee = 5.0; // ต่อ กม.
+        // อัตราค่าจัดส่งจาก settings (ใช้ค่าเดียวกับ RiderDispatchService)
+        $baseFee = $this->settings->delivery_base_fee ?? 30.0;
+        $perKmFee = $this->settings->delivery_per_km_fee ?? 10.0;
 
         return round($baseFee + ($distanceKm * $perKmFee), 2);
     }

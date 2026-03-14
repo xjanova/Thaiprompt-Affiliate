@@ -6,7 +6,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * สร้างระบบตลาดสดไทยพร้อม (Fresh Market Marketplace)
+ * สร้างระบบตลาดสดไทยพร๊อม (Fresh Market Marketplace)
  *
  * ตาราง 9 ตาราง:
  * 1. fresh_market_settings - ตั้งค่าระบบ
@@ -24,7 +24,7 @@ return new class extends Migration
     use SafeMigration;
 
     /**
-     * สร้างตารางระบบตลาดสดไทยพร้อม
+     * สร้างตารางระบบตลาดสดไทยพร๊อม
      */
     public function up(): void
     {
@@ -64,7 +64,7 @@ return new class extends Migration
 
             // UI
             $table->string('line_flex_primary_color', 7)->default('#22C55E');
-            $table->string('brand_name')->default('ตลาดสดไทยพร้อม');
+            $table->string('brand_name')->default('ตลาดสดไทยพร๊อม');
             $table->text('welcome_message')->nullable();
 
             $table->timestamps();
@@ -308,8 +308,8 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->nullable();
 
             $table->string('role', 10)->default('buyer')->comment('buyer|seller');
-            $table->string('conversation_state', 30)->default('new')
-                ->comment('new|browsing|searching|listing|ordering|chatting');
+            $table->string('conversation_state', 30)->default('idle')
+                ->comment('idle|search_location|search_browsing|listing_photos|order_quantity|order_review');
 
             // บริบทการค้นหา
             $table->text('last_search_query')->nullable();
@@ -415,7 +415,7 @@ return new class extends Migration
     }
 
     /**
-     * ลบตารางระบบตลาดสดไทยพร้อม (ลบจากตารางลูกไปหาตารางแม่)
+     * ลบตารางระบบตลาดสดไทยพร๊อม (ลบจากตารางลูกไปหาตารางแม่)
      */
     public function down(): void
     {

@@ -4080,7 +4080,7 @@ Route::prefix('sms-gateway')->name('sms-gateway.')->group(function () {
 });
 
 // ============================================
-// ตลาดสดไทยพร้อม (Fresh Market) 🏪
+// ตลาดสดไทยพร๊อม (Fresh Market) 🏪
 // ============================================
 Route::prefix('fresh-market')->name('fresh-market.')->group(function () {
     // แดชบอร์ด

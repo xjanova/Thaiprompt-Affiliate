@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * FreshMarketAIService - บริการ AI สำหรับตลาดสดไทยพร้อม
+ * FreshMarketAIService - บริการ AI สำหรับตลาดสดไทยพร๊อม
  *
  * ใช้ Groq Pool เดียวกับระบบดูดวง (AiApiKeyPoolService)
  * AI ชื่อ "พี่ตลาด" - ผู้ช่วยตลาดสด
@@ -75,6 +75,9 @@ class FreshMarketAIService
      */
     public function generateResponse(string $userMessage, array $conversationHistory = [], array $context = []): array
     {
+        // จำกัดความยาวข้อความเพื่อป้องกัน token bloat
+        $userMessage = mb_substr($userMessage, 0, 1000);
+
         // ✅ เช็ค rate limit ก่อนเรียก AI (แยกบอทตลาดสดเป็นอิสระ)
         if (! LineGatekeeperService::canCallAI('fresh_market')) {
             Log::warning('FreshMarketAI: ถูก throttle โดย Gatekeeper');
@@ -177,7 +180,7 @@ PROMPT;
                 return null;
             }
 
-            $response = preg_replace('/^```json\s*|```$/m', '', $response);
+            $response = preg_replace('/^```[a-z]*\s*|```$/mi', '', $response);
             $data = json_decode(trim($response), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -201,6 +204,13 @@ PROMPT;
      */
     public function parseListingFromChat(array $chatMessages): ?array
     {
+        // ✅ เช็ค rate limit ก่อนเรียก AI
+        if (! LineGatekeeperService::canCallAI('fresh_market')) {
+            Log::warning('FreshMarketAI: parseListingFromChat ถูก throttle');
+
+            return null;
+        }
+
         $systemPrompt = <<<'PROMPT'
 คุณคือระบบแปลงข้อความแชทเป็นข้อมูลสินค้า ให้ตอบเป็น JSON เท่านั้น
 
@@ -229,13 +239,17 @@ PROMPT;
 
         try {
             $result = $this->callAI($messages, 500);
+
+            // ✅ บันทึก AI call สำเร็จ
+            LineGatekeeperService::recordAICall('fresh_market');
+
             $response = trim($result['response']);
 
             if ($response === 'null') {
                 return null;
             }
 
-            $response = preg_replace('/^```json\s*|```$/m', '', $response);
+            $response = preg_replace('/^```[a-z]*\s*|```$/mi', '', $response);
             $data = json_decode(trim($response), true);
 
             if (json_last_error() !== JSON_ERROR_NONE) {
@@ -255,6 +269,11 @@ PROMPT;
      */
     public function parseSearchIntent(string $message): array
     {
+        // ✅ เช็ค rate limit ก่อนเรียก AI
+        if (! LineGatekeeperService::canCallAI('fresh_market')) {
+            return ['query' => $message, 'intent' => 'search'];
+        }
+
         $systemPrompt = <<<'PROMPT'
 จากข้อความผู้ซื้อ สกัด search filters เป็น JSON:
 {
@@ -275,8 +294,11 @@ PROMPT;
                 ['role' => 'user', 'content' => $message],
             ], 300);
 
+            // ✅ บันทึก AI call สำเร็จ
+            LineGatekeeperService::recordAICall('fresh_market');
+
             $response = trim($result['response']);
-            $response = preg_replace('/^```json\s*|```$/m', '', $response);
+            $response = preg_replace('/^```[a-z]*\s*|```$/mi', '', $response);
 
             $data = json_decode(trim($response), true);
 
@@ -299,19 +321,34 @@ PROMPT;
      */
     protected function buildStateAwarePrompt(string $state, array $context = []): string
     {
-        $basePrompt = $this->settings->ai_system_prompt
-            ?? 'คุณคือ "พี่ตลาด" ผู้ช่วย AI ของตลาดสดไทยพร้อม ตอบภาษาไทย สั้นกระชับ ใจดี เป็นกันเอง';
-
-        // === Bot Identity & Personality ===
         $botName = $this->settings->bot_name ?? 'พี่ตลาด';
-        $personality = $this->settings->bot_personality ?? '';
+        $personality = $this->settings->bot_personality ?? 'อบอุ่น ห่วงใย เป็นคนตลาดตัวจริง';
         $style = $this->settings->bot_response_style ?? 'friendly';
 
-        $base = "คุณคือ \"{$botName}\" สไตล์: {$style}";
-        if ($personality) {
-            $base .= "\nบุคลิกภาพ: {$personality}";
+        // === Bot Identity & Personality (สร้างบุคลิกที่ชัดเจน) ===
+        $base = <<<PROMPT
+คุณคือ "{$botName}" — ผู้ช่วย AI ของ ตลาดสดไทยพร๊อม แพลตฟอร์มตลาดสดออนไลน์
+
+## บุคลิกภาพ
+- สไตล์: {$style}
+- บุคลิก: {$personality}
+- ตอบภาษาไทยเป็นกันเอง ใช้คำลงท้าย "ค่ะ/นะคะ/คะ" (เพศหญิง)
+- ตอบสั้นกระชับ ไม่เกิน 3 บรรทัดต่อข้อความ (ยกเว้นต้องอธิบายยาว)
+- ใช้อิโมจิพอเหมาะ ไม่มากเกินไป
+- ไม่ตอบเรื่องที่ไม่เกี่ยวกับตลาดสด อาหาร หรือบริการ
+- ถ้าผู้ใช้ดูสนใจซื้อ/ขาย → แนะนำให้กดปุ่ม "ซื้อของ" หรือ "ลงขาย"
+- ถ้าผู้ใช้ถามเรื่องทั่วไปเกี่ยวกับอาหาร/สินค้า → ตอบได้เลย พร้อมแนะนำสินค้าใกล้ตัว (ถ้ามี)
+
+## ข้อห้าม
+- ห้ามแกล้งทำเป็นมนุษย์ ถ้าถูกถามให้บอกว่าเป็น AI
+- ห้ามให้ข้อมูลส่วนตัวของผู้ใช้คนอื่น
+- ห้ามทำธุรกรรมเงิน/แก้ไขออเดอร์ โดยตรง
+PROMPT;
+
+        $customPrompt = $this->settings->ai_system_prompt;
+        if ($customPrompt) {
+            $base .= "\n\n## คำแนะนำเพิ่มเติมจาก Admin\n{$customPrompt}";
         }
-        $base .= "\n\n".$basePrompt;
 
         // === AI Scope / Boundaries ===
         if ($scopeDesc = $this->settings->ai_scope_description) {
@@ -356,18 +393,31 @@ PROMPT;
         }
 
         $statePrompt = match ($state) {
-            'idle' => 'idle: แนะนำ "ลงขาย" หรือ "อยากซื้อ" ตอบสั้นไม่เกิน 2 บรรทัด',
-            'seller_phone' => 'รอเบอร์โทร 10 หลัก โฟกัสเรื่องเบอร์เท่านั้น',
-            'seller_otp' => 'รอ OTP 6 หลัก พิมพ์ "ส่งใหม่" ขอรหัสใหม่ได้',
-            'listing_photos' => 'รับรูปสินค้า ('.($context['listing_data']['image_count'] ?? 0).' รูปแล้ว) พิมพ์ "เสร็จ" เมื่อครบ',
-            'listing_details' => 'รอข้อมูลสินค้า: ชื่อ ราคา หน่วย ตอบไทยปกติไม่ต้อง JSON',
-            'listing_location' => 'รอพิกัดร้าน กดส่งตำแหน่งใน LINE',
-            'listing_review' => 'ยืนยันก่อนลงขาย ถามว่า "ยืนยัน" หรือ "แก้ไข" ข้อมูล: '.json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE),
-            'search_location' => 'รอตำแหน่งผู้ซื้อ บอกให้ส่งตำแหน่ง',
-            'search_browsing' => 'แสดงผลค้นหา ช่วยแนะนำสินค้า'.(! empty($context['nearby_listings']) ? "\n{$context['nearby_listings']}" : ''),
-            'order_quantity' => 'รอจำนวนสั่งซื้อ: '.($context['order_data']['listing_title'] ?? '').' ฿'.($context['order_data']['listing_price'] ?? 0).'/'.($context['order_data']['listing_unit'] ?? '').' ตอบไทยปกติ',
-            'order_review' => 'ตรวจสอบคำสั่งซื้อ ถาม "ยืนยัน" หรือ "ยกเลิก"',
-            default => $state,
+            'idle' => "สถานะ: idle (หน้าหลัก)\n- ผู้ใช้พิมพ์อิสระ ตอบตามเนื้อหาที่ถาม\n- ถ้าเกี่ยวกับซื้อของ แนะนำพิมพ์ \"ซื้อของ\" หรือส่งตำแหน่ง\n- ถ้าเกี่ยวกับขายของ แนะนำพิมพ์ \"ลงขาย\"\n- ตอบสั้นไม่เกิน 3 บรรทัด เป็นกันเอง",
+
+            'seller_phone' => "สถานะ: ยืนยันเบอร์โทร\n- ห้ามตอบเรื่องอื่น โฟกัสเรื่องเบอร์เท่านั้น\n- ถ้าผู้ใช้พิมพ์ไม่ใช่เบอร์ → ตอบว่ากรุณาพิมพ์เบอร์ 10 หลัก",
+
+            'seller_otp' => "สถานะ: รอรหัส OTP\n- ห้ามตอบเรื่องอื่น\n- พิมพ์ \"ส่งใหม่\" ได้ถ้าไม่ได้รับ",
+
+            'listing_photos' => 'สถานะ: รับรูปสินค้า (มีแล้ว ' . ($context['listing_data']['image_count'] ?? 0) . " รูป)\n- แนะนำให้ \"ส่งรูป\" หรือพิมพ์ \"เสร็จ\"\n- ตอบสั้น 1-2 บรรทัด",
+
+            'listing_details' => "สถานะ: รอข้อมูลสินค้า\n- ผู้ใช้จะพิมพ์ชื่อ ราคา หน่วย\n- ตอบไทยปกติ ไม่ต้อง JSON\n- ถ้าข้อมูลไม่ครบ ถามเพิ่มอย่างเป็นมิตร",
+
+            'listing_location' => "สถานะ: รอพิกัดร้าน\n- แนะนำกด + → ส่งตำแหน่ง\n- พิมพ์ \"ข้าม\" ใช้พิกัดเดิม",
+
+            'listing_review' => 'สถานะ: ตรวจสอบก่อนลงขาย ' . json_encode($context['listing_data'] ?? [], JSON_UNESCAPED_UNICODE) . "\n- ถามว่า \"ยืนยัน\" หรือ \"แก้ไข\"",
+
+            'search_location' => "สถานะ: รอตำแหน่งผู้ซื้อ\n- แนะนำกด + → ส่งตำแหน่ง\n- ถ้ามีพิกัดเดิม → พิมพ์ชื่อสินค้าค้นหาได้เลย",
+
+            'search_browsing' => "สถานะ: แสดงผลค้นหา\n- ช่วยแนะนำสินค้าจากผลค้นหา\n- ถ้าผู้ใช้บอกชื่อสินค้า → ค้นหาใหม่" . (! empty($context['nearby_listings']) ? "\n\nสินค้าใกล้ตัว:\n{$context['nearby_listings']}" : ''),
+
+            'order_quantity' => 'สถานะ: รอจำนวนสั่งซื้อ ' . ($context['order_data']['listing_title'] ?? '') . ' ฿' . ($context['order_data']['listing_price'] ?? 0) . '/' . ($context['order_data']['listing_unit'] ?? '') . "\n- ผู้ใช้จะบอกจำนวนและวิธีรับ\n- ตอบไทยปกติ",
+
+            'order_review' => "สถานะ: ยืนยันคำสั่งซื้อ\n- ถาม \"ยืนยัน\" หรือ \"ยกเลิก\"",
+
+            'order_tracking' => "สถานะ: ติดตามออเดอร์\n- แจ้งสถานะออเดอร์ปัจจุบัน\n- แนะนำ \"กลับเมนู\" เพื่อทำอย่างอื่น",
+
+            default => "สถานะ: {$state}",
         };
 
         // เพิ่มบริบทผู้ใช้
@@ -402,6 +452,9 @@ PROMPT;
      */
     protected function callAI(array $messages, int $maxTokens = 400): array
     {
+        // จำกัด token สูงสุด 1000 เพื่อควบคุมค่าใช้จ่าย
+        $maxTokens = min($maxTokens, 1000);
+
         $endpoint = $this->getApiEndpoint();
         $headers = $this->getApiHeaders();
 
@@ -418,12 +471,18 @@ PROMPT;
             ->post($endpoint, $payload);
 
         if (! $response->successful()) {
-            throw new \Exception("AI API error: {$response->status()} - {$response->body()}");
+            throw new \Exception("AI API error: {$response->status()}");
         }
 
-        $data = $response->json();
+        $data = $response->json() ?? [];
         $content = $data['choices'][0]['message']['content'] ?? '';
         $tokensUsed = $data['usage']['total_tokens'] ?? 0;
+
+        if (empty($content) && empty($data['choices'])) {
+            Log::warning('FreshMarketAI: AI response structure ผิดปกติ', [
+                'keys' => array_keys($data),
+            ]);
+        }
 
         return [
             'response' => $content,
@@ -514,7 +573,7 @@ PROMPT;
 
         if ($this->provider === 'openrouter') {
             $headers['HTTP-Referer'] = config('app.url');
-            $headers['X-Title'] = 'ตลาดสดไทยพร้อม';
+            $headers['X-Title'] = 'ตลาดสดไทยพร๊อม';
         }
 
         return $headers;

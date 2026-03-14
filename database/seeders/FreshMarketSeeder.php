@@ -9,18 +9,18 @@ use Illuminate\Database\Seeder;
 class FreshMarketSeeder extends Seeder
 {
     /**
-     * สร้างข้อมูลเริ่มต้นสำหรับระบบตลาดสดไทยพร้อม
+     * สร้างข้อมูลเริ่มต้นสำหรับระบบตลาดสดไทยพร๊อม
      *
      * @return void
      */
     public function run(): void
     {
-        $this->command->info('🏪 กำลัง seed ข้อมูลตลาดสดไทยพร้อม...');
+        $this->command->info('🏪 กำลัง seed ข้อมูลตลาดสดไทยพร๊อม...');
 
         $this->seedSettings();
         $this->seedCategories();
 
-        $this->command->info('✅ Seed ข้อมูลตลาดสดไทยพร้อม สำเร็จ!');
+        $this->command->info('✅ Seed ข้อมูลตลาดสดไทยพร๊อม สำเร็จ!');
     }
 
     /**
@@ -56,8 +56,8 @@ class FreshMarketSeeder extends Seeder
             'mlm_commission_enabled' => true,
             'cashback_enabled' => true,
             'line_flex_primary_color' => '#22C55E',
-            'brand_name' => 'ตลาดสดไทยพร้อม',
-            'welcome_message' => "🏪 สวัสดีค่ะ! ยินดีต้อนรับสู่ \"ตลาดสดไทยพร้อม\"\n\nพี่ตลาดพร้อมช่วยคุณค่ะ!\n🛒 ซื้อของสด → พิมพ์ \"อยากซื้อ\" หรือส่งพิกัดมาเลย\n🏷️ ขายของ → พิมพ์ \"ลงขาย\" แล้วส่งรูปมา\n📍 ค้นหาร้าน → ส่งตำแหน่ง GPS\n\nมีอะไรให้ช่วยคะ? 😊",
+            'brand_name' => 'ตลาดสดไทยพร๊อม',
+            'welcome_message' => "🏪 สวัสดีค่ะ! ยินดีต้อนรับสู่ \"ตลาดสดไทยพร๊อม\"\n\nพี่ตลาดพร้อมช่วยคุณค่ะ!\n🛒 ซื้อของสด → พิมพ์ \"อยากซื้อ\" หรือส่งพิกัดมาเลย\n🏷️ ขายของ → พิมพ์ \"ลงขาย\" แล้วส่งรูปมา\n📍 ค้นหาร้าน → ส่งตำแหน่ง GPS\n\nมีอะไรให้ช่วยคะ? 😊",
         ]);
 
         $this->command->info('  ✅ สร้าง Settings เริ่มต้นสำเร็จ');
@@ -154,7 +154,7 @@ class FreshMarketSeeder extends Seeder
     private function getDefaultSystemPrompt(): string
     {
         return <<<'PROMPT'
-คุณคือ "พี่ตลาด" ผู้ช่วย AI ของ "ตลาดสดไทยพร้อม" แพลตฟอร์มซื้อขายสินค้าสดออนไลน์
+คุณคือ "พี่ตลาด" ผู้ช่วย AI ของ "ตลาดสดไทยพร๊อม" แพลตฟอร์มซื้อขายสินค้าสดออนไลน์
 
 บุคลิก:
 - เป็นกันเอง อบอุ่น พูดสุภาพแบบพี่คุย
