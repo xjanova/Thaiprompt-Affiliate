@@ -325,7 +325,12 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             // ถ้า push ล้มเหลว → user ส่งข้อความมาก็จะได้รับแจ้งผ่าน replyMessage
             if (! empty($reading->deep_response) && $this->userId) {
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
-                if (! $alreadyNotified) {
+                // ✅ FIX: แยก "attempted but failed" vs "not attempted"
+                // ถ้าเคย attempt แล้วแต่ล้มเหลว → ลอง retry อีกครั้ง (อาจหมด rate limit ก่อนหน้า)
+                $notifyAttempted = $reading->getConversationState('reading_notification_attempted', false);
+                $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);
+
+                if (! $alreadyNotified && $retryCount < 3) {
                     try {
                         $name = $reading->facebook_user_name ?? 'คุณ';
                         $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
@@ -333,14 +338,47 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             . "🔮 พร้อมอ่านเลยไหมคะ?\n"
                             . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
 
+                        // ✅ เช็คโควต้า LINE ก่อนส่ง push (วินิจฉัยสาเหตุ push ล้มเหลว)
+                        $quotaInfo = null;
+                        if ($this->platform === 'line') {
+                            try {
+                                $lineService = new \App\Services\LineFortuneService($settings);
+                                $quotaInfo = $lineService->getMessageQuota();
+                                Log::info('ProcessDeepFortuneReadingJob: LINE quota check', [
+                                    'reading_id' => $this->readingId,
+                                    'quota' => $quotaInfo['quota'] ?? 0,
+                                    'used' => $quotaInfo['used'] ?? 0,
+                                    'remaining' => $quotaInfo['remaining'] ?? 0,
+                                    'percentage' => $quotaInfo['percentage'] ?? 0,
+                                    'error' => $quotaInfo['error'] ?? null,
+                                ]);
+
+                                // ⚠️ โควต้าหมด → log ชัดเจนแต่ยังลอง push (อาจเป็น free tier)
+                                if (($quotaInfo['remaining'] ?? 1) <= 0 && empty($quotaInfo['error'])) {
+                                    Log::warning('ProcessDeepFortuneReadingJob: ⚠️ LINE push quota หมดแล้ว! ลูกค้าจะได้รับคำทำนายผ่าน replyMessage เมื่อพิมพ์มา', [
+                                        'reading_id' => $this->readingId,
+                                        'quota' => $quotaInfo['quota'] ?? 0,
+                                        'used' => $quotaInfo['used'] ?? 0,
+                                    ]);
+                                }
+                            } catch (\Exception $quotaErr) {
+                                Log::debug('ProcessDeepFortuneReadingJob: เช็ค quota ไม่ได้ (ไม่ critical)', [
+                                    'error' => $quotaErr->getMessage(),
+                                ]);
+                            }
+                        }
+
                         Log::info('ProcessDeepFortuneReadingJob: กำลัง push แจ้ง "คำทำนายพร้อมแล้ว"', [
                             'reading_id' => $this->readingId,
                             'platform' => $this->platform,
                             'user_id' => $this->userId,
-                            'reading_platform_db' => $reading->platform,
-                            'reading_platform_user_id_db' => $reading->platform_user_id,
+                            'retry_count' => $retryCount,
                             'is_line_user' => preg_match('/^U[0-9a-f]{32}$/i', $this->userId),
                         ]);
+
+                        // ✅ ตั้ง flag "attempted" ก่อนส่ง เพื่อแยกจาก "not attempted"
+                        $reading->setConversationState('reading_notification_attempted', true);
+                        $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
                         $notifySent = $channelManager->sendResponse($this->platform, $this->userId, [
                             'action' => 'fortune_ready_notification',
@@ -348,6 +386,23 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             'reading' => $reading,
                             'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง push ตรง
+                        if (! $notifySent && $this->platform === 'line') {
+                            Log::warning('ProcessDeepFortuneReadingJob: sendResponse ล้มเหลว → ลอง direct push', [
+                                'reading_id' => $this->readingId,
+                            ]);
+
+                            try {
+                                $lineService = $lineService ?? new \App\Services\LineFortuneService($settings);
+                                $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage);
+                            } catch (\Exception $directErr) {
+                                Log::error('ProcessDeepFortuneReadingJob: direct push ล้มเหลวด้วย', [
+                                    'reading_id' => $this->readingId,
+                                    'error' => $directErr->getMessage(),
+                                ]);
+                            }
+                        }
 
                         $reading->setConversationState('reading_notification_sent', $notifySent);
                         $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
@@ -357,12 +412,17 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             'sent' => $notifySent,
                             'platform' => $this->platform,
                             'user_id' => $this->userId,
+                            'line_quota_remaining' => $quotaInfo['remaining'] ?? 'unknown',
                         ]);
                     } catch (\Exception $notifyErr) {
                         Log::warning('ProcessDeepFortuneReadingJob: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
                             'reading_id' => $this->readingId,
+                            'platform' => $this->platform,
                             'error' => $notifyErr->getMessage(),
+                            'trace' => substr($notifyErr->getTraceAsString(), 0, 300),
                         ]);
+                        // ✅ ตั้ง flag attempted แม้ล้มเหลว (เพื่อให้ retry ได้)
+                        $reading->setConversationState('reading_notification_attempted', true);
                     }
                 }
             }

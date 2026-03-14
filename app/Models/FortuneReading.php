@@ -458,11 +458,11 @@ class FortuneReading extends Model
     /**
      * ระยะเวลา timeout ของ PAID status (นาที)
      *
-     * หลังชำระเงินแล้ว AI จะประมวลผลคำทำนาย (~45-60 วินาที)
-     * ให้ timeout 5 นาทีเพื่อรอให้ AI ทำงานเสร็จ
-     * ถ้าเกิน 5 นาที → ถือว่า AI ล้มเหลว → ปิด conversation อัตโนมัติ
+     * หลังชำระเงินแล้ว AI จะประมวลผลคำทำนาย (~45-90 วินาที + retry)
+     * ให้ timeout 10 นาทีเพื่อรอให้ AI ทำงานเสร็จ (รวม retry + ไพ่ยิปซี + throttle delay)
+     * ถ้าเกิน 10 นาที → ถือว่า AI ล้มเหลว → ปิด conversation อัตโนมัติ
      */
-    public const PAID_PROCESSING_TIMEOUT_MINUTES = 5;
+    public const PAID_PROCESSING_TIMEOUT_MINUTES = 10;
 
     /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่

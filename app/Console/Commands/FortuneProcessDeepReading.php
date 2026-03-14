@@ -138,13 +138,56 @@ class FortuneProcessDeepReading extends Command
             $reading->refresh();
             if (! empty($reading->deep_response) && ! empty($userId)) {
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
-                if (! $alreadyNotified) {
+                $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);
+
+                if (! $alreadyNotified && $retryCount < 3) {
                     try {
                         $name = $reading->facebook_user_name ?? 'คุณ';
                         $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
                             . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
                             . "🔮 พร้อมอ่านเลยไหมคะ?\n"
                             . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+
+                        // ✅ เช็คโควต้า LINE ก่อนส่ง push (วินิจฉัยสาเหตุ push ล้มเหลว)
+                        $quotaInfo = null;
+                        if ($platform === 'line') {
+                            try {
+                                $lineService = new \App\Services\LineFortuneService($settings);
+                                $quotaInfo = $lineService->getMessageQuota();
+
+                                $this->info("LINE Quota: {$quotaInfo['used']}/{$quotaInfo['quota']} (เหลือ {$quotaInfo['remaining']})");
+                                Log::info('fortune:process-deep: LINE quota check', [
+                                    'reading_id' => $readingId,
+                                    'quota' => $quotaInfo['quota'] ?? 0,
+                                    'used' => $quotaInfo['used'] ?? 0,
+                                    'remaining' => $quotaInfo['remaining'] ?? 0,
+                                    'percentage' => $quotaInfo['percentage'] ?? 0,
+                                    'error' => $quotaInfo['error'] ?? null,
+                                ]);
+
+                                if (($quotaInfo['remaining'] ?? 1) <= 0 && empty($quotaInfo['error'])) {
+                                    Log::warning('fortune:process-deep: ⚠️ LINE push quota หมดแล้ว!', [
+                                        'reading_id' => $readingId,
+                                        'quota' => $quotaInfo['quota'] ?? 0,
+                                        'used' => $quotaInfo['used'] ?? 0,
+                                    ]);
+                                    $this->warn('⚠️ LINE push quota หมดแล้ว! ลูกค้าจะได้รับคำทำนายเมื่อพิมพ์ข้อความมา');
+                                }
+                            } catch (\Exception $quotaErr) {
+                                // ไม่ critical — ยังพยายาม push ต่อ
+                            }
+                        }
+
+                        Log::info('fortune:process-deep: กำลัง push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                            'reading_id' => $readingId,
+                            'platform' => $platform,
+                            'user_id' => $userId,
+                            'retry_count' => $retryCount,
+                        ]);
+
+                        // ✅ ตั้ง flag "attempted" ก่อนส่ง
+                        $reading->setConversationState('reading_notification_attempted', true);
+                        $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
                         $notifySent = $channelManager->sendResponse($platform, $userId, [
                             'action' => 'fortune_ready_notification',
@@ -153,19 +196,47 @@ class FortuneProcessDeepReading extends Command
                             'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
+                        // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง push ตรงด้วย LineFortuneService
+                        if (! $notifySent && $platform === 'line') {
+                            Log::warning('fortune:process-deep: sendResponse ล้มเหลว → ลอง direct push', [
+                                'reading_id' => $readingId,
+                            ]);
+
+                            try {
+                                $lineService = $lineService ?? new \App\Services\LineFortuneService($settings);
+                                $notifySent = $lineService->sendMessagePriority($userId, $readyMessage);
+                            } catch (\Exception $directErr) {
+                                Log::error('fortune:process-deep: direct push ล้มเหลวด้วย', [
+                                    'reading_id' => $readingId,
+                                    'error' => $directErr->getMessage(),
+                                ]);
+                            }
+                        }
+
                         $reading->setConversationState('reading_notification_sent', $notifySent);
                         $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
 
-                        Log::info('fortune:process-deep: push แจ้ง "คำทำนายพร้อมแล้ว"', [
+                        Log::info('fortune:process-deep: push แจ้ง "คำทำนายพร้อมแล้ว" ผลลัพธ์', [
                             'reading_id' => $readingId,
                             'sent' => $notifySent,
+                            'platform' => $platform,
+                            'line_quota_remaining' => $quotaInfo['remaining'] ?? 'unknown',
                         ]);
+
+                        if ($notifySent) {
+                            $this->info('✅ Push แจ้ง "คำทำนายพร้อม" สำเร็จ');
+                        } else {
+                            $this->warn('⚠️ Push แจ้งเตือนไม่สำเร็จ — ลูกค้าจะได้รับเมื่อพิมพ์ข้อความมา');
+                        }
                     } catch (\Exception $notifyErr) {
                         // push ล้มเหลว → ไม่เป็นไร user ส่งข้อความมาจะได้รับผ่าน replyMessage
                         Log::warning('fortune:process-deep: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
                             'reading_id' => $readingId,
+                            'platform' => $platform,
                             'error' => $notifyErr->getMessage(),
+                            'trace' => substr($notifyErr->getTraceAsString(), 0, 300),
                         ]);
+                        $reading->setConversationState('reading_notification_attempted', true);
                     }
                 }
             }

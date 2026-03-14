@@ -677,8 +677,40 @@ class FortuneConversationService
                         ];
                     }
 
-                    // ยังไม่เคยแจ้งเตือน → แจ้ง "คำทำนายพร้อมแล้ว จะอ่านเลยไหมคะ?"
-                    // (ไม่ว่า push จะส่งได้หรือไม่ — ใช้ replyMessage ฟรี เมื่อ user พิมพ์มา)
+                    // ✅ FIX: ถ้า push เคย attempt แล้วแต่ล้มเหลว (โควต้าหมด/error) →
+                    // ส่งคำทำนายเต็มทันทีเลย ไม่ต้องให้ user ส่ง 2 ข้อความ
+                    $notifyAttempted = $unsentReading->getConversationState('reading_notification_attempted', false);
+
+                    if ($notifyAttempted) {
+                        // Push เคยพยายามแล้วแต่ล้มเหลว → ส่งคำทำนายเต็มทันที (ไม่ต้องถามอีก)
+                        Log::info('Fortune processMessage: push เคยล้มเหลว → ส่งคำทำนายเต็มทันทีผ่าน replyMessage', [
+                            'facebook_user_id' => $facebookUserId,
+                            'reading_id' => $unsentReading->id,
+                        ]);
+
+                        $unsentReading->setConversationState('reading_sent_directly', true);
+                        $unsentReading->setConversationState('reading_ready_sent', true);
+                        $unsentReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                        $unsentReading->setConversationState('delivered_by_reply_message', true);
+                        $unsentReading->setConversationState('reading_notification_sent', true);
+
+                        $name = $unsentReading->facebook_user_name ?? 'คุณ';
+                        $message = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                        $message .= '📋 เลขที่บิล: '.($unsentReading->bill_reference ?? '-')."\n";
+                        $message .= '📅 วันที่: '.$unsentReading->created_at->format('d/m/Y H:i')."\n";
+                        $message .= "═══════════════════════\n\n";
+                        $message .= $unsentReading->deep_response;
+
+                        return [
+                            'action' => 'view_reading_deep',
+                            'message' => $message,
+                            'reading' => $unsentReading,
+                            'chart_image_url' => $unsentReading->reading_image_url,
+                        ];
+                    }
+
+                    // ยังไม่เคยพยายาม push → แจ้ง "คำทำนายพร้อมแล้ว จะอ่านเลยไหมคะ?"
+                    // (ข้อความนี้ส่งผ่าน replyMessage ฟรี)
                     Log::info('Fortune processMessage: พบคำทำนายพร้อมส่ง → แจ้งเตือน user ผ่าน replyMessage', [
                         'facebook_user_id' => $facebookUserId,
                         'reading_id' => $unsentReading->id,
@@ -1021,6 +1053,33 @@ class FortuneConversationService
                     // ถ้ารอชำระเงิน → แจ้งยอดชำระ
                     if ($status === FortuneReading::STATUS_PENDING_PAYMENT) {
                         return $this->handlePendingPayment($activeReading, $messageText);
+                    }
+
+                    // ✅ FIX: ถ้าอยู่ระหว่างสุ่มไพ่ → แจ้งให้กดปุ่มสุ่มไพ่
+                    if ($status === FortuneReading::STATUS_COLLECTING_TAROT) {
+                        return [
+                            'action' => 'draw_tarot_card',
+                            'message' => "🃏 ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nกรุณากด 'สุ่มไพ่ยิปซี' อีกครั้งนะคะ ✨",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ✅ FIX: ถ้า PAID → แจ้งกำลังประมวลผล
+                    if ($status === FortuneReading::STATUS_PAID) {
+                        return [
+                            'action' => 'processing',
+                            'message' => "🔮 กำลังวิเคราะห์ดวงชะตาให้อยู่ค่ะ\n\nใช้เวลาประมาณ 1-3 นาทีนะคะ กรุณารอสักครู่ ✨",
+                            'reading' => $activeReading,
+                        ];
+                    }
+
+                    // ✅ FIX: ถ้า AWAITING_CONFIRMATION → แจ้งให้ยืนยัน
+                    if ($status === FortuneReading::STATUS_AWAITING_CONFIRMATION) {
+                        return [
+                            'action' => 'awaiting_confirmation',
+                            'message' => "🔮 ขอโทษค่ะ ระบบขัดข้องชั่วคราว 🙏\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ได้เลยนะคะ ✨",
+                            'reading' => $activeReading,
+                        ];
                     }
                 }
             } catch (\Exception $innerErr) {
@@ -2333,7 +2392,7 @@ class FortuneConversationService
                 'reading' => $reading,
             ],
             default => [
-                'action' => 'unknown',
+                'action' => 'help',
                 'message' => $this->getHelpMessage(),
                 'reading' => $reading,
             ],

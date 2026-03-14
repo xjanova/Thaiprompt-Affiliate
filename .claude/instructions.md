@@ -401,6 +401,54 @@ gh run watch <RUN_ID> --exit-status
 
 ---
 
+---
+
+## 🔍 Code Review Rules (บังคับก่อน Push ทุกครั้ง)
+
+**ก่อน push โค้ดทุกครั้ง ต้องทำ code review ตามขั้นตอนนี้:**
+
+### 1. ตรวจสอบ Flow ครบทุกกรณี
+- ✅ ตรวจสอบว่า **ทุกสถานะ (state)** ใน state machine มี handler ครบ
+- ✅ ไม่มี `action: 'unknown'` ที่ทำให้ UI แสดง error
+- ✅ ทุก match/switch case มี `default` ที่ตอบเป็นมิตรกับผู้ใช้
+- ✅ Error recovery: ทุก exception ต้องมี fallback ที่สมเหตุสมผล
+
+### 2. ตรวจสอบ LINE/Facebook Push Notification
+- ✅ เช็คโควต้า LINE push message ก่อนส่ง (`getMessageQuota()`)
+- ✅ Log ข้อมูลโควต้าเพื่อ debug กรณี push ไม่ทำงาน
+- ✅ มี fallback: ถ้า push ล้มเหลว → ส่งผ่าน `replyMessage` เมื่อ user พิมพ์มา
+- ✅ แยกสถานะ "ยังไม่ลอง" vs "ลองแล้วแต่ล้มเหลว" (`reading_notification_attempted`)
+- ✅ retry mechanism: ไม่ retry เกิน 3 ครั้ง (`reading_notification_retry_count`)
+- ✅ ถ้า push เคยล้มเหลว + user พิมพ์มา → ส่งคำทำนายเต็มทันที (ไม่ต้อง 2 ข้อความ)
+
+### 3. ตรวจสอบ Background Job / Command
+- ✅ Job มี retry strategy ที่เหมาะสม (tries, backoff, timeout)
+- ✅ `dispatchSmart()` มี fallback chain: proc_open → queue → sync
+- ✅ Job failed handler ต้องไม่ทำให้บิลค้างที่สถานะ PAID ตลอดไป
+- ✅ `PAID_PROCESSING_TIMEOUT_MINUTES` ต้องมากพอสำหรับ AI processing + retry
+
+### 4. ตรวจสอบ State Machine (Conversation Flow)
+- ✅ ทุกสถานะมี timeout (ไม่ให้ conversation ค้างตลอดไป)
+- ✅ Cancel request ทำงานได้ทุกสถานะ (ยกเว้น PAID)
+- ✅ ไม่มี infinite loop ระหว่าง state transitions
+- ✅ Dedup filter ป้องกันข้อความซ้ำ
+- ✅ Mutex lock ป้องกัน concurrent processing
+
+### 5. ตรวจสอบ AI Response
+- ✅ AI ตอบเป็นธรรมชาติ ไม่เอ๋อ ไม่ค้าง
+- ✅ มี conversation history (10 ข้อความ) เพื่อให้ AI จำบริบท
+- ✅ Fallback response เมื่อ AI ล้มเหลว → ตอบเป็นมิตร ไม่บอกว่าเกิด error
+- ✅ `[ASK_SAVE]` pattern: AI ตอบไม่ได้ → ถามผู้ใช้ว่าจะฝากคำถามถึงแอดมินไหม
+- ✅ Gatekeeper throttle: ป้องกัน AI call ถี่เกินไป
+
+### 6. ตรวจสอบ Payment Flow
+- ✅ Unique amount matching: 3-tier fallback (active → grace period → amount_paid)
+- ✅ `confirmPayment()` เป็น idempotent (เรียกซ้ำได้ไม่พัง)
+- ✅ Push "ชำระเงินเรียบร้อย" ทันที + Push "คำทำนายพร้อม" หลัง AI เสร็จ
+- ✅ FCM notification ให้แอพ SMS Checker อัพเดทสถานะ
+
+---
+
 *"Excellence is not an act, but a habit" - ทำให้ทุกโค้ดเป็นผลงานที่ภาคภูมิใจ*
 
 *"Quality is never an accident; it is always the result of intelligent effort" - ใส่ใจในทุกรายละเอียด*
