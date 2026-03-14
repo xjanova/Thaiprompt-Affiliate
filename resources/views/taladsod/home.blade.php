@@ -21,11 +21,11 @@
     <section class="relative overflow-hidden bg-gradient-to-br from-green-600 via-green-500 to-teal-500 dark:from-green-800 dark:via-green-700 dark:to-teal-700">
         {{-- รูปแบบพื้นหลัง --}}
         <div class="absolute inset-0 opacity-10">
-            <div class="absolute top-10 left-10 text-8xl">&#x1F96C;</div>
-            <div class="absolute top-20 right-20 text-7xl">&#x1F34E;</div>
-            <div class="absolute bottom-10 left-1/4 text-6xl">&#x1F969;</div>
-            <div class="absolute bottom-20 right-1/3 text-8xl">&#x1F990;</div>
-            <div class="absolute top-1/3 left-1/2 text-5xl">&#x1F33D;</div>
+            <div class="absolute top-10 left-10 text-8xl">🥬</div>
+            <div class="absolute top-20 right-20 text-7xl">🍎</div>
+            <div class="absolute bottom-10 left-1/4 text-6xl">🥩</div>
+            <div class="absolute bottom-20 right-1/3 text-8xl">🦐</div>
+            <div class="absolute top-1/3 left-1/2 text-5xl">🌽</div>
         </div>
 
         <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
@@ -60,7 +60,7 @@
                                         :disabled="loading"
                                         class="flex-shrink-0 px-5 py-4 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-2xl font-medium transition-all border border-white/30 flex items-center gap-2"
                                         :class="{ 'animate-pulse': loading }">
-                                    <span>&#x1F4CD;</span>
+                                    <span>📍</span>
                                     <span class="hidden sm:inline" x-text="loading ? 'กำลังค้นหา...' : 'ค้นหาใกล้ตัว'">ค้นหาใกล้ตัว</span>
                                     <span class="sm:hidden"><i class="fas fa-location-crosshairs"></i></span>
                                 </button>
@@ -113,7 +113,7 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-green-500">&#x1F4E6;</span> หมวดหมู่สินค้า
+                <span class="text-green-500">📦</span> หมวดหมู่สินค้า
             </h2>
             <a href="{{ route('taladsod.search', ['view' => 'categories']) }}"
                class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
@@ -126,16 +126,16 @@
             @php
                 // หมวดหมู่เริ่มต้นกรณีไม่มีข้อมูลจาก Database
                 $defaultCategories = collect([
-                    (object)['slug' => 'vegetables', 'name' => 'ผักสด', 'icon' => '&#x1F96C;', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
-                    (object)['slug' => 'fruits', 'name' => 'ผลไม้', 'icon' => '&#x1F34E;', 'color' => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'],
-                    (object)['slug' => 'meat', 'name' => 'เนื้อสัตว์', 'icon' => '&#x1F969;', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
-                    (object)['slug' => 'seafood', 'name' => 'อาหารทะเล', 'icon' => '&#x1F990;', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
-                    (object)['slug' => 'eggs-dairy', 'name' => 'ไข่และนม', 'icon' => '&#x1F95A;', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
-                    (object)['slug' => 'herbs', 'name' => 'สมุนไพร', 'icon' => '&#x1F33F;', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
-                    (object)['slug' => 'rice-grains', 'name' => 'ข้าวและธัญพืช', 'icon' => '&#x1F33E;', 'color' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'],
-                    (object)['slug' => 'dried-foods', 'name' => 'ของแห้ง', 'icon' => '&#x1F36C;', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
-                    (object)['slug' => 'ready-to-eat', 'name' => 'อาหารปรุงสำเร็จ', 'icon' => '&#x1F372;', 'color' => 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800'],
-                    (object)['slug' => 'beverages', 'name' => 'เครื่องดื่ม', 'icon' => '&#x1F9C3;', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
+                    (object)['slug' => 'vegetables', 'name' => 'ผักสด', 'icon' => '🥬', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
+                    (object)['slug' => 'fruits', 'name' => 'ผลไม้', 'icon' => '🍎', 'color' => 'bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800'],
+                    (object)['slug' => 'meat', 'name' => 'เนื้อสัตว์', 'icon' => '🥩', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
+                    (object)['slug' => 'seafood', 'name' => 'อาหารทะเล', 'icon' => '🦐', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
+                    (object)['slug' => 'eggs-dairy', 'name' => 'ไข่และนม', 'icon' => '🥚', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
+                    (object)['slug' => 'herbs', 'name' => 'สมุนไพร', 'icon' => '🌿', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
+                    (object)['slug' => 'rice-grains', 'name' => 'ข้าวและธัญพืช', 'icon' => '🌾', 'color' => 'bg-amber-50 dark:bg-amber-900/30 border-amber-200 dark:border-amber-800'],
+                    (object)['slug' => 'dried-foods', 'name' => 'ของแห้ง', 'icon' => '🍬', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
+                    (object)['slug' => 'ready-to-eat', 'name' => 'อาหารปรุงสำเร็จ', 'icon' => '🍲', 'color' => 'bg-rose-50 dark:bg-rose-900/30 border-rose-200 dark:border-rose-800'],
+                    (object)['slug' => 'beverages', 'name' => 'เครื่องดื่ม', 'icon' => '🧃', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
                 ]);
                 $displayCategories = isset($categories) && $categories->count() > 0 ? $categories : $defaultCategories;
             @endphp
@@ -144,7 +144,7 @@
                 <a href="{{ route('taladsod.search', ['category' => $category->slug]) }}"
                    class="flex-shrink-0 w-28 sm:w-32 group">
                     <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border {{ $category->color ?? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800' }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-4xl sm:text-5xl">{!! e($category->icon ?? '📦') !!}</span>
+                        <span class="text-4xl sm:text-5xl">{!! $category->icon ?? '📦' !!}</span>
                         <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $category->name }}</span>
                     </div>
                 </a>
@@ -156,7 +156,7 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-orange-500">&#x2B50;</span> สินค้าแนะนำ
+                <span class="text-orange-500">⭐</span> สินค้าแนะนำ
             </h2>
             <a href="{{ route('taladsod.search', ['sort' => 'featured']) }}"
                class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
@@ -179,7 +179,7 @@
                                      loading="lazy">
                             @else
                                 <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                    &#x1F96C;
+                                    🥬
                                 </div>
                             @endif
 
@@ -213,7 +213,7 @@
                             </h3>
                             <div class="flex items-baseline gap-1.5 mb-2">
                                 <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                    &#x0E3F;{{ number_format($listing->price, 0) }}
+                                    ฿{{ number_format($listing->price, 0) }}
                                 </span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">
                                     /{{ $listing->unit ?? 'กก.' }}
@@ -230,7 +230,7 @@
         @else
             {{-- สถานะว่างเปล่า --}}
             <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">&#x1F33F;</div>
+                <div class="text-6xl mb-4">🌿</div>
                 <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีสินค้าแนะนำ</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">สินค้าแนะนำจะแสดงที่นี่เร็วๆ นี้</p>
             </div>
@@ -241,7 +241,7 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-green-500">&#x1F331;</span> สินค้าล่าสุด
+                <span class="text-green-500">🌱</span> สินค้าล่าสุด
             </h2>
             <a href="{{ route('taladsod.search', ['sort' => 'latest']) }}"
                class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium">
@@ -264,7 +264,7 @@
                                      loading="lazy">
                             @else
                                 <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                    &#x1F34E;
+                                    🍎
                                 </div>
                             @endif
 
@@ -296,7 +296,7 @@
                             </h3>
                             <div class="flex items-baseline gap-1.5 mb-2">
                                 <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                    &#x0E3F;{{ number_format($listing->price, 0) }}
+                                    ฿{{ number_format($listing->price, 0) }}
                                 </span>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">
                                     /{{ $listing->unit ?? 'กก.' }}
@@ -313,7 +313,7 @@
         @else
             {{-- สถานะว่างเปล่า --}}
             <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">&#x1F33E;</div>
+                <div class="text-6xl mb-4">🌾</div>
                 <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีสินค้าล่าสุด</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">สินค้าใหม่จะแสดงที่นี่เร็วๆ นี้</p>
             </div>
@@ -324,7 +324,7 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-yellow-500">&#x1F3C6;</span> ร้านค้ายอดนิยม
+                <span class="text-yellow-500">🏆</span> ร้านค้ายอดนิยม
             </h2>
         </div>
 
@@ -373,7 +373,7 @@
         @else
             {{-- สถานะว่างเปล่า --}}
             <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">&#x1F3EA;</div>
+                <div class="text-6xl mb-4">🏪</div>
                 <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีร้านค้ายอดนิยม</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">ร้านค้ายอดนิยมจะแสดงที่นี่เร็วๆ นี้</p>
             </div>
@@ -385,7 +385,7 @@
         {{-- หัวข้อ Section --}}
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                <span class="text-blue-500">&#x1F527;</span> ตลาดช่าง — บริการถึงบ้าน
+                <span class="text-blue-500">🔧</span> ตลาดช่าง — บริการถึงบ้าน
             </h2>
             <a href="{{ route('taladsod.search', ['type' => 'service']) }}"
                class="text-sm text-blue-600 dark:text-blue-400 hover:underline font-medium">
@@ -397,14 +397,14 @@
         <div class="flex gap-3 overflow-x-auto scrollbar-hide pb-4 -mx-4 px-4 mb-6">
             @php
                 $serviceCategories = [
-                    (object)['slug' => 'plumbing', 'name' => 'ช่างประปา', 'icon' => '&#x1F6B0;', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
-                    (object)['slug' => 'electrical', 'name' => 'ช่างไฟฟ้า', 'icon' => '&#x26A1;', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
-                    (object)['slug' => 'aircon', 'name' => 'ช่างแอร์', 'icon' => '&#x2744;', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
-                    (object)['slug' => 'beauty', 'name' => 'ช่างเสริมสวย', 'icon' => '&#x1F487;', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
-                    (object)['slug' => 'massage', 'name' => 'นวดแผนไทย', 'icon' => '&#x1F486;', 'color' => 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800'],
-                    (object)['slug' => 'cleaning', 'name' => 'ทำความสะอาด', 'icon' => '&#x1F9F9;', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
-                    (object)['slug' => 'repair', 'name' => 'ซ่อมบำรุง', 'icon' => '&#x1F6E0;', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
-                    (object)['slug' => 'gardening', 'name' => 'จัดสวน', 'icon' => '&#x1F333;', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
+                    (object)['slug' => 'plumbing', 'name' => 'ช่างประปา', 'icon' => '🚰', 'color' => 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800'],
+                    (object)['slug' => 'electrical', 'name' => 'ช่างไฟฟ้า', 'icon' => '⚡', 'color' => 'bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800'],
+                    (object)['slug' => 'aircon', 'name' => 'ช่างแอร์', 'icon' => '❄️', 'color' => 'bg-cyan-50 dark:bg-cyan-900/30 border-cyan-200 dark:border-cyan-800'],
+                    (object)['slug' => 'beauty', 'name' => 'ช่างเสริมสวย', 'icon' => '💇', 'color' => 'bg-pink-50 dark:bg-pink-900/30 border-pink-200 dark:border-pink-800'],
+                    (object)['slug' => 'massage', 'name' => 'นวดแผนไทย', 'icon' => '💆', 'color' => 'bg-purple-50 dark:bg-purple-900/30 border-purple-200 dark:border-purple-800'],
+                    (object)['slug' => 'cleaning', 'name' => 'ทำความสะอาด', 'icon' => '🧹', 'color' => 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800'],
+                    (object)['slug' => 'repair', 'name' => 'ซ่อมบำรุง', 'icon' => '🛠️', 'color' => 'bg-orange-50 dark:bg-orange-900/30 border-orange-200 dark:border-orange-800'],
+                    (object)['slug' => 'gardening', 'name' => 'จัดสวน', 'icon' => '🌳', 'color' => 'bg-emerald-50 dark:bg-emerald-900/30 border-emerald-200 dark:border-emerald-800'],
                 ];
             @endphp
 
@@ -468,7 +468,7 @@
                             <span><i class="fas fa-briefcase text-blue-500 mr-1"></i>{{ number_format($provider->total_bookings ?? 0) }} งาน</span>
                             @if($provider->isAlsoRider())
                                 <span class="px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
-                                    &#x1F6F5; ส่งของได้
+                                    🛵 ส่งของได้
                                 </span>
                             @endif
                         </div>
@@ -478,7 +478,7 @@
         @else
             {{-- สถานะว่างเปล่า --}}
             <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-6xl mb-4">&#x1F527;</div>
+                <div class="text-6xl mb-4">🔧</div>
                 <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">ยังไม่มีช่างบริการ</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">ช่างบริการจะแสดงที่นี่เร็วๆ นี้</p>
                 <a href="{{ route('taladsod.landing.rider') }}"
@@ -494,8 +494,8 @@
         <div class="bg-gradient-to-br from-green-500 via-green-600 to-teal-600 dark:from-green-700 dark:via-green-800 dark:to-teal-800 rounded-3xl overflow-hidden shadow-2xl relative">
             {{-- รูปแบบพื้นหลัง --}}
             <div class="absolute inset-0 opacity-10">
-                <div class="absolute top-5 right-10 text-7xl">&#x1F33D;</div>
-                <div class="absolute bottom-5 left-10 text-6xl">&#x1F96C;</div>
+                <div class="absolute top-5 right-10 text-7xl">🌽</div>
+                <div class="absolute bottom-5 left-10 text-6xl">🥬</div>
             </div>
 
             <div class="relative p-8 sm:p-12 lg:p-16">

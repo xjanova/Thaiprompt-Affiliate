@@ -13,7 +13,7 @@
 
         {{-- ===== หัวข้อ ===== --}}
         <div class="text-center mb-10">
-            <div class="text-5xl mb-4">&#x1F3EA;</div>
+            <div class="text-5xl mb-4">🏪</div>
             <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 dark:text-white mb-3">
                 สมัครเป็นผู้ขาย
             </h1>
@@ -28,7 +28,7 @@
             <div class="lg:col-span-2 order-2 lg:order-1">
                 <div class="bg-gradient-to-br from-green-500 to-teal-600 dark:from-green-700 dark:to-teal-800 rounded-2xl p-6 sm:p-8 text-white sticky top-24">
                     <h2 class="text-xl font-bold mb-6">
-                        &#x1F31F; ทำไมต้องขายกับเรา
+                        🌟 ทำไมต้องขายกับเรา
                     </h2>
                     <div class="space-y-5">
                         <div class="flex items-start gap-3">

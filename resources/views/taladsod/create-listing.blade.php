@@ -17,7 +17,7 @@
         <div class="flex items-center justify-between mb-6">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    &#x1F4E6; ลงขายสินค้าใหม่
+                    📦 ลงขายสินค้าใหม่
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     กรอกข้อมูลสินค้าเพื่อเริ่มขายในตลาดสดไทยพร๊อม
@@ -105,7 +105,7 @@
                             ราคา (บาท) <span class="text-red-500">*</span>
                         </label>
                         <div class="relative">
-                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 font-medium">&#x0E3F;</span>
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center text-gray-400 font-medium">฿</span>
                             <input type="number"
                                    id="price"
                                    name="price"
@@ -197,7 +197,7 @@
                                accept="image/*"
                                class="hidden"
                                @change="handleImageSelect($event)">
-                        <div class="text-5xl mb-3">&#x1F4F7;</div>
+                        <div class="text-5xl mb-3">📷</div>
                         <p class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             ลากรูปภาพมาวางที่นี่ หรือ <span class="text-green-600 dark:text-green-400 underline">เลือกไฟล์</span>
                         </p>

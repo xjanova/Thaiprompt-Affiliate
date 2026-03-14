@@ -96,7 +96,7 @@
                 {{-- โลโก้ --}}
                 <div class="flex-shrink-0">
                     <a href="{{ route('taladsod.home') }}" class="flex items-center gap-2 group">
-                        <span class="text-2xl group-hover:animate-swing transition-transform">&#x1F3EA;</span>
+                        <span class="text-2xl group-hover:animate-swing transition-transform">🏪</span>
                         <span class="text-lg sm:text-xl font-bold bg-gradient-to-r from-green-600 to-green-500 bg-clip-text text-transparent">
                             ตลาดสดไทยพร๊อม
                         </span>
@@ -345,7 +345,7 @@
                 {{-- ข้อมูลแบรนด์ --}}
                 <div class="lg:col-span-1">
                     <div class="flex items-center gap-2 mb-4">
-                        <span class="text-2xl">&#x1F3EA;</span>
+                        <span class="text-2xl">🏪</span>
                         <span class="text-lg font-bold text-white">ตลาดสดไทยพร๊อม</span>
                     </div>
                     <p class="text-sm text-gray-400 leading-relaxed mb-4">
@@ -397,22 +397,22 @@
                     <ul class="space-y-2 text-sm">
                         <li>
                             <a href="{{ route('taladsod.search', ['category' => 'vegetables']) }}" class="hover:text-green-400 transition-colors flex items-center gap-2">
-                                <span>&#x1F96C;</span> ผักสด
+                                <span>🥬</span> ผักสด
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('taladsod.search', ['category' => 'fruits']) }}" class="hover:text-green-400 transition-colors flex items-center gap-2">
-                                <span>&#x1F34E;</span> ผลไม้
+                                <span>🍎</span> ผลไม้
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('taladsod.search', ['category' => 'meat']) }}" class="hover:text-green-400 transition-colors flex items-center gap-2">
-                                <span>&#x1F969;</span> เนื้อสัตว์
+                                <span>🥩</span> เนื้อสัตว์
                             </a>
                         </li>
                         <li>
                             <a href="{{ route('taladsod.search', ['category' => 'seafood']) }}" class="hover:text-green-400 transition-colors flex items-center gap-2">
-                                <span>&#x1F990;</span> อาหารทะเล
+                                <span>🦐</span> อาหารทะเล
                             </a>
                         </li>
                     </ul>

@@ -19,7 +19,7 @@
         <div class="mb-6">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 @if(isset($currentCategory))
-                    {!! $currentCategory->icon ?? '&#x1F4E6;' !!} {{ $currentCategory->name }}
+                    {!! $currentCategory->icon ?? '📦' !!} {{ $currentCategory->name }}
                 @elseif(request('q'))
                     <i class="fas fa-search text-green-500"></i> ผลการค้นหา "{{ request('q') }}"
                 @else
@@ -59,13 +59,13 @@
                         <div class="space-y-1.5 max-h-48 overflow-y-auto">
                             <a href="{{ route('taladsod.search', array_merge(request()->except('category', 'page'), [])) }}"
                                class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ !request('category') ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
-                                &#x1F4E6; ทั้งหมด
+                                📦 ทั้งหมด
                             </a>
                             @if(isset($categories))
                                 @foreach($categories as $cat)
                                     <a href="{{ route('taladsod.search', array_merge(request()->except('page'), ['category' => $cat->slug])) }}"
                                        class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ request('category') === $cat->slug ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
-                                        {!! $cat->icon ?? '&#x1F4E6;' !!} {{ $cat->name }}
+                                        {!! $cat->icon ?? '📦' !!} {{ $cat->name }}
                                     </a>
                                 @endforeach
                             @endif
@@ -196,7 +196,7 @@
                                              loading="lazy">
                                     @else
                                         <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                            &#x1F96C;
+                                            🥬
                                         </div>
                                     @endif
 
@@ -230,7 +230,7 @@
                                     </h3>
                                     <div class="flex items-baseline gap-1.5 mb-2">
                                         <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                            &#x0E3F;{{ number_format($listing->price, 0) }}
+                                            ฿{{ number_format($listing->price, 0) }}
                                         </span>
                                         <span class="text-xs text-gray-500 dark:text-gray-400">
                                             /{{ $listing->unit ?? 'กก.' }}
@@ -255,7 +255,7 @@
                 @else
                     {{-- ===== สถานะไม่พบสินค้า ===== --}}
                     <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                        <div class="text-7xl mb-6 animate-float">&#x1F50D;</div>
+                        <div class="text-7xl mb-6 animate-float">🔍</div>
                         <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-3">ไม่พบสินค้า</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6 leading-relaxed">
                             ลองเปลี่ยนคำค้นหาหรือเลือกหมวดหมู่อื่น หรือขยายรัศมีค้นหาให้กว้างขึ้น

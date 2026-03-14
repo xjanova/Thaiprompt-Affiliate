@@ -18,7 +18,7 @@
         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
                 <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    &#x1F3EA; แดชบอร์ดผู้ขาย
+                    🏪 แดชบอร์ดผู้ขาย
                 </h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     ยินดีต้อนรับ, {{ $seller->shop_name ?? 'ผู้ขาย' }}
@@ -72,7 +72,7 @@
                     </div>
                 </div>
                 <div class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                    &#x0E3F;{{ number_format($stats->total_revenue ?? 0, 0) }}
+                    ฿{{ number_format($stats->total_revenue ?? 0, 0) }}
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">รายได้รวม</div>
             </div>
@@ -137,14 +137,14 @@
                                     @if($listing->image_url ?? false)
                                         <img src="{{ $listing->image_url }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
                                     @else
-                                        <div class="w-full h-full flex items-center justify-center text-2xl">&#x1F96C;</div>
+                                        <div class="w-full h-full flex items-center justify-center text-2xl">🥬</div>
                                     @endif
                                 </div>
                                 {{-- ข้อมูล --}}
                                 <div class="flex-1 min-w-0">
                                     <h3 class="text-sm font-medium text-gray-900 dark:text-white truncate">{{ $listing->title }}</h3>
                                     <div class="flex items-center gap-3 mt-0.5">
-                                        <span class="text-sm font-bold text-green-600 dark:text-green-400">&#x0E3F;{{ number_format($listing->price, 0) }}/{{ $listing->unit ?? 'กก.' }}</span>
+                                        <span class="text-sm font-bold text-green-600 dark:text-green-400">฿{{ number_format($listing->price, 0) }}/{{ $listing->unit ?? 'กก.' }}</span>
                                         <span class="text-xs px-2 py-0.5 rounded-full {{ $listing->is_active ?? true ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400' }}">
                                             {{ $listing->is_active ?? true ? 'เปิดขาย' : 'ปิดขาย' }}
                                         </span>
@@ -172,7 +172,7 @@
                     </div>
                 @else
                     <div class="text-center py-10">
-                        <div class="text-4xl mb-3">&#x1F4E6;</div>
+                        <div class="text-4xl mb-3">📦</div>
                         <p class="text-sm text-gray-500 dark:text-gray-400 mb-3">ยังไม่มีสินค้า</p>
                         <a href="{{ route('taladsod.listing.create') }}"
                            class="inline-flex items-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
@@ -258,7 +258,7 @@
                                 {{-- จำนวนเงิน --}}
                                 <div class="text-right flex-shrink-0">
                                     <div class="text-sm font-bold text-green-600 dark:text-green-400">
-                                        &#x0E3F;{{ number_format($order->total ?? 0, 0) }}
+                                        ฿{{ number_format($order->total ?? 0, 0) }}
                                     </div>
                                 </div>
                             </div>
@@ -266,7 +266,7 @@
                     </div>
                 @else
                     <div class="text-center py-10">
-                        <div class="text-4xl mb-3">&#x1F4CB;</div>
+                        <div class="text-4xl mb-3">📋</div>
                         <p class="text-sm text-gray-500 dark:text-gray-400">ยังไม่มีออเดอร์</p>
                     </div>
                 @endif

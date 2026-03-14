@@ -503,7 +503,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
                                     <path d="M20 0C8.95 0 0 8.95 0 20c0 14 20 28 20 28s20-14 20-28C40 8.95 31.05 0 20 0z" fill="#F97316"/>
                                     <circle cx="20" cy="18" r="10" fill="white"/>
-                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#F97316">&#x1F3EA;</text>
+                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#F97316">🏪</text>
                                 </svg>
                             `),
                             scaledSize: new google.maps.Size(40, 48),
@@ -533,7 +533,7 @@
                                 <svg xmlns="http://www.w3.org/2000/svg" width="40" height="48" viewBox="0 0 40 48">
                                     <path d="M20 0C8.95 0 0 8.95 0 20c0 14 20 28 20 28s20-14 20-28C40 8.95 31.05 0 20 0z" fill="#22C55E"/>
                                     <circle cx="20" cy="18" r="10" fill="white"/>
-                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#22C55E">&#x1F3E0;</text>
+                                    <text x="20" y="23" text-anchor="middle" font-size="16" fill="#22C55E">🏠</text>
                                 </svg>
                             `),
                             scaledSize: new google.maps.Size(40, 48),
@@ -584,7 +584,7 @@
                         url: 'data:image/svg+xml,' + encodeURIComponent(`
                             <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
                                 <circle cx="24" cy="24" r="22" fill="#22C55E" stroke="white" stroke-width="3"/>
-                                <text x="24" y="30" text-anchor="middle" font-size="22" fill="white">&#x1F3CD;</text>
+                                <text x="24" y="30" text-anchor="middle" font-size="22" fill="white">🏍️</text>
                             </svg>
                         `),
                         scaledSize: new google.maps.Size(48, 48),

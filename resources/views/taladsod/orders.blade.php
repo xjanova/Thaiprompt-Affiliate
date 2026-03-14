@@ -15,7 +15,7 @@
         {{-- ===== หัวข้อ ===== --}}
         <div class="flex items-center justify-between mb-6">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                &#x1F4E6; คำสั่งซื้อของฉัน
+                📦 คำสั่งซื้อของฉัน
             </h1>
             <a href="{{ route('taladsod.home') }}"
                class="text-sm text-green-600 dark:text-green-400 hover:underline font-medium flex items-center gap-1">
@@ -85,7 +85,7 @@
                                             @if($item->listing->image_url ?? false)
                                                 <img src="{{ $item->listing->image_url }}" alt="{{ $item->listing->title ?? '' }}" class="w-full h-full object-cover">
                                             @else
-                                                <div class="w-full h-full flex items-center justify-center text-3xl">&#x1F96C;</div>
+                                                <div class="w-full h-full flex items-center justify-center text-3xl">🥬</div>
                                             @endif
                                         </div>
                                         {{-- ข้อมูลสินค้า --}}
@@ -97,7 +97,7 @@
                                                 จำนวน {{ $item->quantity ?? 1 }} {{ $item->listing->unit ?? 'กก.' }}
                                             </div>
                                             <div class="text-sm font-bold text-green-600 dark:text-green-400 mt-1">
-                                                &#x0E3F;{{ number_format($item->total ?? ($item->price * ($item->quantity ?? 1)), 0) }}
+                                                ฿{{ number_format($item->total ?? ($item->price * ($item->quantity ?? 1)), 0) }}
                                             </div>
                                         </div>
                                     </div>
@@ -125,7 +125,7 @@
                             <div>
                                 <span class="text-xs text-gray-500 dark:text-gray-400">ยอดรวม</span>
                                 <div class="text-lg font-bold text-orange-600 dark:text-orange-400">
-                                    &#x0E3F;{{ number_format($order->total ?? 0, 0) }}
+                                    ฿{{ number_format($order->total ?? 0, 0) }}
                                 </div>
                             </div>
                             <div class="flex items-center gap-2">
@@ -154,7 +154,7 @@
         @else
             {{-- ===== สถานะไม่มีคำสั่งซื้อ ===== --}}
             <div class="text-center py-20 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                <div class="text-7xl mb-6 animate-float">&#x1F6D2;</div>
+                <div class="text-7xl mb-6 animate-float">🛒</div>
                 <h3 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-3">ยังไม่มีคำสั่งซื้อ</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
                     เมื่อคุณสั่งซื้อสินค้า คำสั่งซื้อจะแสดงที่นี่ ลองค้นหาสินค้าสดใกล้บ้านคุณเลย!

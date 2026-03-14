@@ -50,7 +50,7 @@
                     </template>
                     <template x-if="!currentImage">
                         <div class="w-full h-full flex items-center justify-center text-8xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                            &#x1F96C;
+                            🥬
                         </div>
                     </template>
 
@@ -71,7 +71,7 @@
                     {{-- ป้ายเงินคืน --}}
                     @if($listing->cashback_percent ?? false)
                         <div class="absolute top-3 right-3 px-3 py-1.5 bg-orange-500 text-white text-sm font-bold rounded-full shadow-md">
-                            &#x1F4B0; คืน {{ $listing->cashback_percent }}%
+                            💰 คืน {{ $listing->cashback_percent }}%
                         </div>
                     @endif
 
@@ -140,7 +140,7 @@
                     </h1>
                     <div class="flex items-baseline gap-3 mb-4">
                         <span class="text-3xl sm:text-4xl font-extrabold text-green-600 dark:text-green-400">
-                            &#x0E3F;{{ number_format($listing->price ?? 0, 0) }}
+                            ฿{{ number_format($listing->price ?? 0, 0) }}
                         </span>
                         <span class="text-base sm:text-lg text-gray-500 dark:text-gray-400">
                             /{{ $listing->unit ?? 'กก.' }}
@@ -161,7 +161,7 @@
                         @endif
                         @if($listing->cashback_percent ?? false)
                             <span class="inline-flex items-center gap-1 px-3 py-1 bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-sm font-medium rounded-full border border-orange-200 dark:border-orange-800">
-                                &#x1F4B0; เงินคืน {{ $listing->cashback_percent }}%
+                                💰 เงินคืน {{ $listing->cashback_percent }}%
                             </span>
                         @endif
                         @if($listing->quantity ?? false)
@@ -229,7 +229,7 @@
                     @auth
                         <button @click="showOrderForm = !showOrderForm"
                                 class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2">
-                            &#x1F6D2; สั่งซื้อ
+                            🛒 สั่งซื้อ
                         </button>
 
                         {{-- ฟอร์มสั่งซื้อ --}}
@@ -254,7 +254,7 @@
                                 <input type="hidden" name="delivery_type" :value="deliveryType">
                                 <button type="submit" :disabled="ordering"
                                         class="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-bold rounded-xl transition-all">
-                                    <span x-show="!ordering">&#x2705; ยืนยันสั่งซื้อ &#x0E3F;<span x-text="({{ $listing->price }} * quantity).toLocaleString()"></span></span>
+                                    <span x-show="!ordering">✅ ยืนยันสั่งซื้อ ฿<span x-text="({{ $listing->price }} * quantity).toLocaleString()"></span></span>
                                     <span x-show="ordering">กำลังสั่งซื้อ...</span>
                                 </button>
                             </form>
@@ -262,7 +262,7 @@
                     @else
                         <a href="{{ route('login', ['redirect' => url()->current()]) }}"
                            class="w-full py-4 bg-green-500 hover:bg-green-600 text-white text-lg font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:scale-[1.02] flex items-center justify-center gap-2">
-                            &#x1F6D2; เข้าสู่ระบบเพื่อสั่งซื้อ
+                            🛒 เข้าสู่ระบบเพื่อสั่งซื้อ
                         </a>
                     @endauth
 
@@ -271,12 +271,12 @@
                         @if($listing->seller->line_url ?? false)
                             <a href="{{ $listing->seller->line_url }}" target="_blank" rel="noopener"
                                class="py-3 bg-[#06C755] hover:bg-[#05A847] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
-                                &#x1F4AC; แชทผ่าน LINE
+                                💬 แชทผ่าน LINE
                             </a>
                         @else
                             <a href="{{ config('services.line.fresh_market_add_friend_url', '#') }}" target="_blank" rel="noopener"
                                class="py-3 bg-[#06C755] hover:bg-[#05A847] text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
-                                &#x1F4AC; เพิ่มเพื่อน LINE
+                                💬 เพิ่มเพื่อน LINE
                             </a>
                         @endif
 
@@ -284,11 +284,11 @@
                         @if($listing->seller->phone ?? false)
                             <a href="tel:{{ $listing->seller->phone }}"
                                class="py-3 bg-blue-500 hover:bg-blue-600 text-white font-medium rounded-xl transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
-                                &#x1F4DE; โทร
+                                📞 โทร
                             </a>
                         @else
                             <span class="py-3 bg-gray-300 dark:bg-gray-600 text-gray-500 dark:text-gray-400 font-medium rounded-xl flex items-center justify-center gap-2 text-sm sm:text-base cursor-not-allowed">
-                                &#x1F4DE; ไม่มีเบอร์โทร
+                                📞 ไม่มีเบอร์โทร
                             </span>
                         @endif
                     </div>
@@ -299,7 +299,7 @@
         {{-- ===== สินค้าที่เกี่ยวข้อง ===== --}}
         <section class="mt-12 sm:mt-16">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                <span class="text-green-500">&#x1F331;</span> สินค้าที่เกี่ยวข้อง
+                <span class="text-green-500">🌱</span> สินค้าที่เกี่ยวข้อง
             </h2>
 
             @if(isset($relatedListings) && $relatedListings->count() > 0)
@@ -317,7 +317,7 @@
                                          loading="lazy">
                                 @else
                                     <div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-green-50 to-green-100 dark:from-gray-700 dark:to-gray-600">
-                                        &#x1F96C;
+                                        🥬
                                     </div>
                                 @endif
 
@@ -335,7 +335,7 @@
                                 </h3>
                                 <div class="flex items-baseline gap-1.5 mb-2">
                                     <span class="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">
-                                        &#x0E3F;{{ number_format($related->price, 0) }}
+                                        ฿{{ number_format($related->price, 0) }}
                                     </span>
                                     <span class="text-xs text-gray-500 dark:text-gray-400">
                                         /{{ $related->unit ?? 'กก.' }}
@@ -351,7 +351,7 @@
                 </div>
             @else
                 <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-2xl shadow-sm">
-                    <div class="text-5xl mb-3">&#x1F33F;</div>
+                    <div class="text-5xl mb-3">🌿</div>
                     <p class="text-sm text-gray-500 dark:text-gray-400">ยังไม่มีสินค้าที่เกี่ยวข้อง</p>
                 </div>
             @endif
