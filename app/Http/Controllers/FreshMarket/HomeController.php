@@ -160,6 +160,25 @@ class HomeController extends Controller
 
         $listing->incrementViews();
 
+        // รีวิวของสินค้านี้ (จาก orders ที่มี buyer_rating)
+        $reviews = FreshMarketOrder::where('listing_id', $listing->id)
+            ->withBuyerReview()
+            ->with('buyer:id,name')
+            ->latest()
+            ->limit(10)
+            ->get();
+
+        // คะแนนเฉลี่ยของสินค้านี้โดยเฉพาะ
+        $reviewStats = FreshMarketOrder::where('listing_id', $listing->id)
+            ->withBuyerReview()
+            ->selectRaw('AVG(buyer_rating) as avg_rating, COUNT(*) as total')
+            ->first();
+
+        // ค่าจัดส่งโดยประมาณ (base ฿30 + ฿10/km)
+        $settings = FreshMarketSetting::getSettings();
+        $deliveryBaseRate = $settings->delivery_base_rate ?? 30;
+        $deliveryPerKm = $settings->delivery_per_km_rate ?? 10;
+
         // สินค้าใกล้เคียง (จาก seller เดียวกันหรือหมวดเดียวกัน)
         $relatedListings = FreshMarketListing::active()
             ->inStock()
@@ -168,11 +187,14 @@ class HomeController extends Controller
                 $q->where('seller_id', $listing->seller_id)
                     ->orWhere('category_id', $listing->category_id);
             })
-            ->with('seller:id,shop_name')
+            ->with('seller:id,shop_name,rating_average')
             ->limit(6)
             ->get();
 
-        return view('taladsod.listing', compact('listing', 'relatedListings'));
+        return view('taladsod.listing', compact(
+            'listing', 'relatedListings', 'reviews', 'reviewStats',
+            'deliveryBaseRate', 'deliveryPerKm'
+        ));
     }
 
     /**
@@ -373,6 +395,59 @@ class HomeController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่');
         }
+    }
+
+    /**
+     * ยืนยันรับสินค้าแล้ว (delivered → completed)
+     */
+    public function confirmOrder(FreshMarketOrder $order)
+    {
+        if ($order->buyer_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if ($order->order_status !== 'delivered') {
+            return back()->with('error', 'ไม่สามารถยืนยันออเดอร์นี้ได้');
+        }
+
+        $this->marketService->completeOrder($order);
+
+        return redirect()
+            ->route('taladsod.orders.show', $order)
+            ->with('success', 'ยืนยันรับสินค้าสำเร็จ! กรุณาให้คะแนนผู้ขาย');
+    }
+
+    /**
+     * บันทึกรีวิว/ให้ดาว
+     */
+    public function storeReview(Request $request, FreshMarketOrder $order)
+    {
+        if ($order->buyer_id !== auth()->id()) {
+            abort(403);
+        }
+
+        if (! $order->canBeReviewed()) {
+            return back()->with('error', 'ไม่สามารถรีวิวออเดอร์นี้ได้');
+        }
+
+        $validated = $request->validate([
+            'buyer_rating' => 'required|integer|min:1|max:5',
+            'buyer_review' => 'nullable|string|max:1000',
+        ]);
+
+        // ป้องกัน race condition (double submission)
+        $updated = FreshMarketOrder::where('id', $order->id)
+            ->whereNull('buyer_rating')
+            ->update($validated);
+
+        if ($updated === 0) {
+            return back()->with('info', 'คุณให้คะแนนออเดอร์นี้ไปแล้ว');
+        }
+
+        // อัพเดทคะแนนเฉลี่ยของผู้ขาย
+        $order->seller?->updateRating();
+
+        return back()->with('success', 'ขอบคุณสำหรับรีวิว!');
     }
 
     /**

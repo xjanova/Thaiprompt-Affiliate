@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\FreshMarketLineService;
 
 /**
  * FreshMarketService - Core Business Logic ตลาดสดไทยพร๊อม
@@ -316,6 +317,9 @@ class FreshMarketService
             // 4. อัพเดทสถิติ seller
             $order->seller?->refreshStats();
 
+            // 5. ส่ง LINE ขอรีวิวจากผู้ซื้อ
+            $this->sendReviewRequest($order);
+
             Log::info('FreshMarket: order เสร็จสิ้น พร้อม commission + cashback', [
                 'order_id' => $order->id,
             ]);
@@ -508,6 +512,93 @@ class FreshMarketService
             ]);
         } catch (\Exception $e) {
             Log::error('FreshMarket: cashback error', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ส่ง LINE ขอรีวิวจากผู้ซื้อหลัง order เสร็จสิ้น
+     */
+    protected function sendReviewRequest(FreshMarketOrder $order): void
+    {
+        try {
+            $buyer = $order->buyer;
+            $lineUserId = $buyer?->line_user_id;
+
+            if (! $lineUserId) {
+                return;
+            }
+
+            $shopName = $order->seller?->shop_name ?? 'ร้านค้า';
+            $productName = $order->listing?->title ?? 'สินค้า';
+            $reviewUrl = route('taladsod.orders.show', $order);
+
+            $lineService = app(FreshMarketLineService::class);
+            $lineService->pushMessage($lineUserId, [
+                [
+                    'type' => 'flex',
+                    'altText' => "ให้คะแนนร้าน {$shopName}",
+                    'contents' => [
+                        'type' => 'bubble',
+                        'size' => 'kilo',
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'md',
+                            'contents' => [
+                                [
+                                    'type' => 'text',
+                                    'text' => '⭐ ให้คะแนนผู้ขาย',
+                                    'weight' => 'bold',
+                                    'size' => 'lg',
+                                    'color' => '#1DB446',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => "สั่งซื้อ {$productName} จาก {$shopName} สำเร็จแล้ว!",
+                                    'wrap' => true,
+                                    'size' => 'sm',
+                                    'color' => '#666666',
+                                ],
+                                [
+                                    'type' => 'text',
+                                    'text' => 'กรุณาให้คะแนนเพื่อช่วยผู้ซื้อคนอื่น',
+                                    'wrap' => true,
+                                    'size' => 'sm',
+                                    'color' => '#999999',
+                                    'margin' => 'sm',
+                                ],
+                            ],
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'action' => [
+                                        'type' => 'uri',
+                                        'label' => '⭐ ให้คะแนนเลย',
+                                        'uri' => $reviewUrl,
+                                    ],
+                                    'style' => 'primary',
+                                    'color' => '#1DB446',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+
+            Log::info('FreshMarket: ส่ง LINE ขอรีวิวสำเร็จ', [
+                'order_id' => $order->id,
+                'buyer_line_user_id' => $lineUserId,
+            ]);
+        } catch (\Throwable $e) {
+            // ไม่ให้การส่ง LINE ล้มเหลว กระทบ flow หลัก
+            Log::warning('FreshMarket: ส่ง LINE ขอรีวิวล้มเหลว', [
                 'order_id' => $order->id,
                 'error' => $e->getMessage(),
             ]);

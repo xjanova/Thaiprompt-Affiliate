@@ -147,6 +147,25 @@
                         </span>
                     </div>
 
+                    {{-- ดาวรีวิวสินค้า --}}
+                    @if(isset($reviewStats) && $reviewStats->total > 0)
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="flex items-center gap-0.5">
+                                @for($i = 1; $i <= 5; $i++)
+                                    @if($i <= floor($reviewStats->avg_rating))
+                                        <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                    @elseif($i - 0.5 <= $reviewStats->avg_rating)
+                                        <i class="fas fa-star-half-alt text-yellow-400 text-sm"></i>
+                                    @else
+                                        <i class="far fa-star text-gray-300 dark:text-gray-600 text-sm"></i>
+                                    @endif
+                                @endfor
+                            </div>
+                            <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ number_format($reviewStats->avg_rating, 1) }}</span>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">({{ $reviewStats->total }} รีวิว)</span>
+                        </div>
+                    @endif
+
                     {{-- ป้ายต่างๆ --}}
                     <div class="flex flex-wrap gap-2">
                         @if($listing->is_organic ?? false)
@@ -164,9 +183,14 @@
                                 💰 เงินคืน {{ $listing->cashback_percent }}%
                             </span>
                         @endif
-                        @if($listing->quantity ?? false)
+                        {{-- Stock urgency --}}
+                        @if($listing->quantity_available > 0 && $listing->quantity_available <= 5)
+                            <span class="inline-flex items-center gap-1 px-3 py-1 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-sm font-medium rounded-full border border-red-200 dark:border-red-800 animate-pulse">
+                                <i class="fas fa-fire"></i> เหลือเพียง {{ $listing->quantity_available }} {{ $listing->unit ?? 'ชิ้น' }}!
+                            </span>
+                        @elseif($listing->quantity_available > 0)
                             <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-sm font-medium rounded-full border border-blue-200 dark:border-blue-800">
-                                <i class="fas fa-box"></i> คงเหลือ {{ $listing->quantity }} {{ $listing->unit ?? 'กก.' }}
+                                <i class="fas fa-box"></i> คงเหลือ {{ $listing->quantity_available }} {{ $listing->unit ?? 'กก.' }}
                             </span>
                         @endif
                     </div>
@@ -203,13 +227,16 @@
                                 {{-- ดาวรีวิว --}}
                                 <div class="flex items-center gap-0.5">
                                     @for($i = 1; $i <= 5; $i++)
-                                        @if($i <= floor($listing->seller->rating ?? 0))
+                                        @if($i <= floor($listing->seller->rating_average ?? 0))
                                             <i class="fas fa-star text-yellow-400 text-xs"></i>
                                         @else
                                             <i class="far fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
                                         @endif
                                     @endfor
-                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($listing->seller->rating ?? 0, 1) }}</span>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($listing->seller->rating_average ?? 0, 1) }}</span>
+                                    @if(($listing->seller->rating_count ?? 0) > 0)
+                                        <span class="text-xs text-gray-400 dark:text-gray-500">({{ $listing->seller->rating_count }})</span>
+                                    @endif
                                 </div>
                                 {{-- ระยะทาง --}}
                                 @if($listing->distance ?? false)
@@ -222,6 +249,39 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- ===== ค่าจัดส่งโดยประมาณ ===== --}}
+                @if(isset($deliveryBaseRate))
+                    <div x-data="deliveryEstimate({{ $deliveryBaseRate }}, {{ $deliveryPerKm }}, {{ $listing->latitude ?? 'null' }}, {{ $listing->longitude ?? 'null' }})"
+                         class="bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-200 dark:border-blue-800 p-4">
+                        <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                            <i class="fas fa-truck text-blue-500"></i> ค่าจัดส่งโดยประมาณ
+                        </h3>
+                        <template x-if="!estimated">
+                            <div>
+                                <p class="text-sm text-blue-600 dark:text-blue-400 mb-2">เริ่มต้น ฿{{ number_format($deliveryBaseRate) }} + ฿{{ number_format($deliveryPerKm) }}/กม.</p>
+                                <button @click="calculate()"
+                                        :disabled="loading"
+                                        class="text-sm px-3 py-1.5 bg-blue-100 dark:bg-blue-800/50 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors">
+                                    <i class="fas fa-location-dot mr-1"></i>
+                                    <span x-text="loading ? 'กำลังคำนวณ...' : 'คำนวณค่าส่งจากตำแหน่งของฉัน'"></span>
+                                </button>
+                            </div>
+                        </template>
+                        <template x-if="estimated">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-lg font-bold text-blue-700 dark:text-blue-300">฿<span x-text="fee"></span></span>
+                                    <span class="text-xs text-blue-500 dark:text-blue-400 ml-1">(<span x-text="distance"></span> กม.)</span>
+                                </div>
+                                <span class="text-xs text-blue-400">*โดยประมาณ</span>
+                            </div>
+                        </template>
+                        <template x-if="error">
+                            <p class="text-xs text-red-500 mt-1" x-text="error"></p>
+                        </template>
+                    </div>
+                @endif
 
                 {{-- ===== ปุ่มดำเนินการ ===== --}}
                 <div class="space-y-3" x-data="{ showOrderForm: false, quantity: 1, deliveryType: 'pickup', ordering: false }">
@@ -296,6 +356,54 @@
             </div>
         </div>
 
+        {{-- ===== รีวิวจากผู้ซื้อ ===== --}}
+        @if(isset($reviews) && $reviews->count() > 0)
+            <section class="mt-12 sm:mt-16">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
+                        <span class="text-yellow-500">⭐</span> รีวิวจากผู้ซื้อ
+                        <span class="text-base font-normal text-gray-500 dark:text-gray-400">({{ $reviewStats->total ?? 0 }})</span>
+                    </h2>
+                    @if(isset($reviewStats) && $reviewStats->total > 0)
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl font-bold text-gray-900 dark:text-white">{{ number_format($reviewStats->avg_rating, 1) }}</span>
+                            <div class="flex items-center gap-0.5">
+                                @for($i = 1; $i <= 5; $i++)
+                                    <i class="{{ $i <= round($reviewStats->avg_rating) ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-300 dark:text-gray-600' }} text-sm"></i>
+                                @endfor
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <div class="space-y-4">
+                    @foreach($reviews as $review)
+                        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 p-5">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center text-white font-bold text-sm">
+                                        {{ mb_substr($review->buyer?->name ?? 'U', 0, 1) }}
+                                    </div>
+                                    <div>
+                                        <span class="font-medium text-gray-900 dark:text-white text-sm">{{ $review->buyer?->name ?? 'ผู้ซื้อ' }}</span>
+                                        <div class="flex items-center gap-0.5 mt-0.5">
+                                            @for($i = 1; $i <= 5; $i++)
+                                                <i class="{{ $i <= $review->buyer_rating ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-300 dark:text-gray-600' }} text-xs"></i>
+                                            @endfor
+                                        </div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-400 dark:text-gray-500">{{ $review->updated_at->diffForHumans() }}</span>
+                            </div>
+                            @if($review->buyer_review)
+                                <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">{{ $review->buyer_review }}</p>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </section>
+        @endif
+
         {{-- ===== สินค้าที่เกี่ยวข้อง ===== --}}
         <section class="mt-12 sm:mt-16">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-6">
@@ -341,9 +449,17 @@
                                         /{{ $related->unit ?? 'กก.' }}
                                     </span>
                                 </div>
-                                <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                    <i class="fas fa-store text-green-500"></i>
-                                    <span class="truncate">{{ $related->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                    <div class="flex items-center gap-1.5 min-w-0">
+                                        <i class="fas fa-store text-green-500"></i>
+                                        <span class="truncate">{{ $related->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                    </div>
+                                    @if(($related->seller->rating_average ?? 0) > 0)
+                                        <div class="flex items-center gap-0.5 flex-shrink-0">
+                                            <i class="fas fa-star text-yellow-400 text-[10px]"></i>
+                                            <span>{{ number_format($related->seller->rating_average, 1) }}</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </div>
                         </a>
@@ -358,4 +474,58 @@
         </section>
     </div>
 
+@endsection
+
+@section('scripts')
+<script>
+    /**
+     * คำนวณค่าจัดส่งโดยประมาณ (Haversine)
+     */
+    function deliveryEstimate(baseRate, perKm, sellerLat, sellerLng) {
+        return {
+            loading: false,
+            estimated: false,
+            fee: 0,
+            distance: 0,
+            error: null,
+
+            calculate() {
+                if (!navigator.geolocation) {
+                    this.error = 'เบราว์เซอร์ไม่รองรับ GPS';
+                    return;
+                }
+                if (!sellerLat || !sellerLng) {
+                    this.error = 'ร้านค้ายังไม่ได้ตั้งตำแหน่ง';
+                    return;
+                }
+
+                this.loading = true;
+                this.error = null;
+
+                navigator.geolocation.getCurrentPosition(
+                    (pos) => {
+                        const R = 6371;
+                        const dLat = (sellerLat - pos.coords.latitude) * Math.PI / 180;
+                        const dLng = (sellerLng - pos.coords.longitude) * Math.PI / 180;
+                        const a = Math.sin(dLat / 2) ** 2
+                            + Math.cos(pos.coords.latitude * Math.PI / 180)
+                            * Math.cos(sellerLat * Math.PI / 180)
+                            * Math.sin(dLng / 2) ** 2;
+                        const km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+                        this.distance = km.toFixed(1);
+                        this.fee = Math.round(baseRate + (perKm * km));
+                        this.estimated = true;
+                        this.loading = false;
+                    },
+                    (err) => {
+                        this.error = 'ไม่สามารถเข้าถึงตำแหน่งได้ กรุณาอนุญาต GPS';
+                        this.loading = false;
+                    },
+                    { timeout: 10000 }
+                );
+            }
+        };
+    }
+</script>
 @endsection

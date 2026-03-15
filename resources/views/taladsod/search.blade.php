@@ -236,9 +236,17 @@
                                             /{{ $listing->unit ?? 'กก.' }}
                                         </span>
                                     </div>
-                                    <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                        <i class="fas fa-store text-green-500"></i>
-                                        <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                    <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                        <div class="flex items-center gap-1.5 min-w-0">
+                                            <i class="fas fa-store text-green-500"></i>
+                                            <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                        </div>
+                                        @if(($listing->seller->rating_average ?? 0) > 0)
+                                            <div class="flex items-center gap-0.5 flex-shrink-0">
+                                                <i class="fas fa-star text-yellow-400 text-[10px]"></i>
+                                                <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
+                                            </div>
+                                        @endif
                                     </div>
                                 </div>
                             </a>

@@ -200,6 +200,20 @@ class FreshMarketOrder extends Model
         return $query->where('order_status', 'pending');
     }
 
+    public function scopeWithBuyerReview($query)
+    {
+        return $query->whereNotNull('buyer_rating');
+    }
+
+    /**
+     * ตรวจสอบว่ารีวิวได้หรือยัง (สถานะ delivered/completed + ยังไม่เคยรีวิว)
+     */
+    public function canBeReviewed(): bool
+    {
+        return in_array($this->order_status, ['delivered', 'completed'])
+            && is_null($this->getRawOriginal('buyer_rating'));
+    }
+
     // ===== Status Methods =====
 
     /**

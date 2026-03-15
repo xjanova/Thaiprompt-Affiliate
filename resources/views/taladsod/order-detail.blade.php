@@ -144,16 +144,77 @@
         </div>
     @endif
 
-    <!-- Actions -->
-    @if($order->order_status === 'delivered')
-        <div class="text-center">
-            <form action="{{ route('taladsod.orders.show', $order) }}" method="POST" class="inline">
+    <!-- Actions: ยืนยันรับสินค้า -->
+    @if($order->order_status === 'delivered' && !$order->buyer_confirmed_at)
+        <div class="text-center mb-6">
+            <form action="{{ route('taladsod.orders.confirm', $order) }}" method="POST" class="inline">
                 @csrf @method('PUT')
-                <input type="hidden" name="action" value="confirm">
                 <button type="submit" class="px-8 py-3 bg-green-600 hover:bg-green-700 text-white rounded-xl font-medium transition shadow-lg">
-                    ยืนยันรับสินค้าแล้ว
+                    ✅ ยืนยันรับสินค้าแล้ว
                 </button>
             </form>
+        </div>
+    @endif
+
+    <!-- ฟอร์มรีวิว/ให้ดาว -->
+    @if($order->canBeReviewed())
+        <div x-data="{ rating: 0, hoverRating: 0, review: '' }" class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="font-bold text-gray-900 dark:text-white mb-4">⭐ ให้คะแนนผู้ขาย</h2>
+            <form action="{{ route('taladsod.orders.review', $order) }}" method="POST">
+                @csrf
+                {{-- ดาว 1-5 --}}
+                <div class="flex items-center gap-1 mb-4">
+                    @for($i = 1; $i <= 5; $i++)
+                        <button type="button"
+                                @click="rating = {{ $i }}"
+                                @mouseenter="hoverRating = {{ $i }}"
+                                @mouseleave="hoverRating = 0"
+                                class="text-3xl transition-transform hover:scale-125 focus:outline-none cursor-pointer">
+                            <i :class="(hoverRating || rating) >= {{ $i }} ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-300 dark:text-gray-600'"></i>
+                        </button>
+                    @endfor
+                    <span class="ml-2 text-sm text-gray-500 dark:text-gray-400" x-show="rating > 0">
+                        <span x-text="['', 'แย่มาก', 'แย่', 'พอใช้', 'ดี', 'ยอดเยี่ยม'][rating]"></span>
+                    </span>
+                </div>
+                <input type="hidden" name="buyer_rating" :value="rating">
+
+                {{-- เขียนรีวิว --}}
+                <div class="mb-4">
+                    <textarea name="buyer_review"
+                              x-model="review"
+                              rows="3"
+                              maxlength="1000"
+                              placeholder="เขียนรีวิวให้ผู้ขาย (ไม่บังคับ)..."
+                              class="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"></textarea>
+                    <div class="text-right text-xs text-gray-400 mt-1">
+                        <span x-text="review.length"></span>/1000
+                    </div>
+                </div>
+
+                <button type="submit"
+                        :disabled="rating === 0"
+                        class="w-full py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-300 dark:disabled:bg-gray-600 text-white font-medium rounded-xl transition-all">
+                    <span x-show="rating > 0">ส่งรีวิว ⭐</span>
+                    <span x-show="rating === 0">กรุณาเลือกคะแนนก่อน</span>
+                </button>
+            </form>
+        </div>
+    @endif
+
+    <!-- แสดงรีวิวที่เคยให้ -->
+    @if($order->buyer_rating)
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 mb-6">
+            <h2 class="font-bold text-gray-900 dark:text-white mb-3">รีวิวของคุณ</h2>
+            <div class="flex items-center gap-1 mb-2">
+                @for($i = 1; $i <= 5; $i++)
+                    <i class="{{ $i <= $order->buyer_rating ? 'fas fa-star text-yellow-400' : 'far fa-star text-gray-300 dark:text-gray-600' }} text-lg"></i>
+                @endfor
+                <span class="ml-2 text-sm text-gray-500 dark:text-gray-400">{{ $order->buyer_rating }}/5</span>
+            </div>
+            @if($order->buyer_review)
+                <p class="text-gray-700 dark:text-gray-300 text-sm leading-relaxed">{{ $order->buyer_review }}</p>
+            @endif
         </div>
     @endif
 </div>

@@ -42,6 +42,8 @@ Route::prefix('taladsod')->name('taladsod.')->group(function () {
         Route::get('/orders', [HomeController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [HomeController::class, 'orderDetail'])->name('orders.show');
         Route::post('/orders', [HomeController::class, 'storeOrder'])->name('order.store');
+        Route::put('/orders/{order}/confirm', [HomeController::class, 'confirmOrder'])->name('orders.confirm');
+        Route::post('/orders/{order}/review', [HomeController::class, 'storeReview'])->name('orders.review');
 
         // สมัครเป็นผู้ขาย
         Route::get('/register-seller', [HomeController::class, 'registerSeller'])->name('register-seller');

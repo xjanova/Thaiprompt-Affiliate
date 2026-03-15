@@ -217,6 +217,22 @@ class FreshMarketSeller extends Model
     }
 
     /**
+     * อัพเดทคะแนนรีวิวเฉลี่ยจาก orders ที่มี buyer_rating
+     */
+    public function updateRating(): void
+    {
+        $stats = $this->orders()
+            ->whereNotNull('buyer_rating')
+            ->selectRaw('AVG(buyer_rating) as avg_rating, COUNT(*) as total')
+            ->first();
+
+        $this->update([
+            'rating_average' => round($stats->avg_rating ?? 0, 2),
+            'rating_count' => $stats->total ?? 0,
+        ]);
+    }
+
+    /**
      * หาผู้ขายจาก LINE User ID
      */
     public static function findByLineUserId(string $lineUserId): ?self

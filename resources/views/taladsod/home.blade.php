@@ -219,9 +219,17 @@
                                     /{{ $listing->unit ?? 'กก.' }}
                                 </span>
                             </div>
-                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-store text-green-500"></i>
-                                <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <i class="fas fa-store text-green-500"></i>
+                                    <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                </div>
+                                @if(($listing->seller->rating_average ?? 0) > 0)
+                                    <div class="flex items-center gap-0.5 flex-shrink-0">
+                                        <i class="fas fa-star text-yellow-400 text-[10px]"></i>
+                                        <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </a>
@@ -302,9 +310,17 @@
                                     /{{ $listing->unit ?? 'กก.' }}
                                 </span>
                             </div>
-                            <div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-                                <i class="fas fa-store text-green-500"></i>
-                                <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                            <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+                                <div class="flex items-center gap-1.5 min-w-0">
+                                    <i class="fas fa-store text-green-500"></i>
+                                    <span class="truncate">{{ $listing->seller->shop_name ?? 'ร้านค้า' }}</span>
+                                </div>
+                                @if(($listing->seller->rating_average ?? 0) > 0)
+                                    <div class="flex items-center gap-0.5 flex-shrink-0">
+                                        <i class="fas fa-star text-yellow-400 text-[10px]"></i>
+                                        <span>{{ number_format($listing->seller->rating_average, 1) }}</span>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </a>
@@ -351,15 +367,15 @@
                         {{-- ดาวรีวิว --}}
                         <div class="flex items-center justify-center gap-0.5 mb-2">
                             @for($i = 1; $i <= 5; $i++)
-                                @if($i <= floor($seller->rating ?? 0))
+                                @if($i <= floor($seller->rating_average ?? 0))
                                     <i class="fas fa-star text-yellow-400 text-xs"></i>
-                                @elseif($i - 0.5 <= ($seller->rating ?? 0))
+                                @elseif($i - 0.5 <= ($seller->rating_average ?? 0))
                                     <i class="fas fa-star-half-alt text-yellow-400 text-xs"></i>
                                 @else
                                     <i class="far fa-star text-gray-300 dark:text-gray-600 text-xs"></i>
                                 @endif
                             @endfor
-                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($seller->rating ?? 0, 1) }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400 ml-1">{{ number_format($seller->rating_average ?? 0, 1) }}</span>
                         </div>
 
                         {{-- ยอดขาย --}}
