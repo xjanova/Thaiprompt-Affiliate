@@ -81,6 +81,12 @@ class RiderJob extends Model
         'gps_lost_at',
         'gps_warning_count',
         'buyer_line_user_id',
+        'dispatch_type',
+        'dispatch_attempts',
+        'current_offer_rider_id',
+        'offer_expires_at',
+        'offer_sent_at',
+        'candidate_riders',
     ];
 
     /**
@@ -112,6 +118,10 @@ class RiderJob extends Model
         'gps_active' => 'boolean',
         'gps_lost_at' => 'datetime',
         'gps_warning_count' => 'integer',
+        'dispatch_attempts' => 'array',
+        'candidate_riders' => 'array',
+        'offer_expires_at' => 'datetime',
+        'offer_sent_at' => 'datetime',
     ];
 
     /**
@@ -303,12 +313,20 @@ class RiderJob extends Model
     // =====================================================
 
     /**
-     * ไรเดอร์รับงาน
+     * ไรเดอร์รับงาน (ใช้สำหรับ direct dispatch เท่านั้น)
+     *
+     * สำหรับ cascade/broadcast ให้ใช้ RiderDispatchService::handleRiderAccept() แทน
+     * เพื่อป้องกัน race condition
      */
     public function accept(): void
     {
         if ($this->status !== 'pending') {
             throw new \Exception('ไม่สามารถรับงานนี้ได้');
+        }
+
+        // cascade/broadcast ต้องใช้ RiderDispatchService::handleRiderAccept()
+        if (in_array($this->dispatch_type, ['auto', 'broadcast']) && $this->candidate_riders) {
+            throw new \Exception('งานประเภท cascade/broadcast ต้องใช้ RiderDispatchService::handleRiderAccept()');
         }
 
         $this->update([
@@ -465,5 +483,101 @@ class RiderJob extends Model
             'gps_active' => true,
             'gps_lost_at' => null,
         ]);
+    }
+
+    // =====================================================
+    // Dispatch Tracking Methods
+    // =====================================================
+
+    /**
+     * บันทึกการเสนองานให้ไรเดอร์
+     */
+    public function recordOffer(int $riderId, int $timeoutSeconds = 120): void
+    {
+        $attempts = $this->dispatch_attempts ?? [];
+        $attempts[] = [
+            'rider_id' => $riderId,
+            'sent_at' => now()->toIso8601String(),
+            'status' => 'pending',
+        ];
+
+        $this->update([
+            'current_offer_rider_id' => $riderId,
+            'offer_sent_at' => now(),
+            'offer_expires_at' => now()->addSeconds($timeoutSeconds),
+            'dispatch_attempts' => $attempts,
+        ]);
+    }
+
+    /**
+     * บันทึกผลตอบรับจากไรเดอร์
+     */
+    public function recordOfferResponse(int $riderId, string $status): void
+    {
+        $attempts = $this->dispatch_attempts ?? [];
+
+        foreach ($attempts as &$attempt) {
+            if ($attempt['rider_id'] === $riderId && $attempt['status'] === 'pending') {
+                $attempt['status'] = $status; // accepted, rejected, expired
+                $attempt['responded_at'] = now()->toIso8601String();
+                break;
+            }
+        }
+        unset($attempt);
+
+        $updateData = ['dispatch_attempts' => $attempts];
+
+        // ถ้าไม่ใช่ accepted ให้เคลียร์ current offer
+        if ($status !== 'accepted') {
+            $updateData['current_offer_rider_id'] = null;
+            $updateData['offer_expires_at'] = null;
+        }
+
+        $this->update($updateData);
+    }
+
+    /**
+     * ตรวจสอบว่า offer ปัจจุบันหมดเวลาแล้วหรือยัง
+     */
+    public function isOfferExpired(): bool
+    {
+        return $this->offer_expires_at && $this->offer_expires_at->isPast();
+    }
+
+    /**
+     * ตรวจสอบว่ามี offer ที่รอตอบอยู่หรือไม่
+     */
+    public function hasPendingOffer(): bool
+    {
+        return $this->current_offer_rider_id !== null
+            && $this->offer_expires_at
+            && $this->offer_expires_at->isFuture();
+    }
+
+    /**
+     * ดึงไรเดอร์ถัดไปจากรายการ candidates
+     */
+    public function getNextCandidateRiderId(): ?int
+    {
+        $candidates = $this->candidate_riders ?? [];
+        $attempted = collect($this->dispatch_attempts ?? [])
+            ->pluck('rider_id')
+            ->toArray();
+
+        foreach ($candidates as $riderId) {
+            if (! in_array($riderId, $attempted)) {
+                return $riderId;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็น broadcast dispatch หรือไม่
+     */
+    public function isBroadcast(): bool
+    {
+        return $this->dispatch_type === 'broadcast';
     }
 }

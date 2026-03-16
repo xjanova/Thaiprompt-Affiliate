@@ -69,6 +69,9 @@ class FreshMarketSeller extends Model
         'total_revenue',
         'rating_average',
         'rating_count',
+        'broadcast_credits',
+        'broadcast_package_type',
+        'broadcast_package_expires_at',
         'mlm_member_id',
         'referral_code',
     ];
@@ -86,6 +89,8 @@ class FreshMarketSeller extends Model
         'total_revenue' => 'decimal:2',
         'rating_average' => 'decimal:2',
         'rating_count' => 'integer',
+        'broadcast_credits' => 'integer',
+        'broadcast_package_expires_at' => 'datetime',
     ];
 
     /**
@@ -238,5 +243,45 @@ class FreshMarketSeller extends Model
     public static function findByLineUserId(string $lineUserId): ?self
     {
         return self::where('line_user_id', $lineUserId)->first();
+    }
+
+    // ===== Broadcast Methods =====
+
+    /**
+     * ตรวจสอบว่ามี broadcast credits คงเหลือ
+     */
+    public function hasBroadcastCredits(): bool
+    {
+        if ($this->broadcast_package_type === 'unlimited'
+            && $this->broadcast_package_expires_at?->isFuture()) {
+            return true;
+        }
+
+        return $this->broadcast_credits > 0;
+    }
+
+    /**
+     * ใช้ broadcast credit 1 ครั้ง (atomic เพื่อป้องกัน race condition)
+     */
+    public function useBroadcastCredit(): bool
+    {
+        // unlimited ไม่ต้องหักเครดิต
+        if ($this->broadcast_package_type === 'unlimited'
+            && $this->broadcast_package_expires_at?->isFuture()) {
+            return true;
+        }
+
+        // atomic decrement: หักเฉพาะเมื่อยังมีเครดิตเหลือ
+        $updated = static::where('id', $this->id)
+            ->where('broadcast_credits', '>', 0)
+            ->update(['broadcast_credits' => \Illuminate\Support\Facades\DB::raw('broadcast_credits - 1')]);
+
+        if ($updated > 0) {
+            $this->refresh();
+
+            return true;
+        }
+
+        return false;
     }
 }

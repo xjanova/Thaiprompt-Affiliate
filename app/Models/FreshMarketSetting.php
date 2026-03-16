@@ -121,6 +121,10 @@ class FreshMarketSetting extends Model
         'gps_lost_timeout_seconds',
         'tracking_link_expiry_hours',
         'gps_warning_max',
+        // Rider Dispatch & Broadcast Settings
+        'rider_offer_timeout_seconds',
+        'broadcast_max_radius_km',
+        'max_dispatch_attempts',
     ];
 
     /**
@@ -169,6 +173,10 @@ class FreshMarketSetting extends Model
         'gps_lost_timeout_seconds' => 'integer',
         'tracking_link_expiry_hours' => 'integer',
         'gps_warning_max' => 'integer',
+        // Rider Dispatch & Broadcast Settings
+        'rider_offer_timeout_seconds' => 'integer',
+        'broadcast_max_radius_km' => 'decimal:2',
+        'max_dispatch_attempts' => 'integer',
     ];
 
     /**

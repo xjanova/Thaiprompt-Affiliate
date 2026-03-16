@@ -10,6 +10,8 @@ use App\Models\FreshMarketSeller;
 use App\Models\FreshMarketSetting;
 use App\Models\MlmMember;
 use App\Models\MlmPlan;
+use App\Models\Rider;
+use App\Models\RiderJob;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -474,6 +476,8 @@ class FreshMarketChannelManager
             'edit_order' => $this->handleEditOrderPostback($conversation),
             'track_order' => $this->handleTrackOrderPostback($lineUserId, $params, $conversation),
             'sell_more' => $this->handleSellMorePostback($conversation),
+            'rider_accept_job' => $this->handleRiderAcceptJobPostback($lineUserId, $params),
+            'rider_reject_job' => $this->handleRiderRejectJobPostback($lineUserId, $params),
             default => $this->buildGreetingWithButtons($conversation),
         };
 
@@ -1570,6 +1574,95 @@ class FreshMarketChannelManager
 
         return [
             'text' => "{$progress}\n\n📸 ส่งรูปสินค้ามาเลยค่ะ (ได้สูงสุด 5 รูป)\n\nพิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+        ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  RIDER JOB ACCEPT / REJECT               ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * Postback: ไรเดอร์กดรับงาน
+     */
+    protected function handleRiderAcceptJobPostback(string $lineUserId, array $params): ?array
+    {
+        $jobId = $params['job_id'] ?? null;
+
+        if (! $jobId) {
+            return ['text' => '❌ ไม่พบข้อมูลงาน'];
+        }
+
+        $rider = Rider::where('line_user_id', $lineUserId)->first();
+
+        if (! $rider) {
+            return ['text' => '❌ ไม่พบข้อมูลไรเดอร์ กรุณาลงทะเบียนก่อน'];
+        }
+
+        $job = RiderJob::find($jobId);
+
+        if (! $job) {
+            return ['text' => '❌ ไม่พบงานนี้ในระบบ'];
+        }
+
+        if ($job->status !== 'pending') {
+            return ['text' => '⚠️ งานนี้มีไรเดอร์รับไปแล้ว ขอบคุณที่สนใจค่ะ!'];
+        }
+
+        $dispatchService = new RiderDispatchService();
+        $accepted = $dispatchService->handleRiderAccept($job, $rider);
+
+        if (! $accepted) {
+            return ['text' => '⚠️ งานนี้มีไรเดอร์อื่นรับไปแล้ว ขอบคุณที่สนใจค่ะ!'];
+        }
+
+        // แจ้งไรเดอร์อื่นว่างานถูกรับแล้ว (broadcast)
+        $dispatchService->notifyOtherRidersJobTaken($job->fresh());
+
+        return [
+            'text' => "✅ รับงานสำเร็จ!\n\n"
+                . "📦 งาน: {$job->title}\n"
+                . "📍 รับ: " . mb_substr($job->pickup_address, 0, 30) . "\n"
+                . "📦 ส่ง: " . mb_substr($job->delivery_address, 0, 30) . "\n"
+                . "💰 รายได้: ฿" . number_format($job->rider_earnings) . "\n\n"
+                . "🗺️ กรุณาเดินทางไปรับสินค้าที่ร้านค้า",
+        ];
+    }
+
+    /**
+     * Postback: ไรเดอร์กดปฏิเสธงาน
+     */
+    protected function handleRiderRejectJobPostback(string $lineUserId, array $params): ?array
+    {
+        $jobId = $params['job_id'] ?? null;
+
+        if (! $jobId) {
+            return ['text' => '❌ ไม่พบข้อมูลงาน'];
+        }
+
+        $rider = Rider::where('line_user_id', $lineUserId)->first();
+
+        if (! $rider) {
+            return ['text' => '❌ ไม่พบข้อมูลไรเดอร์'];
+        }
+
+        $job = RiderJob::find($jobId);
+
+        if (! $job || $job->status !== 'pending') {
+            return ['text' => 'ℹ️ งานนี้ไม่ได้อยู่ในสถานะรอรับแล้ว'];
+        }
+
+        // Cascade: ตรวจสอบว่าเป็นไรเดอร์ที่กำลังได้รับ offer อยู่
+        if ($job->dispatch_type === 'auto'
+            && $job->current_offer_rider_id
+            && $job->current_offer_rider_id !== $rider->id) {
+            return ['text' => 'ℹ️ งานนี้ถูกเสนอให้ไรเดอร์คนอื่นแล้ว'];
+        }
+
+        $dispatchService = new RiderDispatchService();
+        $dispatchService->handleRiderReject($job, $rider);
+
+        return [
+            'text' => "ℹ️ ปฏิเสธงาน {$job->job_number} แล้ว\n\nงานจะถูกส่งต่อให้ไรเดอร์คนอื่น",
         ];
     }
 

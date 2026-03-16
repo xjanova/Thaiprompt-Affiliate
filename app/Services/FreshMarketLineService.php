@@ -784,6 +784,197 @@ class FreshMarketLineService
         ];
     }
 
+    // ===== Rider Dispatch Flex Messages =====
+
+    /**
+     * สร้าง Flex Message เสนองานให้ไรเดอร์ (มีปุ่มรับ/ปฏิเสธ)
+     *
+     * @param array $job ข้อมูลงาน: job_id, job_number, title, pickup_address, delivery_address,
+     *                   distance_km, total_fee, rider_earnings, dispatch_type
+     * @return array Flex Bubble
+     */
+    public function buildRiderJobOfferFlex(array $job): array
+    {
+        $primaryColor = $this->settings->line_flex_primary_color ?? '#22C55E';
+        $earnings = number_format($job['rider_earnings'] ?? 0);
+        $totalFee = number_format($job['total_fee'] ?? 0);
+        $distance = number_format($job['distance_km'] ?? 0, 1);
+        $isBroadcast = ($job['dispatch_type'] ?? 'auto') === 'broadcast';
+
+        return [
+            'type' => 'bubble',
+            'size' => 'mega',
+            'header' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'backgroundColor' => $isBroadcast ? '#F59E0B' : $primaryColor,
+                'paddingAll' => 'lg',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $isBroadcast ? '📢 งาน Broadcast' : '🛵 งานใหม่สำหรับคุณ!',
+                        'color' => '#FFFFFF',
+                        'weight' => 'bold',
+                        'size' => 'lg',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => $job['job_number'] ?? '',
+                        'color' => '#FFFFFFCC',
+                        'size' => 'xs',
+                        'margin' => 'sm',
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => $job['title'] ?? 'ส่งของตลาดสด',
+                        'weight' => 'bold',
+                        'size' => 'md',
+                        'wrap' => true,
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'md',
+                    ],
+                    // จุดรับ
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '📍 รับ',
+                                'size' => 'sm',
+                                'color' => '#888888',
+                                'flex' => 2,
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => mb_substr($job['pickup_address'] ?? '-', 0, 40),
+                                'size' => 'sm',
+                                'wrap' => true,
+                                'flex' => 5,
+                            ],
+                        ],
+                    ],
+                    // จุดส่ง
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '📦 ส่ง',
+                                'size' => 'sm',
+                                'color' => '#888888',
+                                'flex' => 2,
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => mb_substr($job['delivery_address'] ?? '-', 0, 40),
+                                'size' => 'sm',
+                                'wrap' => true,
+                                'flex' => 5,
+                            ],
+                        ],
+                    ],
+                    [
+                        'type' => 'separator',
+                        'margin' => 'md',
+                    ],
+                    // ระยะทาง + ค่าส่ง
+                    [
+                        'type' => 'box',
+                        'layout' => 'horizontal',
+                        'spacing' => 'sm',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => "🛣️ {$distance} กม.",
+                                'size' => 'sm',
+                                'color' => '#888888',
+                                'flex' => 3,
+                            ],
+                            [
+                                'type' => 'text',
+                                'text' => "💰 รายได้ ฿{$earnings}",
+                                'size' => 'md',
+                                'weight' => 'bold',
+                                'color' => $primaryColor,
+                                'flex' => 4,
+                                'align' => 'end',
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'spacing' => 'sm',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => $primaryColor,
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '✅ รับงาน',
+                            'data' => 'action=rider_accept_job&job_id=' . ($job['job_id'] ?? 0),
+                        ],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'action' => [
+                            'type' => 'postback',
+                            'label' => '❌ ปฏิเสธ',
+                            'data' => 'action=rider_reject_job&job_id=' . ($job['job_id'] ?? 0),
+                        ],
+                    ],
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Flex Message แจ้งไรเดอร์ว่างานถูกรับแล้วโดยคนอื่น (สำหรับ broadcast)
+     */
+    public function buildJobTakenFlex(string $jobNumber): array
+    {
+        return [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'contents' => [
+                    [
+                        'type' => 'text',
+                        'text' => '⚠️ งานถูกรับแล้ว',
+                        'weight' => 'bold',
+                        'size' => 'md',
+                    ],
+                    [
+                        'type' => 'text',
+                        'text' => "งาน {$jobNumber} มีไรเดอร์คนอื่นรับไปแล้ว ขอบคุณที่สนใจ!",
+                        'size' => 'sm',
+                        'color' => '#888888',
+                        'wrap' => true,
+                        'margin' => 'md',
+                    ],
+                ],
+            ],
+        ];
+    }
+
     // ===== Internal API Call =====
 
     /**

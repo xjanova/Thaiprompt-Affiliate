@@ -88,6 +88,9 @@ class Rider extends Model
         'last_location_update',
         'approved_at',
         'approved_by',
+        'preferred_job_types',
+        'preferred_radius_km',
+        'preferred_min_fee',
     ];
 
     /**
@@ -112,6 +115,9 @@ class Rider extends Model
         'deposit_paid_at' => 'datetime',
         'fresh_market_linked' => 'boolean',
         'service_categories' => 'array',
+        'preferred_job_types' => 'array',
+        'preferred_radius_km' => 'decimal:2',
+        'preferred_min_fee' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -520,5 +526,78 @@ class Rider extends Model
             'line_user_id' => $lineUserId,
             'fresh_market_linked' => true,
         ]);
+    }
+
+    // =====================================================
+    // Preference Methods
+    // =====================================================
+
+    /**
+     * ตรวจสอบว่าไรเดอร์ยอมรับงานประเภทนี้หรือไม่
+     */
+    public function acceptsJobType(string $jobType): bool
+    {
+        // ถ้าไม่ได้ตั้งค่า = รับทุกงาน
+        if (empty($this->preferred_job_types)) {
+            return true;
+        }
+
+        return in_array($jobType, $this->preferred_job_types);
+    }
+
+    /**
+     * ตรวจสอบว่าระยะทางอยู่ในรัศมีที่ไรเดอร์ยอมรับหรือไม่
+     */
+    public function acceptsDistance(float $distanceKm): bool
+    {
+        if (! $this->preferred_radius_km || $this->preferred_radius_km <= 0) {
+            return true;
+        }
+
+        return $distanceKm <= (float) $this->preferred_radius_km;
+    }
+
+    /**
+     * ตรวจสอบว่าค่าส่งถึงขั้นต่ำที่ไรเดอร์ยอมรับหรือไม่
+     */
+    public function acceptsFee(float $fee): bool
+    {
+        if (! $this->preferred_min_fee || $this->preferred_min_fee <= 0) {
+            return true;
+        }
+
+        return $fee >= (float) $this->preferred_min_fee;
+    }
+
+    /**
+     * ตรวจสอบว่าไรเดอร์ตรงตามเงื่อนไขทั้งหมดของงาน
+     */
+    public function matchesJob(string $jobType, float $distanceKm, float $fee): bool
+    {
+        return $this->acceptsJobType($jobType)
+            && $this->acceptsDistance($distanceKm)
+            && $this->acceptsFee($fee);
+    }
+
+    /**
+     * อัพเดท preferences ของไรเดอร์
+     */
+    public function updatePreferences(array $preferences): void
+    {
+        $data = [];
+
+        if (array_key_exists('job_types', $preferences)) {
+            $data['preferred_job_types'] = $preferences['job_types'];
+        }
+        if (array_key_exists('radius_km', $preferences)) {
+            $data['preferred_radius_km'] = $preferences['radius_km'];
+        }
+        if (array_key_exists('min_fee', $preferences)) {
+            $data['preferred_min_fee'] = $preferences['min_fee'];
+        }
+
+        if (! empty($data)) {
+            $this->update($data);
+        }
     }
 }
