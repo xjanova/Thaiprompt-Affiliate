@@ -348,7 +348,7 @@ class FortuneCommissionService
                 return;
             }
 
-            $balanceBefore = (float) $wallet->balance;
+            $balanceBefore = (float) ($wallet->balance ?? 0);
             $balanceAfter = $balanceBefore + $amount;
             $levelName = $level === 1 ? 'สายตรง' : 'หลาน';
 

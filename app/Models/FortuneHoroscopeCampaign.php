@@ -337,7 +337,7 @@ class FortuneHoroscopeCampaign extends Model
     {
         $this->update(['status' => self::STATUS_PAUSED]);
 
-        return $this;
+        return $this->fresh();
     }
 
     /**
@@ -347,7 +347,7 @@ class FortuneHoroscopeCampaign extends Model
     {
         $this->update(['status' => self::STATUS_CANCELLED]);
 
-        return $this;
+        return $this->fresh();
     }
 
     /**
@@ -357,7 +357,7 @@ class FortuneHoroscopeCampaign extends Model
     {
         $this->update(['last_error' => $error]);
 
-        return $this;
+        return $this->fresh();
     }
 
     // ============================================================

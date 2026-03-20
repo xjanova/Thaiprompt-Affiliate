@@ -254,6 +254,6 @@ class FortuneReferral extends Model
         // ลบ @ นำหน้าแล้วใส่ %40 แทน (URL encode)
         $basicId = ltrim($botBasicId, '@');
 
-        return 'https://line.me/R/oaMessage/%40'.$basicId.'/?ref_'.$this->referral_token;
+        return 'https://line.me/R/oaMessage/%40'.rawurlencode($basicId).'/?ref_'.$this->referral_token;
     }
 }

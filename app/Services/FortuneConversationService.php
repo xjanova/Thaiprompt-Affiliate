@@ -561,7 +561,8 @@ class FortuneConversationService
             // ⚠️ ไม่ block คำถามข้อถัดไป เพราะเช็ค message content ไม่ใช่ user ID
             $msgHash = md5($facebookUserId.':'.$messageText);
             $dedupKey = "fortune:dedup:{$msgHash}";
-            if (Cache::has($dedupKey)) {
+            // ใช้ Cache::add() (atomic) แทน has()+put() เพื่อป้องกัน race condition
+            if (! Cache::add($dedupKey, true, 5)) {
                 Log::info('Fortune processMessage: ข้อความซ้ำ (dedup) ข้ามไป', [
                     'facebook_user_id' => $facebookUserId,
                     'text_preview' => mb_substr($messageText, 0, 30),
@@ -573,8 +574,6 @@ class FortuneConversationService
                     'reading' => null,
                 ];
             }
-            // ตั้ง dedup flag 5 วินาที (ข้อความเดียวกันที่มาภายใน 5 วินาทีจะถูกข้าม)
-            Cache::put($dedupKey, true, 5);
 
             // ✅ Simple mutex: ป้องกัน concurrent processing สำหรับ user คนเดียวกัน
             // ใช้ Cache::put แทน Cache::lock เพื่อให้ทำงานกับทุก cache driver
@@ -582,9 +581,9 @@ class FortuneConversationService
             $lockAcquired = false;
 
             // พยายามขอ lock — ถ้าไม่ได้ รอแล้วลองใหม่
+            // ใช้ Cache::add() (atomic) แทน has()+put() เพื่อป้องกัน race condition
             for ($lockAttempt = 0; $lockAttempt < 3; $lockAttempt++) {
-                if (! Cache::has($lockKey)) {
-                    Cache::put($lockKey, true, 8); // TTL 8 วินาที (auto-expire เป็น safety net)
+                if (Cache::add($lockKey, true, 8)) { // TTL 8 วินาที (auto-expire เป็น safety net)
                     $lockAcquired = true;
                     break;
                 }
