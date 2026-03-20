@@ -362,7 +362,9 @@ class FortuneReading extends Model
      */
     public function getProfileData(string $key, $default = null)
     {
-        return $this->user_profile[$key] ?? $default;
+        $profile = $this->user_profile;
+
+        return is_array($profile) ? ($profile[$key] ?? $default) : $default;
     }
 
     /**
@@ -603,7 +605,9 @@ class FortuneReading extends Model
      */
     public function getConversationState(string $key, $default = null)
     {
-        return $this->conversation_state[$key] ?? $default;
+        $state = $this->conversation_state;
+
+        return is_array($state) ? ($state[$key] ?? $default) : $default;
     }
 
     /**

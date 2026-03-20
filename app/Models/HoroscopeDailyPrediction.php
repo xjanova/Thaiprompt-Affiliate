@@ -150,8 +150,13 @@ class HoroscopeDailyPrediction extends Model
      */
     public function getAverageScoreAttribute(): float
     {
-        return round(($this->overall_score + $this->love_score + $this->career_score
-            + $this->finance_score + $this->health_score) / 5, 1);
+        return round((
+            ($this->overall_score ?? 0) +
+            ($this->love_score ?? 0) +
+            ($this->career_score ?? 0) +
+            ($this->finance_score ?? 0) +
+            ($this->health_score ?? 0)
+        ) / 5, 1);
     }
 
     /**
