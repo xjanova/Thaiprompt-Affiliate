@@ -5,6 +5,7 @@ namespace App\Http\Controllers\User;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Settings Controller สำหรับจัดการการตั้งค่าของ User
@@ -128,13 +129,17 @@ class SettingsController extends Controller
      */
     private function getActiveSessionsCount(): int
     {
-        // TODO: Implement session counting logic
-        // ตัวอย่างการนับจาก sessions table (ถ้ามี)
-        // return DB::table('sessions')
-        //     ->where('user_id', Auth::id())
-        //     ->count();
+        try {
+            if (\Schema::hasTable('sessions')) {
+                return DB::table('sessions')
+                    ->where('user_id', Auth::id())
+                    ->count();
+            }
+        } catch (\Exception $e) {
+            // ถ้า sessions table ไม่มีหรือ error ให้ return 1
+        }
 
-        return 1; // ตอนนี้ return 1 (session ปัจจุบัน)
+        return 1;
     }
 
     /**
@@ -144,12 +149,18 @@ class SettingsController extends Controller
      */
     public function deleteSession(Request $request, string $sessionId)
     {
-        // TODO: Implement session deletion logic
-        // ตัวอย่าง:
-        // DB::table('sessions')
-        //     ->where('id', $sessionId)
-        //     ->where('user_id', Auth::id())
-        //     ->delete();
+        try {
+            if (\Schema::hasTable('sessions')) {
+                DB::table('sessions')
+                    ->where('id', $sessionId)
+                    ->where('user_id', Auth::id())
+                    ->delete();
+            }
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('user.settings')
+                ->with('error', 'ไม่สามารถลบ session ได้');
+        }
 
         return redirect()
             ->route('user.settings')
@@ -163,12 +174,18 @@ class SettingsController extends Controller
      */
     public function deleteOtherSessions(Request $request)
     {
-        // TODO: Implement logic to delete all sessions except current
-        // ตัวอย่าง:
-        // DB::table('sessions')
-        //     ->where('user_id', Auth::id())
-        //     ->where('id', '!=', $request->session()->getId())
-        //     ->delete();
+        try {
+            if (\Schema::hasTable('sessions')) {
+                DB::table('sessions')
+                    ->where('user_id', Auth::id())
+                    ->where('id', '!=', $request->session()->getId())
+                    ->delete();
+            }
+        } catch (\Exception $e) {
+            return redirect()
+                ->route('user.settings')
+                ->with('error', 'ไม่สามารถลบ sessions อื่นๆ ได้');
+        }
 
         return redirect()
             ->route('user.settings')

@@ -47,8 +47,10 @@ class RegisterController extends Controller
             $referrerMember = MlmMember::where('member_code', $referralCode)->first();
             if ($referrerMember) {
                 $referrer = $referrerMember->user;
-                $referrerName = $referrer->name;
-                $referrerPicture = $referrer->profile_picture ?? $referrer->line_picture_url;
+                if ($referrer) {
+                    $referrerName = $referrer->name;
+                    $referrerPicture = $referrer->profile_picture ?? $referrer->line_picture_url;
+                }
             }
         }
 
@@ -59,7 +61,7 @@ class RegisterController extends Controller
             if ($defaultSponsorCode) {
                 $defaultSponsorMember = MlmMember::where('member_code', $defaultSponsorCode)->first();
                 if ($defaultSponsorMember) {
-                    $defaultSponsorName = $defaultSponsorMember->user->name;
+                    $defaultSponsorName = $defaultSponsorMember->user?->name;
                 }
             }
         }
@@ -163,7 +165,9 @@ class RegisterController extends Controller
             $tokenService->storeAccessToken($user, $lineProfile['line_access_token']);
         }
 
-        // Create MLM member account
+        // Create MLM member account (ครอบด้วย transaction เพื่อความถูกต้องของข้อมูล)
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
         $parentMember = null;
         $referralCode = $validated['referral_code'] ?? null;
 
@@ -263,6 +267,19 @@ class RegisterController extends Controller
             // Clear LINE temp profile from session
             Session::forget('line_temp_profile');
             Session::forget('line_login_referral');
+        }
+
+        \Illuminate\Support\Facades\DB::commit();
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Log::error('Registration MLM member creation failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'เกิดข้อผิดพลาดในการสร้างบัญชี กรุณาลองใหม่อีกครั้ง');
         }
 
         // Log the user in

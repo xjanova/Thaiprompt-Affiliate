@@ -59,7 +59,7 @@ class TwoFactorController extends Controller
         }
 
         // แสดง recovery codes
-        return redirect()->route('two-factor.recovery-codes', ['codes' => json_encode($result['recovery_codes'])])
+        return redirect()->route('user.two-factor.recovery-codes', ['codes' => json_encode($result['recovery_codes'])])
             ->with('success', $result['message']);
     }
 

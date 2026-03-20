@@ -186,18 +186,23 @@ class DashboardController extends Controller
         $chartLabels = [];
         $chartValues = [];
 
+        // ดึงข้อมูลคอมมิชชัน 12 เดือนในคำสั่งเดียว (แทน 12 queries)
+        $startDate = now()->subMonths(11)->startOfMonth();
+        $monthlyCommissions = $user->mlmCommissions()
+            ->where('created_at', '>=', $startDate)
+            ->whereIn('status', ['approved', 'paid'])
+            ->selectRaw('YEAR(created_at) as year, MONTH(created_at) as month, SUM(commission_amount) as total')
+            ->groupByRaw('YEAR(created_at), MONTH(created_at)')
+            ->get()
+            ->keyBy(fn ($item) => $item->year . '-' . $item->month);
+
         for ($i = 11; $i >= 0; $i--) {
             $date = now()->subMonths($i);
+            $key = $date->year . '-' . $date->month;
             $monthName = $date->locale('th')->translatedFormat('M Y');
 
-            $monthTotal = $user->mlmCommissions()
-                ->whereYear('created_at', $date->year)
-                ->whereMonth('created_at', $date->month)
-                ->whereIn('status', ['approved', 'paid'])
-                ->sum('commission_amount') ?? 0;
-
             $chartLabels[] = $monthName;
-            $chartValues[] = (float) $monthTotal;
+            $chartValues[] = (float) ($monthlyCommissions[$key]->total ?? 0);
         }
 
         // ===============================================

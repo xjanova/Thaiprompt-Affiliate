@@ -156,12 +156,6 @@ Route::prefix('v1')->group(function () {
             Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
         });
 
-        // Mobile Profile Avatar (alternative endpoint)
-        Route::prefix('mobile/profile')->group(function () {
-            Route::post('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'uploadAvatar']);
-            Route::delete('/avatar', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'deleteAvatar']);
-        });
-
         // Products (Mobile App E-commerce)
         Route::prefix('products')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\MobileApiController::class, 'getProducts']);
