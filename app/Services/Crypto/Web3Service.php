@@ -18,9 +18,9 @@ class Web3Service
     public function __construct()
     {
         $this->rpcs = [
-            'ethereum' => env('ETHEREUM_RPC_URL', 'https://ethereum.publicnode.com'),
-            'bsc' => env('BSC_RPC_URL', 'https://bsc-dataseed.binance.org'),
-            'polygon' => env('POLYGON_RPC_URL', 'https://polygon-rpc.com'),
+            'ethereum' => config('crypto.networks.ethereum.rpc_url', 'https://ethereum.publicnode.com'),
+            'bsc' => config('crypto.networks.bsc.rpc_url', 'https://bsc-dataseed.binance.org'),
+            'polygon' => config('crypto.networks.polygon.rpc_url', 'https://polygon-rpc.com'),
         ];
 
         $this->explorers = [

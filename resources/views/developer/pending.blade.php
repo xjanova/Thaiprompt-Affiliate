@@ -142,7 +142,7 @@
                         </div>
                         <div>
                             <span class="text-slate-500 dark:text-slate-400">สถานะ:</span>
-                            <span class="ml-2">{!! $developerProfile->status_badge !!}</span>
+                            <span class="ml-2">{!! strip_tags($developerProfile->status_badge, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}</span>
                         </div>
                     </div>
                 </div>

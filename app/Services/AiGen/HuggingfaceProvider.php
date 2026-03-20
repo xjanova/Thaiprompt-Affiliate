@@ -371,8 +371,7 @@ class HuggingfaceProvider extends BaseAiGenProvider
         try {
             // ใช้ Google Cloud Translation API
             $apiKey = config('services.google.translate_api_key')
-                ?? config('services.google_cloud.api_key')
-                ?? env('GOOGLE_CLOUD_TRANSLATE_API_KEY');
+                ?? config('services.google_cloud.translate_api_key');
 
             if (empty($apiKey)) {
                 // ถ้าไม่มี Google API key ส่ง prompt เดิม

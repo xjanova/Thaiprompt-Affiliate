@@ -115,7 +115,7 @@
 
                 {{-- Content --}}
                 <div class="prose prose-lg dark:prose-invert max-w-none mt-6">
-                    {!! $thread->content !!}
+                    {!! strip_tags($thread->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
 
                 {{-- Actions --}}

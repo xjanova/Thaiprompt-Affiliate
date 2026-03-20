@@ -50,9 +50,9 @@ services:
       - ETHEREUM_JSONRPC_VARIANT=geth
       - ETHEREUM_JSONRPC_HTTP_URL=http://tpix-node:8545
       - ETHEREUM_JSONRPC_WS_URL=ws://tpix-node:8546
-      - DATABASE_URL=postgresql://postgres:postgres@explorer-db:5432/blockscout?ssl=false
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@explorer-db:5432/${POSTGRES_DB:-blockscout}?ssl=false
       - ECTO_USE_SSL=false
-      - SECRET_KEY_BASE=56NtB48ear7+wMSf0IQuWDAAazhpb31qyc7GiyspBP2vh7t5zlCsF5QDv76chXeN
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE:?SECRET_KEY_BASE is required}
       - CHAIN_ID=7000
       - COIN=TPIX
       - SUBNETWORK=TPIX Network
@@ -79,9 +79,9 @@ services:
     image: postgres:14-alpine
     container_name: tpix-explorer-db
     environment:
-      - POSTGRES_DB=blockscout
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=${POSTGRES_DB:-blockscout}
+      - POSTGRES_USER=${POSTGRES_USER:-postgres}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - explorer-db-data:/var/lib/postgresql/data
     ports:
@@ -120,7 +120,7 @@ services:
     depends_on:
       - prometheus
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:?GF_SECURITY_ADMIN_PASSWORD is required}
       - GF_USERS_ALLOW_SIGN_UP=false
     volumes:
       - grafana-data:/var/lib/grafana

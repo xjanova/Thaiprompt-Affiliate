@@ -53,7 +53,7 @@ class ImportYouTubeChannelMissions extends Command
     public function handle(): int
     {
         $channelId = $this->argument('channel_id');
-        $apiKey = $this->option('api-key') ?: config('services.youtube.api_key') ?: env('YOUTUBE_API_KEY');
+        $apiKey = $this->option('api-key') ?: config('services.youtube.api_key');
 
         if (! $apiKey) {
             $this->error('❌ ไม่พบ YouTube API Key!');

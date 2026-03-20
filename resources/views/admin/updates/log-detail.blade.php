@@ -30,7 +30,7 @@
             <div class="mb-3">
                 <h6 class="text-muted">Release Notes</h6>
                 <div class="border p-3 bg-light">
-                    {!! $update->notes ?? 'No release notes available' !!}
+                    {!! strip_tags($update->notes ?? 'No release notes available', '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             </div>
 

@@ -150,6 +150,7 @@ class DemoDataController extends Controller
      */
     protected function getTableCount(string $table, string $category): int
     {
+        // SECURITY: conditions ถูกกำหนดไว้ในโค้ดเท่านั้น ห้ามรับค่าจาก user input
         $conditions = [
             'users' => "email LIKE '%@example.com' OR email LIKE '%@thaiprompt.com'",
             'pages' => "type IN ('about', 'faq', 'contact', 'terms', 'privacy', 'custom')",

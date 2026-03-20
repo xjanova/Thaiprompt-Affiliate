@@ -71,9 +71,9 @@
                 <span data-translate>ข้อมูลลูกค้า</span>
             </h3>
             <div class="space-y-2 text-sm">
-                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>ชื่อ:</span> <span class="text-gray-900 dark:text-white">{!! $order->user->name ?? '<span class="text-gray-400" data-translate>ไม่ระบุ</span>' !!}</span></p>
-                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>อีเมล:</span> <span class="text-gray-900 dark:text-white">{!! $order->user->email ?? '<span class="text-gray-400" data-translate>ไม่ระบุ</span>' !!}</span></p>
-                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>เบอร์โทร:</span> <span class="text-gray-900 dark:text-white">{!! $order->customer_phone ?? '<span class="text-gray-400" data-translate>ไม่ระบุ</span>' !!}</span></p>
+                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>ชื่อ:</span> <span class="text-gray-900 dark:text-white">{{ $order->user->name ?? 'ไม่ระบุ' }}</span></p>
+                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>อีเมล:</span> <span class="text-gray-900 dark:text-white">{{ $order->user->email ?? 'ไม่ระบุ' }}</span></p>
+                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>เบอร์โทร:</span> <span class="text-gray-900 dark:text-white">{{ $order->customer_phone ?? 'ไม่ระบุ' }}</span></p>
             </div>
         </div>
 
@@ -96,7 +96,7 @@
                 @if($order->delivered_at)
                     <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>ส่งถึงเมื่อ:</span> <span class="text-gray-900 dark:text-white">{{ $order->delivered_at->format('d/m/Y H:i') }}</span></p>
                 @endif
-                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>วิธีชำระเงิน:</span> <span class="text-gray-900 dark:text-white">{!! $order->payment_method ?? '<span class="text-gray-400" data-translate>ไม่ระบุ</span>' !!}</span></p>
+                <p><span class="font-semibold text-gray-700 dark:text-gray-300" data-translate>วิธีชำระเงิน:</span> <span class="text-gray-900 dark:text-white">{{ $order->payment_method ?? 'ไม่ระบุ' }}</span></p>
             </div>
         </div>
 
@@ -229,7 +229,7 @@
                 </div>
                 <div class="p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg text-sm space-y-1">
                     <p class="text-gray-600 dark:text-gray-400"><span class="font-semibold" data-translate>ยอดรวม:</span> <span class="text-gray-900 dark:text-white font-bold">฿{{ number_format($order->total_amount, 2) }}</span></p>
-                    <p class="text-gray-600 dark:text-gray-400"><span class="font-semibold" data-translate>วิธีชำระเงิน:</span> <span class="text-gray-900 dark:text-white">{!! $order->payment_method ?? '<span class="text-gray-400">ไม่ระบุ</span>' !!}</span></p>
+                    <p class="text-gray-600 dark:text-gray-400"><span class="font-semibold" data-translate>วิธีชำระเงิน:</span> <span class="text-gray-900 dark:text-white">{{ $order->payment_method ?? 'ไม่ระบุ' }}</span></p>
                 </div>
                 <button type="submit" class="w-full px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-lg hover:from-emerald-600 hover:to-teal-700 transition-all duration-200 shadow-lg font-medium">
                     <span data-translate>บันทึกสถานะการชำระเงิน</span>
@@ -271,7 +271,7 @@
                                         </div>
                                     @endif
                                     <div>
-                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{!! $item->product->name ?? '<span class="text-gray-400" data-translate>ไม่ระบุ</span>' !!}</div>
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ $item->product->name ?? 'ไม่ระบุ' }}</div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400">SKU: {{ $item->product->sku ?? 'N/A' }}</div>
                                     </div>
                                 </div>

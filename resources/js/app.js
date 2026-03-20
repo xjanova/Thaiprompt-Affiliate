@@ -30,4 +30,3 @@ window.Alpine = Alpine;
 // Start Alpine.js
 Alpine.start();
 
-console.log('✅ Thaiprompt Affiliate App V3 loaded (Google Translate Widget - ฟรี!)');

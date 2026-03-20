@@ -16,7 +16,7 @@ class AnthropicService implements AiServiceInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.anthropic.api_key') ?? env('ANTHROPIC_API_KEY');
+        $this->apiKey = config('services.anthropic.api_key');
         $this->apiEndpoint = 'https://api.anthropic.com/v1';
     }
 

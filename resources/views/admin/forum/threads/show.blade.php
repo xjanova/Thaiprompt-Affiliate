@@ -86,7 +86,7 @@
 
                 {{-- Content --}}
                 <div class="p-4 bg-white/5 rounded-lg text-white/80 prose prose-invert max-w-none">
-                    {!! $thread->content !!}
+                    {!! strip_tags($thread->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             </div>
 

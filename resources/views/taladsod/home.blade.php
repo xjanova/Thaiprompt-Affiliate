@@ -144,7 +144,7 @@
                 <a href="{{ route('taladsod.search', ['category' => $category->slug]) }}"
                    class="flex-shrink-0 w-28 sm:w-32 group">
                     <div class="flex flex-col items-center gap-2 p-4 rounded-2xl border {{ $category->color ?? 'bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800' }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-4xl sm:text-5xl">{!! $category->icon ?? '📦' !!}</span>
+                        <span class="text-4xl sm:text-5xl">{{ $category->icon ?? '📦' }}</span>
                         <span class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $category->name }}</span>
                     </div>
                 </a>
@@ -428,7 +428,7 @@
                 <a href="{{ route('taladsod.search', ['type' => 'service', 'category' => $svc->slug]) }}"
                    class="flex-shrink-0 w-24 sm:w-28 group">
                     <div class="flex flex-col items-center gap-2 p-3 rounded-2xl border {{ $svc->color }} hover:shadow-lg transition-all duration-300 group-hover:scale-105 group-hover:-translate-y-1">
-                        <span class="text-3xl sm:text-4xl">{!! $svc->icon !!}</span>
+                        <span class="text-3xl sm:text-4xl">{{ $svc->icon }}</span>
                         <span class="text-xs font-medium text-gray-700 dark:text-gray-300 text-center leading-tight">{{ $svc->name }}</span>
                     </div>
                 </a>

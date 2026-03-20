@@ -244,7 +244,7 @@
                         prose-code:bg-gray-100 dark:prose-code:bg-gray-700 prose-code:px-1 prose-code:rounded
                         prose-pre:bg-gray-900 prose-pre:text-gray-100
                         prose-img:rounded-xl prose-img:shadow-lg">
-                {!! $article->content !!}
+                {!! strip_tags($article->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
             </div>
         </div>
 

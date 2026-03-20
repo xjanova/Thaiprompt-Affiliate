@@ -113,11 +113,11 @@ class WebhookController extends Controller
     {
         $secret = config('services.github.webhook_secret', env('GITHUB_WEBHOOK_SECRET'));
 
-        // If no secret configured, skip verification (development mode)
+        // ถ้าไม่มี secret ที่ตั้งค่าไว้ ให้ปฏิเสธ webhook ทั้งหมด
         if (empty($secret)) {
-            Log::warning('GitHub webhook secret not configured, skipping verification');
+            Log::error('GitHub webhook secret not configured - rejecting webhook for security');
 
-            return true;
+            return false;
         }
 
         $signature = $request->header('X-Hub-Signature-256');

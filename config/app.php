@@ -24,6 +24,9 @@ return [
     */
     'menu_use_db_overrides' => env('MENU_USE_DB_OVERRIDES', false),
 
+    'force_https' => env('FORCE_HTTPS', false),
+    'ffmpeg_path' => env('FFMPEG_PATH', 'ffmpeg'),
+
     'url' => env('APP_URL', 'http://localhost'),
     'timezone' => 'Asia/Bangkok',
     'locale' => 'th',

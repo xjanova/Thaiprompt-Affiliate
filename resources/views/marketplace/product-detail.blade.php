@@ -465,7 +465,7 @@
             {{-- Description Tab --}}
             <div x-show="activeTab === 'description'" x-transition>
                 <div class="prose dark:prose-invert max-w-none">
-                    {!! $product->description ?? '<p class="text-gray-500 dark:text-gray-400">ไม่มีรายละเอียด</p>' !!}
+                    {!! strip_tags($product->description ?? '<p class="text-gray-500 dark:text-gray-400">ไม่มีรายละเอียด</p>', '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             </div>
 

@@ -10,7 +10,5 @@
 // Placeholder สำหรับ Workflow Diagram module
 // จะถูกพัฒนาเพิ่มเติมในอนาคต
 
-console.log('Workflow Diagram module loaded');
-
 // Export empty module เพื่อให้ vite build ผ่าน
 export default {};

@@ -122,7 +122,6 @@ export class ReceiptPrinter {
             await this.device.claimInterface(0);
 
             this.isConnected = true;
-            console.log('[Printer] USB connected:', this.device.productName);
 
             return true;
 
@@ -153,7 +152,6 @@ export class ReceiptPrinter {
             this.characteristic = await service.getCharacteristic('00002af1-0000-1000-8000-00805f9b34fb');
 
             this.isConnected = true;
-            console.log('[Printer] Bluetooth connected:', this.device.name);
 
             return true;
 
@@ -168,7 +166,6 @@ export class ReceiptPrinter {
      */
     async connectWeb() {
         this.isConnected = true;
-        console.log('[Printer] Using Web Print API');
         return true;
     }
 
@@ -476,7 +473,6 @@ export class BarcodeScanner {
     start() {
         this.keyHandler = (e) => this.handleKeypress(e);
         document.addEventListener('keydown', this.keyHandler);
-        console.log('[Scanner] Keyboard scanner started');
     }
 
     /**
@@ -486,7 +482,6 @@ export class BarcodeScanner {
         if (this.keyHandler) {
             document.removeEventListener('keydown', this.keyHandler);
         }
-        console.log('[Scanner] Keyboard scanner stopped');
     }
 
     /**
@@ -563,8 +558,6 @@ export class CameraBarcodeScanner {
             this.scanning = true;
             this.startDecoding();
 
-            console.log('[Scanner] Camera started');
-
         } catch (error) {
             console.error('[Scanner] Camera error:', error);
             throw error;
@@ -585,8 +578,6 @@ export class CameraBarcodeScanner {
         if (this.videoElement) {
             this.videoElement.srcObject = null;
         }
-
-        console.log('[Scanner] Camera stopped');
     }
 
     /**
@@ -629,7 +620,6 @@ export class CashDrawer {
     async open() {
         if (this.printer && this.printer.isConnected) {
             await this.printer.openCashDrawer();
-            console.log('[CashDrawer] Opened');
         } else {
             console.warn('[CashDrawer] No printer connected');
         }
@@ -781,7 +771,6 @@ export class Scale {
             this.isConnected = true;
             this.startReading();
 
-            console.log('[Scale] Connected');
             return true;
 
         } catch (error) {

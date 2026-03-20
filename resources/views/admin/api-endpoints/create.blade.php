@@ -138,7 +138,7 @@
                     </label>
                     <textarea name="parameters" rows="4"
                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white font-mono text-sm @error('parameters') border-red-500 @enderror"
-                              placeholder='{"id": "required|integer", "name": "string"}'>{!! old('parameters') !!}</textarea>
+                              placeholder='{"id": "required|integer", "name": "string"}'>{{ old('parameters') }}</textarea>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">กำหนด parameters ในรูปแบบ JSON</p>
                     @error('parameters')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
@@ -152,7 +152,7 @@
                     </label>
                     <textarea name="response_example" rows="6"
                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white font-mono text-sm @error('response_example') border-red-500 @enderror"
-                              placeholder='{"status": "success", "data": {...}}'>{!! old('response_example') !!}</textarea>
+                              placeholder='{"status": "success", "data": {...}}'>{{ old('response_example') }}</textarea>
                     @error('response_example')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror

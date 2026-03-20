@@ -127,7 +127,11 @@
             {{-- Article Content --}}
             <div class="glass-fusion rounded-2xl p-8 border border-white/30">
                 <div class="prose prose-invert prose-lg max-w-none">
-                    {!! \Illuminate\Support\Str::markdown($news->content) !!}
+                    @php
+                        $allowedTags = '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>';
+                        $renderedMarkdown = \Illuminate\Support\Str::markdown($news->content);
+                        echo strip_tags($renderedMarkdown, $allowedTags);
+                    @endphp
                 </div>
             </div>
 

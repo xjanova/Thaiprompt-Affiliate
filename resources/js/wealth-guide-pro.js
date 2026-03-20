@@ -12,8 +12,6 @@ let incomeFlowInstance = null;
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing Wealth Guide Pro...');
-
     // Initialize 3D Mind Map
     if (document.getElementById('wealth-3d-mindmap')) {
         try {
@@ -22,8 +20,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 autoRotate: true,
                 showLabels: true
             });
-
-            console.log('✅ 3D Mind Map initialized');
 
             // Setup mind map controls
             setupMindMapControls();
@@ -51,7 +47,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 incomeData: incomeData
             });
 
-            console.log('✅ 3D Income Flow initialized');
         } catch (error) {
             console.error('❌ Error initializing 3D Income Flow:', error);
             showFallbackMessage('wealth-3d-income-flow', 'ไม่สามารถโหลด Income Flow ได้ กรุณารีเฟรชหน้านี้');
@@ -60,8 +55,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Setup global functions
     setupGlobalFunctions();
-
-    console.log('✨ Wealth Guide Pro loaded successfully!');
 });
 
 // Setup mind map controls
@@ -104,8 +97,6 @@ function getUserIncomeData() {
 
 // Show node details in a modal or sidebar
 function showNodeDetails(nodeData) {
-    console.log('Node clicked:', nodeData);
-
     // Create a beautiful modal
     const modal = document.createElement('div');
     modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80';

@@ -37,9 +37,9 @@ class BlockchainIndexerService
         ];
 
         $this->apiKeys = [
-            'ethereum' => env('ETHERSCAN_API_KEY', ''),
-            'bsc' => env('BSCSCAN_API_KEY', ''),
-            'polygon' => env('POLYGONSCAN_API_KEY', ''),
+            'ethereum' => config('crypto.scanner_api_keys.ethereum', ''),
+            'bsc' => config('crypto.scanner_api_keys.bsc', ''),
+            'polygon' => config('crypto.scanner_api_keys.polygon', ''),
         ];
     }
 

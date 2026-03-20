@@ -41,7 +41,7 @@ class AppServiceProvider extends ServiceProvider
 
         // ⚠️ CRITICAL: Force HTTPS สำหรับ Production
         // แก้ปัญหา redirect loop เมื่อใช้ Cloudflare/Reverse Proxy
-        if (config('app.env') === 'production' || env('FORCE_HTTPS', false)) {
+        if (config('app.env') === 'production' || config('app.force_https', false)) {
             URL::forceScheme('https');
         }
 

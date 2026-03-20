@@ -59,7 +59,7 @@
         <div>
             <h2 class="text-lg font-semibold text-gray-900 mb-4">เนื้อหา</h2>
             <div class="prose max-w-none p-6 bg-gray-50 rounded-lg border border-gray-200">
-                {!! $page->content !!}
+                {!! strip_tags($page->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
             </div>
         </div>
     </div>

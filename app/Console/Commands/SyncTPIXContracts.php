@@ -74,7 +74,7 @@ class SyncTPIXContracts extends Command
         $this->newLine();
 
         // Update .env if needed
-        if ($this->option('force') || ! env('TPIX_TOKEN_ADDRESS')) {
+        if ($this->option('force') || ! config('crypto.tpix_contracts.token_address')) {
             $this->info('📝 Updating .env file...');
 
             $envPath = base_path('.env');

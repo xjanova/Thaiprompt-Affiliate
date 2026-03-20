@@ -80,8 +80,6 @@ export function posApp() {
         // ============================================
 
         async init() {
-            console.log('[POS App] Initializing...');
-
             try {
                 // เปิด Database
                 await db.initDatabase();
@@ -113,7 +111,6 @@ export function posApp() {
                 }
 
                 this.loading = false;
-                console.log('[POS App] Initialized successfully');
 
             } catch (error) {
                 console.error('[POS App] Initialization failed:', error);
@@ -146,7 +143,6 @@ export function posApp() {
             // โหลด pending sync count
             this.pendingSyncCount = await sync.getPendingCount();
 
-            console.log(`[POS App] Loaded: ${this.products.length} products, ${this.categories.length} categories`);
         },
 
         setupEventListeners() {
@@ -189,8 +185,6 @@ export function posApp() {
                         scope: '/pos/'
                     });
 
-                    console.log('[POS App] Service Worker registered:', registration.scope);
-
                     // รับ messages จาก SW
                     navigator.serviceWorker.addEventListener('message', (event) => {
                         this.handleServiceWorkerMessage(event.data);
@@ -213,7 +207,6 @@ export function posApp() {
                     break;
 
                 case 'CACHE_STATUS':
-                    console.log('Cache status:', message.data);
                     break;
             }
         },
@@ -243,7 +236,6 @@ export function posApp() {
                     break;
 
                 case 'products_synced':
-                    console.log(`Synced ${data.count} products`);
                     break;
 
                 case 'transaction_synced':
@@ -963,7 +955,6 @@ export function posApp() {
 export function registerPosComponent() {
     if (typeof Alpine !== 'undefined') {
         Alpine.data('posApp', posApp);
-        console.log('[POS App] Alpine.js component registered');
     }
 }
 

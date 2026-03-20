@@ -420,10 +420,10 @@ class CryptoHealthCheck extends Command
     protected function getMaxHotWalletBalance(string $currency): float
     {
         return match ($currency) {
-            'ETH' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_ETH', 10),
-            'BNB' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_BNB', 100),
-            'MATIC' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_MATIC', 10000),
-            'BTC' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_BTC', 1),
+            'ETH' => config('crypto.hot_wallet_max_balance.eth', 10),
+            'BNB' => config('crypto.hot_wallet_max_balance.bnb', 100),
+            'MATIC' => config('crypto.hot_wallet_max_balance.matic', 10000),
+            'BTC' => config('crypto.hot_wallet_max_balance.btc', 1),
             default => PHP_FLOAT_MAX,
         };
     }

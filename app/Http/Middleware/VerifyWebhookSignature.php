@@ -106,21 +106,63 @@ class VerifyWebhookSignature
     }
 
     /**
-     * Verify Stripe webhook signature
+     * ตรวจสอบ Stripe webhook signature
+     *
+     * ใช้ Stripe's signature format: t=timestamp,v1=signature
      */
     protected function verifyStripeSignature(Request $request): bool
     {
-        $signature = $request->header('Stripe-Signature');
+        $signatureHeader = $request->header('Stripe-Signature');
         $secret = config('services.stripe.webhook_secret');
 
-        if (! $signature || ! $secret) {
+        if (! $signatureHeader || ! $secret) {
             return false;
         }
 
-        // Stripe uses a more complex signature format
-        // In production, use Stripe's SDK: \Stripe\Webhook::constructEvent()
-        // This is a simplified version
-        return true; // Implement full Stripe verification in production
+        // แยก timestamp และ signature จาก header
+        $elements = explode(',', $signatureHeader);
+        $timestamp = null;
+        $signatures = [];
+
+        foreach ($elements as $element) {
+            $parts = explode('=', $element, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+            if ($parts[0] === 't') {
+                $timestamp = $parts[1];
+            } elseif ($parts[0] === 'v1') {
+                $signatures[] = $parts[1];
+            }
+        }
+
+        if (! $timestamp || empty($signatures)) {
+            return false;
+        }
+
+        // ตรวจสอบว่า timestamp ไม่เก่าเกินไป (tolerance 5 นาที)
+        $tolerance = 300;
+        if (abs(time() - (int) $timestamp) > $tolerance) {
+            Log::warning('Stripe webhook timestamp too old', [
+                'timestamp' => $timestamp,
+                'current_time' => time(),
+            ]);
+            return false;
+        }
+
+        // คำนวณ expected signature
+        $payload = $request->getContent();
+        $signedPayload = $timestamp . '.' . $payload;
+        $expectedSignature = hash_hmac('sha256', $signedPayload, $secret);
+
+        // เปรียบเทียบกับ signatures ที่ได้รับ (timing-safe)
+        foreach ($signatures as $signature) {
+            if (hash_equals($expectedSignature, $signature)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

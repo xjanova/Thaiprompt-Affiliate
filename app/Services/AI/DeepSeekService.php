@@ -16,8 +16,8 @@ class DeepSeekService implements AiServiceInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.deepseek.api_key') ?? env('DEEPSEEK_API_KEY');
-        $this->apiEndpoint = config('services.deepseek.api_endpoint') ?? 'https://api.deepseek.com/v1';
+        $this->apiKey = config('services.deepseek.api_key');
+        $this->apiEndpoint = config('services.deepseek.api_endpoint', 'https://api.deepseek.com/v1');
     }
 
     public function chat(array $params): array

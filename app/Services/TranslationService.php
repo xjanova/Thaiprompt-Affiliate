@@ -110,15 +110,13 @@ class TranslationService
     {
         $config = [];
 
-        // Priority order: Database > Environment > Config
+        // Priority order: Database > Config
         try {
             $apiKey = \App\Models\Setting::get('google_translate_api_key')
-                ?? env('GOOGLE_TRANSLATE_API_KEY')
                 ?? config('translate.google.api_key');
         } catch (\Exception $e) {
-            // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก env/config
-            $apiKey = env('GOOGLE_TRANSLATE_API_KEY')
-                ?? config('translate.google.api_key');
+            // ⚠️ ถ้า database ไม่พร้อมใช้งาน ให้ใช้ค่าจาก config
+            $apiKey = config('translate.google.api_key');
         }
 
         if ($apiKey) {
@@ -127,8 +125,7 @@ class TranslationService
         }
         // Otherwise use service account credentials
         else {
-            $credentialsPath = env('GOOGLE_TRANSLATE_CREDENTIALS')
-                ?? config('translate.google.credentials_path');
+            $credentialsPath = config('translate.google.credentials_path');
 
             if ($credentialsPath && file_exists($credentialsPath)) {
                 $config['keyFilePath'] = $credentialsPath;

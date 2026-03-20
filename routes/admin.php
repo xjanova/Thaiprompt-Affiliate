@@ -423,7 +423,9 @@ Route::prefix('smschecker')->name('smschecker.')->group(function () {
     Route::get('/pending-orders', [SmsCheckerAdminController::class, 'pendingOrders'])->name('pending-orders');
     Route::post('/orders/{order}/confirm', [SmsCheckerAdminController::class, 'confirmPayment'])->name('order-confirm');
     Route::post('/orders/{order}/reject', [SmsCheckerAdminController::class, 'rejectPayment'])->name('order-reject');
-    Route::get('/debug-fortune', [SmsCheckerAdminController::class, 'debugFortuneSmsChecker'])->name('debug-fortune');
+    if (config('app.debug')) {
+        Route::get('/debug-fortune', [SmsCheckerAdminController::class, 'debugFortuneSmsChecker'])->name('debug-fortune');
+    }
     Route::post('/transactions/{transaction}/retry-complete', [SmsCheckerAdminController::class, 'retryCompleteTransaction'])->name('retry-complete');
 });
 
@@ -3843,8 +3845,10 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/settings/test-ai', [FortuneSettingsController::class, 'testAI'])->name('settings.test-ai');
     Route::get('/settings/diagnose', [FortuneSettingsController::class, 'diagnose'])->name('settings.diagnose');
     Route::post('/settings/run-migrations', [FortuneSettingsController::class, 'runMigrations'])->name('settings.run-migrations');
-    Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
-    Route::get('/settings/debug-webhook-ai', [FortuneSettingsController::class, 'debugWebhookAI'])->name('settings.debug-webhook-ai');
+    if (config('app.debug')) {
+        Route::get('/settings/debug-engagement', [FortuneSettingsController::class, 'debugEngagement'])->name('settings.debug-engagement');
+        Route::get('/settings/debug-webhook-ai', [FortuneSettingsController::class, 'debugWebhookAI'])->name('settings.debug-webhook-ai');
+    }
 
     // Affiliate Commission Preview (AJAX)
     Route::get('/settings/fortune-commission-preview', [FortuneSettingsController::class, 'fortuneCommissionPreview'])->name('settings.fortune-commission-preview');

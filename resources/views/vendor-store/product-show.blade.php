@@ -555,7 +555,7 @@
                 {{-- Description Tab --}}
                 <div x-show="tab === 'description'" class="prose prose-lg max-w-none dark:prose-invert">
                     @if($product->description)
-                        {!! $product->description !!}
+                        {!! strip_tags($product->description, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                     @else
                         <p class="text-gray-500 dark:text-gray-400">ไม่มีรายละเอียดสินค้า</p>
                     @endif

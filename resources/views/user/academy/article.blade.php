@@ -70,7 +70,7 @@
                             prose-p:text-gray-700 dark:prose-p:text-gray-300
                             prose-a:text-purple-600 dark:prose-a:text-purple-400
                             prose-img:rounded-xl prose-img:shadow-lg">
-                    {!! $article->content !!}
+                    {!! strip_tags($article->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             </div>
 

@@ -542,7 +542,6 @@ export class Wealth3DMindMap {
     }
 
     handleNodeClick(nodeData) {
-        console.log('Node clicked:', nodeData);
         // Emit custom event for external handling
         const event = new CustomEvent('nodeClick', { detail: nodeData });
         this.container.dispatchEvent(event);

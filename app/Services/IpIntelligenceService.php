@@ -119,7 +119,7 @@ class IpIntelligenceService
 
         try {
             // Using proxycheck.io (free tier: 1000 requests/day)
-            $apiKey = env('PROXYCHECK_API_KEY');
+            $apiKey = config('services.proxycheck.api_key');
 
             if ($apiKey) {
                 $response = Http::timeout(5)->get("https://proxycheck.io/v2/{$ip}", [

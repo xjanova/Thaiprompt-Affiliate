@@ -113,7 +113,7 @@ class LineVoiceMessageService
     {
         try {
             // ตรวจสอบว่ามี Google Cloud credentials หรือไม่
-            if (! env('GOOGLE_APPLICATION_CREDENTIALS')) {
+            if (! config('services.google.credentials_path')) {
                 Log::warning('Google Cloud Speech-to-Text not configured, using fallback');
 
                 return $this->fallbackSpeechToText($audioFilePath);
@@ -219,7 +219,7 @@ class LineVoiceMessageService
         }
 
         // ตรวจสอบว่ามี FFmpeg หรือไม่
-        $ffmpegPath = env('FFMPEG_PATH', 'ffmpeg');
+        $ffmpegPath = config('app.ffmpeg_path', 'ffmpeg');
 
         // Test FFmpeg
         exec("which {$ffmpegPath}", $output, $returnCode);

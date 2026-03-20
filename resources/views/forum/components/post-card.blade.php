@@ -54,7 +54,7 @@
 
             {{-- Content --}}
             <div class="prose prose-sm dark:prose-invert max-w-none mb-3">
-                {!! $post->content !!}
+                {!! strip_tags($post->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
             </div>
 
             {{-- Actions --}}

@@ -196,7 +196,7 @@ class ThreatIntelligenceService
      */
     public function checkAbuseIPDB(string $ip): ?array
     {
-        $apiKey = env('ABUSEIPDB_API_KEY');
+        $apiKey = config('services.abuseipdb.api_key');
 
         if (empty($apiKey)) {
             return null;
@@ -253,7 +253,7 @@ class ThreatIntelligenceService
      */
     public function checkIPQualityScore(string $ip): ?array
     {
-        $apiKey = env('IPQUALITYSCORE_API_KEY');
+        $apiKey = config('services.ipqualityscore.api_key');
 
         if (empty($apiKey)) {
             return null;

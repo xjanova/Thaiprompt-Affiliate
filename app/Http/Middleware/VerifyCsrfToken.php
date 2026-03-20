@@ -13,13 +13,18 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        '/webhook/line',        // LINE OA webhook endpoint
         'webhook/line',
-        'webhook/*',            // All webhook endpoints (payment gateways)
-        '/api/webhook/*',       // Payment gateway webhooks
-        'api/webhook/*',
-        'api/games/snake-io/*', // Snake.io game API (XHR/fetch จากในเกม — session อาจหมดอายุระหว่างเล่น)
-        'games/snake-io/*',     // กรณี prefix ไม่มี /api/
+        'webhook/paysolutions',
+        'webhook/promptpay',
+        'webhook/stripe',
+        'webhook/omise',
+        'api/webhook/line',
+        'api/webhook/paysolutions',
+        'api/webhook/promptpay',
+        'api/webhook/stripe',
+        'api/webhook/omise',
+        'api/webhook/github/*',
+        'api/games/snake-io/*',
     ];
 
     /**

@@ -29,7 +29,7 @@
         <!-- Page Content -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden">
             <article class="prose prose-lg max-w-none p-8 md:p-12">
-                {!! $page->content !!}
+                {!! strip_tags($page->content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
             </article>
         </div>
 

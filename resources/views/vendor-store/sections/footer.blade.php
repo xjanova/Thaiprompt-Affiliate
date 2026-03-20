@@ -69,7 +69,7 @@
             {{-- Custom Footer Content --}}
             @if($layoutSettings->footer_content)
                 <div class="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400">
-                    {!! $layoutSettings->footer_content !!}
+                    {!! strip_tags($layoutSettings->footer_content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             @endif
 

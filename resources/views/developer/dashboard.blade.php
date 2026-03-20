@@ -18,7 +18,7 @@
                     </p>
                 </div>
                 <div>
-                    {!! $developerProfile->status_badge !!}
+                    {!! strip_tags($developerProfile->status_badge, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                 </div>
             </div>
         </div>

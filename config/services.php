@@ -25,6 +25,7 @@ return [
     ],
 
     'google' => [
+        'api_key' => env('GOOGLE_API_KEY', ''),
         'credentials_path' => env('GOOGLE_APPLICATION_CREDENTIALS', storage_path('app/google-credentials.json')),
         'translate' => [
             'enabled' => env('GOOGLE_TRANSLATE_ENABLED', false),
@@ -99,6 +100,69 @@ return [
         'webhook_secret' => env('PAYSOLUTIONS_WEBHOOK_SECRET'),
         'api_url' => env('PAYSOLUTIONS_API_URL', 'https://api.paysolutions.asia'),
         'sandbox_url' => env('PAYSOLUTIONS_SANDBOX_URL', 'https://sandbox-api.paysolutions.asia'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tracking / Shipping Provider API Keys
+    |--------------------------------------------------------------------------
+    |
+    | API keys สำหรับเชื่อมต่อระบบติดตามพัสดุกับขนส่งชั้นนำของไทย
+    | ตั้งค่าใน .env เมื่อต้องการเปิดใช้งาน realtime tracking
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | YouTube API
+    |--------------------------------------------------------------------------
+    */
+
+    'youtube' => [
+        'api_key' => env('YOUTUBE_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Service API Keys
+    |--------------------------------------------------------------------------
+    */
+
+    'deepseek' => [
+        'api_key' => env('DEEPSEEK_API_KEY', ''),
+        'api_endpoint' => env('DEEPSEEK_API_ENDPOINT', 'https://api.deepseek.com/v1'),
+    ],
+
+    'anthropic' => [
+        'api_key' => env('ANTHROPIC_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Security / Threat Intelligence API Keys
+    |--------------------------------------------------------------------------
+    */
+
+    'proxycheck' => [
+        'api_key' => env('PROXYCHECK_API_KEY', ''),
+    ],
+
+    'abuseipdb' => [
+        'api_key' => env('ABUSEIPDB_API_KEY', ''),
+    ],
+
+    'ipqualityscore' => [
+        'api_key' => env('IPQUALITYSCORE_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Huggingface
+    |--------------------------------------------------------------------------
+    */
+
+    'google_cloud' => [
+        'translate_api_key' => env('GOOGLE_CLOUD_TRANSLATE_API_KEY', ''),
     ],
 
     /*

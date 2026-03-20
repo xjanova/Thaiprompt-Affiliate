@@ -29,7 +29,8 @@ class PaymentWebhookController extends Controller
         try {
             Log::info('PaySolutions webhook received', [
                 'ip' => $request->ip(),
-                'data' => $request->all(),
+                'order_id' => $request->input('order_id'),
+                'status' => $request->input('status'),
             ]);
 
             // Get transaction ID from webhook data
@@ -97,7 +98,8 @@ class PaymentWebhookController extends Controller
         try {
             Log::info('PromptPay webhook received', [
                 'ip' => $request->ip(),
-                'data' => $request->all(),
+                'ref_no' => $request->input('ref_no'),
+                'status' => $request->input('status'),
             ]);
 
             $refNo = $request->input('ref_no');

@@ -16,7 +16,7 @@ class GoogleGeminiService implements AiServiceInterface
 
     public function __construct()
     {
-        $this->apiKey = config('services.google.api_key') ?? env('GOOGLE_API_KEY');
+        $this->apiKey = config('services.google.api_key');
         $this->apiEndpoint = 'https://generativelanguage.googleapis.com/v1';
     }
 

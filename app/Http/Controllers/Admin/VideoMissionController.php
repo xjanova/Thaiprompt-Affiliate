@@ -766,7 +766,7 @@ class VideoMissionController extends Controller
         sort($categories);
 
         // ตรวจสอบว่ามี API Key หรือไม่
-        $hasApiKey = ! empty(env('YOUTUBE_API_KEY'));
+        $hasApiKey = ! empty(config('services.youtube.api_key'));
 
         return view('admin.video-missions.import-youtube', compact('categories', 'hasApiKey'));
     }
@@ -790,7 +790,7 @@ class VideoMissionController extends Controller
             'is_featured' => 'boolean',
         ]);
 
-        $apiKey = $request->input('api_key') ?: env('YOUTUBE_API_KEY');
+        $apiKey = $request->input('api_key') ?: config('services.youtube.api_key');
 
         if (! $apiKey) {
             return response()->json([

@@ -41,7 +41,7 @@ class PosTerminalController extends Controller
      */
     private function getSecretKey(): string
     {
-        return config('pos.secret_key', env('POS_SECRET_KEY', ''));
+        return config('pos.secret_key', '');
     }
 
     /**

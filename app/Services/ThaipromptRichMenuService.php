@@ -31,7 +31,7 @@ class ThaipromptRichMenuService
     public function __construct()
     {
         // ใช้ LINE Channel Access Token ของ Thaiprompt OA หลัก
-        $this->channelAccessToken = config('services.line.channel_access_token', env('LINE_CHANNEL_ACCESS_TOKEN', ''));
+        $this->channelAccessToken = config('services.line.channel_access_token', '');
     }
 
     /**

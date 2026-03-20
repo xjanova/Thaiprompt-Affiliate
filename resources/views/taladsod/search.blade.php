@@ -19,7 +19,7 @@
         <div class="mb-6">
             <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                 @if(isset($currentCategory))
-                    {!! $currentCategory->icon ?? '📦' !!} {{ $currentCategory->name }}
+                    {{ $currentCategory->icon ?? '📦' }} {{ $currentCategory->name }}
                 @elseif(request('q'))
                     <i class="fas fa-search text-green-500"></i> ผลการค้นหา "{{ request('q') }}"
                 @else
@@ -65,7 +65,7 @@
                                 @foreach($categories as $cat)
                                     <a href="{{ route('taladsod.search', array_merge(request()->except('page'), ['category' => $cat->slug])) }}"
                                        class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors {{ request('category') === $cat->slug ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700' }}">
-                                        {!! $cat->icon ?? '📦' !!} {{ $cat->name }}
+                                        {{ $cat->icon ?? '📦' }} {{ $cat->name }}
                                     </a>
                                 @endforeach
                             @endif

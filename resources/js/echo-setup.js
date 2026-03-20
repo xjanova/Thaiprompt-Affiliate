@@ -24,9 +24,6 @@ function initEcho() {
 
     const config = window.echoConfig;
 
-    console.log('📡 Initializing Laravel Echo...');
-    console.log('Broadcasting driver:', config.driver);
-
     try {
         // สร้าง Echo instance
         window.Echo = new Echo({
@@ -51,7 +48,6 @@ function initEcho() {
             }
         });
 
-        console.log('✅ Laravel Echo initialized successfully');
         return window.Echo;
 
     } catch (error) {
@@ -73,22 +69,17 @@ function subscribeToNotifications(userId, callback) {
         return null;
     }
 
-    console.log(`📬 Subscribing to notifications for user ${userId}...`);
-
     try {
         // Subscribe to private channel
         const channel = window.Echo.private(`notifications.${userId}`);
 
         // Listen for notification events
         channel.listen('NotificationSent', (event) => {
-            console.log('📩 New notification received:', event);
-
             if (typeof callback === 'function') {
                 callback(event.notification);
             }
         });
 
-        console.log('✅ Subscribed to notifications channel');
         return channel;
 
     } catch (error) {
@@ -107,11 +98,8 @@ function unsubscribeFromNotifications(userId) {
         return;
     }
 
-    console.log(`📭 Unsubscribing from notifications for user ${userId}...`);
-
     try {
         window.Echo.leave(`notifications.${userId}`);
-        console.log('✅ Unsubscribed from notifications channel');
     } catch (error) {
         console.error('❌ Failed to unsubscribe:', error);
     }
@@ -130,14 +118,10 @@ function subscribeToImmediateNotifications(userId, callback) {
         return null;
     }
 
-    console.log(`📬 Subscribing to immediate notifications for user ${userId}...`);
-
     try {
         const channel = window.Echo.private(`notifications.immediate.${userId}`);
 
         channel.listen('ImmediateNotificationSent', (event) => {
-            console.log('🔔 Immediate notification received:', event);
-
             if (typeof callback === 'function') {
                 callback(event.notifications);
             }
@@ -148,7 +132,6 @@ function subscribeToImmediateNotifications(userId, callback) {
             }));
         });
 
-        console.log('✅ Subscribed to immediate notifications channel');
         return channel;
 
     } catch (error) {
@@ -192,11 +175,9 @@ function listenToConnectionEvents() {
     }
 
     pusher.connection.bind('connecting', () => {
-        console.log('🔄 WebSocket connecting...');
     });
 
     pusher.connection.bind('connected', () => {
-        console.log('🌐 WebSocket connected');
     });
 
     pusher.connection.bind('unavailable', () => {
@@ -208,7 +189,6 @@ function listenToConnectionEvents() {
     });
 
     pusher.connection.bind('disconnected', () => {
-        console.log('📴 WebSocket disconnected');
     });
 }
 
@@ -217,7 +197,6 @@ function listenToConnectionEvents() {
  */
 function disconnectEcho() {
     if (window.Echo && window.Echo.disconnect) {
-        console.log('📴 Disconnecting Laravel Echo...');
         window.Echo.disconnect();
     }
 }
@@ -257,4 +236,3 @@ window.addEventListener('beforeunload', () => {
     disconnectEcho();
 });
 
-console.log('✅ Laravel Echo Setup loaded');

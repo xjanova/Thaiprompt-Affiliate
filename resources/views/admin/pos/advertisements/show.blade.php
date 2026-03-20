@@ -98,7 +98,7 @@
                         </video>
                     @elseif($advertisement->type === 'html' && $advertisement->html_content)
                         <div class="w-full bg-white dark:bg-gray-800 p-6 rounded-lg">
-                            {!! $advertisement->html_content !!}
+                            {!! strip_tags($advertisement->html_content, '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><blockquote><code><pre><table><thead><tbody><tr><th><td><hr><del><sup><sub><span><div>') !!}
                         </div>
                     @elseif($advertisement->type === 'promotion')
                         <div class="bg-gradient-to-br from-yellow-400 via-orange-500 to-red-500 text-white p-12 rounded-2xl shadow-2xl text-center max-w-md">

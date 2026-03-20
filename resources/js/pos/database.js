@@ -148,7 +148,6 @@ export async function initDatabase() {
         request.onsuccess = () => {
             db = request.result;
             isInitialized = true;
-            console.log('[POS-DB] Database opened successfully');
 
             // จัดการ error ของ database
             db.onerror = (event) => {
@@ -159,7 +158,6 @@ export async function initDatabase() {
         };
 
         request.onupgradeneeded = (event) => {
-            console.log('[POS-DB] Upgrading database...');
             const database = event.target.result;
 
             // สร้าง Object Stores
@@ -182,7 +180,6 @@ export async function initDatabase() {
                         }
                     }
 
-                    console.log(`[POS-DB] Created store: ${storeName}`);
                 }
             }
         };
@@ -913,7 +910,6 @@ export async function deleteDatabase() {
         const request = indexedDB.deleteDatabase(DB_NAME);
 
         request.onsuccess = () => {
-            console.log('[POS-DB] Database deleted');
             resolve();
         };
 

@@ -366,6 +366,7 @@ class ResetDemoData extends Command
 
             try {
                 if ($config['condition']) {
+                    // SECURITY: conditions ถูกกำหนดไว้ในโค้ดเท่านั้น ห้ามรับค่าจาก user input
                     // ลบแบบมีเงื่อนไข
                     $count = DB::table($table)->whereRaw($config['condition'])->count();
                     DB::table($table)->whereRaw($config['condition'])->delete();

@@ -36,6 +36,16 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | TPIX Contract Addresses
+    |--------------------------------------------------------------------------
+    */
+
+    'tpix_contracts' => [
+        'token_address' => env('TPIX_TOKEN_ADDRESS', ''),
+    ],
+
     'networks' => [
         'tpix' => [
             'rpc_url' => env('TPIX_RPC_URL', 'http://localhost:8545'),
@@ -231,6 +241,31 @@ return [
     | Enable or disable specific features.
     |
     */
+
+    /*
+    |--------------------------------------------------------------------------
+    | Blockchain Scanner API Keys
+    |--------------------------------------------------------------------------
+    */
+
+    'scanner_api_keys' => [
+        'ethereum' => env('ETHERSCAN_API_KEY', ''),
+        'bsc' => env('BSCSCAN_API_KEY', ''),
+        'polygon' => env('POLYGONSCAN_API_KEY', ''),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Hot Wallet Max Balance Limits
+    |--------------------------------------------------------------------------
+    */
+
+    'hot_wallet_max_balance' => [
+        'eth' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_ETH', 10),
+        'bnb' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_BNB', 100),
+        'matic' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_MATIC', 10000),
+        'btc' => env('CRYPTO_HOT_WALLET_MAX_BALANCE_BTC', 1),
+    ],
 
     'features' => [
         'trading_enabled' => env('CRYPTO_TRADING_ENABLED', true),

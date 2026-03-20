@@ -171,7 +171,7 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
     {
         $artisan = \base_path('artisan');
         $php = self::findPhpBinary();
-        $notifArg = $notificationId ? " --notification-id={$notificationId}" : '';
+        $notifArg = $notificationId ? ' --notification-id=' . \escapeshellarg((string) $notificationId) : '';
 
         // สร้าง command
         $cmd = \sprintf(

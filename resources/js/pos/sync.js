@@ -56,7 +56,6 @@ export function initNetworkListeners() {
 }
 
 function handleOnline() {
-    console.log('[POS-Sync] Network online');
     syncState.isOnline = true;
     notifyListeners('online');
 
@@ -65,7 +64,6 @@ function handleOnline() {
 }
 
 function handleOffline() {
-    console.log('[POS-Sync] Network offline');
     syncState.isOnline = false;
     notifyListeners('offline');
 }
@@ -153,20 +151,16 @@ async function fetchWithRetry(url, options = {}, retries = 3) {
  */
 export async function syncAll() {
     if (!syncState.isOnline) {
-        console.log('[POS-Sync] Offline - skipping sync');
         return { success: false, reason: 'offline' };
     }
 
     if (syncState.isSyncing) {
-        console.log('[POS-Sync] Already syncing - skipping');
         return { success: false, reason: 'already_syncing' };
     }
 
     try {
         syncState.isSyncing = true;
         notifyListeners('sync_start');
-
-        console.log('[POS-Sync] Starting full sync...');
 
         // 1. ดึงข้อมูลจาก server
         await Promise.all([
@@ -183,7 +177,6 @@ export async function syncAll() {
         syncState.lastSync = new Date();
         await db.setSetting('last_sync', syncState.lastSync.toISOString());
 
-        console.log('[POS-Sync] Full sync completed');
         notifyListeners('sync_complete', { timestamp: syncState.lastSync });
 
         return { success: true };
@@ -209,12 +202,10 @@ export async function syncProducts(force = false) {
             ? `${API_BASE}/products/all`
             : `${API_BASE}/products/updated?since=${lastSync}`;
 
-        console.log('[POS-Sync] Syncing products...');
         const response = await fetchWithRetry(url);
 
         if (response.success && response.data) {
             const result = await db.bulkImportProducts(response.data);
-            console.log(`[POS-Sync] Imported ${result.imported} products`);
 
             await db.setSetting('products_last_sync', new Date().toISOString());
             notifyListeners('products_synced', { count: result.imported });
@@ -240,12 +231,10 @@ export async function syncCategories(force = false) {
             ? `${API_BASE}/categories/all`
             : `${API_BASE}/categories/updated?since=${lastSync}`;
 
-        console.log('[POS-Sync] Syncing categories...');
         const response = await fetchWithRetry(url);
 
         if (response.success && response.data) {
             const result = await db.bulkImportCategories(response.data);
-            console.log(`[POS-Sync] Imported ${result.imported} categories`);
 
             await db.setSetting('categories_last_sync', new Date().toISOString());
             notifyListeners('categories_synced', { count: result.imported });
@@ -271,12 +260,10 @@ export async function syncCustomers(force = false) {
             ? `${API_BASE}/customers/all`
             : `${API_BASE}/customers/updated?since=${lastSync}`;
 
-        console.log('[POS-Sync] Syncing customers...');
         const response = await fetchWithRetry(url);
 
         if (response.success && response.data) {
             const result = await db.bulkImportCustomers(response.data);
-            console.log(`[POS-Sync] Imported ${result.imported} customers`);
 
             await db.setSetting('customers_last_sync', new Date().toISOString());
             notifyListeners('customers_synced', { count: result.imported });
@@ -297,7 +284,6 @@ export async function syncCustomers(force = false) {
  */
 export async function syncSettings() {
     try {
-        console.log('[POS-Sync] Syncing settings...');
         const response = await fetchWithRetry(`${API_BASE}/settings`);
 
         if (response.success && response.data) {
@@ -305,7 +291,6 @@ export async function syncSettings() {
                 await db.setSetting(`server_${key}`, value);
             }
 
-            console.log('[POS-Sync] Settings synced');
             notifyListeners('settings_synced');
         }
 
@@ -325,8 +310,6 @@ export async function syncPendingTransactions() {
         if (pendingTransactions.length === 0) {
             return { synced: 0 };
         }
-
-        console.log(`[POS-Sync] Syncing ${pendingTransactions.length} transactions...`);
 
         let synced = 0;
         let failed = 0;
@@ -359,8 +342,6 @@ export async function syncPendingTransactions() {
             }
         }
 
-        console.log(`[POS-Sync] Transactions synced: ${synced}, failed: ${failed}`);
-
         return { synced, failed };
 
     } catch (error) {
@@ -380,8 +361,6 @@ export async function syncPendingStockMovements() {
             return { synced: 0 };
         }
 
-        console.log(`[POS-Sync] Syncing ${pendingMovements.length} stock movements...`);
-
         const response = await fetchWithRetry(`${API_BASE}/stock/sync`, {
             method: 'POST',
             body: JSON.stringify({ movements: pendingMovements })
@@ -397,7 +376,6 @@ export async function syncPendingStockMovements() {
                 });
             }
 
-            console.log(`[POS-Sync] Stock movements synced: ${pendingMovements.length}`);
             notifyListeners('stock_synced', { count: pendingMovements.length });
 
             return { synced: pendingMovements.length };
@@ -430,8 +408,6 @@ export async function processSyncQueue() {
             return { processed: 0 };
         }
 
-        console.log(`[POS-Sync] Processing ${pendingItems.length} queue items...`);
-
         let processed = 0;
         let failed = 0;
 
@@ -456,8 +432,6 @@ export async function processSyncQueue() {
 
         // ลบรายการที่สำเร็จแล้ว
         await db.removeSyncedItems();
-
-        console.log(`[POS-Sync] Queue processed: ${processed}, failed: ${failed}`);
 
         return { processed, failed };
 
@@ -556,30 +530,24 @@ export function initRealtimeSync(deviceId) {
 
         // รับการอัพเดทสินค้า
         echoChannel.listen('.product.updated', (event) => {
-            console.log('[POS-Sync] Product updated:', event.product_id);
             db.put('products', event.product);
             notifyListeners('product_updated', event);
         });
 
         // รับการอัพเดทราคา
         echoChannel.listen('.price.updated', (event) => {
-            console.log('[POS-Sync] Price updated:', event);
             updateProductPrice(event.product_id, event.new_price);
         });
 
         // รับการแจ้งเตือนสต็อกต่ำ
         echoChannel.listen('.stock.low', (event) => {
-            console.log('[POS-Sync] Low stock alert:', event);
             notifyListeners('stock_alert', event);
         });
 
         // รับคำสั่งจาก server
         echoChannel.listen('.command', (event) => {
-            console.log('[POS-Sync] Command received:', event);
             handleServerCommand(event);
         });
-
-        console.log('[POS-Sync] Real-time sync initialized');
 
     } catch (error) {
         console.error('[POS-Sync] Real-time sync failed:', error);
@@ -660,7 +628,6 @@ export function startAutoSync(intervalMinutes = 5) {
         }
     }, intervalMs);
 
-    console.log(`[POS-Sync] Auto sync started (every ${intervalMinutes} minutes)`);
 }
 
 /**
@@ -671,7 +638,6 @@ export function stopAutoSync() {
         clearInterval(syncIntervalId);
         syncIntervalId = null;
     }
-    console.log('[POS-Sync] Auto sync stopped');
 }
 
 // ============================================
@@ -744,8 +710,6 @@ export async function resolveConflict(localData, serverData, strategy = 'server_
  * Initialize Sync Service
  */
 export async function initSync(options = {}) {
-    console.log('[POS-Sync] Initializing...');
-
     // เปิด Database
     await db.initDatabase();
 
@@ -768,7 +732,6 @@ export async function initSync(options = {}) {
         setTimeout(() => syncAll(), 2000);
     }
 
-    console.log('[POS-Sync] Initialized');
 }
 
 // Export default
