@@ -24,6 +24,7 @@ use Illuminate\Support\Str;
  * @property string|null $district
  * @property string|null $sub_district
  * @property string|null $phone
+ * @property \Carbon\Carbon|null $phone_verified_at
  * @property string|null $line_display_name
  * @property string $subscription_type
  * @property \Carbon\Carbon|null $subscription_expires_at

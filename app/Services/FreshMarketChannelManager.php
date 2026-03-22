@@ -202,8 +202,17 @@ class FreshMarketChannelManager
             return $timeoutResult;
         }
 
-        // อัพเดทพิกัดในทุกกรณี
-        $conversation->updateSearchLocation($lat, $lng);
+        // อัพเดทพิกัดเฉพาะ state ที่เกี่ยวข้องกับการค้นหา (ป้องกัน context pollution)
+        $searchStates = [
+            FreshMarketConversation::STATE_IDLE,
+            FreshMarketConversation::STATE_SEARCH_LOCATION,
+            FreshMarketConversation::STATE_SEARCH_BROWSING,
+            FreshMarketConversation::STATE_ORDER_SELECT,
+            FreshMarketConversation::STATE_ORDER_QUANTITY,
+        ];
+        if (in_array($conversation->conversation_state, $searchStates)) {
+            $conversation->updateSearchLocation($lat, $lng);
+        }
 
         // Dispatch ตาม state
         $result = $this->dispatchByState($conversation, 'location', ['lat' => $lat, 'lng' => $lng], $extra);
@@ -239,6 +248,11 @@ class FreshMarketChannelManager
             $conversation->update([
                 'user_id' => $result['user']->id,
                 'seller_id' => $result['seller']?->id,
+            ]);
+        } elseif (! $result['is_new']) {
+            // Auto-register ล้มเหลว — log แต่ยังส่ง welcome ได้
+            Log::warning('FreshMarket: handleFollow - auto-register failed, sending welcome without account', [
+                'line_user_id' => $lineUserId,
             ]);
         }
 
@@ -583,6 +597,14 @@ class FreshMarketChannelManager
             'search_location:image' => $this->handleWrongInputType($conversation, 'image'),
             'search_browsing:image' => $this->handleWrongInputType($conversation, 'image'),
 
+            // === RIDER REGISTRATION FLOW ===
+            'rider_register:text' => $this->handleRiderRegister_Text($conversation, $inputData, $extra),
+            'rider_register:image' => $this->handleWrongInputType($conversation, 'image'),
+            'rider_register:location' => $this->handleWrongInputType($conversation, 'location'),
+            'rider_category:text' => $this->handleRiderCategory_Text($conversation, $inputData, $extra),
+            'rider_category:image' => $this->handleWrongInputType($conversation, 'image'),
+            'rider_category:location' => $this->handleWrongInputType($conversation, 'location'),
+
             // === DEFAULT ===
             default => $this->handleWrongInputType($conversation, $inputType),
         };
@@ -691,7 +713,15 @@ class FreshMarketChannelManager
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->buildGreetingWithButtons($conversation);
+            // แจ้งผู้ใช้ว่า AI ไม่สามารถตอบได้ แทนที่จะ fallback เงียบๆ
+            return [
+                'text' => "⚠️ ขอโทษค่ะ ระบบ AI ไม่สามารถตอบได้ชั่วคราว\n\nกรุณาลองถามใหม่อีกครั้ง หรือเลือกจากเมนูด้านล่างค่ะ 🙏",
+                'quick_replies' => [
+                    ['label' => '🛒 ซื้อของ', 'postback' => 'action=menu&choice=buy', 'display_text' => 'อยากซื้อ'],
+                    ['label' => '🏷️ ลงขาย', 'postback' => 'action=menu&choice=sell', 'display_text' => 'ลงขาย'],
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
         }
     }
 
@@ -1578,6 +1608,218 @@ class FreshMarketChannelManager
     }
 
     // ╔══════════════════════════════════════════╗
+    // ║  RIDER REGISTRATION FLOW HANDLERS         ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * rider_register + text → ผู้ใช้เลือกประเภทไรเดอร์ (delivery / service / both)
+     */
+    protected function handleRiderRegister_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+        $progress = $conversation->getProgressText();
+
+        // ตรวจจับตัวเลือก
+        $riderType = null;
+        if (in_array($msg, ['1', 'ส่งของ', 'delivery', 'ไรเดอร์ส่งของ'])) {
+            $riderType = 'delivery';
+        } elseif (in_array($msg, ['2', 'บริการ', 'service', 'ช่าง', 'ไรเดอร์บริการ'])) {
+            $riderType = 'service';
+        } elseif (in_array($msg, ['3', 'ทั้งสอง', 'both', 'ทั้งหมด', 'ส่งของและบริการ'])) {
+            $riderType = 'both';
+        }
+
+        if (! $riderType) {
+            return [
+                'text' => "{$progress}\n\n🏍️ กรุณาเลือกประเภทไรเดอร์ค่ะ:\n\n"
+                    . "1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
+                    . "2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
+                    . "3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
+                    . "พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
+                    . "พิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
+                'quick_replies' => [
+                    ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
+                    ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
+                    ['label' => '🚚🔧 ทั้งสอง', 'postback' => 'action=menu&choice=rider_type_both', 'display_text' => '3'],
+                    ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],
+                ],
+            ];
+        }
+
+        // บันทึกประเภทไรเดอร์ใน context
+        $conversation->setFlowContext('rider', [
+            'rider_type' => $riderType,
+            'started_at' => now()->toIso8601String(),
+        ]);
+
+        // ไปเลือกหมวดหมู่บริการ
+        $conversation->transitionTo(FreshMarketConversation::STATE_RIDER_CATEGORY);
+        $newProgress = $conversation->getProgressText();
+
+        $riderTypeLabel = match ($riderType) {
+            'delivery' => '🚚 ส่งของ',
+            'service' => '🔧 บริการ',
+            'both' => '🚚🔧 ส่งของ + บริการ',
+        };
+
+        return [
+            'text' => "{$newProgress}\n\n✅ เลือก: {$riderTypeLabel}\n\n"
+                . "📋 กรุณาเลือกหมวดหมู่ที่ต้องการรับงาน:\n\n"
+                . "1️⃣ ตลาดสด — ส่งสินค้าจากตลาด\n"
+                . "2️⃣ อาหาร — ส่งอาหาร\n"
+                . "3️⃣ เอกสาร — ส่งเอกสาร\n"
+                . "4️⃣ ทั่วไป — ทุกประเภท\n\n"
+                . "พิมพ์ตัวเลข หรือชื่อหมวดหมู่ค่ะ",
+            'quick_replies' => [
+                ['label' => '🥬 ตลาดสด', 'postback' => 'action=menu&choice=rider_cat_fresh', 'display_text' => '1'],
+                ['label' => '🍜 อาหาร', 'postback' => 'action=menu&choice=rider_cat_food', 'display_text' => '2'],
+                ['label' => '📄 เอกสาร', 'postback' => 'action=menu&choice=rider_cat_doc', 'display_text' => '3'],
+                ['label' => '📦 ทั่วไป', 'postback' => 'action=menu&choice=rider_cat_all', 'display_text' => '4'],
+            ],
+        ];
+    }
+
+    /**
+     * rider_category + text → เลือกหมวดหมู่ → ลงทะเบียนไรเดอร์สำเร็จ
+     */
+    protected function handleRiderCategory_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $msg = mb_strtolower(trim($message));
+
+        // ตรวจจับหมวดหมู่
+        $categories = [];
+        if (in_array($msg, ['1', 'ตลาดสด', 'fresh', 'fresh_market'])) {
+            $categories = ['fresh_market'];
+        } elseif (in_array($msg, ['2', 'อาหาร', 'food'])) {
+            $categories = ['food'];
+        } elseif (in_array($msg, ['3', 'เอกสาร', 'document', 'doc'])) {
+            $categories = ['document'];
+        } elseif (in_array($msg, ['4', 'ทั่วไป', 'all', 'ทุกประเภท', 'ทั้งหมด'])) {
+            $categories = ['fresh_market', 'food', 'document', 'delivery'];
+        }
+
+        if (empty($categories)) {
+            $progress = $conversation->getProgressText();
+
+            return [
+                'text' => "{$progress}\n\n"
+                    . "กรุณาเลือกหมวดหมู่ค่ะ:\n"
+                    . "1️⃣ ตลาดสด  2️⃣ อาหาร  3️⃣ เอกสาร  4️⃣ ทั่วไป\n\n"
+                    . "พิมพ์ตัวเลขค่ะ",
+            ];
+        }
+
+        $riderCtx = $conversation->getFlowContext('rider');
+        $riderType = $riderCtx['rider_type'] ?? 'delivery';
+
+        // สร้างหรืออัพเดท Rider
+        try {
+            $rider = $this->registerRider($conversation, $riderType, $categories);
+
+            // รีเซ็ตกลับ idle
+            $conversation->clearFlowContext('rider');
+            $conversation->resetToIdle();
+
+            if ($rider) {
+                $categoryLabels = array_map(fn ($c) => match ($c) {
+                    'fresh_market' => '🥬 ตลาดสด',
+                    'food' => '🍜 อาหาร',
+                    'document' => '📄 เอกสาร',
+                    'delivery' => '🚚 ส่งของทั่วไป',
+                    default => $c,
+                }, $categories);
+
+                return [
+                    'text' => "🎉 ลงทะเบียนไรเดอร์สำเร็จค่ะ!\n\n"
+                        . "📋 ข้อมูลไรเดอร์:\n"
+                        . "━━━━━━━━━━━━━━━\n"
+                        . "🏍️ ประเภท: " . match ($riderType) {
+                            'delivery' => 'ส่งของ',
+                            'service' => 'บริการ',
+                            'both' => 'ส่งของ + บริการ',
+                        } . "\n"
+                        . "📦 หมวดหมู่: " . implode(', ', $categoryLabels) . "\n"
+                        . "━━━━━━━━━━━━━━━\n\n"
+                        . "⚠️ ต้องรอ Admin อนุมัติและวางมัดจำก่อนรับงานนะคะ\n"
+                        . "ระบบจะแจ้งเตือนเมื่อพร้อมค่ะ 🙏",
+                    'quick_replies' => [
+                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                    ],
+                ];
+            }
+
+            return [
+                'text' => "⚠️ ไม่สามารถลงทะเบียนไรเดอร์ได้ค่ะ กรุณาลองใหม่",
+                'quick_replies' => [
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('FreshMarket: Rider registration failed', [
+                'error' => $e->getMessage(),
+                'line_user_id' => $conversation->line_user_id,
+            ]);
+
+            $conversation->resetToIdle();
+
+            return [
+                'text' => "⚠️ เกิดข้อผิดพลาดในการลงทะเบียนค่ะ\n\nกรุณาลองใหม่อีกครั้ง",
+                'quick_replies' => [
+                    ['label' => '🏍️ ลองใหม่', 'postback' => 'action=menu&choice=rider', 'display_text' => 'สมัครไรเดอร์'],
+                    ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                ],
+            ];
+        }
+    }
+
+    /**
+     * สร้างหรืออัพเดท Rider จากข้อมูล conversation
+     */
+    protected function registerRider(FreshMarketConversation $conversation, string $riderType, array $categories): ?Rider
+    {
+        // หา User จาก conversation
+        $user = null;
+        if ($conversation->user_id) {
+            $user = User::find($conversation->user_id);
+        }
+
+        if (! $user) {
+            $user = User::where('line_user_id', $conversation->line_user_id)->first();
+        }
+
+        if (! $user) {
+            return null;
+        }
+
+        // เช็คว่ามี Rider อยู่แล้วหรือไม่
+        $rider = Rider::where('user_id', $user->id)->first();
+
+        if ($rider) {
+            // อัพเดทข้อมูล
+            $rider->update([
+                'rider_type' => $riderType,
+                'service_categories' => $categories,
+                'preferred_job_types' => $categories,
+                'line_user_id' => $conversation->line_user_id,
+            ]);
+        } else {
+            // สร้างใหม่
+            $rider = Rider::create([
+                'user_id' => $user->id,
+                'line_user_id' => $conversation->line_user_id,
+                'rider_type' => $riderType,
+                'service_categories' => $categories,
+                'preferred_job_types' => $categories,
+                'status' => 'pending', // ต้อง admin approve
+                'is_online' => false,
+            ]);
+        }
+
+        return $rider;
+    }
+
+    // ╔══════════════════════════════════════════╗
     // ║  RIDER JOB ACCEPT / REJECT               ║
     // ╚══════════════════════════════════════════╝
 
@@ -2113,10 +2355,26 @@ class FreshMarketChannelManager
                 return $this->buildGreetingWithButtons($conversation);
 
             case 'rider':
+                // เริ่ม rider registration flow ผ่าน state machine
+                $conversation->transitionTo(FreshMarketConversation::STATE_RIDER_REGISTER, [
+                    'rider' => ['started_at' => now()->toIso8601String()],
+                ]);
+
+                $progress = $conversation->getProgressText();
+
                 return [
-                    'text' => "🏍️ สมัครไรเดอร์\n\nสมัครเป็นไรเดอร์เซอร์วิสได้ที่:\n" . url('/taladsod/rider/register') . "\n\nรายได้ดี รับงานอิสระ! 💪",
+                    'text' => "🏍️ สมัครไรเดอร์\n\n{$progress}\n\n"
+                        . "กรุณาเลือกประเภทไรเดอร์ที่ต้องการค่ะ:\n\n"
+                        . "1️⃣ ส่งของ — รับส่งสินค้าจากตลาดสด\n"
+                        . "2️⃣ บริการ — ช่างซ่อม/บริการต่างๆ\n"
+                        . "3️⃣ ทั้งสอง — ส่งของ + บริการ\n\n"
+                        . "พิมพ์ตัวเลข 1, 2 หรือ 3 ค่ะ\n"
+                        . "พิมพ์ \"ยกเลิก\" ถ้าต้องการเริ่มใหม่",
                     'quick_replies' => [
-                        ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+                        ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
+                        ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
+                        ['label' => '🚚🔧 ทั้งสอง', 'postback' => 'action=menu&choice=rider_type_both', 'display_text' => '3'],
+                        ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],
                     ],
                 ];
 
@@ -2221,6 +2479,8 @@ class FreshMarketChannelManager
             'order_tracking' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้กำลังติดตามออเดอร์ค่ะ\n\nพิมพ์ \"สถานะ\" เพื่อเช็คสถานะล่าสุด",
             'search_location' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้รอตำแหน่งค่ะ\n\n• กดปุ่ม \"+\" ด้านล่าง → \"ส่งตำแหน่ง\"\nเพื่อค้นหาสินค้าใกล้ตัวค่ะ",
             'search_browsing' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้กำลังดูรายการสินค้าค่ะ\n\nพิมพ์ชื่อสินค้าเพื่อค้นหา หรือส่งตำแหน่งมาใหม่ค่ะ",
+            'rider_register' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้รอเลือกประเภทไรเดอร์ค่ะ\n\nพิมพ์ 1 (ส่งของ), 2 (บริการ) หรือ 3 (ทั้งสอง) ค่ะ",
+            'rider_category' => "ได้รับ{$inputLabel}ค่ะ แต่ตอนนี้รอเลือกหมวดหมู่งานค่ะ\n\nพิมพ์ 1 (ตลาดสด), 2 (อาหาร), 3 (เอกสาร) หรือ 4 (ทั่วไป) ค่ะ",
             default => "ขอโทษค่ะ พี่ตลาดไม่เข้าใจค่ะ 🤔",
         };
 
@@ -2245,6 +2505,18 @@ class FreshMarketChannelManager
             ],
             'search_location' => [
                 ['label' => '🔙 กลับเมนู', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'กลับเมนู'],
+            ],
+            'rider_register' => [
+                ['label' => '🚚 ส่งของ', 'postback' => 'action=menu&choice=rider_type_delivery', 'display_text' => '1'],
+                ['label' => '🔧 บริการ', 'postback' => 'action=menu&choice=rider_type_service', 'display_text' => '2'],
+                ['label' => '🚚🔧 ทั้งสอง', 'postback' => 'action=menu&choice=rider_type_both', 'display_text' => '3'],
+                ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],
+            ],
+            'rider_category' => [
+                ['label' => '🥬 ตลาดสด', 'postback' => 'action=menu&choice=rider_cat_fresh', 'display_text' => '1'],
+                ['label' => '🍜 อาหาร', 'postback' => 'action=menu&choice=rider_cat_food', 'display_text' => '2'],
+                ['label' => '📄 เอกสาร', 'postback' => 'action=menu&choice=rider_cat_doc', 'display_text' => '3'],
+                ['label' => '📦 ทั่วไป', 'postback' => 'action=menu&choice=rider_cat_all', 'display_text' => '4'],
             ],
             default => [
                 ['label' => '❌ ยกเลิก', 'postback' => 'action=menu&choice=back_to_menu', 'display_text' => 'ยกเลิก'],

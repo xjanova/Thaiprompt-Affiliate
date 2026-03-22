@@ -60,9 +60,10 @@ class FreshMarketConversation extends Model
     public const STATE_ORDER_REVIEW = 'order_review';
     public const STATE_ORDER_TRACKING = 'order_tracking';
 
-    // ===== RIDER REGISTRATION FLOW (2 ขั้นตอน) =====
+    // ===== RIDER REGISTRATION FLOW (3 ขั้นตอน) =====
     public const STATE_RIDER_REGISTER = 'rider_register';
     public const STATE_RIDER_CATEGORY = 'rider_category';
+    public const STATE_RIDER_COMPLETE = 'rider_complete';
 
     // ===== Backward compatibility aliases =====
     public const STATE_NEW = 'idle';
@@ -100,8 +101,9 @@ class FreshMarketConversation extends Model
         'order_tracking' => ['idle', 'search_browsing'],
 
         // Rider registration flow
-        'rider_register' => ['rider_category', 'seller_phone', 'idle'],
-        'rider_category' => ['seller_phone', 'rider_register', 'idle'],
+        'rider_register' => ['rider_category', 'idle'],
+        'rider_category' => ['rider_complete', 'rider_register', 'idle'],
+        'rider_complete' => ['idle', 'rider_register'],
     ];
 
     /**
@@ -140,8 +142,9 @@ class FreshMarketConversation extends Model
         'order_quantity' => ['step' => 2, 'total' => 4, 'label' => 'จำนวนและการจัดส่ง'],
         'order_review' => ['step' => 3, 'total' => 4, 'label' => 'ตรวจสอบคำสั่งซื้อ'],
         'order_tracking' => ['step' => 4, 'total' => 4, 'label' => 'ติดตามออเดอร์'],
-        'rider_register' => ['step' => 1, 'total' => 2, 'label' => 'เลือกประเภทไรเดอร์'],
-        'rider_category' => ['step' => 2, 'total' => 2, 'label' => 'เลือกหมวดหมู่บริการ'],
+        'rider_register' => ['step' => 1, 'total' => 3, 'label' => 'เลือกประเภทไรเดอร์'],
+        'rider_category' => ['step' => 2, 'total' => 3, 'label' => 'เลือกหมวดหมู่บริการ'],
+        'rider_complete' => ['step' => 3, 'total' => 3, 'label' => 'สมัครสำเร็จ'],
     ];
 
     protected $fillable = [
@@ -369,6 +372,18 @@ class FreshMarketConversation extends Model
             self::STATE_ORDER_QUANTITY,
             self::STATE_ORDER_REVIEW,
             self::STATE_ORDER_TRACKING,
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าอยู่ใน rider registration flow หรือไม่
+     */
+    public function isInRiderFlow(): bool
+    {
+        return in_array($this->conversation_state, [
+            self::STATE_RIDER_REGISTER,
+            self::STATE_RIDER_CATEGORY,
+            self::STATE_RIDER_COMPLETE,
         ]);
     }
 
