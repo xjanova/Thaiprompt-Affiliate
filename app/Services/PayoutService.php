@@ -287,9 +287,25 @@ class PayoutService
                     'status' => EarningsLedger::STATUS_AVAILABLE,
                 ]);
 
-            // คืนหนี้ที่หัก (ถ้ามี)
+            // คืนหนี้ที่หัก (ถ้ามี) → สร้าง WalletDebt ใหม่คืนให้ User
             if ($payoutRequest->debt_deduction > 0) {
-                // TODO: implement debt reversal if needed
+                WalletDebt::create([
+                    'user_id' => $payoutRequest->user_id,
+                    'original_amount' => $payoutRequest->debt_deduction,
+                    'deducted_amount' => 0,
+                    'remaining_amount' => $payoutRequest->debt_deduction,
+                    'reason' => 'คืนหนี้จาก Payout ที่ถูกปฏิเสธ #' . $payoutRequest->id,
+                    'source_type' => 'PayoutRequest',
+                    'source_id' => $payoutRequest->id,
+                    'status' => 'active',
+                    'priority' => 0,
+                ]);
+
+                Log::info('Debt reversed due to payout rejection', [
+                    'payout_request_id' => $payoutRequest->id,
+                    'user_id' => $payoutRequest->user_id,
+                    'reversed_amount' => $payoutRequest->debt_deduction,
+                ]);
             }
 
             $payoutRequest->update([
@@ -396,6 +412,9 @@ class PayoutService
 
     /**
      * โอนเงินเข้า User Wallet
+     *
+     * ใช้ WalletService เพื่อให้ audit trail, balance tracking,
+     * total_income, และ last_transaction_at ถูกต้อง
      */
     protected function transferToUserWallet(PayoutRequest $payoutRequest): void
     {
@@ -404,31 +423,19 @@ class PayoutService
             throw new \Exception("ไม่พบ User #{$payoutRequest->user_id}");
         }
 
-        // ตรวจสอบว่า User มี Wallet หรือไม่
-        $wallet = $user->wallet;
-        if (! $wallet) {
-            // สร้าง wallet ใหม่ถ้ายังไม่มี
-            $wallet = $user->wallet()->create([
-                'balance' => 0,
-                'currency' => 'THB',
-            ]);
-        }
+        // ใช้ WalletService เพื่อ consistency กับส่วนอื่นของระบบ
+        $walletService = new WalletService;
+        $wallet = $walletService->getOrCreateWallet($user);
 
-        // เพิ่มเงินเข้า wallet
-        $wallet->increment('balance', $payoutRequest->net_amount);
-
-        // สร้าง transaction record
-        if (method_exists($wallet, 'transactions')) {
-            $wallet->transactions()->create([
-                'user_id' => $user->id,
-                'type' => 'payout',
-                'amount' => $payoutRequest->net_amount,
-                'balance_after' => $wallet->fresh()->balance,
-                'description' => "รับเงินจากการถอน - {$payoutRequest->earning_type}",
-                'reference_type' => 'PayoutRequest',
-                'reference_id' => $payoutRequest->id,
-            ]);
-        }
+        // ใช้ deposit() เพื่อให้ balance_before/after, total_income, log ถูกต้อง
+        $walletService->deposit(
+            $wallet,
+            $payoutRequest->net_amount,
+            "รับเงินจากการถอน - {$payoutRequest->earning_type}",
+            'PayoutRequest',
+            $payoutRequest->id,
+            ['payout_request_id' => $payoutRequest->id, 'earning_type' => $payoutRequest->earning_type]
+        );
     }
 
     /**
