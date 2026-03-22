@@ -340,11 +340,13 @@ class PaymentService
                 $product = $item->product;
                 if ($product && $product->track_inventory) {
                     // ใช้ DB query ป้องกัน stock ติดลบ (atomic decrement with floor 0)
+                    // ใช้ (int) cast ป้องกัน SQL Injection ใน DB::raw()
+                    $qty = (int) $item->quantity;
                     Product::where('id', $product->id)
-                        ->where('stock_quantity', '>=', $item->quantity)
+                        ->where('stock_quantity', '>=', $qty)
                         ->update([
-                            'stock_quantity' => DB::raw("stock_quantity - {$item->quantity}"),
-                            'sales_count' => DB::raw("sales_count + {$item->quantity}"),
+                            'stock_quantity' => DB::raw('stock_quantity - ' . $qty),
+                            'sales_count' => DB::raw('sales_count + ' . $qty),
                         ]);
 
                     // ถ้า stock ไม่พอ (race condition) → log แต่ไม่ block payment

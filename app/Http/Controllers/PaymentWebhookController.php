@@ -216,11 +216,16 @@ class PaymentWebhookController extends Controller
         $transactionId = $metadata['transaction_id'] ?? null;
 
         if ($transactionId) {
-            $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
+            // ใช้ lockForUpdate ป้องกัน race condition เหมือน handleStripePaymentSuccess
+            DB::transaction(function () use ($transactionId) {
+                $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+                    ->lockForUpdate()
+                    ->first();
 
-            if ($transaction && ! $transaction->isCompleted()) {
-                $transaction->markAsFailed('Payment failed via Stripe');
-            }
+                if ($transaction && ! $transaction->isCompleted()) {
+                    $transaction->markAsFailed('Payment failed via Stripe');
+                }
+            });
         }
 
         return response()->json(['status' => 'success']);
