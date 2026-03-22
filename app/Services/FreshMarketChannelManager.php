@@ -41,7 +41,7 @@ class FreshMarketChannelManager
     {
         $this->settings = $settings ?? FreshMarketSetting::getSettings();
         $this->aiService = new FreshMarketAIService($this->settings);
-        $this->marketService = new FreshMarketService;
+        $this->marketService = new FreshMarketService();
         $this->lineService = new FreshMarketLineService($this->settings);
     }
 
