@@ -224,8 +224,8 @@ class WalletDebt extends Model
         $totalDeducted = 0;
         $remaining = $amount;
 
-        // ดึงหนี้ทั้งหมดที่ยังค้าง เรียงตาม priority
-        $debts = static::forUser($userId)->active()->byPriority()->get();
+        // ดึงหนี้ทั้งหมดที่ยังค้าง เรียงตาม priority (ใช้ lockForUpdate ป้องกัน race condition)
+        $debts = static::forUser($userId)->active()->byPriority()->lockForUpdate()->get();
 
         foreach ($debts as $debt) {
             if ($remaining <= 0) {

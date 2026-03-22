@@ -157,7 +157,32 @@ class PaymentApiController extends Controller
                 ], 400);
             }
 
-            // สร้าง payment transaction
+            // Idempotency: ตรวจสอบว่ามี pending payment transaction อยู่แล้วหรือไม่
+            $existingTransaction = PaymentTransaction::where('type', 'order_payment')
+                ->where('user_id', $user->id)
+                ->whereHas('order', fn ($q) => $q->where('id', $order->id))
+                ->whereIn('status', ['pending', 'processing'])
+                ->where('payment_method', $request->payment_method)
+                ->latest()
+                ->first();
+
+            if ($existingTransaction) {
+                // ถ้า transaction ยังไม่หมดอายุ → คืน transaction เดิม
+                if (! $existingTransaction->isExpired()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'มี payment transaction ที่รอชำระอยู่แล้ว',
+                        'data' => [
+                            'transaction_id' => $existingTransaction->transaction_id,
+                            'amount' => $existingTransaction->amount,
+                            'status' => $existingTransaction->status,
+                            'payment_method' => $existingTransaction->payment_method,
+                        ],
+                    ]);
+                }
+            }
+
+            // สร้าง payment transaction ใหม่
             $transaction = $this->paymentService->createOrderPayment(
                 $order,
                 $request->payment_method,

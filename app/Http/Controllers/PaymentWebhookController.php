@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\PaymentTransaction;
 use App\Services\Payment\PaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -108,8 +109,10 @@ class PaymentWebhookController extends Controller
                 return response()->json(['error' => 'Missing ref_no'], 400);
             }
 
+            // ใช้ lockForUpdate เพื่อป้องกัน webhook replay
             $transaction = PaymentTransaction::where('promptpay_ref_no', $refNo)
                 ->whereIn('status', ['pending', 'processing'])
+                ->lockForUpdate()
                 ->first();
 
             if (! $transaction) {
@@ -189,11 +192,16 @@ class PaymentWebhookController extends Controller
             return response()->json(['error' => 'Missing transaction_id'], 400);
         }
 
-        $transaction = PaymentTransaction::where('transaction_id', $transactionId)->first();
+        // ใช้ DB transaction + lockForUpdate เพื่อป้องกัน webhook replay / double processing
+        DB::transaction(function () use ($transactionId) {
+            $transaction = PaymentTransaction::where('transaction_id', $transactionId)
+                ->lockForUpdate()
+                ->first();
 
-        if ($transaction && ! $transaction->isCompleted()) {
-            $this->paymentService->completePayment($transaction);
-        }
+            if ($transaction && ! $transaction->isCompleted()) {
+                $this->paymentService->completePayment($transaction);
+            }
+        });
 
         return response()->json(['status' => 'success']);
     }

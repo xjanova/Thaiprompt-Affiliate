@@ -224,9 +224,21 @@ class PaymentTransaction extends Model
 
     /**
      * Mark transaction as completed
+     *
+     * ตรวจสอบ status transition: เฉพาะ pending/processing เท่านั้นที่สามารถ complete ได้
      */
     public function markAsCompleted()
     {
+        // ป้องกันการ complete transaction ที่ failed/cancelled/refunded
+        if (! in_array($this->status, ['pending', 'processing'])) {
+            Log::warning('PaymentTransaction: พยายาม complete transaction ที่ไม่ใช่ pending/processing', [
+                'transaction_id' => $this->transaction_id,
+                'current_status' => $this->status,
+            ]);
+
+            return;
+        }
+
         $this->update([
             'status' => 'completed',
             'paid_at' => now(),

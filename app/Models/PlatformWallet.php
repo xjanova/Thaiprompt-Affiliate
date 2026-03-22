@@ -214,12 +214,15 @@ class PlatformWallet extends Model
         array $metadata = []
     ): PlatformTransaction {
         return DB::transaction(function () use ($amount, $subType, $sourceType, $sourceId, $metadata) {
-            $balanceBefore = $this->balance;
+            // Lock wallet เพื่อให้ balance_before/after ถูกต้อง
+            $wallet = static::lockForUpdate()->find($this->id);
+
+            $balanceBefore = $wallet->balance;
             $balanceAfter = $balanceBefore + $amount;
 
-            // อัพเดทยอด
-            $this->increment('balance', $amount);
-            $this->increment('total_income', $amount);
+            // อัพเดทยอด (ใช้ $wallet ที่ lock แล้ว)
+            $wallet->increment('balance', $amount);
+            $wallet->increment('total_income', $amount);
 
             // สร้าง transaction
             return $this->transactions()->create([
@@ -255,16 +258,19 @@ class PlatformWallet extends Model
         array $metadata = []
     ): PlatformTransaction {
         return DB::transaction(function () use ($amount, $subType, $sourceType, $sourceId, $metadata) {
-            if ($this->balance < $amount) {
+            // Lock wallet เพื่อป้องกัน race condition
+            $wallet = static::lockForUpdate()->find($this->id);
+
+            if ($wallet->balance < $amount) {
                 throw new \Exception('ยอดเงินในกระเป๋าไม่เพียงพอ');
             }
 
-            $balanceBefore = $this->balance;
+            $balanceBefore = $wallet->balance;
             $balanceAfter = $balanceBefore - $amount;
 
-            // อัพเดทยอด
-            $this->decrement('balance', $amount);
-            $this->increment('total_expense', $amount);
+            // อัพเดทยอด (ใช้ $wallet ที่ lock แล้ว)
+            $wallet->decrement('balance', $amount);
+            $wallet->increment('total_expense', $amount);
 
             // สร้าง transaction
             return $this->transactions()->create([
