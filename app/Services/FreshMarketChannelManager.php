@@ -514,6 +514,18 @@ class FreshMarketChannelManager
             'chat_ai' => $this->enterAIChatMode($conversation),
             'help' => $this->handleCommand('help', $lineUserId, $conversation, []),
             'back_to_menu' => $this->buildGreetingWithButtons($conversation),
+
+            // ===== Rider Registration: ประเภทไรเดอร์ =====
+            'rider_type_delivery' => $this->handleRiderRegister_Text($conversation, '1', []),
+            'rider_type_service' => $this->handleRiderRegister_Text($conversation, '2', []),
+            'rider_type_both' => $this->handleRiderRegister_Text($conversation, '3', []),
+
+            // ===== Rider Registration: หมวดหมู่งาน =====
+            'rider_cat_fresh' => $this->handleRiderCategory_Text($conversation, '1', []),
+            'rider_cat_food' => $this->handleRiderCategory_Text($conversation, '2', []),
+            'rider_cat_doc' => $this->handleRiderCategory_Text($conversation, '3', []),
+            'rider_cat_all' => $this->handleRiderCategory_Text($conversation, '4', []),
+
             default => $this->buildGreetingWithButtons($conversation),
         };
     }
@@ -583,6 +595,9 @@ class FreshMarketChannelManager
             'search_browsing:location' => $this->handleSearchLocation_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
 
             // === ORDER FLOW ===
+            'order_select:text' => $this->handleOrderSelect_Text($conversation, $inputData, $extra),
+            'order_select:image' => $this->handleWrongInputType($conversation, 'image'),
+            'order_select:location' => $this->handleOrderQuantity_Location($conversation, $inputData['lat'] ?? 0, $inputData['lng'] ?? 0, $extra),
             'order_quantity:text' => $this->handleOrderQuantity_Text($conversation, $inputData, $extra),
             'order_quantity:location' => $this->handleOrderQuantity_Location($conversation, $inputData['lat'], $inputData['lng'], $extra),
             'order_quantity:image' => $this->handleWrongInputType($conversation, 'image'),
@@ -597,6 +612,11 @@ class FreshMarketChannelManager
             'search_location:image' => $this->handleWrongInputType($conversation, 'image'),
             'search_browsing:image' => $this->handleWrongInputType($conversation, 'image'),
 
+            // === LISTING COMPLETE (ลงขายเสร็จ → กลับ idle อัตโนมัติ) ===
+            'listing_complete:text' => $this->handleCompletedState_Text($conversation, $inputData, $extra),
+            'listing_complete:image' => $this->handleCompletedState_Text($conversation, '', $extra),
+            'listing_complete:location' => $this->handleCompletedState_Text($conversation, '', $extra),
+
             // === RIDER REGISTRATION FLOW ===
             'rider_register:text' => $this->handleRiderRegister_Text($conversation, $inputData, $extra),
             'rider_register:image' => $this->handleWrongInputType($conversation, 'image'),
@@ -604,6 +624,11 @@ class FreshMarketChannelManager
             'rider_category:text' => $this->handleRiderCategory_Text($conversation, $inputData, $extra),
             'rider_category:image' => $this->handleWrongInputType($conversation, 'image'),
             'rider_category:location' => $this->handleWrongInputType($conversation, 'location'),
+
+            // === RIDER COMPLETE (สมัครเสร็จ → กลับ idle อัตโนมัติ) ===
+            'rider_complete:text' => $this->handleCompletedState_Text($conversation, $inputData, $extra),
+            'rider_complete:image' => $this->handleCompletedState_Text($conversation, '', $extra),
+            'rider_complete:location' => $this->handleCompletedState_Text($conversation, '', $extra),
 
             // === DEFAULT ===
             default => $this->handleWrongInputType($conversation, $inputType),
@@ -1271,6 +1296,63 @@ class FreshMarketChannelManager
     // ╚══════════════════════════════════════════╝
 
     /**
+     * order_select + text → ผู้ใช้พิมพ์ข้อความขณะเลือกสินค้า
+     *
+     * ถ้าเป็นตัวเลข → พยายาม match กับ listing จากผลค้นหาล่าสุด
+     * ถ้าเป็นข้อความ → ค้นหาใหม่ด้วย query
+     */
+    protected function handleOrderSelect_Text(FreshMarketConversation $conversation, string $message, array $extra): array
+    {
+        $searchCtx = $conversation->getFlowContext('search');
+        $listingIds = $searchCtx['result_listing_ids'] ?? [];
+
+        // ถ้าพิมพ์ตัวเลข → ลอง match กับ listing
+        $msg = trim($message);
+        if (is_numeric($msg)) {
+            $index = (int) $msg - 1;
+            if (isset($listingIds[$index])) {
+                $listing = FreshMarketListing::find($listingIds[$index]);
+                if ($listing && $listing->isAvailableForPurchase()) {
+                    // เริ่ม order flow เหมือน postback
+                    $conversation->transitionTo(FreshMarketConversation::STATE_ORDER_QUANTITY, [
+                        'order' => [
+                            'listing_id' => $listing->id,
+                            'listing_title' => $listing->title,
+                            'listing_price' => $listing->price,
+                            'listing_unit' => $listing->unit,
+                            'seller_shop_name' => $listing->seller?->shop_name ?? 'ร้านค้า',
+                            'started_at' => now()->toIso8601String(),
+                        ],
+                    ]);
+
+                    $progress = $conversation->getProgressText();
+
+                    return [
+                        'text' => "{$progress}\n\n🛒 {$listing->title}\n💰 ฿" . number_format($listing->price, 0) . " / {$listing->unit}\n\nจะสั่งกี่ {$listing->unit} คะ?\nนัดรับเองหรือให้ส่ง?",
+                    ];
+                }
+            }
+        }
+
+        // ถ้ามีพิกัดเดิม → ค้นหาด้วย query ใหม่
+        if ($conversation->last_search_latitude) {
+            return $this->searchNearbyAndRespond(
+                $conversation,
+                (float) $conversation->last_search_latitude,
+                (float) $conversation->last_search_longitude,
+                ['query' => $message]
+            );
+        }
+
+        // ไม่มีพิกัด → แนะนำส่งตำแหน่ง
+        $conversation->transitionTo(FreshMarketConversation::STATE_SEARCH_LOCATION);
+
+        return [
+            'text' => "📍 ส่งตำแหน่งมาเพื่อค้นหา \"{$message}\" ใกล้บ้านค่ะ",
+        ];
+    }
+
+    /**
      * order_quantity + text → AI parse จำนวนและวิธีรับ
      */
     protected function handleOrderQuantity_Text(FreshMarketConversation $conversation, string $message, array $extra): array
@@ -1906,6 +1988,32 @@ class FreshMarketChannelManager
         return [
             'text' => "ℹ️ ปฏิเสธงาน {$job->job_number} แล้ว\n\nงานจะถูกส่งต่อให้ไรเดอร์คนอื่น",
         ];
+    }
+
+    // ╔══════════════════════════════════════════╗
+    // ║  COMPLETED STATE HANDLER                  ║
+    // ╚══════════════════════════════════════════╝
+
+    /**
+     * listing_complete / rider_complete + any input
+     *
+     * สถานะ "เสร็จ" เหล่านี้ควรถูก reset ไป idle แล้ว
+     * แต่ถ้าเกิด race condition หรือผู้ใช้ส่งข้อความเร็วมาก
+     * ก็ reset ให้อัตโนมัติแล้วเริ่มต้นใหม่
+     */
+    protected function handleCompletedState_Text(FreshMarketConversation $conversation, mixed $input, array $extra): array
+    {
+        $conversation->resetToIdle();
+
+        // ถ้ามีข้อความ → ลอง dispatch ใหม่ใน idle
+        if (is_string($input) && ! empty(trim($input))) {
+            $command = $this->detectCommand($input);
+            if ($command) {
+                return $this->handleCommand($command, $conversation->line_user_id, $conversation, $extra);
+            }
+        }
+
+        return $this->buildGreetingWithButtons($conversation);
     }
 
     // ╔══════════════════════════════════════════╗

@@ -124,12 +124,12 @@ class FreshMarketWebhookController extends Controller
             return;
         }
 
-        // Flood protection (ใช้ increment เพื่อป้องกัน race condition)
+        // Flood protection
+        // ใช้ cache add + increment เพื่อป้องกัน race condition
+        // add() จะสร้าง key เฉพาะเมื่อยังไม่มี (atomic) แล้ว increment ตาม
         $floodKey = "fm_flood:{$userId}";
+        cache()->add($floodKey, 0, now()->addSeconds(10));
         $floodCount = (int) cache()->increment($floodKey);
-        if ($floodCount === 1) {
-            cache()->put($floodKey, 1, now()->addSeconds(10));
-        }
 
         if ($floodCount >= 5) {
             Log::warning('FreshMarketWebhook: Flood detected', ['user_id' => $userId]);
