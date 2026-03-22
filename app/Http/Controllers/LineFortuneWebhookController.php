@@ -748,9 +748,36 @@ class LineFortuneWebhookController extends Controller
             $billRef = $reading->bill_reference ?? $reading->id;
             $this->lineService->sendMessageWithReplyFallback(
                 $userId,
-                "✅ รับแจ้งแล้วค่ะ! (บิล: {$billRef})\n\nทีมงานจะตรวจสอบและส่งคำทำนายให้โดยเร็วที่สุดค่ะ 🙏\n\n⏳ กรุณารอสักครู่นะคะ",
+                "✅ รับแจ้งแล้วค่ะ! (บิล: {$billRef})\n\nกำลังตรวจสอบและเตรียมคำทำนายให้ค่ะ 🔮\n\n⏳ กรุณารอสักครู่นะคะ",
                 $replyToken
             );
+
+            // ✅ FIX: Auto-process payment + dispatch deep reading job
+            // เมื่อผู้ใช้กด "โอนเงินแล้ว" → เริ่มสร้างคำทำนายทันที
+            // (ก่อนหน้านี้แค่บันทึก transfer_reported แต่ไม่ dispatch job)
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            $autoProcessOnReport = $settings->auto_process_on_transfer_report ?? true;
+
+            if ($autoProcessOnReport && ! $reading->is_paid) {
+                $reading->update([
+                    'is_paid' => true,
+                    'paid_at' => now(),
+                    'conversation_status' => \App\Models\FortuneReading::STATUS_PAID,
+                ]);
+
+                Log::info('LINE Webhook: Auto-process payment on transfer report', [
+                    'reading_id' => $reading->id,
+                    'bill_ref' => $billRef,
+                ]);
+
+                // Dispatch background job สร้างคำทำนาย
+                \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                    $reading->id,
+                    null,
+                    'line',
+                    $userId
+                );
+            }
 
         } catch (\Exception $e) {
             Log::error('LINE Webhook: Postback confirm_transfer ล้มเหลว', [

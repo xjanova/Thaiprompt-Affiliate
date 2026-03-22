@@ -306,9 +306,7 @@ class FortuneCheckPendingReadings extends Command
             $billRef = $reading->bill_reference ?? "#{$reading->id}";
             $waitMinutes = (int) $reading->paid_at->diffInMinutes(now());
 
-            // ✅ V3: ตั้ง flag reading_ready_for_reply (ไม่ push อีกต่อไป)
-            // เมื่อ user ส่งข้อความมา → processMessage() จะตรวจจับ flag นี้
-            // แล้วส่งคำทำนายผ่าน replyMessage (ฟรี!)
+            // ✅ V3: ตั้ง flag reading_ready_for_reply
             if (! $reading->getConversationState('reading_ready_for_reply', false)) {
                 if (! $isDryRun) {
                     $reading->setConversationState('reading_ready_for_reply', true);
@@ -321,8 +319,56 @@ class FortuneCheckPendingReadings extends Command
                     'bill_reference' => $billRef,
                     'wait_minutes' => $waitMinutes,
                 ]);
-            } else {
-                $this->info("  📌 {$billRef} — flag ตั้งแล้ว รอ user ส่งข้อความมา (รอ {$waitMinutes} นาที)");
+            }
+
+            // ✅ FIX: Push แจ้งเตือน "คำทำนายพร้อมแล้ว" ถ้ายังไม่เคยแจ้ง
+            // ก่อนหน้านี้แค่ตั้ง flag แต่ไม่ push → ผู้ใช้ไม่รู้ว่าคำทำนายพร้อมแล้ว
+            $notificationSent = $reading->getConversationState('reading_notification_sent', false);
+            $notifyRetryCount = (int) $reading->getConversationState('phase2_notify_retry_count', 0);
+
+            if (! $notificationSent && $notifyRetryCount < 2 && ! $isDryRun) {
+                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+                $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+
+                if (! empty($userId)) {
+                    try {
+                        $settings = $settings ?? FortuneTellingSetting::getSettings();
+                        $channelManager = $channelManager ?? new FortuneChannelManager($settings);
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+
+                        $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
+                            . '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n\n"
+                            . "🔮 พร้อมอ่านเลยไหมคะ?\n"
+                            . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+
+                        $pushSent = $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'fortune_ready_notification',
+                            'message' => $readyMessage,
+                            'reading' => $reading,
+                            'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
+
+                        if ($pushSent) {
+                            $reading->setConversationState('reading_notification_sent', true);
+                            $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+                            $this->info("  📨 {$billRef} — push แจ้ง 'คำทำนายพร้อมแล้ว' สำเร็จ");
+                        } else {
+                            $reading->setConversationState('reading_notification_attempted', true);
+                            $this->warn("  ⚠️ {$billRef} — push แจ้งไม่สำเร็จ (user พิมพ์มาก็จะได้รับผ่าน replyMessage)");
+                        }
+                    } catch (\Exception $notifyErr) {
+                        $reading->setConversationState('reading_notification_attempted', true);
+                        $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
+                        Log::warning('fortune:check-pending Phase 2: push แจ้งเตือนล้มเหลว', [
+                            'reading_id' => $reading->id,
+                            'error' => $notifyErr->getMessage(),
+                        ]);
+                    }
+                }
+            } elseif ($notificationSent) {
+                $this->info("  📌 {$billRef} — แจ้งแล้ว รอ user ส่งข้อความมา (รอ {$waitMinutes} นาที)");
             }
 
             $flagged++;
