@@ -335,11 +335,30 @@ class PaymentService
                 'status' => 'processing', // Move to processing after payment
             ]);
 
-            // Reduce product stock
+            // Reduce product stock (ป้องกัน stock ติดลบ)
             foreach ($order->items as $item) {
                 $product = $item->product;
-                if ($product->track_inventory) {
-                    $product->decrement('stock_quantity', $item->quantity);
+                if ($product && $product->track_inventory) {
+                    // ใช้ DB query ป้องกัน stock ติดลบ (atomic decrement with floor 0)
+                    Product::where('id', $product->id)
+                        ->where('stock_quantity', '>=', $item->quantity)
+                        ->update([
+                            'stock_quantity' => DB::raw("stock_quantity - {$item->quantity}"),
+                            'sales_count' => DB::raw("sales_count + {$item->quantity}"),
+                        ]);
+
+                    // ถ้า stock ไม่พอ (race condition) → log แต่ไม่ block payment
+                    $product->refresh();
+                    if ($product->stock_quantity < 0) {
+                        Log::warning('PaymentService: stock ติดลบหลัง decrement (race condition)', [
+                            'product_id' => $product->id,
+                            'ordered_qty' => $item->quantity,
+                            'remaining_stock' => $product->stock_quantity,
+                            'order_id' => $order->id,
+                        ]);
+                    }
+                } elseif ($product) {
+                    // ไม่ track inventory → แค่เพิ่ม sales_count
                     $product->increment('sales_count', $item->quantity);
                 }
             }
@@ -400,8 +419,12 @@ class PaymentService
             ],
         ]);
 
-        // Update wallet balance
-        $wallet->increment('balance', $depositAmount);
+        // Update wallet balance + total_income + last_transaction_at
+        $wallet->update([
+            'balance' => $wallet->balance + $depositAmount,
+            'total_income' => ($wallet->total_income ?? 0) + $depositAmount,
+            'last_transaction_at' => now(),
+        ]);
 
         // Link wallet transaction
         $transaction->update(['wallet_transaction_id' => $walletTransaction->id]);
@@ -416,11 +439,70 @@ class PaymentService
 
     /**
      * Complete withdrawal
+     *
+     * บันทึกสถานะและหักเงินจาก wallet ของผู้ใช้
+     * การโอนเงินจริงไปบัญชีธนาคารต้อง admin ดำเนินการแยก
      */
     protected function completeWithdrawal(PaymentTransaction $transaction)
     {
-        // Implementation for withdrawal completion
-        // This would handle the actual money transfer to user's bank account
+        $user = $transaction->user;
+        if (! $user) {
+            Log::error('completeWithdrawal: ไม่พบ user', [
+                'transaction_id' => $transaction->id,
+            ]);
+
+            return;
+        }
+
+        $wallet = Wallet::where('user_id', $user->id)->first();
+        if (! $wallet) {
+            Log::error('completeWithdrawal: ไม่พบ wallet', [
+                'transaction_id' => $transaction->id,
+                'user_id' => $user->id,
+            ]);
+
+            return;
+        }
+
+        // ตรวจสอบยอดเงินเพียงพอ
+        if ($wallet->balance < $transaction->amount) {
+            Log::error('completeWithdrawal: ยอดเงินไม่เพียงพอ', [
+                'transaction_id' => $transaction->id,
+                'wallet_balance' => $wallet->balance,
+                'withdraw_amount' => $transaction->amount,
+            ]);
+
+            return;
+        }
+
+        // สร้าง wallet transaction
+        WalletTransaction::create([
+            'wallet_id' => $wallet->id,
+            'user_id' => $user->id,
+            'type' => 'withdrawal',
+            'amount' => $transaction->amount,
+            'balance_before' => $wallet->balance,
+            'balance_after' => $wallet->balance - $transaction->amount,
+            'description' => 'ถอนเงินผ่าน ' . $transaction->payment_method,
+            'reference_type' => 'PaymentTransaction',
+            'reference_id' => $transaction->id,
+            'status' => 'completed',
+            'completed_at' => now(),
+        ]);
+
+        // หักเงินจาก wallet
+        $wallet->update([
+            'balance' => $wallet->balance - $transaction->amount,
+            'total_expense' => ($wallet->total_expense ?? 0) + $transaction->amount,
+            'last_transaction_at' => now(),
+        ]);
+
+        Log::info('completeWithdrawal: ถอนเงินสำเร็จ', [
+            'transaction_id' => $transaction->id,
+            'user_id' => $user->id,
+            'amount' => $transaction->amount,
+            'new_balance' => $wallet->fresh()->balance,
+        ]);
     }
 
     /**

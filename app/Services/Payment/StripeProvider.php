@@ -296,19 +296,80 @@ class StripeProvider implements PaymentProviderInterface
 
     /**
      * Verify Stripe webhook signature
+     *
+     * ตรวจสอบ Stripe-Signature header โดยใช้ HMAC-SHA256
+     * ตาม specification: https://stripe.com/docs/webhooks/signatures
+     *
+     * @param  array  $data  ข้อมูลจาก request (ไม่ได้ใช้ — ใช้ raw body แทน)
+     * @return bool ลายเซ็นถูกต้องหรือไม่
      */
     protected function verifyWebhookSignature(array $data): bool
     {
-        // ในการใช้งานจริงต้องตรวจสอบ signature จาก header
-        // Stripe-Signature header
         if (empty($this->webhookSecret)) {
-            // ถ้าไม่มี webhook secret ให้ข้ามการตรวจสอบ (ไม่แนะนำ)
-            return true;
+            Log::warning('StripeProvider: webhook_secret ไม่ได้ตั้งค่า — ข้ามการตรวจสอบ (ไม่ปลอดภัย!)');
+
+            return true; // Fallback สำหรับ dev mode ที่ยังไม่ตั้ง secret
         }
 
-        // TODO: Implement proper webhook signature verification
-        // $signature = request()->header('Stripe-Signature');
-        // return Webhook::constructEvent($payload, $signature, $this->webhookSecret);
+        $signature = request()->header('Stripe-Signature');
+        if (empty($signature)) {
+            Log::warning('StripeProvider: ไม่มี Stripe-Signature header');
+
+            return false;
+        }
+
+        $payload = request()->getContent();
+
+        // Parse signature header: t=timestamp,v1=signature
+        $elements = explode(',', $signature);
+        $timestamp = null;
+        $v1Signature = null;
+
+        foreach ($elements as $element) {
+            $parts = explode('=', $element, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+            if ($parts[0] === 't') {
+                $timestamp = $parts[1];
+            } elseif ($parts[0] === 'v1') {
+                $v1Signature = $parts[1];
+            }
+        }
+
+        if (! $timestamp || ! $v1Signature) {
+            Log::warning('StripeProvider: Stripe-Signature format ไม่ถูกต้อง', [
+                'signature' => $signature,
+            ]);
+
+            return false;
+        }
+
+        // ตรวจสอบ timestamp tolerance (5 นาที)
+        $tolerance = 300;
+        if (abs(time() - (int) $timestamp) > $tolerance) {
+            Log::warning('StripeProvider: Stripe webhook timestamp เก่าเกินไป', [
+                'timestamp' => $timestamp,
+                'current_time' => time(),
+                'diff_seconds' => abs(time() - (int) $timestamp),
+            ]);
+
+            return false;
+        }
+
+        // สร้าง expected signature: HMAC-SHA256 ของ "{timestamp}.{payload}"
+        $signedPayload = "{$timestamp}.{$payload}";
+        $expectedSignature = hash_hmac('sha256', $signedPayload, $this->webhookSecret);
+
+        // เปรียบเทียบ timing-safe
+        if (! hash_equals($expectedSignature, $v1Signature)) {
+            Log::warning('StripeProvider: Stripe webhook ลายเซ็นไม่ตรง', [
+                'expected' => substr($expectedSignature, 0, 10) . '...',
+                'received' => substr($v1Signature, 0, 10) . '...',
+            ]);
+
+            return false;
+        }
 
         return true;
     }
