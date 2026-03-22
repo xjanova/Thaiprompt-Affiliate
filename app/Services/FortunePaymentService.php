@@ -161,8 +161,8 @@ class FortunePaymentService
         $specialAmounts = config('smschecker.special_amounts', []);
 
         foreach ($specialAmounts as $specialAmount => $config) {
-            // เปรียบเทียบยอดเงิน (tolerance 0.001 สำหรับ floating point)
-            if (abs((float) $specialAmount - $amount) < 0.001) {
+            // เปรียบเทียบยอดเงิน (tolerance 0.01 สำหรับ THB 2 ทศนิยม + floating point)
+            if (abs((float) $specialAmount - $amount) < 0.01) {
                 return $config;
             }
         }

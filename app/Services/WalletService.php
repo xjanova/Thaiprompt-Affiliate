@@ -68,6 +68,8 @@ class WalletService
         }
 
         return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+            // Lock wallet เพื่อป้องกัน race condition: อ่าน balance ล่าสุดจาก DB
+            $wallet = Wallet::lockForUpdate()->find($wallet->id);
             $balanceBefore = $wallet->balance;
             $balanceAfter = $balanceBefore + $amount;
 
@@ -91,7 +93,7 @@ class WalletService
             // Update wallet balance
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_income' => $wallet->total_income + $amount,
+                'total_income' => ($wallet->total_income ?? 0) + $amount,
                 'last_transaction_at' => now(),
             ]);
 
@@ -143,6 +145,14 @@ class WalletService
         $wallet->resetFailedAttempts();
 
         return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+            // Lock wallet เพื่อป้องกัน race condition: อ่าน balance ล่าสุดจาก DB
+            $wallet = Wallet::lockForUpdate()->find($wallet->id);
+
+            // Re-check balance หลัง lock (balance อาจเปลี่ยนระหว่าง pre-check กับ lock)
+            if ($wallet->balance < $amount) {
+                throw new Exception('ยอดเงินไม่เพียงพอ (ถูกใช้ไประหว่างรอ)');
+            }
+
             $balanceBefore = $wallet->balance;
             $balanceAfter = $balanceBefore - $amount;
 
@@ -166,7 +176,7 @@ class WalletService
             // Update wallet balance
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_expense' => $wallet->total_expense + $amount,
+                'total_expense' => ($wallet->total_expense ?? 0) + $amount,
                 'last_transaction_at' => now(),
             ]);
 
@@ -219,6 +229,13 @@ class WalletService
         }
 
         return DB::transaction(function () use ($wallet, $amount, $description, $referenceType, $referenceId, $metadata) {
+            // Lock wallet เพื่อป้องกัน race condition
+            $wallet = Wallet::lockForUpdate()->find($wallet->id);
+
+            if ($wallet->balance < $amount) {
+                throw new Exception('ยอดเงินไม่เพียงพอ (ถูกใช้ไประหว่างรอ)');
+            }
+
             $balanceBefore = $wallet->balance;
             $balanceAfter = $balanceBefore - $amount;
 
@@ -242,7 +259,7 @@ class WalletService
             // อัพเดทยอดเงินใน wallet
             $wallet->update([
                 'balance' => $balanceAfter,
-                'total_expense' => $wallet->total_expense + $amount,
+                'total_expense' => ($wallet->total_expense ?? 0) + $amount,
                 'last_transaction_at' => now(),
             ]);
 
@@ -295,6 +312,18 @@ class WalletService
         $fromWallet->resetFailedAttempts();
 
         return DB::transaction(function () use ($fromWallet, $toWallet, $amount, $description) {
+            // Lock ทั้ง 2 wallets ตามลำดับ ID เพื่อป้องกัน deadlock
+            $lockIds = [$fromWallet->id, $toWallet->id];
+            sort($lockIds);
+            $lockedWallets = Wallet::whereIn('id', $lockIds)->lockForUpdate()->get()->keyBy('id');
+            $fromWallet = $lockedWallets[$fromWallet->id];
+            $toWallet = $lockedWallets[$toWallet->id];
+
+            // Re-check balance หลัง lock
+            if ($fromWallet->balance < $amount) {
+                throw new Exception('ยอดเงินไม่เพียงพอ (ถูกใช้ไประหว่างรอ)');
+            }
+
             // Deduct from sender
             $fromBalanceBefore = $fromWallet->balance;
             $fromBalanceAfter = $fromBalanceBefore - $amount;
@@ -315,7 +344,7 @@ class WalletService
 
             $fromWallet->update([
                 'balance' => $fromBalanceAfter,
-                'total_expense' => $fromWallet->total_expense + $amount,
+                'total_expense' => ($fromWallet->total_expense ?? 0) + $amount,
                 'last_transaction_at' => now(),
             ]);
 
@@ -339,7 +368,7 @@ class WalletService
 
             $toWallet->update([
                 'balance' => $toBalanceAfter,
-                'total_income' => $toWallet->total_income + $amount,
+                'total_income' => ($toWallet->total_income ?? 0) + $amount,
                 'last_transaction_at' => now(),
             ]);
 

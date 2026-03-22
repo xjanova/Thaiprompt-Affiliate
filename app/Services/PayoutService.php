@@ -42,10 +42,11 @@ class PayoutService
                 throw new \Exception('Payout สำหรับประเภทนี้ถูกปิดใช้งาน');
             }
 
-            // ดึงรายได้ที่ available
+            // ดึงรายได้ที่ available (ใช้ lockForUpdate ป้องกัน race condition double-payout)
             $availableEarnings = EarningsLedger::where('user_id', $userId)
                 ->where('earning_type', $earningType)
                 ->available()
+                ->lockForUpdate()
                 ->get();
 
             $totalAvailable = $availableEarnings->sum('net_amount');
@@ -180,7 +181,7 @@ class PayoutService
             $fee += $amount * ($setting->fee_percentage / 100);
         }
 
-        return round($fee, 4);
+        return round($fee, 2); // ใช้ 2 ทศนิยมตามมาตรฐานสกุลเงินบาท
     }
 
     /**
@@ -335,6 +336,17 @@ class PayoutService
         }
 
         return DB::transaction(function () use ($payoutRequest) {
+            // ป้องกัน race condition: lock + recheck สถานะภายใน transaction
+            $payoutRequest = PayoutRequest::lockForUpdate()->find($payoutRequest->id);
+            if (! $payoutRequest || $payoutRequest->status !== PayoutRequest::STATUS_APPROVED) {
+                Log::warning('PayoutService: processPayout ถูกเรียกซ้ำหรือสถานะเปลี่ยนแล้ว', [
+                    'payout_id' => $payoutRequest->id ?? 'unknown',
+                    'current_status' => $payoutRequest->status ?? 'not found',
+                ]);
+
+                return $payoutRequest;
+            }
+
             $payoutRequest->update([
                 'status' => PayoutRequest::STATUS_PROCESSING,
             ]);
@@ -545,8 +557,8 @@ class PayoutService
 
         return [
             'total_requests' => (clone $query)->count(),
-            'total_gross_amount' => (clone $query)->sum('amount'),
-            'total_fee_amount' => (clone $query)->sum('fee'),
+            'total_gross_amount' => (clone $query)->sum('gross_amount'),
+            'total_fee_amount' => (clone $query)->sum('fee_amount'),
             'total_net_amount' => (clone $query)->sum('net_amount'),
             'by_status' => (clone $query)->selectRaw('status, COUNT(*) as count, SUM(net_amount) as total')
                 ->groupBy('status')
