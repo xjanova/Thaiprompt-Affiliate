@@ -1039,22 +1039,12 @@ class FortuneChannelManager
             return $lineService->sendMessage($userId, $result['message'] ?? 'เกิดข้อผิดพลาด');
         }
 
-        // ✅ ส่งรูปไพ่ยิปซีใบสุดท้ายก่อน payment info (ถ้ามี) — ลอง reply ก่อน (ฟรี)
+        // ✅ ส่งรูปไพ่ยิปซีใบสุดท้ายก่อน payment info (ถ้ามี)
+        // ไม่ใช้ replyToken ตรงนี้ — เก็บไว้ให้ payment flex ใช้ (สำคัญกว่า)
         $tarotImageUrl = $result['tarot_image_url'] ?? null;
         if ($tarotImageUrl) {
             try {
-                $tarotSent = false;
-                if ($replyToken) {
-                    $tarotSent = $lineService->replyMessage($replyToken, [
-                        ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
-                    ]);
-                    if ($tarotSent) {
-                        $replyToken = null; // ใช้แล้ว
-                    }
-                }
-                if (! $tarotSent) {
-                    $lineService->sendImage($userId, $tarotImageUrl);
-                }
+                $lineService->sendImage($userId, $tarotImageUrl);
                 usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('LINE Payment: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
@@ -1386,49 +1376,12 @@ class FortuneChannelManager
         $questionNumber = $result['question_number'] ?? 1;
         $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
 
-        // ✅ ส่งรูปไพ่ยิปซีก่อน Flex เลือกหมวด (ถ้ามี) — ลอง reply ก่อน (ฟรี)
-        $tarotImageUrl = $result['tarot_image_url'] ?? null;
-        if ($tarotImageUrl) {
-            try {
-                $tarotSent = false;
-                if ($replyToken) {
-                    $tarotSent = $lineService->replyMessage($replyToken, [
-                        ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
-                    ]);
-                    if ($tarotSent) {
-                        $replyToken = null; // ใช้แล้ว
-                    }
-                }
-                if (! $tarotSent) {
-                    $lineService->sendImage($userId, $tarotImageUrl);
-                }
-            } catch (\Exception $imgErr) {
-                Log::warning('LINE QuestionSelection: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
-                    'error' => $imgErr->getMessage(),
-                    'image_url' => $tarotImageUrl,
-                ]);
-            }
-        }
-
         // ตรวจหาคำถามก่อนหน้า (ถ้าเป็นข้อ 2+)
         $previousQuestion = null;
         if ($reading && $questionNumber > 1) {
             $collected = $reading->getCollectedQuestions();
             $previousQuestion = end($collected) ?: null;
         }
-
-        Log::info('LINE QuestionSelection: กำลังส่ง Flex เลือกหมวดคำถาม', [
-            'user_id' => $userId,
-            'question_number' => $questionNumber,
-            'total_questions' => $totalQuestions,
-            'user_name' => $userName,
-            'previous_question' => $previousQuestion ? mb_substr($previousQuestion, 0, 30) : null,
-            'has_reply_token' => ! empty($replyToken),
-            'reading_id' => $reading?->id,
-            'reading_status' => $reading?->conversation_status,
-            'collected_count' => $reading ? count($reading->getCollectedQuestions()) : 0,
-            'has_tarot_image' => ! empty($tarotImageUrl),
-        ]);
 
         $questionFlex = $lineService->buildQuestionSelectionFlexMessage(
             $questionNumber,
@@ -1437,22 +1390,60 @@ class FortuneChannelManager
             $previousQuestion
         );
 
-        $flexJsonSize = strlen(json_encode($questionFlex));
-        Log::info('LINE QuestionSelection: Flex JSON built', [
-            'json_size' => $flexJsonSize,
-            'flex_type' => $questionFlex['type'] ?? 'unknown',
-        ]);
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
 
-        $sent = $lineService->sendFlexWithReplyFallback(
-            $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", $replyToken
-        );
-
-        Log::info('LINE QuestionSelection: ผลลัพธ์การส่ง', [
-            'sent' => $sent,
+        Log::info('LINE QuestionSelection: กำลังส่ง Flex เลือกหมวดคำถาม', [
+            'user_id' => $userId,
             'question_number' => $questionNumber,
+            'has_reply_token' => ! empty($replyToken),
+            'has_tarot_image' => ! empty($tarotImageUrl),
+            'reading_id' => $reading?->id,
         ]);
 
-        return $sent;
+        // ✅ รวมรูปไพ่ + Flex เลือกคำถาม เป็น reply batch เดียว (ฟรีทั้งคู่!)
+        // ป้องกันปัญหา: ส่งรูปไพ่ใช้ replyToken หมด → Flex ต้อง push → ถ้า push ถูก throttle → user ค้าง
+        if ($replyToken) {
+            $replyMessages = [];
+
+            // รูปไพ่ยิปซี (ถ้ามี) — ใส่เป็น message แรก
+            if ($tarotImageUrl) {
+                $replyMessages[] = [
+                    'type' => 'image',
+                    'originalContentUrl' => $tarotImageUrl,
+                    'previewImageUrl' => $tarotImageUrl,
+                ];
+            }
+
+            // Flex เลือกหมวดคำถาม
+            $replyMessages[] = [
+                'type' => 'flex',
+                'altText' => "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}",
+                'contents' => $questionFlex,
+            ];
+
+            $sent = $lineService->replyMessage($replyToken, $replyMessages);
+            if ($sent) {
+                return true;
+            }
+            $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
+            Log::warning('LINE QuestionSelection: replyMessage ล้มเหลว fallback push');
+        }
+
+        // Fallback: push ทีละอัน (ถ้า reply ไม่ได้ หรือไม่มี replyToken)
+        if ($tarotImageUrl) {
+            try {
+                $lineService->sendImage($userId, $tarotImageUrl);
+                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
+            } catch (\Exception $imgErr) {
+                Log::warning('LINE QuestionSelection: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                ]);
+            }
+        }
+
+        return $lineService->sendFlexWithReplyFallback(
+            $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", null
+        );
     }
 
     // ============================================================
