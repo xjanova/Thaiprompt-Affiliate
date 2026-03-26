@@ -1386,10 +1386,8 @@ class FortuneChannelManager
 
         // ✅ ไม่ส่งรูปไพ่ตรงนี้ — ส่งตอนคำทำนายทีเดียว (ประหยัด push + ไม่ค้าง)
         // ส่งแค่ Flex เลือกคำถาม (ใช้ replyToken → ฟรี + เร็ว)
-        }
-
         return $lineService->sendFlexWithReplyFallback(
-            $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", null
+            $userId, $questionFlex, "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}", $replyToken
         );
     }
 
