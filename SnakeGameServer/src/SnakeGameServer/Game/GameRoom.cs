@@ -26,6 +26,7 @@ public class GameRoom
 
     public string RoomId { get; }
     public string RoomCode { get; }
+    public string Channel { get; set; } = "CH-1";
     public RoomStatus Status { get; set; } = RoomStatus.Waiting;
     public DateTime CreatedAt { get; }
 

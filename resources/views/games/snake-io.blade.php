@@ -1477,6 +1477,59 @@
                 </p>
             @endguest
 
+            <!-- 🔑 Server Connection: API Key + Channel -->
+            <div id="server-connection-section" style="
+                margin: 20px 0; padding: 20px;
+                background: rgba(0, 100, 255, 0.1);
+                border: 1px solid rgba(0, 150, 255, 0.3);
+                border-radius: 12px; max-width: 500px; width: 100%;
+            ">
+                <h3 style="color: #00aaff; font-size: 16px; margin-bottom: 15px; text-align: center;">
+                    🌐 เชื่อมต่อเซิร์ฟเวอร์
+                </h3>
+
+                <!-- API Key Input -->
+                <div id="api-key-section" style="margin-bottom: 15px; display: none;">
+                    <label style="color: #ffcc00; font-size: 13px; display: block; margin-bottom: 5px;">
+                        🔑 API Key (จากผู้ดูแลเซิร์ฟเวอร์)
+                    </label>
+                    <input type="text" id="server-api-key"
+                           placeholder="กรอก API Key เพื่อเข้าร่วม"
+                           maxlength="32"
+                           style="
+                               width: 100%; padding: 10px 14px;
+                               background: rgba(0, 0, 0, 0.6);
+                               border: 2px solid rgba(255, 200, 0, 0.4);
+                               border-radius: 8px; color: #ffcc00;
+                               font-family: 'Consolas', monospace; font-size: 14px;
+                               letter-spacing: 1px; text-align: center;
+                               outline: none; transition: border-color 0.3s;
+                           "
+                           onfocus="this.style.borderColor='#ffcc00'"
+                           onblur="this.style.borderColor='rgba(255,200,0,0.4)'">
+                    <p id="api-key-error" style="color: #ff4444; font-size: 12px; margin-top: 5px; display: none; text-align: center;"></p>
+                </div>
+
+                <!-- Channel Selector -->
+                <div id="channel-section" style="margin-bottom: 5px;">
+                    <label style="color: #00ffcc; font-size: 13px; display: block; margin-bottom: 8px;">
+                        📡 เลือก Channel
+                    </label>
+                    <div id="channel-list" style="
+                        display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+                    ">
+                        <div style="color: #888; font-size: 13px; padding: 10px;">
+                            ⏳ กำลังโหลด channels...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Connection Status -->
+                <div id="server-connect-status" style="
+                    text-align: center; font-size: 12px; color: #888; margin-top: 8px;
+                "></div>
+            </div>
+
             <div style="display: flex; gap: 15px; margin-top: 30px;">
                 <button class="btn" id="back-to-title-btn" style="background: linear-gradient(135deg, #666, #444);">
                     ← ย้อนกลับ
@@ -1707,6 +1760,12 @@
             // ✅ Dedicated Game Server (C# WebSocket Server)
             GAME_SERVER_IP: '123.253.62.250', // IP ของ Dedicated Game Server
             GAME_SERVER_PORT: '8080', // Port ของ Dedicated Game Server (WebSocket)
+
+            // ✅ Server Security & Channel
+            SERVER_API_KEY: '', // API Key สำหรับเชื่อมต่อ (จากผู้ดูแลเซิร์ฟเวอร์)
+            SERVER_CHANNEL: '', // Channel ที่เลือก
+            SERVER_REQUIRE_API_KEY: false, // เซิร์ฟเวอร์บังคับใช้ API Key หรือไม่
+            SERVER_CHANNELS: [], // รายการ channels จากเซิร์ฟเวอร์
         };
 
         /**
@@ -3260,10 +3319,20 @@
             });
 
             // ✨ UI Events - รองรับ Title Screen + Character Setup Screen
-            // 1. Play Button → แสดงหน้า Character Setup
+            // 1. Play Button → แสดงหน้า Character Setup + โหลด Channel List
             document.getElementById('play-btn').addEventListener('click', function() {
                 document.getElementById('title-screen').classList.add('hidden');
                 document.getElementById('character-setup-screen').classList.add('show');
+
+                // โหลด API Key จาก localStorage (ถ้ามี)
+                const savedApiKey = localStorage.getItem('snake_api_key') || '';
+                const apiKeyInput = document.getElementById('server-api-key');
+                if (apiKeyInput && savedApiKey) {
+                    apiKeyInput.value = savedApiKey;
+                }
+
+                // เชื่อมต่อ WebSocket เพื่อดึง Channel List
+                fetchChannelList();
             });
 
             // 2. Back to Title Button → กลับหน้า Title
@@ -3850,6 +3919,20 @@
                 const serverPort = parseInt(CONFIG.GAME_SERVER_PORT);
 
                 wsClient = new SnakeWebSocketClient();
+
+                // ✅ ตั้ง API Key และ Channel สำหรับ reconnect
+                if (CONFIG.SERVER_API_KEY) {
+                    wsClient.setApiKey(CONFIG.SERVER_API_KEY);
+                }
+                if (CONFIG.SERVER_CHANNEL) {
+                    wsClient.setChannel(CONFIG.SERVER_CHANNEL);
+                }
+
+                wsClient.onAuthError = (msg) => {
+                    console.error('[WS] Reconnect Auth Error:', msg);
+                    updateConnectionStatus('offline', '🔑 API KEY ERROR');
+                };
+
                 await wsClient.connect(serverIp, serverPort);
                 await wsClient.join(playerName, selectedSkin);
 
@@ -3978,6 +4061,179 @@
             }
         }
 
+        // ============================================================
+        // 🌐 Channel List & API Key — ดึงข้อมูลจากเซิร์ฟเวอร์ก่อนเข้าเกม
+        // ============================================================
+
+        let _channelWs = null; // WebSocket ชั่วคราวสำหรับดึง channel list
+
+        /**
+         * เชื่อมต่อ WebSocket เพื่อดึง Channel List จากเซิร์ฟเวอร์
+         */
+        async function fetchChannelList() {
+            const statusEl = document.getElementById('server-connect-status');
+            const channelListEl = document.getElementById('channel-list');
+
+            if (statusEl) statusEl.textContent = '⏳ กำลังเชื่อมต่อเซิร์ฟเวอร์...';
+            if (channelListEl) channelListEl.innerHTML = '<div style="color: #888; font-size: 13px; padding: 10px;">⏳ กำลังโหลด channels...</div>';
+
+            try {
+                const wsIp = CONFIG.GAME_SERVER_IP;
+                const wsPort = CONFIG.GAME_SERVER_PORT;
+
+                if (!wsIp) {
+                    if (statusEl) statusEl.innerHTML = '<span style="color: #ff8800;">⚠️ ไม่พบ IP เซิร์ฟเวอร์ — จะเล่นโหมด Offline</span>';
+                    renderOfflineChannels();
+                    return;
+                }
+
+                // เชื่อมต่อ WebSocket ชั่วคราว
+                const wsUrl = `ws://${wsIp}:${wsPort}/snake`;
+                _channelWs = new WebSocket(wsUrl);
+
+                _channelWs.onmessage = function(event) {
+                    try {
+                        const msg = JSON.parse(event.data);
+
+                        if (msg.type === 'channel_list') {
+                            // บันทึก channel info
+                            CONFIG.SERVER_CHANNELS = msg.channels || [];
+                            CONFIG.SERVER_REQUIRE_API_KEY = msg.require_api_key || false;
+
+                            // แสดง/ซ่อน API Key input
+                            const apiKeySection = document.getElementById('api-key-section');
+                            if (apiKeySection) {
+                                apiKeySection.style.display = CONFIG.SERVER_REQUIRE_API_KEY ? 'block' : 'none';
+                            }
+
+                            // Render channels
+                            renderChannelList(CONFIG.SERVER_CHANNELS);
+
+                            if (statusEl) statusEl.innerHTML = '<span style="color: #00ff00;">✅ เชื่อมต่อเซิร์ฟเวอร์สำเร็จ</span>';
+                        }
+                    } catch (e) {
+                        console.warn('[Channel] Parse error:', e);
+                    }
+                };
+
+                _channelWs.onopen = function() {
+                    console.log('[Channel] เชื่อมต่อเพื่อดึง channel list สำเร็จ');
+                };
+
+                _channelWs.onerror = function() {
+                    if (statusEl) statusEl.innerHTML = '<span style="color: #ff4444;">❌ ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</span>';
+                    renderOfflineChannels();
+                };
+
+                _channelWs.onclose = function() {
+                    _channelWs = null;
+                };
+
+                // timeout 5 วินาที
+                setTimeout(() => {
+                    if (_channelWs && _channelWs.readyState === WebSocket.CONNECTING) {
+                        _channelWs.close();
+                        if (statusEl) statusEl.innerHTML = '<span style="color: #ff8800;">⚠️ เซิร์ฟเวอร์ไม่ตอบสนอง — จะเล่นโหมด Offline</span>';
+                        renderOfflineChannels();
+                    }
+                }, 5000);
+
+            } catch (e) {
+                console.error('[Channel] Error:', e);
+                if (statusEl) statusEl.innerHTML = '<span style="color: #ff4444;">❌ เกิดข้อผิดพลาด</span>';
+                renderOfflineChannels();
+            }
+        }
+
+        /**
+         * แสดง channel list ใน UI
+         */
+        function renderChannelList(channels) {
+            const container = document.getElementById('channel-list');
+            if (!container) return;
+
+            if (!channels || channels.length === 0) {
+                container.innerHTML = '<div style="color: #888; font-size: 13px;">ไม่พบ channel</div>';
+                return;
+            }
+
+            // เลือก channel แรกเป็นค่าเริ่มต้น
+            const savedChannel = localStorage.getItem('snake_channel') || channels[0].name;
+            CONFIG.SERVER_CHANNEL = savedChannel;
+
+            container.innerHTML = channels.map(ch => {
+                const isSelected = ch.name === savedChannel;
+                const playerPercent = ch.max_players_per_room > 0
+                    ? Math.round((ch.player_count / (ch.max_players_per_room * Math.max(ch.room_count, 1))) * 100)
+                    : 0;
+                const barColor = playerPercent > 80 ? '#ff4444' : playerPercent > 50 ? '#ffaa00' : '#00ff00';
+
+                return `
+                    <div class="channel-btn ${isSelected ? 'selected' : ''}"
+                         data-channel="${ch.name}"
+                         onclick="selectChannel('${ch.name}')"
+                         style="
+                            cursor: pointer; padding: 10px 16px; min-width: 100px;
+                            background: ${isSelected ? 'rgba(0, 255, 200, 0.2)' : 'rgba(255, 255, 255, 0.05)'};
+                            border: 2px solid ${isSelected ? '#00ffcc' : 'rgba(255, 255, 255, 0.15)'};
+                            border-radius: 10px; text-align: center;
+                            transition: all 0.2s ease;
+                         ">
+                        <div style="color: ${isSelected ? '#00ffcc' : '#fff'}; font-size: 15px; font-weight: bold;">
+                            ${ch.name}
+                        </div>
+                        <div style="color: #aaa; font-size: 11px; margin-top: 4px;">
+                            👥 ${ch.player_count} คน · ${ch.room_count} ห้อง
+                        </div>
+                        <div style="
+                            margin-top: 6px; height: 4px; border-radius: 2px;
+                            background: rgba(255,255,255,0.1); overflow: hidden;
+                        ">
+                            <div style="
+                                height: 100%; width: ${Math.min(playerPercent, 100)}%;
+                                background: ${barColor}; border-radius: 2px;
+                                transition: width 0.3s ease;
+                            "></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        /**
+         * เลือก channel
+         */
+        function selectChannel(channelName) {
+            CONFIG.SERVER_CHANNEL = channelName;
+            localStorage.setItem('snake_channel', channelName);
+
+            // อัพเดท UI
+            document.querySelectorAll('.channel-btn').forEach(btn => {
+                const isSelected = btn.dataset.channel === channelName;
+                btn.classList.toggle('selected', isSelected);
+                btn.style.background = isSelected ? 'rgba(0, 255, 200, 0.2)' : 'rgba(255, 255, 255, 0.05)';
+                btn.style.borderColor = isSelected ? '#00ffcc' : 'rgba(255, 255, 255, 0.15)';
+                const nameDiv = btn.querySelector('div');
+                if (nameDiv) nameDiv.style.color = isSelected ? '#00ffcc' : '#fff';
+            });
+        }
+
+        /**
+         * แสดง channel เมื่อไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ (Offline)
+         */
+        function renderOfflineChannels() {
+            const container = document.getElementById('channel-list');
+            if (!container) return;
+            container.innerHTML = `
+                <div style="color: #888; font-size: 13px; padding: 10px; text-align: center;">
+                    🤖 โหมด Offline — ไม่ต้องเลือก Channel
+                </div>
+            `;
+            // ซ่อน API Key section
+            const apiKeySection = document.getElementById('api-key-section');
+            if (apiKeySection) apiKeySection.style.display = 'none';
+        }
+
         async function startGame() {
             console.log('Starting game...');
 
@@ -4019,7 +4275,43 @@
                     updateConnectionStatus('offline', '⚡ CONNECTING TO SERVER...');
 
                     try {
+                        // ปิด WebSocket ชั่วคราว (ที่ใช้ดึง channel list)
+                        if (_channelWs) {
+                            try { _channelWs.close(); } catch(e) {}
+                            _channelWs = null;
+                        }
+
                         wsClient = new SnakeWebSocketClient();
+
+                        // ✅ ตั้ง API Key และ Channel ก่อน join
+                        const apiKeyInput = document.getElementById('server-api-key');
+                        const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+                        if (apiKey) {
+                            wsClient.setApiKey(apiKey);
+                            CONFIG.SERVER_API_KEY = apiKey;
+                            localStorage.setItem('snake_api_key', apiKey);
+                        }
+                        if (CONFIG.SERVER_CHANNEL) {
+                            wsClient.setChannel(CONFIG.SERVER_CHANNEL);
+                        }
+
+                        // ✅ Auth Error callback — API Key ผิด
+                        wsClient.onAuthError = (msg) => {
+                            console.error('[WS] Auth Error:', msg);
+                            const apiKeyError = document.getElementById('api-key-error');
+                            if (apiKeyError) {
+                                apiKeyError.textContent = '🔑 API Key ไม่ถูกต้อง — กรุณาตรวจสอบกับผู้ดูแลเซิร์ฟเวอร์';
+                                apiKeyError.style.display = 'block';
+                            }
+                            // กลับไปหน้า Character Setup
+                            updateConnectionStatus('offline', '🔑 API KEY ERROR');
+                            alert('❌ API Key ไม่ถูกต้อง!\n\nกรุณากรอก API Key ที่ได้รับจากผู้ดูแลเซิร์ฟเวอร์');
+                        };
+
+                        // ✅ Channel List callback
+                        wsClient.onChannelList = (channels, requireApiKey) => {
+                            console.log('[WS] ได้รับ channel list จากเซิร์ฟเวอร์');
+                        };
 
                         // ตั้ง callbacks
                         wsClient.onMyDeath = (killerId) => {

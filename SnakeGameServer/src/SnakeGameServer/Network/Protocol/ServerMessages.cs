@@ -106,6 +106,9 @@ public class WelcomeMessage
     [JsonPropertyName("room_id")]
     public string RoomId { get; set; } = "";
 
+    [JsonPropertyName("channel")]
+    public string Channel { get; set; } = "";
+
     [JsonPropertyName("world_size")]
     public int WorldSize { get; set; }
 
@@ -253,4 +256,52 @@ public class RoomInfoMessage
 
     [JsonPropertyName("max_players")]
     public int MaxPlayers { get; set; }
+}
+
+/// <summary>
+/// รายการ channel ที่เปิดให้เข้าได้ (ส่งหลังเชื่อมต่อ)
+/// </summary>
+public class ChannelListMessage
+{
+    [JsonPropertyName("type")]
+    public string Type => ServerMessageType.ChannelList;
+
+    [JsonPropertyName("channels")]
+    public List<ChannelInfoDto> Channels { get; set; } = new();
+
+    [JsonPropertyName("require_api_key")]
+    public bool RequireApiKey { get; set; }
+}
+
+/// <summary>
+/// ข้อมูล channel
+/// </summary>
+public class ChannelInfoDto
+{
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+
+    [JsonPropertyName("player_count")]
+    public int PlayerCount { get; set; }
+
+    [JsonPropertyName("room_count")]
+    public int RoomCount { get; set; }
+
+    [JsonPropertyName("max_players_per_room")]
+    public int MaxPlayersPerRoom { get; set; }
+}
+
+/// <summary>
+/// แจ้ง error การตรวจสอบสิทธิ์ (API Key ผิด)
+/// </summary>
+public class AuthErrorMessage
+{
+    [JsonPropertyName("type")]
+    public string Type => ServerMessageType.AuthError;
+
+    [JsonPropertyName("message")]
+    public string Message { get; set; } = "";
+
+    [JsonPropertyName("code")]
+    public string Code { get; set; } = "INVALID_API_KEY";
 }

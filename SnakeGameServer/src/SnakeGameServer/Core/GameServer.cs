@@ -7,6 +7,7 @@ namespace SnakeGameServer.Core;
 
 /// <summary>
 /// Top-level orchestrator — จัดการทุกอย่างของ game server
+/// รองรับระบบ Channel, API Key, และ Client Status
 /// </summary>
 public class GameServer
 {
@@ -23,6 +24,10 @@ public class GameServer
     // === Player → Room mapping ===
     private readonly Dictionary<string, (string roomId, string playerId)> _clientPlayerMap = new();
     private readonly object _mapLock = new();
+
+    // === Client Status Tracking ===
+    private readonly Dictionary<string, ClientStatusInfo> _clientStatusMap = new();
+    private readonly object _statusLock = new();
 
     /// <summary>
     /// Event: log message
@@ -45,6 +50,7 @@ public class GameServer
     // === Statistics ===
     public int TotalConnections { get; private set; }
     public int PeakPlayers { get; private set; }
+    public int RejectedConnections { get; private set; }
     public TimeSpan Uptime => IsRunning ? DateTime.UtcNow - _startTime : TimeSpan.Zero;
 
     public GameServer(ServerConfig? config = null)
@@ -85,6 +91,9 @@ public class GameServer
         Log($"  Tick Rate: {_config.TickRate}/sec");
         Log($"  World Size: {_config.WorldSize}x{_config.WorldSize}");
         Log($"  Max Players/Room: {_config.MaxPlayersPerRoom}");
+        Log($"  Channels: {_config.MaxChannels} ({string.Join(", ", _config.GetChannelNames())})");
+        Log($"  API Key: {_config.ApiKey}");
+        Log($"  Require API Key: {_config.RequireApiKey}");
         Log($"  Database: {_config.DbProvider}");
 
         OnStateChanged?.Invoke();
@@ -108,6 +117,12 @@ public class GameServer
         // 3. Stop database writer
         _dbWriter.Dispose();
 
+        // 4. Clear client status
+        lock (_statusLock)
+        {
+            _clientStatusMap.Clear();
+        }
+
         IsRunning = false;
 
         Log("Server stopped.");
@@ -130,12 +145,33 @@ public class GameServer
     }
 
     /// <summary>
+    /// สุ่ม API Key ใหม่
+    /// </summary>
+    public void RegenerateApiKey()
+    {
+        _config.RegenerateApiKey();
+        Log($"API Key regenerated: {_config.ApiKey}");
+        OnStateChanged?.Invoke();
+    }
+
+    /// <summary>
     /// อัพเดท config (ต้อง restart)
     /// </summary>
     public void UpdateConfig(Action<ServerConfig> update)
     {
         update(_config);
         OnStateChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// ดึงข้อมูลสถานะ client ทั้งหมด (สำหรับ UI)
+    /// </summary>
+    public List<ClientStatusInfo> GetClientStatuses()
+    {
+        lock (_statusLock)
+        {
+            return _clientStatusMap.Values.ToList();
+        }
     }
 
     // ==================== Event Wiring ====================
@@ -171,12 +207,37 @@ public class GameServer
     private void HandleClientConnected(ClientConnection client)
     {
         TotalConnections++;
+
+        // Track client status
+        lock (_statusLock)
+        {
+            _clientStatusMap[client.Id] = new ClientStatusInfo
+            {
+                ClientId = client.Id,
+                IpAddress = client.RemoteEndpoint,
+                ConnectedAt = client.ConnectedAt,
+                Status = "Connected",
+                IsAuthenticated = false
+            };
+        }
+
+        // ส่ง channel list ไปให้ client ทันทีหลังเชื่อมต่อ
+        SendChannelList(client);
+
+        Log($"Client connected: {client.Id} from {client.RemoteEndpoint}");
         OnStateChanged?.Invoke();
     }
 
     private void HandleClientDisconnected(ClientConnection client, string reason)
     {
         HandlePlayerLeave(client.Id);
+
+        // Remove client status
+        lock (_statusLock)
+        {
+            _clientStatusMap.Remove(client.Id);
+        }
+
         OnStateChanged?.Invoke();
     }
 
@@ -185,10 +246,65 @@ public class GameServer
         _router.Route(client, rawJson);
     }
 
+    // ==================== Channel List ====================
+
+    /// <summary>
+    /// ส่งรายการ channel ไปให้ client (หลังเชื่อมต่อ)
+    /// </summary>
+    private void SendChannelList(ClientConnection client)
+    {
+        var channels = _config.GetChannelNames().Select(ch => new ChannelInfoDto
+        {
+            Name = ch,
+            PlayerCount = _rooms.GetChannelPlayerCount(ch),
+            RoomCount = _rooms.GetChannelRoomCount(ch),
+            MaxPlayersPerRoom = _config.MaxPlayersPerRoom
+        }).ToList();
+
+        var msg = new ChannelListMessage
+        {
+            Channels = channels,
+            RequireApiKey = _config.RequireApiKey
+        };
+
+        var json = MessageSerializer.Serialize(msg);
+        _ = client.SendAsync(json);
+    }
+
     // ==================== Game Handlers ====================
 
     private void HandleJoin(ClientConnection client, JoinMessage msg)
     {
+        // === ตรวจสอบ API Key ===
+        if (_config.RequireApiKey)
+        {
+            if (string.IsNullOrWhiteSpace(msg.ApiKey) ||
+                !string.Equals(msg.ApiKey.Trim(), _config.ApiKey, StringComparison.OrdinalIgnoreCase))
+            {
+                RejectedConnections++;
+                Log($"REJECTED: Client {client.Id} ({client.RemoteEndpoint}) — Invalid API Key: '{msg.ApiKey ?? "(empty)"}'");
+
+                var authError = MessageSerializer.Serialize(new AuthErrorMessage
+                {
+                    Message = "API Key ไม่ถูกต้อง กรุณาตรวจสอบ API Key จาก Server Admin",
+                    Code = "INVALID_API_KEY"
+                });
+                _ = client.SendAsync(authError);
+
+                // อัพเดท client status
+                lock (_statusLock)
+                {
+                    if (_clientStatusMap.TryGetValue(client.Id, out var status))
+                    {
+                        status.Status = "Rejected (Bad API Key)";
+                    }
+                }
+
+                OnStateChanged?.Invoke();
+                return;
+            }
+        }
+
         // Validate name
         var name = string.IsNullOrWhiteSpace(msg.PlayerName)
             ? "Player"
@@ -199,8 +315,11 @@ public class GameServer
         var skin = string.IsNullOrWhiteSpace(msg.Skin) ? "classic" : msg.Skin.Trim();
         if (skin.Length > 50) skin = "classic"; // ป้องกัน payload ยาวเกิน
 
-        // Find or create room
-        var room = _rooms.FindOrCreateRoom(msg.RoomId);
+        // Validate channel
+        var channel = _rooms.ValidateChannel(msg.Channel);
+
+        // Find or create room ใน channel ที่เลือก
+        var room = _rooms.FindOrCreateRoom(msg.RoomId, channel);
 
         // Add player to room
         var player = room.AddPlayer(name, skin);
@@ -224,6 +343,19 @@ public class GameServer
             _clientPlayerMap[client.Id] = (room.RoomId, player.Id);
         }
 
+        // อัพเดท client status
+        lock (_statusLock)
+        {
+            if (_clientStatusMap.TryGetValue(client.Id, out var status))
+            {
+                status.Status = "Playing";
+                status.IsAuthenticated = true;
+                status.PlayerName = name;
+                status.Channel = channel;
+                status.RoomCode = room.RoomCode;
+            }
+        }
+
         // Wire room events สำหรับส่ง message
         room.OnSendToPlayer -= SendToPlayer;
         room.OnSendToPlayer += SendToPlayer;
@@ -232,10 +364,13 @@ public class GameServer
         room.OnLog -= Log;
         room.OnLog += Log;
 
-        // Send welcome
+        // Send welcome (เพิ่ม channel info)
         var welcome = room.CreateWelcomeMessage(player);
+        welcome.Channel = channel;
         var welcomeJson = MessageSerializer.Serialize(welcome);
         _ = client.SendAsync(welcomeJson);
+
+        Log($"Player '{name}' joined {channel}/{room.RoomCode} (API Key: OK)");
 
         // Update peak
         var totalPlayers = _rooms.TotalPlayers;
@@ -281,6 +416,16 @@ public class GameServer
     private void HandlePing(ClientConnection client)
     {
         client.LastPingTime = DateTime.UtcNow;
+
+        // อัพเดท last ping ใน client status
+        lock (_statusLock)
+        {
+            if (_clientStatusMap.TryGetValue(client.Id, out var status))
+            {
+                status.LastPingAt = DateTime.UtcNow;
+            }
+        }
+
         var pong = MessageSerializer.Serialize(new PongMessage
         {
             ServerTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
@@ -301,6 +446,15 @@ public class GameServer
             roomId = entry.roomId;
             playerId = entry.playerId;
             _clientPlayerMap.Remove(clientId);
+        }
+
+        // อัพเดท client status
+        lock (_statusLock)
+        {
+            if (_clientStatusMap.TryGetValue(clientId, out var status))
+            {
+                status.Status = "Disconnected";
+            }
         }
 
         var room = _rooms.GetRoom(roomId);
@@ -385,4 +539,34 @@ public class GameServer
         var timestamp = DateTime.Now.ToString("HH:mm:ss");
         OnLog?.Invoke($"[{timestamp}] {message}");
     }
+}
+
+// ==================== Client Status Info ====================
+
+/// <summary>
+/// ข้อมูลสถานะ client ที่เชื่อมต่อ (สำหรับแสดงใน Admin UI)
+/// </summary>
+public class ClientStatusInfo
+{
+    public string ClientId { get; set; } = "";
+    public string IpAddress { get; set; } = "";
+    public DateTime ConnectedAt { get; set; }
+    public DateTime? LastPingAt { get; set; }
+    public string Status { get; set; } = "Connected";
+    public bool IsAuthenticated { get; set; }
+    public string? PlayerName { get; set; }
+    public string? Channel { get; set; }
+    public string? RoomCode { get; set; }
+
+    /// <summary>
+    /// ระยะเวลาที่เชื่อมต่อ
+    /// </summary>
+    public TimeSpan ConnectionDuration => DateTime.UtcNow - ConnectedAt;
+
+    /// <summary>
+    /// ออนไลน์อยู่หรือไม่ (ดูจาก last ping ภายใน 10 วินาที)
+    /// </summary>
+    public bool IsOnline => LastPingAt.HasValue
+        ? (DateTime.UtcNow - LastPingAt.Value).TotalSeconds < 10
+        : (DateTime.UtcNow - ConnectedAt).TotalSeconds < 10;
 }

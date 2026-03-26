@@ -6,7 +6,7 @@
         xmlns:vm="clr-namespace:SnakeGameServer.ViewModels"
         xmlns:local="clr-namespace:SnakeGameServer"
         mc:Ignorable="d"
-        Title="Snake.io Game Server" Height="800" Width="1280"
+        Title="Snake.io Game Server" Height="900" Width="1400"
         WindowStartupLocation="CenterScreen"
         Background="#1E1E2E" Foreground="White">
 
@@ -68,9 +68,10 @@
     <Grid Margin="8">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>    <!-- Top bar -->
+            <RowDefinition Height="Auto"/>    <!-- API Key bar -->
             <RowDefinition Height="Auto"/>    <!-- Stats -->
             <RowDefinition Height="*"/>       <!-- Main content -->
-            <RowDefinition Height="200"/>     <!-- Log -->
+            <RowDefinition Height="180"/>     <!-- Log -->
             <RowDefinition Height="Auto"/>    <!-- Footer -->
         </Grid.RowDefinitions>
 
@@ -117,8 +118,56 @@
             </Grid>
         </Border>
 
+        <!-- ==================== API KEY BAR ==================== -->
+        <Border Grid.Row="1" Style="{StaticResource CardBorder}" Padding="10,8" Background="#2A2A42">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- API Key Label -->
+                <TextBlock Grid.Column="0" Text="API Key:" VerticalAlignment="Center"
+                           Foreground="#FFD54F" FontWeight="Bold" FontSize="13" Margin="0,0,8,0"/>
+
+                <!-- API Key Value -->
+                <TextBox Grid.Column="1" Text="{Binding ApiKey}" Style="{StaticResource InputField}"
+                         FontFamily="Consolas" FontSize="14" FontWeight="Bold" Foreground="#64FFDA"
+                         IsReadOnly="True" VerticalAlignment="Center"/>
+
+                <!-- Copy Button -->
+                <Button Grid.Column="2" Content="Copy" Command="{Binding CopyApiKeyCommand}"
+                        Style="{StaticResource ActionButton}" Background="#5C6BC0"
+                        Padding="12,4" FontSize="11" Margin="6,0,0,0"/>
+
+                <!-- Regenerate Button -->
+                <Button Grid.Column="3" Content="Regenerate" Command="{Binding RegenerateApiKeyCommand}"
+                        Style="{StaticResource ActionButton}" Background="#FF7043"
+                        Padding="12,4" FontSize="11" Margin="6,0,0,0"/>
+
+                <!-- Require API Key Checkbox -->
+                <CheckBox Grid.Column="4" IsChecked="{Binding RequireApiKey}"
+                          Content="Require API Key" Foreground="#B0B0D0" FontSize="11"
+                          VerticalAlignment="Center" Margin="12,0,0,0"/>
+
+                <!-- Rejected Count -->
+                <TextBlock Grid.Column="5" VerticalAlignment="Center" Margin="12,0,0,0"
+                           Foreground="#FF5252" FontSize="11">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="Rejected: {0}">
+                            <Binding Path="RejectedConnections"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+            </Grid>
+        </Border>
+
         <!-- ==================== STATS BAR ==================== -->
-        <UniformGrid Grid.Row="1" Columns="5" Margin="0,4">
+        <UniformGrid Grid.Row="2" Columns="6" Margin="0,4">
             <!-- Players -->
             <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
@@ -151,6 +200,14 @@
                 </StackPanel>
             </Border>
 
+            <!-- Rejected -->
+            <Border Style="{StaticResource CardBorder}">
+                <StackPanel>
+                    <TextBlock Text="Rejected" Style="{StaticResource HeaderText}"/>
+                    <TextBlock Text="{Binding RejectedConnections}" Style="{StaticResource ValueText}" Foreground="#FF5252"/>
+                </StackPanel>
+            </Border>
+
             <!-- Tick -->
             <Border Style="{StaticResource CardBorder}">
                 <StackPanel>
@@ -167,74 +224,169 @@
         </UniformGrid>
 
         <!-- ==================== MAIN CONTENT ==================== -->
-        <Grid Grid.Row="2" Margin="0,4">
+        <Grid Grid.Row="3" Margin="0,4">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="180"/>   <!-- Rooms -->
-                <ColumnDefinition Width="*"/>     <!-- Players -->
+                <ColumnDefinition Width="200"/>   <!-- Channels + Rooms -->
+                <ColumnDefinition Width="*"/>     <!-- Players + Client Status (TabControl) -->
                 <ColumnDefinition Width="280"/>   <!-- Settings -->
             </Grid.ColumnDefinitions>
 
-            <!-- ROOMS -->
-            <Border Grid.Column="0" Style="{StaticResource CardBorder}">
-                <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="Rooms" Style="{StaticResource HeaderText}" FontSize="15"/>
-                    <ListBox ItemsSource="{Binding Rooms}" DisplayMemberPath="Display"
-                             Background="Transparent" Foreground="#E0E0F0" BorderThickness="0"
-                             FontSize="12"/>
-                </DockPanel>
-            </Border>
+            <!-- CHANNELS + ROOMS -->
+            <Grid Grid.Column="0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
 
-            <!-- PLAYERS -->
+                <!-- Channels -->
+                <Border Grid.Row="0" Style="{StaticResource CardBorder}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Channels" Style="{StaticResource HeaderText}" FontSize="15"/>
+                        <ListBox ItemsSource="{Binding Channels}" DisplayMemberPath="Display"
+                                 Background="Transparent" Foreground="#E0E0F0" BorderThickness="0"
+                                 FontSize="12" MaxHeight="120"/>
+                    </DockPanel>
+                </Border>
+
+                <!-- Rooms -->
+                <Border Grid.Row="1" Style="{StaticResource CardBorder}">
+                    <DockPanel>
+                        <TextBlock DockPanel.Dock="Top" Text="Rooms" Style="{StaticResource HeaderText}" FontSize="15"/>
+                        <ListBox ItemsSource="{Binding Rooms}" DisplayMemberPath="Display"
+                                 Background="Transparent" Foreground="#E0E0F0" BorderThickness="0"
+                                 FontSize="11"/>
+                    </DockPanel>
+                </Border>
+            </Grid>
+
+            <!-- PLAYERS + CLIENT STATUS (Tab) -->
             <Border Grid.Column="1" Style="{StaticResource CardBorder}">
-                <DockPanel>
-                    <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
-                        <TextBlock Text="Connected Players" Style="{StaticResource HeaderText}" FontSize="15"/>
-                        <Button Content="Kick" Command="{Binding KickPlayerCommand}"
-                                Style="{StaticResource ActionButton}" Background="#FF5252"
-                                HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
-                    </Grid>
-                    <DataGrid ItemsSource="{Binding Players}" SelectedItem="{Binding SelectedPlayer}"
-                              AutoGenerateColumns="False" IsReadOnly="True"
-                              Background="Transparent" Foreground="White"
-                              RowBackground="#2D2D44" AlternatingRowBackground="#353552"
-                              GridLinesVisibility="None" BorderThickness="0"
-                              HeadersVisibility="Column" FontSize="12"
-                              ColumnHeaderHeight="28" RowHeight="26">
-                        <DataGrid.ColumnHeaderStyle>
-                            <Style TargetType="DataGridColumnHeader">
-                                <Setter Property="Background" Value="#3D3D54"/>
-                                <Setter Property="Foreground" Value="#B0B0D0"/>
-                                <Setter Property="Padding" Value="8,4"/>
-                                <Setter Property="FontSize" Value="11"/>
-                                <Setter Property="FontWeight" Value="SemiBold"/>
-                                <Setter Property="BorderBrush" Value="#4D4D64"/>
-                                <Setter Property="BorderThickness" Value="0,0,1,1"/>
-                            </Style>
-                        </DataGrid.ColumnHeaderStyle>
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="90"/>
-                            <DataGridTextColumn Header="Room" Binding="{Binding RoomCode}" Width="65"/>
-                            <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="55"/>
-                            <DataGridTextColumn Header="Len" Binding="{Binding Length}" Width="40"/>
-                            <DataGridTextColumn Header="Kills" Binding="{Binding Kills}" Width="40"/>
-                            <DataGridTextColumn Header="Skin" Binding="{Binding Skin}" Width="55"/>
-                            <DataGridTextColumn Header="Time" Binding="{Binding ConnectedTime}" Width="50"/>
-                            <DataGridTextColumn Header="IP" Binding="{Binding Endpoint}" Width="*"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </DockPanel>
+                <TabControl Background="Transparent" BorderThickness="0" Foreground="White">
+                    <TabControl.Resources>
+                        <Style TargetType="TabItem">
+                            <Setter Property="Background" Value="#3D3D54"/>
+                            <Setter Property="Foreground" Value="#B0B0D0"/>
+                            <Setter Property="Padding" Value="10,4"/>
+                            <Setter Property="FontSize" Value="12"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="TabItem">
+                                        <Border Name="Border" Background="#3D3D54" CornerRadius="6,6,0,0"
+                                                Padding="12,5" Margin="2,0">
+                                            <ContentPresenter ContentSource="Header"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Border" Property="Background" Value="#4D4D64"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </TabControl.Resources>
+
+                    <!-- Tab 1: Players -->
+                    <TabItem Header="Players">
+                        <DockPanel Margin="0,6,0,0">
+                            <Grid DockPanel.Dock="Top" Margin="0,0,0,6">
+                                <TextBlock Text="Connected Players" Style="{StaticResource HeaderText}" FontSize="14"/>
+                                <Button Content="Kick" Command="{Binding KickPlayerCommand}"
+                                        Style="{StaticResource ActionButton}" Background="#FF5252"
+                                        HorizontalAlignment="Right" Padding="12,4" FontSize="11"/>
+                            </Grid>
+                            <DataGrid ItemsSource="{Binding Players}" SelectedItem="{Binding SelectedPlayer}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      Background="Transparent" Foreground="White"
+                                      RowBackground="#2D2D44" AlternatingRowBackground="#353552"
+                                      GridLinesVisibility="None" BorderThickness="0"
+                                      HeadersVisibility="Column" FontSize="12"
+                                      ColumnHeaderHeight="28" RowHeight="26">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="#3D3D54"/>
+                                        <Setter Property="Foreground" Value="#B0B0D0"/>
+                                        <Setter Property="Padding" Value="8,4"/>
+                                        <Setter Property="FontSize" Value="11"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="BorderBrush" Value="#4D4D64"/>
+                                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="80"/>
+                                    <DataGridTextColumn Header="CH" Binding="{Binding Channel}" Width="55"/>
+                                    <DataGridTextColumn Header="Room" Binding="{Binding RoomCode}" Width="60"/>
+                                    <DataGridTextColumn Header="Score" Binding="{Binding Score}" Width="50"/>
+                                    <DataGridTextColumn Header="Len" Binding="{Binding Length}" Width="40"/>
+                                    <DataGridTextColumn Header="Kills" Binding="{Binding Kills}" Width="40"/>
+                                    <DataGridTextColumn Header="Time" Binding="{Binding ConnectedTime}" Width="50"/>
+                                    <DataGridTextColumn Header="IP" Binding="{Binding Endpoint}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+
+                    <!-- Tab 2: Client Status -->
+                    <TabItem Header="Client Status">
+                        <DockPanel Margin="0,6,0,0">
+                            <TextBlock DockPanel.Dock="Top" Text="Client Connection Status" Style="{StaticResource HeaderText}" FontSize="14"/>
+                            <DataGrid ItemsSource="{Binding ClientStatuses}"
+                                      AutoGenerateColumns="False" IsReadOnly="True"
+                                      Background="Transparent" Foreground="White"
+                                      RowBackground="#2D2D44" AlternatingRowBackground="#353552"
+                                      GridLinesVisibility="None" BorderThickness="0"
+                                      HeadersVisibility="Column" FontSize="12"
+                                      ColumnHeaderHeight="28" RowHeight="26">
+                                <DataGrid.ColumnHeaderStyle>
+                                    <Style TargetType="DataGridColumnHeader">
+                                        <Setter Property="Background" Value="#3D3D54"/>
+                                        <Setter Property="Foreground" Value="#B0B0D0"/>
+                                        <Setter Property="Padding" Value="8,4"/>
+                                        <Setter Property="FontSize" Value="11"/>
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="BorderBrush" Value="#4D4D64"/>
+                                        <Setter Property="BorderThickness" Value="0,0,1,1"/>
+                                    </Style>
+                                </DataGrid.ColumnHeaderStyle>
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Status" Binding="{Binding OnlineIndicator}" Width="60"/>
+                                    <DataGridTextColumn Header="IP Address" Binding="{Binding IpAddress}" Width="120"/>
+                                    <DataGridTextColumn Header="Player" Binding="{Binding PlayerName}" Width="80"/>
+                                    <DataGridTextColumn Header="Auth" Binding="{Binding IsAuthenticated}" Width="45"/>
+                                    <DataGridTextColumn Header="CH" Binding="{Binding Channel}" Width="50"/>
+                                    <DataGridTextColumn Header="Room" Binding="{Binding RoomCode}" Width="60"/>
+                                    <DataGridTextColumn Header="State" Binding="{Binding Status}" Width="90"/>
+                                    <DataGridTextColumn Header="Time" Binding="{Binding ConnectedDuration}" Width="50"/>
+                                    <DataGridTextColumn Header="ID" Binding="{Binding ClientId}" Width="*"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                    </TabItem>
+                </TabControl>
             </Border>
 
             <!-- SETTINGS -->
             <Border Grid.Column="2" Style="{StaticResource CardBorder}"
                     IsEnabled="{Binding IsRunning, Converter={x:Static local:InverseBoolConverter.Instance}}">
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="⚙ Game Settings" Style="{StaticResource HeaderText}" FontSize="15"/>
+                    <TextBlock DockPanel.Dock="Top" Text="Settings" Style="{StaticResource HeaderText}" FontSize="15"/>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
                         <StackPanel>
 
+                            <!-- === CHANNEL & SECURITY === -->
+                            <Expander Header="Channel &amp; Security" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                                <StackPanel Margin="8,4,0,0">
+                                    <TextBlock Text="Max Channels" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
+                                    <TextBox Text="{Binding MaxChannels}" Style="{StaticResource InputField}"/>
+
+                                    <TextBlock Text="Channel Prefix" Foreground="#888" FontSize="10" Margin="0,4,0,1"/>
+                                    <TextBox Text="{Binding ChannelPrefix}" Style="{StaticResource InputField}"/>
+                                </StackPanel>
+                            </Expander>
+
                             <!-- === SERVER === -->
-                            <Expander Header="🖥 Server" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="Server" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="Max Players/Room" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <TextBox Text="{Binding MaxPlayersPerRoom}" Style="{StaticResource InputField}"/>
@@ -245,7 +397,7 @@
                             </Expander>
 
                             <!-- === WORLD === -->
-                            <Expander Header="🌍 World &amp; Food" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="World &amp; Food" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="World Size" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <TextBox Text="{Binding WorldSize}" Style="{StaticResource InputField}"/>
@@ -262,7 +414,7 @@
                             </Expander>
 
                             <!-- === SNAKE === -->
-                            <Expander Header="🐍 Snake" IsExpanded="True" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="Snake" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="Speed (units/tick)" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <TextBox Text="{Binding SnakeSpeed}" Style="{StaticResource InputField}"/>
@@ -294,7 +446,7 @@
                             </Expander>
 
                             <!-- === POWERUP & DEATH === -->
-                            <Expander Header="⚡ Powerup &amp; Death" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="Powerup &amp; Death" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="Powerup Expire (sec)" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <TextBox Text="{Binding PowerupExpireSeconds}" Style="{StaticResource InputField}"/>
@@ -308,7 +460,7 @@
                             </Expander>
 
                             <!-- === ANTI-CHEAT === -->
-                            <Expander Header="🛡 Anti-Cheat" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="Anti-Cheat" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="Max Inputs/sec" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <TextBox Text="{Binding MaxInputsPerSecond}" Style="{StaticResource InputField}"/>
@@ -319,7 +471,7 @@
                             </Expander>
 
                             <!-- === DATABASE === -->
-                            <Expander Header="💾 Database" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
+                            <Expander Header="Database" IsExpanded="False" Foreground="#B0B0D0" FontSize="12" Margin="0,0,0,4">
                                 <StackPanel Margin="8,4,0,0">
                                     <TextBlock Text="Provider" Foreground="#888" FontSize="10" Margin="0,2,0,1"/>
                                     <ComboBox Background="#3D3D54" Foreground="Black" FontSize="12"
@@ -342,7 +494,7 @@
         </Grid>
 
         <!-- ==================== LOG ==================== -->
-        <Border Grid.Row="3" Style="{StaticResource CardBorder}">
+        <Border Grid.Row="4" Style="{StaticResource CardBorder}">
             <DockPanel>
                 <Grid DockPanel.Dock="Top" Margin="0,0,0,4">
                     <TextBlock Text="Server Log" Style="{StaticResource HeaderText}" FontSize="15"/>
@@ -364,11 +516,13 @@
         </Border>
 
         <!-- ==================== FOOTER ==================== -->
-        <Border Grid.Row="4" Style="{StaticResource CardBorder}" Padding="8,4" Margin="4,0,4,0">
+        <Border Grid.Row="5" Style="{StaticResource CardBorder}" Padding="8,4" Margin="4,0,4,0">
             <StackPanel Orientation="Horizontal">
-                <TextBlock Text="Snake.io Game Server v1.0" Foreground="#666" FontSize="11"/>
+                <TextBlock Text="Snake.io Game Server v1.1" Foreground="#666" FontSize="11"/>
                 <TextBlock Text="  |  " Foreground="#444"/>
                 <TextBlock Text=".NET 8 + WPF + WebSocket" Foreground="#666" FontSize="11"/>
+                <TextBlock Text="  |  " Foreground="#444"/>
+                <TextBlock Text="Channel + API Key System" Foreground="#666" FontSize="11"/>
                 <TextBlock Text="  |  " Foreground="#444"/>
                 <TextBlock Foreground="#666" FontSize="11">
                     <TextBlock.Text>

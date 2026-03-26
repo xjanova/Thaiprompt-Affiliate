@@ -8,6 +8,29 @@ public class ServerConfig
     // === Network ===
     public int Port { get; set; } = 8080;
 
+    // === Security ===
+    /// <summary>
+    /// API Key สำหรับตรวจสอบ client (สุ่มอัตโนมัติตอนสร้าง server)
+    /// Client ต้องส่ง key นี้ตอน join ไม่งั้นจะถูกปฏิเสธ
+    /// </summary>
+    public string ApiKey { get; set; } = GenerateApiKey();
+
+    /// <summary>
+    /// เปิด/ปิดการตรวจสอบ API Key (default: เปิด)
+    /// </summary>
+    public bool RequireApiKey { get; set; } = true;
+
+    // === Channel System ===
+    /// <summary>
+    /// จำนวน channel สูงสุด (แต่ละ channel เป็นกลุ่มห้องแยกกัน)
+    /// </summary>
+    public int MaxChannels { get; set; } = 4;
+
+    /// <summary>
+    /// คำนำหน้า channel (เช่น CH → CH-1, CH-2, CH-3)
+    /// </summary>
+    public string ChannelPrefix { get; set; } = "CH";
+
     // === Game ===
     public int TickRate { get; set; } = 30;
     public int MaxPlayersPerRoom { get; set; } = 30;
@@ -54,4 +77,34 @@ public class ServerConfig
     /// ขอบเขตสำหรับ spawn (เว้นระยะจากขอบ)
     /// </summary>
     public double SpawnBoundary => HalfWorldSize - 20;
+
+    /// <summary>
+    /// สร้างรายชื่อ channel ทั้งหมด
+    /// </summary>
+    public List<string> GetChannelNames()
+    {
+        return Enumerable.Range(1, MaxChannels)
+            .Select(i => $"{ChannelPrefix}-{i}")
+            .ToList();
+    }
+
+    /// <summary>
+    /// สุ่ม API Key ใหม่ (32 ตัวอักษร)
+    /// </summary>
+    public static string GenerateApiKey()
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var rng = new Random();
+        return new string(Enumerable.Range(0, 32)
+            .Select(_ => chars[rng.Next(chars.Length)])
+            .ToArray());
+    }
+
+    /// <summary>
+    /// สร้าง API Key ใหม่แทนอันเก่า
+    /// </summary>
+    public void RegenerateApiKey()
+    {
+        ApiKey = GenerateApiKey();
+    }
 }

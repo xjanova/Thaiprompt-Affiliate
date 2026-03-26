@@ -4,7 +4,7 @@ using SnakeGameServer.Core;
 namespace SnakeGameServer.Game;
 
 /// <summary>
-/// จัดการห้องทั้งหมด — สร้าง/ค้นหา/ลบห้อง
+/// จัดการห้องทั้งหมด — สร้าง/ค้นหา/ลบห้อง (รองรับระบบ Channel)
 /// </summary>
 public class RoomManager
 {
@@ -37,12 +37,38 @@ public class RoomManager
         _config = config;
     }
 
+    // ==================== Channel System ====================
+
     /// <summary>
-    /// ค้นหาห้องที่มีที่ว่าง หรือสร้างใหม่
+    /// นับจำนวนผู้เล่นใน channel
     /// </summary>
-    public GameRoom FindOrCreateRoom(string? requestedRoomId = null)
+    public int GetChannelPlayerCount(string channel)
     {
-        // ถ้าระบุ room id มา → หาห้องนั้น
+        return _rooms.Values
+            .Where(r => r.Channel == channel)
+            .Sum(r => r.Players.Count);
+    }
+
+    /// <summary>
+    /// นับจำนวนห้องใน channel
+    /// </summary>
+    public int GetChannelRoomCount(string channel)
+    {
+        return _rooms.Values
+            .Count(r => r.Channel == channel && r.Players.Count > 0);
+    }
+
+    // ==================== Room Management ====================
+
+    /// <summary>
+    /// ค้นหาห้องที่มีที่ว่างใน channel ที่กำหนด หรือสร้างใหม่
+    /// </summary>
+    public GameRoom FindOrCreateRoom(string? requestedRoomId = null, string? channel = null)
+    {
+        // ตั้งค่า channel default ถ้าไม่ได้ระบุ
+        var targetChannel = ValidateChannel(channel);
+
+        // ถ้าระบุ room id มา → หาห้องนั้น (ไม่สนใจ channel)
         if (!string.IsNullOrEmpty(requestedRoomId))
         {
             var found = _rooms.Values.FirstOrDefault(r =>
@@ -53,28 +79,44 @@ public class RoomManager
             if (found != null) return found;
         }
 
-        // หาห้องที่มีที่ว่าง (เลือกห้องที่มีคนเยอะสุดก่อน)
+        // หาห้องที่มีที่ว่างใน channel ที่เลือก (เลือกห้องที่มีคนเยอะสุดก่อน)
         var available = _rooms.Values
-            .Where(r => r.Status != RoomStatus.Finished
+            .Where(r => r.Channel == targetChannel
+                     && r.Status != RoomStatus.Finished
                      && r.Players.Count < _config.MaxPlayersPerRoom)
             .OrderByDescending(r => r.Players.Count)
             .FirstOrDefault();
 
         if (available != null) return available;
 
-        // สร้างห้องใหม่
-        return CreateRoom();
+        // สร้างห้องใหม่ใน channel นี้
+        return CreateRoom(targetChannel);
     }
 
     /// <summary>
-    /// สร้างห้องใหม่
+    /// สร้างห้องใหม่ใน channel ที่กำหนด
     /// </summary>
-    public GameRoom CreateRoom()
+    public GameRoom CreateRoom(string? channel = null)
     {
-        var room = new GameRoom(GenerateRoomCode(), _config);
+        var targetChannel = ValidateChannel(channel);
+        var room = new GameRoom(GenerateRoomCode(), _config)
+        {
+            Channel = targetChannel
+        };
         _rooms.TryAdd(room.RoomId, room);
-        OnLog?.Invoke($"Room created: {room.RoomCode} (ID: {room.RoomId})");
+        OnLog?.Invoke($"Room created: {room.RoomCode} in {targetChannel} (ID: {room.RoomId})");
         return room;
+    }
+
+    /// <summary>
+    /// ตรวจสอบ channel ว่าถูกต้องหรือไม่ ถ้าไม่ถูก → ใช้ channel แรก
+    /// </summary>
+    public string ValidateChannel(string? channel)
+    {
+        var validChannels = _config.GetChannelNames();
+        if (!string.IsNullOrWhiteSpace(channel) && validChannels.Contains(channel))
+            return channel;
+        return validChannels.FirstOrDefault() ?? "CH-1";
     }
 
     /// <summary>

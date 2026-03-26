@@ -25,6 +25,18 @@ public class JoinMessage : BaseClientMessage
 
     [JsonPropertyName("room_id")]
     public string? RoomId { get; set; }
+
+    /// <summary>
+    /// API Key สำหรับตรวจสอบสิทธิ์ (ต้องตรงกับ server)
+    /// </summary>
+    [JsonPropertyName("api_key")]
+    public string? ApiKey { get; set; }
+
+    /// <summary>
+    /// Channel ที่ต้องการเข้า (เช่น "CH-1", "CH-2")
+    /// </summary>
+    [JsonPropertyName("channel")]
+    public string? Channel { get; set; }
 }
 
 /// <summary>

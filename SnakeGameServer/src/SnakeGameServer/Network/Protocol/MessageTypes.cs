@@ -27,4 +27,6 @@ public static class ServerMessageType
     public const string Pong = "pong";
     public const string Error = "error";
     public const string RoomInfo = "room_info";
+    public const string ChannelList = "channel_list";
+    public const string AuthError = "auth_error";
 }

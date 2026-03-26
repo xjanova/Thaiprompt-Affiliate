@@ -231,15 +231,31 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
+        // ✅ LINE Messaging API ต้องใช้ HTTPS เท่านั้น
+        $imageUrl = $this->ensureHttps($imageUrl);
+        $previewUrl = $previewUrl ? $this->ensureHttps($previewUrl) : $imageUrl;
+
         $messages = [
             [
                 'type' => 'image',
                 'originalContentUrl' => $imageUrl,
-                'previewImageUrl' => $previewUrl ?? $imageUrl,
+                'previewImageUrl' => $previewUrl,
             ],
         ];
 
         return $this->pushMessage($recipientId, $messages);
+    }
+
+    /**
+     * แปลง URL ให้เป็น HTTPS (LINE Messaging API ต้องใช้ HTTPS เท่านั้น)
+     */
+    protected function ensureHttps(string $url): string
+    {
+        if (str_starts_with($url, 'http://')) {
+            return 'https://'.substr($url, 7);
+        }
+
+        return $url;
     }
 
     /**

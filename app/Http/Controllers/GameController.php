@@ -50,6 +50,10 @@ class GameController extends Controller
             return $this->showTetris($game);
         }
 
+        if ($slug === '8ball-pool') {
+            return $this->show8BallPool($game);
+        }
+
         // Space Shooter or other games
         return $this->showSpaceShooter($game);
     }
@@ -77,6 +81,20 @@ class GameController extends Controller
         // Tetris ใช้ localStorage สำหรับ leaderboard
         // ไม่ต้องดึงจาก database
         return view('games.tetris', compact('game'));
+    }
+
+    /**
+     * แสดงหน้าเกม 8 Ball Pool
+     */
+    private function show8BallPool($game)
+    {
+        $leaderboard = GameLeaderboard::where('game_id', $game->id)
+            ->with('user:id,name,profile_picture')
+            ->orderBy('score', 'desc')
+            ->limit(50)
+            ->get();
+
+        return view('games.8ball-pool', compact('game', 'leaderboard'));
     }
 
     private function showSpaceShooter($game)

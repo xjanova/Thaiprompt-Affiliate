@@ -11,6 +11,7 @@ class SnakeWebSocketClient {
         this.connected = false;
         this.playerId = null;
         this.roomId = null;
+        this.channel = null;
         this.worldSize = 200;
 
         // State storage
@@ -22,6 +23,12 @@ class SnakeWebSocketClient {
         // Interpolation
         this._tickIntervalMs = 33.33;       // 30 tick/sec
         this._lastStateTime = 0;
+
+        // Channel & API Key
+        this._apiKey = '';                  // API Key สำหรับ authentication
+        this._channel = null;              // Channel ที่เลือก (เช่น "CH-1")
+        this._availableChannels = [];      // Channel list จาก server
+        this._requireApiKey = false;       // Server ต้องการ API Key หรือไม่
 
         // Callbacks
         this.onConnected = null;
@@ -35,6 +42,8 @@ class SnakeWebSocketClient {
         this.onPlayerLeft = null;           // (playerId) => {}
         this.onPlayerDied = null;           // (playerId, killerId, droppedFood) => {}
         this.onMyDeath = null;              // (killerId) => {} เมื่อตัวเราตาย
+        this.onChannelList = null;          // (channels, requireApiKey) => {} รับ channel list จาก server
+        this.onAuthError = null;            // (message, code) => {} API Key ผิด
 
         // Ping tracking
         this._pingStart = 0;
@@ -49,6 +58,38 @@ class SnakeWebSocketClient {
         this._playerName = '';
         this._skin = '';
         this._autoReconnect = true;
+    }
+
+    /**
+     * ตั้งค่า API Key สำหรับ authentication
+     * @param {string} apiKey
+     */
+    setApiKey(apiKey) {
+        this._apiKey = apiKey;
+    }
+
+    /**
+     * ตั้งค่า Channel ที่ต้องการเข้า
+     * @param {string} channel - เช่น "CH-1", "CH-2"
+     */
+    setChannel(channel) {
+        this._channel = channel;
+    }
+
+    /**
+     * ดึงรายการ Channel ที่ใช้ได้
+     * @returns {Array} channel list
+     */
+    getAvailableChannels() {
+        return this._availableChannels;
+    }
+
+    /**
+     * Server ต้องการ API Key หรือไม่
+     * @returns {boolean}
+     */
+    isApiKeyRequired() {
+        return this._requireApiKey;
     }
 
     // ==================== Connection ====================
@@ -153,12 +194,14 @@ class SnakeWebSocketClient {
                 resolve(data);
             };
 
-            // Send join
+            // Send join (รวม API Key และ Channel)
             this._send({
                 type: 'join',
                 player_name: playerName,
                 skin: skin,
-                room_id: roomId
+                room_id: roomId,
+                api_key: this._apiKey || null,
+                channel: this._channel || null
             });
 
             // Timeout
@@ -337,6 +380,12 @@ class SnakeWebSocketClient {
                 case 'pong':
                     this._handlePong(msg);
                     break;
+                case 'channel_list':
+                    this._handleChannelList(msg);
+                    break;
+                case 'auth_error':
+                    this._handleAuthError(msg);
+                    break;
                 case 'error':
                     console.error('[WS] Server error:', msg.message);
                     if (this.onError) this.onError(new Error(msg.message));
@@ -349,9 +398,22 @@ class SnakeWebSocketClient {
         }
     }
 
+    _handleChannelList(msg) {
+        this._availableChannels = msg.channels || [];
+        this._requireApiKey = msg.require_api_key || false;
+        console.log('[WS] Channel list received:', this._availableChannels.length, 'channels, API Key required:', this._requireApiKey);
+        if (this.onChannelList) this.onChannelList(this._availableChannels, this._requireApiKey);
+    }
+
+    _handleAuthError(msg) {
+        console.error('[WS] Auth error:', msg.message, 'Code:', msg.code);
+        if (this.onAuthError) this.onAuthError(msg.message, msg.code);
+    }
+
     _handleWelcome(msg) {
         this.playerId = msg.player_id;
         this.roomId = msg.room_id;
+        this.channel = msg.channel || null;
         this.worldSize = msg.world_size || 200;
 
         // Server ส่ง tick_rate (30) → คำนวณ interval (33.33ms)

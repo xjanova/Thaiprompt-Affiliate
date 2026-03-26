@@ -10,6 +10,7 @@ namespace SnakeGameServer.ViewModels;
 
 /// <summary>
 /// ViewModel สำหรับ MainWindow (MVVM Pattern - manual implementation)
+/// รองรับระบบ Channel, API Key, และ Client Status
 /// </summary>
 public class MainViewModel : INotifyPropertyChanged
 {
@@ -25,6 +26,12 @@ public class MainViewModel : INotifyPropertyChanged
     private int _port = 8080;
     private int _maxPlayersPerRoom = 30;
     private int _tickRate = 30;
+
+    // === Config: Channel & Security ===
+    private int _maxChannels = 4;
+    private string _channelPrefix = "CH";
+    private string _apiKey = "";
+    private bool _requireApiKey = true;
 
     // === Config: World ===
     private int _worldSize = 200;
@@ -62,12 +69,15 @@ public class MainViewModel : INotifyPropertyChanged
     private string _uptime = "00:00:00";
     private int _peakPlayers;
     private int _totalConnections;
+    private int _rejectedConnections;
     private double _tickDurationMs;
     private long _tickCount;
 
-    // === Room & Player ===
+    // === Room & Player & Client ===
     private ObservableCollection<RoomInfo> _rooms = new();
     private ObservableCollection<PlayerInfo> _players = new();
+    private ObservableCollection<ClientStatusEntry> _clientStatuses = new();
+    private ObservableCollection<ChannelEntry> _channels = new();
     private PlayerInfo? _selectedPlayer;
 
     // === Log ===
@@ -83,6 +93,12 @@ public class MainViewModel : INotifyPropertyChanged
     public int Port { get => _port; set => SetField(ref _port, value); }
     public int MaxPlayersPerRoom { get => _maxPlayersPerRoom; set => SetField(ref _maxPlayersPerRoom, value); }
     public int TickRate { get => _tickRate; set => SetField(ref _tickRate, value); }
+
+    // Channel & Security
+    public int MaxChannels { get => _maxChannels; set => SetField(ref _maxChannels, value); }
+    public string ChannelPrefix { get => _channelPrefix; set => SetField(ref _channelPrefix, value); }
+    public string ApiKey { get => _apiKey; set => SetField(ref _apiKey, value); }
+    public bool RequireApiKey { get => _requireApiKey; set => SetField(ref _requireApiKey, value); }
 
     // World
     public int WorldSize { get => _worldSize; set => SetField(ref _worldSize, value); }
@@ -114,16 +130,21 @@ public class MainViewModel : INotifyPropertyChanged
     public string DbProvider { get => _dbProvider; set => SetField(ref _dbProvider, value); }
     public string ConnectionString { get => _connectionString; set => SetField(ref _connectionString, value); }
 
+    // Statistics
     public int ConnectedPlayers { get => _connectedPlayers; set => SetField(ref _connectedPlayers, value); }
     public int ActiveRooms { get => _activeRooms; set => SetField(ref _activeRooms, value); }
     public string Uptime { get => _uptime; set => SetField(ref _uptime, value); }
     public int PeakPlayers { get => _peakPlayers; set => SetField(ref _peakPlayers, value); }
     public int TotalConnections { get => _totalConnections; set => SetField(ref _totalConnections, value); }
+    public int RejectedConnections { get => _rejectedConnections; set => SetField(ref _rejectedConnections, value); }
     public double TickDurationMs { get => _tickDurationMs; set => SetField(ref _tickDurationMs, value); }
     public long TickCount { get => _tickCount; set => SetField(ref _tickCount, value); }
 
+    // Collections
     public ObservableCollection<RoomInfo> Rooms { get => _rooms; set => SetField(ref _rooms, value); }
     public ObservableCollection<PlayerInfo> Players { get => _players; set => SetField(ref _players, value); }
+    public ObservableCollection<ClientStatusEntry> ClientStatuses { get => _clientStatuses; set => SetField(ref _clientStatuses, value); }
+    public ObservableCollection<ChannelEntry> Channels { get => _channels; set => SetField(ref _channels, value); }
     public PlayerInfo? SelectedPlayer { get => _selectedPlayer; set { SetField(ref _selectedPlayer, value); KickPlayerCommand?.RaiseCanExecuteChanged(); } }
 
     public ObservableCollection<string> LogEntries { get => _logEntries; set => SetField(ref _logEntries, value); }
@@ -134,6 +155,8 @@ public class MainViewModel : INotifyPropertyChanged
     public RelayCommand StopCommand { get; }
     public RelayCommand KickPlayerCommand { get; }
     public RelayCommand ClearLogCommand { get; }
+    public RelayCommand CopyApiKeyCommand { get; }
+    public RelayCommand RegenerateApiKeyCommand { get; }
 
     public MainViewModel()
     {
@@ -147,6 +170,9 @@ public class MainViewModel : INotifyPropertyChanged
             _tickDurationMs = duration;
         };
 
+        // โหลด API Key ที่สุ่มมาให้แสดงใน UI
+        _apiKey = _server.Config.ApiKey;
+
         // Commands
         StartCommand = new RelayCommand(StartServer, () => !IsRunning);
         StopCommand = new RelayCommand(StopServer, () => IsRunning);
@@ -155,6 +181,23 @@ public class MainViewModel : INotifyPropertyChanged
         ClearLogCommand = new RelayCommand(() =>
         {
             Application.Current?.Dispatcher.Invoke(() => LogEntries.Clear());
+        });
+
+        CopyApiKeyCommand = new RelayCommand(() =>
+        {
+            try
+            {
+                Clipboard.SetText(ApiKey);
+                AddLog($"API Key copied to clipboard!");
+            }
+            catch { }
+        });
+
+        RegenerateApiKeyCommand = new RelayCommand(() =>
+        {
+            _server.RegenerateApiKey();
+            ApiKey = _server.Config.ApiKey;
+            AddLog($"API Key regenerated: {ApiKey}");
         });
 
         // UI refresh timer (1 Hz)
@@ -176,6 +219,12 @@ public class MainViewModel : INotifyPropertyChanged
             c.Port = Port;
             c.MaxPlayersPerRoom = MaxPlayersPerRoom;
             c.TickRate = TickRate;
+
+            // Channel & Security
+            c.MaxChannels = MaxChannels;
+            c.ChannelPrefix = ChannelPrefix;
+            c.RequireApiKey = RequireApiKey;
+            // API Key มีค่าอยู่แล้วจาก constructor
 
             // World
             c.WorldSize = WorldSize;
@@ -259,21 +308,36 @@ public class MainViewModel : INotifyPropertyChanged
         ActiveRooms = _server.Rooms.ActiveRooms;
         PeakPlayers = _server.PeakPlayers;
         TotalConnections = _server.TotalConnections;
+        RejectedConnections = _server.RejectedConnections;
         TickCount = _server.Loop.TickCount;
         TickDurationMs = _server.Loop.LastTickDurationMs;
+        ApiKey = _server.Config.ApiKey;
 
         if (IsRunning)
         {
             Uptime = _server.Uptime.ToString(@"hh\:mm\:ss");
         }
 
-        // Update rooms
+        // Update channels
+        Channels.Clear();
+        foreach (var ch in _server.Config.GetChannelNames())
+        {
+            Channels.Add(new ChannelEntry
+            {
+                Name = ch,
+                PlayerCount = _server.Rooms.GetChannelPlayerCount(ch),
+                RoomCount = _server.Rooms.GetChannelRoomCount(ch)
+            });
+        }
+
+        // Update rooms (เพิ่ม channel info)
         Rooms.Clear();
         foreach (var room in _server.Rooms.GetAllRooms())
         {
             Rooms.Add(new RoomInfo
             {
                 RoomCode = room.RoomCode,
+                Channel = room.Channel,
                 PlayerCount = room.Players.Count,
                 MaxPlayers = _server.Config.MaxPlayersPerRoom,
                 Status = room.Status.ToString()
@@ -291,6 +355,7 @@ public class MainViewModel : INotifyPropertyChanged
                     PlayerId = player.Id,
                     Name = player.Name,
                     Skin = player.Skin,
+                    Channel = room.Channel,
                     RoomCode = room.RoomCode,
                     Score = player.Snake.Score,
                     Length = player.Snake.Length,
@@ -300,6 +365,25 @@ public class MainViewModel : INotifyPropertyChanged
                     Endpoint = player.Connection?.RemoteEndpoint ?? "N/A"
                 });
             }
+        }
+
+        // Update client statuses
+        ClientStatuses.Clear();
+        foreach (var cs in _server.GetClientStatuses())
+        {
+            ClientStatuses.Add(new ClientStatusEntry
+            {
+                ClientId = cs.ClientId,
+                IpAddress = cs.IpAddress,
+                Status = cs.Status,
+                IsOnline = cs.IsOnline,
+                IsAuthenticated = cs.IsAuthenticated,
+                PlayerName = cs.PlayerName ?? "-",
+                Channel = cs.Channel ?? "-",
+                RoomCode = cs.RoomCode ?? "-",
+                ConnectedDuration = cs.ConnectionDuration.ToString(@"mm\:ss"),
+                OnlineIndicator = cs.IsOnline ? "Online" : "Offline"
+            });
         }
 
         // Notify command state
@@ -365,10 +449,11 @@ public class RelayCommand : ICommand
 public class RoomInfo
 {
     public string RoomCode { get; set; } = "";
+    public string Channel { get; set; } = "";
     public int PlayerCount { get; set; }
     public int MaxPlayers { get; set; }
     public string Status { get; set; } = "";
-    public string Display => $"{RoomCode} ({PlayerCount}/{MaxPlayers}) - {Status}";
+    public string Display => $"[{Channel}] {RoomCode} ({PlayerCount}/{MaxPlayers}) - {Status}";
 }
 
 public class PlayerInfo
@@ -376,6 +461,7 @@ public class PlayerInfo
     public string PlayerId { get; set; } = "";
     public string Name { get; set; } = "";
     public string Skin { get; set; } = "";
+    public string Channel { get; set; } = "";
     public string RoomCode { get; set; } = "";
     public int Score { get; set; }
     public int Length { get; set; }
@@ -383,4 +469,26 @@ public class PlayerInfo
     public int Kills { get; set; }
     public string ConnectedTime { get; set; } = "";
     public string Endpoint { get; set; } = "";
+}
+
+public class ChannelEntry
+{
+    public string Name { get; set; } = "";
+    public int PlayerCount { get; set; }
+    public int RoomCount { get; set; }
+    public string Display => $"{Name} ({PlayerCount} players, {RoomCount} rooms)";
+}
+
+public class ClientStatusEntry
+{
+    public string ClientId { get; set; } = "";
+    public string IpAddress { get; set; } = "";
+    public string Status { get; set; } = "";
+    public bool IsOnline { get; set; }
+    public bool IsAuthenticated { get; set; }
+    public string PlayerName { get; set; } = "-";
+    public string Channel { get; set; } = "-";
+    public string RoomCode { get; set; } = "-";
+    public string ConnectedDuration { get; set; } = "";
+    public string OnlineIndicator { get; set; } = "";
 }
