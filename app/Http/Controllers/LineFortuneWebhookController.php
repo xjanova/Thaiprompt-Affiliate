@@ -144,12 +144,12 @@ class LineFortuneWebhookController extends Controller
                 return;
             }
 
-            // ✅ Flood Protection: ถ้า user คนนี้ส่งข้อความถี่เกินไป → ตอบข้อความเตือนซ้ำ
+            // ✅ Flood Protection: กันเฉพาะ spam bot ที่ส่งถี่มากผิดปกติ
             $floodKey = "line_flood:{$userId}";
             $floodCount = (int) cache()->get($floodKey, 0);
             cache()->put($floodKey, $floodCount + 1, 10); // นับข้อความใน 10 วินาที
 
-            if ($floodCount >= 3) {
+            if ($floodCount >= 10) {
                 // ⚡ ส่ง replyMessage ตรงๆ (ฟรี ไม่นับ push quota) — ไม่เรียก AI, ไม่เรียก LINE push
                 Log::warning('LINE Webhook: Flood detected — ส่งข้อความเตือนซ้ำ', [
                     'user_id' => $userId,
@@ -744,11 +744,11 @@ class LineFortuneWebhookController extends Controller
                 'bill_ref' => $reading->bill_reference,
             ]);
 
-            // ตอบผู้ใช้
+            // ตอบผู้ใช้ทันที — แจ้งว่ากำลังสร้างคำทำนาย
             $billRef = $reading->bill_reference ?? $reading->id;
             $this->lineService->sendMessageWithReplyFallback(
                 $userId,
-                "✅ รับแจ้งแล้วค่ะ! (บิล: {$billRef})\n\nกำลังตรวจสอบและเตรียมคำทำนายให้ค่ะ 🔮\n\n⏳ กรุณารอสักครู่นะคะ",
+                "✅ รับแจ้งแล้วค่ะ!\n\n🔮 กำลังสร้างคำทำนายให้ค่ะ...\n⏳ แป๊บเดียวเสร็จค่ะ จะแจ้งทันทีเลยนะคะ ✨",
                 $replyToken
             );
 

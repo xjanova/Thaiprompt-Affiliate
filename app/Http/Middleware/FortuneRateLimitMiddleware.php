@@ -18,13 +18,15 @@ class FortuneRateLimitMiddleware
 {
     /**
      * จำนวน requests สูงสุดต่อ window (ต่อ IP)
+     * เพิ่มเป็น 120 เพื่อให้ตอบได้รวดเร็ว — เหลือแค่กัน spam/fraud
      */
-    protected int $maxAttemptsPerIp = 10;
+    protected int $maxAttemptsPerIp = 120;
 
     /**
      * จำนวน requests สูงสุดต่อ window (ต่อ Facebook User)
+     * เพิ่มเป็น 200 เพื่อไม่จำกัดการใช้งานปกติ
      */
-    protected int $maxAttemptsPerUser = 20;
+    protected int $maxAttemptsPerUser = 200;
 
     /**
      * Window duration (minutes)

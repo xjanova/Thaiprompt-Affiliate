@@ -210,7 +210,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $platformService->sendImage($userId, $chartUrl);
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน rate limit
+                usleep(200000); // 0.2s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send chart image', [
                     'platform' => $platform,
@@ -384,7 +384,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -397,7 +397,7 @@ class FortuneChannelManager
             $prediction = trim($parts[0] ?? $message);
             if (! empty($prediction)) {
                 $fbService->sendMessage($userId, $prediction);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
             }
         }
 
@@ -431,7 +431,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (payment)', ['error' => $e->getMessage()]);
             }
@@ -441,7 +441,7 @@ class FortuneChannelManager
         // ส่งเฉพาะ text ข้อมูลบิล (ไม่ส่ง Payment Template อีก เพราะข้อมูลซ้ำ)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         // ส่งภาพ QR Code ชำระเงิน (ถ้ามี) — ส่งครั้งเดียว
@@ -449,7 +449,7 @@ class FortuneChannelManager
         if ($paymentQrUrl) {
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
-                usleep(300000);
+                usleep(200000); // 0.2s — ลดจาก 0.3s เพื่อตอบเร็วขึ้น
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง QR Code ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -477,7 +477,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (completed)', ['error' => $e->getMessage()]);
             }
@@ -486,7 +486,7 @@ class FortuneChannelManager
         // ส่งคำทำนาย (text)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         // ส่ง Reading Complete Template + LINE invite + affiliate
@@ -566,7 +566,7 @@ class FortuneChannelManager
         // ส่ง text ข้อความเดิม
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         $template = $richService->buildAiLimitTemplate($this->getReadingPrice());
@@ -583,7 +583,7 @@ class FortuneChannelManager
 
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         $template = $richService->buildPaymentExpiredTemplate();
@@ -600,7 +600,7 @@ class FortuneChannelManager
 
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         $template = $richService->buildDeclinedTemplate();
@@ -629,7 +629,7 @@ class FortuneChannelManager
         // ส่ง text ก่อน (มีรายละเอียดบัญชี)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(500000);
+            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
         }
 
         $template = $richService->buildWaitingPaymentTemplate($result['remaining_time'] ?? 'ไม่ทราบ');
@@ -686,7 +686,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -696,7 +696,7 @@ class FortuneChannelManager
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
             $fbService->sendMessage($userId, $message);
-            usleep(300000);
+            usleep(200000); // 0.2s — ลดจาก 0.3s เพื่อตอบเร็วขึ้น
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
             } catch (\Exception $e) {
@@ -968,7 +968,7 @@ class FortuneChannelManager
                     if ($sent) {
                         // ส่วนที่เกิน replyMessage → รวมเป็น carousel แล้ว push ครั้งเดียว
                         if (! empty($overflowBubbles)) {
-                            usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                            usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
                             if (count($overflowBubbles) > 1) {
                                 $carousel = ['type' => 'carousel', 'contents' => $overflowBubbles];
                                 $lineService->sendRichMessage($userId, ['alt_text' => 'คำทำนาย (ต่อ)', 'contents' => $carousel]);
@@ -983,7 +983,7 @@ class FortuneChannelManager
                 }
 
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image (basic_done)', [
                     'error' => $imgErr->getMessage(),
@@ -1037,6 +1037,31 @@ class FortuneChannelManager
 
         if (! $reading) {
             return $lineService->sendMessage($userId, $result['message'] ?? 'เกิดข้อผิดพลาด');
+        }
+
+        // ✅ ส่งรูปไพ่ยิปซีใบสุดท้ายก่อน payment info (ถ้ามี) — ลอง reply ก่อน (ฟรี)
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl) {
+            try {
+                $tarotSent = false;
+                if ($replyToken) {
+                    $tarotSent = $lineService->replyMessage($replyToken, [
+                        ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
+                    ]);
+                    if ($tarotSent) {
+                        $replyToken = null; // ใช้แล้ว
+                    }
+                }
+                if (! $tarotSent) {
+                    $lineService->sendImage($userId, $tarotImageUrl);
+                }
+                usleep(200_000); // 0.2s
+            } catch (\Exception $imgErr) {
+                Log::warning('LINE Payment: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
+                    'error' => $imgErr->getMessage(),
+                    'image_url' => $tarotImageUrl,
+                ]);
+            }
         }
 
         // ✅ ดึงโหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
@@ -1145,7 +1170,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -1157,7 +1182,7 @@ class FortuneChannelManager
         if ($qrImageUrl) {
             try {
                 $lineService->sendImage($userId, $qrImageUrl);
-                usleep(1000000); // 1s — ป้องกัน LINE rate limit
+                usleep(300_000); // 0.3s — ลดจาก 1s เพื่อตอบเร็วขึ้น
             } catch (\Exception $qrErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง PromptPay QR ไม่สำเร็จ', [
                     'error' => $qrErr->getMessage(),
@@ -1204,40 +1229,42 @@ class FortuneChannelManager
 
         // ส่ง Birth Chart ก่อนคำทำนาย (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? null;
-        if ($chartUrl) {
-            try {
-                // ⚡ ส่ง chart ด้วย replyToken (เร็ว + ฟรี)
-                if ($replyToken) {
-                    $sent = $lineService->replyMessage($replyToken, [
-                        [
-                            'type' => 'image',
-                            'originalContentUrl' => $chartUrl,
-                            'previewImageUrl' => $chartUrl,
-                        ],
-                    ]);
-                    if ($sent) {
-                        $replyToken = null; // ใช้แล้ว ห้ามใช้ซ้ำ
-                    }
-                } else {
-                    $lineService->sendImage($userId, $chartUrl);
-                }
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
-            } catch (\Exception $imgErr) {
-                Log::warning('FortuneChannelManager: Failed to send LINE chart image', [
-                    'error' => $imgErr->getMessage(),
-                ]);
-            }
-        }
-
         $totalQuestions = count($deepReadings);
 
-        // ✅ ส่ง QA bubble ทีละข้อ (ป้องกัน carousel เกิน LINE Flex size limit 50KB)
-        $allBubbles = [];
-        $sentCount = 0;
+        // ✅ รวม messages ทั้งหมดที่ต้องส่ง → ใช้ replyToken batch 5 ข้อความแรก (ฟรี)
+        // ส่วนเกิน → push (เสียโควต้า แต่ลูกค้าจ่ายเงินแล้วสมควร)
+        $allMessages = [];
+
+        // 1. Birth Chart (ถ้ามี)
+        if ($chartUrl) {
+            $allMessages[] = [
+                'type' => 'image',
+                'originalContentUrl' => $chartUrl,
+                'previewImageUrl' => $chartUrl,
+            ];
+        }
+
+        // 2. สร้าง Flex bubbles สำหรับแต่ละข้อ
         foreach ($deepReadings as $dr) {
             $questionNum = $dr['question_number'];
             $question = $dr['question'];
             $answer = $dr['answer'];
+
+            // ไพ่ยิปซี (ถ้ามี) — ส่งรูป + ชื่อไพ่เป็น push ทีหลัง (เกิน 5 messages)
+            $tarotCard = $dr['tarot_card'] ?? null;
+            $tarotImageUrl = $tarotCard['image_url'] ?? null;
+            if ($tarotImageUrl) {
+                $cardName = $tarotCard['name_th'] ?? $tarotCard['card_name_th'] ?? 'ไพ่ยิปซี';
+                $isReversed = $tarotCard['is_reversed'] ?? false;
+                $position = $isReversed ? '(กลับหัว)' : '(หงาย)';
+
+                $allMessages[] = [
+                    'type' => 'image',
+                    'originalContentUrl' => $tarotImageUrl,
+                    'previewImageUrl' => $tarotImageUrl,
+                    '_meta' => ['tarot' => true, 'label' => "🃏 ไพ่ข้อที่ {$questionNum}: {$cardName} {$position}"],
+                ];
+            }
 
             $flex = $lineService->buildDeepReadingFlexMessage(
                 $questionNum,
@@ -1245,36 +1272,91 @@ class FortuneChannelManager
                 $answer,
                 $totalQuestions
             );
-            $allBubbles[] = $flex;
 
-            // ส่งทีละ bubble (เชื่อถือได้กว่า carousel ที่อาจเกิน 50KB)
-            $sent = $lineService->sendRichMessage($userId, [
-                'alt_text' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
+            $allMessages[] = [
+                'type' => 'flex',
+                'altText' => "🔮 คำทำนายข้อ {$questionNum}/{$totalQuestions}: {$question}",
                 'contents' => $flex,
-            ]);
-
-            if ($sent) {
-                $sentCount++;
-            } else {
-                // Fallback: ส่งเป็น text ถ้า Flex ไม่ได้
-                $textMsg = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n❓ {$question}\n\n{$answer}";
-                if ($lineService->sendMessage($userId, mb_substr($textMsg, 0, 5000))) {
-                    $sentCount++;
-                }
-            }
-
-            usleep(1500000); // 1.5s — ป้องกัน LINE rate limit
+                '_meta' => ['question_num' => $questionNum, 'question' => $question, 'answer' => $answer],
+            ];
         }
 
-        // ส่ง Thank You Flex Message ปิดท้าย — มีปุ่มแชร์ + engagement
-        usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+        // 3. Thank You Flex ปิดท้าย
         $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
-        $lineService->sendRichMessage($userId, [
-            'alt_text' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
+        $allMessages[] = [
+            'type' => 'flex',
+            'altText' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
             'contents' => $thankYouFlex,
-        ]);
+        ];
 
-        return true;
+        // ✅ ใช้ replyToken ส่ง batch 5 ข้อความแรก (ฟรี!)
+        $replyBatch = array_slice($allMessages, 0, 5);
+        $pushBatch = array_slice($allMessages, 5);
+
+        // ลบ _meta ก่อนส่ง LINE API (LINE ไม่รู้จัก field นี้)
+        $cleanMessages = function (array $messages): array {
+            return array_map(function ($msg) {
+                unset($msg['_meta']);
+                return $msg;
+            }, $messages);
+        };
+
+        $sentCount = 0;
+        $replyUsed = false;
+
+        if ($replyToken && ! empty($replyBatch)) {
+            $sent = $lineService->replyMessage($replyToken, $cleanMessages($replyBatch));
+            if ($sent) {
+                $replyUsed = true;
+                $sentCount += count($replyBatch);
+                Log::info('LINE DeepReading: ส่ง reply batch สำเร็จ (ฟรี!)', [
+                    'count' => count($replyBatch),
+                    'remaining_push' => count($pushBatch),
+                ]);
+            }
+        }
+
+        // ถ้า reply ล้มเหลว → push ทั้งหมด
+        if (! $replyUsed) {
+            $pushBatch = $allMessages;
+        }
+
+        // ส่วนเกิน (หรือทั้งหมดถ้า reply ล้มเหลว) → push ทีละข้อความ
+        foreach ($pushBatch as $msg) {
+            $meta = $msg['_meta'] ?? [];
+            unset($msg['_meta']);
+
+            try {
+                if ($msg['type'] === 'image') {
+                    $lineService->sendImage($userId, $msg['originalContentUrl']);
+                    // ส่ง label ไพ่ (ถ้ามี)
+                    if (! empty($meta['label'])) {
+                        usleep(200_000); // 0.2s
+                        $lineService->sendMessage($userId, $meta['label']);
+                    }
+                } elseif ($msg['type'] === 'flex') {
+                    $sent = $lineService->sendRichMessage($userId, [
+                        'alt_text' => $msg['altText'],
+                        'contents' => $msg['contents'],
+                    ]);
+                    if (! $sent && ! empty($meta['answer'])) {
+                        // Fallback: ส่งเป็น text
+                        $qNum = $meta['question_num'] ?? '?';
+                        $textMsg = "🔮 คำทำนายข้อที่ {$qNum}/{$totalQuestions}\n❓ {$meta['question']}\n\n{$meta['answer']}";
+                        $lineService->sendMessage($userId, mb_substr($textMsg, 0, 5000));
+                    }
+                }
+                $sentCount++;
+                usleep(300_000); // 0.3s ระหว่าง push messages
+            } catch (\Exception $sendErr) {
+                Log::warning('LINE DeepReading: ส่งข้อความล้มเหลว', [
+                    'type' => $msg['type'],
+                    'error' => $sendErr->getMessage(),
+                ]);
+            }
+        }
+
+        return $sentCount > 0;
     }
 
     /**
@@ -1304,11 +1386,22 @@ class FortuneChannelManager
         $questionNumber = $result['question_number'] ?? 1;
         $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
 
-        // ✅ ส่งรูปไพ่ยิปซีก่อน Flex เลือกหมวด (ถ้ามี)
+        // ✅ ส่งรูปไพ่ยิปซีก่อน Flex เลือกหมวด (ถ้ามี) — ลอง reply ก่อน (ฟรี)
         $tarotImageUrl = $result['tarot_image_url'] ?? null;
         if ($tarotImageUrl) {
             try {
-                $lineService->sendImage($userId, $tarotImageUrl);
+                $tarotSent = false;
+                if ($replyToken) {
+                    $tarotSent = $lineService->replyMessage($replyToken, [
+                        ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
+                    ]);
+                    if ($tarotSent) {
+                        $replyToken = null; // ใช้แล้ว
+                    }
+                }
+                if (! $tarotSent) {
+                    $lineService->sendImage($userId, $tarotImageUrl);
+                }
             } catch (\Exception $imgErr) {
                 Log::warning('LINE QuestionSelection: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -1469,12 +1562,31 @@ class FortuneChannelManager
     {
         $message = $result['message'] ?? '';
 
-        // ✅ ส่งรูปไพ่ก่อน (ถ้ามี)
+        // ✅ ส่งรูปไพ่ก่อน (ถ้ามี) — ลอง reply batch กับข้อความ (ฟรี!)
         $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl && $replyToken) {
+            try {
+                // ส่ง reply batch: รูปไพ่ + ข้อความ + quick reply (2 messages, ฟรี!)
+                $quickReplyItems = [
+                    ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']],
+                ];
+                $sent = $lineService->replyMessage($replyToken, [
+                    ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
+                    ['type' => 'text', 'text' => $message, 'quickReply' => ['items' => $quickReplyItems]],
+                ]);
+                if ($sent) {
+                    return true;
+                }
+            } catch (\Exception $e) {
+                Log::warning('LINE: reply ไพ่ยิปซีล้มเหลว fallback เป็น push', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // Fallback: push รูปไพ่ + text แยกกัน
         if ($tarotImageUrl) {
             try {
                 $lineService->sendImage($userId, $tarotImageUrl);
-                usleep(800_000);
+                usleep(200_000); // 0.2s
             } catch (\Exception $e) {
                 Log::warning('LINE: ส่งรูปไพ่ยิปซีไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -1772,7 +1884,7 @@ class FortuneChannelManager
                             ]);
                         }
                         if ($idx < count($fortuneBubbles) - 1) {
-                            usleep(800_000); // 0.8s ระหว่าง bubble
+                            usleep(200_000); // 0.2s — ลดจาก 0.8s เพื่อตอบเร็วขึ้น // 0.8s ระหว่าง bubble
                         }
                     }
                 }
@@ -1791,7 +1903,7 @@ class FortuneChannelManager
                     $header = $idx === 0 ? "🌟 คำทำนายเชิงลึกของคุณ{$userName}\n📋 {$reading->bill_reference}\n═══════════════════════\n\n" : "(ต่อ)\n\n";
                     $lineService->sendMessagePriority($userId, mb_substr($header.$chunk, 0, 5000));
                     if ($idx < count($textChunks) - 1) {
-                        usleep(500_000);
+                        usleep(200_000); // 0.2s — ลดจาก 0.5s
                     }
                 }
                 $sent = true; // ถือว่าส่งแล้ว (อย่างน้อย text)
@@ -1804,7 +1916,7 @@ class FortuneChannelManager
             // ส่ง chart image ทีหลัง (ไม่สำคัญเท่าคำทำนาย)
             if ($chartUrl) {
                 try {
-                    usleep(1500000);
+                    usleep(300_000); // 0.3s — ลดจาก 1.5s
                     $lineService->sendImage($userId, $chartUrl);
                 } catch (\Exception $e) {
                     Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
@@ -1813,7 +1925,7 @@ class FortuneChannelManager
 
             // ส่ง Thank You ทีหลัง (ไม่สำคัญ)
             try {
-                usleep(1500000);
+                usleep(300_000); // 0.3s — ลดจาก 1.5s
                 $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
                 $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
             } catch (\Exception $e) {
@@ -1836,7 +1948,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(1500000);
+                usleep(300_000); // 0.3s — ลดจาก 1.5s
             } catch (\Exception $e) {
                 Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
             }
@@ -1905,7 +2017,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
             } catch (\Exception $imgErr) {
                 Log::warning('LINE sendLineChartResponse: ส่ง chart image ไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -2025,7 +2137,7 @@ class FortuneChannelManager
                 if ($bubbleSent) {
                     $individualSentCount++;
                 }
-                usleep(1500000); // 1.5s — ป้องกัน rate limit
+                usleep(300_000); // 0.3s — ลดจาก 1.5s // 1.5s — ป้องกัน rate limit
             }
             $sent = $individualSentCount > 0;
         }

@@ -101,21 +101,23 @@ class FortuneConversationService
     ];
 
     /**
-     * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที - เพิ่มให้คุยได้ลื่นขึ้น
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อนาที
+     * เพิ่มเป็น 120 เพื่อไม่จำกัดการใช้งานปกติ — เหลือแค่กัน spam bot
      */
-    public const MAX_MESSAGES_PER_MINUTE = 30;
+    public const MAX_MESSAGES_PER_MINUTE = 120;
 
     /**
-     * Rate Limiting: จำนวนข้อความสูงสุดต่อชั่วโมง - เพิ่มให้คุยได้ลื่นขึ้น
+     * Rate Limiting: จำนวนข้อความสูงสุดต่อชั่วโมง
+     * เพิ่มเป็น 1000 เพื่อไม่จำกัดการใช้งานปกติ
      */
-    public const MAX_MESSAGES_PER_HOUR = 200;
+    public const MAX_MESSAGES_PER_HOUR = 1000;
 
     /**
      * Rate Limiting: จำนวน AI calls สูงสุดต่อวัน (ต่อ user) - fallback ถ้าไม่ได้ตั้งค่า
      * ปกติใช้ค่าจาก settings.max_free_readings แทน
-     * เพิ่มเป็น 5 เพื่อให้คุยได้หลายรอบ
+     * เพิ่มเป็น 50 เพื่อให้คุยได้ไม่จำกัดในทางปฏิบัติ
      */
-    public const MAX_AI_CALLS_PER_DAY = 5;
+    public const MAX_AI_CALLS_PER_DAY = 50;
 
     /**
      * จำนวนข้อความซ้ำที่ยอมรับได้
@@ -2962,7 +2964,7 @@ class FortuneConversationService
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
-                        usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                        usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
@@ -3107,7 +3109,7 @@ class FortuneConversationService
                                         $sendSuccess = false;
                                     }
                                     if ($chunkIdx < count($chunks) - 1) {
-                                        usleep(500_000); // 0.5s ระหว่าง chunks
+                                        usleep(200_000); // 0.2s — ลดจาก 0.5s ระหว่าง chunks
                                     }
                                 }
                             }
@@ -3123,7 +3125,7 @@ class FortuneConversationService
                             ]);
                         }
 
-                        usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                        usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ (exception)", [
                             'reading_id' => $reading->id,
@@ -3137,7 +3139,7 @@ class FortuneConversationService
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
                                 $platformService->sendImage($userId, $tarotCard['image_url']);
-                                usleep(800_000); // 0.8s ก่อนส่งข้อความ
+                                usleep(200_000); // 0.2s — ลดจาก 0.8s เพื่อตอบเร็วขึ้น
                             }
                         } catch (\Exception $imgErr) {
                             Log::warning("Fortune Deep Streaming: ส่งรูปไพ่ข้อ {$questionNum} ไม่สำเร็จ", [
@@ -3184,7 +3186,7 @@ class FortuneConversationService
                                             $tarotSendSuccess = false;
                                         }
                                         if ($chunkIdx < count($tarotChunks) - 1) {
-                                            usleep(500_000);
+                                            usleep(200_000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
                                         }
                                     }
                                 }
@@ -3195,7 +3197,7 @@ class FortuneConversationService
                                 Log::info("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} สำเร็จ");
                             }
 
-                            usleep(1500000); // ⚡ 1.5s — ป้องกัน LINE rate limit
+                            usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
                         } catch (\Exception $tarotSendErr) {
                             Log::warning("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} ล้มเหลว", [
                                 'reading_id' => $reading->id,
@@ -6949,7 +6951,7 @@ PROMPT;
                     'line_user_id' => $lineUserId,
                     'first_error' => $firstErr->getMessage(),
                 ]);
-                usleep(500000);
+                usleep(200000); // 0.2s — ลดจาก 0.5s retry delay
                 $lineService->sendRichMessage($lineUserId, $richPayload);
             }
 
@@ -7109,7 +7111,7 @@ PROMPT;
                     'user_id' => $userId,
                     'error' => $firstErr->getMessage(),
                 ]);
-                usleep(500000); // 500ms
+                usleep(200000); // 0.2s — ลดจาก 0.5s retry delay
                 $lineService->sendRichMessage($lineUserId, $richPayload);
             }
 

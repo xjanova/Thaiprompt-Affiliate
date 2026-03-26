@@ -572,11 +572,9 @@ class SmsPaymentService
 
             $userName = $reading->facebook_user_name ?? 'คุณ';
             $paymentConfirmedMessage = "✅ ชำระเงินเรียบร้อยแล้วค่ะ คุณ{$userName}!\n\n"
-                .'💰 จำนวน: ฿'.number_format($amount, 2)."\n"
-                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
-                ."🔮 กำลังวิเคราะห์ดวงชะตาให้อย่างละเอียด...\n"
-                ."⏳ ใช้เวลาประมาณ 1-3 นาทีค่ะ\n\n"
-                .'จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อมนะคะ ✨';
+                .'💰 จำนวน: ฿'.number_format($amount, 2)."\n\n"
+                ."🔮 กำลังสร้างคำทำนายให้ค่ะ...\n"
+                .'จะแจ้งทันทีเมื่อพร้อมนะคะ ✨';
 
             $pushSent = $channelManager->sendResponse($platform, $userId, [
                 'action' => 'payment_confirmed_wait',
