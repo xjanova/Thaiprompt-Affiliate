@@ -1039,20 +1039,7 @@ class FortuneChannelManager
             return $lineService->sendMessage($userId, $result['message'] ?? 'เกิดข้อผิดพลาด');
         }
 
-        // ✅ ส่งรูปไพ่ยิปซีใบสุดท้ายก่อน payment info (ถ้ามี)
-        // ไม่ใช้ replyToken ตรงนี้ — เก็บไว้ให้ payment flex ใช้ (สำคัญกว่า)
-        $tarotImageUrl = $result['tarot_image_url'] ?? null;
-        if ($tarotImageUrl) {
-            try {
-                $lineService->sendImage($userId, $tarotImageUrl);
-                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-            } catch (\Exception $imgErr) {
-                Log::warning('LINE Payment: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
-                    'error' => $imgErr->getMessage(),
-                    'image_url' => $tarotImageUrl,
-                ]);
-            }
-        }
+        // ✅ ไม่ส่งรูปไพ่ตรงนี้ — ส่งรวมตอนคำทำนายทีเดียว (ประหยัด push + ลดโอกาสค้าง)
 
         // ✅ ดึงโหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
         $displayMode = $this->settings->getPaymentDisplayMode();
@@ -1390,55 +1377,15 @@ class FortuneChannelManager
             $previousQuestion
         );
 
-        $tarotImageUrl = $result['tarot_image_url'] ?? null;
-
         Log::info('LINE QuestionSelection: กำลังส่ง Flex เลือกหมวดคำถาม', [
             'user_id' => $userId,
             'question_number' => $questionNumber,
             'has_reply_token' => ! empty($replyToken),
-            'has_tarot_image' => ! empty($tarotImageUrl),
             'reading_id' => $reading?->id,
         ]);
 
-        // ✅ รวมรูปไพ่ + Flex เลือกคำถาม เป็น reply batch เดียว (ฟรีทั้งคู่!)
-        // ป้องกันปัญหา: ส่งรูปไพ่ใช้ replyToken หมด → Flex ต้อง push → ถ้า push ถูก throttle → user ค้าง
-        if ($replyToken) {
-            $replyMessages = [];
-
-            // รูปไพ่ยิปซี (ถ้ามี) — ใส่เป็น message แรก
-            if ($tarotImageUrl) {
-                $replyMessages[] = [
-                    'type' => 'image',
-                    'originalContentUrl' => $tarotImageUrl,
-                    'previewImageUrl' => $tarotImageUrl,
-                ];
-            }
-
-            // Flex เลือกหมวดคำถาม
-            $replyMessages[] = [
-                'type' => 'flex',
-                'altText' => "📝 เลือกหมวดคำถามข้อที่ {$questionNumber}",
-                'contents' => $questionFlex,
-            ];
-
-            $sent = $lineService->replyMessage($replyToken, $replyMessages);
-            if ($sent) {
-                return true;
-            }
-            $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
-            Log::warning('LINE QuestionSelection: replyMessage ล้มเหลว fallback push');
-        }
-
-        // Fallback: push ทีละอัน (ถ้า reply ไม่ได้ หรือไม่มี replyToken)
-        if ($tarotImageUrl) {
-            try {
-                $lineService->sendImage($userId, $tarotImageUrl);
-                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-            } catch (\Exception $imgErr) {
-                Log::warning('LINE QuestionSelection: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
-                    'error' => $imgErr->getMessage(),
-                ]);
-            }
+        // ✅ ไม่ส่งรูปไพ่ตรงนี้ — ส่งตอนคำทำนายทีเดียว (ประหยัด push + ไม่ค้าง)
+        // ส่งแค่ Flex เลือกคำถาม (ใช้ replyToken → ฟรี + เร็ว)
         }
 
         return $lineService->sendFlexWithReplyFallback(
@@ -1547,47 +1494,18 @@ class FortuneChannelManager
     }
 
     /**
-     * LINE: ส่งรูปไพ่ยิปซี + ข้อความ + quick reply (draw_tarot_card)
+     * LINE: ส่งข้อความไพ่ยิปซี + quick reply (draw_tarot_card)
+     *
+     * ✅ ไม่ส่งรูปไพ่ตรงนี้ — ส่งตอนคำทำนายทีเดียว (ประหยัด push + เร็วขึ้น)
+     * ส่งแค่ text บอกชื่อไพ่ + ปุ่มสุ่มไพ่
      */
     protected function sendLineTarotCardResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
         $message = $result['message'] ?? '';
 
-        // ✅ ส่งรูปไพ่ก่อน (ถ้ามี) — ลอง reply batch กับข้อความ (ฟรี!)
-        $tarotImageUrl = $result['tarot_image_url'] ?? null;
-        if ($tarotImageUrl && $replyToken) {
-            try {
-                // ส่ง reply batch: รูปไพ่ + ข้อความ + quick reply (2 messages, ฟรี!)
-                $quickReplyItems = [
-                    ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']],
-                ];
-                $sent = $lineService->replyMessage($replyToken, [
-                    ['type' => 'image', 'originalContentUrl' => $tarotImageUrl, 'previewImageUrl' => $tarotImageUrl],
-                    ['type' => 'text', 'text' => $message, 'quickReply' => ['items' => $quickReplyItems]],
-                ]);
-                if ($sent) {
-                    return true;
-                }
-                $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
-            } catch (\Exception $e) {
-                Log::warning('LINE: reply ไพ่ยิปซีล้มเหลว fallback เป็น push', ['error' => $e->getMessage()]);
-                $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
-            }
-        }
-
-        // Fallback: push รูปไพ่ + text แยกกัน
-        if ($tarotImageUrl) {
-            try {
-                $lineService->sendImage($userId, $tarotImageUrl);
-                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-            } catch (\Exception $e) {
-                Log::warning('LINE: ส่งรูปไพ่ยิปซีไม่สำเร็จ', ['error' => $e->getMessage()]);
-            }
-        }
-
-        // ส่ง text + quick reply ปุ่มสุ่มไพ่ (replyToken = null → ใช้ push)
+        // ส่ง text + quick reply ปุ่มสุ่มไพ่ (ใช้ replyMessage → ฟรี!)
         return $this->sendLineMessageWithQuickReply(
-            $lineService, $userId, $message, null,
+            $lineService, $userId, $message, $replyToken,
             [['label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']]
         );
     }
