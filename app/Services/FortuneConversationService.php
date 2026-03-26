@@ -2964,7 +2964,7 @@ class FortuneConversationService
                     $platformService = $channelManager->getPlatform($platform);
                     if ($platformService) {
                         $platformService->sendImage($userId, $chartImageUrl);
-                        usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                        usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                     }
                 } catch (\Exception $imgErr) {
                     Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
@@ -3109,7 +3109,7 @@ class FortuneConversationService
                                         $sendSuccess = false;
                                     }
                                     if ($chunkIdx < count($chunks) - 1) {
-                                        usleep(200_000); // 0.2s — ลดจาก 0.5s ระหว่าง chunks
+                                        usleep(500_000); // 0.5s ระหว่าง chunks (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                                     }
                                 }
                             }
@@ -3125,7 +3125,7 @@ class FortuneConversationService
                             ]);
                         }
 
-                        usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                        usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                     } catch (\Exception $sendErr) {
                         Log::warning("Fortune Deep Streaming: ส่งคำทำนายข้อที่ {$questionNum} ไม่สำเร็จ (exception)", [
                             'reading_id' => $reading->id,
@@ -3139,7 +3139,7 @@ class FortuneConversationService
                             $platformService = $channelManager->getPlatform($platform);
                             if ($platformService) {
                                 $platformService->sendImage($userId, $tarotCard['image_url']);
-                                usleep(200_000); // 0.2s — ลดจาก 0.8s เพื่อตอบเร็วขึ้น
+                                usleep(500_000); // 0.5s — ลดจาก 0.8s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                             }
                         } catch (\Exception $imgErr) {
                             Log::warning("Fortune Deep Streaming: ส่งรูปไพ่ข้อ {$questionNum} ไม่สำเร็จ", [
@@ -3186,7 +3186,7 @@ class FortuneConversationService
                                             $tarotSendSuccess = false;
                                         }
                                         if ($chunkIdx < count($tarotChunks) - 1) {
-                                            usleep(200_000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                                            usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                                         }
                                     }
                                 }
@@ -3197,7 +3197,7 @@ class FortuneConversationService
                                 Log::info("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} สำเร็จ");
                             }
 
-                            usleep(300000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                            usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                         } catch (\Exception $tarotSendErr) {
                             Log::warning("Fortune Deep Streaming: ส่งไพ่ยิปซีข้อ {$questionNum} ล้มเหลว", [
                                 'reading_id' => $reading->id,
@@ -6951,7 +6951,7 @@ PROMPT;
                     'line_user_id' => $lineUserId,
                     'first_error' => $firstErr->getMessage(),
                 ]);
-                usleep(200000); // 0.2s — ลดจาก 0.5s retry delay
+                usleep(500000); // 0.5s retry delay (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                 $lineService->sendRichMessage($lineUserId, $richPayload);
             }
 
@@ -7111,7 +7111,7 @@ PROMPT;
                     'user_id' => $userId,
                     'error' => $firstErr->getMessage(),
                 ]);
-                usleep(200000); // 0.2s — ลดจาก 0.5s retry delay
+                usleep(500000); // 0.5s retry delay (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                 $lineService->sendRichMessage($lineUserId, $richPayload);
             }
 

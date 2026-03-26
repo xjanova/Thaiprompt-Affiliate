@@ -210,7 +210,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $platformService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send chart image', [
                     'platform' => $platform,
@@ -384,7 +384,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -397,7 +397,7 @@ class FortuneChannelManager
             $prediction = trim($parts[0] ?? $message);
             if (! empty($prediction)) {
                 $fbService->sendMessage($userId, $prediction);
-                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             }
         }
 
@@ -431,7 +431,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (payment)', ['error' => $e->getMessage()]);
             }
@@ -441,7 +441,7 @@ class FortuneChannelManager
         // ส่งเฉพาะ text ข้อมูลบิล (ไม่ส่ง Payment Template อีก เพราะข้อมูลซ้ำ)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         // ส่งภาพ QR Code ชำระเงิน (ถ้ามี) — ส่งครั้งเดียว
@@ -449,7 +449,7 @@ class FortuneChannelManager
         if ($paymentQrUrl) {
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
-                usleep(200000); // 0.2s — ลดจาก 0.3s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง QR Code ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -477,7 +477,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart image ไม่สำเร็จ (completed)', ['error' => $e->getMessage()]);
             }
@@ -486,7 +486,7 @@ class FortuneChannelManager
         // ส่งคำทำนาย (text)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         // ส่ง Reading Complete Template + LINE invite + affiliate
@@ -566,7 +566,7 @@ class FortuneChannelManager
         // ส่ง text ข้อความเดิม
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         $template = $richService->buildAiLimitTemplate($this->getReadingPrice());
@@ -583,7 +583,7 @@ class FortuneChannelManager
 
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         $template = $richService->buildPaymentExpiredTemplate();
@@ -600,7 +600,7 @@ class FortuneChannelManager
 
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         $template = $richService->buildDeclinedTemplate();
@@ -629,7 +629,7 @@ class FortuneChannelManager
         // ส่ง text ก่อน (มีรายละเอียดบัญชี)
         if (! empty($message)) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
         $template = $richService->buildWaitingPaymentTemplate($result['remaining_time'] ?? 'ไม่ทราบ');
@@ -686,7 +686,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $fbService->sendImage($userId, $chartUrl);
-                usleep(200000); // 0.2s — ลดจาก 0.5s เพื่อตอบเร็วขึ้น
+                usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่ง chart ไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
@@ -696,7 +696,7 @@ class FortuneChannelManager
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
             $fbService->sendMessage($userId, $message);
-            usleep(200000); // 0.2s — ลดจาก 0.3s เพื่อตอบเร็วขึ้น
+            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
             } catch (\Exception $e) {
@@ -885,9 +885,9 @@ class FortuneChannelManager
                     'user_id' => $userId,
                     'message_length' => mb_strlen($message),
                 ]);
-                // fallback ส่ง text ธรรมดาถ้า Flex ส่งไม่ได้
+                // fallback ส่ง text ธรรมดาถ้า Flex ส่งไม่ได้ (ลอง reply ก่อน push)
                 if ($message) {
-                    $lineService->sendMessage($userId, mb_substr($message, 0, 2000));
+                    $lineService->sendMessageWithReplyFallback($userId, mb_substr($message, 0, 2000), $replyToken);
                 }
             }
 
@@ -968,7 +968,7 @@ class FortuneChannelManager
                     if ($sent) {
                         // ส่วนที่เกิน replyMessage → รวมเป็น carousel แล้ว push ครั้งเดียว
                         if (! empty($overflowBubbles)) {
-                            usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                            usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                             if (count($overflowBubbles) > 1) {
                                 $carousel = ['type' => 'carousel', 'contents' => $overflowBubbles];
                                 $lineService->sendRichMessage($userId, ['alt_text' => 'คำทำนาย (ต่อ)', 'contents' => $carousel]);
@@ -983,7 +983,7 @@ class FortuneChannelManager
                 }
 
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager: Failed to send LINE chart image (basic_done)', [
                     'error' => $imgErr->getMessage(),
@@ -1055,7 +1055,7 @@ class FortuneChannelManager
                 if (! $tarotSent) {
                     $lineService->sendImage($userId, $tarotImageUrl);
                 }
-                usleep(200_000); // 0.2s
+                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('LINE Payment: ส่งรูปไพ่ยิปซีไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -1170,7 +1170,7 @@ class FortuneChannelManager
         if ($chartUrl) {
             try {
                 $lineService->sendImage($userId, $chartUrl);
-                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง chart image ก่อนบิลไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -1182,7 +1182,7 @@ class FortuneChannelManager
         if ($qrImageUrl) {
             try {
                 $lineService->sendImage($userId, $qrImageUrl);
-                usleep(300_000); // 0.3s — ลดจาก 1s เพื่อตอบเร็วขึ้น
+                usleep(500_000); // 0.5s — ลดจาก 1s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $qrErr) {
                 Log::warning('FortuneChannelManager LINE: ส่ง PromptPay QR ไม่สำเร็จ', [
                     'error' => $qrErr->getMessage(),
@@ -1331,7 +1331,7 @@ class FortuneChannelManager
                     $lineService->sendImage($userId, $msg['originalContentUrl']);
                     // ส่ง label ไพ่ (ถ้ามี)
                     if (! empty($meta['label'])) {
-                        usleep(200_000); // 0.2s
+                        usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                         $lineService->sendMessage($userId, $meta['label']);
                     }
                 } elseif ($msg['type'] === 'flex') {
@@ -1347,7 +1347,7 @@ class FortuneChannelManager
                     }
                 }
                 $sentCount++;
-                usleep(300_000); // 0.3s ระหว่าง push messages
+                usleep(500_000); // 0.5s ระหว่าง push messages (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $sendErr) {
                 Log::warning('LINE DeepReading: ส่งข้อความล้มเหลว', [
                     'type' => $msg['type'],
@@ -1535,7 +1535,7 @@ class FortuneChannelManager
         $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
 
         // ดึงสิทธิ์จาก result (ถูกส่งมาจาก FortuneConversationService)
-        $remaining = $result['remaining'] ?? ($result['show_quick_replies'] ? 1 : 0);
+        $remaining = $result['remaining'] ?? (($result['show_quick_replies'] ?? false) ? 1 : 0);
         $deepReadingEnabled = $this->settings->isDeepReadingEnabled();
         $deepPrice = $this->getReadingPrice();
 
@@ -1577,8 +1577,10 @@ class FortuneChannelManager
                 if ($sent) {
                     return true;
                 }
+                $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
             } catch (\Exception $e) {
                 Log::warning('LINE: reply ไพ่ยิปซีล้มเหลว fallback เป็น push', ['error' => $e->getMessage()]);
+                $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
             }
         }
 
@@ -1586,15 +1588,15 @@ class FortuneChannelManager
         if ($tarotImageUrl) {
             try {
                 $lineService->sendImage($userId, $tarotImageUrl);
-                usleep(200_000); // 0.2s
+                usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('LINE: ส่งรูปไพ่ยิปซีไม่สำเร็จ', ['error' => $e->getMessage()]);
             }
         }
 
-        // ส่ง text + quick reply ปุ่มสุ่มไพ่
+        // ส่ง text + quick reply ปุ่มสุ่มไพ่ (replyToken = null → ใช้ push)
         return $this->sendLineMessageWithQuickReply(
-            $lineService, $userId, $message, $replyToken,
+            $lineService, $userId, $message, null,
             [['label' => '🃏 สุ่มไพ่ยิปซี', 'text' => 'สุ่มไพ่']]
         );
     }
@@ -1692,6 +1694,7 @@ class FortuneChannelManager
             if ($sent) {
                 return true;
             }
+            $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
         }
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, "💰 ยอดชำระ ฿".number_format($amount, 2), $replyToken);
@@ -1884,7 +1887,7 @@ class FortuneChannelManager
                             ]);
                         }
                         if ($idx < count($fortuneBubbles) - 1) {
-                            usleep(200_000); // 0.2s — ลดจาก 0.8s เพื่อตอบเร็วขึ้น // 0.8s ระหว่าง bubble
+                            usleep(500_000); // 0.5s — ลดจาก 0.8s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                         }
                     }
                 }
@@ -1903,7 +1906,7 @@ class FortuneChannelManager
                     $header = $idx === 0 ? "🌟 คำทำนายเชิงลึกของคุณ{$userName}\n📋 {$reading->bill_reference}\n═══════════════════════\n\n" : "(ต่อ)\n\n";
                     $lineService->sendMessagePriority($userId, mb_substr($header.$chunk, 0, 5000));
                     if ($idx < count($textChunks) - 1) {
-                        usleep(200_000); // 0.2s — ลดจาก 0.5s
+                        usleep(500_000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                     }
                 }
                 $sent = true; // ถือว่าส่งแล้ว (อย่างน้อย text)
@@ -1916,7 +1919,7 @@ class FortuneChannelManager
             // ส่ง chart image ทีหลัง (ไม่สำคัญเท่าคำทำนาย)
             if ($chartUrl) {
                 try {
-                    usleep(300_000); // 0.3s — ลดจาก 1.5s
+                    usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                     $lineService->sendImage($userId, $chartUrl);
                 } catch (\Exception $e) {
                     Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
@@ -1925,7 +1928,7 @@ class FortuneChannelManager
 
             // ส่ง Thank You ทีหลัง (ไม่สำคัญ)
             try {
-                usleep(300_000); // 0.3s — ลดจาก 1.5s
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
                 $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
                 $lineService->sendRichMessage($userId, ['alt_text' => '🙏 ขอบคุณค่ะ', 'contents' => $thankYouFlex]);
             } catch (\Exception $e) {
@@ -1948,7 +1951,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(300_000); // 0.3s — ลดจาก 1.5s
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $e) {
                 Log::warning('FortuneChannelManager: ส่ง chart image ไม่สำเร็จ (view_reading)', ['error' => $e->getMessage()]);
             }
@@ -2017,7 +2020,7 @@ class FortuneChannelManager
                 } else {
                     $lineService->sendImage($userId, $chartUrl);
                 }
-                usleep(300_000); // 0.3s — ลดจาก 1.5s เพื่อตอบเร็วขึ้น
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             } catch (\Exception $imgErr) {
                 Log::warning('LINE sendLineChartResponse: ส่ง chart image ไม่สำเร็จ', [
                     'error' => $imgErr->getMessage(),
@@ -2137,7 +2140,7 @@ class FortuneChannelManager
                 if ($bubbleSent) {
                     $individualSentCount++;
                 }
-                usleep(300_000); // 0.3s — ลดจาก 1.5s // 1.5s — ป้องกัน rate limit
+                usleep(500_000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             }
             $sent = $individualSentCount > 0;
         }
@@ -2500,10 +2503,11 @@ class FortuneChannelManager
             if ($sent) {
                 return true;
             }
+            $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
         }
 
-        // Fallback: ส่ง text ธรรมดา (ไม่ push Flex — ประหยัดโควต้า)
-        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        // Fallback: ส่ง text ธรรมดา (push เพราะ replyToken ใช้แล้วหรือไม่มี)
+        return $lineService->sendMessage($userId, $message);
     }
 
     /**
