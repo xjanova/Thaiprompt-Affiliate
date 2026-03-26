@@ -109,10 +109,45 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             'platform' => $platform,
         ]);
 
-        // ✅ ลำดับแรก: proc_open() — เชื่อถือได้สูงสุด, ไม่ต้องพึ่ง queue worker
-        // สร้าง background process แยกที่ไม่ติด web server timeout
+        // ✅ ลำดับแรก: fastcgi_finish_request() + Artisan::call() sync
+        // เชื่อถือได้สูงสุด — รันใน process เดียวกัน (ไม่มีทาง crash เงียบ)
+        // fastcgi_finish_request() ส่ง response กลับ client ทันที → PHP process ทำงานต่อ background
+        if (\function_exists('fastcgi_finish_request')) {
+            Log::info('ProcessDeepFortuneReadingJob: ใช้ fastcgi_finish_request + sync (primary strategy)', [
+                'reading_id' => $readingId,
+            ]);
+
+            \set_time_limit(300); // 5 นาที
+            \fastcgi_finish_request(); // ส่ง response กลับ client ทันที
+
+            $args = [
+                'readingId' => $readingId,
+                'platform' => $platform,
+                'userId' => $userId,
+            ];
+            if ($notificationId) {
+                $args['--notification-id'] = $notificationId;
+            }
+
+            try {
+                Artisan::call('fortune:process-deep', $args);
+                Log::info('ProcessDeepFortuneReadingJob: Artisan::call สำเร็จ (fastcgi sync)', [
+                    'reading_id' => $readingId,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('ProcessDeepFortuneReadingJob: Artisan::call ล้มเหลว (fastcgi sync)', [
+                    'reading_id' => $readingId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return;
+        }
+
+        // ✅ ลำดับสอง: proc_open() — ใช้เมื่อไม่มี fastcgi (เช่น Apache mod_php)
+        // ⚠️ proc_open อาจ crash เงียบ → fortune:check-pending จะ retry ให้
         if (\function_exists('proc_open')) {
-            Log::info('ProcessDeepFortuneReadingJob: ใช้ proc_open (primary strategy)', [
+            Log::info('ProcessDeepFortuneReadingJob: ใช้ proc_open (fallback — no fastcgi)', [
                 'reading_id' => $readingId,
             ]);
             self::dispatchViaProcOpen($readingId, $notificationId, $platform, $userId);
@@ -120,10 +155,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
-        // ✅ ลำดับสอง: Queue driver จริง → dispatch ไป queue worker
-        // ใช้เมื่อ proc_open ไม่มี (disabled ใน php.ini)
+        // ✅ ลำดับสาม: Queue driver จริง → dispatch ไป queue worker
         if ($driver !== 'sync') {
-            Log::info('ProcessDeepFortuneReadingJob: fallback to queue dispatch (proc_open unavailable)', [
+            Log::info('ProcessDeepFortuneReadingJob: fallback to queue dispatch', [
                 'reading_id' => $readingId,
                 'queue' => 'fortune-deep',
             ]);
@@ -134,26 +168,18 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
-        // ✅ ลำดับสุดท้าย: Artisan::call() sync (ถ้าทั้ง proc_open + queue ใช้ไม่ได้)
-        // พยายาม flush response ก่อนเพื่อให้ user ไม่ต้องรอ
+        // ✅ ลำดับสุดท้าย: Artisan::call() sync ตรง (ไม่มี fastcgi, ไม่มี proc_open, ไม่มี queue)
         Log::info('ProcessDeepFortuneReadingJob: fallback to Artisan::call (sync — last resort)', [
             'reading_id' => $readingId,
         ]);
 
-        // ขยาย execution time เพื่อป้องกัน PHP timeout
         \set_time_limit(300);
-
-        // Flush response กลับ user ก่อน (ถ้าเป็น FPM)
-        if (\function_exists('fastcgi_finish_request')) {
-            \fastcgi_finish_request();
-        }
 
         $args = [
             'readingId' => $readingId,
             'platform' => $platform,
             'userId' => $userId,
         ];
-
         if ($notificationId) {
             $args['--notification-id'] = $notificationId;
         }
