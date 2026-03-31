@@ -314,6 +314,9 @@ class FortuneChannelManager
                 'downline_info', 'earnings_info'
                     => $this->sendFacebookButtonLinkResponse($fbService, $userId, $message, $result),
 
+                // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
+                'ai_redirect_deep_reading' => $this->sendFacebookDeepReadingRedirect($fbService, $richService, $userId, $result),
+
                 // keyword matched, AI chat, throttle, busy ฯลฯ → ส่ง text + Quick Replies
                 'keyword_matched', 'ai_chat_response', 'fortune_throttled', 'busy', 'busy_processing',
                 'bank_account_info', 'partial', 'processing', 'queued',
@@ -844,6 +847,9 @@ class FortuneChannelManager
 
                 // Keyword auto-reply จากฐานข้อมูล → ส่งตาม response_type
                 'keyword_matched' => $this->sendLineKeywordResponse($lineService, $userId, $result, $replyToken),
+
+                // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
+                'ai_redirect_deep_reading' => $this->sendLineDeepReadingRedirect($lineService, $userId, $result, $replyToken),
 
                 // AI Chat ทั่วไป (Gemini) → ส่ง text ธรรมดา (เป็นธรรมชาติกว่า Flex)
                 'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
@@ -2450,6 +2456,59 @@ class FortuneChannelManager
 
             return $fbService->sendMessage($userId, $message);
         }
+    }
+
+    /**
+     * Facebook: AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
+     *
+     * ส่งข้อความ AI ตอบก่อน (แนะนำบริการ) แล้วเรียก startDeepReadingFlow()
+     * ส่ง birthdate collection response ตามหลัง (เป็น 2 ข้อความต่อกัน)
+     */
+    protected function sendFacebookDeepReadingRedirect(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่งข้อความ AI ตอบก่อน (แนะนำบริการดูดวงเชิงลึก)
+        if (! empty($message)) {
+            $fbService->sendMessage($userId, $message);
+            usleep(500000);
+        }
+
+        // เริ่ม deep reading flow → ได้ result ใหม่ (collecting_birthdate)
+        $deepResult = $this->conversationService->startDeepReadingFlowPublic($userId);
+
+        if (($deepResult['action'] ?? '') === 'deep_reading_disabled') {
+            // ดูดวงเชิงลึกปิดอยู่ → แจ้งผู้ใช้
+            return $fbService->sendMessage($userId, $deepResult['message'] ?? 'บริการดูดวงเชิงลึกปิดให้บริการชั่วคราวค่ะ');
+        }
+
+        // ส่ง response ตาม action ที่ได้ (ปกติจะเป็น collecting_birthdate)
+        return $this->sendFacebookResponse($fbService, $userId, $deepResult);
+    }
+
+    /**
+     * LINE: AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
+     */
+    protected function sendLineDeepReadingRedirect(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $message = $result['message'] ?? '';
+
+        // ส่งข้อความ AI ตอบก่อน (แนะนำบริการดูดวงเชิงลึก)
+        if (! empty($message)) {
+            $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+            $replyToken = null; // ใช้ replyToken ได้ครั้งเดียว
+            usleep(500000);
+        }
+
+        // เริ่ม deep reading flow → ได้ result ใหม่ (collecting_birthdate)
+        $deepResult = $this->conversationService->startDeepReadingFlowPublic($userId);
+
+        if (($deepResult['action'] ?? '') === 'deep_reading_disabled') {
+            return $lineService->sendMessageWithReplyFallback($userId, $deepResult['message'] ?? 'บริการดูดวงเชิงลึกปิดให้บริการชั่วคราวค่ะ', $replyToken);
+        }
+
+        // ส่ง response ตาม action ที่ได้ (ปกติจะเป็น collecting_birthdate)
+        return $this->sendLineResponse($lineService, $userId, $deepResult, ['reply_token' => $replyToken]);
     }
 
     /**

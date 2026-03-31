@@ -1775,6 +1775,13 @@ class FortuneConversationService
             ];
         }
 
+        // ✅ ถ้าเป็นคำขอดูดวงเชิงลึก → ปิด conversation เก่า + เข้า deep reading flow เลย
+        if ($this->isExplicitDeepReadingRequest($messageText)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+        }
+
         // ถ้ายืนยัน หรือพิมพ์ข้อความอื่นเข้ามา → เริ่มทำนายเลย
         // ดึงข้อความต้นฉบับจาก state (ถ้ามี) หรือใช้ข้อความใหม่
         $originalMessage = $reading->getConversationState('original_message', $messageText);
@@ -2450,14 +2457,21 @@ class FortuneConversationService
     }
 
     /**
+     * เริ่ม deep reading flow (public wrapper สำหรับ ChannelManager redirect)
+     *
+     * ใช้เมื่อ AI Chat detect intent ว่าผู้ใช้ต้องการดูดวงเชิงลึก
+     * และ ChannelManager ต้องเรียก method นี้จากภายนอก
+     */
+    public function startDeepReadingFlowPublic(string $userId, ?array $userProfile = null): array
+    {
+        return $this->startDeepReadingFlow($userId, $userProfile);
+    }
+
+    /**
      * เริ่ม flow ดูดวงละเอียด (บริการเสียเงิน) — สร้าง reading ใหม่ + ถามวันเกิด
      *
      * ใช้เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" โดยไม่มี active reading (เช่น หลังจาก ai_limit)
      * ข้าม canMakeAICall() เพราะเป็นบริการเสียเงิน ไม่ใช่บริการฟรี
-     *
-     * @param string $facebookUserId
-     * @param array|null $userProfile
-     * @return array
      */
     protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null): array
     {
@@ -4450,7 +4464,7 @@ class FortuneConversationService
      */
     protected function isDeepReadingAccepted(string $text): bool
     {
-        $acceptKeywords = ['ต้องการ', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'สนใจ', 'ละเอียด'];
+        $acceptKeywords = ['ต้องการ', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'สนใจ', 'ละเอียด', 'เชิงลึก', 'deep'];
         $text = mb_strtolower(trim($text));
 
         foreach ($acceptKeywords as $keyword) {
@@ -4479,6 +4493,14 @@ class FortuneConversationService
             'สนใจดูละเอียด',
             'เอาละเอียด',
             'ดูเพิ่มเติม',
+            'ดูดวงเชิงลึก',
+            'ดูเชิงลึก',
+            'ต้องการดูเชิงลึก',
+            'อยากดูเชิงลึก',
+            'สนใจดูเชิงลึก',
+            'ดูดวงแบบละเอียด',
+            'ดูแบบละเอียด',
+            'ดูดวงdeep',
         ];
         $text = mb_strtolower(trim($text));
 
@@ -4657,6 +4679,26 @@ class FortuneConversationService
             // ✅ บันทึก conversation history (ทั้งข้อความผู้ใช้ + คำตอบ AI)
             $this->saveConversationMessage($userId, 'user', $messageText);
             $this->saveConversationMessage($userId, 'assistant', $responseText);
+
+            // ✅ ตรวจจับ [DEEP_READING] — AI เข้าใจว่าผู้ใช้ต้องการดูดวงเชิงลึก → redirect เข้า deep reading flow
+            if (str_contains($responseText, '[DEEP_READING]')) {
+                $responseText = trim(str_replace('[DEEP_READING]', '', $responseText));
+
+                Log::info('Fortune: AI detect intent ดูดวงเชิงลึก → redirect to deep reading flow', [
+                    'user_id' => $userId,
+                    'original_message' => mb_substr($messageText, 0, 100),
+                ]);
+
+                // ปิด conversation เก่า (ถ้ามี) ก่อนเริ่ม deep reading
+                $this->closeAllActiveConversations($userId);
+
+                return [
+                    'action' => 'ai_redirect_deep_reading',
+                    'message' => $responseText,
+                    'reading' => null,
+                    'redirect_to' => 'deep_reading',
+                ];
+            }
 
             // ✅ ตรวจจับ [ASK_SAVE] — AI บอกว่าตอบไม่ได้ → ถามผู้ใช้ก่อนว่าจะฝากคำถามถึงแอดมินไหม
             if (str_contains($responseText, '[ASK_SAVE]')) {
