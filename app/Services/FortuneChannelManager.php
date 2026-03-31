@@ -873,11 +873,11 @@ class FortuneChannelManager
                     ]
                 ),
 
-                // แจ้งเตือนคำทำนายพร้อม → ส่ง text + quick reply ให้กด "อ่านเลย"
+                // แจ้งเตือนคำทำนายพร้อม → ส่ง Flex สวยงาม (สะดุดตา + ปุ่มกดอ่าน)
+                // ✅ ใช้ Flex Message แทน text ธรรมดา → ลูกค้าเห็นชัดกว่า ไม่พลาด
                 // ✅ ใช้ priority push (ข้าม Gatekeeper) เพราะลูกค้าจ่ายเงินแล้ว ต้องแจ้งให้ได้
-                'fortune_ready_notification' => $this->sendLinePriorityQuickReply(
-                    $lineService, $userId, $message, $replyToken,
-                    array_map(fn ($label) => ['label' => $label, 'text' => $label], $result['quick_replies'] ?? ['อ่านคำทำนาย'])
+                'fortune_ready_notification' => $this->sendLineFortuneReadyNotification(
+                    $lineService, $userId, $result, $replyToken
                 ),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
@@ -2337,6 +2337,68 @@ class FortuneChannelManager
 
         return $lineService->sendMessagePriority($userId, $message, [
             'quick_replies' => $quickReplies,
+        ]);
+    }
+
+    /**
+     * ส่ง LINE Flex แจ้ง "คำทำนายพร้อมแล้ว" (fortune_ready_notification)
+     *
+     * ✅ ใช้ Flex Message สวยงาม (สีม่วง+ทอง) แทน text ธรรมดา
+     * ✅ มีปุ่ม "อ่านคำทำนาย" กดได้ทันที (เหมือน Facebook Button Template)
+     * ✅ ใช้ priority push (ข้าม Gatekeeper) เพราะลูกค้าจ่ายเงินแล้ว
+     * ✅ Fallback เป็น text ถ้า Flex ล้มเหลว
+     */
+    protected function sendLineFortuneReadyNotification(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? 'คุณ';
+        $billRef = $reading?->bill_reference;
+        $message = $result['message'] ?? '';
+
+        try {
+            // ✅ สร้าง Flex Message สวยงาม
+            $flex = $lineService->buildFortuneReadyFlexMessage($userName, $billRef);
+
+            // ลอง replyToken ก่อน (ฟรี + เร็ว)
+            $sent = false;
+            if ($replyToken) {
+                $sent = $lineService->replyWithFlex($replyToken, $flex, '🔮 คำทำนายพร้อมแล้ว!');
+            }
+
+            // Fallback: pushMessagePriority (ข้าม Gatekeeper — ลูกค้าจ่ายเงินแล้ว)
+            if (! $sent) {
+                $sent = $lineService->sendRichMessagePriority($userId, [
+                    'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
+                    'contents' => $flex,
+                ]);
+            }
+
+            if ($sent) {
+                Log::info('LINE sendLineFortuneReadyNotification: ส่ง Flex สำเร็จ', [
+                    'user_id' => $userId,
+                    'reading_id' => $reading?->id,
+                    'used_reply' => empty($replyToken) ? false : $sent,
+                ]);
+
+                return true;
+            }
+        } catch (\Exception $flexErr) {
+            Log::warning('LINE sendLineFortuneReadyNotification: Flex ล้มเหลว → fallback text', [
+                'user_id' => $userId,
+                'error' => $flexErr->getMessage(),
+            ]);
+        }
+
+        // ✅ Fallback: ส่งเป็น text + quick replies (ถ้า Flex ล้มเหลว)
+        Log::info('LINE sendLineFortuneReadyNotification: fallback text+quick_replies', [
+            'user_id' => $userId,
+        ]);
+
+        return $lineService->sendMessagePriority($userId, $message ?: "🔮✨ คุณ{$userName}คะ คำทำนายพร้อมแล้วค่ะ!\n\nกดปุ่ม 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨", [
+            'quick_replies' => [
+                ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
+                ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
+            ],
         ]);
     }
 

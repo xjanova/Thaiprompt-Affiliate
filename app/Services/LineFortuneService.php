@@ -3055,6 +3055,68 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * สร้าง Flex Message แจ้ง "คำทำนายพร้อมแล้ว" (fortune_ready_notification)
+     *
+     * ✅ ใช้ Flex ที่สะดุดตา (สีม่วง+ทอง) แทน text ธรรมดา เพื่อให้ลูกค้าเห็นชัดเจน
+     * มีปุ่ม "อ่านคำทำนาย" กดได้ทันที (เหมือน Facebook Button Template)
+     *
+     * @param string $userName ชื่อผู้ใช้
+     * @param string|null $billRef เลขที่บิล
+     * @return array Flex Message bubble
+     */
+    public function buildFortuneReadyFlexMessage(string $userName = 'คุณ', ?string $billRef = null): array
+    {
+        $billText = $billRef ? "📋 เลขที่บิล: {$billRef}" : '';
+
+        return [
+            'type' => 'bubble',
+            'styles' => [
+                'header' => ['backgroundColor' => '#6B46C1'],
+                'footer' => ['backgroundColor' => '#F3E8FF'],
+            ],
+            'header' => [
+                'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🔮', 'size' => 'xxl', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'คำทำนายพร้อมแล้ว!', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => '✨ วิเคราะห์เสร็จเรียบร้อย', 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                        ],
+                    ],
+                ],
+            ],
+            'body' => [
+                'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'spacing' => 'md',
+                'contents' => array_filter([
+                    ['type' => 'text', 'text' => "✨ คุณ{$userName}คะ", 'size' => 'md', 'color' => '#333333', 'weight' => 'bold'],
+                    ['type' => 'text', 'text' => 'คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!', 'size' => 'sm', 'color' => '#6B46C1', 'margin' => 'sm', 'wrap' => true],
+                    $billRef ? ['type' => 'text', 'text' => $billText, 'size' => 'xs', 'color' => '#999999', 'margin' => 'sm'] : null,
+                    ['type' => 'separator', 'margin' => 'lg'],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => '💎 หมอจันทราได้วิเคราะห์ดวงชะตาของคุณ', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
+                            ['type' => 'text', 'text' => 'อย่างละเอียดเรียบร้อยแล้วค่ะ', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
+                            ['type' => 'text', 'text' => '🌟 กดปุ่มด้านล่างเพื่ออ่านได้เลยค่ะ', 'size' => 'sm', 'color' => '#BF360C', 'margin' => 'sm', 'wrap' => true],
+                        ],
+                    ],
+                ]),
+            ],
+            'footer' => [
+                'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'md',
+                        'action' => ['type' => 'message', 'label' => '📖 อ่านคำทำนายเลย', 'text' => 'อ่านคำทำนาย']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง']],
+                ],
+            ],
+        ];
+    }
+
+    /**
      * สร้าง Flex Message ไม่มีคำทำนาย (view_reading_empty)
      *
      * @return array Flex Message bubble

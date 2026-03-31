@@ -196,17 +196,33 @@ class FortuneProcessDeepReading extends Command
                             'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                        // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง push ตรงด้วย LineFortuneService
+                        // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง Flex push ตรงด้วย LineFortuneService
                         if (! $notifySent && $platform === 'line') {
-                            Log::warning('fortune:process-deep: sendResponse ล้มเหลว → ลอง direct push', [
+                            Log::warning('fortune:process-deep: sendResponse ล้มเหลว → ลอง LINE Flex push ตรง', [
                                 'reading_id' => $readingId,
                             ]);
 
                             try {
                                 $lineService = $lineService ?? new \App\Services\LineFortuneService($settings);
-                                $notifySent = $lineService->sendMessagePriority($userId, $readyMessage);
+
+                                // ลอง Flex ก่อน (สวยงาม สะดุดตา)
+                                $flex = $lineService->buildFortuneReadyFlexMessage($name, $reading->bill_reference ?? null);
+                                $notifySent = $lineService->sendRichMessagePriority($userId, [
+                                    'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
+                                    'contents' => $flex,
+                                ]);
+
+                                // Fallback: text + quick replies
+                                if (! $notifySent) {
+                                    $notifySent = $lineService->sendMessagePriority($userId, $readyMessage, [
+                                        'quick_replies' => [
+                                            ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
+                                            ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
+                                        ],
+                                    ]);
+                                }
                             } catch (\Exception $directErr) {
-                                Log::error('fortune:process-deep: direct push ล้มเหลวด้วย', [
+                                Log::error('fortune:process-deep: LINE direct push ล้มเหลวด้วย', [
                                     'reading_id' => $readingId,
                                     'error' => $directErr->getMessage(),
                                 ]);

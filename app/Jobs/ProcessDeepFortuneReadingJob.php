@@ -372,16 +372,34 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
 
                         $notifySent = false;
 
-                        // ✅ สำหรับ LINE → ส่ง priority push ตรงก่อนเลย (เร็วสุด, bypass gatekeeper)
+                        // ✅ สำหรับ LINE → ส่ง Flex Message สวยงาม (สะดุดตา + ปุ่มกดอ่าน)
+                        // ใช้ priority push ตรง (เร็วสุด, bypass gatekeeper)
                         if ($this->platform === 'line') {
                             try {
                                 $lineService = new \App\Services\LineFortuneService($settings);
-                                $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage, [
-                                    'quick_replies' => [
-                                        ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
-                                        ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
-                                    ],
+
+                                // ลอง Flex ก่อน (สวยงาม สะดุดตา มีปุ่มกด)
+                                $flex = $lineService->buildFortuneReadyFlexMessage(
+                                    $name,
+                                    $reading->bill_reference
+                                );
+                                $notifySent = $lineService->sendRichMessagePriority($this->userId, [
+                                    'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
+                                    'contents' => $flex,
                                 ]);
+
+                                // Fallback: text + quick replies ถ้า Flex ล้มเหลว
+                                if (! $notifySent) {
+                                    Log::warning('ProcessDeepFortuneReadingJob: LINE Flex push ล้มเหลว → fallback text', [
+                                        'reading_id' => $this->readingId,
+                                    ]);
+                                    $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage, [
+                                        'quick_replies' => [
+                                            ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
+                                            ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
+                                        ],
+                                    ]);
+                                }
                             } catch (\Exception $directErr) {
                                 Log::warning('ProcessDeepFortuneReadingJob: LINE direct push ล้มเหลว → ลอง channelManager', [
                                     'reading_id' => $this->readingId,
