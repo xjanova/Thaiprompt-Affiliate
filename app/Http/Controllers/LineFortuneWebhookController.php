@@ -61,11 +61,32 @@ class LineFortuneWebhookController extends Controller
         $data = json_decode($body, true);
         $events = $data['events'] ?? [];
 
+        // ✅ FIX: ส่ง 200 OK ให้ LINE ก่อน → ป้องกัน LINE retry จาก timeout
+        // ใช้ fastcgi_finish_request() (PHP-FPM) หรือ ob_end_flush() (Apache mod_php)
+        // เพื่อปิดการเชื่อมต่อ HTTP แล้วประมวลผลต่อในพื้นหลัง
+        $response = response('OK', 200);
+
+        // ส่ง HTTP response ก่อนประมวลผล events
+        if (function_exists('fastcgi_finish_request')) {
+            // PHP-FPM: ส่ง response ทันที → ประมวลผลต่อใน background
+            $response->send();
+            fastcgi_finish_request();
+
+            // ✅ ประมวลผล events หลังส่ง response แล้ว (ลูกค้าไม่ต้องรอ)
+            foreach ($events as $event) {
+                $this->handleEvent($event);
+            }
+
+            // ส่ง response ว่างเพื่อให้ Laravel middleware ไม่ error
+            return response('', 200);
+        }
+
+        // Non-FPM (Apache mod_php, CLI): ประมวลผลก่อน return ปกติ
         foreach ($events as $event) {
             $this->handleEvent($event);
         }
 
-        return response('OK', 200);
+        return $response;
     }
 
     /**
@@ -468,11 +489,21 @@ class LineFortuneWebhookController extends Controller
     protected function handleDeepReadingPostback(string $userId, ?string $replyToken): void
     {
         try {
+            // ✅ FIX: ดึง profile จาก cache ก่อน → ไม่ต้องให้ ChannelManager เรียก LINE API ซ้ำ
+            // ป้องกัน delay 3-8 วินาทีจากการเรียก getUserProfile ใน ChannelManager
+            $userProfile = null;
+            try {
+                $userProfile = $this->lineService->getUserProfile($userId);
+            } catch (\Exception $profileErr) {
+                // ไม่เป็นไร — ChannelManager จะ fallback ดึงเอง
+            }
+            $userProfile = $userProfile ?: ['id' => $userId, 'name' => null];
+
             $this->channelManager->processMessage(
                 FortuneChannelManager::PLATFORM_LINE,
                 $userId,
                 'ต้องการดูดวงละเอียด',
-                null,
+                $userProfile,
                 ['reply_token' => $replyToken]
             );
         } catch (\Exception $e) {
@@ -516,11 +547,18 @@ class LineFortuneWebhookController extends Controller
     protected function handleSimulateTextPostback(string $userId, ?string $replyToken, string $text): void
     {
         try {
+            // ✅ ดึง profile จาก cache → ป้องกัน delay จาก getUserProfile ใน ChannelManager
+            $userProfile = null;
+            try {
+                $userProfile = $this->lineService->getUserProfile($userId);
+            } catch (\Exception $profileErr) { /* ignore */ }
+            $userProfile = $userProfile ?: ['id' => $userId, 'name' => null];
+
             $this->channelManager->processMessage(
                 FortuneChannelManager::PLATFORM_LINE,
                 $userId,
                 $text,
-                null,
+                $userProfile,
                 ['reply_token' => $replyToken]
             );
         } catch (\Exception $e) {

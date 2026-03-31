@@ -881,6 +881,27 @@ class FortuneConversationService
                     ];
                 }
 
+                // ✅ FIX: ตรวจสอบคำขอดูดวงละเอียดก่อน — ทุกสถานะ (ยกเว้น PAID)
+                // ป้องกันกรณีคลิกปุ่ม "ดูดวงละเอียด" ขณะอยู่ระหว่าง collecting_questions/tarot
+                // → ข้อความ "ดูดวงละเอียด" จะถูกเข้าใจผิดเป็นคำถาม/trigger สุ่มไพ่
+                // ❌ เดิม: ข้อความถูกส่งไป continueConversation → ค้าง/ผิด flow
+                // ✅ ใหม่: ปิด conversation เก่า + เริ่ม deep reading flow ใหม่ทันที
+                if ($this->isExplicitDeepReadingRequest($messageText)
+                    && ! in_array($activeReading->conversation_status, [
+                        FortuneReading::STATUS_PAID,
+                        FortuneReading::STATUS_COLLECTING_BIRTHDATE,  // กำลังเก็บวันเกิดอยู่แล้ว (deep reading flow)
+                    ])) {
+                    Log::info('Fortune processMessage: คำขอดูดวงละเอียดขณะมี active conversation → ปิดเก่า + เริ่ม deep reading ใหม่', [
+                        'facebook_user_id' => $facebookUserId,
+                        'old_status' => $activeReading->conversation_status,
+                        'old_reading_id' => $activeReading->id,
+                    ]);
+
+                    $this->closeAllActiveConversations($facebookUserId);
+
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                }
+
                 // ถ้าอยู่ในสถานะ awaiting_confirmation: เช็คว่าผู้ใช้ยืนยันจะดูดวงหรือไม่
                 if ($activeReading->conversation_status === FortuneReading::STATUS_AWAITING_CONFIRMATION) {
                     return $this->handleConfirmationResponse($activeReading, $facebookUserId, $messageText, $userProfile);
@@ -2839,28 +2860,41 @@ class FortuneConversationService
             ]);
             $reading->setPendingPayment($uniqueAmount);
 
+            // ⏱️ ติดตามเวลา — LINE replyToken หมดอายุ ~30s จึงต้องตอบให้ทัน
+            $billStartTime = microtime(true);
+            $maxBillTime = 12.0; // วินาที — เหลือเวลาให้ ChannelManager ส่ง response
+
             // สร้าง Birth Chart ส่งให้ผู้ใช้เห็นก่อนชำระเงิน (เป็น preview)
+            // ✅ ข้ามถ้าใช้เวลาเกิน → ส่งบิลก่อน ส่ง chart ทีหลังได้
             $chartImageUrl = null;
-            try {
-                $birthDate = $reading->birth_date?->format('Y-m-d');
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $userProfile = $reading->user_profile ?? [];
-                $gender = $userProfile['gender'] ?? null;
+            $elapsed = microtime(true) - $billStartTime;
+            if ($elapsed < $maxBillTime) {
+                try {
+                    $birthDate = $reading->birth_date?->format('Y-m-d');
+                    $name = $reading->facebook_user_name ?? 'คุณ';
+                    $userProfile = $reading->user_profile ?? [];
+                    $gender = $userProfile['gender'] ?? null;
 
-                if ($birthDate) {
-                    $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $gender);
-                } else {
-                    $chartImageUrl = $this->chartService->generateQuickChart($name);
-                }
+                    if ($birthDate) {
+                        $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $gender);
+                    } else {
+                        $chartImageUrl = $this->chartService->generateQuickChart($name);
+                    }
 
-                if ($chartImageUrl) {
-                    $reading->update(['reading_image_url' => $chartImageUrl]);
+                    if ($chartImageUrl) {
+                        $reading->update(['reading_image_url' => $chartImageUrl]);
+                    }
+                } catch (\Throwable $chartErr) {
+                    Log::error('Fortune: สร้าง Birth Chart ก่อนบิลไม่สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'error' => $chartErr->getMessage(),
+                        'error_class' => get_class($chartErr),
+                    ]);
                 }
-            } catch (\Throwable $chartErr) {
-                Log::error('Fortune: สร้าง Birth Chart ก่อนบิลไม่สำเร็จ', [
+            } else {
+                Log::info('Fortune: ข้าม chart generation เพื่อความเร็ว', [
                     'reading_id' => $reading->id,
-                    'error' => $chartErr->getMessage(),
-                    'error_class' => get_class($chartErr),
+                    'elapsed' => round($elapsed, 2),
                 ]);
             }
 
@@ -2872,27 +2906,56 @@ class FortuneConversationService
                 'unique_amount' => $uniqueAmount->unique_amount,
                 'facebook_user_id' => $reading->facebook_user_id,
                 'chart_image_url' => $chartImageUrl,
+                'elapsed_ms' => round((microtime(true) - $billStartTime) * 1000),
             ]);
 
             // ✅ ส่ง FCM push ให้แอพ SMS Checker เห็นบิลใหม่ทันที
-            // ไม่ต้องรอ polling cycle (ปกติ 30-60 วินาที)
-            try {
-                app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
-            } catch (\Exception $fcmErr) {
-                Log::warning('Fortune Conversation: FCM push new_fortune_reading ล้มเหลว (ไม่ blocking)', [
+            // ⚡ ข้ามถ้าเวลาเหลือน้อย — ป้องกัน replyToken หมดอายุ (FCM ไม่สำคัญเท่าส่งบิลให้ลูกค้า)
+            $elapsed = microtime(true) - $billStartTime;
+            if ($elapsed < $maxBillTime) {
+                try {
+                    app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+                } catch (\Exception $fcmErr) {
+                    Log::warning('Fortune Conversation: FCM push new_fortune_reading ล้มเหลว (ไม่ blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $fcmErr->getMessage(),
+                    ]);
+                }
+            } else {
+                Log::info('Fortune: ข้าม FCM push เพื่อความเร็ว', [
                     'reading_id' => $reading->id,
-                    'error' => $fcmErr->getMessage(),
+                    'elapsed' => round($elapsed, 2),
                 ]);
             }
 
             // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน (สแกนจ่ายได้เลย)
-            $qrImageUrl = $this->generatePromptPayQrImage(
-                (float) $uniqueAmount->unique_amount,
-                $reading->id
-            );
+            // ✅ ข้ามถ้าเวลาเหลือน้อย → ใช้ static QR แทน
+            $qrImageUrl = null;
+            $elapsed = microtime(true) - $billStartTime;
+            if ($elapsed < $maxBillTime) {
+                $qrImageUrl = $this->generatePromptPayQrImage(
+                    (float) $uniqueAmount->unique_amount,
+                    $reading->id
+                );
+            } else {
+                Log::info('Fortune: ข้าม QR generation เพื่อความเร็ว', [
+                    'reading_id' => $reading->id,
+                    'elapsed' => round($elapsed, 2),
+                ]);
+            }
             // Fallback: ใช้ static QR จากการตั้งค่า (ถ้า dynamic สร้างไม่ได้)
             if (! $qrImageUrl) {
                 $qrImageUrl = $this->getPaymentQrImageUrl();
+            }
+
+            $totalElapsed = round((microtime(true) - $billStartTime) * 1000);
+            if ($totalElapsed > 5000) {
+                Log::warning('Fortune: createPaymentBill ใช้เวลานาน', [
+                    'reading_id' => $reading->id,
+                    'total_ms' => $totalElapsed,
+                    'has_chart' => ! empty($chartImageUrl),
+                    'has_qr' => ! empty($qrImageUrl),
+                ]);
             }
 
             return [
