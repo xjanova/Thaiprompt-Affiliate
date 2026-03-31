@@ -564,7 +564,8 @@ class FortuneConversationService
             $msgHash = md5($facebookUserId.':'.$messageText);
             $dedupKey = "fortune:dedup:{$msgHash}";
             // ใช้ Cache::add() (atomic) แทน has()+put() เพื่อป้องกัน race condition
-            if (! Cache::add($dedupKey, true, 5)) {
+            // ⚠️ TTL 30 วินาที (เดิม 5s → Facebook retry หลัง ~5s ทำให้ dedup หมดอายุแล้ว process ซ้ำ)
+            if (! Cache::add($dedupKey, true, 30)) {
                 Log::info('Fortune processMessage: ข้อความซ้ำ (dedup) ข้ามไป', [
                     'facebook_user_id' => $facebookUserId,
                     'text_preview' => mb_substr($messageText, 0, 30),
@@ -585,7 +586,7 @@ class FortuneConversationService
             // พยายามขอ lock — ถ้าไม่ได้ รอแล้วลองใหม่
             // ใช้ Cache::add() (atomic) แทน has()+put() เพื่อป้องกัน race condition
             for ($lockAttempt = 0; $lockAttempt < 3; $lockAttempt++) {
-                if (Cache::add($lockKey, true, 8)) { // TTL 8 วินาที (auto-expire เป็น safety net)
+                if (Cache::add($lockKey, true, 30)) { // TTL 30 วินาที (เดิม 8s → สั้นเกินเมื่อ process ใช้เวลานาน เช่น สร้าง chart+QR+AI)
                     $lockAcquired = true;
                     break;
                 }
