@@ -860,13 +860,29 @@ class FortuneConversationService
                         'text_preview' => mb_substr($messageText, 0, 30),
                     ]);
 
+                    // ⏰ ถ้ารอเกิน 3 นาที → แสดงทางออก (เผื่อ queue ตาย)
+                    // ใช้ addMinutes(3)->isPast() แทน diffInMinutes เพื่อให้เที่ยงตรง (Carbon cast float → int อาจคลาด)
+                    $isStuck = $activeReading->updated_at->copy()->addMinutes(3)->isPast();
+                    $waitedMinutes = (int) ceil(abs($activeReading->updated_at->diffInMinutes(now(), true)));
+
+                    $message = "✅ รับชำระเงินเรียบร้อยแล้ว\n\n"
+                        . "🔮 จันทรากำลังวิเคราะห์ดวงชะตาให้อย่างละเอียด\n"
+                        . "ใช้เวลาประมาณ 2-3 นาทีค่ะ\n\n"
+                        . "💡 รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨";
+
+                    if ($isStuck) {
+                        $message = "⏳ คำทำนายใช้เวลานานกว่าปกติ (รอมา {$waitedMinutes} นาที)\n\n"
+                            . "💡 ขออภัยในความไม่สะดวก — คุณสามารถ:\n"
+                            . "• รอเพิ่มอีกสักครู่ (AI อาจทำงานเสร็จใน 1-2 นาที)\n"
+                            . "• พิมพ์ 'คุยกับแม่หมอ' เพื่อให้ทีมงานดูแลโดยตรง\n"
+                            . "• พิมพ์ 'เช็คสถานะ' เพื่อดูสถานะล่าสุด";
+                    }
+
                     return [
                         'action' => 'processing',
-                        'message' => "✅ รับชำระเงินเรียบร้อยแล้วค่ะ!\n\n"
-                            . "🔮 จันทรากำลังวิเคราะห์ดวงชะตาให้อย่างละเอียดอยู่ค่ะ\n"
-                            . "ใช้เวลาประมาณ 2-3 นาทีนะคะ\n\n"
-                            . "💡 พิมพ์ข้อความมาอีกครั้งเมื่อรอสักพักค่ะ จันทราจะส่งคำทำนายให้ทันทีค่ะ ✨",
+                        'message' => $message,
                         'reading' => $activeReading,
+                        'is_stuck' => $isStuck,
                     ];
                 }
 
@@ -2578,12 +2594,32 @@ class FortuneConversationService
      */
     protected function handleBirthdateInput(FortuneReading $reading, string $messageText): array
     {
+        // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
+        // ใช้ exact match เท่านั้น (ป้องกัน "ไม่ยกเลิกค่ะ" → cancel โดยไม่ได้ตั้งใจ)
+        $trimmed = trim($messageText);
+        $lower = mb_strtolower($trimmed);
+        $restartKeywords = [
+            'ดูดวง', 'เริ่มใหม่', 'restart', 'เปลี่ยนเรื่อง',
+            'ยกเลิก', 'cancel', 'stop', '/reset', 'reset',
+        ];
+        $normalizedKeywords = array_map(fn ($k) => mb_strtolower($k), $restartKeywords);
+        if (in_array($lower, $normalizedKeywords, true)) {
+            // ปิด conversation นี้ → ให้ processMessage สร้างใหม่
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'restart_from_birthdate',
+                'message' => "🔄 ยกเลิกการดูดวงรอบก่อนแล้ว\n\nพิมพ์ 'ดูดวง' หรือเรื่องที่อยากรู้ เพื่อเริ่มใหม่",
+                'reading' => $reading,
+            ];
+        }
+
         $birthDate = $this->parseBirthDate($messageText);
 
         if (! $birthDate) {
             return [
                 'action' => 'invalid_birthdate',
-                'message' => "ขอโทษค่ะ ไม่เข้าใจวันเกิด กรุณาพิมพ์ใหม่ในรูปแบบ:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990\n📅 หรือ 15 สิงหาคม 2533\n\nพิมพ์ 'ยกเลิก' หากต้องการยกเลิก",
+                'message' => "ไม่เข้าใจรูปแบบวันเกิด ลองใหม่ในรูปแบบนี้:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990\n📅 หรือ 15 สิงหาคม 2533\n\n💡 พิมพ์ 'ยกเลิก' หรือ 'เริ่มใหม่' หากอยากเริ่มใหม่",
                 'reading' => $reading,
             ];
         }
@@ -4723,12 +4759,22 @@ class FortuneConversationService
             // ✅ ดึง conversation history สำหรับ AI (ความจำ 10 ข้อความ)
             $history = $this->getConversationHistoryForAI($userId);
 
+            // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
+            // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
+            $userTurnCount = collect($history)->where('role', 'user')->count() + 1; // +1 = ข้อความปัจจุบัน
+
+            // Inject turn context ให้ AI ตัดสินใจเสนอดูดวง
+            $messageForAI = $messageText;
+            if ($userTurnCount >= 2) {
+                $messageForAI = "[TURN {$userTurnCount}] {$messageText}";
+            }
+
             // เรียก AI Chat พร้อม history (ถ้ามี)
             $aiService = new FortuneAIService($this->settings);
             if (! empty($history)) {
-                $result = $aiService->generateChatResponseWithHistory($messageText, $userProfile, $history);
+                $result = $aiService->generateChatResponseWithHistory($messageForAI, $userProfile, $history);
             } else {
-                $result = $aiService->generateChatResponse($messageText, $userProfile);
+                $result = $aiService->generateChatResponse($messageForAI, $userProfile);
             }
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
@@ -4743,6 +4789,19 @@ class FortuneConversationService
             // ✅ บันทึก conversation history (ทั้งข้อความผู้ใช้ + คำตอบ AI)
             $this->saveConversationMessage($userId, 'user', $messageText);
             $this->saveConversationMessage($userId, 'assistant', $responseText);
+
+            // ✅ ตรวจจับ [OFFER_FORTUNE] — AI สร้าง rapport เสร็จแล้ว เสนอให้เริ่มดูดวง
+            // ไม่ redirect เลย — แค่ติดธง offer_fortune ให้ ChannelManager ใส่ปุ่มเริ่มดูดวงเด่น
+            $offerFortune = false;
+            if (str_contains($responseText, '[OFFER_FORTUNE]')) {
+                $responseText = trim(str_replace('[OFFER_FORTUNE]', '', $responseText));
+                $offerFortune = true;
+
+                Log::info('Fortune: AI เสนอเริ่มดูดวง (rapport built)', [
+                    'user_id' => $userId,
+                    'turn_count' => $userTurnCount,
+                ]);
+            }
 
             // ✅ ตรวจจับ [DEEP_READING] — AI เข้าใจว่าผู้ใช้ต้องการดูดวงเชิงลึก → redirect เข้า deep reading flow
             if (str_contains($responseText, '[DEEP_READING]')) {
@@ -4806,6 +4865,8 @@ class FortuneConversationService
                 'reading' => null,
                 'chat_provider' => $result['provider'] ?? '',
                 'chat_model' => $result['model'] ?? '',
+                'offer_fortune' => $offerFortune,  // ChannelManager ใช้เพื่อเลือก quick replies
+                'turn_count' => $userTurnCount,
             ];
 
         } catch (\Exception $e) {

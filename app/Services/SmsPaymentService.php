@@ -587,6 +587,20 @@ class SmsPaymentService
                 'platform' => $platform,
                 'sent' => $pushSent,
             ]);
+
+            // ⏳ แสดง loading animation บน LINE ให้ลูกค้ารู้ว่าบอทกำลังทำงาน (ไม่ได้เงียบ)
+            // Animation นี้จะแสดง 60 วินาที — Job retry/check-pending จะเติมต่อถ้านานกว่านั้น
+            if ($platform === 'line') {
+                try {
+                    $lineService = new \App\Services\LineFortuneService($settings);
+                    $lineService->showLoadingAnimation($userId, 60);
+                } catch (\Exception $loadingErr) {
+                    // ไม่ critical — ถ้า loading animation ล้มเหลวก็ไม่ต้องหยุดโฟล
+                    Log::debug('SMS Payment: LINE loading animation ล้มเหลว (ไม่ critical)', [
+                        'error' => $loadingErr->getMessage(),
+                    ]);
+                }
+            }
         } catch (\Exception $pushErr) {
             // Push ล้มเหลวไม่ critical — ผู้ใช้จะได้รับแจ้งเมื่อส่งข้อความมา
             Log::warning('SMS Payment: push แจ้ง "ชำระเงินเรียบร้อย" ล้มเหลว (ไม่ critical)', [

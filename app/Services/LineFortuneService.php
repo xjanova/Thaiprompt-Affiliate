@@ -3283,6 +3283,54 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * แสดง loading animation (typing indicator) ให้ลูกค้ารู้ว่าบอทยังทำงานอยู่
+     *
+     * LINE Messaging API: https://developers.line.biz/en/reference/messaging-api/#display-a-loading-indicator
+     * ใช้ตอนรอ AI ประมวลผลคำทำนายนาน 45-90 วินาที
+     *
+     * @param  string  $userId  LINE user ID
+     * @param  int  $loadingSeconds  ระยะเวลา loading (5-60 วินาที, ต้องหาร 5 ลงตัว)
+     * @return bool สำเร็จหรือไม่
+     */
+    public function showLoadingAnimation(string $userId, int $loadingSeconds = 20): bool
+    {
+        // Clamp เป็น multiple of 5 ระหว่าง 5-60
+        $loadingSeconds = max(5, min(60, (int) (round($loadingSeconds / 5) * 5)));
+
+        $token = $this->settings->line_channel_access_token ?? '';
+        if (empty($token)) {
+            return false;
+        }
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::withToken($token)
+                ->timeout(5)
+                ->post('https://api.line.me/v2/bot/chat/loading/start', [
+                    'chatId' => $userId,
+                    'loadingSeconds' => $loadingSeconds,
+                ]);
+
+            if ($response->successful()) {
+                return true;
+            }
+
+            Log::debug('LINE loadingAnimation: ไม่สำเร็จ', [
+                'user_id' => mb_substr($userId, 0, 20),
+                'status' => $response->status(),
+                'body' => mb_substr($response->body(), 0, 200),
+            ]);
+
+            return false;
+        } catch (\Exception $e) {
+            Log::debug('LINE loadingAnimation: exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * Push message แบบ priority — ข้าม Gatekeeper throttle
      *
      * ใช้สำหรับข้อความสำคัญที่ต้องส่งถึงผู้ใช้ทันที

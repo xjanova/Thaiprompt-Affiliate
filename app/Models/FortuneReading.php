@@ -536,14 +536,36 @@ class FortuneReading extends Model
     }
 
     /**
-     * ปิด conversation ที่หมดเวลาอัตโนมัติ
+     * ปิด conversation ที่หมดเวลาอัตโนมัติ (เฉพาะ user ที่ระบุ)
      *
      * @return int จำนวน conversation ที่ถูกปิด
      */
     public static function expireOldConversations(string $facebookUserId): int
     {
+        return self::expireOldConversationsQuery(
+            self::where('facebook_user_id', $facebookUserId)
+        );
+    }
+
+    /**
+     * ปิด conversation ที่หมดเวลาทั้งระบบ (global — ใช้จาก scheduled command)
+     *
+     * @return int จำนวน conversation ที่ถูกปิด
+     */
+    public static function expireAllOldConversations(): int
+    {
+        return self::expireOldConversationsQuery(self::query());
+    }
+
+    /**
+     * Helper รวม query logic (DRY ระหว่าง per-user และ global)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $baseQuery
+     */
+    protected static function expireOldConversationsQuery($baseQuery): int
+    {
         // ปิด conversation ทั่วไป + pending_payment ที่ค้างเกิน 30 นาที
-        $expired = self::where('facebook_user_id', $facebookUserId)
+        $expired = (clone $baseQuery)
             ->whereIn('conversation_status', [
                 self::STATUS_AWAITING_CONFIRMATION,
                 self::STATUS_BASIC_DONE,
@@ -555,8 +577,8 @@ class FortuneReading extends Model
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
-        // ปิด PAID ที่ค้างเกิน 5 นาที (AI processing ล้มเหลว/timeout)
-        $expiredPaid = self::where('facebook_user_id', $facebookUserId)
+        // ปิด PAID ที่ค้างเกิน timeout (AI processing ล้มเหลว/timeout)
+        $expiredPaid = (clone $baseQuery)
             ->where('conversation_status', self::STATUS_PAID)
             ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);

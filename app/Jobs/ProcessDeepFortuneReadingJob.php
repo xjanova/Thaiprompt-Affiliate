@@ -495,8 +495,105 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             ]);
         }
 
-        // ✅ V3: ไม่ push error message ให้ลูกค้า (ประหยัดโควต้า LINE push)
-        // fortune:check-pending จะตั้ง flag reading_ready_for_reply → user ส่งข้อความมาจะได้รับผ่าน replyMessage
+        // 🚨 V3.2: Push error notification ให้ลูกค้า (สำคัญ — ลูกค้าจ่ายเงินแล้ว ต้องรู้ว่าเกิดอะไรขึ้น)
+        // ยอมเสีย LINE push 1 ครั้ง เพื่อรักษา trust + ลดกรณีลูกค้าคิดว่าโดนโกง
+        try {
+            $this->pushFailureNotification();
+        } catch (\Exception $pushErr) {
+            Log::error('ProcessDeepFortuneReadingJob: push failure notification ล้มเหลว', [
+                'reading_id' => $this->readingId,
+                'error' => $pushErr->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * ส่งข้อความแจ้งลูกค้าเมื่อ AI ล้มเหลวถาวร
+     *
+     * แจ้งลูกค้าว่า AI ขัดข้อง พร้อมเสนอทางเลือก:
+     * - รอทีมงานช่วยโดยตรง (ปุ่ม "คุยกับแม่หมอ")
+     * - ขอ refund / ขอให้ทำใหม่
+     */
+    protected function pushFailureNotification(): void
+    {
+        $reading = FortuneReading::find($this->readingId);
+        if (! $reading) {
+            return;
+        }
+
+        $message = "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว\n\n"
+            . "คำทำนายของคุณยังไม่เสร็จสมบูรณ์ ทีมงานได้รับแจ้งแล้วและจะติดต่อกลับโดยเร็วที่สุด\n\n"
+            . "💬 กดปุ่ม 'คุยกับแม่หมอ' เพื่อให้ทีมงานดูแลโดยตรง\n"
+            . "💰 เงินที่ชำระไปยังไม่สูญ — ได้รับคำทำนายแน่นอน";
+
+        // ตรวจ platform ที่รู้จัก (กันกรณี queue payload พัง)
+        if (! in_array($this->platform, ['line', 'facebook'], true)) {
+            Log::warning('ProcessDeepFortuneReadingJob: platform ไม่รู้จัก ข้าม failure notification', [
+                'reading_id' => $this->readingId,
+                'platform' => $this->platform,
+            ]);
+
+            return;
+        }
+
+        try {
+            if ($this->platform === 'line') {
+                $settings = FortuneTellingSetting::getSettings();
+                $lineService = new \App\Services\LineFortuneService($settings);
+
+                // ส่ง Flex พร้อมปุ่ม "คุยกับแม่หมอ"
+                $richContent = [
+                    'alt_text' => '😔 AI ขัดข้อง — กดคุยกับแม่หมอ',
+                    'contents' => [
+                        'type' => 'bubble',
+                        'body' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'contents' => [
+                                ['type' => 'text', 'text' => '😔 ระบบ AI ขัดข้อง', 'weight' => 'bold', 'size' => 'lg', 'color' => '#D97706'],
+                                ['type' => 'text', 'text' => $message, 'wrap' => true, 'size' => 'sm', 'margin' => 'md'],
+                            ],
+                        ],
+                        'footer' => [
+                            'type' => 'box',
+                            'layout' => 'vertical',
+                            'spacing' => 'sm',
+                            'contents' => [
+                                [
+                                    'type' => 'button',
+                                    'style' => 'primary',
+                                    'color' => '#7C3AED',
+                                    'action' => ['type' => 'message', 'label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                                ],
+                                [
+                                    'type' => 'button',
+                                    'style' => 'secondary',
+                                    'action' => ['type' => 'message', 'label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ'],
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+
+                $lineService->sendRichMessage($this->userId, $richContent);
+            } else {
+                // Facebook — ส่งข้อความธรรมดา
+                $settings = FortuneTellingSetting::getSettings();
+                $fbService = new \App\Services\FacebookWebhookService($settings);
+                $fbService->sendMessage($this->userId, $message);
+            }
+
+            Log::info('ProcessDeepFortuneReadingJob: ส่ง failure notification สำเร็จ', [
+                'reading_id' => $this->readingId,
+                'platform' => $this->platform,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('ProcessDeepFortuneReadingJob: push failure notification ล้มเหลว', [
+                'reading_id' => $this->readingId,
+                'error' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
     }
 
     /**

@@ -348,6 +348,7 @@ class FortuneChannelManager
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
                 'view_later',
                 'invalid_birthdate', 'retry_birthdate',
+                'restart_from_birthdate',
                 'error',
                 'ai_ask_save_question',
                 'fortune_ready_notification',
@@ -707,6 +708,13 @@ class FortuneChannelManager
             $message = 'ระบบกำลังดำเนินการค่ะ 🙏';
         }
 
+        // 🔍 Strip control tags ที่ไม่ควรโชว์ให้ลูกค้า (เผื่อหลุดจาก service layer)
+        $offerFortune = (bool) ($result['offer_fortune'] ?? false);
+        if (mb_strpos($message, '[OFFER_FORTUNE]') !== false) {
+            $offerFortune = true;
+            $message = trim(str_replace('[OFFER_FORTUNE]', '', $message));
+        }
+
         // ส่ง chart image ก่อน (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? null;
         if ($chartUrl) {
@@ -735,11 +743,64 @@ class FortuneChannelManager
         // เช็คว่ามี Quick Replies สำหรับ action นี้ไหม
         $quickReplies = $richService->getQuickRepliesForAction($action);
 
+        // ⚡ Fallback quick replies สำหรับ actions ที่ RichMessageService ไม่ได้ครอบคลุม
+        // เพื่อให้ UX สอดคล้องกับ LINE (ปุ่ม "คุยกับแม่หมอ" เสมอ)
+        if (empty($quickReplies)) {
+            $quickReplies = $this->getFacebookFallbackQuickReplies($action, $result, $offerFortune);
+        }
+
         if (! empty($quickReplies)) {
             return $fbService->sendQuickReplies($userId, $message, $quickReplies);
         }
 
         return $fbService->sendMessage($userId, $message);
+    }
+
+    /**
+     * Fallback quick replies สำหรับ Facebook (เมื่อ FacebookRichMessageService ไม่ได้ครอบคลุม)
+     *
+     * ใช้เฉพาะ actions ที่เราเพิ่ม/ปรับปรุงใหม่ — ai_chat_response, processing (stuck),
+     * restart_from_birthdate, invalid_birthdate
+     */
+    protected function getFacebookFallbackQuickReplies(string $action, array $result, bool $offerFortune): array
+    {
+        return match ($action) {
+            'ai_chat_response' => $offerFortune
+                ? [
+                    ['content_type' => 'text', 'title' => '🔮 เริ่มดูดวง', 'payload' => 'START_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                ]
+                : [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                ],
+
+            // PAID stuck → เช็คสถานะ + คุยกับแม่หมอ
+            'processing' => ($result['is_stuck'] ?? false)
+                ? [
+                    ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_STATUS'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                ]
+                : [],
+
+            // ยูสเซ่อร์ขอเริ่มใหม่ระหว่างกรอกวันเกิด
+            'restart_from_birthdate' => [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+            ],
+
+            // วันเกิดผิดรูปแบบ
+            'invalid_birthdate', 'retry_birthdate' => [
+                ['content_type' => 'text', 'title' => '🔄 เริ่มใหม่', 'payload' => 'RESTART'],
+                ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
+                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+            ],
+
+            default => [],
+        };
     }
 
     /**
@@ -795,6 +856,17 @@ class FortuneChannelManager
 
                 // วันเกิดผิดรูปแบบ → Flex แจ้ง error + ตัวอย่าง
                 'invalid_birthdate', 'retry_birthdate' => $this->sendLineInvalidBirthdateResponse($lineService, $userId, $result, $replyToken),
+
+                // 🔄 ยูสเซ่อร์ขอเริ่มใหม่ระหว่างกรอกวันเกิด → ส่ง text + quick reply เริ่มใหม่
+                'restart_from_birthdate' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message ?: '🔄 ยกเลิกการดูดวงรอบก่อนแล้ว — พิมพ์ "ดูดวง" เพื่อเริ่มใหม่',
+                    $replyToken,
+                    [
+                        ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+                        ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+                        ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                    ]
+                ),
 
                 // หมดสิทธิ์ฟรี → Flex แนะนำดูดวงละเอียดพร้อมราคา
                 'ai_limit' => $this->sendLineAiLimitResponse($lineService, $userId, $result, $replyToken),
@@ -874,8 +946,8 @@ class FortuneChannelManager
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendLineDeepReadingRedirect($lineService, $userId, $result, $replyToken),
 
-                // AI Chat ทั่วไป (Gemini) → ส่ง text ธรรมดา (เป็นธรรมชาติกว่า Flex)
-                'ai_chat_response' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                // AI Chat ทั่วไป → ส่ง text + Quick Replies default (ดูดวง / คุยกับแม่หมอ)
+                'ai_chat_response' => $this->sendLineAiChatResponse($lineService, $userId, $message, $replyToken, $result),
 
                 // Gatekeeper throttle → ส่งข้อความ "รอสักครู่" แทน
                 'fortune_throttled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
@@ -1542,9 +1614,14 @@ class FortuneChannelManager
      */
     protected function sendLineInvalidBirthdateResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
-        $flex = $lineService->buildInvalidBirthdateFlexMessage();
+        // ⬅️ ใช้ text + quick replies แทน Flex เดิม เพื่อให้มีปุ่ม escape
+        $message = $result['message'] ?? "ไม่เข้าใจรูปแบบวันเกิด ลองใหม่:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990";
 
-        return $lineService->sendFlexWithReplyFallback($userId, $flex, '⚠️ วันเกิดไม่ถูกต้อง', $replyToken);
+        return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+            ['label' => '🔄 เริ่มใหม่', 'text' => 'เริ่มใหม่'],
+            ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+            ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+        ]);
     }
 
     /**
@@ -1654,6 +1731,19 @@ class FortuneChannelManager
     {
         $reading = $result['reading'] ?? null;
         $billRef = $reading?->bill_reference ?? '-';
+        $isStuck = (bool) ($result['is_stuck'] ?? false);
+
+        // ⏳ ถ้ารอนาน → ส่ง text + quick replies (เช็คสถานะ / คุยกับแม่หมอ)
+        // แทน Flex ธรรมดา เพื่อให้มีทางออกชัดเจน
+        if ($isStuck) {
+            $message = $result['message'] ?? '⏳ คำทำนายใช้เวลานานกว่าปกติ';
+
+            return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                ['label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ'],
+                ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+            ]);
+        }
+
         $flex = $lineService->buildProcessingFlexMessage($billRef);
 
         return $lineService->sendFlexWithReplyFallback($userId, $flex, '⏳ กำลังสร้างคำทำนาย', $replyToken);
@@ -2283,6 +2373,61 @@ class FortuneChannelManager
      *
      * ลอง replyMessage ก่อน (เร็ว + ฟรี) → fallback เป็น pushMessage
      */
+    /**
+     * Default quick replies ที่ติดท้ายทุก AI chat response
+     *
+     * ทำให้ลูกค้ามีทางเลือกเสมอ: เริ่มดูดวง / คุยกับคน
+     * ถ้า AI ใส่ [OFFER_FORTUNE] tag → จะได้ปุ่มเริ่มดูดวงเด่นขึ้น
+     */
+    protected function getDefaultQuickReplies(bool $offerFortune = false): array
+    {
+        if ($offerFortune) {
+            return [
+                ['label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง'],
+                ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+                ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                ['label' => '💬 คุยต่อ', 'text' => 'ขอคำแนะนำเพิ่ม'],
+            ];
+        }
+
+        return [
+            ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+            ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+            ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+            ['label' => '📖 อ่านคำทำนาย', 'text' => 'ดูคำทำนาย'],
+        ];
+    }
+
+    /**
+     * ส่ง AI chat response พร้อม default quick replies
+     *
+     * ตรวจ [OFFER_FORTUNE] tag ในข้อความ AI → ถ้ามี ให้ปุ่มเริ่มดูดวงเด่นขึ้น
+     */
+    protected function sendLineAiChatResponse(
+        LineFortuneService $lineService,
+        string $userId,
+        string $message,
+        ?string $replyToken,
+        array $result = []
+    ): bool {
+        // ถ้า result บ่งบอกว่า AI แนะนำเริ่มดูดวง → ใช้ quick replies แบบ offer
+        $offerFortune = (bool) ($result['offer_fortune'] ?? false);
+
+        // ตรวจ [OFFER_FORTUNE] tag ในข้อความ (fallback ถ้า result ไม่ได้ตั้ง flag)
+        if (! $offerFortune && mb_strpos($message, '[OFFER_FORTUNE]') !== false) {
+            $offerFortune = true;
+            $message = trim(str_replace('[OFFER_FORTUNE]', '', $message));
+        }
+
+        return $this->sendLineMessageWithQuickReply(
+            $lineService,
+            $userId,
+            $message,
+            $replyToken,
+            $this->getDefaultQuickReplies($offerFortune)
+        );
+    }
+
     protected function sendLineMessageWithQuickReply(LineFortuneService $lineService, string $userId, string $message, ?string $replyToken, array $quickReplies): bool
     {
         // สร้าง Quick Reply items

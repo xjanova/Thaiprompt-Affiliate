@@ -351,6 +351,17 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // Fortune Expire Conversations - ปิด orphan conversations ทุก 5 นาที
+        // ========================================
+        $schedule->command('fortune:expire-conversations')
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10) // lock expire ใน 10 นาที (ไม่ให้ skip ยาวเกินไปถ้า hang)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Expire Conversations] ปิด orphan conversations ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Cleanup Free Readings - ล้างคำทำนายฟรีเก่าเพื่อลดภาระ DB
         // ========================================
         $schedule->command('fortune:cleanup-free')
