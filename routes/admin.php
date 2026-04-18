@@ -3810,6 +3810,7 @@ use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 use App\Http\Controllers\Admin\FortuneSettingsController;
+use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
 
@@ -3882,6 +3883,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
+
+    // ระบบเทคโอเวอร์ (Takeover Control) — แม่หมอ/แอดมินคุยแทน AI
+    Route::prefix('takeover')->name('takeover.')->group(function () {
+        Route::get('/', [FortuneTakeoverController::class, 'index'])->name('index');
+        Route::get('/{reading}', [FortuneTakeoverController::class, 'show'])->name('show');
+        Route::get('/{reading}/status', [FortuneTakeoverController::class, 'status'])->name('status');
+        Route::post('/{reading}/takeover', [FortuneTakeoverController::class, 'takeover'])->name('takeover');
+        Route::post('/{reading}/resume', [FortuneTakeoverController::class, 'resume'])->name('resume');
+        Route::post('/{reading}/extend', [FortuneTakeoverController::class, 'extend'])->name('extend');
+        Route::post('/{reading}/send-message', [FortuneTakeoverController::class, 'sendMessage'])->name('send-message');
+    });
 
     // คำถามที่ AI ตอบไม่ได้ — รอแอดมินตอบกลับ
     Route::prefix('saved-questions')->name('saved-questions.')->group(function () {

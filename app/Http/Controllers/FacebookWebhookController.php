@@ -11,6 +11,7 @@ use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
+use App\Services\FortuneTakeoverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -46,6 +47,12 @@ class FacebookWebhookController extends Controller
      */
     protected $channelManager;
 
+    /**
+     * FortuneTakeoverService — ระบบเทคโอเวอร์ (แม่หมอ/แอดมินคุยแทน AI)
+     * ใช้ร่วมกันกับ LINE เพื่อให้โฟลและ cache ไม่ขัดแย้งกัน
+     */
+    protected FortuneTakeoverService $takeoverService;
+
     public function __construct()
     {
         try {
@@ -54,6 +61,7 @@ class FacebookWebhookController extends Controller
             $this->aiService = new FortuneAIService($this->settings);
             $this->conversationService = new FortuneConversationService($this->settings);
             $this->channelManager = new FortuneChannelManager($this->settings);
+            $this->takeoverService = app(FortuneTakeoverService::class);
         } catch (\Exception $e) {
             // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
             Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
@@ -99,6 +107,16 @@ class FacebookWebhookController extends Controller
                 } catch (\Exception $cmError) {
                     Log::error('FacebookWebhookController: สร้าง FortuneChannelManager ไม่ได้', [
                         'error' => $cmError->getMessage(),
+                    ]);
+                }
+            }
+            // ✅ สร้าง fallback สำหรับ takeoverService
+            if (! isset($this->takeoverService)) {
+                try {
+                    $this->takeoverService = app(FortuneTakeoverService::class);
+                } catch (\Exception $toError) {
+                    Log::error('FacebookWebhookController: สร้าง FortuneTakeoverService ไม่ได้', [
+                        'error' => $toError->getMessage(),
                     ]);
                 }
             }
@@ -481,22 +499,48 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // แอดมินกำลังตอบ user คนนี้ → ทำเครื่องหมายว่าแอดมินกำลังดูแล
-        $timeoutMinutes = $this->settings->admin_handover_timeout ?? 15;
-        Cache::put(
-            "fortune_admin_active:{$recipientId}",
-            [
-                'active_at' => now()->toIso8601String(),
-                'admin_message' => mb_substr($messageText, 0, 100),
-            ],
-            now()->addMinutes($timeoutMinutes)
-        );
+        // หา reading ล่าสุดของ user นี้ (เฉพาะที่ยัง active อยู่)
+        $reading = FortuneReading::where(function ($q) use ($recipientId) {
+            $q->where('facebook_user_id', $recipientId)
+                ->orWhere(function ($sub) use ($recipientId) {
+                    $sub->where('platform', 'facebook')
+                        ->where('platform_user_id', $recipientId);
+                });
+        })
+            ->whereNotIn('conversation_status', [
+                FortuneReading::STATUS_COMPLETED,
+            ])
+            ->latest()
+            ->first();
 
-        Log::info('👨‍💼 Admin Handover: แอดมินกำลังดูแลลูกค้า', [
-            'user_id' => $recipientId,
-            'timeout_minutes' => $timeoutMinutes,
-            'message_preview' => mb_substr($messageText, 0, 50),
-        ]);
+        if (! $reading) {
+            // ไม่มี active conversation — ข้าม (ถ้าลูกค้าสร้าง conversation ใหม่
+            // webhook processMessage จะเช็ค takeover ผ่าน isActiveByPlatform ใหม่อีกครั้ง)
+            Log::debug('Facebook Takeover: echo โดยไม่มี active reading — ข้าม', [
+                'user_id' => $recipientId,
+            ]);
+
+            return;
+        }
+
+        // ตรวจว่าแอดมินพิมพ์คำสั่งให้ AI กลับมาหรือไม่
+        if ($this->takeoverService->detectAdminResumeCommand($messageText)) {
+            $this->takeoverService->resume($reading, null, true);
+            Log::info('✨ Facebook: แอดมินพิมพ์คำสั่งให้ AI กลับมา', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return;
+        }
+
+        // แอดมินพิมพ์ปกติ → เทคโอเวอร์อัตโนมัติ
+        $this->takeoverService->takeover(
+            $reading,
+            FortuneReading::TAKEOVER_REASON_AUTO_REPLY,
+            null,
+            null,
+            $messageText,
+        );
     }
 
     /**
@@ -507,7 +551,8 @@ class FacebookWebhookController extends Controller
      */
     protected function isAdminActive(string $userId): bool
     {
-        return Cache::has("fortune_admin_active:{$userId}");
+        // ใช้ service กลางเพื่อ sync กับ LINE
+        return $this->takeoverService->isActiveByPlatform('facebook', $userId);
     }
 
     /**
@@ -549,6 +594,13 @@ class FacebookWebhookController extends Controller
         $messageText = $messaging['message']['text'] ?? '';
         $attachments = $messaging['message']['attachments'] ?? [];
 
+        // 🙋 Customer Handoff: ลูกค้าพิมพ์ขอคุยกับคนจริง → เทคโอเวอร์ + แจ้งลูกค้า
+        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+            $this->handleCustomerHandoffRequest($senderId, $messageText);
+
+            return;
+        }
+
         // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
         $userImageUrl = null;
         if (! empty($attachments)) {
@@ -558,7 +610,7 @@ class FacebookWebhookController extends Controller
             if (empty($messageText) && $userImageUrl) {
                 $this->facebookService->sendMessage(
                     $senderId,
-                    "📸 ได้รับรูปภาพแล้วค่ะ\n\nกรุณาพิมพ์ 'ดูดวง' เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวง เรื่องความรัก"
+                    "📸 ได้รับรูปภาพแล้ว\n\nกรุณาพิมพ์ 'ดูดวง' เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวง เรื่องความรัก"
                 );
 
                 return;
@@ -567,6 +619,59 @@ class FacebookWebhookController extends Controller
 
         // ใช้ Conversational Flow ใหม่
         $this->processConversationalMessage($senderId, $messageText);
+    }
+
+    /**
+     * จัดการเมื่อลูกค้าขอคุยกับคนจริง (customer handoff request)
+     *
+     * Flow:
+     * 1. หาหรือสร้าง active reading
+     * 2. เทคโอเวอร์ด้วย reason=customer_request
+     * 3. แจ้งลูกค้า (ถ้า settings เปิดไว้)
+     */
+    protected function handleCustomerHandoffRequest(string $senderId, string $messageText): void
+    {
+        // หา active reading ของ user นี้
+        $reading = FortuneReading::where(function ($q) use ($senderId) {
+            $q->where('facebook_user_id', $senderId)
+                ->orWhere(function ($sub) use ($senderId) {
+                    $sub->where('platform', 'facebook')
+                        ->where('platform_user_id', $senderId);
+                });
+        })
+            ->latest()
+            ->first();
+
+        // ถ้าไม่มี reading เลย → สร้าง placeholder เพื่อให้ track ได้
+        if (! $reading) {
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $senderId,
+                'platform' => 'facebook',
+                'platform_user_id' => $senderId,
+                'reading_type' => 'basic',
+                'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                'conversation_state' => ['placeholder' => true, 'source' => 'takeover_only'],
+                'questions' => [],
+                'ai_response' => '',
+                'ai_provider' => 'none',
+            ]);
+        }
+
+        $this->takeoverService->takeover(
+            $reading,
+            FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
+            null,
+            null,
+            $messageText,
+        );
+
+        // แจ้งลูกค้า (ถ้าเปิดไว้)
+        if ($this->settings->shouldNotifyTakeoverToCustomer()) {
+            $this->facebookService->sendMessage(
+                $senderId,
+                $this->settings->getTakeoverCustomerMessage()
+            );
+        }
     }
 
     /**

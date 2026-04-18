@@ -1742,6 +1742,124 @@
             </div>
         </div>
 
+        {{-- ========================================= --}}
+        {{-- 🎯 Admin Takeover (เทคโอเวอร์) --}}
+        {{-- ========================================= --}}
+        <div id="takeover" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-l-4 border-purple-500">
+            <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        🎯 ระบบเทคโอเวอร์ (Takeover Control)
+                    </h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        ให้แม่หมอ/แอดมินคุยแทน AI ทั้ง LINE และ Facebook — ตรวจจับอัตโนมัติเมื่อแอดมินพิมพ์ หรือลูกค้าขอ
+                    </p>
+                </div>
+                <a href="{{ route('admin.fortune.takeover.index') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg transition text-sm font-medium">
+                    📋 ไปที่แผงเทคโอเวอร์ →
+                </a>
+            </div>
+
+            {{-- เปิด/ปิดระบบ --}}
+            <div class="mb-4">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox"
+                           name="admin_handover_enabled"
+                           value="1"
+                           {{ $settings->admin_handover_enabled ? 'checked' : '' }}
+                           class="form-checkbox h-5 w-5 text-purple-600 rounded">
+                    <span class="ml-2 text-gray-900 dark:text-white font-medium">เปิดใช้งานระบบเทคโอเวอร์</span>
+                </label>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 ml-7">
+                    เมื่อปิด — บอท AI จะตอบทุกข้อความเสมอ ไม่เคารพการเทคโอเวอร์
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- ระยะเวลา default --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        ⏱ ระยะเวลา Default (นาที)
+                    </label>
+                    <input type="number"
+                           name="admin_handover_timeout"
+                           value="{{ old('admin_handover_timeout', $settings->admin_handover_timeout ?? 15) }}"
+                           min="1" max="1440"
+                           class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        เมื่อแอดมินพิมพ์ตอบอัตโนมัติ — AI จะหยุดเป็นเวลานี้
+                    </p>
+                </div>
+
+                {{-- คำสั่งให้ AI กลับมา --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                        ✨ คำสั่งให้ AI กลับมา
+                    </label>
+                    <input type="text"
+                           name="ai_resume_command"
+                           value="{{ old('ai_resume_command', $settings->ai_resume_command ?? '/ai') }}"
+                           placeholder="/ai"
+                           maxlength="50"
+                           class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white font-mono">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        แอดมินพิมพ์คำนี้ใน LINE/Facebook เพื่อให้ AI กลับมาทำงานทันที
+                    </p>
+                </div>
+            </div>
+
+            {{-- คำลูกค้าที่ trigger เทคโอเวอร์ --}}
+            <div class="mt-4">
+                <label class="block text-sm font-medium text-gray-900 dark:text-white mb-1">
+                    🙋 คำที่ลูกค้าพิมพ์แล้วให้เทคโอเวอร์อัตโนมัติ
+                </label>
+                <textarea name="customer_handoff_keywords"
+                          rows="4"
+                          placeholder="คุยกับคน&#10;คุยกับแม่หมอ&#10;ขอแอดมิน&#10;ติดต่อแอดมิน"
+                          class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white font-mono text-sm">{{ old('customer_handoff_keywords', is_array($settings->customer_handoff_keywords) ? implode("\n", $settings->customer_handoff_keywords) : '') }}</textarea>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    ใส่ 1 คำต่อบรรทัด (หรือคั่นด้วย comma) — ถ้าลูกค้าพิมพ์คำใดคำหนึ่ง จะเทคโอเวอร์และแจ้งเตือนแอดมิน
+                    <span class="text-gray-400">(เว้นว่าง = ใช้ค่า default)</span>
+                </p>
+            </div>
+
+            {{-- แจ้งลูกค้าเมื่อเทคโอเวอร์ --}}
+            <div class="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <label class="inline-flex items-center cursor-pointer">
+                    <input type="checkbox"
+                           name="takeover_notify_customer"
+                           value="1"
+                           {{ ($settings->takeover_notify_customer ?? true) ? 'checked' : '' }}
+                           class="form-checkbox h-5 w-5 text-purple-600 rounded">
+                    <span class="ml-2 text-gray-900 dark:text-white font-medium">แจ้งลูกค้าเมื่อแม่หมอเข้ามาคุย</span>
+                </label>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ข้อความเมื่อแม่หมอเข้ามา
+                        </label>
+                        <textarea name="takeover_customer_message"
+                                  rows="2"
+                                  maxlength="500"
+                                  placeholder="🙏 สวัสดีค่ะ แม่หมอเข้ามาดูแลเอง ขอสักครู่นะคะ"
+                                  class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">{{ old('takeover_customer_message', $settings->takeover_customer_message) }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ข้อความเมื่อ AI กลับมาทำงาน
+                        </label>
+                        <textarea name="takeover_resume_message"
+                                  rows="2"
+                                  maxlength="500"
+                                  placeholder="✨ ระบบอัจฉริยะกลับมาดูแลต่อแล้ว"
+                                  class="w-full rounded-lg border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm">{{ old('takeover_resume_message', $settings->takeover_resume_message) }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         {{-- Submit Button --}}
         <div class="flex justify-end gap-3">
             <a href="{{ route('admin.fortune.readings.index') }}"

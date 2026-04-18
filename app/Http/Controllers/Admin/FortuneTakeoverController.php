@@ -1,0 +1,295 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Http\Controllers\Controller;
+use App\Models\FortuneReading;
+use App\Models\FortuneTakeoverLog;
+use App\Models\FortuneTellingSetting;
+use App\Services\FacebookWebhookService;
+use App\Services\FortuneTakeoverService;
+use App\Services\LineFortuneService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Admin Fortune Takeover Controller
+ *
+ * จัดการระบบเทคโอเวอร์ (Takeover Control) — แอดมิน/แม่หมอคุยแทน AI
+ *
+ * Features:
+ * - แสดงรายการ conversation ทั้งหมด พร้อมสถานะ takeover
+ * - กดเทคโอเวอร์ manual (หยุด AI)
+ * - สั่งให้ AI กลับมา (resume)
+ * - ต่อเวลา
+ * - ส่งข้อความผ่านแอดมินพาเนล (LINE/Facebook)
+ * - ดู conversation history
+ */
+class FortuneTakeoverController extends Controller
+{
+    protected FortuneTakeoverService $takeoverService;
+
+    public function __construct(FortuneTakeoverService $takeoverService)
+    {
+        $this->takeoverService = $takeoverService;
+    }
+
+    /**
+     * แสดงรายการ conversations พร้อมสถานะ takeover
+     *
+     * @return \Illuminate\View\View
+     */
+    public function index(Request $request)
+    {
+        $filter = $request->query('filter', 'active'); // active|taken_over|all
+        $platform = $request->query('platform'); // line|facebook|null
+        $search = trim($request->query('search', ''));
+
+        $query = FortuneReading::with(['takeoverAdmin', 'user'])
+            ->latest('updated_at');
+
+        // Filter: active conversations (ไม่ completed)
+        if ($filter === 'active') {
+            $query->whereNotIn('conversation_status', [
+                FortuneReading::STATUS_COMPLETED,
+            ])
+                ->where('updated_at', '>=', now()->subDays(7));
+        } elseif ($filter === 'taken_over') {
+            $query->takenOver();
+        }
+
+        // Filter by platform
+        if ($platform && in_array($platform, ['line', 'facebook'])) {
+            $query->where('platform', $platform);
+        }
+
+        // Search by user name or id
+        if ($search !== '') {
+            $query->where(function ($q) use ($search) {
+                $q->where('facebook_user_name', 'like', "%{$search}%")
+                    ->orWhere('facebook_user_id', 'like', "%{$search}%")
+                    ->orWhere('platform_user_id', 'like', "%{$search}%")
+                    ->orWhere('bill_reference', 'like', "%{$search}%");
+            });
+        }
+
+        $readings = $query->paginate(20)->withQueryString();
+
+        $stats = [
+            'total_taken_over' => FortuneReading::takenOver()->count(),
+            'total_active' => FortuneReading::whereNotIn('conversation_status', [
+                FortuneReading::STATUS_COMPLETED,
+            ])->where('updated_at', '>=', now()->subDays(7))->count(),
+            'takeovers_today' => FortuneTakeoverLog::where('action', FortuneTakeoverLog::ACTION_TAKEOVER)
+                ->whereDate('created_at', today())
+                ->count(),
+        ];
+
+        $settings = FortuneTellingSetting::getSettings();
+
+        return view('admin.fortune.takeover.index', [
+            'readings' => $readings,
+            'stats' => $stats,
+            'settings' => $settings,
+            'filter' => $filter,
+            'platform' => $platform,
+            'search' => $search,
+        ]);
+    }
+
+    /**
+     * แสดงรายละเอียด conversation (chat view + controls)
+     *
+     * @return \Illuminate\View\View
+     */
+    public function show(FortuneReading $reading)
+    {
+        $reading->load(['takeoverAdmin', 'user', 'takeoverLogs.user']);
+
+        $settings = FortuneTellingSetting::getSettings();
+
+        return view('admin.fortune.takeover.show', [
+            'reading' => $reading,
+            'settings' => $settings,
+        ]);
+    }
+
+    /**
+     * กดเทคโอเวอร์เอง (manual)
+     */
+    public function takeover(Request $request, FortuneReading $reading): JsonResponse
+    {
+        $validated = $request->validate([
+            'minutes' => 'nullable|integer|min:1|max:1440',
+        ]);
+
+        $minutes = $this->takeoverService->takeover(
+            $reading,
+            FortuneReading::TAKEOVER_REASON_MANUAL,
+            Auth::id(),
+            $validated['minutes'] ?? null,
+            null,
+            true, // forceIgnoreDisabled — admin สั่งเอง ต้องทำงานเสมอ
+        );
+
+        $reading->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => "เทคโอเวอร์สำเร็จ — AI จะหยุดทำงาน {$minutes} นาที",
+            'data' => [
+                'minutes' => $minutes,
+                'until' => $reading->admin_takeover_until?->toIso8601String(),
+                'remaining_seconds' => $reading->takeoverRemainingSeconds(),
+            ],
+        ]);
+    }
+
+    /**
+     * สั่งให้ AI กลับมาทำงาน
+     */
+    public function resume(FortuneReading $reading): JsonResponse
+    {
+        $this->takeoverService->resume($reading, Auth::id(), false);
+
+        return response()->json([
+            'success' => true,
+            'message' => '✨ AI กลับมาทำงานแล้ว',
+        ]);
+    }
+
+    /**
+     * ต่อเวลาเทคโอเวอร์
+     */
+    public function extend(Request $request, FortuneReading $reading): JsonResponse
+    {
+        $validated = $request->validate([
+            'minutes' => 'required|integer|min:1|max:1440',
+        ]);
+
+        $added = $this->takeoverService->extend($reading, $validated['minutes'], Auth::id());
+
+        $reading->refresh();
+
+        return response()->json([
+            'success' => true,
+            'message' => "⏱ ต่อเวลาอีก {$added} นาที",
+            'data' => [
+                'minutes_added' => $added,
+                'until' => $reading->admin_takeover_until?->toIso8601String(),
+                'remaining_seconds' => $reading->takeoverRemainingSeconds(),
+            ],
+        ]);
+    }
+
+    /**
+     * ส่งข้อความจากแอดมินพาเนลไปยัง LINE/Facebook user
+     *
+     * Flow:
+     * 1. ตรวจว่า reading กำลังถูกเทคโอเวอร์อยู่ (ถ้าไม่ → takeover ก่อน)
+     * 2. ส่งข้อความผ่าน platform ที่เหมาะสม
+     * 3. บันทึก log
+     */
+    public function sendMessage(Request $request, FortuneReading $reading): JsonResponse
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|min:1|max:2000',
+        ]);
+
+        $message = trim($validated['message']);
+
+        // ถ้ายังไม่ได้ takeover → takeover ก่อนเพื่อความปลอดภัย
+        // ใช้ forceIgnoreDisabled เพื่อให้ทำงานได้แม้ settings ปิดอยู่ (admin สั่งเอง)
+        if (! $reading->isAdminTakenOver()) {
+            $this->takeoverService->takeover(
+                $reading,
+                FortuneReading::TAKEOVER_REASON_MANUAL,
+                Auth::id(),
+                null,
+                null,
+                true, // forceIgnoreDisabled — admin กดเอง ต้องทำงานเสมอ
+            );
+            $reading->refresh();
+        }
+
+        // ส่งข้อความผ่าน platform
+        $sent = $this->sendMessageToPlatform($reading, $message);
+
+        if (! $sent) {
+            return response()->json([
+                'success' => false,
+                'message' => '❌ ส่งข้อความไม่สำเร็จ — ตรวจสอบการตั้งค่า platform',
+            ], 500);
+        }
+
+        // บันทึก log
+        $this->takeoverService->logMessage($reading, Auth::id(), $message);
+
+        return response()->json([
+            'success' => true,
+            'message' => '💬 ส่งข้อความสำเร็จ',
+            'data' => [
+                'sent_at' => now()->toIso8601String(),
+                'message_preview' => mb_substr($message, 0, 100),
+            ],
+        ]);
+    }
+
+    /**
+     * ดึงสถานะ takeover แบบ live (สำหรับ Alpine.js polling)
+     */
+    public function status(FortuneReading $reading): JsonResponse
+    {
+        $reading->refresh();
+
+        return response()->json([
+            'is_active' => $reading->isAdminTakenOver(),
+            'remaining_seconds' => $reading->takeoverRemainingSeconds(),
+            'remaining_minutes' => $reading->takeoverRemainingMinutes(),
+            'until' => $reading->admin_takeover_until?->toIso8601String(),
+            'admin_name' => $reading->takeoverAdmin?->name,
+            'reason' => $reading->admin_takeover_reason,
+        ]);
+    }
+
+    /**
+     * ส่งข้อความไปยัง platform ที่เหมาะสม
+     */
+    protected function sendMessageToPlatform(FortuneReading $reading, string $message): bool
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->platform_user_id ?: $reading->facebook_user_id;
+
+        if (empty($userId)) {
+            Log::error('FortuneTakeover: ไม่มี user_id ไม่สามารถส่งข้อความได้', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return false;
+        }
+
+        try {
+            if ($platform === 'line') {
+                $service = new LineFortuneService($settings);
+
+                return $service->sendMessageWithReplyFallback($userId, $message, null);
+            }
+
+            // Facebook (default)
+            $service = new FacebookWebhookService($settings);
+
+            return $service->sendMessage($userId, $message);
+        } catch (\Exception $e) {
+            Log::error('FortuneTakeover: ส่งข้อความล้มเหลว', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+}

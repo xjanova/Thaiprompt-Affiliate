@@ -7,6 +7,7 @@ use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmProspect;
 use App\Services\FortuneChannelManager;
+use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
 use App\Services\LineGatekeeperService;
 use Illuminate\Http\Request;
@@ -28,11 +29,17 @@ class LineFortuneWebhookController extends Controller
 
     protected FortuneChannelManager $channelManager;
 
+    /**
+     * FortuneTakeoverService — ระบบเทคโอเวอร์ (ใช้ร่วมกับ Facebook)
+     */
+    protected FortuneTakeoverService $takeoverService;
+
     public function __construct()
     {
         $this->settings = FortuneTellingSetting::getSettings();
         $this->lineService = new LineFortuneService($this->settings);
         $this->channelManager = new FortuneChannelManager($this->settings);
+        $this->takeoverService = app(FortuneTakeoverService::class);
     }
 
     /**
@@ -148,6 +155,27 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
+        // ========================================
+        // 🛑 Admin Takeover: ถ้าแม่หมอ/แอดมินกำลังดูแล → บอทเงียบ
+        // ========================================
+        if ($this->takeoverService->isActiveByPlatform('line', $userId)) {
+            Log::info('👨‍💼 LINE Takeover: บอทข้ามข้อความ (แม่หมอกำลังดูแล)', [
+                'user_id' => $userId,
+                'message_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return;
+        }
+
+        // ========================================
+        // 🙋 ลูกค้าขอคุยกับคนจริง → เทคโอเวอร์ + แจ้ง
+        // ========================================
+        if ($this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+            $this->handleCustomerHandoffRequest($userId, $messageText, $replyToken);
+
+            return;
+        }
+
         try {
             // ✅ Gatekeeper: เช็คทราฟฟิคภาพรวมทั้งระบบก่อน (ทุก user รวมกัน)
             if (LineGatekeeperService::isSystemThrottled()) {
@@ -222,9 +250,69 @@ class LineFortuneWebhookController extends Controller
             ]);
 
             // ส่งข้อความ error (ลอง reply ก่อน ถ้าไม่ได้ใช้ push)
-            $errorMessage = 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏';
+            $errorMessage = 'ขออภัย เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏';
             $this->lineService->sendMessageWithReplyFallback($userId, $errorMessage, $replyToken);
         }
+    }
+
+    /**
+     * จัดการเมื่อลูกค้าพิมพ์ขอคุยกับคนจริง (customer handoff request)
+     *
+     * Flow:
+     * 1. หาหรือสร้าง active reading (LINE)
+     * 2. เทคโอเวอร์ด้วย reason=customer_request
+     * 3. แจ้งลูกค้าผ่าน replyToken (ถ้า settings เปิดไว้)
+     */
+    protected function handleCustomerHandoffRequest(
+        string $userId,
+        string $messageText,
+        ?string $replyToken,
+    ): void {
+        // หา active reading ล่าสุดของ user นี้
+        $reading = FortuneReading::where('platform', 'line')
+            ->where('platform_user_id', $userId)
+            ->latest()
+            ->first();
+
+        // ไม่มี reading เลย → สร้าง placeholder เพื่อให้ track ได้
+        // ใช้ status=COMPLETED เพื่อไม่ให้ ConversationService picks up เป็น active conversation
+        if (! $reading) {
+            $reading = FortuneReading::create([
+                'platform' => 'line',
+                'platform_user_id' => $userId,
+                'facebook_user_id' => $userId, // legacy column ต้องไม่ null
+                'reading_type' => 'basic',
+                'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                'conversation_state' => ['placeholder' => true, 'source' => 'takeover_only'],
+                'questions' => [],
+                'ai_response' => '',
+                'ai_provider' => 'none',
+            ]);
+        }
+
+        $this->takeoverService->takeover(
+            $reading,
+            FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
+            null,
+            null,
+            $messageText,
+        );
+
+        // แจ้งลูกค้า (ถ้าเปิดไว้) ผ่าน replyToken (ฟรี ไม่นับ push quota)
+        if ($this->settings->shouldNotifyTakeoverToCustomer() && $replyToken) {
+            $this->lineService->replyMessage($replyToken, [
+                [
+                    'type' => 'text',
+                    'text' => $this->settings->getTakeoverCustomerMessage(),
+                ],
+            ]);
+        }
+
+        Log::info('🙋 LINE Takeover: ลูกค้าขอคุยกับคนจริง', [
+            'user_id' => $userId,
+            'reading_id' => $reading->id,
+            'message_preview' => mb_substr($messageText, 0, 50),
+        ]);
     }
 
     /**
@@ -453,6 +541,16 @@ class LineFortuneWebhookController extends Controller
         $replyToken = $event['replyToken'] ?? null;
 
         if (! $userId) {
+            return;
+        }
+
+        // 🛑 Admin Takeover: ถ้าแม่หมอ/แอดมินกำลังดูแล → ข้าม postback ด้วย
+        if ($this->takeoverService->isActiveByPlatform('line', $userId)) {
+            Log::info('👨‍💼 LINE Takeover: บอทข้าม postback (แม่หมอกำลังดูแล)', [
+                'user_id' => $userId,
+                'data' => mb_substr($data, 0, 50),
+            ]);
+
             return;
         }
 

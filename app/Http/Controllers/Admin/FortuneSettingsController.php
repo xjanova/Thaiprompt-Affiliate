@@ -241,7 +241,22 @@ class FortuneSettingsController extends Controller
             'chat_ai_model' => 'nullable|string|max:100',
             'chat_ai_api_key' => 'nullable|string',
             'chat_system_prompt' => 'nullable|string|max:5000',
+            // Admin Takeover (เทคโอเวอร์ — LINE + Facebook รวมกัน)
+            'admin_handover_enabled' => 'boolean',
+            'admin_handover_timeout' => 'nullable|integer|min:1|max:1440',
+            'ai_resume_command' => 'nullable|string|max:50',
+            'customer_handoff_keywords' => 'nullable|string',
+            'takeover_notify_customer' => 'boolean',
+            'takeover_customer_message' => 'nullable|string|max:500',
+            'takeover_resume_message' => 'nullable|string|max:500',
         ]);
+
+        // แปลง customer_handoff_keywords จาก textarea → array
+        if (isset($validated['customer_handoff_keywords'])) {
+            $raw = (string) $validated['customer_handoff_keywords'];
+            $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n|,/', $raw)));
+            $validated['customer_handoff_keywords'] = ! empty($lines) ? array_values($lines) : null;
+        }
 
         $settings = FortuneTellingSetting::getSettings();
 
@@ -253,6 +268,7 @@ class FortuneSettingsController extends Controller
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate', 'fortune_level2_enabled',
             'enable_ai_chat',
+            'admin_handover_enabled', 'takeover_notify_customer',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

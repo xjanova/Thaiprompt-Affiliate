@@ -28,6 +28,11 @@ class FortuneChannelManager
     protected FortuneAIService $aiService;
 
     /**
+     * FortuneTakeoverService — เช็คสถานะเทคโอเวอร์ (defense in depth)
+     */
+    protected FortuneTakeoverService $takeoverService;
+
+    /**
      * Platform instances cache
      */
     protected array $platforms = [];
@@ -44,6 +49,7 @@ class FortuneChannelManager
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
         $this->conversationService = new FortuneConversationService($this->settings);
         $this->aiService = new FortuneAIService($this->settings);
+        $this->takeoverService = app(FortuneTakeoverService::class);
     }
 
     /**
@@ -111,6 +117,23 @@ class FortuneChannelManager
     ): array {
         // บันทึก platform ลงใน context
         $contextUserId = "{$platform}:{$userId}";
+
+        // 🛑 Defense-in-depth: เช็ค takeover ก่อนเรียก AI ทุกครั้ง
+        // (controller ควรเช็คแล้ว แต่ถ้าหลุดมา ให้เงียบ)
+        if ($this->takeoverService->isActiveByPlatform($platform, $userId)) {
+            Log::info('🛑 ChannelManager: ข้ามข้อความ (กำลังถูกเทคโอเวอร์)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'message_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return [
+                'action' => 'skipped_takeover',
+                'platform' => $platform,
+                'user_id' => $userId,
+                'reading' => null,
+            ];
+        }
 
         // ดึงโปรไฟล์ถ้ายังไม่มี
         if (empty($userProfile)) {

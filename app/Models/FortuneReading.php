@@ -119,6 +119,11 @@ class FortuneReading extends Model
         'feedback',
         'transfer_reported',
         'transfer_reported_at',
+        // Admin Takeover Fields (ระบบเทคโอเวอร์ — แม่หมอ/แอดมินคุยแทน AI)
+        'admin_takeover_until',
+        'admin_takeover_by',
+        'admin_takeover_reason',
+        'admin_takeover_started_at',
     ];
 
     /**
@@ -143,6 +148,8 @@ class FortuneReading extends Model
         'rating' => 'integer',
         'transfer_reported' => 'boolean',
         'transfer_reported_at' => 'datetime',
+        'admin_takeover_until' => 'datetime',
+        'admin_takeover_started_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -899,5 +906,105 @@ class FortuneReading extends Model
     public static function findByBillReference(string $billReference): ?self
     {
         return self::where('bill_reference', $billReference)->first();
+    }
+
+    // ============================================================
+    // Admin Takeover (ระบบเทคโอเวอร์)
+    // ============================================================
+
+    /**
+     * เหตุผลการเทคโอเวอร์ที่ใช้ได้
+     */
+    public const TAKEOVER_REASON_MANUAL = 'manual';
+
+    public const TAKEOVER_REASON_AUTO_REPLY = 'auto_reply';
+
+    public const TAKEOVER_REASON_CUSTOMER_REQUEST = 'customer_request';
+
+    /**
+     * ความสัมพันธ์กับแอดมินที่เทคโอเวอร์
+     *
+     * @return BelongsTo
+     */
+    public function takeoverAdmin(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'admin_takeover_by');
+    }
+
+    /**
+     * ความสัมพันธ์กับ takeover logs
+     */
+    public function takeoverLogs(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FortuneTakeoverLog::class, 'fortune_reading_id')
+            ->latest();
+    }
+
+    /**
+     * ตรวจสอบว่ากำลังถูกเทคโอเวอร์อยู่หรือไม่
+     *
+     * ใช้ DB เป็นแหล่งข้อมูลหลัก — Cache เป็น performance optimization เท่านั้น
+     * AI ต้องเช็คผ่าน method นี้ก่อนตอบทุกครั้ง
+     */
+    public function isAdminTakenOver(): bool
+    {
+        if (empty($this->admin_takeover_until)) {
+            return false;
+        }
+
+        return $this->admin_takeover_until->isFuture();
+    }
+
+    /**
+     * ดึงเวลาที่เหลือของการเทคโอเวอร์ (วินาที)
+     */
+    public function takeoverRemainingSeconds(): int
+    {
+        if (! $this->isAdminTakenOver()) {
+            return 0;
+        }
+
+        return max(0, (int) now()->diffInSeconds($this->admin_takeover_until, false));
+    }
+
+    /**
+     * ดึงเวลาที่เหลือของการเทคโอเวอร์ (นาที) — ปัดขึ้น
+     */
+    public function takeoverRemainingMinutes(): int
+    {
+        $seconds = $this->takeoverRemainingSeconds();
+
+        return $seconds > 0 ? (int) ceil($seconds / 60) : 0;
+    }
+
+    /**
+     * Scope: conversations ที่กำลังถูกเทคโอเวอร์อยู่
+     */
+    public function scopeTakenOver($query)
+    {
+        return $query->whereNotNull('admin_takeover_until')
+            ->where('admin_takeover_until', '>', now());
+    }
+
+    /**
+     * Scope: conversations ที่ takeover หมดเวลาแล้ว (รอ cleanup)
+     */
+    public function scopeTakeoverExpired($query)
+    {
+        return $query->whereNotNull('admin_takeover_until')
+            ->where('admin_takeover_until', '<=', now());
+    }
+
+    /**
+     * ดึง identifier สำหรับ cache key (รวมทุก platform)
+     *
+     * ใช้ platform_user_id ถ้ามี, fallback เป็น facebook_user_id
+     */
+    public function getTakeoverCacheKey(): string
+    {
+        $platform = $this->platform ?? 'facebook';
+        $userId = $this->platform_user_id ?: $this->facebook_user_id;
+
+        return "fortune_admin_active:{$platform}:{$userId}";
     }
 }

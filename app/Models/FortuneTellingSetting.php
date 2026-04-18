@@ -114,6 +114,12 @@ class FortuneTellingSetting extends Model
         // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
         'admin_handover_enabled',
         'admin_handover_timeout',
+        // Admin Takeover (เทคโอเวอร์แบบใหม่ — LINE+Facebook รวมกัน)
+        'ai_resume_command',
+        'customer_handoff_keywords',
+        'takeover_notify_customer',
+        'takeover_customer_message',
+        'takeover_resume_message',
         // บัญชีธนาคารเฉพาะระบบดูดวง
         'fortune_bank_account_ids',
         // โหมดแสดงช่องทางชำระเงิน (both, bank_only, promptpay_only)
@@ -165,6 +171,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_enabled' => 'boolean',
         'admin_handover_enabled' => 'boolean',
         'admin_handover_timeout' => 'integer',
+        'customer_handoff_keywords' => 'array',
+        'takeover_notify_customer' => 'boolean',
         'line_enabled' => 'boolean',
         'enabled_platforms' => 'array',
         'fortune_bank_account_ids' => 'array',
@@ -1066,6 +1074,110 @@ PROMPT;
     public function getChatSystemPrompt(): ?string
     {
         return $this->chat_system_prompt;
+    }
+
+    // ============================================================
+    // Admin Takeover Helpers (ระบบเทคโอเวอร์)
+    // ============================================================
+
+    /**
+     * ตรวจสอบว่าเปิดระบบเทคโอเวอร์หรือไม่
+     *
+     * ใช้ค่า admin_handover_enabled เดิม (ไม่สร้างฟิลด์ซ้ำ)
+     */
+    public function isTakeoverEnabled(): bool
+    {
+        return (bool) ($this->admin_handover_enabled ?? false);
+    }
+
+    /**
+     * ดึงระยะเวลา default ของการเทคโอเวอร์ (นาที)
+     */
+    public function getTakeoverDefaultMinutes(): int
+    {
+        return max(1, (int) ($this->admin_handover_timeout ?? 15));
+    }
+
+    /**
+     * ดึงคำสั่งให้ AI กลับมาทำงาน
+     */
+    public function getAiResumeCommand(): string
+    {
+        $cmd = trim((string) ($this->ai_resume_command ?? '/ai'));
+
+        return $cmd !== '' ? $cmd : '/ai';
+    }
+
+    /**
+     * ดึงรายการคำที่ลูกค้าพิมพ์แล้วให้เทคโอเวอร์อัตโนมัติ
+     *
+     * @return array<string>
+     */
+    public function getCustomerHandoffKeywords(): array
+    {
+        $keywords = $this->customer_handoff_keywords;
+
+        if (! is_array($keywords) || empty($keywords)) {
+            // Default keywords — ลูกค้าอยากคุยกับคนจริง
+            return [
+                'คุยกับคน',
+                'คุยกับแอดมิน',
+                'คุยกับแม่หมอ',
+                'คุยกับเจ้าหน้าที่',
+                'ขอคุยกับคน',
+                'ขอคุยกับแม่หมอ',
+                'ขอแม่หมอ',
+                'ต้องการพูดกับคน',
+                'อยากคุยกับคน',
+                'ติดต่อแอดมิน',
+                'ขอแอดมิน',
+                'admin',
+            ];
+        }
+
+        // กรองเฉพาะ string ที่ไม่ว่าง
+        return array_values(array_filter(array_map(
+            fn ($k) => trim((string) $k),
+            $keywords
+        ), fn ($k) => $k !== ''));
+    }
+
+    /**
+     * ตรวจสอบว่าต้องแจ้งลูกค้าเมื่อแม่หมอเข้ามาคุยหรือไม่
+     */
+    public function shouldNotifyTakeoverToCustomer(): bool
+    {
+        return (bool) ($this->takeover_notify_customer ?? true);
+    }
+
+    /**
+     * ดึงข้อความแจ้งลูกค้าเมื่อแม่หมอเข้ามา
+     */
+    public function getTakeoverCustomerMessage(): string
+    {
+        $msg = trim((string) ($this->takeover_customer_message ?? ''));
+
+        if ($msg !== '') {
+            return $msg;
+        }
+
+        $brandName = $this->getFortuneBrandName();
+
+        return "🙏 สวัสดีค่ะ {$brandName} เข้ามาดูแลเอง ขอสักครู่นะคะ 💜";
+    }
+
+    /**
+     * ดึงข้อความเมื่อ AI กลับมาทำงาน
+     */
+    public function getTakeoverResumeMessage(): string
+    {
+        $msg = trim((string) ($this->takeover_resume_message ?? ''));
+
+        if ($msg !== '') {
+            return $msg;
+        }
+
+        return '✨ ระบบอัจฉริยะกลับมาดูแลต่อแล้ว พิมพ์สอบถามได้เลย';
     }
 
     /**
