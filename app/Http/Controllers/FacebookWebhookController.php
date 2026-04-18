@@ -1380,6 +1380,14 @@ class FacebookWebhookController extends Controller
             'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'VIEW_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
 
+            // ✅ Phase A quick reply payloads (จาก FortuneChannelManager getFacebookFallbackQuickReplies)
+            'TALK_HUMAN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
+            'START_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวงละเอียด'),
+            'CHECK_STATUS' => $this->processConversationalMessage($senderId, 'เช็คสถานะ'),
+            'RESTART' => $this->processConversationalMessage($senderId, 'เริ่มใหม่'),
+            'CANCEL' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),

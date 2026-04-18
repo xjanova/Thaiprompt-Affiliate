@@ -5243,23 +5243,25 @@ class FortuneConversationService
     {
         $text = trim($text);
 
-        // รูปแบบ: dd/mm/yyyy หรือ dd-mm-yyyy
-        if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/', $text, $matches)) {
+        // 🔢 แปลงเลขไทย (๐-๙) เป็นเลขอารบิก ก่อน parse
+        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $text = str_replace($thaiDigits, $arabicDigits, $text);
+
+        // รูปแบบ: dd/mm/yyyy หรือ dd-mm-yyyy (รับทั้ง 2 และ 4 หลัก)
+        if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/', $text, $matches)) {
             $day = (int) $matches[1];
             $month = (int) $matches[2];
             $year = (int) $matches[3];
 
-            // แปลง พ.ศ. เป็น ค.ศ. ถ้าจำเป็น
-            if ($year > 2400) {
-                $year -= 543;
-            }
+            $year = $this->normalizeBirthYear($year);
 
-            if (checkdate($month, $day, $year)) {
+            if ($year !== null && checkdate($month, $day, $year) && $this->isValidBirthYear($year)) {
                 return sprintf('%04d-%02d-%02d', $year, $month, $day);
             }
         }
 
-        // รูปแบบ: dd เดือนไทย yyyy
+        // รูปแบบ: dd เดือนไทย yyyy (รับทั้ง 2 และ 4 หลัก)
         $thaiMonths = [
             'มกราคม' => 1, 'กุมภาพันธ์' => 2, 'มีนาคม' => 3, 'เมษายน' => 4,
             'พฤษภาคม' => 5, 'มิถุนายน' => 6, 'กรกฎาคม' => 7, 'สิงหาคม' => 8,
@@ -5270,21 +5272,57 @@ class FortuneConversationService
         ];
 
         foreach ($thaiMonths as $monthName => $monthNum) {
-            if (preg_match('/(\d{1,2})\s*'.$monthName.'\s*(\d{4})/', $text, $matches)) {
+            if (preg_match('/(\d{1,2})\s*'.$monthName.'\s*(\d{2,4})/', $text, $matches)) {
                 $day = (int) $matches[1];
                 $year = (int) $matches[2];
 
-                if ($year > 2400) {
-                    $year -= 543;
-                }
+                $year = $this->normalizeBirthYear($year);
 
-                if (checkdate($monthNum, $day, $year)) {
+                if ($year !== null && checkdate($monthNum, $day, $year) && $this->isValidBirthYear($year)) {
                     return sprintf('%04d-%02d-%02d', $year, $monthNum, $day);
                 }
             }
         }
 
         return null;
+    }
+
+    /**
+     * Normalize ปีเกิด — รองรับ 2 หลัก, 4 หลัก, พ.ศ., ค.ศ.
+     *
+     * @param  int  $year  ปีที่ได้จากการ parse (ยังไม่ได้ normalize)
+     * @return int|null  ปี ค.ศ. หลัง normalize (null ถ้าไม่สมเหตุสมผล)
+     */
+    protected function normalizeBirthYear(int $year): ?int
+    {
+        // ปีย่อ 2 หลัก — ใช้ logic Thai ID card (ถ้า > ปีค.ศ.ปัจจุบัน%100 → ศตวรรษก่อน)
+        if ($year < 100) {
+            $currentYY = (int) now()->format('y');
+            $year = ($year <= $currentYY) ? (2000 + $year) : (1900 + $year);
+        }
+
+        // พ.ศ. → ค.ศ.
+        if ($year > 2400) {
+            $year -= 543;
+        }
+
+        // ถ้ายังน่าสงสัย (ไม่ใช่ปีค.ศ. 4 หลักที่สมเหตุสมผล) → คืน null
+        if ($year < 1900 || $year > (int) now()->format('Y')) {
+            return null;
+        }
+
+        return $year;
+    }
+
+    /**
+     * ตรวจว่าปีเกิดสมเหตุสมผล — อายุ 1-120 ปี
+     */
+    protected function isValidBirthYear(int $year): bool
+    {
+        $currentYear = (int) now()->format('Y');
+        $age = $currentYear - $year;
+
+        return $age >= 1 && $age <= 120;
     }
 
     /**
