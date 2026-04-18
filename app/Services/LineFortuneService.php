@@ -538,7 +538,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกันนะคะ',
+                        'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกัน',
                         'size' => 'xs',
                         'color' => '#9B8EC4',
                         'align' => 'center',
@@ -708,7 +708,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 $bubble['footer'] = [
                     'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'md',
                     'contents' => [
-                        ['type' => 'text', 'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกันนะคะ', 'size' => 'xs', 'color' => '#9B8EC4', 'align' => 'center'],
+                        ['type' => 'text', 'text' => '✨ แชร์ให้เพื่อนมาดูดวงด้วยกัน', 'size' => 'xs', 'color' => '#9B8EC4', 'align' => 'center'],
                     ],
                 ];
             }
@@ -976,14 +976,14 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => 'และส่งคำทำนายให้ทันทีค่ะ ✨',
+                        'text' => 'และส่งคำทำนายให้ทันที ✨',
                         'size' => 'xs',
                         'color' => '#888888',
                         'align' => 'center',
                     ],
                     [
                         'type' => 'text',
-                        'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน\nให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ",
+                        'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน\nให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้",
                         'size' => 'xs',
                         'color' => '#E65100',
                         'align' => 'center',
@@ -1007,8 +1007,8 @@ class LineFortuneService implements MessagingPlatformInterface
 
         // สร้างข้อความทักทาย — ถ้ามีชื่อจะใส่ชื่อด้วย
         $greeting = $userName
-            ? "สวัสดีค่ะ คุณ{$userName} ✨"
-            : 'สวัสดีค่ะ ✨';
+            ? "สวัสดี คุณ{$userName} ✨"
+            : 'สวัสดี ✨';
 
         return [
             'type' => 'bubble',
@@ -1034,7 +1034,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => "🔮 {$brandName}ยินดีต้อนรับค่ะ 🔮",
+                        'text' => "🔮 {$brandName}ยินดีต้อนรับ 🔮",
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -1142,7 +1142,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => '💡 พิมพ์คำถามมาได้เลยค่ะ เช่น',
+                        'text' => '💡 พิมพ์คำถามมาได้เลย เช่น',
                         'weight' => 'bold',
                         'size' => 'sm',
                         'margin' => 'xl',
@@ -1581,7 +1581,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => 'ขอบคุณที่ไว้วางใจค่ะ',
+                        'text' => 'ขอบคุณที่ไว้วางใจ',
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -1604,7 +1604,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => 'หวังว่าคำทำนายจะเป็นแนวทางที่ดีในชีวิตนะคะ ขอให้โชคดีและมีความสุขมากๆ ค่ะ',
+                        'text' => 'หวังว่าคำทำนายจะเป็นแนวทางที่ดี ขอให้โชคดีและมีความสุขมากๆ ค่ะ',
                         'wrap' => true,
                         'size' => 'md',
                         'color' => '#555555',
@@ -1633,7 +1633,7 @@ class LineFortuneService implements MessagingPlatformInterface
                             ],
                             [
                                 'type' => 'text',
-                                'text' => 'สามารถดูย้อนหลังได้ทุกเมื่อค่ะ',
+                                'text' => 'สามารถดูย้อนหลังได้ทุกเมื่อ',
                                 'wrap' => true,
                                 'size' => 'xs',
                                 'color' => '#888888',
@@ -1717,7 +1717,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => 'รับคำถามข้อที่ '.($questionNumber - 1).' แล้วค่ะ',
+                                'text' => 'รับคำถามข้อที่ '.($questionNumber - 1).' แล้ว',
                                 'size' => 'sm',
                                 'color' => '#2E7D32',
                             ],
@@ -1735,7 +1735,7 @@ class LineFortuneService implements MessagingPlatformInterface
         // ข้อความแนะนำ
         $bodyContents[] = [
             'type' => 'text',
-            'text' => "เลือกหมวดที่สนใจ หรือพิมพ์คำถามเองได้เลยค่ะ 👇",
+            'text' => "เลือกหมวดที่สนใจ หรือพิมพ์คำถามเองได้เลย 👇",
             'wrap' => true,
             'size' => 'sm',
             'color' => '#666666',
@@ -2021,14 +2021,14 @@ class LineFortuneService implements MessagingPlatformInterface
             // สวัสดี
             [
                 'type' => 'text',
-                'text' => "สวัสดีค่ะ คุณ{$userName} ✨",
+                'text' => "สวัสดี คุณ{$userName} ✨",
                 'size' => 'md',
                 'weight' => 'bold',
                 'color' => '#333333',
             ],
             [
                 'type' => 'text',
-                'text' => 'หมอจันทราพร้อมดูดวงให้ค่ะ',
+                'text' => 'หมอจันทราพร้อมดูดวงให้',
                 'size' => 'sm',
                 'color' => '#999999',
                 'margin' => 'sm',
@@ -2135,7 +2135,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
-                            ['type' => 'text', 'text' => 'ยินดีต้อนรับค่ะ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
+                            ['type' => 'text', 'text' => 'ยินดีต้อนรับ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
                         ],
                     ],
                 ],
@@ -2175,7 +2175,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'กรุณาบอกวันเดือนปีเกิดค่ะ', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'กรุณาบอกวันเดือนปีเกิด', 'size' => 'md', 'weight' => 'bold', 'color' => '#333333'],
                     ['type' => 'text', 'text' => 'เพื่อวิเคราะห์ดวงชะตาได้แม่นยำ ✨', 'size' => 'sm', 'color' => '#999999', 'margin' => 'sm'],
                     ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'],
                     // รูปแบบที่รับ
@@ -2228,7 +2228,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'กรุณาพิมพ์วันเกิดใหม่ค่ะ', 'size' => 'md', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'กรุณาพิมพ์วันเกิดใหม่', 'size' => 'md', 'color' => '#333333'],
                     ['type' => 'separator', 'margin' => 'lg', 'color' => '#FFCDD2'],
                     [
                         'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF3E0', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
@@ -2269,7 +2269,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'สิทธิ์ฟรีวันนี้หมดแล้วค่ะ', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
+                            ['type' => 'text', 'text' => 'สิทธิ์ฟรีวันนี้หมดแล้ว', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
                             ['type' => 'text', 'text' => 'ฟรีวันละ 1 คำถาม', 'size' => 'xs', 'color' => '#999999'],
                         ],
                     ],
@@ -2312,7 +2312,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
-                            ['type' => 'text', 'text' => 'ยินดีต้อนรับค่ะ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
+                            ['type' => 'text', 'text' => 'ยินดีต้อนรับ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
                         ],
                     ],
                 ],
@@ -2465,14 +2465,14 @@ class LineFortuneService implements MessagingPlatformInterface
             // ทักทาย
             [
                 'type' => 'text',
-                'text' => "สวัสดีค่ะ คุณ{$userName} ✨",
+                'text' => "สวัสดี คุณ{$userName} ✨",
                 'size' => 'md',
                 'weight' => 'bold',
                 'color' => '#333333',
             ],
             [
                 'type' => 'text',
-                'text' => 'หมอจันทราพร้อมทำนายให้แล้วค่ะ',
+                'text' => 'หมอจันทราพร้อมทำนายให้แล้ว',
                 'size' => 'sm',
                 'color' => '#999999',
                 'margin' => 'sm',
@@ -2871,7 +2871,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'ระยะเวลาชำระเงินหมดแล้วค่ะ', 'size' => 'sm', 'color' => '#555555'],
+                    ['type' => 'text', 'text' => 'ระยะเวลาชำระเงินหมดแล้ว', 'size' => 'sm', 'color' => '#555555'],
                     ['type' => 'text', 'text' => 'สามารถเริ่มดูดวงละเอียดใหม่ได้เลยค่ะ', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
                 ],
             ],
@@ -2938,7 +2938,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     // ข้อความเตือน
                     ['type' => 'text', 'text' => 'เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันทีค่ะ ✨', 'size' => 'xs', 'color' => '#999999', 'margin' => 'xl', 'wrap' => true],
-                    ['type' => 'text', 'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้ค่ะ", 'size' => 'xs', 'color' => '#E65100', 'margin' => 'md', 'wrap' => true],
+                    ['type' => 'text', 'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้", 'size' => 'xs', 'color' => '#E65100', 'margin' => 'md', 'wrap' => true],
                 ],
             ],
             'footer' => [
@@ -3098,7 +3098,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => '💎 หมอจันทราได้วิเคราะห์ดวงชะตาของคุณ', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
-                            ['type' => 'text', 'text' => 'อย่างละเอียดเรียบร้อยแล้วค่ะ', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
+                            ['type' => 'text', 'text' => 'อย่างละเอียดเรียบร้อยแล้ว', 'size' => 'sm', 'color' => '#E65100', 'wrap' => true],
                             ['type' => 'text', 'text' => '🌟 กดปุ่มด้านล่างเพื่ออ่านได้เลยค่ะ', 'size' => 'sm', 'color' => '#BF360C', 'margin' => 'sm', 'wrap' => true],
                         ],
                     ],
@@ -3164,13 +3164,13 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'horizontal', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'text', 'text' => '✅', 'size' => 'xl', 'flex' => 0],
-                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'บันทึกแล้วค่ะ', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
+                    ['type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md', 'justifyContent' => 'center', 'contents' => [['type' => 'text', 'text' => 'บันทึกแล้ว', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold']]],
                 ],
             ],
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'คำทำนายถูกบันทึกไว้แล้วค่ะ', 'size' => 'sm', 'color' => '#333333'],
+                    ['type' => 'text', 'text' => 'คำทำนายถูกบันทึกไว้แล้ว', 'size' => 'sm', 'color' => '#333333'],
                     [
                         'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#E8F5E9', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
                         'contents' => [

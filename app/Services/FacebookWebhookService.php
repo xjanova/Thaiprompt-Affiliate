@@ -805,7 +805,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         // Fallback: ข้อความต้อนรับเดิม
         return $this->sendMessage($recipientId,
-            "🔮 สวัสดีค่ะ ยินดีต้อนรับสู่ระบบดูดวง!\n\n".
+            "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n".
             "พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n".
             '🌟 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายเชิงลึก'
         );
@@ -867,8 +867,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         return $this->sendMessage($recipientId,
-            "😔 ขออภัยค่ะ ขณะนี้ระบบมีปัญหา\n".
-            "กรุณาลองใหม่อีกครั้งในอีกสักครู่ค่ะ\n".
+            "😔 ขออภัย ขณะนี้ระบบมีปัญหา\n".
+            "กรุณาลองใหม่อีกครั้งในอีกสักครู่\n".
             'พิมพ์ "ดูดวง" เพื่อลองใหม่'
         );
     }
@@ -1136,11 +1136,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'greeting' => [
                     [
                         'locale' => 'default',
-                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨",
+                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลย ✨",
                     ],
                     [
                         'locale' => 'th_TH',
-                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨",
+                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลย ✨",
                     ],
                 ],
 
@@ -1428,7 +1428,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             if ($sent && ! empty($quickReplies)) {
                 usleep(500000); // รอ 500ms
-                $this->sendQuickReplies($recipientId, 'เลือกได้เลยค่ะ 👇', $quickReplies);
+                $this->sendQuickReplies($recipientId, 'เลือกได้เลย 👇', $quickReplies);
             }
 
             return $sent;

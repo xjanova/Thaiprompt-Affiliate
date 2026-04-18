@@ -363,7 +363,7 @@ class FortuneChannelManager
                 ]),
 
                 // อื่นๆ → ส่ง text ธรรมดา
-                default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการค่ะ 🙏'),
+                default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏'),
             };
 
             // Log ถ้าส่งไม่สำเร็จ
@@ -387,7 +387,7 @@ class FortuneChannelManager
             ]);
 
             // Fallback ส่ง text ธรรมดาเสมอ
-            $fallbackText = $message ?: 'ระบบกำลังดำเนินการค่ะ กรุณารอสักครู่ 🙏';
+            $fallbackText = $message ?: 'ระบบกำลังดำเนินการ กรุณารอสักครู่ 🙏';
 
             return $fbService->sendMessage($userId, mb_substr($fallbackText, 0, 2000));
         }
@@ -554,7 +554,7 @@ class FortuneChannelManager
             return $fbService->sendQuickReplies($userId, $message, $quickReplies);
         }
 
-        return $fbService->sendMessage($userId, $message ?: 'พิมพ์คำถามมาได้เลยค่ะ 🔮');
+        return $fbService->sendMessage($userId, $message ?: 'พิมพ์คำถามมาได้เลย 🔮');
     }
 
     /**
@@ -693,7 +693,7 @@ class FortuneChannelManager
             return $fbService->sendButtonTemplate($userId, $lineInvite);
         }
 
-        return $fbService->sendMessage($userId, $result['message'] ?? 'กรุณาสมัครสมาชิกก่อนเพื่อรับลิงก์เชิญเพื่อนค่ะ');
+        return $fbService->sendMessage($userId, $result['message'] ?? 'กรุณาสมัครสมาชิกก่อนเพื่อรับลิงก์เชิญเพื่อน');
     }
 
     /**
@@ -705,7 +705,7 @@ class FortuneChannelManager
     protected function sendFacebookTextWithOptionalQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
     {
         if (empty($message)) {
-            $message = 'ระบบกำลังดำเนินการค่ะ 🙏';
+            $message = 'ระบบกำลังดำเนินการ 🙏';
         }
 
         // 🔍 Strip control tags ที่ไม่ควรโชว์ให้ลูกค้า (เผื่อหลุดจาก service layer)
@@ -932,7 +932,7 @@ class FortuneChannelManager
                 'processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
 
                 // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ
-                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: 'กำลังประมวลผลอยู่ค่ะ กรุณารอสักครู่ 🙏', $replyToken),
+                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: 'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏', $replyToken),
 
                 // แสดงบัญชีธนาคาร → ส่ง text (ไม่มีปุ่มดูดวง)
                 'bank_account_info' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
@@ -1003,7 +1003,7 @@ class FortuneChannelManager
             ]);
 
             // ส่ง text ธรรมดาเป็น fallback เสมอ
-            $fallbackText = $message ?: 'ระบบกำลังดำเนินการค่ะ กรุณารอสักครู่ 🙏';
+            $fallbackText = $message ?: 'ระบบกำลังดำเนินการ กรุณารอสักครู่ 🙏';
 
             return $lineService->sendMessageWithReplyFallback($userId, mb_substr($fallbackText, 0, 2000), $replyToken);
         }
@@ -1194,7 +1194,7 @@ class FortuneChannelManager
 
             return $lineService->sendMessageWithReplyFallback(
                 $userId,
-                $result['message'] ?? 'กรุณาติดต่อแอดมินเพื่อชำระเงินค่ะ 🙏',
+                $result['message'] ?? 'กรุณาติดต่อแอดมินเพื่อชำระเงิน 🙏',
                 $replyToken
             );
         }

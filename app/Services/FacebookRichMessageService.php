@@ -114,7 +114,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "💎 คุณ{$userName} ต้องการดูดวงละเอียดไหมคะ?\n\n✅ วิเคราะห์เชิงลึก 3 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
+                    'text' => "💎 คุณ{$userName} ต้องการดูดวงละเอียดไหม?\n\n✅ วิเคราะห์เชิงลึก 3 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
                     'buttons' => [
                         [
                             'type' => 'postback',
@@ -128,7 +128,7 @@ class FacebookRichMessageService
                         ],
                         [
                             'type' => 'postback',
-                            'title' => '❌ ไม่ต้องค่ะ',
+                            'title' => '❌ ไม่ต้อง',
                             'payload' => 'DEEP_READING_NO',
                         ],
                     ],
@@ -234,7 +234,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "✅ ส่งคำทำนายเรียบร้อยแล้วค่ะ\n\n💚 เพิ่มเพื่อนใน LINE เพื่อดูดวงแบบสวยงาม\nและรับสิทธิ์พิเศษมากขึ้น\n\n📢 เชิญเพื่อนมาดูดวง ได้เงินจริง!",
+                    'text' => "✅ ส่งคำทำนายเรียบร้อยแล้ว\n\n💚 เพิ่มเพื่อนใน LINE เพื่อดูดวงแบบสวยงาม\nและรับสิทธิ์พิเศษมากขึ้น\n\n📢 เชิญเพื่อนมาดูดวง ได้เงินจริง!",
                     'buttons' => $buttons,
                 ],
             ],
@@ -313,7 +313,7 @@ class FacebookRichMessageService
         $text .= "✅ เหลืออีก: {$remaining} ครั้ง\n\n";
 
         if ($remaining > 0) {
-            $text .= '💡 พิมพ์คำถามมาได้เลยค่ะ!';
+            $text .= '💡 พิมพ์คำถามมาได้เลย!';
         } else {
             $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงละเอียดสิคะ!';
         }
@@ -431,7 +431,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "📅 กรุณาบอกวันเดือนปีเกิดค่ะ\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวงละเอียด: {$priceText} บาท",
+                    'text' => "📅 กรุณาบอกวันเดือนปีเกิด\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวงละเอียด: {$priceText} บาท",
                     'buttons' => [
                         [
                             'type' => 'postback',
