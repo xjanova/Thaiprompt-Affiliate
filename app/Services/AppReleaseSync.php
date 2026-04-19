@@ -98,26 +98,49 @@ class AppReleaseSync
 
     /**
      * Pick the best APK asset from a release.
-     * Preference order: `*-universal.apk` > any other `*.apk` that isn't
-     * an ABI-specific split (arm64/armeabi/x86).
+     *
+     * Preference order:
+     *   1. The plain `thaipromptapp-X.Y.Z.apk` file (current naming since
+     *      v1.0.5 — single arm64-v8a build, no suffix).
+     *   2. Legacy `*-universal.apk` (releases v1.0.0–1.0.4 had a fat APK).
+     *   3. Any `*-arm64-v8a.apk` (legacy split-per-abi variant for arm64).
+     *   4. Anything else ending in `.apk`.
+     *
+     * Returning null tells the caller this release shipped no Android APK
+     * (e.g. iOS-only or doc-only release) so we just skip it.
      */
     protected function findApkAsset(array $assets): ?array
     {
-        // First pass: prefer explicit universal builds.
+        // Pass 1: plain `<name>-<version>.apk` (no ABI suffix, no -universal).
+        foreach ($assets as $a) {
+            $name = $a['name'] ?? '';
+            if (!str_ends_with($name, '.apk')) continue;
+            if (str_contains($name, '-universal.apk')) continue;
+            $isAbiSplit = str_contains($name, 'arm64-v8a')
+                || str_contains($name, 'armeabi-v7a')
+                || str_contains($name, 'x86_64');
+            if (!$isAbiSplit) {
+                return $a;
+            }
+        }
+        // Pass 2: legacy universal build.
         foreach ($assets as $a) {
             $name = $a['name'] ?? '';
             if (str_contains($name, '-universal.apk')) {
                 return $a;
             }
         }
-        // Second pass: any APK that isn't a split-per-abi variant.
+        // Pass 3: legacy arm64 split.
         foreach ($assets as $a) {
             $name = $a['name'] ?? '';
-            if (!str_ends_with($name, '.apk')) continue;
-            $isAbiSplit = str_contains($name, 'arm64-v8a')
-                || str_contains($name, 'armeabi-v7a')
-                || str_contains($name, 'x86_64');
-            if (!$isAbiSplit) {
+            if (str_contains($name, '-arm64-v8a.apk')) {
+                return $a;
+            }
+        }
+        // Pass 4: any APK at all.
+        foreach ($assets as $a) {
+            $name = $a['name'] ?? '';
+            if (str_ends_with($name, '.apk')) {
                 return $a;
             }
         }
