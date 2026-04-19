@@ -295,22 +295,19 @@
     @endif
 </div>
 
-{{-- Detail Modal --}}
+{{-- Detail Modal — ใช้ DOM class control ล้วน (ไม่ผ่าน Alpine reactive) --}}
 <div id="detailModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center"
-     x-data="{ show: false }"
-     x-show="show"
-     x-transition
-     @keydown.escape.window="show = false; document.getElementById('detailModal').classList.add('hidden')">
-    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" @click.outside="show = false; document.getElementById('detailModal').classList.add('hidden')">
+     onclick="if (event.target === this) closeDetail()">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-lg mx-4" onclick="event.stopPropagation()">
         <div class="flex justify-between items-center mb-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">รายละเอียดคอมมิชชั่น</h3>
-            <button onclick="closeDetail()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+            <button onclick="closeDetail()" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" aria-label="ปิด">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
         </div>
-        <div id="detailContent" class="space-y-3 text-sm">
+        <div id="detailContent" class="space-y-3 text-sm max-h-[70vh] overflow-y-auto">
             <div class="text-center py-8 text-gray-500">
                 <div class="animate-spin h-8 w-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-3"></div>
                 กำลังโหลด...
@@ -412,6 +409,16 @@ function closeDetail() {
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
+
+// ปิด modal ด้วยปุ่ม ESC
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        const modal = document.getElementById('detailModal');
+        if (modal && !modal.classList.contains('hidden')) {
+            closeDetail();
+        }
+    }
+});
 </script>
 @endpush
 @endsection
