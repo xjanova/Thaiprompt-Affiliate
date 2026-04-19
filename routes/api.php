@@ -130,6 +130,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/banners', [\App\Http\Controllers\Admin\AppBannerController::class, 'apiBanners']);
         Route::post('/banners/{appBanner}/view', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackView']);
         Route::post('/banners/{appBanner}/click', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackClick']);
+
+        // Mobile app control plane (public; private keys filtered server-side)
+        Route::get('/config',         [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
+        Route::get('/flags',          [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'flags'])->name('api.v1.app.flags');
+        Route::get('/menus',          [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'menus'])->name('api.v1.app.menus');
+        Route::get('/sliders',        [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'sliders'])->name('api.v1.app.sliders');
+        Route::get('/promotions',     [\App\Http\Controllers\Api\V1\AppMenuApiController::class, 'promotions'])->name('api.v1.app.promotions');
+        Route::get('/latest-version', [\App\Http\Controllers\Api\V1\AppReleaseApiController::class, 'latest'])->name('api.v1.app.latest-version');
     });
 
     // Protected routes
@@ -137,6 +145,14 @@ Route::prefix('v1')->group(function () {
         // Auth
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
+
+        // Mobile app analytics ingestion + AI fallback (protected + rate-limited)
+        Route::post('/events/batch', [\App\Http\Controllers\Api\V1\AnalyticsApiController::class, 'batch'])
+            ->middleware('throttle:60,1')
+            ->name('api.v1.events.batch');
+        Route::post('/ai/chat', [\App\Http\Controllers\Api\V1\AiChatApiController::class, 'chat'])
+            ->middleware('throttle:20,1')
+            ->name('api.v1.ai.chat');
 
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
