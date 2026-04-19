@@ -12,6 +12,22 @@
     RewriteEngine On
 
     # ========================================
+    # CANONICAL HOST: thaiprompt.online → main.thaiprompt.online
+    # ========================================
+    # Cloudflare currently has a Page Rule that 301s the bare domain to
+    # `main.thaiprompt.online` BUT forgets the slash separator, producing
+    # `http://main.thaiprompt.onlineapi/v1/...` (host concatenated with path).
+    # See HANDOVER.md → "Cloudflare Page Rule fix" for the dashboard one-liner.
+    #
+    # This rule is the in-repo safety net: if the CF rule is ever removed or
+    # bypassed and a request reaches Apache with HTTP_HOST=thaiprompt.online,
+    # we issue a CLEAN 301 to the canonical host with the slash present.
+    # When CF normally short-circuits at the edge, Apache never sees these
+    # requests and this block is a no-op.
+    RewriteCond %{HTTP_HOST} ^thaiprompt\.online$ [NC]
+    RewriteRule ^(.*)$ https://main.thaiprompt.online/$1 [R=301,L]
+
+    # ========================================
     # SECURITY: ป้องกันการเข้าถึงไฟล์ ENV
     # Redirect การเข้าถึง /env, /.env ไปที่หน้าแรก
     # ========================================
