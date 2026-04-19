@@ -153,6 +153,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/ai/chat', [\App\Http\Controllers\Api\V1\AiChatApiController::class, 'chat'])
             ->middleware('throttle:20,1')
             ->name('api.v1.ai.chat');
+        Route::post('/ai/tts', [\App\Http\Controllers\Api\V1\AiTtsApiController::class, 'speak'])
+            ->middleware('throttle:20,1')
+            ->name('api.v1.ai.tts');
 
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);
