@@ -355,9 +355,14 @@ class FortuneChannelManager
                 'restart_from_birthdate',
                 'error',
                 'ai_ask_save_question',
-                'fortune_ready_notification',
-                'send_chart', 'deep_reading_result', 'reading_complete', 'reading_ready'
+                'send_chart', 'deep_reading_result', 'reading_ready'
                     => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result),
+
+                // 🔔 คำทำนายพร้อม → ส่ง Button Template พร้อมปุ่ม "อ่านคำทำนาย" โดดเด่น
+                'fortune_ready_notification' => $this->sendFacebookFortuneReadyNotification($fbService, $userId, $message, $result),
+
+                // 🙏 ทำนายจบ → ส่งข้อความขอบคุณ + ลิงก์ชวนเพื่อน/แชร์เพจ
+                'reading_complete' => $this->sendFacebookReadingCompleteResponse($fbService, $userId, $result),
 
                 // ✅ สุ่มไพ่ยิปซี → ส่ง Quick Reply พร้อมปุ่มเลือกไพ่
                 'draw_tarot_card' => $fbService->sendQuickReplies($userId, $message, [
@@ -2690,6 +2695,59 @@ class FortuneChannelManager
 
             return $fbService->sendMessage($userId, $message);
         }
+    }
+
+    /**
+     * Facebook: แจ้ง "คำทำนายพร้อมแล้ว" พร้อมปุ่ม "อ่านคำทำนาย" โดดเด่น
+     *
+     * ใช้ Button Template เพื่อให้ลูกค้ากดปุ่มเพียงครั้งเดียวเปิดคำทำนายได้
+     * ไม่ใช่ quick replies (ที่ Messenger อาจซ่อนหลังส่งข้อความใหม่)
+     */
+    protected function sendFacebookFortuneReadyNotification(FacebookWebhookService $fbService, string $userId, string $message, array $result): bool
+    {
+        $defaultMessage = "🔮✨ คำทำนายเชิงลึกพร้อมแล้ว!\n\nกดปุ่มด้านล่างเพื่ออ่านคำทำนายได้เลย";
+        $text = $message ?: $defaultMessage;
+
+        return $fbService->sendButtonTemplate($userId, [
+            'template_type' => 'button',
+            'text' => mb_substr($text, 0, 640), // button template text max 640 chars
+            'buttons' => [
+                ['type' => 'postback', 'title' => '📖 อ่านคำทำนาย', 'payload' => 'VIEW_READING'],
+                ['type' => 'postback', 'title' => '⏰ ไว้ดูทีหลัง', 'payload' => 'VIEW_LATER'],
+                ['type' => 'postback', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+            ],
+        ]);
+    }
+
+    /**
+     * Facebook: ข้อความขอบคุณ + อวยพรหลังทำนายจบ
+     *
+     * แยกจากข้อความทำนาย (reading_complete ถูกส่งหลัง view_reading_deep)
+     * รวม: ขอบคุณ + อวยพร + ลิงก์ชวนเพื่อนได้เงิน + ลิงก์แชร์เพจ
+     */
+    protected function sendFacebookReadingCompleteResponse(FacebookWebhookService $fbService, string $userId, array $result): bool
+    {
+        $reading = $result['reading'] ?? null;
+        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+
+        $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
+        $recruitUrl = $appUrl.'/user/fortune-referral/recruit';
+        $pageId = $this->settings->facebook_page_id ?? null;
+        $pageUrl = $pageId ? "https://www.facebook.com/{$pageId}" : $appUrl;
+
+        $text = "🙏 ขอบคุณที่ไว้วางใจหมอจันทรา คุณ{$userName}\n\n"
+            . "✨ ขอให้โชคดี มีสุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
+            . "📢 ถ้าคำทำนายถูกใจ — แชร์เพจให้เพื่อน หรือชวนเพื่อนมาดูดวงได้ค่าแนะนำเข้า Wallet ทันที!";
+
+        return $fbService->sendButtonTemplate($userId, [
+            'template_type' => 'button',
+            'text' => mb_substr($text, 0, 640),
+            'buttons' => [
+                ['type' => 'web_url', 'title' => '📢 ชวนเพื่อน/ดูรายได้', 'url' => $recruitUrl],
+                ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
+                ['type' => 'postback', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+            ],
+        ]);
     }
 
     /**

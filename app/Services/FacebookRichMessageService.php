@@ -783,6 +783,21 @@ class FacebookRichMessageService
             'awaiting_confirmation' => $this->buildCategoryQuickReplies(),
             'basic_done' => $this->buildPostReadingQuickReplies(),
             'completed' => $this->buildPostReadingQuickReplies(),
+
+            // 🔔 คำทำนายพร้อม — ต้องมีปุ่ม "อ่านคำทำนาย" โดดเด่น
+            'fortune_ready_notification', 'reading_ready' => [
+                ['content_type' => 'text', 'title' => '📖 อ่านคำทำนาย', 'payload' => 'VIEW_READING'],
+                ['content_type' => 'text', 'title' => '⏰ ไว้ดูทีหลัง', 'payload' => 'VIEW_LATER'],
+            ],
+
+            // 💬 ทำนายจบแล้ว — ขอบคุณ + เชิญชวนทำการตลาด + แชร์
+            'reading_complete', 'deep_reading_result', 'view_reading_deep' => [
+                ['content_type' => 'text', 'title' => '📢 ชวนเพื่อน/รับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
+                ['content_type' => 'text', 'title' => '🔗 แชร์เพจ', 'payload' => 'SHARE_PAGE'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+            ],
+
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],

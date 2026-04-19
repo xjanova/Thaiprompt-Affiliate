@@ -1604,7 +1604,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
-                        'text' => 'หวังว่าคำทำนายจะเป็นแนวทางที่ดี ขอให้โชคดีและมีความสุขมากๆ ค่ะ',
+                        'text' => 'ขอให้โชคดี มีสุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ ✨',
                         'wrap' => true,
                         'size' => 'md',
                         'color' => '#555555',
@@ -1616,28 +1616,47 @@ class LineFortuneService implements MessagingPlatformInterface
                         'margin' => 'xl',
                         'color' => '#E8E0FF',
                     ],
+                    // Section: ชวนเพื่อน / รับรายได้
                     [
                         'type' => 'box',
                         'layout' => 'vertical',
                         'margin' => 'xl',
-                        'backgroundColor' => '#F8F7FF',
+                        'backgroundColor' => '#FFF8E1',
                         'cornerRadius' => 'lg',
                         'paddingAll' => 'lg',
                         'contents' => [
                             [
                                 'type' => 'text',
-                                'text' => '💡 พิมพ์ "ดูคำทำนาย" เพื่อดูอีกครั้ง',
+                                'text' => '📢 ถ้าคำทำนายถูกใจ...',
                                 'wrap' => true,
                                 'size' => 'sm',
-                                'color' => '#6B46C1',
+                                'weight' => 'bold',
+                                'color' => '#E8890C',
                             ],
                             [
                                 'type' => 'text',
-                                'text' => 'สามารถดูย้อนหลังได้ทุกเมื่อ',
+                                'text' => 'ชวนเพื่อนมาดูดวง ได้ค่าแนะนำเข้า Wallet ทันที! กดปุ่มด้านล่างเพื่อดูรายละเอียด',
                                 'wrap' => true,
                                 'size' => 'xs',
                                 'color' => '#888888',
                                 'margin' => 'sm',
+                            ],
+                        ],
+                    ],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'margin' => 'md',
+                        'backgroundColor' => '#F8F7FF',
+                        'cornerRadius' => 'lg',
+                        'paddingAll' => 'md',
+                        'contents' => [
+                            [
+                                'type' => 'text',
+                                'text' => '💡 พิมพ์ "ดูคำทำนาย" เพื่อดูอีกครั้ง',
+                                'wrap' => true,
+                                'size' => 'xs',
+                                'color' => '#6B46C1',
                             ],
                         ],
                     ],
@@ -1649,7 +1668,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'spacing' => 'sm',
                 'paddingAll' => 'lg',
                 'contents' => [
-                    // ปุ่มดูดวงอีกครั้ง
+                    // ปุ่มดูดวงอีกครั้ง (primary)
                     [
                         'type' => 'button',
                         'style' => 'primary',
@@ -1661,14 +1680,25 @@ class LineFortuneService implements MessagingPlatformInterface
                             'text' => 'ดูดวง',
                         ],
                     ],
-                    // ปุ่มแชร์
+                    // ปุ่มดูวิธีรับรายได้ (ชวนเพื่อน — เปิด LINE LIFF/redirect ไปหน้า recruit)
                     [
                         'type' => 'button',
                         'style' => 'secondary',
                         'height' => 'sm',
                         'action' => [
                             'type' => 'uri',
-                            'label' => '📤 แชร์ให้เพื่อน',
+                            'label' => '📢 ชวนเพื่อน/ดูรายได้',
+                            'uri' => rtrim(config('app.url', 'https://main.thaiprompt.online'), '/').'/auth/line?redirect=/user/fortune-referral/recruit',
+                        ],
+                    ],
+                    // ปุ่มแชร์ OA
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => [
+                            'type' => 'uri',
+                            'label' => '📤 แชร์ OA ให้เพื่อน',
                             'uri' => 'https://line.me/R/nv/recommendOA/'.($this->settings->line_bot_basic_id ?? config('services.line.bot_basic_id', '@002dqcls')),
                         ],
                     ],

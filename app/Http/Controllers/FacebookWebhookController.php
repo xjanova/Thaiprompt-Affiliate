@@ -1388,6 +1388,11 @@ class FacebookWebhookController extends Controller
             'RESTART' => $this->processConversationalMessage($senderId, 'เริ่มใหม่'),
             'CANCEL' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
 
+            // ✅ Post-reading payloads (จบคำทำนาย → เชิญแชร์/ชวนเพื่อน)
+            'VIEW_LATER' => $this->facebookService->sendMessage($senderId, "✨ ได้เลย! เมื่อพร้อมดูแล้ว พิมพ์ 'ดูคำทำนาย' ได้ทุกเมื่อ 🔮"),
+            'FORTUNE_EARN_INFO' => $this->handleFortuneEarnInfo($senderId),
+            'SHARE_PAGE' => $this->handleSharePage($senderId),
+
             // Quick Replies เดิม (backward compatibility)
             'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
@@ -1551,6 +1556,48 @@ class FacebookWebhookController extends Controller
      *
      * @param  string  $senderId  Facebook User ID
      */
+    /**
+     * ส่งข้อมูลการชวนเพื่อน/รับรายได้ พร้อมลิงก์ไปหน้าศึกษา
+     */
+    protected function handleFortuneEarnInfo(string $senderId): void
+    {
+        $appUrl = config('app.url', 'https://main.thaiprompt.online');
+        $recruitUrl = $appUrl.'/auth/line?redirect=/user/fortune-referral/recruit';
+        $wealthUrl = $appUrl.'/wealth-guide';
+
+        $this->facebookService->sendButtonTemplate($senderId, [
+            'template_type' => 'button',
+            'text' => "📢 เชิญเพื่อนมาดูดวง — ได้รายได้จริง!\n\n"
+                . "💰 ทุกครั้งที่เพื่อนคุณดูดวงเชิงลึก คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
+                . "🔗 กดศึกษาวิธีและรับลิงก์เชิญเพื่อนได้ด้านล่าง",
+            'buttons' => [
+                ['type' => 'web_url', 'title' => '🔗 รับลิงก์เชิญเพื่อน', 'url' => $recruitUrl],
+                ['type' => 'web_url', 'title' => '📚 ศึกษาวิธีสร้างรายได้', 'url' => $wealthUrl],
+                ['type' => 'postback', 'title' => '🔮 ดูดวงต่อ', 'payload' => 'FORTUNE_BASIC'],
+            ],
+        ]);
+    }
+
+    /**
+     * แชร์เพจ Facebook ให้เพื่อน
+     */
+    protected function handleSharePage(string $senderId): void
+    {
+        $pageId = $this->settings->facebook_page_id ?? null;
+        $pageUrl = $pageId ? "https://www.facebook.com/{$pageId}" : config('app.url');
+
+        $this->facebookService->sendButtonTemplate($senderId, [
+            'template_type' => 'button',
+            'text' => "🙏 ขอบคุณที่ใช้บริการ!\n\n"
+                . "📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมาดูดวงเชิงลึก คุณได้ค่าแนะนำเข้า Wallet",
+            'buttons' => [
+                ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
+                ['type' => 'postback', 'title' => '📢 ดูวิธีรับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
+                ['type' => 'postback', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+            ],
+        ]);
+    }
+
     protected function handleLineAddFriend(string $senderId): void
     {
         try {
