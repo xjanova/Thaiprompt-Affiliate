@@ -181,7 +181,7 @@ class FortuneBillingController extends Controller
             }
 
             // Dispatch background job → ไม่ติด web server timeout
-            // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+            // Job จะ: confirmPayment → สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
             ProcessDeepFortuneReadingJob::dispatchSmart(
                 $reading->id, null, $platform, $userId
             );
@@ -260,7 +260,7 @@ class FortuneBillingController extends Controller
         }
 
         // Dispatch background job → ไม่ติด web server timeout
-        // Job จะ: สร้าง chart → สร้างคำทำนาย 3 ข้อ → ส่ง Messenger → save DB
+        // Job จะ: สร้าง chart → สร้างคำทำนาย 2 ข้อ → ส่ง Messenger → save DB
         ProcessDeepFortuneReadingJob::dispatchSmart(
             $reading->id, null, $platform, $userId
         );
