@@ -32,10 +32,15 @@ use Illuminate\Support\Facades\Http;
 class AiTtsApiController extends Controller
 {
     private const ALLOWED_FORMATS = ['mp3', 'wav', 'ogg'];
+
+    /**
+     * Female voices ONLY — "น้องหญิง" is a female persona. Do not add male
+     * entries; product rule, enforced here server-side so even a compromised
+     * client cannot request a male voice.
+     */
     private const THAI_VOICES = [
-        'th-premwadee' => 'Aoede',   // warm female; our "น้องหญิง" default
-        'th-achara'    => 'Callirrhoe',
-        'th-niwat'     => 'Charon',  // male alt
+        'th-premwadee' => 'Aoede',        // warm female · default
+        'th-achara'    => 'Callirrhoe',   // gentler female alt
     ];
 
     public function speak(Request $request)
