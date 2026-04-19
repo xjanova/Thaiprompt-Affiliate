@@ -8,7 +8,7 @@
     @uses Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการร้านค้าทั้งหมด')
 

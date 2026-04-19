@@ -10,7 +10,7 @@
     รองรับ Dark Mode และ Responsive
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่า Storefront')
 

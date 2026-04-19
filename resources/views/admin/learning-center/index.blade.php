@@ -1,5 +1,5 @@
 {{-- 📚 Academy Knowledge - ศูนย์เรียนรู้ (V3 UI) --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Academy Knowledge - ศูนย์เรียนรู้')
 

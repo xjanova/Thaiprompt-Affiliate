@@ -1,5 +1,5 @@
 {{-- 📚 Academy Knowledge - หน้าบทเรียน (V3 UI) --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $article->title . ' - Academy Knowledge')
 

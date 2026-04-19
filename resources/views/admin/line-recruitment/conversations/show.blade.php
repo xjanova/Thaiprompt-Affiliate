@@ -2,7 +2,7 @@
     หน้าแสดงรายละเอียดการสนทนา
     แสดงว่าบอทคุยอะไรกับผู้สมัคร แบบ Chat Interface
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดการสนทนา - LINE Recruitment')
 

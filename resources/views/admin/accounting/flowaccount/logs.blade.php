@@ -1,7 +1,7 @@
 {{-- resources/views/admin/accounting/flowaccount/logs.blade.php --}}
 {{-- หน้าประวัติการซิงค์ FlowAccount --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ประวัติการซิงค์ FlowAccount')
 

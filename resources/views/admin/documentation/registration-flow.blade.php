@@ -8,7 +8,7 @@
     @version 1.0
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Documentation: ระบบการสมัครสมาชิก')
 

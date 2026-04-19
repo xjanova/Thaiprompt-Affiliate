@@ -4,7 +4,7 @@
   * รองรับ Dark Mode และ Responsive Design
   --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'สินค้าที่ถูกบล็อก')
 

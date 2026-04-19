@@ -1,7 +1,7 @@
 {{-- resources/views/admin/accounting/flowaccount/settings.blade.php --}}
 {{-- หน้าตั้งค่า FlowAccount Integration --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ตั้งค่า FlowAccount')
 

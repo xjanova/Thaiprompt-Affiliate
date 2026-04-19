@@ -1,5 +1,5 @@
 {{-- 📚 Academy Knowledge - หน้าหมวดหมู่ (V3 UI) --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $category->name . ' - Academy Knowledge')
 

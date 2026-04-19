@@ -3,7 +3,7 @@
     แสดงกราฟและข้อมูลสถิติรายวัน/รายเดือน
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'สถิติงานไรเดอร์')
 

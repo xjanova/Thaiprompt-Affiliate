@@ -1,7 +1,7 @@
 {{--
     Admin - รายละเอียดข้อร้องเรียน
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ข้อร้องเรียน #' . $dispute->dispute_number)
 

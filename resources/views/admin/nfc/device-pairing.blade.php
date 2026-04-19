@@ -9,7 +9,7 @@
     @version 1.0.0
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'NFC Device Pairing')
 

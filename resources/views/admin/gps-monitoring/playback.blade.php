@@ -2,7 +2,7 @@
     GPS Playback View
     แสดงการเล่นย้อนหลังประวัติ GPS ของ booking
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'GPS Playback - #' . $booking->booking_number)
 

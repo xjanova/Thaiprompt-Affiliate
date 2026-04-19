@@ -2,7 +2,7 @@
     รายการงานไรเดอร์ทั้งหมด
     แสดงงานส่งของ/บริการ พร้อมสถิติ
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการงานไรเดอร์')
 

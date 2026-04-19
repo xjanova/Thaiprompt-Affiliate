@@ -1,7 +1,7 @@
 {{-- resources/views/admin/fortune/horoscope/post-history.blade.php --}}
 {{-- ประวัติการโพสดวงรายวัน --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ประวัติโพส - ' . $campaign->name)
 

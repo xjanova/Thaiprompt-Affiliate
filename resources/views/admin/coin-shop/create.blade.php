@@ -2,7 +2,7 @@
     หน้าเพิ่มสินค้าใหม่
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'เพิ่มสินค้าใหม่')
 

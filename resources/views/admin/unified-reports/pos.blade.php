@@ -1,5 +1,5 @@
 {{-- รายงาน POS --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $pageTitle ?? 'รายงาน POS')
 
 @section('content')

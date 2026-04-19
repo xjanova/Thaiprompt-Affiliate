@@ -3,7 +3,7 @@
     แสดงเส้นทางและประวัติการเคลื่อนที่
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เล่นย้อนหลัง GPS: ' . $rider->full_name)
 

@@ -2,7 +2,7 @@
     รายงาน MLM/Affiliate
     แสดงข้อมูลสมาชิก คอมมิชชั่น Rank และการเติบโต
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'รายงาน MLM/Affiliate')
 

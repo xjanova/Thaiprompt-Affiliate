@@ -2,7 +2,7 @@
     หน้าจัดการ Topic Boundaries
     กำหนดขอบเขตหัวข้อที่ AI สามารถคุยได้
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการขอบเขตหัวข้อ - LINE Recruitment')
 

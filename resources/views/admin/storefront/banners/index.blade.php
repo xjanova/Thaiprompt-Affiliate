@@ -5,7 +5,7 @@
     รองรับ CRUD, Drag & Drop Reorder, และ Toggle Status
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการ Banner หน้าร้าน')
 

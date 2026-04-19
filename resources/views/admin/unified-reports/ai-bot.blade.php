@@ -1,5 +1,5 @@
 {{-- รายงาน AI Bot --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $pageTitle ?? 'รายงาน AI Bot')
 
 @section('content')

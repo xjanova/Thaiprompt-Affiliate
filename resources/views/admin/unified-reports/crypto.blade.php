@@ -1,5 +1,5 @@
 {{-- รายงาน Crypto/TPIX --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $pageTitle ?? 'รายงาน Crypto/TPIX')
 
 @section('content')

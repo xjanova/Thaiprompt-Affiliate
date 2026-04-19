@@ -4,7 +4,7 @@
     Pattern เดียวกับ Fortune Rich Menu Editor
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'Rich Menu Editor - ไทยพร๊อม OA')
 

@@ -1,7 +1,7 @@
 {{--
     Admin - รายการข้อร้องเรียนทั้งหมด
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการข้อร้องเรียน')
 

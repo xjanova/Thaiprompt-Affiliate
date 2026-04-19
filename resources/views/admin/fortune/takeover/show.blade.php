@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เทคโอเวอร์: ' . ($reading->facebook_user_name ?? 'ไม่ระบุชื่อ'))
 

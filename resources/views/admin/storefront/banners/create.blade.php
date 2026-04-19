@@ -5,7 +5,7 @@
     รองรับการอัพโหลดรูป, เลือก Gradient, กำหนดช่วงเวลาแสดง
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เพิ่ม Banner ใหม่')
 

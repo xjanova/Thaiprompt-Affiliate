@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดนักพัฒนา - ' . $developer->display_name)
 

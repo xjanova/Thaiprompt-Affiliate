@@ -11,7 +11,7 @@
     @since 2025-02-22
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'NFC QR Card Pairing')
 

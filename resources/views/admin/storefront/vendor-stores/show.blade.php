@@ -7,7 +7,7 @@
     @uses Tailwind CSS + Alpine.js
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดร้าน: ' . $store->store_name)
 

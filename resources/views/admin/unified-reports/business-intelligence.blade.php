@@ -2,7 +2,7 @@
     Business Intelligence Dashboard
     แดชบอร์ดวิเคราะห์ธุรกิจแบบเต็มรูปแบบ พร้อมกราฟและ KPIs
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'Business Intelligence Dashboard')
 

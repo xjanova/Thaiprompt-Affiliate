@@ -2,7 +2,7 @@
     หน้ารายการการสนทนาทั้งหมด
     แสดงว่าบอทคุยอะไรกับผู้สมัคร
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายการการสนทนา - LINE Recruitment')
 

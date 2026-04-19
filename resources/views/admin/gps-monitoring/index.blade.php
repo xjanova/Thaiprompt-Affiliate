@@ -3,7 +3,7 @@
     แสดงตำแหน่ง GPS ทั้งหมดบนแผนที่แบบ Real-time
     รองรับการกรองตามเงื่อนไขต่างๆ
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'GPS Monitoring Center')
 

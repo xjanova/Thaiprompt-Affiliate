@@ -1,5 +1,5 @@
 {{-- จัดการ 12 ราศี + Generate Daily --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle)
 

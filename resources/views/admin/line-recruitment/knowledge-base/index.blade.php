@@ -2,7 +2,7 @@
     หน้าจัดการ Knowledge Base
     เพิ่มข้อมูลให้ AI จากหลายแหล่ง: ข้อความ, URL, ไฟล์
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการแหล่งข้อมูล - LINE Recruitment')
 

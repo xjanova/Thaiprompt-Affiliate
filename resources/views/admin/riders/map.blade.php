@@ -3,7 +3,7 @@
     ใช้ระบบ GPS Monitoring เดียวกับ ServiceBooking
     แสดงไรเดอร์ที่ออนไลน์/ไม่ว่าง/ออฟไลน์ บนแผนที่แบบ Real-time
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'แผนที่ GPS ไรเดอร์')
 

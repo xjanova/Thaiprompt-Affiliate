@@ -2,7 +2,7 @@
     ศูนย์รายงานรวม - หน้าหลัก
     แสดงรายการระบบทั้งหมดที่สามารถดูรายงานได้
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'ศูนย์รายงานรวม')
 

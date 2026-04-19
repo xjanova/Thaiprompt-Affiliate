@@ -2,7 +2,7 @@
     Trust Scores Index - รายการคะแนนความน่าเชื่อถือทั้งหมด
     แสดง User และ Provider Trust Scores พร้อมตัวกรอง
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการคะแนนความน่าเชื่อถือ')
 

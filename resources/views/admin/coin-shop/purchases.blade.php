@@ -2,7 +2,7 @@
     หน้าจัดการคำสั่งซื้อ Coin Shop (Admin)
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'จัดการคำสั่งซื้อ')
 

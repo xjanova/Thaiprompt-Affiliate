@@ -2,7 +2,7 @@
     Penalties Index - รายการค่าปรับ/บทลงโทษ
     แสดงรายการค่าปรับทั้งหมดพร้อมการจัดการ
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการค่าปรับ/บทลงโทษ')
 

@@ -3,7 +3,7 @@
     แสดงข้อมูลงาน, เส้นทาง, สถานะ และการจัดการ
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียดงาน: #' . $job->job_number)
 

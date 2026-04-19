@@ -2,7 +2,7 @@
     Admin Dashboard - ศูนย์ป้องกันการกลั่นแกล้ง
     แสดงสถิติและข้อมูลสำคัญของระบบ Anti-Abuse
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ศูนย์ป้องกันการกลั่นแกล้ง')
 

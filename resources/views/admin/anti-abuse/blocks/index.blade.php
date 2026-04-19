@@ -2,7 +2,7 @@
     User Blocks Index - รายการการ Block ระหว่างผู้ใช้
     แสดงรายการการ Block ทั้งหมด
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการการ Block')
 

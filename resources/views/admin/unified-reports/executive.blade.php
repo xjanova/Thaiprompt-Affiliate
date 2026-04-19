@@ -2,7 +2,7 @@
     รายงานภาพรวมผู้บริหาร (Executive Summary)
     แสดงข้อมูลสรุปทุกระบบพร้อมกราฟและ Export
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'รายงานภาพรวมผู้บริหาร')
 

@@ -2,7 +2,7 @@
     รายละเอียดไรเดอร์
     แสดงข้อมูลส่วนตัว, สถิติงาน, ประวัติงาน, ตำแหน่ง GPS ปัจจุบัน
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle)
 

@@ -2,7 +2,7 @@
     หน้าแก้ไขสินค้า
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'แก้ไขสินค้า')
 

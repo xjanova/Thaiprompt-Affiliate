@@ -1,7 +1,7 @@
 {{-- resources/views/admin/fortune/horoscope/form.blade.php --}}
 {{-- ฟอร์มสร้าง/แก้ไขแคมเปญดวงรายวัน --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle)
 

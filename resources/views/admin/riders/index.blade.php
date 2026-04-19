@@ -3,7 +3,7 @@
     แสดงรายการ สถิติ และเครื่องมือจัดการ
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'จัดการไรเดอร์')
 

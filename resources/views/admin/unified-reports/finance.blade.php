@@ -1,5 +1,5 @@
 {{-- รายงานการเงิน/กระเป๋าเงิน --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $pageTitle ?? 'รายงานการเงิน')
 
 @section('content')

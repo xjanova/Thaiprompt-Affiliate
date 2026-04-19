@@ -1,7 +1,7 @@
 {{-- resources/views/admin/fortune/horoscope/content-history.blade.php --}}
 {{-- ประวัติเนื้อหาที่ AI สร้าง (7 วันเกิด) --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'เนื้อหาดวง - ' . $campaign->name)
 

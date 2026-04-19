@@ -12,7 +12,7 @@
     @since 2025-11-23
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ธุรกรรม NFC')
 

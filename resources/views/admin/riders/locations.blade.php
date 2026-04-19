@@ -2,7 +2,7 @@
     ตำแหน่ง GPS และประวัติการเดินทางของไรเดอร์
     แสดงตำแหน่งปัจจุบัน และ Playback ย้อนหลัง 24 ชม.
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle)
 

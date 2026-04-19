@@ -1,5 +1,5 @@
 {{-- ฟอร์มเพิ่ม/แก้ไขหมวดหมู่ฝัน --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle)
 

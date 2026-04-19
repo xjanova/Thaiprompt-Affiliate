@@ -2,7 +2,7 @@
     หน้า Dashboard ระบบรับสมัครผ่าน LINE AI
     แสดงสถิติ, กราฟ, และการตั้งค่าต่างๆ
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ระบบรับสมัครผ่าน LINE AI')
 

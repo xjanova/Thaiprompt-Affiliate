@@ -2,7 +2,7 @@
     หน้าจัดการสินค้า Coin Shop (Admin)
 --}}
 
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', $pageTitle ?? 'จัดการสินค้า Coin Shop')
 

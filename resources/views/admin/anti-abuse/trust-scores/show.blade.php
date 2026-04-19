@@ -2,7 +2,7 @@
     Trust Score Show - รายละเอียด Trust Score
     แสดงข้อมูลละเอียดและปรับแต่งคะแนน
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'รายละเอียด Trust Score')
 

@@ -2,7 +2,7 @@
     Location History Viewer - ดูประวัติตำแหน่ง GPS
     แสดงแผนที่และเส้นทางการเดินทางของผู้ใช้และผู้ให้บริการ
 --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 
 @section('title', 'ประวัติตำแหน่ง GPS')
 

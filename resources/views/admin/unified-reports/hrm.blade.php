@@ -1,5 +1,5 @@
 {{-- รายงานบุคลากร (HRM) --}}
-@extends('layouts.admin')
+@extends('layouts.admin-v3')
 @section('title', $pageTitle ?? 'รายงานบุคลากร')
 
 @section('content')
