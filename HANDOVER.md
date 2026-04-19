@@ -42,6 +42,56 @@ curl -sSI https://thaiprompt.online/api/v1/app/config | grep -i location
 
 ---
 
+## Mobile auto-update — wiring + first-time setup
+
+The mobile app's auto-update flow reads from the `app_releases` table via `GET /api/v1/app/latest-version`. Two ingestion paths populate it:
+
+### Path A — automatic (GitHub webhook)
+
+On every `release.published` event, GitHub posts to `/api/webhooks/github/release`. The handler (`App\Http\Controllers\Api\WebhookController::handleGitHubRelease`) verifies the HMAC signature, calls `AppReleaseSync::upsertFromGitHubRelease`, then clears the response cache. End result: a new GitHub release is queryable by the mobile app within seconds.
+
+**One-time GitHub-side setup** (per repo that publishes mobile APKs):
+
+1. `xjanova/thaipromptapp` → **Settings → Webhooks → Add webhook**
+2. Payload URL: `https://main.thaiprompt.online/api/webhooks/github/release`
+3. Content type: `application/json`
+4. Secret: a random string — also set as `GITHUB_WEBHOOK_SECRET` in the backend `.env` (same value)
+5. Events: **Let me select individual events → Releases**
+6. Active: ✓
+7. Save
+
+Verify by editing the most recent release on GitHub (no real change needed) and checking backend logs:
+```bash
+tail -f storage/logs/laravel.log | grep "GitHub release processed"
+```
+
+### Path B — backfill (`releases:backfill` artisan)
+
+For releases that existed before the webhook was wired up, or after a DB wipe:
+
+```bash
+php artisan releases:backfill                          # default: xjanova/thaipromptapp, last 30
+php artisan releases:backfill --limit=50
+php artisan releases:backfill --repo=other-org/x
+php artisan releases:backfill --dry-run                # preview only
+```
+
+Idempotent — safe to re-run. Uses `GITHUB_TOKEN` from `.env` if set (raises rate limit 60/hr → 5000/hr) but works without on public repos.
+
+### Verify auto-update is live end-to-end
+
+```bash
+# 1. Public endpoint returns the latest row
+curl -s https://main.thaiprompt.online/api/v1/app/latest-version | jq '.data.latest_version,.data.apk_url'
+
+# 2. Older app version sees the prompt — bump min_supported_version in DB
+#    to test the "mandatory update" code path:
+php artisan tinker
+>>> DB::table('app_releases')->where('version', '1.0.3')->update(['min_supported_version' => '1.0.3']);
+```
+
+---
+
 ## Mobile app endpoints (v1)
 
 Live as of PR [#2534](https://github.com/xjanova/Thaiprompt-Affiliate/pull/2534) (merged 2026-04-19).
