@@ -126,10 +126,12 @@ Route::prefix('v1')->group(function () {
     Route::prefix('app')->group(function () {
         Route::get('/maintenance-status', [AppConfigController::class, 'maintenanceStatus']);
 
-        // Emergency Alert Banners (public - anyone can view)
-        Route::get('/banners', [\App\Http\Controllers\Admin\AppBannerController::class, 'apiBanners']);
-        Route::post('/banners/{appBanner}/view', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackView']);
-        Route::post('/banners/{appBanner}/click', [\App\Http\Controllers\Admin\AppBannerController::class, 'trackClick']);
+        // NOTE: the previous Emergency Alert Banner public routes referenced
+        // App\Http\Controllers\Admin\AppBannerController which never landed in
+        // the codebase (only the AppBanner model exists). They were silently
+        // overridden by the legacy banner routes inside the protected v1
+        // group below, so removing them is a no-op for live behavior — just
+        // unbreaks `php artisan route:list`.
 
         // Mobile app control plane (public; private keys filtered server-side)
         Route::get('/config',         [\App\Http\Controllers\Api\V1\AppConfigApiController::class, 'config'])->name('api.v1.app.config');
@@ -483,18 +485,22 @@ Route::prefix('v1')->group(function () {
             Route::post('/from-wei', [\App\Http\Controllers\Api\TPIXBlockchainController::class, 'fromWei']);
         });
 
-        // App Configuration (protected)
+        // App Configuration (protected, legacy)
+        // The mobile app's NEW control plane lives in the public block above
+        // (`/v1/app/config`, `/v1/app/flags`, ...). The two `/config` routes
+        // collided — Laravel kept the LATER definition, which silently
+        // hijacked the new public endpoint and made it return 401. The new
+        // endpoint is canonical going forward, so the legacy `/config` and
+        // `/banners` shadows are removed here. The remaining theme/settings/
+        // features endpoints are kept in case any web admin tooling still
+        // hits them.
         Route::prefix('app')->group(function () {
-            Route::get('/config', [AppConfigController::class, 'config']);
             Route::get('/settings', [AppConfigController::class, 'settings']);
             Route::get('/theme', [AppConfigController::class, 'theme']);
             Route::get('/complete-theme', [AppConfigController::class, 'completeTheme']);
             Route::get('/control-sections', [AppConfigController::class, 'controlSections']);
             Route::get('/component-settings', [AppConfigController::class, 'componentSettings']);
             Route::get('/features', [AppConfigController::class, 'features']);
-            Route::get('/banners', [AppConfigController::class, 'banners']);
-            Route::post('/banners/{bannerId}/view', [AppConfigController::class, 'trackBannerView']);
-            Route::post('/banners/{bannerId}/click', [AppConfigController::class, 'trackBannerClick']);
         });
 
         // AI Gen - Image & Video Generation
