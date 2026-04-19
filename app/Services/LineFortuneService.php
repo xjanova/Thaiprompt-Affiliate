@@ -2033,8 +2033,13 @@ class LineFortuneService implements MessagingPlatformInterface
                 'color' => '#999999',
                 'margin' => 'sm',
             ],
-            // สิทธิ์ฟรีวันนี้
-            [
+        ];
+
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // สิทธิ์ฟรีวันนี้ — แสดงเฉพาะเมื่อเปิดบริการฟรี
+        if ($freeEnabled) {
+            $bodyContents[] = [
                 'type' => 'box',
                 'layout' => 'horizontal',
                 'margin' => 'xl',
@@ -2045,36 +2050,38 @@ class LineFortuneService implements MessagingPlatformInterface
                     ['type' => 'text', 'text' => '📊 สิทธิ์ฟรีวันนี้:', 'size' => 'sm', 'flex' => 3, 'color' => '#555555'],
                     ['type' => 'text', 'text' => $creditText, 'size' => 'sm', 'weight' => 'bold', 'color' => $creditColor, 'flex' => 2, 'align' => 'end'],
                 ],
-            ],
-            // เส้นแบ่ง
-            ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'],
-            // บริการ
-            [
-                'type' => 'text',
-                'text' => '🎁 บริการของหมอจันทรา',
-                'size' => 'md',
-                'weight' => 'bold',
-                'color' => '#6B46C1',
-                'margin' => 'xl',
-            ],
+            ];
+            $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
+        }
+
+        // หัวข้อบริการ
+        $bodyContents[] = [
+            'type' => 'text',
+            'text' => '🎁 บริการของหมอจันทรา',
+            'size' => 'md',
+            'weight' => 'bold',
+            'color' => '#6B46C1',
+            'margin' => 'xl',
         ];
 
-        // บริการฟรี
-        $bodyContents[] = [
-            'type' => 'box',
-            'layout' => 'horizontal',
-            'margin' => 'lg',
-            'contents' => [
-                ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
-                [
-                    'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
-                    'contents' => [
-                        ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333'],
-                        ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไปแบบสั้นๆ', 'size' => 'xs', 'color' => '#999999'],
+        // บริการฟรี — แสดงเฉพาะเมื่อเปิดบริการฟรี
+        if ($freeEnabled) {
+            $bodyContents[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'margin' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold', 'color' => '#333333'],
+                            ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไปแบบสั้นๆ', 'size' => 'xs', 'color' => '#999999'],
+                        ],
                     ],
                 ],
-            ],
-        ];
+            ];
+        }
 
         // บริการเสียเงิน (ถ้าเปิด)
         if ($deepReadingEnabled) {
@@ -2088,7 +2095,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => "ดูดวงละเอียด ({$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => "ดูดวงละเอียด (ค่าครู {$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
                             ['type' => 'text', 'text' => 'ถาม 2 คำถาม + วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999'],
                         ],
                     ],
@@ -2260,17 +2267,25 @@ class LineFortuneService implements MessagingPlatformInterface
     public function buildAiLimitFlexMessage(float $deepReadingPrice, bool $deepReadingEnabled = true): array
     {
         $priceDisplay = number_format($deepReadingPrice, 0);
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $maxFree = (int) ($this->settings->max_free_readings ?? 0);
+
+        // Header box — เปลี่ยนข้อความตามสถานะฟรี
+        $headerText = $freeEnabled ? 'สิทธิ์ฟรีวันนี้หมดแล้ว' : 'ดูดวงโดยแม่หมอจันทรา';
+        $subText = $freeEnabled
+            ? "ฟรีวันละ {$maxFree} คำถาม"
+            : "ค่าครู {$priceDisplay} บาท/ครั้ง";
 
         $bodyContents = [
             [
                 'type' => 'box', 'layout' => 'horizontal', 'backgroundColor' => '#FFEBEE', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
                 'contents' => [
-                    ['type' => 'text', 'text' => '⏰', 'size' => 'lg', 'flex' => 0],
+                    ['type' => 'text', 'text' => $freeEnabled ? '⏰' : '💎', 'size' => 'lg', 'flex' => 0],
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'สิทธิ์ฟรีวันนี้หมดแล้ว', 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
-                            ['type' => 'text', 'text' => 'ฟรีวันละ 1 คำถาม', 'size' => 'xs', 'color' => '#999999'],
+                            ['type' => 'text', 'text' => $headerText, 'size' => 'sm', 'weight' => 'bold', 'color' => '#C62828'],
+                            ['type' => 'text', 'text' => $subText, 'size' => 'xs', 'color' => '#999999'],
                         ],
                     ],
                 ],
@@ -2285,7 +2300,7 @@ class LineFortuneService implements MessagingPlatformInterface
             $bodyContents[] = [
                 'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
                 'contents' => [
-                    ['type' => 'text', 'text' => "เริ่มต้นเพียง {$priceDisplay} บาท", 'size' => 'lg', 'weight' => 'bold', 'color' => '#E8890C', 'align' => 'center'],
+                    ['type' => 'text', 'text' => "ค่าครู {$priceDisplay} บาท", 'size' => 'lg', 'weight' => 'bold', 'color' => '#E8890C', 'align' => 'center'],
                     ['type' => 'separator', 'margin' => 'md', 'color' => '#FFE082'],
                     ['type' => 'text', 'text' => '📌 ถามได้ 2 คำถาม', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
                     ['type' => 'text', 'text' => '📌 วิเคราะห์จากวันเกิดเจาะลึก', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
@@ -2298,7 +2313,7 @@ class LineFortuneService implements MessagingPlatformInterface
         if ($deepReadingEnabled) {
             $footerContents[] = [
                 'type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm',
-                'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด'],
+                'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด'],
             ];
         }
         return [
@@ -2339,11 +2354,15 @@ class LineFortuneService implements MessagingPlatformInterface
         $creditText = $isUnlimited || $remaining >= 99 ? '✨ ไม่จำกัด ✨' : "{$remaining} ครั้ง";
         $statusColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
         $priceDisplay = number_format($deepReadingPrice, 0);
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
 
         $bodyContents = [
             ['type' => 'text', 'text' => "คุณ{$userName}", 'size' => 'md', 'weight' => 'bold', 'color' => '#333333'],
-            // สิทธิ์คงเหลือ
-            [
+        ];
+
+        // สิทธิ์คงเหลือ — แสดงเฉพาะเมื่อเปิดบริการฟรี
+        if ($freeEnabled) {
+            $bodyContents[] = [
                 'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#F8F7FF', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
                 'contents' => [
                     [
@@ -2361,8 +2380,17 @@ class LineFortuneService implements MessagingPlatformInterface
                         ],
                     ],
                 ],
-            ],
-        ];
+            ];
+        } else {
+            // ปิดบริการฟรี → แสดง info card ชี้ไปที่ดูดวงเสียค่าครู
+            $bodyContents[] = [
+                'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💎 บริการดูดวงโดยแม่หมอจันทรา', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                    ['type' => 'text', 'text' => "ค่าครู {$priceDisplay} บาท/ครั้ง", 'size' => 'xs', 'color' => '#999999', 'margin' => 'sm'],
+                ],
+            ];
+        }
 
         // แนะนำดูดวงละเอียด (ถ้าเปิด)
         if ($deepReadingEnabled) {
@@ -2374,7 +2402,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => "ดูดวงละเอียด {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => "ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
                             ['type' => 'text', 'text' => 'ถาม 2 คำถาม วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999', 'wrap' => true],
                         ],
                     ],

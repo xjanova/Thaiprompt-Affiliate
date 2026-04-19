@@ -308,27 +308,43 @@ class FacebookRichMessageService
      */
     public function buildCheckRemainingTemplate(int $remaining, int $maxFree, int $todayCount): array
     {
-        $text = "📊 สิทธิ์ดูดวงของคุณ\n\n";
-        $text .= "🆓 ดูดวงฟรีวันนี้: {$todayCount}/{$maxFree} ครั้ง\n";
-        $text .= "✅ เหลืออีก: {$remaining} ครั้ง\n\n";
+        $settings = FortuneTellingSetting::getSettings();
+        $freeEnabled = $settings->isFreeReadingEnabled();
+        $price = number_format((float) ($settings->deep_reading_price ?? 99), 0);
 
-        if ($remaining > 0) {
-            $text .= '💡 พิมพ์คำถามมาได้เลย!';
+        if ($freeEnabled) {
+            $text = "📊 สิทธิ์ดูดวงของคุณ\n\n";
+            $text .= "🆓 ดูดวงฟรีวันนี้: {$todayCount}/{$maxFree} ครั้ง\n";
+            $text .= "✅ เหลืออีก: {$remaining} ครั้ง\n\n";
+
+            if ($remaining > 0) {
+                $text .= '💡 พิมพ์คำถามมาได้เลย!';
+            } else {
+                $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงละเอียดสิ!';
+            }
         } else {
-            $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงละเอียดสิคะ!';
+            // ปิดบริการฟรี — ไม่พูดถึงฟรี
+            $text = "💎 บริการดูดวงโดยแม่หมอจันทรา\n\n";
+            $text .= "💰 ค่าครู {$price} บาท/ครั้ง\n";
+            $text .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n\n";
+            $text .= '💡 กดปุ่มด้านล่างเพื่อเริ่ม';
         }
 
-        $buttons = [
-            [
+        $buttons = [];
+
+        // ปุ่มดูดวงฟรี — แสดงเฉพาะเมื่อเปิดบริการฟรี
+        if ($freeEnabled) {
+            $buttons[] = [
                 'type' => 'postback',
                 'title' => '🔮 ดูดวงฟรี',
                 'payload' => 'FORTUNE_BASIC',
-            ],
-            [
-                'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
-                'payload' => 'DEEP_READING_ACCEPT',
-            ],
+            ];
+        }
+
+        $buttons[] = [
+            'type' => 'postback',
+            'title' => '💎 ดูดวงละเอียด',
+            'payload' => 'DEEP_READING_ACCEPT',
         ];
 
         $lineUrl = $this->getLineAddFriendUrl();
@@ -506,6 +522,7 @@ class FacebookRichMessageService
     public function buildAiLimitTemplate(float $price): array
     {
         $priceText = number_format($price, 0);
+        $freeEnabled = FortuneTellingSetting::getSettings()->isFreeReadingEnabled();
 
         $buttons = [
             [
@@ -524,18 +541,26 @@ class FacebookRichMessageService
             ];
         }
 
-        $buttons[] = [
-            'type' => 'postback',
-            'title' => '📊 เช็คสิทธิ์',
-            'payload' => 'CHECK_REMAINING',
-        ];
+        // เช็คสิทธิ์ — แสดงเฉพาะเมื่อมีบริการฟรี
+        if ($freeEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => '📊 เช็คสิทธิ์',
+                'payload' => 'CHECK_REMAINING',
+            ];
+        }
+
+        // ข้อความแตกต่างตามสถานะฟรี
+        $text = $freeEnabled
+            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงละเอียดสิ!\n• วิเคราะห์เชิงลึก 3 คำถาม\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
+            : "💎 ดูดวงโดยแม่หมอจันทรา\n\n• วิเคราะห์เชิงลึก 3 คำถาม\n• ใช้วันเกิดวิเคราะห์\n• ทำนายแม่นยำ\n\n💰 ค่าครู {$priceText} บาท";
 
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้วค่ะ\n\n💎 ลองดูดวงละเอียดสิคะ!\n• วิเคราะห์เชิงลึก 3 คำถาม\n• ใช้วันเกิดวิเคราะห์\n\n💰 เพียง {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!",
+                    'text' => $text,
                     'buttons' => $buttons,
                 ],
             ],

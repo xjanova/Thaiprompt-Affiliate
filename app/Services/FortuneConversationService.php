@@ -3563,6 +3563,14 @@ class FortuneConversationService
      */
     protected function getRemainingCreditsMessage(string $userId): string
     {
+        // ถ้าปิดบริการฟรี → แจ้งว่าต้องใช้บริการเสียค่าครู
+        if (! $this->settings->isFreeReadingEnabled()) {
+            $price = $this->getDeepReadingPrice();
+
+            return "💎 บริการดูดวง — ค่าครู {$price} บาท/ครั้ง\n"
+                . "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มใช้บริการ";
+        }
+
         $remaining = $this->getRemainingFreeQuestions($userId);
 
         // เช็คว่ามีเครดิตพิเศษจากแอดมินหรือไม่
@@ -3786,9 +3794,18 @@ class FortuneConversationService
      */
     protected function getHelpMessage(): string
     {
-        return "🔮 *ระบบดูดวง AI*\n\n".
-               "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
-               'หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ค่ะ ✨';
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        if ($freeEnabled) {
+            return "🔮 *ระบบดูดวง AI*\n\n".
+                   "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
+                   'หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ ✨';
+        }
+
+        $price = $this->getDeepReadingPrice();
+
+        return "🔮 *ระบบดูดวงโดยแม่หมอจันทรา*\n\n".
+               "พิมพ์ 'ดูดวง' เพื่อเริ่มใช้บริการ\n".
+               "💎 ค่าครู {$price} บาท/ครั้ง ✨";
     }
 
     /**
@@ -3799,6 +3816,8 @@ class FortuneConversationService
     protected function getHelpMessageWithExamples(): string
     {
         $price = $this->getDeepReadingPrice();
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $maxFree = (int) ($this->settings->max_free_readings ?? 0);
 
         $message = "🔮 *เพจดูดวงหมอจันทรายินดีต้อนรับ*\n\n";
         $message .= "หมอพร้อมช่วยดูดวงให้ ไม่ว่าจะเรื่องอะไร:\n\n";
@@ -3812,10 +3831,13 @@ class FortuneConversationService
         $message .= "🎁 *บริการของหมอ*\n";
         $message .= "═══════════════════════\n\n";
 
-        $message .= "🆓 *ดูดวงฟรี* - วันละ 1 คำถาม\n";
-        $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
+        // แสดงบริการฟรีเฉพาะเมื่อเปิดอยู่
+        if ($freeEnabled) {
+            $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
+            $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
+        }
 
-        $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+        $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
         $message .= "   ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
         $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
 
@@ -4457,24 +4479,30 @@ class FortuneConversationService
      */
     protected function getAILimitMessage(): string
     {
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $maxFree = (int) ($this->settings->max_free_readings ?? 0);
+
         $message = "🔮 *เพจดูดวงหมอจันทรายินดีต้อนรับ*\n\n";
-        $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้วค่ะ\n";
-        $message .= "(ฟรีวันละ 1 คำถาม)\n\n";
+
+        if ($freeEnabled) {
+            $message .= "วันนี้คุณใช้สิทธิ์ถามฟรีไปแล้ว\n";
+            $message .= "(ฟรีวันละ {$maxFree} คำถาม)\n\n";
+        }
 
         // ✅ แสดง upsell เฉพาะเมื่อเปิดดูดวงละเอียด
         if ($this->settings->isDeepReadingEnabled()) {
             $price = $this->getDeepReadingPrice();
 
             $message .= "═══════════════════════\n";
-            $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+            $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
             $message .= "═══════════════════════\n\n";
 
             $message .= "📌 ถามได้ถึง 2 คำถาม\n";
             $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
             $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
-            $message .= "📌 คำทำนายละเอียดคุ้มราคา\n\n";
+            $message .= "📌 คำทำนายละเอียดคุ้มค่าครู\n\n";
 
-            $message .= "🎯 *วิธีใช้บริการ*\n";
+            $message .= "🎯 *วิธีใช้งาน*\n";
             $message .= "─────────────────────\n";
             $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
             $message .= "2️⃣ ถามคำถามได้เลย 2 ข้อ\n";
@@ -4482,8 +4510,10 @@ class FortuneConversationService
             $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
 
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
-        } else {
+        } elseif ($freeEnabled) {
             $message .= 'กลับมาใหม่พรุ่งนี้ได้ 🙏';
+        } else {
+            $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
         }
 
         return $message;

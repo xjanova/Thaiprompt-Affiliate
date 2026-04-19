@@ -297,7 +297,11 @@ class FortuneChannelManager
                 'completed' => $this->sendFacebookCompletedResponse($fbService, $richService, $userId, $result),
 
                 // ยืนยันดูดวง → Quick Replies เลือกหมวด
-                'awaiting_confirmation' => $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action),
+                // Facebook awaiting_confirmation — ถ้าปิดบริการฟรี (show_quick_replies=false) → ส่งแค่ text
+                // ป้องกันดันลูกค้าเข้า free flow ผ่านปุ่ม category
+                'awaiting_confirmation' => ($result['show_quick_replies'] ?? true)
+                    ? $this->sendFacebookWithQuickReplies($fbService, $richService, $userId, $message, $action)
+                    : $fbService->sendMessage($userId, $message),
 
                 // ขอวันเกิด → Birthdate prompt Template
                 'collecting_birthdate' => $this->sendFacebookBirthdateResponse($fbService, $richService, $userId, $result),
