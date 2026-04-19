@@ -2,9 +2,9 @@
 
 Operational notes that don't belong in code or `CLAUDE.md` but the next person needs to know.
 
-## Cloudflare Page Rule fix — bare-domain redirect bug
+## Bare-domain redirect — the real fix (origin .htaccess, NOT Cloudflare)
 
-**Symptom:** any request to `https://thaiprompt.online/...` returns a 301 to a broken URL where the path is concatenated to the host without a separator slash:
+**Symptom (resolved 2026-04-19):** any request to `https://thaiprompt.online/...` returned a 301 to a broken URL where the host and path concatenated without a separator slash:
 
 ```text
 $ curl -sSI https://thaiprompt.online/api/v1/app/config
@@ -13,32 +13,41 @@ location: http://main.thaiprompt.onlineapi/v1/app/config     ← BROKEN (missing
 server: cloudflare
 ```
 
-The mobile app's HTTP client follows the 301, fails DNS for the bogus host, and shows "no network." Affects every endpoint hit via the bare brand domain.
+The mobile app's HTTP client followed the 301, failed DNS for the bogus host, and showed "no network." Affected every endpoint hit via the bare brand domain.
 
-**Root cause:** A Cloudflare **Forwarding URL** Page Rule whose destination is
+**Root cause** (verified by inspecting CF dashboard + walking docroot via SSH):
+
+The bug was NOT in Cloudflare — Page Rules / Redirect Rules / Bulk Redirects all empty. The bug lived in the bare domain's `.htaccess` at the origin server:
 
 ```text
-http://main.thaiprompt.online$1
+/home/admin/domains/thaiprompt.online/public_html/.htaccess
+└── Redirect 301 / http://main.thaiprompt.online        ← OLD/BROKEN
 ```
 
-— missing the `/` between the host and the `$1` capture, so a path like `api/v1/app/config` (captured without leading slash by `*thaiprompt.online/*`) is appended directly to the host.
+Apache's `Redirect 301 <URL-path> <URL>` directive strips the matching prefix from the request and appends the remainder to the destination URL. With source=`/` and dest=`http://main.thaiprompt.online` (no trailing slash):
 
-**Fix (10-second dashboard edit):**
+  request `/api/v1/app/config`
+  → strip `/`  → leftover `api/v1/app/config`
+  → concat → `http://main.thaiprompt.online` + `api/v1/app/config`
+  → final  → `http://main.thaiprompt.onlineapi/v1/app/config`  💥
 
-1. Cloudflare dashboard → **thaiprompt.online** → **Rules → Page Rules**
-2. Find the rule whose URL pattern is `*thaiprompt.online/*` (or similar) with a "Forwarding URL" action
-3. Edit the destination to add the missing slash AND switch to HTTPS:
-   - Old: `http://main.thaiprompt.online$1`
-   - **New:** `https://main.thaiprompt.online/$1`
-4. Save · the change is global within ~30s
+Cloudflare just relayed the broken 301 from origin (`cf-cache-status: DYNAMIC`).
 
-**Verify:**
+**Fix applied** — replaced the file in-place via Server Logs `tinker` (backup at `.htaccess.bak.YYYYMMDD_HHMMSS`):
+
+```apache
+RewriteEngine On
+RewriteRule ^(.*)$ https://main.thaiprompt.online/$1 [R=301,L]
+```
+
+Now `RewriteRule` keeps the leading slash on `$1` AND upgrades to HTTPS. Verified:
+
 ```bash
-curl -sSI https://thaiprompt.online/api/v1/app/config | grep -i location
-# Expect:  location: https://main.thaiprompt.online/api/v1/app/config
+$ curl -sSI https://thaiprompt.online/api/v1/app/config | grep -i location
+location: https://main.thaiprompt.online/api/v1/app/config   ← clean
 ```
 
-**Repo-side safety net:** `public/.htaccess` has a defensive `RewriteRule` that catches `HTTP_HOST = thaiprompt.online` and issues a clean 301. It's a no-op while the CF rule short-circuits at the edge, but it's there in case the CF rule is removed and Apache starts seeing bare-domain traffic.
+**If the file gets reverted by cPanel / a deploy script / a "reset" button**, redeploy the same content, OR rely on the in-repo safety net at `public/.htaccess` of the Laravel app (handles the `HTTP_HOST = thaiprompt.online` case at the application layer too — works only after the request reaches the Laravel docroot, which it does NOT today because of the per-domain vhost split, but is there as a belt-and-braces).
 
 ---
 
