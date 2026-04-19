@@ -33,14 +33,18 @@ Apache's `Redirect 301 <URL-path> <URL>` directive strips the matching prefix fr
 
 Cloudflare just relayed the broken 301 from origin (`cf-cache-status: DYNAMIC`).
 
-**Fix applied** — replaced the file in-place via Server Logs `tinker` (backup at `.htaccess.bak.YYYYMMDD_HHMMSS`):
+**Fix applied** — replaced the file in-place via Server Logs `tinker` (backup at `.htaccess.bak.YYYYMMDD_HHMMSS`).
+
+First attempt used `[R=301,L]` — that fixed the slash bug but introduced a new one: HTTP/1.1 clients downgrade `POST` → `GET` when following a 301 (legacy behaviour from RFC 2616). Mobile registration started returning 405 Method Not Allowed because `/api/v1/register` only accepts POST. The app's catch-all error handler then surfaced "ไม่มีสัญญาณอินเทอร์เน็ต".
+
+The current rule uses **308 (Permanent Redirect)** which preserves the request method:
 
 ```apache
 RewriteEngine On
-RewriteRule ^(.*)$ https://main.thaiprompt.online/$1 [R=301,L]
+RewriteRule ^(.*)$ https://main.thaiprompt.online/$1 [R=308,L]
 ```
 
-Now `RewriteRule` keeps the leading slash on `$1` AND upgrades to HTTPS. Verified:
+308 is the right choice for an API redirect — clients keep `POST`/`PUT`/`DELETE` intact and the body is re-sent. Verified:
 
 ```bash
 $ curl -sSI https://thaiprompt.online/api/v1/app/config | grep -i location
