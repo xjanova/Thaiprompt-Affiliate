@@ -1746,18 +1746,44 @@ class FortuneConversationService
         // เก็บข้อความต้นฉบับไว้ใน state เพื่อส่งให้ AI ตอนยืนยัน
         $reading->setConversationState('original_message', $messageText);
 
-        // สร้างข้อความแจ้งสิทธิ์ฟรี
+        // สร้างข้อความ — conditional ตามว่าเปิดบริการฟรีหรือไม่
         $message = "🔮 สวัสดี คุณ{$name} ✨\n\n";
         $message .= "เพจดูดวงหมอจันทรายินดีต้อนรับ\n\n";
 
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // ถ้าปิดบริการฟรี → ชี้ไปที่ดูดวงเสียค่าครูเลย (ไม่พูดถึงฟรี)
+        if (! $freeEnabled) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            if ($this->settings->isDeepReadingEnabled()) {
+                $price = $this->getDeepReadingPrice();
+                $message .= "💎 *ดูดวงโดยแม่หมอจันทรา — ค่าครู {$price} บาท*\n";
+                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+                $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
+            } else {
+                $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
+            }
+
+            return [
+                'action' => 'awaiting_confirmation',
+                'message' => $message,
+                'reading' => $reading,
+                'show_quick_replies' => false,
+                'remaining' => 0,
+            ];
+        }
+
+        // เปิดบริการฟรี — แจ้งสิทธิ์
         if ($userCredit && $userCredit->isCurrentlyUnlimited()) {
-            $message .= "🌟 คุณมีสิทธิ์ดูดวงฟรีไม่จำกัด! (โปรโมชั่นพิเศษ)\n\n";
+            $message .= "🌟 คุณมีสิทธิ์ดูดวงไม่จำกัด! (โปรโมชั่นพิเศษ)\n\n";
         } elseif ($remaining >= 99) {
-            $message .= "🌟 คุณมีสิทธิ์ดูดวงฟรีไม่จำกัด!\n\n";
+            $message .= "🌟 คุณมีสิทธิ์ดูดวงไม่จำกัด!\n\n";
         } elseif ($remaining > 0) {
-            $message .= "📊 วันนี้คุณมีสิทธิ์ดูดวงฟรี {$remaining} ครั้ง\n\n";
+            $message .= "📊 วันนี้คุณมีสิทธิ์ดูดวง {$remaining} ครั้ง\n\n";
         } else {
-            $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้ว\n\n";
+            $message .= "⏰ สิทธิ์วันนี้หมดแล้ว\n\n";
         }
 
         if ($remaining > 0) {
@@ -1765,13 +1791,13 @@ class FortuneConversationService
             $message .= "ไม่ว่าจะเรื่อง ความรัก 💕 การงาน 💼 การเงิน 💰 สุขภาพ 🏥\n\n";
             $message .= 'กดเลือกด้านล่าง หรือพิมพ์คำถามมาได้เลย 👇';
         } else {
-            // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงละเอียด
+            // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงเสียค่าครู
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
                 $message .= "กลับมาใหม่พรุ่งนี้ได้ หรือ\n\n";
-                $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
+                $message .= "💎 *ดูดวงโดยแม่หมอจันทรา — ค่าครู {$price} บาท*\n";
                 $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';

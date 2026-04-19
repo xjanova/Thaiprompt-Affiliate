@@ -577,6 +577,17 @@ EOT;
     }
 
     /**
+     * ตรวจสอบว่าเปิดบริการดูดวงฟรีหรือไม่
+     *
+     * เปิดเมื่อ max_free_readings > 0 เท่านั้น
+     * ถ้าปิด → ระบบจะไม่พูดถึงการดูดวงฟรีเลย และชี้ไปที่ดูดวงเสียค่าครูแทน
+     */
+    public function isFreeReadingEnabled(): bool
+    {
+        return (int) ($this->max_free_readings ?? 0) > 0;
+    }
+
+    /**
      * ตรวจสอบว่าเปิดใช้งานระบบสมัครสมาชิกหรือไม่
      */
     public function isSubscriptionEnabled(): bool

@@ -208,7 +208,7 @@ class FortuneAIService
 
 [ข้อมูลระบบดูดวง Thaiprompt ที่คุณต้องรู้]
 - ดูดวงฟรีได้วันละ {maxFreeReadings} ครั้ง
-- ดูดวงเชิงลึก (Deep Reading) ราคา {deepReadingPrice} บาท/ครั้ง โดยหมอดู AI วิเคราะห์จากวันเกิดและคำถามของผู้ใช้
+- ดูดวงเชิงลึก (Deep Reading) ค่าครู {deepReadingPrice} บาท/ครั้ง โดยหมอจันทราวิเคราะห์จากวันเกิดและคำถามของผู้ใช้ (ใช้คำว่า "ค่าครู" เสมอ ไม่ใช่ "ค่าบริการ")
 - หัวข้อดูดวงที่ได้: ความรัก, การเงิน, การงาน, สุขภาพ, โชคลาภ, ครอบครัว, การเรียน, เดินทาง
 - วิธีดูดวง: พิมพ์ "ดูดวง" หรือพิมพ์หัวข้อตรงๆ เช่น "ดวงความรัก" "ดวงการเงินปีนี้"
 
@@ -530,6 +530,12 @@ class FortuneAIService
     {
         $maxFreeReadings = (int) ($this->settings->max_free_readings ?? 3);
         $deepReadingPrice = number_format((float) ($this->settings->deep_reading_price ?? 99), 0);
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // หากปิดบริการฟรี → ใช้ข้อความแบบไม่พูดถึงฟรีเลย
+        $freeLineForPrompt = $freeEnabled
+            ? "- ดูดวงฟรีได้วันละ {$maxFreeReadings} ครั้ง"
+            : "- บริการดูดวงฟรีปิดอยู่ — ทุกคำถามคิดเป็นค่าครูตามราคา";
 
         // คำนวณค่าคอมมิชชั่นจาก settings
         $mode = $this->settings->getFortuneCommissionMode();
@@ -551,11 +557,25 @@ class FortuneAIService
         }
 
         // แทนที่ placeholder ด้วยข้อมูลจริง
-        return str_replace(
+        $message = str_replace(
             ['{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}'],
             [$maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission],
             self::CHAT_SYSTEM_MESSAGE_TEMPLATE
         );
+
+        // แทนที่บรรทัดที่พูดถึงฟรี — conditional ตามสถานะจริง
+        $message = str_replace(
+            "- ดูดวงฟรีได้วันละ {$maxFreeReadings} ครั้ง",
+            $freeLineForPrompt,
+            $message
+        );
+
+        // ถ้าปิดฟรี → เปลี่ยนคำว่า "ค่าบริการ" ให้เป็น "ค่าครู" และเน้นว่าไม่มีฟรี
+        if (! $freeEnabled) {
+            $message .= "\n\n[สำคัญ] บริการดูดวงฟรีถูกปิดชั่วคราว — ห้ามพูดถึงฟรีเลย ถ้าลูกค้าถามเรื่องราคา ให้ตอบว่าเป็น 'ค่าครู' ทุกครั้ง ไม่ใช่ 'ค่าบริการ'";
+        }
+
+        return $message;
     }
 
     /**

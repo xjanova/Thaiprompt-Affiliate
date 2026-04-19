@@ -2878,8 +2878,10 @@ class LineFortuneService implements MessagingPlatformInterface
             'footer' => [
                 'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด']],
-                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด']],
+                    ...($this->settings->isFreeReadingEnabled()
+                        ? [['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']]]
+                        : []),
                 ],
             ],
         ];
