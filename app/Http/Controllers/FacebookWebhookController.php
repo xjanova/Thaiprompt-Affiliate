@@ -302,7 +302,11 @@ class FacebookWebhookController extends Controller
             $deepLimitCheck = $this->facebookService->checkDeepFreeLimit($fromId);
 
             if ($deepLimitCheck['has_reached_limit']) {
-                $this->sendDeepLimitMessage($comment);
+                // ✅ ครบ limit → ใช้ engagement template ชวนดูดวงแทนการส่ง limit message
+                Log::info('🚫 Deep limit reached → redirect to engagement', [
+                    'user_id' => $fromId,
+                ]);
+                $this->handleCommentEngagement($comment);
 
                 return;
             }
@@ -312,7 +316,11 @@ class FacebookWebhookController extends Controller
             $limitCheck = $this->facebookService->checkFreeLimit($fromId);
 
             if ($limitCheck['has_reached_limit']) {
-                $this->sendLimitMessage($comment);
+                // ✅ ครบ limit → ใช้ engagement template ชวนดูดวงแทนการส่ง limit message
+                Log::info('🚫 Free limit reached → redirect to engagement', [
+                    'user_id' => $fromId,
+                ]);
+                $this->handleCommentEngagement($comment);
 
                 return;
             }
