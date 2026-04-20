@@ -123,32 +123,35 @@ class AppServiceProvider extends ServiceProvider
      */
     protected function autoRunPendingMigrations(): void
     {
-        try {
-            // ข้ามถ้ากำลังรัน migrate command อยู่แล้ว (ป้องกัน nested migration
-            // ที่อาจทำให้เกิดสถานะ partial - ตารางถูกสร้างแต่ migration ไม่ถูกบันทึก)
-            if ($this->app->runningInConsole()) {
-                $argv = $_SERVER['argv'] ?? [];
-                $command = implode(' ', $argv);
-                if (str_contains($command, 'migrate')) {
-                    return;
-                }
-            }
-
-            // ใช้ file cache เพื่อตรวจสอบวันละครั้ง (ไม่ใช้ DB cache เพราะ DB อาจยังไม่พร้อม)
-            $cacheFile = storage_path('framework/cache/migration_check.txt');
-            $today = date('Y-m-d');
-
-            // ถ้าเช็คแล้ววันนี้ ข้ามไป
-            if (file_exists($cacheFile) && trim(file_get_contents($cacheFile)) === $today) {
+        // ข้ามถ้ากำลังรัน migrate command อยู่แล้ว (ป้องกัน nested migration
+        // ที่อาจทำให้เกิดสถานะ partial - ตารางถูกสร้างแต่ migration ไม่ถูกบันทึก)
+        if ($this->app->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            $command = implode(' ', $argv);
+            if (str_contains($command, 'migrate')) {
                 return;
             }
+        }
 
+        // ใช้ file cache เพื่อตรวจสอบวันละครั้ง (ไม่ใช้ DB cache เพราะ DB อาจยังไม่พร้อม)
+        $cacheFile = storage_path('framework/cache/migration_check.txt');
+        $today = date('Y-m-d');
+
+        // ถ้าเช็คแล้ววันนี้ ข้ามไป
+        if (file_exists($cacheFile) && trim(file_get_contents($cacheFile)) === $today) {
+            return;
+        }
+
+        // ⚠️ CRITICAL: บันทึก cache ก่อนรัน migrate
+        // เหตุผล: ถ้า migrate throw exception (เช่น DB down) แล้ว cache ถูกเขียนหลัง
+        //         → ทุก request จะพยายาม migrate ใหม่ → spam log + timeout
+        // ยอมรับความเสี่ยงว่า migration ที่ fail จะต้องรอถึงพรุ่งนี้ (หรือรัน artisan migrate เอง)
+        @file_put_contents($cacheFile, $today);
+
+        try {
             // รัน migrate --force (จะไม่ทำอะไรถ้าไม่มี pending)
             \Artisan::call('migrate', ['--force' => true]);
             $output = \Artisan::output();
-
-            // บันทึกว่าเช็คแล้ววันนี้
-            file_put_contents($cacheFile, $today);
 
             // Log ถ้ามี migration ที่รัน
             if (! str_contains($output, 'Nothing to migrate')) {

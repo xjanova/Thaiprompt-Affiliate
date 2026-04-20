@@ -49,40 +49,19 @@ class PaymentService
 
     public function __construct()
     {
-        $this->registerProviders();
-    }
-
-    /**
-     * Register payment providers
-     *
-     * ลงทะเบียน payment providers ทั้งหมดที่พร้อมใช้งาน
-     */
-    protected function registerProviders(): void
-    {
-        // ลงทะเบียน built-in providers
-        foreach (self::$providerClasses as $code => $class) {
-            try {
-                // NFCCardProvider ต้องใช้ dependency injection
-                if ($code === 'nfc_card') {
-                    $this->providers[$code] = app($class);
-                } else {
-                    $this->providers[$code] = new $class;
-                }
-            } catch (\Exception $e) {
-                // ถ้าสร้าง provider ไม่สำเร็จ ให้ข้ามไป
-                Log::debug("Failed to register payment provider: {$code}", [
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
+        // ⚠️ ไม่สร้าง providers ใน constructor — ใช้ lazy loading ผ่าน getProvider()
+        // เหตุผล: constructor ของแต่ละ provider ยิง DB query หา gateway config
+        // ถ้า DB ไม่พร้อมจะเกิด timeout 8 วิ/provider × 12 providers = 96 วิ/request
     }
 
     /**
      * Check if a provider is available
+     *
+     * เช็คจาก static mapping ไม่ต้อง instantiate (หลีกเลี่ยง DB query)
      */
     public function hasProvider(string $method): bool
     {
-        return isset($this->providers[$method]);
+        return isset(self::$providerClasses[$method]);
     }
 
     /**
@@ -90,18 +69,42 @@ class PaymentService
      */
     public function getRegisteredProviders(): array
     {
-        return array_keys($this->providers);
+        return array_keys(self::$providerClasses);
     }
 
     /**
      * Get payment provider by method
      *
+     * Lazy load — สร้าง provider instance เมื่อเรียกใช้จริงเท่านั้น
+     * แล้ว cache ไว้ใน $this->providers เพื่อใช้ซ้ำ
+     *
      * @throws Exception
      */
     public function getProvider(string $method): PaymentProviderInterface
     {
-        if (! isset($this->providers[$method])) {
+        // คืน instance ที่สร้างไว้แล้ว (cached)
+        if (isset($this->providers[$method])) {
+            return $this->providers[$method];
+        }
+
+        if (! isset(self::$providerClasses[$method])) {
             throw new Exception("Payment provider '{$method}' not found");
+        }
+
+        $class = self::$providerClasses[$method];
+
+        try {
+            // NFCCardProvider ต้องใช้ dependency injection
+            if ($method === 'nfc_card') {
+                $this->providers[$method] = app($class);
+            } else {
+                $this->providers[$method] = new $class;
+            }
+        } catch (\Exception $e) {
+            Log::debug("Failed to instantiate payment provider: {$method}", [
+                'error' => $e->getMessage(),
+            ]);
+            throw new Exception("Payment provider '{$method}' could not be instantiated: ".$e->getMessage());
         }
 
         return $this->providers[$method];
