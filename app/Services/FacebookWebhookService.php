@@ -301,6 +301,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * - message_tag: tag สำหรับ MESSAGE_TAG เช่น 'POST_PURCHASE_UPDATE'
      * - from_comment_engagement: true เมื่อเรียกจาก comment engagement
      *   → จะ fallback เป็น MESSAGE_TAG อัตโนมัติถ้า RESPONSE ล้มเหลว
+     * - comment_id: ถ้ามี + from_comment_engagement=true จะลองส่งผ่าน Private Replies
+     *   endpoint (/{comment-id}/private_replies) ก่อน เพื่อ bypass 24hr window และ
+     *   error 551 "บุคคลนี้ไม่พร้อมใช้งาน" (user ไม่เคยทักเพจมาก่อน)
      *
      * @param  string  $recipientId  Facebook User ID
      * @param  string  $message  ข้อความหลัก
@@ -321,6 +324,22 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $messagingType = $options['messaging_type'] ?? 'RESPONSE';
             $messageTag = $options['message_tag'] ?? null;
             $fromCommentEngagement = $options['from_comment_engagement'] ?? false;
+            $commentId = $options['comment_id'] ?? null;
+
+            // ถ้าเป็น comment engagement + มี comment_id → ลอง Private Replies ก่อน
+            // Private Replies รองรับ 7 วันหลังคอมเม้นต์ และไม่ต้องอยู่ใน conversation window
+            // แก้ปัญหา error 551 "บุคคลนี้ไม่พร้อมใช้งาน"
+            if ($fromCommentEngagement && $commentId) {
+                $privateReplySuccess = $this->sendPrivateReply($commentId, $message, $formattedReplies);
+                if ($privateReplySuccess) {
+                    return true;
+                }
+                // ถ้า Private Replies ล้มเหลว → fallback ไปยัง /me/messages ข้างล่าง
+                Log::info('🔄 Private Replies ล้มเหลว → fallback ไปยัง /me/messages', [
+                    'comment_id' => $commentId,
+                    'recipient' => $recipientId,
+                ]);
+            }
 
             $payload = [
                 'recipient' => ['id' => $recipientId],
@@ -414,7 +433,98 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return true;
         } catch (Exception $e) {
-            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: '.$e->getMessage(), [
+            // HTTP 403 = token ไม่มี pages_manage_engagement permission
+            // ต้องไปขออนุมัติ App Review ที่ Facebook Developer Console
+            $msg = $e->getMessage();
+            $is403 = str_contains($msg, '403');
+            Log::error('ตอบคอมเมนต์ไม่สำเร็จ: '.$msg, [
+                'comment_id' => $commentId,
+                'hint' => $is403
+                    ? '⚠️ HTTP 403 → Page Access Token ขาด pages_manage_engagement scope — เช็คที่ Facebook Dev Console'
+                    : null,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * ส่งข้อความ Private Reply ตอบคอมเม้นต์ (ไป DM/Messenger)
+     *
+     * ใช้ endpoint POST /{comment-id}/private_replies ซึ่ง:
+     * - รองรับการส่ง DM ตอบกลับคอมเม้นต์ได้ 7 วันหลังคอมเม้นต์
+     * - ไม่ต้องอยู่ใน 24-hour conversation window
+     * - แก้ปัญหา error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ
+     *
+     * Flow:
+     * 1. ลอง structured message (text + quick_replies) ก่อน
+     * 2. ถ้า FB ปฏิเสธ structure → fallback เป็น text-only
+     *
+     * @param  string  $commentId  Comment ID ที่จะตอบ
+     * @param  string  $message  ข้อความที่จะส่งไป DM
+     * @param  array  $quickReplies  Formatted quick replies (optional)
+     */
+    public function sendPrivateReply(string $commentId, string $message, array $quickReplies = []): bool
+    {
+        try {
+            // ลอง structured message ก่อน — ใช้ Send API + recipient.comment_id
+            // FB Private Reply via Send API รองรับ full message object รวม quick_replies
+            // หมายเหตุ: ส่ง message เป็น array (ไม่ json_encode) เพราะ Laravel Http::post
+            // จะ serialize payload ทั้งก้อนเป็น JSON body ให้อัตโนมัติ
+            if (! empty($quickReplies)) {
+                $structuredPayload = [
+                    'recipient' => ['comment_id' => $commentId],
+                    'message' => [
+                        'text' => $message,
+                        'quick_replies' => $quickReplies,
+                    ],
+                    'access_token' => $this->pageAccessToken,
+                ];
+
+                $response = Http::timeout(30)
+                    ->post($this->graphUrl('/me/messages'), $structuredPayload);
+
+                if ($response->successful()) {
+                    Log::info('✅ Private Reply สำเร็จ (structured + quick_replies)', [
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return true;
+                }
+
+                Log::info('Private Reply structured ล้มเหลว → ลอง text-only', [
+                    'comment_id' => $commentId,
+                    'error' => $response->json()['error']['message'] ?? $response->body(),
+                ]);
+            }
+
+            // Fallback: text-only ผ่าน /{comment-id}/private_replies
+            $textResponse = Http::timeout(30)
+                ->post($this->graphUrl("/{$commentId}/private_replies"), [
+                    'message' => $message,
+                    'access_token' => $this->pageAccessToken,
+                ]);
+
+            if ($textResponse->successful()) {
+                Log::info('✅ Private Reply สำเร็จ (text-only)', [
+                    'comment_id' => $commentId,
+                ]);
+
+                return true;
+            }
+
+            $errorBody = $textResponse->json();
+            Log::warning('Private Reply ล้มเหลว', [
+                'comment_id' => $commentId,
+                'http_status' => $textResponse->status(),
+                'error_code' => $errorBody['error']['code'] ?? null,
+                'error_subcode' => $errorBody['error']['error_subcode'] ?? null,
+                'error_message' => $errorBody['error']['message'] ?? $textResponse->body(),
+            ]);
+
+            return false;
+        } catch (Exception $e) {
+            Log::warning('Private Reply exception: '.$e->getMessage(), [
                 'comment_id' => $commentId,
             ]);
 
