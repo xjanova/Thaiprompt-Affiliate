@@ -1090,7 +1090,9 @@ class FacebookWebhookController extends Controller
             'GET_STARTED', 'get_started' => $this->handleGetStarted($senderId),
 
             // Persistent Menu options
-            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // ⚠️ ผู้สูงอายุงงระหว่าง "ดูดวง" vs "ดูดวงละเอียด" → ให้ทั้ง 2 เมนูเข้า deep flow
+            // ตรงๆ ลูกค้ากดอะไรก็ได้ → ถูกพาเข้ากระบวนการทำนายทันที
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
@@ -1837,7 +1839,8 @@ class FacebookWebhookController extends Controller
             'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
-            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
 
             // ✅ ปุ่มจาก Button Templates
@@ -1845,13 +1848,15 @@ class FacebookWebhookController extends Controller
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
-            'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // ผู้สูงอายุงง → ปุ่ม "ดูดวงใหม่/ต่อ" → deep flow ตรง
+            'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'VIEW_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
 
             // ✅ Phase A quick reply payloads (จาก FortuneChannelManager getFacebookFallbackQuickReplies)
             'TALK_HUMAN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
-            'START_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
-            'DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวงละเอียด'),
+            // ผู้สูงอายุงง → ปุ่ม "เริ่มดูดวง" → deep flow ตรง
+            'START_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'CHECK_STATUS' => $this->processConversationalMessage($senderId, 'เช็คสถานะ'),
             'RESTART' => $this->processConversationalMessage($senderId, 'เริ่มใหม่'),
             'CANCEL' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
@@ -1862,7 +1867,8 @@ class FacebookWebhookController extends Controller
             'SHARE_PAGE' => $this->handleSharePage($senderId),
 
             // Quick Replies เดิม (backward compatibility)
-            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // ผู้สูงอายุงง → ปุ่ม "ดูดวง" และ "ดูดวงละเอียด" → deep flow เดียวกัน
+            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
             'CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
