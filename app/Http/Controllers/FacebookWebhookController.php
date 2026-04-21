@@ -372,9 +372,12 @@ class FacebookWebhookController extends Controller
         $reaction->dm_attempted = true;
 
         try {
-            // ลองส่ง DM แบบสั้น ชวนดูดวง
-            $message = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
-                ."แม่หมออยากให้ลองดูดวงฟรี — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮";
+            // ลองส่ง DM แบบสั้น ชวนดูดวง — ตัดคำว่า "ฟรี" ออกถ้า admin ปิดบริการฟรี
+            $freeEnabled = $this->settings->isFreeReadingEnabled();
+            $invite = $freeEnabled
+                ? "แม่หมออยากให้ลองดูดวงฟรี — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮"
+                : "แม่หมออยากให้ลองดูดวง — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮";
+            $message = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n".$invite;
 
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
@@ -1386,12 +1389,17 @@ class FacebookWebhookController extends Controller
 
             // ส่งข้อความที่เป็นมิตรกับผู้ใช้ แทนที่จะบอกว่า "ผิดพลาด"
             try {
+                // ตัด "เช็คสิทธิ์ฟรี" ออกถ้า admin ปิดบริการฟรี
+                $freeEnabled = $this->settings->isFreeReadingEnabled();
+                $checkHint = $freeEnabled
+                    ? "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n"
+                    : '';
                 $this->facebookService->sendMessage(
                     $senderId,
                     "🔮 สวัสดีค่ะ\n\n".
                     "ตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\n".
                     "กรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n".
-                    "💡 ลองพิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n".
+                    $checkHint.
                     'หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨'
                 );
             } catch (\Exception $sendError) {
@@ -1723,9 +1731,14 @@ class FacebookWebhookController extends Controller
             }
 
             try {
+                // ตัด "เช็คสิทธิ์ฟรี" ออกถ้า admin ปิดบริการฟรี
+                $freeEnabled = $this->settings->isFreeReadingEnabled();
+                $checkHint = $freeEnabled
+                    ? "💡 พิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\n"
+                    : '';
                 $this->facebookService->sendMessage(
                     $fromId,
-                    "🔮 สวัสดีค่ะ\n\nตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\nกรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n💡 พิมพ์ 'เช็คสิทธิ์' เพื่อดูสิทธิ์ดูดวงฟรี\nหรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
+                    "🔮 สวัสดีค่ะ\n\nตอนนี้ระบบกำลังปรับปรุงชั่วคราวค่ะ\nกรุณาลองพิมพ์มาใหม่อีกครั้งนะคะ 🙏\n\n{$checkHint}หรือพิมพ์คำถามใหม่ได้เลยค่ะ ✨"
                 );
             } catch (\Exception $sendError) {
                 Log::error('ส่งข้อความ error ไม่สำเร็จ: '.$sendError->getMessage());

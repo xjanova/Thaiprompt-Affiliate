@@ -1323,10 +1323,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     protected function buildPersistentMenuActions(): array
     {
+        // ถ้า admin ปิดบริการฟรี → เปลี่ยนชื่อปุ่มหลักจาก "ดูดวงฟรี" เป็น "เริ่มดูดวง"
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
         $actions = [
             [
                 'type' => 'postback',
-                'title' => '🔮 ดูดวงฟรี',
+                'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
                 'payload' => 'MENU_FORTUNE',
             ],
             [

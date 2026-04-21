@@ -506,29 +506,38 @@ class FacebookRichMessageService
      */
     public function buildPaymentExpiredTemplate(): array
     {
+        // ซ่อนปุ่ม "🔮 ดูดวงฟรี" เมื่อ admin ปิดบริการฟรี
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        $buttons = [
+            [
+                'type' => 'postback',
+                'title' => '💎 เริ่มดูดวงละเอียด',
+                'payload' => 'DEEP_READING_ACCEPT',
+            ],
+        ];
+
+        if ($freeEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => '🔮 ดูดวงฟรี',
+                'payload' => 'FORTUNE_BASIC',
+            ];
+        }
+
+        $buttons[] = [
+            'type' => 'postback',
+            'title' => '📊 เช็คสิทธิ์',
+            'payload' => 'CHECK_REMAINING',
+        ];
+
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
                     'text' => "⏰ บิลดูดวงหมดอายุแล้วค่ะ\n\nหากต้องการดูดวงละเอียด สามารถเริ่มใหม่ได้เลยนะคะ",
-                    'buttons' => [
-                        [
-                            'type' => 'postback',
-                            'title' => '💎 เริ่มดูดวงละเอียด',
-                            'payload' => 'DEEP_READING_ACCEPT',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '🔮 ดูดวงฟรี',
-                            'payload' => 'FORTUNE_BASIC',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '📊 เช็คสิทธิ์',
-                            'payload' => 'CHECK_REMAINING',
-                        ],
-                    ],
+                    'buttons' => $buttons,
                 ],
             ],
         ];
