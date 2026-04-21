@@ -227,6 +227,18 @@ class LineFortuneWebhookController extends Controller
             // ส่ง empty array ถ้า null → กัน FortuneChannelManager เรียก getUserProfile ซ้ำ
             $userProfile = $userProfile ?: ['id' => $userId, 'name' => null];
 
+            // 💰 Affiliate Signal: ถ้าข้อความบ่งบอกว่ามีปัญหาเงิน / อยากรายได้เสริม
+            // (และไม่ใช่คำสั่งดูดวง) → ส่ง recruitment pitch แทน
+            if ($this->isAffiliateSignalMessage($messageText)) {
+                Log::info('💰 LINE: Affiliate signal detected → pitch', [
+                    'user_id' => $userId,
+                    'message_snippet' => mb_substr($messageText, 0, 60),
+                ]);
+                $this->sendAffiliatePitchToLine($userId, $replyToken);
+
+                return;
+            }
+
             // ประมวลผลข้อความผ่าน Channel Manager
             $result = $this->channelManager->processMessage(
                 FortuneChannelManager::PLATFORM_LINE,
@@ -573,12 +585,156 @@ class LineFortuneWebhookController extends Controller
             'help' => $this->handleHelpPostback($userId, $replyToken),
             'menu' => $this->handleSimulateTextPostback($userId, $replyToken, 'เมนู'),
             'confirm_transfer' => $this->handleConfirmTransferPostback($userId, $replyToken, $params),
+            // 💰 Affiliate Recruitment (parity กับ FB comment engagement)
+            'affiliate_pitch' => $this->handleAffiliatePitchPostback($userId, $replyToken),
+            'affiliate_yes' => $this->handleAffiliateYesPostback($userId, $replyToken),
+            'affiliate_no' => $this->handleAffiliateNoPostback($userId, $replyToken),
             default => Log::warning('LINE Webhook: Unknown postback action', [
                 'user_id' => $userId,
                 'action' => $action,
                 'data' => $data,
             ]),
         };
+    }
+
+    /**
+     * ตรวจสอบว่าข้อความ LINE มี money-signal ที่ควร pitch affiliate หรือไม่
+     *
+     * ใช้ keyword ที่เข้มกว่า FB เพื่อลดการ hijack conversation
+     * → ต้องมี "negative money context" + ไม่มี "fortune intent"
+     */
+    protected function isAffiliateSignalMessage(string $message): bool
+    {
+        $message = mb_strtolower(trim($message));
+        if ($message === '') {
+            return false;
+        }
+
+        // ถ้ามีคำสื่อถึงการดูดวง → ไม่ใช่ signal (user ต้องการดูดวง)
+        $fortuneIntent = ['ดูดวง', 'ทำนาย', 'ดวง', 'หมอดู', 'ยิปซี', 'ไพ่', 'ลายมือ'];
+        foreach ($fortuneIntent as $kw) {
+            if (mb_stripos($message, $kw) !== false) {
+                return false;
+            }
+        }
+
+        // คำที่สื่อถึงปัญหาเงินหรือต้องการรายได้เสริม (เข้มกว่า FB)
+        $signals = [
+            'ไม่มีเงิน', 'เงินไม่พอ', 'เงินขาด', 'หารายได้', 'งานเสริม',
+            'อยากรวย', 'เป็นหนี้', 'หนี้สิน', 'ขาดทุน', 'อยากได้เงิน',
+            'ว่างงาน', 'ตกงาน', 'รายได้เสริม', 'งานออนไลน์',
+        ];
+        foreach ($signals as $kw) {
+            if (mb_stripos($message, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ส่ง affiliate recruitment pitch + 2 ปุ่มอยาก/ไม่อยาก (LINE)
+     */
+    protected function handleAffiliatePitchPostback(string $userId, ?string $replyToken): void
+    {
+        $this->sendAffiliatePitchToLine($userId, $replyToken);
+    }
+
+    /**
+     * ผู้ใช้กด "✅ อยาก" → รายละเอียดการเริ่ม (ดูดวง 39 บาท → สมาชิก)
+     */
+    protected function handleAffiliateYesPostback(string $userId, ?string $replyToken): void
+    {
+        $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
+            ."1️⃣ ดูดวงละเอียดกับแม่หมอ 39 บาท/ครั้ง\n"
+            ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
+            ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
+            ."💰 รายได้:\n"
+            ."• ชวนคนมาดูดวง → ได้ 10 บาท/คน (Level 1)\n"
+            ."• เพื่อนชวนต่อ → ได้ส่วนแบ่งอีกชั้น (Level 2)\n\n"
+            .'พิมพ์ "ดูดวงละเอียด" เพื่อเริ่มเลยค่ะ ✨';
+
+        $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        Log::info('💰 LINE Affiliate YES clicked', ['user_id' => $userId]);
+    }
+
+    /**
+     * ผู้ใช้กด "❌ ไม่อยาก" → ชวนดูดวงปกติ
+     */
+    protected function handleAffiliateNoPostback(string $userId, ?string $replyToken): void
+    {
+        $message = "ไม่เป็นไรค่ะ 😊\n\n"
+            ."ถ้าสนใจให้แม่หมอทำนายดวง\n"
+            .'พิมพ์ "ดูดวง" มาได้เลยนะคะ 🔮';
+
+        $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        Log::info('💰 LINE Affiliate NO clicked', ['user_id' => $userId]);
+    }
+
+    /**
+     * ส่ง Flex Message recruitment pitch พร้อม 2 ปุ่ม (postback)
+     */
+    protected function sendAffiliatePitchToLine(string $userId, ?string $replyToken): void
+    {
+        $flex = [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => '💰 รายได้เสริมง่ายๆ', 'weight' => 'bold', 'size' => 'xl', 'color' => '#6b46c1'],
+                    ['type' => 'separator', 'margin' => 'md'],
+                    [
+                        'type' => 'text',
+                        'text' => "แม่หมอมีทางให้ค่ะ\n\nชวนเพื่อนมาดูดวง\nได้ค่าชวน 10 บาท/คน\n\n✨ ไม่ต้องลงทุน\n📌 ชวนได้ไม่จำกัด",
+                        'wrap' => true,
+                        'size' => 'sm',
+                        'margin' => 'md',
+                    ],
+                    ['type' => 'text', 'text' => 'สนใจไหมคะ?', 'weight' => 'bold', 'margin' => 'lg', 'align' => 'center'],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'paddingAll' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#6b46c1',
+                        'height' => 'sm',
+                        'action' => ['type' => 'postback', 'label' => '✅ อยาก', 'data' => 'action=affiliate_yes'],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => ['type' => 'postback', 'label' => '❌ ไม่อยาก', 'data' => 'action=affiliate_no'],
+                    ],
+                ],
+            ],
+        ];
+
+        $messages = [[
+            'type' => 'flex',
+            'altText' => '💰 รายได้เสริม — ชวนเพื่อนได้ 10 บาท/คน',
+            'contents' => $flex,
+        ]];
+
+        if ($replyToken) {
+            $this->lineService->replyMessage($replyToken, $messages);
+        } else {
+            // fallback: ส่งเป็น text (ไม่ใช่ flex) ถ้าไม่มี reply token
+            $fallbackText = "💰 รายได้เสริม\n\nชวนเพื่อนมาดูดวงกับแม่หมอ ได้ค่าชวน 10 บาท/คน\n\nพิมพ์ \"อยาก\" ถ้าสนใจ หรือ \"ไม่อยาก\" เพื่อข้ามค่ะ";
+            $this->lineService->sendMessageWithReplyFallback($userId, $fallbackText, null);
+        }
+
+        Log::info('💰 LINE Affiliate pitch sent', ['user_id' => $userId]);
     }
 
     /**
@@ -734,9 +890,13 @@ class LineFortuneWebhookController extends Controller
             }
 
             // สร้าง result ในรูปแบบที่ FortuneChannelManager ต้องการ
+            // เมื่อปิดระบบฟรี ($maxFreeReadings = 0) → ไม่พูดถึงสิทธิ์ฟรี
+            $statusMessage = $maxFreeReadings > 0
+                ? "✅ สถานะ: สิทธิ์ฟรี {$normalRemaining} ครั้ง"
+                : '✅ สถานะบัญชี';
             $result = [
                 'action' => 'check_status',
-                'message' => "✅ สถานะ: สิทธิ์ฟรี {$normalRemaining} ครั้ง",
+                'message' => $statusMessage,
                 'reading' => null,
                 'user_name' => $userName,
                 'remaining' => $normalRemaining,

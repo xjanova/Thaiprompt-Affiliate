@@ -51,10 +51,14 @@ class FacebookRichMessageService
      */
     public function buildWelcomeTemplate(string $userName): array
     {
+        // ตรวจสอบว่าเปิดระบบดูดวงฟรีหรือไม่
+        // ถ้า max_free_readings = 0 → ไม่พูดถึง "ฟรี" เลย
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
         $buttons = [
             [
                 'type' => 'postback',
-                'title' => '🔮 ดูดวงฟรี',
+                'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
                 'payload' => 'MENU_FORTUNE',
             ],
             [
@@ -80,12 +84,17 @@ class FacebookRichMessageService
             ];
         }
 
+        // ข้อความแนะนำบริการ — เปลี่ยนตามสถานะระบบฟรี
+        $serviceLines = $freeEnabled
+            ? "🆓 ดูดวงพื้นฐาน (ฟรี)\n💎 ดูดวงละเอียด (เชิงลึก)"
+            : "🔮 ดูดวงแม่นยำ ทำนายชัดเจน\n💎 ดูดวงละเอียดเชิงลึก";
+
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "✨ สวัสดีค่ะ คุณ{$userName}!\n\n🔮 ยินดีต้อนรับสู่ {$this->brandName}\n\nพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n🆓 ดูดวงพื้นฐาน (ฟรี)\n💎 ดูดวงละเอียด (เชิงลึก)\n\n💡 พิมพ์อะไรก็ได้มาคุยกันเลยค่ะ!",
+                    'text' => "✨ สวัสดีค่ะ คุณ{$userName}!\n\n🔮 ยินดีต้อนรับสู่ {$this->brandName}\n\nพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n{$serviceLines}\n\n💡 พิมพ์อะไรก็ได้มาคุยกันเลยค่ะ!",
                     'buttons' => $buttons,
                 ],
             ],
@@ -108,6 +117,30 @@ class FacebookRichMessageService
     public function buildUpsellTemplate(string $userName, float $price): array
     {
         $priceText = number_format($price, 0);
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // สร้างปุ่ม — ซ่อนปุ่ม "ถามเพิ่ม (ฟรี)" เมื่อระบบฟรีปิดอยู่
+        $buttons = [
+            [
+                'type' => 'postback',
+                'title' => '💎 ดูดวงละเอียด',
+                'payload' => 'DEEP_READING_ACCEPT',
+            ],
+        ];
+
+        if ($freeEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => '🔮 ถามเพิ่ม (ฟรี)',
+                'payload' => 'FORTUNE_BASIC',
+            ];
+        }
+
+        $buttons[] = [
+            'type' => 'postback',
+            'title' => '❌ ไม่ต้อง',
+            'payload' => 'DEEP_READING_NO',
+        ];
 
         return [
             'attachment' => [
@@ -115,23 +148,7 @@ class FacebookRichMessageService
                 'payload' => [
                     'template_type' => 'button',
                     'text' => "💎 คุณ{$userName} ต้องการดูดวงละเอียดไหม?\n\n✅ วิเคราะห์เชิงลึก 2 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
-                    'buttons' => [
-                        [
-                            'type' => 'postback',
-                            'title' => '💎 ดูดวงละเอียด',
-                            'payload' => 'DEEP_READING_ACCEPT',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '🔮 ถามเพิ่ม (ฟรี)',
-                            'payload' => 'FORTUNE_BASIC',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '❌ ไม่ต้อง',
-                            'payload' => 'DEEP_READING_NO',
-                        ],
-                    ],
+                    'buttons' => $buttons,
                 ],
             ],
         ];

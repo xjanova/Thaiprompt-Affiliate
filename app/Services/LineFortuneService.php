@@ -1010,6 +1010,67 @@ class LineFortuneService implements MessagingPlatformInterface
             ? "สวัสดี คุณ{$userName} ✨"
             : 'สวัสดี ✨';
 
+        // ตรวจสอบว่าเปิดระบบดูดวงฟรีหรือไม่
+        // ถ้า max_free_readings = 0 → ไม่แสดงการ์ด "ดูดวงพื้นฐาน (ฟรี)"
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // สร้างรายการ service cards แบบมีเงื่อนไข
+        $serviceCards = [
+            [
+                'type' => 'text',
+                'text' => '📋 บริการของเรา',
+                'weight' => 'bold',
+                'size' => 'sm',
+                'color' => $primaryColor,
+            ],
+        ];
+
+        // การ์ด "ดูดวงพื้นฐาน (ฟรี)" — แสดงเฉพาะเมื่อระบบฟรีเปิดอยู่
+        if ($freeEnabled) {
+            $serviceCards[] = [
+                'type' => 'box',
+                'layout' => 'horizontal',
+                'backgroundColor' => '#F0FFF4',
+                'cornerRadius' => 'md',
+                'paddingAll' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
+                    [
+                        'type' => 'box',
+                        'layout' => 'vertical',
+                        'flex' => 1,
+                        'paddingStart' => 'md',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไป', 'size' => 'xs', 'color' => '#888888'],
+                        ],
+                    ],
+                ],
+            ];
+        }
+
+        // การ์ด "ดูดวงละเอียด" — แสดงเสมอ
+        $serviceCards[] = [
+            'type' => 'box',
+            'layout' => 'horizontal',
+            'backgroundColor' => '#F8F7FF',
+            'cornerRadius' => 'md',
+            'paddingAll' => 'md',
+            'contents' => [
+                ['type' => 'text', 'text' => '💎', 'size' => 'lg', 'flex' => 0],
+                [
+                    'type' => 'box',
+                    'layout' => 'vertical',
+                    'flex' => 1,
+                    'paddingStart' => 'md',
+                    'contents' => [
+                        ['type' => 'text', 'text' => 'ดูดวงละเอียด ('.number_format($this->getDeepReadingPrice(), 0).' บาท)', 'size' => 'sm', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => 'ถาม '.FortuneConversationService::REQUIRED_QUESTIONS.' คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
+                    ],
+                ],
+            ],
+        ];
+
         return [
             'type' => 'bubble',
             'size' => 'mega',
@@ -1079,61 +1140,13 @@ class LineFortuneService implements MessagingPlatformInterface
                         'margin' => 'xl',
                         'color' => '#E8E0FF',
                     ],
-                    // บริการของเรา
+                    // บริการของเรา — ใช้ $serviceCards ที่ build มาตามเงื่อนไข isFreeReadingEnabled()
                     [
                         'type' => 'box',
                         'layout' => 'vertical',
                         'margin' => 'xl',
                         'spacing' => 'md',
-                        'contents' => [
-                            [
-                                'type' => 'text',
-                                'text' => '📋 บริการของเรา',
-                                'weight' => 'bold',
-                                'size' => 'sm',
-                                'color' => $primaryColor,
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'horizontal',
-                                'backgroundColor' => '#F0FFF4',
-                                'cornerRadius' => 'md',
-                                'paddingAll' => 'md',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '🆓', 'size' => 'lg', 'flex' => 0],
-                                    [
-                                        'type' => 'box',
-                                        'layout' => 'vertical',
-                                        'flex' => 1,
-                                        'paddingStart' => 'md',
-                                        'contents' => [
-                                            ['type' => 'text', 'text' => 'ดูดวงพื้นฐาน (ฟรี)', 'size' => 'sm', 'weight' => 'bold'],
-                                            ['type' => 'text', 'text' => 'ทำนายเรื่องทั่วไป', 'size' => 'xs', 'color' => '#888888'],
-                                        ],
-                                    ],
-                                ],
-                            ],
-                            [
-                                'type' => 'box',
-                                'layout' => 'horizontal',
-                                'backgroundColor' => '#F8F7FF',
-                                'cornerRadius' => 'md',
-                                'paddingAll' => 'md',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => '💎', 'size' => 'lg', 'flex' => 0],
-                                    [
-                                        'type' => 'box',
-                                        'layout' => 'vertical',
-                                        'flex' => 1,
-                                        'paddingStart' => 'md',
-                                        'contents' => [
-                                            ['type' => 'text', 'text' => 'ดูดวงละเอียด ('.number_format($this->getDeepReadingPrice(), 0).' บาท)', 'size' => 'sm', 'weight' => 'bold'],
-                                            ['type' => 'text', 'text' => 'ถาม '.FortuneConversationService::REQUIRED_QUESTIONS.' คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
-                                        ],
-                                    ],
-                                ],
-                            ],
-                        ],
+                        'contents' => $serviceCards,
                     ],
                     [
                         'type' => 'separator',
@@ -3859,6 +3872,41 @@ class LineFortuneService implements MessagingPlatformInterface
         $questions = FortuneConversationService::REQUIRED_QUESTIONS;
         $brandName = $this->settings->getFortuneBrandName();
         $primaryColor = $this->settings->getLineFlexPrimaryColor();
+        // ถ้าระบบฟรีปิด → ไม่แสดงการ์ด "ดูดวงฟรี"
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        // สร้างการ์ด "ดูดวงฟรี" (optional) + "ดูดวงละเอียด" (always)
+        $fortuneServiceCards = [];
+        if ($freeEnabled) {
+            $fortuneServiceCards[] = [
+                'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+                'backgroundColor' => '#F0FFF4', 'cornerRadius' => 'md',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🆓', 'size' => 'md', 'flex' => 0],
+                    [
+                        'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                        'contents' => [
+                            ['type' => 'text', 'text' => 'ดูดวงฟรี', 'size' => 'sm', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'พิมพ์ "ดูดวง" หรือตั้งคำถามได้เลย', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                        ],
+                    ],
+                ],
+            ];
+        }
+        $fortuneServiceCards[] = [
+            'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
+            'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'md',
+            'contents' => [
+                ['type' => 'text', 'text' => '💎', 'size' => 'md', 'flex' => 0],
+                [
+                    'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
+                    'contents' => [
+                        ['type' => 'text', 'text' => "ดูดวงละเอียด ({$price} บาท)", 'size' => 'sm', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเกิด → คำทำนายเชิงลึก", 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                    ],
+                ],
+            ],
+        ];
 
         return [
             'type' => 'bubble',
@@ -3880,40 +3928,10 @@ class LineFortuneService implements MessagingPlatformInterface
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl', 'spacing' => 'sm',
                 'contents' => [
-                    // ═══ บริการดูดวง ═══
+                    // ═══ บริการดูดวง ═══ (การ์ด "ดูดวงฟรี" ซ่อนเมื่อ isFreeReadingEnabled() = false)
                     ['type' => 'text', 'text' => '🔮 บริการดูดวง', 'size' => 'md', 'weight' => 'bold', 'color' => $primaryColor],
 
-                    // ดูดวงฟรี
-                    [
-                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
-                        'backgroundColor' => '#F0FFF4', 'cornerRadius' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => '🆓', 'size' => 'md', 'flex' => 0],
-                            [
-                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => 'ดูดวงฟรี', 'size' => 'sm', 'weight' => 'bold'],
-                                    ['type' => 'text', 'text' => 'พิมพ์ "ดูดวง" หรือตั้งคำถามได้เลย', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
-                                ],
-                            ],
-                        ],
-                    ],
-
-                    // ดูดวงละเอียด
-                    [
-                        'type' => 'box', 'layout' => 'horizontal', 'margin' => 'sm', 'paddingAll' => 'sm',
-                        'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'md',
-                        'contents' => [
-                            ['type' => 'text', 'text' => '💎', 'size' => 'md', 'flex' => 0],
-                            [
-                                'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
-                                'contents' => [
-                                    ['type' => 'text', 'text' => "ดูดวงละเอียด ({$price} บาท)", 'size' => 'sm', 'weight' => 'bold'],
-                                    ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเกิด → คำทำนายเชิงลึก", 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
-                                ],
-                            ],
-                        ],
-                    ],
+                    ...$fortuneServiceCards,
 
                     ['type' => 'separator', 'margin' => 'md', 'color' => '#E1BEE7'],
 

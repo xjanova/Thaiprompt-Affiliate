@@ -385,6 +385,18 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 💰 Money-keyword route: ถ้าคอมเม้นต์เกี่ยวกับการเงิน/เงิน/หนี้ ฯลฯ
+            // → ชวนเข้าร่วม affiliate (ได้ค่าชวน 10 บาท/คน) + 2 ปุ่ม อยาก/ไม่อยาก
+            if ($this->isMoneyRelatedComment($message)) {
+                Log::info('💰 Comment Engagement: detected money keyword → affiliate pitch', [
+                    'user_id' => $fromId,
+                    'comment_snippet' => mb_substr($message, 0, 60),
+                ]);
+                $this->sendAffiliateRecruitmentEngagement($comment);
+
+                return;
+            }
+
             $mode = $this->settings->getCommentEngagementMode();
 
             if ($mode === 'template') {
@@ -469,6 +481,108 @@ class FacebookWebhookController extends Controller
             'dm_message' => $dmMessage,
             'user_profile' => $userProfile,
             'engaged_at' => now(),
+        ]);
+    }
+
+    /**
+     * ตรวจสอบว่าคอมเม้นต์เกี่ยวข้องกับ "การเงิน" หรือไม่
+     *
+     * ใช้คำสำคัญเรื่องเงิน/รายได้/หนี้/การลงทุน ฯลฯ เพื่อ route ไปยัง
+     * affiliate recruitment flow (ชวนคนได้ค่าชวน 10 บาท/คน)
+     *
+     * @param  string  $message  ข้อความคอมเม้นต์
+     */
+    protected function isMoneyRelatedComment(string $message): bool
+    {
+        $message = mb_strtolower(trim($message));
+        if ($message === '') {
+            return false;
+        }
+
+        // คำสำคัญเรื่องการเงิน (ครอบคลุมทั้ง direct และ implied)
+        $keywords = [
+            'การเงิน', 'เงิน', 'หวย', 'รวย', 'จน', 'หนี้', 'ค่าใช้จ่าย',
+            'เศรษฐกิจ', 'ขาดทุน', 'รายได้', 'ลงทุน', 'หุ้น', 'ทอง',
+            'ออม', 'ฐานะ', 'งานเสริม', 'หารายได้', 'ค่าใช้',
+            'ไม่มีเงิน', 'เงินไม่พอ', 'เงินขาด', 'ธุรกิจ',
+        ];
+
+        foreach ($keywords as $kw) {
+            if (mb_stripos($message, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ส่ง Affiliate Recruitment pitch ตอบคอมเม้นต์ "การเงิน"
+     *
+     * Flow:
+     * 1. ตอบคอมเม้นต์สั้นๆ ชวนไปคุยใน inbox
+     * 2. ส่ง DM อธิบายโปรแกรม affiliate + 2 ปุ่ม "อยาก"/"ไม่อยาก"
+     * 3. บันทึก engagement กันส่งซ้ำ
+     *
+     * @param  array  $comment  Facebook comment payload
+     */
+    protected function sendAffiliateRecruitmentEngagement(array $comment): void
+    {
+        $fromId = $comment['from']['id'];
+        $commentId = $comment['comment_id'];
+        $postId = $comment['post_id'];
+        $commentText = $comment['message'] ?? '';
+        $fromName = $comment['from']['name'] ?? 'คุณ';
+
+        // ดึง user profile (fallback ใช้ชื่อจาก comment payload)
+        $userProfile = $this->facebookService->getUserProfile($fromId);
+        if (! is_array($userProfile)) {
+            $userProfile = ['name' => $fromName, 'id' => $fromId];
+        }
+        $name = $userProfile['name'] ?? $fromName;
+
+        // ข้อความตอบใต้คอมเม้นต์ (สั้น ไม่สปอยล์รายละเอียด)
+        $commentReply = "เรื่องเงินมาถูกทางแล้วค่ะ 🙏 แม่หมอมีเคล็ดลับง่ายๆ เช็คใน inbox นะคะ ✨";
+
+        // ข้อความ DM — pitch โปรแกรม affiliate
+        $dmMessage = "🙏 สวัสดีค่ะ คุณ{$name}\n\n"
+            ."เห็นเม้นต์เรื่องเงินแล้ว แม่หมอมีทางสร้างรายได้ง่ายๆ ให้ค่ะ\n\n"
+            ."💰 ชวนเพื่อนมาดูดวงกับแม่หมอ\n"
+            ."→ ได้ค่าชวน 10 บาท/คน\n\n"
+            ."✨ ไม่ต้องลงทุน ไม่มีความเสี่ยง\n"
+            ."📌 ชวนได้ไม่จำกัดคน\n\n"
+            .'สนใจไหมคะ?';
+
+        $quickReplies = [
+            ['content_type' => 'text', 'title' => '✅ อยาก', 'payload' => 'AFFILIATE_RECRUIT_YES'],
+            ['content_type' => 'text', 'title' => '❌ ไม่อยาก', 'payload' => 'AFFILIATE_RECRUIT_NO'],
+        ];
+
+        // 1. ตอบคอมเม้นต์ (403 ล้มเหลวได้ถ้าไม่มี pages_manage_engagement)
+        $this->facebookService->replyToComment($commentId, $commentReply);
+
+        // 2. ส่ง DM + Quick Replies ผ่าน Private Replies (bypass 24hr window)
+        $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
+            'from_comment_engagement' => true,
+            'comment_id' => $commentId,
+        ]);
+
+        // 3. บันทึก engagement กันส่งซ้ำในโพสต์เดียวกัน
+        FortuneCommentEngagement::create([
+            'facebook_user_id' => $fromId,
+            'facebook_post_id' => $postId,
+            'facebook_comment_id' => $commentId,
+            'comment_text' => $commentText,
+            'comment_reply' => $commentReply,
+            'dm_message' => $dmMessage,
+            'user_profile' => $userProfile,
+            'engaged_at' => now(),
+        ]);
+
+        Log::info('💰 Affiliate Recruitment engagement sent', [
+            'user_id' => $fromId,
+            'post_id' => $postId,
+            'comment_id' => $commentId,
         ]);
     }
 
@@ -743,9 +857,58 @@ class FacebookWebhookController extends Controller
             'LINE_INVITE' => $this->handleLineAddFriend($senderId),
             'AFFILIATE_SHARE' => $this->processConversationalMessage($senderId, 'แชร์'),
 
+            // 💰 Affiliate Recruitment — comment engagement ชวนเข้าร่วม (ได้ค่าชวน 10 บาท/คน)
+            'AFFILIATE_RECRUIT_YES' => $this->handleAffiliateRecruitYes($senderId),
+            'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
+
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
         };
+    }
+
+    /**
+     * ผู้ใช้กด "✅ อยาก" หลัง affiliate recruitment pitch
+     * → ส่งรายละเอียดการเริ่มต้น (ดูดวง 39 บาท → สมาชิก → รับส่วนแบ่ง)
+     */
+    protected function handleAffiliateRecruitYes(string $senderId): void
+    {
+        $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
+            ."1️⃣ ดูดวงละเอียดกับแม่หมอ 39 บาท/ครั้ง\n"
+            ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
+            ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
+            ."💰 รายได้:\n"
+            ."• ชวนคนมาดูดวง → ได้ 10 บาท/คน (Level 1)\n"
+            ."• เพื่อนชวนต่อ → ได้ส่วนแบ่งอีกชั้น (Level 2)\n\n"
+            .'กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨';
+
+        $quickReplies = [
+            ['content_type' => 'text', 'title' => '💎 เริ่มดูดวง 39 บาท', 'payload' => 'MENU_DEEP_FORTUNE'],
+            ['content_type' => 'text', 'title' => '🔮 ดูดวงก่อน', 'payload' => 'MENU_FORTUNE'],
+        ];
+
+        $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
+
+        Log::info('💰 Affiliate Recruit YES clicked', ['user_id' => $senderId]);
+    }
+
+    /**
+     * ผู้ใช้กด "❌ ไม่อยาก" หลัง affiliate recruitment pitch
+     * → fallback ชวนดูดวงปกติ
+     */
+    protected function handleAffiliateRecruitNo(string $senderId): void
+    {
+        $message = "ไม่เป็นไรค่ะ 😊\n\n"
+            ."ถ้าสนใจให้แม่หมอทำนายดวง\n"
+            .'พิมพ์ "ดูดวง" มาได้เลยนะคะ 🔮';
+
+        $quickReplies = [
+            ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
+            ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'MENU_DEEP_FORTUNE'],
+        ];
+
+        $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
+
+        Log::info('💰 Affiliate Recruit NO clicked', ['user_id' => $senderId]);
     }
 
     /**
@@ -791,11 +954,19 @@ class FacebookWebhookController extends Controller
             } else {
                 // Fallback: ส่งข้อความต้อนรับธรรมดา + Quick Replies
                 $welcomeMessage = $this->buildWelcomeMessage($userName);
+                $freeEnabled = $this->settings->isFreeReadingEnabled();
                 $quickReplies = [
-                    ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_BASIC'],
-                    ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
-                    ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
+                    [
+                        'content_type' => 'text',
+                        'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
+                        'payload' => 'FORTUNE_BASIC',
+                    ],
                 ];
+                // ปุ่ม "เช็คสิทธิ์" แสดงเฉพาะเมื่อระบบฟรีเปิดอยู่
+                if ($freeEnabled) {
+                    $quickReplies[] = ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'];
+                }
+                $quickReplies[] = ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'];
                 $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
             }
 
@@ -819,6 +990,9 @@ class FacebookWebhookController extends Controller
      */
     protected function buildWelcomeMessage(string $userName): string
     {
+        // ตรวจสอบสถานะระบบฟรี — ถ้า max_free_readings = 0 → ซ่อนการพูดถึง "ฟรี"
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
         $message = "✨ *สวัสดีค่ะ คุณ{$userName}!*\n\n";
         $message .= "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n";
         $message .= "ทางเพจพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n";
@@ -827,8 +1001,13 @@ class FacebookWebhookController extends Controller
         $message .= "📋 *บริการของเรา*\n";
         $message .= "═══════════════════════\n\n";
 
-        $message .= "🆓 *ดูดวงพื้นฐาน (ฟรี)*\n";
-        $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
+        if ($freeEnabled) {
+            $message .= "🆓 *ดูดวงพื้นฐาน (ฟรี)*\n";
+            $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
+        } else {
+            $message .= "🔮 *ดูดวงพื้นฐาน*\n";
+            $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
+        }
 
         $message .= "💎 *ดูดวงละเอียด (49 บาท)*\n";
         $message .= "ทำนายเชิงลึก 2 คำถาม พร้อมวันเกิด\n\n";
@@ -844,7 +1023,10 @@ class FacebookWebhookController extends Controller
         $message .= "• ปีนี้จะได้เลื่อนตำแหน่งไหม\n";
         $message .= "• การเงินเดือนหน้าเป็นอย่างไร\n\n";
 
-        $message .= "📊 พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n\n";
+        // แสดงข้อความ "เช็คสิทธิ์ฟรี" เฉพาะเมื่อระบบฟรีเปิดอยู่
+        if ($freeEnabled) {
+            $message .= "📊 พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n\n";
+        }
 
         $message .= 'กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇';
 
