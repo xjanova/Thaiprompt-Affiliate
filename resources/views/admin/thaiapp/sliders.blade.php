@@ -28,21 +28,27 @@
 
     <div class="space-y-3">
         @forelse($sliders as $s)
-        <form method="POST" action="{{ route('admin.thaiapp.sliders.update', $s->id) }}" class="p-4 bg-white dark:bg-gray-800 border rounded-xl grid grid-cols-12 gap-3 items-center">
-            @csrf @method('PUT')
-            <input type="number" name="order" value="{{ $s->order }}" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-center">
-            <input type="text" name="title_th" value="{{ $s->title_th }}" required class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-            <input type="text" name="subtitle_th" value="{{ $s->subtitle_th }}" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-            <input type="text" name="cta_deeplink" value="{{ $s->cta_deeplink }}" placeholder="/route" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
-            <input type="text" name="media_url" value="{{ $s->media_url }}" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
-            <div class="col-span-1 flex gap-1">
-                <button class="px-2 py-2 bg-blue-600 text-white rounded">💾</button>
-        </form>
-                <form method="POST" action="{{ route('admin.thaiapp.sliders.destroy', $s->id) }}" onsubmit="return confirm('ลบ?')">
-                    @csrf @method('DELETE')
-                    <button class="px-2 py-2 bg-rose-600 text-white rounded">🗑️</button>
-                </form>
-            </div>
+        <div class="p-4 bg-white dark:bg-gray-800 border rounded-xl flex gap-3 items-start">
+            <form method="POST" action="{{ route('admin.thaiapp.sliders.update', $s->id) }}" class="flex-1 grid grid-cols-12 gap-3 items-center">
+                @csrf @method('PUT')
+                <input type="number" name="order" value="{{ $s->order }}" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-center" placeholder="#">
+                <input type="text" name="title_th" value="{{ $s->title_th }}" required placeholder="TH" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="title_en" value="{{ $s->title_en }}" placeholder="EN" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <select name="media_type" class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
+                    <option value="image" @selected(($s->media_type ?? 'image') === 'image')>image</option>
+                    <option value="video" @selected(($s->media_type ?? '') === 'video')>video</option>
+                </select>
+                <input type="text" name="cta_label_th" value="{{ $s->cta_label_th }}" placeholder="CTA label" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
+                <input type="text" name="subtitle_th" value="{{ $s->subtitle_th }}" placeholder="Subtitle TH" class="col-span-6 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="cta_deeplink" value="{{ $s->cta_deeplink }}" placeholder="/route" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
+                <input type="text" name="media_url" value="{{ $s->media_url }}" placeholder="Media URL" class="col-span-3 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
+                <button class="col-span-12 px-3 py-2 bg-blue-600 text-white rounded-lg">💾 Save</button>
+            </form>
+            <form method="POST" action="{{ route('admin.thaiapp.sliders.destroy', $s->id) }}" onsubmit="return confirm('ลบ slider นี้?')" class="flex-shrink-0">
+                @csrf @method('DELETE')
+                <button class="px-3 py-2 bg-rose-600 text-white rounded-lg">🗑️</button>
+            </form>
+        </div>
         @empty
         <div class="p-8 bg-white dark:bg-gray-800 border rounded-xl text-center text-gray-500">ยังไม่มี slider</div>
         @endforelse

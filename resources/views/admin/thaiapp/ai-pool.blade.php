@@ -61,7 +61,7 @@
                             <input type="hidden" name="is_active" value="{{ $k->is_active ? 0 : 1 }}">
                             <button class="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">{{ $k->is_active ? 'Disable' : 'Enable' }}</button>
                         </form>
-                        <form method="POST" action="{{ route('admin.thaiapp.ai-pool.keys.destroy', $k->id) }}" class="inline" onsubmit="return confirm('ลบ key {{ $k->name }}?')">
+                        <form method="POST" action="{{ route('admin.thaiapp.ai-pool.keys.destroy', $k->id) }}" class="inline" onsubmit="return confirm('ลบ API key นี้? (' + this.dataset.keyName + ')')" data-key-name="{{ $k->name }}">
                             @csrf @method('DELETE')
                             <button class="px-3 py-1 text-xs bg-rose-600 text-white rounded hover:bg-rose-700">ลบ</button>
                         </form>

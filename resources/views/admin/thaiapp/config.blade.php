@@ -55,7 +55,7 @@
                     <td class="px-4 py-2 text-xs">{{ $c->value_type }}</td>
                     <td class="px-4 py-2 text-xs">{{ $c->is_public ? '✓' : '—' }}</td>
                     <td class="px-4 py-2 text-right">
-                        <form method="POST" action="{{ route('admin.thaiapp.config.destroy', $c->id) }}" onsubmit="return confirm('ลบ {{ $c->key }}?')">
+                        <form method="POST" action="{{ route('admin.thaiapp.config.destroy', $c->id) }}" onsubmit="return confirm('ลบ config key นี้? (' + this.dataset.configKey + ')')" data-config-key="{{ $c->key }}">
                             @csrf @method('DELETE')
                             <button class="px-2 py-1 bg-rose-600 text-white rounded text-xs">🗑️</button>
                         </form>

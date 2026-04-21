@@ -88,6 +88,15 @@ class ThaiappManagerController extends Controller
             ->where('key', 'nong_ying_bot_profile_id')
             ->where('environment', $env)->value('value');
 
+        // Guard: bot profile must be configured AND exist in ai_bot_profiles.
+        // Without this check, a missing/zero config silently updates 0 rows
+        // and the admin thinks they saved when they didn't.
+        if ($botId <= 0 || ! DB::table('ai_bot_profiles')->where('id', $botId)->exists()) {
+            return back()
+                ->withInput()
+                ->with('error', 'ไม่พบ bot profile (config key `nong_ying_bot_profile_id` ว่างหรือชี้ไปที่ id ที่ไม่มีในตาราง `ai_bot_profiles`) · ต้อง seed ก่อน');
+        }
+
         $ttsConfig = [
             'voice'            => $data['tts_voice'],
             'voices_available' => ['th-premwadee', 'th-achara'],
@@ -114,7 +123,7 @@ class ThaiappManagerController extends Controller
         \Illuminate\Support\Facades\Cache::forget('persona:etag');
 
         return redirect()->route('admin.thaiapp.nong-ying')
-            ->with('success', 'บันทึก persona ของน้องหญิงแล้วค่ะ · แอพจะเห็นการเปลี่ยนแปลงในครั้งถัดไปที่เรียก /v1/ai/nong-ying/persona');
+            ->with('success', 'บันทึก persona ของน้องหญิงแล้วค่ะ · แอพจะเห็นการเปลี่ยนแปลงในครั้งถัดไปที่เรียก /api/v1/ai/nong-ying/persona');
     }
 
     // ─── AI Pool (API keys) ───────────────────────────────────────────
@@ -413,9 +422,19 @@ class ThaiappManagerController extends Controller
             'description' => 'nullable|string|max:500',
             'is_public'   => 'nullable|boolean',
         ]);
+        $env = app()->environment();
+
+        // Prevent silent duplicates: (key, environment) is logically unique
+        // (the reader side always filters by environment). Two rows with the
+        // same key would make `value()` return the first one and orphan
+        // the rest — very confusing.
+        if (DB::table('app_configs')->where('key', $data['key'])->where('environment', $env)->exists()) {
+            return back()->withInput()->with('error', "มี config key `{$data['key']}` ใน env `{$env}` อยู่แล้ว · แก้ค่าในแถวเดิมแทน");
+        }
+
         DB::table('app_configs')->insert([
             'key'         => $data['key'],
-            'environment' => app()->environment(),
+            'environment' => $env,
             'value'       => $data['value'] ?? '',
             'value_type'  => $data['value_type'],
             'description' => $data['description'] ?? null,
@@ -423,6 +442,7 @@ class ThaiappManagerController extends Controller
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);
+        \Illuminate\Support\Facades\Cache::forget('app_config');
         return back()->with('success', 'เพิ่ม config แล้ว');
     }
 

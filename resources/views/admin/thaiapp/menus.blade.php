@@ -32,26 +32,31 @@
 
     <div class="space-y-2">
         @forelse($menus as $m)
-        <form method="POST" action="{{ route('admin.thaiapp.menus.update', $m->id) }}" class="p-3 bg-white dark:bg-gray-800 border rounded-xl grid grid-cols-12 gap-2 items-center text-sm">
-            @csrf @method('PUT')
-            <input type="text" name="slot" value="{{ $m->slot }}" class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
-            <input type="number" name="order" value="{{ $m->order }}" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-center">
-            <input type="text" name="icon" value="{{ $m->icon }}" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-            <input type="text" name="label_th" value="{{ $m->label_th }}" required class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-            <input type="text" name="action" value="{{ $m->action }}" required class="col-span-3 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
-            <label class="col-span-1 flex items-center gap-1">
-                <input type="hidden" name="enabled" value="0">
-                <input type="checkbox" name="enabled" value="1" @checked($m->enabled)>
-                on
-            </label>
-            <div class="col-span-2 flex gap-1">
-                <button class="flex-1 px-2 py-2 bg-blue-600 text-white rounded">💾 Save</button>
-        </form>
-                <form method="POST" action="{{ route('admin.thaiapp.menus.destroy', $m->id) }}" onsubmit="return confirm('ลบ?')">
-                    @csrf @method('DELETE')
-                    <button class="px-2 py-2 bg-rose-600 text-white rounded">🗑️</button>
-                </form>
-            </div>
+        <div class="p-3 bg-white dark:bg-gray-800 border rounded-xl flex gap-2 items-start">
+            <form method="POST" action="{{ route('admin.thaiapp.menus.update', $m->id) }}" class="flex-1 grid grid-cols-12 gap-2 items-center text-sm">
+                @csrf @method('PUT')
+                <input type="text" name="slot" value="{{ $m->slot }}" placeholder="slot" class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
+                <input type="number" name="order" value="{{ $m->order }}" placeholder="#" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-center">
+                <input type="text" name="icon" value="{{ $m->icon }}" placeholder="icon" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="label_th" value="{{ $m->label_th }}" required placeholder="TH" class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="label_en" value="{{ $m->label_en }}" placeholder="EN" class="col-span-2 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <select name="role" class="col-span-1 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
+                    @foreach(['' => 'any', 'guest' => 'guest', 'authed' => 'authed'] as $v => $label)
+                        <option value="{{ $v }}" @selected(($m->role ?? '') === $v)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                <label class="col-span-1 flex items-center gap-1 text-xs">
+                    <input type="hidden" name="enabled" value="0">
+                    <input type="checkbox" name="enabled" value="1" @checked($m->enabled)> on
+                </label>
+                <button class="col-span-2 px-2 py-2 bg-blue-600 text-white rounded">💾 Save</button>
+                <input type="text" name="action" value="{{ $m->action }}" required placeholder="/deep-link or action" class="col-span-12 px-2 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
+            </form>
+            <form method="POST" action="{{ route('admin.thaiapp.menus.destroy', $m->id) }}" onsubmit="return confirm('ลบ menu นี้?')" class="flex-shrink-0">
+                @csrf @method('DELETE')
+                <button class="px-2 py-2 bg-rose-600 text-white rounded">🗑️</button>
+            </form>
+        </div>
         @empty
         <div class="p-8 bg-white dark:bg-gray-800 border rounded-xl text-center text-gray-500">ยังไม่มี menu</div>
         @endforelse

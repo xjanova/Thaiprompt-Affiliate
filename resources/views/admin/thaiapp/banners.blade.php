@@ -23,23 +23,25 @@
 
     <div class="space-y-3">
         @forelse($banners as $b)
-        <div class="p-4 bg-white dark:bg-gray-800 border rounded-xl">
-            <form method="POST" action="{{ route('admin.thaiapp.banners.update', $b->id) }}" class="grid grid-cols-5 gap-3 items-center">
+        <div class="p-4 bg-white dark:bg-gray-800 border rounded-xl flex gap-4">
+            <form method="POST" action="{{ route('admin.thaiapp.banners.update', $b->id) }}" class="flex-1 grid grid-cols-6 gap-3 items-center">
                 @csrf @method('PUT')
-                <input type="text" name="title" value="{{ $b->title }}" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg" required>
-                <input type="text" name="title_en" value="{{ $b->title_en }}" placeholder="EN" class="px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-                <input type="text" name="description" value="{{ $b->description }}" placeholder="desc" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
-                <div class="flex gap-1">
-                    <button class="flex-1 px-3 py-2 bg-blue-600 text-white rounded-lg">Save</button>
+                <input type="text" name="title" value="{{ $b->title }}" placeholder="TH" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg" required>
+                <input type="text" name="title_en" value="{{ $b->title_en }}" placeholder="EN" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="background_color" value="{{ $b->background_color }}" placeholder="#FFF8EC" class="col-span-1 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg font-mono text-xs">
+                <button class="col-span-1 px-3 py-2 bg-blue-600 text-white rounded-lg">💾 Save</button>
+                <input type="text" name="description" value="{{ $b->description }}" placeholder="รายละเอียด" class="col-span-4 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg">
+                <input type="text" name="image_url" value="{{ $b->image_url }}" placeholder="URL รูป (https://...)" class="col-span-2 px-3 py-2 bg-gray-50 dark:bg-gray-900 border rounded-lg text-xs">
             </form>
-                    <form method="POST" action="{{ route('admin.thaiapp.banners.destroy', $b->id) }}" onsubmit="return confirm('ลบ banner?')" class="flex-shrink-0">
-                        @csrf @method('DELETE')
-                        <button class="px-3 py-2 bg-rose-600 text-white rounded-lg">🗑️</button>
-                    </form>
-                </div>
-            @if($b->image_url)
-                <img src="{{ $b->image_url }}" alt="" class="mt-3 h-24 rounded-lg object-cover">
-            @endif
+            <div class="flex flex-col items-end gap-2 flex-shrink-0">
+                @if($b->image_url)
+                    <img src="{{ $b->image_url }}" alt="" class="h-16 w-24 rounded-lg object-cover border">
+                @endif
+                <form method="POST" action="{{ route('admin.thaiapp.banners.destroy', $b->id) }}" onsubmit="return confirm('ลบ banner นี้?')">
+                    @csrf @method('DELETE')
+                    <button class="px-3 py-2 bg-rose-600 text-white rounded-lg text-sm">🗑️ ลบ</button>
+                </form>
+            </div>
         </div>
         @empty
         <div class="p-8 bg-white dark:bg-gray-800 border rounded-xl text-center text-gray-500">ยังไม่มี banner</div>
