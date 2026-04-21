@@ -485,6 +485,28 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * ดึงราคาดูดวงละเอียดจาก settings (DRY — เทียบกับ LineFortuneService::getDeepReadingPrice)
+     *
+     * ลำดับ fallback:
+     * 1. deep_reading_price (จากส่วน Freemium)
+     * 2. reading_price (ราคาดูดวงพื้นฐาน/ครั้ง)
+     * 3. FortuneConversationService::DEEP_READING_PRICE constant
+     */
+    protected function getDeepReadingPriceFromSettings(): float
+    {
+        $price = (float) ($this->settings->deep_reading_price ?? 0);
+        if ($price > 0) {
+            return $price;
+        }
+        $price = (float) ($this->settings->reading_price ?? 0);
+        if ($price > 0) {
+            return $price;
+        }
+
+        return (float) \App\Services\FortuneConversationService::DEEP_READING_PRICE;
+    }
+
+    /**
      * ตรวจสอบว่าคอมเม้นต์บ่งชี้ว่าคนอยากหารายได้ / มีปัญหาเงิน (affiliate signal)
      *
      * ใช้ keyword เข้ม + มี "positive fortune blessing filter" เพื่อไม่ hijack
@@ -1028,7 +1050,9 @@ class FacebookWebhookController extends Controller
             $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
         }
 
-        $message .= "💎 *ดูดวงละเอียด (49 บาท)*\n";
+        // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
+        $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
+        $message .= "💎 *ดูดวงละเอียด ({$deepPriceText} บาท)*\n";
         $message .= "ทำนายเชิงลึก 2 คำถาม พร้อมวันเกิด\n\n";
 
         $message .= "═══════════════════════\n";
@@ -1739,27 +1763,40 @@ class FacebookWebhookController extends Controller
             ]);
         }
 
-        // Fallback: ข้อความธรรมดา
+        // Fallback: ข้อความธรรมดา — gate "ฟรี" ตามสถานะระบบ + ใช้ราคา dynamic
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $freeDeep = (int) ($this->settings->free_deep_per_day ?? 0);
+        $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
+
         $message = "🔮 ระบบดูดวง AI\n\n";
-        $message .= "📌 ดูดวงพื้นฐาน (ฟรี):\n";
+        if ($freeEnabled) {
+            $message .= "📌 ดูดวงพื้นฐาน (ฟรี):\n";
+        } else {
+            $message .= "📌 ดูดวงพื้นฐาน:\n";
+        }
         $message .= "พิมพ์: ดูดวง ตามด้วยคำถาม\n";
         $message .= "ตัวอย่าง: ดูดวง เรื่องความรัก, เรื่องการเงิน\n\n";
 
         if ($this->settings->isDeepReadingEnabled()) {
             $message .= "🌟 ดูดวงเชิงลึก (ละเอียด):\n";
             $message .= "พิมพ์: ดูดวงละเอียด ตามด้วยคำถาม\n";
-            $message .= "(ฟรี {$this->settings->free_deep_per_day} ครั้ง/วัน)\n\n";
+            $message .= "ราคา {$deepPriceText} บาท/ครั้ง";
+            if ($freeDeep > 0) {
+                $message .= " (ทดลองฟรี {$freeDeep} ครั้ง/วัน)";
+            }
+            $message .= "\n\n";
         }
 
         $message .= "📸 ส่งรูปภาพ:\n";
         $message .= "ส่งรูปพร้อมข้อความ 'ดูดวง' หรือ 'ดูดวงละเอียด'\n";
 
-        // ส่งพร้อม quick reply buttons
+        // ส่งพร้อม quick reply buttons — "เช็คสิทธิ์" ซ่อนเมื่อปิดระบบฟรี
         $quickReplies = [
-            ['title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-            ['title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
+            ['title' => $freeEnabled ? '🔮 ดูดวง' : '🔮 เริ่มดูดวง', 'payload' => 'FORTUNE_BASIC'],
         ];
-
+        if ($freeEnabled) {
+            $quickReplies[] = ['title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'];
+        }
         if ($this->settings->isDeepReadingEnabled()) {
             $quickReplies[] = ['title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
         }
