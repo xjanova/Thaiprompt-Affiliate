@@ -485,10 +485,15 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * ตรวจสอบว่าคอมเม้นต์เกี่ยวข้องกับ "การเงิน" หรือไม่
+     * ตรวจสอบว่าคอมเม้นต์บ่งชี้ว่าคนอยากหารายได้ / มีปัญหาเงิน (affiliate signal)
      *
-     * ใช้คำสำคัญเรื่องเงิน/รายได้/หนี้/การลงทุน ฯลฯ เพื่อ route ไปยัง
-     * affiliate recruitment flow (ชวนคนได้ค่าชวน 10 บาท/คน)
+     * ใช้ keyword เข้ม + มี "positive fortune blessing filter" เพื่อไม่ hijack
+     * คนที่แค่อวยพรขอโชคลาภ หรือคนที่ต้องการดูดวงเรื่องเงิน
+     *
+     * กฎ:
+     * 1. ถ้ามีคำอวยพร/ขอพรดวง (น้อมรับ, สาธุ, ทรัพย์สิน, ขอให้) → ไม่ใช่ signal
+     * 2. ถ้ามีคำสื่อถึงการดูดวง (ดูดวง, ทำนาย, ดวง) → ไม่ใช่ signal
+     * 3. ต้องมี keyword ที่บ่งบอกปัญหาเงิน/ต้องการรายได้เสริมโดยตรง
      *
      * @param  string  $message  ข้อความคอมเม้นต์
      */
@@ -499,15 +504,29 @@ class FacebookWebhookController extends Controller
             return false;
         }
 
-        // คำสำคัญเรื่องการเงิน (ครอบคลุมทั้ง direct และ implied)
-        $keywords = [
-            'การเงิน', 'เงิน', 'หวย', 'รวย', 'จน', 'หนี้', 'ค่าใช้จ่าย',
-            'เศรษฐกิจ', 'ขาดทุน', 'รายได้', 'ลงทุน', 'หุ้น', 'ทอง',
-            'ออม', 'ฐานะ', 'งานเสริม', 'หารายได้', 'ค่าใช้',
-            'ไม่มีเงิน', 'เงินไม่พอ', 'เงินขาด', 'ธุรกิจ',
+        // 1. Filter ออก: คำอวยพร / ขอพรดวง / ดูดวง — เหล่านี้ user ต้องการให้ดวงดี ไม่ใช่หางาน
+        $excludeKeywords = [
+            'น้อมรับ', 'นอ้มรับ', 'ຂໍຍ້ອມຮັບ', 'ຍອມຮັບ', 'ยอมรับ',
+            'สาธุ', 'ສາທຸ', 'ขอให้', 'ขอพร',
+            'ทรัพย์สิน', 'ทรัพยสิน', 'ไหลมา', 'ไหลเท',
+            'ดูดวง', 'ทำนาย', 'ดวง', 'หมอดู', 'ยิปซี', 'ไพ่', 'ลายมือ',
         ];
+        foreach ($excludeKeywords as $kw) {
+            if (mb_stripos($message, $kw) !== false) {
+                return false;
+            }
+        }
 
-        foreach ($keywords as $kw) {
+        // 2. ต้องมี signal ชัดเจนว่าต้องการหารายได้ / มีปัญหาเงิน
+        $signalKeywords = [
+            'ไม่มีเงิน', 'เงินไม่พอ', 'เงินขาด', 'ขัดสน',
+            'เป็นหนี้', 'หนี้สิน', 'ติดหนี้', 'มีหนี้',
+            'ตกงาน', 'ว่างงาน', 'ไม่มีงาน',
+            'หารายได้', 'รายได้เสริม', 'งานเสริม', 'งานออนไลน์', 'งานพิเศษ',
+            'อยากรวย', 'อยากได้เงิน', 'อยากมีเงิน',
+            'ขาดทุน', 'เศรษฐกิจไม่ดี', 'ลำบาก',
+        ];
+        foreach ($signalKeywords as $kw) {
             if (mb_stripos($message, $kw) !== false) {
                 return true;
             }
@@ -1562,6 +1581,15 @@ class FacebookWebhookController extends Controller
             'LINE_ADD_FRIEND' => $this->handleLineAddFriend($senderId),
             'LINE_INVITE' => $this->handleLineAddFriend($senderId),
             'AFFILIATE_SHARE' => $this->processConversationalMessage($senderId, 'แชร์'),
+
+            // 💰 Affiliate Recruitment — Quick Replies จาก comment engagement pitch
+            // (FB ส่ง quick_reply.payload เป็น message event ไม่ใช่ postback)
+            'AFFILIATE_RECRUIT_YES' => $this->handleAffiliateRecruitYes($senderId),
+            'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
+
+            // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
