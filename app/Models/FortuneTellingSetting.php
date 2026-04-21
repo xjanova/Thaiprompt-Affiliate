@@ -588,6 +588,20 @@ EOT;
     }
 
     /**
+     * ตรวจสอบว่าระบบดูดวงสาธารณะ (Frontend /horoscope) ยังมีการใช้งานฟรีอยู่หรือไม่
+     *
+     * เปิดเมื่ออย่างน้อยหนึ่งใน horoscope_free_daily_limit, horoscope_dream_free_limit,
+     * หรือ horoscope_numerology_free_limit มีค่า > 0
+     * ใช้สำหรับซ่อน/แสดงคำว่า "ดูดวงฟรี" บนหน้าเว็บ
+     */
+    public function isHoroscopePublicFreeEnabled(): bool
+    {
+        return (int) ($this->horoscope_free_daily_limit ?? 0) > 0
+            || (int) ($this->horoscope_dream_free_limit ?? 0) > 0
+            || (int) ($this->horoscope_numerology_free_limit ?? 0) > 0;
+    }
+
+    /**
      * ตรวจสอบว่าเปิดใช้งานระบบสมัครสมาชิกหรือไม่
      */
     public function isSubscriptionEnabled(): bool

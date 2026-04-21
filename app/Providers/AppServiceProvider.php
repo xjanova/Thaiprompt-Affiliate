@@ -8,6 +8,7 @@ use Carbon\Carbon;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -112,6 +113,21 @@ class AppServiceProvider extends ServiceProvider
             NewTransactionCreated::class,
             SendNewTransactionFcmNotification::class
         );
+
+        // แชร์ตัวแปร $freeFortuneEnabled ให้ทุก view ในระบบดูดวงสาธารณะ
+        // ใช้ซ่อน/แสดงคำว่า "ดูดวงฟรี" เมื่อ admin ตั้งโควต้าฟรีเป็น 0 ทั้งหมด
+        View::composer('frontend.horoscope.*', function ($view) {
+            try {
+                $settings = \App\Models\FortuneTellingSetting::first();
+                $view->with(
+                    'freeFortuneEnabled',
+                    $settings ? $settings->isHoroscopePublicFreeEnabled() : true
+                );
+            } catch (\Exception $e) {
+                // ถ้ายังไม่ได้ migrate หรือ DB ไม่พร้อม → ให้แสดงฟรีเป็น default
+                $view->with('freeFortuneEnabled', true);
+            }
+        });
     }
 
     /**

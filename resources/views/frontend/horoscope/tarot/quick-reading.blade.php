@@ -314,7 +314,7 @@
                     <div>
                         @include('frontend.horoscope.partials._share-buttons', [
                             'url' => route('horoscope.tarot.quick'),
-                            'title' => 'เปิดไพ่ทาโรต์ออนไลน์ฟรี — Quick Reading',
+                            'title' => 'เปิดไพ่ทาโรต์ออนไลน์'.(($freeFortuneEnabled ?? true) ? 'ฟรี' : '').' — Quick Reading',
                         ])
                     </div>
                     <div class="flex gap-3">

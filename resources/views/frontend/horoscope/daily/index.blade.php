@@ -182,7 +182,7 @@
                class="group bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10 text-center hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">
                 <div class="text-3xl mb-2">🃏</div>
                 <div class="text-white font-bold text-sm">ไพ่ทาโรต์</div>
-                <div class="text-purple-300/50 text-xs mt-1">เปิดไพ่ฟรี</div>
+                <div class="text-purple-300/50 text-xs mt-1">เปิดไพ่{{ ($freeFortuneEnabled ?? true) ? 'ฟรี' : '' }}</div>
             </a>
             <a href="{{ route('horoscope.numerology.index') }}"
                class="group bg-white/5 backdrop-blur-lg rounded-2xl p-5 border border-white/10 text-center hover:bg-white/10 hover:border-white/20 transition-all duration-300 hover:scale-105">

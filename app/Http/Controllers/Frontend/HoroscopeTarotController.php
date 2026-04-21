@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Frontend;
 
 use App\Http\Controllers\Controller;
+use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
 use App\Models\TarotReading;
 use App\Models\TarotReadingCard;
@@ -44,8 +45,15 @@ class HoroscopeTarotController extends Controller
         // ดึง spread types
         $spreadTypes = TarotSpreadType::active()->ordered()->get();
 
+        // ตัดคำว่า "ดูดวงฟรี" ออกจาก page title ถ้า admin ปิดการใช้งานฟรี
+        $settings = FortuneTellingSetting::first();
+        $freeEnabled = $settings ? $settings->isHoroscopePublicFreeEnabled() : true;
+        $pageTitle = $freeEnabled
+            ? 'ไพ่ทาโรต์ออนไลน์ — ดูดวงฟรี'
+            : 'ไพ่ทาโรต์ออนไลน์';
+
         return view('frontend.horoscope.tarot.index', [
-            'pageTitle' => 'ไพ่ทาโรต์ออนไลน์ — ดูดวงฟรี',
+            'pageTitle' => $pageTitle,
             'totalReadings' => $totalReadings,
             'todayReadings' => $todayReadings,
             'totalCards' => $totalCards,

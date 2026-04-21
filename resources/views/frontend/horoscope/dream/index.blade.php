@@ -396,7 +396,7 @@
     {{-- ==================== SEO Content ==================== --}}
     <section class="container mx-auto px-4 pb-16">
         <div class="bg-white/5 backdrop-blur-lg rounded-2xl p-6 border border-white/10">
-            <h2 class="text-white text-lg font-bold mb-3">ทำนายฝันออนไลน์ ฟรี</h2>
+            <h2 class="text-white text-lg font-bold mb-3">ทำนายฝันออนไลน์{{ ($freeFortuneEnabled ?? true) ? ' ฟรี' : '' }}</h2>
             <div class="text-purple-300/50 text-sm leading-relaxed space-y-2">
                 <p>ระบบทำนายฝันออนไลน์ที่รวบรวมพจนานุกรมความฝันมากกว่า {{ $totalSymbols }} สัญลักษณ์ พร้อมเลขเด็ดจากความฝัน ครอบคลุม {{ $categories->count() }} หมวดหมู่</p>
                 <p>นอกจากค้นหาความหมายจากพจนานุกรมแล้ว คุณยังสามารถเล่าฝันให้ AI ทำนายแบบละเอียดได้ โดย AI จะวิเคราะห์สัญลักษณ์ทั้งหมดในฝัน ให้คำทำนายด้านความรัก การงาน การเงิน พร้อมเลขเด็ดที่คำนวณจากสัญลักษณ์</p>

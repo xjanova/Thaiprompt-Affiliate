@@ -35,7 +35,7 @@
 
             {{-- คำอธิบาย --}}
             <p class="text-lg md:text-xl text-purple-200/80 mb-10 max-w-2xl mx-auto leading-relaxed">
-                ดูดวงออนไลน์ฟรี ด้วยเทคโนโลยี AI ที่ทันสมัยที่สุด<br class="hidden md:block">
+                ดูดวงออนไลน์{{ ($freeFortuneEnabled ?? true) ? 'ฟรี ' : ' ' }}ด้วยเทคโนโลยี AI ที่ทันสมัยที่สุด<br class="hidden md:block">
                 ดวงรายวัน ไพ่ทาโรต์ เลขศาสตร์ ทำนายฝัน ครบจบที่เดียว
             </p>
 
@@ -45,7 +45,7 @@
                    class="group relative overflow-hidden px-8 py-4 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl font-bold text-lg text-white shadow-2xl shadow-purple-500/30 transform hover:scale-105 transition-all duration-300">
                     <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                     <span class="relative flex items-center justify-center gap-2">
-                        ⭐ เริ่มดูดวงฟรี
+                        ⭐ เริ่มดูดวง{{ ($freeFortuneEnabled ?? true) ? 'ฟรี' : '' }}
                     </span>
                 </a>
                 <a href="{{ route('horoscope.tarot.index') }}"
@@ -342,16 +342,18 @@
             <div class="max-w-3xl mx-auto text-center">
                 <div class="bg-white/5 backdrop-blur-lg rounded-3xl p-8 border border-white/10">
                     <h2 class="text-2xl font-bold text-white mb-4">
-                        ดูดวงออนไลน์ฟรี — ครบทุกศาสตร์ในที่เดียว
+                        ดูดวงออนไลน์{{ ($freeFortuneEnabled ?? true) ? 'ฟรี ' : ' ' }}— ครบทุกศาสตร์ในที่เดียว
                     </h2>
                     <p class="text-purple-300/60 text-sm leading-relaxed mb-4">
                         ระบบดูดวงออนไลน์ที่ขับเคลื่อนด้วย AI แม่นยำ ทันสมัย
                         ครอบคลุมทุกศาสตร์ — ดวงรายวัน 12 ราศี, ไพ่ทาโรต์ 78 ใบ,
                         เลขศาสตร์วิเคราะห์ชื่อ-เบอร์โทร-ทะเบียนรถ, ทำนายฝันพร้อมเลขเด็ด
-                        ฟรีทุกวัน ใช้งานง่าย สวยงาม รองรับมือถือทุกรุ่น
+                        {{ ($freeFortuneEnabled ?? true) ? 'ฟรีทุกวัน ' : '' }}ใช้งานง่าย สวยงาม รองรับมือถือทุกรุ่น
                     </p>
                     <div class="flex flex-wrap justify-center gap-2 text-xs">
+                        @if($freeFortuneEnabled ?? true)
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ดูดวงฟรี</span>
+                        @endif
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ดวงรายวัน</span>
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">12 ราศี</span>
                         <span class="px-3 py-1 bg-white/5 rounded-full text-purple-300/50">ไพ่ทาโรต์</span>

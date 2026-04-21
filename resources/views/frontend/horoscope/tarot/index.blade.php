@@ -52,17 +52,19 @@
     <section class="container mx-auto px-4 pb-16">
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
 
-            {{-- 1. Quick 1-Card Reading (ฟรี) --}}
+            {{-- 1. Quick 1-Card Reading --}}
             <a href="{{ route('horoscope.tarot.quick') }}"
                class="group relative block overflow-hidden">
                 <div class="absolute inset-0 rounded-3xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-500 bg-gradient-to-br from-violet-600 to-fuchsia-600"></div>
                 <div class="relative bg-gradient-to-br from-violet-600/15 to-fuchsia-600/15 backdrop-blur-lg rounded-3xl p-8 border border-violet-500/20 group-hover:border-violet-500/50 transition-all duration-300 group-hover:scale-[1.02] group-hover:-translate-y-1 h-full">
+                    @if($freeFortuneEnabled ?? true)
                     {{-- Badge ฟรี --}}
                     <div class="absolute top-4 right-4">
                         <span class="px-3 py-1 bg-gradient-to-r from-emerald-500 to-green-500 text-white text-xs font-bold rounded-full shadow-lg shadow-emerald-500/30">
                             ฟรี!
                         </span>
                     </div>
+                    @endif
 
                     {{-- Icon --}}
                     <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center text-3xl mb-5 shadow-xl shadow-violet-500/30 group-hover:shadow-violet-500/50 transition-shadow">
@@ -264,9 +266,9 @@
     {{-- ==================== SEO Content ==================== --}}
     <section class="container mx-auto px-4 pb-12">
         <div class="bg-white/3 rounded-2xl p-6 border border-white/5">
-            <h2 class="text-lg font-bold text-white/60 mb-3">ไพ่ทาโรต์ออนไลน์ — ดูดวงฟรี ตีความด้วย AI</h2>
+            <h2 class="text-lg font-bold text-white/60 mb-3">ไพ่ทาโรต์ออนไลน์ — {{ ($freeFortuneEnabled ?? true) ? 'ดูดวงฟรี ' : '' }}ตีความด้วย AI</h2>
             <p class="text-purple-300/40 text-xs leading-relaxed">
-                เปิดไพ่ทาโรต์ออนไลน์ฟรี ไพ่ทาโรต์ 78 ใบ Major Arcana 22 ใบ Minor Arcana 56 ใบ
+                เปิดไพ่ทาโรต์ออนไลน์{{ ($freeFortuneEnabled ?? true) ? 'ฟรี ' : ' ' }}ไพ่ทาโรต์ 78 ใบ Major Arcana 22 ใบ Minor Arcana 56 ใบ
                 ตีความด้วยปัญญาประดิษฐ์ AI ที่ทันสมัยที่สุด Quick Reading 1 ใบ Full Reading
                 3 ใบ อดีต ปัจจุบัน อนาคต Celtic Cross และอื่นๆ อีกมากมาย
                 ครอบคลุมทุกด้านของชีวิต ความรัก การงาน การเงิน สุขภาพ พัฒนาตนเอง

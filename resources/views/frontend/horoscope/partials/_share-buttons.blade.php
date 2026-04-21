@@ -3,7 +3,7 @@
 {{-- @param string $title -- ข้อความสำหรับแชร์ --}}
 @php
     $shareUrl = $url ?? request()->url();
-    $shareTitle = $title ?? 'ดูดวงออนไลน์ฟรี';
+    $shareTitle = $title ?? ('ดูดวงออนไลน์'.(($freeFortuneEnabled ?? true) ? 'ฟรี' : ''));
     $encodedUrl = urlencode($shareUrl);
     $encodedTitle = urlencode($shareTitle);
 @endphp

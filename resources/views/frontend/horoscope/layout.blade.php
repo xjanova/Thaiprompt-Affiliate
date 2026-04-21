@@ -98,7 +98,7 @@
                         <span class="text-2xl">🔮</span> ดูดวงออนไลน์
                     </h3>
                     <p class="text-purple-300/70 text-sm leading-relaxed">
-                        ดูดวงออนไลน์ฟรี ด้วยเทคโนโลยี AI ที่ทันสมัยที่สุด
+                        ดูดวงออนไลน์{{ ($freeFortuneEnabled ?? true) ? 'ฟรี ' : '' }}ด้วยเทคโนโลยี AI ที่ทันสมัยที่สุด
                         ครอบคลุมทุกด้าน ไม่ว่าจะเป็นดวงรายวัน ไพ่ทาโรต์
                         เลขศาสตร์ และทำนายฝัน
                     </p>
@@ -141,9 +141,11 @@
                         <li class="text-purple-300/70 text-sm flex items-center gap-2">
                             <span>🔒</span> ปลอดภัย เป็นส่วนตัว
                         </li>
+                        @if($freeFortuneEnabled ?? true)
                         <li class="text-purple-300/70 text-sm flex items-center gap-2">
                             <span>🆓</span> ดูดวงฟรี ทุกวัน
                         </li>
+                        @endif
                         <li class="text-purple-300/70 text-sm flex items-center gap-2">
                             <span>📱</span> รองรับทุกอุปกรณ์
                         </li>
