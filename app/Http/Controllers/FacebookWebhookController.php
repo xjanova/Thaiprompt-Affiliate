@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Jobs\ProcessCommentEngagement;
 use App\Jobs\ProcessFortuneTelling;
 use App\Models\FortuneCommentEngagement;
+use App\Models\FortunePostReaction;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
@@ -241,11 +242,18 @@ class FacebookWebhookController extends Controller
      */
     protected function processEntry(array $entry): void
     {
-        // ประมวลผลคอมเมนต์
+        // ประมวลผลคอมเมนต์ + reaction
         foreach ($entry['changes'] ?? [] as $change) {
-            if (($change['field'] ?? '') === 'feed'
-                && ($change['value']['item'] ?? '') === 'comment') {
+            if (($change['field'] ?? '') !== 'feed') {
+                continue;
+            }
+            $item = $change['value']['item'] ?? '';
+
+            if ($item === 'comment') {
                 $this->processComment($change['value']);
+            } elseif ($item === 'reaction') {
+                // กดไลก์/หัวใจ/wow ฯลฯ → track + ลองส่ง DM ถ้าอยู่ใน 24hr window
+                $this->processReaction($change['value']);
             }
         }
 
@@ -268,6 +276,138 @@ class FacebookWebhookController extends Controller
             if (isset($messaging['postback'])) {
                 $this->processPostback($messaging);
             }
+        }
+    }
+
+    /**
+     * ประมวลผล reaction (ไลก์/หัวใจ/wow ฯลฯ)
+     *
+     * Flow:
+     * 1. Track reaction ลง DB (fortune_post_reactions) — analytics + warm lead
+     * 2. ลองส่ง DM ผ่าน Send API ถ้า user อยู่ใน 24hr window
+     *    (ถ้าไม่อยู่ → FB 551 → skip — แต่ track ไว้)
+     *
+     * Facebook policy:
+     * - ไม่อนุญาต unsolicited DM ให้ user ที่แค่ reaction alone
+     * - Private Replies ใช้กับ comment เท่านั้น (ไม่รองรับ reaction)
+     * - ดังนั้นถ้าไม่มี conversation window → skip DM
+     *
+     * @param  array  $data  Facebook reaction webhook payload
+     */
+    protected function processReaction(array $data): void
+    {
+        $fromId = $data['from']['id'] ?? null;
+        $postId = $data['post_id'] ?? null;
+        $reactionType = $data['reaction_type'] ?? null;
+        $verb = $data['verb'] ?? null;
+        $fromName = $data['from']['name'] ?? null;
+
+        if (empty($fromId) || empty($postId)) {
+            return;
+        }
+
+        // ไม่ track reaction จากเพจเอง
+        if ($fromId === $this->settings->facebook_page_id) {
+            return;
+        }
+
+        // ถ้าเพจ remove reaction (verb='remove') → ข้าม ไม่สร้าง record
+        if ($verb === 'remove') {
+            return;
+        }
+
+        // ตรวจว่าเปิด comment engagement ไหม (ใช้ setting เดียวกัน — reaction = engagement)
+        if (! $this->settings->isCommentEngagementEnabled()) {
+            return;
+        }
+
+        try {
+            // 1. Track reaction — upsert (กัน duplicate ต่อ post เดียวกัน)
+            $reaction = FortunePostReaction::updateOrCreate(
+                [
+                    'facebook_user_id' => $fromId,
+                    'facebook_post_id' => $postId,
+                ],
+                [
+                    'reaction_type' => $reactionType,
+                    'verb' => $verb,
+                    'user_name' => $fromName,
+                    'reacted_at' => now(),
+                ]
+            );
+
+            Log::info('👍 Reaction tracked', [
+                'user_id' => $fromId,
+                'post_id' => $postId,
+                'type' => $reactionType,
+                'is_new' => $reaction->wasRecentlyCreated,
+            ]);
+
+            // 2. ลอง DM เฉพาะ reaction ใหม่ (กัน spam ต่อคน) + ยังไม่ได้ลอง
+            if (! $reaction->wasRecentlyCreated || $reaction->dm_attempted) {
+                return;
+            }
+
+            // ลองส่ง DM (จะล้มเหลวถ้า user ไม่อยู่ใน 24hr window — OK skip)
+            $this->tryReactionDm($reaction);
+
+        } catch (\Exception $e) {
+            Log::warning('processReaction error: '.$e->getMessage(), [
+                'user_id' => $fromId,
+                'post_id' => $postId,
+            ]);
+        }
+    }
+
+    /**
+     * ลองส่ง DM ให้ user ที่กด reaction (เฉพาะถ้าอยู่ใน 24hr conversation window)
+     *
+     * ใช้ Send API RESPONSE — ถ้าล้มเหลวด้วย error 551 (user not available)
+     * → skip ไม่ fallback MESSAGE_TAG เพราะ reaction อย่างเดียวไม่เพียงพอให้ FB อนุญาต tag
+     *
+     * @param  FortunePostReaction  $reaction
+     */
+    protected function tryReactionDm(FortunePostReaction $reaction): void
+    {
+        $reaction->dm_attempted = true;
+
+        try {
+            // ลองส่ง DM แบบสั้น ชวนดูดวง
+            $message = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
+                ."แม่หมออยากให้ลองดูดวงฟรี — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮";
+
+            $quickReplies = [
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+            ];
+
+            $success = $this->facebookService->sendQuickReplies(
+                $reaction->facebook_user_id,
+                $message,
+                $quickReplies,
+                ['messaging_type' => 'RESPONSE']
+            );
+
+            $reaction->dm_success = (bool) $success;
+            $reaction->save();
+
+            if ($success) {
+                Log::info('✅ Reaction DM sent', [
+                    'user_id' => $reaction->facebook_user_id,
+                    'post_id' => $reaction->facebook_post_id,
+                ]);
+            } else {
+                Log::info('ℹ️ Reaction DM skipped (user not in 24hr window)', [
+                    'user_id' => $reaction->facebook_user_id,
+                ]);
+            }
+        } catch (\Exception $e) {
+            $reaction->dm_success = false;
+            $reaction->save();
+
+            Log::debug('tryReactionDm: '.$e->getMessage(), [
+                'user_id' => $reaction->facebook_user_id,
+            ]);
         }
     }
 
@@ -385,12 +525,23 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🔥 Warm lead detection — ถ้า user เคยกด reaction ในโพสต์ใด
+            // → แสดงว่า user สนใจเพจอยู่แล้ว → log เป็น high-intent signal
+            $isWarmLead = FortunePostReaction::hasReacted($fromId);
+            if ($isWarmLead) {
+                Log::info('🔥 Comment Engagement: WARM LEAD — user เคยกด reaction', [
+                    'user_id' => $fromId,
+                    'post_id' => $postId,
+                ]);
+            }
+
             // 💰 Money-keyword route: ถ้าคอมเม้นต์เกี่ยวกับการเงิน/เงิน/หนี้ ฯลฯ
             // → ชวนเข้าร่วม affiliate (ได้ค่าชวน 10 บาท/คน) + 2 ปุ่ม อยาก/ไม่อยาก
             if ($this->isMoneyRelatedComment($message)) {
                 Log::info('💰 Comment Engagement: detected money keyword → affiliate pitch', [
                     'user_id' => $fromId,
                     'comment_snippet' => mb_substr($message, 0, 60),
+                    'is_warm_lead' => $isWarmLead,
                 ]);
                 $this->sendAffiliateRecruitmentEngagement($comment);
 
