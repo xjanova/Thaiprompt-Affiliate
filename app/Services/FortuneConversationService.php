@@ -1340,7 +1340,10 @@ class FortuneConversationService
     }
 
     /**
-     * แสดงสิทธิ์ดูดวงฟรีที่เหลือวันนี้
+     * แสดงสิทธิ์ดูดวงที่เหลือวันนี้
+     *
+     * ถ้า admin ปิดบริการฟรี (max_free_readings=0) และผู้ใช้ไม่มีเครดิตพิเศษ
+     * → แจ้งว่าต้องใช้ดูดวงละเอียด (paid) แทน
      */
     protected function handleCheckRemaining(string $facebookUserId): array
     {
@@ -1368,6 +1371,8 @@ class FortuneConversationService
         $usedToday = FortuneReading::countTodayReadings($facebookUserId);
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
         $price = $this->getDeepReadingPrice();
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $hasSpecialCredit = $userCredit && ($userCredit->isCurrentlyUnlimited() || $userCredit->getRemainingCredits() > 0 || $userCredit->isDailyResetActive());
 
         // คำนวณสิทธิ์จากข้อมูลที่ดึงมาแล้ว (ไม่เรียก getRemainingFreeQuestions ซ้ำ)
         $normalRemaining = max(0, $maxFreeReadings - $usedToday);
@@ -1381,6 +1386,34 @@ class FortuneConversationService
             }
         }
         $remaining = $normalRemaining;
+
+        // ⚠️ ถ้า admin ปิดบริการฟรี และผู้ใช้ไม่มีเครดิตพิเศษ → ไม่พูดถึง "ฟรี"
+        if (! $freeEnabled && ! $hasSpecialCredit) {
+            $brandName = $this->settings->getFortuneBrandName();
+            $message = "💎 *บริการดูดวงโดย{$brandName}*\n";
+            $message .= "═══════════════════════\n\n";
+            if ($this->settings->isDeepReadingEnabled()) {
+                $message .= "🔮 ดูดวงละเอียด เริ่มต้น {$price} บาท\n";
+                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+                $message .= "💡 พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มใช้บริการ";
+            } else {
+                $message .= 'ขณะนี้ระบบปิดให้บริการชั่วคราว กรุณาติดต่อแอดมินค่ะ 🙏';
+            }
+
+            return [
+                'action' => 'check_remaining',
+                'message' => $message,
+                'reading' => null,
+                'user_name' => $userName,
+                'remaining' => 0,
+                'used' => $usedToday,
+                'total' => $maxFreeReadings,
+                'is_unlimited' => false,
+                'wallet_balance' => $walletBalance,
+                'total_commission' => $totalCommission,
+            ];
+        }
 
         $message = "🔮 *สิทธิ์ดูดวงของคุณ{$userName}วันนี้*\n";
         $message .= "═══════════════════════\n\n";
@@ -2112,7 +2145,8 @@ class FortuneConversationService
             $message = "🔮 คุณ{$name} ถามว่า: \"{$messageText}\"\n\n";
             $message .= "✨ หมอจันทราพร้อมทำนายให้แล้ว\n\n";
 
-            if ($remaining < 99) {
+            // แสดงสิทธิ์คงเหลือเฉพาะเมื่อระบบฟรีเปิดอยู่ (หรือมีสิทธิ์ไม่จำกัดจากเครดิตพิเศษ)
+            if ($remaining < 99 && $this->settings->isFreeReadingEnabled()) {
                 $message .= "📊 สิทธิ์ฟรีคงเหลือ: {$remaining} ครั้ง\n\n";
             }
 
@@ -5190,6 +5224,11 @@ class FortuneConversationService
                     ."🍀 โชคลาภ — ทำนายเรื่องโชค ดวง โชคชะตา";
             }
 
+            // ถ้า admin ปิดบริการฟรี → ใช้บรรทัด "🔮 ดูดวง" แทน "🆓 ดูดวงฟรี"
+            $freeLine = $this->settings->isFreeReadingEnabled()
+                ? "🆓 ดูดวงฟรี — พิมพ์ \"ดูดวง\"\n"
+                : "🔮 ดูดวง — พิมพ์ \"ดูดวง\"\n";
+
             $message = "📋 เมนูบริการ {$brandName}\n"
                 ."━━━━━━━━━━━━━━━━━\n\n"
                 ."🔮 หมวดหมู่ดูดวง\n"
@@ -5198,7 +5237,7 @@ class FortuneConversationService
                 ."💡 วิธีใช้: พิมพ์คำถามที่ต้องการ\n"
                 ."เช่น \"ดวงความรักเดือนนี้\" หรือ \"การเงินจะดีไหม\"\n\n"
                 ."━━━━━━━━━━━━━━━━━\n"
-                ."🆓 ดูดวงฟรี — พิมพ์ \"ดูดวง\"\n"
+                .$freeLine
                 ."💎 ดูดวงละเอียด — {$price} บาท\n"
                 ."📖 ดูคำทำนาย — พิมพ์ \"ดูคำทำนาย\"\n"
                 ."💰 เช็คสิทธิ์/Wallet — พิมพ์ \"เช็คสิทธิ์\"\n"

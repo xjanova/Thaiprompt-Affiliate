@@ -2754,7 +2754,11 @@ class LineFortuneService implements MessagingPlatformInterface
             ];
         }
 
-        // กล่องสิทธิ์ฟรี
+        // กล่องสิทธิ์ฟรี — ถ้า admin ปิดบริการฟรีและไม่มีเครดิตพิเศษ → ใช้ label "สิทธิ์ดูดวง" แทน
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $creditBoxTitle = ($freeEnabled || $isUnlimited || $specialCredits > 0)
+            ? '🔮 สิทธิ์ดูดวงฟรี'
+            : '🔮 สิทธิ์ดูดวง';
         $bodyContents[] = [
             'type' => 'box',
             'layout' => 'vertical',
@@ -2765,7 +2769,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'contents' => [
                 [
                     'type' => 'text',
-                    'text' => '🔮 สิทธิ์ดูดวงฟรี',
+                    'text' => $creditBoxTitle,
                     'size' => 'md',
                     'weight' => 'bold',
                     'color' => '#6B46C1',
@@ -3340,6 +3344,13 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildDeepReadingDisabledFlexMessage(): array
     {
+        // ถ้า admin ปิดทั้งดูดวงละเอียด และ ดูดวงฟรี → ไม่พูดถึง "ฟรี"
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $bodyBottom = $freeEnabled
+            ? 'ยังสามารถดูดวงฟรีได้ตามปกตินะคะ ✨'
+            : 'กรุณาติดต่อแม่หมอเพื่อสอบถามบริการอื่นค่ะ';
+        $buttonLabel = $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง';
+
         return [
             'type' => 'bubble',
             'styles' => ['header' => ['backgroundColor' => '#78909C']],
@@ -3354,13 +3365,13 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
                     ['type' => 'text', 'text' => 'บริการดูดวงละเอียดปิดให้บริการชั่วคราวค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
-                    ['type' => 'text', 'text' => 'ยังสามารถดูดวงฟรีได้ตามปกตินะคะ ✨', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
+                    ['type' => 'text', 'text' => $bodyBottom, 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
                 ],
             ],
             'footer' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']],
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => $buttonLabel, 'text' => 'ดูดวง']],
                 ],
             ],
         ];
