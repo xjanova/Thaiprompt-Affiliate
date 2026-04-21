@@ -1260,3 +1260,45 @@ use App\Http\Controllers\FortuneReferralController;
 
 Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landing'])
     ->name('fortune.invite');
+
+// ========= THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =========
+Route::middleware(['auth','role:admin,super_admin'])
+    ->prefix('admin/thaiapp')->name('admin.thaiapp.')
+    ->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'hub'])->name('hub');
+
+        Route::get('/nong-ying', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'nongYing'])->name('nong-ying');
+        Route::put('/nong-ying', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateNongYing'])->name('nong-ying.update');
+
+        Route::get('/ai-pool', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'aiPool'])->name('ai-pool');
+        Route::post('/ai-pool/keys', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeApiKey'])->name('ai-pool.keys.store');
+        Route::put('/ai-pool/keys/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateApiKey'])->name('ai-pool.keys.update');
+        Route::delete('/ai-pool/keys/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyApiKey'])->name('ai-pool.keys.destroy');
+
+        Route::get('/ai-models', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'aiModels'])->name('ai-models');
+        Route::post('/ai-models/{tier}/sync', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'syncModel'])->name('ai-models.sync');
+        Route::delete('/ai-models/{tier}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyModel'])->name('ai-models.destroy');
+
+        Route::get('/banners', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'banners'])->name('banners');
+        Route::post('/banners', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeBanner'])->name('banners.store');
+        Route::put('/banners/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateBanner'])->name('banners.update');
+        Route::delete('/banners/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyBanner'])->name('banners.destroy');
+
+        Route::get('/sliders', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'sliders'])->name('sliders');
+        Route::post('/sliders', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeSlider'])->name('sliders.store');
+        Route::put('/sliders/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateSlider'])->name('sliders.update');
+        Route::delete('/sliders/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroySlider'])->name('sliders.destroy');
+
+        Route::get('/menus', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'menus'])->name('menus');
+        Route::post('/menus', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeMenu'])->name('menus.store');
+        Route::put('/menus/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateMenu'])->name('menus.update');
+        Route::delete('/menus/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyMenu'])->name('menus.destroy');
+
+        Route::get('/config', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'config'])->name('config');
+        Route::post('/config', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'storeConfig'])->name('config.store');
+        Route::put('/config/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'updateConfig'])->name('config.update');
+        Route::delete('/config/{id}', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'destroyConfig'])->name('config.destroy');
+
+        Route::get('/releases', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'releases'])->name('releases');
+    });
+// ======= END THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =======

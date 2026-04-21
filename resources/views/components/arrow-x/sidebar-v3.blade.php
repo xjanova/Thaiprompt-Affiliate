@@ -210,6 +210,29 @@
         />
 
         {{-- ========================================
+             📱 Thaiapp-MANAGER · ตัวคุม Thaiprompt App (Flutter)
+             ======================================== --}}
+        <x-menu.pinnable-menu-group
+            menuKey="admin.thaiapp"
+            label="Thaiapp · แอป"
+            icon="fas fa-mobile-screen"
+            dashboardType="admin"
+            :isActive="request()->routeIs('admin.thaiapp.*')"
+            :submenu="[
+                ['label' => 'ภาพรวม', 'url' => route('admin.thaiapp.hub'), 'icon' => 'fas fa-gauge-high'],
+                ['label' => 'น้องหญิง · ตัวตน/TTS', 'url' => route('admin.thaiapp.nong-ying'), 'icon' => 'fas fa-comment-dots'],
+                ['label' => 'AI Pool · API keys', 'url' => route('admin.thaiapp.ai-pool'), 'icon' => 'fas fa-key'],
+                ['label' => 'AI Models · Gemma sync', 'url' => route('admin.thaiapp.ai-models'), 'icon' => 'fas fa-brain'],
+                ['label' => 'แบนเนอร์ในแอป', 'url' => route('admin.thaiapp.banners'), 'icon' => 'fas fa-image'],
+                ['label' => 'สไลด์ในแอป', 'url' => route('admin.thaiapp.sliders'), 'icon' => 'fas fa-images'],
+                ['label' => 'เมนูในแอป', 'url' => route('admin.thaiapp.menus'), 'icon' => 'fas fa-bars'],
+                ['label' => 'ค่าคอนฟิก (key-value)', 'url' => route('admin.thaiapp.config'), 'icon' => 'fas fa-sliders'],
+                ['label' => 'ประวัติรุ่น (releases)', 'url' => route('admin.thaiapp.releases'), 'icon' => 'fas fa-clock-rotate-left'],
+            ]"
+            :defaultUrl="route('admin.thaiapp.hub')"
+        />
+
+        {{-- ========================================
              🏪 Storefront Management (Collapsible Menu)
              จัดการหน้าร้านค้าหลัก, แบนเนอร์, ธีม
              ======================================== --}}
