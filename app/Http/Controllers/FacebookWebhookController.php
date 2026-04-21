@@ -532,12 +532,19 @@ class FacebookWebhookController extends Controller
 
             // 🔥 Warm lead detection — ถ้า user เคยกด reaction ในโพสต์ใด
             // → แสดงว่า user สนใจเพจอยู่แล้ว → log เป็น high-intent signal
-            $isWarmLead = FortunePostReaction::hasReacted($fromId);
-            if ($isWarmLead) {
-                Log::info('🔥 Comment Engagement: WARM LEAD — user เคยกด reaction', [
-                    'user_id' => $fromId,
-                    'post_id' => $postId,
-                ]);
+            // ⚠️ ห่อ try/catch: ถ้าตาราง fortune_post_reactions ยังไม่มี (migration ยังไม่รัน)
+            //    → ข้ามได้ ห้ามให้ warm-lead check มาบล็อกการส่ง DM หลัก
+            $isWarmLead = false;
+            try {
+                $isWarmLead = FortunePostReaction::hasReacted($fromId);
+                if ($isWarmLead) {
+                    Log::info('🔥 Comment Engagement: WARM LEAD — user เคยกด reaction', [
+                        'user_id' => $fromId,
+                        'post_id' => $postId,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::debug('Warm lead check failed (non-blocking): '.$e->getMessage());
             }
 
             // 💰 Money-keyword route: ถ้าคอมเม้นต์เกี่ยวกับการเงิน/เงิน/หนี้ ฯลฯ
