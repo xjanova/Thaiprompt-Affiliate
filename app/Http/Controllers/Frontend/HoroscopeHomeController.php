@@ -69,11 +69,12 @@ class HoroscopeHomeController extends Controller
         $categories = $this->getMainCategories();
 
         // SEO — ตัดคำว่า "ฟรี" ออกถ้า admin ปิดการใช้งานฟรีทั้งหมด
+        // ใช้ null-safe operator กันกรณี $settings เป็น null (fresh install ที่ยังไม่มี row)
         $freeEnabled = $settings ? $settings->isHoroscopePublicFreeEnabled() : true;
         $freeWord = $freeEnabled ? ' ฟรี' : '';
-        $seoTitle = $settings->horoscope_seo_title_th
+        $seoTitle = $settings?->horoscope_seo_title_th
             ?? 'ดูดวงออนไลน์'.$freeWord.' — ดวงรายวัน ไพ่ทาโรต์ ทำนายฝัน เลขศาสตร์';
-        $seoDescription = $settings->horoscope_seo_description_th
+        $seoDescription = $settings?->horoscope_seo_description_th
             ?? 'ดูดวงออนไลน์'.$freeWord.' ดวงรายวัน 12 ราศี ไพ่ทาโรต์ ทำนายฝัน เลขเด็ด วิเคราะห์ชื่อ เบอร์โทร ทะเบียนรถ ทำนายด้วย AI แม่นยำ ทันสมัย';
 
         return view('frontend.horoscope.home', [
