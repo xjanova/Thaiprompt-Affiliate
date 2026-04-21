@@ -6,7 +6,6 @@ use App\Models\FortuneCommentEngagement;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
-use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,10 +19,10 @@ use Throwable;
  *
  * เมื่อมีคนคอมเม้นต์ในโพสต์ (ไม่ใช่คำสั่งดูดวง) → AI สร้างข้อความชวนดูดวง
  * 1. ดึง user profile
- * 2. AI สร้างข้อความ (ตอบคอมเม้นต์ + ทัก inbox)
+ * 2. AI สร้างข้อความ (ตอบคอมเม้นต์ + ทัก inbox) — fallback ไป template ถ้า AI ล้ม
  * 3. ส่งตอบคอมเม้นต์
  * 4. ส่ง inbox + Quick Replies
- * 5. บันทึก engagement
+ * 5. บันทึก engagement (เฉพาะเมื่อ DM ส่งสำเร็จ — เพื่อไม่ dedupe ลูกค้าที่ยังไม่ได้รับ DM)
  */
 class ProcessCommentEngagement implements ShouldQueue
 {
@@ -65,10 +64,21 @@ class ProcessCommentEngagement implements ShouldQueue
             $facebookService = new FacebookWebhookService($settings);
             $aiService = new FortuneAIService($settings);
 
-            $userId = $this->data['facebook_user_id'];
-            $commentId = $this->data['facebook_comment_id'];
-            $postId = $this->data['facebook_post_id'];
+            // ✅ validate required data (กัน missing keys → PHP warning/Error)
+            $userId = $this->data['facebook_user_id'] ?? null;
+            $commentId = $this->data['facebook_comment_id'] ?? null;
+            $postId = $this->data['facebook_post_id'] ?? null;
             $commentText = $this->data['comment_text'] ?? '';
+
+            if (empty($userId) || empty($commentId) || empty($postId)) {
+                Log::warning('Comment engagement: missing required data', [
+                    'has_user_id' => ! empty($userId),
+                    'has_comment_id' => ! empty($commentId),
+                    'has_post_id' => ! empty($postId),
+                ]);
+
+                return;
+            }
 
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (กัน race condition จาก webhook retry)
             // ไม่เช็คระดับ user+post — เจ้าของต้องการให้บอททักทุกคอมเม้นต์
@@ -83,6 +93,13 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 1. ดึง user profile (ชื่อ, เพศ, วันเกิด ฯลฯ)
             $userProfile = $facebookService->getUserProfile($userId);
+            if (! is_array($userProfile)) {
+                $userProfile = [
+                    'name' => $this->data['user_name'] ?? 'คุณ',
+                    'id' => $userId,
+                ];
+            }
+            $name = $userProfile['name'] ?? ($this->data['user_name'] ?? 'คุณ');
 
             Log::info('Comment Engagement: กำลังสร้างข้อความชวนดูดวง', [
                 'user_id' => $userId,
@@ -90,17 +107,47 @@ class ProcessCommentEngagement implements ShouldQueue
                 'has_profile' => ! empty($userProfile),
             ]);
 
-            // 2. AI สร้างข้อความ
-            $engagement = $aiService->generateCommentEngagement(
-                $commentText,
-                $userProfile
-            );
+            // 2. AI สร้างข้อความ — ถ้าล้ม → fallback เป็น template
+            //    (AI rate-limited / key หมด / 429 ฯลฯ จะไม่ทำให้ลูกค้าเงียบ)
+            try {
+                $engagement = $aiService->generateCommentEngagement(
+                    $commentText,
+                    $userProfile
+                );
+                $commentReply = $engagement['comment_reply'] ?? '';
+                $dmMessage = $engagement['dm_message'] ?? '';
+            } catch (Throwable $aiError) {
+                Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                    'user_id' => $userId,
+                    'error' => $aiError->getMessage(),
+                ]);
+                $commentReply = '';
+                $dmMessage = '';
+            }
 
-            $commentReply = $engagement['comment_reply'];
-            $dmMessage = $engagement['dm_message'];
+            // Guard: ถ้า AI คืน empty → ใช้ template แทน
+            if (empty($commentReply) || empty($dmMessage)) {
+                $commentReply = str_replace(
+                    ['{name}', '{comment}'],
+                    [$name, $commentText],
+                    $settings->getCommentReplyTemplate()
+                );
+                $dmMessage = str_replace(
+                    ['{name}', '{comment}'],
+                    [$name, $commentText],
+                    $settings->getCommentDmTemplate()
+                );
+            }
 
-            // 3. ตอบคอมเม้นต์
-            $facebookService->replyToComment($commentId, $commentReply);
+            // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
+            try {
+                $facebookService->replyToComment($commentId, $commentReply);
+            } catch (Throwable $e) {
+                Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
+                    'comment_id' => $commentId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             // 4. ส่ง inbox พร้อม Quick Replies
             // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
@@ -109,12 +156,22 @@ class ProcessCommentEngagement implements ShouldQueue
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ];
-            $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+            $dmSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
                 'from_comment_engagement' => true,
                 'comment_id' => $commentId,
             ]);
 
-            // 5. บันทึก engagement
+            // 5. บันทึก engagement เฉพาะเมื่อ DM ส่งสำเร็จ
+            //    ถ้าส่งไม่สำเร็จ → ไม่ dedupe ลูกค้า ให้ retry ได้ในคอมเม้นต์ถัดไป
+            if (! $dmSent) {
+                Log::warning('❌ DM ไม่ได้ส่งถึงลูกค้า — ไม่สร้าง engagement record (allow retry)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                ]);
+
+                return;
+            }
+
             FortuneCommentEngagement::create([
                 'facebook_user_id' => $userId,
                 'facebook_post_id' => $postId,
@@ -126,13 +183,14 @@ class ProcessCommentEngagement implements ShouldQueue
                 'engaged_at' => now(),
             ]);
 
-            Log::info('Comment Engagement สำเร็จ', [
+            Log::info('✅ Comment Engagement สำเร็จ', [
                 'user_id' => $userId,
                 'post_id' => $postId,
                 'comment_id' => $commentId,
             ]);
 
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
+            // ใช้ Throwable (ไม่ใช่ Exception) เพื่อจับ TypeError, Error ด้วย
             Log::error('Comment Engagement Error: '.$e->getMessage(), [
                 'data' => $this->data,
                 'trace' => $e->getTraceAsString(),

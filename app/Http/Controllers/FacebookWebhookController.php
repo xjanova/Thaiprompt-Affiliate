@@ -518,6 +518,22 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ใน DM
+            // → บอทไม่ควรส่ง DM แทรกระหว่าง conversation ของแอดมิน
+            try {
+                if ($this->isAdminActive($fromId)) {
+                    Log::info('👨‍💼 Comment Engagement: ข้าม (แอดมินกำลังดูแล user คนนี้ใน DM)', [
+                        'user_id' => $fromId,
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return;
+                }
+            } catch (\Throwable $e) {
+                // ถ้า takeover service ล้ม → ดำเนินการต่อ best-effort
+                Log::debug('Takeover check failed (non-blocking): '.$e->getMessage());
+            }
+
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (ป้องกัน webhook retry ส่ง DM ซ้ำ
             // สำหรับคอมเม้นต์เดียวกัน) — ไม่เช็คระดับ user+post แล้ว
             // เพราะต้องการให้บอททักทุกคอมเม้นต์ แม้คนเดิมจะคอมเม้นต์ซ้ำในโพสต์เดิม
@@ -567,13 +583,23 @@ class FacebookWebhookController extends Controller
                 $this->sendTemplateEngagement($comment);
             } else {
                 // โหมด AI: dispatch job ให้ AI สร้างข้อความ
-                ProcessCommentEngagement::dispatch([
-                    'facebook_user_id' => $fromId,
-                    'facebook_post_id' => $postId,
-                    'facebook_comment_id' => $commentId,
-                    'comment_text' => $message,
-                    'user_name' => $fromName,
-                ]);
+                // ⚠️ ถ้า queue driver = sync → dispatch จะ block webhook ยาวเกิน 20s
+                //    → fallback เป็น template ส่งทันที (ลูกค้ายังได้ DM แต่ไม่มี AI personalization)
+                $queueDriver = config('queue.default', 'sync');
+                if ($queueDriver === 'sync') {
+                    Log::info('🗨️ queue=sync → AI engagement ส่งเป็น template fallback', [
+                        'user_id' => $fromId,
+                    ]);
+                    $this->sendTemplateEngagement($comment);
+                } else {
+                    ProcessCommentEngagement::dispatch([
+                        'facebook_user_id' => $fromId,
+                        'facebook_post_id' => $postId,
+                        'facebook_comment_id' => $commentId,
+                        'comment_text' => $message,
+                        'user_name' => $fromName,
+                    ]);
+                }
             }
 
             Log::info('Comment Engagement: dispatched', [
@@ -619,8 +645,15 @@ class FacebookWebhookController extends Controller
             $this->settings->getCommentDmTemplate()
         );
 
-        // 1. ตอบคอมเม้นต์
-        $this->facebookService->replyToComment($commentId, $commentReply);
+        // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
+        try {
+            $this->facebookService->replyToComment($commentId, $commentReply);
+        } catch (\Throwable $e) {
+            Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
+                'comment_id' => $commentId,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         // 2. ส่ง inbox + Quick Replies
         // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
@@ -629,12 +662,22 @@ class FacebookWebhookController extends Controller
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
         ];
-        $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
+        $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
         ]);
 
-        // 3. บันทึก engagement
+        // 3. บันทึก engagement เฉพาะเมื่อ DM ส่งสำเร็จ
+        //    ถ้าส่งไม่สำเร็จ → ไม่ dedupe ลูกค้า ให้ retry ได้ในคอมเม้นต์ถัดไป
+        if (! $dmSent) {
+            Log::warning('❌ Template DM ไม่ได้ส่งถึงลูกค้า — ไม่สร้าง engagement record (allow retry)', [
+                'user_id' => $fromId,
+                'comment_id' => $commentId,
+            ]);
+
+            return;
+        }
+
         FortuneCommentEngagement::create([
             'facebook_user_id' => $fromId,
             'facebook_post_id' => $postId,
