@@ -38,6 +38,24 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * @return float ราคา (บาท)
      */
+    /**
+     * Sanitize user name — ป้องกันซ้อน "คุณคุณ" ใน greeting
+     *
+     * ถ้า $userName เป็น fallback 'คุณ' หรือว่าง → return empty string
+     * → ใน template `"สวัสดี คุณ{$userName}"` จะได้ `"สวัสดี คุณ"` (ไม่ซ้อน)
+     *
+     * @param  string|null  $userName  ชื่อจาก caller
+     */
+    protected function sanitizeUserName(?string $userName): string
+    {
+        $userName = trim((string) $userName);
+        if ($userName === '' || $userName === 'คุณ') {
+            return '';
+        }
+
+        return $userName;
+    }
+
     public function getDeepReadingPrice(): float
     {
         $deepPrice = (float) ($this->settings->deep_reading_price ?? 0);
@@ -728,6 +746,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildUpsellFlexMessage(string $userName, float $price): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         return [
             'type' => 'bubble',
             'styles' => [
@@ -1002,6 +1022,7 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildWelcomeFlexMessage(string $userName = ''): array
     {
+        $userName = $this->sanitizeUserName($userName);
         $brandName = $this->settings->getFortuneBrandName();
         $primaryColor = $this->settings->getLineFlexPrimaryColor();
 
@@ -1575,6 +1596,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildThankYouFlexMessage(string $userName = 'คุณ'): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         return [
             'type' => 'bubble',
             'size' => 'mega',
@@ -2054,17 +2077,20 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildConfirmationFlexMessage(string $userName, int $remaining, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false): array
     {
+        $userName = $this->sanitizeUserName($userName);
         // แสดงสิทธิ์ฟรี
         $creditText = $isUnlimited || $remaining >= 99
             ? '✨ ไม่จำกัด ✨'
             : ($remaining > 0 ? "{$remaining} ครั้ง" : 'หมดแล้ว');
         $creditColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
 
+        // greeting — ถ้าไม่มีชื่อ ใช้ "สวัสดี ✨" (กันห้อย "คุณ ✨")
+        $greetingText = $userName !== '' ? "สวัสดี คุณ{$userName} ✨" : 'สวัสดี ✨';
         $bodyContents = [
             // สวัสดี
             [
                 'type' => 'text',
-                'text' => "สวัสดี คุณ{$userName} ✨",
+                'text' => $greetingText,
                 'size' => 'md',
                 'weight' => 'bold',
                 'color' => '#333333',
@@ -2184,7 +2210,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => $this->settings->getFortuneBrandName(), 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
                             ['type' => 'text', 'text' => 'ยินดีต้อนรับ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
                         ],
                     ],
@@ -2313,8 +2339,9 @@ class LineFortuneService implements MessagingPlatformInterface
         $freeEnabled = $this->settings->isFreeReadingEnabled();
         $maxFree = (int) ($this->settings->max_free_readings ?? 0);
 
-        // Header box — เปลี่ยนข้อความตามสถานะฟรี
-        $headerText = $freeEnabled ? 'สิทธิ์ฟรีวันนี้หมดแล้ว' : 'ดูดวงโดยแม่หมอจันทรา';
+        // Header box — เปลี่ยนข้อความตามสถานะฟรี (ใช้ brand name จาก settings)
+        $brandName = $this->settings->getFortuneBrandName();
+        $headerText = $freeEnabled ? 'สิทธิ์ฟรีวันนี้หมดแล้ว' : "ดูดวงโดย{$brandName}";
         $subText = $freeEnabled
             ? "ฟรีวันละ {$maxFree} คำถาม"
             : "ค่าครู {$priceDisplay} บาท/ครั้ง";
@@ -2369,7 +2396,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => $this->settings->getFortuneBrandName(), 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
                             ['type' => 'text', 'text' => 'ยินดีต้อนรับ ✨', 'color' => '#FFFFFFCC', 'size' => 'sm'],
                         ],
                     ],
@@ -2394,6 +2421,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildCheckRemainingFlexMessage(string $userName, int $remaining, int $used, int $total, float $deepReadingPrice, bool $deepReadingEnabled = true, bool $isUnlimited = false, float $walletBalance = 0, float $totalCommission = 0): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         $creditText = $isUnlimited || $remaining >= 99 ? '✨ ไม่จำกัด ✨' : "{$remaining} ครั้ง";
         $statusColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
         $priceDisplay = number_format($deepReadingPrice, 0);
@@ -2429,7 +2458,7 @@ class LineFortuneService implements MessagingPlatformInterface
             $bodyContents[] = [
                 'type' => 'box', 'layout' => 'vertical', 'margin' => 'xl', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'text', 'text' => '💎 บริการดูดวงโดยแม่หมอจันทรา', 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                    ['type' => 'text', 'text' => '💎 บริการดูดวงโดย'.$this->settings->getFortuneBrandName(), 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
                     ['type' => 'text', 'text' => "ค่าครู {$priceDisplay} บาท/ครั้ง", 'size' => 'xs', 'color' => '#999999', 'margin' => 'sm'],
                 ],
             ];
@@ -2527,16 +2556,20 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildQuestionTopicFlexMessage(string $userName, int $remaining, bool $isUnlimited = false): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         $creditText = $isUnlimited || $remaining >= 99
             ? '✨ ไม่จำกัด ✨'
             : "{$remaining} ครั้ง";
         $creditColor = $remaining > 0 || $isUnlimited ? '#43A047' : '#E53935';
 
+        // greeting — ถ้าไม่มีชื่อ ใช้ "สวัสดี ✨" (กันห้อย "คุณ ✨")
+        $greetingText = $userName !== '' ? "สวัสดี คุณ{$userName} ✨" : 'สวัสดี ✨';
         $bodyContents = [
             // ทักทาย
             [
                 'type' => 'text',
-                'text' => "สวัสดี คุณ{$userName} ✨",
+                'text' => $greetingText,
                 'size' => 'md',
                 'weight' => 'bold',
                 'color' => '#333333',
@@ -2653,7 +2686,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'flex' => 1,
                         'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'แม่หมอจันทราดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => $this->settings->getFortuneBrandName(), 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
                             ['type' => 'text', 'text' => 'เลือกเรื่องที่อยากถามค่ะ 🌙', 'color' => '#FFFFFFCC', 'size' => 'sm'],
                         ],
                     ],
@@ -2888,6 +2921,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildDeclinedFlexMessage(string $userName, string $type = 'declined'): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         $title = $type === 'cancelled' ? 'ยกเลิกแล้วค่ะ' : 'ไม่เป็นไรค่ะ';
         $subtitle = "คุณ{$userName} สามารถกลับมาดูดวงได้ทุกเมื่อนะคะ ✨";
         $headerColor = $type === 'cancelled' ? '#78909C' : '#8E24AA';
@@ -3081,6 +3116,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildPaymentConfirmedFlexMessage(string $billRef, string $userName = 'คุณ'): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         return [
             'type' => 'bubble',
             'styles' => ['header' => ['backgroundColor' => '#2E7D32']],
@@ -3139,6 +3176,8 @@ class LineFortuneService implements MessagingPlatformInterface
      */
     public function buildFortuneReadyFlexMessage(string $userName = 'คุณ', ?string $billRef = null): array
     {
+        $userName = $this->sanitizeUserName($userName);
+
         $billText = $billRef ? "📋 เลขที่บิล: {$billRef}" : '';
 
         return [

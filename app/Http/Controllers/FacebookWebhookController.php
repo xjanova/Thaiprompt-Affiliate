@@ -911,12 +911,15 @@ class FacebookWebhookController extends Controller
 
     /**
      * ผู้ใช้กด "✅ อยาก" หลัง affiliate recruitment pitch
-     * → ส่งรายละเอียดการเริ่มต้น (ดูดวง 39 บาท → สมาชิก → รับส่วนแบ่ง)
+     * → ส่งรายละเอียดการเริ่มต้น (ดูดวงราคา dynamic → สมาชิก → รับส่วนแบ่ง)
      */
     protected function handleAffiliateRecruitYes(string $senderId): void
     {
+        // ใช้ราคา dynamic จาก settings (ไม่ hardcode)
+        $deepPrice = number_format($this->getDeepReadingPriceFromSettings(), 0);
+
         $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
-            ."1️⃣ ดูดวงละเอียดกับแม่หมอ 39 บาท/ครั้ง\n"
+            ."1️⃣ ดูดวงละเอียดกับแม่หมอ {$deepPrice} บาท/ครั้ง\n"
             ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
             ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
             ."💰 รายได้:\n"
@@ -925,7 +928,7 @@ class FacebookWebhookController extends Controller
             .'กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨';
 
         $quickReplies = [
-            ['content_type' => 'text', 'title' => '💎 เริ่มดูดวง 39 บาท', 'payload' => 'MENU_DEEP_FORTUNE'],
+            ['content_type' => 'text', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'],
             ['content_type' => 'text', 'title' => '🔮 ดูดวงก่อน', 'payload' => 'MENU_FORTUNE'],
         ];
 

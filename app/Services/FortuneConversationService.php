@@ -1758,7 +1758,7 @@ class FortuneConversationService
 
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
-                $message .= "💎 *ดูดวงโดยแม่หมอจันทรา — ค่าครู {$price} บาท*\n";
+                $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — ค่าครู {$price} บาท*\n";
                 $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
@@ -1797,7 +1797,7 @@ class FortuneConversationService
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
                 $message .= "กลับมาใหม่พรุ่งนี้ได้ หรือ\n\n";
-                $message .= "💎 *ดูดวงโดยแม่หมอจันทรา — ค่าครู {$price} บาท*\n";
+                $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — ค่าครู {$price} บาท*\n";
                 $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
@@ -3803,7 +3803,9 @@ class FortuneConversationService
 
         $price = $this->getDeepReadingPrice();
 
-        return "🔮 *ระบบดูดวงโดยแม่หมอจันทรา*\n\n".
+        $brandName = $this->settings->getFortuneBrandName();
+
+        return "🔮 *ระบบดูดวงโดย{$brandName}*\n\n".
                "พิมพ์ 'ดูดวง' เพื่อเริ่มใช้บริการ\n".
                "💎 ค่าครู {$price} บาท/ครั้ง ✨";
     }

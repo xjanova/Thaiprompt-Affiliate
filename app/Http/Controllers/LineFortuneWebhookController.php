@@ -642,20 +642,78 @@ class LineFortuneWebhookController extends Controller
     }
 
     /**
-     * ผู้ใช้กด "✅ อยาก" → รายละเอียดการเริ่ม (ดูดวง 39 บาท → สมาชิก)
+     * ผู้ใช้กด "✅ อยาก" → ส่ง Flex detail + ปุ่มเริ่มดูดวง (parity กับ FB)
      */
     protected function handleAffiliateYesPostback(string $userId, ?string $replyToken): void
     {
-        $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
-            ."1️⃣ ดูดวงละเอียดกับแม่หมอ 39 บาท/ครั้ง\n"
-            ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
-            ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
-            ."💰 รายได้:\n"
-            ."• ชวนคนมาดูดวง → ได้ 10 บาท/คน (Level 1)\n"
-            ."• เพื่อนชวนต่อ → ได้ส่วนแบ่งอีกชั้น (Level 2)\n\n"
-            .'พิมพ์ "ดูดวงละเอียด" เพื่อเริ่มเลยค่ะ ✨';
+        // ใช้ราคา dynamic จาก LineFortuneService::getDeepReadingPrice()
+        $deepPrice = number_format($this->lineService->getDeepReadingPrice(), 0);
 
-        $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+        $flex = [
+            'type' => 'bubble',
+            'body' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'md',
+                'paddingAll' => 'xl',
+                'contents' => [
+                    ['type' => 'text', 'text' => '🎉 ยินดีค่ะ!', 'weight' => 'bold', 'size' => 'xl', 'color' => '#6b46c1'],
+                    ['type' => 'separator', 'margin' => 'md'],
+                    ['type' => 'text', 'text' => '📋 วิธีเริ่ม 3 ขั้น', 'weight' => 'bold', 'margin' => 'md', 'size' => 'md'],
+                    [
+                        'type' => 'text',
+                        'text' => "1️⃣ ดูดวงละเอียด {$deepPrice} บาท/ครั้ง\n2️⃣ ได้เป็นสมาชิกอัตโนมัติ\n3️⃣ รับลิงก์แชร์ส่วนตัว",
+                        'wrap' => true,
+                        'size' => 'sm',
+                        'margin' => 'sm',
+                    ],
+                    ['type' => 'separator', 'margin' => 'md'],
+                    ['type' => 'text', 'text' => '💰 รายได้', 'weight' => 'bold', 'margin' => 'md', 'size' => 'md'],
+                    [
+                        'type' => 'text',
+                        'text' => "• ชวนคนมาดูดวง → 10 บาท/คน (Level 1)\n• เพื่อนชวนต่อ → ส่วนแบ่ง Level 2",
+                        'wrap' => true,
+                        'size' => 'sm',
+                        'margin' => 'sm',
+                    ],
+                ],
+            ],
+            'footer' => [
+                'type' => 'box',
+                'layout' => 'vertical',
+                'spacing' => 'sm',
+                'paddingAll' => 'md',
+                'contents' => [
+                    [
+                        'type' => 'button',
+                        'style' => 'primary',
+                        'color' => '#6b46c1',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'text' => 'ดูดวงละเอียด'],
+                    ],
+                    [
+                        'type' => 'button',
+                        'style' => 'secondary',
+                        'height' => 'sm',
+                        'action' => ['type' => 'message', 'label' => '🔮 ดูดวงก่อน', 'text' => 'ดูดวง'],
+                    ],
+                ],
+            ],
+        ];
+
+        $messages = [[
+            'type' => 'flex',
+            'altText' => "🎉 วิธีเริ่มสร้างรายได้ — ดูดวง {$deepPrice} บาท",
+            'contents' => $flex,
+        ]];
+
+        if ($replyToken) {
+            $this->lineService->replyMessage($replyToken, $messages);
+        } else {
+            // fallback เป็น text เมื่อ reply token หมดอายุ
+            $fallback = "🎉 วิธีเริ่มง่ายๆ 3 ขั้น\n\n1️⃣ ดูดวงละเอียด {$deepPrice} บาท\n2️⃣ ได้เป็นสมาชิก\n3️⃣ แชร์ลิงก์ได้เลย\n\n💰 ชวนคน → 10 บาท/คน\n\nพิมพ์ \"ดูดวงละเอียด\" เพื่อเริ่มค่ะ";
+            $this->lineService->sendMessageWithReplyFallback($userId, $fallback, null);
+        }
         Log::info('💰 LINE Affiliate YES clicked', ['user_id' => $userId]);
     }
 
@@ -979,9 +1037,10 @@ class LineFortuneWebhookController extends Controller
     {
         try {
             $flex = $this->lineService->buildHelpFlexMessage();
+            $brandName = $this->settings->getFortuneBrandName();
 
             $this->lineService->sendFlexWithReplyFallback(
-                $userId, $flex, 'ℹ️ วิธีใช้งานแม่หมอจันทรา', $replyToken
+                $userId, $flex, "ℹ️ วิธีใช้งาน{$brandName}", $replyToken
             );
 
         } catch (\Exception $e) {
