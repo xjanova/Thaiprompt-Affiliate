@@ -301,23 +301,29 @@ class FcmNotificationService
         // ใช้ offset ID เดียวกับ transformFortuneReadingToOrderApproval()
         $offsetId = $reading->id + 10000000;
 
+        // Flag `is_floating` แยกเคสบิลลอย (ยังจับคู่ user ไม่ได้ — admin ต้อง review manual)
+        $isFloating = (bool) ($reading->is_floating ?? false);
+
         $data = [
-            'type' => 'new_order',
+            'type' => $isFloating ? 'new_floating_fortune_bill' : 'new_order',
             'order_id' => (string) $offsetId,
             'order_number' => $reading->bill_reference ?? ('FTU-' . $reading->id),
             'amount' => number_format((float) ($reading->amount_paid ?? 0), 2, '.', ''),
             'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
             'is_fortune_reading' => 'true',
+            'is_floating' => $isFloating ? 'true' : 'false',
             'server_url' => config('app.url'),  // ให้ Android app รู้ว่า FCM นี้มาจากเซิร์ฟไหน
         ];
 
         // ส่งเป็น data-only (ไม่มี notification field) เพื่อให้ onMessageReceived() ถูกเรียกเสมอ
         // แม้แอพอยู่ใน background — Android จะแสดง notification เองใน FcmService.handleNewOrder()
         // ถ้าส่ง notification field ด้วย → Android OS จะ intercept และ onMessageReceived() จะไม่ถูกเรียก
-        Log::info('FCM: Sending new_fortune_reading push (data-only)', [
+        Log::info($isFloating ? '⚠️ FCM: Floating fortune bill (ต้อง manual review)' : 'FCM: Sending new_fortune_reading push (data-only)', [
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
             'amount' => $reading->amount_paid,
+            'is_floating' => $isFloating,
+            'sender_info' => $reading->sender_info,
         ]);
 
         return $this->sendToMultipleTokens($tokens, $data, null);

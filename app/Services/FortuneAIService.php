@@ -825,6 +825,12 @@ class FortuneAIService
                     'remaining_keys' => $totalKeys - $keyNum,
                 ]);
 
+                // Circuit Breaker: track 429 per provider
+                // ถ้าโดน 429 ≥ 5 ครั้ง ใน 60 วินาที → mark provider down 2 นาที
+                if ($is429) {
+                    $this->recordProvider429($keyInfo['provider']);
+                }
+
                 // ถ้ายังมี key ถัดไป → สลับทันที (รอแค่ 1-3 วินาที)
                 if ($index < $totalKeys - 1) {
                     $delay = $is429 ? 1 : 3; // 429 = สลับเลย (1s), error อื่น = 3s
@@ -893,11 +899,74 @@ class FortuneAIService
      *
      * @return array [['provider' => '...', 'api_key' => '...', 'model' => '...', 'pool_key' => ?AiApiKey, 'source' => '...', 'name' => '...'], ...]
      */
+    /**
+     * Circuit Breaker — รายชื่อ providers ที่เพิ่งโดน 429 หนัก
+     * → cache key `ai_circuit_breaker:{provider}` = true
+     */
+    protected function getDownProviders(): array
+    {
+        $downList = [];
+        foreach (['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'openai', 'anthropic'] as $provider) {
+            if (cache()->has("ai_circuit_breaker:{$provider}")) {
+                $downList[] = $provider;
+            }
+        }
+
+        return $downList;
+    }
+
+    /**
+     * Circuit Breaker — บันทึก 429 ของ provider
+     *
+     * Logic:
+     * - เจอ 429 → increment counter (TTL 60 วินาที)
+     * - ถ้า counter ≥ 5 → mark provider down 2 นาที → skip ใน getAllAvailableKeys()
+     * - หลัง 2 นาที cache expire → ลอง provider ใหม่
+     *
+     * @param  string  $provider  ชื่อ provider (groq, gemini, ฯลฯ)
+     */
+    protected function recordProvider429(string $provider): void
+    {
+        $counterKey = "ai_429_count:{$provider}";
+        $breakerKey = "ai_circuit_breaker:{$provider}";
+
+        try {
+            // increment counter (atomic)
+            $counter = cache()->increment($counterKey);
+            if ($counter === 1) {
+                // ครั้งแรก → set TTL 60 วินาที
+                cache()->put($counterKey, 1, 60);
+            }
+
+            // ครบ threshold → เปิด circuit breaker 2 นาที
+            if ($counter >= 5 && ! cache()->has($breakerKey)) {
+                cache()->put($breakerKey, true, 120);
+                cache()->forget($counterKey);
+                Log::warning("🔴 AI Circuit Breaker: {$provider} OPEN", [
+                    'reason' => '429 rate limit hit 5+ times in 60s',
+                    'duration' => '2 minutes',
+                ]);
+            }
+        } catch (Exception $e) {
+            // cache อาจใช้ไม่ได้ (file driver + concurrent) → log แล้วไปต่อ
+            Log::debug('Circuit breaker counter error: '.$e->getMessage());
+        }
+    }
+
     protected function getAllAvailableKeys(): array
     {
         $keys = [];
         $addedApiKeys = []; // เก็บ api_key ที่เพิ่มแล้ว ป้องกันซ้ำ
         $primaryProvider = $this->provider;
+
+        // Circuit Breaker: skip providers ที่เพิ่งโดน 429 หนัก
+        // (ถูก mark ไว้ใน cache 2 นาที เพื่อให้ rate limit reset)
+        $downProviders = $this->getDownProviders();
+        if (! empty($downProviders)) {
+            Log::info('FortuneAI: Circuit Breaker active — skipping providers', [
+                'down_providers' => $downProviders,
+            ]);
+        }
 
         // 1) ดึงจาก API Key Pool — ทุก provider (primary ก่อน)
         try {
@@ -911,6 +980,11 @@ class FortuneAIService
             );
 
             foreach ($providerOrder as $provider) {
+                // Circuit Breaker: skip ถ้า provider โดน 429 หนัก
+                if (in_array($provider, $downProviders, true)) {
+                    continue;
+                }
+
                 // ดึง ALL available keys ของ provider นี้ (ไม่ใช่แค่ 1 key)
                 $poolKeys = AiApiKey::forProvider($provider)
                     ->available()

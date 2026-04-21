@@ -68,6 +68,18 @@ class FortunePaymentService
             'bank' => $notification->bank,
         ]);
 
+        // 📲 แจ้ง admin ผ่าน FCM (ทั้งกรณี matched และ floating)
+        // Android app จะแสดง alert ให้ admin review manual สำหรับ floating bill
+        try {
+            app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+        } catch (\Exception $e) {
+            // FCM ล้มเหลวไม่ block flow — แค่ log
+            Log::warning('Fortune Payment: FCM notify ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return $reading;
     }
 
