@@ -1388,17 +1388,14 @@ class FortuneConversationService
         $remaining = $normalRemaining;
 
         // ⚠️ ถ้า admin ปิดบริการฟรี และผู้ใช้ไม่มีเครดิตพิเศษ → ไม่พูดถึง "ฟรี"
+        // กระชับ: brand + ราคา + ปุ่มเริ่ม (ไม่ต้องแจกแจง bullet ซ้ำซ้อน)
         if (! $freeEnabled && ! $hasSpecialCredit) {
             $brandName = $this->settings->getFortuneBrandName();
-            $message = "💎 *บริการดูดวงโดย{$brandName}*\n";
-            $message .= "═══════════════════════\n\n";
             if ($this->settings->isDeepReadingEnabled()) {
-                $message .= "🔮 ดูดวงละเอียด เริ่มต้น {$price} บาท\n";
-                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
-                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-                $message .= "💡 พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มใช้บริการ";
+                $message = "💎 ดูดวงโดย{$brandName} — {$price} บาท\n\n";
+                $message .= "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่ม 👇";
             } else {
-                $message .= 'ขณะนี้ระบบปิดให้บริการชั่วคราว กรุณาติดต่อแอดมินค่ะ 🙏';
+                $message = 'ขณะนี้ระบบปิดให้บริการชั่วคราว กรุณาติดต่อแอดมินค่ะ 🙏';
             }
 
             return [
@@ -1755,6 +1752,21 @@ class FortuneConversationService
         }
 
         $name = $userProfile['name'] ?? 'คุณ';
+
+        // ⚡ FAST PATH: ถ้าปิดบริการฟรี + เปิด deep → ข้ามการสร้าง basic reading
+        // ไปเข้า deep flow ทันที (เก็บวันเกิด → คำถาม → ชำระ) ไม่ต้องถามซ้ำ
+        // เหตุผล: เมื่อไม่มี free reading เลย การสร้าง dummy reading + ถามยืนยัน
+        //         เป็นขั้นตอนสิ้นเปลือง ผู้สูงอายุงง
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        if (! $freeEnabled && $this->settings->isDeepReadingEnabled()) {
+            Log::info('Fortune: ปิด free → redirect เข้า deep flow ตรง', [
+                'facebook_user_id' => $facebookUserId,
+                'original_message' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+        }
+
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
 
@@ -1783,21 +1795,10 @@ class FortuneConversationService
         $message = "🔮 สวัสดี คุณ{$name} ✨\n\n";
         $message .= "เพจดูดวงหมอจันทรายินดีต้อนรับ\n\n";
 
-        $freeEnabled = $this->settings->isFreeReadingEnabled();
-
-        // ถ้าปิดบริการฟรี → ชี้ไปที่ดูดวงเสียค่าครูเลย (ไม่พูดถึงฟรี)
+        // Edge case: ปิดทั้ง free และ deep → แจ้งสั้นๆ ว่าปิดชั่วคราว
         if (! $freeEnabled) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-
-            if ($this->settings->isDeepReadingEnabled()) {
-                $price = $this->getDeepReadingPrice();
-                $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — ค่าครู {$price} บาท*\n";
-                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
-                $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-                $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
-            } else {
-                $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
-            }
+            $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
 
             return [
                 'action' => 'awaiting_confirmation',
@@ -3597,12 +3598,11 @@ class FortuneConversationService
      */
     protected function getRemainingCreditsMessage(string $userId): string
     {
-        // ถ้าปิดบริการฟรี → แจ้งว่าต้องใช้บริการเสียค่าครู
+        // ถ้าปิดบริการฟรี → แจ้งสั้นๆ ว่าราคาเท่าไร + ปุ่มเริ่ม (ไม่พูด "สิทธิ์")
         if (! $this->settings->isFreeReadingEnabled()) {
             $price = $this->getDeepReadingPrice();
 
-            return "💎 บริการดูดวง — ค่าครู {$price} บาท/ครั้ง\n"
-                . "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มใช้บริการ";
+            return "💎 ดูดวง {$price} บาท — พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่ม";
         }
 
         $remaining = $this->getRemainingFreeQuestions($userId);
@@ -3863,19 +3863,22 @@ class FortuneConversationService
         $message .= "💰 *การเงิน* - โชคลาภ รายได้\n";
         $message .= "🏥 *สุขภาพ* - สิ่งควรระวัง\n\n";
 
-        $message .= "═══════════════════════\n";
-        $message .= "🎁 *บริการของหมอ*\n";
-        $message .= "═══════════════════════\n\n";
-
-        // แสดงบริการฟรีเฉพาะเมื่อเปิดอยู่
+        // ถ้าเปิดบริการฟรี → แสดง section "บริการของหมอ" (basic + deep)
+        // ถ้าปิดบริการฟรี → แสดงแค่การ์ด deep ไม่ต้องมี header/separator ซ้ำซ้อน
         if ($freeEnabled) {
+            $message .= "═══════════════════════\n";
+            $message .= "🎁 *บริการของหมอ*\n";
+            $message .= "═══════════════════════\n\n";
             $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
             $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
+            $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
+            $message .= "   ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+            $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+        } else {
+            // กระชับ: ราคา + สิ่งที่ได้ (ไม่ต้องมี section header)
+            $message .= "💎 *ค่าครู {$price} บาท* — ถาม 2 คำถาม\n";
+            $message .= "   วิเคราะห์จากวันเกิด + สีมงคล เลขมงคล ฤกษ์ดี\n\n";
         }
-
-        $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
-        $message .= "   ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
-        $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
 
         $message .= "📝 *ตัวอย่างคำถาม*:\n";
         $message .= "• ปีนี้จะมีคู่ครองไหม\n";

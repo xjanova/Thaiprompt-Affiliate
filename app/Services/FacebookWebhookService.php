@@ -929,11 +929,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         // Fallback: ข้อความต้อนรับเดิม
-        return $this->sendMessage($recipientId,
-            "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n".
-            "พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n".
-            '🌟 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายเชิงลึก'
-        );
+        // กระชับเมื่อปิด free — ไม่แนะนำ "ดูดวง" (ซึ่งไม่มี basic flow ให้ใช้)
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        if ($freeEnabled) {
+            $welcomeText = "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n"
+                ."พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n"
+                .'🌟 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายเชิงลึก';
+        } else {
+            $welcomeText = "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n"
+                .'พิมพ์ "ดูดวงละเอียด" เพื่อเริ่มค่ะ 🙏';
+        }
+
+        return $this->sendMessage($recipientId, $welcomeText);
     }
 
     /**
