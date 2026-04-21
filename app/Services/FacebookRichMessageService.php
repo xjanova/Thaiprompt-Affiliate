@@ -54,6 +54,11 @@ class FacebookRichMessageService
         // ตรวจสอบว่าเปิดระบบดูดวงฟรีหรือไม่
         // ถ้า max_free_readings = 0 → ไม่พูดถึง "ฟรี" เลย
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // กันซ้อน "คุณคุณ" เมื่อไม่มีชื่อจริง
+        $hasName = ! empty($userName) && $userName !== 'คุณ';
+        $greeting = $hasName
+            ? "✨ สวัสดีค่ะ คุณ{$userName}!"
+            : '✨ สวัสดีค่ะ!';
 
         $buttons = [
             [
@@ -94,7 +99,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "✨ สวัสดีค่ะ คุณ{$userName}!\n\n🔮 ยินดีต้อนรับสู่ {$this->brandName}\n\nพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n{$serviceLines}\n\n💡 พิมพ์อะไรก็ได้มาคุยกันเลยค่ะ!",
+                    'text' => "{$greeting}\n\n🔮 ยินดีต้อนรับสู่ {$this->brandName}\n\nพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n{$serviceLines}\n\n💡 พิมพ์อะไรก็ได้มาคุยกันเลยค่ะ!",
                     'buttons' => $buttons,
                 ],
             ],
@@ -118,6 +123,9 @@ class FacebookRichMessageService
     {
         $priceText = number_format($price, 0);
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // กันซ้อน "คุณคุณ" — ถ้าไม่มีชื่อจริง ใช้ "คุณ" เดี่ยวๆ
+        $hasName = ! empty($userName) && $userName !== 'คุณ';
+        $subject = $hasName ? "คุณ{$userName}" : 'คุณ';
 
         // สร้างปุ่ม — ซ่อนปุ่ม "ถามเพิ่ม (ฟรี)" เมื่อระบบฟรีปิดอยู่
         $buttons = [
@@ -147,7 +155,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "💎 คุณ{$userName} ต้องการดูดวงละเอียดไหม?\n\n✅ วิเคราะห์เชิงลึก 2 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
+                    'text' => "💎 {$subject}ต้องการดูดวงละเอียดไหม?\n\n✅ วิเคราะห์เชิงลึก 2 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
                     'buttons' => $buttons,
                 ],
             ],

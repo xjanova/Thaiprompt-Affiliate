@@ -553,6 +553,17 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             $profile = $response->json();
 
+            // ⚠️ FB Graph API Privacy (2018+): field `name` บางครั้งไม่ return
+            // แต่ `first_name` / `last_name` มักจะได้ → compose ให้ always มี `name` field
+            if (empty($profile['name'])) {
+                $composed = trim(
+                    ($profile['first_name'] ?? '').' '.($profile['last_name'] ?? '')
+                );
+                if ($composed !== '') {
+                    $profile['name'] = $composed;
+                }
+            }
+
             // ถ้าได้ birthday มา → คำนวณอายุ
             if (! empty($profile['birthday'])) {
                 try {
@@ -566,6 +577,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             Log::info('ดึงโปรไฟล์ผู้ใช้สำเร็จ', [
                 'user_id' => $facebookUserId,
+                'has_name' => ! empty($profile['name']),
+                'has_first_name' => ! empty($profile['first_name']),
                 'has_gender' => ! empty($profile['gender']),
                 'has_birthday' => ! empty($profile['birthday']),
                 'has_locale' => ! empty($profile['locale']),
@@ -573,7 +586,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return $profile;
         } catch (Exception $e) {
-            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: '.$e->getMessage());
+            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: '.$e->getMessage(), [
+                'user_id' => $facebookUserId,
+            ]);
 
             return null;
         }

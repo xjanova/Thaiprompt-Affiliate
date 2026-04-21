@@ -585,8 +585,10 @@ class FacebookWebhookController extends Controller
         // ข้อความตอบใต้คอมเม้นต์ (สั้น ไม่สปอยล์รายละเอียด)
         $commentReply = "เรื่องเงินมาถูกทางแล้วค่ะ 🙏 แม่หมอมีเคล็ดลับง่ายๆ เช็คใน inbox นะคะ ✨";
 
-        // ข้อความ DM — pitch โปรแกรม affiliate
-        $dmMessage = "🙏 สวัสดีค่ะ คุณ{$name}\n\n"
+        // ข้อความ DM — pitch โปรแกรม affiliate (greeting แบบ conditional ไม่ซ้อน "คุณคุณ")
+        $hasName = ! empty($name) && $name !== 'คุณ';
+        $greeting = $hasName ? "🙏 สวัสดีค่ะ คุณ{$name}" : '🙏 สวัสดีค่ะ';
+        $dmMessage = "{$greeting}\n\n"
             ."เห็นเม้นต์เรื่องเงินแล้ว แม่หมอมีทางสร้างรายได้ง่ายๆ ให้ค่ะ\n\n"
             ."💰 ชวนเพื่อนมาดูดวงกับแม่หมอ\n"
             ."→ ได้ค่าชวน 10 บาท/คน\n\n"
@@ -1034,7 +1036,11 @@ class FacebookWebhookController extends Controller
         // ตรวจสอบสถานะระบบฟรี — ถ้า max_free_readings = 0 → ซ่อนการพูดถึง "ฟรี"
         $freeEnabled = $this->settings->isFreeReadingEnabled();
 
-        $message = "✨ *สวัสดีค่ะ คุณ{$userName}!*\n\n";
+        // กันซ้อน "คุณคุณ" — ถ้า fallback เป็น 'คุณ' ให้ใช้ greeting สั้น
+        $greeting = ($userName === 'คุณ' || $userName === '' || empty($userName))
+            ? '✨ *สวัสดีค่ะ!*'
+            : "✨ *สวัสดีค่ะ คุณ{$userName}!*";
+        $message = $greeting."\n\n";
         $message .= "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n";
         $message .= "ทางเพจพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n";
 
