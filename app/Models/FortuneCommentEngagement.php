@@ -43,12 +43,26 @@ class FortuneCommentEngagement extends Model
 
     /**
      * ตรวจสอบว่า user นี้เคยถูก engage ในโพสต์นี้แล้วหรือไม่
+     *
+     * @deprecated ใช้ hasEngagedComment() แทน — เจ้าของต้องการทักทุกคอมเม้นต์
+     *             แม้คนเดิมจะคอมเม้นต์ซ้ำในโพสต์เดิม (per-comment ไม่ใช่ per-post)
      */
     public static function hasEngaged(string $userId, string $postId): bool
     {
         return self::where('facebook_user_id', $userId)
             ->where('facebook_post_id', $postId)
             ->exists();
+    }
+
+    /**
+     * ตรวจสอบว่าคอมเม้นต์ (ID) นี้เคยถูก engage แล้วหรือไม่
+     *
+     * ใช้เพื่อป้องกัน webhook retry ส่ง DM ซ้ำสำหรับคอมเม้นต์เดียวกัน
+     * (ไม่ใช่ป้องกันคอมเม้นต์ซ้ำจากผู้ใช้คนเดียวกัน — อันนั้นอนุญาต)
+     */
+    public static function hasEngagedComment(string $commentId): bool
+    {
+        return self::where('facebook_comment_id', $commentId)->exists();
     }
 
     /**

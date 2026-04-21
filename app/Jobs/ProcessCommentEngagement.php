@@ -70,11 +70,12 @@ class ProcessCommentEngagement implements ShouldQueue
             $postId = $this->data['facebook_post_id'];
             $commentText = $this->data['comment_text'] ?? '';
 
-            // ตรวจสอบซ้ำอีกครั้ง (กัน race condition)
-            if (FortuneCommentEngagement::hasEngaged($userId, $postId)) {
-                Log::info('User เคยถูก engage ในโพสต์นี้แล้ว', [
+            // ตรวจสอบซ้ำเฉพาะระดับ comment_id (กัน race condition จาก webhook retry)
+            // ไม่เช็คระดับ user+post — เจ้าของต้องการให้บอททักทุกคอมเม้นต์
+            if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
+                Log::info('คอมเม้นต์ถูก engage ไปแล้ว (webhook retry)', [
                     'user_id' => $userId,
-                    'post_id' => $postId,
+                    'comment_id' => $commentId,
                 ]);
 
                 return;

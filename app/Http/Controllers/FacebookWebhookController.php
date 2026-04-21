@@ -518,11 +518,13 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // ตรวจสอบว่าเคย engage ในโพสต์นี้แล้วหรือไม่
-            if (FortuneCommentEngagement::hasEngaged($fromId, $postId)) {
-                Log::info('Comment Engagement: เคย engage แล้ว ข้าม', [
+            // ตรวจสอบซ้ำเฉพาะระดับ comment_id (ป้องกัน webhook retry ส่ง DM ซ้ำ
+            // สำหรับคอมเม้นต์เดียวกัน) — ไม่เช็คระดับ user+post แล้ว
+            // เพราะต้องการให้บอททักทุกคอมเม้นต์ แม้คนเดิมจะคอมเม้นต์ซ้ำในโพสต์เดิม
+            if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
+                Log::info('Comment Engagement: คอมเม้นต์นี้ engage แล้ว ข้าม', [
                     'user_id' => $fromId,
-                    'post_id' => $postId,
+                    'comment_id' => $commentId,
                 ]);
 
                 return;
