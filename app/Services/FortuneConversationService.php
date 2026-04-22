@@ -2486,7 +2486,7 @@ class FortuneConversationService
 
         return match ($status) {
             FortuneReading::STATUS_BASIC_DONE => $this->handleAfterBasic($reading, $messageText),
-            FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText),
+            FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText, $userProfile),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_TAROT => $this->handleTarotCardDraw($reading, $messageText),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
@@ -2652,8 +2652,12 @@ class FortuneConversationService
 
     /**
      * จัดการ input วันเกิด
+     *
+     * @param  FortuneReading  $reading
+     * @param  string  $messageText
+     * @param  array|null  $userProfile  ใช้ประกอบ AI acknowledgement เมื่อ user พิมพ์นอกสเตป
      */
-    protected function handleBirthdateInput(FortuneReading $reading, string $messageText): array
+    protected function handleBirthdateInput(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
     {
         // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
         // ใช้ exact match เท่านั้น (ป้องกัน "ไม่ยกเลิกค่ะ" → cancel โดยไม่ได้ตั้งใจ)
@@ -2678,9 +2682,20 @@ class FortuneConversationService
         $birthDate = $this->parseBirthDate($messageText);
 
         if (! $birthDate) {
+            // ข้อความไม่ใช่รูปแบบวันเกิด → ให้ AI รับฟังแล้วเตือนขั้นตอนต่อ
+            // (ถ้า AI ไม่พร้อม → เหลือแค่ step hint เดิม)
+            $stepHint = "📅 ตอนนี้หมอรอวันเกิดอยู่นะคะ กรุณาบอกแบบนี้:\n"
+                . "• วัน/เดือน/ปี เช่น 15/08/1990\n"
+                . "• หรือ 15 สิงหาคม 2533\n\n"
+                . "💡 พิมพ์ 'ยกเลิก' หากอยากเริ่มใหม่";
+
+            // ใช้ profile จาก reading ถ้าไม่มี param ส่งมา
+            $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI);
+
             return [
                 'action' => 'invalid_birthdate',
-                'message' => "ไม่เข้าใจรูปแบบวันเกิด ลองใหม่ในรูปแบบนี้:\n\n📅 วัน/เดือน/ปี เช่น 15/08/1990\n📅 หรือ 15 สิงหาคม 2533\n\n💡 พิมพ์ 'ยกเลิก' หรือ 'เริ่มใหม่' หากอยากเริ่มใหม่",
+                'message' => $message,
                 'reading' => $reading,
             ];
         }
@@ -4810,6 +4825,69 @@ class FortuneConversationService
             'response_flex_json' => $keyword->response_flex_json,
             'quick_reply_options' => $keyword->quick_reply_options,
         ];
+    }
+
+    /**
+     * สร้างข้อความตอบแบบ "AI รับฟัง + เตือนขั้นตอน" (mid-flow helper)
+     *
+     * ใช้เมื่อผู้ใช้พิมพ์ข้อความไม่ตรงกับสเตปปัจจุบัน เช่น ระหว่างเก็บวันเกิด
+     * พิมพ์คำถามอื่น ("ราคาเท่าไร", "แม่นไหม") — AI จะรับฟังสั้นๆ แล้วเตือน
+     * ขั้นตอนที่รออยู่ ไม่ให้บอทตอบวนซ้ำ "ไม่เข้าใจรูปแบบ..." อย่างเดียว
+     *
+     * ใช้ chat_ai_api_key (แยกจาก prediction provider) — ไม่ขึ้นกับ enable_ai_chat
+     * เพราะใน mid-flow ถ้า bot ตอบผิดจะทำให้ user หลงทาง (AI help เป็น always-on)
+     *
+     * @param  string  $messageText  ข้อความผู้ใช้ที่ไม่ตรงสเตป
+     * @param  string  $stepHint  ข้อความเตือนว่าต้องทำอะไร (จะ append หลัง AI reply)
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @return string  ข้อความรวม (AI ack + step hint) หรือแค่ step hint ถ้า AI ล้ม
+     */
+    protected function buildAIAssistedStepReminder(
+        string $messageText,
+        string $stepHint,
+        ?array $userProfile = null
+    ): string {
+        // เช็ค API key ก่อน — ไม่มี key → ข้าม AI ใช้ hint อย่างเดียว
+        try {
+            $apiKey = $this->settings->getChatAIApiKey();
+            if (empty($apiKey)) {
+                return $stepHint;
+            }
+        } catch (\Throwable $e) {
+            return $stepHint;
+        }
+
+        // ลอง AI ตอบสั้นๆ แบบ acknowledge
+        try {
+            // Gatekeeper: กัน AI call ล้นระบบ
+            if (! LineGatekeeperService::canCallAI('fortune')) {
+                return $stepHint;
+            }
+
+            $aiService = new FortuneAIService($this->settings);
+            $promptForAI = "ผู้ใช้พิมพ์ข้อความนี้: \"{$messageText}\"\n\n"
+                . "กรุณาตอบสั้นมาก (1 ประโยค) แสดงว่าเข้าใจสิ่งที่ผู้ใช้พูด "
+                . 'ห้ามอธิบายยาว ห้ามบอกให้ทำอะไรต่อ (ระบบจะเติมขั้นตอนเอง)';
+
+            $result = $aiService->generateChatResponse($promptForAI, $userProfile);
+            LineGatekeeperService::recordAICall('fortune');
+
+            $aiReply = trim($result['response'] ?? '');
+
+            // ลบ [OFFER_FORTUNE] tag ถ้ามี (mid-flow ไม่ต้องเสนอดูดวงซ้ำ เพราะกำลัง flow อยู่แล้ว)
+            $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $aiReply));
+
+            if (! empty($aiReply)) {
+                return $aiReply."\n\n".$stepHint;
+            }
+        } catch (\Throwable $e) {
+            Log::debug('buildAIAssistedStepReminder: AI ล้ม ใช้ hint อย่างเดียว', [
+                'error' => $e->getMessage(),
+                'text_preview' => mb_substr($messageText, 0, 30),
+            ]);
+        }
+
+        return $stepHint;
     }
 
     /**
