@@ -1880,6 +1880,27 @@ class FortuneConversationService
             return $this->startDeepReadingFlow($facebookUserId, $userProfile);
         }
 
+        // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม", "สวัสดี")
+        //    ระหว่างรอการยืนยัน → ให้ AI รับฟังและแนะนำขั้นตอนต่อ (ไม่ถือเป็นคำถามดูดวง)
+        if ($this->looksLikeMetaOrChitchat($messageText)) {
+            $stepHint = "💫 ถ้าพร้อมให้หมอจันทราดูดวงแล้ว\n"
+                . "พิมพ์ 'ใช่' หรือ 'ดูเลย' เพื่อเริ่ม ✨\n"
+                . "หรือพิมพ์คำถามที่อยากรู้มาได้เลย";
+            $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI);
+
+            return [
+                'action' => 'awaiting_confirmation',
+                'message' => $message,
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'quick_replies' => [
+                    ['label' => '✨ ดูเลย', 'text' => 'ดูเลย'],
+                    ['label' => '❌ ไม่เอา', 'text' => 'ไม่ต้องการ'],
+                ],
+            ];
+        }
+
         // ถ้ายืนยัน หรือพิมพ์ข้อความอื่นเข้ามา → เริ่มทำนายเลย
         // ดึงข้อความต้นฉบับจาก state (ถ้ามี) หรือใช้ข้อความใหม่
         $originalMessage = $reading->getConversationState('original_message', $messageText);
@@ -2724,6 +2745,24 @@ class FortuneConversationService
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
         try {
+            // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "สวัสดี", "วิธีใช้")
+            //    ไม่ถือเป็นคำถามดูดวง → ให้ AI รับฟังและย้ำขั้นตอน
+            if ($this->looksLikeMetaOrChitchat($messageText)) {
+                $stepHint = "📝 ตอนนี้หมอรอคำถามดูดวงของคุณอยู่ค่ะ\n"
+                    . "ลองถามเรื่องที่อยากรู้มาได้เลย เช่น:\n"
+                    . "• ความรักปีนี้จะเป็นยังไง\n"
+                    . "• ดวงการเงินช่วงนี้\n"
+                    . "• การงานจะก้าวหน้าไหม\n\n"
+                    . "💡 พิมพ์ 'ยกเลิก' หากอยากเริ่มใหม่";
+                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+
+                return [
+                    'action' => 'awaiting_question',
+                    'message' => $message,
+                    'reading' => $reading,
+                ];
+            }
+
             // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
             $question = trim($messageText);
             if (! empty($question)) {
@@ -2908,7 +2947,33 @@ class FortuneConversationService
         $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
         $remainingMinutes = max(0, $remainingMinutes);
 
-        $message = "🔮 หมอจันทรารอคำทำนายละเอียดให้อยู่\n\n";
+        // 🧠 ถ้าลูกค้าพูด meta/chitchat (ไม่ใช่คำแจ้งชำระ) → ให้ AI รับฟังก่อน
+        //    แล้วค่อยแสดงข้อมูลชำระเงิน (ไม่ใช่เด้งบัญชี+ยอดเงินทันที — รู้สึกเหมือนคุยกับคน)
+        $aiPrefix = '';
+        if ($this->looksLikeMetaOrChitchat($messageText)) {
+            try {
+                $apiKey = $this->settings->getChatAIApiKey();
+                if (! empty($apiKey) && LineGatekeeperService::canCallAI('fortune')) {
+                    $aiService = new FortuneAIService($this->settings);
+                    $promptForAI = "ผู้ใช้อยู่ในระหว่างรอโอนเงินค่าครู {$payAmount} บาท เพื่อรับคำทำนาย และพิมพ์ว่า: \"{$messageText}\"\n\n"
+                        . 'กรุณาตอบสั้นมาก (1 ประโยค) แสดงว่าเข้าใจสิ่งที่ผู้ใช้พูด '
+                        . 'ห้ามอธิบายยอดเงิน/บัญชีธนาคาร (ระบบจะเติมเอง)';
+                    $result = $aiService->generateChatResponse($promptForAI, $reading->user_profile);
+                    LineGatekeeperService::recordAICall('fortune');
+                    $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $result['response'] ?? ''));
+                    if (! empty($aiReply)) {
+                        $aiPrefix = $aiReply."\n\n";
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::debug('handlePendingPayment AI prefix ล้ม (non-blocking)', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        $message = $aiPrefix;
+        $message .= "🔮 หมอจันทรารอคำทำนายละเอียดให้อยู่\n\n";
         $message .= "กรุณาโอนเงินเพื่อรับคำทำนาย 🙏\n\n";
         $message .= "═══════════════════════\n";
         $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
@@ -4825,6 +4890,64 @@ class FortuneConversationService
             'response_flex_json' => $keyword->response_flex_json,
             'quick_reply_options' => $keyword->quick_reply_options,
         ];
+    }
+
+    /**
+     * ตรวจว่าข้อความเป็น "meta/chitchat" ที่ไม่ใช่คำตอบของสเตปปัจจุบัน
+     *
+     * ใช้ heuristic จับคำที่บ่งชี้ชัดว่าไม่ใช่คำตอบของขั้นตอน เช่น:
+     * - ทักทาย: "สวัสดี", "hi", "hello"
+     * - ขอบคุณ: "ขอบคุณ"
+     * - ถามวิธีใช้: "ทำยังไง", "ใช้ยังไง", "วิธีใช้"
+     * - ถามราคา: "ราคาเท่าไร", "กี่บาท"
+     * - ถามความน่าเชื่อถือ: "แม่นไหม", "น่าเชื่อถือ"
+     * - ถามบริการ: "มีอะไรบ้าง", "ช่วยอะไรได้"
+     * - ขอคำแนะนำ: "สอนหน่อย", "ขอถาม"
+     *
+     * หมายเหตุ: ไม่ใช่ผลลัพธ์สมบูรณ์ 100% — แค่กันกรณีชัดเจน
+     * เพื่อไม่ให้ถือเป็นคำตอบสเตปไปประมวลผลผิด
+     */
+    protected function looksLikeMetaOrChitchat(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        // ลบคำลงท้ายสุภาพ เพื่อจับคำหลักได้แม่นขึ้น
+        $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u', '', $text);
+
+        // ทักทาย / ขอบคุณ (exact match หรือ starts_with)
+        $chitchatPrefixes = [
+            'สวัสดี', 'ขอบคุณ', 'ขอบพระคุณ', 'ขอบใจ',
+            'ดีค่ะ', 'ดีครับ', 'ดีจ้า', 'hi', 'hello', 'hey',
+            'เฮลโล', 'หวัดดี', 'หวัดดีค่ะ',
+        ];
+        foreach ($chitchatPrefixes as $prefix) {
+            if ($normalized === $prefix || str_starts_with($normalized, $prefix)) {
+                return true;
+            }
+        }
+
+        // meta / help / pricing / trust / service queries
+        $metaPatterns = [
+            'ทำยังไง', 'ทำอย่างไร', 'ทำไง', 'ทำไรได้', 'ใช้ยังไง',
+            'ใช้งานยังไง', 'ใช้งานอย่างไร', 'วิธีใช้', 'วิธีการใช้', 'วิธีการ',
+            'ราคาเท่าไร', 'ราคาเท่าไหร่', 'เท่าไหร่', 'กี่บาท', 'คิดเงิน', 'ค่าใช้จ่าย', 'ค่าครู',
+            'แม่นไหม', 'แม่นแค่ไหน', 'แม่นจริง', 'น่าเชื่อถือ', 'จริงไหม', 'จริงหรอ',
+            'มีอะไร', 'ช่วยอะไรได้', 'มีบริการอะไร', 'บริการอะไร',
+            'สอนหน่อย', 'สอนใช้', 'ขอคำแนะนำ',
+            'ขอถาม', 'ถามหน่อย', 'อยากถาม',
+            'เป็นใคร', 'คือใคร', 'คุณใคร', 'นี่ใคร',
+            'บอท', 'หุ่นยนต์', 'คนจริงไหม',
+        ];
+        foreach ($metaPatterns as $pattern) {
+            if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
