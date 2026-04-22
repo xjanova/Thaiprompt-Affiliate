@@ -1630,6 +1630,42 @@ class FacebookWebhookController extends Controller
             default => null,
         };
 
+        // 🎯 Phase C — กรองปุ่มตามสถานะระบบ (ปิด free / deep)
+        //   ถ้าปิดระบบฟรี → ซ่อนปุ่มที่พึ่งระบบฟรี
+        //   ถ้าปิดระบบเชิงลึก → ซ่อนปุ่มที่พึ่ง deep reading
+        if ($quickReplies) {
+            $freeEnabled = $this->settings->isFreeReadingEnabled();
+            $deepEnabled = $this->settings->isDeepReadingEnabled();
+
+            // Payload ที่ต้องมี free เปิดอยู่
+            $freeOnlyPayloads = [
+                'FORTUNE_OVERVIEW', 'FORTUNE_LOVE', 'FORTUNE_WORK',
+                'FORTUNE_MONEY', 'FORTUNE_HEALTH', 'CHECK_REMAINING',
+            ];
+            // Payload ที่ต้องมี deep เปิดอยู่
+            $deepOnlyPayloads = [
+                'DEEP_READING_ACCEPT', 'DEEP_WITH_BIRTHDATE',
+                'FORTUNE_BASIC', 'FORTUNE_DEEP',
+            ];
+
+            $quickReplies = array_values(array_filter($quickReplies, function ($btn) use ($freeEnabled, $deepEnabled, $freeOnlyPayloads, $deepOnlyPayloads) {
+                $payload = $btn['payload'] ?? '';
+                if (! $freeEnabled && in_array($payload, $freeOnlyPayloads, true)) {
+                    return false;
+                }
+                if (! $deepEnabled && in_array($payload, $deepOnlyPayloads, true)) {
+                    return false;
+                }
+
+                return true;
+            }));
+
+            // หลังกรอง ถ้าไม่เหลือปุ่มอะไร → ไม่ส่ง quick replies
+            if (empty($quickReplies)) {
+                $quickReplies = null;
+            }
+        }
+
         // เพิ่มปุ่ม "📜 คำทำนายล่าสุด" ถ้า user มีบิลที่จ่ายวันนี้
         // แสดงเฉพาะ actions ที่ไม่ได้อยู่กลาง flow (ไม่ใส่ตอนเก็บคำถาม/รอชำระ)
         if ($quickReplies) {

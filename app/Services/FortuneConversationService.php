@@ -1069,11 +1069,12 @@ class FortuneConversationService
                     'platform' => $this->currentPlatform,
                 ]);
 
+                // แสดงปุ่มเฉพาะเมื่อมีบริการอย่างน้อย 1 อย่างเปิดอยู่
                 return [
                     'action' => 'birthdate_detected',
                     'message' => $message,
                     'reading' => null,
-                    'show_quick_replies' => true,
+                    'show_quick_replies' => ($deepEnabled || $freeEnabled),
                     'pending_birthdate' => $standaloneBirthdate,
                 ];
             }
