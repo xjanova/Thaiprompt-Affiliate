@@ -372,6 +372,24 @@ class FacebookWebhookController extends Controller
         $reaction->dm_attempted = true;
 
         try {
+            // 🚫 ถ้าลูกค้ากำลังคุยกับบอท (มี active reading) → ห้ามส่ง DM "ขอบคุณที่กดไลก์"
+            //    แทรก เพราะจะทำให้ลูกค้างง (กำลังคุยเรื่องดูดวงอยู่แล้ว)
+            try {
+                $hasActive = FortuneReading::activeConversation($reaction->facebook_user_id)->exists();
+                if ($hasActive) {
+                    Log::info('👍 Reaction DM ข้าม — user กำลังคุยกับบอทอยู่', [
+                        'user_id' => $reaction->facebook_user_id,
+                    ]);
+                    $reaction->dm_success = false;
+                    $reaction->save();
+
+                    return;
+                }
+            } catch (\Throwable $e) {
+                // ถ้า query ล้ม → ดำเนินการต่อ best-effort (ไม่ควรบล็อก reaction DM)
+                Log::debug('tryReactionDm: active check failed (non-blocking): '.$e->getMessage());
+            }
+
             // ลองส่ง DM แบบสั้น ชวนดูดวง — ตัดคำว่า "ฟรี" ออกถ้า admin ปิดบริการฟรี
             $freeEnabled = $this->settings->isFreeReadingEnabled();
             $invite = $freeEnabled
@@ -532,6 +550,22 @@ class FacebookWebhookController extends Controller
             } catch (\Throwable $e) {
                 // ถ้า takeover service ล้ม → ดำเนินการต่อ best-effort
                 Log::debug('Takeover check failed (non-blocking): '.$e->getMessage());
+            }
+
+            // 🚫 ถ้าลูกค้ากำลังคุยกับบอทอยู่ (มี active reading) → ห้ามส่ง DM "ชวนดูดวง"
+            //    แทรก เพราะจะทำให้ลูกค้างง (กำลังอยู่ในสเตปดูดวงอยู่แล้ว)
+            try {
+                $hasActive = FortuneReading::activeConversation($fromId)->exists();
+                if ($hasActive) {
+                    Log::info('🗨️ Comment Engagement: ข้าม — user กำลังคุยกับบอทอยู่ (active reading)', [
+                        'user_id' => $fromId,
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return;
+                }
+            } catch (\Throwable $e) {
+                Log::debug('Comment engagement active check failed (non-blocking): '.$e->getMessage());
             }
 
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (ป้องกัน webhook retry ส่ง DM ซ้ำ
