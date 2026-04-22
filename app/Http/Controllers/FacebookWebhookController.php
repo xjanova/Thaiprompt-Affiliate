@@ -1457,6 +1457,8 @@ class FacebookWebhookController extends Controller
                 'pending_payment', 'waiting_payment',
                 'ai_limit', 'declined', 'payment_expired', 'completed',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
+                // 🎯 Phase C — ตรวจพบวันเกิดจากข้อความแรก
+                'birthdate_detected',
             ];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
@@ -1618,6 +1620,12 @@ class FacebookWebhookController extends Controller
             'pending_payment', 'waiting_payment' => [
                 ['content_type' => 'text', 'title' => '❌ ยกเลิกบิล', 'payload' => 'CANCEL_PAYMENT'],
                 ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
+            ],
+            // 🎯 Phase C — ลูกค้าพิมพ์วันเกิดมาก่อน → ถาม "ดูดวงเชิงลึกไหม?"
+            'birthdate_detected' => [
+                ['content_type' => 'text', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'DEEP_WITH_BIRTHDATE'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรีก่อน', 'payload' => 'FORTUNE_OVERVIEW'],
+                ['content_type' => 'text', 'title' => '❌ ยังไม่ก่อน', 'payload' => 'CANCEL'],
             ],
             default => null,
         };
@@ -1917,6 +1925,9 @@ class FacebookWebhookController extends Controller
             'CHECK_STATUS' => $this->processConversationalMessage($senderId, 'เช็คสถานะ'),
             'RESTART' => $this->processConversationalMessage($senderId, 'เริ่มใหม่'),
             'CANCEL' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+
+            // 🎯 Phase C — ลูกค้าพิมพ์วันเกิดมาก่อน → กดปุ่ม "ดูดวงเชิงลึก" → ใช้วันเกิดที่ cache ไว้
+            'DEEP_WITH_BIRTHDATE' => $this->processConversationalMessage($senderId, '__DEEP_WITH_CACHED_BIRTHDATE__'),
 
             // ✅ Post-reading payloads (จบคำทำนาย → เชิญแชร์/ชวนเพื่อน)
             'VIEW_LATER' => $this->facebookService->sendMessage($senderId, "✨ ได้เลย! เมื่อพร้อมดูแล้ว พิมพ์ 'ดูคำทำนาย' ได้ทุกเมื่อ 🔮"),

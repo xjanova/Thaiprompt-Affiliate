@@ -611,6 +611,15 @@ class FortuneConversationService
             try {
 
             // ═══════════════════════════════════════════════════════════
+            // 🎯 Phase C — internal marker: ลูกค้ากดปุ่ม "ดูดวงเชิงลึก" หลังพิมพ์วันเกิด
+            // ═══════════════════════════════════════════════════════════
+            // controller ส่ง marker '__DEEP_WITH_CACHED_BIRTHDATE__' มา → ให้ใช้วันเกิด
+            // ที่ cache ไว้ + จัมพ์เข้า deep reading flow ทันที (ข้ามขั้นเก็บวันเกิด)
+            if ($messageText === '__DEEP_WITH_CACHED_BIRTHDATE__') {
+                return $this->startDeepReadingFromCachedBirthdate($facebookUserId, $userProfile);
+            }
+
+            // ═══════════════════════════════════════════════════════════
             // 🎯 Phase B.1 — บันทึก DM timestamps + ตรวจ 24h window
             // ═══════════════════════════════════════════════════════════
             // ใช้ข้อมูลนี้เพื่อให้ AI chat ตอบแบบคุ้นเคย (soft-sell) เมื่อลูกค้า
@@ -1017,6 +1026,56 @@ class FortuneConversationService
             // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
             if ($this->isExplicitDeepReadingRequest($messageText)) {
                 return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            }
+
+            // 🎯 Phase C — ลูกค้าพิมพ์วันเกิด standalone มาก่อน (เช่น "15/8/1990")
+            //    → บอกว่าได้วันเกิดแล้ว + offer ดูดวงเชิงลึก/ฟรี ให้เลือก
+            //    ทำก่อน DB keywords + AI Chat เพราะ intent ชัดเจน
+            $standaloneBirthdate = $this->parseStandaloneBirthdate($messageText);
+            if ($standaloneBirthdate) {
+                // เก็บวันเกิดไว้ใน cache เผื่อ user กดปุ่ม "ดูดวงเชิงลึก" → ใช้ pre-filled
+                Cache::put(
+                    "fortune:pending_birthdate:{$this->currentPlatform}:{$facebookUserId}",
+                    $standaloneBirthdate,
+                    now()->addMinutes(15)
+                );
+
+                $formattedDate = $this->formatThaiDate($standaloneBirthdate);
+                $deepEnabled = $this->settings->isDeepReadingEnabled();
+                $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+                $message = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
+
+                if ($deepEnabled && $freeEnabled) {
+                    $price = (int) $this->getDeepReadingPrice();
+                    $message .= "อยากให้หมอดูดวงเชิงลึก (ค่าครู {$price} บาท) หรือดูดวงฟรีก่อนดี?\n\n"
+                        . "👇 กดเลือกด้านล่างได้เลย";
+                } elseif ($deepEnabled) {
+                    $price = (int) $this->getDeepReadingPrice();
+                    $message .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n"
+                        . "• ถามได้ 2 คำถาม\n"
+                        . "• วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n\n"
+                        . "👇 กดเลือกด้านล่าง";
+                } elseif ($freeEnabled) {
+                    $message .= "🔮 อยากให้หมอดูดวงฟรีให้ไหม?\n"
+                        . "ถามเรื่องอะไรก็ได้ — เลือกหัวข้อด้านล่าง";
+                } else {
+                    $message .= "🙏 ขณะนี้บริการดูดวงปิดชั่วคราว";
+                }
+
+                Log::info('Fortune: ตรวจพบวันเกิด standalone จากข้อความแรก', [
+                    'facebook_user_id' => $facebookUserId,
+                    'birth_date' => $standaloneBirthdate,
+                    'platform' => $this->currentPlatform,
+                ]);
+
+                return [
+                    'action' => 'birthdate_detected',
+                    'message' => $message,
+                    'reading' => null,
+                    'show_quick_replies' => true,
+                    'pending_birthdate' => $standaloneBirthdate,
+                ];
             }
 
             // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย", "หมอดู") → ไป fortune flow เลย
@@ -2736,6 +2795,159 @@ class FortuneConversationService
                 'reading' => null,
             ];
         }
+    }
+
+    /**
+     * 🎯 Phase C — เริ่ม deep reading flow โดยมีวันเกิดพร้อมอยู่แล้ว
+     *
+     * ใช้เมื่อลูกค้าพิมพ์วันเกิดมาเลยตั้งแต่ข้อความแรก (ก่อนเข้า flow)
+     * → ข้ามขั้นตอน COLLECTING_BIRTHDATE ไปเก็บคำถามเลย
+     *
+     * @param  string  $userId
+     * @param  string  $birthDate  ค.ศ. Y-m-d
+     * @param  array|null  $userProfile
+     */
+    /**
+     * 🎯 Phase C — Public wrapper: เริ่ม deep reading โดยใช้วันเกิดที่ cache ไว้
+     *
+     * ใช้โดย controller เมื่อ user กดปุ่ม "💎 ดูดวงเชิงลึก" หลังพิมพ์วันเกิดมาก่อนหน้า
+     * ถ้า cache หมดอายุ (>15 นาที) → fallback เข้า flow ปกติ (เก็บวันเกิดใหม่)
+     *
+     * @param  string  $userId
+     * @param  array|null  $userProfile
+     */
+    public function startDeepReadingFromCachedBirthdate(string $userId, ?array $userProfile = null): array
+    {
+        $cached = Cache::get("fortune:pending_birthdate:{$this->currentPlatform}:{$userId}");
+        Cache::forget("fortune:pending_birthdate:{$this->currentPlatform}:{$userId}");
+
+        if (empty($cached)) {
+            Log::info('Fortune: pending_birthdate cache หมดอายุ → fallback เข้า flow ปกติ', [
+                'user_id' => $userId,
+                'platform' => $this->currentPlatform,
+            ]);
+
+            return $this->startDeepReadingFlow($userId, $userProfile);
+        }
+
+        return $this->startDeepReadingFlowWithBirthdate($userId, $cached, $userProfile);
+    }
+
+    protected function startDeepReadingFlowWithBirthdate(string $userId, string $birthDate, ?array $userProfile = null): array
+    {
+        try {
+            // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            if (! $this->settings->isDeepReadingEnabled()) {
+                return [
+                    'action' => 'deep_reading_disabled',
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดปิดชั่วคราว\n\n"
+                        . "หากต้องการดูดวงทั่วไปฟรี พิมพ์ 'ดูดวง' ได้เลย 🙏",
+                    'reading' => null,
+                ];
+            }
+
+            // ⚡ ใช้ profile จาก FortuneChannelManager ถ้ามี
+            if (! is_array($userProfile) || empty($userProfile)) {
+                $previousName = FortuneReading::where('facebook_user_id', $userId)
+                    ->whereNotNull('facebook_user_name')
+                    ->where('facebook_user_name', '!=', 'คุณ')
+                    ->where('facebook_user_name', '!=', '')
+                    ->latest()
+                    ->value('facebook_user_name');
+
+                $userProfile = [
+                    'name' => $previousName ?? 'คุณ',
+                    'id' => $userId,
+                ];
+            }
+
+            // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
+            $this->closeAllActiveConversations($userId);
+
+            $name = $userProfile['name'] ?? 'คุณ';
+
+            // สร้าง FortuneReading ใหม่ — มี birth_date พร้อมแล้ว → จัมพ์ไป COLLECTING_QUESTIONS
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $userId,
+                'facebook_user_name' => $name,
+                'user_profile' => $userProfile,
+                'questions' => [],
+                'reading_type' => 'deep',
+                'birth_date' => $birthDate,
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                'response_type' => 'private_message',
+                'ai_response' => '',
+                'ai_provider' => '',
+                'platform' => $this->currentPlatform,
+                'platform_user_id' => $userId,
+            ]);
+            $reading->setConversationState('collected_questions', []);
+
+            Log::info('Fortune: เริ่ม deep reading ข้ามขั้นวันเกิด (ลูกค้าพิมพ์วันเกิดมาก่อน)', [
+                'facebook_user_id' => $userId,
+                'reading_id' => $reading->id,
+                'birth_date' => $birthDate,
+            ]);
+
+            $formattedDate = $this->formatThaiDate($birthDate);
+
+            return [
+                'action' => 'collecting_questions',
+                'message' => "✅ รับวันเกิด {$formattedDate} แล้วค่ะ\n\n"
+                    . $this->getQuestionsRequestMessage($name, $birthDate),
+                'reading' => $reading,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Fortune: startDeepReadingFlowWithBirthdate ล้มเหลว', [
+                'user_id' => $userId,
+                'birth_date' => $birthDate,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback → เริ่ม flow ปกติ (เก็บวันเกิดใหม่)
+            return $this->startDeepReadingFlow($userId, $userProfile);
+        }
+    }
+
+    /**
+     * 🎯 Phase C — ตรวจว่าข้อความเป็นวันเกิด standalone หรือไม่
+     *
+     * ใช้เพื่อจับ case ที่ลูกค้าพิมพ์ "15/8/1990" เป็นข้อความแรก (ก่อนเข้า flow)
+     * → auto-offer deep reading พร้อม birthdate pre-filled
+     *
+     * เงื่อนไข (เพื่อลด false positive):
+     * - parseBirthDate ต้องสำเร็จ
+     * - ข้อความสั้น (≤ 40 ตัวอักษร) หรือมีแต่ตัวเลข+เดือน+separator
+     * - ไม่มีคำถามเกี่ยวกับดวง/หัวข้อเพิ่ม (ไม่งั้นให้ flow ปกติจัดการ)
+     *
+     * @return string|null  วันเกิด Y-m-d ถ้า match, null ถ้าไม่
+     */
+    protected function parseStandaloneBirthdate(string $messageText): ?string
+    {
+        $text = trim($messageText);
+
+        // ข้อความสั้นพอ (เผื่อกรณี "วันเกิด 15/8/1990 ค่ะ" = ~22 ตัวอักษร)
+        if (mb_strlen($text) > 40) {
+            return null;
+        }
+
+        // ต้อง parse เป็นวันเกิดได้
+        $birthDate = $this->parseBirthDate($text);
+        if (! $birthDate) {
+            return null;
+        }
+
+        // ห้ามมีคำเกี่ยวกับดูดวงเฉพาะ (เพราะถ้ามี ควรผ่าน flow หลักไปถาม)
+        // ยกเว้นคำเป็นกลางที่ไม่ชี้หัวข้อ เช่น "เกิด", "วันเกิด", "วันที่"
+        $conflictKeywords = ['ความรัก', 'การงาน', 'การเงิน', 'สุขภาพ', 'โชค', 'หวย', 'ดูดวง', 'ทำนาย'];
+        $lower = mb_strtolower($text);
+        foreach ($conflictKeywords as $kw) {
+            if (str_contains($lower, $kw)) {
+                return null;  // มีหัวข้อเฉพาะ → ให้ flow หลักจัดการ
+            }
+        }
+
+        return $birthDate;
     }
 
     /**
