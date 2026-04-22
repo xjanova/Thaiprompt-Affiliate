@@ -1459,6 +1459,8 @@ class FacebookWebhookController extends Controller
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
                 // 🎯 Phase C — ตรวจพบวันเกิดจากข้อความแรก
                 'birthdate_detected',
+                // 🎯 Phase D — AI + pool fail หมด → ชี้ปุ่ม ดูดวงละเอียด ให้ลูกค้า
+                'welcome_guide_button',
             ];
             if (! empty($result['show_quick_replies']) || in_array($result['action'] ?? '', $actionsWithQuickReplies)) {
                 $this->sendConversationQuickReplies($senderId, $result['action']);
@@ -1626,6 +1628,13 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'DEEP_WITH_BIRTHDATE'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรีก่อน', 'payload' => 'FORTUNE_OVERVIEW'],
                 ['content_type' => 'text', 'title' => '❌ ยังไม่ก่อน', 'payload' => 'CANCEL'],
+            ],
+            // 🎯 Phase D — welcome guide (แสดงตอน AI fail / ข้อความไม่ match intent ใด)
+            //   ชี้ปุ่มชัดเจน — ผู้สูงวัยไม่ต้องเดาว่าต้อง "พิมพ์" อะไร
+            'welcome_guide_button' => [
+                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_OVERVIEW'],
+                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ],
             default => null,
         };

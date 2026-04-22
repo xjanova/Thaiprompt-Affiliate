@@ -417,6 +417,90 @@ class FortuneAIService
     }
 
     /**
+     * 🎯 Phase D — Chat response + fallback ผ่าน AI Pool (Gemini, Groq, Grok, ฯลฯ)
+     *
+     * Flow:
+     * 1. ลอง chat_ai_provider ที่ admin ตั้งไว้ก่อน (เช่น Gemini)
+     * 2. ถ้าล้มเหลว (empty key, 429, error) → วน loop ทุก key ใน AI Pool
+     * 3. ใช้ key แรกที่ได้ผล — ทุกรายการใน pool เป็นได้ทั้ง chat (เรียก endpoint เดียวกัน)
+     *
+     * เหตุผล: ลูกค้าพิมพ์ข้อความนอกเหนือ (เช่น "แม่นมั้ย", "ราคาเท่าไร") ควรได้คำตอบ
+     * จาก AI เสมอ ไม่ใช่ pattern ตายตัว — แม้ chat AI หลักจะใช้ไม่ได้ ก็ยัง fallback
+     * ไปใช้ pool keys ของ prediction provider ได้
+     *
+     * @return array ['response' => string, 'provider' => string, 'model' => string]
+     *
+     * @throws Exception เมื่อทั้ง chat หลักและ pool ล้มเหลวหมด
+     */
+    public function generateChatResponseWithPoolFallback(
+        string $messageText,
+        ?array $userProfile = null,
+        array $history = []
+    ): array {
+        // Step 1: ลอง chat AI หลัก
+        try {
+            if (! empty($history)) {
+                return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
+            }
+
+            return $this->generateChatResponse($messageText, $userProfile);
+        } catch (Exception $primaryErr) {
+            Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
+                'primary_error' => mb_substr($primaryErr->getMessage(), 0, 150),
+            ]);
+        }
+
+        // Step 2: วน loop keys ทั้งหมดจาก AI Pool
+        $customPrompt = $this->settings->getChatSystemPrompt();
+        $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
+
+        $userName = $userProfile['name'] ?? '';
+        $prompt = $messageText;
+        if (! empty($userName) && $userName !== 'คุณ') {
+            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
+        }
+
+        $config = [
+            'temperature' => 0.8,
+            'max_tokens' => 512,
+        ];
+
+        $allKeys = $this->getAllAvailableKeys();
+
+        if (empty($allKeys)) {
+            throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
+        }
+
+        $errors = [];
+        foreach ($allKeys as $keyInfo) {
+            try {
+                $result = match ($keyInfo['provider']) {
+                    'gemini' => empty($history)
+                        ? $this->callChatGemini($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
+                        : $this->callChatGeminiWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
+                    default => empty($history)
+                        ? $this->callChatOpenAICompatible($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config)
+                        : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config, $history),
+                };
+
+                Log::info('FortuneAIService: Pool fallback สำเร็จสำหรับ chat', [
+                    'provider' => $keyInfo['provider'],
+                    'source' => $keyInfo['source'] ?? 'unknown',
+                    'name' => $keyInfo['name'] ?? 'unknown',
+                ]);
+
+                return $result;
+            } catch (Exception $poolErr) {
+                $errors[] = "{$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($poolErr->getMessage(), 0, 100);
+
+                continue;
+            }
+        }
+
+        throw new Exception('AI Chat และ Pool fallback ล้มเหลวหมด: '.implode(' | ', array_slice($errors, 0, 3)));
+    }
+
+    /**
      * เรียก Gemini API พร้อม conversation history
      *
      * Gemini ใช้ format: contents[] = [{role: 'user', parts: [...]}, {role: 'model', parts: [...]}]

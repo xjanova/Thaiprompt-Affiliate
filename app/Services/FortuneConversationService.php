@@ -1009,10 +1009,13 @@ class FortuneConversationService
                     // ✅ FIX: ถ้าไม่ match อะไรเลยใน basic_done → ตอบเป็น AI Chat fallback
                     // ❌ เดิม: เรียก askFortuneConfirmation → วนลูป confirmation ซ้ำไม่จบ
                     // ✅ ใหม่: ตอบข้อความทั่วไป + ชวนดูดวง (ไม่สร้าง FortuneReading)
+                    // 🎯 Phase D — ใช้ action 'welcome_guide_button' เพื่อให้ controller ส่ง quick reply
+                    //    ชี้ไปที่ปุ่ม 💎 ดูดวงละเอียด ชัดเจน (แทนคำว่า "พิมพ์")
                     return [
-                        'action' => 'ai_chat_response',
-                        'message' => "✨ หมอจันทรารับฟังอยู่\n\nหากต้องการดูดวง พิมพ์ \"ดูดวง\" หรือกดปุ่ม 🔮 ด้านล่างได้เลย",
+                        'action' => 'welcome_guide_button',
+                        'message' => $this->buildWelcomeGuideMessage(),
                         'reading' => null,
+                        'show_quick_replies' => true,
                     ];
                 }
 
@@ -1126,11 +1129,14 @@ class FortuneConversationService
 
             // ✅ FIX: ถ้าไม่ match อะไรเลย → ตอบข้อความทั่วไป + ชวนดูดวง
             // ❌ เดิม: เรียก askFortuneConfirmation → วนลูป confirmation ซ้ำไม่จบ
-            // ✅ ใหม่: ตอบเป็นมิตร + แนะนำให้พิมพ์ "ดูดวง" (ไม่สร้าง FortuneReading)
+            // ✅ ใหม่: ตอบเป็นมิตร + แนะนำให้กดปุ่ม (ไม่สร้าง FortuneReading)
+            // 🎯 Phase D — ใช้ action 'welcome_guide_button' เพื่อให้ controller ส่ง quick reply
+            //    ชี้ไปที่ปุ่ม 💎 ดูดวงละเอียด ชัดเจน — รองรับกรณี AI ทั้ง chat+pool ล้มเหลวหมด
             return [
-                'action' => 'ai_chat_response',
-                'message' => "🔮 สวัสดีค่ะ ยินดีต้อนรับ ✨\n\nหมอจันทราพร้อมดูดวงให้คุณค่ะ\n\n💫 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงฟรี\n🔮 หรือพิมพ์ \"ดูดวงความรัก\" \"ดูดวงการเงิน\" ก็ได้ค่ะ\n\nหรือจะคุยเรื่องอื่นก็ได้นะคะ 😊",
+                'action' => 'welcome_guide_button',
+                'message' => $this->buildWelcomeGuideMessage(),
                 'reading' => null,
+                'show_quick_replies' => true,
             ];
 
             } finally {
@@ -4264,6 +4270,47 @@ class FortuneConversationService
     }
 
     /**
+     * 🎯 Phase D — สร้างข้อความ welcome/fallback ที่ชี้ปุ่มชัดเจน
+     *
+     * ใช้เมื่อ AI Chat + Pool fallback ล้มเหลวหมด หรือผู้ใช้พิมพ์ข้อความที่
+     * ไม่ match intent ใดๆ — เน้นบอกให้กดปุ่ม ไม่ให้ "พิมพ์ X" อย่างเดียว
+     * (เพราะผู้สูงวัยมักไม่รู้ว่าต้องพิมพ์อะไร)
+     */
+    protected function buildWelcomeGuideMessage(): string
+    {
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+        if ($deepEnabled && $freeEnabled) {
+            $price = (int) $this->getDeepReadingPrice();
+
+            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
+                . "อยากให้หมอดูดวงให้ไหมคะ?\n"
+                . "   • 🔮 ดูดวงฟรี  — ถามเรื่องที่อยากรู้\n"
+                . "   • 💎 ดูดวงละเอียด — ค่าครู {$price} บาท วิเคราะห์จากวันเกิด\n\n"
+                . "👇 กดปุ่มด้านล่างเพื่อเริ่ม";
+        }
+
+        if ($deepEnabled) {
+            $price = (int) $this->getDeepReadingPrice();
+
+            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
+                . "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n"
+                . "   • ถามได้ 2 คำถาม\n"
+                . "   • วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n\n"
+                . "👇 กดปุ่ม \"💎 ดูดวงละเอียด\" ด้านล่างเพื่อเริ่ม";
+        }
+
+        if ($freeEnabled) {
+            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
+                . "ถ้าอยากดูดวง 👇 กดปุ่ม \"🔮 ดูดวง\" ด้านล่าง\n"
+                . "หรือพิมพ์คำถามมาคุยกับหมอจันทราก็ได้";
+        }
+
+        return "🔮 สวัสดีค่ะ\n\nช่วงนี้บริการดูดวงปิดชั่วคราว\nถ้าอยากพูดคุยอะไร ทักมาได้เลยนะคะ 🙏";
+    }
+
+    /**
      * สร้างข้อความขอวันเกิด
      *
      * 🎯 Phase A.3 — ตัวอย่างครบ + รองรับทั้ง ค.ศ. และ พ.ศ. + มี fallback step-by-step
@@ -5725,13 +5772,15 @@ class FortuneConversationService
                 $messageForAI = '['.implode('] [', $contextParts)."] {$messageText}";
             }
 
-            // เรียก AI Chat พร้อม history (ถ้ามี)
+            // 🎯 Phase D — เรียก AI Chat พร้อม fallback ไป AI Pool
+            // ถ้า chat_ai_provider ที่ตั้งไว้ล้มเหลว (empty key / 429 / error)
+            // → วน loop ใช้ key จาก AI Pool (Gemini, Groq, Grok ฯลฯ) เป็น chat แทน
             $aiService = new FortuneAIService($this->settings);
-            if (! empty($history)) {
-                $result = $aiService->generateChatResponseWithHistory($messageForAI, $userProfile, $history);
-            } else {
-                $result = $aiService->generateChatResponse($messageForAI, $userProfile);
-            }
+            $result = $aiService->generateChatResponseWithPoolFallback(
+                $messageForAI,
+                $userProfile,
+                $history
+            );
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
             LineGatekeeperService::recordAICall('fortune');
