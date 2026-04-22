@@ -611,6 +611,35 @@ class FortuneConversationService
             try {
 
             // ═══════════════════════════════════════════════════════════
+            // 🎯 Phase B.1 — บันทึก DM timestamps + ตรวจ 24h window
+            // ═══════════════════════════════════════════════════════════
+            // ใช้ข้อมูลนี้เพื่อให้ AI chat ตอบแบบคุ้นเคย (soft-sell) เมื่อลูกค้า
+            // กลับมา DM ภายใน 24 ชม. และแยก "first-contact" ออกจาก "returning"
+            //
+            // ❗ ล้มเหลวไม่ block flow — ใช้ try/catch เพื่อกัน DB error
+            $isReturningWithin24h = false;
+            $priorDmCount = 0;
+            $hoursSinceLastDm = null;
+            try {
+                $credit = FortuneUserCredit::getOrCreate(
+                    $facebookUserId,
+                    $this->currentPlatform,
+                    $userProfile['name'] ?? null
+                );
+                $isReturningWithin24h = $credit->isWithin24hDmWindow();
+                $priorDmCount = (int) ($credit->dm_count ?? 0);
+                if ($credit->last_dm_at) {
+                    $hoursSinceLastDm = (int) now()->diffInHours($credit->last_dm_at, true);
+                }
+                $credit->recordDm();
+            } catch (\Throwable $dmTrackErr) {
+                Log::warning('Fortune: DM tracking ล้มเหลว (non-blocking)', [
+                    'facebook_user_id' => $facebookUserId,
+                    'error' => $dmTrackErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════
             // 🔝 ลำดับที่ 1: เช็คคำทำนายที่รอส่ง/กำลังเตรียม (สำคัญสุด!)
             // ═══════════════════════════════════════════════════════════
             // เมื่อลูกค้าจ่ายเงินแล้ว คำทำนายต้องเป็นลำดับแรกเสมอ
@@ -951,7 +980,12 @@ class FortuneConversationService
                     // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง (ไม่ใช้โควต้าฟรี)
                     // ต้องให้ AI Chat จัดการก่อน เพราะ containsFortuneKeyword จับคำกว้างเกิน
                     // (เช่น "งาน", "เงิน", "แฟน") ทำให้ข้อความทั่วไปถูก trigger fortune flow
-                    $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
+                    // 🎯 Phase B.1 — ส่ง DM context ไปให้ AI ทำ soft-sell เนียนๆ
+                    $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile, [
+                        'is_returning_24h' => $isReturningWithin24h,
+                        'prior_dm_count' => $priorDmCount,
+                        'hours_since_last_dm' => $hoursSinceLastDm,
+                    ]);
                     if ($aiChatResult) {
                         return $aiChatResult;
                     }
@@ -1015,7 +1049,12 @@ class FortuneConversationService
             // คำเกี่ยวกับดวง (เช่น "ความรัก", "การเงิน", "ปีนี้") จะถูกจัดการโดย AI Chat
             // ไม่สร้าง FortuneReading → ไม่ใช้สิทธิ์ฟรี
             // ✅ ผู้ใช้ต้องพิมพ์ "ดูดวง" หรือกดปุ่มดูดวงฟรีเท่านั้นจึงจะเริ่มกระบวนการทำนาย
-            $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile);
+            // 🎯 Phase B.1 — ส่ง DM context ไปให้ AI ทำ soft-sell เนียนๆ
+            $aiChatResult = $this->tryAIChatResponse($facebookUserId, $messageText, $userProfile, [
+                'is_returning_24h' => $isReturningWithin24h,
+                'prior_dm_count' => $priorDmCount,
+                'hours_since_last_dm' => $hoursSinceLastDm,
+            ]);
             if ($aiChatResult) {
                 return $aiChatResult;
             }
@@ -1791,6 +1830,28 @@ class FortuneConversationService
         // เก็บข้อความต้นฉบับไว้ใน state เพื่อส่งให้ AI ตอนยืนยัน
         $reading->setConversationState('original_message', $messageText);
 
+        // 🎯 Phase A.1 (FB) — ข้อความต้อนรับกระชับสำหรับผู้สูงวัย
+        // หลักการ: นำด้วย action ก่อน context (ไม่ใช่กำแพงข้อความ)
+        // LINE และ edge cases (ปิดบริการ/สิทธิ์หมด) ใช้โค้ดเดิมต่อด้านล่าง
+        if ($this->currentPlatform === 'facebook' && $freeEnabled && $remaining > 0) {
+            $quotaLine = (($userCredit && $userCredit->isCurrentlyUnlimited()) || $remaining >= 99)
+                ? '🌟 ดูดวงฟรีไม่จำกัดวันนี้'
+                : "✨ วันนี้ดูดวงฟรีได้ {$remaining} ครั้ง";
+
+            $fbMessage = "🔮 สวัสดีค่ะ คุณ{$name}\n\n"
+                . "{$quotaLine}\n\n"
+                . "👇 แตะปุ่มเรื่องที่อยากรู้ด้านล่าง\n"
+                . "หรือพิมพ์คำถามมาได้เลย";
+
+            return [
+                'action' => 'awaiting_confirmation',
+                'message' => $fbMessage,
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'remaining' => $remaining,
+            ];
+        }
+
         // สร้างข้อความ — conditional ตามว่าเปิดบริการฟรีหรือไม่
         $message = "🔮 สวัสดี คุณ{$name} ✨\n\n";
         $message .= "เพจดูดวงหมอจันทรายินดีต้อนรับ\n\n";
@@ -2010,11 +2071,17 @@ class FortuneConversationService
      */
     protected function isDeclineResponse(string $text): bool
     {
+        // 🧹 normalize ก่อน compare — รองรับ "ไม่เอา ค่ะ", "ไม่ดู นะคะ", "no."
+        $normalized = $this->normalizeUserInput($text);
+        $noSpace = str_replace(' ', '', $normalized);
+
         $declineKeywords = ['ไม่', 'ไม่เอา', 'ไม่ต้อง', 'ไม่ต้องการ', 'ยังก่อน', 'ไว้ก่อน', 'ไม่ดู', 'no'];
-        $text = mb_strtolower(trim($text));
 
         foreach ($declineKeywords as $keyword) {
-            if ($text === $keyword || str_starts_with($text, $keyword)) {
+            if ($normalized === $keyword
+                || $noSpace === $keyword
+                || str_starts_with($normalized, $keyword)
+                || str_starts_with($noSpace, $keyword)) {
                 return true;
             }
         }
@@ -2681,16 +2748,18 @@ class FortuneConversationService
     protected function handleBirthdateInput(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
     {
         // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
-        // ใช้ exact match เท่านั้น (ป้องกัน "ไม่ยกเลิกค่ะ" → cancel โดยไม่ได้ตั้งใจ)
-        $trimmed = trim($messageText);
-        $lower = mb_strtolower($trimmed);
+        // 🧹 ใช้ matchesExactKeyword (normalize ก่อน compare) เพื่อรองรับ
+        //    "ยกเลิก ค่ะ", "ยกเลิก.", "YKLK " ฯลฯ — ก่อนหน้านี้พลาดเพราะ exact match
         $restartKeywords = [
             'ดูดวง', 'เริ่มใหม่', 'restart', 'เปลี่ยนเรื่อง',
             'ยกเลิก', 'cancel', 'stop', '/reset', 'reset',
         ];
-        $normalizedKeywords = array_map(fn ($k) => mb_strtolower($k), $restartKeywords);
-        if (in_array($lower, $normalizedKeywords, true)) {
+        if ($this->matchesExactKeyword($messageText, $restartKeywords)) {
             // ปิด conversation นี้ → ให้ processMessage สร้างใหม่
+            // รีเซ็ต state ของ step-by-step mode ด้วย
+            $reading->setConversationState('birthdate_step_mode', false);
+            $reading->setConversationState('birthdate_partial', []);
+            $reading->setConversationState('birthdate_attempts', 0);
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return [
@@ -2700,17 +2769,37 @@ class FortuneConversationService
             ];
         }
 
+        // 🎯 Phase A.3 — ถ้าอยู่ในโหมดถามทีละส่วน → ไปจัดการใน handler แยก
+        if ($reading->getConversationState('birthdate_step_mode', false)) {
+            return $this->handleBirthdateStepMode($reading, $messageText);
+        }
+
         $birthDate = $this->parseBirthDate($messageText);
 
         if (! $birthDate) {
-            // ข้อความไม่ใช่รูปแบบวันเกิด → ให้ AI รับฟังแล้วเตือนขั้นตอนต่อ
-            // (ถ้า AI ไม่พร้อม → เหลือแค่ step hint เดิม)
-            $stepHint = "📅 ตอนนี้หมอรอวันเกิดอยู่นะคะ กรุณาบอกแบบนี้:\n"
-                . "• วัน/เดือน/ปี เช่น 15/08/1990\n"
-                . "• หรือ 15 สิงหาคม 2533\n\n"
-                . "💡 พิมพ์ 'ยกเลิก' หากอยากเริ่มใหม่";
+            // 🎯 Phase A.3 — นับจำนวนพลาด ถ้า ≥ 2 → สลับเข้าโหมดถามทีละส่วน
+            $attempts = (int) $reading->getConversationState('birthdate_attempts', 0) + 1;
+            $reading->setConversationState('birthdate_attempts', $attempts);
 
-            // ใช้ profile จาก reading ถ้าไม่มี param ส่งมา
+            if ($attempts >= 2) {
+                // เปิดโหมดถามทีละส่วน (ปี → เดือน → วัน) — เริ่มถามปี
+                $reading->setConversationState('birthdate_step_mode', true);
+                $reading->setConversationState('birthdate_partial', []);
+
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $this->getBirthdateStepRequestMessage('year'),
+                    'reading' => $reading,
+                ];
+            }
+
+            // พลาดครั้งแรก → ให้ AI รับฟังแล้วเตือนขั้นตอน (behavior เดิม แต่เพิ่มสัญญาณว่าถ้าพลาดอีกจะถามแยก)
+            $stepHint = "📅 ตอนนี้หมอรอวันเกิดอยู่นะคะ บอกแบบไหนก็ได้:\n"
+                . "  • 15/8/1990  หรือ  15/8/2533\n"
+                . "  • 15 สิงหาคม 2533\n"
+                . "  • 15 ส.ค. 33\n\n"
+                . "💡 ถ้าไม่แน่ใจ ลองพิมพ์อีกครั้ง — หมอจะถามทีละส่วนให้";
+
             $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
             $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI);
 
@@ -2721,7 +2810,10 @@ class FortuneConversationService
             ];
         }
 
-        // บันทึกวันเกิด
+        // Parse สำเร็จ → บันทึก + รีเซ็ต state ของ step mode
+        $reading->setConversationState('birthdate_attempts', 0);
+        $reading->setConversationState('birthdate_step_mode', false);
+        $reading->setConversationState('birthdate_partial', []);
         $reading->update([
             'birth_date' => $birthDate,
             'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
@@ -2733,6 +2825,231 @@ class FortuneConversationService
             'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $birthDate),
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🎯 Phase A.3 — จัดการ input วันเกิดแบบถามทีละส่วน (ปี → เดือน → วัน)
+     *
+     * ใช้เมื่อ user พิมพ์รูปแบบเต็มผิด 2 ครั้งติด → ระบบสลับเข้าโหมดนี้
+     * เก็บค่าทีละส่วนใน conversation state `birthdate_partial`
+     */
+    protected function handleBirthdateStepMode(FortuneReading $reading, string $messageText): array
+    {
+        $partial = $reading->getConversationState('birthdate_partial', []) ?: [];
+
+        // 🎯 Short-circuit: ถ้าใน step mode ผู้ใช้ดันพิมพ์วันเกิดเต็มรูปแบบ
+        //    ("15/8/1990") → รับทั้งชุดเลย ไม่ต้องถามทีละส่วน
+        $fullDate = $this->parseBirthDate($messageText);
+        if ($fullDate) {
+            $reading->setConversationState('birthdate_attempts', 0);
+            $reading->setConversationState('birthdate_step_mode', false);
+            $reading->setConversationState('birthdate_partial', []);
+            $reading->update([
+                'birth_date' => $fullDate,
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            ]);
+            $reading->setConversationState('collected_questions', []);
+
+            return [
+                'action' => 'collecting_questions',
+                'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $fullDate),
+                'reading' => $reading,
+            ];
+        }
+
+        // Step 1: เก็บปี
+        if (empty($partial['year'])) {
+            $year = $this->parseLooseYear($messageText);
+            if (! $year) {
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => "❓ ไม่เข้าใจปีที่บอกมาค่ะ\n\n"
+                        . $this->getBirthdateStepRequestMessage('year'),
+                    'reading' => $reading,
+                ];
+            }
+            $partial['year'] = $year;
+            $reading->setConversationState('birthdate_partial', $partial);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => $this->getBirthdateStepRequestMessage('month', ['year' => $year]),
+                'reading' => $reading,
+            ];
+        }
+
+        // Step 2: เก็บเดือน
+        if (empty($partial['month'])) {
+            $month = $this->parseLooseMonth($messageText);
+            if (! $month) {
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => "❓ ไม่เข้าใจเดือนที่บอกมาค่ะ\n\n"
+                        . $this->getBirthdateStepRequestMessage('month', $partial),
+                    'reading' => $reading,
+                ];
+            }
+            $partial['month'] = $month;
+            $reading->setConversationState('birthdate_partial', $partial);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => $this->getBirthdateStepRequestMessage('day', ['month' => $month]),
+                'reading' => $reading,
+            ];
+        }
+
+        // Step 3: เก็บวัน + ตรวจสอบความถูกต้องทั้งชุด
+        $day = $this->parseLooseDay($messageText);
+        if (! $day) {
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "❓ ไม่เข้าใจวันที่บอกมาค่ะ\n\n"
+                    . $this->getBirthdateStepRequestMessage('day', $partial),
+                'reading' => $reading,
+            ];
+        }
+
+        $year = (int) $partial['year'];
+        $month = (int) $partial['month'];
+
+        if (! checkdate($month, $day, $year)) {
+            // วัน/เดือน/ปี ไม่ match กัน (เช่น 31 กุมภาพันธ์) → ขอวันใหม่
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "❓ วันที่ {$day} ไม่ตรงกับเดือน {$month} ปี {$year} ค่ะ\n\n"
+                    . $this->getBirthdateStepRequestMessage('day', $partial),
+                'reading' => $reading,
+            ];
+        }
+
+        // สำเร็จ → บันทึกวันเกิด + reset state ของ step mode
+        $birthDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
+
+        $reading->setConversationState('birthdate_attempts', 0);
+        $reading->setConversationState('birthdate_step_mode', false);
+        $reading->setConversationState('birthdate_partial', []);
+        $reading->update([
+            'birth_date' => $birthDate,
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+        ]);
+        $reading->setConversationState('collected_questions', []);
+
+        return [
+            'action' => 'collecting_questions',
+            'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $birthDate),
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🎯 Phase A.3 — แกะปีจากข้อความแบบหลวม
+     *
+     * รองรับ: "1990", "2533", "33", "ค.ศ. 1990", "พ.ศ. 2533", "ปี 2500 ค่ะ"
+     */
+    protected function parseLooseYear(string $text): ?int
+    {
+        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $text = str_replace($thaiDigits, $arabicDigits, $text);
+
+        // ลองจับเลข 4 หลักก่อน (ปีเต็ม) — กัน case เช่น "15/8/1990" หยิบ "15" เป็นปี
+        if (preg_match('/(?<!\d)(\d{4})(?!\d)/', $text, $m)) {
+            $year = $this->normalizeBirthYear((int) $m[1]);
+            if ($year !== null && $this->isValidBirthYear($year)) {
+                return $year;
+            }
+        }
+
+        // fallback: เลข 2-3 หลัก (ปีย่อ)
+        if (preg_match('/(?<!\d)(\d{2,3})(?!\d)/', $text, $m)) {
+            $year = $this->normalizeBirthYear((int) $m[1]);
+            if ($year !== null && $this->isValidBirthYear($year)) {
+                return $year;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🎯 Phase A.3 — แกะเดือนจากข้อความแบบหลวม
+     *
+     * รองรับ: เลข 1-12, ชื่อไทยเต็ม (สิงหาคม), ชื่อไทยย่อ (ส.ค. / สค), ชื่อย่อไม่มีจุด
+     */
+    protected function parseLooseMonth(string $text): ?int
+    {
+        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $text = str_replace($thaiDigits, $arabicDigits, $text);
+        $textLower = mb_strtolower(trim($text));
+
+        // ชื่อเดือนไทย (ต้องเช็คชื่อเต็มก่อนย่อ เพื่อไม่ให้ "สิงหาคม" match "ส.ค." ก่อน)
+        $thaiMonthsFull = [
+            'มกราคม' => 1, 'กุมภาพันธ์' => 2, 'มีนาคม' => 3, 'เมษายน' => 4,
+            'พฤษภาคม' => 5, 'มิถุนายน' => 6, 'กรกฎาคม' => 7, 'สิงหาคม' => 8,
+            'กันยายน' => 9, 'ตุลาคม' => 10, 'พฤศจิกายน' => 11, 'ธันวาคม' => 12,
+        ];
+        foreach ($thaiMonthsFull as $name => $num) {
+            if (str_contains($textLower, $name)) {
+                return $num;
+            }
+        }
+
+        // ชื่อย่อมีจุด
+        $thaiMonthsAbbrDot = [
+            'ม.ค.' => 1, 'ก.พ.' => 2, 'มี.ค.' => 3, 'เม.ย.' => 4,
+            'พ.ค.' => 5, 'มิ.ย.' => 6, 'ก.ค.' => 7, 'ส.ค.' => 8,
+            'ก.ย.' => 9, 'ต.ค.' => 10, 'พ.ย.' => 11, 'ธ.ค.' => 12,
+        ];
+        foreach ($thaiMonthsAbbrDot as $name => $num) {
+            if (str_contains($textLower, $name)) {
+                return $num;
+            }
+        }
+
+        // ชื่อย่อไม่มีจุด (มค, กพ, ...)
+        $thaiMonthsAbbrNoDot = [
+            'มค' => 1, 'กพ' => 2, 'มีค' => 3, 'เมย' => 4,
+            'พค' => 5, 'มิย' => 6, 'กค' => 7, 'สค' => 8,
+            'กย' => 9, 'ตค' => 10, 'พย' => 11, 'ธค' => 12,
+        ];
+        foreach ($thaiMonthsAbbrNoDot as $name => $num) {
+            if (preg_match('/(?<![ก-๙a-z])'.preg_quote($name, '/').'(?![ก-๙a-z])/u', $textLower)) {
+                return $num;
+            }
+        }
+
+        // เลข 1-12
+        if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
+            $n = (int) $m[1];
+            if ($n >= 1 && $n <= 12) {
+                return $n;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🎯 Phase A.3 — แกะวันจากข้อความแบบหลวม
+     *
+     * รองรับ: เลข 1-31 (จากที่ไหนในข้อความก็ได้)
+     */
+    protected function parseLooseDay(string $text): ?int
+    {
+        $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+        $text = str_replace($thaiDigits, $arabicDigits, $text);
+
+        if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
+            $n = (int) $m[1];
+            if ($n >= 1 && $n <= 31) {
+                return $n;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -3280,10 +3597,13 @@ class FortuneConversationService
                 $lastModel = $aiResult['model'] ?? '';
 
                 // ✅ ส่วนที่ 2: เรียก AI รอบ 2 สำหรับวิเคราะห์ไพ่ยิปซีแยก (ถ้ามีไพ่)
+                // 🎯 Phase B.2 — ส่งคำตอบหลักที่เพิ่งสร้างเข้าไปด้วย
+                //    เพื่อให้ AI ตีความไพ่สอดคล้อง ไม่ขัดแย้งกับคำตอบหลักที่ลูกค้ากำลังจะเห็น
                 $tarotAiResponse = '';
                 if (! empty($tarotCard) && LineGatekeeperService::canCallAI('fortune')) {
                     $tarotPrompt = $this->buildTarotOnlyPrompt(
-                        $userProfile, $question, $questionNum, $totalQuestions, $birthDate, $tarotCard
+                        $userProfile, $question, $questionNum, $totalQuestions, $birthDate, $tarotCard,
+                        $aiResult['response'] ?? null
                     );
 
                     try {
@@ -3732,14 +4052,58 @@ class FortuneConversationService
 
     /**
      * สร้างข้อความขอวันเกิด
+     *
+     * 🎯 Phase A.3 — ตัวอย่างครบ + รองรับทั้ง ค.ศ. และ พ.ศ. + มี fallback step-by-step
      */
     protected function getBirthdateRequestMessage(): string
     {
-        return "🎂 *กรุณาบอกวันเดือนปีเกิดค่ะ*\n\n".
-               "📅 พิมพ์ในรูปแบบ: วัน/เดือน/ปี\n".
-               "📅 ตัวอย่าง: 15/08/1990 หรือ 15/08/2533\n".
-               "📅 หรือพิมพ์: 15 สิงหาคม 2533\n\n".
-               'ข้อมูลนี้จะช่วยให้คำทำนายแม่นยำขึ้นค่ะ ✨';
+        return "🎂 กรุณาบอกวันเดือนปีเกิดค่ะ\n\n"
+            . "พิมพ์ได้หลายแบบ:\n"
+            . "  • 15/8/1990\n"
+            . "  • 15/8/2533  (ปีพ.ศ. ก็ได้)\n"
+            . "  • 15 สิงหาคม 2533\n"
+            . "  • 15 ส.ค. 33\n\n"
+            . "💡 ถ้าไม่แน่ใจ ตอบทีละอย่างก็ได้นะคะ — "
+            . "หมอจะถามทีละส่วนให้";
+    }
+
+    /**
+     * 🎯 Phase A.3 — สร้างข้อความถามวันเกิดแบบทีละส่วน (สำหรับผู้สูงวัย)
+     *
+     * เมื่อ user พิมพ์รูปแบบวันเกิดผิดติดต่อกัน → ระบบสลับเข้าโหมดนี้
+     * ให้ตอบทีละเรื่อง: ปี → เดือน → วัน
+     *
+     * @param  string  $step  'year' / 'month' / 'day'
+     * @param  array  $partial  ข้อมูลที่เก็บไปแล้ว (year, month, day)
+     */
+    protected function getBirthdateStepRequestMessage(string $step, array $partial = []): string
+    {
+        switch ($step) {
+            case 'year':
+                return "ไม่เป็นไรค่ะ หมอจะถามทีละส่วนนะคะ 🙏\n\n"
+                    . "📅 ปีที่เกิดคือปีอะไรคะ?\n\n"
+                    . "  • ใส่ปี ค.ศ. เช่น  1990\n"
+                    . "  • หรือปี พ.ศ. เช่น  2533\n"
+                    . "  • หรือย่อ 2 หลักก็ได้ เช่น  33";
+
+            case 'month':
+                $year = $partial['year'] ?? '';
+                $prefix = $year ? "✅ ปี {$year} รับแล้ว\n\n" : '';
+                return $prefix
+                    . "📅 เดือนไหนคะ?\n\n"
+                    . "  • ใส่เลข 1-12 เช่น  8\n"
+                    . "  • หรือชื่อเดือน เช่น  สิงหาคม / ส.ค.";
+
+            case 'day':
+                $month = $partial['month'] ?? '';
+                $prefix = $month ? "✅ เดือน {$month} รับแล้ว\n\n" : '';
+                return $prefix
+                    . "📅 วันที่เท่าไรคะ?\n\n"
+                    . "  • ใส่เลข 1-31 เช่น  15";
+
+            default:
+                return $this->getBirthdateRequestMessage();
+        }
     }
 
     /**
@@ -4739,11 +5103,14 @@ class FortuneConversationService
      */
     protected function isDeepReadingAccepted(string $text): bool
     {
+        // 🧹 normalize — รองรับ "โอ เค", "Ok ค่ะ", "ต้องการ นะครับ"
+        $normalized = $this->normalizeUserInput($text);
+        $noSpace = str_replace(' ', '', $normalized);
+
         $acceptKeywords = ['ต้องการ', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'สนใจ', 'ละเอียด', 'เชิงลึก', 'deep'];
-        $text = mb_strtolower(trim($text));
 
         foreach ($acceptKeywords as $keyword) {
-            if (str_contains($text, $keyword)) {
+            if (str_contains($normalized, $keyword) || str_contains($noSpace, $keyword)) {
                 return true;
             }
         }
@@ -4789,16 +5156,85 @@ class FortuneConversationService
     }
 
     /**
+     * 🧹 Normalize ข้อความจากผู้ใช้ สำหรับ keyword matching
+     *
+     * จัดการเคสผู้สูงวัยพิมพ์เผลอ:
+     * - เคาะ space เยอะ / มีช่องว่างก่อน-หลัง
+     * - ตัวอักษรพิมพ์ใหญ่ปน ("OK" / "Ok")
+     * - คำลงท้ายสุภาพ ("ค่ะ", "ครับ", "นะ", "ค่า")
+     * - เครื่องหมายคำพูด/ไม้ยมก ("'โอนแล้ว'" / "โอนแล้ว.")
+     * - zero-width characters จาก copy-paste
+     *
+     * @param  string  $text  ข้อความดิบจากผู้ใช้
+     * @return string  ข้อความที่ normalize แล้ว (lowercase, trim, ไม่มีคำลงท้าย)
+     */
+    protected function normalizeUserInput(string $text): string
+    {
+        $text = mb_strtolower(trim($text));
+
+        // ลบ zero-width / invisible characters
+        $text = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', $text);
+
+        // ลบเครื่องหมายคำพูด/punctuation นำหน้า-ท้าย
+        $text = trim($text, " \t\n\r\0\x0B'\"‘’“”`()[]{},.?!:;…");
+
+        // ยุบ whitespace ซ้อนเป็น 1 space
+        $text = preg_replace('/\s+/u', ' ', $text);
+
+        // ลบคำลงท้ายสุภาพ (ซ้อนได้ เช่น "ค่ะนะ" / "ครับผม")
+        $text = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|ค่า|คับ|จ้า|จ้ะ|จ๊ะ|นะคะ|นะครับ|นะ|หน่อย|ด้วย|ที|สิ|เลย|อะ|ผม|ผมล่ะ)\s*$/u',
+            '',
+            $text
+        );
+        // รันอีกรอบเผื่อ stack เช่น "ค่ะนะ" → "ค่ะ" → ""
+        $text = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|ค่า|คับ|จ้า|จ้ะ|จ๊ะ|นะคะ|นะครับ|นะ|หน่อย|ด้วย|ที|สิ|เลย|อะ|ผม|ผมล่ะ)\s*$/u',
+            '',
+            $text
+        );
+
+        return trim($text);
+    }
+
+    /**
+     * เช็คว่า normalized input ตรงกับ keyword ชุดหนึ่งไหม (exact หรือ noSpace exact)
+     *
+     * ใช้กับ keyword สั้นๆ ที่ไม่อยาก match แบบ contains
+     * (เช่น "ยกเลิก" ไม่ควร match "ไม่ยกเลิกค่ะ")
+     *
+     * @param  string  $text  ข้อความดิบ
+     * @param  array<string>  $keywords  keyword ที่ต้อง match
+     * @return bool  true ถ้า match
+     */
+    protected function matchesExactKeyword(string $text, array $keywords): bool
+    {
+        $normalized = $this->normalizeUserInput($text);
+        $noSpace = str_replace(' ', '', $normalized);
+
+        foreach ($keywords as $keyword) {
+            $kw = mb_strtolower(trim($keyword));
+            if ($normalized === $kw || $noSpace === str_replace(' ', '', $kw)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * ตรวจสอบว่าต้องการยกเลิกหรือไม่
      */
     protected function isCancelRequest(string $text): bool
     {
-        $text = mb_strtolower(trim($text));
+        // 🧹 normalize ก่อน match (รองรับ "ยกเลิก ค่ะ", "ยก เลิก", "YKLK" ฯลฯ)
+        $normalized = $this->normalizeUserInput($text);
+        $noSpace = str_replace(' ', '', $normalized);
 
         // คำสั่งยกเลิกชัดเจน → ใช้ str_contains (ข้อความยาวก็ match)
         $strongKeywords = ['ยกเลิก', 'cancel', 'stop'];
         foreach ($strongKeywords as $keyword) {
-            if (str_contains($text, $keyword)) {
+            if (str_contains($normalized, $keyword) || str_contains($noSpace, $keyword)) {
                 return true;
             }
         }
@@ -4806,10 +5242,8 @@ class FortuneConversationService
         // คำสั้นที่อาจกำกวม → ใช้ exact match เท่านั้น
         // เพื่อไม่ให้ "ไม่เอาดูดวงละเอียด" → ยกเลิกทั้ง session
         $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด'];
-        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ)\s*$/u', '', $text);
-
         foreach ($exactKeywords as $keyword) {
-            if ($text === $keyword || $textNormalized === $keyword) {
+            if ($normalized === $keyword || $noSpace === $keyword) {
                 return true;
             }
         }
@@ -5024,7 +5458,7 @@ class FortuneConversationService
      * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
      * @return array|null  ผลลัพธ์ action 'ai_chat_response' หรือ null ถ้าล้มเหลว
      */
-    protected function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null): ?array
+    protected function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null): ?array
     {
         try {
             // เช็คว่าเปิด AI Chat หรือไม่
@@ -5059,10 +5493,23 @@ class FortuneConversationService
             // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
             $userTurnCount = collect($history)->where('role', 'user')->count() + 1; // +1 = ข้อความปัจจุบัน
 
-            // Inject turn context ให้ AI ตัดสินใจเสนอดูดวง
-            $messageForAI = $messageText;
+            // 🎯 Phase B.1 — สร้าง context prefix สำหรับ AI
+            //  - [TURN N] บอกจำนวนรอบ (เดิม)
+            //  - [RETURNING_24H] บอกว่าลูกค้ากลับมาใน 24 ชม. → soft-sell ได้เนียนขึ้น
+            //  - [DM_COUNT N] จำนวน DM รวม → AI รู้ว่าลูกค้าคุ้นกับเพจแค่ไหน
+            $contextParts = [];
             if ($userTurnCount >= 2) {
-                $messageForAI = "[TURN {$userTurnCount}] {$messageText}";
+                $contextParts[] = "TURN {$userTurnCount}";
+            }
+            if (! empty($dmContext['is_returning_24h']) && ! empty($dmContext['hours_since_last_dm'])) {
+                $hoursAgo = (int) $dmContext['hours_since_last_dm'];
+                $dmCount = (int) ($dmContext['prior_dm_count'] ?? 0);
+                $contextParts[] = "RETURNING_24H hours_ago={$hoursAgo} dm_count={$dmCount}";
+            }
+
+            $messageForAI = $messageText;
+            if (! empty($contextParts)) {
+                $messageForAI = '['.implode('] [', $contextParts)."] {$messageText}";
             }
 
             // เรียก AI Chat พร้อม history (ถ้ามี)
@@ -5539,6 +5986,8 @@ class FortuneConversationService
 
     /**
      * Parse วันเกิดจากข้อความ
+     *
+     * 🎯 Phase A.3 — รับ separator เพิ่ม (/ - . space) + ตัดคำนำหน้า "เกิด/วันที่"
      */
     protected function parseBirthDate(string $text): ?string
     {
@@ -5549,8 +5998,12 @@ class FortuneConversationService
         $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $text = str_replace($thaiDigits, $arabicDigits, $text);
 
-        // รูปแบบ: dd/mm/yyyy หรือ dd-mm-yyyy (รับทั้ง 2 และ 4 หลัก)
-        if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/', $text, $matches)) {
+        // ตัดคำนำหน้าที่ผู้สูงวัยมักใส่: "เกิด", "เกิดวันที่", "วันเกิด", "วันที่"
+        $text = preg_replace('/^(เกิดวันที่|วันเกิด|วันที่|เกิด)\s*/u', '', $text);
+
+        // รูปแบบ: dd/mm/yyyy (รับ separator หลากหลาย: / - . space)
+        //   - ใช้ [\/\-\.\s] ครอบคลุมทั้ง "15/8/90", "15-8-90", "15.8.90", "15 8 90"
+        if (preg_match('/(\d{1,2})[\/\-\.\s]+(\d{1,2})[\/\-\.\s]+(\d{2,4})/', $text, $matches)) {
             $day = (int) $matches[1];
             $month = (int) $matches[2];
             $year = (int) $matches[3];
@@ -6404,13 +6857,22 @@ PROMPT;
             }
         }
 
-        // สรุปคำทำนายก่อนหน้า (เพื่อไม่ให้ AI ซ้ำ)
+        // 🎯 Phase B.2 — สรุปคำทำนายก่อนหน้า เน้น "สอดคล้อง" ไม่ใช่แค่ "ห้ามซ้ำ"
+        //    ส่งคำตอบจริงให้ AI เห็น (ตัดสั้น) เพื่อให้ timeline + เหตุการณ์ไม่ขัดกัน
         $previousContext = '';
         if (! empty($previousReadings)) {
-            $previousContext = "\n[คำทำนายที่ผ่านมา - ห้ามพูดซ้ำ ให้ทำนายมุมใหม่ ใช้ดาว/ภพคนละดวง]\n";
+            $previousContext = "\n[🔗 คำทำนายก่อนหน้า — คำตอบนี้ต้องสอดคล้อง ไม่ขัดแย้งกับ timeline/เหตุการณ์ข้างล่าง]\n";
             foreach ($previousReadings as $prev) {
-                $previousContext .= "- คำถาม {$prev['question_number']}: {$prev['question']} → ตอบไปแล้ว (ห้ามพูดซ้ำ)\n";
+                $prevQuestion = $prev['question'] ?? '';
+                $prevAnswer = mb_substr(trim($prev['answer'] ?? ''), 0, 800);
+                $previousContext .= "\n— คำถามที่ {$prev['question_number']}: {$prevQuestion}\n"
+                    . "  คำตอบที่ให้ไปแล้ว:\n  {$prevAnswer}\n";
             }
+            $previousContext .= "\n⚠️ **กฎความสอดคล้อง (บังคับ)**:\n"
+                . "  1. Timeline ต้องตรงกัน — ถ้าคำถามก่อนบอก \"เดือนหน้าการเงินดี\" คำถามนี้ห้ามบอก \"เดือนหน้าจะวิกฤต\"\n"
+                . "  2. เหตุการณ์/บุคคลที่กล่าวถึงต้องต่อเนื่อง — ถ้าก่อนหน้ากล่าวถึง \"เพื่อนร่วมงาน\" คำถามใหม่สามารถต่อยอดได้ ไม่จำเป็นต้องสร้างใหม่\n"
+                . "  3. ให้ทำนายมุมใหม่ที่ **เสริม** ภาพรวม ไม่ใช่ซ้ำ และต้องอ้างอิงภพ/ดาวคนละดวงกับคำถามก่อน\n"
+                . "  4. ถ้าเห็นว่าคำตอบก่อนหน้ามีเหตุการณ์เฉพาะ (เช่น \"ชาย สูงอายุราว 40\") → นำมาใช้ซ้ำได้ในมุมใหม่ (เช่น คนเดิมจะมีบทบาทเรื่องนี้ต่อ)\n";
         }
 
         // ลำดับที่ 1: ใช้ prompt จากการตั้งค่าระบบ (ถ้ามี)
@@ -6540,7 +7002,9 @@ PROMPT;
 
         $prompt .= "[กฎสำคัญ]
 - ทำนายเฉพาะคำถามที่ {$questionNumber} เท่านั้น ห้ามตอบคำถามอื่น
-- ห้ามพูดซ้ำกับคำทำนายก่อนหน้า ใช้ดาว/ภพคนละดวง
+- **ฟันธง** ตรงคำถาม ห้ามตอบกว้าง ห้ามใช้คำ \"อาจจะ/น่าจะ/บางที/มักจะ/โดยทั่วไป/ส่วนใหญ่\" — ใช้ \"จะ/คือ/เห็นว่า/ฟันธงว่า\"
+- **สมมติเหตุการณ์เฉพาะได้** เพื่อให้สมจริง เช่น \"ช่วง 10-15 พ.ย. จะมีเงินก้อน 15,000-25,000 เข้ามาจากงานเสริม\" หรือ \"กลางเดือนหน้า จะมีผู้หญิงวัยใกล้เคียงเสนอแนะทางธุรกิจ\" — **แต่ต้องผูกกับดาว/ภพของเจ้าชะตา** เช่น \"ดาวพฤหัสฯเข้าภพลาภะ\" (ห้ามยกเรื่องลอยไร้ที่มา)
+- **สอดคล้องกับคำทำนายก่อนหน้า** (ถ้ามี) — Timeline ต้องไม่ขัดกัน, เหตุการณ์/บุคคลที่กล่าวถึงให้ต่อเนื่อง ไม่ต้องสร้างใหม่
 - ต้องอ้างอิงตำแหน่งดาวจริงจากแผนที่ดวงชะตา + Transit ปัจจุบัน + Transit อนาคต ห้ามแต่งตำแหน่งดาวขึ้นเอง
 - เมื่อทำนายอนาคต ต้องอ้าง Transit อนาคต (1,3,6,12 เดือน) เปรียบเทียบกับดวงกำเนิด
 - ห้ามพูดว่าหยั่งรู้ จิตสัมผัส → ใช้คำว่า \"ศาสตร์โหราศาสตร์โบราณ\" หรือ \"หลักเจ้าชนะ\" แทน
@@ -6610,7 +7074,8 @@ PROMPT;
         int $questionNumber,
         int $totalQuestions,
         ?string $birthDate,
-        array $tarotCard
+        array $tarotCard,
+        ?string $mainAnswer = null
     ): string {
         $name = $userProfile['name'] ?? 'คุณ';
         $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
@@ -6648,6 +7113,17 @@ PROMPT;
             }
         }
 
+        // 🎯 Phase B.2 — ถ้ามีคำตอบหลักของคำถามนี้แล้ว → ส่งให้ AI เพื่อให้ไพ่สอดคล้อง
+        $mainAnswerSection = '';
+        if (! empty($mainAnswer)) {
+            // ตัดคำตอบหลักสั้นๆ (สูงสุด 1500 ตัวอักษร) เพื่อประหยัด token แต่ยังให้ AI เห็นประเด็นหลัก
+            $mainAnswerTrimmed = mb_substr(trim($mainAnswer), 0, 1500);
+            $mainAnswerSection = "\n[🎯 คำตอบหลักที่หมอจันทราตอบไปแล้ว — ไพ่ต้องสอดคล้องกับคำตอบนี้]\n"
+                . "{$mainAnswerTrimmed}\n\n"
+                . "⚠️ **สำคัญ**: ไพ่ต้องเสริมหรือขยายคำตอบหลักข้างบน ห้ามขัดแย้งกับ timeline, เหตุการณ์, หรือการฟันธงใดๆ ที่กล่าวไปแล้ว "
+                . "ถ้าไพ่ธรรมดา (ไพ่หงาย/กลับหัว) ให้ความหมายที่เข้ากันได้กับดวงที่วิเคราะห์ไปแล้ว — เป็นแง่มุมเสริม ไม่ใช่มุมขัด\n";
+        }
+
         return "คุณชื่อ \"แม่หมอจันทรา\" เป็นหมอดูสาวสวยผู้เชี่ยวชาญไพ่ทาโรต์ + โหราศาสตร์โบราณ พูดจาเพราะ อบอุ่น
 
 === วิเคราะห์ไพ่ยิปซี — คำถามที่ {$questionNumber}/{$totalQuestions} ===
@@ -6657,7 +7133,7 @@ PROMPT;
 ".($zodiacInfo ? "- {$zodiacInfo}\n" : '')."
 {$planetPositionsInfo}
 คำถาม: {$question}
-
+{$mainAnswerSection}
 🃏 ไพ่ที่{$genderPrefix}{$name}เปิดได้:
 - ไพ่: {$cardNameTh} ({$cardNameEn})
 - ตำแหน่ง: {$position}
@@ -6685,10 +7161,13 @@ PROMPT;
 
 [กฎสำคัญ]
 - ต้องเขียนครบ 4 ย่อหน้า อย่างน้อย 200 คำ ไม่เกิน 400 คำ
-- ต้องอ้างอิงดาวจากตำแหน่งจริง (แผนที่ดวงชะตาด้านบน) ห้ามแต่งขึ้น
+- **สอดคล้องกับคำตอบหลัก** (ถ้ามีข้างบน) — ไม่ขัด timeline/เหตุการณ์/การฟันธง ที่ให้ไปแล้ว
+- ต้องอ้างอิงดาวจากตำแหน่งจริง (แผนที่ดวงชะตาด้านบน) ห้ามแต่งดาวขึ้น
+- **ฟันธง** — ห้ามใช้ \"อาจจะ/น่าจะ/บางที/มักจะ/โดยทั่วไป\" ใช้ \"จะ/คือ/เห็นว่า\"
+- **สมมติเหตุการณ์เฉพาะได้** (ช่วงเวลา/ลักษณะบุคคล/ตัวเลขโดยประมาณ) แต่ต้องผูกกับความหมายไพ่ + ดาว ห้ามยกเรื่องลอย
 - ใช้ \"หมอจันทรา\" แทนตัวเอง
 - ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ
-- ฟันธง กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี";
+- กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี";
     }
 
     /**

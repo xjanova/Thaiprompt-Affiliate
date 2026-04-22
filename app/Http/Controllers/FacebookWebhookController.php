@@ -1446,9 +1446,15 @@ class FacebookWebhookController extends Controller
             }
 
             // Fallback: ส่ง Quick Replies
+            // 🎯 Phase A.2 (FB) — เพิ่ม escape-hatch buttons ให้ state ที่ user มักติด
+            //   - invalid_birthdate / collecting_birthdate: ยกเลิก / ช่วยเหลือ
+            //   - awaiting_question: เลือกหัวข้อ / ยกเลิก
+            //   - waiting_payment / pending_payment: ยกเลิกบิล / วิธีใช้งาน
             $actionsWithQuickReplies = [
                 'awaiting_confirmation', 'basic_done', 'check_remaining',
                 'collecting_questions', 'need_more_questions', 'retry_question',
+                'awaiting_question', 'invalid_birthdate', 'collecting_birthdate',
+                'pending_payment', 'waiting_payment',
                 'ai_limit', 'declined', 'payment_expired', 'completed',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
             ];
@@ -1595,6 +1601,23 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
+            ],
+            // 🎯 Phase A.2 (FB) — escape-hatch buttons ระหว่างขั้นตอนกรอกข้อมูล
+            // รองรับผู้สูงวัยที่พิมพ์ keyword ไม่ได้ ให้กดปุ่มแทน
+            'invalid_birthdate', 'collecting_birthdate' => [
+                ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
+                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
+            ],
+            'awaiting_question' => [
+                ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'QUESTION_LOVE'],
+                ['content_type' => 'text', 'title' => '💼 การงาน', 'payload' => 'QUESTION_WORK'],
+                ['content_type' => 'text', 'title' => '💰 การเงิน', 'payload' => 'QUESTION_MONEY'],
+                ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'QUESTION_HEALTH'],
+                ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
+            ],
+            'pending_payment', 'waiting_payment' => [
+                ['content_type' => 'text', 'title' => '❌ ยกเลิกบิล', 'payload' => 'CANCEL_PAYMENT'],
+                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ],
             default => null,
         };

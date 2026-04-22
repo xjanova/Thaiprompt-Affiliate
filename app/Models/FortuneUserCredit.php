@@ -47,6 +47,11 @@ class FortuneUserCredit extends Model
         'daily_reset_date',
         'note',
         'updated_by',
+        // 🎯 Phase B.1 — DM tracking
+        'first_dm_at',
+        'last_dm_at',
+        'dm_count',
+        'last_warmup_sent_at',
     ];
 
     /**
@@ -59,6 +64,11 @@ class FortuneUserCredit extends Model
         'unlimited_until' => 'date',
         'is_daily_reset' => 'boolean',
         'daily_reset_date' => 'date',
+        // 🎯 Phase B.1 — DM tracking
+        'first_dm_at' => 'datetime',
+        'last_dm_at' => 'datetime',
+        'dm_count' => 'integer',
+        'last_warmup_sent_at' => 'datetime',
     ];
 
     /**
@@ -297,6 +307,87 @@ class FortuneUserCredit extends Model
             'updated_by' => $adminId,
             'note' => $note ?? 'รีเซ็ตเครดิตทั้งหมด',
         ]);
+
+        return $this->fresh();
+    }
+
+    // ============================================================
+    // 🎯 Phase B.1 — DM Tracking (24-hour warm-up memory)
+    // ============================================================
+
+    /**
+     * บันทึกว่าลูกค้า DM เข้ามาตอนนี้
+     *
+     * - ถ้ายังไม่เคย DM → ตั้ง first_dm_at
+     * - อัปเดต last_dm_at = ปัจจุบัน
+     * - เพิ่ม dm_count
+     *
+     * เรียกจาก FortuneConversationService::processMessage() ทุกครั้งที่มี DM เข้ามา
+     */
+    public function recordDm(): self
+    {
+        $updates = [
+            'last_dm_at' => now(),
+            'dm_count' => (int) ($this->dm_count ?? 0) + 1,
+        ];
+
+        // ตั้ง first_dm_at เฉพาะครั้งแรก
+        if (empty($this->first_dm_at)) {
+            $updates['first_dm_at'] = now();
+        }
+
+        $this->update($updates);
+
+        return $this->fresh();
+    }
+
+    /**
+     * ตรวจสอบว่าลูกค้ามีการ DM ภายใน 24 ชั่วโมงล่าสุดหรือไม่
+     *
+     * ใช้ตัดสินว่าจะใช้โหมด "AI warm-up" (หว่านล้อมเนียนๆ) หรือ "pattern เดิม" (ทักทาย+ปุ่ม)
+     *
+     * @return bool true = คือลูกค้าเก่าที่กลับมาในหน้าต่าง 24 ชม.
+     */
+    public function isWithin24hDmWindow(): bool
+    {
+        if (empty($this->last_dm_at)) {
+            return false;
+        }
+
+        return $this->last_dm_at->greaterThanOrEqualTo(now()->subHours(24));
+    }
+
+    /**
+     * ตรวจสอบว่าเคย DM มาก่อนหน้านี้หรือเปล่า (ไม่ใช่ first contact)
+     */
+    public function hasPriorDmInteraction(): bool
+    {
+        return ! empty($this->first_dm_at) && ($this->dm_count ?? 0) > 1;
+    }
+
+    /**
+     * ตรวจว่าสามารถส่ง AI warm-up ตอนนี้ได้ไหม
+     *
+     * กันไม่ให้ส่ง warm-up ถี่เกินไปในช่วงสั้น
+     * (เช่น ลูกค้า DM 10 ข้อความต่อเนื่อง → ไม่ควร warm-up ทุกข้อความ)
+     *
+     * @param  int  $cooldownMinutes  นาทีระหว่าง warm-up ครั้งล่าสุด (default 5)
+     */
+    public function canSendWarmup(int $cooldownMinutes = 5): bool
+    {
+        if (empty($this->last_warmup_sent_at)) {
+            return true;
+        }
+
+        return $this->last_warmup_sent_at->lessThan(now()->subMinutes($cooldownMinutes));
+    }
+
+    /**
+     * บันทึกว่าส่ง warm-up ไปแล้ว (ใช้กัน spam)
+     */
+    public function markWarmupSent(): self
+    {
+        $this->update(['last_warmup_sent_at' => now()]);
 
         return $this->fresh();
     }
