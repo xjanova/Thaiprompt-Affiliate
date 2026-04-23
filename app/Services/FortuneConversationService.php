@@ -1941,9 +1941,21 @@ class FortuneConversationService
             // 🎯 Phase E — ใช้ greetName เพื่อกัน "คุณคุณ"
             $greet = $this->greetName($name);
             $greetingLine = $greet !== '' ? "🔮 สวัสดีค่ะ {$greet}" : '🔮 สวัสดีค่ะ';
+
+            // 🎯 Phase F — DM ครั้งแรก + deep เปิด → แทรก pitch compelling (รอตาม user)
+            $pitchSection = '';
+            if ($this->settings->isDeepReadingEnabled() && $this->isFirstTimeDm($facebookUserId)) {
+                $price = (int) $this->getDeepReadingPrice();
+                $pitch = $this->pickFirstTouchPitch($facebookUserId, $price);
+                if (! empty($pitch['title']) && ! empty($pitch['body'])) {
+                    $pitchSection = "\n\n━━━━━━━━━━━━━\n{$pitch['title']}\n{$pitch['body']}\n━━━━━━━━━━━━━";
+                }
+            }
+
             $fbMessage = "{$greetingLine}\n\n"
-                . "{$quotaLine}\n\n"
-                . "👇 แตะปุ่มเรื่องที่อยากรู้ด้านล่าง\n"
+                . "{$quotaLine}"
+                . $pitchSection
+                . "\n\n👇 แตะปุ่มเรื่องที่อยากรู้ด้านล่าง\n"
                 . "หรือพิมพ์คำถามมาได้เลย";
 
             return [
@@ -4304,6 +4316,93 @@ class FortuneConversationService
                "📍 ถามได้ 2 คำถาม\n".
                "📍 เริ่มต้นเพียง {$price} บาท\n\n".
                'กดเลือกด้านล่างได้เลยค่ะ 👇';
+    }
+
+    /**
+     * 🎯 Phase F — ชุด pitch สำหรับ DM ครั้งแรก (สุ่มต่อผู้ใช้แบบ stable)
+     *
+     * ลูกค้าใหม่เห็นข้อความต่างกันตามแฮชของ user_id → ได้ variety
+     * แต่ลูกค้าคนเดิมเห็นเหมือนเดิมในครั้งแรก (กันสับสน)
+     *
+     * Placeholder:
+     *   {price} = ราคาดูดวงเชิงลึก (บาท)
+     */
+    protected const FIRST_TOUCH_PITCHES = [
+        [
+            'title' => '☕ ถูกกว่าค่ากาแฟ 1 แก้ว',
+            'body' => "ค่าครู {price} บาท — ลาเต้ 1 แก้วยังแพงกว่า\nแต่บทวิเคราะห์ดวงเจาะจงตัวเจ้าชะตา อาจเปลี่ยนมุมมองชีวิตได้",
+        ],
+        [
+            'title' => '⏳ 3 นาที ได้คำตอบชัดกว่าคิดเอง 3 เดือน',
+            'body' => "คำตอบเจาะจงจากดาวเจ้าชนะ + ไพ่ยิปซี\nชัดกว่าการนั่งคิดวนไปวนมา\n💎 ค่าครู {price} บาท",
+        ],
+        [
+            'title' => '🌙 หลายคนบอก "เจอจุดที่ไม่คิดมาก่อน"',
+            'body' => "ลูกค้าหลายคนทักมาว่าคำทำนายของหมอจันทรา\nเห็นมุมที่เขาไม่เคยรู้ — ลองเปิดใจดู\n💎 ค่าครู {price} บาท",
+        ],
+        [
+            'title' => '🎯 ถามได้ 2 คำถาม — ฟันธงทั้งคู่',
+            'body' => "ค่าครู {price} บาท เลือกถาม 2 เรื่องที่ต่างกัน\nพร้อมไพ่ยิปซี + สีมงคล + เลขมงคล + ฤกษ์ดี",
+        ],
+        [
+            'title' => '💭 ไม่ต้องแบกคำถามไว้คนเดียว',
+            'body' => "มีเรื่องค้างใจแต่ไม่รู้จะไปปรึกษาใคร?\nหมอจันทราฟัง + ชี้ทางออกจากดวงของคุณ\n💎 ค่าครู {price} บาท",
+        ],
+        [
+            'title' => '✨ ไม่เชื่อก็แค่ {price} — ถ้าเชื่อ อาจได้คำตอบ',
+            'body' => "หมอไม่บังคับให้เชื่อ — ลองเปิดใจรับมุมใหม่\nวิเคราะห์จากวันเกิดเจาะตัว ไม่ใช่คำกลางๆ",
+        ],
+        [
+            'title' => '🔮 ดาวโคจรช่วงนี้พิเศษ',
+            'body' => "ดาวช่วงนี้ส่งผลต่อหลายราศี\nอยากรู้ดาวของคุณจะพาไปทางไหน?\n💎 ค่าครู {price} บาท ทำนาย 2 คำถาม",
+        ],
+        [
+            'title' => '🎁 หมอไม่กั๊ก — ฟันธงตรงไปตรงมา',
+            'body' => "ค่าครู {price} บาท รับคำตอบ 2 ข้อ\nบอกทั้งเรื่องดีและเรื่องต้องระวัง — ไม่แต่งให้สวยเกินจริง",
+        ],
+    ];
+
+    /**
+     * 🎯 Phase F — เลือก pitch ตาม userId (stable per user) + inject ราคา
+     *
+     * @param  string  $userId
+     * @param  int  $price  ราคาดูดวงเชิงลึก (บาท)
+     * @return array{title: string, body: string}
+     */
+    protected function pickFirstTouchPitch(string $userId, int $price): array
+    {
+        $pitches = self::FIRST_TOUCH_PITCHES;
+        if (empty($pitches)) {
+            return ['title' => '', 'body' => ''];
+        }
+        $idx = abs(crc32($userId)) % count($pitches);
+        $pitch = $pitches[$idx];
+
+        return [
+            'title' => str_replace('{price}', (string) $price, $pitch['title'] ?? ''),
+            'body' => str_replace('{price}', (string) $price, $pitch['body'] ?? ''),
+        ];
+    }
+
+    /**
+     * 🎯 Phase F — ตรวจว่าลูกค้ากำลังอยู่ใน DM ครั้งแรกหรือไม่
+     *
+     * ใช้หลังจากที่ processMessage() เรียก recordDm() แล้ว —
+     *   dm_count = 1 → นี่คือ DM แรก
+     *   dm_count > 1 → เคย DM มาก่อน
+     */
+    protected function isFirstTimeDm(string $userId): bool
+    {
+        try {
+            $credit = FortuneUserCredit::findByUser($userId, $this->currentPlatform);
+            if (! $credit) {
+                return true;
+            }
+
+            return (int) ($credit->dm_count ?? 0) <= 1;
+        } catch (\Throwable $e) {
+            return false;
+        }
     }
 
     /**
