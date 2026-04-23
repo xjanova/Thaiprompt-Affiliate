@@ -1241,6 +1241,7 @@ class FacebookWebhookController extends Controller
                 );
             } else {
                 // Fallback: ส่งข้อความต้อนรับธรรมดา + Quick Replies
+                // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" + "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
                 $welcomeMessage = $this->buildWelcomeMessage($userName);
                 $freeEnabled = $this->settings->isFreeReadingEnabled();
                 $quickReplies = [
@@ -1250,11 +1251,9 @@ class FacebookWebhookController extends Controller
                         'payload' => 'FORTUNE_BASIC',
                     ],
                 ];
-                // ปุ่ม "เช็คสิทธิ์" แสดงเฉพาะเมื่อระบบฟรีเปิดอยู่
-                if ($freeEnabled) {
-                    $quickReplies[] = ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'];
+                if ($this->settings->isDeepReadingEnabled()) {
+                    $quickReplies[] = ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
                 }
-                $quickReplies[] = ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'];
                 $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
             }
 
@@ -1365,14 +1364,19 @@ class FacebookWebhookController extends Controller
             $this->facebookService->sendTypingIndicator($senderId);
 
             // ดึง user profile พร้อม fallback กรณี API ล้มเหลว
+            // 🎯 Phase E — ถ้า API ล้มเหลว ใช้ชื่อที่บันทึกไว้ใน FortuneUserCredit (แทน "คุณ" hardcode)
+            //    กัน "สวัสดี คุณคุณ" จากการพิมพ์ซ้ำของ prefix
             $userProfile = $this->facebookService->getUserProfile($senderId);
-            if (! is_array($userProfile)) {
+            if (! is_array($userProfile) || empty($userProfile['name']) || $userProfile['name'] === 'คุณ') {
+                $savedName = \App\Models\FortuneUserCredit::findByUser($senderId, 'facebook')?->facebook_user_name;
+
                 $userProfile = [
-                    'name' => 'คุณ',
+                    'name' => ($savedName && $savedName !== 'คุณ') ? $savedName : '',
                     'id' => $senderId,
                 ];
-                Log::info('Facebook: ดึงโปรไฟล์ไม่สำเร็จ ใช้ค่าเริ่มต้น', [
+                Log::info('Facebook: ดึงโปรไฟล์ไม่สำเร็จ ใช้ชื่อที่บันทึกไว้/ว่าง', [
                     'sender_id' => $senderId,
+                    'used_saved_name' => ! empty($savedName),
                 ]);
             }
 
@@ -1574,12 +1578,12 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'FORTUNE_HEALTH'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงรวม', 'payload' => 'FORTUNE_OVERVIEW'],
             ],
+            // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
             'basic_done' => [
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
                 ['content_type' => 'text', 'title' => '❌ ไม่ต้องค่ะ', 'payload' => 'DEEP_READING_NO'],
                 ['content_type' => 'text', 'title' => '💕 ถามเรื่องรัก', 'payload' => 'FORTUNE_LOVE'],
                 ['content_type' => 'text', 'title' => '💼 ถามเรื่องงาน', 'payload' => 'FORTUNE_WORK'],
-                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
@@ -1596,21 +1600,20 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ],
+            // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
             'declined', 'completed' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
-                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
             'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
-                ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
             ],
             // 🎯 Phase A.2 (FB) — escape-hatch buttons ระหว่างขั้นตอนกรอกข้อมูล
             // รองรับผู้สูงวัยที่พิมพ์ keyword ไม่ได้ ให้กดปุ่มแทน
+            // 🎯 Phase E — เอาปุ่ม "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
             'invalid_birthdate', 'collecting_birthdate' => [
                 ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
-                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ],
             'awaiting_question' => [
                 ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'QUESTION_LOVE'],
@@ -1619,9 +1622,9 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🏥 สุขภาพ', 'payload' => 'QUESTION_HEALTH'],
                 ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
             ],
+            // 🎯 Phase E — เอาปุ่ม "วิธีใช้งาน" ออก
             'pending_payment', 'waiting_payment' => [
                 ['content_type' => 'text', 'title' => '❌ ยกเลิกบิล', 'payload' => 'CANCEL_PAYMENT'],
-                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ],
             // 🎯 Phase C — ลูกค้าพิมพ์วันเกิดมาก่อน → ถาม "ดูดวงเชิงลึกไหม?"
             'birthdate_detected' => [
@@ -1631,10 +1634,10 @@ class FacebookWebhookController extends Controller
             ],
             // 🎯 Phase D — welcome guide (แสดงตอน AI fail / ข้อความไม่ match intent ใด)
             //   ชี้ปุ่มชัดเจน — ผู้สูงวัยไม่ต้องเดาว่าต้อง "พิมพ์" อะไร
+            // 🎯 Phase E — เอาปุ่ม "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
             'welcome_guide_button' => [
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_OVERVIEW'],
-                ['content_type' => 'text', 'title' => '❓ วิธีใช้งาน', 'payload' => 'HELP'],
             ],
             default => null,
         };
@@ -2134,13 +2137,11 @@ class FacebookWebhookController extends Controller
         $message .= "📸 ส่งรูปภาพ:\n";
         $message .= "ส่งรูปพร้อมข้อความ 'ดูดวง' หรือ 'ดูดวงละเอียด'\n";
 
-        // ส่งพร้อม quick reply buttons — "เช็คสิทธิ์" ซ่อนเมื่อปิดระบบฟรี
+        // ส่งพร้อม quick reply buttons
+        // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
         $quickReplies = [
             ['title' => $freeEnabled ? '🔮 ดูดวง' : '🔮 เริ่มดูดวง', 'payload' => 'FORTUNE_BASIC'],
         ];
-        if ($freeEnabled) {
-            $quickReplies[] = ['title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'];
-        }
         if ($this->settings->isDeepReadingEnabled()) {
             $quickReplies[] = ['title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
         }

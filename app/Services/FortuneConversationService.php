@@ -630,11 +630,29 @@ class FortuneConversationService
             $priorDmCount = 0;
             $hoursSinceLastDm = null;
             try {
+                $incomingName = $this->sanitizeName($userProfile['name'] ?? null);
+
                 $credit = FortuneUserCredit::getOrCreate(
                     $facebookUserId,
                     $this->currentPlatform,
-                    $userProfile['name'] ?? null
+                    $incomingName ?: null
                 );
+
+                // 🎯 Phase E — อัปเดตชื่อถ้าได้ชื่อจริงมาตอนนี้ (ก่อนหน้านี้อาจเป็น null / "คุณ")
+                if ($incomingName !== '' && (empty($credit->facebook_user_name) || $credit->facebook_user_name === 'คุณ')) {
+                    $credit->update(['facebook_user_name' => $incomingName]);
+                    $credit->refresh();
+                }
+
+                // 🎯 Phase E — ถ้า userProfile ไม่มีชื่อ (fallback) → เติมจาก credit
+                if (empty($userProfile['name']) || $userProfile['name'] === 'คุณ') {
+                    $savedName = $credit->facebook_user_name ?? '';
+                    if ($savedName !== '' && $savedName !== 'คุณ') {
+                        $userProfile = is_array($userProfile) ? $userProfile : [];
+                        $userProfile['name'] = $savedName;
+                    }
+                }
+
                 $isReturningWithin24h = $credit->isWithin24hDmWindow();
                 $priorDmCount = (int) ($credit->dm_count ?? 0);
                 if ($credit->last_dm_at) {
@@ -646,6 +664,20 @@ class FortuneConversationService
                     'facebook_user_id' => $facebookUserId,
                     'error' => $dmTrackErr->getMessage(),
                 ]);
+            }
+
+            // 🎯 Phase E — ตรวจว่าลูกค้ามีคำทำนายเชิงลึกพร้อมอ่านแล้วหรือยัง (24 ชม. ล่าสุด)
+            //   ถ้ามี → เวลา AI chat จะได้แนะนำว่า "อ่านคำทำนายล่าสุด" แทนการ pitch ขายซ้ำ
+            $hasFreshPaidDeep = false;
+            try {
+                $hasFreshPaidDeep = FortuneReading::where('facebook_user_id', $facebookUserId)
+                    ->where('is_paid', true)
+                    ->whereNotNull('deep_response')
+                    ->where('deep_response', '!=', '')
+                    ->where('paid_at', '>=', now()->subHours(24))
+                    ->exists();
+            } catch (\Throwable $readingCheckErr) {
+                // ignore
             }
 
             // ═══════════════════════════════════════════════════════════
@@ -994,6 +1026,7 @@ class FortuneConversationService
                         'is_returning_24h' => $isReturningWithin24h,
                         'prior_dm_count' => $priorDmCount,
                         'hours_since_last_dm' => $hoursSinceLastDm,
+                        'has_fresh_paid_deep' => $hasFreshPaidDeep,
                     ]);
                     if ($aiChatResult) {
                         return $aiChatResult;
@@ -1117,6 +1150,7 @@ class FortuneConversationService
                 'is_returning_24h' => $isReturningWithin24h,
                 'prior_dm_count' => $priorDmCount,
                 'hours_since_last_dm' => $hoursSinceLastDm,
+                'has_fresh_paid_deep' => $hasFreshPaidDeep,
             ]);
             if ($aiChatResult) {
                 return $aiChatResult;
@@ -1904,7 +1938,10 @@ class FortuneConversationService
                 ? '🌟 ดูดวงฟรีไม่จำกัดวันนี้'
                 : "✨ วันนี้ดูดวงฟรีได้ {$remaining} ครั้ง";
 
-            $fbMessage = "🔮 สวัสดีค่ะ คุณ{$name}\n\n"
+            // 🎯 Phase E — ใช้ greetName เพื่อกัน "คุณคุณ"
+            $greet = $this->greetName($name);
+            $greetingLine = $greet !== '' ? "🔮 สวัสดีค่ะ {$greet}" : '🔮 สวัสดีค่ะ';
+            $fbMessage = "{$greetingLine}\n\n"
                 . "{$quotaLine}\n\n"
                 . "👇 แตะปุ่มเรื่องที่อยากรู้ด้านล่าง\n"
                 . "หรือพิมพ์คำถามมาได้เลย";
@@ -4270,6 +4307,41 @@ class FortuneConversationService
     }
 
     /**
+     * 🎯 Phase E — สร้าง greeting ที่ปลอดภัย (กัน "คุณคุณ")
+     *
+     * - ถ้าชื่อว่าง / เป็น "คุณ" / ฟอลแบ็ก → คืน empty string (ให้ caller ตัด prefix ทิ้ง)
+     * - ถ้าชื่อขึ้นต้นด้วย "คุณ"/"นาย"/"นาง" แล้ว → คืนชื่อเดิม (กันเติม prefix ซ้ำ)
+     * - ชื่อปกติ → คืน "คุณ{name}"
+     */
+    protected function greetName(?string $rawName): string
+    {
+        $name = trim((string) $rawName);
+        if ($name === '' || $name === 'คุณ') {
+            return '';
+        }
+        foreach (['คุณ ', 'คุณพี่', 'นาย', 'นาง', 'นางสาว', 'น.ส.', 'ด.ช.', 'ด.ญ.'] as $title) {
+            if (str_starts_with($name, $title)) {
+                return $name;
+            }
+        }
+
+        return "คุณ{$name}";
+    }
+
+    /**
+     * 🎯 Phase E — sanitize name — ลบ prefix "คุณ" ถ้าเป็น placeholder
+     */
+    protected function sanitizeName(?string $rawName): string
+    {
+        $name = trim((string) $rawName);
+        if ($name === 'คุณ') {
+            return '';
+        }
+
+        return $name;
+    }
+
+    /**
      * 🎯 Phase D — สร้างข้อความ welcome/fallback ที่ชี้ปุ่มชัดเจน
      *
      * ใช้เมื่อ AI Chat + Pool fallback ล้มเหลวหมด หรือผู้ใช้พิมพ์ข้อความที่
@@ -5765,6 +5837,12 @@ class FortuneConversationService
                 $hoursAgo = (int) $dmContext['hours_since_last_dm'];
                 $dmCount = (int) ($dmContext['prior_dm_count'] ?? 0);
                 $contextParts[] = "RETURNING_24H hours_ago={$hoursAgo} dm_count={$dmCount}";
+            }
+
+            // 🎯 Phase E — ถ้าลูกค้ามีคำทำนายเชิงลึกพร้อมอ่านใน 24 ชม. → แทนที่จะ pitch ขาย
+            //   AI ต้องแนะนำให้ "อ่านคำทำนายล่าสุด" (เพราะลูกค้าจ่ายไปแล้ว)
+            if (! empty($dmContext['has_fresh_paid_deep'])) {
+                $contextParts[] = 'HAS_FRESH_DEEP_READING';
             }
 
             $messageForAI = $messageText;

@@ -2728,24 +2728,33 @@ class FortuneChannelManager
     protected function sendFacebookReadingCompleteResponse(FacebookWebhookService $fbService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
-        $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
+        $rawName = $reading?->facebook_user_name ?? $result['user_name'] ?? '';
+
+        // 🎯 Phase E — กัน "คุณคุณ" ถ้าชื่อเป็น 'คุณ' (fallback) → ละเว้น prefix
+        $greet = ($rawName !== '' && $rawName !== 'คุณ') ? "คุณ{$rawName}" : '';
 
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
         $recruitUrl = $appUrl.'/user/fortune-referral/recruit';
         $pageId = $this->settings->facebook_page_id ?? null;
         $pageUrl = $pageId ? "https://www.facebook.com/{$pageId}" : $appUrl;
 
-        $text = "🙏 ขอบคุณที่ไว้วางใจหมอจันทรา คุณ{$userName}\n\n"
-            . "✨ ขอให้โชคดี มีสุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
-            . "📢 ถ้าคำทำนายถูกใจ — แชร์เพจให้เพื่อน หรือชวนเพื่อนมาดูดวงได้ค่าแนะนำเข้า Wallet ทันที!";
+        // 🎯 Phase E — เพิ่ม "อ่านคำทำนายล่าสุด" hint + เน้นส่วนแบ่งการตลาดเมื่อชวนเพื่อน
+        $thankYouLine = $greet !== ''
+            ? "🙏 ขอบคุณที่ไว้วางใจหมอจันทรา {$greet}"
+            : '🙏 ขอบคุณที่ไว้วางใจหมอจันทรา';
+
+        $text = "{$thankYouLine}\n\n"
+            . "✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
+            . "📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
+            . "📢 ถ้าคำทำนายถูกใจ — ชวนเพื่อนมาดูดวง ได้ **ส่วนแบ่งการตลาด** เข้า Wallet ทันที!";
 
         return $fbService->sendButtonTemplate($userId, [
             'template_type' => 'button',
             'text' => mb_substr($text, 0, 640),
             'buttons' => [
-                ['type' => 'web_url', 'title' => '📢 ชวนเพื่อน/ดูรายได้', 'url' => $recruitUrl],
+                ['type' => 'web_url', 'title' => '📢 ชวนเพื่อน/รับส่วนแบ่ง', 'url' => $recruitUrl],
                 ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
-                ['type' => 'postback', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
+                ['type' => 'postback', 'title' => '📖 อ่านคำทำนายล่าสุด', 'payload' => 'VIEW_LAST_READING'],
             ],
         ]);
     }
