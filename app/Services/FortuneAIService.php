@@ -1149,19 +1149,50 @@ class FortuneAIService
     }
 
     /**
-     * 🎯 Phase H — Smart load-balanced key ordering สำหรับ concurrent scale (1000+ users)
+     * 🎯 Phase I — Default RPM cap ต่อ provider (conservative — กัน hit 429 ตั้งแต่แรก)
+     *
+     * ใช้เมื่อ AiApiKey.rate_limit_per_minute ไม่ได้ตั้งค่าไว้ใน admin
+     * ค่าเหล่านี้อิงจาก free-tier ของแต่ละ provider — เผื่อ 10-20% safety margin
+     */
+    protected const PROVIDER_DEFAULT_RPM = [
+        'gemini' => 12,        // free tier 15 RPM → ใช้ 12 (เผื่อ 20%)
+        'groq' => 28,          // free tier 30 RPM → ใช้ 28
+        'grok' => 55,          // xAI 60+ RPM
+        'qwen' => 28,          // HF router ~30 RPM
+        'openrouter' => 55,    // varies, ~60 RPM เฉลี่ย
+        'deepseek' => 55,      // ~60 RPM
+        'typhoon' => 55,       // OpenTyphoon ~60 RPM
+    ];
+
+    /**
+     * 🎯 Phase I — Max concurrent in-flight ต่อ key
+     *
+     * กัน key เดียวรับ concurrent เยอะเกิน (ถึงแม้ RPM ไม่ถึง limit)
+     * หลัง cap นี้ → key จะถูก skip จาก list ชั่วคราว จน request เก่าเสร็จ
+     */
+    protected const PER_KEY_INFLIGHT_CAP = 3;
+
+    /**
+     * 🎯 Phase H+I — Smart load-balanced key ordering สำหรับ concurrent scale (1000+ users)
      *
      * แทนที่ "เรียงตาม priority อย่างเดียว" (ทำให้ทุกคนชน key #1 พร้อมกัน)
-     * ด้วยคะแนน load score ที่คำนึงถึง:
-     *   - in-flight requests ต่อ key (ใช้อยู่กี่คน)
-     *   - requests per minute ต่อ key (ใกล้ rate limit ไหม)
-     *   - consecutive_errors (กำลังมีปัญหาไหม)
-     *   - priority (admin-set)
-     *   - per-user jitter (crc32 ของ userId → คนละ user เห็นลำดับต่างกันเวลา score เท่ากัน)
+     * ด้วยคะแนน load score + hard filter:
      *
-     * Cooldown ต่อ key: ถ้าโดน 429 เมื่อไม่นาน → pause key นั้น 30s (กัน thundering herd)
+     *   Hard filter (ข้าม key ทันที):
+     *     - disabled_until, is_active = false (DB-level)
+     *     - per-key cooldown หลัง 429 (Cache 30s)
+     *     - RPM >= effective_limit (Cache real-time)   ← Phase I proactive
+     *     - In-flight >= PER_KEY_INFLIGHT_CAP          ← Phase I proactive
      *
-     * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId) — ถ้า null = ไม่มี jitter
+     *   Soft score (เรียงตามนี้):
+     *     - priority × 10
+     *     - primary_provider_boost 50
+     *     - per-user jitter 0-9 (crc32 ของ userId)
+     *     - rpm_ratio penalty (rpm/limit × -100)
+     *     - inflight × -100
+     *     - errors × -50
+     *
+     * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId)
      */
     protected function getAllAvailableKeys(?string $userContext = null): array
     {
@@ -1204,6 +1235,33 @@ class FortuneAIService
                         continue;
                     }
 
+                    // 🎯 Phase I — Proactive filter: ข้ามก่อนจะถึง rate limit
+                    $effectiveRpmLimit = $this->getEffectiveRpmLimit($provider, $poolKey);
+                    $currentRpm = (int) cache()->get("pool:rpm:{$provider}:{$poolKey->id}", 0);
+                    if ($currentRpm >= $effectiveRpmLimit) {
+                        Log::debug('FortuneAI: Skip key — RPM cap reached', [
+                            'provider' => $provider,
+                            'key_id' => $poolKey->id,
+                            'rpm' => $currentRpm,
+                            'limit' => $effectiveRpmLimit,
+                        ]);
+
+                        continue;
+                    }
+
+                    // 🎯 Phase I — Proactive filter: ข้าม key ที่ concurrent สูงเกิน cap
+                    $currentInflight = (int) cache()->get("pool:inflight:{$provider}:{$poolKey->id}", 0);
+                    if ($currentInflight >= self::PER_KEY_INFLIGHT_CAP) {
+                        Log::debug('FortuneAI: Skip key — in-flight cap reached', [
+                            'provider' => $provider,
+                            'key_id' => $poolKey->id,
+                            'inflight' => $currentInflight,
+                            'cap' => self::PER_KEY_INFLIGHT_CAP,
+                        ]);
+
+                        continue;
+                    }
+
                     $keys[] = [
                         'provider' => $provider,
                         'api_key' => $poolKey->api_key,
@@ -1215,7 +1273,10 @@ class FortuneAIService
                             $provider,
                             $poolKey,
                             $provider === $primaryProvider,
-                            $userContext
+                            $userContext,
+                            $currentRpm,
+                            $currentInflight,
+                            $effectiveRpmLimit
                         ),
                     ];
                     $addedApiKeys[] = $poolKey->api_key;
@@ -1284,37 +1345,63 @@ class FortuneAIService
     }
 
     /**
-     * 🎯 Phase H — คำนวณ load score ของ key (สูง = ดี = เลือกก่อน)
+     * 🎯 Phase I — ดึง effective RPM limit ของ key
+     *
+     * ใช้ค่าที่ admin ตั้งไว้ก่อน ไม่งั้นใช้ default ต่อ provider (conservative)
+     */
+    protected function getEffectiveRpmLimit(string $provider, AiApiKey $poolKey): int
+    {
+        $configured = (int) ($poolKey->rate_limit_per_minute ?? 0);
+        if ($configured > 0) {
+            return $configured;
+        }
+
+        return self::PROVIDER_DEFAULT_RPM[$provider] ?? 30;
+    }
+
+    /**
+     * 🎯 Phase H+I — คำนวณ load score ของ key (สูง = ดี = เลือกก่อน)
      *
      * Factors:
-     *   + priority × 10          — admin-set preference
-     *   + primary_boost (50)     — ถ้าเป็น provider หลักที่ admin เลือก
-     *   + jitter (0-9)           — per-user variance (ทำให้ users ต่าง key ต่างกัน)
-     *   - inflight × 100         — requests ที่กำลังวิ่งอยู่ (ตัวหลัก → กระจายโหลด)
-     *   - rpm × 5                — requests ใน 60s ล่าสุด (กัน rate limit)
-     *   - errors × 50            — consecutive errors (กันใช้ key ที่กำลังเสีย)
+     *   + priority × 10               — admin-set preference
+     *   + primary_boost (50)          — ถ้าเป็น provider หลักที่ admin เลือก
+     *   + jitter (0-9)                — per-user variance
+     *   - inflight × 100              — requests กำลังวิ่ง (ตัวหลัก → กระจาย)
+     *   - rpm_ratio × 100             — % ที่ใช้ของ RPM limit (Phase I — proactive)
+     *   - errors × 50                 — consecutive errors
+     *
+     * rpm_ratio แปรผันตามสัดส่วน rpm/limit:
+     *   - rpm 6/30  = 20% → penalty 20
+     *   - rpm 24/30 = 80% → penalty 80 (หนักกว่าเดิม 2 เท่า)
+     *   - rpm 28/30 = 93% → penalty 93 (เหลือน้อย ควรเลี่ยง)
      */
     protected function computeKeyScore(
         string $provider,
         AiApiKey $poolKey,
         bool $isPrimaryProvider,
-        ?string $userContext = null
+        ?string $userContext = null,
+        ?int $currentRpm = null,
+        ?int $currentInflight = null,
+        ?int $effectiveRpmLimit = null
     ): int {
-        $inflight = (int) cache()->get("pool:inflight:{$provider}:{$poolKey->id}", 0);
-        $rpm = (int) cache()->get("pool:rpm:{$provider}:{$poolKey->id}", 0);
+        $rpm = $currentRpm ?? (int) cache()->get("pool:rpm:{$provider}:{$poolKey->id}", 0);
+        $inflight = $currentInflight ?? (int) cache()->get("pool:inflight:{$provider}:{$poolKey->id}", 0);
+        $rpmLimit = $effectiveRpmLimit ?? $this->getEffectiveRpmLimit($provider, $poolKey);
         $errors = (int) ($poolKey->consecutive_errors ?? 0);
         $priority = (int) ($poolKey->priority ?? 0);
 
+        // Phase I — ใช้ load ratio แทน raw rpm (key limit 30 vs 100 ควรให้น้ำหนักต่างกัน)
+        $rpmRatio = $rpmLimit > 0 ? min(100, (int) round(($rpm / $rpmLimit) * 100)) : 0;
+
         $score = ($priority * 10)
             - ($inflight * 100)
-            - ($rpm * 5)
+            - $rpmRatio
             - ($errors * 50);
 
         if ($isPrimaryProvider) {
             $score += 50;
         }
 
-        // Per-user jitter — ทำให้ user ต่างคน เห็นลำดับต่างกันเมื่อ score เท่ากัน
         if ($userContext !== null && $userContext !== '') {
             $jitter = abs(crc32($userContext.'|'.$provider.'|'.$poolKey->id)) % 10;
             $score += $jitter;
