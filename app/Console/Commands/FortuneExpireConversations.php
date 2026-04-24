@@ -40,6 +40,25 @@ class FortuneExpireConversations extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         // ========================================
+        // 🎯 Phase K — ส่ง closing-pitch DM ก่อนยกเลิก (บิลอายุ 25-30 นาที)
+        //    ปิดการขายอีกรอบโดย reframe ราคา + เน้นไพ่จาก "ดวงชนะ" ของลูกค้าเอง
+        // ========================================
+        $remindersSent = 0;
+
+        if ($dryRun) {
+            $remindersSent = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('is_paid', false)
+                ->whereNotNull('unique_payment_amount_id')
+                ->whereBetween('updated_at', [
+                    now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES),
+                    now()->subMinutes(max(1, FortuneReading::PAYMENT_TIMEOUT_MINUTES - 5)),
+                ])
+                ->count();
+        } else {
+            $remindersSent = FortuneReading::sendExpiryReminders();
+        }
+
+        // ========================================
         // 🎯 Phase J — ยกเลิกบิล pending_payment ที่ค้างเกิน 30 นาที
         //    (cancel UPA + ส่ง FCM แจ้งแอพ SMS Checker) ก่อนปิด conversation
         // ========================================
@@ -90,15 +109,19 @@ class FortuneExpireConversations extends Command
         // สรุปผล
         // ========================================
         $prefix = $dryRun ? '[DRY-RUN] ' : '';
-        $total = $cancelledBills + $expiredCount + $takeoverCount;
+        $total = $remindersSent + $cancelledBills + $expiredCount + $takeoverCount;
 
         if ($total > 0) {
             Log::info($prefix.'fortune:expire-conversations', [
+                'reminders_sent' => $remindersSent,
                 'bills_cancelled' => $cancelledBills,
                 'conversations_expired' => $expiredCount,
                 'takeover_cleared' => $takeoverCount,
             ]);
 
+            if ($remindersSent > 0) {
+                $this->info($prefix."ส่ง closing-pitch DM: {$remindersSent} (บิลอายุ 25 นาที)");
+            }
             if ($cancelledBills > 0) {
                 $this->info($prefix."ยกเลิกบิลค้าง: {$cancelledBills} (แจ้ง SMS Checker แล้ว)");
             }

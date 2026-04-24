@@ -558,6 +558,142 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🎯 Phase K — ก่อนยกเลิกบิล ส่ง DM "closing pitch" เพื่อกระตุ้นอีกรอบ
+     *
+     * ตรรกะ:
+     *   - หาบิลที่ค้าง 25 นาที (5 นาทีก่อนหมดอายุ) ที่ยังไม่เคยเตือน
+     *   - ส่ง DM message ที่ reframe ราคา (เทียบค่ากาแฟ) + เน้นว่า
+     *     การทำนายใช้ดาวเจ้าชนะ + ไพ่ที่พลังจิตลูกค้าเลือกเอง
+     *   - mark state `expiry_reminder_sent_at` กันส่งซ้ำ
+     *
+     * ⚠️ Best-effort: ถ้า platform ส่งไม่สำเร็จ (FB 24hr window หมด) → mark ส่งแล้วอยู่ดี
+     *    เพื่อกันวนส่ง
+     *
+     * @return int  จำนวน reminder ที่ส่งสำเร็จ
+     */
+    public static function sendExpiryReminders(): int
+    {
+        // หาบิลอายุ 25-30 นาที (window 5 นาทีก่อนหมด)
+        //   เก่าสุด 30 นาที = now - PAYMENT_TIMEOUT_MINUTES  (ใกล้หมด)
+        //   ใหม่สุด 25 นาที = now - (PAYMENT_TIMEOUT_MINUTES - 5) (เริ่มเตือน)
+        $readings = self::where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->whereBetween('updated_at', [
+                now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES),
+                now()->subMinutes(max(1, self::PAYMENT_TIMEOUT_MINUTES - 5)),
+            ])
+            ->get();
+
+        if ($readings->isEmpty()) {
+            return 0;
+        }
+
+        $sent = 0;
+
+        $channelManager = null;
+        try {
+            $channelManager = app(\App\Services\FortuneChannelManager::class);
+        } catch (\Throwable $e) {
+            \Log::warning('FortuneReading::sendExpiryReminders — channel manager ไม่พร้อม', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return 0;
+        }
+
+        foreach ($readings as $reading) {
+            // ข้ามถ้าเคยเตือนแล้ว
+            if (! empty($reading->getConversationState('expiry_reminder_sent_at'))) {
+                continue;
+            }
+
+            $message = self::buildExpiryReminderMessage($reading);
+            $platform = $reading->platform ?? 'facebook';
+            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+            if (empty($userId)) {
+                continue;
+            }
+
+            try {
+                $platformService = $channelManager->getPlatform($platform);
+                if ($platformService) {
+                    $platformService->sendMessage($userId, $message);
+                    $sent++;
+
+                    \Log::info('FortuneReading: ส่ง expiry reminder DM', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                        'bill_reference' => $reading->bill_reference,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                \Log::warning('FortuneReading: expiry reminder DM ล้มเหลว (best-effort)', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // ⚠️ mark sent แม้ fail — กันวนส่งซ้ำใน cron tick ถัดไป
+            $reading->setConversationState('expiry_reminder_sent_at', now()->toIso8601String());
+        }
+
+        return $sent;
+    }
+
+    /**
+     * 🎯 Phase K — สร้างข้อความ closing pitch (4 variants, rotate ตาม reading ID)
+     *
+     * ทุก variant สะท้อนสาร 3 อย่าง:
+     *   1. ราคาเทียบกับของธรรมดา (ค่ากาแฟ/ที่ปรึกษา)
+     *   2. การทำนายอิงดาวเจ้าชนะ (ไม่ใช่คำตอบ generic)
+     *   3. ไพ่ที่สุ่มออกมา มาจากพลังจิตของลูกค้าเอง (จิตตั้งมั่น = ไพ่ถึง)
+     */
+    protected static function buildExpiryReminderMessage(self $reading): string
+    {
+        $expiresAt = $reading->updated_at->copy()->addMinutes(self::PAYMENT_TIMEOUT_MINUTES);
+        $remainingMinutes = (int) max(1, ceil(now()->diffInMinutes($expiresAt, false)));
+        $price = (int) ($reading->amount_paid ?? 49);
+
+        $variants = [
+            "🔮 บิลดูดวงยังรออยู่นะคะ — อีก {$remainingMinutes} นาทีจะหมดอายุ\n\n"
+                ."☕ ค่าครู {$price} บาท น้อยกว่าค่ากาแฟ 1 แก้วเสียอีก\n"
+                ."แต่หมอวิเคราะห์จาก **ดาวเจ้าชนะของเจ้าชะตาเอง**\n"
+                ."ไพ่ที่เปิดก็มาจากพลังจิตของเจ้าชะตา\n"
+                ."ไม่ต่างจากจับไพ่เอง — จิตตั้งมั่น ดาวก็ส่งสัญญาณมาแล้ว ✨\n\n"
+                ."ถ้าพร้อม → โอนมาได้เลย 🙏",
+
+            "💫 คำทำนายของหมอ ไม่ใช่คำตอบทั่วไปที่ใครก็ได้\n\n"
+                ."วิเคราะห์จาก **ดาวเจ้าชนะของเจ้าชะตาคนเดียว**\n"
+                ."บวกกับ **ไพ่ที่พลังจิตเจ้าชะตาเลือกออกมาเอง**\n"
+                ."เหมือนจับไพ่เอง เพราะจิตสื่อถึงดวงดาวไปแล้ว 🌙\n\n"
+                ."💎 {$price} บาท แลกคำตอบตรงตัว\n"
+                ."⏰ บิลหมดอายุในอีก {$remainingMinutes} นาที",
+
+            "🃏 หมอเตรียมไพ่ + ดาวของเจ้าชะตาไว้พร้อมแล้ว\n\n"
+                ."ตอนสุ่มไพ่ พลังจิตของเจ้าชะตาเป็นคนเลือก\n"
+                ."ไม่ต่างจากจับไพ่เอง — จิตเชื่อ ใจสื่อ ดาวตอบ 🌟\n\n"
+                ."{$price} บาท ไม่ใช่แค่ค่าทำนาย\n"
+                ."แต่คือค่าที่ปรึกษาที่ตั้งใจวิเคราะห์ให้เจ้าชะตาคนเดียว\n\n"
+                ."อีก {$remainingMinutes} นาทีบิลจะหมด — ถ้าพร้อมโอนมาได้เลยนะคะ",
+
+            "⏰ บิลดูดวงเหลืออีก {$remainingMinutes} นาทีจะหมดอายุ\n\n"
+                ."🪙 {$price} บาท — เทียบเท่าค่ากาแฟ 1 แก้ว\n"
+                ."แต่ได้คำทำนายเจาะตัวจาก\n"
+                ."   • ดาวเจ้าชนะของเจ้าชะตา\n"
+                ."   • ไพ่ที่สุ่มจากพลังจิตของเจ้าชะตาเอง\n\n"
+                ."เหมือนจับไพ่เอง เพราะจิตตั้งมั่นก็สื่อถึงดาวแล้ว ✨\n"
+                ."ถ้าพร้อม → โอนได้เลย",
+        ];
+
+        $idx = abs(crc32((string) $reading->id)) % count($variants);
+
+        return $variants[$idx];
+    }
+
+    /**
      * 🎯 Phase J — ยกเลิกบิลดูดวงที่ค้างเกิน 30 นาทีพร้อมแจ้ง SMS Checker app
      *
      * ทำ 3 อย่างในคราวเดียว (สำหรับ cron):
