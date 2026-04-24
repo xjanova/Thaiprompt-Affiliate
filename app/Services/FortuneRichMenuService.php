@@ -217,9 +217,10 @@ class FortuneRichMenuService
                     'display_text' => 'ดูคำทำนายล่าสุด',
                     'glow' => false,
                 ],
+                // 🎯 Phase M — แทน "สิทธิ์/Wallet" ด้วย "ชวนเพื่อน" (useful + actionable)
                 [
-                    'label' => 'สิทธิ์ / Wallet',
-                    'subtitle' => 'ดูสิทธิ์ รายได้ Wallet',
+                    'label' => 'ชวนเพื่อน',
+                    'subtitle' => 'รับส่วนแบ่ง',
                     'icon' => 'status',
                     'bg_color' => '#00605B',
                     'text_color' => '#FFFFFF',
@@ -227,8 +228,8 @@ class FortuneRichMenuService
                     'font_size' => 48,
                     'subtitle_size' => 28,
                     'action_type' => 'postback',
-                    'action_data' => 'action=check_status',
-                    'display_text' => 'ดูสถานะสิทธิ์',
+                    'action_data' => 'action=affiliate_share',
+                    'display_text' => 'ชวนเพื่อน/รับส่วนแบ่ง',
                     'glow' => false,
                 ],
                 [
@@ -246,18 +247,19 @@ class FortuneRichMenuService
                     'display_text' => 'แจ้งปัญหาโอน',
                     'glow' => false,
                 ],
+                // 🎯 Phase M — แทน "วิธีใช้งาน" ด้วย "คุยกับแม่หมอ" (ติดต่อแอดมิน)
                 [
-                    'label' => 'วิธีใช้งาน',
-                    'subtitle' => 'คู่มือ & ช่วยเหลือ',
+                    'label' => 'คุยกับแม่หมอ',
+                    'subtitle' => 'ติดต่อแอดมิน',
                     'icon' => 'info',
                     'bg_color' => null,
                     'text_color' => '#FFFFFF',
                     'subtitle_color' => '#C4B5FD',
-                    'font_size' => 48,
+                    'font_size' => 44,
                     'subtitle_size' => 28,
                     'action_type' => 'postback',
-                    'action_data' => 'action=help',
-                    'display_text' => 'วิธีใช้งาน',
+                    'action_data' => 'action=talk_human',
+                    'display_text' => 'คุยกับแม่หมอ',
                     'glow' => false,
                 ],
             ],
@@ -478,20 +480,20 @@ class FortuneRichMenuService
                 'bounds' => ['x' => self::COL_WIDTH_1 + self::COL_WIDTH_2, 'y' => 0, 'width' => self::COL_WIDTH_3, 'height' => self::ROW_HEIGHT],
                 'action' => ['type' => 'postback', 'data' => 'action=view_last_reading', 'displayText' => 'ดูคำทำนายล่าสุด'],
             ],
-            // Row 2, Col 1: 📊 สถานะ/สิทธิ์ (เปลี่ยนจาก เช็คสิทธิ์ → ส่ง Flex สถานะ)
+            // 🎯 Phase M — Row 2, Col 1: 📢 ชวนเพื่อน (แทน "เช็คสิทธิ์")
             [
                 'bounds' => ['x' => 0, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_1, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=check_status', 'displayText' => 'ดูสถานะสิทธิ์'],
+                'action' => ['type' => 'postback', 'data' => 'action=affiliate_share', 'displayText' => 'ชวนเพื่อน/รับส่วนแบ่ง'],
             ],
             // Row 2, Col 2: ⚠️ แจ้งปัญหาโอน
             [
                 'bounds' => ['x' => self::COL_WIDTH_1, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_2, 'height' => self::ROW_HEIGHT],
                 'action' => ['type' => 'postback', 'data' => 'action=report_payment', 'displayText' => 'แจ้งปัญหาโอน'],
             ],
-            // Row 2, Col 3: ℹ️ วิธีใช้งาน
+            // 🎯 Phase M — Row 2, Col 3: 💬 คุยกับแม่หมอ (แทน "วิธีใช้งาน")
             [
                 'bounds' => ['x' => self::COL_WIDTH_1 + self::COL_WIDTH_2, 'y' => self::ROW_HEIGHT, 'width' => self::COL_WIDTH_3, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=help', 'displayText' => 'วิธีใช้งาน'],
+                'action' => ['type' => 'postback', 'data' => 'action=talk_human', 'displayText' => 'คุยกับแม่หมอ'],
             ],
         ];
     }

@@ -82,10 +82,11 @@ class FacebookRichMessageService
                 'url' => $lineUrl,
             ];
         } else {
+            // 🎯 Phase M — แทน "เช็คสิทธิ์" ด้วย "ดูดวงละเอียด" (useful กว่า)
             $buttons[] = [
                 'type' => 'postback',
-                'title' => '📊 เช็คสิทธิ์ดูดวง',
-                'payload' => 'MENU_CHECK_REMAINING',
+                'title' => '💎 ดูดวงละเอียด',
+                'payload' => 'FORTUNE_DEEP',
             ];
         }
 
@@ -195,16 +196,12 @@ class FacebookRichMessageService
                 'payload' => [
                     'template_type' => 'button',
                     'text' => $text,
+                    // 🎯 Phase M — เอาปุ่ม "เช็คสถานะบิล" ออก (ซ้ำซ้อน)
                     'buttons' => [
                         [
                             'type' => 'postback',
                             'title' => '✅ แจ้งชำระเงินแล้ว',
                             'payload' => 'REPORT_PAYMENT',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '📊 เช็คสถานะบิล',
-                            'payload' => 'CHECK_REMAINING',
                         ],
                         [
                             'type' => 'postback',
@@ -473,21 +470,12 @@ class FacebookRichMessageService
                 'payload' => [
                     'template_type' => 'button',
                     'text' => "📅 กรุณาบอกวันเดือนปีเกิด\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวงละเอียด: {$priceText} บาท",
+                    // 🎯 Phase M — เอาปุ่ม "วิธีใช้งาน" + "เช็คสิทธิ์" ออก (ซ้ำซ้อน งง)
                     'buttons' => [
                         [
                             'type' => 'postback',
                             'title' => '❌ ยกเลิก',
                             'payload' => 'CANCEL_DEEP',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '❓ วิธีใช้งาน',
-                            'payload' => 'MENU_HELP',
-                        ],
-                        [
-                            'type' => 'postback',
-                            'title' => '📊 เช็คสิทธิ์',
-                            'payload' => 'CHECK_REMAINING',
                         ],
                     ],
                 ],
@@ -524,12 +512,7 @@ class FacebookRichMessageService
                 'payload' => 'FORTUNE_BASIC',
             ];
         }
-
-        $buttons[] = [
-            'type' => 'postback',
-            'title' => '📊 เช็คสิทธิ์',
-            'payload' => 'CHECK_REMAINING',
-        ];
+        // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน ผู้ใช้งง)
 
         return [
             'attachment' => [
@@ -575,14 +558,7 @@ class FacebookRichMessageService
             ];
         }
 
-        // เช็คสิทธิ์ — แสดงเฉพาะเมื่อมีบริการฟรี
-        if ($freeEnabled) {
-            $buttons[] = [
-                'type' => 'postback',
-                'title' => '📊 เช็คสิทธิ์',
-                'payload' => 'CHECK_REMAINING',
-            ];
-        }
+        // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน ผู้ใช้งง)
 
         // ข้อความแตกต่างตามสถานะฟรี
         $text = $freeEnabled
@@ -649,7 +625,7 @@ class FacebookRichMessageService
             ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ['content_type' => 'text', 'title' => '📢 เชิญเพื่อน', 'payload' => 'AFFILIATE_SHARE'],
             ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
-            ['content_type' => 'text', 'title' => '📊 เช็คสิทธิ์', 'payload' => 'CHECK_REMAINING'],
+            // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก
         ];
     }
 

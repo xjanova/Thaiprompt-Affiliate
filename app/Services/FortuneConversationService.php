@@ -125,6 +125,14 @@ class FortuneConversationService
     public const MAX_REPETITIVE_MESSAGES = 3;
 
     /**
+     * 🎯 Phase N — Rapid-fire spam detection
+     *   ส่งข้อความ/รูป เกิน N ครั้งใน X วินาที → เข้า silent mode
+     */
+    public const RAPID_FIRE_THRESHOLD = 6;         // จำนวนข้อความในหน้าต่าง
+    public const RAPID_FIRE_WINDOW_SECONDS = 30;   // หน้าต่างเวลา (วินาที)
+    public const SILENT_MODE_MINUTES = 3;          // พักการตอบกลับ N นาที
+
+    /**
      * Prompt Injection Patterns - คำสั่งที่พยายาม manipulate AI
      */
     protected const PROMPT_INJECTION_PATTERNS = [
@@ -541,6 +549,35 @@ class FortuneConversationService
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
         try {
+            // 🎯 Phase N — ถ้าผู้ใช้อยู่ใน silent mode → ไม่ตอบกลับเลย (สแปมตรวจพบแล้ว)
+            if ($this->isInSilentMode($facebookUserId)) {
+                Log::info('Fortune: ข้ามข้อความ — user อยู่ใน silent mode', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 30),
+                ]);
+
+                return [
+                    'action' => 'silent_skip',
+                    'message' => null,
+                    'reading' => null,
+                ];
+            }
+
+            // 🎯 Phase N — นับ rapid-fire: เกินเกณฑ์ → เข้า silent mode พร้อม warning 1 ครั้ง
+            $rapidCount = $this->countRapidFire($facebookUserId);
+            if ($rapidCount >= self::RAPID_FIRE_THRESHOLD) {
+                $this->enterSilentMode($facebookUserId);
+                $this->clearRapidFire($facebookUserId);
+
+                return [
+                    'action' => 'silent_warning',
+                    'message' => "⏸ เจ้าชะตาส่งข้อความเยอะเกินไปค่ะ\n"
+                        . "หมอจันทราขอพักสักครู่นะคะ ({$this->getSilentMinutesText()})\n"
+                        . 'กลับมาพิมพ์ใหม่หลังจากนั้นได้เลย 🙏',
+                    'reading' => null,
+                ];
+            }
+
             // Pre-filter พร้อม Rate Limiting: ตรวจจับ spam รุนแรงเท่านั้น
             $filterResult = $this->preFilterWithRateLimit($facebookUserId, $messageText);
             if (! $filterResult['valid']) {
@@ -3429,6 +3466,32 @@ class FortuneConversationService
      */
     protected function handleTarotCardDraw(FortuneReading $reading, string $messageText): array
     {
+        // 🔓 Escape — ถ้าลูกค้ายกเลิก/เริ่มใหม่ → ปิด conversation ให้ flow หลักจัดการ
+        if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop', 'เริ่มใหม่', 'restart'])) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'cancelled',
+                'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                'reading' => $reading,
+            ];
+        }
+
+        // 🎯 Phase M — ถ้าลูกค้าพิมพ์ meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม")
+        //   ในช่วงรอเปิดไพ่ → ให้ AI รับฟังและย้ำขั้นตอน ไม่เปิดไพ่ทันที
+        if ($this->looksLikeMetaOrChitchat($messageText)) {
+            $stepHint = "🃏 หมอกำลังจะเปิดไพ่ยิปซีให้คะ\n"
+                . "เจ้าชะตาแค่พิมพ์อะไรก็ได้ เช่น \"เปิดเลย\" หรือ \"ดู\" แล้วหมอจะสุ่มไพ่ให้\n\n"
+                . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+
+            return [
+                'action' => 'awaiting_tarot_draw',
+                'message' => $message,
+                'reading' => $reading,
+            ];
+        }
+
         try {
             $collectedQuestions = $reading->getCollectedQuestions();
             $questionCount = count($collectedQuestions);
@@ -5059,6 +5122,60 @@ class FortuneConversationService
     // ============================================================
     // Rate Limiting Methods - ป้องกัน Spam/Attack
     // ============================================================
+
+    /**
+     * 🎯 Phase N — ข้อความย่อยเรื่องเวลา silent mode สำหรับ warning
+     */
+    protected function getSilentMinutesText(): string
+    {
+        return self::SILENT_MODE_MINUTES.' นาที';
+    }
+
+    /**
+     * 🎯 Phase N — ตรวจว่าผู้ใช้อยู่ใน silent mode (ถูกตรวจว่า spam)
+     *   → บอทจะไม่ตอบกลับจนกว่าจะหมดเวลา
+     */
+    protected function isInSilentMode(string $userId): bool
+    {
+        return Cache::has("fortune:silent:{$userId}");
+    }
+
+    /**
+     * 🎯 Phase N — เข้า silent mode (หลังถูกตรวจว่า spam)
+     *
+     * @param  int|null  $minutes  จำนวนนาทีที่จะเงียบ (default SILENT_MODE_MINUTES)
+     */
+    protected function enterSilentMode(string $userId, ?int $minutes = null): void
+    {
+        $minutes = $minutes ?? self::SILENT_MODE_MINUTES;
+        Cache::put("fortune:silent:{$userId}", true, now()->addMinutes($minutes));
+        Log::info('Fortune: เข้า silent mode (spam detected)', [
+            'user_id' => $userId,
+            'minutes' => $minutes,
+        ]);
+    }
+
+    /**
+     * 🎯 Phase N — นับจำนวนข้อความใน rapid-fire window
+     *
+     * @return int จำนวนปัจจุบันใน window (รวมครั้งนี้)
+     */
+    protected function countRapidFire(string $userId): int
+    {
+        $key = "fortune:rapid:{$userId}";
+        $count = (int) Cache::get($key, 0) + 1;
+        Cache::put($key, $count, now()->addSeconds(self::RAPID_FIRE_WINDOW_SECONDS));
+
+        return $count;
+    }
+
+    /**
+     * 🎯 Phase N — เคลียร์ rapid counter (ตอน user ผ่านเกณฑ์ปกติ)
+     */
+    protected function clearRapidFire(string $userId): void
+    {
+        Cache::forget("fortune:rapid:{$userId}");
+    }
 
     /**
      * ตรวจสอบ Rate Limit
