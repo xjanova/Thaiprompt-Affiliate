@@ -440,8 +440,14 @@ class FortuneAIService
      * - total-time budget (default 15 วินาที) — เกินแล้วหยุด loop (caller ตอบ pattern fallback)
      * - max attempts (default 4 keys) — กัน pool ยาวเป็น 10 keys
      *
+     * 🎯 Phase H — Smart load balancing สำหรับ scale 1000+ concurrent:
+     * - userContext → per-user jitter ใน key scoring (users ต่าง key ต่าง)
+     * - in-flight tracking ต่อ key → ไม่ hammer key เดียวพร้อมกัน
+     * - Per-key 429 cooldown 30s → กัน thundering herd
+     *
      * @param  int  $totalTimeoutMs  งบเวลารวมสูงสุด (default 15000 = 15s, เหลือ 5s ให้ FB)
      * @param  int  $maxPoolAttempts  จำกัดจำนวน pool key ที่ลอง (default 4)
+     * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId)
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
      * @throws Exception เมื่อทั้ง chat หลักและ pool ล้มเหลวหมด หรือเกิน budget
@@ -451,7 +457,8 @@ class FortuneAIService
         ?array $userProfile = null,
         array $history = [],
         int $totalTimeoutMs = 15000,
-        int $maxPoolAttempts = 4
+        int $maxPoolAttempts = 4,
+        ?string $userContext = null
     ): array {
         $startTime = microtime(true);
 
@@ -473,12 +480,11 @@ class FortuneAIService
             ]);
         }
 
-        // เกิน budget แล้วตั้งแต่ step 1 (primary timeout) → เลิก ไม่ต้อง pool
         if ($elapsedMs() >= $totalTimeoutMs) {
             throw new Exception("AI Chat primary timeout ({$elapsedMs()}ms) — ไม่มีเวลาลอง pool fallback");
         }
 
-        // Step 2: วน loop keys ทั้งหมดจาก AI Pool (มี budget + attempt cap)
+        // Step 2: วน loop keys จาก Smart Pool (เรียงตาม load score + user jitter)
         $customPrompt = $this->settings->getChatSystemPrompt();
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
 
@@ -493,7 +499,8 @@ class FortuneAIService
             'max_tokens' => 512,
         ];
 
-        $allKeys = $this->getAllAvailableKeys();
+        // 🎯 Phase H — ส่ง userContext เพื่อให้ key ordering กระจายตาม user
+        $allKeys = $this->getAllAvailableKeys($userContext);
 
         if (empty($allKeys)) {
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
@@ -502,7 +509,6 @@ class FortuneAIService
         $errors = [];
         $attempts = 0;
         foreach ($allKeys as $keyInfo) {
-            // 🛡️ Phase G — ตรวจ budget + attempt cap ก่อนยิงแต่ละครั้ง
             $currentElapsed = $elapsedMs();
             if ($currentElapsed >= $totalTimeoutMs) {
                 Log::warning('FortuneAIService: Chat pool fallback เกิน budget → หยุด', [
@@ -522,6 +528,9 @@ class FortuneAIService
 
             $attempts++;
 
+            // 🎯 Phase H — Acquire in-flight slot ก่อนเรียก
+            $inflightCache = $this->acquireKeyInflight($keyInfo);
+
             try {
                 $result = match ($keyInfo['provider']) {
                     'gemini' => empty($history)
@@ -532,16 +541,23 @@ class FortuneAIService
                         : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config, $history),
                 };
 
+                // ✅ Success — release + record RPM
+                $this->releaseKeyInflight($keyInfo, $inflightCache, true);
+
                 Log::info('FortuneAIService: Pool fallback สำเร็จสำหรับ chat', [
                     'provider' => $keyInfo['provider'],
                     'source' => $keyInfo['source'] ?? 'unknown',
                     'name' => $keyInfo['name'] ?? 'unknown',
+                    'score' => $keyInfo['score'] ?? 0,
                     'attempts' => $attempts,
                     'elapsed_ms' => $elapsedMs(),
                 ]);
 
                 return $result;
             } catch (Exception $poolErr) {
+                // ❌ Fail — release + อาจ set cooldown ถ้า 429
+                $this->releaseKeyInflight($keyInfo, $inflightCache, false, $poolErr->getMessage());
+
                 $errors[] = "{$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($poolErr->getMessage(), 0, 100);
 
                 continue;
@@ -907,6 +923,7 @@ class FortuneAIService
      * @param  string|null  $promptTemplate  Prompt template
      * @param  string  $readingType  ประเภทคำทำนาย: 'basic' หรือ 'deep'
      * @param  string|null  $birthDate  วันเดือนปีเกิด
+     * @param  string|null  $userContext  🎯 Phase H — สำหรับ jitter ใน key ordering
      * @return array ผลลัพธ์จาก AI
      *
      * @throws Exception เมื่อทุก provider ล้มเหลวหมด
@@ -917,26 +934,29 @@ class FortuneAIService
         ?array $userPosts = null,
         ?string $promptTemplate = null,
         string $readingType = 'basic',
-        ?string $birthDate = null
+        ?string $birthDate = null,
+        ?string $userContext = null
     ): array {
         $errors = [];
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
         $config = self::READING_CONFIG[$readingType] ?? self::READING_CONFIG['basic'];
         $startTime = microtime(true);
 
-        // ✅ รวม keys ทั้งหมดจาก Pool + Settings + Global Settings เป็นรายการเดียว
-        // เรียงลำดับ: primary provider keys ก่อน → providers อื่น
-        // วนลองทุก key — สลับทันทีเมื่อโดน 429 ไม่ต้องรอ 60 วินาที
-        $allKeys = $this->getAllAvailableKeys();
+        // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
+        //    key ที่โหลดน้อย/ไม่ 429 → มาก่อน; users ต่างคน key ต่างลำดับ
+        $allKeys = $this->getAllAvailableKeys($userContext);
 
-        Log::info('FortuneAI: เริ่มสร้างคำทำนาย — รวม keys ทั้งหมด', [
+        Log::info('FortuneAI: เริ่มสร้างคำทำนาย — Smart pool ordering', [
             'primary_provider' => $this->provider,
             'total_keys' => count($allKeys),
-            'keys' => array_map(fn ($k) => "{$k['provider']}/{$k['name']}({$k['source']})", $allKeys),
+            'has_user_context' => $userContext !== null,
+            'top_keys' => array_map(
+                fn ($k) => "{$k['provider']}/{$k['name']}(score={$k['score']})",
+                array_slice($allKeys, 0, 3)
+            ),
         ]);
 
         if (empty($allKeys)) {
-            // Fallback: ถ้าไม่มี key จาก Pool/Settings เลย ลอง key เดิมจาก constructor
             if (! empty($this->apiKey)) {
                 $allKeys = [[
                     'provider' => $this->provider,
@@ -945,14 +965,18 @@ class FortuneAIService
                     'pool_key' => $this->currentKey,
                     'source' => 'constructor',
                     'name' => 'Constructor Key',
+                    'score' => 0,
                 ]];
             } else {
                 throw new Exception('ไม่มี API Key ที่ใช้ได้เลย — กรุณาเพิ่ม key ในระบบ AI API Key Pool');
             }
         }
 
-        // วนลอง keys ทั้งหมด — สลับทันทีเมื่อโดน error/429
+        // วนลอง keys — สลับทันทีเมื่อ error/429 (คงเหลือ smart tracking)
         foreach ($allKeys as $index => $keyInfo) {
+            // 🎯 Phase H — Acquire in-flight slot (ป้องกัน hammer key เดียว)
+            $inflightCache = $this->acquireKeyInflight($keyInfo);
+
             try {
                 $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
                 $keyNum = $index + 1;
@@ -963,15 +987,17 @@ class FortuneAIService
                     $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config
                 );
 
-                // สำเร็จ! — บันทึก usage
+                // สำเร็จ! — บันทึก usage + release in-flight
                 $responseTime = (int) ((microtime(true) - $startTime) * 1000);
                 if ($keyInfo['pool_key'] instanceof AiApiKey) {
                     $this->recordUsageForKey($keyInfo['pool_key'], $result['tokens_used'] ?? 0, $result['model'] ?? $keyInfo['model'], $responseTime, $readingType);
                 }
+                $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
                 Log::info("FortuneAI: สำเร็จ! ใช้ key [{$keyNum}/{$totalKeys}] {$keyLabel}", [
                     'tokens_used' => $result['tokens_used'] ?? 0,
                     'response_time_ms' => $responseTime,
+                    'score' => $keyInfo['score'] ?? 0,
                 ]);
 
                 return $result;
@@ -981,10 +1007,11 @@ class FortuneAIService
                 $totalKeys = count($allKeys);
                 $errors[] = "{$keyLabel}: " . Str::limit($e->getMessage(), 150);
 
-                // บันทึก error ลง Pool key (ถ้ามี)
+                // บันทึก error ลง Pool key + release in-flight + possible cooldown
                 if ($keyInfo['pool_key'] instanceof AiApiKey) {
                     $this->recordErrorForKey($keyInfo['pool_key'], $e->getMessage(), $keyInfo['model']);
                 }
+                $this->releaseKeyInflight($keyInfo, $inflightCache, false, $e->getMessage());
 
                 $is429 = str_contains($e->getMessage(), '429') || str_contains($e->getMessage(), 'rate_limit');
                 Log::warning("FortuneAI: key [{$keyNum}/{$totalKeys}] {$keyLabel} ล้ม", [
@@ -1121,14 +1148,28 @@ class FortuneAIService
         }
     }
 
-    protected function getAllAvailableKeys(): array
+    /**
+     * 🎯 Phase H — Smart load-balanced key ordering สำหรับ concurrent scale (1000+ users)
+     *
+     * แทนที่ "เรียงตาม priority อย่างเดียว" (ทำให้ทุกคนชน key #1 พร้อมกัน)
+     * ด้วยคะแนน load score ที่คำนึงถึง:
+     *   - in-flight requests ต่อ key (ใช้อยู่กี่คน)
+     *   - requests per minute ต่อ key (ใกล้ rate limit ไหม)
+     *   - consecutive_errors (กำลังมีปัญหาไหม)
+     *   - priority (admin-set)
+     *   - per-user jitter (crc32 ของ userId → คนละ user เห็นลำดับต่างกันเวลา score เท่ากัน)
+     *
+     * Cooldown ต่อ key: ถ้าโดน 429 เมื่อไม่นาน → pause key นั้น 30s (กัน thundering herd)
+     *
+     * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId) — ถ้า null = ไม่มี jitter
+     */
+    protected function getAllAvailableKeys(?string $userContext = null): array
     {
         $keys = [];
-        $addedApiKeys = []; // เก็บ api_key ที่เพิ่มแล้ว ป้องกันซ้ำ
+        $addedApiKeys = [];
         $primaryProvider = $this->provider;
 
         // Circuit Breaker: skip providers ที่เพิ่งโดน 429 หนัก
-        // (ถูก mark ไว้ใน cache 2 นาที เพื่อให้ rate limit reset)
         $downProviders = $this->getDownProviders();
         if (! empty($downProviders)) {
             Log::info('FortuneAI: Circuit Breaker active — skipping providers', [
@@ -1138,7 +1179,6 @@ class FortuneAIService
 
         // 1) ดึงจาก API Key Pool — ทุก provider (primary ก่อน)
         try {
-            // เรียง: primary provider ก่อน → providers อื่น
             $providerOrder = array_merge(
                 [$primaryProvider],
                 array_filter(
@@ -1148,21 +1188,22 @@ class FortuneAIService
             );
 
             foreach ($providerOrder as $provider) {
-                // Circuit Breaker: skip ถ้า provider โดน 429 หนัก
                 if (in_array($provider, $downProviders, true)) {
                     continue;
                 }
 
-                // ดึง ALL available keys ของ provider นี้ (ไม่ใช่แค่ 1 key)
-                $poolKeys = AiApiKey::forProvider($provider)
-                    ->available()
-                    ->orderByDesc('priority')
-                    ->get();
+                $poolKeys = AiApiKey::forProvider($provider)->available()->get();
 
                 foreach ($poolKeys as $poolKey) {
                     if (in_array($poolKey->api_key, $addedApiKeys)) {
                         continue;
                     }
+
+                    // 🛡️ ข้าม key ที่อยู่ใน per-key cooldown (429 ล่าสุด)
+                    if (cache()->has("pool:cooldown:{$provider}:{$poolKey->id}")) {
+                        continue;
+                    }
+
                     $keys[] = [
                         'provider' => $provider,
                         'api_key' => $poolKey->api_key,
@@ -1170,6 +1211,12 @@ class FortuneAIService
                         'pool_key' => $poolKey,
                         'source' => 'pool',
                         'name' => $poolKey->name ?? "Pool #{$poolKey->id}",
+                        'score' => $this->computeKeyScore(
+                            $provider,
+                            $poolKey,
+                            $provider === $primaryProvider,
+                            $userContext
+                        ),
                     ];
                     $addedApiKeys[] = $poolKey->api_key;
                 }
@@ -1179,6 +1226,7 @@ class FortuneAIService
         }
 
         // 2) ดึงจาก Fortune Settings (กรณี use_global_ai_settings = false)
+        //    score ต่ำกว่า pool keys เพื่อให้ pool มาก่อน (ถ้าลูกค้าจัด pool)
         if (! empty($this->settings->ai_api_key) && ! empty($this->settings->ai_provider)) {
             $settingsKey = $this->settings->ai_api_key;
             if (! in_array($settingsKey, $addedApiKeys)) {
@@ -1189,6 +1237,7 @@ class FortuneAIService
                     'pool_key' => null,
                     'source' => 'fortune_settings',
                     'name' => 'Fortune Settings Key',
+                    'score' => -100, // รองจาก pool
                 ];
                 $addedApiKeys[] = $settingsKey;
             }
@@ -1196,7 +1245,6 @@ class FortuneAIService
 
         // 3) ดึงจาก Global AI Settings (Gemini, Claude/OpenRouter)
         try {
-            // Gemini key จาก global settings
             $geminiKey = AiContentSetting::getValue('gemini_api_key');
             if (! empty($geminiKey) && ! in_array($geminiKey, $addedApiKeys)) {
                 $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
@@ -1207,11 +1255,11 @@ class FortuneAIService
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Gemini Key',
+                    'score' => -200, // last resort
                 ];
                 $addedApiKeys[] = $geminiKey;
             }
 
-            // Claude/OpenRouter key จาก global settings
             $claudeKey = AiContentSetting::getValue('claude_api_key');
             if (! empty($claudeKey) && ! in_array($claudeKey, $addedApiKeys)) {
                 $keys[] = [
@@ -1221,6 +1269,7 @@ class FortuneAIService
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Claude/OpenRouter Key',
+                    'score' => -200,
                 ];
                 $addedApiKeys[] = $claudeKey;
             }
@@ -1228,7 +1277,126 @@ class FortuneAIService
             Log::debug('FortuneAI: Global settings ดึง keys ไม่ได้', ['error' => $e->getMessage()]);
         }
 
+        // 🎯 Phase H — เรียงตาม score DESC (สูงสุดก่อน = โหลดเบาสุด)
+        usort($keys, fn ($a, $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
+
         return $keys;
+    }
+
+    /**
+     * 🎯 Phase H — คำนวณ load score ของ key (สูง = ดี = เลือกก่อน)
+     *
+     * Factors:
+     *   + priority × 10          — admin-set preference
+     *   + primary_boost (50)     — ถ้าเป็น provider หลักที่ admin เลือก
+     *   + jitter (0-9)           — per-user variance (ทำให้ users ต่าง key ต่างกัน)
+     *   - inflight × 100         — requests ที่กำลังวิ่งอยู่ (ตัวหลัก → กระจายโหลด)
+     *   - rpm × 5                — requests ใน 60s ล่าสุด (กัน rate limit)
+     *   - errors × 50            — consecutive errors (กันใช้ key ที่กำลังเสีย)
+     */
+    protected function computeKeyScore(
+        string $provider,
+        AiApiKey $poolKey,
+        bool $isPrimaryProvider,
+        ?string $userContext = null
+    ): int {
+        $inflight = (int) cache()->get("pool:inflight:{$provider}:{$poolKey->id}", 0);
+        $rpm = (int) cache()->get("pool:rpm:{$provider}:{$poolKey->id}", 0);
+        $errors = (int) ($poolKey->consecutive_errors ?? 0);
+        $priority = (int) ($poolKey->priority ?? 0);
+
+        $score = ($priority * 10)
+            - ($inflight * 100)
+            - ($rpm * 5)
+            - ($errors * 50);
+
+        if ($isPrimaryProvider) {
+            $score += 50;
+        }
+
+        // Per-user jitter — ทำให้ user ต่างคน เห็นลำดับต่างกันเมื่อ score เท่ากัน
+        if ($userContext !== null && $userContext !== '') {
+            $jitter = abs(crc32($userContext.'|'.$provider.'|'.$poolKey->id)) % 10;
+            $score += $jitter;
+        }
+
+        return $score;
+    }
+
+    /**
+     * 🎯 Phase H — Increment in-flight counter ก่อนยิง API (ใช้ใน fallback loop)
+     *
+     * @return string|null  cache key (pass เข้า release) หรือ null ถ้าไม่ใช่ pool key
+     */
+    protected function acquireKeyInflight(array $keyInfo): ?string
+    {
+        $poolKey = $keyInfo['pool_key'] ?? null;
+        if (! $poolKey instanceof AiApiKey) {
+            return null;
+        }
+
+        $provider = $keyInfo['provider'];
+        $cacheKey = "pool:inflight:{$provider}:{$poolKey->id}";
+
+        if (cache()->has($cacheKey)) {
+            cache()->increment($cacheKey);
+        } else {
+            cache()->put($cacheKey, 1, 30);  // TTL 30s ป้องกัน leak
+        }
+
+        return $cacheKey;
+    }
+
+    /**
+     * 🎯 Phase H — Decrement in-flight + record RPM หลัง API call เสร็จ
+     *
+     * @param  bool  $success     true = สำเร็จ (เพิ่ม RPM), false = error (skip RPM)
+     * @param  string|null  $errorMessage  ถ้ามี "429/rate limit" → set cooldown 30s
+     */
+    protected function releaseKeyInflight(
+        array $keyInfo,
+        ?string $inflightCacheKey,
+        bool $success,
+        ?string $errorMessage = null
+    ): void {
+        if (! $inflightCacheKey) {
+            return;
+        }
+
+        // Decrement in-flight
+        $current = (int) cache()->get($inflightCacheKey, 0);
+        if ($current > 1) {
+            cache()->decrement($inflightCacheKey);
+        } else {
+            cache()->forget($inflightCacheKey);
+        }
+
+        $poolKey = $keyInfo['pool_key'] ?? null;
+        if (! $poolKey instanceof AiApiKey) {
+            return;
+        }
+        $provider = $keyInfo['provider'];
+
+        if ($success) {
+            // Increment RPM (TTL 60s)
+            $rpmKey = "pool:rpm:{$provider}:{$poolKey->id}";
+            if (cache()->has($rpmKey)) {
+                cache()->increment($rpmKey);
+            } else {
+                cache()->put($rpmKey, 1, 60);
+            }
+        } elseif ($errorMessage !== null) {
+            // Per-key cooldown ถ้าโดน rate limit (429) — 30s
+            $msg = mb_strtolower($errorMessage);
+            if (str_contains($msg, '429') || str_contains($msg, 'rate limit') || str_contains($msg, 'quota')) {
+                cache()->put("pool:cooldown:{$provider}:{$poolKey->id}", true, 30);
+                Log::info('FortuneAI: Per-key cooldown 30s (429)', [
+                    'provider' => $provider,
+                    'key_id' => $poolKey->id,
+                    'error_preview' => mb_substr($errorMessage, 0, 80),
+                ]);
+            }
+        }
     }
 
     /**

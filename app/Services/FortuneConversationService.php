@@ -5985,11 +5985,16 @@ class FortuneConversationService
             // 🎯 Phase D — เรียก AI Chat พร้อม fallback ไป AI Pool
             // ถ้า chat_ai_provider ที่ตั้งไว้ล้มเหลว (empty key / 429 / error)
             // → วน loop ใช้ key จาก AI Pool (Gemini, Groq, Grok ฯลฯ) เป็น chat แทน
+            // 🎯 Phase H — ส่ง userId เป็น context เพื่อให้ key ordering กระจายตาม user
+            //    (users ต่างคน → key ต่างลำดับ → ลด thundering herd)
             $aiService = new FortuneAIService($this->settings);
             $result = $aiService->generateChatResponseWithPoolFallback(
                 $messageForAI,
                 $userProfile,
-                $history
+                $history,
+                15000,  // totalTimeoutMs (Phase G)
+                4,      // maxPoolAttempts (Phase G)
+                $userId // userContext (Phase H)
             );
 
             // ✅ Gatekeeper: บันทึกว่าเรียก AI สำเร็จ
