@@ -1072,8 +1072,15 @@ class FortuneConversationService
                         ];
                     }
 
-                    // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย") → fortune flow เลย
+                    // ✅ ถ้าเป็นคำขอดูดวงชัดเจน → fortune flow เลย
+                    // 🎯 Phase O — "ดูดวง" / "ดูดวงความรัก" etc. → deep flow ตรง
+                    //    ไม่ต้องกด "ดูดวงละเอียด" อีก (ถ้า deep ถูกเปิด)
+                    //    ถ้า deep ปิดอยู่ → ใช้ basic flow เดิม (askForQuestionBeforeReading)
                     if ($this->isGenericFortuneRequest($messageText)) {
+                        if ($this->settings->isDeepReadingEnabled()) {
+                            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                        }
+
                         return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
                     }
 
@@ -1186,7 +1193,14 @@ class FortuneConversationService
             }
 
             // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย", "หมอดู") → ไป fortune flow เลย
+            // 🎯 Phase O — "ดูดวง" / "ดูดวงความรัก" etc. → deep flow ตรง
+            //    ไม่ต้องกด "ดูดวงละเอียด" อีก (ถ้า deep ถูกเปิด)
+            //    ถ้า deep ปิดอยู่ → ใช้ basic flow เดิม (askForQuestionBeforeReading) + canMakeAICall guard
             if ($this->isGenericFortuneRequest($messageText)) {
+                if ($this->settings->isDeepReadingEnabled()) {
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                }
+
                 if (! $this->canMakeAICall($facebookUserId)) {
                     return [
                         'action' => 'ai_limit',
