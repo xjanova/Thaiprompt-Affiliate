@@ -320,23 +320,19 @@ class FortuneUserCredit extends Model
      *
      * - ถ้ายังไม่เคย DM → ตั้ง first_dm_at
      * - อัปเดต last_dm_at = ปัจจุบัน
-     * - เพิ่ม dm_count
+     * - เพิ่ม dm_count (atomic — กัน race condition จาก concurrent DMs)
      *
      * เรียกจาก FortuneConversationService::processMessage() ทุกครั้งที่มี DM เข้ามา
      */
     public function recordDm(): self
     {
-        $updates = [
+        // ✅ Atomic increment ผ่าน SQL — ปลอดภัยกับ concurrent DMs
+        //   ใช้ $this->increment() แทน $this->update(['dm_count' => ...+1]) ที่ race ได้
+        $this->increment('dm_count', 1, [
             'last_dm_at' => now(),
-            'dm_count' => (int) ($this->dm_count ?? 0) + 1,
-        ];
-
-        // ตั้ง first_dm_at เฉพาะครั้งแรก
-        if (empty($this->first_dm_at)) {
-            $updates['first_dm_at'] = now();
-        }
-
-        $this->update($updates);
+            // ตั้ง first_dm_at เฉพาะครั้งแรก (ใช้ COALESCE ผ่าน PHP — ถ้า null ตอนนี้ ให้ใส่ now)
+            'first_dm_at' => $this->first_dm_at ?? now(),
+        ]);
 
         return $this->fresh();
     }
