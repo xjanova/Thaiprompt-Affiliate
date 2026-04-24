@@ -40,19 +40,35 @@ class FortuneExpireConversations extends Command
         $dryRun = (bool) $this->option('dry-run');
 
         // ========================================
-        // 1+2. ปิด conversation + PAID timeout (ใช้ model method เพื่อ DRY)
+        // 🎯 Phase J — ยกเลิกบิล pending_payment ที่ค้างเกิน 30 นาที
+        //    (cancel UPA + ส่ง FCM แจ้งแอพ SMS Checker) ก่อนปิด conversation
+        // ========================================
+        $cancelledBills = 0;
+
+        if ($dryRun) {
+            $cancelledBills = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->where('is_paid', false)
+                ->whereNotNull('unique_payment_amount_id')
+                ->where('updated_at', '<', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES))
+                ->count();
+        } else {
+            $cancelledBills = FortuneReading::cancelExpiredPendingBills();
+        }
+
+        // ========================================
+        // 1+2. ปิด conversation + PAID timeout (ส่วนที่ไม่ใช่บิล)
         // ========================================
         $expiredCount = 0;
 
         if ($dryRun) {
-            // Dry-run: นับอย่างเดียว ไม่อัพเดต (รวม 2 query แยก)
+            // Dry-run: นับอย่างเดียว ไม่อัพเดต
+            // หมายเหตุ: pending_payment ที่มีบิลถูกนับไปแล้วใน $cancelledBills — ไม่นับซ้ำ
             $expiredCount = FortuneReading::whereIn('conversation_status', [
                 FortuneReading::STATUS_AWAITING_CONFIRMATION,
                 FortuneReading::STATUS_BASIC_DONE,
                 FortuneReading::STATUS_COLLECTING_BIRTHDATE,
                 FortuneReading::STATUS_COLLECTING_QUESTIONS,
                 FortuneReading::STATUS_COLLECTING_TAROT,
-                FortuneReading::STATUS_PENDING_PAYMENT,
             ])
                 ->where('updated_at', '<', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES))
                 ->count()
@@ -74,14 +90,18 @@ class FortuneExpireConversations extends Command
         // สรุปผล
         // ========================================
         $prefix = $dryRun ? '[DRY-RUN] ' : '';
-        $total = $expiredCount + $takeoverCount;
+        $total = $cancelledBills + $expiredCount + $takeoverCount;
 
         if ($total > 0) {
             Log::info($prefix.'fortune:expire-conversations', [
+                'bills_cancelled' => $cancelledBills,
                 'conversations_expired' => $expiredCount,
                 'takeover_cleared' => $takeoverCount,
             ]);
 
+            if ($cancelledBills > 0) {
+                $this->info($prefix."ยกเลิกบิลค้าง: {$cancelledBills} (แจ้ง SMS Checker แล้ว)");
+            }
             $this->info($prefix."ปิด conversation: {$expiredCount}");
             $this->info($prefix."ล้าง takeover: {$takeoverCount}");
         }

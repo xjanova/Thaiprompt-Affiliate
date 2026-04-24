@@ -558,6 +558,93 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🎯 Phase J — ยกเลิกบิลดูดวงที่ค้างเกิน 30 นาทีพร้อมแจ้ง SMS Checker app
+     *
+     * ทำ 3 อย่างในคราวเดียว (สำหรับ cron):
+     *   1. ดึง reading ที่ conversation_status = pending_payment, is_paid = false,
+     *      มี unique_payment_amount_id, และ updated_at เก่ากว่า PAYMENT_TIMEOUT_MINUTES
+     *   2. สำหรับแต่ละ reading:
+     *      - cancel() UniquePaymentAmount ที่อยู่ 'reserved' → status = cancelled
+     *      - ส่ง FCM push "order_cancelled" ให้แอพ SMS Checker (ผ่าน
+     *        FcmNotificationService::notifyFortuneReadingCancelled)
+     *      - update conversation_status = completed
+     *   3. คืนจำนวนบิลที่ expire สำเร็จ
+     *
+     * ⚠️ ต่างจาก expireAllOldConversations(): ตัวนี้จัดการ **บิล** (UPA + FCM)
+     *    ส่วน expireAllOldConversations() จัดการ **conversation status** เฉย ๆ
+     *
+     * @return int  จำนวนบิลที่ถูกยกเลิก
+     */
+    public static function cancelExpiredPendingBills(): int
+    {
+        $expiredReadings = self::where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
+            ->with('uniquePaymentAmount')
+            ->get();
+
+        if ($expiredReadings->isEmpty()) {
+            return 0;
+        }
+
+        $cancelled = 0;
+        $fcmService = null;
+        try {
+            $fcmService = app(\App\Services\FcmNotificationService::class);
+        } catch (\Throwable $e) {
+            \Log::warning('FortuneReading::cancelExpiredPendingBills — FCM service unavailable', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        foreach ($expiredReadings as $reading) {
+            try {
+                // 1. ยกเลิก UniquePaymentAmount (ถ้ายัง reserved)
+                $upa = $reading->uniquePaymentAmount;
+                if ($upa && $upa->status === 'reserved') {
+                    $upa->cancel();
+                }
+
+                // 2. ปิด conversation
+                $reading->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+                // 3. แจ้ง SMS Checker app ว่าบิลถูกยกเลิก (สำคัญ — กันแอพเก็บบิลค้าง)
+                if ($fcmService) {
+                    try {
+                        $fcmService->notifyFortuneReadingCancelled($reading);
+                    } catch (\Throwable $fcmErr) {
+                        \Log::warning('FortuneReading::cancelExpiredPendingBills FCM push failed', [
+                            'reading_id' => $reading->id,
+                            'bill_reference' => $reading->bill_reference,
+                            'error' => $fcmErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                $cancelled++;
+
+                \Log::info('FortuneReading: บิลค้างเกิน 30 นาที → ยกเลิกอัตโนมัติ', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'facebook_user_id' => $reading->facebook_user_id,
+                    'amount' => $reading->amount_paid,
+                    'age_minutes' => (int) now()->diffInMinutes($reading->updated_at, true),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('FortuneReading::cancelExpiredPendingBills ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                continue;
+            }
+        }
+
+        return $cancelled;
+    }
+
+    /**
      * Helper รวม query logic (DRY ระหว่าง per-user และ global)
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $baseQuery
