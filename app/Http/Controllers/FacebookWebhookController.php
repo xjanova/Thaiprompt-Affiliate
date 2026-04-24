@@ -390,12 +390,8 @@ class FacebookWebhookController extends Controller
                 Log::debug('tryReactionDm: active check failed (non-blocking): '.$e->getMessage());
             }
 
-            // ลองส่ง DM แบบสั้น ชวนดูดวง — ตัดคำว่า "ฟรี" ออกถ้า admin ปิดบริการฟรี
-            $freeEnabled = $this->settings->isFreeReadingEnabled();
-            $invite = $freeEnabled
-                ? "แม่หมออยากให้ลองดูดวงฟรี — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮"
-                : "แม่หมออยากให้ลองดูดวง — พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🔮";
-            $message = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n".$invite;
+            // 🎯 Phase L — rotating reaction DM variants (คนละข้อความตาม userId)
+            $message = $this->pickReactionDmVariant($reaction->facebook_user_id);
 
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
@@ -430,6 +426,62 @@ class FacebookWebhookController extends Controller
                 'user_id' => $reaction->facebook_user_id,
             ]);
         }
+    }
+
+    /**
+     * 🎯 Phase L — เลือก reaction DM variant ตาม userId (stable per user)
+     *
+     * 4 variants สะท้อน: ค่ากาแฟ, ดาวเจ้าชนะ, timing, no-hedge
+     * ถ้าปิดบริการฟรี — ตัดคำว่า "ฟรี" ออก (guard isFreeReadingEnabled)
+     */
+    protected function pickReactionDmVariant(string $facebookUserId): string
+    {
+        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $price = (int) $this->getDeepReadingPriceFromSettings();
+        if ($price <= 0) {
+            $price = 39;
+        }
+
+        $variants = [
+            // v1: coffee + self-drawn card
+            "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
+                ."☕ ลองดูดวงดูไหม? {$price} บาท เท่าค่ากาแฟ 1 แก้ว\n"
+                ."แต่ได้คำทำนายจาก **ดาวเจ้าชนะของคุณ** + ไพ่ที่พลังจิตคุณเลือกเอง\n\n"
+                ."พิมพ์ \"ดูดวง\" ได้เลยค่ะ 🔮",
+
+            // v2: testimonial
+            "🌙 เห็นคุณกดไลก์ ขอบคุณนะคะ\n\n"
+                ."หลายคนบอกว่า คำทำนายของหมอจันทรา\n"
+                ."\"เจอจุดที่ไม่เคยคิดมาก่อน\" ✨\n\n"
+                ."💎 ดูดวงเชิงลึก {$price} บาท\n"
+                ."พิมพ์ \"ดูดวง\" เพื่อเริ่มนะคะ",
+
+            // v3: astrology transit
+            "✨ ขอบคุณที่สนใจเพจเราค่ะ\n\n"
+                ."ดาวช่วงนี้โคจรส่งผลพิเศษต่อหลายราศี\n"
+                ."อยากรู้ไหมว่า ดาวของคุณจะพาไปทางไหน?\n\n"
+                ."🔮 {$price} บาท วิเคราะห์จาก ดาวเจ้าชนะ + ไพ่ยิปซี\n"
+                ."พิมพ์ \"ดูดวง\" ได้เลยนะคะ",
+
+            // v4: emotional
+            "🙏 ขอบคุณที่กดไลก์ค่ะ 💫\n\n"
+                ."มีเรื่องในใจที่อยากระบาย แต่ไม่รู้จะไปปรึกษาใคร?\n"
+                ."หมอจันทราฟัง + ชี้ทางออกจาก ดวงของคุณเอง\n\n"
+                ."{$price} บาท = ค่าที่ปรึกษาที่ตั้งใจ\n"
+                ."พิมพ์ \"ดูดวง\" ลองดูนะคะ",
+        ];
+
+        // ถ้าเปิดฟรี เพิ่ม variant ฟรีเข้าไปด้วย
+        if ($freeEnabled) {
+            $variants[] = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
+                ."🔮 วันนี้หมอเปิดดูดวงฟรีให้\n"
+                ."พิมพ์ \"ดูดวง\" มาได้เลยค่ะ\n\n"
+                ."หรือถ้าอยากลึกกว่า → ดูดวงเชิงลึก {$price} บาท";
+        }
+
+        $idx = abs(crc32($facebookUserId)) % count($variants);
+
+        return $variants[$idx];
     }
 
     /**
@@ -676,7 +728,8 @@ class FacebookWebhookController extends Controller
         $dmMessage = str_replace(
             ['{name}', '{comment}'],
             [$name, $commentText],
-            $this->settings->getCommentDmTemplate()
+            // 🎯 Phase L — ส่ง userId ให้ getCommentDmTemplate เลือก variant (stable per user)
+            $this->settings->getCommentDmTemplate($fromId)
         );
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)

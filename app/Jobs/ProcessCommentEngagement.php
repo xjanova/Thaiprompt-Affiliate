@@ -135,7 +135,8 @@ class ProcessCommentEngagement implements ShouldQueue
                 $dmMessage = str_replace(
                     ['{name}', '{comment}'],
                     [$name, $commentText],
-                    $settings->getCommentDmTemplate()
+                    // 🎯 Phase L — ส่ง userId เพื่อเลือก variant (stable per user)
+                    $settings->getCommentDmTemplate($userId)
                 );
             }
 

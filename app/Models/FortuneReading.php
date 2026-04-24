@@ -655,7 +655,23 @@ class FortuneReading extends Model
     {
         $expiresAt = $reading->updated_at->copy()->addMinutes(self::PAYMENT_TIMEOUT_MINUTES);
         $remainingMinutes = (int) max(1, ceil(now()->diffInMinutes($expiresAt, false)));
-        $price = (int) ($reading->amount_paid ?? 49);
+
+        // 🎯 Phase L — ราคา: ใช้ amount ของ bill นั้นก่อน (คือราคาที่ลูกค้าเห็น)
+        //   ถ้าไม่มี → fallback ไปดึงจาก admin settings (deep_reading_price → reading_price)
+        //   ถ้า settings ก็ไม่มี → 39 (ค่าเริ่มต้นจริง ไม่ใช่ 49)
+        $price = (int) ($reading->amount_paid ?? 0);
+        if ($price <= 0) {
+            try {
+                $settings = \App\Models\FortuneTellingSetting::getSettings();
+                $settingPrice = (float) ($settings->deep_reading_price ?? 0);
+                if ($settingPrice <= 0) {
+                    $settingPrice = (float) ($settings->reading_price ?? 0);
+                }
+                $price = (int) ($settingPrice > 0 ? $settingPrice : 39);
+            } catch (\Throwable $e) {
+                $price = 39;
+            }
+        }
 
         $variants = [
             "🔮 บิลดูดวงยังรออยู่นะคะ — อีก {$remainingMinutes} นาทีจะหมดอายุ\n\n"
