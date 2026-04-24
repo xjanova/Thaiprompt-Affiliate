@@ -1002,6 +1002,39 @@ class FortuneConversationService
                     // ปิด conversation เก่า
                     $activeReading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
+                    // 🎯 Phase G — basic_done + พิมพ์วันเกิดเดี่ยวๆ → offer deep reading เลย
+                    //   (extension ของ Phase C ที่เดิมทำในเฉพาะ no-active-reading)
+                    $standaloneBirthdate = $this->parseStandaloneBirthdate($messageText);
+                    if ($standaloneBirthdate) {
+                        Cache::put(
+                            "fortune:pending_birthdate:{$this->currentPlatform}:{$facebookUserId}",
+                            $standaloneBirthdate,
+                            now()->addMinutes(15)
+                        );
+                        $formattedDate = $this->formatThaiDate($standaloneBirthdate);
+                        $deepEnabled = $this->settings->isDeepReadingEnabled();
+                        $freeEnabled = $this->settings->isFreeReadingEnabled();
+
+                        $msg = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
+                        if ($deepEnabled) {
+                            $price = (int) $this->getDeepReadingPrice();
+                            $msg .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n\n"
+                                . "👇 กดปุ่มด้านล่าง";
+                        } elseif ($freeEnabled) {
+                            $msg .= "🔮 อยากให้หมอดูดวงจากวันเกิดนี้ไหม?\n👇 กดปุ่มด้านล่าง";
+                        } else {
+                            $msg .= '🙏 ขณะนี้บริการปิดชั่วคราว';
+                        }
+
+                        return [
+                            'action' => 'birthdate_detected',
+                            'message' => $msg,
+                            'reading' => null,
+                            'show_quick_replies' => ($deepEnabled || $freeEnabled),
+                            'pending_birthdate' => $standaloneBirthdate,
+                        ];
+                    }
+
                     // ✅ ถ้าเป็นคำขอดูดวงชัดเจน (เช่น "ดูดวง", "ทำนาย") → fortune flow เลย
                     if ($this->isGenericFortuneRequest($messageText)) {
                         return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);

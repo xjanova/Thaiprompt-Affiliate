@@ -433,22 +433,32 @@ class FortuneAIService
      *
      * Flow:
      * 1. ลอง chat_ai_provider ที่ admin ตั้งไว้ก่อน (เช่น Gemini)
-     * 2. ถ้าล้มเหลว (empty key, 429, error) → วน loop ทุก key ใน AI Pool
+     * 2. ถ้าล้มเหลว (empty key, 429, error) → วน loop key ใน AI Pool จนหมด หรือเกิน budget
      * 3. ใช้ key แรกที่ได้ผล — ทุกรายการใน pool เป็นได้ทั้ง chat (เรียก endpoint เดียวกัน)
      *
-     * เหตุผล: ลูกค้าพิมพ์ข้อความนอกเหนือ (เช่น "แม่นมั้ย", "ราคาเท่าไร") ควรได้คำตอบ
-     * จาก AI เสมอ ไม่ใช่ pattern ตายตัว — แม้ chat AI หลักจะใช้ไม่ได้ ก็ยัง fallback
-     * ไปใช้ pool keys ของ prediction provider ได้
+     * 🛡️ Phase G — ป้องกัน FB webhook timeout (20 วินาที):
+     * - total-time budget (default 15 วินาที) — เกินแล้วหยุด loop (caller ตอบ pattern fallback)
+     * - max attempts (default 4 keys) — กัน pool ยาวเป็น 10 keys
      *
+     * @param  int  $totalTimeoutMs  งบเวลารวมสูงสุด (default 15000 = 15s, เหลือ 5s ให้ FB)
+     * @param  int  $maxPoolAttempts  จำกัดจำนวน pool key ที่ลอง (default 4)
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
-     * @throws Exception เมื่อทั้ง chat หลักและ pool ล้มเหลวหมด
+     * @throws Exception เมื่อทั้ง chat หลักและ pool ล้มเหลวหมด หรือเกิน budget
      */
     public function generateChatResponseWithPoolFallback(
         string $messageText,
         ?array $userProfile = null,
-        array $history = []
+        array $history = [],
+        int $totalTimeoutMs = 15000,
+        int $maxPoolAttempts = 4
     ): array {
+        $startTime = microtime(true);
+
+        $elapsedMs = function () use ($startTime): int {
+            return (int) ((microtime(true) - $startTime) * 1000);
+        };
+
         // Step 1: ลอง chat AI หลัก
         try {
             if (! empty($history)) {
@@ -459,10 +469,16 @@ class FortuneAIService
         } catch (Exception $primaryErr) {
             Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
                 'primary_error' => mb_substr($primaryErr->getMessage(), 0, 150),
+                'elapsed_ms' => $elapsedMs(),
             ]);
         }
 
-        // Step 2: วน loop keys ทั้งหมดจาก AI Pool
+        // เกิน budget แล้วตั้งแต่ step 1 (primary timeout) → เลิก ไม่ต้อง pool
+        if ($elapsedMs() >= $totalTimeoutMs) {
+            throw new Exception("AI Chat primary timeout ({$elapsedMs()}ms) — ไม่มีเวลาลอง pool fallback");
+        }
+
+        // Step 2: วน loop keys ทั้งหมดจาก AI Pool (มี budget + attempt cap)
         $customPrompt = $this->settings->getChatSystemPrompt();
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
 
@@ -484,7 +500,28 @@ class FortuneAIService
         }
 
         $errors = [];
+        $attempts = 0;
         foreach ($allKeys as $keyInfo) {
+            // 🛡️ Phase G — ตรวจ budget + attempt cap ก่อนยิงแต่ละครั้ง
+            $currentElapsed = $elapsedMs();
+            if ($currentElapsed >= $totalTimeoutMs) {
+                Log::warning('FortuneAIService: Chat pool fallback เกิน budget → หยุด', [
+                    'elapsed_ms' => $currentElapsed,
+                    'budget_ms' => $totalTimeoutMs,
+                    'attempts_made' => $attempts,
+                ]);
+                break;
+            }
+            if ($attempts >= $maxPoolAttempts) {
+                Log::info('FortuneAIService: Chat pool fallback ถึง max attempts → หยุด', [
+                    'attempts_made' => $attempts,
+                    'max_attempts' => $maxPoolAttempts,
+                ]);
+                break;
+            }
+
+            $attempts++;
+
             try {
                 $result = match ($keyInfo['provider']) {
                     'gemini' => empty($history)
@@ -499,6 +536,8 @@ class FortuneAIService
                     'provider' => $keyInfo['provider'],
                     'source' => $keyInfo['source'] ?? 'unknown',
                     'name' => $keyInfo['name'] ?? 'unknown',
+                    'attempts' => $attempts,
+                    'elapsed_ms' => $elapsedMs(),
                 ]);
 
                 return $result;
@@ -509,7 +548,10 @@ class FortuneAIService
             }
         }
 
-        throw new Exception('AI Chat และ Pool fallback ล้มเหลวหมด: '.implode(' | ', array_slice($errors, 0, 3)));
+        throw new Exception(
+            'AI Chat และ Pool fallback ล้มเหลวหมด (attempts='.$attempts.', elapsed='.$elapsedMs().'ms): '
+            .implode(' | ', array_slice($errors, 0, 3))
+        );
     }
 
     /**
