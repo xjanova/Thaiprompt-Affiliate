@@ -1262,7 +1262,10 @@ Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landin
     ->name('fortune.invite');
 
 // ========= THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =========
-Route::middleware(['auth','role:admin,super_admin'])
+// `throttle:60,1` caps a compromised or scripted admin account at 60
+// admin-panel requests/min — legitimate UI work never touches this
+// (saving one form = 1 req; even rapid typing is well under the cap).
+Route::middleware(['auth','role:admin,super_admin','throttle:60,1'])
     ->prefix('admin/thaiapp')->name('admin.thaiapp.')
     ->group(function () {
         Route::get('/', [\App\Http\Controllers\Admin\ThaiappManagerController::class, 'hub'])->name('hub');

@@ -142,6 +142,37 @@ Route::prefix('v1')->group(function () {
         Route::get('/latest-version', [\App\Http\Controllers\Api\V1\AppReleaseApiController::class, 'latest'])->name('api.v1.app.latest-version');
     });
 
+    // ========= THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =========
+    // App-facing AI endpoints called without user auth. Per-IP rate
+    // limited. These were previously hot-patched onto prod via tinker
+    // and got wiped by a `git reset --hard` during deploy — now tracked
+    // in git so they survive. See session_handoff_v1.0.21.
+    Route::get('/ai/nong-ying/persona',
+        [\App\Http\Controllers\Api\V1\NongYingController::class, 'persona'])
+        ->middleware('throttle:60,1')
+        ->name('api.v1.ai.nong-ying.persona');
+
+    Route::get('/ai/nong-ying/knowledge',
+        [\App\Http\Controllers\Api\V1\NongYingController::class, 'knowledgeSearch'])
+        ->middleware('throttle:30,1')
+        ->name('api.v1.ai.nong-ying.knowledge');
+
+    // On-device Gemma .task download proxy. Local-first: Nginx serves
+    // straight from public/ai-models/ when synced, else streams from HF
+    // with server-side HF_TOKEN. GET + HEAD both forwarded.
+    Route::match(['get', 'head'], '/ai/models/{tier}',
+        [\App\Http\Controllers\Api\AiModelProxyController::class, 'download'])
+        ->where('tier', 'gemma4_e2b|gemma4_e4b')
+        ->middleware('throttle:30,1')
+        ->name('api.v1.ai.models.download');
+
+    // Metadata (size, modified, HF URL) — guardAdmin() inside controller.
+    Route::get('/ai/models/{tier}/info',
+        [\App\Http\Controllers\Api\AiModelAdminController::class, 'show'])
+        ->where('tier', 'gemma4_e2b|gemma4_e4b')
+        ->name('api.v1.ai.models.info');
+    // ======= END THAIPROMPT_APP_AI_PUBLIC (v1.0.21 recovery) =======
+
     // Protected routes
     Route::middleware('auth:sanctum')->group(function () {
         // Auth
@@ -158,6 +189,12 @@ Route::prefix('v1')->group(function () {
         Route::post('/ai/tts', [\App\Http\Controllers\Api\V1\AiTtsApiController::class, 'speak'])
             ->middleware('throttle:20,1')
             ->name('api.v1.ai.tts');
+
+        // Admin-only model sync (gated by controller's guardAdmin()).
+        Route::post('/admin/ai/models/{tier}/sync',
+            [\App\Http\Controllers\Api\AiModelAdminController::class, 'sync'])
+            ->where('tier', 'gemma4_e2b|gemma4_e4b')
+            ->name('api.v1.admin.ai.models.sync');
 
         // Dashboard
         Route::get('/dashboard/statistics', [DashboardController::class, 'statistics']);

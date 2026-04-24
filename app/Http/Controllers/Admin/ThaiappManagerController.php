@@ -217,6 +217,22 @@ class ThaiappManagerController extends Controller
         if (! in_array($tier, ['gemma4_e2b', 'gemma4_e4b'], true)) {
             return back()->with('error', 'tier ไม่รู้จัก');
         }
+
+        // Concurrent-sync guard: each tier downloads a 2-3 GB .task file
+        // from HuggingFace into public/ai-models/. Two admins clicking
+        // "Sync now" simultaneously would either race on the same
+        // tmpfile (corruption) or double the HF bandwidth + disk write
+        // (2× 3 GB = 6 GB swing). flock with LOCK_NB returns instantly
+        // if another process already holds the lock, so the second
+        // click gets a friendly message instead of a silent download.
+        $lockDir  = storage_path('app');
+        @mkdir($lockDir, 0775, true);
+        $lockPath = "$lockDir/ai-models-sync-$tier.lock";
+        $fh = fopen($lockPath, 'c');
+        if (! $fh || ! flock($fh, LOCK_EX | LOCK_NB)) {
+            if ($fh) fclose($fh);
+            return back()->with('error', "sync {$tier} กำลังทำงานอยู่แล้ว · รอให้รอบก่อนเสร็จ (ดูขนาดไฟล์ใน public/ai-models/)");
+        }
         try {
             $admin = new \App\Http\Controllers\Api\AiModelAdminController;
             $resp = $admin->sync($request, $tier);
@@ -227,6 +243,9 @@ class ThaiappManagerController extends Controller
             return back()->with('error', "sync ล้ม: " . ($body['message'] ?? 'unknown'));
         } catch (\Throwable $e) {
             return back()->with('error', 'sync ล้ม: ' . $e->getMessage());
+        } finally {
+            flock($fh, LOCK_UN);
+            fclose($fh);
         }
     }
 
@@ -409,7 +428,11 @@ class ThaiappManagerController extends Controller
             'value'      => $data['value'] ?? '',
             'updated_at' => now(),
         ]);
-        \Illuminate\Support\Facades\Cache::forget('app_config');
+        // Cache key must match AppConfigApiController reader
+        // (`app_configs:{$env}`). Previous value `app_config` (singular,
+        // no env) was a no-op — admin edits stayed invisible for up to
+        // 60s of cache TTL.
+        \Illuminate\Support\Facades\Cache::forget('app_configs:' . app()->environment());
         return back()->with('success', 'อัพเดท config แล้ว');
     }
 
@@ -442,13 +465,14 @@ class ThaiappManagerController extends Controller
             'created_at'  => now(),
             'updated_at'  => now(),
         ]);
-        \Illuminate\Support\Facades\Cache::forget('app_config');
+        \Illuminate\Support\Facades\Cache::forget("app_configs:$env");
         return back()->with('success', 'เพิ่ม config แล้ว');
     }
 
     public function destroyConfig(int $id): RedirectResponse
     {
         DB::table('app_configs')->where('id', $id)->delete();
+        \Illuminate\Support\Facades\Cache::forget('app_configs:' . app()->environment());
         return back()->with('success', 'ลบ config แล้ว');
     }
 
