@@ -331,6 +331,21 @@ class FortuneChannelManager
                 // ยืนยันชำระเงินสำเร็จ → Payment Confirmed Template
                 'payment_confirmed_wait' => $this->sendFacebookPaymentConfirmedResponse($fbService, $richService, $userId, $result),
 
+                // 🔍 เช็คสถานะบิล (ผู้ใช้กดปุ่ม) — ตอบสถานะจริงพร้อมปุ่ม
+                'payment_check_processing' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                ]),
+                'payment_check_pending' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                ]),
+                'payment_check_expired' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                ]),
+
                 // เช็คสถานะ → เช็คสิทธิ์
                 'check_status' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
 
@@ -680,15 +695,12 @@ class FortuneChannelManager
     {
         $message = $result['message'] ?? '';
 
-        // ส่ง text ก่อน (มีรายละเอียดบัญชี)
-        if (! empty($message)) {
-            $fbService->sendMessage($userId, $message);
-            usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
-        }
-
-        $template = $richService->buildWaitingPaymentTemplate($result['remaining_time'] ?? 'ไม่ทราบ');
-
-        return $fbService->sendButtonTemplate($userId, $template);
+        // ส่ง text + Quick Replies "เช็คสถานะ / ยกเลิก" — ผู้ใช้กดปุ่มแทนพิมพ์เอง
+        // (เพราะถ้าพิมพ์เองอาจหลงทาง)
+        return $fbService->sendQuickReplies($userId, $message ?: 'รอชำระเงิน', [
+            ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_PAYMENT_STATUS'],
+            ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+        ]);
     }
 
     /**
@@ -930,6 +942,21 @@ class FortuneChannelManager
 
                 // รอชำระเงิน (เตือนซ้ำ) → Flex ยอดเงิน + เวลาเหลือ
                 'waiting_payment' => $this->sendLineWaitingPaymentResponse($lineService, $userId, $result, $replyToken),
+
+                // 🔍 เช็คสถานะบิล (ผู้ใช้กด "เช็คสถานะ") — ตอบสถานะจริง + ปุ่มเช็คอีกครั้ง
+                'payment_check_processing' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
+                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                ]),
+                'payment_check_pending' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
+                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
+                'payment_check_expired' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                ]),
 
                 // บิลหมดอายุ → Flex แจ้ง + ปุ่มเริ่มใหม่
                 'payment_expired' => $this->sendLinePaymentExpiredResponse($lineService, $userId, $result, $replyToken),
@@ -1734,6 +1761,14 @@ class FortuneChannelManager
 
         $flex = $lineService->buildWaitingPaymentFlexMessage($amount, $billRef, $expiresAt, $remainingMinutes);
 
+        // 🎯 Quick Reply ปุ่ม "เช็คสถานะ / ยกเลิก" — แนบกับ Flex เพื่อไม่ให้ผู้ใช้ต้องพิมพ์เอง
+        $quickReply = [
+            'items' => [
+                ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🔍 เช็คสถานะ', 'text' => 'เช็คสถานะ']],
+                ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
+            ],
+        ];
+
         // ส่ง PromptPay QR Code ซ้ำ (ถ้ามี) เพื่อให้ผู้ใช้สแกนจ่ายได้สะดวก
         $qrImageUrl = $result['payment_qr_url'] ?? null;
         if ($qrImageUrl && $replyToken) {
@@ -1747,6 +1782,7 @@ class FortuneChannelManager
                     'type' => 'flex',
                     'altText' => '💰 ยอดชำระ ฿'.number_format($amount, 2),
                     'contents' => $flex,
+                    'quickReply' => $quickReply,
                 ],
             ];
             $sent = $lineService->replyMessage($replyToken, $replyMessages);

@@ -3691,6 +3691,12 @@ class FortuneConversationService
             ];
         }
 
+        // 💰 ถ้าผู้ใช้พิมพ์เคลม "โอนแล้ว/จ่ายแล้ว/payment claim" → ตรวจสถานะจริง
+        //    ตอบตามจริง: paid แล้ว / กำลังตรวจสอบ / ยังไม่พบ
+        if ($this->isPaymentClaimRequest($messageText)) {
+            return $this->handlePaymentClaim($reading, $uniqueAmount);
+        }
+
         // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคาร+เวลาเหลือ
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
@@ -3740,12 +3746,12 @@ class FortuneConversationService
 
         $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันที ✨\n";
-        $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้\n\n";
+        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะตัดบิลและส่งคำทำนายให้ทันที ✨\n";
+        $message .= "💡 ต้องการเช็คว่าระบบตัดบิลแล้วหรือยัง — กดปุ่ม *\"เช็คสถานะ\"* ด้านล่าง\n\n";
         if ($remainingMinutes <= 10) {
             $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุ\n\n";
         }
-        $message .= "พิมพ์ 'ยกเลิก' หากต้องการยกเลิก";
+        $message .= "หรือกดปุ่ม *\"ยกเลิก\"* หากต้องการยกเลิก";
 
         // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน
         $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
@@ -5824,6 +5830,149 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * ตรวจว่าผู้ใช้กำลังเคลม "ฉันโอนแล้ว / จ่ายแล้ว / ตัดบิลหรือยัง"
+     *
+     * รองรับทั้งคำพิมพ์เองและ payload จากปุ่ม Quick Reply
+     *
+     * @param  string  $text  ข้อความผู้ใช้
+     * @return bool  true ถ้าเป็นคำขอเช็คสถานะการชำระ
+     */
+    protected function isPaymentClaimRequest(string $text): bool
+    {
+        $normalized = $this->normalizeUserInput($text);
+        $noSpace = str_replace(' ', '', $normalized);
+
+        $claimKeywords = [
+            // โอน/จ่ายแล้ว
+            'โอนแล้ว', 'จ่ายแล้ว', 'ชำระแล้ว', 'จ่ายเงินแล้ว', 'โอนเงินแล้ว',
+            'จ่ายเรียบร้อย', 'โอนเรียบร้อย', 'ชำระเรียบร้อย',
+            // เช็คสถานะ
+            'เช็คสถานะ', 'เช็คบิล', 'เช็คยอด', 'ตรวจสอบ', 'ตรวจสอบยอด',
+            'ตัดบิลหรือยัง', 'ตัดบิลหรือไม่', 'ระบบรับเงินหรือยัง', 'รับเงินหรือยัง',
+            // English / payload
+            'paid', 'transferred', 'check_payment', 'payment_check',
+        ];
+
+        foreach ($claimKeywords as $keyword) {
+            $kw = mb_strtolower($keyword);
+            if (str_contains($normalized, $kw) || str_contains($noSpace, str_replace(' ', '', $kw))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * จัดการเมื่อผู้ใช้เคลมว่าโอนแล้ว — ตรวจสถานะจริงจาก DB แล้วตอบตามจริง
+     *
+     * 4 กรณี:
+     *   1. paid แล้ว มีคำทำนายเสร็จ → "✅ ตัดบิลแล้ว คำทำนายพร้อม กดอ่าน"
+     *   2. paid แล้ว AI กำลังทำงาน (PAID/COMPLETED ที่ยังไม่มี deep_response) → "✅ ตัดบิลแล้ว แม่หมอกำลังคำนวณ"
+     *   3. ยังไม่ paid + UPA reserved + ในเวลา → "⏳ ยังไม่พบยอด — รอ 1-3 นาที / ตรวจอีกครั้ง"
+     *   4. ยังไม่ paid + UPA หมดอายุ → "⏰ บิลหมดอายุ"
+     *
+     * @param  FortuneReading  $reading
+     * @param  UniquePaymentAmount  $uniqueAmount
+     * @return array
+     */
+    protected function handlePaymentClaim(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): array
+    {
+        $reading->refresh();
+        $payAmount = number_format($uniqueAmount->unique_amount, 2);
+        $billRef = $reading->bill_reference ?? '-';
+        $userName = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+        // 🟢 กรณี 1+2: ระบบตัดบิลแล้ว (is_paid = true)
+        if ($reading->is_paid) {
+            // กรณี 1: คำทำนายเสร็จแล้ว
+            if (! empty($reading->deep_response)) {
+                $message = "✅ *ระบบตัดบิลแล้วเรียบร้อย*\n\n"
+                    . "🔖 เลขที่บิล: {$billRef}\n"
+                    . "💰 ยอดที่รับ: ฿{$payAmount}\n\n"
+                    . "🌟 คำทำนายของคุณ{$userName} *พร้อมแล้ว* — กดอ่านได้เลย ✨";
+
+                return [
+                    'action' => 'fortune_ready_notification',
+                    'message' => $message,
+                    'reading' => $reading,
+                    'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                ];
+            }
+
+            // กรณี 2: AI กำลังคำนวณอยู่
+            $paidAt = $reading->paid_at ?? $reading->updated_at;
+            $waitedSeconds = (int) max(0, now()->diffInSeconds($paidAt, false) * -1);
+            $waitedMinutes = (int) ceil($waitedSeconds / 60);
+
+            $message = "✅ *ระบบตัดบิลแล้วเรียบร้อย*\n\n"
+                . "🔖 เลขที่บิล: {$billRef}\n"
+                . "💰 ยอดที่รับ: ฿{$payAmount}\n\n"
+                . "═══════════════════════\n"
+                . "🌙 *แม่หมอจันทรากำลังคำนวณดวงดาวให้*\n"
+                . "═══════════════════════\n\n"
+                . "✨ เปิดดาวเจ้าชนะของเจ้าชะตา\n"
+                . "🃏 เรียงไพ่ยิปซีตามพลังจิต\n"
+                . "🔮 รวบรวมพลังจักรวาลเข้าสู่คำทำนาย\n\n";
+
+            if ($waitedMinutes > 0) {
+                $message .= "⏳ รอมาแล้ว {$waitedMinutes} นาที — โดยปกติใช้เวลา 1-3 นาที\n";
+            }
+
+            if ($waitedMinutes >= 4) {
+                $message .= "💡 หากนานกว่านี้ พิมพ์ 'คุยกับแม่หมอ' เพื่อให้ทีมงานช่วยเร่ง";
+            } else {
+                $message .= '🙏 ขอเจ้าชะตารอสักครู่ จะส่งคำทำนายให้ทันทีเมื่อพร้อม';
+            }
+
+            return [
+                'action' => 'payment_check_processing',
+                'message' => $message,
+                'reading' => $reading,
+            ];
+        }
+
+        // 🟡 กรณี 3+4: ยังไม่ตัดบิล (is_paid = false)
+        $remainingMinutes = (int) max(0, now()->diffInMinutes($uniqueAmount->expires_at, false));
+
+        if ($uniqueAmount->status === 'cancelled' || $uniqueAmount->status === 'expired') {
+            // กรณี 4: บิลถูกยกเลิก/หมดอายุแล้ว
+            return [
+                'action' => 'payment_check_expired',
+                'message' => "⏰ *บิลนี้หมดอายุไปแล้ว*\n\n"
+                    . "🔖 เลขที่บิล: {$billRef}\n"
+                    . "ระบบไม่สามารถจับคู่ยอดเงินได้\n\n"
+                    . "💡 หากโอนเข้าจริง ทีมงานจะตรวจให้\n"
+                    . "พิมพ์ 'คุยกับแม่หมอ' เพื่อแจ้งเรื่อง\n\n"
+                    . "🔮 หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ค่ะ",
+                'reading' => $reading,
+            ];
+        }
+
+        // กรณี 3: ยังไม่ paid + UPA ยัง reserved + ยังไม่หมดอายุ
+        $expiresAt = $uniqueAmount->expires_at->format('H:i');
+        $message = "⏳ *ระบบยังไม่พบยอดในบัญชี*\n\n"
+            . "🔖 เลขที่บิล: {$billRef}\n"
+            . "💰 ยอดที่รอ: ฿{$payAmount}\n"
+            . "⏰ บิลหมดอายุ: {$expiresAt} น. (เหลือ {$remainingMinutes} นาที)\n\n"
+            . "═══════════════════════\n"
+            . "🔍 *กำลังตรวจสอบทุก 30 วินาที*\n"
+            . "═══════════════════════\n\n"
+            . "ถ้าโอนแล้ว — ระบบจะแจ้งภายใน 1-3 นาที (รอ SMS เข้า)\n\n"
+            . "💡 *กรุณาตรวจสอบ:*\n"
+            . "  1️⃣ โอนยอดตรงเป๊ะ ฿{$payAmount} (รวมทศนิยม)\n"
+            . "  2️⃣ โอนเข้าบัญชีที่ระบบแจ้ง\n"
+            . "  3️⃣ ถ้ายังไม่ขึ้น ลองกดเช็คอีกใน 1-2 นาที\n\n"
+            . "พิมพ์ 'คุยกับแม่หมอ' หากต้องการแจ้งทีมงานโดยตรง";
+
+        return [
+            'action' => 'payment_check_pending',
+            'message' => $message,
+            'reading' => $reading,
+        ];
     }
 
     /**

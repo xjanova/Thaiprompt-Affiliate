@@ -571,10 +571,18 @@ class SmsPaymentService
             $channelManager = new FortuneChannelManager($settings);
 
             $userName = $reading->facebook_user_name ?? 'คุณ';
-            $paymentConfirmedMessage = "✅ ชำระเงินเรียบร้อยแล้วค่ะ คุณ{$userName}!\n\n"
-                .'💰 จำนวน: ฿'.number_format($amount, 2)."\n\n"
-                ."🔮 กำลังสร้างคำทำนายให้ค่ะ...\n"
-                .'จะแจ้งทันทีเมื่อพร้อมนะคะ ✨';
+            $billRef = $reading->bill_reference ?? '-';
+            $paymentConfirmedMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                ."🔖 เลขที่บิล: {$billRef}\n"
+                .'💰 ยอดที่ได้รับ: ฿'.number_format($amount, 2)."\n\n"
+                ."═══════════════════════\n"
+                ."🌙 *แม่หมอจันทรากำลังคำนวณดวงดาวให้*\n"
+                ."═══════════════════════\n\n"
+                ."✨ กำลังเปิดดาวเจ้าชนะของเจ้าชะตา\n"
+                ."🃏 เรียงไพ่ยิปซีตามพลังจิตที่เลือก\n"
+                ."🔮 รวบรวมพลังจักรวาลเข้าสู่คำทำนาย\n\n"
+                ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n"
+                ."จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏";
 
             $pushSent = $channelManager->sendResponse($platform, $userId, [
                 'action' => 'payment_confirmed_wait',
