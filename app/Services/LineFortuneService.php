@@ -2165,7 +2165,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => "ดูดวงละเอียด (ค่าครู {$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
-                            ['type' => 'text', 'text' => 'ถาม 2 คำถาม + วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999'],
+                            ['type' => 'text', 'text' => '1 คำถาม + ดาวเจ้าชนะ + ไพ่ยิปซีจริง', 'size' => 'xs', 'color' => '#999999'],
                         ],
                     ],
                 ],
@@ -2243,7 +2243,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => 'ดูดวงละเอียด', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
-                            ['type' => 'text', 'text' => "เริ่มต้น {$priceDisplay} บาท • ถาม 2 คำถาม", 'color' => '#FFFFFFCC', 'size' => 'xs'],
+                            ['type' => 'text', 'text' => "{$priceDisplay} บาท • 1 คำถามโฟกัสเดียว", 'color' => '#FFFFFFCC', 'size' => 'xs'],
                         ],
                     ],
                 ],
@@ -2269,7 +2269,8 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => "💎 สิ่งที่คุณจะได้รับ ({$priceDisplay} บาท)", 'size' => 'xs', 'weight' => 'bold', 'color' => '#E8890C'],
-                            ['type' => 'text', 'text' => '✅ ถามได้ 2 คำถาม วิเคราะห์เจาะลึก', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => '✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm', 'wrap' => true],
+                            ['type' => 'text', 'text' => '✅ ดาวเจ้าชนะ + ไพ่ยิปซีจริง (ไม่ยกเมฆ)', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm', 'wrap' => true],
                             ['type' => 'text', 'text' => '✅ สีมงคล เลขมงคล ฤกษ์ดี', 'size' => 'xs', 'color' => '#666666', 'margin' => 'sm'],
                         ],
                     ],
@@ -2372,8 +2373,8 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     ['type' => 'text', 'text' => "ค่าครู {$priceDisplay} บาท", 'size' => 'lg', 'weight' => 'bold', 'color' => '#E8890C', 'align' => 'center'],
                     ['type' => 'separator', 'margin' => 'md', 'color' => '#FFE082'],
-                    ['type' => 'text', 'text' => '📌 ถามได้ 2 คำถาม', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md'],
-                    ['type' => 'text', 'text' => '📌 วิเคราะห์จากวันเกิดเจาะลึก', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
+                    ['type' => 'text', 'text' => '📌 1 คำถามโฟกัสเดียว — แม่นยำกว่า', 'size' => 'sm', 'color' => '#555555', 'margin' => 'md', 'wrap' => true],
+                    ['type' => 'text', 'text' => '📌 ดาวเจ้าชนะของเจ้าชะตา + ไพ่ยิปซีจริง', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm', 'wrap' => true],
                     ['type' => 'text', 'text' => '📌 สีมงคล เลขมงคล ฤกษ์ดี', 'size' => 'sm', 'color' => '#555555', 'margin' => 'sm'],
                 ],
             ];
@@ -2475,7 +2476,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
                             ['type' => 'text', 'text' => "ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
-                            ['type' => 'text', 'text' => 'ถาม 2 คำถาม วิเคราะห์จากวันเกิด', 'size' => 'xs', 'color' => '#999999', 'wrap' => true],
+                            ['type' => 'text', 'text' => '1 คำถาม + ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก', 'size' => 'xs', 'color' => '#999999', 'wrap' => true],
                         ],
                     ],
                 ],

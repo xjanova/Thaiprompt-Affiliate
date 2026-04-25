@@ -371,6 +371,24 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '✨ เลือกไพ่ 2', 'payload' => 'DRAW_TAROT_2'],
                 ]),
 
+                // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" / "ยกเลิก"
+                'awaiting_tarot_intention' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🧘 พร้อมแล้ว', 'payload' => 'TAROT_READY'],
+                    ['content_type' => 'text', 'title' => '⏳ ยังไม่พร้อม', 'payload' => 'TAROT_NOT_READY'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                ]),
+
+                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
+                'awaiting_tarot_draw' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🃏 เปิดไพ่เลย', 'payload' => 'DRAW_TAROT'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                ]),
+
+                // 📜 บิลถูกยกเลิก / AI rebuttal → ข้อความ + ปุ่มเริ่มใหม่
+                'ai_rebuttal' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
+                ]),
+
                 // อื่นๆ → ส่ง text ธรรมดา
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏'),
             };
@@ -856,6 +874,24 @@ class FortuneChannelManager
 
                 // สุ่มไพ่ยิปซี → ส่งรูปไพ่ (ถ้ามี) + text + quick reply
                 'draw_tarot_card' => $this->sendLineTarotCardResponse($lineService, $userId, $result, $replyToken),
+
+                // 🧘 ตั้งจิตเลือกไพ่ — ส่ง text + quick reply "พร้อม"
+                'awaiting_tarot_intention' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🧘 พร้อมแล้ว', 'text' => 'พร้อม'],
+                    ['label' => '⏳ ยังไม่พร้อม', 'text' => 'ยังไม่พร้อม'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
+
+                // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
+                'awaiting_tarot_draw' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🃏 เปิดไพ่', 'text' => 'เปิดไพ่'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
+
+                // 📜 AI rebuttal หลังบิลถูกยกเลิก
+                'ai_rebuttal' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+                ]),
 
                 // ยืนยันดูดวง → ถ้าเป็น "รอคำถาม" ส่ง TopicFlex / ถ้าเป็นปกติ ส่ง ConfirmationFlex
                 'awaiting_confirmation' => $this->sendLineAwaitingResponse($lineService, $userId, $result, $replyToken),
@@ -1471,7 +1507,8 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
         $questionNumber = $result['question_number'] ?? 1;
-        $totalQuestions = 2; // ปัจจุบันเก็บ 2 คำถาม
+        // ดึงจำนวนคำถามจาก constant — ปัจจุบัน 1 ข้อ (admin ตั้งใน FortuneConversationService::REQUIRED_QUESTIONS)
+        $totalQuestions = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
 
         // ตรวจหาคำถามก่อนหน้า (ถ้าเป็นข้อ 2+)
         $previousQuestion = null;
@@ -2281,8 +2318,9 @@ class FortuneChannelManager
             '/(?:═{3,})/u', // เส้นแบ่ง
         ];
 
-        // วิธีง่ายที่สุด: ถ้ามี 2 คำถาม ลองแบ่งครึ่ง
-        // หรือ split ด้วย pattern คำถามที่พบ
+        // วิธีง่ายที่สุด: split ด้วย pattern คำถามที่พบ
+        // (เดิม 2 คำถาม → ตอนนี้ 1 คำถามเป็นค่า default — ยังคง pattern เดิมไว้
+        //  เผื่อ admin เปลี่ยน REQUIRED_QUESTIONS เป็น 2+ ในอนาคต)
         foreach ($patterns as $pattern) {
             $parts = preg_split($pattern, $deepResponse, -1, PREG_SPLIT_NO_EMPTY);
 

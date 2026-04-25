@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Log;
  * Flow:
  * 1. User พิมพ์ข้อความ → แจ้งสิทธิ์ดูดวงฟรีที่เหลือวันนี้ + ถามว่าจะดูไหม
  * 2. User ยืนยัน → ดึงโปรไฟล์ + ทำนายพื้นฐานฟรี
- * 3. เสนอดูดวงละเอียด 49 บาท → ถามวันเกิด + 2 คำถาม
+ * 3. เสนอดูดวงละเอียด (ราคาดึงจาก admin settings) → ถามวันเกิด + 1 คำถาม
  * 4. สร้างบิล + unique amount → แสดงบัญชีธนาคาร
  * 5. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
  *
@@ -47,14 +47,19 @@ class FortuneConversationService
     protected string $currentPlatform = 'line';
 
     /**
-     * ราคาดูดวงละเอียด (บาท)
+     * ราคาดูดวงละเอียด (บาท) — ค่า fallback สุดท้ายเมื่อ admin ไม่ได้ตั้งราคา
+     *
+     * ⚠️ ห้าม hardcode ราคาในข้อความ — ใช้ getDeepReadingPrice() เสมอ
+     *    (จะดึงจาก settings ก่อน — admin ตั้งราคาได้จากหน้า Admin → Fortune → Settings)
      */
-    public const DEEP_READING_PRICE = 49;
+    public const DEEP_READING_PRICE = 39;
 
     /**
-     * จำนวนคำถามที่ต้องการ
+     * จำนวนคำถามที่ต้องการ — ลดเหลือ 1 ข้อ เพื่อโฟกัสคำทำนายให้แม่นยำ
+     *
+     * ⚠️ ห้าม hardcode "1 คำถาม" หรือ "2 คำถาม" ในข้อความ — ใช้ self::REQUIRED_QUESTIONS เสมอ
      */
-    public const REQUIRED_QUESTIONS = 2;
+    public const REQUIRED_QUESTIONS = 1;
 
     /**
      * ความยาวคำถามขั้นต่ำ (ตัวอักษร) - ลดลงเพื่อให้คุยได้สะดวก
@@ -290,7 +295,7 @@ class FortuneConversationService
      * ลำดับการดึงราคา:
      * 1. deep_reading_price (ราคาเชิงลึกจากส่วน Freemium — ถ้าเปิดและตั้งราคาไว้)
      * 2. reading_price (ราคาดูดวงพื้นฐาน/ครั้ง — ตั้งจากหน้า settings หลัก)
-     * 3. DEEP_READING_PRICE constant (fallback สุดท้าย = 49 บาท)
+     * 3. DEEP_READING_PRICE constant (fallback สุดท้าย = 39 บาท)
      *
      * ⚠️ สำคัญ: ต้อง cast เป็น float เพราะ Laravel decimal:2 cast
      * จะคืนค่า "0.00" เป็น string ซึ่ง PHP ถือว่าเป็น truthy
@@ -885,6 +890,17 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════
+            // 🔽 ลำดับที่ 1.5: AI Rebuttal — ผู้ใช้ตอบโต้หลังบิลถูกยกเลิก
+            // ═══════════════════════════════════════════════════════════
+
+            // 🎯 ถ้าผู้ใช้เพิ่งถูกยกเลิกบิลใน 10 นาทีล่าสุด แล้วพิมพ์มาตอบโต้
+            //    → ให้ AI ตอบแบบนักปราชญ์ มีปรัชญา ไม่ใช่ default response
+            $rebuttalResult = $this->handleCancelledBillRebuttal($facebookUserId, $messageText, $userProfile);
+            if ($rebuttalResult) {
+                return $rebuttalResult;
+            }
+
+            // ═══════════════════════════════════════════════════════════
             // 🔽 ลำดับที่ 2: คำสั่งพิเศษ (เฉพาะเมื่อไม่มีคำทำนายค้างรอส่ง)
             // ═══════════════════════════════════════════════════════════
 
@@ -1165,9 +1181,10 @@ class FortuneConversationService
                         . "👇 กดเลือกด้านล่างได้เลย";
                 } elseif ($deepEnabled) {
                     $price = (int) $this->getDeepReadingPrice();
-                    $message .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n"
-                        . "• ถามได้ 2 คำถาม\n"
-                        . "• วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n\n"
+                    $qCount = self::REQUIRED_QUESTIONS;
+                    $message .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? ({$qCount} คำถาม {$price} บาท)\n"
+                        . "• โฟกัสคำถามเดียว — คำตอบแม่นยำกว่า\n"
+                        . "• วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเจ้าชะตาเลือกเอง\n\n"
                         . "👇 กดเลือกด้านล่าง";
                 } elseif ($freeEnabled) {
                     $message .= "🔮 อยากให้หมอดูดวงฟรีให้ไหม?\n"
@@ -1658,8 +1675,9 @@ class FortuneConversationService
             $message .= "⏰ สิทธิ์ฟรีวันนี้หมดแล้ว\n";
             if ($this->settings->isDeepReadingEnabled()) {
                 $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
-                $message .= "💎 *ดูดวงละเอียด เริ่มต้น {$price} บาท*\n";
-                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $qCount = self::REQUIRED_QUESTIONS;
+                $message .= "💎 *ดูดวงละเอียด {$qCount} คำถาม {$price} บาท*\n";
+                $message .= "📌 วิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีจริง ไม่ยกเมฆ\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
             } else {
@@ -2091,8 +2109,9 @@ class FortuneConversationService
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
                 $message .= "กลับมาใหม่พรุ่งนี้ได้ หรือ\n\n";
-                $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — ค่าครู {$price} บาท*\n";
-                $message .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+                $qCount = self::REQUIRED_QUESTIONS;
+                $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — {$qCount} คำถาม {$price} บาท*\n";
+                $message .= "📌 วิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเจ้าชะตาเลือก ไม่ยกเมฆ\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
             } else {
@@ -3408,8 +3427,8 @@ class FortuneConversationService
      * จัดการ input คำถาม — เก็บทีละข้อ
      *
      * รับข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split อีกต่อไป)
-     * ถ้ายังไม่ครบ 2 ข้อ → return action 'need_more_questions'
-     * ถ้าครบ 2 ข้อ → สร้างบิลรอชำระ
+     * ถ้ายังไม่ครบจำนวนตาม REQUIRED_QUESTIONS → return action 'need_more_questions'
+     * ถ้าครบ → ไปขั้นตั้งจิต+เปิดไพ่ → สร้างบิลรอชำระ
      */
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
@@ -3448,13 +3467,24 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            // ✅ หลังรับคำถาม → ให้สุ่มไพ่ยิปซีประกอบคำทำนาย (เฉพาะแบบเสียเงิน)
+            // ✅ หลังรับคำถาม → เข้าสู่ขั้น "ตั้งจิตเลือกไพ่" ก่อนเปิดไพ่ยิปซี
+            //    (ไพ่ที่จิตของเจ้าชะตาเลือกเอง ≠ สุ่มมั่ว)
             $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
+            $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
 
             return [
-                'action' => 'draw_tarot_card',
-                'message' => "✅ รับคำถามข้อที่ {$questionCount} แล้วค่ะ\n\n"
-                    . "🃏 กดสุ่มไพ่ยิปซี 1 ใบ เพื่อประกอบคำทำนายข้อนี้ ✨",
+                'action' => 'awaiting_tarot_intention',
+                'message' => "✅ รับคำถามแล้วค่ะ\n\n"
+                    . "═══════════════════════\n"
+                    . "🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                    . "═══════════════════════\n\n"
+                    . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                    . "นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
+                    . "🃏 ที่นี่ไพ่ที่ออก = ไพ่ที่จิตของเจ้าชะตาเลือกเอง\n"
+                    . "ไม่ต่างจากการจับไพ่จริงด้วยมือตัวเอง\n"
+                    . "เพราะเมื่อจิตตั้งมั่น พลังจิตจะนำทางไพ่ที่ตรงกับชะตา ✨\n\n"
+                    . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                    . "หรือกดปุ่มด้านล่าง 👇",
                 'reading' => $reading,
                 'question_number' => $questionCount,
             ];
@@ -3489,6 +3519,75 @@ class FortuneConversationService
                 'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
                 'reading' => $reading,
             ];
+        }
+
+        // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ต้องให้ผู้ใช้ยืนยันด้วยคำว่า "พร้อม"/"เปิดไพ่"
+        //    ป้องกันการกดเปิดไพ่ทันทีโดยไม่ตั้งจิต (ไพ่ที่ออกต้องเป็นไพ่ที่จิตเลือก)
+        $promptedAt = $reading->getConversationState('tarot_intention_prompted_at');
+        $intentionConfirmed = (bool) $reading->getConversationState('tarot_intention_confirmed');
+        $readyKeywords = [
+            'พร้อม', 'พร้อมแล้ว', 'พร้อมค่ะ', 'พร้อมครับ',
+            'เปิดไพ่', 'เปิดเลย', 'เปิด', 'หยิบไพ่', 'จับไพ่',
+            'สุ่มไพ่', 'สุ่ม', 'ดูไพ่', 'เริ่ม', 'go', 'ok', 'okay', 'ready',
+            'ตั้งจิตแล้ว', 'ตั้งใจแล้ว', 'ตั้งสมาธิแล้ว',
+        ];
+
+        if (! $intentionConfirmed && $promptedAt) {
+            // ตรวจว่าเร็วไปไหม — ขอเวลาตั้งจิตอย่างน้อย 5 วินาที
+            $secondsSincePrompt = 0;
+            try {
+                $secondsSincePrompt = max(0, (int) now()->diffInSeconds(\Carbon\Carbon::parse($promptedAt), false) * -1);
+            } catch (\Throwable $e) {
+                $secondsSincePrompt = 999; // ถ้า parse พลาด → ผ่าน
+            }
+
+            $isReadySignal = $this->matchesExactKeyword($messageText, $readyKeywords)
+                || mb_strpos(mb_strtolower(trim($messageText)), 'พร้อม') !== false
+                || mb_strpos(mb_strtolower(trim($messageText)), 'เปิด') !== false;
+
+            if (! $isReadySignal && $this->looksLikeMetaOrChitchat($messageText)) {
+                $stepHint = "🧘 ตอนนี้อยู่ขั้น *ตั้งจิตเลือกไพ่*\n"
+                    . "หลับตา หายใจลึกๆ นึกถึงคำถามของเจ้าชะตา\n"
+                    . "เมื่อพร้อมแล้วพิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"* ค่ะ\n\n"
+                    . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
+                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => $message,
+                    'reading' => $reading,
+                ];
+            }
+
+            if (! $isReadySignal) {
+                // พิมพ์อะไรที่ไม่ใช่สัญญาณพร้อม → ย้ำให้ตั้งจิตก่อน
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "🧘 หมอยังรอเจ้าชะตาตั้งจิตอยู่นะคะ\n\n"
+                        . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                        . "นึกถึงคำถามที่ถามมาให้ชัดเจนในใจ\n\n"
+                        . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                        . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่",
+                    'reading' => $reading,
+                ];
+            }
+
+            // ⏱️ ถ้ารีบเกินไป (น้อยกว่า 5 วินาที) → ขอให้ตั้งจิตให้นานกว่านี้
+            if ($secondsSincePrompt < 5) {
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "⏳ เร็วไปนะคะเจ้าชะตา\n\n"
+                        . "ลองหยุดสักครู่ — หายใจลึกๆ ให้จิตสงบ\n"
+                        . "นึกถึงคำถามให้ชัดเจน เห็นภาพในใจ\n\n"
+                        . "ไพ่ที่จิตเลือกตอนสงบ ≠ ไพ่ที่จิตวุ่นวายเลือก\n"
+                        . "ผลทำนายจะแม่นยำกว่ามาก ✨\n\n"
+                        . "เมื่อรู้สึกพร้อมจริงๆ พิมพ์ *\"พร้อม\"* อีกครั้ง 🙏",
+                    'reading' => $reading,
+                ];
+            }
+
+            // ✅ ตั้งจิตพร้อมแล้ว → mark confirmed + ดำเนินการเปิดไพ่ต่อ
+            $reading->setConversationState('tarot_intention_confirmed', true);
         }
 
         // 🎯 Phase M — ถ้าลูกค้าพิมพ์ meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม")
@@ -3592,7 +3691,7 @@ class FortuneConversationService
         }
 
         // ครบแล้ว → สร้างบิล
-        Log::info('Fortune: ครบ 2 คำถาม + ไพ่ยิปซี กำลังสร้างบิล', [
+        Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล', [
             'reading_id' => $reading->id,
             'questions' => $collectedQuestions,
             'tarot_cards' => $reading->getCollectedTarotCards(),
@@ -4417,14 +4516,15 @@ class FortuneConversationService
         }
 
         $price = $this->getDeepReadingPrice();
+        $qCount = self::REQUIRED_QUESTIONS;
 
         return "═══════════════════════\n".
                "🌟 *ดูดวงละเอียด* 🌟\n".
                "═══════════════════════\n\n".
                "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n".
                "📍 บอกวันเดือนปีเกิด\n".
-               "📍 ถามได้ 2 คำถาม\n".
-               "📍 เริ่มต้นเพียง {$price} บาท\n\n".
+               "📍 {$qCount} คำถาม โฟกัสเดียว — แม่นยำ\n".
+               "📍 ค่าครู {$price} บาท (ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา)\n\n".
                'กดเลือกด้านล่างได้เลยค่ะ 👇';
     }
 
@@ -4451,8 +4551,8 @@ class FortuneConversationService
             'body' => "ลูกค้าหลายคนทักมาว่าคำทำนายของหมอจันทรา\nเห็นมุมที่เขาไม่เคยรู้ — ลองเปิดใจดู\n💎 ค่าครู {price} บาท",
         ],
         [
-            'title' => '🎯 ถามได้ 2 คำถาม — ฟันธงทั้งคู่',
-            'body' => "ค่าครู {price} บาท เลือกถาม 2 เรื่องที่ต่างกัน\nพร้อมไพ่ยิปซี + สีมงคล + เลขมงคล + ฤกษ์ดี",
+            'title' => '🎯 1 คำถาม — โฟกัสเดียว แม่นยำกว่า',
+            'body' => "ค่าครู {price} บาท ถามได้ 1 เรื่องที่อยากรู้สุด\nวิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา + สีมงคล + เลขมงคล",
         ],
         [
             'title' => '💭 ไม่ต้องแบกคำถามไว้คนเดียว',
@@ -4464,11 +4564,11 @@ class FortuneConversationService
         ],
         [
             'title' => '🔮 ดาวโคจรช่วงนี้พิเศษ',
-            'body' => "ดาวช่วงนี้ส่งผลต่อหลายราศี\nอยากรู้ดาวของคุณจะพาไปทางไหน?\n💎 ค่าครู {price} บาท ทำนาย 2 คำถาม",
+            'body' => "ดาวช่วงนี้ส่งผลต่อหลายราศี\nอยากรู้ดาวของคุณจะพาไปทางไหน?\n💎 ค่าครู {price} บาท ทำนาย 1 คำถามเจาะลึก",
         ],
         [
             'title' => '🎁 หมอไม่กั๊ก — ฟันธงตรงไปตรงมา',
-            'body' => "ค่าครู {price} บาท รับคำตอบ 2 ข้อ\nบอกทั้งเรื่องดีและเรื่องต้องระวัง — ไม่แต่งให้สวยเกินจริง",
+            'body' => "ค่าครู {price} บาท รับคำตอบเจาะลึก 1 ข้อ\nบอกทั้งเรื่องดีและเรื่องต้องระวัง — ไม่แต่งให้สวยเกินจริง",
         ],
     ];
 
@@ -4574,11 +4674,12 @@ class FortuneConversationService
 
         if ($deepEnabled) {
             $price = (int) $this->getDeepReadingPrice();
+            $qCount = self::REQUIRED_QUESTIONS;
 
             return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
-                . "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n"
-                . "   • ถามได้ 2 คำถาม\n"
-                . "   • วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n\n"
+                . "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? ({$qCount} คำถาม {$price} บาท)\n"
+                . "   • โฟกัสคำถามเดียว — แม่นยำกว่ากระจาย\n"
+                . "   • วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n\n"
                 . "👇 กดปุ่ม \"💎 ดูดวงละเอียด\" ด้านล่างเพื่อเริ่ม";
         }
 
@@ -4654,6 +4755,17 @@ class FortuneConversationService
     {
         $formattedDate = $this->formatThaiDate($birthDate);
         $count = self::REQUIRED_QUESTIONS;
+
+        // 1 คำถาม → ใช้ภาษาที่กระชับ ไม่ต้อง "ข้อที่ 1 จาก 1"
+        if ($count === 1) {
+            return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n".
+                   "═══════════════════════\n".
+                   "🔮 *ตั้งคำถามที่อยากรู้สุด 1 ข้อ*\n".
+                   "═══════════════════════\n\n".
+                   "คุณ{$name} เลือกเรื่องสำคัญที่สุดในใจตอนนี้นะคะ\n".
+                   "หมอจะวิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีให้แม่นยำ\n\n".
+                   "📝 เลือกหมวดหรือพิมพ์คำถามเองได้เลย 👇";
+        }
 
         return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n".
                "═══════════════════════\n".
@@ -4856,12 +4968,14 @@ class FortuneConversationService
             $message .= "═══════════════════════\n\n";
             $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
             $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
-            $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
-            $message .= "   ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n";
+            $qCount = self::REQUIRED_QUESTIONS;
+            $message .= "💎 *ดูดวงละเอียด — {$qCount} คำถาม {$price} บาท*\n";
+            $message .= "   วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n";
             $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
         } else {
             // กระชับ: ราคา + สิ่งที่ได้ (ไม่ต้องมี section header)
-            $message .= "💎 *ค่าครู {$price} บาท* — ถาม 2 คำถาม\n";
+            $qCount = self::REQUIRED_QUESTIONS;
+            $message .= "💎 *ค่าครู {$price} บาท* — {$qCount} คำถาม โฟกัสเดียว\n";
             $message .= "   วิเคราะห์จากวันเกิด + สีมงคล เลขมงคล ฤกษ์ดี\n\n";
         }
 
@@ -5571,21 +5685,24 @@ class FortuneConversationService
         if ($this->settings->isDeepReadingEnabled()) {
             $price = $this->getDeepReadingPrice();
 
+            $qCount = self::REQUIRED_QUESTIONS;
             $message .= "═══════════════════════\n";
-            $message .= "💎 *ดูดวงละเอียด — ค่าครู {$price} บาท*\n";
+            $message .= "💎 *ดูดวงละเอียด — {$qCount} คำถาม {$price} บาท*\n";
             $message .= "═══════════════════════\n\n";
 
-            $message .= "📌 ถามได้ถึง 2 คำถาม\n";
-            $message .= "📌 วิเคราะห์จากวันเกิดเจาะลึก\n";
-            $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี\n";
-            $message .= "📌 คำทำนายละเอียดคุ้มค่าครู\n\n";
+            $message .= "📌 โฟกัสคำถามเดียว — แม่นกว่าถามกระจาย\n";
+            $message .= "📌 วิเคราะห์ดาวเจ้าชนะของเจ้าชะตาเอง\n";
+            $message .= "📌 ไพ่ยิปซีที่จิตเจ้าชะตาเลือก — ไม่ใช่สุ่มมั่ว\n";
+            $message .= "📌 บอกสีมงคล เลขมงคล ฤกษ์ดี — มีหลักการณ์\n\n";
 
+            $qCount = self::REQUIRED_QUESTIONS;
             $message .= "🎯 *วิธีใช้งาน*\n";
             $message .= "─────────────────────\n";
             $message .= "1️⃣ บอกวันเดือนปีเกิด\n";
-            $message .= "2️⃣ ถามคำถามได้เลย 2 ข้อ\n";
-            $message .= "3️⃣ ระบบจะออกบิลพร้อมยอดชำระ\n";
-            $message .= "4️⃣ โอนเงินตามยอดในบิล\n\n";
+            $message .= "2️⃣ ถามคำถามที่อยากรู้สุด {$qCount} ข้อ\n";
+            $message .= "3️⃣ ตั้งจิตเลือกไพ่ยิปซี (จิตจะนำทางไพ่)\n";
+            $message .= "4️⃣ ระบบออกบิลพร้อมยอดชำระ\n";
+            $message .= "5️⃣ โอนเงินตามยอดในบิล\n\n";
 
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
         } elseif ($freeEnabled) {
@@ -6040,6 +6157,140 @@ class FortuneConversationService
         }
 
         return $stepHint;
+    }
+
+    /**
+     * จัดการ rebuttal เมื่อผู้ใช้ตอบโต้หลังบิลถูกยกเลิก
+     *
+     * ตรรกะ:
+     *   1. หาบิลที่เพิ่งถูกยกเลิกใน 10 นาทีล่าสุด ของผู้ใช้คนนี้
+     *   2. ถ้าผู้ใช้พิมพ์มาใน window นั้น → AI ตอบแบบนักปราชญ์ มีปรัชญา
+     *   3. ใช้ context "เพิ่งโดนยกเลิกบิลเพราะไม่จ่าย" + บุคลิกแม่หมอที่ฉลาด มีหลักการ
+     *   4. คุมจำนวนรอบตอบ — สูงสุด 3 รอบต่อบิลเดียว เพื่อกัน loop
+     *
+     * เงื่อนไขที่จะ return null (ให้ flow ปกติทำงาน):
+     *   - ไม่มีบิลถูกยกเลิกใน window
+     *   - ผู้ใช้พิมพ์ "ดูดวง" / คำขอเริ่มใหม่ → flow ปกติทำงาน
+     *   - ตอบ rebuttal ครบ 3 รอบแล้ว
+     *
+     * @param  string  $facebookUserId
+     * @param  string  $messageText
+     * @param  array|null  $userProfile
+     * @return array|null  ผลลัพธ์ action 'ai_rebuttal' หรือ null ถ้าไม่ entrance
+     */
+    protected function handleCancelledBillRebuttal(string $facebookUserId, string $messageText, ?array $userProfile = null): ?array
+    {
+        // ข้ามถ้าผู้ใช้พิมพ์คำสั่งเริ่มใหม่ — ปล่อยให้ flow ปกติจัดการ
+        // ⚠️ ใช้ exact match เท่านั้น — หลีกเลี่ยง substring match เพราะ "หมอช่วย" ไม่ควรนับเป็น "หมอ" (start)
+        $startKeywords = ['ดูดวง', 'เริ่ม', 'start', 'ดูดวงละเอียด', 'ทำนาย', 'restart', 'reset'];
+        $textNormalized = mb_strtolower(trim($messageText));
+        // ลบคำลงท้ายสุภาพออกก่อนเทียบ
+        $textNormalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|หน่อย|ด้วย|ที|นะ|นะคะ|นะครับ)\s*$/u', '', $textNormalized);
+        foreach ($startKeywords as $kw) {
+            if ($textNormalized === mb_strtolower($kw)) {
+                return null;
+            }
+        }
+
+        // หาบิลที่เพิ่งยกเลิกใน 10 นาทีล่าสุด (auto_expired)
+        $recentlyCancelled = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->where('updated_at', '>=', now()->subMinutes(10))
+            ->latest('updated_at')
+            ->first();
+
+        if (! $recentlyCancelled) {
+            return null;
+        }
+
+        // ตรวจว่าเป็นการยกเลิกอัตโนมัติจริง (กัน false positive จาก reading ที่จบแบบอื่น)
+        $cancelReason = $recentlyCancelled->getConversationState('cancellation_reason');
+        if ($cancelReason !== 'auto_expired') {
+            return null;
+        }
+
+        // คุม rebuttal rounds — สูงสุด 3 รอบ เพื่อกัน infinite chat
+        $rebuttalCount = (int) ($recentlyCancelled->getConversationState('rebuttal_count') ?? 0);
+        if ($rebuttalCount >= 3) {
+            return null; // ปล่อยให้ flow ปกติทำงาน → ไปที่ tryAIChatResponse / welcome
+        }
+
+        // Gatekeeper: กัน AI call ล้น
+        if (! LineGatekeeperService::canCallAI('fortune')) {
+            return null; // fail-open — ปล่อยให้ flow ปกติทำงาน
+        }
+
+        // ดึงราคา + เตรียม prompt สำหรับ AI
+        $price = (int) $this->getDeepReadingPrice();
+
+        try {
+            $apiKey = $this->settings->getChatAIApiKey();
+            if (empty($apiKey)) {
+                return null; // ไม่มี API key → flow ปกติ
+            }
+
+            $aiService = new FortuneAIService($this->settings);
+            $userName = $userProfile['name'] ?? $recentlyCancelled->facebook_user_name ?? 'เจ้าชะตา';
+
+            // System persona — แม่หมอจันทราที่ฉลาด มีหลักการณ์ ตอบแบบนักปราชญ์
+            $promptForAI = "บทบาท: คุณคือ \"แม่หมอจันทรา\" — หมอดูที่มีปัญญา ใช้หลักการณ์ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n"
+                . "ไม่ใช่หมอดูที่งมงาย — มีระบบ มีศาสตร์ ไม่ยกเมฆ\n\n"
+                . "สถานการณ์: ลูกค้า \"คุณ{$userName}\" เพิ่งสร้างบิลดูดวง {$price} บาท แต่ไม่ได้ชำระจนบิลหมดอายุ\n"
+                . "ตอนนี้ลูกค้าตอบโต้ด้วยข้อความ: \"{$messageText}\"\n\n"
+                . "หน้าที่: ตอบกลับด้วยภาษาคนมีความรู้ ไม่ด่า ไม่บีบ ไม่ขายของรุนแรง\n"
+                . "ใช้คำพูดเชิงปรัชญา ยกตัวอย่างเปรียบเทียบที่ฉลาด เช่น:\n"
+                . "  - คนสำเร็จลงทุนกับความรู้ คนพนันลงทุนกับความหวัง\n"
+                . "  - ราคาน้อยกว่ากาแฟ/หวย แต่ผลคุ้มค่ากว่ามาก\n"
+                . "  - ที่นี่ใช้ดาวเจ้าชนะ + ไพ่ที่จิตเลือก ไม่ใช่ยกเมฆ\n"
+                . "  - การไม่กล้าเริ่มแม้สิ่งเล็ก = สัญญาณของชีวิตที่ติดอยู่ที่เดิม\n\n"
+                . "กฎ: ตอบสั้น 2-4 ประโยค ภาษาสุภาพ มีปัญญา ลงท้ายชวนให้พิมพ์ 'ดูดวง' เพื่อเริ่มใหม่\n"
+                . "ห้ามใช้คำหยาบ ห้ามด่า ห้ามทำให้ลูกค้าอายหรืออับอาย\n"
+                . "ห้ามใส่ [OFFER_FORTUNE] tag";
+
+            $result = $aiService->generateChatResponse($promptForAI, $userProfile);
+            LineGatekeeperService::recordAICall('fortune');
+
+            $aiReply = trim($result['response'] ?? '');
+            $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $aiReply));
+
+            if (empty($aiReply)) {
+                return null; // AI ตอบกลับว่าง → flow ปกติ
+            }
+
+            // เพิ่ม footer ชวนให้เริ่มใหม่ (กัน AI ลืมใส่)
+            $hasReinvitation = (mb_strpos($aiReply, 'ดูดวง') !== false)
+                || (mb_strpos($aiReply, 'พิมพ์') !== false);
+
+            if (! $hasReinvitation) {
+                $aiReply .= "\n\n🔮 พิมพ์ 'ดูดวง' เมื่อพร้อมเริ่มใหม่ — หมอรอเสมอ";
+            }
+
+            // อัพเดท rebuttal count
+            $recentlyCancelled->setConversationState('rebuttal_count', $rebuttalCount + 1);
+            $recentlyCancelled->setConversationState('last_rebuttal_at', now()->toIso8601String());
+
+            Log::info('Fortune: AI rebuttal ส่งให้ผู้ใช้หลังบิลถูกยกเลิก', [
+                'facebook_user_id' => $facebookUserId,
+                'reading_id' => $recentlyCancelled->id,
+                'rebuttal_round' => $rebuttalCount + 1,
+                'user_text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return [
+                'action' => 'ai_rebuttal',
+                'message' => $aiReply,
+                'reading' => $recentlyCancelled,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: handleCancelledBillRebuttal ล้มเหลว', [
+                'facebook_user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null; // fail-open — flow ปกติทำงาน
+        }
     }
 
     /**

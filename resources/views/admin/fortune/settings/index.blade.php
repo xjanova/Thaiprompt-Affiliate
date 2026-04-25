@@ -1175,9 +1175,9 @@
                             💰 ราคาคำทำนายเชิงลึก/ครั้ง (บาท)
                         </label>
                         <input type="number" name="deep_reading_price" min="0" step="0.01"
-                               value="{{ old('deep_reading_price', $settings->deep_reading_price ?? 99) }}"
+                               value="{{ old('deep_reading_price', $settings->deep_reading_price ?? 39) }}"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ราคาต่อครั้งสำหรับคำทำนายละเอียดลึกซึ้ง</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ราคาต่อ 1 คำถาม (Bot จะแสดงราคานี้ทุกจุด — ค่าเริ่มต้น 39)</p>
                     </div>
 
                     <div>

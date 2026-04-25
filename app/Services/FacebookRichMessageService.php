@@ -156,7 +156,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "💎 {$subject}ต้องการดูดวงละเอียดไหม?\n\n✅ วิเคราะห์เชิงลึก 2 คำถาม\n✅ ใช้วันเดือนปีเกิดวิเคราะห์\n✅ ทำนายแม่นยำยิ่งขึ้น\n\n💰 ราคาเพียง {$priceText} บาท",
+                    'text' => "💎 {$subject}ต้องการดูดวงละเอียดไหม?\n\n✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า\n✅ ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก\n✅ ไม่ยกเมฆ — มีหลักการณ์ พิสูจน์ได้\n\n💰 ค่าครู {$priceText} บาท",
                     'buttons' => $buttons,
                 ],
             ],
@@ -346,9 +346,10 @@ class FacebookRichMessageService
             }
         } else {
             // ปิดบริการฟรี — ไม่พูดถึงฟรี (ใช้ brand name จาก settings)
+            $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
             $text = "💎 บริการดูดวงโดย{$this->brandName}\n\n";
-            $text .= "💰 ค่าครู {$price} บาท/ครั้ง\n";
-            $text .= "📌 ถามได้ 2 คำถาม วิเคราะห์จากวันเกิด\n\n";
+            $text .= "💰 ค่าครู {$price} บาท/{$qCount} คำถาม\n";
+            $text .= "📌 ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก — ไม่ยกเมฆ\n\n";
             $text .= '💡 กดปุ่มด้านล่างเพื่อเริ่ม';
         }
 
@@ -561,9 +562,10 @@ class FacebookRichMessageService
         // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน ผู้ใช้งง)
 
         // ข้อความแตกต่างตามสถานะฟรี
+        $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
         $text = $freeEnabled
-            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงละเอียดสิ!\n• วิเคราะห์เชิงลึก 2 คำถาม\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
-            : "💎 ดูดวงโดย{$this->brandName}\n\n• วิเคราะห์เชิงลึก 2 คำถาม\n• ใช้วันเกิดวิเคราะห์\n• ทำนายแม่นยำ\n\n💰 ค่าครู {$priceText} บาท";
+            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงละเอียดสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
+            : "💎 ดูดวงโดย{$this->brandName}\n\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซี (ไม่ยกเมฆ)\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท";
 
         return [
             'attachment' => [

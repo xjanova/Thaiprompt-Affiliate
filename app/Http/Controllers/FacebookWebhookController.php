@@ -1355,8 +1355,9 @@ class FacebookWebhookController extends Controller
 
         // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
         $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
-        $message .= "💎 *ดูดวงละเอียด ({$deepPriceText} บาท)*\n";
-        $message .= "ทำนายเชิงลึก 2 คำถาม พร้อมวันเกิด\n\n";
+        $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
+        $message .= "💎 *ดูดวงละเอียด ({$qCount} คำถาม {$deepPriceText} บาท)*\n";
+        $message .= "ทำนายเชิงลึกจากดาวเจ้าชนะ + ไพ่ยิปซีจริง — ไม่ยกเมฆ\n\n";
 
         $message .= "═══════════════════════\n";
         $message .= "💡 *วิธีเริ่มต้น*\n";
@@ -1390,7 +1391,7 @@ class FacebookWebhookController extends Controller
      *
      * Flow:
      * 1. ดูดวงพื้นฐานฟรี (ดึงโปรไฟล์ทำนายเบื้องต้น)
-     * 2. เสนอดูดวงละเอียด 49 บาท (ถามวันเกิด + 2 คำถาม)
+     * 2. เสนอดูดวงละเอียด (ราคาดึงจาก admin settings) ถามวันเกิด + 1 คำถาม + ตั้งจิตเลือกไพ่
      * 3. สร้างบิล + unique amount + แสดงบัญชีธนาคาร
      * 4. SMS match → ส่งคำทำนายละเอียดผ่าน Messenger
      *
