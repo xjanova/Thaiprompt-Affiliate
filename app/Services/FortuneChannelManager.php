@@ -372,16 +372,16 @@ class FortuneChannelManager
                 ]),
 
                 // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" / "ยกเลิก"
+                //    title คือสิ่งที่ส่งกลับเป็น message text → ใช้คำสั้น (ไม่มี emoji ในคำหลัก) เพื่อให้ระบบเข้าใจง่าย
                 'awaiting_tarot_intention' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🧘 พร้อมแล้ว', 'payload' => 'TAROT_READY'],
-                    ['content_type' => 'text', 'title' => '⏳ ยังไม่พร้อม', 'payload' => 'TAROT_NOT_READY'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                    ['content_type' => 'text', 'title' => 'พร้อม', 'payload' => 'TAROT_READY'],
+                    ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
 
                 // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
                 'awaiting_tarot_draw' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🃏 เปิดไพ่เลย', 'payload' => 'DRAW_TAROT'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                    ['content_type' => 'text', 'title' => 'เปิดไพ่', 'payload' => 'DRAW_TAROT'],
+                    ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
 
                 // 📜 บิลถูกยกเลิก / AI rebuttal → ข้อความ + ปุ่มเริ่มใหม่
@@ -875,10 +875,10 @@ class FortuneChannelManager
                 // สุ่มไพ่ยิปซี → ส่งรูปไพ่ (ถ้ามี) + text + quick reply
                 'draw_tarot_card' => $this->sendLineTarotCardResponse($lineService, $userId, $result, $replyToken),
 
-                // 🧘 ตั้งจิตเลือกไพ่ — ส่ง text + quick reply "พร้อม"
+                // 🧘 ตั้งจิตเลือกไพ่ — ส่ง text + quick reply "พร้อม" / "ยกเลิก"
+                //    LINE: label มี emoji ได้ (โชว์ในปุ่ม), text คือข้อความที่ระบบรับ → ใช้คำสะอาด
                 'awaiting_tarot_intention' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🧘 พร้อมแล้ว', 'text' => 'พร้อม'],
-                    ['label' => '⏳ ยังไม่พร้อม', 'text' => 'ยังไม่พร้อม'],
                     ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                 ]),
 

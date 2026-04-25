@@ -2166,7 +2166,7 @@ class FortuneConversationService
                 . "พิมพ์ 'ใช่' หรือ 'ดูเลย' เพื่อเริ่ม ✨\n"
                 . "หรือพิมพ์คำถามที่อยากรู้มาได้เลย";
             $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
-            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI);
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI, 'awaiting_confirmation');
 
             return [
                 'action' => 'awaiting_confirmation',
@@ -3172,7 +3172,7 @@ class FortuneConversationService
                 . "💡 ถ้าไม่แน่ใจ ลองพิมพ์อีกครั้ง — หมอจะถามทีละส่วนให้";
 
             $profileForAI = $userProfile ?? ($reading->user_profile ?? null);
-            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI);
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $profileForAI, 'birthdate');
 
             return [
                 'action' => 'invalid_birthdate',
@@ -3442,7 +3442,7 @@ class FortuneConversationService
                     . "• ดวงการเงินช่วงนี้\n"
                     . "• การงานจะก้าวหน้าไหม\n\n"
                     . "💡 พิมพ์ 'ยกเลิก' หากอยากเริ่มใหม่";
-                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'question');
 
                 return [
                     'action' => 'awaiting_question',
@@ -3521,36 +3521,22 @@ class FortuneConversationService
             ];
         }
 
-        // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ต้องให้ผู้ใช้ยืนยันด้วยคำว่า "พร้อม"/"เปิดไพ่"
-        //    ป้องกันการกดเปิดไพ่ทันทีโดยไม่ตั้งจิต (ไพ่ที่ออกต้องเป็นไพ่ที่จิตเลือก)
+        // 🧘 ขั้นตั้งจิตก่อนเปิดไพ่ — ส่งข้อความเตือนสติ แล้วผู้ใช้ตอบอะไรก็ถือว่า "ตั้งจิตเสร็จ"
+        //    เพราะการอ่านข้อความ + ตอบกลับ = ผู้ใช้รับรู้แล้วว่าต้องตั้งจิต
+        //    ❌ ไม่บังคับ wait 5 วินาที (UX แย่ — ผู้ใช้กดปุ่มเร็วก็ติดอยู่)
+        //    ❌ ไม่บังคับ exact keyword "พร้อม" (ผู้ใช้พิมพ์ "ครับ"/"OK" ก็ควรผ่าน)
+        //    ✅ บล็อกแค่ chitchat (เช่น "ราคาเท่าไร", "สวัสดี") — เพราะนั่นไม่ใช่การตอบขั้นตอน
         $promptedAt = $reading->getConversationState('tarot_intention_prompted_at');
         $intentionConfirmed = (bool) $reading->getConversationState('tarot_intention_confirmed');
-        $readyKeywords = [
-            'พร้อม', 'พร้อมแล้ว', 'พร้อมค่ะ', 'พร้อมครับ',
-            'เปิดไพ่', 'เปิดเลย', 'เปิด', 'หยิบไพ่', 'จับไพ่',
-            'สุ่มไพ่', 'สุ่ม', 'ดูไพ่', 'เริ่ม', 'go', 'ok', 'okay', 'ready',
-            'ตั้งจิตแล้ว', 'ตั้งใจแล้ว', 'ตั้งสมาธิแล้ว',
-        ];
 
         if (! $intentionConfirmed && $promptedAt) {
-            // ตรวจว่าเร็วไปไหม — ขอเวลาตั้งจิตอย่างน้อย 5 วินาที
-            $secondsSincePrompt = 0;
-            try {
-                $secondsSincePrompt = max(0, (int) now()->diffInSeconds(\Carbon\Carbon::parse($promptedAt), false) * -1);
-            } catch (\Throwable $e) {
-                $secondsSincePrompt = 999; // ถ้า parse พลาด → ผ่าน
-            }
-
-            $isReadySignal = $this->matchesExactKeyword($messageText, $readyKeywords)
-                || mb_strpos(mb_strtolower(trim($messageText)), 'พร้อม') !== false
-                || mb_strpos(mb_strtolower(trim($messageText)), 'เปิด') !== false;
-
-            if (! $isReadySignal && $this->looksLikeMetaOrChitchat($messageText)) {
+            // ถ้าเป็น chitchat (เช่น "ราคาเท่าไร", "ดี") → ให้ AI รับฟัง + ย้ำขั้นตอน
+            if ($this->looksLikeMetaOrChitchat($messageText)) {
                 $stepHint = "🧘 ตอนนี้อยู่ขั้น *ตั้งจิตเลือกไพ่*\n"
                     . "หลับตา หายใจลึกๆ นึกถึงคำถามของเจ้าชะตา\n"
-                    . "เมื่อพร้อมแล้วพิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"* ค่ะ\n\n"
+                    . "เมื่อพร้อมแล้วพิมพ์อะไรก็ได้มาบอกหมอ เช่น \"พร้อม\" หรือ \"เปิดไพ่\"\n\n"
                     . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
-                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+                $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'tarot_intention');
 
                 return [
                     'action' => 'awaiting_tarot_intention',
@@ -3559,34 +3545,7 @@ class FortuneConversationService
                 ];
             }
 
-            if (! $isReadySignal) {
-                // พิมพ์อะไรที่ไม่ใช่สัญญาณพร้อม → ย้ำให้ตั้งจิตก่อน
-                return [
-                    'action' => 'awaiting_tarot_intention',
-                    'message' => "🧘 หมอยังรอเจ้าชะตาตั้งจิตอยู่นะคะ\n\n"
-                        . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
-                        . "นึกถึงคำถามที่ถามมาให้ชัดเจนในใจ\n\n"
-                        . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
-                        . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่",
-                    'reading' => $reading,
-                ];
-            }
-
-            // ⏱️ ถ้ารีบเกินไป (น้อยกว่า 5 วินาที) → ขอให้ตั้งจิตให้นานกว่านี้
-            if ($secondsSincePrompt < 5) {
-                return [
-                    'action' => 'awaiting_tarot_intention',
-                    'message' => "⏳ เร็วไปนะคะเจ้าชะตา\n\n"
-                        . "ลองหยุดสักครู่ — หายใจลึกๆ ให้จิตสงบ\n"
-                        . "นึกถึงคำถามให้ชัดเจน เห็นภาพในใจ\n\n"
-                        . "ไพ่ที่จิตเลือกตอนสงบ ≠ ไพ่ที่จิตวุ่นวายเลือก\n"
-                        . "ผลทำนายจะแม่นยำกว่ามาก ✨\n\n"
-                        . "เมื่อรู้สึกพร้อมจริงๆ พิมพ์ *\"พร้อม\"* อีกครั้ง 🙏",
-                    'reading' => $reading,
-                ];
-            }
-
-            // ✅ ตั้งจิตพร้อมแล้ว → mark confirmed + ดำเนินการเปิดไพ่ต่อ
+            // ✅ ผู้ใช้พิมพ์อะไรก็ได้ที่ไม่ใช่ chitchat → ตั้งจิตเสร็จ → เปิดไพ่ต่อ
             $reading->setConversationState('tarot_intention_confirmed', true);
         }
 
@@ -3596,7 +3555,7 @@ class FortuneConversationService
             $stepHint = "🃏 หมอกำลังจะเปิดไพ่ยิปซีให้คะ\n"
                 . "เจ้าชะตาแค่พิมพ์อะไรก็ได้ เช่น \"เปิดเลย\" หรือ \"ดู\" แล้วหมอจะสุ่มไพ่ให้\n\n"
                 . "💡 พิมพ์ 'ยกเลิก' หากต้องการเริ่มใหม่";
-            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile);
+            $message = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'tarot_draw');
 
             return [
                 'action' => 'awaiting_tarot_draw',
@@ -6109,12 +6068,15 @@ class FortuneConversationService
      * @param  string  $messageText  ข้อความผู้ใช้ที่ไม่ตรงสเตป
      * @param  string  $stepHint  ข้อความเตือนว่าต้องทำอะไร (จะ append หลัง AI reply)
      * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @param  string|null  $flowContext  context ของ flow ปัจจุบัน (เช่น 'birthdate', 'question', 'tarot_intention')
+     *                                    ช่วยให้ AI รู้ว่าผู้ใช้กำลังควรทำอะไร → guide ได้แม่นกว่า
      * @return string  ข้อความรวม (AI ack + step hint) หรือแค่ step hint ถ้า AI ล้ม
      */
     protected function buildAIAssistedStepReminder(
         string $messageText,
         string $stepHint,
-        ?array $userProfile = null
+        ?array $userProfile = null,
+        ?string $flowContext = null
     ): string {
         // เช็ค API key ก่อน — ไม่มี key → ข้าม AI ใช้ hint อย่างเดียว
         try {
@@ -6134,9 +6096,30 @@ class FortuneConversationService
             }
 
             $aiService = new FortuneAIService($this->settings);
-            $promptForAI = "ผู้ใช้พิมพ์ข้อความนี้: \"{$messageText}\"\n\n"
-                . "กรุณาตอบสั้นมาก (1 ประโยค) แสดงว่าเข้าใจสิ่งที่ผู้ใช้พูด "
-                . 'ห้ามอธิบายยาว ห้ามบอกให้ทำอะไรต่อ (ระบบจะเติมขั้นตอนเอง)';
+
+            // 🎯 ใส่ flow context เพื่อให้ AI ตอบฉลาดขึ้น
+            //    เช่น ถ้าอยู่ขั้นเก็บวันเกิดแล้วผู้ใช้พิมพ์ "อายุ 30" → AI จะแนะนำให้บอกวันเกิดแทน
+            $contextHint = '';
+            if ($flowContext) {
+                $contextMap = [
+                    'awaiting_confirmation' => 'ผู้ใช้กำลังรอตัดสินใจว่าจะดูดวงไหม — กดปุ่ม "ดูเลย" หรือพิมพ์คำถามมาเลย',
+                    'birthdate' => 'ผู้ใช้กำลังอยู่ขั้น "บอกวันเกิด" — รับวัน/เดือน/ปี เช่น 15/08/1990 หรือ 15 สิงหาคม 2533',
+                    'question' => 'ผู้ใช้กำลังอยู่ขั้น "ตั้งคำถามดูดวง" — ต้องพิมพ์เรื่องที่อยากรู้ เช่น ความรัก/การงาน/การเงิน',
+                    'tarot_intention' => 'ผู้ใช้กำลังอยู่ขั้น "ตั้งจิตเลือกไพ่" — ต้องพิมพ์ "พร้อม" หรือ "เปิดไพ่" เพื่อเปิดไพ่ยิปซี',
+                    'tarot_draw' => 'ผู้ใช้กำลังอยู่ขั้น "เปิดไพ่ยิปซี" — กดปุ่มเปิดไพ่หรือพิมพ์ "เปิด"',
+                    'pending_payment' => 'ผู้ใช้มีบิลรอชำระอยู่ — ต้องโอนเงินตามยอดในบิล หรือพิมพ์ "ยกเลิก"',
+                ];
+                $contextHint = $contextMap[$flowContext] ?? '';
+            }
+
+            $promptForAI = "ผู้ใช้พิมพ์ข้อความนี้: \"{$messageText}\"\n\n";
+            if ($contextHint !== '') {
+                $promptForAI .= "บริบท: {$contextHint}\n\n";
+            }
+            $promptForAI .= "กรุณาตอบสั้นมาก (1-2 ประโยค) แบบหมอดูที่อบอุ่น:\n"
+                . "1. แสดงว่าเข้าใจสิ่งที่ผู้ใช้พูด/รู้สึก\n"
+                . "2. ถ้าผู้ใช้ดูสับสนเรื่องขั้นตอน — ให้ใบ้นิดเดียวว่าควรทำอะไร (ระบบจะเติมรายละเอียดต่อท้ายเอง)\n"
+                . "ห้ามอธิบายยาว ห้ามใส่ลิสต์ ห้ามใส่ [OFFER_FORTUNE]";
 
             $result = $aiService->generateChatResponse($promptForAI, $userProfile);
             LineGatekeeperService::recordAICall('fortune');
