@@ -495,7 +495,22 @@ class FortuneChannelManager
         $reading = $result['reading'] ?? null;
         $message = $result['message'] ?? '';
 
-        // ส่ง Birth Chart ก่อน (ถ้ามี)
+        // 🃏 ส่งรูปไพ่ยิปซีก่อน (ถ้ามี) — เมื่อ REQUIRED_QUESTIONS=1 flow จะข้าม
+        //    draw_tarot_card action มาที่ pending_payment ตรงๆ พร้อม tarot_image_url
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+        if ($tarotImageUrl) {
+            try {
+                $fbService->sendImage($userId, $tarotImageUrl);
+                usleep(500000); // 0.5s
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่งรูปไพ่ยิปซีไม่สำเร็จ (payment)', [
+                    'error' => $e->getMessage(),
+                    'image_url' => $tarotImageUrl,
+                ]);
+            }
+        }
+
+        // ส่ง Birth Chart (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? null;
         if ($chartUrl) {
             try {
@@ -1280,14 +1295,25 @@ class FortuneChannelManager
         $expiresAt = $uniquePayment?->expires_at?->format('H:i') ?? '--:--';
         $billRef = $reading->bill_reference;
 
+        // 🃏 รูปไพ่ยิปซี (เมื่อ REQUIRED_QUESTIONS=1 flow ข้าม draw_tarot_card → มาที่ pending_payment ตรง)
+        $tarotImageUrl = $result['tarot_image_url'] ?? null;
+
         // ส่ง Birth Chart ก่อนบิล (ถ้ามี) เพื่อให้ผู้ใช้เห็นภาพดวงดาวก่อนชำระเงิน
         $chartUrl = $result['chart_image_url'] ?? null;
         $qrImageUrl = $result['payment_qr_url'] ?? null;
         $paymentFlex = $lineService->buildPaymentFlexMessage($bankAccounts, $amount, $expiresAt, $billRef);
 
-        // ⚡ ใช้ replyToken ส่ง chart + QR + payment รวมกัน (เร็วมาก! LINE จำกัด 5 messages)
+        // ⚡ ใช้ replyToken ส่ง tarot + chart + QR + payment รวมกัน (LINE จำกัด 5 messages)
         if ($replyToken) {
             $replyMessages = [];
+            // 🃏 ไพ่ยิปซีมาก่อนเสมอ (เป็นเรื่องที่ผู้ใช้คาดหวังจากการ "ตั้งจิตเลือก")
+            if ($tarotImageUrl) {
+                $replyMessages[] = [
+                    'type' => 'image',
+                    'originalContentUrl' => $tarotImageUrl,
+                    'previewImageUrl' => $tarotImageUrl,
+                ];
+            }
             if ($chartUrl) {
                 $replyMessages[] = [
                     'type' => 'image',
@@ -1317,6 +1343,17 @@ class FortuneChannelManager
         }
 
         // Fallback: pushMessage
+        if ($tarotImageUrl) {
+            try {
+                $lineService->sendImage($userId, $tarotImageUrl);
+                usleep(500_000);
+            } catch (\Exception $tarotErr) {
+                Log::warning('FortuneChannelManager LINE: ส่งรูปไพ่ยิปซีก่อนบิลไม่สำเร็จ', [
+                    'error' => $tarotErr->getMessage(),
+                ]);
+            }
+        }
+
         if ($chartUrl) {
             try {
                 $lineService->sendImage($userId, $chartUrl);
