@@ -143,6 +143,18 @@ class FortuneChannelManager
             }
         }
 
+        // 👤 Enrich profile name ก่อนส่งให้ conversationService (กันชื่อหายระหว่าง flow)
+        //   เคสที่เกิด: getUserProfile() คืน {'name' => 'คุณ'} (FB API fail / token expired)
+        //   → reading ถูกสร้างด้วย name='คุณ' → ค้างที่ 'คุณ' ตลอด flow
+        //   Fallback chain: profile → FortuneUserCredit → historical FortuneReading
+        if (empty($userProfile['name']) || $userProfile['name'] === 'คุณ') {
+            $resolvedName = $this->resolveUserName($platform, $userId);
+            if (! empty($resolvedName) && $resolvedName !== 'คุณ') {
+                $userProfile = is_array($userProfile) ? $userProfile : [];
+                $userProfile['name'] = $resolvedName;
+            }
+        }
+
         // ✅ ตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
         $this->conversationService->setPlatform($platform);
 
@@ -168,6 +180,49 @@ class FortuneChannelManager
         $this->sendResponse($platform, $userId, $result, $extra);
 
         return $result;
+    }
+
+    /**
+     * 👤 Resolve user name จาก persistent sources
+     *
+     * Fallback chain (same logic as FortuneReading::resolveCustomerName):
+     *   1. FortuneUserCredit ของ user คนนี้
+     *   2. FortuneReading เก่าๆ ของ user เดียวกันที่มีชื่อจริง
+     *
+     * @return string|null  null = หาไม่เจอ — caller ใช้ fallback อื่น
+     */
+    protected function resolveUserName(string $platform, string $userId): ?string
+    {
+        // 1. FortuneUserCredit
+        try {
+            $credit = \App\Models\FortuneUserCredit::findByUser($userId, $platform);
+            if ($credit && ! empty($credit->facebook_user_name) && $credit->facebook_user_name !== 'คุณ') {
+                return $credit->facebook_user_name;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // 2. Historical FortuneReading
+        try {
+            $historical = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->whereNotNull('facebook_user_name')
+                ->where('facebook_user_name', '!=', 'คุณ')
+                ->where('facebook_user_name', '!=', '')
+                ->latest('updated_at')
+                ->value('facebook_user_name');
+
+            if (! empty($historical)) {
+                return $historical;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return null;
     }
 
     /**

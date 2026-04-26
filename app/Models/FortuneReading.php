@@ -1149,6 +1149,127 @@ class FortuneReading extends Model
     }
 
     /**
+     * 👤 Resolve customer name via fallback chain (เคสชื่อหายระหว่าง flow)
+     *
+     * Priority:
+     *   1. facebook_user_name ของ reading (ถ้าไม่ใช่ empty / "คุณ")
+     *   2. user_profile['name'] ของ reading
+     *   3. FortuneUserCredit ของ user คนนี้ (cross-conversation persistent)
+     *   4. ดึงจาก FortuneReading เก่าๆ ของ user เดียวกัน (latest with valid name)
+     *   5. user.name (registered user account)
+     *   6. PLATFORM-XXXXXX (last 6 ของ platform_user_id)
+     *   7. 'คุณ' (default สุดท้าย)
+     *
+     * Side effect: ถ้า resolve ได้ name จริง + DB เก็บเป็น 'คุณ'/empty → update เพื่อ persist
+     * (ครั้งต่อไปไม่ต้อง resolve ซ้ำ + admin panel เห็นชื่อจริง)
+     */
+    public function resolveCustomerName(): string
+    {
+        // 1. reading.facebook_user_name
+        if (! empty($this->facebook_user_name) && $this->facebook_user_name !== 'คุณ') {
+            return $this->facebook_user_name;
+        }
+
+        $resolved = null;
+
+        // 2. user_profile.name
+        $profile = $this->user_profile ?? [];
+        if (is_array($profile) && ! empty($profile['name']) && $profile['name'] !== 'คุณ') {
+            $resolved = $profile['name'];
+        }
+
+        // 3. FortuneUserCredit (persistent across conversations)
+        if (! $resolved) {
+            try {
+                $userId = $this->platform_user_id ?? $this->facebook_user_id;
+                if (! empty($userId)) {
+                    $credit = \App\Models\FortuneUserCredit::findByUser(
+                        $userId,
+                        $this->platform ?? 'facebook'
+                    );
+                    if ($credit && ! empty($credit->facebook_user_name) && $credit->facebook_user_name !== 'คุณ') {
+                        $resolved = $credit->facebook_user_name;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // 4. Historical reading ของ user เดียวกันที่มีชื่อจริง
+        if (! $resolved) {
+            try {
+                $userId = $this->platform_user_id ?? $this->facebook_user_id;
+                if (! empty($userId)) {
+                    $historical = self::where(function ($q) use ($userId) {
+                        $q->where('facebook_user_id', $userId)
+                            ->orWhere('platform_user_id', $userId);
+                    })
+                        ->whereNotNull('facebook_user_name')
+                        ->where('facebook_user_name', '!=', 'คุณ')
+                        ->where('facebook_user_name', '!=', '')
+                        ->where('id', '!=', $this->id)
+                        ->latest('updated_at')
+                        ->value('facebook_user_name');
+                    if (! empty($historical)) {
+                        $resolved = $historical;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // 5. user.name (registered)
+        if (! $resolved) {
+            try {
+                if ($this->user && ! empty($this->user->name)) {
+                    $resolved = $this->user->name;
+                }
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        // 6. PLATFORM-XXXXXX (สุดท้ายก่อน 'คุณ' — ดีกว่า "คุณคุณ")
+        if (! $resolved) {
+            $platformId = $this->platform_user_id ?? $this->facebook_user_id;
+            if (! empty($platformId)) {
+                $platformLabel = strtoupper($this->platform ?? 'FB');
+                $resolved = $platformLabel . '-' . substr($platformId, -6);
+            }
+        }
+
+        // 7. Default
+        if (! $resolved) {
+            return 'คุณ';
+        }
+
+        // 💾 Persist กลับ DB ถ้าเดิมเป็น empty/'คุณ' — กันต้อง resolve ซ้ำ + admin เห็นชื่อ
+        try {
+            if (empty($this->facebook_user_name) || $this->facebook_user_name === 'คุณ') {
+                $this->update(['facebook_user_name' => $resolved]);
+                \Log::debug('FortuneReading: persisted resolved customer name', [
+                    'reading_id' => $this->id,
+                    'resolved_name' => $resolved,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // ignore — return resolved name อย่างน้อย
+        }
+
+        return $resolved;
+    }
+
+    /**
+     * Accessor: $reading->resolved_customer_name
+     */
+    public function getResolvedCustomerNameAttribute(): string
+    {
+        return $this->resolveCustomerName();
+    }
+
+    /**
      * เพิ่มคำถามเข้าไปใน state
      *
      * @return int จำนวนคำถามปัจจุบัน
