@@ -752,6 +752,13 @@ class FortuneChannelManager
      */
     protected function sendFacebookHelpResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
+        // 🔒 Guard: ถ้าลูกค้ามีบิลค้าง / กำลังประมวลผล / มีคำทำนายเสร็จแล้ว
+        //   → ห้ามแสดง welcome bubble — ตอบ contextual message แทน
+        $contextual = $this->buildActiveBillContextMessage(self::PLATFORM_FACEBOOK, $userId);
+        if ($contextual !== null) {
+            return $fbService->sendQuickReplies($userId, $contextual['message'], $contextual['quick_replies'] ?? []);
+        }
+
         $userName = $result['user_name'] ?? 'คุณ';
         $template = $richService->buildWelcomeTemplate($userName);
 
@@ -1608,11 +1615,127 @@ class FortuneChannelManager
      */
     protected function sendLineHelpResponse(LineFortuneService $lineService, string $userId, array $result, ?string $replyToken = null): bool
     {
+        // 🔒 Guard: ถ้าลูกค้ามีบิลค้าง / กำลังประมวลผล / มีคำทำนายเสร็จแล้ว
+        //   → ห้ามแสดง welcome bubble "ยินดีต้อนรับ" (สับสนลูกค้าที่จ่ายเงินแล้ว)
+        //   → ตอบ contextual message แทน เช่น "แม่หมอกำลังพยากรณ์" / "พิมพ์ อ่านคำทำนาย"
+        $contextual = $this->buildActiveBillContextMessage(self::PLATFORM_LINE, $userId);
+        if ($contextual !== null) {
+            return $lineService->sendMessageWithReplyFallback($userId, $contextual['message'], $replyToken);
+        }
+
         $welcomeFlex = $lineService->buildWelcomeFlexMessage();
 
         return $lineService->sendFlexWithReplyFallback(
             $userId, $welcomeFlex, "{$this->settings->getFortuneBrandName()}ยินดีต้อนรับค่ะ", $replyToken
         );
+    }
+
+    /**
+     * 🔒 ตรวจ active bill / processing / unread reading — ส่ง contextual message แทน welcome
+     *
+     * Returns:
+     *   ['message' => string, 'quick_replies' => array<['content_type','title','payload']>]
+     *   หรือ null ถ้าไม่มี context พิเศษ (caller จะ fallback ไป welcome bubble)
+     *
+     * Rules (ลำดับสำคัญ):
+     *   1. PENDING_PAYMENT + UPA active        → "ยังไม่ได้ชำระ" + เช็คสถานะ/ยกเลิก
+     *   2. PAID หรือ COMPLETED+!deep (in 30m)  → "แม่หมอกำลังพยากรณ์"
+     *   3. COMPLETED+is_paid+deep (in 24h)     → "ขอบคุณ + พิมพ์ 'อ่านคำทำนาย'"
+     *   4. ไม่เข้าเงื่อนไข                       → null (fallback welcome)
+     */
+    protected function buildActiveBillContextMessage(string $platform, string $userId): ?array
+    {
+        try {
+            $reading = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where(function ($q) {
+                    // มี bill_reference + ไม่เก่าเกินไป (24 ชม.)
+                    $q->whereNotNull('bill_reference');
+                })
+                ->where('updated_at', '>=', now()->subHours(24))
+                ->latest('updated_at')
+                ->first();
+
+            if (! $reading) {
+                return null;
+            }
+
+            $billRef = $reading->bill_reference ?? '-';
+            $name = $reading->resolved_customer_name ?? 'คุณ';
+
+            // Rule 1: PENDING_PAYMENT + UPA active → "ยังไม่ได้ชำระ"
+            if ($reading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT) {
+                $upa = $reading->uniquePaymentAmount;
+                if ($upa && $upa->status === 'reserved' && $upa->expires_at > now()) {
+                    $payAmount = number_format((float) $upa->unique_amount, 2);
+                    $remainingMin = (int) max(0, now()->diffInMinutes($upa->expires_at, false));
+
+                    return [
+                        'message' => "🔔 บิลรอชำระอยู่นะคะ คุณ{$name}\n\n"
+                            . "📋 เลขบิล: {$billRef}\n"
+                            . "💰 ยอด: ฿{$payAmount}\n"
+                            . "⏳ เหลือเวลา {$remainingMin} นาที\n\n"
+                            . "👉 พิมพ์ \"เช็คสถานะ\" ดูว่าระบบตัดบิลแล้วหรือยัง\n"
+                            . "👉 พิมพ์ \"โอนแล้ว\" ถ้าเพิ่งโอน\n"
+                            . "👉 พิมพ์ \"ยกเลิก\" ถ้าต้องการยกเลิก",
+                        'quick_replies' => [
+                            ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                            ['content_type' => 'text', 'title' => '✅ โอนแล้ว', 'payload' => 'REPORT_PAYMENT'],
+                            ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                        ],
+                    ];
+                }
+            }
+
+            // Rule 2: PAID / processing → "แม่หมอกำลังพยากรณ์"
+            $isProcessing = $reading->is_paid && empty($reading->deep_response)
+                && (
+                    $reading->conversation_status === FortuneReading::STATUS_PAID
+                    || $reading->conversation_status === FortuneReading::STATUS_COMPLETED
+                );
+            if ($isProcessing) {
+                $waitedMin = (int) ceil(abs(
+                    ($reading->paid_at ?? $reading->updated_at)->diffInMinutes(now(), true)
+                ));
+
+                return [
+                    'message' => "🌙 คุณ{$name} แม่หมอกำลังพยากรณ์ดวงดาวให้อยู่ค่ะ\n\n"
+                        . "📋 เลขบิล: {$billRef}\n"
+                        . "⏳ รอมาแล้ว {$waitedMin} นาที (ปกติใช้ 1-3 นาที)\n\n"
+                        . "✨ จะแจ้งทันทีเมื่อคำทำนายพร้อม\n"
+                        . "💡 ห้ามสร้างบิลใหม่นะคะ — กันจ่ายซ้ำ",
+                    'quick_replies' => [
+                        ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                    ],
+                ];
+            }
+
+            // Rule 3: คำทำนายเสร็จแล้วใน 24 ชม. → "พิมพ์ อ่านคำทำนาย"
+            if ($reading->is_paid && ! empty($reading->deep_response)
+                && ($reading->paid_at && $reading->paid_at >= now()->subHours(24))) {
+                return [
+                    'message' => "🙏 ขอบคุณคุณ{$name} ที่ใช้บริการแม่หมอจันทรา\n\n"
+                        . "📋 เลขบิลล่าสุด: {$billRef}\n"
+                        . "🌟 คำทำนายเชิงลึกของเจ้าชะตาพร้อมแล้ว\n\n"
+                        . "👉 พิมพ์ *\"อ่านคำทำนาย\"* เพื่อดูคำทำนายอีกครั้ง\n"
+                        . "👉 พิมพ์ *\"บิลของฉัน\"* เพื่อดูประวัติบิลย้อนหลัง",
+                    'quick_replies' => [
+                        ['content_type' => 'text', 'title' => '🌟 อ่านคำทำนาย', 'payload' => 'READ_LAST_READING'],
+                        ['content_type' => 'text', 'title' => '📚 บิลของฉัน', 'payload' => 'MY_BILLS'],
+                    ],
+                ];
+            }
+        } catch (\Throwable $e) {
+            \Log::warning('FortuneChannelManager: buildActiveBillContextMessage ล้ม (fallback to welcome)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return null;
     }
 
     /**
