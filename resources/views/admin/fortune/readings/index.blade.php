@@ -209,10 +209,7 @@
                             วันที่
                         </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            ผู้ใช้
-                        </th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                            คำถาม
+                            ผู้ใช้ / รหัสบิล
                         </th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                             หมวด
@@ -257,9 +254,6 @@
                                         @endif
                                     </div>
                                 </div>
-                            </td>
-                            <td class="px-4 py-4 text-sm text-gray-600 dark:text-gray-400 max-w-xs">
-                                <div class="truncate">{{ Str::limit(implode(', ', $reading->questions ?? []), 50) }}</div>
                             </td>
                             <td class="px-4 py-4 whitespace-nowrap text-sm">
                                 @php $cats = $reading->categories ?? []; @endphp
@@ -317,7 +311,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
                                 <div class="text-4xl mb-2">🔮</div>
                                 ไม่พบประวัติการทำนาย
                             </td>
