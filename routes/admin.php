@@ -3880,6 +3880,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
     Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
+    Route::get('/readings/{reading}/status', [FortuneReadingsController::class, 'status'])->name('readings.status');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');

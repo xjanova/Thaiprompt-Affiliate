@@ -127,6 +127,25 @@ class FortuneReadingsController extends Controller
     }
 
     /**
+     * สถานะ reading สำหรับ polling จากหน้า show.blade
+     *
+     * Client poll endpoint นี้ทุก 3 วินาทีหลังกดปุ่ม "สร้างคำทำนาย"
+     * เมื่อ ready=true → reload หน้า show ครั้งเดียว เพื่อดูคำทำนายเต็ม
+     */
+    public function status(FortuneReading $reading)
+    {
+        return response()->json([
+            'id' => $reading->id,
+            'conversation_status' => $reading->conversation_status,
+            'has_deep_response' => ! empty($reading->deep_response),
+            'is_paid' => (bool) $reading->is_paid,
+            'updated_at' => $reading->updated_at?->toIso8601String(),
+            // ready = สร้างคำทำนายเสร็จแล้ว (ไม่ว่าจะ status เป็น completed หรือยัง)
+            'ready' => ! empty($reading->deep_response),
+        ]);
+    }
+
+    /**
      * สร้างคำทำนายเชิงลึกใหม่ + ส่งให้ลูกค้า (Manual Retry)
      *
      * ใช้กรณี: ลูกค้าชำระเงินแล้ว แต่ระบบส่งคำทำนายไม่สำเร็จ
@@ -146,39 +165,40 @@ class FortuneReadingsController extends Controller
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
         }
 
-        // ถ้ามี deep_response อยู่แล้ว → clear เพื่อสร้างใหม่
+        // ถ้ามี deep_response อยู่แล้ว → clear + ตั้ง status=PAID เพื่อให้ banner "AI กำลังสร้าง..." แสดง
         // (Artisan command จะข้ามถ้ามี deep_response + status=completed)
-        if (! empty($reading->deep_response)) {
-            $reading->update([
-                'deep_response' => null,
-                'ai_response' => null,
-                'conversation_status' => FortuneReading::STATUS_PAID,
-            ]);
-        }
+        $reading->update([
+            'deep_response' => null,
+            'ai_response' => null,
+            'conversation_status' => FortuneReading::STATUS_PAID,
+        ]);
 
-        // Dispatch job สร้างคำทำนาย + ส่งข้อความ
-        try {
-            ProcessDeepFortuneReadingJob::dispatchSmart(
-                $reading->id, null, $platform, $userId
-            );
+        Log::info('Admin: Manual retry deep reading queued', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'user_id' => $userId,
+            'admin' => auth()->user()?->name,
+        ]);
 
-            Log::info('Admin: Manual retry deep reading', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'user_id' => $userId,
-                'admin' => auth()->user()?->name,
-            ]);
+        // 🚀 Defer dispatch ไปหลัง response ส่งกลับ — กัน fastcgi_finish_request() ใน
+        //    ProcessDeepFortuneReadingJob::dispatchSmart() ทำ response body ว่างเปล่า
+        //    (เคสเดิม: คลิกปุ่ม → หน้าขาว เพราะ fastcgi_finish_request ถูกเรียกก่อน redirect)
+        $readingId = $reading->id;
+        register_shutdown_function(function () use ($readingId, $platform, $userId) {
+            try {
+                ProcessDeepFortuneReadingJob::dispatchSmart($readingId, null, $platform, $userId);
+            } catch (\Throwable $e) {
+                Log::error('Admin retry: dispatch failed in shutdown', [
+                    'reading_id' => $readingId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        });
 
-            return redirect()->back()->with('success', '🔄 กำลังสร้างคำทำนายเชิงลึกใหม่... ระบบจะส่งให้ลูกค้าอัตโนมัติ');
-
-        } catch (\Exception $e) {
-            Log::error('Admin: Manual retry deep reading ล้มเหลว', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return redirect()->back()->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
-        }
+        // Redirect ไปหน้า show — banner "AI กำลังสร้าง..." + auto-reload จะ kick in ทันที
+        return redirect()
+            ->route('admin.fortune.readings.show', $reading)
+            ->with('success', '🔮 เริ่มสร้างคำทำนายเชิงลึก... หน้าจะอัปเดตอัตโนมัติเมื่อเสร็จ');
     }
 
     /**

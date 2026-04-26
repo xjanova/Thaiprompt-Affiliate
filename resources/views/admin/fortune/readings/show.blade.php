@@ -275,31 +275,55 @@
                             </div>
                         </div>
                     </div>
-                    {{-- Auto-refresh ทุก 5 วินาทีเมื่อ AI กำลังทำงาน --}}
+                    {{-- Polling: เช็ค status endpoint ทุก 3 วิ — reload เฉพาะตอน deep_response มี --}}
+                    {{-- (เดิม reload ทุก 5 วิ — รบกวน scroll/copy ของ admin) --}}
                     <script>
                         (function() {
-                            let elapsed = 0;
-                            const maxWait = 120; // 2 นาที
+                            const statusUrl = '{{ route('admin.fortune.readings.status', $reading) }}';
                             const progressBar = document.getElementById('ai-progress-bar');
+                            const banner = document.getElementById('ai-processing-banner');
+                            const startedAt = Date.now();
+                            const maxWaitMs = 180 * 1000; // 3 นาที
 
-                            const timer = setInterval(function() {
-                                elapsed += 5;
-                                // อัพเดท progress bar
+                            const tick = setInterval(async () => {
+                                const elapsedSec = (Date.now() - startedAt) / 1000;
+
+                                // อัพเดท progress bar (visual only)
                                 if (progressBar) {
-                                    const progress = Math.min(95, (elapsed / 60) * 100);
+                                    const progress = Math.min(95, (elapsedSec / 60) * 100);
                                     progressBar.style.width = progress + '%';
                                 }
-                                // รีเฟรชหน้า
-                                if (elapsed < maxWait) {
-                                    window.location.reload();
-                                } else {
-                                    clearInterval(timer);
-                                    const banner = document.getElementById('ai-processing-banner');
+
+                                // ตรวจ timeout
+                                if (Date.now() - startedAt > maxWaitMs) {
+                                    clearInterval(tick);
                                     if (banner) {
-                                        banner.innerHTML = '<p class="text-orange-600 dark:text-orange-400">⚠️ AI ใช้เวลานานกว่าปกติ กรุณารีเฟรชหน้าด้วยตัวเอง หรือกดปุ่มสร้างคำทำนายใหม่</p>';
+                                        banner.innerHTML = '<p class="text-orange-600 dark:text-orange-400 font-medium">⚠️ AI ใช้เวลานานกว่าปกติ — กรุณารีเฟรชหน้าด้วยตัวเอง หรือกดปุ่มสร้างคำทำนายใหม่</p>';
                                     }
+                                    return;
                                 }
-                            }, 5000);
+
+                                // เช็ค status (silent — ไม่รบกวน UI)
+                                try {
+                                    const res = await fetch(statusUrl, {
+                                        headers: { 'Accept': 'application/json' },
+                                        cache: 'no-store',
+                                    });
+                                    if (!res.ok) return;
+                                    const data = await res.json();
+                                    if (data.ready) {
+                                        clearInterval(tick);
+                                        if (progressBar) progressBar.style.width = '100%';
+                                        if (banner) {
+                                            banner.innerHTML = '<p class="text-green-700 dark:text-green-300 font-medium">✅ คำทำนายเสร็จแล้ว — กำลังโหลดผล...</p>';
+                                        }
+                                        // หน่วงสั้น ๆ ให้ user เห็น "เสร็จแล้ว" ก่อน reload
+                                        setTimeout(() => window.location.reload(), 600);
+                                    }
+                                } catch (e) {
+                                    // เงียบ — รอบหน้าจะลองใหม่
+                                }
+                            }, 3000);
                         })();
                     </script>
                 @endif
