@@ -66,6 +66,19 @@ class FortuneCommentEngagement extends Model
     }
 
     /**
+     * 📆 ตรวจว่าผู้ใช้คนนี้เคยถูก DM จาก comment engagement ใน 24 ชม. ล่าสุดหรือไม่
+     *
+     * นโยบาย: 1 user → 1 DM ต่อวัน (rolling 24h) ไม่ว่าจะคอมเม้นต์กี่ครั้ง/กี่โพสต์
+     * เหตุผล: กัน spam ลูกค้าที่ active comment เยอะ — ได้รับ DM ซ้ำ ๆ จะรำคาญ
+     */
+    public static function hasEngagedToday(string $userId): bool
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('engaged_at', '>=', now()->subHours(24))
+            ->exists();
+    }
+
+    /**
      * Scope: ตาม Facebook User
      */
     public function scopeByFacebookUser($query, string $facebookUserId)

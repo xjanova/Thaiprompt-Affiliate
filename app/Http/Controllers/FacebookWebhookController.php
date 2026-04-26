@@ -621,10 +621,19 @@ class FacebookWebhookController extends Controller
             }
 
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (ป้องกัน webhook retry ส่ง DM ซ้ำ
-            // สำหรับคอมเม้นต์เดียวกัน) — ไม่เช็คระดับ user+post แล้ว
-            // เพราะต้องการให้บอททักทุกคอมเม้นต์ แม้คนเดิมจะคอมเม้นต์ซ้ำในโพสต์เดิม
+            // สำหรับคอมเม้นต์เดียวกัน)
             if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
                 Log::info('Comment Engagement: คอมเม้นต์นี้ engage แล้ว ข้าม', [
+                    'user_id' => $fromId,
+                    'comment_id' => $commentId,
+                ]);
+
+                return;
+            }
+
+            // 📆 1 user → 1 DM ต่อวัน (rolling 24h) — กัน spam ลูกค้า active comment เยอะ
+            if (FortuneCommentEngagement::hasEngagedToday($fromId)) {
+                Log::info('Comment Engagement: user ได้ DM ใน 24 ชม. แล้ว ข้าม (1/วัน policy)', [
                     'user_id' => $fromId,
                     'comment_id' => $commentId,
                 ]);

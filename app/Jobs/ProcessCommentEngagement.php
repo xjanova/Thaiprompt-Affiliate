@@ -81,9 +81,18 @@ class ProcessCommentEngagement implements ShouldQueue
             }
 
             // ตรวจสอบซ้ำเฉพาะระดับ comment_id (กัน race condition จาก webhook retry)
-            // ไม่เช็คระดับ user+post — เจ้าของต้องการให้บอททักทุกคอมเม้นต์
             if (FortuneCommentEngagement::hasEngagedComment($commentId)) {
                 Log::info('คอมเม้นต์ถูก engage ไปแล้ว (webhook retry)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                ]);
+
+                return;
+            }
+
+            // 📆 1 user → 1 DM ต่อวัน (rolling 24h) — กัน spam ลูกค้า active comment เยอะ
+            if (FortuneCommentEngagement::hasEngagedToday($userId)) {
+                Log::info('Comment engagement skip — user ได้ DM ใน 24 ชม. แล้ว (1/วัน policy)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
