@@ -942,6 +942,17 @@ class FortuneConversationService
                 return $this->handleViewLastReading($facebookUserId);
             }
 
+            // 📜 ดูบิลตามรหัส (e.g. "ดูบิล FTU-260425-T4022", "FTU-..." standalone)
+            //   ตรวจ "view by bill_ref" ก่อน "my bills list" — เพื่อให้ payload ปุ่มทำงาน
+            if ($this->isViewBillRequest($messageText)) {
+                return $this->handleViewBill($facebookUserId, $messageText);
+            }
+
+            // 📚 ดูประวัติบิลของฉัน (3 อันล่าสุด + ปุ่มเลือก)
+            if ($this->isMyBillsRequest($messageText)) {
+                return $this->handleMyBills($facebookUserId);
+            }
+
             // ✅ ตรวจสอบคำสั่ง "แชร์" → ส่งลิงก์เชิญเพื่อน
             if ($this->isShareRequest($messageText)) {
                 return $this->handleShareRequest($facebookUserId);
@@ -1788,6 +1799,188 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * 📚 ตรวจว่าผู้ใช้ขอดูประวัติบิลของตัวเอง (3 บิลล่าสุด + ปุ่มเลือก)
+     *
+     * เช่น "บิลของฉัน", "ประวัติบิล", "ดูบิลเก่า", "บิลย้อนหลัง", "ดูคำทำนายเก่า"
+     */
+    protected function isMyBillsRequest(string $text): bool
+    {
+        $keywords = [
+            'บิลของฉัน', 'บิลของผม', 'บิลของหนู',
+            'ประวัติบิล', 'ดูบิลเก่า', 'บิลเก่า', 'บิลย้อนหลัง',
+            'ดูคำทำนายเก่า', 'คำทำนายเก่า', 'ทำนายเก่า', 'ดูประวัติ',
+            'รายการบิล', 'บิลทั้งหมด', 'my bills', 'history',
+        ];
+        $text = mb_strtolower(trim($text));
+
+        foreach ($keywords as $keyword) {
+            if (str_contains($text, mb_strtolower($keyword))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 📋 แสดง 3 บิลล่าสุด ที่ลูกค้าจ่ายเงินแล้ว + มี deep_response
+     *
+     * AI ส่งรายการ + quick reply ปุ่ม "ดูบิล FTU-..." ให้ลูกค้ากดเลือก
+     * เลือกแล้ว → trigger handleViewBill โดย matched ผ่าน isViewBillRequest
+     */
+    protected function handleMyBills(string $facebookUserId): array
+    {
+        // ดึง 3 readings ล่าสุดที่ paid + มี deep_response (ทำนายสำเร็จ)
+        $bills = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('is_paid', true)
+            ->whereNotNull('deep_response')
+            ->where('deep_response', '!=', '')
+            ->whereNotNull('bill_reference')
+            ->orderByDesc('paid_at')
+            ->limit(3)
+            ->get();
+
+        if ($bills->isEmpty()) {
+            return [
+                'action' => 'my_bills_empty',
+                'message' => "📚 ยังไม่มีบิลคำทำนายในประวัติของคุณค่ะ\n\n"
+                    . "ถ้าต้องการดูดวงเชิงลึก พิมพ์ 'ดูดวงละเอียด' ได้เลย ✨",
+                'reading' => null,
+            ];
+        }
+
+        $name = $bills->first()->facebook_user_name ?? 'คุณ';
+        $message = "📚 *ประวัติคำทำนายของคุณ{$name}*\n";
+        $message .= "═══════════════════════\n\n";
+
+        $quickReplies = [];
+        foreach ($bills as $idx => $bill) {
+            $num = $idx + 1;
+            $date = $bill->paid_at?->format('d/m/Y H:i') ?? $bill->created_at->format('d/m/Y H:i');
+            $billRef = $bill->bill_reference;
+            $amount = number_format((float) ($bill->amount_paid ?? 0), 2);
+
+            $message .= "{$num}. 🧾 *{$billRef}*\n";
+            $message .= "   📅 {$date}\n";
+            $message .= "   💰 ฿{$amount}\n";
+
+            // คำถามแรก preview (สั้น ๆ)
+            $questions = $bill->questions ?? [];
+            if (! empty($questions[0])) {
+                $preview = mb_substr((string) $questions[0], 0, 40);
+                $message .= "   ❓ {$preview}".(mb_strlen((string) $questions[0]) > 40 ? '...' : '')."\n";
+            }
+            $message .= "\n";
+
+            // Quick reply payload — ใช้ "ดูบิล FTU-..." ที่ isViewBillRequest จับได้
+            $quickReplies[] = [
+                'title' => "📜 บิล {$num}",
+                'text' => "ดูบิล {$billRef}",
+                'payload' => "ดูบิล {$billRef}",
+            ];
+        }
+
+        $message .= "👇 กดปุ่มด้านล่างเพื่อดูคำทำนายของบิลที่ต้องการ";
+
+        return [
+            'action' => 'my_bills_list',
+            'message' => $message,
+            'reading' => null,
+            'show_quick_replies' => true,
+            'quick_replies' => $quickReplies,
+        ];
+    }
+
+    /**
+     * 🔎 ตรวจว่าผู้ใช้ขอดูคำทำนายตามรหัสบิล
+     *
+     * จับ pattern:
+     *   - "ดูบิล FTU-260425-T4022"
+     *   - "FTU-260425-T4022" (standalone)
+     *   - "ดู FTU-260425-T4022"
+     *   - "FR-12345"
+     */
+    protected function isViewBillRequest(string $text): bool
+    {
+        return (bool) preg_match('/(?:FTU|FR)-[A-Z0-9-]+/i', trim($text));
+    }
+
+    /**
+     * แสดงคำทำนายของบิลที่ระบุ — เฉพาะบิลของ user คนนี้เท่านั้น (ป้องกันดูบิลคนอื่น)
+     */
+    protected function handleViewBill(string $facebookUserId, string $messageText): array
+    {
+        // Extract bill reference จากข้อความ
+        if (! preg_match('/((?:FTU|FR)-[A-Z0-9-]+)/i', trim($messageText), $m)) {
+            return [
+                'action' => 'view_bill_invalid',
+                'message' => "❌ ไม่พบรหัสบิลในข้อความ — กรุณาพิมพ์ 'บิลของฉัน' เพื่อดูรายการบิลค่ะ",
+                'reading' => null,
+            ];
+        }
+        $billRef = strtoupper($m[1]);
+
+        // ดึง reading ตาม bill_reference + verify ownership
+        $reading = FortuneReading::where('bill_reference', $billRef)
+            ->where(function ($q) use ($facebookUserId) {
+                $q->where('facebook_user_id', $facebookUserId)
+                    ->orWhere('platform_user_id', $facebookUserId);
+            })
+            ->first();
+
+        if (! $reading) {
+            Log::info('Fortune: handleViewBill — ไม่พบบิล หรือไม่ใช่ของผู้ใช้คนนี้', [
+                'facebook_user_id' => $facebookUserId,
+                'bill_reference' => $billRef,
+            ]);
+
+            return [
+                'action' => 'view_bill_not_found',
+                'message' => "❌ ไม่พบบิล *{$billRef}* ในประวัติของคุณค่ะ\n\n"
+                    . "พิมพ์ 'บิลของฉัน' เพื่อดูรายการบิลทั้งหมด",
+                'reading' => null,
+            ];
+        }
+
+        // เคส 1: บิล paid + มี deep_response → ส่งคำทำนายเต็ม
+        if ($reading->is_paid && ! empty($reading->deep_response)) {
+            $name = $reading->facebook_user_name ?? 'คุณ';
+            $date = ($reading->paid_at ?? $reading->created_at)->format('d/m/Y H:i');
+
+            $message = "🌟 *คำทำนายเชิงลึก — บิล {$billRef}*\n";
+            $message .= "👤 คุณ{$name}\n";
+            $message .= "📅 {$date}\n";
+            $message .= "═══════════════════════\n\n";
+            $message .= $reading->deep_response;
+
+            return [
+                'action' => 'view_bill_deep',
+                'message' => $message,
+                'reading' => $reading,
+                'chart_image_url' => $reading->reading_image_url,
+            ];
+        }
+
+        // เคส 2: paid แต่ยังไม่มี deep_response → กำลังประมวลผล
+        if ($reading->is_paid && empty($reading->deep_response)) {
+            return [
+                'action' => 'view_bill_processing',
+                'message' => "🌙 บิล *{$billRef}* — แม่หมอกำลังคำนวณดวงดาวอยู่ค่ะ\n\n"
+                    . "⏳ รอสักครู่ คำทำนายจะส่งไปทันทีเมื่อเสร็จ ✨",
+                'reading' => $reading,
+            ];
+        }
+
+        // เคส 3: ยังไม่ paid → บิลค้าง / ถูกยกเลิก
+        return [
+            'action' => 'view_bill_unpaid',
+            'message' => "⚠️ บิล *{$billRef}* ยังไม่ได้รับการชำระเงิน\n\n"
+                . "ถ้าต้องการเริ่มดูดวงใหม่ พิมพ์ 'ดูดวงละเอียด' ได้เลย ✨",
+            'reading' => $reading,
+        ];
     }
 
     /**

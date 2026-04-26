@@ -132,7 +132,17 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
-        // รองรับเฉพาะ text message
+        // 📸 รับรูปภาพ — ตรวจบริบท active reading แล้วตอบตามสถานะ
+        //   PENDING_PAYMENT → assume สลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
+        //   PAID / processing → "แม่หมอกำลังคำนวณ"
+        //   ไม่มี active → guidance generic
+        if ($messageType === 'image') {
+            $this->handleSlipImageOnly($userId, $replyToken);
+
+            return;
+        }
+
+        // รองรับเฉพาะ text message (sticker, video, audio, file → fallback)
         if ($messageType !== 'text') {
             $this->lineService->replyMessage($replyToken, [
                 [
@@ -1142,6 +1152,111 @@ class LineFortuneWebhookController extends Controller
             $this->lineService->sendMessageWithReplyFallback(
                 $userId, 'ขออภัยค่ะ เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง 🙏', $replyToken
             );
+        }
+    }
+
+    /**
+     * 📸 จัดการเมื่อลูกค้า LINE ส่งรูปภาพ (มักเป็นสลิปการโอน)
+     *
+     * ตรวจ active reading → ตอบตามบริบท เหมือน FacebookWebhookController::handleSlipImageOnly:
+     *   - PENDING_PAYMENT → ปลอบ + แนะให้กด "แจ้งชำระเงิน" / พิมพ์ "โอนแล้ว"
+     *   - PAID / processing → "แม่หมอกำลังคำนวณดวงดาว"
+     *   - ไม่มี active → guidance ว่าระบบใช้ SMS Banking auto-check
+     *
+     * เคยเป็น generic "รับเฉพาะข้อความ" → ลูกค้าที่ส่งสลิปกังวลว่าระบบไม่รับ
+     */
+    protected function handleSlipImageOnly(string $userId, ?string $replyToken): void
+    {
+        try {
+            // หา reading ที่ user กำลังใช้งานอยู่ (LINE platform)
+            $activeReading = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)
+                    ->orWhere('facebook_user_id', $userId);
+            })
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PAID,
+                ])
+                ->latest()
+                ->first();
+
+            // Fallback: ตรวจบิลที่เพิ่งจ่ายใน 30 นาที (กรณี conversation ปิดไปแล้วแต่ AI ยังประมวลผลอยู่)
+            if (! $activeReading) {
+                $recentReading = FortuneReading::where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)
+                        ->orWhere('facebook_user_id', $userId);
+                })
+                    ->where(function ($q) {
+                        $q->where('paid_at', '>=', now()->subMinutes(30))
+                            ->orWhere('updated_at', '>=', now()->subMinutes(30));
+                    })
+                    ->whereNotNull('bill_reference')
+                    ->latest('updated_at')
+                    ->first();
+
+                if ($recentReading && $recentReading->is_paid) {
+                    $activeReading = $recentReading;
+                }
+            }
+
+            // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
+            if ($activeReading && $activeReading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT) {
+                $billRef = $activeReading->bill_reference ?? '-';
+                $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
+                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    . "💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
+                    . "🔔 *กรุณาพิมพ์ \"โอนแล้ว\" หรือ \"แจ้งชำระเงิน\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"
+                    . "ระบบจะตรวจสอบและตัดบิลภายใน 1-3 นาทีค่ะ ✨\n\n"
+                    . "🪐 ระหว่างรอ ใจเย็นๆ นะคะ — ดาวเจ้าชนะของเจ้าชะตากำลังเรียงตัว";
+
+                $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                Log::info('LINE: รับสลิประหว่าง PENDING_PAYMENT → ปลอบ + ขอกด แจ้งชำระเงิน', [
+                    'user_id' => $userId,
+                    'reading_id' => $activeReading->id,
+                    'bill_reference' => $billRef,
+                ]);
+
+                return;
+            }
+
+            // 🟢 PAID / processing — ระบบรับเงินแล้ว แม่หมอกำลังคำนวณ
+            if ($activeReading && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
+                || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
+                $billRef = $activeReading->bill_reference ?? '-';
+                $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
+                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    . "🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
+                    . "ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
+                    . "💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)";
+
+                $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                Log::info('LINE: รับสลิประหว่าง PAID → ปลอบ แม่หมอกำลังคำนวณ', [
+                    'user_id' => $userId,
+                    'reading_id' => $activeReading->id,
+                ]);
+
+                return;
+            }
+
+            // ⚪ ไม่มี active → guidance generic
+            $genericMessage = "📸 ได้รับรูปภาพแล้วค่ะ\n\n"
+                . "💡 ถ้าเป็นสลิปการโอน — ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ ไม่ต้องส่งสลิปให้แอดมินค่ะ\n\n"
+                . "🔮 ถ้าต้องการเริ่มดูดวง พิมพ์ 'ดูดวง' หรือคำถามที่อยากรู้มาได้เลย ✨";
+
+            $this->lineService->sendMessageWithReplyFallback($userId, $genericMessage, $replyToken);
+        } catch (\Throwable $e) {
+            Log::warning('LINE: handleSlipImageOnly ล้มเหลว fallback generic', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            if ($replyToken) {
+                $this->lineService->replyMessage($replyToken, [
+                    ['type' => 'text', 'text' => "📸 ได้รับรูปภาพแล้วค่ะ\n\nพิมพ์คำถามที่อยากให้ดูดวงมาได้เลยนะคะ 🔮✨"],
+                ]);
+            }
         }
     }
 }
