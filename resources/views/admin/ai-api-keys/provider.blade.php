@@ -150,9 +150,22 @@
                             @endif
 
                             @if($key['consecutive_errors'] > 0)
-                            <span class="ml-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
+                            {{-- 🔍 Clickable error badge — เปิด modal แสดง last_error + ปุ่มไปดู logs ทั้งหมด --}}
+                            <button type="button"
+                                    @click="showErrorDetail({
+                                        id: {{ $key['id'] }},
+                                        name: @js($key['name']),
+                                        consecutive_errors: {{ $key['consecutive_errors'] }},
+                                        last_error: @js($key['last_error'] ?? ''),
+                                        last_error_at: @js($key['last_error_at'] ?? ''),
+                                    })"
+                                    class="ml-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 transition cursor-pointer"
+                                    title="คลิกเพื่อดู error message">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                </svg>
                                 {{ $key['consecutive_errors'] }} errors
-                            </span>
+                            </button>
                             @endif
                         </td>
                         <td class="px-6 py-4">
@@ -220,6 +233,14 @@
                                     </svg>
                                 </button>
                                 @endif
+                                {{-- 📜 ดู logs ของ key นี้ทั้งหมด — รองรับทุก provider --}}
+                                <a href="{{ route('admin.ai-api-keys.key.logs', $key['id']) }}"
+                                   class="p-1.5 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition"
+                                   title="ดู Usage Logs">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                                    </svg>
+                                </a>
                                 <a href="{{ route('admin.ai-api-keys.edit', $key['id']) }}"
                                    class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
                                    title="แก้ไข">
@@ -257,6 +278,101 @@
             </table>
         </div>
     </div>
+
+    {{-- 🚨 Error Detail Modal — ดูรายละเอียด error ของ key ที่คลิก --}}
+    <div x-show="errorModal.open"
+         x-cloak
+         x-transition.opacity
+         @keydown.escape.window="errorModal.open = false"
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+         @click.self="errorModal.open = false">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-hidden flex flex-col"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100">
+
+            {{-- Header --}}
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                            Error ล่าสุดของ <span x-text="errorModal.name"></span>
+                        </h3>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            <span x-text="errorModal.consecutive_errors"></span> errors ติดต่อกัน
+                            <template x-if="errorModal.last_error_at">
+                                <span> · เกิดเมื่อ <span x-text="errorModal.last_error_at"></span></span>
+                            </template>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="errorModal.open = false"
+                        class="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            {{-- Body --}}
+            <div class="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+                <template x-if="errorModal.last_error">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                            Error message
+                        </label>
+                        <pre class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4 text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap break-words font-mono"
+                             x-text="errorModal.last_error"></pre>
+                    </div>
+                </template>
+                <template x-if="!errorModal.last_error">
+                    <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                        <svg class="w-12 h-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p class="text-sm">ยังไม่มี error message ที่บันทึกไว้</p>
+                        <p class="text-xs mt-1">บิลรุ่นเก่าอาจไม่ได้บันทึก — ดู Usage Logs เพื่อดูรายละเอียด</p>
+                    </div>
+                </template>
+
+                <div class="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <p class="text-xs text-blue-800 dark:text-blue-300">
+                        💡 ดู usage logs ทั้งหมดของ key นี้เพื่อตรวจประวัติ error และคำขอที่สำเร็จ/ล้มเหลว
+                    </p>
+                </div>
+            </div>
+
+            {{-- Footer --}}
+            <div class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between gap-3">
+                <button type="button"
+                        @click="resetErrors(errorModal.id); errorModal.open = false"
+                        class="px-4 py-2 text-sm font-medium text-yellow-700 dark:text-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 hover:bg-yellow-100 dark:hover:bg-yellow-900/40 rounded-lg transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    รีเซ็ต Errors
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" @click="errorModal.open = false"
+                            class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition">
+                        ปิด
+                    </button>
+                    <a :href="`/admin/ai-api-keys/${errorModal.id}/logs`"
+                       class="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                        </svg>
+                        ดู Usage Logs ทั้งหมด
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @push('scripts')
@@ -266,6 +382,28 @@ function providerDashboard() {
         loading: false,
         savingSettings: false,
         currentSettings: @json($settings),
+
+        // 🚨 Error detail modal state
+        errorModal: {
+            open: false,
+            id: null,
+            name: '',
+            consecutive_errors: 0,
+            last_error: '',
+            last_error_at: '',
+        },
+
+        // 📋 เปิด modal แสดง error detail (เรียกจาก clickable badge)
+        showErrorDetail(payload) {
+            this.errorModal = {
+                open: true,
+                id: payload.id,
+                name: payload.name || '',
+                consecutive_errors: payload.consecutive_errors || 0,
+                last_error: payload.last_error || '',
+                last_error_at: payload.last_error_at || '',
+            };
+        },
 
         init() {
             setInterval(() => this.refreshStats(), 30000);
