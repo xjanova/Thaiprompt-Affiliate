@@ -2193,6 +2193,34 @@ class FortuneConversationService
                     'error' => $e->getMessage(),
                 ]);
             }
+
+            // 💭 ส่งคำเตือนสติให้ลูกค้าที่กดยกเลิกบิลเอง (เฉพาะกรณีมีบิล PENDING_PAYMENT)
+            //   เหตุผล: ลูกค้าตัดสินใจไม่จ่ายค่าครู ก็เหมือนกับ auto-expire — ใช้โอกาสได้ educate
+            //   header แตกต่างจาก auto: "✋ รับทราบ — ยกเลิกตามคำขอ" แทน "🚫 ยกเลิกอัตโนมัติ"
+            if ($pendingReadings->isNotEmpty()) {
+                try {
+                    foreach ($pendingReadings as $cancelledReading) {
+                        $wakeupMessage = FortuneReading::buildCancelWakeupMessage(
+                            $cancelledReading,
+                            'user_cancelled'
+                        );
+                        $platform = $cancelledReading->platform ?? 'facebook';
+                        $userId = $cancelledReading->platform_user_id ?? $cancelledReading->facebook_user_id;
+
+                        if (! empty($userId)) {
+                            $platformService = app(FortuneChannelManager::class)->getPlatform($platform);
+                            if ($platformService) {
+                                $platformService->sendMessage($userId, $wakeupMessage);
+                            }
+                        }
+                    }
+                } catch (\Throwable $wakeupErr) {
+                    Log::warning('Fortune: ส่งคำเตือนสติ user_cancelled ล้มเหลว (best-effort)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'error' => $wakeupErr->getMessage(),
+                    ]);
+                }
+            }
         }
 
         return $closed;

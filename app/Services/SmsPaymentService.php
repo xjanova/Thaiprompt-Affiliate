@@ -119,6 +119,14 @@ class SmsPaymentService
                         $matchedModelType = 'fortune_reading';
                     }
                 }
+
+                // 🚨 Orphan fortune payment guard — ยอดอยู่ในช่วงดูดวงแต่ไม่มีบิลจับคู่
+                //    เคสที่เกิด: บิลถูกยกเลิกไปแล้ว (auto/user) → ลูกค้ามาจ่ายข้ามวัน → SMS เข้า
+                //    → ระบบไม่ match (เพราะ UPA cancelled/expired เกิน grace) → เงินค้าง
+                //    Fix: flag notification + ส่ง FCM push ให้ admin ตรวจสอบ + จ่ายคืน/สร้าง reading manual
+                if (! $fortuneReadingHandled && ! $matched && ! $specialAmountHandled) {
+                    $this->flagOrphanFortunePayment($notification);
+                }
             }
 
             Log::info('SMS Payment: ประมวลผล notification สำเร็จ', [
@@ -490,6 +498,81 @@ class SmsPaymentService
         ]);
 
         return false;
+    }
+
+    /**
+     * 🚨 Flag orphan fortune payment — ยอดอยู่ในช่วงดูดวงแต่ไม่มีบิลจับคู่
+     *
+     * เคสที่เกิดขึ้น:
+     *   - บิลถูก cancel/expired ไปแล้ว (UPA cancelled / expired เกิน grace 60 นาที)
+     *   - ลูกค้ามาโอนข้ามวัน → SMS เข้า → ระบบไม่ match (handleFortuneReadingPayment fail)
+     *   - หา special_amount ก็ไม่ตรง (เพราะลูกค้าโอนตามยอดบิลเก่าที่ unique)
+     *   - ผลลัพธ์เดิม: SMS notification status='pending' ค้างไว้ admin ไม่รู้
+     *
+     * Fix:
+     *   1. เช็ค amount ในช่วง fortune (deep_reading_price ± 1 บาท — รองรับ unique decimal suffix .00-.99)
+     *   2. Mark notification ใน metadata: requires_admin_review + reason
+     *   3. ส่ง FCM push 'orphan_fortune_payment' ให้ admin device — เด้งแจ้งเตือนทันที
+     *   4. Log critical สำหรับ ops monitoring
+     *
+     * smschecker app หน้าที่: รับ FCM push → แสดงเป็น "บิลค้างต้องตรวจสอบ" ใน admin queue
+     */
+    protected function flagOrphanFortunePayment(SmsPaymentNotification $notification): void
+    {
+        $amount = (float) $notification->amount;
+
+        // ดึง fortune price จาก settings (รองรับ admin เปลี่ยนราคา)
+        $fortunePrice = 0.0;
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $fortunePrice = (float) ($settings->deep_reading_price ?? 0);
+            if ($fortunePrice <= 0) {
+                $fortunePrice = (float) ($settings->reading_price ?? 0);
+            }
+        } catch (\Throwable $e) {
+            // ignore — fallback ด้านล่าง
+        }
+        if ($fortunePrice <= 0) {
+            $fortunePrice = 39.0; // default
+        }
+
+        // Range check: amount ต้องอยู่ในช่วง [price, price + 1]
+        // เช่น price=39 → match 39.00 ถึง 39.99 (รองรับ unique decimal suffix)
+        // กัน edge: ถ้า admin ตั้งราคา 40 → match 40.00 ถึง 40.99
+        if ($amount < $fortunePrice || $amount >= ($fortunePrice + 1.0)) {
+            return; // ยอดไม่อยู่ในช่วง fortune — ไม่ใช่ orphan ของระบบนี้
+        }
+
+        // Mark notification — admin จะเห็นใน UI พร้อม flag
+        $notification->update([
+            'status' => 'requires_admin_review',
+            // เก็บเหตุผลใน raw_data (notification model มี json field นี้)
+            'raw_data' => array_merge((array) ($notification->raw_data ?? []), [
+                'orphan_fortune_payment' => true,
+                'orphan_reason' => 'amount_in_fortune_range_but_no_matching_bill',
+                'expected_price_range' => [$fortunePrice, $fortunePrice + 0.99],
+                'flagged_at' => now()->toIso8601String(),
+            ]),
+        ]);
+
+        Log::critical('🚨 SMS Payment: Orphan fortune payment — ลูกค้าโอนแต่ไม่มีบิล (admin ต้องตรวจ)', [
+            'notification_id' => $notification->id,
+            'amount' => $amount,
+            'expected_range' => "{$fortunePrice}-".($fortunePrice + 0.99),
+            'bank' => $notification->bank,
+            'sender' => $notification->sender_or_receiver,
+            'sms_timestamp' => $notification->sms_timestamp,
+        ]);
+
+        // 📡 ส่ง FCM push ให้ admin device — เด้งแจ้งเตือนทันที
+        try {
+            app(FcmNotificationService::class)->notifyOrphanFortunePayment($notification, $fortunePrice);
+        } catch (\Throwable $fcmErr) {
+            Log::warning('SMS Payment: FCM orphan payment alert ล้ม (best-effort)', [
+                'notification_id' => $notification->id,
+                'error' => $fcmErr->getMessage(),
+            ]);
+        }
     }
 
     /**

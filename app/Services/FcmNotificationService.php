@@ -379,6 +379,57 @@ class FcmNotificationService
     }
 
     /**
+     * 🚨 ส่ง push แจ้ง admin เมื่อมียอดดูดวงเข้าแต่ไม่มีบิลจับคู่
+     *
+     * เคสที่ trigger: ลูกค้าโอนยอดในช่วงดูดวง (เช่น 39.34) แต่บิลถูกยกเลิก/หมดอายุ
+     * ไปแล้วเกิน grace period — server ไม่ match → admin ต้อง review manual
+     *
+     * Push เป็น **visible notification** (ไม่ใช่ data-only) เพราะต้องการให้
+     * admin เห็นเด้งทันทีไม่ต้องเปิดแอพ
+     */
+    public function notifyOrphanFortunePayment(SmsPaymentNotification $notification, float $expectedPrice): bool
+    {
+        $tokens = $this->getTargetTokens(null);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens available for orphan payment alert');
+
+            return false;
+        }
+
+        $amount = number_format((float) $notification->amount, 2);
+        $sender = $notification->sender_or_receiver ?: 'ไม่ทราบ';
+
+        $data = [
+            'type' => 'orphan_fortune_payment',
+            'notification_id' => (string) $notification->id,
+            'amount' => $amount,
+            'bank' => $notification->bank ?? '',
+            'sender' => $sender,
+            'expected_price' => number_format($expectedPrice, 2),
+            'requires_admin_review' => 'true',
+            'server_url' => config('app.url'),
+        ];
+
+        $notificationPayload = [
+            'title' => '🚨 ยอดดูดวงเข้าแต่ไม่มีบิล — ตรวจสอบด่วน',
+            'body' => sprintf(
+                '฿%s จาก %s — ยอดอยู่ในช่วงดูดวง (~฿%s) แต่ไม่มีบิลจับคู่ (อาจเป็นบิลที่ยกเลิกไปแล้ว)',
+                $amount,
+                $sender,
+                number_format($expectedPrice, 2)
+            ),
+        ];
+
+        Log::info('FCM: Sending orphan_fortune_payment alert', [
+            'notification_id' => $notification->id,
+            'amount' => $amount,
+            'expected_price' => $expectedPrice,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notificationPayload);
+    }
+
+    /**
      * Notify device that settings changed (e.g. approval_mode from admin panel)
      * Device will trigger sync to pull updated settings
      */
