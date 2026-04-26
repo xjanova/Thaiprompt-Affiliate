@@ -196,33 +196,60 @@ class FortuneChannelManager
         // 1. FortuneUserCredit
         try {
             $credit = \App\Models\FortuneUserCredit::findByUser($userId, $platform);
-            if ($credit && ! empty($credit->facebook_user_name) && $credit->facebook_user_name !== 'คุณ') {
+            if ($credit && $this->isHumanLikeName($credit->facebook_user_name)) {
                 return $credit->facebook_user_name;
             }
         } catch (\Throwable $e) {
             // ignore
         }
 
-        // 2. Historical FortuneReading
+        // 2. Historical FortuneReading — scan top 10 ล่าสุด เลือกอันที่เป็นชื่อคนจริง
         try {
-            $historical = FortuneReading::where(function ($q) use ($userId) {
+            $candidates = FortuneReading::where(function ($q) use ($userId) {
                 $q->where('facebook_user_id', $userId)
                     ->orWhere('platform_user_id', $userId);
             })
                 ->whereNotNull('facebook_user_name')
-                ->where('facebook_user_name', '!=', 'คุณ')
                 ->where('facebook_user_name', '!=', '')
                 ->latest('updated_at')
-                ->value('facebook_user_name');
+                ->limit(10)
+                ->pluck('facebook_user_name');
 
-            if (! empty($historical)) {
-                return $historical;
+            foreach ($candidates as $candidate) {
+                if ($this->isHumanLikeName($candidate)) {
+                    return $candidate;
+                }
             }
         } catch (\Throwable $e) {
             // ignore
         }
 
         return null;
+    }
+
+    /**
+     * ตรวจว่าค่าที่ได้ดูเป็นชื่อคนจริง (กัน code pattern "FACEBOOK-494919" หลุดเข้า flow)
+     */
+    protected function isHumanLikeName(?string $name): bool
+    {
+        if ($name === null) {
+            return false;
+        }
+        $name = trim($name);
+        if ($name === '' || $name === 'คุณ' || $name === 'ลูกค้า' || $name === 'เจ้าชะตา') {
+            return false;
+        }
+        if (preg_match('/^(FACEBOOK|LINE|FB|TG|TELEGRAM|MESSENGER|IG|INSTAGRAM)-[A-Z0-9]+$/i', $name)) {
+            return false;
+        }
+        if (preg_match('/^U[0-9a-f]{32}$/i', $name)) {
+            return false;
+        }
+        if (preg_match('/^\d{15,}$/', $name)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

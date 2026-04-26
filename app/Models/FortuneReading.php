@@ -1152,21 +1152,22 @@ class FortuneReading extends Model
      * 👤 Resolve customer name via fallback chain (เคสชื่อหายระหว่าง flow)
      *
      * Priority:
-     *   1. facebook_user_name ของ reading (ถ้าไม่ใช่ empty / "คุณ")
+     *   1. facebook_user_name ของ reading (ถ้าเป็นชื่อคนจริง)
      *   2. user_profile['name'] ของ reading
      *   3. FortuneUserCredit ของ user คนนี้ (cross-conversation persistent)
      *   4. ดึงจาก FortuneReading เก่าๆ ของ user เดียวกัน (latest with valid name)
      *   5. user.name (registered user account)
-     *   6. PLATFORM-XXXXXX (last 6 ของ platform_user_id)
-     *   7. 'คุณ' (default สุดท้าย)
+     *   6. 'คุณ' (default สุดท้าย — ดีกว่าโชว์ code "FACEBOOK-XXXXXX")
      *
-     * Side effect: ถ้า resolve ได้ name จริง + DB เก็บเป็น 'คุณ'/empty → update เพื่อ persist
-     * (ครั้งต่อไปไม่ต้อง resolve ซ้ำ + admin panel เห็นชื่อจริง)
+     * Side effect: persist กลับ DB เฉพาะกรณีได้ชื่อคนจริง (ไม่ persist 'คุณ' / code-pattern)
+     *
+     * ⚠️ ห้าม fallback เป็น "PLATFORM-XXXXXX" — เคยมีบั๊ก: persist ลง DB แล้ว historical lookup
+     *    เอามาใช้ซ้ำ → ลูกค้าเห็น "FACEBOOK-494919" ตลอด
      */
     public function resolveCustomerName(): string
     {
         // 1. reading.facebook_user_name
-        if (! empty($this->facebook_user_name) && $this->facebook_user_name !== 'คุณ') {
+        if ($this->isHumanLikeName($this->facebook_user_name)) {
             return $this->facebook_user_name;
         }
 
@@ -1174,7 +1175,7 @@ class FortuneReading extends Model
 
         // 2. user_profile.name
         $profile = $this->user_profile ?? [];
-        if (is_array($profile) && ! empty($profile['name']) && $profile['name'] !== 'คุณ') {
+        if (is_array($profile) && $this->isHumanLikeName($profile['name'] ?? null)) {
             $resolved = $profile['name'];
         }
 
@@ -1187,7 +1188,7 @@ class FortuneReading extends Model
                         $userId,
                         $this->platform ?? 'facebook'
                     );
-                    if ($credit && ! empty($credit->facebook_user_name) && $credit->facebook_user_name !== 'คุณ') {
+                    if ($credit && $this->isHumanLikeName($credit->facebook_user_name)) {
                         $resolved = $credit->facebook_user_name;
                     }
                 }
@@ -1201,18 +1202,22 @@ class FortuneReading extends Model
             try {
                 $userId = $this->platform_user_id ?? $this->facebook_user_id;
                 if (! empty($userId)) {
-                    $historical = self::where(function ($q) use ($userId) {
+                    $candidates = self::where(function ($q) use ($userId) {
                         $q->where('facebook_user_id', $userId)
                             ->orWhere('platform_user_id', $userId);
                     })
                         ->whereNotNull('facebook_user_name')
-                        ->where('facebook_user_name', '!=', 'คุณ')
                         ->where('facebook_user_name', '!=', '')
                         ->where('id', '!=', $this->id)
                         ->latest('updated_at')
-                        ->value('facebook_user_name');
-                    if (! empty($historical)) {
-                        $resolved = $historical;
+                        ->limit(10)
+                        ->pluck('facebook_user_name');
+
+                    foreach ($candidates as $candidate) {
+                        if ($this->isHumanLikeName($candidate)) {
+                            $resolved = $candidate;
+                            break;
+                        }
                     }
                 }
             } catch (\Throwable $e) {
@@ -1223,7 +1228,7 @@ class FortuneReading extends Model
         // 5. user.name (registered)
         if (! $resolved) {
             try {
-                if ($this->user && ! empty($this->user->name)) {
+                if ($this->user && $this->isHumanLikeName($this->user->name)) {
                     $resolved = $this->user->name;
                 }
             } catch (\Throwable $e) {
@@ -1231,23 +1236,15 @@ class FortuneReading extends Model
             }
         }
 
-        // 6. PLATFORM-XXXXXX (สุดท้ายก่อน 'คุณ' — ดีกว่า "คุณคุณ")
-        if (! $resolved) {
-            $platformId = $this->platform_user_id ?? $this->facebook_user_id;
-            if (! empty($platformId)) {
-                $platformLabel = strtoupper($this->platform ?? 'FB');
-                $resolved = $platformLabel . '-' . substr($platformId, -6);
-            }
-        }
-
-        // 7. Default
+        // 6. Default 'คุณ' — ดีกว่าโชว์ code
         if (! $resolved) {
             return 'คุณ';
         }
 
-        // 💾 Persist กลับ DB ถ้าเดิมเป็น empty/'คุณ' — กันต้อง resolve ซ้ำ + admin เห็นชื่อ
+        // 💾 Persist กลับ DB เฉพาะกรณีเดิมเป็น empty/'คุณ'/code → resolved ชื่อคนจริง
         try {
-            if (empty($this->facebook_user_name) || $this->facebook_user_name === 'คุณ') {
+            $current = $this->facebook_user_name;
+            if ($this->isHumanLikeName($resolved) && ! $this->isHumanLikeName($current)) {
                 $this->update(['facebook_user_name' => $resolved]);
                 \Log::debug('FortuneReading: persisted resolved customer name', [
                     'reading_id' => $this->id,
@@ -1259,6 +1256,38 @@ class FortuneReading extends Model
         }
 
         return $resolved;
+    }
+
+    /**
+     * ตรวจว่าค่าที่ได้ "ดูเป็นชื่อคนจริง" หรือเปล่า
+     *
+     * เกณฑ์:
+     *   - ไม่ใช่ null / empty / 'คุณ'
+     *   - ไม่ใช่ code pattern PLATFORM-XXXXXX (FACEBOOK-, LINE-, FB-, ...)
+     *   - ไม่ใช่ platform user ID เปล่า ๆ (33+ chars hex / numeric long string)
+     */
+    protected function isHumanLikeName(?string $name): bool
+    {
+        if ($name === null) {
+            return false;
+        }
+        $name = trim($name);
+        if ($name === '' || $name === 'คุณ' || $name === 'ลูกค้า' || $name === 'เจ้าชะตา') {
+            return false;
+        }
+        // Code pattern: FACEBOOK-XXXX, LINE-XXXX, FB-XXXX (uppercase prefix + dash + alphanum)
+        if (preg_match('/^(FACEBOOK|LINE|FB|TG|TELEGRAM|MESSENGER|IG|INSTAGRAM)-[A-Z0-9]+$/i', $name)) {
+            return false;
+        }
+        // Platform user ID เปล่า ๆ: LINE userId = U + 32 hex, FB PSID = numeric 15+ chars
+        if (preg_match('/^U[0-9a-f]{32}$/i', $name)) {
+            return false;
+        }
+        if (preg_match('/^\d{15,}$/', $name)) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
