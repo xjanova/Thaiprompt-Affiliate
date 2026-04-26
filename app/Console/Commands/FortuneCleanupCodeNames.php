@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\FortuneCommentEngagement;
 use App\Models\FortuneReading;
 use App\Models\FortuneUserCredit;
 use Illuminate\Console\Command;
@@ -90,6 +91,26 @@ class FortuneCleanupCodeNames extends Command
                 }
             }
 
+            // 🆕 ลอง FortuneCommentEngagement.user_profile.name (มี name จาก comment payload เสมอ)
+            if (! $realName && ! empty($userId)) {
+                try {
+                    $engagement = FortuneCommentEngagement::where('facebook_user_id', $userId)
+                        ->whereNotNull('user_profile')
+                        ->latest('engaged_at')
+                        ->first();
+                    if ($engagement) {
+                        $profileName = data_get($engagement->user_profile, 'name');
+                        if (! empty($profileName)
+                            && ! preg_match("/{$pattern}/i", $profileName)
+                            && $profileName !== 'คุณ') {
+                            $realName = $profileName;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+            }
+
             if ($realName) {
                 if (! $dryRun) {
                     $reading->update(['facebook_user_name' => $realName]);
@@ -132,6 +153,26 @@ class FortuneCleanupCodeNames extends Command
 
             if (! empty($candidate)) {
                 $realName = $candidate;
+            }
+
+            // 🆕 ลอง FortuneCommentEngagement.user_profile.name
+            if (! $realName) {
+                try {
+                    $engagement = FortuneCommentEngagement::where('facebook_user_id', $credit->facebook_user_id)
+                        ->whereNotNull('user_profile')
+                        ->latest('engaged_at')
+                        ->first();
+                    if ($engagement) {
+                        $profileName = data_get($engagement->user_profile, 'name');
+                        if (! empty($profileName)
+                            && ! preg_match("/{$pattern}/i", $profileName)
+                            && $profileName !== 'คุณ') {
+                            $realName = $profileName;
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ignore
+                }
             }
 
             if ($realName) {

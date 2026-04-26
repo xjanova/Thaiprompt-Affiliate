@@ -146,6 +146,63 @@ class FortuneUserCredit extends Model
         return self::byUser($facebookUserId, $platform)->first();
     }
 
+    /**
+     * 👤 จดจำชื่อจริงของลูกค้าจาก source ที่ trust ได้ (เช่น Facebook comment payload from.name)
+     *
+     * Behavior:
+     *   - ไม่มี record → สร้างใหม่พร้อมชื่อ (ถ้าชื่อ valid)
+     *   - มี record + ชื่อเก่าไม่ใช่ชื่อจริง → update เป็น $name
+     *   - มี record + ชื่อเก่าเป็นชื่อจริง → ไม่ทับ (รักษาชื่อที่ user แก้เอง / ใหม่กว่า)
+     *
+     * เรียกจาก: comment engagement, DM webhook, postback handler ใด ๆ ที่มี name จริง
+     *
+     * ⚠️ กัน code-pattern ("FACEBOOK-XXXXXX") + raw IDs ไม่ให้ persist ลง DB
+     */
+    public static function rememberName(string $facebookUserId, string $platform, ?string $name): ?self
+    {
+        if (! self::isHumanLikeName($name)) {
+            return self::findByUser($facebookUserId, $platform);
+        }
+
+        $record = self::firstOrCreate(
+            ['facebook_user_id' => $facebookUserId, 'platform' => $platform],
+            ['facebook_user_name' => $name]
+        );
+
+        // ถ้า record มีอยู่แล้วแต่ name เก่าไม่ใช่ชื่อจริง → update
+        if (! self::isHumanLikeName($record->facebook_user_name)) {
+            $record->update(['facebook_user_name' => $name]);
+        }
+
+        return $record;
+    }
+
+    /**
+     * ตรวจว่าค่าที่ได้ "ดูเป็นชื่อคนจริง" หรือเปล่า
+     * (sync logic เดียวกับ FortuneReading::isHumanLikeName + FortuneChannelManager::isHumanLikeName)
+     */
+    public static function isHumanLikeName(?string $name): bool
+    {
+        if ($name === null) {
+            return false;
+        }
+        $name = trim($name);
+        if ($name === '' || $name === 'คุณ' || $name === 'ลูกค้า' || $name === 'เจ้าชะตา') {
+            return false;
+        }
+        if (preg_match('/^(FACEBOOK|LINE|FB|TG|TELEGRAM|MESSENGER|IG|INSTAGRAM)-[A-Z0-9]+$/i', $name)) {
+            return false;
+        }
+        if (preg_match('/^U[0-9a-f]{32}$/i', $name)) {
+            return false;
+        }
+        if (preg_match('/^\d{15,}$/', $name)) {
+            return false;
+        }
+
+        return true;
+    }
+
     // ============================================================
     // Instance Methods
     // ============================================================

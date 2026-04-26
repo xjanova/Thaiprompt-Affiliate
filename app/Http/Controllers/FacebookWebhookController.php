@@ -719,6 +719,12 @@ class FacebookWebhookController extends Controller
         }
         $name = $userProfile['name'] ?? $fromName;
 
+        // 👤 Persist name ที่ได้จาก comment payload ลง FortuneUserCredit ทันที
+        //   เคสที่เกิด: ระบบ comment ได้ name จริงจาก Facebook payload แต่ flow ดูดวง
+        //   หา name ไม่เจอ → ลูกค้าเห็น "FACEBOOK-XXXXXX" ใน DM ครั้งต่อมา
+        //   Fix: save name ลง credit ตั้งแต่ point ที่ได้ name → flow อื่นใช้ผ่าน credit
+        \App\Models\FortuneUserCredit::rememberName($fromId, 'facebook', $name);
+
         // แทนที่ placeholders
         $commentReply = str_replace(
             ['{name}', '{comment}'],
@@ -874,6 +880,9 @@ class FacebookWebhookController extends Controller
             $userProfile = ['name' => $fromName, 'id' => $fromId];
         }
         $name = $userProfile['name'] ?? $fromName;
+
+        // 👤 Persist name จาก comment payload ลง FortuneUserCredit (กันชื่อหายใน flow อื่น)
+        \App\Models\FortuneUserCredit::rememberName($fromId, 'facebook', $name);
 
         // ข้อความตอบใต้คอมเม้นต์ (สั้น ไม่สปอยล์รายละเอียด)
         $commentReply = "เรื่องเงินมาถูกทางแล้วค่ะ 🙏 แม่หมอมีเคล็ดลับง่ายๆ เช็คใน inbox นะคะ ✨";

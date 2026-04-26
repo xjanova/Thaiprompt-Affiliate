@@ -101,6 +101,10 @@ class ProcessCommentEngagement implements ShouldQueue
             }
             $name = $userProfile['name'] ?? ($this->data['user_name'] ?? 'คุณ');
 
+            // 👤 Persist name (จาก comment payload หรือ profile API) ลง FortuneUserCredit
+            //   → flow ดูดวงครั้งต่อไปจะหาชื่อจริงเจอ ไม่ตก fallback "FACEBOOK-XXXXXX"
+            \App\Models\FortuneUserCredit::rememberName($userId, 'facebook', $name);
+
             Log::info('Comment Engagement: กำลังสร้างข้อความชวนดูดวง', [
                 'user_id' => $userId,
                 'comment' => mb_substr($commentText, 0, 50),
