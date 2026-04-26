@@ -3706,6 +3706,12 @@ class FortuneConversationService
                 ];
             }
 
+            // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
+            //    (ไม่เก็บ message เป็นคำถามใหม่ — ไม่งั้นจะ overwrite คำถามเดิม)
+            if ($reading->getConversationState('awaiting_question_confirmation', false)) {
+                return $this->handleQuestionConfirmation($reading, $messageText);
+            }
+
             // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
             $question = trim($messageText);
             if (! empty($question)) {
@@ -3715,33 +3721,41 @@ class FortuneConversationService
             $collectedQuestions = $reading->getCollectedQuestions();
             $questionCount = count($collectedQuestions);
 
-            Log::info('Fortune: handleQuestionInput', [
+            Log::info('Fortune: handleQuestionInput → ขอ confirm คำถามก่อนเปิดไพ่+สร้างบิล', [
                 'reading_id' => $reading->id,
                 'question_count' => $questionCount,
                 'required' => self::REQUIRED_QUESTIONS,
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            // ✅ หลังรับคำถาม → เข้าสู่ขั้น "ตั้งจิตเลือกไพ่" ก่อนเปิดไพ่ยิปซี
-            //    (ไพ่ที่จิตของเจ้าชะตาเลือกเอง ≠ สุ่มมั่ว)
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
-            $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+            // 🔒 Confirmation step (ก่อนเปิดไพ่ + สร้างบิล)
+            //    เหตุผล: ลูกค้ามักพิมพ์คำถามผิด/พิมพ์ผ่าน — ถ้าสร้างบิลทันที
+            //    จะต้องยกเลิก + เริ่มใหม่ (สับสน + เสียเวลา)
+            //    ใช้ flag ใน conversation_state — ค้าง status ที่ COLLECTING_QUESTIONS
+            $reading->setConversationState('awaiting_question_confirmation', true);
+            $reading->setConversationState('confirmed_question_at', null);
+
+            $latestQuestion = end($collectedQuestions) ?: $question;
 
             return [
-                'action' => 'awaiting_tarot_intention',
+                'action' => 'awaiting_question_confirmation',
                 'message' => "✅ รับคำถามแล้วค่ะ\n\n"
                     . "═══════════════════════\n"
-                    . "🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                    . "❓ *คำถามของเจ้าชะตา:*\n"
+                    . "\"{$latestQuestion}\"\n"
                     . "═══════════════════════\n\n"
-                    . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
-                    . "นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
-                    . "🃏 ที่นี่ไพ่ที่ออก = ไพ่ที่จิตของเจ้าชะตาเลือกเอง\n"
-                    . "ไม่ต่างจากการจับไพ่จริงด้วยมือตัวเอง\n"
-                    . "เพราะเมื่อจิตตั้งมั่น พลังจิตจะนำทางไพ่ที่ตรงกับชะตา ✨\n\n"
-                    . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
-                    . "หรือกดปุ่มด้านล่าง 👇",
+                    . "🔍 *ขอยืนยันคำถามอีกครั้ง*\n"
+                    . "ใช่คำถามที่เจ้าชะตาต้องการถามจริงไหม?\n\n"
+                    . "👉 ถ้า *ใช่* → พิมพ์ *\"ใช่\"* หรือ *\"ยืนยัน\"* (จะเปิดไพ่ + สร้างบิลค่าครู)\n"
+                    . "👉 ถ้า *ไม่ใช่* → พิมพ์ *\"ไม่ใช่\"* หรือ *\"ยกเลิก\"* (เริ่มดูดวงใหม่)\n\n"
+                    . "💡 ตรวจให้ชัวร์ก่อนนะคะ — แต่ละคำถามแม่หมอจะลงพลังเรียงไพ่ใหม่ทั้งหมด",
                 'reading' => $reading,
                 'question_number' => $questionCount,
+                'show_quick_replies' => true,
+                'quick_replies' => [
+                    ['title' => '✅ ใช่ ดำเนินการต่อ', 'text' => 'ใช่'],
+                    ['title' => '❌ ไม่ใช่ เริ่มใหม่', 'text' => 'ยกเลิก'],
+                ],
             ];
 
         } catch (\Exception $e) {
@@ -3755,6 +3769,107 @@ class FortuneConversationService
             // Re-throw เพื่อให้ processMessage catch handler จัดการ
             throw $e;
         }
+    }
+
+    /**
+     * 🔒 จัดการ confirmation step — ลูกค้ายืนยันคำถามก่อนเปิดไพ่ + สร้างบิล
+     *
+     * รับมาจาก handleQuestionInput เมื่อ flag awaiting_question_confirmation = true
+     *
+     * Outcomes:
+     *   - "ใช่" / "ยืนยัน" / "ok" / "ดำเนินการ" → unset flag → เข้า COLLECTING_TAROT
+     *   - "ไม่" / "ยกเลิก" / "เริ่มใหม่" / "ผิด" → ลบคำถามล่าสุด + ปิด conversation
+     *   - อื่น ๆ (พิมพ์มาผิด) → ส่ง confirmation message ซ้ำ
+     */
+    protected function handleQuestionConfirmation(FortuneReading $reading, string $messageText): array
+    {
+        $text = mb_strtolower(trim($messageText));
+        // strip คำลงท้ายสุภาพ
+        $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u', '', $text);
+
+        // ✅ ยืนยัน → ดำเนินการ
+        $confirmKeywords = ['ใช่', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ดำเนินการ', 'ต่อ', 'ไป', 'ไปต่อ', 'yes', 'y', 'confirm'];
+        foreach ($confirmKeywords as $kw) {
+            if ($normalized === $kw || str_starts_with($normalized, $kw)) {
+                $collected = $reading->getCollectedQuestions();
+                $latestQuestion = end($collected) ?: '-';
+
+                Log::info('Fortune: ลูกค้ายืนยันคำถาม → เปิดไพ่ + สร้างบิล', [
+                    'reading_id' => $reading->id,
+                    'question_preview' => mb_substr((string) $latestQuestion, 0, 60),
+                ]);
+
+                // unset flag + entering COLLECTING_TAROT
+                $reading->setConversationState('awaiting_question_confirmation', false);
+                $reading->setConversationState('confirmed_question_at', now()->toIso8601String());
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
+                $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "✨ รับทราบ — ดำเนินการต่อค่ะ\n\n"
+                        . "═══════════════════════\n"
+                        . "🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                        . "═══════════════════════\n\n"
+                        . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                        . "นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
+                        . "🃏 ที่นี่ไพ่ที่ออก = ไพ่ที่จิตของเจ้าชะตาเลือกเอง\n"
+                        . "ไม่ต่างจากการจับไพ่จริงด้วยมือตัวเอง\n"
+                        . "เพราะเมื่อจิตตั้งมั่น พลังจิตจะนำทางไพ่ที่ตรงกับชะตา ✨\n\n"
+                        . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                        . "หรือกดปุ่มด้านล่าง 👇",
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        // ❌ ยกเลิก / ไม่ใช่ / เริ่มใหม่ → ปิด conversation + offer ใหม่
+        $cancelKeywords = ['ไม่ใช่', 'ไม่', 'ผิด', 'ยกเลิก', 'cancel', 'no', 'n', 'เริ่มใหม่', 'restart', 'reset', 'แก้', 'แก้คำถาม'];
+        foreach ($cancelKeywords as $kw) {
+            if ($normalized === $kw || str_starts_with($normalized, $kw)) {
+                Log::info('Fortune: ลูกค้าปฏิเสธคำถาม → ยกเลิก + offer เริ่มใหม่', [
+                    'reading_id' => $reading->id,
+                    'reply' => $normalized,
+                ]);
+
+                // ปิด conversation นี้
+                $reading->setConversationState('awaiting_question_confirmation', false);
+                $reading->setConversationState('cancelled_at', now()->toIso8601String());
+                $reading->setConversationState('cancellation_reason', 'user_rejected_question');
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return [
+                    'action' => 'question_rejected',
+                    'message' => "🔄 ยกเลิกคำถามเดิมแล้วค่ะ\n\n"
+                        . "ไม่เป็นไรเลย — แม่หมอเข้าใจว่าบางทีอยากปรับคำถามให้ชัดเจนขึ้น 🙏\n\n"
+                        . "👉 พิมพ์ *\"ดูดวงละเอียด\"* เพื่อเริ่มดูดวงใหม่\n"
+                        . "หรือพิมพ์คำถามใหม่ที่ต้องการมาเลยค่ะ ✨",
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['title' => '🔮 เริ่มดูดวงใหม่', 'text' => 'ดูดวงละเอียด'],
+                    ],
+                ];
+            }
+        }
+
+        // 🤔 พิมพ์อื่น ๆ — เตือนอีกครั้งว่าให้ตอบ ใช่/ไม่ใช่
+        $collected = $reading->getCollectedQuestions();
+        $latestQuestion = end($collected) ?: '-';
+
+        return [
+            'action' => 'awaiting_question_confirmation',
+            'message' => "🤔 ขอยืนยันอีกครั้งค่ะ\n\n"
+                . "❓ คำถามของเจ้าชะตา: \"{$latestQuestion}\"\n\n"
+                . "👉 ถ้าใช่ → พิมพ์ *\"ใช่\"*\n"
+                . "👉 ถ้าไม่ใช่ → พิมพ์ *\"ยกเลิก\"*",
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '✅ ใช่ ดำเนินการต่อ', 'text' => 'ใช่'],
+                ['title' => '❌ ไม่ใช่ เริ่มใหม่', 'text' => 'ยกเลิก'],
+            ],
+        ];
     }
 
     /**
