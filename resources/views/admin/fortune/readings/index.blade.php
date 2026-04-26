@@ -87,12 +87,13 @@
     {{-- Filters --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
         <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            {{-- Search by name --}}
+            {{-- Search by name / bill reference / platform user id --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    🔍 ค้นหาชื่อ
+                    🔍 ค้นหา (ชื่อ / รหัสบิล)
                 </label>
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="ชื่อผู้ใช้..."
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="ชื่อ หรือ FTU-260425-T4022..."
                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
             </div>
 
@@ -245,6 +246,15 @@
                                     <div class="min-w-0">
                                         <div class="font-medium truncate">{{ $reading->facebook_user_name ?? 'ไม่ระบุชื่อ' }}</div>
                                         <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ Str::limit($reading->facebook_user_id, 15) }}</div>
+                                        @if($reading->bill_reference)
+                                            {{-- 🧾 รหัสบิล — คลิก copy ได้ --}}
+                                            <button type="button"
+                                                    onclick="navigator.clipboard.writeText('{{ $reading->bill_reference }}'); this.innerText='✅ คัดลอกแล้ว'; setTimeout(() => this.innerText='🧾 {{ $reading->bill_reference }}', 1500);"
+                                                    class="mt-0.5 text-xs font-mono text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-200 truncate cursor-pointer text-left"
+                                                    title="คลิกเพื่อคัดลอกรหัสบิล">
+                                                🧾 {{ $reading->bill_reference }}
+                                            </button>
+                                        @endif
                                     </div>
                                 </div>
                             </td>

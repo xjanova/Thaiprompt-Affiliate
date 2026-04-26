@@ -26,12 +26,18 @@ class FortuneReadingsController extends Controller
             ->with('user')
             ->orderBy('created_at', 'desc');
 
-        // ค้นหาตามชื่อ
+        // ค้นหาตามชื่อ / รหัสบิล / platform user id
+        // รองรับ:
+        //   - ชื่อลูกค้า (facebook_user_name)
+        //   - รหัสบิล เช่น FTU-260425-T4022 (bill_reference)
+        //   - Platform user ID (FB PSID / LINE userId)
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
             $query->where(function ($q) use ($search) {
                 $q->where('facebook_user_name', 'like', "%{$search}%")
-                    ->orWhere('facebook_user_id', 'like', "%{$search}%");
+                    ->orWhere('facebook_user_id', 'like', "%{$search}%")
+                    ->orWhere('platform_user_id', 'like', "%{$search}%")
+                    ->orWhere('bill_reference', 'like', "%{$search}%");
             });
         }
 

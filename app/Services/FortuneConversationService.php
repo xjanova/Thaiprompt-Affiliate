@@ -3790,28 +3790,83 @@ class FortuneConversationService
     protected function createPaymentBill(FortuneReading $reading, array $questions): array
     {
         try {
-            // สร้าง unique amount จากราคาในการตั้งค่า
-            $basePrice = $this->getDeepReadingPrice();
-            $uniqueAmount = UniquePaymentAmount::generate(
-                $basePrice,
-                $reading->id,
-                'fortune_reading',
-                30  // หมดอายุใน 30 นาที
-            );
+            // ⚠️ CRITICAL SAFETY — ห้ามส่ง QR code / bill_reference ออกไปจนกว่าจะ verify
+            //   ว่า DB persist สมบูรณ์ทั้ง UPA + FortuneReading.unique_payment_amount_id + bill_reference
+            //   เคยมีบั๊ก: ลูกค้าเห็น bill_reference ใน chat แต่ไม่มีใน DB → จ่ายเงินแล้วเงินหาย
+            //   เหตุผลที่อาจเกิด: queue worker rollback / DB connection drop / race condition
+            //
+            // วิธีแก้: wrap UPA generate + reading update ใน DB::transaction()
+            //         แล้ว fresh query verify หลัง commit ว่าทุกอย่างอยู่จริง
+            $billData = \DB::transaction(function () use ($reading, $questions) {
+                $basePrice = $this->getDeepReadingPrice();
+                $uniqueAmount = UniquePaymentAmount::generate(
+                    $basePrice,
+                    $reading->id,
+                    'fortune_reading',
+                    30  // หมดอายุใน 30 นาที
+                );
 
-            if (! $uniqueAmount) {
+                if (! $uniqueAmount) {
+                    throw new \RuntimeException('UPA generate ล้มเหลว');
+                }
+
+                // อัพเดท reading
+                $reading->update([
+                    'questions' => $questions,
+                ]);
+                $reading->setPendingPayment($uniqueAmount);
+
+                return ['upa' => $uniqueAmount, 'reading' => $reading];
+            });
+
+            $uniqueAmount = $billData['upa'];
+
+            // 🔒 Post-commit verification — fetch fresh จาก DB
+            //   ถ้า reading ไม่มี unique_payment_amount_id หรือ bill_reference → DB inconsistency
+            //   → ห้ามส่ง QR ออก ป้องกันลูกค้าจ่ายเงินเข้าบิลที่ระบบไม่รู้จัก
+            $verified = FortuneReading::where('id', $reading->id)
+                ->where('unique_payment_amount_id', $uniqueAmount->id)
+                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->whereNotNull('bill_reference')
+                ->first();
+
+            if (! $verified) {
+                // 🚨 บิลสร้างไม่ครบ — เคลียร์ UPA แล้วบอกลูกค้าให้ลองใหม่
+                Log::critical('Fortune: createPaymentBill verification fail — ห้ามส่ง QR/bill', [
+                    'reading_id' => $reading->id,
+                    'upa_id' => $uniqueAmount->id,
+                    'expected_status' => FortuneReading::STATUS_PENDING_PAYMENT,
+                    'actual_reading' => FortuneReading::find($reading->id)?->only([
+                        'id', 'bill_reference', 'conversation_status',
+                        'unique_payment_amount_id', 'amount_paid',
+                    ]),
+                ]);
+
+                // เคลียร์ UPA — ป้องกัน orphan UPA ที่ลูกค้าโอนแล้วระบบจับคู่ผิด
+                try {
+                    $uniqueAmount->refresh();
+                    if ($uniqueAmount->status === 'reserved') {
+                        $uniqueAmount->cancel();
+                    }
+                } catch (\Throwable $cleanupErr) {
+                    Log::error('Fortune: เคลียร์ UPA ที่ verify fail ไม่ได้', [
+                        'upa_id' => $uniqueAmount->id,
+                        'error' => $cleanupErr->getMessage(),
+                    ]);
+                }
+
                 return [
-                    'action' => 'error',
-                    'message' => "🔮 ตอนนี้ระบบกำลังเตรียมบิลให้ค่ะ\n\nรบกวนพิมพ์ 'ดูดวงละเอียด' อีกครั้งในอีกสักครู่นะคะ ✨",
+                    'action' => 'bill_creation_failed',
+                    'message' => "🙏 ขออภัยค่ะ — ระบบเตรียมบิลไม่สำเร็จ\n\n"
+                        . "กรุณาพิมพ์ 'ดูดวงละเอียด' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
+                        . "⚠️ *อย่าโอนเงิน*จนกว่าจะได้รับบิลใหม่ที่สมบูรณ์ — ป้องกันเงินเข้าบิลที่ระบบไม่รู้จัก",
                     'reading' => $reading,
+                    // 🚫 ไม่ส่ง payment_qr_url ออกเด็ดขาด
                 ];
             }
 
-            // อัพเดท reading
-            $reading->update([
-                'questions' => $questions,
-            ]);
-            $reading->setPendingPayment($uniqueAmount);
+            // ✅ Verify ผ่าน — ใช้ verified reading ที่ fresh จาก DB ต่อจากนี้
+            $reading = $verified;
 
             // ⏱️ ติดตามเวลา — LINE replyToken หมดอายุ ~30s จึงต้องตอบให้ทัน
             $billStartTime = microtime(true);

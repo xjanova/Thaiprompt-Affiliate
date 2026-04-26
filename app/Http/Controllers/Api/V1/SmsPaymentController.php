@@ -251,13 +251,44 @@ class SmsPaymentController extends Controller
             ? (float) $uniquePayment->unique_amount
             : (float) $reading->amount_paid;
 
+        // 👤 Customer name resolution (priority chain — รองรับทุก platform)
+        //   1. facebook_user_name        — Facebook ที่ extract มาจาก profile
+        //   2. user_profile['name']      — cross-platform (LINE / Web)
+        //   3. user.name                 — ถ้ามี registered user account
+        //   4. platform-specific id      — fallback แสดง LINE-xxxx / FB-xxxx
+        //   5. 'ลูกค้าดูดวง'             — สุดท้าย
+        $customerName = $reading->facebook_user_name;
+        if (empty($customerName) || $customerName === 'คุณ') {
+            $profile = $reading->user_profile ?? [];
+            if (is_array($profile) && ! empty($profile['name']) && $profile['name'] !== 'คุณ') {
+                $customerName = $profile['name'];
+            }
+        }
+        if (empty($customerName) || $customerName === 'คุณ') {
+            try {
+                $customerName = $reading->user?->name;
+            } catch (\Throwable $e) {
+                $customerName = null;
+            }
+        }
+        if (empty($customerName) || $customerName === 'คุณ') {
+            $platformId = $reading->platform_user_id ?? $reading->facebook_user_id;
+            if (! empty($platformId)) {
+                $platformLabel = strtoupper($reading->platform ?? 'FB');
+                $customerName = $platformLabel . '-' . substr($platformId, -6);
+            }
+        }
+        if (empty($customerName)) {
+            $customerName = 'ลูกค้าดูดวง';
+        }
+
         $orderDetails = [
             'order_number' => $reading->bill_reference,
             'product_name' => 'ดูดวง'.($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
-            'product_details' => $reading->facebook_user_name ?? null,
+            'product_details' => $customerName,
             'quantity' => 1,
             'website_name' => config('app.name'),
-            'customer_name' => $reading->facebook_user_name ?? 'ลูกค้าดูดวง',
+            'customer_name' => $customerName,
             'amount' => $displayAmount,
         ];
 
