@@ -765,12 +765,23 @@ class SmsPaymentController extends Controller
             $fortuneQuery = FortuneReading::query();
 
             if ($status === 'waiting') {
-                // รวม STATUS_PAID ด้วย เพราะบิลที่เพิ่ง auto-approve จาก SMS จะเปลี่ยนเป็น paid ทันที
-                // แอพควรแสดงบิลที่ชำระแล้วเพื่อให้เห็นผลการจับคู่
-                $fortuneQuery->whereIn('conversation_status', [
-                    FortuneReading::STATUS_PENDING_PAYMENT,
-                    FortuneReading::STATUS_PAID,
-                ]);
+                // 'waiting' รวม:
+                //  - PENDING_PAYMENT (รอชำระ) — บิลใหม่
+                //  - PAID (เพิ่ง auto-approve จาก SMS — ยังประมวลผล AI)
+                //  - COMPLETED ภายใน 24 ชม. — ทั้งบิล cancelled (is_paid=false)
+                //    และบิลทำนายเสร็จ (is_paid=true) เพื่อให้แอพเห็นการเปลี่ยนแปลงสถานะ
+                //    และ "ลบ" บิลที่ cancel แล้วออกจาก UI
+                //    ⚠️ เคยมีบั๊ก: ไม่รวม COMPLETED → บิล cancelled ค้างใน UI ตลอดไป
+                $fortuneQuery->where(function ($q) {
+                    $q->whereIn('conversation_status', [
+                        FortuneReading::STATUS_PENDING_PAYMENT,
+                        FortuneReading::STATUS_PAID,
+                    ])
+                        ->orWhere(function ($q2) {
+                            $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->where('updated_at', '>=', now()->subHours(24));
+                        });
+                });
             } elseif ($status === 'all') {
                 $fortuneQuery->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,

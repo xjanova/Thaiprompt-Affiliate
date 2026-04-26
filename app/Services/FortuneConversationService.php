@@ -849,6 +849,11 @@ class FortuneConversationService
 
             // ✅ เช็คคำทำนายที่กำลังประมวลผลอยู่ (PAID หรือ COMPLETED แต่ยังไม่มี deep_response)
             // ⚠️ ข้ามถ้ามี active conversation อยู่ (ไม่งั้นจะ block คำถามข้อ 2+)
+            // 🛡️ Window 30 นาที + ใช้ paid_at เป็น primary anchor เพื่อทน slow AI / queue stuck:
+            //    - paid_at = ลูกค้าจ่ายเสร็จเมื่อไหร่ (เริ่ม processing period จริง)
+            //    - fallback → updated_at (กรณี paid_at null) → created_at (กรณีโบราณ)
+            //    - ห้ามใช้ created_at เดี่ยวๆ เพราะลูกค้าอาจรอตอบนาน → bill เก่า → window พลาด
+            //    - ⚠️ เคยเป็น 10 นาที — แต่ลูกค้าจ่ายซ้ำเพราะ AI > 10 นาที → bill ซ้อน → ขยาย 30
             $hasActiveConversation = FortuneReading::findActiveConversation($facebookUserId);
 
             if (! $hasActiveConversation) {
@@ -864,26 +869,49 @@ class FortuneConversationService
                                     });
                             });
                     })
-                    ->where('created_at', '>=', now()->subMinutes(10)) // ลดจาก 1 ชม. เป็น 10 นาที
-                    ->latest()
+                    ->where(function ($q) {
+                        // ใช้ paid_at เป็น primary; fallback updated_at; fallback created_at
+                        $cutoff = now()->subMinutes(30);
+                        $q->where('paid_at', '>=', $cutoff)
+                            ->orWhere(function ($q2) use ($cutoff) {
+                                $q2->whereNull('paid_at')
+                                    ->where('updated_at', '>=', $cutoff);
+                            });
+                    })
+                    ->latest('paid_at')
                     ->first();
 
                 if ($processingReading) {
                     $name = $processingReading->facebook_user_name ?? 'คุณ';
+                    $waitedMinutes = (int) ceil(abs(
+                        ($processingReading->paid_at ?? $processingReading->updated_at)
+                            ->diffInMinutes(now(), true)
+                    ));
 
-                    Log::info('Fortune processMessage: พบคำทำนายกำลังประมวลผล → แจ้งให้รอ', [
+                    Log::info('Fortune processMessage: พบคำทำนายกำลังประมวลผล → แจ้งให้รอ (lock)', [
                         'facebook_user_id' => $facebookUserId,
                         'reading_id' => $processingReading->id,
                         'status' => $processingReading->conversation_status,
                         'bill_reference' => $processingReading->bill_reference,
+                        'paid_at' => $processingReading->paid_at?->toIso8601String(),
+                        'waited_minutes' => $waitedMinutes,
                     ]);
+
+                    // 🪐 ข้อความปลอบใจ "แม่หมอกำลังคำนวณดวงดาว" + เลขบิล + เวลารอ
+                    $message = "🌙 คุณ{$name} แม่หมอกำลังคำนวณดวงดาวอยู่ค่ะ\n\n"
+                        . '📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
+                        . "⏳ รอมาแล้ว {$waitedMinutes} นาที (ปกติใช้เวลา 1-3 นาที)\n\n"
+                        . "🔮 ดาวเจ้าชนะของคุณกำลังเรียงอยู่ — รอสักครู่ คำทำนายจะส่งไปทันทีเมื่อเสร็จ ✨\n\n"
+                        . "💡 ระหว่างรอ — ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ) จะแจ้งเตือนทันทีเมื่อคำทำนายพร้อม";
+
+                    // ⏰ ถ้ารอเกิน 5 นาที → เพิ่มทางออก (เผื่อ queue ตาย/AI hang)
+                    if ($waitedMinutes >= 5) {
+                        $message .= "\n\n⚠️ ใช้เวลานานกว่าปกติ — ถ้ารออีก 2-3 นาทีไม่มา พิมพ์ 'เช็คสถานะ' เพื่อตรวจอีกครั้ง";
+                    }
 
                     return [
                         'action' => 'processing',
-                        'message' => "🔮 คุณ{$name} กำลังเตรียมคำทำนายอยู่\n\n"
-                            . '📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
-                            . "⏳ ใช้เวลาประมาณ 1-3 นาที\n\n"
-                            . "จะแจ้งให้ทราบทันทีเมื่อคำทำนายพร้อม ✨",
+                        'message' => $message,
                         'reading' => $processingReading,
                     ];
                 }
