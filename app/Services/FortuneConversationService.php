@@ -1924,12 +1924,18 @@ class FortuneConversationService
             if ($pendingReading->uniquePaymentAmount && $pendingReading->uniquePaymentAmount->status === 'reserved') {
                 $pendingReading->uniquePaymentAmount->cancel();
 
+                // 🏷️ ระบุประเภทการยกเลิก = ผู้ใช้กดยกเลิกเอง (ไม่ใช่ auto-expire)
+                //    → smschecker app ใช้แยกสถิติ และอัปเดต UI ให้ถูกต้อง
+                $pendingReading->setConversationState('cancelled_at', now()->toIso8601String());
+                $pendingReading->setConversationState('cancellation_reason', 'user_cancelled');
+
                 Log::info('Fortune: ยกเลิกบิล UniquePaymentAmount เนื่องจากลูกค้ากดยกเลิก', [
                     'facebook_user_id' => $facebookUserId,
                     'reading_id' => $pendingReading->id,
                     'bill_reference' => $pendingReading->bill_reference,
                     'unique_amount_id' => $pendingReading->unique_payment_amount_id,
                     'amount' => $pendingReading->amount_paid,
+                    'cancellation_reason' => 'user_cancelled',
                 ]);
             }
         }
@@ -3706,29 +3712,12 @@ class FortuneConversationService
         $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
         $remainingMinutes = max(0, $remainingMinutes);
 
-        // 🧠 ถ้าลูกค้าพูด meta/chitchat (ไม่ใช่คำแจ้งชำระ) → ให้ AI รับฟังก่อน
-        //    แล้วค่อยแสดงข้อมูลชำระเงิน (ไม่ใช่เด้งบัญชี+ยอดเงินทันที — รู้สึกเหมือนคุยกับคน)
+        // 🎯 AI Pre-Cancel Nudge — ถ้าลูกค้าพูดอะไรที่ไม่ใช่คำแจ้งชำระ
+        //    → AI persona "นักปราชญ์" soft-encourage ด้วยปรัชญาค่าครู (ไม่ฮาร์ดเซล)
+        //    จำกัด 3 รอบต่อบิล (กัน loop) — ถ้าเกินรอบ → ใช้แค่ payment details
         $aiPrefix = '';
         if ($this->looksLikeMetaOrChitchat($messageText)) {
-            try {
-                $apiKey = $this->settings->getChatAIApiKey();
-                if (! empty($apiKey) && LineGatekeeperService::canCallAI('fortune')) {
-                    $aiService = new FortuneAIService($this->settings);
-                    $promptForAI = "ผู้ใช้อยู่ในระหว่างรอโอนเงินค่าครู {$payAmount} บาท เพื่อรับคำทำนาย และพิมพ์ว่า: \"{$messageText}\"\n\n"
-                        . 'กรุณาตอบสั้นมาก (1 ประโยค) แสดงว่าเข้าใจสิ่งที่ผู้ใช้พูด '
-                        . 'ห้ามอธิบายยอดเงิน/บัญชีธนาคาร (ระบบจะเติมเอง)';
-                    $result = $aiService->generateChatResponse($promptForAI, $reading->user_profile);
-                    LineGatekeeperService::recordAICall('fortune');
-                    $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $result['response'] ?? ''));
-                    if (! empty($aiReply)) {
-                        $aiPrefix = $aiReply."\n\n";
-                    }
-                }
-            } catch (\Throwable $e) {
-                Log::debug('handlePendingPayment AI prefix ล้ม (non-blocking)', [
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            $aiPrefix = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes);
         }
 
         $message = $aiPrefix;
@@ -6289,6 +6278,170 @@ class FortuneConversationService
         }
 
         return $stepHint;
+    }
+
+    /**
+     * 🎯 AI Pre-Cancel Nudge — กระตุ้นการโอนแบบนักปราชญ์ ก่อนบิลถูกยกเลิก
+     *
+     * ใช้ตอนผู้ใช้พูดอะไรระหว่างรอชำระเงิน (PENDING_PAYMENT) แต่ยังไม่โอน
+     * persona "แม่หมอจันทรา" ที่มีปัญญา ใช้ปรัชญาค่าครู / ดาวเจ้าชนะ / ไพ่ที่จิตเลือก
+     * → soft-encourage โอน (ไม่ฮาร์ดเซล) แทนที่จะแค่ ack 1 ประโยค
+     *
+     * จำกัด nudge_count = 3 รอบต่อบิล (กัน loop)
+     * ถ้าเกิน → fallback ใช้ chitchat AI 1-line ack แบบเดิม
+     *
+     * @param  FortuneReading  $reading
+     * @param  string  $messageText  ข้อความผู้ใช้
+     * @param  int  $remainingMinutes  เวลาเหลือก่อนบิลหมดอายุ
+     * @return string  ข้อความ AI nudge (จะถูกใส่ก่อน payment details) หรือ empty string ถ้าข้าม
+     */
+    protected function buildPendingPaymentNudge(FortuneReading $reading, string $messageText, int $remainingMinutes): string
+    {
+        // ตรวจรอบ nudge — เกิน 3 รอบ → return empty (ให้ flow ใช้ default ack)
+        $nudgeCount = (int) ($reading->getConversationState('nudge_count') ?? 0);
+        if ($nudgeCount >= 3) {
+            return '';
+        }
+
+        // เช็ค API key + Gatekeeper
+        try {
+            $apiKey = $this->settings->getChatAIApiKey();
+            if (empty($apiKey)) {
+                return '';
+            }
+        } catch (\Throwable $e) {
+            return '';
+        }
+
+        if (! LineGatekeeperService::canCallAI('fortune')) {
+            return '';
+        }
+
+        try {
+            // ราคา (ฉบับนี้) + เวลาเหลือ — ใส่ใน prompt ให้ AI รู้บริบท
+            // ⚠️ null-safe: uniquePaymentAmount อาจเป็น null ในเคส race
+            $rawAmount = $reading->uniquePaymentAmount?->unique_amount
+                ?? $reading->amount_paid
+                ?? 39;
+            $payAmount = number_format((float) $rawAmount, 2);
+            $userName = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+            // จำแนก intent คร่าว ๆ จากข้อความ → ช่วยให้ AI ตอบตรงประเด็น
+            $intentHint = $this->classifyPendingPaymentIntent($messageText);
+
+            $aiService = new FortuneAIService($this->settings);
+
+            $promptForAI = "บทบาท: คุณคือ \"แม่หมอจันทรา\" — หมอดูที่มีปัญญา ใช้ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n"
+                . "ไม่ใช่หมอดูงมงาย — มีระบบ มีศาสตร์ ไม่ยกเมฆ ไม่ขายของรุนแรง\n\n"
+                . "สถานการณ์: ลูกค้า \"คุณ{$userName}\" สร้างบิล {$payAmount} บาท แล้วยังไม่ได้โอน เหลืออีก {$remainingMinutes} นาทีบิลจะหมดอายุ\n"
+                . "ลูกค้าพิมพ์มาว่า: \"{$messageText}\"\n";
+
+            if ($intentHint !== '') {
+                $promptForAI .= "บริบท intent: {$intentHint}\n";
+            }
+
+            $promptForAI .= "\nหน้าที่: ตอบสั้น 2 ประโยค ภาษาคนมีความรู้ — soft encourage ให้โอน ไม่ใช่ฮาร์ดเซล\n"
+                . "ใช้คำพูดเชิงปรัชญา ยกตัวอย่างเปรียบเทียบที่ฉลาด เลือกใช้ตามความเหมาะสม:\n"
+                . "  - ค่าครู คือเครื่องบ่งชี้ความตั้งใจของจิต (จิตจริง จึงเปิดทางคำตอบ)\n"
+                . "  - ดาวเจ้าชนะของเจ้าชะตา ไพ่ที่พลังจิตของเจ้าชะตาเลือกเอง — ไม่ใช่คำตอบทั่วไป\n"
+                . "  - {$payAmount} บาท น้อยกว่ากาแฟ 1 แก้ว แต่ผลคุ้มค่ากว่ามาก\n"
+                . "  - คนสำเร็จลงทุนกับความรู้ คนพนันลงทุนกับความหวัง\n"
+                . "  - ไม่ได้บังคับ — แต่ถ้าจิตยังลังเล คำตอบก็จะลังเลตามไปด้วย\n\n"
+                . "กฎ: ห้ามอธิบายยอดเงิน/บัญชีธนาคาร (ระบบจะเติมเอง)\n"
+                . "ห้ามด่า ห้ามทำให้ลูกค้าอาย ห้ามใส่ลิสต์ ห้ามใส่ [OFFER_FORTUNE]\n"
+                . 'ตอบเป็นข้อความบรรยายธรรมดา 2 ประโยคพอดี';
+
+            $result = $aiService->generateChatResponse($promptForAI, $reading->user_profile);
+            LineGatekeeperService::recordAICall('fortune');
+
+            $aiReply = trim(str_replace('[OFFER_FORTUNE]', '', $result['response'] ?? ''));
+
+            if (empty($aiReply)) {
+                return '';
+            }
+
+            // อัพเดท nudge_count
+            $reading->setConversationState('nudge_count', $nudgeCount + 1);
+            $reading->setConversationState('last_nudge_at', now()->toIso8601String());
+
+            Log::info('Fortune: AI pre-cancel nudge ส่งให้ผู้ใช้ระหว่าง PENDING_PAYMENT', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'nudge_round' => $nudgeCount + 1,
+                'intent' => $intentHint,
+                'remaining_minutes' => $remainingMinutes,
+                'user_text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return $aiReply . "\n\n";
+        } catch (\Throwable $e) {
+            Log::debug('buildPendingPaymentNudge: AI ล้ม fallback empty', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * จำแนก intent คร่าว ๆ จากข้อความระหว่าง PENDING_PAYMENT
+     *
+     * ช่วยให้ AI ตอบตรงประเด็น — ตัวอย่าง:
+     *  "แพง" → price_objection
+     *  "แม่นจริงหรอ" → trust_question
+     *  "ทีหลัง" → procrastination
+     *  "ฟรีไหม" → wants_free
+     *  default '' → general chitchat
+     */
+    protected function classifyPendingPaymentIntent(string $message): string
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return '';
+        }
+
+        // ราคา / ขอลด
+        $priceObj = ['แพง', 'ลดราคา', 'ลดหน่อย', 'แพงไป', 'ลดได้', 'ราคาสูง', 'ขอลด'];
+        foreach ($priceObj as $kw) {
+            if (str_contains($text, $kw)) {
+                return 'price_objection — ลูกค้ากังวลเรื่องราคา ขอใช้ปรัชญาว่าค่าครูคือเครื่องบ่งชี้ความตั้งใจของจิต';
+            }
+        }
+
+        // ความน่าเชื่อถือ
+        $trust = ['แม่นจริง', 'แม่นไหม', 'หลอก', 'มั่ว', 'มั่วๆ', 'จริงหรอ', 'จริงไหม', 'เชื่อได้ไหม', 'น่าเชื่อ'];
+        foreach ($trust as $kw) {
+            if (str_contains($text, $kw)) {
+                return 'trust_question — ลูกค้าสงสัยในความแม่น ใช้ประเด็น "ดาวเจ้าชนะ + ไพ่ที่จิตเลือกเอง" ไม่ใช่ยกเมฆ';
+            }
+        }
+
+        // ผัดผ่อน / ทีหลัง
+        $delay = ['ทีหลัง', 'พรุ่งนี้', 'มะรืน', 'อีกที', 'อีกหน่อย', 'ยังไม่พร้อม', 'ยังไม่อยาก', 'ขอคิด', 'รอก่อน'];
+        foreach ($delay as $kw) {
+            if (str_contains($text, $kw)) {
+                return 'procrastination — ลูกค้าผัดผ่อน เตือนว่าจิตที่ลังเล คำตอบก็จะลังเลตามไป — ไม่บีบ แต่ชวนตัดสินใจ';
+            }
+        }
+
+        // ขอฟรี
+        $free = ['ฟรี', 'ทำไมต้องจ่าย', 'ทำไมต้องเสีย', 'ขอดูฟรี', 'ไม่มีเงิน', 'ไม่จ่าย'];
+        foreach ($free as $kw) {
+            if (str_contains($text, $kw)) {
+                return 'wants_free — ลูกค้าขอฟรี อธิบายว่าค่าครูทำให้คำทำนายมีน้ำหนัก จิตจริง ผลจริง';
+            }
+        }
+
+        // เงียบ / สับสน flow
+        $confused = ['ทำยังไง', 'ทำไง', 'โอนยังไง', 'จ่ายยังไง', 'ที่ไหน', 'งง', 'ไม่เข้าใจ'];
+        foreach ($confused as $kw) {
+            if (str_contains($text, $kw)) {
+                return 'confused — ลูกค้าสับสนวิธีโอน — ตอบสั้น ๆ ว่าระบบจะเติมรายละเอียดต่อท้ายเอง';
+            }
+        }
+
+        return '';
     }
 
     /**

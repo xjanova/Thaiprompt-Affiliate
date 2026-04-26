@@ -224,6 +224,25 @@ class SmsPaymentController extends Controller
             default => 'pending_review',
         };
 
+        // 🏷️ ดึง cancellation_reason จาก conversation_state (เฉพาะกรณี cancelled)
+        //    ค่าที่เป็นไปได้:
+        //      - 'auto_expired'        — Phase J cron ยกเลิกที่ 30 นาที (หลัก)
+        //      - 'user_cancelled'      — ลูกค้ากดยกเลิกเอง
+        //      - 'auto_expired_grace'  — SmsPaymentService cleanup ยกเลิกหลัง grace 90 นาที
+        //      - 'unknown'             — บิลเก่าไม่ได้ระบุ (ก่อนระบบนี้เข้า)
+        $cancellationReason = null;
+        if ($approvalStatus === 'cancelled') {
+            $cancellationReason = 'unknown';
+            try {
+                $state = $reading->conversation_state ?? [];
+                if (is_array($state) && ! empty($state['cancellation_reason'])) {
+                    $cancellationReason = (string) $state['cancellation_reason'];
+                }
+            } catch (\Throwable $e) {
+                // ปล่อย default
+            }
+        }
+
         // ดึงยอดเงินจริงที่ต้องชำระ (unique amount)
         $uniquePayment = $reading->unique_payment_amount_id
             ? UniquePaymentAmount::find($reading->unique_payment_amount_id)
@@ -278,6 +297,7 @@ class SmsPaymentController extends Controller
             'matched_transaction_id' => $offsetId,
             'device_id' => null,
             'approval_status' => $approvalStatus,
+            'cancellation_reason' => $cancellationReason,
             'confidence' => $reading->is_paid ? 'high' : 'medium',
             'approved_by' => null,
             'approved_at' => $reading->paid_at?->toIso8601String(),

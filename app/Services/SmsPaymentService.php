@@ -379,6 +379,16 @@ class SmsPaymentService
             ->where('expires_at', '<=', now()->subMinutes(30)) // grace period 30 นาที
             ->get();
 
+        // ⚡ FCM service สำหรับแจ้งแอพ smschecker (best-effort)
+        $fcmService = null;
+        try {
+            $fcmService = app(\App\Services\FcmNotificationService::class);
+        } catch (\Throwable $e) {
+            Log::warning('SmsPaymentService::cleanup — FCM service unavailable', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         foreach ($expiredFortuneAmounts as $uniqueAmount) {
             // ปิด FortuneReading ที่ยังรอชำระ
             $expiredReadings = FortuneReading::where('unique_payment_amount_id', $uniqueAmount->id)
@@ -386,6 +396,10 @@ class SmsPaymentService
                 ->get();
 
             foreach ($expiredReadings as $reading) {
+                // 🏷️ ระบุประเภทการยกเลิก = หมดอายุหลัง grace period (Phase J cron พลาดหรือยังไม่ทัน)
+                $reading->setConversationState('cancelled_at', now()->toIso8601String());
+                $reading->setConversationState('cancellation_reason', 'auto_expired_grace');
+
                 $reading->update([
                     'conversation_status' => FortuneReading::STATUS_COMPLETED,
                 ]);
@@ -395,7 +409,20 @@ class SmsPaymentService
                     'reading_id' => $reading->id,
                     'bill_reference' => $reading->bill_reference,
                     'unique_amount' => $uniqueAmount->unique_amount,
+                    'cancellation_reason' => 'auto_expired_grace',
                 ]);
+
+                // 📡 แจ้ง smschecker app ทันที — กันบิลค้างใน UI รอ admin อนุมัติ
+                if ($fcmService) {
+                    try {
+                        $fcmService->notifyFortuneReadingCancelled($reading);
+                    } catch (\Throwable $fcmErr) {
+                        Log::warning('SMS Payment: FCM cancelled push ล้ม (best-effort)', [
+                            'reading_id' => $reading->id,
+                            'error' => $fcmErr->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // อัปเดต unique amount เป็น expired

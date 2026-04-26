@@ -362,6 +362,23 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
+        //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
+        //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ
+        //   FCM พลาดตอนยกเลิกครั้งแรก (offline / token หมดอายุ / legacy)
+        // ========================================
+        $schedule->command('fortune:resync-cancelled-bills', ['--days=30', '--limit=500'])
+            ->dailyAt('06:00')
+            ->withoutOverlapping()
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Resync] backfill FCM cancelled bills สำเร็จ');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Resync] backfill FCM cancelled bills ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Cleanup Free Readings - ล้างคำทำนายฟรีเก่าเพื่อลดภาระ DB
         // ========================================
         $schedule->command('fortune:cleanup-free')

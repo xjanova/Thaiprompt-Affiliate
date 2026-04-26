@@ -346,11 +346,24 @@ class FcmNotificationService
 
         $offsetId = $reading->id + 10000000;
 
+        // 🏷️ ดึง cancellation_reason จาก conversation_state (auto_expired / user_cancelled / auto_expired_grace)
+        //    ส่งให้ smschecker app เพื่อแยกสถิติ + แสดง label ที่ถูกต้องใน UI
+        $cancellationReason = 'unknown';
+        try {
+            $state = $reading->conversation_state ?? [];
+            if (is_array($state) && ! empty($state['cancellation_reason'])) {
+                $cancellationReason = (string) $state['cancellation_reason'];
+            }
+        } catch (\Throwable $e) {
+            // ปล่อย default 'unknown'
+        }
+
         $data = [
             'type' => 'order_cancelled',
             'order_id' => (string) $offsetId,
             'order_number' => $reading->bill_reference ?? ('FTU-'.$reading->id),
             'payment_status' => 'cancelled',
+            'cancellation_reason' => $cancellationReason,
             'is_fortune_reading' => 'true',
             'server_url' => config('app.url'),
         ];
@@ -359,6 +372,7 @@ class FcmNotificationService
         Log::info('FCM: Sending fortune_reading_cancelled push (data-only)', [
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
+            'cancellation_reason' => $cancellationReason,
         ]);
 
         return $this->sendToMultipleTokens($tokens, $data, null);
