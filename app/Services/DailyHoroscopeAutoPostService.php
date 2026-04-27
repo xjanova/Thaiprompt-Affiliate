@@ -268,12 +268,14 @@ class DailyHoroscopeAutoPostService
         // Encode prompt + params
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
         $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
+        // ใช้ model=turbo (Stable Diffusion turbo) เร็วกว่า flux ~6 เท่า
+        // (5-10s/รูป แทน 30-60s) คุณภาพยังดีพอใช้สำหรับโพส FB
         $url = "https://image.pollinations.ai/prompt/{$encoded}"
-            . "?width=1080&height=1080&seed={$seed}&nologo=true&model=flux&enhance=true";
+            . "?width=1080&height=1080&seed={$seed}&nologo=true&model=turbo&enhance=true";
 
         // Download รูป + เก็บไว้บน server เอง (กัน Pollinations link หาย)
         try {
-            $response = Http::timeout(120) // AI gen ใช้เวลา 5-30 วินาที
+            $response = Http::timeout(45) // turbo เร็ว ~5-10s — ตั้ง 45s buffer
                 ->withHeaders(['Accept' => 'image/*'])
                 ->get($url);
 
