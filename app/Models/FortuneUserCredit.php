@@ -52,6 +52,9 @@ class FortuneUserCredit extends Model
         'last_dm_at',
         'dm_count',
         'last_warmup_sent_at',
+        // 👁️ Follow-page tracking (2026-04-28)
+        'facebook_follow_prompted_at',
+        'facebook_followed_confirmed_at',
     ];
 
     /**
@@ -69,6 +72,9 @@ class FortuneUserCredit extends Model
         'last_dm_at' => 'datetime',
         'dm_count' => 'integer',
         'last_warmup_sent_at' => 'datetime',
+        // 👁️ Follow-page tracking
+        'facebook_follow_prompted_at' => 'datetime',
+        'facebook_followed_confirmed_at' => 'datetime',
     ];
 
     /**
@@ -441,6 +447,62 @@ class FortuneUserCredit extends Model
     public function markWarmupSent(): self
     {
         $this->update(['last_warmup_sent_at' => now()]);
+
+        return $this->fresh();
+    }
+
+    // ============================================================
+    // 👁️ Follow-page tracking (2026-04-28)
+    // ============================================================
+
+    /**
+     * ตรวจว่า user ยืนยันแล้วว่ากดติดตามเพจ
+     * (เช็คผ่าน postback "✅ ติดตามแล้ว" — เพราะ FB API ไม่เปิด GET /{user}/likes)
+     */
+    public function hasFacebookFollowed(): bool
+    {
+        return ! empty($this->facebook_followed_confirmed_at);
+    }
+
+    /**
+     * ควรส่งกล่อง "ติดตามเพจ" ให้ user หรือไม่
+     *
+     * Rules:
+     * 1. ถ้ายืนยันติดตามแล้ว → false (ไม่ต้องส่งอีก)
+     * 2. ถ้ายังไม่เคยส่ง prompt → true
+     * 3. ถ้าส่งไปแล้วเกิน cooldown → true (re-prompt)
+     *
+     * @param  int  $cooldownDays  จำนวนวันก่อน prompt ซ้ำ (default: 7)
+     */
+    public function shouldPromptFollow(int $cooldownDays = 7): bool
+    {
+        if ($this->hasFacebookFollowed()) {
+            return false;
+        }
+
+        if ($this->facebook_follow_prompted_at === null) {
+            return true;
+        }
+
+        return $this->facebook_follow_prompted_at->lessThan(now()->subDays($cooldownDays));
+    }
+
+    /**
+     * บันทึกว่าส่งกล่อง "ติดตามเพจ" ไปแล้ว
+     */
+    public function markFollowPrompted(): self
+    {
+        $this->update(['facebook_follow_prompted_at' => now()]);
+
+        return $this->fresh();
+    }
+
+    /**
+     * บันทึกว่า user ยืนยันแล้วว่ากดติดตามเพจ (ผ่าน postback)
+     */
+    public function markFacebookFollowed(): self
+    {
+        $this->update(['facebook_followed_confirmed_at' => now()]);
 
         return $this->fresh();
     }

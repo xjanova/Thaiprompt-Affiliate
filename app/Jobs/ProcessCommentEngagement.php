@@ -195,6 +195,10 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
+            // 5.5 👁️ Follow-page prompt — gated ที่ DB (cooldown 7 วัน + skip ถ้าติดตามแล้ว)
+            //     ส่งหลัง DM main เพื่อโน้มน้าวให้กดติดตาม → รับดวงประจำวันทุกวัน
+            $facebookService->sendFollowPagePromptToUser($userId);
+
             FortuneCommentEngagement::create([
                 'facebook_user_id' => $userId,
                 'facebook_post_id' => $postId,

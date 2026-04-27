@@ -1137,6 +1137,10 @@ class FacebookWebhookController extends Controller
 
         // ใช้ Conversational Flow ใหม่
         $this->processConversationalMessage($senderId, $messageText);
+
+        // 👁️ Follow-page prompt: ส่งหลัง bot ตอบ — gated ที่ DB
+        //   (skip ถ้า user ติดตามแล้ว / cooldown 7 วัน — ไม่สแปม)
+        $this->facebookService->sendFollowPagePromptToUser($senderId);
     }
 
     /**
@@ -1364,9 +1368,40 @@ class FacebookWebhookController extends Controller
             'AFFILIATE_RECRUIT_YES' => $this->handleAffiliateRecruitYes($senderId),
             'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
 
+            // 👁️ Follow-page confirmation — user คลิก "✅ ติดตามแล้ว"
+            'FOLLOW_CONFIRMED' => $this->handleFollowConfirmed($senderId),
+
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
         };
+    }
+
+    /**
+     * 👁️ จัดการเมื่อ user คลิก "✅ ติดตามแล้ว"
+     * - mark facebook_followed_confirmed_at ใน FortuneUserCredit
+     * - ส่ง thank-you message
+     * - ไม่ส่ง follow-prompt อีก
+     */
+    protected function handleFollowConfirmed(string $senderId): void
+    {
+        try {
+            $credit = \App\Models\FortuneUserCredit::getOrCreate($senderId, 'facebook');
+            $credit->markFacebookFollowed();
+
+            $this->facebookService->sendMessage(
+                $senderId,
+                "✨ ขอบคุณที่ติดตามเพจค่ะ\n"
+                . "ตั้งแต่ตี 1-7 โมงเช้าทุกวัน เราจะโพสดวงประจำวันให้\n"
+                . "อย่าลืมกดเปิดการแจ้งเตือนนะคะ 🔔"
+            );
+
+            Log::info('👁️ Follow confirmed', ['user_id' => $senderId]);
+        } catch (\Throwable $e) {
+            Log::warning('handleFollowConfirmed failed (non-blocking)', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -1549,32 +1584,11 @@ class FacebookWebhookController extends Controller
      * เป็นข้อความที่ 2 หลัง DM Quick Replies — ใช้ Button Template
      * เพื่อให้กดติดตามได้ง่าย + รับการแจ้งเตือนดวงประจำวันที่ระบบโพสรายชั่วโมง
      */
-    protected function sendFollowPagePrompt(string $userId, string $commentId): void
+    protected function sendFollowPagePrompt(string $userId, ?string $commentId = null): void
     {
-        $pageId = $this->settings->facebook_page_id;
-        if (empty($pageId)) {
-            return; // ไม่มี page_id → ข้าม
-        }
-
-        $message = "🎁 *พิเศษ! รับดวงฟรีทุกวัน*\n"
-            . "เราพยากรณ์ดวงประจำวันให้ทั้ง 7 วันเกิด\n"
-            . "ตั้งแต่ตี 1 ถึง 7 โมงเช้า ทุกวัน\n\n"
-            . "👉 กดติดตามเพจรับการแจ้งเตือนเลยค่ะ ✨";
-
-        $followUrl = "https://www.facebook.com/{$pageId}";
-
-        try {
-            $this->sendButtons($userId, $message, [
-                ['type' => 'web_url', 'title' => '👁️ ติดตามเพจรับดวงฟรี', 'url' => $followUrl],
-                ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึกเลย', 'payload' => 'MENU_DEEP_FORTUNE'],
-            ]);
-        } catch (\Throwable $e) {
-            // non-blocking — ถ้าล้ม DM หลักยังส่งสำเร็จ
-            Log::debug('sendFollowPagePrompt ล้ม (non-blocking)', [
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // ใช้ service method ที่มี shouldPromptFollow gating + postback button
+        // (refactored 2026-04-28 — เดิมส่งทุกครั้ง ตอนนี้เช็ค + dedupe + ติดตามผ่าน DB)
+        $this->facebookService->sendFollowPagePromptToUser($userId);
     }
 
     /**
@@ -2434,6 +2448,10 @@ class FacebookWebhookController extends Controller
                 $this->settings->getSubscriptionMessage()
             ),
             'HELP' => $this->sendHelpMessage($senderId),
+
+            // 👁️ Follow-page confirmation (safety: postback usually routes via processPostback)
+            'FOLLOW_CONFIRMED' => $this->handleFollowConfirmed($senderId),
+
             default => $this->processConversationalMessage($senderId, $payload),
         };
     }

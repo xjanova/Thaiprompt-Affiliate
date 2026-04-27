@@ -1591,6 +1591,66 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * @param array $options ตัวเลือกเพิ่มเติม (messaging_type, from_admin)
      * @return bool สำเร็จหรือไม่
      */
+    /**
+     * 👁️ ส่งกล่องชวนติดตามเพจ + ปุ่มยืนยัน "ติดตามแล้ว"
+     *
+     * - เช็ค FortuneUserCredit::shouldPromptFollow() ก่อน → skip ถ้า:
+     *   • user ยืนยันติดตามแล้ว (clicked FOLLOW_CONFIRMED postback)
+     *   • หรือเพิ่งส่ง prompt ภายใน 7 วันที่ผ่านมา
+     * - เรียกได้จากทุกที่ที่ส่ง DM (processMessage, sendTemplateEngagement, AI job)
+     * - non-blocking — ถ้า fail ไม่กระทบ flow หลัก
+     *
+     * @param  string  $recipientId  Facebook PSID
+     * @return bool  true = ส่งสำเร็จ + mark prompted, false = gated/failed
+     */
+    public function sendFollowPagePromptToUser(string $recipientId): bool
+    {
+        try {
+            $credit = \App\Models\FortuneUserCredit::getOrCreate($recipientId, 'facebook');
+            if (! $credit->shouldPromptFollow()) {
+                return false; // ติดตามแล้ว หรือ cooldown ยังไม่หมด
+            }
+
+            $pageId = $this->settings->facebook_page_id ?? null;
+            if (empty($pageId)) {
+                return false;
+            }
+
+            $message = "🎁 พิเศษ! รับดวงฟรีทุกวัน\n"
+                . "เราพยากรณ์ดวงประจำวันให้ทั้ง 7 วันเกิด\n"
+                . "ตั้งแต่ตี 1 ถึง 7 โมงเช้า ทุกวัน\n\n"
+                . "👉 กดติดตามเพจรับการแจ้งเตือนเลยค่ะ ✨";
+
+            $payload = [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => mb_substr($message, 0, 640),
+                        'buttons' => [
+                            ['type' => 'web_url', 'title' => '👁️ ติดตามเพจ', 'url' => "https://www.facebook.com/{$pageId}"],
+                            ['type' => 'postback', 'title' => '✅ ติดตามแล้ว', 'payload' => 'FOLLOW_CONFIRMED'],
+                        ],
+                    ],
+                ],
+            ];
+
+            $sent = $this->sendButtonTemplate($recipientId, $payload);
+            if ($sent) {
+                $credit->markFollowPrompted();
+            }
+
+            return (bool) $sent;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('sendFollowPagePromptToUser failed (non-blocking)', [
+                'user_id' => $recipientId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
     {
         try {
