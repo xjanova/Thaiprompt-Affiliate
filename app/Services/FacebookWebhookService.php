@@ -1382,6 +1382,38 @@ class FacebookWebhookService implements MessagingPlatformInterface
     {
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
 
+        // ❌ Note: nested submenu สร้าง "Invalid button type" จาก FB API
+        // → ใช้ flat menu 3 items เท่านั้น (FB max 3 top-level)
+        // → ปุ่ม "ชวนเพื่อน" / "LINE" ทำได้ผ่าน Ice Breakers แทน
+        return [
+            // 1️⃣ สมัครสมาชิก → URL ไป FB OAuth
+            [
+                'type' => 'web_url',
+                'title' => '📝 สมัครสมาชิก',
+                'url' => $appUrl . '/auth/facebook',
+            ],
+            // 2️⃣ ดูดวงละเอียด → postback เริ่ม flow
+            [
+                'type' => 'postback',
+                'title' => '💎 ดูดวงละเอียด',
+                'payload' => 'MENU_DEEP_FORTUNE',
+            ],
+            // 3️⃣ รู้จักเรา → postback แสดงข้อมูลศาสตร์ + xman studio + ปุ่มต่างๆ
+            [
+                'type' => 'postback',
+                'title' => '🔍 รู้จักเรา',
+                'payload' => 'MENU_ABOUT_US',
+            ],
+        ];
+    }
+
+    /**
+     * 🚫 Deprecated nested submenu (เก็บไว้เผื่อ reuse — แต่ไม่ใช้แล้ว)
+     */
+    protected function _buildPersistentMenuActions_OLD(): array
+    {
+        $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
+
         // Submenu ของ "🔍 รู้จักเรา"
         $aboutSubmenu = [
             [
