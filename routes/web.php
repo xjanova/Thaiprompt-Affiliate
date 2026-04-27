@@ -304,7 +304,14 @@ Route::middleware('guest')->group(function () {
     Route::match(['GET', 'HEAD'], '/auth/line/register-guide', function () {
         return view('auth.line-register-guide');
     })->name('line.register.guide');
+
+    // Facebook OAuth Login (Socialite)
+    Route::match(['GET', 'HEAD'], '/auth/facebook', [\App\Http\Controllers\Auth\FacebookLoginController::class, 'redirect'])->name('facebook.login');
 });
+
+// ✅ Facebook callback ต้องอยู่นอก guest middleware
+// เพราะ FB redirect กลับมาเฉพาะ guest flow (ไม่มี link mode)
+Route::match(['GET', 'HEAD'], '/auth/facebook/callback', [\App\Http\Controllers\Auth\FacebookLoginController::class, 'callback'])->name('facebook.callback');
 
 // ✅ LINE callback ต้องอยู่นอก guest middleware
 // เพราะทั้ง guest (login) และ authenticated users (link LINE) ต้องเข้าถึงได้

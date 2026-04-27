@@ -344,7 +344,17 @@ class FortuneCommissionService
             }
 
             $lines[] = '💎 ยอดในกระเป๋าปัจจุบัน: ' . number_format($balance, 2) . ' บาท';
+
+            // 💼 ลิงก์เข้ากระเป๋า — login ผ่าน Facebook OAuth (signed redirect → wallet)
+            // ลูกค้ากดได้เลย: FB OAuth login → auto match → redirect ไปหน้า wallet
+            $walletUrl = route('user.wallet.index');
+            $loginUrl = route('facebook.login', ['redirect' => $walletUrl]);
+
             $lines[] = '';
+            $lines[] = '👉 เข้าหน้ากระเป๋า/ถอนเงิน:';
+            $lines[] = $loginUrl;
+            $lines[] = '';
+            $lines[] = '⚠️ การถอนต้องยืนยันตัวตน (KYC) ก่อน';
             $lines[] = '✨ ขอบคุณที่ช่วยแนะนำเพื่อนๆ มาดูดวงนะคะ';
 
             $message = implode("\n", $lines);

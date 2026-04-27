@@ -89,8 +89,10 @@ Route::prefix('kyc')->name('kyc.')->group(function () {
     Route::get('/{kycVerification}', [KycController::class, 'show'])->name('show');
 });
 
-// Wallet Management (User) - 🔒 ต้องมี LINE UID เพื่อยืนยันตัวตน
-Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid')->group(function () {
+// Wallet Management (User) - รองรับทั้ง LINE และ Facebook user
+// 'require.line.uid:soft' = แสดง warning ให้ link LINE แต่ไม่บล็อก
+// (FB users ที่ login ผ่าน OAuth สามารถเข้าได้ — KYC จะถูกเช็คตอน withdraw)
+Route::prefix('wallet')->name('wallet.')->middleware('require.line.uid:soft')->group(function () {
     Route::get('/', [WalletController::class, 'index'])->name('index');
 
     // Topup Routes (ระบบเติมเงินแยกจากตะกร้าสินค้า)

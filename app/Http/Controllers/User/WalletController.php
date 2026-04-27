@@ -420,10 +420,22 @@ class WalletController extends Controller
 
     /**
      * Display withdrawal page
+     *
+     * ✅ KYC gate: ถ้ายังไม่ผ่าน → redirect ไปหน้า KYC พร้อมข้อความอธิบาย
+     * (Super Admin/Admin ข้าม)
      */
     public function withdraw()
     {
         $user = auth()->user();
+
+        // KYC gate — ป้องกันฟอกเงิน + กฎการเงิน
+        $isAdmin = $user->is_super_admin || in_array($user->role, ['admin', 'super_admin'], true);
+        if (! $isAdmin && ! $user->isKycVerified()) {
+            return redirect()->route('user.kyc.index')
+                ->with('warning', 'กรุณายืนยันตัวตน (KYC) ก่อนถอนเงิน — '
+                    . 'อัพโหลดบัตรประชาชน + เซลฟี่เพื่อยืนยันตัวตนตามกฎการเงิน');
+        }
+
         $wallet = $this->walletService->getOrCreateWallet($user);
         $paymentMethods = $user->paymentMethods()->active()->get();
 

@@ -24,6 +24,21 @@ class WithdrawalService
     }
 
     /**
+     * ตรวจว่า user ผ่าน KYC แล้วหรือยัง (Super Admin bypass)
+     *
+     * เรียกก่อนสร้าง withdrawal request — ป้องกันฟอกเงิน + กฎการเงิน
+     */
+    protected function isKycVerified(User $user): bool
+    {
+        // Admin/Super Admin ข้ามการตรวจ KYC
+        if ($user->is_super_admin || in_array($user->role, ['admin', 'super_admin'], true)) {
+            return true;
+        }
+
+        return $user->isKycVerified();
+    }
+
+    /**
      * Create withdrawal request
      */
     public function createWithdrawalRequest(
@@ -32,6 +47,16 @@ class WithdrawalService
         ?int $paymentMethodId = null,
         ?string $userNote = null
     ): WithdrawalRequest {
+        // ✅ KYC requirement (2026-04-27)
+        // ทุก user ต้องผ่าน KYC ก่อนถอน — ป้องกันฟอกเงิน + กฎการเงิน
+        // (Super Admin/Admin ข้ามได้)
+        if (! $this->isKycVerified($user)) {
+            throw new Exception(
+                'กรุณายืนยันตัวตน (KYC) ก่อนถอนเงิน — '
+                . 'ไปที่หน้า KYC แล้วอัพโหลดเอกสารยืนยัน'
+            );
+        }
+
         $wallet = $this->walletService->getOrCreateWallet($user);
 
         // Validate wallet

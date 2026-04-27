@@ -46,6 +46,13 @@ class User extends Authenticatable
         'line_access_token',
         'line_linked_at',
         'line_verified',
+        // Facebook OAuth fields
+        'facebook_user_id',
+        'facebook_email',
+        'facebook_name',
+        'facebook_picture_url',
+        'facebook_verified',
+        'facebook_linked_at',
         // Contact fields
         'phone',
         'phone_verified',
@@ -201,6 +208,8 @@ class User extends Authenticatable
             'rank_updated_at' => 'datetime',
             'line_linked_at' => 'datetime',
             'line_verified' => 'boolean',
+            'facebook_linked_at' => 'datetime',
+            'facebook_verified' => 'boolean',
             'phone_verified' => 'boolean',
             'phone_verified_at' => 'datetime',
             'date_of_birth' => 'date',

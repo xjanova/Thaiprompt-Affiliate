@@ -55,6 +55,25 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Facebook OAuth (Laravel Socialite)
+    |--------------------------------------------------------------------------
+    |
+    | สำหรับ "Login with Facebook" — ลูกค้าที่จ่ายดูดวงผ่าน Messenger
+    | สามารถ login เข้าเว็บเพื่อดู wallet/รายได้/ถอนเงิน
+    |
+    | App setup: https://developers.facebook.com/apps/
+    | Required scopes: email, public_profile
+    | Callback URL: https://main.thaiprompt.online/auth/facebook/callback
+    */
+
+    'facebook' => [
+        'client_id' => env('FACEBOOK_CLIENT_ID'),
+        'client_secret' => env('FACEBOOK_CLIENT_SECRET'),
+        'redirect' => env('FACEBOOK_REDIRECT_URI', '/auth/facebook/callback'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Payment Gateway Configurations
     |--------------------------------------------------------------------------
     */
