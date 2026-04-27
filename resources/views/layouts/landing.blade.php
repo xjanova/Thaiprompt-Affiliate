@@ -284,25 +284,33 @@
                     @endif
                 </a>
 
-                {{-- Desktop Navigation --}}
-                <div class="hidden lg:flex items-center gap-8">
-                    <a href="#demo" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                {{-- Desktop Navigation
+                     ใช้ route('home') . '#anchor' เพื่อให้คลิกจากหน้าไหนก็ scroll ไปยัง section ของหน้า home ได้
+                     section IDs ที่มีจริงในหน้า home ใหม่: #services / #wallet / #how / #demo / #asia --}}
+                <div class="hidden lg:flex items-center gap-6 xl:gap-8">
+                    <a href="{{ route('home') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        หน้าแรก
+                    </a>
+                    <a href="{{ route('home') }}#services" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        บริการ
+                    </a>
+                    <a href="{{ route('home') }}#wallet" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        Wallet
+                    </a>
+                    <a href="{{ route('home') }}#how" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        วิธีใช้งาน
+                    </a>
+                    <a href="{{ route('home') }}#demo" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
                         สื่อการเรียนรู้
                     </a>
-                    <a href="#features" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        คุณสมบัติ
-                    </a>
-                    <a href="#systems" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        ระบบทั้งหมด
-                    </a>
-                    <a href="#stats" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        สถิติ
+                    <a href="{{ route('home') }}#asia" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
+                        เครือข่าย
                     </a>
                     <a href="{{ route('about') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        เกี่ยวกับเรา
+                        เกี่ยวกับ
                     </a>
                     <a href="{{ route('contact') }}" class="text-slate-600 dark:text-slate-300 hover:text-blue-900 dark:hover:text-blue-400 font-medium transition-colors">
-                        ติดต่อเรา
+                        ติดต่อ
                     </a>
 
                     {{-- ปุ่มดูดวง - เด่นชัด --}}
@@ -389,40 +397,46 @@
                 </button>
             </div>
 
-            {{-- Menu Links --}}
+            {{-- Menu Links — ใช้ route('home') . '#anchor' เพื่อให้คลิกจากหน้าไหนก็ทำงาน
+                 section IDs ที่มีจริงในหน้า home: #services / #wallet / #how / #demo / #asia --}}
             <nav class="space-y-2">
                 <a href="{{ route('home') }}" @click="mobileMenuOpen = false"
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl bg-blue-900/30 text-white font-medium">
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('home') ? 'bg-blue-900/30 text-white' : 'hover:bg-white/10 text-slate-200' }} font-medium transition-colors">
                     <i class="fas fa-home w-5 text-center"></i>
                     หน้าแรก
                 </a>
-                <a href="#demo" @click="mobileMenuOpen = false"
+                <a href="{{ route('home') }}#services" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-th-large w-5 text-center"></i>
+                    บริการ
+                </a>
+                <a href="{{ route('home') }}#wallet" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-wallet w-5 text-center"></i>
+                    Wallet
+                </a>
+                <a href="{{ route('home') }}#how" @click="mobileMenuOpen = false"
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                    <i class="fas fa-route w-5 text-center"></i>
+                    วิธีใช้งาน
+                </a>
+                <a href="{{ route('home') }}#demo" @click="mobileMenuOpen = false"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
                     <i class="fas fa-play-circle w-5 text-center"></i>
                     สื่อการเรียนรู้
                 </a>
-                <a href="#features" @click="mobileMenuOpen = false"
+                <a href="{{ route('home') }}#asia" @click="mobileMenuOpen = false"
                    class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                    <i class="fas fa-star w-5 text-center"></i>
-                    คุณสมบัติ
-                </a>
-                <a href="#systems" @click="mobileMenuOpen = false"
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                    <i class="fas fa-cubes w-5 text-center"></i>
-                    ระบบทั้งหมด
-                </a>
-                <a href="#stats" @click="mobileMenuOpen = false"
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                    <i class="fas fa-chart-bar w-5 text-center"></i>
-                    สถิติ
+                    <i class="fas fa-globe-asia w-5 text-center"></i>
+                    เครือข่ายเอเชีย
                 </a>
                 <a href="{{ route('about') }}" @click="mobileMenuOpen = false"
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('about') ? 'bg-blue-900/30 text-white' : 'hover:bg-white/10 text-slate-200' }} transition-colors">
                     <i class="fas fa-info-circle w-5 text-center"></i>
                     เกี่ยวกับเรา
                 </a>
                 <a href="{{ route('contact') }}" @click="mobileMenuOpen = false"
-                   class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
+                   class="flex items-center gap-3 px-4 py-3 rounded-xl {{ request()->routeIs('contact') ? 'bg-blue-900/30 text-white' : 'hover:bg-white/10 text-slate-200' }} transition-colors">
                     <i class="fas fa-envelope w-5 text-center"></i>
                     ติดต่อเรา
                 </a>
@@ -443,11 +457,6 @@
                        class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
                         <i class="fas fa-book w-5 text-center"></i>
                         คู่มือการใช้งาน
-                    </a>
-                    <a href="/demo" @click="mobileMenuOpen = false"
-                       class="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-white/10 text-slate-200 transition-colors">
-                        <i class="fas fa-play-circle w-5 text-center"></i>
-                        ทดลองใช้งาน
                     </a>
                 </div>
             </nav>
