@@ -203,98 +203,178 @@ class DailyHoroscopeAutoPostService
     protected function generateImage(FortuneDailyHoroscopePost $post): void
     {
         try {
-            $card = $post->tarotCard;
-            $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
-            $dayEmoji = FortuneDailyHoroscopePost::DAY_EMOJI[$post->day_of_birth];
-            $dateStr = $post->post_date->locale('th')->translatedFormat('j M Y');
+            // ✨ ใช้ Pollinations.ai — AI image generation API ฟรี ไม่ต้อง API key
+            // คุณภาพดีกว่า GD library + รูปสวยตรงตามธีม + 1080x1080
+            $imageUrl = $this->generateImageWithPollinations($post);
 
-            // สี theme ตามวันเกิด (สีไทยโบราณ)
-            $themeColors = [
-                1 => [255, 230, 100], // จันทร์ - เหลืองนวล
-                2 => [255, 90, 90],   // อังคาร - แดง
-                3 => [120, 220, 120], // พุธ - เขียว
-                4 => [255, 160, 60],  // พฤหัส - ส้ม
-                5 => [100, 180, 255], // ศุกร์ - ฟ้า
-                6 => [180, 100, 220], // เสาร์ - ม่วง
-                7 => [255, 100, 30],  // อาทิตย์ - แดงส้ม
-            ];
-            $color = $themeColors[$post->day_of_birth] ?? [200, 200, 200];
-
-            // สร้างรูปขนาด 1080x1080 (Instagram/FB square)
-            $width = 1080;
-            $height = 1080;
-            $img = imagecreatetruecolor($width, $height);
-
-            // Background gradient (ม่วงเข้ม → ดำ)
-            for ($y = 0; $y < $height; $y++) {
-                $ratio = $y / $height;
-                $r = (int) (30 + (60 * (1 - $ratio)));
-                $g = (int) (10 + (20 * (1 - $ratio)));
-                $b = (int) (60 + (100 * (1 - $ratio)));
-                $bgColor = imagecolorallocate($img, $r, $g, $b);
-                imageline($img, 0, $y, $width, $y, $bgColor);
+            if (! $imageUrl) {
+                Log::info('DailyHoroscopeAutoPost: Pollinations.ai ไม่พร้อม → fallback GD', [
+                    'post_id' => $post->id,
+                ]);
+                $imageUrl = $this->generateImageWithGD($post);
             }
 
-            // วงกลมสีตาม theme ทับ background (deco)
-            $themeRgb = imagecolorallocatealpha($img, $color[0], $color[1], $color[2], 80);
-            imagefilledellipse($img, $width / 2, 320, 700, 700, $themeRgb);
+            if ($imageUrl) {
+                $post->update([
+                    'image_url' => $imageUrl,
+                    'status' => FortuneDailyHoroscopePost::STATUS_READY,
+                ]);
+            }
+        } catch (Exception $e) {
+            Log::warning('DailyHoroscopeAutoPost: สร้างรูปล้มเหลว — โพสแบบ text-only', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
 
-            // ตัวอักษรสีทอง
-            $gold = imagecolorallocate($img, 255, 215, 0);
-            $white = imagecolorallocate($img, 255, 255, 255);
-            $cream = imagecolorallocate($img, 255, 240, 200);
+    /**
+     * 🎨 สร้างรูปด้วย Pollinations.ai (AI image — ฟรี ไม่ต้อง API key)
+     *
+     * Endpoint: https://image.pollinations.ai/prompt/{encoded_prompt}?{params}
+     * Model: FLUX (default) — คุณภาพ photorealistic
+     *
+     * Returns: URL ของรูป (Pollinations จะ return รูปทันทีจาก URL)
+     *          หรือ null ถ้าไม่สามารถ generate ได้
+     */
+    protected function generateImageWithPollinations(FortuneDailyHoroscopePost $post): ?string
+    {
+        $card = $post->tarotCard;
+        $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
+        $cardName = $card?->name_en ?: 'tarot card';
 
-            // Font (ใช้ default GD font — ไม่ต้องโหลด TTF)
-            // หา TTF font ภาษาไทยถ้ามี
-            $fontPath = $this->findThaiFont();
+        // ธีมสีตามวันเกิด (โหราศาสตร์ไทย — กำลังวัน)
+        $dayThemes = [
+            1 => 'soft golden yellow moonlight, pearl white aura',                    // จันทร์
+            2 => 'fiery red and orange, mars warrior energy',                          // อังคาร
+            3 => 'emerald green forest, mercury wisdom',                               // พุธ
+            4 => 'royal orange and amber, jupiter abundance',                          // พฤหัส
+            5 => 'azure blue and silver, venus love beauty',                           // ศุกร์
+            6 => 'deep purple and indigo, saturn mysticism',                           // เสาร์
+            7 => 'radiant sunrise red-orange, sun divine energy',                      // อาทิตย์
+        ];
+        $theme = $dayThemes[$post->day_of_birth] ?? 'mystical purple';
 
-            if ($fontPath) {
-                // Header: "ดวงคนเกิดวันจันทร์"
-                $header = "ดวงคนเกิดวัน{$dayName}";
-                imagettftext($img, 50, 0, 80, 100, $gold, $fontPath, $header);
+        // สร้าง prompt — ภาษาอังกฤษเพราะ AI image gen ทำงานดีกว่า
+        $prompt = "Mystical Thai astrology fortune telling artwork, "
+            . "{$theme}, "
+            . "tarot card '{$cardName}' floating in cosmic space, "
+            . "ornate gold filigree borders, sacred geometry mandalas, "
+            . "celestial stars and constellations, ethereal mist, "
+            . "Thai temple architecture silhouette, lotus flowers, "
+            . "elegant mystic atmosphere, high quality digital art, "
+            . "cinematic lighting, ultra detailed, 4K, professional photography style, "
+            . "no text no words no letters";
 
-                // Date
-                imagettftext($img, 28, 0, 80, 150, $cream, $fontPath, $dateStr);
+        // Encode prompt + params
+        $encoded = rawurlencode(mb_substr($prompt, 0, 800));
+        $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
+        $url = "https://image.pollinations.ai/prompt/{$encoded}"
+            . "?width=1080&height=1080&seed={$seed}&nologo=true&model=flux&enhance=true";
 
-                // Card name (ใหญ่กลางภาพ)
-                $cardName = $card?->name_th ?: ($card?->name_en ?: 'ไพ่ทาโรต์');
-                $position = $post->is_reversed ? '(กลับด้าน)' : '(ตั้งตรง)';
-                imagettftext($img, 60, 0, 80, 580, $white, $fontPath, $cardName);
-                imagettftext($img, 32, 0, 80, 640, $cream, $fontPath, $position);
+        // Download รูป + เก็บไว้บน server เอง (กัน Pollinations link หาย)
+        try {
+            $response = Http::timeout(120) // AI gen ใช้เวลา 5-30 วินาที
+                ->withHeaders(['Accept' => 'image/*'])
+                ->get($url);
 
-                // Footer: brand
-                imagettftext($img, 28, 0, 80, 1000, $gold, $fontPath, '✨ แม่หมอจันทรา • thaiprompt');
-                imagettftext($img, 22, 0, 80, 1040, $cream, $fontPath, 'ดูดวงเชิงลึกทักแชทมาเลย');
-            } else {
-                // Fallback: GD built-in font (ไม่รองรับภาษาไทยดี — แสดงเป็น box แทน)
-                imagestring($img, 5, 80, 100, "Day: {$dayName}", $gold);
-                imagestring($img, 4, 80, 580, ($card?->name_en ?: 'Tarot'), $white);
-                imagestring($img, 3, 80, 1000, 'thaiprompt fortune', $gold);
+            if (! $response->successful() || empty($response->body())) {
+                Log::warning('Pollinations.ai: response ล้มเหลว', [
+                    'status' => $response->status(),
+                    'url' => $url,
+                ]);
+
+                return null;
             }
 
-            // Save to storage
             $relativePath = "fortune-daily/{$post->post_date->format('Y-m-d')}/day-{$post->day_of_birth}.jpg";
             $absolutePath = storage_path("app/public/{$relativePath}");
             $dir = dirname($absolutePath);
             if (! is_dir($dir)) {
                 mkdir($dir, 0755, true);
             }
+            file_put_contents($absolutePath, $response->body());
 
+            $post->update(['image_path' => $relativePath]);
+
+            Log::info('DailyHoroscopeAutoPost: Pollinations.ai สร้างรูปสำเร็จ', [
+                'post_id' => $post->id,
+                'day' => $post->day_of_birth,
+                'card' => $cardName,
+                'size' => strlen($response->body()),
+            ]);
+
+            return asset('storage/' . $relativePath);
+        } catch (Exception $e) {
+            Log::warning('Pollinations.ai: error', [
+                'error' => $e->getMessage(),
+                'url' => $url,
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🛠 Fallback — สร้างรูปด้วย GD (เก่า) ถ้า Pollinations ล้มเหลว
+     */
+    protected function generateImageWithGD(FortuneDailyHoroscopePost $post): ?string
+    {
+        try {
+            $card = $post->tarotCard;
+            $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
+            $dateStr = $post->post_date->locale('th')->translatedFormat('j M Y');
+
+            $themeColors = [
+                1 => [255, 230, 100], 2 => [255, 90, 90], 3 => [120, 220, 120],
+                4 => [255, 160, 60], 5 => [100, 180, 255], 6 => [180, 100, 220],
+                7 => [255, 100, 30],
+            ];
+            $color = $themeColors[$post->day_of_birth] ?? [200, 200, 200];
+
+            $img = imagecreatetruecolor(1080, 1080);
+            for ($y = 0; $y < 1080; $y++) {
+                $ratio = $y / 1080;
+                $r = (int) (30 + (60 * (1 - $ratio)));
+                $g = (int) (10 + (20 * (1 - $ratio)));
+                $b = (int) (60 + (100 * (1 - $ratio)));
+                imageline($img, 0, $y, 1080, $y, imagecolorallocate($img, $r, $g, $b));
+            }
+            imagefilledellipse($img, 540, 320, 700, 700,
+                imagecolorallocatealpha($img, $color[0], $color[1], $color[2], 80));
+
+            $gold = imagecolorallocate($img, 255, 215, 0);
+            $white = imagecolorallocate($img, 255, 255, 255);
+            $cream = imagecolorallocate($img, 255, 240, 200);
+            $fontPath = $this->findThaiFont();
+
+            if ($fontPath) {
+                imagettftext($img, 50, 0, 80, 100, $gold, $fontPath, "ดวงคนเกิดวัน{$dayName}");
+                imagettftext($img, 28, 0, 80, 150, $cream, $fontPath, $dateStr);
+                $cardName = $card?->name_th ?: ($card?->name_en ?: 'ไพ่ทาโรต์');
+                $position = $post->is_reversed ? '(กลับด้าน)' : '(ตั้งตรง)';
+                imagettftext($img, 60, 0, 80, 580, $white, $fontPath, $cardName);
+                imagettftext($img, 32, 0, 80, 640, $cream, $fontPath, $position);
+                imagettftext($img, 28, 0, 80, 1000, $gold, $fontPath, '✨ แม่หมอจันทรา • thaiprompt');
+                imagettftext($img, 22, 0, 80, 1040, $cream, $fontPath, 'ดูดวงเชิงลึกทักแชทมาเลย');
+            } else {
+                imagestring($img, 5, 80, 100, "Day: {$dayName}", $gold);
+                imagestring($img, 4, 80, 580, ($card?->name_en ?: 'Tarot'), $white);
+                imagestring($img, 3, 80, 1000, 'thaiprompt fortune', $gold);
+            }
+
+            $relativePath = "fortune-daily/{$post->post_date->format('Y-m-d')}/day-{$post->day_of_birth}.jpg";
+            $absolutePath = storage_path("app/public/{$relativePath}");
+            if (! is_dir(dirname($absolutePath))) {
+                mkdir(dirname($absolutePath), 0755, true);
+            }
             imagejpeg($img, $absolutePath, 92);
             imagedestroy($img);
 
-            $publicUrl = asset('storage/' . $relativePath);
+            $post->update(['image_path' => $relativePath]);
 
-            $post->update([
-                'image_path' => $relativePath,
-                'image_url' => $publicUrl,
-                'status' => FortuneDailyHoroscopePost::STATUS_READY,
-            ]);
+            return asset('storage/' . $relativePath);
         } catch (Exception $e) {
-            Log::warning('DailyHoroscopeAutoPost: สร้างรูปล้มเหลว — โพสแบบ text-only', [
-                'error' => $e->getMessage(),
-            ]);
-            // ไม่ throw — ยังสามารถ post text-only ได้
+            return null;
         }
     }
 
