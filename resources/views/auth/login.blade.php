@@ -408,8 +408,8 @@
                 </div>
                 @endif
 
-                {{-- Facebook Login (Socialite OAuth) --}}
-                @if(config('services.facebook.client_id') && config('services.facebook.client_secret'))
+                {{-- Facebook Login (Socialite OAuth) — config จาก DB ผ่าน FacebookOAuthSetting --}}
+                @if(\App\Models\FacebookOAuthSetting::isConfigured())
                 <div class="mt-3">
                     @if(!$showLineLogin)
                         <div class="relative flex items-center justify-center my-4">

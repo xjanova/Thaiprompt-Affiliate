@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\FacebookOAuthSetting;
 use App\Models\MlmMember;
 use App\Models\User;
 use App\Models\Wallet;
@@ -11,6 +12,7 @@ use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -41,7 +43,8 @@ class FacebookLoginController extends Controller
      */
     public function redirect(Request $request): RedirectResponse
     {
-        if (! $this->isConfigured()) {
+        $setting = $this->loadSetting();
+        if (! $setting) {
             return redirect()->route('login')
                 ->with('error', 'Facebook Login ยังไม่ได้ตั้งค่า — กรุณาแจ้งผู้ดูแลระบบ');
         }
@@ -61,7 +64,7 @@ class FacebookLoginController extends Controller
         Session::put('facebook_login_origin', str_contains($referer, '/register') ? 'register' : 'login');
 
         return Socialite::driver('facebook')
-            ->scopes(['email', 'public_profile'])
+            ->scopes($setting->getScopes())
             ->redirect();
     }
 
@@ -70,8 +73,15 @@ class FacebookLoginController extends Controller
      */
     public function callback(Request $request): RedirectResponse
     {
+        // Load setting + apply runtime config (สำคัญ! Socialite อ่าน config ตอน driver init)
+        $setting = $this->loadSetting();
         $errorOrigin = Session::get('facebook_login_origin', 'login');
         $errorRoute = $errorOrigin === 'register' ? 'register' : 'login';
+
+        if (! $setting) {
+            return redirect()->route($errorRoute)
+                ->with('error', 'Facebook Login ยังไม่ได้ตั้งค่า — กรุณาแจ้งผู้ดูแลระบบ');
+        }
 
         // User cancel หรือ error จาก FB
         if ($request->has('error')) {
@@ -117,6 +127,9 @@ class FacebookLoginController extends Controller
 
         // Login user
         Auth::login($user, true);
+
+        // Track login stats
+        $setting->recordLogin();
 
         Log::info('Facebook OAuth: login success', [
             'user_id' => $user->id,
@@ -272,11 +285,26 @@ class FacebookLoginController extends Controller
     }
 
     /**
-     * ตรวจว่า config ครบไหม
+     * โหลด setting จาก DB + apply runtime config ให้ Socialite
+     *
+     * Override config ตอน runtime — เพราะ Socialite อ่าน config('services.facebook.*')
+     * ตอน driver instantiation. การเปลี่ยน DB row ไม่ทันที ต้อง Config::set() ตรงๆ
+     *
+     * Return null ถ้า config ยังไม่พร้อม (admin ยังไม่ได้กรอก/disabled)
      */
-    protected function isConfigured(): bool
+    protected function loadSetting(): ?FacebookOAuthSetting
     {
-        return ! empty(config('services.facebook.client_id'))
-            && ! empty(config('services.facebook.client_secret'));
+        $setting = FacebookOAuthSetting::getActive();
+
+        if (! $setting || ! $setting->isReady()) {
+            return null;
+        }
+
+        // Override Socialite config runtime — แทนที่ค่าจาก env ใน config/services.php
+        Config::set('services.facebook.client_id', $setting->app_id);
+        Config::set('services.facebook.client_secret', $setting->app_secret);
+        Config::set('services.facebook.redirect', $setting->getRedirectUri());
+
+        return $setting;
     }
 }

@@ -982,6 +982,16 @@
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">LINE OA</span>
                 </a>
 
+                {{-- Facebook Login (OAuth) — อยู่ใต้ LINE เพราะเป็น login provider เหมือนกัน --}}
+                <a href="{{ route('admin.auth.facebook-oauth.index') }}"
+                   @click="$store.sidebar.closeOnMenuClick()"
+                   data-menu-active="{{ request()->routeIs('admin.auth.facebook-oauth.*') ? 'true' : 'false' }}"
+                   data-menu-type="submenu"
+                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.auth.facebook-oauth.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
+                    <i class="fab fa-facebook w-4 text-center drop-shadow"></i>
+                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">Facebook Login</span>
+                </a>
+
                 {{-- LINE Bot AI --}}
                 <a href="{{ route('admin.line-bot.ai.index') }}"
                    @click="$store.sidebar.closeOnMenuClick()"

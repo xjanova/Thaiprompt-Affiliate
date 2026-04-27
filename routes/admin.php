@@ -692,6 +692,16 @@ Route::prefix('email')->name('email.')->group(function () {
     Route::post('/test', [EmailController::class, 'sendTest'])->name('test');
 });
 
+// Authentication Providers (login methods configuration)
+Route::prefix('auth')->name('auth.')->group(function () {
+    // Facebook OAuth Login Settings (DB-backed config)
+    Route::prefix('facebook-oauth')->name('facebook-oauth.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FacebookOAuthController::class, 'index'])->name('index');
+        Route::put('/', [\App\Http\Controllers\Admin\FacebookOAuthController::class, 'update'])->name('update');
+        Route::post('/test', [\App\Http\Controllers\Admin\FacebookOAuthController::class, 'test'])->name('test');
+    });
+});
+
 // LINE OA Management
 Route::prefix('line-oa')->name('line-oa.')->group(function () {
     Route::get('/', [LineOaController::class, 'index'])->name('index');
