@@ -387,7 +387,7 @@ class DailyHoroscopeAutoPostService
             Log::info('DailyHoroscopeAutoPost: Cloudflare AI สำเร็จ', [
                 'post_id' => $post->id,
                 'day' => $post->day_of_birth,
-                'card' => $cardName,
+                'card' => $card?->name_en ?: 'unknown',
                 'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
             ]);
 
@@ -541,7 +541,7 @@ class DailyHoroscopeAutoPostService
             Log::info('DailyHoroscopeAutoPost: Pollinations.ai สร้างรูปสำเร็จ', [
                 'post_id' => $post->id,
                 'day' => $post->day_of_birth,
-                'card' => $cardName,
+                'card' => $card?->name_en ?: 'unknown',
                 'size' => strlen($response->body()),
             ]);
 
