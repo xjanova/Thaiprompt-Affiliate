@@ -40,8 +40,8 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $togetherAi->setConfig('api_key', '', true);
-        $togetherAi->setConfig('api_endpoint', 'https://api.together.xyz/v1', false);
+        $this->setConfigIfMissing($togetherAi, 'api_key', '', true);
+        $this->setConfigIfMissing($togetherAi, 'api_endpoint', 'https://api.together.xyz/v1', false);
 
         // 2. Cloudflare Workers AI (FLUX - ฟรี ~40 ภาพ/วัน)
         $cloudflareAi = AiGenProvider::updateOrCreate(
@@ -58,8 +58,8 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $cloudflareAi->setConfig('api_key', '', true);
-        $cloudflareAi->setConfig('account_id', '', false);
+        $this->setConfigIfMissing($cloudflareAi, 'api_key', '', true);
+        $this->setConfigIfMissing($cloudflareAi, 'account_id', '', false);
 
         // 3. Grok / xAI Aurora (คุณภาพสูง)
         $grok = AiGenProvider::updateOrCreate(
@@ -76,8 +76,8 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $grok->setConfig('api_key', '', true);
-        $grok->setConfig('api_endpoint', 'https://api.x.ai/v1', false);
+        $this->setConfigIfMissing($grok, 'api_key', '', true);
+        $this->setConfigIfMissing($grok, 'api_endpoint', 'https://api.x.ai/v1', false);
 
         // 4. OpenAI (DALL-E 3 / gpt-image-1) ⭐ ยอดนิยม
         $openai = AiGenProvider::updateOrCreate(
@@ -94,8 +94,8 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $openai->setConfig('api_key', '', true);
-        $openai->setConfig('api_endpoint', 'https://api.openai.com/v1', false);
+        $this->setConfigIfMissing($openai, 'api_key', '', true);
+        $this->setConfigIfMissing($openai, 'api_endpoint', 'https://api.openai.com/v1', false);
 
         // 5. Stability AI (Stable Diffusion 3.5)
         $stabilityAi = AiGenProvider::updateOrCreate(
@@ -112,7 +112,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $stabilityAi->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($stabilityAi, 'api_key', '', true);
 
         // 6. FAL AI (FLUX Pro - เร็วมาก)
         $falAi = AiGenProvider::updateOrCreate(
@@ -129,7 +129,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $falAi->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($falAi, 'api_key', '', true);
 
         // 7. Black Forest Labs (FLUX Pro - คุณภาพสูงสุด)
         $bfl = AiGenProvider::updateOrCreate(
@@ -146,7 +146,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $bfl->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($bfl, 'api_key', '', true);
 
         // 8. Replicate (หลายโมเดล)
         $replicate = AiGenProvider::updateOrCreate(
@@ -163,7 +163,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $replicate->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($replicate, 'api_key', '', true);
 
         // 9. Ideogram (เน้นข้อความในภาพ)
         $ideogram = AiGenProvider::updateOrCreate(
@@ -180,7 +180,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $ideogram->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($ideogram, 'api_key', '', true);
 
         // 10. Leonardo AI (game art, concept art)
         $leonardoAi = AiGenProvider::updateOrCreate(
@@ -197,7 +197,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 0,
             ]
         );
-        $leonardoAi->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($leonardoAi, 'api_key', '', true);
 
         // 11. Freepik (ภาพ + วิดีโอ)
         $freepik = AiGenProvider::updateOrCreate(
@@ -214,8 +214,8 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 10,
             ]
         );
-        $freepik->setConfig('api_key', '', true);
-        $freepik->setConfig('api_endpoint', 'https://api.freepik.com/v1', false);
+        $this->setConfigIfMissing($freepik, 'api_key', '', true);
+        $this->setConfigIfMissing($freepik, 'api_endpoint', 'https://api.freepik.com/v1', false);
 
         // =====================================================================
         // 🎬 VIDEO GENERATION PROVIDERS
@@ -236,7 +236,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 15,
             ]
         );
-        $klingAi->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($klingAi, 'api_key', '', true);
 
         // 13. Runway ML (Gen-3 Alpha - top tier video)
         $runwayMl = AiGenProvider::updateOrCreate(
@@ -253,7 +253,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 25,
             ]
         );
-        $runwayMl->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($runwayMl, 'api_key', '', true);
 
         // 14. Luma AI (Dream Machine)
         $lumaAi = AiGenProvider::updateOrCreate(
@@ -270,7 +270,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 20,
             ]
         );
-        $lumaAi->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($lumaAi, 'api_key', '', true);
 
         // 15. Minimax / Hailuo (วิดีโอ realistic)
         $minimax = AiGenProvider::updateOrCreate(
@@ -287,7 +287,7 @@ class AiGenSeeder extends Seeder
                 'wallet_cost_per_video' => 15,
             ]
         );
-        $minimax->setConfig('api_key', '', true);
+        $this->setConfigIfMissing($minimax, 'api_key', '', true);
 
         // 16. Vidu (placeholder)
         AiGenProvider::updateOrCreate(
@@ -483,5 +483,30 @@ class AiGenSeeder extends Seeder
         );
 
         $this->command->info('✅ AI Gen system seeded successfully!');
+    }
+
+    /**
+     * ตั้งค่า provider config เฉพาะเมื่อยังไม่มีค่า — กัน admin token ถูก wipe ทุกครั้งที่ deploy รัน seeder
+     *
+     * @param  \App\Models\AiGenProvider  $provider
+     * @param  string  $key
+     * @param  string  $defaultValue  ค่าเริ่มต้น (มักเป็น '' ให้ admin กรอกเอง)
+     * @param  bool  $isEncrypted  เข้ารหัสก่อนเก็บไหม (สำหรับ api_key)
+     */
+    protected function setConfigIfMissing($provider, string $key, string $defaultValue, bool $isEncrypted = false): void
+    {
+        if (! $provider) {
+            return;
+        }
+
+        $existing = $provider->configs()->where('config_key', $key)->first();
+
+        // ถ้ามี config + มีค่าจริง (ไม่ใช่ empty) → preserve ทิ้งไว้ ไม่ overwrite
+        if ($existing && ! empty(trim((string) $existing->config_value))) {
+            return;
+        }
+
+        // ไม่มี หรือว่างเปล่า → set default value (เฉพาะกรณี first install)
+        $provider->setConfig($key, $defaultValue, $isEncrypted);
     }
 }
