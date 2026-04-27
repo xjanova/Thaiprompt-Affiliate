@@ -51,6 +51,10 @@
 @endphp
 
 @push('styles')
+{{-- Leaflet CSS สำหรับแผนที่จริงในส่วน Asia network --}}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin="" />
 <style>
 /* ================================================================
     ThaiPrompt Landing Theme — Blue & Gold
@@ -895,6 +899,55 @@
     transition: gap .25s;
 }
 .tp-landing .demo-card:hover .arrow { gap: 10px; }
+
+/* ================== Leaflet (Asia real map) ================== */
+.tp-landing #asia-real-map {
+    width: 100%; height: 100%;
+    border-radius: 28px;
+    background: linear-gradient(180deg, #f0f5ff, #e0ecff);
+}
+.tp-landing #asia-real-map .leaflet-control-zoom a {
+    background: rgba(255,255,255,.95);
+    border: 1px solid var(--line);
+    color: var(--ink-2);
+    font-weight: 700;
+}
+.tp-landing #asia-real-map .leaflet-control-zoom a:hover {
+    background: var(--gold-400); color: #2a1a00;
+}
+.tp-landing #asia-real-map .leaflet-control-attribution {
+    font-size: 10px;
+    background: rgba(255,255,255,.85);
+}
+.tp-landing .tp-leaflet-icon {
+    background: transparent !important;
+    border: 0 !important;
+}
+.tp-landing .tp-leaflet-pin {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid #fff;
+    background: var(--blue-500);
+    box-shadow: 0 0 0 4px rgba(31,100,255,.2), 0 0 0 8px rgba(31,100,255,.08), 0 4px 8px rgba(0,0,0,.15);
+    animation: tp-pulse-pin 2.4s infinite;
+}
+.tp-landing .tp-leaflet-pin.tp-leaflet-pin-gold {
+    width: 18px; height: 18px;
+    background: var(--gold-500);
+    box-shadow: 0 0 0 5px rgba(245,180,35,.3), 0 0 0 10px rgba(245,180,35,.12), 0 4px 12px rgba(245,180,35,.4);
+    animation-duration: 1.8s;
+}
+.tp-landing #asia-real-map .leaflet-tooltip {
+    background: rgba(8,30,90,.92);
+    border: 1px solid var(--gold-400);
+    color: #fff;
+    font-family: 'Prompt','Noto Sans Thai',sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,.25);
+}
+.tp-landing #asia-real-map .leaflet-tooltip-top:before { border-top-color: var(--gold-400); }
 </style>
 @endpush
 
@@ -1541,89 +1594,11 @@
             </div>
 
             <div class="asia-map">
-                {{-- WorldMap SVG (จากธีม) --}}
-                <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">
-                    <defs>
-                        <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0" stop-color="#f0f5ff"/>
-                            <stop offset="1" stop-color="#dbe7ff"/>
-                        </linearGradient>
-                        <linearGradient id="continent" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stop-color="#cfe0ff"/>
-                            <stop offset="1" stop-color="#9dc0ff"/>
-                        </linearGradient>
-                        <linearGradient id="asiaG" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stop-color="#1f64ff"/>
-                            <stop offset="0.6" stop-color="#0b4cdb"/>
-                            <stop offset="1" stop-color="#082b7f"/>
-                        </linearGradient>
-                        <radialGradient id="asiaGlow" cx="0.5" cy="0.5" r="0.6">
-                            <stop offset="0" stop-color="#f5b423" stop-opacity="0.35"/>
-                            <stop offset="1" stop-color="#f5b423" stop-opacity="0"/>
-                        </radialGradient>
-                    </defs>
-                    <rect width="1000" height="500" fill="url(#seaG)"/>
-                    <ellipse cx="720" cy="220" rx="240" ry="180" fill="url(#asiaGlow)"/>
-
-                    {{-- ทวีปอื่น --}}
-                    <path d="M50 110 Q 90 70 160 65 Q 220 60 260 90 Q 280 120 270 160 Q 250 210 220 240 Q 180 270 150 260 Q 100 250 70 220 Q 40 180 50 110 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M150 70 L 180 50 L 220 55 L 230 75 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M310 70 Q 350 60 360 90 Q 350 130 320 130 Q 290 110 310 70 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M210 280 Q 250 270 270 310 Q 280 360 270 410 Q 250 450 220 460 Q 195 440 195 400 Q 200 340 210 280 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M460 110 Q 500 90 540 100 Q 580 110 590 140 Q 580 175 540 180 Q 500 175 470 160 Q 450 140 460 110 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M455 95 L 480 85 L 500 92 L 490 105 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M460 200 Q 510 190 540 220 Q 560 270 555 320 Q 540 380 510 400 Q 480 410 460 380 Q 440 330 445 270 Q 450 230 460 200 Z" fill="url(#continent)" opacity="0.85"/>
-                    <path d="M820 380 Q 870 370 900 390 Q 920 410 905 430 Q 870 445 830 440 Q 800 430 805 405 Q 810 388 820 380 Z" fill="url(#continent)" opacity="0.85"/>
-
-                    {{-- เอเชีย — เน้นสี gold/blue --}}
-                    <path d="M580 90 Q 650 70 760 75 Q 850 80 920 100 Q 950 120 940 150 Q 900 175 820 175 Q 720 170 640 165 Q 590 155 580 130 Z" fill="url(#asiaG)"/>
-                    <path d="M640 165 Q 720 160 800 170 Q 850 185 845 220 Q 820 255 770 260 Q 700 260 660 245 Q 625 220 640 165 Z" fill="url(#asiaG)"/>
-                    <path d="M620 240 Q 660 235 680 260 Q 690 295 670 320 Q 650 335 635 320 Q 615 290 615 260 Z" fill="url(#asiaG)"/>
-                    <path d="M540 200 Q 580 195 615 210 Q 625 240 605 260 Q 580 270 555 260 Q 530 240 540 200 Z" fill="url(#asiaG)"/>
-                    <path d="M730 270 Q 760 270 770 295 Q 770 325 750 340 Q 730 340 720 320 Q 715 290 730 270 Z" fill="url(#asiaG)"/>
-                    <path d="M880 195 Q 895 200 895 220 Q 890 245 875 245 Q 870 225 875 205 Z" fill="url(#asiaG)"/>
-                    <path d="M870 250 Q 880 255 880 270 Q 870 280 862 275 Z" fill="url(#asiaG)"/>
-                    <path d="M845 200 Q 855 205 854 225 Q 845 240 838 230 Q 838 210 845 200 Z" fill="url(#asiaG)"/>
-                    <ellipse cx="800" cy="335" rx="22" ry="8" fill="url(#asiaG)"/>
-                    <ellipse cx="830" cy="345" rx="18" ry="7" fill="url(#asiaG)"/>
-                    <ellipse cx="775" cy="345" rx="14" ry="6" fill="url(#asiaG)"/>
-                    <ellipse cx="820" cy="320" rx="10" ry="14" fill="url(#asiaG)"/>
-
-                    {{-- เส้นเชื่อมจากไทย --}}
-                    <g stroke="#f5b423" stroke-width="1.5" fill="none" stroke-dasharray="3 4" opacity="0.7">
-                        <path d="M725 295 Q 780 230 875 215"/>
-                        <path d="M725 295 Q 760 245 845 215"/>
-                        <path d="M725 295 Q 750 250 770 200"/>
-                        <path d="M725 295 Q 700 320 800 335"/>
-                        <path d="M725 295 Q 760 320 820 320"/>
-                        <path d="M725 295 Q 690 280 660 270"/>
-                    </g>
-                </svg>
-
-                {{-- หมุดประเทศ (ไทย=ทอง, อื่น=น้ำเงิน) --}}
-                <div class="map-pin gold" style="top:59%; left:72.5%; animation-delay:0s"></div>
-                <div class="map-pin" style="top:56%; left:77%; animation-delay:0.18s"></div>
-                <div class="map-pin" style="top:68%; left:80%; animation-delay:0.36s"></div>
-                <div class="map-pin" style="top:62%; left:82%; animation-delay:0.54s"></div>
-                <div class="map-pin" style="top:66%; left:77.5%; animation-delay:0.72s"></div>
-                <div class="map-pin" style="top:66%; left:78%; animation-delay:0.9s"></div>
-                <div class="map-pin" style="top:56%; left:74%; animation-delay:1.08s"></div>
-                <div class="map-pin" style="top:58%; left:70%; animation-delay:1.26s"></div>
-                <div class="map-pin" style="top:60%; left:74.5%; animation-delay:1.44s"></div>
-                <div class="map-pin" style="top:42%; left:77%; animation-delay:1.62s"></div>
-                <div class="map-pin" style="top:42%; left:84.5%; animation-delay:1.8s"></div>
-                <div class="map-pin" style="top:42%; left:88%; animation-delay:1.98s"></div>
+                {{-- แผนที่จริงด้วย Leaflet + Carto Voyager tile (init ใน @push('scripts')) --}}
+                <div id="asia-real-map" style="width:100%; height:100%; border-radius:28px;"></div>
             </div>
         </div>
     </section>
-
-    {{-- ================================================================
-        ⭐ DYNAMIC SECTIONS — From Homepage Manager
-        ส่วนที่ธีมไม่มี — แสดง sections ที่แอดมินตั้งค่าผ่าน /admin/homepage-manager
-    ================================================================ --}}
-    @if(isset($sections) && $sections->count() > 0)
-        @include('frontend.partials.homepage-sections', ['sections' => $sections])
-    @endif
 
     {{-- ================================================================
         CTA — Final call to action with newsletter form
@@ -1733,19 +1708,107 @@
 @endsection
 
 @push('scripts')
+{{-- Leaflet JS สำหรับแผนที่จริง --}}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
 <script>
     /**
-     * Reveal-on-scroll observer สำหรับ element ที่มี class .reveal
-     * เมื่อ element เข้ามาในจอ จะเพิ่ม class .in เพื่อ fade in
+     * Reveal-on-scroll observer + Leaflet Asia real map init
      */
     document.addEventListener('DOMContentLoaded', function() {
+        // ===== Reveal observer =====
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((e) => {
                 if (e.isIntersecting) e.target.classList.add('in');
             });
         }, { threshold: 0.1 });
-
         document.querySelectorAll('.tp-landing .reveal').forEach(el => observer.observe(el));
+
+        // ===== Asia real map (Leaflet) =====
+        const mapEl = document.getElementById('asia-real-map');
+        if (!mapEl || typeof L === 'undefined') return;
+
+        // เริ่มต้นที่กึ่งกลางเอเชีย (เห็น TH, JP, ID, KR, CN ในเฟรมเดียว)
+        const map = L.map('asia-real-map', {
+            center: [18, 108],
+            zoom: 3,
+            minZoom: 2,
+            maxZoom: 7,
+            zoomControl: true,
+            scrollWheelZoom: false,  // กันไม่ให้ดูดการ scroll ของหน้าเว็บ
+            attributionControl: true,
+        });
+
+        // Carto Voyager — สีฟ้า/เทาดูสะอาด ตรงโทนธีม
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        // 12 เมืองหลวงพาร์ทเนอร์ (ไทยเป็น home — หมุดทอง)
+        const cities = [
+            { lat: 13.7563, lng: 100.5018, name: 'กรุงเทพ',      flag: '🇹🇭', home: true },
+            { lat: 21.0285, lng: 105.8542, name: 'ฮานอย',       flag: '🇻🇳' },
+            { lat: -6.2088, lng: 106.8456, name: 'จาการ์ตา',     flag: '🇮🇩' },
+            { lat: 14.5995, lng: 120.9842, name: 'มะนิลา',      flag: '🇵🇭' },
+            { lat: 3.1390,  lng: 101.6869, name: 'กัวลาลัมเปอร์', flag: '🇲🇾' },
+            { lat: 1.3521,  lng: 103.8198, name: 'สิงคโปร์',     flag: '🇸🇬' },
+            { lat: 17.9757, lng: 102.6331, name: 'เวียงจันทน์',   flag: '🇱🇦' },
+            { lat: 16.8661, lng: 96.1951,  name: 'ย่างกุ้ง',     flag: '🇲🇲' },
+            { lat: 11.5564, lng: 104.9282, name: 'พนมเปญ',      flag: '🇰🇭' },
+            { lat: 39.9042, lng: 116.4074, name: 'ปักกิ่ง',      flag: '🇨🇳' },
+            { lat: 37.5665, lng: 126.9780, name: 'โซล',         flag: '🇰🇷' },
+            { lat: 35.6762, lng: 139.6503, name: 'โตเกียว',     flag: '🇯🇵' },
+        ];
+
+        // คำนวณจุดบนเส้นโค้ง Bezier (quadratic) ระหว่าง 2 พิกัด
+        function arcPoints(from, to, height = 8, segments = 30) {
+            const midLat = (from[0] + to[0]) / 2 + height;
+            const midLng = (from[1] + to[1]) / 2;
+            const pts = [];
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const lat = (1 - t) * (1 - t) * from[0] + 2 * (1 - t) * t * midLat + t * t * to[0];
+                const lng = (1 - t) * (1 - t) * from[1] + 2 * (1 - t) * t * midLng + t * t * to[1];
+                pts.push([lat, lng]);
+            }
+            return pts;
+        }
+
+        const bangkok = [13.7563, 100.5018];
+
+        // วาดเส้นโค้งทองจากกรุงเทพไปทุกเมือง
+        cities.forEach((c) => {
+            if (c.home) return;
+            const pts = arcPoints(bangkok, [c.lat, c.lng], 6);
+            L.polyline(pts, {
+                color: '#f5b423',
+                weight: 1.5,
+                opacity: 0.65,
+                dashArray: '4, 6',
+                smoothFactor: 1
+            }).addTo(map);
+        });
+
+        // ปักหมุดทุกเมือง (ไทย=ทอง, อื่น=น้ำเงิน) พร้อม tooltip
+        cities.forEach((c) => {
+            const cls = c.home ? 'tp-leaflet-pin tp-leaflet-pin-gold' : 'tp-leaflet-pin';
+            const size = c.home ? 18 : 14;
+            const icon = L.divIcon({
+                html: `<div class="${cls}"></div>`,
+                className: 'tp-leaflet-icon',
+                iconSize: [size, size],
+                iconAnchor: [size / 2, size / 2],
+            });
+            L.marker([c.lat, c.lng], { icon }).addTo(map)
+                .bindTooltip(`${c.flag} ${c.name}`, {
+                    direction: 'top',
+                    offset: [0, -size / 2 - 2],
+                    permanent: false,
+                });
+        });
     });
 </script>
 @endpush
