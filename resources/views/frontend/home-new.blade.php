@@ -1,33 +1,34 @@
 {{--
 /**
- * หน้าแรกใหม่ - Professional & Trustworthy Design
+ * หน้าแรก - ThaiPrompt Landing (V2 Theme)
  *
- * ออกแบบใหม่ทั้งหมดให้มีความน่าเชื่อถือ มืออาชีพ:
- * - สีสัน: Deep Blue + Purple + Gold (น่าเชื่อถือ)
- * - Layout: Clean, Modern, Enterprise-grade
- * - ข้อมูลตรงตามปัจจุบันของโครงการ
+ * นำธีมจาก thaiprompt web.zip มาใช้เป็นธีมหลัก
+ * พร้อมเพิ่มส่วนที่ธีมไม่มีของเราเข้าไป:
+ *  - ส่วน Presentation Slides (สื่อการเรียนรู้ระบบ - 9 cards)
+ *  - ส่วน Dynamic Sections จาก Homepage Manager
+ *  - ใช้สถิติจริงจากฐานข้อมูล
  *
  * V3 Technologies:
- * - Tailwind CSS (utility-first)
- * - Alpine.js (reactive)
- * - Smooth animations
+ *  - Tailwind CSS (utility-first)
+ *  - Alpine.js (reactive)
+ *  - Theme CSS scoped ใต้ .tp-landing เพื่อไม่ชนกับ class อื่น
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @author Thaiprompt Team
- * @created 2025-12-03
+ * @updated 2026-04-27
  */
 --}}
 
 @extends('layouts.landing')
 
-@section('title', 'TP-Affiliate Pro - ระบบ Affiliate Marketing ระดับ Enterprise')
+@section('title', 'ThaiPrompt — แพลตฟอร์มเดียว เพื่อคนไทยและเอเชีย')
 
-@section('meta_description', 'TP-Affiliate Pro - แพลตฟอร์ม Affiliate Marketing ระดับ Enterprise ที่ครบครันที่สุด พร้อมระบบ AI, Blockchain, E-Commerce และ 20+ ระบบรองรับธุรกิจของคุณ')
+@section('meta_description', 'ThaiPrompt (ไทยพร๊อมท์) แพลตฟอร์มคนไทย รวม Rider, ตลาดสด, AI Management, Wallet, ปันผลโปร่งใส ด้วย Blockchain ของเราเอง')
 
 @php
     // ดึงข้อมูลจาก SiteSetting (ที่แอดมินตั้งค่าใน admin/site-settings)
     $siteSettings = \App\Models\SiteSetting::getSetting();
-    $appName = $siteSettings->site_name ?? 'TP-Affiliate Pro';
+    $appName = $siteSettings->site_name ?? 'ThaiPrompt';
     $systemLogo = $siteSettings->logo;
 
     // ดึง version จาก package.json
@@ -40,7 +41,7 @@
         }
     }
 
-    // สถิติโครงการ
+    // สถิติโครงการ (จากฐานข้อมูลจริง)
     $stats = [
         'users' => \App\Models\User::count(),
         'affiliates' => \App\Models\MlmMember::count(),
@@ -49,1958 +50,1702 @@
     ];
 @endphp
 
-@section('content')
-
-{{-- ================================================================
-    GLOBAL LAVA LAMP BACKGROUND - Fixed ไม่ scroll ตามเนื้อหา
-================================================================ --}}
-<div class="fixed inset-0 z-0 pointer-events-none">
-    {{-- Base Gradient Background --}}
-    <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-blue-950 to-purple-950">
-        {{-- Grid Pattern --}}
-        <div class="absolute inset-0 opacity-[0.03]"
-             style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px),
-                                      linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px);
-                    background-size: 60px 60px;">
-        </div>
-
-        {{-- ✨ Firefly Container --}}
-        <div id="fireflies" class="absolute inset-0 pointer-events-none" style="z-index: 1;"></div>
-
-        {{-- Glass Overlay for Glassmorphism Effect (เบลอเบาๆ เพื่อให้เห็น blobs) --}}
-        <div class="absolute inset-0 backdrop-blur-sm"></div>
-    </div>
-</div>
-
-{{-- ================================================================
-    HERO SECTION - Professional & Trustworthy
-================================================================ --}}
-<section class="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 z-10">
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-
-            {{-- Left Content --}}
-            <div class="text-center lg:text-left animate-fade-in-up">
-                {{-- Badge --}}
-                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm mb-8">
-                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    <span class="text-sm font-medium text-slate-300">Enterprise-Grade Solution</span>
-                    <span class="text-xs text-slate-400">v{{ $version }}</span>
-                </div>
-
-                {{-- Headline --}}
-                <h1 class="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold text-white leading-tight mb-6">
-                    <span class="block">ระบบ Affiliate</span>
-                    <span class="block gradient-text-secondary">ระดับ Enterprise</span>
-                    <span class="block text-2xl md:text-3xl lg:text-4xl font-normal text-slate-300 mt-4">
-                        ที่ครบครันที่สุดในประเทศไทย
-                    </span>
-                </h1>
-
-                {{-- Description --}}
-                <p class="text-lg lg:text-xl text-slate-400 leading-relaxed mb-10 max-w-xl mx-auto lg:mx-0">
-                    แพลตฟอร์ม All-in-One สำหรับธุรกิจ Affiliate, MLM, E-Commerce
-                    พร้อมระบบ AI, Blockchain และ 20+ ระบบรองรับทุกความต้องการ
-                </p>
-
-                {{-- CTA Buttons --}}
-                <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-10">
-                    <a href="{{ route('storefront.index') }}"
-                       class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-orange-500/30 hover:shadow-orange-500/40 transition-all">
-                        <i class="fas fa-shopping-cart"></i>
-                        🛒 ช้อปปิ้งเลย!
-                    </a>
-                    <a href="{{ route('register') }}"
-                       class="inline-flex items-center justify-center gap-2 px-8 py-4 btn-accent font-bold text-lg rounded-xl shadow-lg shadow-amber-500/20 hover:shadow-amber-500/30">
-                        <i class="fas fa-rocket"></i>
-                        เริ่มต้นใช้งานฟรี
-                    </a>
-                    <a href="#features"
-                       class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-lg rounded-xl transition-all">
-                        <i class="fas fa-play-circle"></i>
-                        ดูรายละเอียด
-                    </a>
-                </div>
-
-                {{-- Trust Indicators --}}
-                <div class="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-sm text-slate-400">
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-shield-alt text-green-400"></i>
-                        <span>ปลอดภัย 100%</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-headset text-blue-400"></i>
-                        <span>Support 24/7</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <i class="fas fa-certificate text-amber-400"></i>
-                        <span>มาตรฐานสากล</span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Right - Hero Visual --}}
-            <div class="relative animate-fade-in-up" style="animation-delay: 0.2s;">
-                <div class="relative">
-                    {{-- Main Card --}}
-                    <div class="relative bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/20 rounded-3xl p-8 lg:p-12 shadow-2xl animate-float">
-                        {{-- Logo - ใหญ่และเท่ --}}
-                        <div class="flex items-center justify-center mb-8">
-                            @if($systemLogo)
-                                <div class="relative group">
-                                    {{-- Glow Effect Background --}}
-                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 scale-110"></div>
-
-                                    {{-- Logo Container --}}
-                                    <div class="relative bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-3xl p-6 lg:p-8 border border-white/30 shadow-2xl">
-                                        <img src="{{ asset('storage/' . $systemLogo) }}"
-                                             alt="{{ $appName }}"
-                                             class="h-32 sm:h-40 lg:h-48 w-auto drop-shadow-2xl transition-transform duration-500 group-hover:scale-105"
-                                             style="filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.3));">
-                                    </div>
-
-                                    {{-- Shine Effect --}}
-                                    <div class="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-3xl pointer-events-none"></div>
-                                </div>
-                            @else
-                                <div class="relative group">
-                                    {{-- Glow Effect --}}
-                                    <div class="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-500 rounded-3xl blur-2xl opacity-60 group-hover:opacity-80 transition-opacity duration-500 scale-110"></div>
-
-                                    {{-- Logo Placeholder --}}
-                                    <div class="relative w-40 h-40 lg:w-52 lg:h-52 bg-gradient-to-br from-blue-600 via-purple-600 to-pink-500 rounded-3xl flex items-center justify-center shadow-2xl transition-transform duration-500 group-hover:scale-105">
-                                        <span class="text-white font-black text-6xl lg:text-7xl drop-shadow-lg">TP</span>
-                                        {{-- Inner glow --}}
-                                        <div class="absolute inset-4 bg-white/10 rounded-2xl"></div>
-                                    </div>
-                                </div>
-                            @endif
-                        </div>
-
-                        {{-- YouTube Video - Click to Play --}}
-                        <div class="mb-8" x-data="{ playing: false }">
-                            <div class="relative rounded-2xl overflow-hidden shadow-2xl border border-white/20 group cursor-pointer"
-                                 @click="playing = true">
-                                {{-- Thumbnail --}}
-                                <div class="aspect-video" x-show="!playing">
-                                    <img src="https://img.youtube.com/vi/-GsrFb2tO1I/maxresdefault.jpg"
-                                         alt="วิดีโอแนะนำ TP-Affiliate"
-                                         class="w-full h-full object-cover">
-
-                                    {{-- Overlay --}}
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent flex flex-col items-center justify-center">
-                                        {{-- Play Button --}}
-                                        <div class="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center shadow-2xl
-                                                    transform group-hover:scale-110 transition-all duration-300
-                                                    group-hover:bg-red-500">
-                                            <svg class="w-10 h-10 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M8 5v14l11-7z"/>
-                                            </svg>
-                                        </div>
-
-                                        {{-- Invite Text --}}
-                                        <p class="mt-4 text-white text-lg font-semibold drop-shadow-lg">
-                                            ▶ คลิกเพื่อดูวิดีโอแนะนำ
-                                        </p>
-                                        <p class="text-white/70 text-sm mt-1">
-                                            ทำความรู้จักกับระบบของเรา
-                                        </p>
-                                    </div>
-                                </div>
-
-                                {{-- Video iframe (loads when clicked) --}}
-                                <div class="aspect-video" x-show="playing" x-cloak>
-                                    <template x-if="playing">
-                                        <iframe
-                                            src="https://www.youtube.com/embed/-GsrFb2tO1I?autoplay=1&rel=0"
-                                            title="TP-Affiliate Introduction"
-                                            class="w-full h-full"
-                                            frameborder="0"
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                            allowfullscreen>
-                                        </iframe>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- App Name - แสดงเฉพาะเมื่อไม่มีโลโก้ --}}
-                        @if(!$systemLogo)
-                        <h2 class="text-2xl lg:text-3xl font-bold text-white text-center mb-2">
-                            {{ $appName }}
-                        </h2>
-                        @endif
-
-                        {{-- Quick Stats --}}
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white/5 rounded-xl p-4 text-center">
-                                <div class="text-2xl font-bold text-white">{{ number_format($stats['users']) }}+</div>
-                                <div class="text-sm text-slate-400">ผู้ใช้งาน</div>
-                            </div>
-                            <div class="bg-white/5 rounded-xl p-4 text-center">
-                                <div class="text-2xl font-bold text-white">{{ $stats['systems'] }}+</div>
-                                <div class="text-sm text-slate-400">ระบบรองรับ</div>
-                            </div>
-                            <div class="bg-white/5 rounded-xl p-4 text-center">
-                                <div class="text-2xl font-bold text-white">99.9%</div>
-                                <div class="text-sm text-slate-400">Uptime</div>
-                            </div>
-                            <div class="bg-white/5 rounded-xl p-4 text-center">
-                                <div class="text-2xl font-bold text-white">24/7</div>
-                                <div class="text-sm text-slate-400">Support</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Decorative Elements --}}
-                    <div class="absolute -top-4 -right-4 w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl blur-sm opacity-50"></div>
-                    <div class="absolute -bottom-4 -left-4 w-32 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full blur-sm opacity-40"></div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Scroll Indicator --}}
-        <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce">
-            <a href="#features" class="flex flex-col items-center text-slate-400 hover:text-white transition-colors">
-                <span class="text-sm mb-2">เลื่อนลง</span>
-                <i class="fas fa-chevron-down"></i>
-            </a>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    FRESH MARKET SECTION - ตลาดสดไทยพร๊อม (ซื้อ ขาย ส่ง บริการ)
-================================================================ --}}
-<section id="fresh-market" class="py-20 lg:py-28 relative overflow-hidden z-10"
-         x-data="{ shown: false }"
-         x-intersect:enter="shown = true">
-
-    {{-- Background Effects --}}
-    <div class="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-950/20 to-transparent"></div>
-    <div class="absolute top-10 left-20 w-72 h-72 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse"></div>
-    <div class="absolute bottom-10 right-20 w-72 h-72 bg-teal-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-pulse" style="animation-delay: 1s;"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-        {{-- Section Header --}}
-        <div class="text-center mb-12 lg:mb-16"
-             :class="shown ? 'animate-fade-in-up' : 'opacity-0'">
-            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 backdrop-blur-sm mb-6">
-                <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                <span class="text-sm font-medium text-green-300">Fresh Market Platform</span>
-            </div>
-            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-4">
-                ตลาดสด<span class="text-green-400">ไทยพร๊อม</span>
-            </h2>
-            <p class="text-lg text-slate-400 max-w-2xl mx-auto">
-                ซื้อ ขาย ส่ง บริการ — ครบจบในที่เดียว ผ่าน LINE OA สมัครง่าย ใช้ได้ทันที
-            </p>
-        </div>
-
-        {{-- 3 Cards Grid --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-
-            {{-- Card 1: ผู้ซื้อ (Buyer) --}}
-            <a href="{{ route('taladsod.landing.buyer') }}"
-               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-green-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-green-500/10"
-               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
-               style="animation-delay: 0.1s;">
-
-                {{-- Icon --}}
-                <div class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/>
-                    </svg>
-                </div>
-
-                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors">
-                    ช๊อปปิ้งตลาดสด
-                </h3>
-                <p class="text-slate-400 mb-6 leading-relaxed">
-                    เลือกซื้อของสดจากตลาดใกล้บ้าน ส่งถึงที่ พร้อม Cashback ทุกออเดอร์
-                </p>
-
-                <div class="flex items-center text-green-400 font-medium group-hover:gap-3 gap-2 transition-all">
-                    <span>ช๊อปเลย</span>
-                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
-                </div>
-
-                {{-- Decorative Corner --}}
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-green-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
-            </a>
-
-            {{-- Card 2: ผู้ขาย/บริการ (Seller) --}}
-            <a href="{{ route('taladsod.landing.seller') }}"
-               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-orange-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-orange-500/10"
-               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
-               style="animation-delay: 0.2s;">
-
-                {{-- Icon --}}
-                <div class="w-16 h-16 bg-gradient-to-br from-orange-500 to-amber-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-orange-500/20 group-hover:scale-110 transition-transform">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
-                    </svg>
-                </div>
-
-                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-orange-400 transition-colors">
-                    เปิดร้าน/ให้บริการ
-                </h3>
-                <p class="text-slate-400 mb-6 leading-relaxed">
-                    เปิดร้านออนไลน์ฟรี ขายได้ทันที จัดการทุกอย่างผ่าน LINE พร้อม MLM Cashback
-                </p>
-
-                <div class="flex items-center text-orange-400 font-medium group-hover:gap-3 gap-2 transition-all">
-                    <span>เปิดร้านเลย</span>
-                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
-                </div>
-
-                {{-- Decorative Corner --}}
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-orange-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
-            </a>
-
-            {{-- Card 3: ไรเดอร์/ช่าง (Rider) --}}
-            <a href="{{ route('taladsod.landing.rider') }}"
-               class="group relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-blue-500/30 transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/10"
-               :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
-               style="animation-delay: 0.3s;">
-
-                {{-- Icon --}}
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-                    </svg>
-                </div>
-
-                <h3 class="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors">
-                    ไรเดอร์ & ช่างบริการ
-                </h3>
-                <p class="text-slate-400 mb-6 leading-relaxed">
-                    รับงานส่งของ หรือเป็นช่างบริการ (ประปา, แอร์, เสริมสวย) สร้างรายได้ทุกวัน
-                </p>
-
-                <div class="flex items-center text-blue-400 font-medium group-hover:gap-3 gap-2 transition-all">
-                    <span>สมัครเลย</span>
-                    <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-                    </svg>
-                </div>
-
-                {{-- Decorative Corner --}}
-                <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-blue-500/10 to-transparent rounded-tr-2xl rounded-bl-full"></div>
-            </a>
-        </div>
-
-        {{-- Bottom CTA --}}
-        <div class="text-center mt-12"
-             :class="shown ? 'animate-fade-in-up' : 'opacity-0'"
-             style="animation-delay: 0.4s;">
-            <a href="{{ route('taladsod.home') }}"
-               class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-500/30 hover:shadow-green-500/40 transition-all">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-                </svg>
-                เข้าสู่ตลาดสดไทยพร๊อม
-            </a>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    SIGNUP TUTORIAL SECTION - วิธีสมัครสมาชิก
-================================================================ --}}
-<section id="signup-tutorial" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
-    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image:
-            linear-gradient(to right, rgba(16, 185, 129, 0.15) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(16, 185, 129, 0.15) 1px, transparent 1px);
-            background-size: 40px 40px;"></div>
-    </div>
-    <div class="absolute top-20 right-10 w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-    <div class="absolute bottom-20 left-10 w-96 h-96 bg-emerald-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center mb-12 lg:mb-16">
-            <div class="inline-flex items-center gap-2 px-6 py-3 bg-green-500/20 backdrop-blur-sm rounded-full border border-green-500/30 mb-8">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-                </span>
-                <span class="text-green-300 font-semibold">สมัครสมาชิกฟรี!</span>
-            </div>
-
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400">
-                    วิธีสมัครสมาชิก
-                </span>
-            </h2>
-            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                เลือกวิธีสมัครที่สะดวกสำหรับคุณ ไม่ว่าจะผ่านเว็บหรือ LINE ก็ทำได้ง่ายๆ
-                <br class="hidden md:block">
-                <span class="text-green-300 font-medium">ใช้เวลาไม่ถึง 2 นาที!</span>
-            </p>
-        </div>
-
-        {{-- Signup Methods Cards --}}
-        <div class="grid md:grid-cols-2 gap-8 lg:gap-10 mb-12">
-            {{-- Card 1: สมัครผ่านเว็บ --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-green-500/30 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openSignupTutorial === 'function') openSignupTutorial('signup-web')">
-                <div class="flex items-start gap-6">
-                    <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-blue-500/20">
-                        <i class="fas fa-globe text-4xl text-white"></i>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-bold text-white mb-3">สมัครผ่านเว็บ</h3>
-                        <p class="text-slate-400 mb-4">กรอกข้อมูลผ่านฟอร์มบนเว็บไซต์ สะดวก ครบถ้วน ทำได้จากทุกอุปกรณ์</p>
-                        <div class="flex flex-wrap gap-3 mb-4">
-                            <span class="px-3 py-1.5 bg-blue-500/20 text-blue-300 rounded-full text-sm font-medium">
-                                <i class="fas fa-clock mr-1"></i>2 นาที
-                            </span>
-                            <span class="px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-full text-sm font-medium">
-                                <i class="fas fa-list-ol mr-1"></i>4 ขั้นตอน
-                            </span>
-                        </div>
-                        <div class="flex items-center text-green-400 font-medium group-hover:text-green-300">
-                            <span>ดูขั้นตอน</span>
-                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Card 2: สมัครผ่าน LINE --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-[#06C755]/30 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openSignupTutorial === 'function') openSignupTutorial('signup-line')">
-                <div class="flex items-start gap-6">
-                    <div class="w-20 h-20 bg-gradient-to-br from-[#06C755] to-[#00B900] rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform shadow-lg shadow-green-500/20">
-                        <svg class="w-12 h-12" viewBox="0 0 24 24" fill="white">
-                            <path d="M19.365 9.863c.349 0 .63.285.63.631 0 .345-.281.63-.63.63H17.61v1.125h1.755c.349 0 .63.283.63.63 0 .344-.281.629-.63.629h-2.386c-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63h2.386c.346 0 .627.285.627.63 0 .349-.281.63-.63.63H17.61v1.125h1.755zm-3.855 3.016c0 .27-.174.51-.432.596-.064.021-.133.031-.199.031-.211 0-.391-.09-.51-.25l-2.443-3.317v2.94c0 .344-.279.629-.631.629-.346 0-.626-.285-.626-.629V8.108c0-.27.173-.51.43-.595.06-.023.136-.033.194-.033.195 0 .375.104.495.254l2.462 3.33V8.108c0-.345.282-.63.63-.63.345 0 .63.285.63.63v4.771zm-5.741 0c0 .344-.282.629-.631.629-.345 0-.627-.285-.627-.629V8.108c0-.345.282-.63.63-.63.346 0 .628.285.628.63v4.771zm-2.466.629H4.917c-.345 0-.63-.285-.63-.629V8.108c0-.345.285-.63.63-.63.348 0 .63.285.63.63v4.141h1.756c.348 0 .629.283.629.63 0 .344-.282.629-.629.629M24 10.314C24 4.943 18.615.572 12 .572S0 4.943 0 10.314c0 4.811 4.27 8.842 10.035 9.608.391.082.923.258 1.058.59.12.301.079.766.038 1.08l-.164 1.02c-.045.301-.24 1.186 1.049.645 1.291-.539 6.916-4.078 9.436-6.975C23.176 14.393 24 12.458 24 10.314"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <h3 class="text-2xl font-bold text-white mb-3">สมัครผ่าน LINE</h3>
-                        <p class="text-slate-400 mb-4">ใช้บัญชี LINE ที่มีอยู่แล้ว สะดวก รวดเร็ว ปลอดภัย รับแจ้งเตือนทาง LINE</p>
-                        <div class="flex flex-wrap gap-3 mb-4">
-                            <span class="px-3 py-1.5 bg-green-500/20 text-green-300 rounded-full text-sm font-medium">
-                                <i class="fas fa-bolt mr-1"></i>เร็วที่สุด
-                            </span>
-                            <span class="px-3 py-1.5 bg-green-500/20 text-green-300 rounded-full text-sm font-medium">
-                                <i class="fas fa-list-ol mr-1"></i>3 ขั้นตอน
-                            </span>
-                        </div>
-                        <div class="flex items-center text-[#06C755] font-medium group-hover:text-green-400">
-                            <span>ดูขั้นตอน</span>
-                            <i class="fas fa-arrow-right ml-2 group-hover:translate-x-2 transition-transform"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Quick Actions --}}
-        <div class="text-center">
-            <p class="text-slate-400 mb-6">พร้อมเริ่มต้นแล้ว?</p>
-            <div class="flex flex-wrap justify-center gap-4">
-                <a href="{{ route('register') }}"
-                   class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white font-bold text-lg rounded-xl shadow-lg shadow-green-500/30 hover:shadow-green-500/40 transition-all">
-                    <i class="fas fa-rocket"></i>
-                    สมัครสมาชิกเลย!
-                </a>
-                <a href="{{ route('login') }}"
-                   class="inline-flex items-center gap-2 px-8 py-4 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-semibold text-lg rounded-xl transition-all">
-                    <i class="fas fa-sign-in-alt"></i>
-                    เข้าสู่ระบบ
-                </a>
-            </div>
-            {{-- Link to detailed documentation --}}
-            <p class="mt-6 text-slate-400">
-                <a href="{{ route('documents.how-to-register') }}"
-                   class="text-green-400 hover:text-green-300 underline underline-offset-4 transition-colors">
-                    <i class="fas fa-book-open mr-1"></i>
-                    อ่านคู่มือการสมัครฉบับละเอียด
-                </a>
-            </p>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    APP DOWNLOAD SECTION - ดาวน์โหลดแอป TP Ultra
-================================================================ --}}
-@if($siteSettings->app_download_enabled ?? true)
-<section id="app-download" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
-    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image:
-            linear-gradient(to right, rgba(6, 182, 212, 0.15) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(6, 182, 212, 0.15) 1px, transparent 1px);
-            background-size: 40px 40px;"></div>
-    </div>
-    <div class="absolute top-20 right-10 w-96 h-96 bg-cyan-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-    <div class="absolute bottom-20 left-10 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center mb-12 lg:mb-16">
-            <div class="inline-flex items-center gap-2 px-6 py-3 bg-cyan-500/20 backdrop-blur-sm rounded-full border border-cyan-500/30 mb-8">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-                </span>
-                <span class="text-cyan-300 font-semibold">ดาวน์โหลดแอปฟรี!</span>
-            </div>
-
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400">
-                    {{ $siteSettings->app_name ?? 'TP Ultra' }}
-                </span>
-            </h2>
-            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                {{ $siteSettings->app_description ?? 'แอปพลิเคชั่นสำหรับจัดการธุรกิจ Affiliate ทุกที่ทุกเวลา' }}
-            </p>
-        </div>
-
-        {{-- App Showcase --}}
-        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            {{-- Left: App Icon & Visual --}}
-            <div class="flex justify-center animate-fade-in-up">
-                <div class="relative group">
-                    {{-- Glow Effect --}}
-                    <div class="absolute inset-0 bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 rounded-3xl blur-2xl opacity-50 group-hover:opacity-75 transition-opacity duration-500 scale-110"></div>
-
-                    {{-- App Icon Container --}}
-                    <div class="relative bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-sm rounded-3xl p-8 lg:p-12 border border-white/30 shadow-2xl">
-                        <img src="{{ $siteSettings->app_icon_url ?? asset('images/tp-ultra-icon.png') }}"
-                             alt="{{ $siteSettings->app_name ?? 'TP Ultra' }}"
-                             class="w-48 h-48 lg:w-64 lg:h-64 rounded-3xl shadow-2xl transition-transform duration-500 group-hover:scale-105"
-                             style="filter: drop-shadow(0 0 30px rgba(6, 182, 212, 0.3));">
-
-                        {{-- App Name Badge --}}
-                        <div class="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-full shadow-lg">
-                            <span class="text-white font-bold text-lg">{{ $siteSettings->app_name ?? 'TP Ultra' }}</span>
-                        </div>
-                    </div>
-
-                    {{-- Floating Elements --}}
-                    <div class="absolute -top-4 -right-4 w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">
-                        <i class="fas fa-mobile-alt text-white text-2xl"></i>
-                    </div>
-                    <div class="absolute -bottom-4 -left-4 w-12 h-12 bg-gradient-to-br from-purple-400 to-pink-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                        <i class="fas fa-star text-white text-lg"></i>
-                    </div>
-                </div>
-            </div>
-
-            {{-- Right: Download Options --}}
-            <div class="space-y-6 animate-fade-in-up" style="animation-delay: 0.2s;">
-                {{-- Features List --}}
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-chart-line text-white"></i>
-                        </div>
-                        <span class="text-white font-medium">ดูคอมมิชชั่น</span>
-                    </div>
-                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-users text-white"></i>
-                        </div>
-                        <span class="text-white font-medium">จัดการทีม</span>
-                    </div>
-                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-wallet text-white"></i>
-                        </div>
-                        <span class="text-white font-medium">ถอนเงิน</span>
-                    </div>
-                    <div class="flex items-center gap-3 bg-white/5 rounded-xl p-4">
-                        <div class="w-10 h-10 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-bell text-white"></i>
-                        </div>
-                        <span class="text-white font-medium">แจ้งเตือน</span>
-                    </div>
-                </div>
-
-                {{-- Download Buttons --}}
-                <div class="space-y-4">
-                    {{-- APK Direct Download --}}
-                    @if($siteSettings->app_apk_enabled ?? true)
-                    <a href="{{ $siteSettings->app_apk_url ?? '#' }}"
-                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 rounded-2xl shadow-lg shadow-cyan-500/30 hover:shadow-cyan-500/50 transition-all duration-300 {{ empty($siteSettings->app_apk_url) ? 'opacity-60 cursor-not-allowed' : '' }}"
-                       {{ empty($siteSettings->app_apk_url) ? 'onclick=return false;' : '' }}>
-                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fab fa-android text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-white/70 text-sm">ดาวน์โหลดไฟล์</p>
-                            <p class="text-white font-bold text-lg">APK สำหรับ Android</p>
-                        </div>
-                        <div class="flex items-center gap-2 text-white">
-                            @if(empty($siteSettings->app_apk_url))
-                                <span class="text-sm opacity-70">กำลังเตรียมลิงก์...</span>
-                            @else
-                                <i class="fas fa-download text-xl group-hover:animate-bounce"></i>
-                            @endif
-                        </div>
-                    </a>
-                    @endif
-
-                    {{-- Google Play Store --}}
-                    @if($siteSettings->app_playstore_enabled ?? false)
-                    <a href="{{ $siteSettings->app_playstore_url ?? '#' }}"
-                       target="_blank"
-                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-2xl shadow-lg shadow-green-500/30 hover:shadow-green-500/50 transition-all duration-300">
-                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fab fa-google-play text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-white/70 text-sm">ดาวน์โหลดจาก</p>
-                            <p class="text-white font-bold text-lg">Google Play Store</p>
-                        </div>
-                        <i class="fas fa-external-link-alt text-white text-xl group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                    @else
-                    <div class="flex items-center gap-4 w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl cursor-not-allowed">
-                        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
-                            <i class="fab fa-google-play text-3xl text-white/50"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-white/50 text-sm">ดาวน์โหลดจาก</p>
-                            <p class="text-white/70 font-bold text-lg">Google Play Store</p>
-                        </div>
-                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium">
-                            เร็วๆ นี้
-                        </span>
-                    </div>
-                    @endif
-
-                    {{-- Apple App Store --}}
-                    @if($siteSettings->app_appstore_enabled ?? false)
-                    <a href="{{ $siteSettings->app_appstore_url ?? '#' }}"
-                       target="_blank"
-                       class="group flex items-center gap-4 w-full px-6 py-4 bg-gradient-to-r from-gray-700 to-gray-800 hover:from-gray-600 hover:to-gray-700 rounded-2xl shadow-lg shadow-gray-500/30 hover:shadow-gray-500/50 transition-all duration-300">
-                        <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                            <i class="fab fa-apple text-3xl text-white"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-white/70 text-sm">ดาวน์โหลดจาก</p>
-                            <p class="text-white font-bold text-lg">App Store</p>
-                        </div>
-                        <i class="fas fa-external-link-alt text-white text-xl group-hover:translate-x-1 transition-transform"></i>
-                    </a>
-                    @else
-                    <div class="flex items-center gap-4 w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl cursor-not-allowed">
-                        <div class="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
-                            <i class="fab fa-apple text-3xl text-white/50"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-white/50 text-sm">ดาวน์โหลดจาก</p>
-                            <p class="text-white/70 font-bold text-lg">App Store (iOS)</p>
-                        </div>
-                        <span class="px-3 py-1 bg-amber-500/20 text-amber-300 rounded-full text-sm font-medium">
-                            เร็วๆ นี้
-                        </span>
-                    </div>
-                    @endif
-                </div>
-
-                {{-- Note --}}
-                <p class="text-center text-slate-400 text-sm mt-6">
-                    <i class="fas fa-shield-alt text-green-400 mr-2"></i>
-                    แอปปลอดภัย 100% ไม่มีไวรัส ไม่มีโฆษณา
-                </p>
-            </div>
-        </div>
-    </div>
-</section>
-@endif
-
-{{-- ================================================================
-    PLATFORM DEMO SECTION - สื่อการเรียนรู้ระบบ
-================================================================ --}}
-<section id="demo" class="py-20 lg:py-28 bg-white/5 relative overflow-hidden z-10">
-    {{-- Background Effects - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image:
-            linear-gradient(to right, rgba(99, 102, 241, 0.15) 1px, transparent 1px),
-            linear-gradient(to bottom, rgba(99, 102, 241, 0.15) 1px, transparent 1px);
-            background-size: 40px 40px;"></div>
-    </div>
-    <div class="absolute top-20 left-10 w-96 h-96 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-    <div class="absolute bottom-20 right-10 w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-10"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center mb-12 lg:mb-16">
-            <div class="inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-sm rounded-full border border-white/20 mb-8">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
-                </span>
-                <span class="text-white font-semibold">สื่อการเรียนรู้ระบบ</span>
-            </div>
-
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                <span class="text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-200 to-purple-200">
-                    เรียนรู้ {{ $appName }}
-                </span>
-            </h2>
-            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-                สไลด์นำเสนอระบบแบบครบถ้วน สวยงาม มืออาชีพ พร้อมใช้งานทันที
-                <br class="hidden md:block">
-                <span class="text-indigo-300 font-medium">เหมาะสำหรับนักลงทุน ผู้อยากร่วม และผู้สนใจทุกท่าน</span>
-            </p>
-        </div>
-
-        {{-- Demo Cards Grid - 9 Cards = 3x3 Layout --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8 mb-12">
-            {{-- Card 1: System Overview --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('system-overview')">
-                <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-desktop text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">ภาพรวมระบบ</h3>
-                <p class="text-slate-400 mb-4">เรียนรู้ระบบทั้งหมดใน {{ $appName }} รวมถึง Affiliate, MLM, E-Commerce และระบบอื่นๆ</p>
-                <div class="flex items-center text-indigo-400 font-medium group-hover:text-indigo-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 2: MLM Plans --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('mlm-plans')">
-                <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-sitemap text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">แผนการตลาด MLM</h3>
-                <p class="text-slate-400 mb-4">เรียนรู้แผน Unilevel, Binary และระบบคอมมิชชั่นหลายชั้นที่ยืดหยุ่น</p>
-                <div class="flex items-center text-purple-400 font-medium group-hover:text-purple-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 3: TPIX Token --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('tpix-token')">
-                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform overflow-hidden">
-                    <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" class="w-12 h-12 object-contain">
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">TPIX Token</h3>
-                <p class="text-slate-400 mb-4">เรียนรู้ TPIX Token ที่มี Blockchain ของตัวเอง Staking, DEX และ Tokenomics</p>
-                <div class="flex items-center text-amber-400 font-medium group-hover:text-amber-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 4: AI & Automation --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ai-automation')">
-                <div class="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-robot text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">AI & Automation</h3>
-                <p class="text-slate-400 mb-4">เรียนรู้ระบบ AI Chatbot, LINE Bot และระบบอัตโนมัติที่ช่วยประหยัดเวลา</p>
-                <div class="flex items-center text-emerald-400 font-medium group-hover:text-emerald-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 5: Academy & ปลดแอกธุรกิจ --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('academy-freedom')">
-                <div class="w-16 h-16 bg-gradient-to-br from-rose-500 to-orange-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-graduation-cap text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">Academy & ปลดแอกธุรกิจ</h3>
-                <p class="text-slate-400 mb-4">เรียนรู้ระบบ Academy ออนไลน์และอิสรภาพจากแพลตฟอร์มต่างชาติ</p>
-                <div class="flex items-center text-rose-400 font-medium group-hover:text-rose-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 6: Ecosystem & Vision --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecosystem-vision')">
-                <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-globe text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">Ecosystem & Vision</h3>
-                <p class="text-slate-400 mb-4">ระบบนิเวศครบวงจรและ Roadmap การพัฒนา 2025-2027</p>
-                <div class="flex items-center text-indigo-400 font-medium group-hover:text-indigo-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 7: พลิกเกมส์ธุรกิจ --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('game-changer')">
-                <div class="w-16 h-16 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-chess-king text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">พลิกเกมส์ธุรกิจ</h3>
-                <p class="text-slate-400 mb-4">โอกาสการลงทุนที่แตกต่าง หลากหลายช่องทางรายได้</p>
-                <div class="flex items-center text-amber-400 font-medium group-hover:text-amber-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 8: E-Commerce Empire --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecommerce-empire')">
-                <div class="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-shopping-bag text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">E-Commerce Empire</h3>
-                <p class="text-slate-400 mb-4">ระบบ E-Commerce ครบวงจร จาก Marketplace ถึง Food Passport</p>
-                <div class="flex items-center text-cyan-400 font-medium group-hover:text-cyan-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-
-            {{-- Card 9: Community & Partnership --}}
-            <div class="group bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-6 lg:p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300 cursor-pointer"
-                 onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('community')">
-                <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-rose-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-users text-3xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">Community & Partnership</h3>
-                <p class="text-slate-400 mb-4">ชุมชนผู้ใช้ พันธมิตรธุรกิจ และบริการสนับสนุน</p>
-                <div class="flex items-center text-pink-400 font-medium group-hover:text-pink-300">
-                    <span>ดูสไลด์</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </div>
-        </div>
-
-        {{-- Main CTA Button --}}
-        <div class="text-center">
-            <div class="relative inline-block">
-                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl blur-lg opacity-75 animate-pulse"></div>
-                <button onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()"
-                        class="relative inline-flex items-center gap-3 px-10 py-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xl font-bold rounded-2xl shadow-2xl hover:shadow-indigo-500/50 transition-all duration-300 transform hover:scale-105 group">
-                    <i class="fas fa-play-circle text-2xl group-hover:scale-110 transition-transform"></i>
-                    <span>เปิดสไลด์นำเสนอ</span>
-                    <i class="fas fa-arrow-right group-hover:translate-x-2 transition-transform"></i>
-                </button>
-            </div>
-
-            {{-- Features List --}}
-            <div class="flex flex-wrap items-center justify-center gap-6 mt-8 text-white/70 text-sm">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-check-circle text-emerald-400"></i>
-                    <span>เต็มจอ Fullscreen</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-check-circle text-emerald-400"></i>
-                    <span>Auto-play อัจฉริยะ</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-check-circle text-emerald-400"></i>
-                    <span>รองรับ Keyboard</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-check-circle text-emerald-400"></i>
-                    <span>ตั้งค่าได้หลากหลาย</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- Include Presentation Slides Modal (แค่ส่วน modal และ scripts ไม่ซ้ำกับ section ด้านบน) --}}
-@include('components.presentation-slides-modal')
-
-{{-- ================================================================
-    FEATURES SECTION - จุดเด่นของระบบ
-================================================================ --}}
-<section id="features" class="py-16 lg:py-20 bg-white/5">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center max-w-3xl mx-auto mb-16 lg:mb-20">
-            <span class="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold mb-4">
-                คุณสมบัติเด่น
-            </span>
-            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-                ทำไมต้องเลือก <span class="gradient-text">{{ $appName }}</span>
-            </h2>
-            <p class="text-lg text-slate-200 leading-relaxed">
-                แพลตฟอร์มที่ออกแบบมาเพื่อธุรกิจของคุณโดยเฉพาะ พร้อมเทคโนโลยีล่าสุดและระบบรักษาความปลอดภัยระดับ Enterprise
-            </p>
-        </div>
-
-        {{-- Features Grid - แต่ละ Card มีลิงก์ไปหน้าเอกสารละเอียด --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {{-- Feature 1: All-in-One --}}
-            <a href="{{ route('documents.all-in-one') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-blue-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-layer-group text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    All-in-One Platform
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    รวมทุกระบบไว้ในที่เดียว Affiliate, MLM, E-Commerce, AI Bot และอีก 20+ ระบบ ไม่ต้องซื้อแยก ประหยัดกว่า
-                </p>
-                <div class="flex items-center text-blue-400 font-medium text-sm group-hover:underline">
-                    <span>อ่านเอกสารเพิ่มเติม</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            {{-- Feature 2: AI Powered --}}
-            <a href="{{ route('documents.ai-automation') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-purple-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-robot text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    AI-Powered Automation
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    ระบบ AI อัจฉริยะ ช่วยตอบแชท วิเคราะห์ข้อมูล และทำงานอัตโนมัติ 24 ชั่วโมง ลดต้นทุน เพิ่มประสิทธิภาพ
-                </p>
-                <div class="flex items-center text-purple-400 font-medium text-sm group-hover:underline">
-                    <span>อ่านเอกสารเพิ่มเติม</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            {{-- Feature 3: Blockchain --}}
-            <a href="{{ route('documents.blockchain-tpix') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-amber-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-link text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    Blockchain & TPIX Token
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    รองรับ Cryptocurrency และ Token TPIX สำหรับระบบ Staking, Farming และการชำระเงินแบบ Web3
-                </p>
-                <div class="flex items-center text-amber-400 font-medium text-sm group-hover:underline">
-                    <span>อ่าน Whitepaper</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            {{-- Feature 4: Multi-Currency Wallet --}}
-            <a href="{{ route('documents.multi-currency-wallet') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-emerald-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-wallet text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    Multi-Currency Wallet
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    กระเป๋าเงินหลายสกุล THB, USD, Crypto พร้อมระบบถอนเงินหลายช่องทาง Bank, PromptPay, Crypto
-                </p>
-                <div class="flex items-center text-emerald-400 font-medium text-sm group-hover:underline">
-                    <span>อ่านเอกสารเพิ่มเติม</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            {{-- Feature 5: MLM System --}}
-            <a href="{{ route('documents.mlm-commission') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-pink-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-pink-500 to-rose-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-sitemap text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    MLM & Commission System
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    ระบบ Multi-Level Marketing ไม่จำกัดชั้น คำนวณคอมมิชชันอัตโนมัติ พร้อมรายงานละเอียด
-                </p>
-                <div class="flex items-center text-pink-400 font-medium text-sm group-hover:underline">
-                    <span>อ่านเอกสารเพิ่มเติม</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-
-            {{-- Feature 6: Security --}}
-            <a href="{{ route('documents.enterprise-security') }}" class="group card-hover bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-8 block hover:border-cyan-500 transition-all">
-                <div class="w-14 h-14 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                    <i class="fas fa-shield-alt text-2xl text-white"></i>
-                </div>
-                <h3 class="text-xl font-bold text-white mb-3">
-                    Enterprise Security
-                </h3>
-                <p class="text-slate-200 leading-relaxed mb-4">
-                    ความปลอดภัยระดับ Enterprise พร้อม 2FA, SSL, IP Whitelist และ License System
-                </p>
-                <div class="flex items-center text-cyan-400 font-medium text-sm group-hover:underline">
-                    <span>อ่านเอกสารเพิ่มเติม</span>
-                    <i class="fas fa-arrow-right ml-2 group-hover:translate-x-1 transition-transform"></i>
-                </div>
-            </a>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    NAVIGATION SECTION - ทางเลือกสำหรับคุณ (V3 Design)
-    🎨 3D + Glassmorphism + Premium Animations
-================================================================ --}}
-<section id="navigation" class="relative py-24 lg:py-32 overflow-hidden z-10">
-    {{-- Background --}}
-    <div class="absolute inset-0 bg-white/5"></div>
-
-    {{-- Background Pattern --}}
-    <div class="absolute inset-0 opacity-[0.03]"
-         style="background-image: radial-gradient(circle, currentColor 1px, transparent 1px);
-                background-size: 40px 40px;">
-    </div>
-
-    {{-- Floating Gradient Orbs --}}
-    <div class="absolute top-20 -left-32 w-96 h-96 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-full blur-3xl"></div>
-    <div class="absolute bottom-20 -right-32 w-96 h-96 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl"></div>
-    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-amber-400/10 to-orange-400/10 rounded-full blur-3xl"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center max-w-4xl mx-auto mb-16 lg:mb-20">
-            {{-- Badge --}}
-            <div class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-500/10 to-purple-500/10 backdrop-blur-sm rounded-full border border-blue-500/20 mb-8">
-                <span class="relative flex h-3 w-3">
-                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                </span>
-                <span class="text-sm font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                    เลือกเส้นทางของคุณ
-                </span>
-            </div>
-
-            {{-- Title --}}
-            <h2 class="text-4xl md:text-5xl lg:text-6xl font-black mb-6">
-                <span class="block text-white mb-2">คุณต้องการ</span>
-                <span class="block bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                    อะไรวันนี้?
-                </span>
-            </h2>
-
-            {{-- Description --}}
-            <p class="text-xl text-slate-200 leading-relaxed">
-                เลือกบริการที่ตอบโจทย์คุณ ทุกอย่างอยู่ในแพลตฟอร์มเดียว
-                <br class="hidden md:block">
-                <span class="text-purple-400 font-semibold">ครบจบในที่เดียว ไม่ต้องไปหาที่อื่น!</span>
-            </p>
-        </div>
-
-        {{-- Navigation Grid - 7 Main Categories --}}
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
-
-            {{-- ============================================================
-                1. 💼 หางาน/ทำงาน
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                {{-- Main Card --}}
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-blue-500/50
-                            hover:shadow-2xl hover:shadow-blue-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    {{-- Glow Effect --}}
-                    <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    {{-- Content --}}
-                    <div class="relative">
-                        {{-- Icon --}}
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-blue-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-briefcase text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        {{-- Title --}}
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            หางาน / ทำงาน
-                        </h3>
-
-                        {{-- Description --}}
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            โอกาสการงานหลากหลาย เริ่มต้นสร้างรายได้วันนี้
-                        </p>
-
-                        {{-- Sub Items --}}
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🚴 ไรเดอร์ / Delivery</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">💼 นักขาย / Sales</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🏪 ขายของออนไลน์</span>
-                            </a>
-                        </div>
-
-                        {{-- Expand Button --}}
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-blue-400 hover:text-blue-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                2. 🤖 ตลาดบอท/โปรแกรม
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-purple-500/50
-                            hover:shadow-2xl hover:shadow-purple-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-purple-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-robot text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            ตลาดบอท/โปรแกรม
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            AI, บอท และซอฟต์แวร์ช่วยธุรกิจ
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🤖 AI Chatbot</span>
-                            </a>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">📈 Trading Bot</span>
-                            </a>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">💻 ซอฟต์แวร์/โปรแกรม</span>
-                            </a>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl hover:from-purple-700 hover:to-pink-600 transition-colors shadow-lg">
-                                <span class="text-sm font-bold text-white">🏬 ดูทั้งหมด →</span>
-                            </a>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-purple-400 hover:text-purple-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                3. 💰 ลงทุน
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-amber-500/50
-                            hover:shadow-2xl hover:shadow-amber-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-amber-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-coins text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            ลงทุน
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            โอกาสลงทุนและสร้างรายได้แบบ passive
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">💎 TPIX Token</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🌾 Staking / Farming</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">₿ Cryptocurrency</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-amber-400 hover:text-amber-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                4. 🛒 ช็อปปิ้ง
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-pink-500/50
-                            hover:shadow-2xl hover:shadow-pink-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-pink-500 to-rose-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-pink-500 to-rose-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-pink-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-shopping-cart text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            ช็อปปิ้ง
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            ซื้อสินค้าออนไลน์ คุณภาพดี ราคาดี
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🏪 ร้านค้าออนไลน์</span>
-                            </a>
-                            <a href="{{ route('storefront.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🏬 Unified Marketplace</span>
-                            </a>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🍔 Food Passport</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-pink-400 hover:text-pink-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                5. 🎮 เกม/ดูดวง
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-violet-500/50
-                            hover:shadow-2xl hover:shadow-violet-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-violet-500 to-purple-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-violet-500 to-purple-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-violet-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-gamepad text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            เกม / ดูดวง
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            สนุกสนาน ผ่อนคลาย ทำนายดวงชะตา
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('tarot.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🔮 ดูไพ่ทาโรต์</span>
-                            </a>
-                            <a href="{{ route('games.index') }}" class="block px-4 py-3 bg-white/10 backdrop-blur-sm rounded-xl hover:bg-white/20 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🎮 เกมส์ออนไลน์</span>
-                            </a>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🎰 Tournament</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-violet-600 hover:text-violet-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                6. 🏨 บริการ
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-cyan-500/50
-                            hover:shadow-2xl hover:shadow-cyan-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-cyan-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-concierge-bell text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            บริการ
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            บริการครบวงจรสำหรับทุกความต้องการ
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('hotels.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-cyan-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">🏨 จองโรงแรม</span>
-                            </a>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🌳 Carbon Credit</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">💼 POS System</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-cyan-400 hover:text-cyan-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {{-- ============================================================
-                7. 🎓 เรียนรู้
-            ============================================================ --}}
-            <div class="group relative" x-data="{ expanded: false }">
-                <div class="relative bg-white/80 backdrop-blur-xl border-2 border-slate-200/50 rounded-3xl p-6 lg:p-8
-                            hover:border-emerald-500/50
-                            hover:shadow-2xl hover:shadow-emerald-500/20
-                            transform hover:-translate-y-2 hover:scale-[1.02]
-                            transition-all duration-500 cursor-pointer"
-                     @click="expanded = !expanded">
-
-                    <div class="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-3xl blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500"></div>
-
-                    <div class="relative">
-                        <div class="w-16 h-16 lg:w-20 lg:h-20 mx-auto mb-6 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center
-                                    shadow-lg shadow-emerald-500/30
-                                    transform group-hover:scale-110 group-hover:rotate-6
-                                    transition-all duration-500">
-                            <i class="fas fa-graduation-cap text-3xl lg:text-4xl text-white drop-shadow-lg"></i>
-                        </div>
-
-                        <h3 class="text-xl lg:text-2xl font-black text-white mb-3 text-center">
-                            เรียนรู้
-                        </h3>
-
-                        <p class="text-sm text-slate-200 text-center mb-4">
-                            ความรู้และทรัพยากรเพื่อพัฒนาตัวเอง
-                        </p>
-
-                        <div class="space-y-2" x-show="expanded" x-collapse>
-                            <a href="{{ route('wiki.index') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-emerald-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">📚 Wiki / คู่มือ</span>
-                            </a>
-                            <a href="{{ route('documents.how-to-register') }}" class="block px-4 py-3 bg-slate-100 rounded-xl hover:bg-emerald-100 transition-colors">
-                                <span class="text-sm font-semibold text-slate-100">📖 วิธีใช้งาน</span>
-                            </a>
-                            <div class="block px-4 py-3 bg-white/5 rounded-xl cursor-not-allowed opacity-75">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm font-semibold text-slate-500">🎓 Academy LMS</span>
-                                    <span class="px-2 py-1 bg-amber-500/20 text-amber-700 rounded-full text-xs font-bold">
-                                        เร็วๆ นี้
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <button class="mt-4 w-full flex items-center justify-center gap-2 text-sm font-bold text-emerald-400 hover:text-emerald-700 transition-colors">
-                            <span x-text="expanded ? 'ซ่อน' : 'ดูทั้งหมด'">ดูทั้งหมด</span>
-                            <i class="fas fa-chevron-down transform transition-transform duration-300" :class="expanded ? 'rotate-180' : ''"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        {{-- Bottom CTA --}}
-        <div class="mt-16 text-center">
-            <p class="text-slate-200 mb-6">
-                ไม่เจออะไรที่ต้องการ?
-            </p>
-            <a href="{{ route('contact') }}"
-               class="inline-flex items-center gap-3 px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700
-                      text-white font-bold rounded-2xl shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50
-                      transform hover:scale-105 transition-all duration-300">
-                <i class="fas fa-headset"></i>
-                <span>ติดต่อเราเลย!</span>
-                <i class="fas fa-arrow-right"></i>
-            </a>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    STATS SECTION - สถิติโครงการ
-================================================================ --}}
-<section id="stats" class="py-24 lg:py-32 bg-white/5 relative overflow-hidden z-10">
-    {{-- Background Pattern - โปร่งใสเพื่อให้เห็น lava lamp ด้านหลัง --}}
-    <div class="absolute inset-0 opacity-5"
-         style="background-image: radial-gradient(circle, white 1px, transparent 1px);
-                background-size: 30px 30px;">
-    </div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Section Header --}}
-        <div class="text-center max-w-3xl mx-auto mb-16">
-            <span class="inline-block px-4 py-1.5 bg-white/10 text-white rounded-full text-sm font-semibold mb-4">
-                ตัวเลขที่พิสูจน์ความน่าเชื่อถือ
-            </span>
-            <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-                ข้อมูลจริง ไม่ใช่คำโฆษณา
-            </h2>
-            <p class="text-lg text-slate-300">
-                ตัวเลขเหล่านี้มาจากระบบจริง อัพเดทแบบ Real-time
-            </p>
-        </div>
-
-        {{-- Stats Grid --}}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-            {{-- Stat 1: Users --}}
-            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 lg:p-8 text-center">
-                <div class="text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-2">
-                    {{ number_format($stats['users']) }}+
-                </div>
-                <div class="text-slate-300 font-medium">ผู้ใช้ที่เชื่อใจ</div>
-                <div class="mt-4 flex items-center justify-center gap-1 text-green-400 text-sm">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>เพิ่มขึ้นทุกวัน</span>
-                </div>
-            </div>
-
-            {{-- Stat 2: Affiliates --}}
-            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 lg:p-8 text-center">
-                <div class="text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-2">
-                    {{ number_format($stats['affiliates']) }}+
-                </div>
-                <div class="text-slate-300 font-medium">พันธมิตร Affiliate</div>
-                <div class="mt-4 flex items-center justify-center gap-1 text-green-400 text-sm">
-                    <i class="fas fa-network-wired"></i>
-                    <span>เครือข่ายแน่น</span>
-                </div>
-            </div>
-
-            {{-- Stat 3: Systems --}}
-            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 lg:p-8 text-center">
-                <div class="text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-2">
-                    20+
-                </div>
-                <div class="text-slate-300 font-medium">ระบบรองรับ</div>
-                <div class="mt-4 flex items-center justify-center gap-1 text-amber-400 text-sm">
-                    <i class="fas fa-cubes"></i>
-                    <span>All-in-One</span>
-                </div>
-            </div>
-
-            {{-- Stat 4: Uptime --}}
-            <div class="bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-6 lg:p-8 text-center">
-                <div class="text-4xl lg:text-5xl xl:text-6xl font-bold text-white mb-2">
-                    99.9%
-                </div>
-                <div class="text-slate-300 font-medium">Uptime SLA</div>
-                <div class="mt-4 flex items-center justify-center gap-1 text-blue-400 text-sm">
-                    <i class="fas fa-server"></i>
-                    <span>พร้อมใช้ 24/7</span>
-                </div>
-            </div>
-        </div>
-
-        {{-- Tech Stack --}}
-        <div class="mt-16 pt-16 border-t border-white/10">
-            <p class="text-center text-slate-400 mb-8">เทคโนโลยีที่เราใช้</p>
-            <div class="flex flex-wrap items-center justify-center gap-8 lg:gap-12">
-                <div class="text-slate-400 hover:text-white transition-colors">
-                    <i class="fab fa-laravel text-4xl"></i>
-                    <span class="block text-xs mt-1">Laravel 11</span>
-                </div>
-                <div class="text-slate-400 hover:text-white transition-colors">
-                    <i class="fab fa-php text-4xl"></i>
-                    <span class="block text-xs mt-1">PHP 8.1+</span>
-                </div>
-                <div class="text-slate-400 hover:text-cyan-400 transition-colors">
-                    <i class="fab fa-react text-4xl"></i>
-                    <span class="block text-xs mt-1">Tailwind CSS</span>
-                </div>
-                <div class="text-slate-400 hover:text-white transition-colors">
-                    <i class="fab fa-js text-4xl"></i>
-                    <span class="block text-xs mt-1">Alpine.js</span>
-                </div>
-                <div class="text-slate-400 hover:text-orange-400 transition-colors">
-                    <i class="fab fa-ethereum text-4xl"></i>
-                    <span class="block text-xs mt-1">Blockchain</span>
-                </div>
-                <div class="text-slate-400 hover:text-blue-400 transition-colors">
-                    <i class="fas fa-database text-4xl"></i>
-                    <span class="block text-xs mt-1">MySQL 8</span>
-                </div>
-                <div class="text-slate-400 hover:text-red-400 transition-colors">
-                    <i class="fas fa-bolt text-4xl"></i>
-                    <span class="block text-xs mt-1">Redis</span>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    DYNAMIC SECTIONS - From Homepage Manager
-    สามารถแก้ไขผ่าน Admin Panel ที่ /admin/homepage-manager
-================================================================ --}}
-@if(isset($sections) && $sections->count() > 0)
-    @include('frontend.partials.homepage-sections', ['sections' => $sections])
-@endif
-
-{{-- ================================================================
-    CTA SECTION - Call to Action
-================================================================ --}}
-<section class="py-12 lg:py-16 bg-white/5">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        {{-- Icon --}}
-        <div class="w-20 h-20 mx-auto bg-gradient-to-br from-blue-600 to-purple-600 rounded-3xl flex items-center justify-center mb-8 animate-pulse-glow">
-            <i class="fas fa-rocket text-4xl text-white"></i>
-        </div>
-
-        {{-- Headline --}}
-        <h2 class="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6">
-            พร้อมที่จะเริ่มต้นหรือยัง?
-        </h2>
-        <p class="text-lg lg:text-xl text-slate-200 mb-10 max-w-2xl mx-auto">
-            เริ่มต้นใช้งาน {{ $appName }} ได้ทันที ลงทะเบียนฟรี ไม่มีค่าใช้จ่ายเริ่มต้น
-            พร้อมทีมซัพพอร์ตช่วยเหลือคุณตลอด 24 ชั่วโมง
-        </p>
-
-        {{-- CTA Buttons --}}
-        <div class="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="{{ route('register') }}"
-               class="inline-flex items-center justify-center gap-2 px-10 py-4 btn-secondary text-white font-bold text-lg rounded-xl shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30">
-                <i class="fas fa-user-plus"></i>
-                ลงทะเบียนฟรี
-            </a>
-            <a href="{{ route('contact') }}"
-               class="inline-flex items-center justify-center gap-2 px-10 py-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-lg rounded-xl transition-colors">
-                <i class="fas fa-headset"></i>
-                ติดต่อทีมขาย
-            </a>
-        </div>
-
-        {{-- Trust Badges --}}
-        <div class="mt-12 flex flex-wrap items-center justify-center gap-8 text-slate-200">
-            <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-400"></i>
-                <span class="font-medium">ทดลองใช้ฟรี</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-400"></i>
-                <span class="font-medium">ไม่ต้องใส่บัตรเครดิต</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <i class="fas fa-check-circle text-green-400"></i>
-                <span class="font-medium">ยกเลิกได้ทุกเมื่อ</span>
-            </div>
-        </div>
-    </div>
-</section>
-
-{{-- ================================================================
-    FOOTER - Professional Enterprise Footer
-================================================================ --}}
-<footer class="bg-slate-900 text-white relative overflow-hidden">
-    {{-- Decorative Background --}}
-    <div class="absolute inset-0 opacity-5">
-        <div class="absolute inset-0" style="background-image: radial-gradient(circle, white 1px, transparent 1px); background-size: 30px 30px;"></div>
-    </div>
-    <div class="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-3xl"></div>
-    <div class="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-purple-500/10 to-pink-500/10 rounded-full blur-3xl"></div>
-
-    <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {{-- Main Footer Content --}}
-        <div class="py-16 lg:py-20 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
-            {{-- Column 1: About / Logo --}}
-            <div class="lg:col-span-1">
-                <div class="mb-6">
-                    @if($systemLogo)
-                        <img src="{{ Storage::url($systemLogo) }}" alt="{{ $appName }}" class="h-12 w-auto">
-                    @else
-                        <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                            {{ $appName }}
-                        </h3>
-                    @endif
-                </div>
-                <p class="text-slate-400 text-sm leading-relaxed mb-6">
-                    แพลตฟอร์ม Affiliate Marketing ระดับ Enterprise ที่ครบครันที่สุด พร้อมระบบ AI, Blockchain และ 20+ ระบบรองรับธุรกิจของคุณ
-                </p>
-                {{-- Trust Badges --}}
-                <div class="flex flex-wrap gap-3">
-                    <div class="px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 text-xs font-semibold">
-                        <i class="fas fa-shield-check mr-1"></i> SSL Secure
-                    </div>
-                    <div class="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 text-xs font-semibold">
-                        <i class="fas fa-award mr-1"></i> Enterprise
-                    </div>
-                </div>
-            </div>
-
-            {{-- Column 2: Products --}}
-            <div>
-                <h4 class="text-white font-bold text-lg mb-6">ผลิตภัณฑ์</h4>
-                <ul class="space-y-3">
-                    <li><a href="{{ route('documents.mlm-commission') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-blue-400"></i> ระบบ Affiliate
-                    </a></li>
-                    <li><a href="{{ route('storefront.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-blue-400"></i> AI Bot Marketplace
-                    </a></li>
-                    <li><a href="#app-download" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-blue-400"></i> Mobile App
-                    </a></li>
-                    <li><a href="{{ route('storefront.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-blue-400"></i> E-Commerce
-                    </a></li>
-                    <li><a href="{{ route('documents.blockchain-tpix') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-blue-400"></i> Blockchain / TPIX
-                    </a></li>
-                </ul>
-            </div>
-
-            {{-- Column 3: Resources --}}
-            <div>
-                <h4 class="text-white font-bold text-lg mb-6">ทรัพยากร</h4>
-                <ul class="space-y-3">
-                    <li><a href="{{ route('about') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> เกี่ยวกับเรา
-                    </a></li>
-                    <li><a href="{{ route('contact') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> ติดต่อเรา
-                    </a></li>
-                    <li><a href="{{ route('wiki.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> คู่มือการใช้งาน
-                    </a></li>
-                    <li><a href="{{ route('documents.how-to-register') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> วิธีการสมัครสมาชิก
-                    </a></li>
-                    <li><a href="{{ route('wiki.index') }}" class="text-slate-400 hover:text-white transition-colors text-sm flex items-center gap-2">
-                        <i class="fas fa-chevron-right text-xs text-purple-400"></i> เอกสารประกอบ
-                    </a></li>
-                </ul>
-            </div>
-
-            {{-- Column 4: Support & Contact --}}
-            <div>
-                <h4 class="text-white font-bold text-lg mb-6">ติดต่อ & สนับสนุน</h4>
-                <ul class="space-y-3 mb-6">
-                    <li class="text-slate-400 text-sm flex items-start gap-2">
-                        <i class="fas fa-headset text-green-400 mt-1"></i>
-                        <div>
-                            <div class="text-white font-semibold">24/7 Support</div>
-                            <div class="text-xs">พร้อมช่วยเหลือตลอด 24 ชั่วโมง</div>
-                        </div>
-                    </li>
-                    <li class="text-slate-400 text-sm flex items-start gap-2">
-                        <i class="fas fa-envelope text-blue-400 mt-1"></i>
-                        <div>
-                            <div class="text-white font-semibold">Email</div>
-                            <a href="mailto:support@thaiprompt.com" class="text-xs hover:text-white transition-colors">support@thaiprompt.com</a>
-                        </div>
-                    </li>
-                    <li class="text-slate-400 text-sm flex items-start gap-2">
-                        <i class="fab fa-line text-green-400 mt-1"></i>
-                        <div>
-                            <div class="text-white font-semibold">LINE Official</div>
-                            <div class="text-xs">@thaiprompt</div>
-                        </div>
-                    </li>
-                </ul>
-
-                {{-- Social Media --}}
-                <div>
-                    <h5 class="text-white font-semibold text-sm mb-3">ติดตามเรา</h5>
-                    <div class="flex gap-3">
-                        <a href="#" class="w-10 h-10 bg-slate-800 hover:bg-blue-600 rounded-lg flex items-center justify-center transition-colors">
-                            <i class="fab fa-facebook-f"></i>
-                        </a>
-                        <a href="#" class="w-10 h-10 bg-slate-800 hover:bg-blue-400 rounded-lg flex items-center justify-center transition-colors">
-                            <i class="fab fa-twitter"></i>
-                        </a>
-                        <a href="#" class="w-10 h-10 bg-slate-800 hover:bg-green-500 rounded-lg flex items-center justify-center transition-colors">
-                            <i class="fab fa-line"></i>
-                        </a>
-                        <a href="#" class="w-10 h-10 bg-slate-800 hover:bg-gradient-to-r hover:from-purple-500 hover:to-pink-500 rounded-lg flex items-center justify-center transition-colors">
-                            <i class="fab fa-instagram"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {{-- Divider --}}
-        <div class="border-t border-slate-800"></div>
-
-        {{-- Bottom Footer --}}
-        <div class="py-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <div class="text-slate-400 text-sm text-center md:text-left">
-                <p>© {{ date('Y') }} {{ $appName }}. All rights reserved.</p>
-                <p class="text-xs mt-1">Version {{ $version }} | Made with <i class="fas fa-heart text-red-500"></i> in Thailand</p>
-            </div>
-
-            {{-- Footer Links --}}
-            <div class="flex flex-wrap items-center justify-center gap-6 text-slate-400 text-sm">
-                <a href="/privacy-policy.html" target="_blank" class="hover:text-white transition-colors">นโยบายความเป็นส่วนตัว</a>
-                <a href="/terms-of-service.html" target="_blank" class="hover:text-white transition-colors">เงื่อนไขการใช้งาน</a>
-                <a href="{{ route('cookie-policy') }}" class="hover:text-white transition-colors">นโยบายคุกกี้</a>
-            </div>
-        </div>
-    </div>
-</footer>
-
-@endsection
-
 @push('styles')
 <style>
-/**
- * Fireflies Background Effect - หิ่งห้อยเรืองแสง
- * (แบบเดียวกับหน้า Login)
- */
+/* ================================================================
+    ThaiPrompt Landing Theme — Blue & Gold
+    (จาก design_handoff_thaiprompt_landing/styles.css)
+    Scoped ใต้ .tp-landing เพื่อไม่ชนกับ Tailwind / layouts อื่น
+================================================================ */
+.tp-landing {
+    /* Brand backgrounds (deep navy ramp) */
+    --bg-deep: #050b1a;
+    --bg-1: #0a1430;
+    --bg-2: #0e1c4a;
+    --bg-3: #122769;
 
-/* ✨ Firefly Effect */
-.firefly {
-    position: fixed;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 1;
+    /* Primary blue ramp */
+    --blue-50: #eaf2ff;
+    --blue-100: #cfe0ff;
+    --blue-200: #9dc0ff;
+    --blue-300: #6aa0ff;
+    --blue-400: #3d82ff;
+    --blue-500: #1f64ff;
+    --blue-600: #0b4cdb;
+    --blue-700: #0a3aac;
+    --blue-800: #082b7f;
+
+    /* Gold ramp */
+    --gold-300: #ffe28a;
+    --gold-400: #ffcd54;
+    --gold-500: #f5b423;
+    --gold-600: #d99318;
+    --gold-700: #a86c0d;
+
+    --teal: #38d3ee;
+    --cyan: #6ee7ff;
+    --orange: #ff7a2d;
+
+    --ink: #0a1230;
+    --ink-2: #2a3760;
+    --ink-3: #5b6890;
+    --line: rgba(20, 50, 120, .12);
+
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --r-2xl: 36px;
+
+    --shadow-card: 0 18px 40px -22px rgba(8, 30, 90, .35), 0 4px 14px -6px rgba(8, 30, 90, .15);
+    --shadow-glow: 0 30px 80px -30px rgba(31, 100, 255, .55);
+
+    font-family: 'Prompt', 'Noto Sans Thai', 'Inter', system-ui, sans-serif;
+    color: var(--ink);
+    background: #fafbff;
+    -webkit-font-smoothing: antialiased;
 }
 
-.firefly::before,
-.firefly::after {
-    content: '';
-    position: absolute;
+/* โหลดฟอนต์ Prompt + Noto Sans Thai (อาจซ้ำกับ layouts.landing แต่ปลอดภัย) */
+.tp-landing,
+.tp-landing * { box-sizing: border-box; }
+
+.tp-landing img { max-width: 100%; display: block; }
+.tp-landing a { color: inherit; text-decoration: none; }
+.tp-landing button { font-family: inherit; cursor: pointer; }
+
+/* Container ของธีม (ไม่ชนกับ Tailwind .container) */
+.tp-landing .tp-container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+
+/* Eyebrow text */
+.tp-landing .tp-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--gold-500);
+}
+.tp-landing .tp-eyebrow::before {
+    content: ''; width: 24px; height: 1px; background: currentColor;
+}
+
+/* ================== Buttons ================== */
+.tp-landing .tp-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 12px;
+    font-weight: 600; font-size: 14px;
+    border: 0;
+    transition: transform .25s cubic-bezier(.4,0,.2,1), box-shadow .25s, background .25s;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.tp-landing .tp-btn-primary {
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+    color: #fff;
+    box-shadow: 0 10px 24px -10px rgba(11, 76, 219, .55);
+}
+.tp-landing .tp-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(11, 76, 219, .7); }
+.tp-landing .tp-btn-gold {
+    background: linear-gradient(135deg, #ffd76a, var(--gold-500));
+    color: #2a1a00;
+    box-shadow: 0 10px 24px -10px rgba(245, 180, 35, .55);
+}
+.tp-landing .tp-btn-gold:hover { transform: translateY(-2px); box-shadow: 0 18px 36px -12px rgba(245, 180, 35, .75); }
+.tp-landing .tp-btn-outline-white {
+    background: rgba(255,255,255,.08);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.25);
+    backdrop-filter: blur(8px);
+}
+.tp-landing .tp-btn-outline-white:hover { background: rgba(255,255,255,.16); transform: translateY(-2px); }
+
+/* ================== IMAGE SLIDE (full-bleed dividers) ================== */
+.tp-landing .imgslide {
+    position: relative;
     width: 100%;
-    height: 100%;
+    height: clamp(440px, 64vh, 760px);
+    overflow: hidden;
+    isolation: isolate;
+    background: #0a1230;
+    margin-bottom: -1px;
+}
+.tp-landing .imgslide.fullscreen { height: 100vh; min-height: 560px; }
+.tp-landing .imgslide + section { margin-top: -1px; }
+.tp-landing .imgslide-bg {
+    position: absolute; inset: 0;
+    background-size: cover;
+    background-position: center;
+}
+.tp-landing .imgslide.animate .imgslide-bg {
+    transform: scale(1.05);
+    animation: tp-kenburns 16s ease-in-out infinite alternate;
+}
+@keyframes tp-kenburns {
+    0% { transform: scale(1.05) translate(0, 0); }
+    100% { transform: scale(1.12) translate(-1.5%, -1%); }
+}
+.tp-landing .imgslide::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(70% 60% at 50% 30%, transparent 0%, rgba(5,11,26,.15) 70%, rgba(5,11,26,.45) 100%);
+    z-index: 1;
+    pointer-events: none;
+}
+.tp-landing .imgslide::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: 0;
+    height: 55%;
+    background: linear-gradient(180deg,
+        rgba(5,11,26,0) 0%,
+        rgba(5,11,26,.3) 35%,
+        rgba(5,11,26,.75) 65%,
+        rgba(5,11,26,.95) 88%,
+        #050b1a 100%);
+    z-index: 2;
+    pointer-events: none;
+}
+.tp-landing .imgslide.fade-light::after {
+    background: linear-gradient(180deg,
+        rgba(250,251,255,0) 0%,
+        rgba(250,251,255,.25) 35%,
+        rgba(250,251,255,.7) 65%,
+        rgba(250,251,255,.95) 88%,
+        #fafbff 100%);
+}
+.tp-landing .imgslide-decor { display: none; }
+.tp-landing .imgslide.animate .imgslide-decor { display: block; position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+.tp-landing .imgslide.animate .imgslide-decor span {
+    position: absolute;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold-400);
+    box-shadow: 0 0 14px 4px rgba(255,205,84,.55);
+    animation: tp-floatY 5s ease-in-out infinite;
+}
+.tp-landing .imgslide.animate .imgslide-decor span:nth-child(1) { top: 18%; left: 12%; animation-delay: 0s; }
+.tp-landing .imgslide.animate .imgslide-decor span:nth-child(2) { top: 30%; left: 78%; animation-delay: -1.6s; background: #6ee7ff; box-shadow: 0 0 14px 4px rgba(110,231,255,.55); }
+.tp-landing .imgslide.animate .imgslide-decor span:nth-child(3) { top: 60%; left: 22%; animation-delay: -2.4s; }
+.tp-landing .imgslide.animate .imgslide-decor span:nth-child(4) { top: 25%; left: 50%; animation-delay: -3.2s; }
+.tp-landing .imgslide.animate .imgslide-decor span:nth-child(5) { top: 72%; left: 70%; animation-delay: -1s; background: #6ee7ff; box-shadow: 0 0 14px 4px rgba(110,231,255,.45); }
+
+/* ================== HERO ================== */
+.tp-landing .tp-hero {
+    position: relative;
+    background:
+        radial-gradient(1200px 700px at 80% -10%, rgba(31,100,255,.45), transparent 60%),
+        radial-gradient(900px 600px at 0% 100%, rgba(245,180,35,.18), transparent 60%),
+        linear-gradient(180deg, #050b1a 0%, #081231 60%, #0a1742 100%);
+    color: #fff;
+    overflow: hidden;
+    isolation: isolate;
+}
+.tp-landing .tp-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(110,231,255,.08) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110,231,255,.08) 1px, transparent 1px);
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 100% 70% at 50% 40%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 100% 70% at 50% 40%, black 30%, transparent 75%);
+    z-index: 0;
+    pointer-events: none;
+}
+.tp-landing .tp-hero::after {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+        radial-gradient(2px 2px at 20% 30%, rgba(255,205,84,.7), transparent 60%),
+        radial-gradient(2px 2px at 70% 50%, rgba(110,231,255,.7), transparent 60%),
+        radial-gradient(1.5px 1.5px at 35% 70%, rgba(255,255,255,.6), transparent 60%),
+        radial-gradient(2px 2px at 85% 20%, rgba(255,205,84,.6), transparent 60%),
+        radial-gradient(1px 1px at 50% 85%, rgba(255,255,255,.5), transparent 60%),
+        radial-gradient(2px 2px at 12% 80%, rgba(110,231,255,.6), transparent 60%);
+    z-index: 0;
+    animation: tp-twinkle 6s ease-in-out infinite alternate;
+}
+@keyframes tp-twinkle { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+
+.tp-landing .hero-inner {
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1.1fr 1fr;
+    gap: 56px; align-items: center;
+    padding-block: 72px 96px;
+}
+@media (max-width: 980px) { .tp-landing .hero-inner { grid-template-columns: 1fr; padding-block: 48px 72px; } }
+
+.tp-landing .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 7px 14px 7px 8px;
+    border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,205,84,.3);
+    font-size: 12px; font-weight: 600; letter-spacing: .04em;
+    color: #ffe7a8;
+    backdrop-filter: blur(8px);
+}
+.tp-landing .hero-eyebrow .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.25);
+    animation: tp-pulse 1.8s infinite;
+}
+@keyframes tp-pulse {
+    0%,100% { box-shadow: 0 0 0 4px rgba(74,222,128,.25); }
+    50% { box-shadow: 0 0 0 8px rgba(74,222,128,.05); }
+}
+.tp-landing .hero-h1 {
+    font-family: 'Prompt','Noto Sans Thai',sans-serif;
+    font-size: clamp(40px, 6vw, 78px);
+    font-weight: 800; line-height: 1.02; letter-spacing: -.02em;
+    margin: 22px 0 16px;
+}
+.tp-landing .hero-h1 .gold {
+    background: linear-gradient(180deg, #fff2c2 0%, #ffd76a 45%, #d99318 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 4px 18px rgba(245,180,35,.3));
+}
+.tp-landing .hero-h1 .blue {
+    background: linear-gradient(180deg, #cfe0ff, #6aa0ff 60%, #3d82ff);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.tp-landing .hero-sub {
+    font-size: clamp(17px, 1.5vw, 20px);
+    color: rgba(255,255,255,.78);
+    max-width: 560px; line-height: 1.55;
+    margin-bottom: 32px;
+}
+.tp-landing .hero-pillars { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.tp-landing .pillar-chip {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(110,231,255,.22);
+    font-size: 13px; color: #cfe0ff; font-weight: 500;
+}
+.tp-landing .pillar-chip svg { width: 14px; height: 14px; color: var(--gold-400); }
+.tp-landing .hero-cta { display: flex; gap: 14px; flex-wrap: wrap; }
+.tp-landing .hero-meta {
+    display: flex; gap: 24px; flex-wrap: wrap; margin-top: 36px;
+    color: rgba(255,255,255,.55); font-size: 13px;
+}
+.tp-landing .hero-meta strong { color: #fff; font-weight: 700; }
+
+/* hero card visual */
+.tp-landing .hero-visual { position: relative; height: 540px; }
+@media (max-width: 980px) { .tp-landing .hero-visual { height: 420px; } }
+.tp-landing .hero-card {
+    position: absolute; inset: 0;
+    border-radius: 28px;
+    overflow: hidden;
+    background: linear-gradient(180deg, #102052, #050b1a 70%);
+    box-shadow: 0 50px 100px -30px rgba(0,0,0,.6), inset 0 0 0 1px rgba(255,255,255,.06);
+}
+.tp-landing .hero-card-bg {
+    position: absolute; inset: 0;
+    background-image: linear-gradient(135deg, rgba(11,76,219,.5), rgba(8,43,127,.6)),
+        radial-gradient(circle at 30% 30%, rgba(245,180,35,.2), transparent 60%);
+    background-size: cover; background-position: center;
+}
+.tp-landing .hero-card-bg::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(5,11,26,0) 50%, rgba(5,11,26,.65) 100%);
+}
+.tp-landing .hero-floats { position: absolute; inset: 0; }
+.tp-landing .float-card {
+    position: absolute;
+    background: rgba(255,255,255,.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 12px 16px;
+    box-shadow: 0 20px 50px -16px rgba(0,0,0,.45);
+    display: flex; align-items: center; gap: 12px;
+    font-size: 13px; color: var(--ink);
+    animation: tp-floatY 4.5s ease-in-out infinite;
+}
+.tp-landing .float-card .ic {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--blue-500), var(--blue-700));
+    color: #fff; flex-shrink: 0;
+}
+.tp-landing .float-card .lbl { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+.tp-landing .float-card .val { font-size: 14px; font-weight: 700; color: var(--ink); }
+.tp-landing .float-1 { top: 12%; left: -28px; animation-delay: 0s; }
+.tp-landing .float-2 { top: 50%; right: -30px; animation-delay: -1.4s; }
+.tp-landing .float-3 { bottom: 8%; left: 12%; animation-delay: -2.6s; }
+@keyframes tp-floatY { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+.tp-landing .hero-badge-tl {
+    position: absolute; top: 18px; left: 18px;
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, var(--gold-400), var(--gold-600));
+    color: #2a1a00; font-weight: 700; font-size: 12px;
+    box-shadow: 0 12px 28px -10px rgba(245,180,35,.6);
+}
+.tp-landing .hero-badge-br {
+    position: absolute; bottom: 18px; right: 18px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(0,0,0,.4); color: #cfe0ff; font-size: 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    backdrop-filter: blur(10px);
+}
+
+/* hero stats strip (overlapping) */
+.tp-landing .hero-stats {
+    position: relative; z-index: 6;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    background: #fff;
+    border-radius: 24px;
+    margin: -56px auto 0;
+    max-width: 1180px;
+    box-shadow: 0 30px 60px -25px rgba(8,30,90,.35);
+    overflow: hidden;
+    border: 1px solid var(--line);
+}
+.tp-landing .hero-stats > div {
+    padding: 26px 28px; border-right: 1px solid var(--line);
+    display: flex; align-items: center; gap: 16px;
+}
+.tp-landing .hero-stats > div:last-child { border-right: 0; }
+.tp-landing .hero-stats .num {
+    font-family: 'Prompt'; font-weight: 800;
+    font-size: 30px; color: var(--blue-700);
+    letter-spacing: -.02em; line-height: 1;
+}
+.tp-landing .hero-stats .lbl { font-size: 13px; color: var(--ink-3); margin-top: 4px; }
+.tp-landing .hero-stats .ic-wrap {
+    width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, #eaf2ff, #cfe0ff);
+    color: var(--blue-700);
+}
+@media (max-width: 900px) {
+    .tp-landing .hero-stats { grid-template-columns: repeat(2, 1fr); margin-top: -40px; }
+    .tp-landing .hero-stats > div:nth-child(2) { border-right: 0; }
+    .tp-landing .hero-stats > div:nth-child(1),
+    .tp-landing .hero-stats > div:nth-child(2) { border-bottom: 1px solid var(--line); }
+}
+@media (max-width: 540px) {
+    .tp-landing .hero-stats { grid-template-columns: 1fr; margin-top: -32px; border-radius: 18px; }
+    .tp-landing .hero-stats > div { border-right: 0; border-bottom: 1px solid var(--line); padding: 20px 22px; }
+    .tp-landing .hero-stats > div:last-child { border-bottom: 0; }
+    .tp-landing .hero-stats .num { font-size: 24px; }
+}
+
+/* ================== SECTION ================== */
+.tp-landing .tp-section { padding: 96px 0; }
+@media (max-width: 900px) { .tp-landing .tp-section { padding: 64px 0; } }
+@media (max-width: 540px) { .tp-landing .tp-section { padding: 56px 0; } }
+
+.tp-landing .fade-bottom-light { position: relative; }
+.tp-landing .fade-bottom-light::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 80px;
+    background: linear-gradient(180deg, transparent, #fafbff);
+    pointer-events: none; z-index: 5;
+}
+.tp-landing .fade-top-light { position: relative; }
+.tp-landing .fade-top-light::before {
+    content: ''; position: absolute; left: 0; right: 0; top: 0; height: 60px;
+    background: linear-gradient(180deg, #fafbff, transparent);
+    pointer-events: none; z-index: 1;
+}
+.tp-landing .fade-bottom-dark { position: relative; }
+.tp-landing .fade-bottom-dark::after {
+    content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 80px;
+    background: linear-gradient(180deg, transparent, #050b1a);
+    pointer-events: none; z-index: 5;
+}
+.tp-landing .sec-head { text-align: center; max-width: 720px; margin: 0 auto 56px; }
+.tp-landing .sec-head h2 {
+    font-family: 'Prompt'; font-size: clamp(30px, 4vw, 48px);
+    font-weight: 800; letter-spacing: -.02em; line-height: 1.1;
+    margin: 12px 0 14px; color: var(--ink);
+}
+.tp-landing .sec-head p { font-size: 17px; color: var(--ink-3); line-height: 1.6; margin: 0; }
+.tp-landing .sec-head .grad {
+    background: linear-gradient(90deg, var(--blue-600), var(--gold-500));
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* ================== SERVICES ================== */
+.tp-landing .services { background: #fafbff; position: relative; }
+.tp-landing .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+@media (max-width: 980px) { .tp-landing .services-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .tp-landing .services-grid { grid-template-columns: 1fr; } }
+
+.tp-landing .service-card {
+    position: relative;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 28px 26px;
+    transition: transform .35s, box-shadow .35s, border-color .35s;
+    overflow: hidden;
+}
+.tp-landing .service-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card);
+    border-color: transparent;
+}
+.tp-landing .service-card .ic {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    background: var(--accent, linear-gradient(135deg, var(--blue-500), var(--blue-700)));
+    color: #fff;
+    margin-bottom: 18px;
+    box-shadow: 0 12px 28px -12px var(--accent-shadow, rgba(11,76,219,.5));
+}
+.tp-landing .service-card h3 { font-family: 'Prompt'; font-size: 19px; font-weight: 700; margin: 0 0 6px; color: var(--ink); }
+.tp-landing .service-card .tag {
+    display: inline-block;
+    font-size: 11px; font-weight: 600; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--blue-600);
+    margin-bottom: 12px;
+}
+.tp-landing .service-card p { font-size: 14px; color: var(--ink-3); line-height: 1.6; margin: 0 0 16px; }
+.tp-landing .service-card .feats { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 7px; }
+.tp-landing .service-card .feats li { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.tp-landing .service-card .feats li svg { width: 14px; height: 14px; color: var(--gold-500); flex-shrink: 0; }
+.tp-landing .service-card .arrow {
+    margin-top: 18px;
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--blue-600);
+    transition: gap .25s;
+}
+.tp-landing .service-card:hover .arrow { gap: 10px; }
+
+/* ================== WALLET ================== */
+.tp-landing .wallet-section {
+    background:
+        radial-gradient(800px 500px at 80% 20%, rgba(31,100,255,.35), transparent 70%),
+        linear-gradient(180deg, #050b1a 0%, #060d22 8%, #0a1742 100%),
+        radial-gradient(700px 500px at 10% 80%, rgba(245,180,35,.16), transparent 70%);
+    color: #fff; position: relative; overflow: hidden;
+}
+.tp-landing .wallet-section::before {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(110,231,255,.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(110,231,255,.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 80%);
+    -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 80%);
+}
+.tp-landing .wallet-grid {
+    position: relative; z-index: 1;
+    display: grid; grid-template-columns: 1fr 1.1fr; gap: 64px; align-items: center;
+}
+@media (max-width: 980px) { .tp-landing .wallet-grid { grid-template-columns: 1fr; } }
+.tp-landing .wallet-h2 {
+    font-family: 'Prompt'; font-size: clamp(30px, 4vw, 46px);
+    font-weight: 800; line-height: 1.1; letter-spacing: -.02em;
+    margin: 16px 0 16px;
+}
+.tp-landing .wallet-h2 .gold {
+    background: linear-gradient(180deg, #fff2c2, #ffcd54 60%, #d99318);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.tp-landing .wallet-text-p { color: rgba(255,255,255,.72); font-size: 17px; line-height: 1.7; margin-bottom: 28px; }
+.tp-landing .wallet-feat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+@media (max-width: 540px) { .tp-landing .wallet-feat-grid { grid-template-columns: 1fr; } }
+.tp-landing .wallet-feat {
+    background: rgba(255,255,255,.04);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 16px;
+    padding: 18px;
+    backdrop-filter: blur(8px);
+    transition: border-color .25s, transform .25s;
+}
+.tp-landing .wallet-feat:hover { border-color: rgba(255,205,84,.4); transform: translateY(-2px); }
+.tp-landing .wallet-feat .ic {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: linear-gradient(135deg, rgba(110,231,255,.18), rgba(31,100,255,.18));
+    border: 1px solid rgba(110,231,255,.25);
+    color: var(--gold-400);
+    margin-bottom: 12px;
+}
+.tp-landing .wallet-feat h4 { font-family: 'Prompt'; font-size: 15px; font-weight: 600; margin: 0 0 4px; color: #fff; }
+.tp-landing .wallet-feat p { font-size: 13px; color: rgba(255,255,255,.6); margin: 0; line-height: 1.5; }
+
+/* phone mock */
+.tp-landing .phone-mock { position: relative; width: 100%; aspect-ratio: 1/1; display: grid; place-items: center; }
+.tp-landing .phone-orbit { position: absolute; inset: 0; display: grid; place-items: center; }
+.tp-landing .phone-orbit::before {
+    content: ''; position: absolute;
+    width: 90%; height: 90%; border-radius: 50%;
+    border: 1px dashed rgba(110,231,255,.25);
+    animation: tp-spin 40s linear infinite;
+}
+.tp-landing .phone-orbit::after {
+    content: ''; position: absolute;
+    width: 70%; height: 70%; border-radius: 50%;
+    border: 1px dashed rgba(255,205,84,.18);
+    animation: tp-spin 30s linear infinite reverse;
+}
+@keyframes tp-spin { to { transform: rotate(360deg); } }
+.tp-landing .coin {
+    position: absolute;
+    width: 64px; height: 64px;
     border-radius: 50%;
-    transform-origin: center center;
+    background: linear-gradient(135deg, #ffe28a, #d99318);
+    box-shadow: 0 0 0 2px #6e4a00, 0 12px 30px -10px rgba(245,180,35,.65);
+    display: grid; place-items: center;
+    font-family: 'Prompt'; font-weight: 900; font-size: 22px; color: #4a2e00;
+    animation: tp-floatY 5s ease-in-out infinite;
 }
+.tp-landing .coin.c1 { top: 8%; right: 10%; animation-delay: 0s; }
+.tp-landing .coin.c2 { bottom: 14%; left: 4%; animation-delay: -1.5s; width: 52px; height: 52px; font-size: 18px; }
+.tp-landing .coin.c3 { top: 38%; left: -2%; animation-delay: -2.5s; width: 44px; height: 44px; font-size: 15px; }
+.tp-landing .phone {
+    position: relative;
+    width: 280px; height: 560px;
+    border-radius: 44px;
+    background: linear-gradient(180deg, #0a1230, #050b1a);
+    box-shadow: 0 60px 100px -30px rgba(0,0,0,.7),
+        inset 0 0 0 2px rgba(255,255,255,.08),
+        inset 0 0 0 8px #050b1a,
+        inset 0 0 0 9px rgba(110,231,255,.18);
+    padding: 12px;
+    z-index: 2;
+}
+.tp-landing .phone-screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    background: linear-gradient(180deg, #0d1d4f, #061030);
+    overflow: hidden;
+    position: relative;
+    padding: 22px 18px;
+    display: flex; flex-direction: column; gap: 14px;
+}
+.tp-landing .phone-notch {
+    position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; border-radius: 14px; background: #050b1a;
+    z-index: 5;
+}
+.tp-landing .phone-head { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; }
+.tp-landing .phone-head .h1 { font-size: 11px; color: rgba(255,255,255,.5); }
+.tp-landing .phone-head .h2 { font-size: 11px; color: #4ade80; display: flex; align-items: center; gap: 4px; }
+.tp-landing .phone-head .h2::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #4ade80; }
+.tp-landing .balance-card {
+    background: linear-gradient(135deg, #1f64ff, #0a3aac);
+    border-radius: 20px; padding: 20px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 18px 36px -16px rgba(11,76,219,.7);
+}
+.tp-landing .balance-card::before {
+    content: ''; position: absolute; right: -30px; top: -30px;
+    width: 140px; height: 140px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,205,84,.35), transparent 60%);
+}
+.tp-landing .balance-card .lbl { font-size: 11px; color: rgba(255,255,255,.7); }
+.tp-landing .balance-card .val {
+    font-family: 'Prompt'; font-weight: 800; font-size: 28px; color: #fff; margin-top: 4px;
+    letter-spacing: -.02em;
+}
+.tp-landing .balance-card .val small { font-size: 14px; color: rgba(255,255,255,.7); font-weight: 500; }
+.tp-landing .balance-card .pct {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(255,255,255,.18); padding: 3px 8px; border-radius: 999px;
+    font-size: 11px; color: #fff; margin-top: 10px;
+}
+.tp-landing .phone-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.tp-landing .phone-actions button {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.08);
+    color: rgba(255,255,255,.85);
+    padding: 10px 6px; border-radius: 12px;
+    font-size: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.tp-landing .phone-actions button svg { width: 16px; height: 16px; color: var(--gold-400); }
+.tp-landing .phone-tx { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.tp-landing .phone-tx-item {
+    display: flex; align-items: center; gap: 10px;
+    background: rgba(255,255,255,.04);
+    padding: 10px;
+    border-radius: 12px;
+}
+.tp-landing .phone-tx-item .ic {
+    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    background: rgba(31,100,255,.25); color: #6aa0ff;
+}
+.tp-landing .phone-tx-item .meta { flex: 1; min-width: 0; }
+.tp-landing .phone-tx-item .meta b { font-size: 11px; color: #fff; display: block; font-weight: 600; }
+.tp-landing .phone-tx-item .meta span { font-size: 9px; color: rgba(255,255,255,.5); }
+.tp-landing .phone-tx-item .amt { font-size: 11px; font-weight: 700; }
+.tp-landing .phone-tx-item .amt.up { color: #4ade80; }
+.tp-landing .phone-tx-item .amt.dn { color: #f87171; }
 
-.firefly::before {
-    background: radial-gradient(circle, rgba(129, 140, 248, 0.9) 0%, rgba(99, 102, 241, 0.6) 40%, transparent 70%);
-    animation: fireflyGlow 2s ease-in-out infinite alternate;
+/* ================== HOW IT WORKS ================== */
+.tp-landing .how { background: #fafbff; }
+.tp-landing .how-track { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; position: relative; }
+.tp-landing .how-track::before {
+    content: ''; position: absolute;
+    left: 5%; right: 5%; top: 36px; height: 2px;
+    background: repeating-linear-gradient(90deg, var(--blue-300) 0, var(--blue-300) 8px, transparent 8px, transparent 16px);
+    z-index: 0;
 }
+@media (max-width: 900px) {
+    .tp-landing .how-track { grid-template-columns: 1fr 1fr; gap: 28px; }
+    .tp-landing .how-track::before { display: none; }
+}
+@media (max-width: 540px) { .tp-landing .how-track { grid-template-columns: 1fr; } }
+.tp-landing .how-step { position: relative; z-index: 1; text-align: center; padding: 0 8px; }
+.tp-landing .how-step .num {
+    width: 72px; height: 72px; border-radius: 24px;
+    background: #fff;
+    border: 2px solid #fff;
+    box-shadow: 0 12px 30px -14px rgba(11,76,219,.4), inset 0 0 0 1px rgba(11,76,219,.08);
+    margin: 0 auto 18px;
+    display: grid; place-items: center;
+    font-family: 'Prompt'; font-size: 28px; font-weight: 800; color: var(--blue-700);
+    position: relative;
+}
+.tp-landing .how-step h4 { font-family: 'Prompt'; font-size: 17px; font-weight: 700; margin: 0 0 8px; color: var(--ink); }
+.tp-landing .how-step p { font-size: 14px; color: var(--ink-3); line-height: 1.6; margin: 0; }
 
-.firefly::after {
-    background: radial-gradient(circle, rgba(255, 255, 255, 1) 0%, rgba(199, 210, 254, 0.8) 30%, transparent 60%);
-    width: 4px;
-    height: 4px;
-    left: 1px;
-    top: 1px;
-    animation: fireflyCore 1.5s ease-in-out infinite alternate;
+/* ================== ASIA ================== */
+.tp-landing .asia { background: linear-gradient(180deg, #fafbff, #eef3ff); position: relative; overflow: hidden; }
+.tp-landing .asia-grid { display: grid; grid-template-columns: 1fr 1.2fr; gap: 56px; align-items: center; }
+@media (max-width: 900px) { .tp-landing .asia-grid { grid-template-columns: 1fr; } }
+.tp-landing .asia-flags { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
+.tp-landing .flag-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px; border-radius: 999px;
+    background: #fff; border: 1px solid var(--line);
+    font-size: 13px; font-weight: 600; color: var(--ink-2);
+    box-shadow: 0 2px 8px -2px rgba(0,0,0,.06);
+    transition: transform .2s, border-color .2s;
 }
+.tp-landing .flag-pill:hover { transform: translateY(-2px); border-color: var(--gold-400); }
+.tp-landing .flag-pill .em { font-size: 18px; }
+.tp-landing .asia-map {
+    position: relative;
+    aspect-ratio: 2/1;
+    background: linear-gradient(180deg, #f0f5ff, #e0ecff);
+    border-radius: 28px;
+    border: 1px solid var(--line);
+    box-shadow: 0 30px 60px -30px rgba(8,30,90,.25);
+    overflow: hidden;
+    display: grid; place-items: center;
+}
+.tp-landing .asia-map svg { width: 100%; height: 100%; display: block; }
+.tp-landing .map-pin {
+    position: absolute;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--blue-500);
+    box-shadow: 0 0 0 4px rgba(31,100,255,.2), 0 0 0 8px rgba(31,100,255,.08);
+    animation: tp-pulse-pin 2.4s infinite;
+}
+.tp-landing .map-pin.gold { background: var(--gold-500); box-shadow: 0 0 0 4px rgba(245,180,35,.25), 0 0 0 8px rgba(245,180,35,.1); }
+@keyframes tp-pulse-pin { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 
-@keyframes fireflyGlow {
-    0% { transform: scale(1); opacity: 0.3; }
-    100% { transform: scale(2.5); opacity: 0.8; }
+/* ================== CTA STRIP ================== */
+.tp-landing .cta-strip {
+    position: relative;
+    background:
+        radial-gradient(700px 400px at 0% 0%, rgba(245,180,35,.25), transparent 60%),
+        radial-gradient(700px 400px at 100% 100%, rgba(110,231,255,.18), transparent 60%),
+        linear-gradient(135deg, #082b7f, #050b1a 70%);
+    color: #fff;
+    border-radius: 36px;
+    padding: 64px clamp(24px, 5vw, 56px);
+    margin: 0 auto;
+    max-width: 1180px;
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 40px;
+    align-items: center;
+    overflow: hidden;
+    box-shadow: 0 40px 80px -30px rgba(8,30,90,.5);
 }
+@media (max-width: 900px) {
+    .tp-landing .cta-strip { grid-template-columns: 1fr; padding: 48px 32px; border-radius: 28px; }
+}
+.tp-landing .cta-strip h2 {
+    font-family: 'Prompt';
+    font-size: clamp(28px, 3.5vw, 44px);
+    font-weight: 800; letter-spacing: -.02em; line-height: 1.1; margin: 0 0 14px;
+}
+.tp-landing .cta-strip h2 .gold {
+    background: linear-gradient(180deg, #fff2c2, #ffcd54 60%, #d99318);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.tp-landing .cta-strip p { color: rgba(255,255,255,.75); font-size: 16px; line-height: 1.6; margin: 0 0 26px; }
+.tp-landing .cta-form {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 20px;
+    padding: 22px;
+    backdrop-filter: blur(12px);
+}
+.tp-landing .cta-form label { font-size: 12px; color: rgba(255,255,255,.6); display: block; margin-bottom: 8px; }
+.tp-landing .cta-form-row { display: flex; gap: 8px; }
+.tp-landing .cta-form input {
+    flex: 1; min-width: 0;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.16);
+    border-radius: 12px;
+    padding: 12px 14px;
+    color: #fff; font-size: 14px;
+    font-family: inherit;
+    outline: none;
+}
+.tp-landing .cta-form input::placeholder { color: rgba(255,255,255,.4); }
+.tp-landing .cta-form input:focus { border-color: var(--gold-400); }
+.tp-landing .cta-form .hint { font-size: 11px; color: rgba(255,255,255,.45); margin-top: 10px; }
 
-@keyframes fireflyCore {
-    0% { opacity: 0.8; }
-    100% { opacity: 1; }
+/* ================== FOOTER ================== */
+.tp-landing .tp-footer { background: #050b1a; color: rgba(255,255,255,.7); padding: 72px 0 32px; }
+.tp-landing .footer-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 40px; margin-bottom: 48px; }
+@media (max-width: 900px) { .tp-landing .footer-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 540px) { .tp-landing .footer-grid { grid-template-columns: 1fr; } }
+.tp-landing .tp-footer h5 { color: #fff; font-family: 'Prompt'; font-size: 15px; font-weight: 700; margin: 0 0 16px; letter-spacing: .02em; }
+.tp-landing .tp-footer ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.tp-landing .tp-footer ul a { font-size: 14px; color: rgba(255,255,255,.6); transition: color .2s; }
+.tp-landing .tp-footer ul a:hover { color: var(--gold-400); }
+.tp-landing .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,.08);
+    padding-top: 24px;
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+    font-size: 13px; color: rgba(255,255,255,.45);
 }
+.tp-landing .footer-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+.tp-landing .footer-brand-mark {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: linear-gradient(135deg, #0b4cdb, #082b7f 70%);
+    display: grid; place-items: center;
+    color: var(--gold-400);
+    font-family: 'Prompt'; font-weight: 900; font-size: 20px;
+    box-shadow: inset 0 0 0 1px rgba(255,205,84,.35), 0 8px 18px -10px rgba(11,76,219,.65);
+}
+.tp-landing .footer-social { display: flex; gap: 10px; }
+.tp-landing .footer-social a {
+    width: 38px; height: 38px; border-radius: 10px;
+    display: grid; place-items: center;
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.7);
+    transition: background .2s, color .2s, transform .2s;
+}
+.tp-landing .footer-social a:hover { background: var(--gold-500); color: #0a1230; transform: translateY(-2px); }
+
+/* ================== TICKER ================== */
+.tp-landing .ticker {
+    background: linear-gradient(90deg, #082b7f, #0a3aac, #082b7f);
+    color: #fff; padding: 14px 0;
+    overflow: hidden;
+    border-top: 1px solid rgba(255,205,84,.25);
+    border-bottom: 1px solid rgba(255,205,84,.25);
+}
+.tp-landing .ticker-track { display: flex; gap: 56px; animation: tp-ticker 35s linear infinite; white-space: nowrap; width: max-content; }
+@keyframes tp-ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.tp-landing .ticker-item { display: inline-flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; letter-spacing: .03em; }
+.tp-landing .ticker-item .em { color: var(--gold-400); }
+.tp-landing .ticker-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--gold-400); }
+
+/* ================== Reveal-on-scroll ================== */
+.tp-landing .reveal { opacity: 0; transform: translateY(20px); transition: opacity .8s, transform .8s; }
+.tp-landing .reveal.in { opacity: 1; transform: none; }
+
+/* ================== Presentation Slides Section (เพิ่มจากของเดิม) ================== */
+.tp-landing .demo-section {
+    background: linear-gradient(180deg, #fafbff 0%, #f0f5ff 100%);
+    position: relative;
+}
+.tp-landing .demo-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+}
+@media (max-width: 980px) { .tp-landing .demo-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) { .tp-landing .demo-grid { grid-template-columns: 1fr; } }
+.tp-landing .demo-card {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    padding: 28px 26px;
+    cursor: pointer;
+    transition: transform .35s, box-shadow .35s, border-color .35s;
+}
+.tp-landing .demo-card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-card);
+    border-color: rgba(245,180,35,.4);
+}
+.tp-landing .demo-card .ic {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: grid; place-items: center;
+    color: #fff;
+    margin-bottom: 18px;
+    font-size: 24px;
+}
+.tp-landing .demo-card h3 { font-family: 'Prompt'; font-size: 18px; font-weight: 700; margin: 0 0 8px; color: var(--ink); }
+.tp-landing .demo-card p { font-size: 14px; color: var(--ink-3); line-height: 1.6; margin: 0 0 14px; }
+.tp-landing .demo-card .arrow {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; font-weight: 600; color: var(--blue-600);
+    transition: gap .25s;
+}
+.tp-landing .demo-card:hover .arrow { gap: 10px; }
 </style>
 @endpush
 
+@section('content')
+
+<div class="tp-landing">
+
+    {{-- ================================================================
+        SLIDE 1 — Full-bleed hero image (no text, fades into Hero)
+    ================================================================ --}}
+    <section class="imgslide fullscreen">
+        <div class="imgslide-bg"
+             style="background-image: url('{{ asset('images/landing/slide-top.png') }}'); background-position: center 35%;"></div>
+    </section>
+
+    {{-- ================================================================
+        HERO — Headline + value props + CTAs + floating cards + stats strip
+    ================================================================ --}}
+    <section class="tp-hero">
+        <div class="tp-container hero-inner">
+            {{-- Left content --}}
+            <div>
+                <div class="hero-eyebrow">
+                    <span class="dot"></span>
+                    <span>แพลตฟอร์มคนไทย • เพื่อคนไทย • เพื่อเอเชีย</span>
+                </div>
+
+                <h1 class="hero-h1">
+                    <span class="gold">ไทยพร๊อมท์</span> แพลตฟอร์ม<br>
+                    <span class="blue">เพื่อชีวิตที่ดีกว่า</span>
+                </h1>
+
+                <p class="hero-sub">
+                    รวมทุกโซลูชันในที่เดียว — Rider &amp; E-commerce, ตลาดสด, AI Management,
+                    กระเป๋าเงินดิจิทัล และระบบปันผลที่โปร่งใสด้วย Blockchain ของเราเอง
+                </p>
+
+                <div class="hero-pillars">
+                    <span class="pillar-chip">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2z"/></svg>
+                        โปร่งใส
+                    </span>
+                    <span class="pillar-chip">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2z"/></svg>
+                        ยุติธรรม
+                    </span>
+                    <span class="pillar-chip">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2z"/></svg>
+                        เติบโตไปด้วยกัน
+                    </span>
+                    <span class="pillar-chip">
+                        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l1.6 5.4L19 9l-5.4 1.6L12 16l-1.6-5.4L5 9l5.4-1.6L12 2z"/></svg>
+                        ยั่งยืน
+                    </span>
+                </div>
+
+                <div class="hero-cta">
+                    <a href="{{ route('register') }}" class="tp-btn tp-btn-gold">
+                        เริ่มต้นใช้งานฟรี
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                    <a href="#how" class="tp-btn tp-btn-outline-white">ดูวิธีการทำงาน</a>
+                </div>
+
+                <div class="hero-meta">
+                    <div><strong>10+</strong> ประเทศในเอเชีย</div>
+                    <div><strong>{{ number_format($stats['users']) }}+</strong> ผู้ใช้งาน</div>
+                    <div><strong>24/7</strong> ตลอดเวลา</div>
+                </div>
+            </div>
+
+            {{-- Right visual: card + floating product cards --}}
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="hero-card-bg"></div>
+                    <div class="hero-badge-tl">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.4.6-5.6 4.9 1.7 7.3L12 17.8 5.6 21.7l1.7-7.3L1.7 9.5l7.4-.6L12 2z"/></svg>
+                        แพลตฟอร์มคนไทย เพื่อคนไทย
+                    </div>
+                    <div class="hero-badge-br">โปร่งใส · ตรวจสอบได้ด้วย Blockchain</div>
+                </div>
+
+                <div class="hero-floats">
+                    {{-- Float 1: ออเดอร์วันนี้ --}}
+                    <div class="float-card float-1">
+                        <div class="ic" style="background: linear-gradient(135deg, #ff7a2d, #d04b00);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="M6 17h12M9 8h4l4 9M9 8l-2 5M13 8l1-3h2"/></svg>
+                        </div>
+                        <div>
+                            <div class="lbl">ออเดอร์วันนี้</div>
+                            <div class="val">+2,481 <span style="color:#22c55e;font-size:12px">↑12%</span></div>
+                        </div>
+                    </div>
+
+                    {{-- Float 2: ปันผลรายสัปดาห์ --}}
+                    <div class="float-card float-2">
+                        <div class="ic" style="background: linear-gradient(135deg, #f5b423, #a86c0d);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v2H6a3 3 0 0 0 0 6h14v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><circle cx="16" cy="12" r="1.5"/></svg>
+                        </div>
+                        <div>
+                            <div class="lbl">ปันผลรายสัปดาห์</div>
+                            <div class="val">฿ 84,250</div>
+                        </div>
+                    </div>
+
+                    {{-- Float 3: ธุรกรรมบนเชน --}}
+                    <div class="float-card float-3">
+                        <div class="ic" style="background: linear-gradient(135deg, #38d3ee, #0b4cdb);">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L10.5 5.8"/><path d="M15 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7L13.5 18.2"/></svg>
+                        </div>
+                        <div>
+                            <div class="lbl">ธุรกรรมบนเชน</div>
+                            <div class="val">{{ number_format($stats['transactions']) }}+ TX</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Hero stats strip — overlaps hero (-56px) with REAL DB data --}}
+        <div class="tp-container">
+            <div class="hero-stats">
+                <div>
+                    <div class="ic-wrap">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 19a6 6 0 0 1 12 0M14 19a5 5 0 0 1 7 0"/></svg>
+                    </div>
+                    <div>
+                        <div class="num">{{ number_format($stats['users']) }}+</div>
+                        <div class="lbl">ผู้ใช้งานทั่วเอเชีย</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="ic-wrap">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11.4a2 2 0 0 0 2 1.6h7.6a2 2 0 0 0 2-1.5L21 8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/></svg>
+                    </div>
+                    <div>
+                        <div class="num">{{ number_format($stats['affiliates']) }}+</div>
+                        <div class="lbl">พันธมิตร Affiliate</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="ic-wrap">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L10.5 5.8"/><path d="M15 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7L13.5 18.2"/></svg>
+                    </div>
+                    <div>
+                        <div class="num">99.9%</div>
+                        <div class="lbl">ความเสถียรของเครือข่าย</div>
+                    </div>
+                </div>
+                <div>
+                    <div class="ic-wrap">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                    </div>
+                    <div>
+                        <div class="num">{{ $stats['systems'] }}+</div>
+                        <div class="lbl">ระบบรองรับ All-in-One</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        TICKER — Animated marquee of blockchain status pills
+    ================================================================ --}}
+    <div class="ticker">
+        <div class="ticker-track">
+            @php
+                // รายการสำหรับ ticker (ทำซ้ำเพื่อ seamless loop)
+                $tickerItems = [
+                    ['em' => '⚡', 't' => 'Block #2,481,902 confirmed'],
+                    ['em' => '✦', 't' => '+12,408 transactions today'],
+                    ['em' => '◈', 't' => 'Avg fee 0.0008 TPX'],
+                    ['em' => '◆', 't' => 'Network uptime 99.98%'],
+                    ['em' => '✸', 't' => 'Active validators 142'],
+                    ['em' => '⬢', 't' => 'Cross-Asia payments enabled'],
+                ];
+            @endphp
+            @foreach(array_merge($tickerItems, $tickerItems) as $item)
+                <span class="ticker-item">
+                    <span class="em">{{ $item['em'] }}</span> {{ $item['t'] }}
+                    <span class="ticker-dot" style="margin-left: 24px"></span>
+                </span>
+            @endforeach
+        </div>
+    </div>
+
+    {{-- ================================================================
+        SERVICES — 6 service pillars
+    ================================================================ --}}
+    <section id="services" class="tp-section services fade-top-light fade-bottom-light">
+        <div class="tp-container">
+            <div class="sec-head">
+                <div class="tp-eyebrow">หกเสาหลักของเรา</div>
+                <h2>แพลตฟอร์มเดียว <span class="grad">รวมทุกโซลูชัน</span></h2>
+                <p>เชื่อมร้านค้า ผู้บริโภค ไรเดอร์ และเครือข่ายปันผล เข้าด้วยกันบนระบบเดียว ที่โปร่งใส ยุติธรรม และเติบโตไปด้วยกัน</p>
+            </div>
+
+            <div class="services-grid">
+                {{-- 1. Rider & Delivery --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#ff7a2d,#d04b00); --accent-shadow: rgba(255,122,45,.45);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="2.5"/><circle cx="18" cy="17" r="2.5"/><path d="M6 17h12M9 8h4l4 9M9 8l-2 5M13 8l1-3h2"/></svg>
+                    </div>
+                    <span class="tag">Rider &amp; Delivery</span>
+                    <h3>ไรเดอร์ &amp; อีคอมเมิร์ซ</h3>
+                    <p>ส่งไว ปลอดภัย ครอบคลุมทั่วไทยและเอเชีย ด้วยระบบจัดเส้นทางอัจฉริยะ</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ติดตามแบบ real-time</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ค่าส่งโปร่งใส</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> รองรับร้านค้านับพัน</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+
+                {{-- 2. Fresh Market --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#22c55e,#0e7e3a); --accent-shadow: rgba(34,197,94,.45);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l1.5-4h15L21 9M3 9v10h18V9M3 9h18M8 13v3M16 13v3M12 13v6"/></svg>
+                    </div>
+                    <span class="tag">Fresh Market</span>
+                    <h3>ตลาดสดออนไลน์</h3>
+                    <p>ของสดคุณภาพดี ราคายุติธรรม จากเกษตรกรและพ่อค้าแม่ค้าตัวจริง</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ของสดวันต่อวัน</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ราคาจากต้นทาง</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ส่งถึงบ้าน</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+
+                {{-- 3. AI Management --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#3d82ff,#0a3aac); --accent-shadow: rgba(11,76,219,.5);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 9v6M15 9v6M9 12h6M3 9h3M3 15h3M18 9h3M18 15h3M9 3v3M15 3v3M9 18v3M15 18v3"/></svg>
+                    </div>
+                    <span class="tag">AI Management</span>
+                    <h3>จัดการด้วย AI</h3>
+                    <p>AI ช่วยวิเคราะห์ยอดขาย วางแผนสต็อก แม่นยำ เพิ่มประสิทธิภาพร้านค้าของคุณ</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> Forecast ยอดขาย</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> จัดการสต็อกอัตโนมัติ</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> แชทบอทตอบลูกค้า</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+
+                {{-- 4. Digital Wallet --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#f5b423,#a86c0d); --accent-shadow: rgba(245,180,35,.45);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v2H6a3 3 0 0 0 0 6h14v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><circle cx="16" cy="12" r="1.5"/></svg>
+                    </div>
+                    <span class="tag">Digital Wallet</span>
+                    <h3>กระเป๋าเงินดิจิทัล</h3>
+                    <p>จ่าย รับ โอน ค่าธรรมเนียมต่ำ ปลอดภัยด้วย encryption ระดับธนาคาร</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> โอนทันที 24/7</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ค่าธรรมเนียมต่ำ</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> รองรับหลายสกุลเงิน</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+
+                {{-- 5. Dividend System --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#a855f7,#5b21b6); --accent-shadow: rgba(168,85,247,.45);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 16l8-8M9 9h.01M15 15h.01"/></svg>
+                    </div>
+                    <span class="tag">Dividend System</span>
+                    <h3>ระบบปันผลโปร่งใส</h3>
+                    <p>แบ่งผลประโยชน์อย่างเป็นธรรม ตรวจสอบได้ทุกธุรกรรม บนเชนของเราเอง</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> Smart contract ปันผลอัตโนมัติ</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ตรวจสอบบนเชนได้</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> ทุกบาทมีที่มาที่ไป</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+
+                {{-- 6. ThaiPrompt Chain --}}
+                <article class="service-card" style="--accent: linear-gradient(135deg,#06b6d4,#0a3aac); --accent-shadow: rgba(6,182,212,.45);">
+                    <div class="ic">
+                        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7L10.5 5.8"/><path d="M15 11a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7L13.5 18.2"/></svg>
+                    </div>
+                    <span class="tag">ThaiPrompt Chain</span>
+                    <h3>Blockchain ของเราเอง</h3>
+                    <p>เครือข่ายของคนไทย เพื่อคนไทย รองรับ smart contract และ payment ขนาดใหญ่</p>
+                    <ul class="feats">
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> Public chain ของไทย</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> Throughput สูง ค่า gas ต่ำ</li>
+                        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12l4 4 10-10"/></svg> นักพัฒนาเข้าถึงง่าย</li>
+                    </ul>
+                    <div class="arrow">เรียนรู้เพิ่มเติม
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        SLIDE 2 — Temple image (animated, fades into Wallet)
+    ================================================================ --}}
+    <section class="imgslide animate">
+        <div class="imgslide-bg"
+             style="background-image: url('{{ asset('images/landing/slide-temple.png') }}'); background-position: center 40%;"></div>
+        <div class="imgslide-decor"><span></span><span></span><span></span><span></span><span></span></div>
+    </section>
+
+    {{-- ================================================================
+        WALLET — Phone mockup + feature grid
+    ================================================================ --}}
+    <section id="wallet" class="tp-section wallet-section fade-bottom-dark">
+        <div class="tp-container wallet-grid">
+            <div>
+                <div class="tp-eyebrow" style="color:#ffe28a">ThaiPrompt Wallet</div>
+                <h2 class="wallet-h2">กระเป๋าเงินดิจิทัล <span class="gold">ปลอดภัย โปร่งใส</span></h2>
+                <p class="wallet-text-p">
+                    จัดการเงิน ปันผล และเหรียญ TPX ได้จากแอปเดียว
+                    ทุกธุรกรรมบันทึกบน Blockchain ของเรา ตรวจสอบได้ทุกขั้นตอน
+                    ค่าธรรมเนียมต่ำ ใช้ได้ทั่วเอเชีย
+                </p>
+
+                <div class="wallet-feat-grid">
+                    <div class="wallet-feat">
+                        <div class="ic">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+                        </div>
+                        <h4>เข้ารหัสระดับธนาคาร</h4>
+                        <p>ระบบ multi-signature และ cold storage ปกป้องสินทรัพย์ของคุณ</p>
+                    </div>
+                    <div class="wallet-feat">
+                        <div class="ic">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3L4 14h7l-1 7 9-11h-7l1-7z"/></svg>
+                        </div>
+                        <h4>โอนทันที 24/7</h4>
+                        <p>ยืนยันธุรกรรมในไม่กี่วินาที รองรับการใช้งานข้ามประเทศ</p>
+                    </div>
+                    <div class="wallet-feat">
+                        <div class="ic">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 16l8-8M9 9h.01M15 15h.01"/></svg>
+                        </div>
+                        <h4>รับปันผลอัตโนมัติ</h4>
+                        <p>Smart contract กระจายผลประโยชน์ทุกสัปดาห์ ไร้คนกลาง</p>
+                    </div>
+                    <div class="wallet-feat">
+                        <div class="ic">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                        </div>
+                        <h4>ใช้ได้ทั่วเอเชีย</h4>
+                        <p>รองรับหลายสกุลเงิน เชื่อมต่อร้านค้าและบริการในเครือข่าย</p>
+                    </div>
+                </div>
+
+                <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                    <a href="{{ route('register') }}" class="tp-btn tp-btn-gold">
+                        เปิดกระเป๋า TPX
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                    <a href="#" class="tp-btn tp-btn-outline-white">ดู Whitepaper</a>
+                </div>
+            </div>
+
+            {{-- Phone mockup --}}
+            <div class="phone-mock">
+                <div class="phone-orbit"></div>
+                <div class="coin c1">฿</div>
+                <div class="coin c2">TP</div>
+                <div class="coin c3">$</div>
+
+                <div class="phone">
+                    <div class="phone-notch"></div>
+                    <div class="phone-screen">
+                        <div class="phone-head">
+                            <div class="h1">สวัสดี, คุณสมชาย</div>
+                            <div class="h2">Live</div>
+                        </div>
+
+                        <div class="balance-card">
+                            <div class="lbl">ยอดคงเหลือทั้งหมด</div>
+                            <div class="val">฿ 128,540<small>.25</small></div>
+                            <div class="pct">↑ +5.2% สัปดาห์นี้</div>
+                        </div>
+
+                        <div class="phone-actions">
+                            <button>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                                ส่ง
+                            </button>
+                            <button>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                                รับ
+                            </button>
+                            <button>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h12l-3-3M17 17H5l3 3"/></svg>
+                                สลับ
+                            </button>
+                            <button>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3M20 14v7M14 20h7"/></svg>
+                                สแกน
+                            </button>
+                        </div>
+
+                        <div class="phone-tx">
+                            <div class="phone-tx-item">
+                                <div class="ic">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M8 16l8-8"/></svg>
+                                </div>
+                                <div class="meta"><b>ปันผลรายสัปดาห์</b><span>วันนี้ 09:00</span></div>
+                                <div class="amt up">+฿ 1,840</div>
+                            </div>
+                            <div class="phone-tx-item">
+                                <div class="ic">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 4h2l2.4 11.4a2 2 0 0 0 2 1.6h7.6"/><circle cx="9" cy="20" r="1.5"/></svg>
+                                </div>
+                                <div class="meta"><b>ตลาดสด รังสิต</b><span>เมื่อวาน 16:24</span></div>
+                                <div class="amt dn">-฿ 285</div>
+                            </div>
+                            <div class="phone-tx-item">
+                                <div class="ic">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 13a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7"/></svg>
+                                </div>
+                                <div class="meta"><b>Stake TPX</b><span>27 เม.ย. 2569</span></div>
+                                <div class="amt up">+12.4 TPX</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        HOW IT WORKS — 4-step onboarding
+    ================================================================ --}}
+    <section id="how" class="tp-section how fade-top-light fade-bottom-light">
+        <div class="tp-container">
+            <div class="sec-head">
+                <div class="tp-eyebrow">วิธีใช้งาน</div>
+                <h2>เริ่มต้น <span class="grad">ใน 4 ขั้นตอน</span></h2>
+                <p>ออกแบบให้ทุกคนใช้งานได้ ไม่ว่าจะเป็นพ่อค้าแม่ค้า ไรเดอร์ ผู้บริโภค หรือนักพัฒนา</p>
+            </div>
+
+            <div class="how-track">
+                <div class="how-step">
+                    <div class="num">1</div>
+                    <h4>สมัครสมาชิก</h4>
+                    <p>สร้างบัญชีฟรีในไม่กี่นาที ยืนยันตัวตนตามมาตรฐาน KYC</p>
+                </div>
+                <div class="how-step">
+                    <div class="num">2</div>
+                    <h4>เชื่อมต่อบริการ</h4>
+                    <p>เลือกใช้ Rider, ตลาดสด, Wallet หรือเป็นพาร์ทเนอร์ร้านค้า</p>
+                </div>
+                <div class="how-step">
+                    <div class="num">3</div>
+                    <h4>เริ่มใช้งานทันที</h4>
+                    <p>ซื้อ ขาย โอน ส่งของ จัดการร้าน ผ่านแพลตฟอร์มเดียว</p>
+                </div>
+                <div class="how-step">
+                    <div class="num">4</div>
+                    <h4>รับปันผล &amp; เติบโต</h4>
+                    <p>ส่วนแบ่งจากเครือข่าย กระจายอัตโนมัติบนเชน ทุกสัปดาห์</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        ⭐ PRESENTATION SLIDES SECTION (สื่อการเรียนรู้ระบบ)
+        ส่วนที่ธีมไม่มี — เพิ่มเข้ามาตามคำขอของผู้ใช้
+        แสดงการ์ด 9 ใบเปิด modal สไลด์นำเสนอ
+    ================================================================ --}}
+    <section id="demo" class="tp-section demo-section fade-top-light fade-bottom-light">
+        <div class="tp-container">
+            <div class="sec-head">
+                <div class="tp-eyebrow">สื่อการเรียนรู้ระบบ</div>
+                <h2>เรียนรู้ <span class="grad">{{ $appName }}</span></h2>
+                <p>สไลด์นำเสนอระบบแบบครบถ้วน สวยงาม มืออาชีพ พร้อมใช้งานทันที — เหมาะสำหรับนักลงทุน ผู้อยากร่วม และผู้สนใจทุกท่าน</p>
+            </div>
+
+            <div class="demo-grid">
+                {{-- การ์ด 1: ภาพรวมระบบ --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('system-overview')">
+                    <div class="ic" style="background: linear-gradient(135deg, #3d82ff, #0a3aac);">
+                        <i class="fas fa-desktop"></i>
+                    </div>
+                    <h3>ภาพรวมระบบ</h3>
+                    <p>เรียนรู้ระบบทั้งหมดใน {{ $appName }} รวมถึง Affiliate, MLM, E-Commerce และระบบอื่นๆ</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 2: แผน MLM --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('mlm-plans')">
+                    <div class="ic" style="background: linear-gradient(135deg, #a855f7, #5b21b6);">
+                        <i class="fas fa-sitemap"></i>
+                    </div>
+                    <h3>แผนการตลาด MLM</h3>
+                    <p>เรียนรู้แผน Unilevel, Binary และระบบคอมมิชชั่นหลายชั้นที่ยืดหยุ่น</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 3: TPIX Token --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('tpix-token')">
+                    <div class="ic" style="background: linear-gradient(135deg, #f5b423, #a86c0d); overflow:hidden; padding:6px;">
+                        <img src="{{ asset('images/tpix-logo.svg') }}" alt="TPIX" style="width:100%; height:100%; object-fit:contain; filter:brightness(0) invert(1);">
+                    </div>
+                    <h3>TPIX Token</h3>
+                    <p>เรียนรู้ TPIX Token ที่มี Blockchain ของตัวเอง Staking, DEX และ Tokenomics</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 4: AI & Automation --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ai-automation')">
+                    <div class="ic" style="background: linear-gradient(135deg, #22c55e, #0e7e3a);">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <h3>AI &amp; Automation</h3>
+                    <p>เรียนรู้ระบบ AI Chatbot, LINE Bot และระบบอัตโนมัติที่ช่วยประหยัดเวลา</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 5: Academy & ปลดแอกธุรกิจ --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('academy-freedom')">
+                    <div class="ic" style="background: linear-gradient(135deg, #f43f5e, #d04b00);">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3>Academy &amp; ปลดแอกธุรกิจ</h3>
+                    <p>เรียนรู้ระบบ Academy ออนไลน์และอิสรภาพจากแพลตฟอร์มต่างชาติ</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 6: Ecosystem & Vision --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecosystem-vision')">
+                    <div class="ic" style="background: linear-gradient(135deg, #6366f1, #5b21b6);">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <h3>Ecosystem &amp; Vision</h3>
+                    <p>ระบบนิเวศครบวงจรและ Roadmap การพัฒนา 2025-2027</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 7: พลิกเกมส์ธุรกิจ --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('game-changer')">
+                    <div class="ic" style="background: linear-gradient(135deg, #f5b423, #d97706);">
+                        <i class="fas fa-chess-king"></i>
+                    </div>
+                    <h3>พลิกเกมส์ธุรกิจ</h3>
+                    <p>โอกาสการลงทุนที่แตกต่าง หลากหลายช่องทางรายได้</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 8: E-Commerce Empire --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('ecommerce-empire')">
+                    <div class="ic" style="background: linear-gradient(135deg, #06b6d4, #0a3aac);">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <h3>E-Commerce Empire</h3>
+                    <p>ระบบ E-Commerce ครบวงจร จาก Marketplace ถึง Food Passport</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+
+                {{-- การ์ด 9: Community & Partnership --}}
+                <div class="demo-card" onclick="if(typeof openPresentationWithTopic === 'function') openPresentationWithTopic('community')">
+                    <div class="ic" style="background: linear-gradient(135deg, #ec4899, #be123c);">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3>Community &amp; Partnership</h3>
+                    <p>ชุมชนผู้ใช้ พันธมิตรธุรกิจ และบริการสนับสนุน</p>
+                    <span class="arrow">ดูสไลด์ <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+                </div>
+            </div>
+
+            {{-- ปุ่มเปิดสไลด์เต็มจอ --}}
+            <div style="text-align:center; margin-top: 48px;">
+                <button onclick="if(typeof openPresentationFullscreen === 'function') openPresentationFullscreen()"
+                        class="tp-btn tp-btn-gold" style="font-size:16px; padding: 16px 32px;">
+                    <i class="fas fa-play-circle" style="font-size:18px;"></i>
+                    เปิดสไลด์นำเสนอเต็มจอ
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    {{-- รวม modal และ scripts สำหรับสไลด์นำเสนอ --}}
+    @include('components.presentation-slides-modal')
+
+    {{-- ================================================================
+        SLIDE 3 — Flow image (animated, fades into Asia)
+    ================================================================ --}}
+    <section class="imgslide animate fade-light">
+        <div class="imgslide-bg"
+             style="background-image: url('{{ asset('images/landing/slide-flow.png') }}'); background-position: center 35%;"></div>
+        <div class="imgslide-decor"><span></span><span></span><span></span><span></span><span></span></div>
+    </section>
+
+    {{-- ================================================================
+        ASIA — Network map + flag pills
+    ================================================================ --}}
+    <section id="asia" class="tp-section asia fade-top-light fade-bottom-light">
+        <div class="tp-container asia-grid">
+            <div>
+                <div class="tp-eyebrow">เครือข่ายเอเชีย</div>
+                <h2 style="font-family:Prompt; font-size:clamp(28px,3.5vw,42px); font-weight:800; letter-spacing:-.02em; line-height:1.1; margin:12px 0 16px; color:var(--ink);">
+                    เพื่อคนไทย <span class="grad">เพื่อเอเชีย</span><br>เพื่ออนาคตที่ดีกว่า
+                </h2>
+                <p style="color:var(--ink-3); font-size:17px; line-height:1.7; margin:0;">
+                    เริ่มจากประเทศไทย ขยายต่อเนื่องไปยัง 10+ ประเทศในเอเชีย
+                    สร้างเศรษฐกิจดิจิทัลร่วมกัน ที่ทุกคนได้ประโยชน์อย่างเป็นธรรม
+                </p>
+
+                <div class="asia-flags">
+                    <span class="flag-pill"><span class="em">🇹🇭</span> ไทย</span>
+                    <span class="flag-pill"><span class="em">🇻🇳</span> เวียดนาม</span>
+                    <span class="flag-pill"><span class="em">🇮🇩</span> อินโดนีเซีย</span>
+                    <span class="flag-pill"><span class="em">🇵🇭</span> ฟิลิปปินส์</span>
+                    <span class="flag-pill"><span class="em">🇲🇾</span> มาเลเซีย</span>
+                    <span class="flag-pill"><span class="em">🇸🇬</span> สิงคโปร์</span>
+                    <span class="flag-pill"><span class="em">🇱🇦</span> ลาว</span>
+                    <span class="flag-pill"><span class="em">🇲🇲</span> เมียนมา</span>
+                    <span class="flag-pill"><span class="em">🇰🇭</span> กัมพูชา</span>
+                    <span class="flag-pill"><span class="em">🇨🇳</span> จีน</span>
+                    <span class="flag-pill"><span class="em">🇰🇷</span> เกาหลี</span>
+                    <span class="flag-pill"><span class="em">🇯🇵</span> ญี่ปุ่น</span>
+                </div>
+
+                <div style="display:flex; gap:12px;">
+                    <a href="{{ route('contact') }}" class="tp-btn tp-btn-primary">
+                        เป็นพาร์ทเนอร์กับเรา
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="asia-map">
+                {{-- WorldMap SVG (จากธีม) --}}
+                <svg viewBox="0 0 1000 500" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">
+                    <defs>
+                        <linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0" stop-color="#f0f5ff"/>
+                            <stop offset="1" stop-color="#dbe7ff"/>
+                        </linearGradient>
+                        <linearGradient id="continent" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#cfe0ff"/>
+                            <stop offset="1" stop-color="#9dc0ff"/>
+                        </linearGradient>
+                        <linearGradient id="asiaG" x1="0" y1="0" x2="1" y2="1">
+                            <stop offset="0" stop-color="#1f64ff"/>
+                            <stop offset="0.6" stop-color="#0b4cdb"/>
+                            <stop offset="1" stop-color="#082b7f"/>
+                        </linearGradient>
+                        <radialGradient id="asiaGlow" cx="0.5" cy="0.5" r="0.6">
+                            <stop offset="0" stop-color="#f5b423" stop-opacity="0.35"/>
+                            <stop offset="1" stop-color="#f5b423" stop-opacity="0"/>
+                        </radialGradient>
+                    </defs>
+                    <rect width="1000" height="500" fill="url(#seaG)"/>
+                    <ellipse cx="720" cy="220" rx="240" ry="180" fill="url(#asiaGlow)"/>
+
+                    {{-- ทวีปอื่น --}}
+                    <path d="M50 110 Q 90 70 160 65 Q 220 60 260 90 Q 280 120 270 160 Q 250 210 220 240 Q 180 270 150 260 Q 100 250 70 220 Q 40 180 50 110 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M150 70 L 180 50 L 220 55 L 230 75 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M310 70 Q 350 60 360 90 Q 350 130 320 130 Q 290 110 310 70 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M210 280 Q 250 270 270 310 Q 280 360 270 410 Q 250 450 220 460 Q 195 440 195 400 Q 200 340 210 280 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M460 110 Q 500 90 540 100 Q 580 110 590 140 Q 580 175 540 180 Q 500 175 470 160 Q 450 140 460 110 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M455 95 L 480 85 L 500 92 L 490 105 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M460 200 Q 510 190 540 220 Q 560 270 555 320 Q 540 380 510 400 Q 480 410 460 380 Q 440 330 445 270 Q 450 230 460 200 Z" fill="url(#continent)" opacity="0.85"/>
+                    <path d="M820 380 Q 870 370 900 390 Q 920 410 905 430 Q 870 445 830 440 Q 800 430 805 405 Q 810 388 820 380 Z" fill="url(#continent)" opacity="0.85"/>
+
+                    {{-- เอเชีย — เน้นสี gold/blue --}}
+                    <path d="M580 90 Q 650 70 760 75 Q 850 80 920 100 Q 950 120 940 150 Q 900 175 820 175 Q 720 170 640 165 Q 590 155 580 130 Z" fill="url(#asiaG)"/>
+                    <path d="M640 165 Q 720 160 800 170 Q 850 185 845 220 Q 820 255 770 260 Q 700 260 660 245 Q 625 220 640 165 Z" fill="url(#asiaG)"/>
+                    <path d="M620 240 Q 660 235 680 260 Q 690 295 670 320 Q 650 335 635 320 Q 615 290 615 260 Z" fill="url(#asiaG)"/>
+                    <path d="M540 200 Q 580 195 615 210 Q 625 240 605 260 Q 580 270 555 260 Q 530 240 540 200 Z" fill="url(#asiaG)"/>
+                    <path d="M730 270 Q 760 270 770 295 Q 770 325 750 340 Q 730 340 720 320 Q 715 290 730 270 Z" fill="url(#asiaG)"/>
+                    <path d="M880 195 Q 895 200 895 220 Q 890 245 875 245 Q 870 225 875 205 Z" fill="url(#asiaG)"/>
+                    <path d="M870 250 Q 880 255 880 270 Q 870 280 862 275 Z" fill="url(#asiaG)"/>
+                    <path d="M845 200 Q 855 205 854 225 Q 845 240 838 230 Q 838 210 845 200 Z" fill="url(#asiaG)"/>
+                    <ellipse cx="800" cy="335" rx="22" ry="8" fill="url(#asiaG)"/>
+                    <ellipse cx="830" cy="345" rx="18" ry="7" fill="url(#asiaG)"/>
+                    <ellipse cx="775" cy="345" rx="14" ry="6" fill="url(#asiaG)"/>
+                    <ellipse cx="820" cy="320" rx="10" ry="14" fill="url(#asiaG)"/>
+
+                    {{-- เส้นเชื่อมจากไทย --}}
+                    <g stroke="#f5b423" stroke-width="1.5" fill="none" stroke-dasharray="3 4" opacity="0.7">
+                        <path d="M725 295 Q 780 230 875 215"/>
+                        <path d="M725 295 Q 760 245 845 215"/>
+                        <path d="M725 295 Q 750 250 770 200"/>
+                        <path d="M725 295 Q 700 320 800 335"/>
+                        <path d="M725 295 Q 760 320 820 320"/>
+                        <path d="M725 295 Q 690 280 660 270"/>
+                    </g>
+                </svg>
+
+                {{-- หมุดประเทศ (ไทย=ทอง, อื่น=น้ำเงิน) --}}
+                <div class="map-pin gold" style="top:59%; left:72.5%; animation-delay:0s"></div>
+                <div class="map-pin" style="top:56%; left:77%; animation-delay:0.18s"></div>
+                <div class="map-pin" style="top:68%; left:80%; animation-delay:0.36s"></div>
+                <div class="map-pin" style="top:62%; left:82%; animation-delay:0.54s"></div>
+                <div class="map-pin" style="top:66%; left:77.5%; animation-delay:0.72s"></div>
+                <div class="map-pin" style="top:66%; left:78%; animation-delay:0.9s"></div>
+                <div class="map-pin" style="top:56%; left:74%; animation-delay:1.08s"></div>
+                <div class="map-pin" style="top:58%; left:70%; animation-delay:1.26s"></div>
+                <div class="map-pin" style="top:60%; left:74.5%; animation-delay:1.44s"></div>
+                <div class="map-pin" style="top:42%; left:77%; animation-delay:1.62s"></div>
+                <div class="map-pin" style="top:42%; left:84.5%; animation-delay:1.8s"></div>
+                <div class="map-pin" style="top:42%; left:88%; animation-delay:1.98s"></div>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        ⭐ DYNAMIC SECTIONS — From Homepage Manager
+        ส่วนที่ธีมไม่มี — แสดง sections ที่แอดมินตั้งค่าผ่าน /admin/homepage-manager
+    ================================================================ --}}
+    @if(isset($sections) && $sections->count() > 0)
+        @include('frontend.partials.homepage-sections', ['sections' => $sections])
+    @endif
+
+    {{-- ================================================================
+        CTA — Final call to action with newsletter form
+    ================================================================ --}}
+    <section id="contact" style="padding: 48px 0 96px; background: #fafbff;">
+        <div class="tp-container">
+            <div class="cta-strip">
+                <div>
+                    <div class="tp-eyebrow" style="color:#ffe28a">โหลดเลย — ฟรี</div>
+                    <h2 style="margin-top:12px; color:#fff;">เริ่มต้น <span class="gold">อนาคตที่ดีกว่า</span><br>กับ {{ $appName }} วันนี้</h2>
+                    <p>โปร่งใส · ยุติธรรม · เติบโตไปด้วยกัน — แพลตฟอร์มเดียวที่รวมทุกบริการ พร้อมระบบปันผลที่ตรวจสอบได้บน Blockchain ของเราเอง</p>
+                    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+                        <a href="{{ route('register') }}" class="tp-btn tp-btn-gold">
+                            ดาวน์โหลดแอป
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+                        </a>
+                        <a href="{{ route('contact') }}" class="tp-btn tp-btn-outline-white">เป็นร้านค้าพาร์ทเนอร์</a>
+                    </div>
+                </div>
+
+                {{-- ฟอร์ม subscribe (ใช้ Alpine จัดการ state) --}}
+                <form class="cta-form" x-data="{ email: '', sent: false }" @submit.prevent="sent = true">
+                    <label>รับข่าวสารและสิทธิพิเศษก่อนใคร</label>
+                    <div class="cta-form-row">
+                        <input type="email" placeholder="กรอกอีเมลของคุณ" x-model="email" required>
+                        <button class="tp-btn tp-btn-gold" type="submit" x-text="sent ? 'รับแล้ว ✓' : 'สมัครรับข่าว'"></button>
+                    </div>
+                    <div class="hint">เราเคารพความเป็นส่วนตัว ยกเลิกได้ทุกเมื่อ</div>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    {{-- ================================================================
+        FOOTER — Theme footer (4 columns + social + bottom bar)
+    ================================================================ --}}
+    <footer class="tp-footer">
+        <div class="tp-container">
+            <div class="footer-grid">
+                {{-- คอลัมน์ 1: Brand --}}
+                <div>
+                    <div class="footer-brand">
+                        <div class="footer-brand-mark">TP</div>
+                        <div style="display:flex; flex-direction:column; line-height:1;">
+                            <strong style="color:#fff; font-family:Prompt; font-weight:800; font-size:17px;">
+                                ThaiPrompt <span style="color:var(--gold-400)">ไทยพร๊อมท์</span>
+                            </strong>
+                            <span style="color:rgba(255,255,255,.5); font-size:11px; margin-top:3px;">POS · Blockchain · AI Management</span>
+                        </div>
+                    </div>
+                    <p style="font-size:14px; color:rgba(255,255,255,.55); line-height:1.7; margin:0; max-width:360px;">
+                        แพลตฟอร์มคนไทย เพื่อคนไทยและเอเชีย โปร่งใส ยุติธรรม เติบโตไปด้วยกัน อย่างยั่งยืน
+                    </p>
+                    <div class="footer-social" style="margin-top:20px;">
+                        <a href="#" aria-label="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 8h-3v4h3v12h5V12h3.6l.4-4H14V6.3c0-1 .2-1.3 1.2-1.3H18V0h-3.8C10.6 0 9 1.6 9 4.6V8z"/></svg></a>
+                        <a href="#" aria-label="LINE"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.4 10.5c0-3.4-3.4-6.1-7.5-6.1S4.4 7.1 4.4 10.5c0 3 2.7 5.6 6.4 6 .3 0 .6.2.7.5.1.2 0 .6 0 .8 0 0-.1.7-.1.8-.1.2-.2 1 .9.6 1-.4 5.6-3.3 7.7-5.7 1.4-1.6 2-3.3 2-5z"/></svg></a>
+                        <a href="#" aria-label="X"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.5 8.6L23.3 22h-7l-5.5-7.2L4.5 22H1.4l8-9.2L1 2h7.2l5 6.6L18.9 2zm-1.2 18h1.9L7.4 4H5.4l12.3 16z"/></svg></a>
+                        <a href="#" aria-label="YouTube"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M23 7.5a3 3 0 0 0-2-2C19 5 12 5 12 5s-7 0-9 .5a3 3 0 0 0-2 2C.5 9.5.5 12 .5 12s0 2.5.5 4.5a3 3 0 0 0 2 2c2 .5 9 .5 9 .5s7 0 9-.5a3 3 0 0 0 2-2c.5-2 .5-4.5.5-4.5s0-2.5-.5-4.5zM10 16V8l6 4-6 4z"/></svg></a>
+                    </div>
+                </div>
+
+                {{-- คอลัมน์ 2: บริการ --}}
+                <div>
+                    <h5>บริการ</h5>
+                    <ul>
+                        <li><a href="#services">Rider &amp; Delivery</a></li>
+                        <li><a href="#services">ตลาดสด</a></li>
+                        <li><a href="#services">AI Management</a></li>
+                        <li><a href="#wallet">ThaiPrompt Wallet</a></li>
+                        <li><a href="#services">ระบบปันผล</a></li>
+                    </ul>
+                </div>
+
+                {{-- คอลัมน์ 3: นักพัฒนา --}}
+                <div>
+                    <h5>นักพัฒนา</h5>
+                    <ul>
+                        <li><a href="#">Whitepaper</a></li>
+                        <li><a href="#">API Documentation</a></li>
+                        <li><a href="#">Block Explorer</a></li>
+                        <li><a href="#">Smart Contract</a></li>
+                    </ul>
+                </div>
+
+                {{-- คอลัมน์ 4: เกี่ยวกับเรา --}}
+                <div>
+                    <h5>เกี่ยวกับเรา</h5>
+                    <ul>
+                        <li><a href="{{ route('about') }}">เกี่ยวกับ {{ $appName }}</a></li>
+                        <li><a href="#">ร่วมงานกับเรา</a></li>
+                        <li><a href="{{ route('contact') }}">ติดต่อ</a></li>
+                        <li><a href="#">ข้อตกลงการใช้งาน</a></li>
+                        <li><a href="#">นโยบายความเป็นส่วนตัว</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <span>© {{ date('Y') }} {{ $appName }}. ไทยพร๊อมท์ — แพลตฟอร์มคนไทย เพื่อคนไทยและเอเชีย · v{{ $version }}</span>
+                <span>www.thaiprompt.online</span>
+            </div>
+        </div>
+    </footer>
+
+</div>{{-- /.tp-landing --}}
+
+@endsection
+
 @push('scripts')
 <script>
-/**
- * สร้างเอฟเฟคหิ่งห้อยเรืองแสง (แบบหน้า Login)
- */
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('fireflies');
-    if (!container) return;
+    /**
+     * Reveal-on-scroll observer สำหรับ element ที่มี class .reveal
+     * เมื่อ element เข้ามาในจอ จะเพิ่ม class .in เพื่อ fade in
+     */
+    document.addEventListener('DOMContentLoaded', function() {
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((e) => {
+                if (e.isIntersecting) e.target.classList.add('in');
+            });
+        }, { threshold: 0.1 });
 
-    // จำนวนหิ่งห้อย
-    const isMobile = window.innerWidth < 768;
-    const fireflyCount = isMobile ? 15 : 25;
-
-    // สร้างหิ่งห้อยแต่ละตัว
-    for (let i = 0; i < fireflyCount; i++) {
-        createFirefly(container, i);
-    }
-});
-
-/**
- * สร้างหิ่งห้อยตัวเดียว
- */
-function createFirefly(container, index) {
-    const firefly = document.createElement('div');
-    firefly.className = 'firefly';
-
-    // สุ่มตำแหน่งเริ่มต้น
-    const startX = Math.random() * 100;
-    const startY = 100 + Math.random() * 20;
-
-    firefly.style.left = startX + 'vw';
-    firefly.style.bottom = -startY + 'px';
-
-    // สุ่มค่า animation
-    const duration = 15 + Math.random() * 25;
-    const delay = Math.random() * 10;
-    const drift = -50 + Math.random() * 100;
-    const scale = 0.6 + Math.random() * 0.8;
-
-    firefly.style.transform = `scale(${scale})`;
-
-    // สุ่มสี
-    const colors = [
-        'rgba(129, 140, 248, 0.9)', // indigo
-        'rgba(167, 139, 250, 0.9)', // purple
-        'rgba(96, 165, 250, 0.9)',  // blue
-        'rgba(192, 132, 252, 0.9)', // violet
-        'rgba(129, 230, 217, 0.8)', // teal
-    ];
-    const color = colors[Math.floor(Math.random() * colors.length)];
-
-    firefly.style.setProperty('--duration', duration + 's');
-    firefly.style.setProperty('--delay', delay + 's');
-    firefly.style.setProperty('--drift', drift + 'px');
-    firefly.style.setProperty('--glow-color', color);
-
-    // สร้าง keyframe animation
-    const animationName = `fireflyFloat_${index}`;
-    const keyframes = `
-        @keyframes ${animationName} {
-            0% {
-                bottom: -20px;
-                left: ${startX}vw;
-                opacity: 0;
-            }
-            10% {
-                opacity: ${0.5 + Math.random() * 0.5};
-            }
-            30% {
-                left: calc(${startX}vw + ${drift * 0.3}px);
-            }
-            50% {
-                left: calc(${startX}vw + ${drift}px);
-            }
-            70% {
-                left: calc(${startX}vw + ${drift * 0.7}px);
-            }
-            90% {
-                opacity: ${0.3 + Math.random() * 0.4};
-            }
-            100% {
-                bottom: 110vh;
-                left: calc(${startX}vw + ${drift * 0.5}px);
-                opacity: 0;
-            }
-        }
-    `;
-
-    // เพิ่ม keyframes เข้า stylesheet
-    const style = document.createElement('style');
-    style.textContent = keyframes;
-    document.head.appendChild(style);
-
-    // ใช้ animation
-    firefly.style.animation = `${animationName} ${duration}s ${delay}s ease-in-out infinite`;
-
-    container.appendChild(firefly);
-}
+        document.querySelectorAll('.tp-landing .reveal').forEach(el => observer.observe(el));
+    });
 </script>
 @endpush
