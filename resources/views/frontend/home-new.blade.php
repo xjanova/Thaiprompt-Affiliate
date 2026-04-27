@@ -741,15 +741,8 @@
     overflow: hidden;
     display: grid; place-items: center;
 }
-.tp-landing .asia-map svg { width: 100%; height: 100%; display: block; }
-.tp-landing .map-pin {
-    position: absolute;
-    width: 14px; height: 14px; border-radius: 50%;
-    background: var(--blue-500);
-    box-shadow: 0 0 0 4px rgba(31,100,255,.2), 0 0 0 8px rgba(31,100,255,.08);
-    animation: tp-pulse-pin 2.4s infinite;
-}
-.tp-landing .map-pin.gold { background: var(--gold-500); box-shadow: 0 0 0 4px rgba(245,180,35,.25), 0 0 0 8px rgba(245,180,35,.1); }
+/* (เดิมมีกฎ .asia-map svg { width:100%; height:100% } สำหรับ SVG world map เก่า
+    — ลบแล้ว เพราะทำให้ Leaflet attribution flag SVG (12x8px) ขยายเต็มจอ) */
 @keyframes tp-pulse-pin { 0%,100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 
 /* ================== CTA STRIP ================== */
