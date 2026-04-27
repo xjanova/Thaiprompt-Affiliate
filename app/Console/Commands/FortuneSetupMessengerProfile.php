@@ -29,9 +29,11 @@ class FortuneSetupMessengerProfile extends Command
     {
         $settings = FortuneTellingSetting::getSettings();
 
-        if (empty($settings->facebook_page_access_token)) {
-            $this->error('❌ ไม่พบ facebook_page_access_token ใน fortune_telling_settings');
-            $this->line('กรุณาตั้งค่า Page Access Token ในหน้า admin ก่อน');
+        // ใช้ field ตามที่ FacebookWebhookService ใช้: facebook_page_token
+        $token = $settings->facebook_page_token ?? $settings->facebook_page_access_token ?? null;
+        if (empty($token)) {
+            $this->error('❌ ไม่พบ Page Access Token ใน fortune_telling_settings');
+            $this->line('กรุณาตั้งค่า facebook_page_token ในหน้า admin ก่อน');
 
             return self::FAILURE;
         }
