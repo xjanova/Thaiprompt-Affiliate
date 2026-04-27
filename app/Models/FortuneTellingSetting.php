@@ -244,6 +244,9 @@ class FortuneTellingSetting extends Model
         'fortune_static_commission_amount' => 10,
         // กระเป๋ากลาง: เปิด fallback ตามค่าเริ่มต้น (user_id ตั้งภายหลังใน admin)
         'fortune_central_fallback_enabled' => true,
+        // Admin Takeover: AI หยุด 1 นาทีเมื่อแอดมินพิมพ์ (เปลี่ยนจาก 15)
+        'admin_handover_enabled' => true,
+        'admin_handover_timeout' => 1,
         // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
@@ -1214,10 +1217,14 @@ PROMPT;
 
     /**
      * ดึงระยะเวลา default ของการเทคโอเวอร์ (นาที)
+     *
+     * Default 1 นาที (2026-04-27): เมื่อแอดมินพิมพ์ตอบลูกค้า → AI หยุด 1 นาที
+     * พอให้แอดมินตอบเสร็จไม่โดน AI แทรก แต่ไม่นานเกินไปจน AI กลับมาช้า
+     * แอดมินสามารถต่อเวลาผ่านปุ่มในแอดมินพาเนล ถ้าต้องการคุยนานกว่านี้
      */
     public function getTakeoverDefaultMinutes(): int
     {
-        return max(1, (int) ($this->admin_handover_timeout ?? 15));
+        return max(1, (int) ($this->admin_handover_timeout ?? 1));
     }
 
     /**
