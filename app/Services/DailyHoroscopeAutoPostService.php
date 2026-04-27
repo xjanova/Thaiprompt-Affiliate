@@ -294,32 +294,29 @@ class DailyHoroscopeAutoPostService
             $card = $post->tarotCard;
             $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
 
-            // ใช้ "ธีมแทนไพ่" แทนการเรียกชื่อไพ่ตรงๆ — กัน FLUX render ตัวอักษร/ไพ่จริงเพี้ยน
-            //   (ก่อนหน้านี้ prompt บอก "tarot card 'X' floating" + "no text" → confused)
-            $cardSymbol = $this->mapCardToSymbol($card?->name_en, $post->is_reversed);
-
-            // ธีมสีตามวันเกิด (โหราศาสตร์ไทย) — กระชับกว่าเดิม เน้นวัตถุชัดๆ
-            $dayThemes = [
-                1 => 'glowing pale yellow moon over still water, silver mist',                  // จันทร์
-                2 => 'crimson sunset over mountains, ember sparks rising',                       // อังคาร
-                3 => 'emerald forest temple at dawn, golden sunlight through leaves',           // พุธ
-                4 => 'amber autumn light through cathedral, floating gold particles',           // พฤหัส
-                5 => 'turquoise ocean waves at sunset, pink clouds, soft pearl glow',           // ศุกร์
-                6 => 'deep indigo night sky, distant nebula, single bright star',               // เสาร์
-                7 => 'radiant orange sunrise over horizon, sunburst rays, warm haze',           // อาทิตย์
+            // 🎨 ภาพ: scene เฉพาะวันเกิด — ไม่อิงไพ่ทาโรต์ (user feedback 2026-04)
+            //    ใช้ "Thai mystical landscape + วัตถุมงคล/ธรรมชาติ" ที่สวยงามแบบภาพถ่าย
+            //    หลีกเลี่ยง: tarot card, ตัวอักษร, complex composition
+            $dayScenes = [
+                1 => 'serene moonlit Thai temple courtyard at midnight, single white lotus floating in reflecting pool, soft silver mist, distant pagoda silhouette',
+                2 => 'dramatic crimson sunset over Thai mountain range, ancient stone pavilion silhouette, warm fire glow, embers rising into sky',
+                3 => 'emerald jungle dawn around hidden Thai forest temple, sunlight rays cutting through morning mist, stone naga statue covered in moss',
+                4 => 'majestic golden hour over Thai grand temple, amber light through ornate windows, floating gold flecks, peaceful atmosphere',
+                5 => 'turquoise ocean meets pink sunset sky, bouquet of fresh tropical flowers on wooden boat, peaceful fishing village in distance',
+                6 => 'deep indigo starry night over Thai stupa, milky way galaxy visible, single bright shooting star, ethereal cosmic atmosphere',
+                7 => 'radiant golden sunrise behind grand Thai pagoda, sun rays bursting through clouds, lotus pond glowing in foreground, hopeful warm light',
             ];
-            $scene = $dayThemes[$post->day_of_birth] ?? 'mystical purple cosmos';
+            $scene = $dayScenes[$post->day_of_birth] ?? 'mystical Thai temple at golden hour';
 
-            // Prompt ใหม่ — เน้น "scene เดียวจบ" ไม่ขัดแย้ง ตัด element เกิน
-            //   หลีกเลี่ยง: literal tarot card / "no text" (FLUX มักทำหลุด) / element มากเกิน
-            //   ได้: scene เดี่ยว มีโฟกัสชัดเจน + symbolic object 1 ตัว + lighting cinematic
+            // Prompt ใหม่ — pure landscape photography, no tarot, no abstract symbols
+            //   เน้น: realistic photography style + Thai cultural element + ความงาม
             $prompt = "{$scene}, "
-                . "{$cardSymbol}, "
-                . "ethereal atmospheric photography, "
-                . "soft volumetric lighting, dreamy bokeh, "
-                . "professional cinematic composition, "
-                . "rich color grading, photorealistic, ultra sharp, 8k detail, "
-                . "wide shot, magazine quality";
+                . "professional landscape photography, "
+                . "National Geographic style, "
+                . "soft volumetric lighting, perfect composition, "
+                . "rich saturated colors, photorealistic, ultra sharp, 8k detail, "
+                . "wide cinematic shot, magazine cover quality, "
+                . "no text, no people, no faces";
 
             // seed deterministic (วัน + วันเกิด) — เผื่อรัน publish ซ้ำ ภาพเดียวกัน
             $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
@@ -402,72 +399,6 @@ class DailyHoroscopeAutoPostService
     }
 
     /**
-     * แปลงชื่อไพ่ทาโรต์ → symbolic object สำหรับ image prompt
-     *
-     * เหตุผล: ถ้า prompt มี "tarot card 'XXX'" ตรงๆ FLUX จะพยายาม render
-     * ตัวอักษรหรือไพ่จริงซึ่งมักหลุดเพี้ยน — เปลี่ยนเป็น object เชิงสัญลักษณ์
-     * ที่สื่อความหมายเดียวกันแทน ภาพออกมาสะอาด มีจุดโฟกัส
-     *
-     * @param  string|null  $cardEn  ชื่อไพ่ภาษาอังกฤษ (เช่น "The Fool", "Page of Pentacles")
-     * @param  bool  $isReversed  กลับด้านมั้ย (ใช้ปรับ tone)
-     */
-    protected function mapCardToSymbol(?string $cardEn, bool $isReversed = false): string
-    {
-        $card = mb_strtolower(trim((string) $cardEn));
-
-        // Suit-based fallback (ครอบคลุม Minor Arcana 56 ใบ)
-        $suitSymbol = null;
-        if (str_contains($card, 'cups')) {
-            $suitSymbol = 'ornate golden chalice overflowing with glowing water in foreground';
-        } elseif (str_contains($card, 'wands')) {
-            $suitSymbol = 'wooden staff with mystical runes glowing amber in foreground';
-        } elseif (str_contains($card, 'swords')) {
-            $suitSymbol = 'silver ceremonial sword pierced into glowing earth in foreground';
-        } elseif (str_contains($card, 'pentacles') || str_contains($card, 'coins')) {
-            $suitSymbol = 'shimmering golden coin engraved with sacred geometry in foreground';
-        }
-
-        // Major Arcana — symbolic object เฉพาะใบที่จำง่าย
-        $majorMap = [
-            'fool' => 'lone traveler walking on misty cliff path, small bag over shoulder',
-            'magician' => 'glowing crystal orb floating above ornate pedestal',
-            'high priestess' => 'silver crescent moon hanging above still mirror lake',
-            'empress' => 'lush garden of blooming roses and golden wheat field',
-            'emperor' => 'ancient stone throne on mountain summit at dawn',
-            'hierophant' => 'tall temple gate with carved reliefs glowing softly',
-            'lovers' => 'two glowing paper lanterns rising into starry sky',
-            'chariot' => 'majestic horses galloping through golden clouds',
-            'strength' => 'gentle lion resting in field of wildflowers',
-            'hermit' => 'lone monk holding lantern on mountain ridge',
-            'wheel of fortune' => 'massive ornate golden wheel spinning slowly above clouds',
-            'justice' => 'perfectly balanced scales of light floating in sky',
-            'hanged man' => 'single hanging tree branch with golden fruit, peaceful',
-            'death' => 'black raven on bare branch with new green sprouts at base',
-            'temperance' => 'translucent water flowing gracefully between two crystal cups',
-            'devil' => 'broken chains scattered on stone floor, candle nearby',
-            'tower' => 'lightning illuminating distant cliff tower silhouette',
-            'star' => 'single brilliant star reflecting on dark calm water',
-            'moon' => 'large luminous full moon over silent forest path',
-            'sun' => 'radiant sun bursting through golden grain field',
-            'judgement' => 'golden trumpet floating in sunlit clouds',
-            'world' => 'small glowing earth orb suspended in galaxy',
-        ];
-
-        foreach ($majorMap as $key => $symbol) {
-            if (str_contains($card, $key)) {
-                return $symbol;
-            }
-        }
-
-        if ($suitSymbol) {
-            return $suitSymbol;
-        }
-
-        // Fallback — ถ้า match ไม่ได้
-        return 'glowing crystal orb floating above ancient stone in foreground';
-    }
-
-    /**
      * 🎨 สร้างรูปด้วย Pollinations.ai (AI image — ฟรี ไม่ต้อง API key)
      *
      * Endpoint: https://image.pollinations.ai/prompt/{encoded_prompt}?{params}
@@ -481,29 +412,25 @@ class DailyHoroscopeAutoPostService
         $card = $post->tarotCard;
         $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
 
-        // ใช้ symbol แทนชื่อไพ่ตรงๆ — กัน text artifact (เหมือน Cloudflare path)
-        $cardSymbol = $this->mapCardToSymbol($card?->name_en, $post->is_reversed);
-
-        // ธีม scene ตามวันเกิด (concrete scene เดียว — ไม่ผสมหลาย element)
-        $dayThemes = [
-            1 => 'glowing pale yellow moon over still water, silver mist',
-            2 => 'crimson sunset over mountains, ember sparks rising',
-            3 => 'emerald forest temple at dawn, golden sunlight through leaves',
-            4 => 'amber autumn light through cathedral, floating gold particles',
-            5 => 'turquoise ocean waves at sunset, pink clouds, soft pearl glow',
-            6 => 'deep indigo night sky, distant nebula, single bright star',
-            7 => 'radiant orange sunrise over horizon, sunburst rays, warm haze',
+        // 🎨 ภาพ: scene เฉพาะวันเกิด — ไม่อิงไพ่ทาโรต์ (เหมือน Cloudflare path)
+        $dayScenes = [
+            1 => 'serene moonlit Thai temple courtyard at midnight, single white lotus floating in reflecting pool, soft silver mist, distant pagoda silhouette',
+            2 => 'dramatic crimson sunset over Thai mountain range, ancient stone pavilion silhouette, warm fire glow, embers rising into sky',
+            3 => 'emerald jungle dawn around hidden Thai forest temple, sunlight rays cutting through morning mist, stone naga statue covered in moss',
+            4 => 'majestic golden hour over Thai grand temple, amber light through ornate windows, floating gold flecks, peaceful atmosphere',
+            5 => 'turquoise ocean meets pink sunset sky, bouquet of fresh tropical flowers on wooden boat, peaceful fishing village in distance',
+            6 => 'deep indigo starry night over Thai stupa, milky way galaxy visible, single bright shooting star, ethereal cosmic atmosphere',
+            7 => 'radiant golden sunrise behind grand Thai pagoda, sun rays bursting through clouds, lotus pond glowing in foreground, hopeful warm light',
         ];
-        $scene = $dayThemes[$post->day_of_birth] ?? 'mystical purple cosmos';
+        $scene = $dayScenes[$post->day_of_birth] ?? 'mystical Thai temple at golden hour';
 
-        // Prompt เดียวกับ Cloudflare — เน้น scene เดี่ยว + symbolic object
         $prompt = "{$scene}, "
-            . "{$cardSymbol}, "
-            . "ethereal atmospheric photography, "
-            . "soft volumetric lighting, dreamy bokeh, "
-            . "professional cinematic composition, "
-            . "rich color grading, photorealistic, ultra sharp, 8k detail, "
-            . "wide shot, magazine quality";
+            . "professional landscape photography, "
+            . "National Geographic style, "
+            . "soft volumetric lighting, perfect composition, "
+            . "rich saturated colors, photorealistic, ultra sharp, 8k detail, "
+            . "wide cinematic shot, magazine cover quality, "
+            . "no text, no people, no faces";
 
         // Encode prompt + params
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
