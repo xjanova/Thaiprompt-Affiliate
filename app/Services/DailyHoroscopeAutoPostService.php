@@ -39,8 +39,9 @@ class DailyHoroscopeAutoPostService
      *
      * @param  int  $dayOfBirth  1=จันทร์ ... 7=อาทิตย์
      * @param  Carbon|null  $date  วันที่ดวง (default: today)
+     * @param  bool  $force  true = ลบโพสเก่า (FB + DB) ก่อน republish
      */
-    public function generateAndPublish(int $dayOfBirth, ?Carbon $date = null): array
+    public function generateAndPublish(int $dayOfBirth, ?Carbon $date = null, bool $force = false): array
     {
         $date = $date ?? now();
 
@@ -48,6 +49,28 @@ class DailyHoroscopeAutoPostService
         $existing = FortuneDailyHoroscopePost::where('post_date', $date->toDateString())
             ->where('day_of_birth', $dayOfBirth)
             ->first();
+
+        // --force: ลบโพสเก่าบน FB + DB ก่อน republish
+        if ($force && $existing) {
+            if ($existing->fb_post_id) {
+                $this->deleteFromFacebook($existing->fb_post_id);
+            }
+
+            // ลบไฟล์ภาพเก่าด้วย (กันรกใน storage)
+            if ($existing->image_path) {
+                Storage::disk('public')->delete($existing->image_path);
+            }
+
+            Log::info('DailyHoroscopeAutoPost: --force ลบโพสเก่า', [
+                'post_id' => $existing->id,
+                'fb_post_id' => $existing->fb_post_id,
+                'day_of_birth' => $dayOfBirth,
+                'date' => $date->toDateString(),
+            ]);
+
+            $existing->delete();
+            $existing = null;
+        }
 
         if ($existing && $existing->status === FortuneDailyHoroscopePost::STATUS_POSTED) {
             return [
@@ -270,29 +293,33 @@ class DailyHoroscopeAutoPostService
 
             $card = $post->tarotCard;
             $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
-            $cardName = $card?->name_en ?: 'tarot card';
 
-            // ธีมสีตามวันเกิด (โหราศาสตร์ไทย)
+            // ใช้ "ธีมแทนไพ่" แทนการเรียกชื่อไพ่ตรงๆ — กัน FLUX render ตัวอักษร/ไพ่จริงเพี้ยน
+            //   (ก่อนหน้านี้ prompt บอก "tarot card 'X' floating" + "no text" → confused)
+            $cardSymbol = $this->mapCardToSymbol($card?->name_en, $post->is_reversed);
+
+            // ธีมสีตามวันเกิด (โหราศาสตร์ไทย) — กระชับกว่าเดิม เน้นวัตถุชัดๆ
             $dayThemes = [
-                1 => 'soft golden yellow moonlight, pearl white aura',
-                2 => 'fiery red and orange, mars warrior energy',
-                3 => 'emerald green forest, mercury wisdom',
-                4 => 'royal orange and amber, jupiter abundance',
-                5 => 'azure blue and silver, venus love beauty',
-                6 => 'deep purple and indigo, saturn mysticism',
-                7 => 'radiant sunrise red-orange, sun divine energy',
+                1 => 'glowing pale yellow moon over still water, silver mist',                  // จันทร์
+                2 => 'crimson sunset over mountains, ember sparks rising',                       // อังคาร
+                3 => 'emerald forest temple at dawn, golden sunlight through leaves',           // พุธ
+                4 => 'amber autumn light through cathedral, floating gold particles',           // พฤหัส
+                5 => 'turquoise ocean waves at sunset, pink clouds, soft pearl glow',           // ศุกร์
+                6 => 'deep indigo night sky, distant nebula, single bright star',               // เสาร์
+                7 => 'radiant orange sunrise over horizon, sunburst rays, warm haze',           // อาทิตย์
             ];
-            $theme = $dayThemes[$post->day_of_birth] ?? 'mystical purple';
+            $scene = $dayThemes[$post->day_of_birth] ?? 'mystical purple cosmos';
 
-            $prompt = "Mystical Thai astrology fortune telling artwork, "
-                . "{$theme}, "
-                . "tarot card '{$cardName}' floating in cosmic space, "
-                . "ornate gold filigree borders, sacred geometry mandalas, "
-                . "celestial stars and constellations, ethereal mist, "
-                . "Thai temple architecture silhouette, lotus flowers, "
-                . "elegant mystic atmosphere, high quality digital art, "
-                . "cinematic lighting, ultra detailed, 4K, professional photography style, "
-                . "no text no words no letters";
+            // Prompt ใหม่ — เน้น "scene เดียวจบ" ไม่ขัดแย้ง ตัด element เกิน
+            //   หลีกเลี่ยง: literal tarot card / "no text" (FLUX มักทำหลุด) / element มากเกิน
+            //   ได้: scene เดี่ยว มีโฟกัสชัดเจน + symbolic object 1 ตัว + lighting cinematic
+            $prompt = "{$scene}, "
+                . "{$cardSymbol}, "
+                . "ethereal atmospheric photography, "
+                . "soft volumetric lighting, dreamy bokeh, "
+                . "professional cinematic composition, "
+                . "rich color grading, photorealistic, ultra sharp, 8k detail, "
+                . "wide shot, magazine quality";
 
             // seed deterministic (วัน + วันเกิด) — เผื่อรัน publish ซ้ำ ภาพเดียวกัน
             $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
@@ -300,7 +327,7 @@ class DailyHoroscopeAutoPostService
             $result = $cfProvider->generateImage($prompt, [
                 'model' => 'flux-1-schnell',
                 'size' => '1024x1024',
-                'steps' => 4, // FLUX-schnell โอเคที่ 4 steps
+                'steps' => 8, // เพิ่มจาก 4 → 8 steps คุณภาพดีขึ้นชัดเจน (ยังเร็วพอ ~4-6s)
                 'seed' => $seed,
             ]);
 
@@ -375,6 +402,72 @@ class DailyHoroscopeAutoPostService
     }
 
     /**
+     * แปลงชื่อไพ่ทาโรต์ → symbolic object สำหรับ image prompt
+     *
+     * เหตุผล: ถ้า prompt มี "tarot card 'XXX'" ตรงๆ FLUX จะพยายาม render
+     * ตัวอักษรหรือไพ่จริงซึ่งมักหลุดเพี้ยน — เปลี่ยนเป็น object เชิงสัญลักษณ์
+     * ที่สื่อความหมายเดียวกันแทน ภาพออกมาสะอาด มีจุดโฟกัส
+     *
+     * @param  string|null  $cardEn  ชื่อไพ่ภาษาอังกฤษ (เช่น "The Fool", "Page of Pentacles")
+     * @param  bool  $isReversed  กลับด้านมั้ย (ใช้ปรับ tone)
+     */
+    protected function mapCardToSymbol(?string $cardEn, bool $isReversed = false): string
+    {
+        $card = mb_strtolower(trim((string) $cardEn));
+
+        // Suit-based fallback (ครอบคลุม Minor Arcana 56 ใบ)
+        $suitSymbol = null;
+        if (str_contains($card, 'cups')) {
+            $suitSymbol = 'ornate golden chalice overflowing with glowing water in foreground';
+        } elseif (str_contains($card, 'wands')) {
+            $suitSymbol = 'wooden staff with mystical runes glowing amber in foreground';
+        } elseif (str_contains($card, 'swords')) {
+            $suitSymbol = 'silver ceremonial sword pierced into glowing earth in foreground';
+        } elseif (str_contains($card, 'pentacles') || str_contains($card, 'coins')) {
+            $suitSymbol = 'shimmering golden coin engraved with sacred geometry in foreground';
+        }
+
+        // Major Arcana — symbolic object เฉพาะใบที่จำง่าย
+        $majorMap = [
+            'fool' => 'lone traveler walking on misty cliff path, small bag over shoulder',
+            'magician' => 'glowing crystal orb floating above ornate pedestal',
+            'high priestess' => 'silver crescent moon hanging above still mirror lake',
+            'empress' => 'lush garden of blooming roses and golden wheat field',
+            'emperor' => 'ancient stone throne on mountain summit at dawn',
+            'hierophant' => 'tall temple gate with carved reliefs glowing softly',
+            'lovers' => 'two glowing paper lanterns rising into starry sky',
+            'chariot' => 'majestic horses galloping through golden clouds',
+            'strength' => 'gentle lion resting in field of wildflowers',
+            'hermit' => 'lone monk holding lantern on mountain ridge',
+            'wheel of fortune' => 'massive ornate golden wheel spinning slowly above clouds',
+            'justice' => 'perfectly balanced scales of light floating in sky',
+            'hanged man' => 'single hanging tree branch with golden fruit, peaceful',
+            'death' => 'black raven on bare branch with new green sprouts at base',
+            'temperance' => 'translucent water flowing gracefully between two crystal cups',
+            'devil' => 'broken chains scattered on stone floor, candle nearby',
+            'tower' => 'lightning illuminating distant cliff tower silhouette',
+            'star' => 'single brilliant star reflecting on dark calm water',
+            'moon' => 'large luminous full moon over silent forest path',
+            'sun' => 'radiant sun bursting through golden grain field',
+            'judgement' => 'golden trumpet floating in sunlit clouds',
+            'world' => 'small glowing earth orb suspended in galaxy',
+        ];
+
+        foreach ($majorMap as $key => $symbol) {
+            if (str_contains($card, $key)) {
+                return $symbol;
+            }
+        }
+
+        if ($suitSymbol) {
+            return $suitSymbol;
+        }
+
+        // Fallback — ถ้า match ไม่ได้
+        return 'glowing crystal orb floating above ancient stone in foreground';
+    }
+
+    /**
      * 🎨 สร้างรูปด้วย Pollinations.ai (AI image — ฟรี ไม่ต้อง API key)
      *
      * Endpoint: https://image.pollinations.ai/prompt/{encoded_prompt}?{params}
@@ -387,30 +480,30 @@ class DailyHoroscopeAutoPostService
     {
         $card = $post->tarotCard;
         $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
-        $cardName = $card?->name_en ?: 'tarot card';
 
-        // ธีมสีตามวันเกิด (โหราศาสตร์ไทย — กำลังวัน)
+        // ใช้ symbol แทนชื่อไพ่ตรงๆ — กัน text artifact (เหมือน Cloudflare path)
+        $cardSymbol = $this->mapCardToSymbol($card?->name_en, $post->is_reversed);
+
+        // ธีม scene ตามวันเกิด (concrete scene เดียว — ไม่ผสมหลาย element)
         $dayThemes = [
-            1 => 'soft golden yellow moonlight, pearl white aura',                    // จันทร์
-            2 => 'fiery red and orange, mars warrior energy',                          // อังคาร
-            3 => 'emerald green forest, mercury wisdom',                               // พุธ
-            4 => 'royal orange and amber, jupiter abundance',                          // พฤหัส
-            5 => 'azure blue and silver, venus love beauty',                           // ศุกร์
-            6 => 'deep purple and indigo, saturn mysticism',                           // เสาร์
-            7 => 'radiant sunrise red-orange, sun divine energy',                      // อาทิตย์
+            1 => 'glowing pale yellow moon over still water, silver mist',
+            2 => 'crimson sunset over mountains, ember sparks rising',
+            3 => 'emerald forest temple at dawn, golden sunlight through leaves',
+            4 => 'amber autumn light through cathedral, floating gold particles',
+            5 => 'turquoise ocean waves at sunset, pink clouds, soft pearl glow',
+            6 => 'deep indigo night sky, distant nebula, single bright star',
+            7 => 'radiant orange sunrise over horizon, sunburst rays, warm haze',
         ];
-        $theme = $dayThemes[$post->day_of_birth] ?? 'mystical purple';
+        $scene = $dayThemes[$post->day_of_birth] ?? 'mystical purple cosmos';
 
-        // สร้าง prompt — ภาษาอังกฤษเพราะ AI image gen ทำงานดีกว่า
-        $prompt = "Mystical Thai astrology fortune telling artwork, "
-            . "{$theme}, "
-            . "tarot card '{$cardName}' floating in cosmic space, "
-            . "ornate gold filigree borders, sacred geometry mandalas, "
-            . "celestial stars and constellations, ethereal mist, "
-            . "Thai temple architecture silhouette, lotus flowers, "
-            . "elegant mystic atmosphere, high quality digital art, "
-            . "cinematic lighting, ultra detailed, 4K, professional photography style, "
-            . "no text no words no letters";
+        // Prompt เดียวกับ Cloudflare — เน้น scene เดี่ยว + symbolic object
+        $prompt = "{$scene}, "
+            . "{$cardSymbol}, "
+            . "ethereal atmospheric photography, "
+            . "soft volumetric lighting, dreamy bokeh, "
+            . "professional cinematic composition, "
+            . "rich color grading, photorealistic, ultra sharp, 8k detail, "
+            . "wide shot, magazine quality";
 
         // Encode prompt + params
         $encoded = rawurlencode(mb_substr($prompt, 0, 800));
@@ -617,5 +710,59 @@ class DailyHoroscopeAutoPostService
             'post_url' => $postId ? "https://www.facebook.com/{$postId}" : null,
             'response' => $data,
         ];
+    }
+
+    /**
+     * ลบโพสบน Facebook Page (best-effort)
+     *
+     * เรียก Graph API DELETE /{fb_post_id}?access_token=...
+     * ไม่ throw exception — ถ้าลบไม่สำเร็จยังให้ flow ดำเนินต่อ
+     * (อาจเป็นเพราะ token หมดอายุ หรือ post ถูกลบไปแล้ว)
+     *
+     * @param  string  $fbPostId  รูปแบบ "{pageId}_{postId}" ตามที่ FB คืนกลับมา
+     */
+    protected function deleteFromFacebook(string $fbPostId): bool
+    {
+        try {
+            $fresh = FortuneTellingSetting::query()->first();
+            if (! $fresh) {
+                Log::warning('DailyHoroscopeAutoPost: deleteFromFacebook ข้าม — ไม่พบ settings');
+
+                return false;
+            }
+
+            $pageToken = $fresh->facebook_page_token
+                ?? $fresh->facebook_page_access_token
+                ?? $fresh->getRawOriginal('facebook_page_token');
+
+            if (empty($pageToken)) {
+                Log::warning('DailyHoroscopeAutoPost: deleteFromFacebook ข้าม — ไม่พบ page token');
+
+                return false;
+            }
+
+            $endpoint = "https://graph.facebook.com/v18.0/{$fbPostId}";
+            $response = Http::timeout(30)->delete($endpoint, [
+                'access_token' => $pageToken,
+            ]);
+
+            $success = $response->successful() && ($response->json('success') === true);
+
+            Log::info('DailyHoroscopeAutoPost: deleteFromFacebook', [
+                'fb_post_id' => $fbPostId,
+                'http_status' => $response->status(),
+                'success' => $success,
+                'response' => $response->json(),
+            ]);
+
+            return $success;
+        } catch (Exception $e) {
+            Log::warning('DailyHoroscopeAutoPost: deleteFromFacebook exception', [
+                'fb_post_id' => $fbPostId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 }

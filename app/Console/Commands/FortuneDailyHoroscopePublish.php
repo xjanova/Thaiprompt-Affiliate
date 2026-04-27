@@ -19,7 +19,8 @@ class FortuneDailyHoroscopePublish extends Command
 {
     protected $signature = 'fortune:daily-horoscope:publish
         {dayOfBirth : 1=จันทร์, 2=อังคาร, 3=พุธ, 4=พฤหัส, 5=ศุกร์, 6=เสาร์, 7=อาทิตย์, all=ทุกวัน}
-        {--date= : วันที่ดวง (YYYY-MM-DD), default: today}';
+        {--date= : วันที่ดวง (YYYY-MM-DD), default: today}
+        {--force : ลบโพสเก่า (FB + DB) แล้วสร้างใหม่ — ใช้สำหรับ republish ภาพไม่สวย}';
 
     protected $description = 'สร้างและโพสดวงประจำวันสำหรับเจ้าของวันเกิดที่ระบุ';
 
@@ -27,8 +28,13 @@ class FortuneDailyHoroscopePublish extends Command
     {
         $arg = $this->argument('dayOfBirth');
         $date = $this->option('date') ? Carbon::parse($this->option('date')) : now();
+        $force = (bool) $this->option('force');
 
         $service = app(DailyHoroscopeAutoPostService::class);
+
+        if ($force) {
+            $this->warn('⚠️  --force: จะลบโพสเก่าบน FB + DB ก่อน republish');
+        }
 
         if (strtolower($arg) === 'all') {
             $this->info("📅 โพสดวงประจำวันทั้ง 7 วันเกิด ({$date->toDateString()})");
@@ -36,7 +42,7 @@ class FortuneDailyHoroscopePublish extends Command
             $results = [];
             foreach (range(1, 7) as $day) {
                 $this->line("  • วัน{$day} ({$this->dayName($day)})...");
-                $result = $service->generateAndPublish($day, $date);
+                $result = $service->generateAndPublish($day, $date, $force);
                 $results[] = ['day' => $day, 'result' => $result];
 
                 $icon = $result['success'] ? '✅' : '❌';
@@ -57,7 +63,7 @@ class FortuneDailyHoroscopePublish extends Command
         }
 
         $this->info("📅 โพสดวงคนเกิดวัน{$this->dayName($day)} ({$date->toDateString()})");
-        $result = $service->generateAndPublish($day, $date);
+        $result = $service->generateAndPublish($day, $date, $force);
 
         if ($result['success']) {
             $this->info('✅ ' . ($result['message'] ?? 'สำเร็จ'));
