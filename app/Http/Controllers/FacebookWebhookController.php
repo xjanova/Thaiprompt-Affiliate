@@ -276,6 +276,12 @@ class FacebookWebhookController extends Controller
             if (isset($messaging['postback'])) {
                 $this->processPostback($messaging);
             }
+
+            // 💗 ประมวลผล message_reactions (user กด ❤️/👍 ข้อความ bot)
+            // — ส่ง emoji กลับ (throttle 1 ครั้ง/60 วินาที)
+            if (isset($messaging['reaction'])) {
+                $this->handleMessageReaction($messaging);
+            }
         }
     }
 
@@ -1303,6 +1309,11 @@ class FacebookWebhookController extends Controller
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
+            // ✨ Ice Breakers + Persistent Menu (2026-04-27)
+            'MENU_ABOUT_US', 'ICEBREAKER_ABOUT' => $this->handleAboutUs($senderId),
+            'MENU_REFERRAL', 'ICEBREAKER_REFERRAL' => $this->handleReferralMenu($senderId),
+            'ICEBREAKER_REGISTER' => $this->handleRegisterMenu($senderId),
+
             // ✅ ปุ่มจาก Rich Templates — ดูดวงละเอียด flow
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
@@ -1369,6 +1380,176 @@ class FacebookWebhookController extends Controller
         $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
 
         Log::info('💰 Affiliate Recruit NO clicked', ['user_id' => $senderId]);
+    }
+
+    /**
+     * 🔍 รู้จักเรา — อธิบายศาสตร์ที่ใช้ทำนาย + เน้นความน่าเชื่อถือ + ติดต่อ xman studio
+     *
+     * เน้นว่าไม่ใช่ AI มโน — ใช้ระบบหลักล้านจริง
+     */
+    protected function handleAboutUs(string $senderId): void
+    {
+        $message = "✨ รู้จัก \"แม่หมอจันทรา\"\n"
+            . "─────────────\n\n"
+            . "🔮 *ศาสตร์ที่เราใช้ทำนาย*\n"
+            . "• โหราศาสตร์ไทยสายเจ้าชนะ (วิชาดั้งเดิมจากสายลังกา)\n"
+            . "• โหราศาสตร์สากล — ตำแหน่งดาวเคราะห์ปัจจุบัน (transit)\n"
+            . "• ไพ่ทาโรต์ — สื่อพลังจิตและสัญลักษณ์\n"
+            . "• เลขศาสตร์ — วันเดือนปีเกิดเชื่อมพลังตัวเลข\n\n"
+            . "💎 *ทำไมแม่นและน่าเชื่อถือ*\n"
+            . "ระบบของเราใช้ AI ระดับ flagship หลักล้าน "
+            . "(Grok, Gemini Pro, GPT-class) ผูกกับ\n"
+            . "ฐานข้อมูลโหราศาสตร์จริงที่ถ่ายทอดจากครูบาอาจารย์\n"
+            . "→ ไม่ใช่ AI มโนเดา แต่วิเคราะห์จากดวงชะตาจริง\n\n"
+            . "🏢 *พัฒนาโดย xman studio*\n"
+            . "ทีมพัฒนาระบบ AI ดูดวงและ Affiliate ระดับองค์กร\n"
+            . "📍 https://xman4289.com\n\n"
+            . "💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio";
+
+        $this->facebookService->sendButtons($senderId, $message, [
+            ['type' => 'web_url', 'title' => '🌐 เยี่ยมชม xman studio', 'url' => 'https://xman4289.com'],
+            ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
+            ['type' => 'postback', 'title' => '👥 ชวนเพื่อน', 'payload' => 'MENU_REFERRAL'],
+        ]);
+
+        Log::info('🔍 About Us shown', ['user_id' => $senderId]);
+    }
+
+    /**
+     * 📝 สมัครสมาชิก — ส่งลิงก์ FB OAuth ที่ทำไว้แล้ว
+     *
+     * ลูกค้าคลิก → /auth/facebook → Socialite → auto-create User+Wallet+MlmMember
+     * → redirect ไปหน้า wallet
+     */
+    protected function handleRegisterMenu(string $senderId): void
+    {
+        $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
+        $registerUrl = $appUrl . '/auth/facebook';
+
+        $message = "📝 *สมัครสมาชิก thaiprompt — ฟรี!*\n"
+            . "─────────────\n\n"
+            . "✅ ใช้ Facebook ของคุณสมัครได้เลย — ไม่ต้องกรอกอะไร\n"
+            . "✅ ระบบสร้างกระเป๋าให้อัตโนมัติ\n"
+            . "✅ ดูยอดรายได้ค่าแนะนำได้ตลอด\n"
+            . "✅ ถอนเงินได้เมื่อยืนยันตัวตน (KYC)\n\n"
+            . "👉 กดปุ่มด้านล่างเพื่อสมัคร — ใช้เวลา 10 วินาที";
+
+        $this->facebookService->sendButtons($senderId, $message, [
+            ['type' => 'web_url', 'title' => '📝 สมัครด้วย Facebook', 'url' => $registerUrl, 'webview_height_ratio' => 'full'],
+            ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
+        ]);
+
+        Log::info('📝 Register menu shown', ['user_id' => $senderId]);
+    }
+
+    /**
+     * 👥 ชวนเพื่อน — ตรวจ membership ก่อน
+     *
+     * - ดูดวง 1 ครั้ง (paid) = สมาชิก → ส่ง referral link พร้อมรายละเอียดรายได้
+     * - ยังไม่ได้ดูดวง → แจ้ง "ต้องเป็นสมาชิกก่อน" + อธิบาย benefit
+     */
+    protected function handleReferralMenu(string $senderId): void
+    {
+        // ตรวจ membership: มี FortuneReading ที่ is_paid=true หรือไม่
+        $isMember = \App\Models\FortuneReading::where('facebook_user_id', $senderId)
+            ->where('is_paid', true)
+            ->exists();
+
+        $deepPrice = number_format($this->getDeepReadingPriceFromSettings(), 0);
+
+        if (! $isMember) {
+            // ⛔ ยังไม่ใช่สมาชิก — pitch ให้ดูดวง 1 ครั้ง
+            $message = "⚠️ ต้องเป็นสมาชิกก่อนนะคะ\n"
+                . "─────────────\n\n"
+                . "📋 *วิธีเป็นสมาชิก — ง่ายมาก:*\n"
+                . "เพียงดูดวงเชิงลึก *1 ครั้ง* ({$deepPrice} บาท)\n"
+                . "ระบบจะลงทะเบียนให้อัตโนมัติทันที\n\n"
+                . "🎁 *สิทธิ์ที่ได้รับ:*\n"
+                . "• 💎 กระเป๋าเงินส่วนตัวในระบบ\n"
+                . "• 👥 ลิงก์เชิญเพื่อนพิเศษ\n"
+                . "• 💰 ค่าแนะนำ 10 บาท/คนที่เพื่อนของคุณดูดวง (Level 1)\n"
+                . "• 🌳 ค่าแนะนำชั้นหลาน (Level 2) อีกชั้น\n"
+                . "• 📊 Dashboard ดูรายได้แบบ real-time\n"
+                . "• 💸 ถอนเงินเข้าบัญชีได้ (หลัง KYC)\n\n"
+                . "✨ ดูดวง 1 ครั้ง = ได้ทั้งคำทำนายแม่นๆ + เป็นสมาชิกเลยค่ะ";
+
+            $this->facebookService->sendButtons($senderId, $message, [
+                ['type' => 'postback', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'],
+                ['type' => 'postback', 'title' => '✨ รู้จักเราเพิ่ม', 'payload' => 'MENU_ABOUT_US'],
+            ]);
+
+            Log::info('👥 Referral pitch (non-member)', ['user_id' => $senderId]);
+
+            return;
+        }
+
+        // ✅ เป็นสมาชิกแล้ว — ส่ง referral link
+        $this->processConversationalMessage($senderId, 'แชร์');
+
+        Log::info('👥 Referral link sent (member)', ['user_id' => $senderId]);
+    }
+
+    /**
+     * 💗 จัดการเมื่อลูกค้า react ข้อความ (❤️/👍/😆/😮/😢/😡)
+     *
+     * Throttle: 1 ครั้ง/user/60 วินาที — ป้องกันรัวสแปม
+     * ตอบกลับด้วย emoji เดียวกัน (เพราะ FB Page Messenger API ยังไม่รองรับ react กลับ
+     * เป็น sender_action — เลยใช้ emoji เป็นข้อความแทน)
+     */
+    protected function handleMessageReaction(array $messaging): void
+    {
+        $senderId = $messaging['sender']['id'] ?? null;
+        $reaction = $messaging['reaction']['reaction'] ?? null; // love/like/wow/haha/sad/angry
+        $action = $messaging['reaction']['action'] ?? null; // 'react' หรือ 'unreact'
+
+        if (! $senderId || ! $reaction || $action !== 'react') {
+            return;
+        }
+
+        // 🛑 Admin Handover guard — ถ้าแอดมินกำลังดูแล → ข้าม
+        if ($this->takeoverService->isActiveByPlatform('facebook', $senderId)) {
+            return;
+        }
+
+        // ⏱ Throttle — 1 ครั้ง/user ในช่วง 60 วินาที (กันรัว)
+        $cacheKey = "fb_reaction_replied:{$senderId}";
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            Log::debug('FB Reaction: throttle hit (เคยตอบในรอบ 60 วิ)', [
+                'user_id' => $senderId,
+                'reaction' => $reaction,
+            ]);
+
+            return;
+        }
+        \Illuminate\Support\Facades\Cache::put($cacheKey, true, 60);
+
+        // Map reaction → emoji เดียวกันที่จะส่งกลับ
+        $emojiMap = [
+            'love' => '❤️',
+            'like' => '👍',
+            'wow' => '😮',
+            'haha' => '😆',
+            'sad' => '😢',
+            'angry' => '😡',
+            'dislike' => '👎',
+            'smile' => '😊',
+        ];
+        $emoji = $emojiMap[$reaction] ?? '✨';
+
+        // ส่ง emoji กลับเป็น text — FB Messenger ไม่มี react reply API
+        try {
+            $this->facebookService->sendMessage($senderId, $emoji);
+            Log::info('💗 FB Reaction: ส่ง emoji กลับ', [
+                'user_id' => $senderId,
+                'reaction' => $reaction,
+                'emoji' => $emoji,
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('FB Reaction: ส่ง emoji ล้มเหลว', [
+                'user_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

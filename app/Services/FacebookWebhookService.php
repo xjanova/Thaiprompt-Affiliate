@@ -1255,7 +1255,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
 
         try {
-            // ตั้งค่า Get Started button และ Persistent Menu
+            // ตั้งค่า Get Started + Greeting + Persistent Menu + Ice Breakers
             $response = Http::post($this->graphUrl('/me/messenger_profile'), [
                 'access_token' => $this->pageAccessToken,
 
@@ -1268,11 +1268,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'greeting' => [
                     [
                         'locale' => 'default',
-                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลย ✨",
+                        'text' => "🔮 ยินดีต้อนรับสู่ \"แม่หมอจันทรา\"\n\nหมอดูเชี่ยวชาญโหราศาสตร์ไทย-สากล ทำนายแม่นยำด้วยระบบหลักล้าน 💎\n\nกดปุ่มด้านล่างเพื่อเริ่มได้เลย ✨",
                     ],
+                ],
+
+                // ✨ Ice Breakers — 4 คำถามให้ลูกค้าใหม่กดเลือกตอนเปิดแชท
+                'ice_breakers' => [
                     [
-                        'locale' => 'th_TH',
-                        'text' => "🔮 ยินดีต้อนรับสู่ระบบดูดวง AI\n\nกดปุ่ม \"เริ่มต้นใช้งาน\" เพื่อเริ่มดูดวงได้เลย ✨",
+                        'locale' => 'default',
+                        'call_to_actions' => $this->buildIceBreakerActions(),
                     ],
                 ],
 
@@ -1321,53 +1325,102 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
-     * สร้างรายการเมนูสำหรับ Persistent Menu
+     * สร้างรายการเมนูสำหรับ Persistent Menu (เมนูถาวรล่างซ้ายของแชท)
      *
-     * Facebook จำกัดสูงสุด 3 top-level items
-     * รองรับปุ่ม LINE เพิ่มเพื่อนถ้ามีการตั้งค่า
+     * โครงสร้างตาม spec ของ user (2026-04-27):
+     * 1. 📝 สมัครสมาชิก → URL ไป Facebook OAuth ของ thaiprompt
+     * 2. 💎 ดูดวงละเอียด → postback เริ่ม deep reading flow
+     * 3. 🔍 รู้จักเรา → postback อธิบายศาสตร์ + ติดต่อ xman studio
+     *    (มี submenu: ชวนเพื่อน + เพิ่มเพื่อน LINE ถ้ามี)
      *
-     * @return array call_to_actions สำหรับ Persistent Menu
+     * Facebook จำกัด 3 top-level items + nested ได้
+     *
+     * @return array call_to_actions
      */
     protected function buildPersistentMenuActions(): array
     {
-        // ถ้า admin ปิดบริการฟรี → เปลี่ยนชื่อปุ่มหลักจาก "ดูดวงฟรี" เป็น "เริ่มดูดวง"
-        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
 
-        $actions = [
+        // Submenu ของ "🔍 รู้จักเรา"
+        $aboutSubmenu = [
             [
                 'type' => 'postback',
-                'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
-                'payload' => 'MENU_FORTUNE',
+                'title' => '✨ ศาสตร์ที่เราใช้',
+                'payload' => 'MENU_ABOUT_US',
             ],
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
-                'payload' => 'MENU_DEEP_FORTUNE',
+                'title' => '👥 ชวนเพื่อน รับรายได้',
+                'payload' => 'MENU_REFERRAL',
             ],
         ];
 
-        // ถ้ามี LINE → ใส่ปุ่มเพิ่มเพื่อน LINE (URL button)
-        // ⚠️ ใช้ line_bot_basic_id (@xxx) ไม่ใช่ line_channel_id (ตัวเลข)
+        // เพิ่ม LINE ใน submenu ถ้ามีการตั้งค่า
         $basicId = $this->settings->line_bot_basic_id ?? null;
         if (! empty($basicId)) {
             if (! str_starts_with($basicId, '@')) {
                 $basicId = '@' . $basicId;
             }
-            $actions[] = [
+            $aboutSubmenu[] = [
                 'type' => 'web_url',
                 'title' => '💚 เพิ่มเพื่อน LINE',
                 'url' => 'https://line.me/R/ti/p/' . $basicId,
             ];
-        } else {
-            // ถ้าไม่มี LINE → ใส่ปุ่มเช็คสิทธิ์แทน
-            $actions[] = [
-                'type' => 'postback',
-                'title' => '📊 เช็คสิทธิ์ดูดวง',
-                'payload' => 'MENU_CHECK_REMAINING',
-            ];
         }
 
-        return $actions;
+        return [
+            // 1️⃣ สมัครสมาชิก → ไป FB OAuth (auto-login + redirect ไป wallet)
+            [
+                'type' => 'web_url',
+                'title' => '📝 สมัครสมาชิก',
+                'url' => $appUrl . '/auth/facebook',
+                'webview_height_ratio' => 'full',
+            ],
+
+            // 2️⃣ ดูดวงละเอียด → เริ่ม flow
+            [
+                'type' => 'postback',
+                'title' => '💎 ดูดวงละเอียด',
+                'payload' => 'MENU_DEEP_FORTUNE',
+            ],
+
+            // 3️⃣ รู้จักเรา (มี submenu)
+            [
+                'type' => 'nested',
+                'title' => '🔍 รู้จักเรา',
+                'call_to_actions' => $aboutSubmenu,
+            ],
+        ];
+    }
+
+    /**
+     * สร้าง Ice Breakers — 4 คำถามให้ลูกค้าใหม่กดเลือกตอนเปิดแชท
+     *
+     * ปรากฏก่อนลูกค้าพิมพ์ข้อความแรก ทำให้ลูกค้าใหม่เริ่ม flow ได้ง่าย
+     * Facebook รองรับสูงสุด 4 questions
+     *
+     * @return array call_to_actions สำหรับ ice_breakers
+     */
+    protected function buildIceBreakerActions(): array
+    {
+        return [
+            [
+                'question' => '🔮 อยากดูดวงเชิงลึกแม่นๆ',
+                'payload' => 'MENU_DEEP_FORTUNE',
+            ],
+            [
+                'question' => '📝 สมัครสมาชิกเพื่อดูดวง+รับรายได้',
+                'payload' => 'ICEBREAKER_REGISTER',
+            ],
+            [
+                'question' => '✨ รู้จักเรา / ศาสตร์ที่ใช้ทำนาย',
+                'payload' => 'MENU_ABOUT_US',
+            ],
+            [
+                'question' => '👥 ชวนเพื่อน รับรายได้แบบไหน?',
+                'payload' => 'MENU_REFERRAL',
+            ],
+        ];
     }
 
     /**
