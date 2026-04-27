@@ -94,6 +94,22 @@ class FortuneAIService
     }
 
     /**
+     * 🚀 Provider HTTP timeouts (วินาที)
+     *
+     * ทำไมต้องสั้น: ลูกค้าจ่ายเงินรอคำทำนาย → ต้อง failover เร็ว
+     * ปกติ AI deep reading ตอบใน 5-20s → ตัด tail latency ที่ 30s = สลับ provider เลย
+     *
+     * - DEEP: เพิ่งเก็บค่าเดิม 60-120s ทำให้รอ 1-2 นาที/provider พัง = ไม่เชื่อถือ
+     * - CHAT: response สั้น ตอบเร็ว (3-10s) → 15s ก็พอ
+     * - TOTAL_BUDGET: หยุด loop หลังเวลานี้ ป้องกันรอนานเกิน
+     */
+    protected const DEEP_PROVIDER_TIMEOUT = 30;
+
+    protected const CHAT_PROVIDER_TIMEOUT = 15;
+
+    protected const DEEP_TOTAL_BUDGET_SEC = 90;
+
+    /**
      * กำหนด maxTokens และ temperature ตาม reading type
      */
     protected const READING_CONFIG = [
@@ -613,7 +629,7 @@ class FortuneAIService
             'parts' => [['text' => $prompt]],
         ];
 
-        $response = Http::timeout(20)->post($url, [
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -693,7 +709,7 @@ class FortuneAIService
         // เพิ่มข้อความปัจจุบัน
         $messages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(20)
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
@@ -782,7 +798,7 @@ class FortuneAIService
     {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
-        $response = Http::timeout(15)->post($url, [
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -836,7 +852,7 @@ class FortuneAIService
             $headers['HTTP-Referer'] = config('app.url');
         }
 
-        $response = Http::timeout(15)
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
             ->withHeaders($headers)
             ->post($url, [
                 'model' => $model,
@@ -986,7 +1002,21 @@ class FortuneAIService
         }
 
         // วนลอง keys — สลับทันทีเมื่อ error/429 (คงเหลือ smart tracking)
+        // 🚀 2026-04-27: เพิ่ม total budget guard — หยุด loop ถ้ารอนานเกินกำหนด
+        // ป้องกันลูกค้ารอ 4+ นาทีกรณี keys หลายตัว stuck
         foreach ($allKeys as $index => $keyInfo) {
+            // ⏱️ Total budget check — เกิน 90s แล้วหยุด ไม่งั้นลูกค้ารอนานเกินไป
+            $elapsedSec = microtime(true) - $startTime;
+            if ($elapsedSec >= self::DEEP_TOTAL_BUDGET_SEC) {
+                Log::warning('FortuneAI: เกิน total budget — หยุด fallback loop', [
+                    'elapsed_sec' => round($elapsedSec, 1),
+                    'budget_sec' => self::DEEP_TOTAL_BUDGET_SEC,
+                    'tried_keys' => $index,
+                    'remaining_keys' => count($allKeys) - $index,
+                ]);
+                break;
+            }
+
             // 🎯 Phase H — Acquire in-flight slot (ป้องกัน hammer key เดียว)
             $inflightCache = $this->acquireKeyInflight($keyInfo);
 
@@ -994,7 +1024,7 @@ class FortuneAIService
                 $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
                 $keyNum = $index + 1;
                 $totalKeys = count($allKeys);
-                Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel}");
+                Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel} (elapsed={$elapsedSec}s)");
 
                 $result = $this->callProviderDirect(
                     $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config
@@ -1039,10 +1069,12 @@ class FortuneAIService
                     $this->recordProvider429($keyInfo['provider']);
                 }
 
-                // ถ้ายังมี key ถัดไป → สลับทันที (รอแค่ 1-3 วินาที)
-                if ($index < $totalKeys - 1) {
-                    $delay = $is429 ? 1 : 3; // 429 = สลับเลย (1s), error อื่น = 3s
-                    sleep($delay);
+                // 🚀 2026-04-27: สลับ key ถัดไปทันที — ไม่ sleep บน non-429
+                // เก่า: sleep 1s (429) / 3s (อื่น) — ช้าไปสำหรับลูกค้าที่รอ
+                // ใหม่: 0s (อื่น) / 1s (429 — กัน hammer rate-limited provider)
+                // เหตุผล: provider พังแล้ว ลอง provider ถัดไปเลย ไม่ต้องรอ
+                if ($index < $totalKeys - 1 && $is429) {
+                    sleep(1);
                 }
             }
         }
@@ -1786,7 +1818,7 @@ class FortuneAIService
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
-            $response = Http::timeout(60)->post($url, [
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)->post($url, [
                 'system_instruction' => [
                     'parts' => [['text' => self::SYSTEM_MESSAGE]],
                 ],
@@ -1837,7 +1869,7 @@ class FortuneAIService
     protected function callGroq(string $prompt, array $config = []): array
     {
         try {
-            $response = Http::timeout(60)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.groq.com/openai/v1/chat/completions', [
                     'model' => $this->model,
@@ -1871,7 +1903,7 @@ class FortuneAIService
         try {
             // ใช้ HuggingFace Router API (OpenAI-compatible chat format)
             // ให้คุณภาพคำทำนายดีกว่า text generation API เดิม
-            $response = Http::timeout(120)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://router.huggingface.co/v1/chat/completions', [
                     'model' => $this->model,
@@ -1903,7 +1935,7 @@ class FortuneAIService
     protected function callOpenRouter(string $prompt, array $config = []): array
     {
         try {
-            $response = Http::timeout(60)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->withHeaders(['HTTP-Referer' => config('app.url')])
                 ->post('https://openrouter.ai/api/v1/chat/completions', [
@@ -2120,7 +2152,7 @@ class FortuneAIService
     protected function callGrok(string $prompt, array $config = []): array
     {
         try {
-            $response = Http::timeout(90)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.x.ai/v1/chat/completions', [
                     'model' => $this->model ?: 'grok-2-latest',
@@ -2171,7 +2203,7 @@ class FortuneAIService
     protected function callDeepSeek(string $prompt, array $config = []): array
     {
         try {
-            $response = Http::timeout(90)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.deepseek.com/chat/completions', [
                     'model' => $this->model ?: 'deepseek-chat',
@@ -2219,7 +2251,7 @@ class FortuneAIService
     protected function callTyphoon(string $prompt, array $config = []): array
     {
         try {
-            $response = Http::timeout(90)
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.opentyphoon.ai/v1/chat/completions', [
                     'model' => $this->model ?: 'typhoon-v2-70b-instruct',

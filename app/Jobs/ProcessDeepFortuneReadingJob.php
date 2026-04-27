@@ -347,91 +347,119 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 $reading->setConversationState('reading_ready_at', now()->toIso8601String());
             }
 
-            // ✅ Push แจ้งเตือนทันที "คำทำนายพร้อมแล้ว อ่านเลยไหม"
-            // ลูกค้าจ่ายเงินแล้ว → ต้องแจ้งให้ได้ทันที (bypass gatekeeper + priority push)
+            // ✅ Push เมื่อคำทำนายพร้อม (2026-04-27 — แตกต่างกันตาม platform)
+            //
+            // 📱 Facebook → push **คำทำนายเต็มทันที** (ไม่ถาม "พร้อมไหม?")
+            //   ใช้ POST_PURCHASE_UPDATE message_tag — ฟรีตาม FB policy
+            //   action: view_reading_deep → channelManager ส่งข้อความ + chart image
+            //
+            // 💎 LINE → push **แจ้งเตือนสั้นๆ Flex Message** (ยอมเสีย quota 1 ครั้งเพื่อ UX)
+            //   - ใช้ buildFortuneReadyFlexMessage (ปุ่ม "อ่านคำทำนาย" สวยงาม)
+            //   - คำทำนายเต็มยังส่งฟรีผ่าน replyMessage ตอน user กดอ่าน/ทักกลับมา
+            //   - ตั้ง reading_notification_sent=true → FCS:766 จะส่งคำทำนายเต็มตอน user ตอบกลับ
             if (! empty($reading->deep_response) && $this->userId) {
+                $alreadySent = $reading->getConversationState('reading_sent_directly', false);
                 $alreadyNotified = $reading->getConversationState('reading_notification_sent', false);
                 $retryCount = (int) $reading->getConversationState('reading_notification_retry_count', 0);
 
-                if (! $alreadyNotified && $retryCount < 3) {
-                    try {
-                        $name = $reading->facebook_user_name ?? 'คุณ';
-                        $readyMessage = "🔮✨ คุณ{$name}คะ คำทำนายพร้อมแล้วค่ะ!\n\n"
-                            . "อ่านเลยไหมคะ? 💎\n\n"
-                            . "💡 กด 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
+                if (! $alreadySent && ! $alreadyNotified && $retryCount < 3) {
+                    $name = $reading->facebook_user_name ?? 'คุณ';
+                    $reading->setConversationState('reading_notification_attempted', true);
+                    $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
-                        Log::info('ProcessDeepFortuneReadingJob: กำลัง push แจ้ง "คำทำนายพร้อมแล้ว" ทันที', [
-                            'reading_id' => $this->readingId,
-                            'platform' => $this->platform,
-                            'user_id' => $this->userId,
-                            'retry_count' => $retryCount,
-                        ]);
+                    if ($this->platform === 'line') {
+                        // 💎 LINE: push Flex แจ้งเตือนสั้นๆ (1 quota), คำทำนายเต็มส่งฟรีตอนตอบกลับ
+                        try {
+                            $lineService = new \App\Services\LineFortuneService($settings);
+                            $readyMessage = "🔮✨ คุณ{$name}คะ คำทำนายพร้อมแล้วค่ะ!\n\n"
+                                . "อ่านเลยไหมคะ? 💎\n\n"
+                                . "💡 กด 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
 
-                        $reading->setConversationState('reading_notification_attempted', true);
-                        $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
+                            Log::info('ProcessDeepFortuneReadingJob: LINE — push Flex แจ้งเตือนสั้นๆ (1 quota)', [
+                                'reading_id' => $this->readingId,
+                                'user_id' => $this->userId,
+                            ]);
 
-                        $notifySent = false;
+                            // ลอง Flex สวยๆ ก่อน
+                            $flex = $lineService->buildFortuneReadyFlexMessage(
+                                $name,
+                                $reading->bill_reference
+                            );
+                            $notifySent = $lineService->sendRichMessagePriority($this->userId, [
+                                'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
+                                'contents' => $flex,
+                            ]);
 
-                        // ✅ สำหรับ LINE → ส่ง Flex Message สวยงาม (สะดุดตา + ปุ่มกดอ่าน)
-                        // ใช้ priority push ตรง (เร็วสุด, bypass gatekeeper)
-                        if ($this->platform === 'line') {
-                            try {
-                                $lineService = new \App\Services\LineFortuneService($settings);
-
-                                // ลอง Flex ก่อน (สวยงาม สะดุดตา มีปุ่มกด)
-                                $flex = $lineService->buildFortuneReadyFlexMessage(
-                                    $name,
-                                    $reading->bill_reference
-                                );
-                                $notifySent = $lineService->sendRichMessagePriority($this->userId, [
-                                    'alt_text' => '🔮 คำทำนายเชิงลึกพร้อมแล้ว! กดอ่านได้เลยค่ะ',
-                                    'contents' => $flex,
-                                ]);
-
-                                // Fallback: text + quick replies ถ้า Flex ล้มเหลว
-                                if (! $notifySent) {
-                                    Log::warning('ProcessDeepFortuneReadingJob: LINE Flex push ล้มเหลว → fallback text', [
-                                        'reading_id' => $this->readingId,
-                                    ]);
-                                    $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage, [
-                                        'quick_replies' => [
-                                            ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
-                                            ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
-                                        ],
-                                    ]);
-                                }
-                            } catch (\Exception $directErr) {
-                                Log::warning('ProcessDeepFortuneReadingJob: LINE direct push ล้มเหลว → ลอง channelManager', [
+                            // Fallback: text + quick replies ถ้า Flex ล้มเหลว
+                            if (! $notifySent) {
+                                Log::warning('ProcessDeepFortuneReadingJob: LINE Flex push ล้มเหลว → fallback text', [
                                     'reading_id' => $this->readingId,
-                                    'error' => $directErr->getMessage(),
+                                ]);
+                                $notifySent = $lineService->sendMessagePriority($this->userId, $readyMessage, [
+                                    'quick_replies' => [
+                                        ['label' => '📖 อ่านคำทำนาย', 'text' => 'อ่านคำทำนาย'],
+                                        ['label' => '⏰ ไว้ดูทีหลัง', 'text' => 'ไว้ดูทีหลัง'],
+                                    ],
                                 ]);
                             }
-                        }
 
-                        // Fallback: ผ่าน channelManager (สำหรับ Facebook หรือ LINE push ล้มเหลว)
-                        if (! $notifySent) {
-                            $notifySent = $channelManager->sendResponse($this->platform, $this->userId, [
-                                'action' => 'fortune_ready_notification',
-                                'message' => $readyMessage,
+                            $reading->setConversationState('reading_notification_sent', $notifySent);
+                            $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+
+                            Log::info('ProcessDeepFortuneReadingJob: LINE push แจ้งเตือนสั้น ผลลัพธ์', [
+                                'reading_id' => $this->readingId,
+                                'sent' => $notifySent,
+                            ]);
+                        } catch (\Exception $notifyErr) {
+                            Log::warning('ProcessDeepFortuneReadingJob: LINE push แจ้งเตือนล้มเหลว', [
+                                'reading_id' => $this->readingId,
+                                'error' => $notifyErr->getMessage(),
+                            ]);
+                            // notification_attempted=true แล้ว → FCS:794 จะส่งคำทำนายเต็มทันทีตอนทักกลับ
+                        }
+                    } else {
+                        // 📱 Facebook: ส่งคำทำนายเต็มทันที (ไม่ถามก่อน)
+                        try {
+                            // ประกอบข้อความคำทำนายเต็ม (รูปแบบเดียวกับ FCS:779-784)
+                            $readingMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                            $readingMessage .= '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n";
+                            $readingMessage .= '📅 วันที่: ' . $reading->created_at->format('d/m/Y H:i') . "\n";
+                            $readingMessage .= "═══════════════════════\n\n";
+                            $readingMessage .= $reading->deep_response;
+
+                            Log::info('ProcessDeepFortuneReadingJob: Facebook — ส่งคำทำนายเต็มทันที (push)', [
+                                'reading_id' => $this->readingId,
+                                'user_id' => $this->userId,
+                                'message_length' => mb_strlen($readingMessage),
+                                'has_chart' => ! empty($reading->reading_image_url),
+                                'retry_count' => $retryCount,
+                            ]);
+
+                            $sent = $channelManager->sendResponse($this->platform, $this->userId, [
+                                'action' => 'view_reading_deep',
+                                'message' => $readingMessage,
                                 'reading' => $reading,
-                                'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                                'chart_image_url' => $reading->reading_image_url,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                            // Mark as sent — กัน duplicate ตอน user ทักกลับมา
+                            $reading->setConversationState('reading_sent_directly', $sent);
+                            $reading->setConversationState('reading_notification_sent', $sent);
+                            $reading->setConversationState('reading_ready_sent', $sent);
+                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                            $reading->setConversationState('delivered_by_push', $sent);
+
+                            Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
+                                'reading_id' => $this->readingId,
+                                'sent' => $sent,
+                            ]);
+                        } catch (\Exception $notifyErr) {
+                            Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
+                                'reading_id' => $this->readingId,
+                                'error' => $notifyErr->getMessage(),
+                            ]);
+                            // notification_attempted=true แล้ว → FCS:794 จะส่งคำทำนายเต็มทันทีตอนทักกลับ
                         }
-
-                        $reading->setConversationState('reading_notification_sent', $notifySent);
-                        $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
-
-                        Log::info('ProcessDeepFortuneReadingJob: push แจ้ง "คำทำนายพร้อมแล้ว" ผลลัพธ์', [
-                            'reading_id' => $this->readingId,
-                            'sent' => $notifySent,
-                            'platform' => $this->platform,
-                        ]);
-                    } catch (\Exception $notifyErr) {
-                        Log::warning('ProcessDeepFortuneReadingJob: push แจ้งเตือนล้มเหลว (fallback replyMessage)', [
-                            'reading_id' => $this->readingId,
-                            'error' => $notifyErr->getMessage(),
-                        ]);
-                        $reading->setConversationState('reading_notification_attempted', true);
                     }
                 }
             }
