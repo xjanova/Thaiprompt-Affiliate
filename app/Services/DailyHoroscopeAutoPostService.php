@@ -328,11 +328,32 @@ class DailyHoroscopeAutoPostService
      */
     protected function publishToFacebook(FortuneDailyHoroscopePost $post): array
     {
-        $pageId = $this->settings->facebook_page_id;
-        $pageToken = $this->settings->facebook_page_token ?? $this->settings->facebook_page_access_token;
+        // ✅ Refresh จาก DB ตรงๆ — กัน static cache ของ getSettings() stale
+        // (ใน flow มีการเรียก AI หลายครั้ง อาจมี side-effect)
+        $fresh = FortuneTellingSetting::query()->first();
+        if (! $fresh) {
+            throw new Exception('ไม่พบ FortuneTellingSetting ใน DB');
+        }
+
+        $pageId = $fresh->facebook_page_id;
+        $pageToken = $fresh->facebook_page_token
+            ?? $fresh->facebook_page_access_token
+            ?? $fresh->getRawOriginal('facebook_page_token');
+
+        // Debug — ลง log ค่าความยาว (ไม่เผย secret)
+        Log::info('DailyHoroscopeAutoPost: ตรวจ FB credentials ก่อน publish', [
+            'has_page_id' => ! empty($pageId),
+            'page_id_len' => is_string($pageId) ? strlen($pageId) : 0,
+            'has_token' => ! empty($pageToken),
+            'token_len' => is_string($pageToken) ? strlen($pageToken) : 0,
+        ]);
 
         if (empty($pageId) || empty($pageToken)) {
-            throw new Exception('ไม่พบ Facebook Page ID หรือ Page Access Token ใน settings');
+            throw new Exception(sprintf(
+                'ไม่พบ Facebook Page ID หรือ Page Access Token ใน settings (page_id_len=%d, token_len=%d)',
+                is_string($pageId) ? strlen($pageId) : 0,
+                is_string($pageToken) ? strlen($pageToken) : 0,
+            ));
         }
 
         $caption = $post->caption ?: 'ดวงประจำวัน';
