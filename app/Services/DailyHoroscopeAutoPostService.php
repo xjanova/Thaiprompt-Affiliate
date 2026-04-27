@@ -2,9 +2,11 @@
 
 namespace App\Services;
 
+use App\Models\AiGenProvider;
 use App\Models\FortuneDailyHoroscopePost;
 use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
+use App\Services\AiGen\CloudflareAiProvider;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -203,10 +205,19 @@ class DailyHoroscopeAutoPostService
     protected function generateImage(FortuneDailyHoroscopePost $post): void
     {
         try {
-            // ✨ ใช้ Pollinations.ai — AI image generation API ฟรี ไม่ต้อง API key
-            // คุณภาพดีกว่า GD library + รูปสวยตรงตามธีม + 1080x1080
-            $imageUrl = $this->generateImageWithPollinations($post);
+            // 🥇 Primary: Cloudflare Workers AI (FLUX-1-schnell)
+            //    เร็ว ~3-5s + เสถียร + ฟรี ~40 ภาพ/วัน + รวม Account ID + token เดียว
+            $imageUrl = $this->generateImageWithCloudflare($post);
 
+            // 🥈 Fallback 1: Pollinations.ai (ฟรี ไม่ต้อง API key)
+            if (! $imageUrl) {
+                Log::info('DailyHoroscopeAutoPost: Cloudflare AI ไม่พร้อม → ลอง Pollinations.ai', [
+                    'post_id' => $post->id,
+                ]);
+                $imageUrl = $this->generateImageWithPollinations($post);
+            }
+
+            // 🥉 Fallback 2: GD library (เสมอเสมอ — สร้างจากข้อมูลในระบบ)
             if (! $imageUrl) {
                 Log::info('DailyHoroscopeAutoPost: Pollinations.ai ไม่พร้อม → fallback GD', [
                     'post_id' => $post->id,
@@ -224,6 +235,142 @@ class DailyHoroscopeAutoPostService
             Log::warning('DailyHoroscopeAutoPost: สร้างรูปล้มเหลว — โพสแบบ text-only', [
                 'error' => $e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * 🚀 สร้างรูปด้วย Cloudflare Workers AI (FLUX-1-schnell) — Primary
+     *
+     * ใช้ provider ที่มีอยู่แล้วในระบบ (slug: cloudflare-ai)
+     * fallback credential: DB config → config('services.cloudflare.*')
+     *
+     * Returns: URL ของรูป หรือ null ถ้าล้มเหลว
+     */
+    protected function generateImageWithCloudflare(FortuneDailyHoroscopePost $post): ?string
+    {
+        try {
+            // ดึง provider จาก DB (ถ้าไม่มี slug 'cloudflare-ai' = ไม่ได้ seed → ข้าม)
+            $providerModel = AiGenProvider::where('slug', 'cloudflare-ai')->first();
+
+            if (! $providerModel) {
+                Log::info('DailyHoroscopeAutoPost: ไม่พบ AiGenProvider slug=cloudflare-ai — รัน AiGenSeeder ก่อน');
+
+                return null;
+            }
+
+            // เช็ค credential ก่อนเรียก (ประหยัด HTTP call ถ้า config ว่าง)
+            $cfProvider = new CloudflareAiProvider($providerModel);
+            if (! $cfProvider->isConfigured()) {
+                Log::info('DailyHoroscopeAutoPost: Cloudflare AI ยังไม่ได้ตั้งค่า — เช็ค .env: CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID', [
+                    'post_id' => $post->id,
+                ]);
+
+                return null;
+            }
+
+            $card = $post->tarotCard;
+            $dayName = FortuneDailyHoroscopePost::DAY_NAMES[$post->day_of_birth];
+            $cardName = $card?->name_en ?: 'tarot card';
+
+            // ธีมสีตามวันเกิด (โหราศาสตร์ไทย)
+            $dayThemes = [
+                1 => 'soft golden yellow moonlight, pearl white aura',
+                2 => 'fiery red and orange, mars warrior energy',
+                3 => 'emerald green forest, mercury wisdom',
+                4 => 'royal orange and amber, jupiter abundance',
+                5 => 'azure blue and silver, venus love beauty',
+                6 => 'deep purple and indigo, saturn mysticism',
+                7 => 'radiant sunrise red-orange, sun divine energy',
+            ];
+            $theme = $dayThemes[$post->day_of_birth] ?? 'mystical purple';
+
+            $prompt = "Mystical Thai astrology fortune telling artwork, "
+                . "{$theme}, "
+                . "tarot card '{$cardName}' floating in cosmic space, "
+                . "ornate gold filigree borders, sacred geometry mandalas, "
+                . "celestial stars and constellations, ethereal mist, "
+                . "Thai temple architecture silhouette, lotus flowers, "
+                . "elegant mystic atmosphere, high quality digital art, "
+                . "cinematic lighting, ultra detailed, 4K, professional photography style, "
+                . "no text no words no letters";
+
+            // seed deterministic (วัน + วันเกิด) — เผื่อรัน publish ซ้ำ ภาพเดียวกัน
+            $seed = ($post->day_of_birth * 1000) + (int) $post->post_date->format('Ymd');
+
+            $result = $cfProvider->generateImage($prompt, [
+                'model' => 'flux-1-schnell',
+                'size' => '1024x1024',
+                'steps' => 4, // FLUX-schnell โอเคที่ 4 steps
+                'seed' => $seed,
+            ]);
+
+            if (! ($result['success'] ?? false) || empty($result['images'][0]['url'])) {
+                Log::warning('DailyHoroscopeAutoPost: Cloudflare AI fail', [
+                    'post_id' => $post->id,
+                    'error' => $result['error'] ?? 'unknown',
+                ]);
+
+                return null;
+            }
+
+            $sourceUrl = $result['images'][0]['url'];
+
+            // คัดลอก image จาก ai-gen storage path → fortune-daily/{date}/day-{n}.jpg (ตาม convention)
+            $relativePath = "fortune-daily/{$post->post_date->format('Y-m-d')}/day-{$post->day_of_birth}.jpg";
+            $absolutePath = storage_path("app/public/{$relativePath}");
+            $dir = dirname($absolutePath);
+            if (! is_dir($dir)) {
+                mkdir($dir, 0755, true);
+            }
+
+            // ดึงไฟล์จาก URL (relative URL ใน app เดียวกัน — ใช้ Storage หรือ readfile)
+            // CloudflareAiProvider เซฟไว้ใน Storage::disk('public') → เราอ่านผ่าน path ตรง
+            try {
+                $sourcePath = parse_url($sourceUrl, PHP_URL_PATH);
+                // ตัด /storage/ ออกเพื่อหา path ใน disk
+                if (str_starts_with($sourcePath, '/storage/')) {
+                    $diskRelative = substr($sourcePath, strlen('/storage/'));
+                    if (Storage::disk('public')->exists($diskRelative)) {
+                        $binary = Storage::disk('public')->get($diskRelative);
+                        file_put_contents($absolutePath, $binary);
+                    } else {
+                        // fallback: ดาวน์โหลดผ่าน HTTP
+                        $response = Http::timeout(30)->get($sourceUrl);
+                        if (! $response->successful()) {
+                            return null;
+                        }
+                        file_put_contents($absolutePath, $response->body());
+                    }
+                } else {
+                    // absolute URL → HTTP fetch
+                    $response = Http::timeout(30)->get($sourceUrl);
+                    if (! $response->successful()) {
+                        return null;
+                    }
+                    file_put_contents($absolutePath, $response->body());
+                }
+            } catch (Exception $copyEx) {
+                Log::warning('DailyHoroscopeAutoPost: copy CF image fail', ['error' => $copyEx->getMessage()]);
+
+                return null;
+            }
+
+            $post->update(['image_path' => $relativePath]);
+
+            Log::info('DailyHoroscopeAutoPost: Cloudflare AI สำเร็จ', [
+                'post_id' => $post->id,
+                'day' => $post->day_of_birth,
+                'card' => $cardName,
+                'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
+            ]);
+
+            return asset('storage/' . $relativePath);
+        } catch (Exception $e) {
+            Log::warning('DailyHoroscopeAutoPost: Cloudflare AI exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 

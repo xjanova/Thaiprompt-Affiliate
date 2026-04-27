@@ -497,9 +497,29 @@ class FacebookWebhookController extends Controller
     {
         $message = $comment['message'] ?? '';
         $fromId = $comment['from']['id'] ?? null;
+        $commentId = $comment['comment_id'] ?? null;
 
         if (empty($fromId)) {
             return;
+        }
+
+        // 👍 Auto-like ทุกคอมเม้นต์ที่มาจาก user (ไม่ใช่จากเพจเอง)
+        //    — ครั้งเดียวต่อ comment_id (cache 24 ชม.)
+        //    — best-effort: ถ้าล้มยังไป flow ต่อได้
+        //    — เปิดใช้ก็ต่อเมื่อ token มี pages_manage_engagement scope
+        if (! empty($commentId) && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+            $likeKey = "fb_liked_comment_{$commentId}";
+            if (! Cache::has($likeKey)) {
+                try {
+                    $this->facebookService->reactToComment($commentId, 'LIKE');
+                    Cache::put($likeKey, 1, now()->addHours(24));
+                } catch (\Throwable $e) {
+                    // non-blocking — log แค่ debug
+                    Log::debug('Auto-like comment ล้ม (non-blocking): '.$e->getMessage(), [
+                        'comment_id' => $commentId,
+                    ]);
+                }
+            }
         }
 
         // ตรวจสอบว่าเป็นคำขอดูดวงเชิงลึกหรือพื้นฐาน

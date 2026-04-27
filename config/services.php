@@ -22,6 +22,11 @@ return [
         // Cloudflare API (Cache Purge, DNS, Security, etc.)
         'zone_id' => env('CLOUDFLARE_ZONE_ID', 'd552b4a77bf4783bf6cbfd6a07d3f349'),
         'api_token' => env('CLOUDFLARE_API_TOKEN', '3fc13fcba9b6add1ee59f2504f092bddec540'),
+
+        // Cloudflare Account ID (สำหรับ Workers AI - เจนภาพ FLUX)
+        // หาได้จาก dash.cloudflare.com → sidebar ขวา → Account ID
+        // หรือดูใน URL: dash.cloudflare.com/<account_id>/...
+        'account_id' => env('CLOUDFLARE_ACCOUNT_ID', ''),
     ],
 
     'google' => [

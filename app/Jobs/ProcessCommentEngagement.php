@@ -163,6 +163,15 @@ class ProcessCommentEngagement implements ShouldQueue
                 ]);
             }
 
+            // 3.5 💗 กด LIKE คอมเม้นต์อัตโนมัติ — boost engagement signal ให้ FB algorithm
+            //     (ไม่ block ถ้า fail — best-effort)
+            try {
+                $facebookService->reactToComment($commentId, 'LIKE');
+            } catch (Throwable $e) {
+                // non-blocking
+                Log::debug('reactToComment LIKE ล้ม (non-blocking): '.$e->getMessage());
+            }
+
             // 4. ส่ง inbox พร้อม Quick Replies
             // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
             // และแก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ)

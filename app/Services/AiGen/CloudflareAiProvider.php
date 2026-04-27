@@ -37,13 +37,15 @@ class CloudflareAiProvider extends BaseAiGenProvider
      */
     public function generateImage(string $prompt, array $parameters = []): array
     {
-        $apiToken = $this->getConfig('api_key');
-        $accountId = $this->getConfig('account_id');
+        // ลำดับการดึง credential: DB config (admin UI) → .env (CLOUDFLARE_API_TOKEN/ACCOUNT_ID)
+        // วิธีนี้ใช้ token เดียวกับ TPIX ได้โดยไม่ต้องตั้งค่า admin UI ใหม่
+        $apiToken = $this->getConfig('api_key') ?: config('services.cloudflare.api_token');
+        $accountId = $this->getConfig('account_id') ?: config('services.cloudflare.account_id');
 
         if (! $apiToken || ! $accountId) {
             return [
                 'success' => false,
-                'error' => 'Cloudflare API token หรือ Account ID ยังไม่ได้ตั้งค่า',
+                'error' => 'Cloudflare API token หรือ Account ID ยังไม่ได้ตั้งค่า (ลองใส่ CLOUDFLARE_API_TOKEN + CLOUDFLARE_ACCOUNT_ID ใน .env)',
             ];
         }
 
@@ -217,7 +219,11 @@ class CloudflareAiProvider extends BaseAiGenProvider
      */
     public function isConfigured(): bool
     {
-        return ! empty($this->getConfig('api_key')) && ! empty($this->getConfig('account_id'));
+        // เช็ค DB config + env fallback (ใช้ TPIX key ที่ใส่ไว้แล้ว)
+        $token = $this->getConfig('api_key') ?: config('services.cloudflare.api_token');
+        $accountId = $this->getConfig('account_id') ?: config('services.cloudflare.account_id');
+
+        return ! empty($token) && ! empty($accountId);
     }
 
     /**
@@ -227,13 +233,14 @@ class CloudflareAiProvider extends BaseAiGenProvider
      */
     public function testConnection(): array
     {
-        $apiToken = $this->getConfig('api_key');
-        $accountId = $this->getConfig('account_id');
+        // ใช้ DB config → fallback ไป env (CLOUDFLARE_API_TOKEN/ACCOUNT_ID)
+        $apiToken = $this->getConfig('api_key') ?: config('services.cloudflare.api_token');
+        $accountId = $this->getConfig('account_id') ?: config('services.cloudflare.account_id');
 
         if (! $apiToken || ! $accountId) {
             return [
                 'success' => false,
-                'message' => 'API token หรือ Account ID ยังไม่ได้ตั้งค่า',
+                'message' => 'API token หรือ Account ID ยังไม่ได้ตั้งค่า (ใส่ใน admin UI หรือ .env)',
             ];
         }
 
