@@ -51,8 +51,9 @@
 @endpush
 
 @section('content')
-{{-- Horoscope Cosmic Layout --}}
-<div class="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 relative overflow-hidden"
+{{-- Horoscope Cosmic Layout
+     pt-16 lg:pt-20 = ดันเนื้อหาลงให้พ้น fixed top nav ของ layouts.landing (h-16/h-20) --}}
+<div class="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-indigo-950 relative overflow-hidden pt-16 lg:pt-20"
      x-data="horoscopeLayout()">
 
     {{-- พื้นหลัง Cosmic --}}

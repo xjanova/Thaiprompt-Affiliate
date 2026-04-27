@@ -1,5 +1,6 @@
-{{-- Navigation สำหรับหมวดหมู่ดูดวง --}}
-<nav class="relative z-20 bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-0">
+{{-- Navigation สำหรับหมวดหมู่ดูดวง
+     sticky top-16 lg:top-20 = นั่งใต้ fixed top nav ของ layouts.landing --}}
+<nav class="relative z-20 bg-black/20 backdrop-blur-xl border-b border-white/10 sticky top-16 lg:top-20">
     <div class="container mx-auto px-4">
         <div class="flex items-center justify-between h-16">
             {{-- โลโก้ --}}
