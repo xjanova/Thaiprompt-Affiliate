@@ -763,6 +763,15 @@ class FacebookWebhookController extends Controller
             ]);
         }
 
+        // 1.5 👍 กด "ถูกใจ" comment ของลูกค้าอัตโนมัติ
+        // - User เห็นว่าเพจ active + ใส่ใจ → engagement rate สูงขึ้น
+        // - FB algorithm boost reach (เพจที่ engage comment ตัวเองได้คะแนนสูง)
+        try {
+            $this->facebookService->reactToComment($commentId, 'LIKE');
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
         // 2. ส่ง inbox + Quick Replies
         // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
         // และแก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ)
@@ -774,6 +783,12 @@ class FacebookWebhookController extends Controller
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
         ]);
+
+        // 2.5 ส่งปุ่มติดตามเพจ (best-effort — เพื่อ algorithm boost)
+        // ลูกค้ากดติดตาม → FB อัลกอริธึมเห็นว่าเพจมี follower เพิ่ม + แจ้งเตือนได้ตลอด
+        if ($dmSent) {
+            $this->sendFollowPagePrompt($fromId, $commentId);
+        }
 
         // 3. บันทึก engagement เฉพาะเมื่อ DM ส่งสำเร็จ
         //    ถ้าส่งไม่สำเร็จ → ไม่ dedupe ลูกค้า ให้ retry ได้ในคอมเม้นต์ถัดไป
@@ -1406,7 +1421,7 @@ class FacebookWebhookController extends Controller
             . "📍 https://xman4289.com\n\n"
             . "💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio";
 
-        $this->facebookService->sendButtons($senderId, $message, [
+        $this->sendButtons($senderId, $message, [
             ['type' => 'web_url', 'title' => '🌐 เยี่ยมชม xman studio', 'url' => 'https://xman4289.com'],
             ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
             ['type' => 'postback', 'title' => '👥 ชวนเพื่อน', 'payload' => 'MENU_REFERRAL'],
@@ -1434,7 +1449,7 @@ class FacebookWebhookController extends Controller
             . "✅ ถอนเงินได้เมื่อยืนยันตัวตน (KYC)\n\n"
             . "👉 กดปุ่มด้านล่างเพื่อสมัคร — ใช้เวลา 10 วินาที";
 
-        $this->facebookService->sendButtons($senderId, $message, [
+        $this->sendButtons($senderId, $message, [
             ['type' => 'web_url', 'title' => '📝 สมัครด้วย Facebook', 'url' => $registerUrl, 'webview_height_ratio' => 'full'],
             ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
         ]);
@@ -1473,7 +1488,7 @@ class FacebookWebhookController extends Controller
                 . "• 💸 ถอนเงินเข้าบัญชีได้ (หลัง KYC)\n\n"
                 . "✨ ดูดวง 1 ครั้ง = ได้ทั้งคำทำนายแม่นๆ + เป็นสมาชิกเลยค่ะ";
 
-            $this->facebookService->sendButtons($senderId, $message, [
+            $this->sendButtons($senderId, $message, [
                 ['type' => 'postback', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'],
                 ['type' => 'postback', 'title' => '✨ รู้จักเราเพิ่ม', 'payload' => 'MENU_ABOUT_US'],
             ]);
@@ -1487,6 +1502,59 @@ class FacebookWebhookController extends Controller
         $this->processConversationalMessage($senderId, 'แชร์');
 
         Log::info('👥 Referral link sent (member)', ['user_id' => $senderId]);
+    }
+
+    /**
+     * Helper: wrap buttons array → FB Button Template payload + ส่ง
+     */
+    protected function sendButtons(string $userId, string $message, array $buttons): bool
+    {
+        $payload = [
+            'attachment' => [
+                'type' => 'template',
+                'payload' => [
+                    'template_type' => 'button',
+                    'text' => mb_substr($message, 0, 640), // FB limit 640 chars
+                    'buttons' => array_slice($buttons, 0, 3), // FB limit 3 buttons
+                ],
+            ],
+        ];
+
+        return $this->facebookService->sendButtonTemplate($userId, $payload);
+    }
+
+    /**
+     * 👁️ ส่งข้อความกระตุ้นให้กดติดตามเพจ (หลังส่ง DM comment engagement)
+     *
+     * เป็นข้อความที่ 2 หลัง DM Quick Replies — ใช้ Button Template
+     * เพื่อให้กดติดตามได้ง่าย + รับการแจ้งเตือนดวงประจำวันที่ระบบโพสรายชั่วโมง
+     */
+    protected function sendFollowPagePrompt(string $userId, string $commentId): void
+    {
+        $pageId = $this->settings->facebook_page_id;
+        if (empty($pageId)) {
+            return; // ไม่มี page_id → ข้าม
+        }
+
+        $message = "🎁 *พิเศษ! รับดวงฟรีทุกวัน*\n"
+            . "เราพยากรณ์ดวงประจำวันให้ทั้ง 7 วันเกิด\n"
+            . "ตั้งแต่ตี 1 ถึง 7 โมงเช้า ทุกวัน\n\n"
+            . "👉 กดติดตามเพจรับการแจ้งเตือนเลยค่ะ ✨";
+
+        $followUrl = "https://www.facebook.com/{$pageId}";
+
+        try {
+            $this->sendButtons($userId, $message, [
+                ['type' => 'web_url', 'title' => '👁️ ติดตามเพจรับดวงฟรี', 'url' => $followUrl],
+                ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึกเลย', 'payload' => 'MENU_DEEP_FORTUNE'],
+            ]);
+        } catch (\Throwable $e) {
+            // non-blocking — ถ้าล้ม DM หลักยังส่งสำเร็จ
+            Log::debug('sendFollowPagePrompt ล้ม (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

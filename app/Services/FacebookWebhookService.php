@@ -449,6 +449,47 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 💗 ส่ง reaction (LIKE/LOVE/HAHA/WOW/SAD/ANGRY) ให้ comment
+     *
+     * ใช้ Graph API: POST /{comment-id}/reactions?type=LOVE
+     *
+     * ผลพลอยได้:
+     * - FB algorithm เห็นว่า Page engage กับ comment → boost reach
+     * - User รู้สึกว่าเพจ active + ใส่ใจ
+     * - ลูกค้าจะ react กลับมาเยอะขึ้น (ส่งสัญญาณดีให้ FB)
+     *
+     * @param  string  $commentId
+     * @param  string  $type  LIKE | LOVE | HAHA | WOW | SAD | ANGRY (default: LOVE ❤️)
+     */
+    public function reactToComment(string $commentId, string $type = 'LOVE'): bool
+    {
+        try {
+            Http::timeout(15)
+                ->post($this->graphUrl("/{$commentId}/reactions"), [
+                    'type' => $type,
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            Log::info('💗 React comment สำเร็จ', [
+                'comment_id' => $commentId,
+                'type' => $type,
+            ]);
+
+            return true;
+        } catch (Exception $e) {
+            $msg = $e->getMessage();
+            // 100/3 = comment ไม่พบหรือถูกลบ
+            // 403 = token ขาด pages_manage_engagement
+            Log::warning('React comment ล้มเหลว: ' . mb_substr($msg, 0, 200), [
+                'comment_id' => $commentId,
+                'type' => $type,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * ส่งข้อความ Private Reply ตอบคอมเม้นต์ (ไป DM/Messenger)
      *
      * ใช้ endpoint POST /{comment-id}/private_replies ซึ่ง:
