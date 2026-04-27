@@ -123,6 +123,135 @@
         </div>
     </div>
 
+    {{-- ☁️ Cloudflare Workers AI Settings (สำหรับเจนภาพดวงประจำวัน) --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div class="flex items-center justify-between mb-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center text-white">
+                    <i class="fas fa-cloud text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">
+                        Cloudflare Workers AI <span class="text-sm font-normal text-gray-500 dark:text-gray-400">(เจนภาพดวงประจำวัน)</span>
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        ใช้ FLUX-1-schnell สร้างภาพประกอบโพสดวง — ฟรี ~40 ภาพ/วัน
+                    </p>
+                </div>
+            </div>
+
+            {{-- Status Badge --}}
+            @if(($cloudflareAi['configured'] ?? false))
+                <span class="inline-flex items-center gap-2 px-3 py-1 bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 text-sm font-medium rounded-full">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                    @if($cloudflareAi['using_env_fallback'] ?? false)
+                        ใช้คีย์จาก .env (TPIX)
+                    @else
+                        เชื่อมต่อแล้ว
+                    @endif
+                </span>
+            @else
+                <span class="inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-200 text-sm font-medium rounded-full">
+                    <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                    ยังไม่ได้ตั้งค่า
+                </span>
+            @endif
+        </div>
+
+        @if(! ($cloudflareAi['available'] ?? false))
+            <div class="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                <p class="text-sm text-red-800 dark:text-red-200">
+                    <i class="fas fa-exclamation-triangle mr-1"></i>
+                    {{ $cloudflareAi['reason'] ?? 'Cloudflare AI provider ไม่พร้อม' }}
+                </p>
+            </div>
+        @else
+            <form action="{{ route('admin.fortune.channels.cloudflare-ai.update') }}" method="POST" class="space-y-4">
+                @csrf
+                @method('PUT')
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            Account ID <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="cloudflare_account_id"
+                               value="{{ old('cloudflare_account_id', $cloudflareAi['account_id'] ?? '') }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+                               placeholder="32-character hex ID">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            หาได้ที่ <a href="https://dash.cloudflare.com" target="_blank" class="text-orange-600 hover:underline">dash.cloudflare.com</a> → sidebar ขวา → Account ID
+                        </p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            API Token <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" name="cloudflare_api_token"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-orange-500 font-mono text-sm"
+                               placeholder="{{ ! empty($cloudflareAi['masked_token']) ? $cloudflareAi['masked_token'] . ' (กรอกใหม่เพื่อเปลี่ยน)' : 'กรอก API Token...' }}">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" class="text-orange-600 hover:underline">สร้าง Token ใหม่</a> →
+                            permissions: <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">Account.Workers AI:Read</code>
+                        </p>
+                    </div>
+                </div>
+
+                @if($cloudflareAi['using_env_fallback'] ?? false)
+                    <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg text-sm text-blue-800 dark:text-blue-200">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        ขณะนี้ใช้คีย์จาก <code class="text-xs">.env</code> (TPIX project) — ใส่ค่าด้านบนเพื่อ override
+                    </div>
+                @endif
+
+                <div class="flex flex-wrap items-center gap-3 pt-2">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg transition">
+                        <i class="fas fa-save"></i>
+                        บันทึก Cloudflare AI
+                    </button>
+
+                    <button type="button" @click="testCloudflareAi()"
+                            :disabled="testingCloudflare"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg transition disabled:opacity-50">
+                        <i class="fas" :class="testingCloudflare ? 'fa-spinner fa-spin' : 'fa-plug'"></i>
+                        <span x-text="testingCloudflare ? 'กำลังทดสอบ...' : 'ทดสอบการเชื่อมต่อ'"></span>
+                    </button>
+
+                    <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank"
+                       class="text-sm text-orange-600 dark:text-orange-400 hover:underline">
+                        <i class="fas fa-external-link-alt mr-1"></i>
+                        เปิด Cloudflare Dashboard
+                    </a>
+                </div>
+
+                {{-- Test Result --}}
+                <div x-show="cloudflareTestResult" x-cloak
+                     class="mt-3 p-3 rounded-lg text-sm"
+                     :class="cloudflareTestResult?.success
+                        ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-200'
+                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200'">
+                    <i class="fas" :class="cloudflareTestResult?.success ? 'fa-check-circle' : 'fa-exclamation-circle'"></i>
+                    <span x-text="cloudflareTestResult?.message"></span>
+                </div>
+
+                {{-- Quick Guide --}}
+                <details class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                    <summary class="cursor-pointer font-medium hover:text-gray-800 dark:hover:text-gray-200">
+                        <i class="fas fa-question-circle mr-1"></i>
+                        วิธีสร้าง API Token (3 ขั้นตอน)
+                    </summary>
+                    <ol class="mt-3 ml-6 space-y-2 list-decimal">
+                        <li>เข้า <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" class="text-orange-600 hover:underline">Cloudflare API Tokens</a> → กด <strong>Create Token</strong></li>
+                        <li>เลือก <strong>Custom Token</strong> → ใส่ชื่อ "Fortune AI" → Permissions: <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">Account › Workers AI › Read</code></li>
+                        <li>กด Create → คัดลอก Token (เห็นครั้งเดียว!) → วางในช่องด้านบน + กรอก Account ID</li>
+                    </ol>
+                </details>
+            </form>
+        @endif
+    </div>
+
     <form action="{{ route('admin.fortune.channels.update') }}" method="POST">
         @csrf
         @method('PUT')
@@ -380,6 +509,8 @@ function fortuneChannels() {
         testResult: null,
         setupingFacebook: false,
         facebookSetupResult: null,
+        testingCloudflare: false,
+        cloudflareTestResult: null,
 
         init() {
             // Watch color input
@@ -422,6 +553,28 @@ function fortuneChannels() {
                 };
             } finally {
                 this.testingLine = false;
+            }
+        },
+
+        async testCloudflareAi() {
+            this.testingCloudflare = true;
+            this.cloudflareTestResult = null;
+            try {
+                const response = await fetch('{{ route('admin.fortune.channels.test-cloudflare-ai') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    },
+                });
+                this.cloudflareTestResult = await response.json();
+            } catch (error) {
+                this.cloudflareTestResult = {
+                    success: false,
+                    message: 'เกิดข้อผิดพลาด: ' + error.message,
+                };
+            } finally {
+                this.testingCloudflare = false;
             }
         },
 

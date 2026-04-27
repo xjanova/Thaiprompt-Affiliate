@@ -3883,6 +3883,10 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/channels/stats', [FortuneChannelController::class, 'statsApi'])->name('channels.stats');
     Route::get('/channels/facebook-page-management', [FortuneChannelController::class, 'facebookPageManagement'])->name('channels.facebook-page-management');
 
+    // Cloudflare Workers AI (สำหรับเจนภาพดวงประจำวัน)
+    Route::put('/channels/cloudflare-ai', [FortuneChannelController::class, 'updateCloudflareAi'])->name('channels.cloudflare-ai.update');
+    Route::post('/channels/test-cloudflare-ai', [FortuneChannelController::class, 'testCloudflareAi'])->name('channels.test-cloudflare-ai');
+
     // หมวดหมู่
     Route::resource('categories', FortuneCategoriesController::class)->except('show');
 

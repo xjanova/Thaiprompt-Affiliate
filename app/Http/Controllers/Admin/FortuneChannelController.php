@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiGenProvider;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Services\AiGen\CloudflareAiProvider;
 use App\Services\FacebookWebhookService;
 use App\Services\LineFortuneService;
 use Illuminate\Http\Request;
@@ -30,11 +32,81 @@ class FortuneChannelController extends Controller
         // สถิติการใช้งานตามช่องทาง
         $stats = $this->getChannelStats();
 
+        // Cloudflare AI provider (สำหรับ section เจนภาพดวงประจำวัน)
+        $cloudflareAi = $this->getCloudflareAiStatus();
+
         return view('admin.fortune.channels.index', [
             'settings' => $settings,
             'stats' => $stats,
+            'cloudflareAi' => $cloudflareAi,
             'pageTitle' => 'จัดการช่องทาง',
         ]);
+    }
+
+    /**
+     * ดึงสถานะการตั้งค่า Cloudflare Workers AI (ใช้กับเจนภาพดวงประจำวัน)
+     *
+     * Source ของค่า: AiGenProvider config (DB) → fallback ไป config('services.cloudflare.*')
+     */
+    protected function getCloudflareAiStatus(): array
+    {
+        $provider = AiGenProvider::where('slug', 'cloudflare-ai')->first();
+
+        if (! $provider) {
+            return [
+                'available' => false,
+                'configured' => false,
+                'has_db_config' => false,
+                'using_env_fallback' => false,
+                'masked_token' => '',
+                'account_id' => '',
+                'reason' => 'AiGenProvider slug=cloudflare-ai ยังไม่ถูก seed (รัน php artisan db:seed --class=AiGenSeeder)',
+            ];
+        }
+
+        $dbToken = $provider->getConfig('api_key');
+        $dbAccount = $provider->getConfig('account_id');
+        $envToken = config('services.cloudflare.api_token');
+        $envAccount = config('services.cloudflare.account_id');
+
+        // decrypt DB token (ถูก encrypt ตอน setConfig(api_key, ..., true))
+        $dbTokenDecrypted = '';
+        if (! empty($dbToken)) {
+            try {
+                $dbTokenDecrypted = decrypt($dbToken);
+            } catch (\Throwable $e) {
+                $dbTokenDecrypted = '';
+            }
+        }
+
+        $effectiveToken = $dbTokenDecrypted ?: $envToken;
+        $effectiveAccount = $dbAccount ?: $envAccount;
+        $usingEnv = empty($dbTokenDecrypted) && ! empty($envToken);
+
+        return [
+            'available' => true,
+            'configured' => ! empty($effectiveToken) && ! empty($effectiveAccount),
+            'has_db_config' => ! empty($dbTokenDecrypted) && ! empty($dbAccount),
+            'using_env_fallback' => $usingEnv,
+            'masked_token' => $this->maskToken($effectiveToken),
+            'account_id' => $effectiveAccount ?? '',
+        ];
+    }
+
+    /**
+     * ปกปิด token (แสดงแค่ 4 ตัวแรก + 4 ตัวสุดท้าย)
+     */
+    protected function maskToken(?string $token): string
+    {
+        if (empty($token)) {
+            return '';
+        }
+        $len = strlen($token);
+        if ($len <= 8) {
+            return str_repeat('•', $len);
+        }
+
+        return substr($token, 0, 4).str_repeat('•', max(4, $len - 8)).substr($token, -4);
     }
 
     /**
@@ -314,6 +386,91 @@ class FortuneChannelController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * บันทึกการตั้งค่า Cloudflare Workers AI (ใช้กับเจนภาพดวงประจำวัน)
+     *
+     * รับ API Token + Account ID จากฟอร์มแอดมิน → เก็บใน AiGenProvider config
+     * - api_key: encrypted (true)
+     * - account_id: plain (false) — สำหรับ display ใน admin
+     *
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function updateCloudflareAi(Request $request)
+    {
+        $validated = $request->validate([
+            'cloudflare_api_token' => 'nullable|string|max:255',
+            'cloudflare_account_id' => 'nullable|string|max:64',
+        ]);
+
+        $provider = AiGenProvider::where('slug', 'cloudflare-ai')->first();
+        if (! $provider) {
+            return redirect()
+                ->route('admin.fortune.channels.index')
+                ->with('error', 'ไม่พบ Cloudflare AI provider — กรุณารัน php artisan db:seed --class=AiGenSeeder ก่อน');
+        }
+
+        $token = trim($validated['cloudflare_api_token'] ?? '');
+        $accountId = trim($validated['cloudflare_account_id'] ?? '');
+
+        // ถ้า user ส่งค่าใหม่ — บันทึก (ถ้าค่าว่าง ตีความเป็น "ไม่เปลี่ยน")
+        if ($token !== '') {
+            $provider->setConfig('api_key', $token, true);  // encrypt
+        }
+        if ($accountId !== '') {
+            $provider->setConfig('account_id', $accountId, false);
+        }
+
+        Log::info('Cloudflare AI credentials updated', [
+            'has_token' => $token !== '',
+            'has_account_id' => $accountId !== '',
+        ]);
+
+        return redirect()
+            ->route('admin.fortune.channels.index')
+            ->with('success', 'บันทึก Cloudflare AI สำเร็จ');
+    }
+
+    /**
+     * ทดสอบการเชื่อมต่อ Cloudflare Workers AI
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function testCloudflareAi()
+    {
+        try {
+            $provider = AiGenProvider::where('slug', 'cloudflare-ai')->first();
+            if (! $provider) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ไม่พบ Cloudflare AI provider — รัน AiGenSeeder ก่อน',
+                ]);
+            }
+
+            $cf = new CloudflareAiProvider($provider);
+
+            if (! $cf->isConfigured()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'ยังไม่ได้ตั้งค่า API Token หรือ Account ID — กรอกค่าก่อนทดสอบ',
+                ]);
+            }
+
+            $result = $cf->testConnection();
+
+            return response()->json([
+                'success' => $result['success'] ?? false,
+                'message' => $result['message'] ?? 'ทดสอบเรียบร้อย',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Cloudflare AI test failed', ['error' => $e->getMessage()]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
