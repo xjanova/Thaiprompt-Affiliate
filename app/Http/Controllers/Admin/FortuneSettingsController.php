@@ -235,6 +235,9 @@ class FortuneSettingsController extends Controller
             'fortune_level2_enabled' => 'boolean',
             'fortune_level2_commission_type' => 'nullable|in:fixed,percent',
             'fortune_level2_commission_amount' => 'nullable|numeric|min:0',
+            // กระเป๋ากลาง (รับค่าแนะนำเมื่อหา sponsor ไม่ได้)
+            'fortune_central_user_id' => 'nullable|integer|exists:users,id',
+            'fortune_central_fallback_enabled' => 'boolean',
             // AI Chat ทั่วไป (สนทนาอัจฉริยะ)
             'enable_ai_chat' => 'boolean',
             'chat_ai_provider' => 'nullable|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
@@ -267,6 +270,7 @@ class FortuneSettingsController extends Controller
             'use_global_ai_settings', 'comment_engagement_enabled',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate', 'fortune_level2_enabled',
+            'fortune_central_fallback_enabled',
             'enable_ai_chat',
             'admin_handover_enabled', 'takeover_notify_customer',
         ];

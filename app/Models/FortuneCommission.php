@@ -68,6 +68,7 @@ class FortuneCommission extends Model
         'rejected_at',
         'wallet_transaction_id',
         'notes',
+        'chat_notified_at',
     ];
 
     /**
@@ -81,6 +82,7 @@ class FortuneCommission extends Model
         'approved_at' => 'datetime',
         'paid_at' => 'datetime',
         'rejected_at' => 'datetime',
+        'chat_notified_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

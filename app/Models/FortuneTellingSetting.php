@@ -140,6 +140,9 @@ class FortuneTellingSetting extends Model
         'fortune_level2_enabled',
         'fortune_level2_commission_type',
         'fortune_level2_commission_amount',
+        // กระเป๋ากลาง — รับค่าแนะนำเมื่อหา sponsor ไม่ได้
+        'fortune_central_user_id',
+        'fortune_central_fallback_enabled',
         // AI Chat ทั่วไป (สนทนาอัจฉริยะ — แยก provider จากทำนาย)
         'enable_ai_chat',
         'chat_ai_provider',
@@ -191,6 +194,8 @@ class FortuneTellingSetting extends Model
         'fortune_level1_commission_amount' => 'decimal:2',
         'fortune_level2_enabled' => 'boolean',
         'fortune_level2_commission_amount' => 'decimal:2',
+        'fortune_central_user_id' => 'integer',
+        'fortune_central_fallback_enabled' => 'boolean',
         'enable_ai_chat' => 'boolean',
         // ระบบดูดวงสาธารณะ
         'horoscope_public_enabled' => 'boolean',
@@ -237,6 +242,8 @@ class FortuneTellingSetting extends Model
         'fortune_use_global_commission_rate' => true,
         'fortune_commission_mode' => 'static',  // 'pv' = ใช้ PV ตาม MLM, 'static' = จ่ายตรง
         'fortune_static_commission_amount' => 10,
+        // กระเป๋ากลาง: เปิด fallback ตามค่าเริ่มต้น (user_id ตั้งภายหลังใน admin)
+        'fortune_central_fallback_enabled' => true,
         // AI Chat ทั่วไป (ค่าเริ่มต้นเปิดใช้งาน Gemini)
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
@@ -1080,6 +1087,38 @@ PROMPT;
     public function getFortuneLevel2CommissionType(): string
     {
         return $this->fortune_level2_commission_type ?? 'fixed';
+    }
+
+    // ===== กระเป๋ากลาง (Central Wallet Fallback) =====
+
+    /**
+     * เปิดใช้ระบบ fallback ค่าแนะนำเข้ากระเป๋ากลางหรือไม่
+     *
+     * เปิดเมื่อ:
+     * 1. fortune_central_fallback_enabled = true
+     * 2. fortune_central_user_id ถูกตั้งและ user ยังมีอยู่จริง
+     */
+    public function isFortuneCentralFallbackEnabled(): bool
+    {
+        if (! $this->fortune_central_fallback_enabled) {
+            return false;
+        }
+
+        return ! empty($this->fortune_central_user_id);
+    }
+
+    /**
+     * ดึง User ID ของกระเป๋ากลาง (null ถ้าไม่ได้ตั้งหรือ disabled)
+     *
+     * caller ต้องเช็ค isFortuneCentralFallbackEnabled() ก่อน
+     */
+    public function getFortuneCentralUserId(): ?int
+    {
+        if (! $this->isFortuneCentralFallbackEnabled()) {
+            return null;
+        }
+
+        return (int) $this->fortune_central_user_id;
     }
 
     // ===== AI Chat ทั่วไป (สนทนาอัจฉริยะ) =====

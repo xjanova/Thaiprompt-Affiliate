@@ -1397,6 +1397,8 @@
                 level1Type: '{{ old('fortune_level1_commission_type', $settings->fortune_level1_commission_type ?? 'fixed') }}',
                 level1Amount: '{{ old('fortune_level1_commission_amount', $settings->fortune_level1_commission_amount ?? 10) }}',
                 level2Enabled: {{ old('fortune_level2_enabled', $settings->fortune_level2_enabled ?? true) ? 'true' : 'false' }},
+                centralFallbackEnabled: {{ old('fortune_central_fallback_enabled', $settings->fortune_central_fallback_enabled ?? true) ? 'true' : 'false' }},
+                centralUserId: '{{ old('fortune_central_user_id', $settings->fortune_central_user_id ?? '') }}',
                 level2Type: '{{ old('fortune_level2_commission_type', $settings->fortune_level2_commission_type ?? 'fixed') }}',
                 level2Amount: '{{ old('fortune_level2_commission_amount', $settings->fortune_level2_commission_amount ?? 5) }}',
                 preview: null,
@@ -1598,6 +1600,52 @@
                             ปิดการจ่ายคอมมิชชั่นชั้นหลาน — จ่ายเฉพาะ Level 1 (สายตรง) เท่านั้น
                         </p>
                     </div>
+                </div>
+
+                {{-- 🏛️ กระเป๋ากลาง (Central Wallet Fallback) --}}
+                <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div>
+                            <label class="block text-sm font-bold text-gray-700 dark:text-gray-300">
+                                🏛️ กระเป๋ากลาง (Fallback)
+                            </label>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                ถ้าลูกค้า<strong>ไม่มีผู้แนะนำ</strong> หรือผู้แนะนำ<strong>ไม่ active</strong> →
+                                ค่าแนะนำจะเข้ากระเป๋าของ user นี้แทน (มี audit trail สมบูรณ์)
+                            </p>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer ml-4">
+                            <input type="hidden" name="fortune_central_fallback_enabled" value="0">
+                            <input type="checkbox" name="fortune_central_fallback_enabled" value="1"
+                                   x-model="centralFallbackEnabled"
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+
+                    <div x-show="centralFallbackEnabled" x-transition x-cloak class="space-y-2">
+                        <label class="block text-xs font-medium text-gray-600 dark:text-gray-400">
+                            User ID ของกระเป๋ากลาง
+                        </label>
+                        <input type="number" name="fortune_central_user_id" min="1"
+                               x-model="centralUserId"
+                               placeholder="เช่น 1 (Super Admin)"
+                               class="w-full md:w-48 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            ระบุ User ID จากหน้า <a href="{{ route('admin.users.index') }}" class="text-amber-600 dark:text-amber-400 hover:underline">จัดการผู้ใช้</a>
+                            — แนะนำใช้ user "Super Admin" หรือบัญชีระบบเฉพาะ
+                        </p>
+                        <div class="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-700">
+                            <p class="text-xs text-amber-800 dark:text-amber-300">
+                                ⚠️ user ที่เลือกต้องเป็นสมาชิก MLM (มี MlmMember record) — ถ้าไม่มี ระบบจะ skip fallback
+                                และเงินยังคงอยู่ในบัญชีบริษัทแต่ไม่มี record (เหมือนเดิม)
+                            </p>
+                        </div>
+                    </div>
+
+                    <p x-show="!centralFallbackEnabled" class="text-xs text-gray-400 dark:text-gray-500 mt-2">
+                        ⚠️ ปิดอยู่ — เมื่อหา sponsor ไม่ได้ ค่าแนะนำจะ<strong class="text-red-500">หายโดยไม่มี record</strong>
+                    </p>
                 </div>
 
                 {{-- PV Value (แสดงเมื่อเลือก pv mode) --}}

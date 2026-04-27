@@ -176,10 +176,95 @@ class FortuneChannelManager
             ]);
         }
 
+        // 💰 แทรกข้อความแจ้งรายได้ค่าแนะนำที่ยังไม่ได้บอก (FB 24h-safe — ใช้ replyMessage ฟรี)
+        // เรียกหลัง processMessage เพื่อให้ user_id ถูก resolve แล้ว
+        $this->prependPendingCommissionNotification($result, $platform, $userId);
+
         // ส่งข้อความตอบกลับ
         $this->sendResponse($platform, $userId, $result, $extra);
 
         return $result;
+    }
+
+    /**
+     * แทรกข้อความ "💰 มีรายได้ค่าแนะนำ X บาท" หน้า message ปกติ
+     *
+     * Trigger: user ทักแชทมา → ส่ง notification ฟรีผ่าน replyMessage
+     * (กฎ FB: bot ตอบฟรีภายใน 24h หลัง user ส่งข้อความ — ใช้ window นี้ได้)
+     *
+     * Skip ถ้า:
+     * - หา user_id (DB) ไม่ได้ (ลูกค้าใหม่/guest)
+     * - ไม่มี pending commission (notify ครบแล้ว)
+     * - action = 'skipped_takeover' / 'dedup_skip' (ไม่มี reply)
+     */
+    protected function prependPendingCommissionNotification(array &$result, string $platform, string $userId): void
+    {
+        $action = $result['action'] ?? '';
+        if (in_array($action, ['skipped_takeover', 'dedup_skip'], true)) {
+            return;
+        }
+
+        try {
+            // หา user DB id จาก platform_user_id
+            $dbUserId = $this->resolveDbUserId($platform, $userId, $result['reading'] ?? null);
+            if (! $dbUserId) {
+                return;
+            }
+
+            $commissionService = app(\App\Services\FortuneCommissionService::class);
+            $note = $commissionService->buildPendingChatNotification($dbUserId);
+
+            if ($note) {
+                $original = $result['message'] ?? '';
+                $result['message'] = $note . ($original !== '' ? "\n\n─────\n\n" . $original : '');
+                $result['has_commission_notification'] = true;
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FortuneChannelManager: แทรก commission notification ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * หา DB user_id จาก platform_user_id
+     *
+     * Order:
+     * 1. ใช้ reading->user_id ถ้ามี (เร็วสุด)
+     * 2. ค้นจาก User table ตาม platform column (line_user_id / facebook_user_id)
+     * 3. ค้นจาก FortuneReading ที่ link user แล้ว
+     */
+    protected function resolveDbUserId(string $platform, string $platformUserId, $reading): ?int
+    {
+        // 1. reading มี user_id แล้ว
+        if ($reading instanceof FortuneReading && $reading->user_id) {
+            return (int) $reading->user_id;
+        }
+
+        // 2. หาจาก User table
+        $userQuery = \App\Models\User::query();
+        if ($platform === 'line') {
+            $userQuery->where('line_user_id', $platformUserId);
+        } else {
+            $userQuery->where('facebook_user_id', $platformUserId);
+        }
+        $user = $userQuery->first(['id']);
+        if ($user) {
+            return (int) $user->id;
+        }
+
+        // 3. หาจาก FortuneReading ล่าสุดของ platform_user_id ที่มี user_id
+        $linked = FortuneReading::where(function ($q) use ($platformUserId) {
+            $q->where('platform_user_id', $platformUserId)
+                ->orWhere('facebook_user_id', $platformUserId);
+        })
+            ->whereNotNull('user_id')
+            ->latest('updated_at')
+            ->first(['user_id']);
+
+        return $linked?->user_id ? (int) $linked->user_id : null;
     }
 
     /**

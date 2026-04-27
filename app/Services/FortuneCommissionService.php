@@ -78,6 +78,9 @@ class FortuneCommissionService
 
     /**
      * จ่ายคอมมิชชั่น Level 1 (สายตรง)
+     *
+     * ถ้าหา sponsor ไม่ได้ (ไม่มีผู้แนะนำ / ไม่ active / user หาย):
+     *   → fallback เข้ากระเป๋ากลาง (ถ้าเปิด isFortuneCentralFallbackEnabled)
      */
     protected function payLevel1(
         FortuneReading $reading,
@@ -85,38 +88,7 @@ class FortuneCommissionService
         FortuneTellingSetting $settings,
         float $readingPrice
     ): void {
-        // หา sponsor (ผู้แนะนำตรง)
-        if (! $mlmMember->unilevel_sponsor_id) {
-            Log::debug('FortuneCommission [L1]: สมาชิกไม่มีผู้แนะนำ ข้าม', [
-                'reading_id' => $reading->id,
-                'mlm_member_id' => $mlmMember->id,
-            ]);
-
-            return;
-        }
-
-        $sponsor = MlmMember::with('user')->find($mlmMember->unilevel_sponsor_id);
-        if (! $sponsor || ! $sponsor->user) {
-            Log::debug('FortuneCommission [L1]: ผู้แนะนำไม่พบหรือไม่มี user', [
-                'reading_id' => $reading->id,
-                'sponsor_id' => $mlmMember->unilevel_sponsor_id,
-            ]);
-
-            return;
-        }
-
-        // เช็ค active: ผู้แนะนำต้อง active (ไม่ roll up — กฎดูดวง)
-        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($sponsor);
-        if (! $isActive) {
-            Log::info('FortuneCommission [L1]: ผู้แนะนำไม่ active ข้าม (ไม่ roll up)', [
-                'reading_id' => $reading->id,
-                'sponsor_id' => $sponsor->id,
-            ]);
-
-            return;
-        }
-
-        // คำนวณคอมมิชชั่น
+        // คำนวณ amount ก่อน — ใช้ทั้ง path sponsor และ central fallback
         $commissionAmount = $settings->getFortuneLevel1Amount($readingPrice);
         if ($commissionAmount <= 0) {
             return;
@@ -125,7 +97,65 @@ class FortuneCommissionService
         $commissionType = $settings->getFortuneLevel1CommissionType();
         $commissionRate = (float) ($settings->fortune_level1_commission_amount ?? 10);
 
-        // สร้าง record + จ่ายเข้า wallet
+        // หา sponsor (ผู้แนะนำตรง)
+        if (! $mlmMember->unilevel_sponsor_id) {
+            Log::info('FortuneCommission [L1]: สมาชิกไม่มีผู้แนะนำ → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+                'mlm_member_id' => $mlmMember->id,
+            ]);
+            $this->payToCentralWallet(
+                $reading, $mlmMember, $settings,
+                level: 1,
+                commissionType: $commissionType,
+                commissionRate: $commissionRate,
+                amount: $commissionAmount,
+                readingPrice: $readingPrice,
+                reason: 'no_referrer',
+            );
+
+            return;
+        }
+
+        $sponsor = MlmMember::with('user')->find($mlmMember->unilevel_sponsor_id);
+        if (! $sponsor || ! $sponsor->user) {
+            Log::info('FortuneCommission [L1]: ผู้แนะนำไม่พบหรือไม่มี user → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+                'sponsor_id' => $mlmMember->unilevel_sponsor_id,
+            ]);
+            $this->payToCentralWallet(
+                $reading, $mlmMember, $settings,
+                level: 1,
+                commissionType: $commissionType,
+                commissionRate: $commissionRate,
+                amount: $commissionAmount,
+                readingPrice: $readingPrice,
+                reason: 'sponsor_missing',
+            );
+
+            return;
+        }
+
+        // เช็ค active: ผู้แนะนำต้อง active (ไม่ roll up — กฎดูดวง)
+        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($sponsor);
+        if (! $isActive) {
+            Log::info('FortuneCommission [L1]: ผู้แนะนำไม่ active → fallback กระเป๋ากลาง (ไม่ roll up)', [
+                'reading_id' => $reading->id,
+                'sponsor_id' => $sponsor->id,
+            ]);
+            $this->payToCentralWallet(
+                $reading, $mlmMember, $settings,
+                level: 1,
+                commissionType: $commissionType,
+                commissionRate: $commissionRate,
+                amount: $commissionAmount,
+                readingPrice: $readingPrice,
+                reason: 'sponsor_inactive',
+            );
+
+            return;
+        }
+
+        // สร้าง record + จ่ายเข้า wallet (sponsor ตรง)
         $this->createCommissionAndPay(
             reading: $reading,
             recipientMember: $sponsor,
@@ -150,6 +180,9 @@ class FortuneCommissionService
 
     /**
      * จ่ายคอมมิชชั่น Level 2 (ชั้นหลาน)
+     *
+     * ถ้าหา grandparent ไม่ได้ (ไม่มี / ไม่ active / user หาย):
+     *   → fallback เข้ากระเป๋ากลาง (ถ้าเปิด isFortuneCentralFallbackEnabled)
      */
     protected function payLevel2(
         FortuneReading $reading,
@@ -157,43 +190,7 @@ class FortuneCommissionService
         FortuneTellingSetting $settings,
         float $readingPrice
     ): void {
-        // หา sponsor ตรง
-        if (! $mlmMember->unilevel_sponsor_id) {
-            return;
-        }
-
-        $sponsor = MlmMember::find($mlmMember->unilevel_sponsor_id);
-        if (! $sponsor || ! $sponsor->unilevel_sponsor_id) {
-            Log::debug('FortuneCommission [L2]: ไม่มี grandparent ข้าม', [
-                'reading_id' => $reading->id,
-            ]);
-
-            return;
-        }
-
-        // หา grandparent (sponsor ของ sponsor)
-        $grandparent = MlmMember::with('user')->find($sponsor->unilevel_sponsor_id);
-        if (! $grandparent || ! $grandparent->user) {
-            Log::debug('FortuneCommission [L2]: grandparent ไม่พบหรือไม่มี user', [
-                'reading_id' => $reading->id,
-                'grandparent_id' => $sponsor->unilevel_sponsor_id,
-            ]);
-
-            return;
-        }
-
-        // เช็ค active
-        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($grandparent);
-        if (! $isActive) {
-            Log::info('FortuneCommission [L2]: grandparent ไม่ active ข้าม', [
-                'reading_id' => $reading->id,
-                'grandparent_id' => $grandparent->id,
-            ]);
-
-            return;
-        }
-
-        // คำนวณคอมมิชชั่น
+        // คำนวณ amount ก่อน — ใช้ทั้ง path grandparent และ central fallback
         $commissionAmount = $settings->getFortuneLevel2Amount($readingPrice);
         if ($commissionAmount <= 0) {
             return;
@@ -201,6 +198,65 @@ class FortuneCommissionService
 
         $commissionType = $settings->getFortuneLevel2CommissionType();
         $commissionRate = (float) ($settings->fortune_level2_commission_amount ?? 5);
+
+        // helper closure สำหรับ fallback
+        $fallback = function (string $reason) use (
+            $reading, $mlmMember, $settings, $commissionType, $commissionRate, $commissionAmount, $readingPrice
+        ) {
+            $this->payToCentralWallet(
+                $reading, $mlmMember, $settings,
+                level: 2,
+                commissionType: $commissionType,
+                commissionRate: $commissionRate,
+                amount: $commissionAmount,
+                readingPrice: $readingPrice,
+                reason: $reason,
+            );
+        };
+
+        // หา sponsor ตรง
+        if (! $mlmMember->unilevel_sponsor_id) {
+            Log::info('FortuneCommission [L2]: ไม่มีผู้แนะนำ → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+            ]);
+            $fallback('no_referrer');
+
+            return;
+        }
+
+        $sponsor = MlmMember::find($mlmMember->unilevel_sponsor_id);
+        if (! $sponsor || ! $sponsor->unilevel_sponsor_id) {
+            Log::info('FortuneCommission [L2]: ไม่มี grandparent → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+            ]);
+            $fallback('no_grandparent');
+
+            return;
+        }
+
+        // หา grandparent (sponsor ของ sponsor)
+        $grandparent = MlmMember::with('user')->find($sponsor->unilevel_sponsor_id);
+        if (! $grandparent || ! $grandparent->user) {
+            Log::info('FortuneCommission [L2]: grandparent ไม่พบหรือไม่มี user → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+                'grandparent_id' => $sponsor->unilevel_sponsor_id,
+            ]);
+            $fallback('grandparent_missing');
+
+            return;
+        }
+
+        // เช็ค active
+        $isActive = \App\Helpers\MlmRetentionHelper::isMemberActive($grandparent);
+        if (! $isActive) {
+            Log::info('FortuneCommission [L2]: grandparent ไม่ active → fallback กระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+                'grandparent_id' => $grandparent->id,
+            ]);
+            $fallback('grandparent_inactive');
+
+            return;
+        }
 
         // สร้าง record + จ่ายเข้า wallet
         $this->createCommissionAndPay(
@@ -223,6 +279,214 @@ class FortuneCommissionService
             'amount' => $commissionAmount,
             'reading_price' => $readingPrice,
         ]);
+    }
+
+    /**
+     * สร้างข้อความแจ้งรายได้ค่าแนะนำที่ยังไม่ได้บอก user (FB 24h-safe)
+     *
+     * เรียกจาก FortuneChannelManager::processMessage ทุกครั้งที่ user ทักแชทมา
+     * → ใช้ replyMessage ฟรี ไม่กิน push quota / ไม่ติดกฎ FB 24h
+     *
+     * Flow:
+     * 1. หา FortuneCommission ของ user นี้ ที่ status=PAID + chat_notified_at IS NULL
+     * 2. รวมยอด + นับ + build ข้อความสรุป
+     * 3. mark chat_notified_at = now() ทั้งหมด → กันซ้ำ
+     * 4. return ข้อความ หรือ null ถ้าไม่มี
+     *
+     * @param  int  $userId  ผู้รับคอมมิชชั่น (recipient)
+     * @return string|null  ข้อความสรุปรายได้ หรือ null ถ้าไม่มี
+     */
+    public function buildPendingChatNotification(int $userId): ?string
+    {
+        // กันกระเป๋ากลาง — ไม่ต้องแจ้งตัวเอง (เป็น admin/system รู้อยู่แล้ว)
+        $settings = FortuneTellingSetting::getSettings();
+        $centralUserId = $settings->getFortuneCentralUserId();
+        if ($centralUserId && $centralUserId === $userId) {
+            return null;
+        }
+
+        try {
+            $pending = FortuneCommission::where('user_id', $userId)
+                ->where('status', FortuneCommission::STATUS_PAID)
+                ->whereNull('chat_notified_at')
+                ->orderBy('created_at')
+                ->limit(20) // กันรายการเยอะเกิน — แสดง 20 ล่าสุด
+                ->get();
+
+            if ($pending->isEmpty()) {
+                return null;
+            }
+
+            $totalAmount = (float) $pending->sum('amount');
+            $count = $pending->count();
+            $l1Count = $pending->where('level', 1)->count();
+            $l2Count = $pending->where('level', 2)->count();
+
+            // ดึงยอดรวมในกระเป๋า (เพื่อบอก current balance)
+            $wallet = Wallet::where('user_id', $userId)->first();
+            $balance = $wallet ? (float) $wallet->balance : 0;
+
+            // build ข้อความ
+            $lines = [];
+            $lines[] = '💰 ข่าวดี! มีรายได้ค่าแนะนำเข้ากระเป๋า';
+            $lines[] = '─────────────────────';
+            $lines[] = sprintf('🎉 ได้รับ %d รายการ รวม %s บาท', $count, number_format($totalAmount, 2));
+
+            $breakdown = [];
+            if ($l1Count > 0) {
+                $breakdown[] = "สายตรง {$l1Count} ราย";
+            }
+            if ($l2Count > 0) {
+                $breakdown[] = "ชั้นหลาน {$l2Count} ราย";
+            }
+            if (! empty($breakdown)) {
+                $lines[] = '🌳 ' . implode(' • ', $breakdown);
+            }
+
+            $lines[] = '💎 ยอดในกระเป๋าปัจจุบัน: ' . number_format($balance, 2) . ' บาท';
+            $lines[] = '';
+            $lines[] = '✨ ขอบคุณที่ช่วยแนะนำเพื่อนๆ มาดูดวงนะคะ';
+
+            $message = implode("\n", $lines);
+
+            // mark all as notified — กันส่งซ้ำ
+            FortuneCommission::whereIn('id', $pending->pluck('id'))
+                ->update(['chat_notified_at' => now()]);
+
+            Log::info('FortuneCommission [Notify]: ส่งสรุปรายได้ผ่านแชท', [
+                'user_id' => $userId,
+                'count' => $count,
+                'total_amount' => $totalAmount,
+                'commission_ids' => $pending->pluck('id')->toArray(),
+            ]);
+
+            return $message;
+        } catch (\Throwable $e) {
+            // ห้าม fail การ reply ปกติเพราะ notify error
+            Log::warning('FortuneCommission [Notify]: build notification ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * จ่ายค่าแนะนำเข้ากระเป๋ากลาง (Central Wallet Fallback)
+     *
+     * เรียกเมื่อหา recipient จริงไม่ได้ (no_referrer/sponsor_inactive/no_grandparent/etc.)
+     * → เงินไปกระเป๋ากลางพร้อม notes บอกเหตุผล → audit trail สมบูรณ์
+     *
+     * Skip เงียบๆ ถ้า:
+     * - ปิด fortune_central_fallback_enabled
+     * - ไม่ได้ตั้ง fortune_central_user_id
+     * - User กลางถูกลบ / ไม่มี MlmMember
+     * (เงินยังคงอยู่ในบัญชีบริษัทแต่ไม่มี record — เหมือนเดิม)
+     *
+     * @param string $reason เหตุผล fallback (no_referrer/sponsor_inactive/no_grandparent/etc.)
+     */
+    protected function payToCentralWallet(
+        FortuneReading $reading,
+        MlmMember $fromMember,
+        FortuneTellingSetting $settings,
+        int $level,
+        string $commissionType,
+        float $commissionRate,
+        float $amount,
+        float $readingPrice,
+        string $reason,
+    ): void {
+        if (! $settings->isFortuneCentralFallbackEnabled()) {
+            Log::debug('FortuneCommission [Central]: fallback ปิดอยู่ → ไม่จ่ายเข้ากระเป๋ากลาง', [
+                'reading_id' => $reading->id,
+                'level' => $level,
+                'reason' => $reason,
+                'amount' => $amount,
+            ]);
+
+            return;
+        }
+
+        $centralUserId = $settings->getFortuneCentralUserId();
+        if (! $centralUserId) {
+            return; // isFortuneCentralFallbackEnabled() น่าจะจัดการไว้แล้ว แต่กันชน
+        }
+
+        // หา MlmMember ของ user กลาง
+        $centralMember = MlmMember::with('user')->where('user_id', $centralUserId)->first();
+        if (! $centralMember || ! $centralMember->user) {
+            Log::warning('FortuneCommission [Central]: หา MlmMember ของ user กลางไม่เจอ → ข้าม fallback', [
+                'reading_id' => $reading->id,
+                'level' => $level,
+                'central_user_id' => $centralUserId,
+                'reason' => $reason,
+                'lost_amount' => $amount,
+            ]);
+
+            return;
+        }
+
+        // กัน edge case: ถ้า fromMember เป็นคนเดียวกับ centralMember → ไม่จ่ายตัวเอง
+        if ($fromMember->id === $centralMember->id) {
+            Log::info('FortuneCommission [Central]: fromMember = centralMember → ข้าม (ไม่จ่ายตัวเอง)', [
+                'reading_id' => $reading->id,
+                'central_user_id' => $centralUserId,
+            ]);
+
+            return;
+        }
+
+        // จ่ายเข้ากระเป๋ากลาง พร้อม notes บอกเหตุผล
+        DB::transaction(function () use (
+            $reading, $centralMember, $fromMember, $level, $commissionType, $commissionRate, $amount, $readingPrice, $reason
+        ) {
+            $levelName = $level === 1 ? 'สายตรง' : 'ชั้นหลาน';
+            $reasonNote = $this->reasonToThaiNote($reason);
+
+            $commission = FortuneCommission::create([
+                'user_id' => $centralMember->user_id,
+                'from_user_id' => $reading->user_id,
+                'fortune_reading_id' => $reading->id,
+                'mlm_member_id' => $centralMember->id,
+                'from_mlm_member_id' => $fromMember->id,
+                'level' => $level,
+                'commission_type' => $commissionType,
+                'commission_rate' => $commissionRate,
+                'amount' => $amount,
+                'reading_price' => $readingPrice,
+                'status' => FortuneCommission::STATUS_PAID,
+                'paid_at' => now(),
+                'notes' => "[CENTRAL_FALLBACK:{$reason}] ค่าแนะนำดูดวง L{$level} ({$levelName}) {$amount} บาท — {$reasonNote}",
+            ]);
+
+            $this->depositToWallet($centralMember, $commission, $reading, $level, $amount);
+        });
+
+        Log::info('FortuneCommission [Central/กระเป๋ากลาง]: จ่ายสำเร็จ', [
+            'reading_id' => $reading->id,
+            'level' => $level,
+            'reason' => $reason,
+            'central_user_id' => $centralMember->user_id,
+            'amount' => $amount,
+            'reading_price' => $readingPrice,
+        ]);
+    }
+
+    /**
+     * แปลง reason code → คำอธิบายภาษาไทย (ใช้ใน notes)
+     */
+    protected function reasonToThaiNote(string $reason): string
+    {
+        return match ($reason) {
+            'no_referrer' => 'ลูกค้าไม่มีผู้แนะนำ',
+            'sponsor_missing' => 'ผู้แนะนำหายจากระบบ',
+            'sponsor_inactive' => 'ผู้แนะนำไม่ active (ไม่ roll up)',
+            'no_grandparent' => 'ไม่มี grandparent (ผู้แนะนำของผู้แนะนำ)',
+            'grandparent_missing' => 'grandparent หายจากระบบ',
+            'grandparent_inactive' => 'grandparent ไม่ active',
+            default => "เหตุผล: {$reason}",
+        };
     }
 
     /**
