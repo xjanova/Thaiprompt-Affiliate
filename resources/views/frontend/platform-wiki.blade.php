@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.landing')
 
 @section('title', 'Platform Knowledge Base - Thaiprompt Affiliate Encyclopedia')
 

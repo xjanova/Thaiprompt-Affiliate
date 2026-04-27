@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.landing')
 
 @section('title', 'เกี่ยวกับเรา - Thaiprompt Affiliate Platform')
 
