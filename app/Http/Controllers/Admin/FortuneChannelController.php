@@ -218,10 +218,12 @@ class FortuneChannelController extends Controller
         try {
             $settings = FortuneTellingSetting::getSettings();
 
-            if (empty($settings->facebook_page_access_token)) {
+            // ใช้ field ตามที่ FacebookWebhookService ใช้: facebook_page_token
+            $token = $settings->facebook_page_token ?? $settings->facebook_page_access_token ?? null;
+            if (empty($token)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อนทดสอบ',
+                    'message' => 'กรุณาตั้งค่า Facebook Page Token (facebook_page_token) ก่อนทดสอบ',
                 ]);
             }
 
@@ -254,10 +256,11 @@ class FortuneChannelController extends Controller
         try {
             $settings = FortuneTellingSetting::getSettings();
 
-            if (empty($settings->facebook_page_access_token)) {
+            $token = $settings->facebook_page_token ?? $settings->facebook_page_access_token ?? null;
+            if (empty($token)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อน',
+                    'message' => 'กรุณาตั้งค่า Facebook Page Token (facebook_page_token) ก่อน',
                 ]);
             }
 
@@ -284,10 +287,11 @@ class FortuneChannelController extends Controller
         try {
             $settings = FortuneTellingSetting::getSettings();
 
-            if (empty($settings->facebook_page_access_token)) {
+            $token = $settings->facebook_page_token ?? $settings->facebook_page_access_token ?? null;
+            if (empty($token)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'กรุณาตั้งค่า Facebook Page Access Token ก่อน',
+                    'message' => 'กรุณาตั้งค่า Facebook Page Token (facebook_page_token) ก่อน',
                 ]);
             }
 
