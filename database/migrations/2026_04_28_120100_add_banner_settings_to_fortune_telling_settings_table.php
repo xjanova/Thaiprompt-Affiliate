@@ -23,7 +23,9 @@ return new class extends Migration
 
         Schema::table('fortune_telling_settings', function (Blueprint $table) {
             if (! Schema::hasColumn('fortune_telling_settings', 'enable_dm_banner')) {
-                $table->boolean('enable_dm_banner')->default(false)->after('enable_ai_chat');
+                // ✅ Default เปิดทันที — ให้แอดมินได้เห็นผลทันทีหลัง deploy
+                // ปิดได้ใน /admin/fortune/banners
+                $table->boolean('enable_dm_banner')->default(true)->after('enable_ai_chat');
             }
 
             if (! Schema::hasColumn('fortune_telling_settings', 'banner_pick_strategy')) {
@@ -42,6 +44,16 @@ return new class extends Migration
                 $table->boolean('banner_send_on_welcome')->default(true)->after('banner_send_on_comment');
             }
         });
+
+        // ✅ Force enable สำหรับ row ที่มีอยู่แล้ว (default จะใช้แค่ตอน insert ใหม่)
+        // ทำให้ deploy บน prod ที่มี settings row อยู่แล้ว → banner ทำงานทันที
+        \Illuminate\Support\Facades\DB::table('fortune_telling_settings')->update([
+            'enable_dm_banner' => true,
+            'banner_pick_strategy' => 'rotation',
+            'banner_send_on_reaction' => true,
+            'banner_send_on_comment' => true,
+            'banner_send_on_welcome' => true,
+        ]);
     }
 
     public function down(): void

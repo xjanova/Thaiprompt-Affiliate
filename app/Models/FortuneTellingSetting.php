@@ -262,8 +262,8 @@ class FortuneTellingSetting extends Model
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
         'chat_ai_model' => 'llama-3.3-70b-versatile',
-        // 🖼️ Banner DM (default: ปิดทั้งระบบ — แอดมินเปิดใช้เอง)
-        'enable_dm_banner' => false,
+        // 🖼️ Banner DM — เปิดทันทีหลัง deploy
+        'enable_dm_banner' => true,
         'banner_pick_strategy' => 'rotation',
         'banner_send_on_reaction' => true,
         'banner_send_on_comment' => true,
