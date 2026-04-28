@@ -3197,6 +3197,14 @@ class FortuneConversationService
             //    แทน flow แข็ง (ขอวันเกิด → ขอคำถาม)
             $useDiscoveryChat = (bool) ($this->settings->enable_discovery_chat ?? true);
 
+            // 🛡️ Pre-check: ถ้าไม่มี Chat AI API key → ใช้ rigid flow ทันที (กัน user ค้าง)
+            if ($useDiscoveryChat && empty($this->settings->getChatAIApiKey())) {
+                Log::info('Fortune: Discovery Chat ปิดอัตโนมัติ — ไม่มี Chat AI API key', [
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+                $useDiscoveryChat = false;
+            }
+
             $initialStatus = $useDiscoveryChat
                 ? FortuneReading::STATUS_DISCOVERY_CHAT
                 : FortuneReading::STATUS_COLLECTING_BIRTHDATE;
@@ -10790,6 +10798,51 @@ PROMPT;
 
         // เรียก AI
         $aiResult = $this->aiService->discoverIntent($messages, $extracted, $reading->facebook_user_name);
+
+        // 🛡️ AI fail (no key, network, parse error) → fallback ไป rigid flow
+        // Track failure count — fallback หลัง 2 ครั้งติด (กัน flicker เพราะ glitch ชั่วคราว)
+        if (! empty($aiResult['failed'])) {
+            $failCount = (int) $reading->getConversationState('discovery_ai_fail_count', 0) + 1;
+            $reading->setConversationState('discovery_ai_fail_count', $failCount);
+            $reading->setConversationState('discovery_ai_last_fail_reason', $aiResult['fail_reason'] ?? 'unknown');
+
+            Log::warning('Fortune Discovery: AI ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'fail_count' => $failCount,
+                'fail_reason' => $aiResult['fail_reason'] ?? 'unknown',
+            ]);
+
+            // ครั้งแรก — รอ retry รอบหน้า
+            if ($failCount < 2) {
+                return [
+                    'action' => 'discovery_chat',
+                    'message' => "🙏 หมอจันทราขอเวลาคิดสักครู่นะคะ ลองพิมพ์ใหม่อีกครั้งได้เลย",
+                    'reading' => $reading,
+                ];
+            }
+
+            // ครั้งที่ 2+ → fallback ไป rigid flow ทันที
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+            $reading->setConversationState('discovery_fellback_to_rigid', true);
+            $reading->setConversationState('discovery_fallback_at', now()->toIso8601String());
+
+            Log::info('Fortune Discovery: fallback ไป rigid flow (เก็บวันเกิดแบบเดิม)', [
+                'reading_id' => $reading->id,
+                'fail_count' => $failCount,
+            ]);
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "🙏 หมอจันทราขอเก็บข้อมูลแบบรวบรัดดีกว่านะคะ\n\n"
+                    . $this->getBirthdateRequestMessage(),
+                'reading' => $reading,
+            ];
+        }
+
+        // ✅ AI สำเร็จ — รีเซ็ต fail counter
+        if ($failCount = $reading->getConversationState('discovery_ai_fail_count', 0)) {
+            $reading->setConversationState('discovery_ai_fail_count', 0);
+        }
 
         // 🚫 ถ้า AI ตรวจจับว่าเป็นคนป่วน → ปิดสนทนา
         if (! empty($aiResult['abusive'])) {

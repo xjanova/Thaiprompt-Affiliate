@@ -427,11 +427,14 @@ class FortuneAIService
     {
         $chatApiKey = $this->settings->getChatAIApiKey();
         if (empty($chatApiKey)) {
-            // fallback — ตอบแบบ template เพื่อไม่ให้ crash
+            // ⚠️ ไม่มี API key → caller ต้อง fallback ไป rigid flow
             return [
-                'reply' => 'หมอจันทรารับฟังอยู่นะคะ เล่าให้หมอฟังต่อได้ค่ะ 🙏',
+                'reply' => null,
                 'extracted' => $extracted,
                 'ready' => false,
+                'abusive' => false,
+                'failed' => true,
+                'fail_reason' => 'no_api_key',
             ];
         }
 
@@ -533,14 +536,17 @@ PROMPT;
                 ],
                 'ready' => (bool) ($parsed['ready'] ?? false),
                 'abusive' => (bool) ($parsed['abusive'] ?? false),
+                'failed' => false,
             ];
         } catch (Exception $e) {
             Log::warning('discoverIntent: error', ['error' => $e->getMessage()]);
             return [
-                'reply' => 'หมอจันทรารับฟังอยู่นะคะ เล่าให้หมอฟังต่อได้ค่ะ 🙏',
+                'reply' => null,
                 'extracted' => $extracted,
                 'ready' => false,
                 'abusive' => false,
+                'failed' => true,
+                'fail_reason' => $e->getMessage(),
             ];
         }
     }
