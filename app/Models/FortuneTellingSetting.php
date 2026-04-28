@@ -165,6 +165,16 @@ class FortuneTellingSetting extends Model
         // 🧠 Discovery Chat Mode (2026-04-28)
         'enable_discovery_chat',
         'discovery_chat_max_turns',
+        // 🔮 Daily Horoscope Per Day (toggle ระบบเดิม)
+        'daily_horoscope_per_day_enabled',
+        // 🌙 Mystic Content Auto-Post (2026-04-29)
+        'mystic_content_enabled',
+        'mystic_content_schedule',
+        'mystic_content_caption_min',
+        'mystic_content_caption_max',
+        'mystic_content_hashtag_count',
+        'tavily_api_key',
+        'brave_search_api_key',
     ];
 
     /**
@@ -216,6 +226,14 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => 'boolean',
         'banner_send_on_comment' => 'boolean',
         'banner_send_on_welcome' => 'boolean',
+        // 🔮 Daily Horoscope Per Day toggle
+        'daily_horoscope_per_day_enabled' => 'boolean',
+        // 🌙 Mystic Content
+        'mystic_content_enabled' => 'boolean',
+        'mystic_content_schedule' => 'array',
+        'mystic_content_caption_min' => 'integer',
+        'mystic_content_caption_max' => 'integer',
+        'mystic_content_hashtag_count' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -271,6 +289,13 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction' => true,
         'banner_send_on_comment' => true,
         'banner_send_on_welcome' => true,
+        // 🔮 Daily Horoscope Per Day — ปิดเป็น default หลัง deploy v3 (2026-04-29)
+        'daily_horoscope_per_day_enabled' => false,
+        // 🌙 Mystic Content — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
+        'mystic_content_enabled' => false,
+        'mystic_content_caption_min' => 400,
+        'mystic_content_caption_max' => 700,
+        'mystic_content_hashtag_count' => 6,
     ];
 
     /**
@@ -285,6 +310,8 @@ class FortuneTellingSetting extends Model
         'chat_ai_api_key',
         'line_channel_secret',
         'line_channel_access_token',
+        'tavily_api_key',
+        'brave_search_api_key',
     ];
 
     /**

@@ -4026,6 +4026,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     });
 
     // ========================================
+    // MYSTIC CONTENT — โพสคอนเทนต์สายมูอัตโนมัติ (Facebook Page)
+    // ========================================
+    Route::prefix('mystic')->name('mystic.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FortuneMysticController::class, 'index'])->name('index');
+        Route::put('/settings', [\App\Http\Controllers\Admin\FortuneMysticController::class, 'updateSettings'])->name('settings.update');
+        Route::put('/topics/{topic}', [\App\Http\Controllers\Admin\FortuneMysticController::class, 'updateTopic'])->name('topics.update');
+        Route::post('/publish-now', [\App\Http\Controllers\Admin\FortuneMysticController::class, 'publishNow'])->name('publish-now');
+        Route::get('/posts/{post}', [\App\Http\Controllers\Admin\FortuneMysticController::class, 'showPost'])->name('posts.show');
+    });
+
+    // ========================================
     // HOROSCOPE PUBLIC — จัดการระบบดูดวงสาธารณะ (frontend)
     // ========================================
     Route::prefix('horoscope-public')->name('horoscope-public.')->group(function () {
