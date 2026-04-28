@@ -3,7 +3,21 @@
 /**
  * Menu Configuration - V3 Menu System
  *
- * Single Source of Truth สำหรับเมนูทั้งหมดในระบบ
+ * ╔══════════════════════════════════════════════════════════════════════════════╗
+ * ║  🎯 SINGLE SOURCE OF TRUTH สำหรับเมนูทั้งหมดในระบบ                             ║
+ * ║                                                                                ║
+ * ║  ‼️  ถ้าจะเพิ่ม/แก้/ย้าย/ลบเมนู Admin/Seller/User → แก้ที่ไฟล์นี้เท่านั้น        ║
+ * ║                                                                                ║
+ * ║  ❌ ห้ามแก้ resources/views/components/arrow-x/sidebar-v3.blade.php            ║
+ * ║     (Hardcoded menu ในนั้นเป็น dead code — ไม่ render)                          ║
+ * ║                                                                                ║
+ * ║  Flow:  config/menus.php → MenuService::getMenuForRole() → sidebar-v3 @foreach║
+ * ║                                                                                ║
+ * ║  หลัง edit ไฟล์นี้แล้ว:                                                         ║
+ * ║    1. composer dump-autoload   (ไม่จำเป็น — config ไม่ต้อง autoload)            ║
+ * ║    2. php artisan config:clear  (สำคัญ! Laravel cache config)                  ║
+ * ║    3. php artisan view:clear    (ถ้า sidebar component ไม่ refresh)            ║
+ * ╚══════════════════════════════════════════════════════════════════════════════╝
  *
  * ✅ Config-based approach (ไม่ใช้ database)
  * ✅ Theme-agnostic (รองรับทุก theme)
@@ -732,6 +746,7 @@ return [
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],
                 ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
                 ['label' => '🌟 ดวงรายวันอัตโนมัติ', 'route' => 'admin.fortune.horoscope.index', 'description' => 'AI สร้างดวง 7 วันเกิด + โพส FB/LINE อัตโนมัติ'],
+                ['label' => '🌙 คอนเทนต์สายมูอัตโนมัติ', 'route' => 'admin.fortune.mystic.index', 'description' => 'โพส FB อัตโนมัติ — สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก'],
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],

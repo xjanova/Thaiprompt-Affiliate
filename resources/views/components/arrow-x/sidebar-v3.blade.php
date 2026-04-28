@@ -183,7 +183,23 @@
                 @endif
             @endforeach
         @else
-            {{-- Static Admin Menu (original hardcoded menu) --}}
+            {{--
+            ╔══════════════════════════════════════════════════════════════════════════════╗
+            ║  ⛔ DEAD CODE — DO NOT EDIT TO ADD MENUS ⛔                                  ║
+            ║                                                                                ║
+            ║  This @else branch is NEVER rendered because $useMenuService = true (line 40).║
+            ║  Editing menu items here will NOT make them appear in the sidebar.            ║
+            ║                                                                                ║
+            ║  ✅ TO ADD/EDIT ADMIN MENU ITEMS — edit:  config/menus.php                    ║
+            ║                                                                                ║
+            ║  ✅ The actual rendered menu comes from:                                       ║
+            ║       MenuService::getMenuForRole() → config('menus.admin') → @foreach above  ║
+            ║                                                                                ║
+            ║  This static block is kept ONLY as a fallback safety net if MenuService fails.║
+            ║  Do not delete, but do not add new items here either.                          ║
+            ╚══════════════════════════════════════════════════════════════════════════════╝
+            --}}
+            {{-- Static Admin Menu (DEAD — see warning above; edit config/menus.php instead) --}}
             {{-- Dashboard --}}
             <x-menu.pinnable-menu-item
                 menuKey="admin.dashboard"
@@ -652,16 +668,6 @@
                    class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.marketing.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
                     <i class="fas fa-bullhorn w-4 text-center drop-shadow"></i>
                     <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">การตลาดดูดวง</span>
-                </a>
-
-                {{-- Mystic Content 🌙 (auto-post สายมู/แก้เคล็ด/สิ่งลี้ลับ) --}}
-                <a href="{{ route('admin.fortune.mystic.index') }}"
-                   @click="$store.sidebar.closeOnMenuClick()"
-                   data-menu-active="{{ request()->routeIs('admin.fortune.mystic.*') ? 'true' : 'false' }}"
-                   data-menu-type="submenu"
-                   class="flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm {{ request()->routeIs('admin.fortune.mystic.*') ? 'bg-white/30 text-white font-bold' : 'text-white/80 hover:bg-white/10 hover:text-white' }}">
-                    <i class="fas fa-moon w-4 text-center drop-shadow"></i>
-                    <span x-show="$store.sidebar.shouldExpand" x-transition class="drop-shadow whitespace-nowrap">คอนเทนต์สายมู</span>
                 </a>
 
                 {{-- Saved Questions 📝 --}}

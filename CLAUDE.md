@@ -142,8 +142,23 @@ php artisan serve
 7. **[.claude/DATABASE_GUIDELINES.md](.claude/DATABASE_GUIDELINES.md)** - Database and migration rules
 8. **[.claude/seeder-guidelines.md](.claude/seeder-guidelines.md)** - Seeder synchronization rules
 9. **[.claude/ROUTES_GUIDELINES.md](.claude/ROUTES_GUIDELINES.md)** - Route and view conventions
+10. **[.claude/MENU_RULES.md](.claude/MENU_RULES.md)** 🚨 **CRITICAL** - Menu system — **edit `config/menus.php` ONLY, NEVER edit sidebar Blade for menus**
+
+---
+
+### 🚨 Top Mistakes to Avoid (อ่านก่อนเริ่มทุกครั้ง!)
+
+**MENU EDITING:**
+- ❌ ห้ามแก้ `resources/views/components/arrow-x/sidebar-v3.blade.php` เพื่อเพิ่ม/ลบ/ย้าย menu items
+- ✅ Edit menus only at `config/menus.php` → Run `php artisan config:clear` after
+- 📖 อ่าน `.claude/MENU_RULES.md` ก่อนแก้เมนู
+
+The hardcoded menu in `sidebar-v3.blade.php` is in `@else` (DEAD CODE) — `$useMenuService = true` ทำให้ branch ไม่ถูก render. Real menu = `MenuService::getMenuForRole()` → `config/menus.php`.
+
+---
 
 **⚠️ WARNING**: Not reading these guidelines will result in:
+- Editing wrong menu file (hardcoded sidebar instead of config/menus.php) 🚨 **COMMON MISTAKE**
 - Code not meeting V3 standards ⚠️ **NEW**
 - Using deprecated technologies (jQuery, Bootstrap) ⚠️ **NEW**
 - Deployment failures
