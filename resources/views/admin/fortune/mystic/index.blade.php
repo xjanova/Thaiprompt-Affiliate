@@ -113,7 +113,7 @@
                 กำหนดชั่วโมงที่ต้องการโพส (Asia/Bangkok) — โพสได้สูงสุด 6 ครั้ง/วัน เพื่อไม่ให้โดน FB ลด reach
             </p>
 
-            <div x-data="{ slots: @json($settings->mystic_content_schedule ?? ['08:00', '20:00']) }">
+            <div x-data="{ slots: @json(!empty($settings->mystic_content_schedule) ? $settings->mystic_content_schedule : ['08:00', '20:00']) }">
                 <template x-for="(slot, idx) in slots" :key="idx">
                     <div class="flex items-center gap-2 mb-2">
                         <input type="time"
@@ -188,21 +188,36 @@
 
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        🥇 Tavily API Key <span class="text-xs text-gray-500">(แนะนำ — 1000 free/เดือน)</span>
+                    <label class="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <span>🥇 Tavily API Key <span class="text-xs text-gray-500">(แนะนำ — 1000 free/เดือน)</span></span>
+                        @if(!empty($settings->tavily_api_key))
+                            <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-semibold">
+                                ✓ บันทึกแล้ว ({{ strlen($settings->tavily_api_key) }} ตัวอักษร)
+                            </span>
+                        @endif
                     </label>
                     <input type="password" name="tavily_api_key"
-                           placeholder="{{ $settings->tavily_api_key ? '••••••••••••• (มี key อยู่ — เว้นไว้ถ้าไม่ต้องการเปลี่ยน)' : 'tvly-... (สมัครฟรีที่ tavily.com)' }}"
+                           placeholder="{{ $settings->tavily_api_key ? '••••••••••••• (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน — กรอกใหม่เพื่อแทนที่)' : 'tvly-... (สมัครฟรีที่ tavily.com)' }}"
                            autocomplete="off"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    @if(!empty($settings->tavily_api_key))
+                        <p class="text-xs text-green-600 dark:text-green-400 mt-1">
+                            🔒 Key ถูกบันทึกในฐานข้อมูลแล้ว — ช่อง input ว่างเป็นเรื่องปกติ (browser ไม่แสดง password ที่บันทึกไว้)
+                        </p>
+                    @endif
                 </div>
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        🥈 Brave Search API Key <span class="text-xs text-gray-500">(fallback — 2000 free/เดือน)</span>
+                    <label class="flex items-center justify-between text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <span>🥈 Brave Search API Key <span class="text-xs text-gray-500">(fallback — 2000 free/เดือน)</span></span>
+                        @if(!empty($settings->brave_search_api_key))
+                            <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded text-xs font-semibold">
+                                ✓ บันทึกแล้ว ({{ strlen($settings->brave_search_api_key) }} ตัวอักษร)
+                            </span>
+                        @endif
                     </label>
                     <input type="password" name="brave_search_api_key"
-                           placeholder="{{ $settings->brave_search_api_key ? '••••••••••••• (มี key อยู่)' : 'BSA... (สมัครที่ brave.com/search/api)' }}"
+                           placeholder="{{ $settings->brave_search_api_key ? '••••••••••••• (เว้นว่างไว้ถ้าไม่ต้องการเปลี่ยน)' : 'BSA... (สมัครที่ brave.com/search/api)' }}"
                            autocomplete="off"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
                 </div>
