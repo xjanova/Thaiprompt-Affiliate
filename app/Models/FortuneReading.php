@@ -66,6 +66,19 @@ class FortuneReading extends Model
 
     public const STATUS_COLLECTING_QUESTIONS = 'collecting_questions';
 
+    /**
+     * 🎯 (2026-04-28) Discovery Chat Mode
+     * AI เป็นหมอจิตวิทยา ชวนคุยเนียนๆ เก็บวันเกิด + เรื่องที่กังวล
+     * แทน flow แบบ rigid (ขอวันเกิด → ขอคำถาม)
+     */
+    public const STATUS_DISCOVERY_CHAT = 'discovery_chat';
+
+    /**
+     * Confirm หลัง AI สรุปว่ารู้แล้วลูกค้าต้องการอะไร
+     * ลูกค้าตอบ "ใช่" → จ่ายเงิน → tarot flow
+     */
+    public const STATUS_DISCOVERY_CONFIRM = 'discovery_confirm';
+
     public const STATUS_COLLECTING_TAROT = 'collecting_tarot';
 
     public const STATUS_PENDING_PAYMENT = 'pending_payment';
@@ -493,6 +506,8 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
                 self::STATUS_COLLECTING_TAROT,
+                self::STATUS_DISCOVERY_CHAT,    // 🆕 (2026-04-28) AI psychology chat
+                self::STATUS_DISCOVERY_CONFIRM, // 🆕 รอ user ยืนยันสรุปจาก AI
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_PAID, // เพิ่ม: ระหว่าง AI กำลังประมวลผลคำทำนาย
             ])
@@ -505,6 +520,8 @@ class FortuneReading extends Model
                         self::STATUS_COLLECTING_BIRTHDATE,
                         self::STATUS_COLLECTING_QUESTIONS,
                         self::STATUS_COLLECTING_TAROT,
+                        self::STATUS_DISCOVERY_CHAT,
+                        self::STATUS_DISCOVERY_CONFIRM,
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
@@ -1081,6 +1098,8 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_BIRTHDATE,
                 self::STATUS_COLLECTING_QUESTIONS,
                 self::STATUS_COLLECTING_TAROT,
+                self::STATUS_DISCOVERY_CHAT,
+                self::STATUS_DISCOVERY_CONFIRM,
                 self::STATUS_PENDING_PAYMENT,
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))

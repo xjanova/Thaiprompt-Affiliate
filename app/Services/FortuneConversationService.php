@@ -3069,6 +3069,8 @@ class FortuneConversationService
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText, $userProfile),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_TAROT => $this->handleTarotCardDraw($reading, $messageText),
+            FortuneReading::STATUS_DISCOVERY_CHAT => $this->handleDiscoveryChat($reading, $messageText, $userProfile),
+            FortuneReading::STATUS_DISCOVERY_CONFIRM => $this->handleDiscoveryConfirm($reading, $messageText, $userProfile),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
             // PAID: AI กำลังประมวลผลคำทำนายอยู่ → แจ้งให้รอ
             FortuneReading::STATUS_PAID => [
@@ -3191,6 +3193,14 @@ class FortuneConversationService
 
             $name = $userProfile['name'] ?? 'คุณ';
 
+            // 🧠 (2026-04-28) Discovery Chat Mode — ถ้าเปิดใช้งาน → AI ชวนคุยเก็บข้อมูล
+            //    แทน flow แข็ง (ขอวันเกิด → ขอคำถาม)
+            $useDiscoveryChat = (bool) ($this->settings->enable_discovery_chat ?? true);
+
+            $initialStatus = $useDiscoveryChat
+                ? FortuneReading::STATUS_DISCOVERY_CHAT
+                : FortuneReading::STATUS_COLLECTING_BIRTHDATE;
+
             // สร้าง FortuneReading ใหม่สำหรับ deep reading
             $reading = FortuneReading::create([
                 'facebook_user_id' => $facebookUserId,
@@ -3198,7 +3208,7 @@ class FortuneConversationService
                 'user_profile' => $userProfile,
                 'questions' => [],
                 'reading_type' => 'deep',
-                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                'conversation_status' => $initialStatus,
                 'response_type' => 'private_message',
                 'ai_response' => '',
                 'ai_provider' => '',
@@ -3206,10 +3216,30 @@ class FortuneConversationService
                 'platform_user_id' => $facebookUserId,
             ]);
 
-            Log::info('Fortune: เริ่ม deep reading flow ใหม่ (ข้าม free limit)', [
+            Log::info('Fortune: เริ่ม deep reading flow ใหม่', [
                 'facebook_user_id' => $facebookUserId,
                 'reading_id' => $reading->id,
+                'discovery_chat_mode' => $useDiscoveryChat,
             ]);
+
+            // Discovery Chat: เปิดด้วย greeting อบอุ่น + invite ให้เล่า (ไม่ขอวันเกิดทันที)
+            if ($useDiscoveryChat) {
+                $reading->setConversationState('discovery_messages', []);
+                $reading->setConversationState('discovery_extracted', [
+                    'birthdate' => null,
+                    'concern' => null,
+                ]);
+                $reading->setConversationState('discovery_turns', 0);
+
+                $greet = $name && $name !== 'คุณ' ? "คุณ{$name}" : 'เจ้าชะตา';
+                return [
+                    'action' => 'discovery_chat_open',
+                    'message' => "🌙 สวัสดีค่ะ {$greet} หมอจันทราดีใจที่ได้รู้จัก ✨\n\n"
+                        . "เล่าให้หมอฟังหน่อยได้ไหมคะ — ตอนนี้ในใจมีเรื่องอะไรที่กังวลใจอยู่?\n"
+                        . "ความรัก การงาน เงินทอง หรือเรื่องใดก็ได้ที่อยากให้หมอช่วยดูดวงให้ค่ะ 🙏",
+                    'reading' => $reading,
+                ];
+            }
 
             return [
                 'action' => 'collecting_birthdate',
@@ -10698,6 +10728,258 @@ PROMPT;
             . "ถ้ายังมีเรื่องอื่นในใจ อยากให้แม่หมอช่วยดู\n"
             . "เปิดไพ่ใหม่ได้ที่ค่าครู {$price} บาท — แม่หมอจะวิเคราะห์ดวงดาว + เปิดไพ่ให้ใหม่ค่ะ 🃏\n\n"
             . "👇 กดปุ่มเพื่อเริ่ม";
+    }
+
+    // ============================================================
+    // 🧠 Discovery Chat Mode (2026-04-28)
+    // AI หมอจิตวิทยา ชวนคุยเก็บวันเกิด+เรื่องที่กังวล
+    // แทน flow แข็ง (ขอวันเกิด → ขอคำถาม)
+    // ============================================================
+
+    /**
+     * Hard limit ของ discovery chat turns — กัน abuse + AI cost
+     * Default ใน settings = 8 (ปรับได้)
+     */
+    protected function getDiscoveryMaxTurns(): int
+    {
+        return (int) ($this->settings->discovery_chat_max_turns ?? 8);
+    }
+
+    /**
+     * Handle Discovery Chat — AI ชวนคุยเก็บข้อมูล
+     *
+     * Flow:
+     *   1. เพิ่ม user message ใน history
+     *   2. เรียก AI discoverIntent — ได้ reply + extracted + ready + abusive
+     *   3. ถ้า abusive → ปิด conversation
+     *   4. ถ้า ready → ไป STATUS_DISCOVERY_CONFIRM (สรุป + ขอจ่าย)
+     *   5. ถ้ายัง → ส่ง reply กลับ + รอ turn ถัดไป
+     *   6. ถ้าเกิน max turns → forced summary หรือ fallback
+     */
+    protected function handleDiscoveryChat(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
+    {
+        // 🚪 Escape hatch — ถ้า user อยากยกเลิก
+        $cancelKeywords = ['ยกเลิก', 'cancel', 'stop', '/reset', 'reset', 'เริ่มใหม่'];
+        if ($this->matchesExactKeyword($messageText, $cancelKeywords)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            return [
+                'action' => 'cancelled',
+                'message' => "🙏 ยกเลิกแล้วค่ะ — ถ้าอยากดูดวงใหม่พิมพ์ \"ดูดวง\" ได้เลย",
+                'reading' => $reading,
+            ];
+        }
+
+        // เพิ่ม user message ใน history
+        $messages = $reading->getConversationState('discovery_messages', []) ?: [];
+        $extracted = $reading->getConversationState('discovery_extracted', ['birthdate' => null, 'concern' => null]);
+        $turns = (int) $reading->getConversationState('discovery_turns', 0) + 1;
+
+        $messages[] = ['role' => 'user', 'content' => $messageText];
+
+        // 🚫 Hard cap — ถ้าเกิน max turns × 1.5 → ปิด (กัน infinite loop)
+        $maxTurns = $this->getDiscoveryMaxTurns();
+        if ($turns > $maxTurns + 4) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            return [
+                'action' => 'discovery_exhausted',
+                'message' => "🌙 หมอจันทรารับฟังนานพอสมควรแล้วค่ะ\n\n"
+                    . "ถ้าตอนนี้พร้อมดูดวง พิมพ์ \"ดูดวงเชิงลึก\" — หมอจะเริ่มเปิดไพ่ให้ใหม่นะคะ ✨",
+                'reading' => $reading,
+            ];
+        }
+
+        // เรียก AI
+        $aiResult = $this->aiService->discoverIntent($messages, $extracted, $reading->facebook_user_name);
+
+        // 🚫 ถ้า AI ตรวจจับว่าเป็นคนป่วน → ปิดสนทนา
+        if (! empty($aiResult['abusive'])) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            $reading->setConversationState('discovery_aborted_abusive', true);
+            $reading->setConversationState('discovery_aborted_at', now()->toIso8601String());
+
+            Log::warning('Fortune Discovery: ปิดสนทนา — AI ตรวจจับคนป่วน', [
+                'reading_id' => $reading->id,
+                'user_id' => $reading->facebook_user_id,
+                'last_message' => mb_substr($messageText, 0, 100),
+                'turn' => $turns,
+            ]);
+
+            return [
+                'action' => 'discovery_aborted',
+                'message' => $aiResult['reply'] ?: "🙏 หมอจันทราขอจบการสนทนานี้ค่ะ ถ้ามีคำถามเรื่องดูดวงจริงๆ ทักมาใหม่ได้นะคะ",
+                'reading' => $reading,
+            ];
+        }
+
+        // เพิ่ม assistant reply ใน history
+        $assistantReply = $aiResult['reply'] ?: 'หมอจันทรารับฟังอยู่นะคะ เล่าให้หมอฟังต่อได้ค่ะ 🙏';
+        $messages[] = ['role' => 'assistant', 'content' => $assistantReply];
+
+        // เก็บ history แค่ N turns ล่าสุด (กัน prompt บวม)
+        $messages = array_slice($messages, -16); // 8 user + 8 assistant
+
+        $reading->setConversationState('discovery_messages', $messages);
+        $reading->setConversationState('discovery_extracted', $aiResult['extracted']);
+        $reading->setConversationState('discovery_turns', $turns);
+
+        $newExtracted = $aiResult['extracted'];
+        $hasComplete = ! empty($newExtracted['birthdate']) && ! empty($newExtracted['concern']);
+
+        // ✅ AI บอกว่าครบแล้ว → ไปสรุป
+        // หรือ เก็บข้อมูลครบ + เกิน max turns → forced summary
+        if (($aiResult['ready'] && $hasComplete) || ($hasComplete && $turns >= $maxTurns)) {
+            return $this->transitionToDiscoveryConfirm($reading, $newExtracted);
+        }
+
+        // ⏰ เกิน max turns แต่ข้อมูลไม่ครบ → ขอข้อมูลตรงๆ
+        if ($turns >= $maxTurns) {
+            $missing = [];
+            if (empty($newExtracted['birthdate'])) $missing[] = 'วันเดือนปีเกิด';
+            if (empty($newExtracted['concern'])) $missing[] = 'เรื่องที่อยากให้ดู';
+            $missingText = implode(' + ', $missing);
+
+            return [
+                'action' => 'discovery_chat',
+                'message' => $assistantReply . "\n\n_(หมอจันทราขอ {$missingText} เพื่อเริ่มเปิดไพ่ให้ค่ะ)_",
+                'reading' => $reading,
+            ];
+        }
+
+        // ปกติ — ส่ง reply กลับ
+        return [
+            'action' => 'discovery_chat',
+            'message' => $assistantReply,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * Transition จาก Discovery Chat → Discovery Confirm
+     * บันทึก birthdate + concern ลง reading + ส่งสรุป + ขอจ่ายค่าครู
+     */
+    protected function transitionToDiscoveryConfirm(FortuneReading $reading, array $extracted): array
+    {
+        $birthdate = $extracted['birthdate'];
+        $concern = $extracted['concern'];
+
+        // บันทึกข้อมูลที่เก็บได้
+        $reading->update([
+            'birth_date' => $birthdate,
+            'questions' => [$concern],
+            'conversation_status' => FortuneReading::STATUS_DISCOVERY_CONFIRM,
+        ]);
+        $reading->setConversationState('collected_questions', [$concern]);
+        $reading->setConversationState('discovery_summary_at', now()->toIso8601String());
+
+        $price = (int) $this->getDeepReadingPrice();
+        $birthdateThai = $this->formatThaiDate($birthdate);
+
+        Log::info('Fortune Discovery: สรุปข้อมูลครบ → ขอ confirm', [
+            'reading_id' => $reading->id,
+            'birthdate' => $birthdate,
+            'concern' => $concern,
+        ]);
+
+        return [
+            'action' => 'discovery_confirm',
+            'message' => "🌙 หมอจันทราเข้าใจแล้วค่ะ\n\n"
+                . "═══════════════════════\n"
+                . "📅 *วันเกิด*: {$birthdateThai}\n"
+                . "💭 *เรื่องที่อยากรู้*: {$concern}\n"
+                . "═══════════════════════\n\n"
+                . "💎 *ค่าครู {$price} บาท* — โอนแล้วหมอจันทราจะ:\n"
+                . "  • เปิดไพ่ยิปซีให้เจ้าชะตาเลือกเอง\n"
+                . "  • วิเคราะห์ดวงดาว + ไพ่ + ฟันธงเป็นเรื่องราว\n"
+                . "  • คุยต่อเรื่องนี้ได้ฟรี 48 ชม. หลังคำทำนาย\n\n"
+                . "ตอบ \"ตกลง\" เพื่อเริ่มเปิดไพ่ค่ะ ✨\n"
+                . "หรือถ้าอยากปรับเรื่อง พิมพ์ \"ปรับ\" ได้นะคะ",
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['content_type' => 'text', 'title' => '✅ ตกลงดู', 'payload' => 'DISCOVERY_CONFIRM_YES'],
+                ['content_type' => 'text', 'title' => '✏️ ปรับเรื่อง', 'payload' => 'DISCOVERY_CONFIRM_NO'],
+            ],
+        ];
+    }
+
+    /**
+     * Handle confirmation step
+     * ใช่ → ไป tarot flow / ไม่ → กลับเข้า chat
+     */
+    protected function handleDiscoveryConfirm(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
+    {
+        $text = mb_strtolower(trim($messageText));
+
+        // ✅ ตอบใช่ → enter tarot flow
+        $yesKeywords = ['ตกลง', 'ใช่', 'โอเค', 'ok', 'ใช', 'ครับ', 'ค่ะ', 'จ่าย', 'discovery_confirm_yes', 'พร้อม', 'เอา'];
+        if ($this->containsAny($text, $yesKeywords)) {
+            // เปลี่ยน status → COLLECTING_TAROT (เข้า tarot flow เดิม)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
+            $reading->setConversationState('tarot_intention_confirmed', false);
+            $reading->setConversationState('tarot_intention_prompted_at', null);
+
+            Log::info('Fortune Discovery: user ตกลง → เข้า tarot flow', [
+                'reading_id' => $reading->id,
+            ]);
+
+            // ใช้ tarot intention prompt เดิม
+            return $this->promptTarotIntention($reading);
+        }
+
+        // ❌ อยากปรับ → กลับ chat
+        $noKeywords = ['ไม่', 'ปรับ', 'แก้', 'เปลี่ยน', 'discovery_confirm_no'];
+        if ($this->containsAny($text, $noKeywords)) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_DISCOVERY_CHAT]);
+
+            return [
+                'action' => 'discovery_chat',
+                'message' => "ได้เลยค่ะ — เล่าให้หมอฟังเพิ่มได้ว่าอยากปรับตรงไหน หรืออยากให้ดูเรื่องอื่นแทน 🙏",
+                'reading' => $reading,
+            ];
+        }
+
+        // ไม่เข้าใจ — ถามใหม่
+        return [
+            'action' => 'discovery_confirm',
+            'message' => "ตอบ \"ตกลง\" เพื่อเริ่มเปิดไพ่ หรือ \"ปรับ\" เพื่อแก้เรื่องก่อนค่ะ ✨",
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['content_type' => 'text', 'title' => '✅ ตกลงดู', 'payload' => 'DISCOVERY_CONFIRM_YES'],
+                ['content_type' => 'text', 'title' => '✏️ ปรับเรื่อง', 'payload' => 'DISCOVERY_CONFIRM_NO'],
+            ],
+        ];
+    }
+
+    /**
+     * Helper: ตรวจว่าข้อความมี keyword อย่างน้อย 1 คำหรือไม่
+     */
+    protected function containsAny(string $text, array $keywords): bool
+    {
+        foreach ($keywords as $kw) {
+            if (str_contains($text, mb_strtolower($kw))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * เริ่ม tarot intention prompt (DRY — ใช้ logic เดียวกับ flow เดิม)
+     * ส่งข้อความเชิญให้กดเลขเพื่อเลือกไพ่
+     */
+    protected function promptTarotIntention(FortuneReading $reading): array
+    {
+        $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+
+        return [
+            'action' => 'collecting_tarot',
+            'message' => "🃏 *เปิดไพ่ยิปซี*\n\n"
+                . "หลับตา หายใจลึก แล้วนึกถึงเรื่องที่ถามมา\n"
+                . "เมื่อพร้อม — พิมพ์เลข **1-78** เพื่อเปิดไพ่\n\n"
+                . "(หรือพิมพ์ \"สุ่ม\" ให้หมอเปิดให้ก็ได้ค่ะ ✨)",
+            'reading' => $reading,
+        ];
     }
 
     /**

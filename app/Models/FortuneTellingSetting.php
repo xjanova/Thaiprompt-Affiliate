@@ -162,6 +162,9 @@ class FortuneTellingSetting extends Model
         'banner_send_on_reaction',
         'banner_send_on_comment',
         'banner_send_on_welcome',
+        // 🧠 Discovery Chat Mode (2026-04-28)
+        'enable_discovery_chat',
+        'discovery_chat_max_turns',
     ];
 
     /**
