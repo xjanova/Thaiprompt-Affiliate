@@ -449,6 +449,12 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
                             $reading->setConversationState('delivered_by_push', $sent);
 
+                            // 🆕 (2026-04-28) ส่ง follow-up DM แจ้งว่าคุยต่อได้
+                            // ใน 48 ชม. ลูกค้าถามต่อเรื่องเดิมได้ฟรี (ระบบ post-reading discussion)
+                            if ($sent) {
+                                $this->sendPostReadingFollowUp($channelManager, $reading, $name);
+                            }
+
                             Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
                                 'reading_id' => $this->readingId,
                                 'sent' => $sent,
@@ -642,5 +648,48 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             "reading:{$this->readingId}",
             "platform:{$this->platform}",
         ];
+    }
+
+    /**
+     * 🆕 (2026-04-28) ส่ง follow-up DM หลังคำทำนายแล้ว
+     *
+     * แจ้งลูกค้าว่าคุยต่อเรื่องเดิมได้ฟรีใน 48 ชม. (post-reading discussion mode)
+     * หน่วงเวลา 1.5 วินาทีเพื่อให้คำทำนายขึ้นก่อน + Messenger group ข้อความรวมกัน
+     */
+    protected function sendPostReadingFollowUp(FortuneChannelManager $channelManager, FortuneReading $reading, string $name): void
+    {
+        try {
+            // หน่วงให้คำทำนายแสดงก่อน — กัน DM ซ้อน
+            usleep(1_500_000);
+
+            $hours = FortuneConversationService::POST_READING_DISCUSSION_HOURS;
+            $maxTurns = FortuneConversationService::POST_READING_MAX_TURNS;
+
+            $followUpMessage = "💬 *อ่านแล้วมีอะไรอยากถามเพิ่ม?*\n\n"
+                . "เจ้าชะตา{$name} สามารถ **คุยต่อเรื่องนี้กับแม่หมอจันทราได้ฟรี** ภายใน {$hours} ชั่วโมง\n\n"
+                . "🃏 ใช้ไพ่+ดวงดาวชุดเดิมที่เปิดไว้แล้ว\n"
+                . "💭 ถามขยายความ หรือเรื่องที่สงสัยจากคำทำนาย ได้สูงสุด {$maxTurns} ครั้ง\n\n"
+                . "_(ถ้าเป็นเรื่องใหม่/หมวดอื่น แม่หมอจะแจ้งให้เปิดไพ่ใหม่ค่ะ)_\n\n"
+                . "พิมพ์คำถามมาได้เลย ✨";
+
+            $channelManager->sendResponse($this->platform, $this->userId, [
+                'action' => 'post_reading_invite',
+                'message' => $followUpMessage,
+                'reading' => $reading,
+            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+            $reading->setConversationState('post_reading_invite_sent', true);
+            $reading->setConversationState('post_reading_invite_at', now()->toIso8601String());
+
+            Log::info('ProcessDeepFortuneReadingJob: ส่ง post-reading follow-up DM', [
+                'reading_id' => $this->readingId,
+                'platform' => $this->platform,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('ProcessDeepFortuneReadingJob: post-reading follow-up DM ล้ม (non-blocking)', [
+                'reading_id' => $this->readingId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }
