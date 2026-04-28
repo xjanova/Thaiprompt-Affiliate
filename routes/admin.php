@@ -3812,6 +3812,7 @@ Route::prefix('developers')->name('developers.')->group(function () {
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
+use App\Http\Controllers\Admin\FortuneBannerController;
 use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
 use App\Http\Controllers\Admin\FortuneRichMenuEditorController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
@@ -3894,10 +3895,25 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::get('/readings/export/csv', [FortuneReadingsController::class, 'export'])->name('readings.export');
     Route::get('/readings', [FortuneReadingsController::class, 'index'])->name('readings.index');
     Route::get('/readings/{reading}', [FortuneReadingsController::class, 'show'])->name('readings.show');
+    Route::get('/readings/{reading}/edit', [FortuneReadingsController::class, 'edit'])->name('readings.edit');
+    Route::put('/readings/{reading}', [FortuneReadingsController::class, 'update'])->name('readings.update');
     Route::get('/readings/{reading}/status', [FortuneReadingsController::class, 'status'])->name('readings.status');
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
+
+    // 🖼️ แบนเนอร์ DM
+    Route::prefix('banners')->name('banners.')->group(function () {
+        Route::get('/', [FortuneBannerController::class, 'index'])->name('index');
+        Route::get('/create', [FortuneBannerController::class, 'create'])->name('create');
+        Route::post('/', [FortuneBannerController::class, 'store'])->name('store');
+        Route::get('/{banner}/edit', [FortuneBannerController::class, 'edit'])->name('edit');
+        Route::put('/{banner}', [FortuneBannerController::class, 'update'])->name('update');
+        Route::delete('/{banner}', [FortuneBannerController::class, 'destroy'])->name('destroy');
+        Route::post('/{banner}/toggle', [FortuneBannerController::class, 'toggle'])->name('toggle');
+        Route::post('/reorder', [FortuneBannerController::class, 'reorder'])->name('reorder');
+        Route::post('/settings', [FortuneBannerController::class, 'saveSettings'])->name('settings');
+    });
 
     // ระบบเทคโอเวอร์ (Takeover Control) — แม่หมอ/แอดมินคุยแทน AI
     Route::prefix('takeover')->name('takeover.')->group(function () {

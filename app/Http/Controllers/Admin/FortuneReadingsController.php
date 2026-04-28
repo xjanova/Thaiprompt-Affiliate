@@ -127,6 +127,87 @@ class FortuneReadingsController extends Controller
     }
 
     /**
+     * แสดงฟอร์มแก้ไขการทำนาย (admin)
+     *
+     * รองรับการแก้ไข:
+     *   - คำทำนาย (deep_response, basic_response, ai_response)
+     *   - สถานะบิล (is_paid, paid_at, conversation_status)
+     *   - จำนวนเงิน (amount_paid)
+     */
+    public function edit(FortuneReading $reading)
+    {
+        return view('admin.fortune.readings.edit', [
+            'reading' => $reading,
+            'pageTitle' => 'แก้ไขการทำนาย #' . $reading->id,
+        ]);
+    }
+
+    /**
+     * บันทึกการแก้ไขการทำนาย (admin)
+     *
+     * Audit log: ทุกการแก้ไขถูก log เพื่อตรวจสอบย้อนหลัง
+     */
+    public function update(Request $request, FortuneReading $reading)
+    {
+        $validated = $request->validate([
+            'deep_response' => 'nullable|string|max:50000',
+            'basic_response' => 'nullable|string|max:20000',
+            'ai_response' => 'nullable|string|max:20000',
+            'conversation_status' => 'required|in:new,awaiting_confirmation,basic_done,collecting_birthdate,collecting_questions,collecting_tarot,pending_payment,paid,completed',
+            'is_paid' => 'required|boolean',
+            'amount_paid' => 'nullable|numeric|min:0|max:999999',
+            'paid_at' => 'nullable|date',
+            'admin_note' => 'nullable|string|max:500',
+        ]);
+
+        // เก็บ snapshot ก่อนแก้ — ใส่ใน conversation_state เพื่อ audit
+        $beforeSnapshot = [
+            'deep_response_len' => mb_strlen($reading->deep_response ?? ''),
+            'basic_response_len' => mb_strlen($reading->basic_response ?? ''),
+            'is_paid' => $reading->is_paid,
+            'conversation_status' => $reading->conversation_status,
+            'amount_paid' => $reading->amount_paid,
+            'paid_at' => $reading->paid_at?->toIso8601String(),
+        ];
+
+        // ถ้าเปลี่ยน is_paid เป็น true แต่ paid_at ว่าง → ใส่ now()
+        if ($validated['is_paid'] && empty($validated['paid_at'])) {
+            $validated['paid_at'] = now();
+        }
+        // ถ้าเปลี่ยน is_paid เป็น false → clear paid_at
+        if (! $validated['is_paid']) {
+            $validated['paid_at'] = null;
+        }
+
+        $adminNote = $validated['admin_note'] ?? null;
+        unset($validated['admin_note']);
+
+        $reading->update($validated);
+
+        // Audit log ลง conversation_state
+        $audits = $reading->getConversationState('admin_edits', []);
+        $audits[] = [
+            'edited_at' => now()->toIso8601String(),
+            'edited_by' => auth()->user()?->name ?? 'unknown',
+            'edited_by_id' => auth()->id(),
+            'before' => $beforeSnapshot,
+            'note' => $adminNote,
+        ];
+        $reading->setConversationState('admin_edits', $audits);
+
+        Log::info('Admin: Edit fortune reading', [
+            'reading_id' => $reading->id,
+            'admin' => auth()->user()?->name,
+            'before' => $beforeSnapshot,
+            'note' => $adminNote,
+        ]);
+
+        return redirect()
+            ->route('admin.fortune.readings.show', $reading)
+            ->with('success', '✅ บันทึกการแก้ไขสำเร็จ');
+    }
+
+    /**
      * สถานะ reading สำหรับ polling จากหน้า show.blade
      *
      * Client poll endpoint นี้ทุก 3 วินาทีหลังกดปุ่ม "สร้างคำทำนาย"

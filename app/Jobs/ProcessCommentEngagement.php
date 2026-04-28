@@ -6,6 +6,7 @@ use App\Models\FortuneCommentEngagement;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
+use App\Services\FortuneBannerService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -179,6 +180,18 @@ class ProcessCommentEngagement implements ShouldQueue
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ];
+
+            // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+            try {
+                $bannerService = new FortuneBannerService($settings);
+                $bannerService->sendBannerThenWait(
+                    fn ($url) => $facebookService->sendImage($userId, $url),
+                    'comment'
+                );
+            } catch (Throwable $bannerErr) {
+                Log::debug('Comment Engagement: banner send failed (non-blocking): '.$bannerErr->getMessage());
+            }
+
             $dmSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
                 'from_comment_engagement' => true,
                 'comment_id' => $commentId,

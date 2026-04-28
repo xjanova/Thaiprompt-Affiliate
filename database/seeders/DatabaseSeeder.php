@@ -62,6 +62,7 @@ class DatabaseSeeder extends Seeder
             FortuneHoroscopeCampaignSeeder::class, // 🆕 ระบบดูดวง - แคมเปญโพสดวงรายวันอัตโนมัติ (AI + FB/LINE auto-post)
             FortuneCommissionSeeder::class,      // 🔮 ค่าเริ่มต้น Level 1/Level 2 commission ดูดวง
             FortuneTakeoverSettingsSeeder::class, // 🎯 ระบบเทคโอเวอร์ดูดวง (แม่หมอ/แอดมินคุยแทน AI)
+            FortuneBannerSeeder::class,          // 🖼️ แบนเนอร์ DM (4 รูปเริ่มต้นจาก banner1.zip)
 
             // 5. AI & Integrations
             CentralAiSettingSeeder::class,      // 🆕 Central AI Settings (Ollama + PostXAgent Management)

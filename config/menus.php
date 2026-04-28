@@ -726,6 +726,7 @@ return [
                 ['label' => '📱 ช่องทางรับข้อความ', 'route' => 'admin.fortune.channels.index', 'description' => 'Facebook Messenger, LINE Official Account'],
                 ['label' => '📂 หมวดหมู่การทำนาย', 'route' => 'admin.fortune.categories.index', 'description' => 'ความรัก, การเงิน, สุขภาพ'],
                 ['label' => '📜 ประวัติคำทำนาย', 'route' => 'admin.fortune.readings.index', 'description' => 'ดูประวัติการทำนายทั้งหมด (มีปุ่ม Export CSV ในหน้านี้)'],
+                ['label' => '🖼️ แบนเนอร์ DM', 'route' => 'admin.fortune.banners.index', 'description' => 'อัพโหลด/จัดการแบนเนอร์ที่ส่งให้ลูกค้าใน DM (reaction/comment/welcome)'],
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],

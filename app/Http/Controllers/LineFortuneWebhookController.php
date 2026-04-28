@@ -6,6 +6,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmProspect;
+use App\Services\FortuneBannerService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
@@ -34,12 +35,18 @@ class LineFortuneWebhookController extends Controller
      */
     protected FortuneTakeoverService $takeoverService;
 
+    /**
+     * FortuneBannerService — ส่งภาพแบนเนอร์ก่อนข้อความ
+     */
+    protected FortuneBannerService $bannerService;
+
     public function __construct()
     {
         $this->settings = FortuneTellingSetting::getSettings();
         $this->lineService = new LineFortuneService($this->settings);
         $this->channelManager = new FortuneChannelManager($this->settings);
         $this->takeoverService = app(FortuneTakeoverService::class);
+        $this->bannerService = new FortuneBannerService($this->settings);
     }
 
     /**
@@ -248,6 +255,15 @@ class LineFortuneWebhookController extends Controller
 
                 return;
             }
+
+            // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
+            // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
+            $this->bannerService->sendBannerOnce(
+                $userId,
+                fn ($url) => $this->lineService->sendImage($userId, $url),
+                'welcome',
+                24
+            );
 
             // ประมวลผลข้อความผ่าน Channel Manager
             $result = $this->channelManager->processMessage(

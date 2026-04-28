@@ -6,13 +6,19 @@
 <div class="container mx-auto px-4 py-8 max-w-5xl">
     {{-- Header --}}
     <div class="mb-8">
-        <a href="{{ route('admin.fortune.readings.index') }}" 
+        <a href="{{ route('admin.fortune.readings.index') }}"
            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 mb-4 inline-block">
             ← กลับไปรายการ
         </a>
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
-            รายละเอียดการทำนาย #{{ $reading->id }}
-        </h1>
+        <div class="flex items-start justify-between gap-4">
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">
+                รายละเอียดการทำนาย #{{ $reading->id }}
+            </h1>
+            <a href="{{ route('admin.fortune.readings.edit', $reading) }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow transition">
+                ✏️ แก้ไข
+            </a>
+        </div>
     </div>
 
     {{-- User Info + Conversation Status --}}

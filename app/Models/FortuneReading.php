@@ -1100,11 +1100,16 @@ class FortuneReading extends Model
      *
      * กรองเฉพาะ transaction_type = 'fortune_reading' เพื่อแยกบิลดูดวง
      * ไม่ให้ปะปนกับบิลอีคอมเมิร์ซหรือ seller
+     *
+     * 🔒 SECURITY (2026-04-28): รับ smsTimestamp เพื่อกัน SMS เก่ามา match บิลใหม่
+     *
+     * @param  float  $amount  จำนวนเงินที่ได้รับจาก SMS
+     * @param  \Carbon\Carbon|null  $smsTimestamp  เวลาที่ SMS เข้า
      */
-    public static function findByUniqueAmount(float $amount): ?self
+    public static function findByUniqueAmount(float $amount, ?\Carbon\Carbon $smsTimestamp = null): ?self
     {
         // กรองเฉพาะ fortune_reading เพื่อไม่ให้ match ข้ามระบบ
-        $uniquePayment = UniquePaymentAmount::findMatch($amount, 'fortune_reading');
+        $uniquePayment = UniquePaymentAmount::findMatch($amount, 'fortune_reading', $smsTimestamp);
 
         if (! $uniquePayment) {
             return null;

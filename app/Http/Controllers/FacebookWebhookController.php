@@ -10,6 +10,7 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
+use App\Services\FortuneBannerService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use App\Services\FortuneTakeoverService;
@@ -54,6 +55,11 @@ class FacebookWebhookController extends Controller
      */
     protected FortuneTakeoverService $takeoverService;
 
+    /**
+     * FortuneBannerService — ส่งภาพแบนเนอร์ก่อนข้อความใน DM
+     */
+    protected ?FortuneBannerService $bannerService = null;
+
     public function __construct()
     {
         try {
@@ -63,6 +69,7 @@ class FacebookWebhookController extends Controller
             $this->conversationService = new FortuneConversationService($this->settings);
             $this->channelManager = new FortuneChannelManager($this->settings);
             $this->takeoverService = app(FortuneTakeoverService::class);
+            $this->bannerService = new FortuneBannerService($this->settings);
         } catch (\Exception $e) {
             // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
             Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
@@ -403,6 +410,14 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
             ];
+
+            // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin)
+            if ($this->bannerService) {
+                $this->bannerService->sendBannerThenWait(
+                    fn ($url) => $this->facebookService->sendImage($reaction->facebook_user_id, $url),
+                    'reaction'
+                );
+            }
 
             $success = $this->facebookService->sendQuickReplies(
                 $reaction->facebook_user_id,
@@ -799,6 +814,15 @@ class FacebookWebhookController extends Controller
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
         ];
+
+        // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+        if ($this->bannerService) {
+            $this->bannerService->sendBannerThenWait(
+                fn ($url) => $this->facebookService->sendImage($fromId, $url),
+                'comment'
+            );
+        }
+
         $dmSent = $this->facebookService->sendQuickReplies($fromId, $dmMessage, $quickReplies, [
             'from_comment_engagement' => true,
             'comment_id' => $commentId,
@@ -1834,6 +1858,17 @@ class FacebookWebhookController extends Controller
                     'sender_id' => $senderId,
                     'used_saved_name' => ! empty($savedName),
                 ]);
+            }
+
+            // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
+            // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
+            if ($this->bannerService) {
+                $this->bannerService->sendBannerOnce(
+                    $senderId,
+                    fn ($url) => $this->facebookService->sendImage($senderId, $url),
+                    'welcome',
+                    24
+                );
             }
 
             // ✅ ใช้ FortuneChannelManager เพื่อ routing + Rich Message response

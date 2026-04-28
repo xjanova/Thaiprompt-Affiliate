@@ -585,15 +585,30 @@ class SmsPaymentService
      */
     protected function handleFortuneReadingPayment(SmsPaymentNotification $notification): bool
     {
+        // 🔒 GUARD #1 (2026-04-28): SMS notification นี้ถูก match ไปบิลอื่นแล้ว → ห้าม reuse
+        // กฎทอง: 1 SMS ใช้ได้กับ 1 บิล เท่านั้น
+        // เคสที่กัน: notification ถูก reprocess (เช่น admin คลิก retry, queue replay)
+        if ($notification->matched_transaction_id !== null) {
+            Log::warning('🚫 SMS Payment: notification ถูก match แล้ว — ปฏิเสธ reuse', [
+                'notification_id' => $notification->id,
+                'matched_transaction_id' => $notification->matched_transaction_id,
+                'matched_status' => $notification->status,
+            ]);
+            return false;
+        }
+
         $amount = (float) $notification->amount;
+        // 🔒 SMS timestamp — ใช้กัน SMS ที่มาก่อนบิลถูกสร้าง
+        $smsTimestamp = $notification->sms_timestamp ?? $notification->created_at;
 
         // ขั้นที่ 1: ค้นหา FortuneReading ที่รอชำระเงินด้วย unique amount ที่ยังไม่หมดอายุ
-        $reading = FortuneReading::findByUniqueAmount($amount);
+        // ⭐ ส่ง smsTimestamp เพื่อกัน bill ใหม่ที่ยอดตรงแต่สร้างหลัง SMS
+        $reading = FortuneReading::findByUniqueAmount($amount, $smsTimestamp);
 
         // ขั้นที่ 2: Grace period — ค้นหา unique amount ที่เพิ่งหมดอายุ (ภายใน 30 นาที)
         // กรณีลูกค้าโอนช้ากว่าเวลาที่กำหนด แต่ยังอยู่ใน grace period
         if (! $reading) {
-            $reading = $this->findFortuneReadingByExpiredAmount($amount);
+            $reading = $this->findFortuneReadingByExpiredAmount($amount, $smsTimestamp);
 
             if ($reading) {
                 Log::info('SMS Payment: พบ Fortune Reading ผ่าน grace period (unique amount หมดอายุแล้ว)', [
@@ -604,29 +619,10 @@ class SmsPaymentService
             }
         }
 
-        // ขั้นที่ 3: Fallback — ค้นหาจาก amount_paid ตรงๆ
-        // กรณี unique amount ถูกลบไปแล้ว แต่ FortuneReading ยังรอชำระ
-        // หรือ cleanup ปิดไปแล้ว (completed) แต่ SMS มาช้า → recover กลับมา
-        if (! $reading) {
-            $reading = FortuneReading::whereIn('conversation_status', [
-                FortuneReading::STATUS_PENDING_PAYMENT,
-                FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว
-            ])
-                ->where('is_paid', false)
-                ->where('amount_paid', $amount)
-                ->where('updated_at', '>=', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES + 30))
-                ->orderBy('updated_at', 'desc')
-                ->first();
-
-            if ($reading) {
-                Log::info('SMS Payment: พบ Fortune Reading ผ่าน amount_paid fallback', [
-                    'notification_id' => $notification->id,
-                    'reading_id' => $reading->id,
-                    'amount' => $amount,
-                    'was_status' => $reading->conversation_status,
-                ]);
-            }
-        }
+        // 🚫 REMOVED (2026-04-28): Step 3 amount_paid fallback
+        // เดิม: where('amount_paid', $amount) → match ใครก็ได้ที่บิลตรง 90 นาที
+        // อันตรายเกินไป — ถ้า UPA ของบิลเก่าถูก cleanup แต่บิลใหม่ยอดตรง → match ผิด
+        // หลัง remove: ถ้า UPA หาย → ไป orphan flag ตามปกติ (admin แก้มือ ปลอดภัยกว่า)
 
         if (! $reading) {
             return false;
@@ -878,16 +874,19 @@ class SmsPaymentService
      * เพิ่งหมดอายุไม่นาน (ภายใน 30 นาทีหลังหมดอายุ)
      * → ยังสามารถจับคู่กับ FortuneReading ที่รอชำระเงินได้
      */
-    protected function findFortuneReadingByExpiredAmount(float $amount): ?FortuneReading
+    protected function findFortuneReadingByExpiredAmount(float $amount, ?\Carbon\Carbon $smsTimestamp = null): ?FortuneReading
     {
         // ค้นหา unique amount ที่หมดอายุแล้วแต่ยังอยู่ใน grace period (30 นาทีหลังหมดอายุ)
         $gracePeriodMinutes = 30;
+        $smsTimestamp = $smsTimestamp ?? now();
 
         $uniquePayment = UniquePaymentAmount::where('unique_amount', $amount)
             ->where('transaction_type', 'fortune_reading')
             ->whereIn('status', ['reserved', 'expired'])
             ->where('expires_at', '<=', now())
             ->where('expires_at', '>', now()->subMinutes($gracePeriodMinutes))
+            // 🔒 (2026-04-28) SMS ต้องมาหลัง bill ถูกสร้าง — กัน SMS ก่อน bill
+            ->where('created_at', '<=', $smsTimestamp)
             ->orderBy('expires_at', 'desc')
             ->lockForUpdate()
             ->first();

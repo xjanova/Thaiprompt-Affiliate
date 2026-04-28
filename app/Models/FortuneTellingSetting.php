@@ -156,6 +156,12 @@ class FortuneTellingSetting extends Model
         'horoscope_numerology_free_limit',
         'horoscope_seo_title_th',
         'horoscope_seo_description_th',
+        // 🖼️ Banner DM (2026-04-28)
+        'enable_dm_banner',
+        'banner_pick_strategy',
+        'banner_send_on_reaction',
+        'banner_send_on_comment',
+        'banner_send_on_welcome',
     ];
 
     /**
@@ -202,6 +208,11 @@ class FortuneTellingSetting extends Model
         'horoscope_free_daily_limit' => 'integer',
         'horoscope_dream_free_limit' => 'integer',
         'horoscope_numerology_free_limit' => 'integer',
+        // 🖼️ Banner DM
+        'enable_dm_banner' => 'boolean',
+        'banner_send_on_reaction' => 'boolean',
+        'banner_send_on_comment' => 'boolean',
+        'banner_send_on_welcome' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -251,6 +262,12 @@ class FortuneTellingSetting extends Model
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
         'chat_ai_model' => 'llama-3.3-70b-versatile',
+        // 🖼️ Banner DM (default: ปิดทั้งระบบ — แอดมินเปิดใช้เอง)
+        'enable_dm_banner' => false,
+        'banner_pick_strategy' => 'rotation',
+        'banner_send_on_reaction' => true,
+        'banner_send_on_comment' => true,
+        'banner_send_on_welcome' => true,
     ];
 
     /**

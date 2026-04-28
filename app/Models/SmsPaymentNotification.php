@@ -141,8 +141,21 @@ class SmsPaymentNotification extends Model
             return false;
         }
 
+        // 🔒 GUARD #1 (2026-04-28): SMS notification นี้ถูก match แล้ว → ห้าม reuse
+        // กฎทอง: 1 SMS ใช้ได้กับ 1 บิล เท่านั้น
+        if ($this->matched_transaction_id !== null) {
+            \Illuminate\Support\Facades\Log::warning('🚫 SMS Payment: notification ถูก match แล้ว — ปฏิเสธ reuse (ecommerce)', [
+                'notification_id' => $this->id,
+                'matched_transaction_id' => $this->matched_transaction_id,
+            ]);
+            return false;
+        }
+
+        // 🔒 SMS timestamp — ใช้กัน SMS ที่มาก่อนบิลถูกสร้าง
+        $smsTimestamp = $this->sms_timestamp ?? $this->created_at;
+
         // ใช้ DB transaction + lock ป้องกัน race condition ในการจับคู่
-        return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm) {
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($autoConfirm, $smsTimestamp) {
             // ดึง store_id ของ device เพื่อ filter เฉพาะ transactions ของร้านตัวเอง
             // ป้องกันการ match ข้ามร้านเมื่อมี multi-store
             // Admin device (store_id = null) → match ทุกร้าน (เพราะเป็น device หลักรับ SMS ของทั้ง platform)
@@ -154,10 +167,13 @@ class SmsPaymentNotification extends Model
             // ขั้นที่ 1: จับคู่ด้วย unique amount ที่ยังไม่หมดอายุ (พร้อม lock)
             // กรองเฉพาะบิลอีคอมเมิร์ซ (order, order_payment, topup, tarot_reading)
             // ไม่รวมบิลดูดวง (fortune_reading) เพราะจัดการแยกใน handleFortuneReadingPayment()
+            // ⭐ (2026-04-28) เพิ่ม temporal check + FIFO order
             $uniqueAmountQuery = UniquePaymentAmount::where('unique_amount', $this->amount)
                 ->where('status', 'reserved')
                 ->where('expires_at', '>', now())
                 ->where('transaction_type', '!=', 'fortune_reading')
+                ->where('created_at', '<=', $smsTimestamp)  // 🔒 SMS หลัง bill
+                ->orderBy('created_at', 'asc')              // FIFO — bill เก่าสุด
                 ->lockForUpdate();
 
             // Filter ตาม store_id ของ device (ป้องกัน match ข้ามร้าน)
@@ -209,11 +225,13 @@ class SmsPaymentNotification extends Model
             // กรณี UniquePaymentAmount หมดอายุแล้ว (เช่น ลูกค้าจ่ายหลัง 30 นาที)
             // แต่ PaymentTransaction ยังเป็น pending อยู่ (ยังไม่ถูก cleanup)
             // ใช้ exact match กับ amount ที่มีทศนิยม (unique decimal) เพื่อความแม่นยำ
+            // ⭐ (2026-04-28) เพิ่ม temporal check + FIFO — กัน SMS เก่ามา match transaction ใหม่
             $txnQuery = PaymentTransaction::where('amount', $this->amount)
                 ->whereIn('status', ['pending', 'processing'])
                 ->whereIn('payment_method', ['promptpay', 'bank_transfer'])
+                ->where('created_at', '<=', $smsTimestamp)  // 🔒 SMS หลัง transaction
                 ->lockForUpdate()
-                ->orderBy('created_at', 'desc');
+                ->orderBy('created_at', 'asc');             // FIFO — txn เก่าสุดก่อน
 
             // Admin device → match ทุกร้าน, Seller device → match เฉพาะร้านตัวเอง
             if ($deviceStoreId !== null) {
@@ -258,9 +276,11 @@ class SmsPaymentNotification extends Model
             }
 
             // ขั้นที่ 3: Fallback - จับคู่ด้วย reference_number (พร้อม lock)
+            // ⭐ (2026-04-28) เพิ่ม temporal check
             if ($this->reference_number) {
                 $refQuery = PaymentTransaction::where('promptpay_ref_no', $this->reference_number)
                     ->whereIn('status', ['pending', 'processing'])
+                    ->where('created_at', '<=', $smsTimestamp)  // 🔒 SMS หลัง transaction
                     ->lockForUpdate();
 
                 // Admin device → match ทุกร้าน, Seller device → match เฉพาะร้านตัวเอง

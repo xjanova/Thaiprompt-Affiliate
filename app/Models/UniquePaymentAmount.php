@@ -160,11 +160,20 @@ class UniquePaymentAmount extends Model
      * - 'tarot_reading' = บิลไพ่ทาโร่
      * - 'order' / 'order_payment' = บิลอีคอมเมิร์ซ
      *
+     * 🔒 SECURITY (2026-04-28): Temporal binding + FIFO
+     *   ป้องกันบั๊กที่ SMS เก่ามา match กับบิลใหม่ที่ลูกค้ายังไม่ได้โอน
+     *   - $smsTimestamp ทำให้ match เฉพาะ UPA ที่สร้าง *ก่อน* SMS arrived
+     *   - FIFO order ป้องกัน race เมื่อมี UPA หลายตัวยอดเดียวกัน (pick เก่าสุด)
+     *
      * @param  float  $amount  จำนวนเงินที่ได้รับ
      * @param  string|array|null  $transactionType  กรองตามประเภท (null = ไม่กรอง, ใช้แบบเดิม)
+     * @param  \Carbon\Carbon|null  $smsTimestamp  เวลาที่ SMS เข้า (เพื่อกัน SMS ก่อน bill)
      */
-    public static function findMatch(float $amount, string|array|null $transactionType = null): ?self
-    {
+    public static function findMatch(
+        float $amount,
+        string|array|null $transactionType = null,
+        ?\Carbon\Carbon $smsTimestamp = null
+    ): ?self {
         $query = static::where('unique_amount', $amount)
             ->where('status', 'reserved')
             ->where('expires_at', '>', now());
@@ -178,7 +187,16 @@ class UniquePaymentAmount extends Model
             }
         }
 
-        return $query->lockForUpdate()->first();
+        // 🔒 SMS ต้องมาหลัง bill ถูกสร้าง — ไม่งั้นเป็นบั๊ก/ฉ้อโกง
+        // เคสที่กัน: Bill #A 39.47 paid → Bill #B 39.47 รอ → SMS เก่าของ A reprocess
+        // ผลก่อนแก้: B ได้ตัดผิด, ผลหลังแก้: skip B (เพราะ A.created_at < SMS < B.created_at ไม่จริง)
+        if ($smsTimestamp !== null) {
+            $query->where('created_at', '<=', $smsTimestamp);
+        }
+
+        // FIFO — บิลที่สร้างเก่าสุด (แต่ยัง reserved) match ก่อน
+        // กัน race condition เมื่อ generate() reuse suffix หลัง bill เก่า used แล้ว
+        return $query->orderBy('created_at', 'asc')->lockForUpdate()->first();
     }
 
     /**
