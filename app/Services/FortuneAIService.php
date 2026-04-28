@@ -380,6 +380,123 @@ class FortuneAIService
     }
 
     /**
+     * 🎯 (2026-04-28) Generic chat with custom system prompt
+     *
+     * ใช้สำหรับ post-reading discussion + birthdate parsing + อื่นๆ
+     * ที่ต้องการ inject context พิเศษเข้า system message
+     *
+     * @param  string  $systemMessage  prompt ที่ค่อนข้างเฉพาะเจาะจง
+     * @param  string  $userMessage  ข้อความจาก user
+     * @param  array  $config  ['temperature' => float, 'max_tokens' => int]
+     * @return array ['response' => string, 'provider' => string, 'model' => string]
+     *
+     * @throws Exception
+     */
+    public function chatWithCustomSystemPrompt(string $systemMessage, string $userMessage, array $config = []): array
+    {
+        $chatProvider = $this->settings->getChatAIProvider();
+        $chatModel = $this->settings->getChatAIModel();
+        $chatApiKey = $this->settings->getChatAIApiKey();
+
+        if (empty($chatApiKey)) {
+            throw new Exception("ไม่พบ API Key สำหรับ Chat AI ({$chatProvider})");
+        }
+
+        $config = array_merge(['temperature' => 0.7, 'max_tokens' => 600], $config);
+
+        return match ($chatProvider) {
+            'gemini' => $this->callChatGemini($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
+            default => $this->callChatOpenAICompatible($userMessage, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
+        };
+    }
+
+    /**
+     * 🎯 (2026-04-28) AI parser สำหรับวันเกิดที่ regex parse ไม่ได้
+     *
+     * ใช้เป็น fallback หลัง parseBirthDate() ปกติล้มเหลว
+     * Handle: "เกิดวันเสาร์ 15 สิงหา ปี 65", "ผมเกิดสิงหา 35 ครับ", "23 กย 32"
+     *
+     * Returns YYYY-MM-DD or null
+     *
+     * @param  string  $messageText  ข้อความที่อาจมีวันเกิด
+     * @return string|null  วันเกิดในรูปแบบ YYYY-MM-DD (ค.ศ.) หรือ null
+     */
+    public function parseBirthDateWithAI(string $messageText): ?string
+    {
+        $chatApiKey = $this->settings->getChatAIApiKey();
+        if (empty($chatApiKey)) {
+            return null; // ไม่มี API key — fallback เงียบ
+        }
+
+        $currentYear = (int) now()->format('Y');
+        $minYear = $currentYear - 120;
+
+        $systemPrompt = "คุณคือเครื่องแปลงวันเกิด ตอบเฉพาะ JSON\n"
+            . "หน้าที่: อ่านข้อความและดึงวันเดือนปีเกิด ตอบเป็น YYYY-MM-DD เท่านั้น\n"
+            . "กฎ:\n"
+            . "1. ถ้าปีเป็น พ.ศ. → แปลงเป็น ค.ศ. (พ.ศ. - 543)\n"
+            . "2. ถ้าปีเป็น 2 หลัก → ใช้ Thai ID logic: ถ้า ≤ {$currentYear}%100 = 20XX, ไม่งั้น = 19XX\n"
+            . "3. ปีต้องอยู่ระหว่าง {$minYear}-{$currentYear}\n"
+            . "4. ถ้าไม่แน่ใจ/ไม่พบวันเกิด → ตอบ {\"date\": null}\n"
+            . "ตัวอย่าง:\n"
+            . "  input: \"เกิด 15 สิงหา ปี 33\"  → {\"date\": \"1990-08-15\"}\n"
+            . "  input: \"23 กย 2535\"           → {\"date\": \"1992-09-23\"}\n"
+            . "  input: \"สวัสดีครับ\"           → {\"date\": null}\n";
+
+        try {
+            $result = $this->chatWithCustomSystemPrompt(
+                $systemPrompt,
+                $messageText,
+                ['temperature' => 0.0, 'max_tokens' => 80]
+            );
+
+            $response = trim($result['response'] ?? '');
+
+            // Strip code fences if AI added them
+            $response = preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $response);
+
+            $parsed = json_decode($response, true);
+            $date = $parsed['date'] ?? null;
+
+            if (! $date) {
+                return null;
+            }
+
+            // Validate format YYYY-MM-DD
+            if (! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m)) {
+                return null;
+            }
+
+            $year = (int) $m[1];
+            $month = (int) $m[2];
+            $day = (int) $m[3];
+
+            if (! checkdate($month, $day, $year)) {
+                return null;
+            }
+
+            // Sanity: อายุ 1-120 ปี
+            $age = $currentYear - $year;
+            if ($age < 1 || $age > 120) {
+                return null;
+            }
+
+            Log::info('FortuneAIService: parseBirthDateWithAI สำเร็จ', [
+                'input' => mb_substr($messageText, 0, 80),
+                'parsed_date' => $date,
+            ]);
+
+            return $date;
+
+        } catch (Exception $e) {
+            Log::debug('FortuneAIService: parseBirthDateWithAI ล้มเหลว (silent)', [
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
      * สร้าง AI Chat Response พร้อม conversation history (ความจำ)
      *
      * ใช้สำหรับสนทนาต่อเนื่อง — AI จะจำบริบทจากข้อความก่อนหน้า

@@ -1189,6 +1189,25 @@ class FortuneConversationService
                 return $this->continueConversation($activeReading, $messageText, $userProfile);
             }
 
+            // 🆕 (2026-04-28) Post-reading discussion mode
+            // ลูกค้าจ่ายไปแล้ว+ได้คำทำนาย → ภายใน window อนุญาตคุยต่อกับ AI ฟรี
+            // โดยใช้ context จาก deep_response/birth_chart/cards เดิม
+            // ❗ ต้องไม่ trigger ถ้าเป็นคำขอดูดวงใหม่ (จะข้ามไปด้านล่างปกติ)
+            if (! $this->isExplicitDeepReadingRequest($messageText)
+                && ! $this->parseStandaloneBirthdate($messageText)) {
+                $recentReading = $this->findRecentCompletedDeepReading($facebookUserId);
+                if ($recentReading) {
+                    $discussionResult = $this->handlePostReadingDiscussion(
+                        $recentReading,
+                        $messageText,
+                        $userProfile
+                    );
+                    if ($discussionResult) {
+                        return $discussionResult;
+                    }
+                }
+            }
+
             // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
             // เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" จาก ai_limit → ต้องเข้า flow เก็บวันเกิด+คำถาม ไม่ใช่วน ai_limit ซ้ำ
             // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
@@ -5129,6 +5148,17 @@ class FortuneConversationService
         $formattedDate = $this->formatThaiDate($birthDate);
         $count = self::REQUIRED_QUESTIONS;
 
+        // 💡 Detail-encouragement footer (2026-04-28)
+        // ลูกค้าเล่ารายละเอียดยิ่งเยอะ → AI ทำนายแม่นยิ่งขึ้น → reduce refund/complaint
+        $detailHint = "\n\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "💡 *ทริคให้ทำนายแม่น*\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "📌 ยิ่งเล่าเรื่องราวละเอียด หมอจันทรายิ่งทำนายแม่นยำ\n"
+            . "📌 ถ้ามี \"คู่กรณี\" (แฟน/คนสนใจ/หุ้นส่วน/เจ้านาย) บอก *วันเดือนปีเกิด* ของเขามาด้วยเลย\n"
+            . "📌 อยากรู้เกี่ยวกับช่วงเวลาเฉพาะ? บอกได้ เช่น \"ภายใน 3 เดือนนี้\"\n\n"
+            . "_(ตัวอย่าง: \"ตอนนี้คุยกับผู้ชายคนนึง เกิด 12/3/2535 อยากรู้ว่าจะได้คบกันไหม\")_";
+
         // 1 คำถาม → ใช้ภาษาที่กระชับ ไม่ต้อง "ข้อที่ 1 จาก 1"
         if ($count === 1) {
             return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n".
@@ -5137,7 +5167,8 @@ class FortuneConversationService
                    "═══════════════════════\n\n".
                    "คุณ{$name} เลือกเรื่องสำคัญที่สุดในใจตอนนี้นะคะ\n".
                    "หมอจะวิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีให้แม่นยำ\n\n".
-                   "📝 เลือกหมวดหรือพิมพ์คำถามเองได้เลย 👇";
+                   "📝 เลือกหมวดหรือพิมพ์คำถามเองได้เลย 👇" .
+                   $detailHint;
         }
 
         return "✅ รับวันเกิดแล้ว: {$formattedDate}\n\n".
@@ -5145,7 +5176,8 @@ class FortuneConversationService
                "🔮 *ตั้งคำถาม {$count} ข้อ*\n".
                "═══════════════════════\n\n".
                "คุณ{$name} ต้องการถามเรื่องอะไรบ้างคะ?\n\n".
-               "📝 คำถามข้อที่ 1 จาก {$count} — เลือกหมวดหรือพิมพ์เองได้เลย 👇";
+               "📝 คำถามข้อที่ 1 จาก {$count} — เลือกหมวดหรือพิมพ์เองได้เลย 👇" .
+               $detailHint;
     }
 
     /**
@@ -7604,6 +7636,7 @@ class FortuneConversationService
         }
 
         // รูปแบบ: dd เดือนไทย yyyy (รับทั้ง 2 และ 4 หลัก)
+        // 🎯 (2026-04-28) เพิ่มชื่อย่อแบบไม่มีจุด: สค, กพ, มค, ฯลฯ
         $thaiMonths = [
             'มกราคม' => 1, 'กุมภาพันธ์' => 2, 'มีนาคม' => 3, 'เมษายน' => 4,
             'พฤษภาคม' => 5, 'มิถุนายน' => 6, 'กรกฎาคม' => 7, 'สิงหาคม' => 8,
@@ -7611,6 +7644,14 @@ class FortuneConversationService
             'ม.ค.' => 1, 'ก.พ.' => 2, 'มี.ค.' => 3, 'เม.ย.' => 4,
             'พ.ค.' => 5, 'มิ.ย.' => 6, 'ก.ค.' => 7, 'ส.ค.' => 8,
             'ก.ย.' => 9, 'ต.ค.' => 10, 'พ.ย.' => 11, 'ธ.ค.' => 12,
+            // ย่อแบบไม่มีจุด (ที่คนพิมพ์มือถือชอบใช้)
+            'มค' => 1, 'กพ' => 2, 'มีค' => 3, 'เมย' => 4,
+            'พค' => 5, 'มิย' => 6, 'กค' => 7, 'สค' => 8,
+            'กย' => 9, 'ตค' => 10, 'พย' => 11, 'ธค' => 12,
+            // ย่อบางคำที่คนชอบใช้
+            'มกรา' => 1, 'กุมภา' => 2, 'มีนา' => 3, 'เมษา' => 4,
+            'พฤษภา' => 5, 'มิถุนา' => 6, 'กรกฎา' => 7, 'สิงหา' => 8,
+            'กันยา' => 9, 'ตุลา' => 10, 'พฤศจิกา' => 11, 'ธันวา' => 12,
         ];
 
         foreach ($thaiMonths as $monthName => $monthNum) {
@@ -7624,6 +7665,22 @@ class FortuneConversationService
                     return sprintf('%04d-%02d-%02d', $year, $monthNum, $day);
                 }
             }
+        }
+
+        // 🎯 (2026-04-28) Final fallback: ใช้ AI ตีความ
+        // เคสที่กัน: "เกิดเสาร์ที่ 23 กันยายน 32 ครับ", "ผมเกิด สิงหา ปี35 ค่ะ"
+        // เรียก AI เฉพาะตอน regex ปกติพลาด — ไม่ slow flow ถ้าคนพิมพ์ถูก
+        try {
+            $aiService = new FortuneAIService($this->settings);
+            $aiParsed = $aiService->parseBirthDateWithAI($text);
+            if ($aiParsed) {
+                return $aiParsed;
+            }
+        } catch (\Throwable $e) {
+            // ignore — AI fallback ล้ม → ตอบ null ปกติ
+            \Illuminate\Support\Facades\Log::debug('parseBirthDate AI fallback ล้ม', [
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return null;
@@ -10360,5 +10417,297 @@ PROMPT;
         $amount = $this->settings->getFortuneLevel1Amount($readingPrice);
 
         return number_format($amount, 0);
+    }
+
+    // ============================================================
+    // 🆕 Post-Reading Discussion (2026-04-28)
+    // ============================================================
+
+    /**
+     * Window สำหรับ post-reading discussion (ชั่วโมง)
+     * หลังจากนี้ → ลูกค้าต้องเปิดบิลใหม่ถ้าอยากคุยต่อ
+     */
+    public const POST_READING_DISCUSSION_HOURS = 48;
+
+    /**
+     * จำนวน follow-up turns สูงสุด (กัน abuse)
+     */
+    public const POST_READING_MAX_TURNS = 8;
+
+    /**
+     * ค้นหา deep reading ที่เพิ่งเสร็จและยังอยู่ใน discussion window
+     *
+     * @param  string  $userId  Facebook/LINE user ID
+     * @return FortuneReading|null
+     */
+    protected function findRecentCompletedDeepReading(string $userId): ?FortuneReading
+    {
+        return FortuneReading::where('facebook_user_id', $userId)
+            ->where('reading_type', 'deep')
+            ->where('is_paid', true)
+            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+            ->whereNotNull('deep_response')
+            ->where('responded_at', '>=', now()->subHours(self::POST_READING_DISCUSSION_HOURS))
+            ->orderBy('responded_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * จัดการ post-reading discussion
+     *
+     * Flow:
+     *   1. นับ follow-up turns — ถ้าเกิน max → suggest บิลใหม่
+     *   2. ตรวจหมวด — ถ้าข้ามหมวดจาก reading เดิม → suggest บิลใหม่ (เนียนๆ)
+     *   3. ถ้า in-scope → AI ตอบโดยใช้ context จาก deep_response/birth_date
+     *
+     * @param  FortuneReading  $reading  reading ที่เพิ่งเสร็จ
+     * @param  string  $messageText  ข้อความใหม่จาก user
+     * @param  array|null  $userProfile
+     * @return array|null  ผลลัพธ์ หรือ null ถ้าควรปล่อยให้ flow ปกติทำงาน
+     */
+    protected function handlePostReadingDiscussion(
+        FortuneReading $reading,
+        string $messageText,
+        ?array $userProfile = null
+    ): ?array {
+        // 🚪 ถ้า user พิมพ์คำขอเริ่มใหม่ชัดเจน → ปล่อย flow ปกติ (สร้าง reading ใหม่)
+        $restartKeywords = ['ดูดวง', 'เริ่มใหม่', 'ดูดวงใหม่', 'restart', 'reset'];
+        if ($this->matchesExactKeyword($messageText, $restartKeywords)) {
+            return null;
+        }
+
+        // นับ turns ที่ใช้ใน discussion mode (กัน abuse / ลด AI cost)
+        $turns = (int) $reading->getConversationState('post_reading_turns', 0);
+
+        if ($turns >= self::POST_READING_MAX_TURNS) {
+            return [
+                'action' => 'post_reading_limit',
+                'message' => $this->buildPostReadingLimitMessage(),
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'quick_replies' => [
+                    ['content_type' => 'text', 'title' => '💎 ดูดวงเรื่องใหม่', 'payload' => 'FORTUNE_DEEP'],
+                    ['content_type' => 'text', 'title' => '🙏 ขอบคุณค่ะ', 'payload' => 'FORTUNE_DECLINE'],
+                ],
+            ];
+        }
+
+        // ตรวจหมวด — ถ้าข้ามหมวดจากที่จ่ายมา → suggest บิลใหม่
+        $isCrossover = $this->isCategoryCrossover($messageText, $reading);
+
+        if ($isCrossover) {
+            $price = (int) $this->getDeepReadingPrice();
+            return [
+                'action' => 'post_reading_crossover',
+                'message' => $this->buildCrossCategoryMessage($price, $reading),
+                'reading' => $reading,
+                'show_quick_replies' => true,
+                'quick_replies' => [
+                    ['content_type' => 'text', 'title' => '💎 เปิดไพ่ใหม่', 'payload' => 'FORTUNE_DEEP'],
+                    ['content_type' => 'text', 'title' => '↩️ ถามต่อเรื่องเดิม', 'payload' => 'POST_READING_CONTINUE'],
+                ],
+            ];
+        }
+
+        // ✅ In-scope discussion — ใช้ AI ตอบ พร้อม context
+        return $this->generatePostReadingAnswer($reading, $messageText, $userProfile, $turns);
+    }
+
+    /**
+     * ตรวจว่าข้อความข้ามหมวดจาก reading เดิมหรือไม่
+     *
+     * วิธี: ใช้ keyword detection (รวดเร็ว ไม่ต้องเรียก AI)
+     * ถ้าไม่แน่ใจ — return false (ให้คุยต่อได้ ปลอดภัยกว่า block ผิด)
+     */
+    protected function isCategoryCrossover(string $messageText, FortuneReading $reading): bool
+    {
+        // หมวดเดิมของ reading (อาจมาจาก categories field หรือ analyze จาก questions)
+        $originalCategories = $this->detectReadingCategory($reading);
+        if (empty($originalCategories)) {
+            return false; // ไม่รู้หมวดเดิม → ไม่ block
+        }
+
+        $newCategory = $this->detectMessageCategory($messageText);
+        if (! $newCategory) {
+            return false; // ข้อความใหม่ไม่ชัด → ไม่ block (ให้ AI ตอบไป)
+        }
+
+        // ถ้าหมวดใหม่ไม่อยู่ในเซ็ตของหมวดเดิม → crossover
+        return ! in_array($newCategory, $originalCategories, true);
+    }
+
+    /**
+     * ตรวจหมวดของ reading จาก categories field หรือ questions
+     *
+     * @return array  ['love'|'work'|'money'|'health'|'general']
+     */
+    protected function detectReadingCategory(FortuneReading $reading): array
+    {
+        $categories = [];
+
+        // 1. ใช้ categories field ถ้ามี
+        if (! empty($reading->categories) && is_array($reading->categories)) {
+            $map = [
+                'ความรัก' => 'love', 'love' => 'love', 'แฟน' => 'love',
+                'การงาน' => 'work', 'work' => 'work', 'งาน' => 'work',
+                'การเงิน' => 'money', 'money' => 'money', 'เงิน' => 'money',
+                'สุขภาพ' => 'health', 'health' => 'health',
+            ];
+            foreach ($reading->categories as $cat) {
+                $key = $map[$cat] ?? null;
+                if ($key) $categories[] = $key;
+            }
+        }
+
+        // 2. Fallback: analyze จาก questions
+        if (empty($categories) && ! empty($reading->questions)) {
+            $questionsText = is_array($reading->questions) ? implode(' ', $reading->questions) : (string) $reading->questions;
+            $cat = $this->detectMessageCategory($questionsText);
+            if ($cat) $categories[] = $cat;
+        }
+
+        return array_unique($categories);
+    }
+
+    /**
+     * ตรวจหมวดจาก message
+     *
+     * @return string|null  'love'|'work'|'money'|'health' หรือ null ถ้าไม่ชัด
+     */
+    protected function detectMessageCategory(string $messageText): ?string
+    {
+        $text = mb_strtolower($messageText);
+
+        $rules = [
+            'love' => ['ความรัก', 'แฟน', 'คู่ครอง', 'เนื้อคู่', 'คนรัก', 'สามี', 'ภรรยา', 'แต่งงาน', 'รักไหม', 'เลิก', 'นอกใจ', 'หย่า', 'จีบ', 'ผู้ชาย', 'ผู้หญิง'],
+            'work' => ['การงาน', 'งาน', 'อาชีพ', 'เปลี่ยนงาน', 'หางาน', 'เจ้านาย', 'เลื่อนตำแหน่ง', 'ลาออก', 'สมัครงาน', 'โปรโมท'],
+            'money' => ['การเงิน', 'เงิน', 'รายได้', 'หนี้', 'รวย', 'ลงทุน', 'หุ้น', 'ค้าขาย', 'ธุรกิจ', 'ยอดขาย', 'ดอกเบี้ย', 'lottery', 'หวย'],
+            'health' => ['สุขภาพ', 'ป่วย', 'โรค', 'อุบัติเหตุ', 'เจ็บ', 'หมอ', 'รักษา', 'ตรวจ'],
+        ];
+
+        $scores = [];
+        foreach ($rules as $cat => $keywords) {
+            foreach ($keywords as $kw) {
+                if (str_contains($text, mb_strtolower($kw))) {
+                    $scores[$cat] = ($scores[$cat] ?? 0) + 1;
+                }
+            }
+        }
+
+        if (empty($scores)) return null;
+
+        arsort($scores);
+        return array_key_first($scores);
+    }
+
+    /**
+     * Generate คำตอบ post-reading discussion โดย AI พร้อม context
+     */
+    protected function generatePostReadingAnswer(
+        FortuneReading $reading,
+        string $messageText,
+        ?array $userProfile,
+        int $currentTurns
+    ): ?array {
+        try {
+            $aiService = new FortuneAIService($this->settings);
+
+            // สร้าง system prompt พร้อม context จาก reading เดิม
+            $birthDateThai = $reading->birth_date
+                ? $this->formatThaiDate($reading->birth_date->format('Y-m-d'))
+                : '(ไม่ระบุ)';
+
+            $deepResponse = $reading->deep_response ?? '';
+            $deepSummary = mb_strlen($deepResponse) > 1500
+                ? mb_substr($deepResponse, 0, 1500) . '...'
+                : $deepResponse;
+
+            $name = $reading->resolveCustomerName();
+
+            $systemMessage = "คุณคือ \"แม่หมอจันทรา\" — หมอดูที่อ่อนโยน เป็นมิตร พูดไทยเท่านั้น\n\n"
+                . "บริบท: ลูกค้าชื่อ {$name} เพิ่งจ่ายเงินดูดวงเชิงลึก คุณทำนายให้แล้วเรียบร้อย\n"
+                . "ตอนนี้เขามาคุยต่อเพื่อขยายความ/ถามคำถามเสริมจากคำทำนายเดิม (ฟรี — ในขอบเขตเรื่องเดิม)\n\n"
+                . "ข้อมูลที่ใช้ทำนายไปแล้ว:\n"
+                . "- วันเกิด: {$birthDateThai}\n"
+                . "- คำทำนายที่ส่งไปแล้ว (สรุป):\n{$deepSummary}\n\n"
+                . "หน้าที่:\n"
+                . "1. ตอบจากบริบทคำทำนายเดิม + ดวงดาวเดิม + ไพ่ที่เปิดไปแล้ว\n"
+                . "2. อธิบายเพิ่ม วิเคราะห์เพิ่ม ยืนยัน หรือตอบคำถามที่เกี่ยวเนื่องกับเรื่องเดิม\n"
+                . "3. ห้ามทำนายเรื่องใหม่ที่ต้องเปิดไพ่/ดูดวงใหม่ — ถ้าจำเป็นต้องบอกว่า \"เรื่องนี้ต้องเปิดไพ่ใหม่\"\n"
+                . "4. ตอบสั้น กระชับ ไม่เกิน 200 คำ — ใช้ภาษาธรรมชาติ\n"
+                . "5. ห้ามขอวันเกิดใหม่ ห้ามขอข้อมูลใหม่ที่มีอยู่แล้ว\n";
+
+            if (empty($this->settings->getChatAIApiKey())) {
+                return null; // ไม่มี API key → fallback ไป default flow
+            }
+
+            $result = $aiService->chatWithCustomSystemPrompt(
+                $systemMessage,
+                $messageText,
+                ['temperature' => 0.7, 'max_tokens' => 600]
+            );
+
+            $response = trim($result['response'] ?? '');
+            if (empty($response)) {
+                return null;
+            }
+
+            // นับ turn + บันทึก context
+            $reading->setConversationState('post_reading_turns', $currentTurns + 1);
+            $reading->setConversationState('post_reading_last_at', now()->toIso8601String());
+
+            // เพิ่ม footer แจ้ง remaining turns เมื่อใกล้หมด
+            $remaining = self::POST_READING_MAX_TURNS - ($currentTurns + 1);
+            $footer = '';
+            if ($remaining <= 2) {
+                $footer = "\n\n_(ถามต่อได้อีก {$remaining} ครั้งในเรื่องเดิม — ถ้าอยากดูเรื่องอื่นต้องเปิดไพ่ใหม่)_";
+            }
+
+            return [
+                'action' => 'post_reading_discussion',
+                'message' => $response . $footer,
+                'reading' => $reading,
+            ];
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Post-reading discussion AI ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null; // ปล่อยให้ default flow ทำงาน
+        }
+    }
+
+    /**
+     * ข้อความเมื่อ user ใช้ turns เกิน limit
+     */
+    protected function buildPostReadingLimitMessage(): string
+    {
+        $price = (int) $this->getDeepReadingPrice();
+        return "🌙 คุย กับ แม่หมอเรื่องนี้ พอแล้วนะคะ ✨\n\n"
+            . "ถ้ายังมีเรื่องอื่นในใจ อยากให้แม่หมอช่วยดู\n"
+            . "เปิดไพ่ใหม่ได้ที่ค่าครู {$price} บาท — แม่หมอจะวิเคราะห์ดวงดาว + เปิดไพ่ให้ใหม่ค่ะ 🃏\n\n"
+            . "👇 กดปุ่มเพื่อเริ่ม";
+    }
+
+    /**
+     * ข้อความเมื่อ user ถามข้ามหมวด
+     */
+    protected function buildCrossCategoryMessage(int $price, FortuneReading $reading): string
+    {
+        $originalCats = $this->detectReadingCategory($reading);
+        $catLabel = match ($originalCats[0] ?? null) {
+            'love' => 'ความรัก',
+            'work' => 'การงาน',
+            'money' => 'การเงิน',
+            'health' => 'สุขภาพ',
+            default => 'เรื่องที่ถามไป',
+        };
+
+        return "🌙 อืม... เรื่องนี้เป็นคนละเรื่องกับที่เปิดไพ่ไปนะคะ\n\n"
+            . "ครั้งก่อนแม่หมอเปิดไพ่ + วิเคราะห์ดาวสำหรับเรื่อง *{$catLabel}*\n"
+            . "การอ่านดวงในเรื่องใหม่ — แม่หมอต้องเปิดไพ่ชุดใหม่ + ดูดาวอีกครั้งให้แม่นยำค่ะ\n\n"
+            . "💎 ค่าครู {$price} บาท — ได้คำทำนายเรื่องใหม่เต็มๆ\n"
+            . "↩️ หรือถ้าอยากถามต่อเรื่องเดิม กดปุ่มด้านล่างได้เลย";
     }
 }
