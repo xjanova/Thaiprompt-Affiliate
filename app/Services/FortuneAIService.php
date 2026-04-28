@@ -523,8 +523,25 @@ PROMPT;
             $birthdate = $newExtracted['birthdate'] ?? null;
             $concern = $newExtracted['concern'] ?? null;
 
-            // validate birthdate format
-            if ($birthdate && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
+            // 🔒 Validate birthdate — format + range + แปลง พ.ศ. ถ้า AI ส่งมา
+            if ($birthdate && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $birthdate, $m)) {
+                $year = (int) $m[1];
+                $month = (int) $m[2];
+                $day = (int) $m[3];
+
+                // AI ส่ง พ.ศ. มา → แปลง ค.ศ.
+                if ($year > 2400) {
+                    $year -= 543;
+                }
+
+                $currentYear = (int) now()->format('Y');
+                $age = $currentYear - $year;
+                if ($age < 1 || $age > 120 || ! checkdate($month, $day, $year)) {
+                    $birthdate = null;
+                } else {
+                    $birthdate = sprintf('%04d-%02d-%02d', $year, $month, $day);
+                }
+            } else {
                 $birthdate = null;
             }
 

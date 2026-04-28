@@ -139,6 +139,19 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
+        $messageText = $event['message']['text'] ?? '';
+
+        // 🚫 (2026-04-28) Spam guard — silence คนป่วน (parity กับ FB)
+        // กัน: video/sticker/audio ซ้ำๆ, ข้อความมี URL, ข้อความซ้ำ
+        if ($this->isUserSpamming($userId, $messageText, $messageType)) {
+            Log::info('🚫 LINE Fortune: ignore spam message (silenced)', [
+                'user_id' => $userId,
+                'message_type' => $messageType,
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+            return;
+        }
+
         // 📸 รับรูปภาพ — ตรวจบริบท active reading แล้วตอบตามสถานะ
         //   PENDING_PAYMENT → assume สลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
         //   PAID / processing → "แม่หมอกำลังคำนวณ"
@@ -160,8 +173,6 @@ class LineFortuneWebhookController extends Controller
 
             return;
         }
-
-        $messageText = $event['message']['text'] ?? '';
 
         // ========================================
         // จับคู่ FortuneReferral จาก ref_{token} (แม่นยำ 100%)
@@ -1274,5 +1285,90 @@ class LineFortuneWebhookController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * 🚫 (2026-04-28) Anti-spam guard (LINE side, parity กับ FB)
+     *
+     * คืน true เมื่อควร silence (ไม่ตอบ — แต่ log)
+     *
+     * Strike rules (เก็บใน Cache 1 ชั่วโมง):
+     *   1. Non-text + non-image (sticker/video/audio/file) ติด ๆ + ไม่มี active reading → +1 strike
+     *   2. Text มี URL → +1 strike
+     *   3. Text เหมือนเดิมกับ turn ก่อน → +1 strike
+     *
+     * เมื่อ strike >= 5 ภายใน 1 ชม. → silence (return true เสมอจนกว่าจะ expire)
+     *
+     * @param  string  $userId
+     * @param  string  $text
+     * @param  string|null  $messageType  text|image|sticker|video|audio|file|location|...
+     */
+    protected function isUserSpamming(string $userId, string $text, ?string $messageType): bool
+    {
+        $silencedKey = "fortune:spam:silenced:line:{$userId}";
+        $strikeKey = "fortune:spam:strikes:line:{$userId}";
+        $lastTextKey = "fortune:spam:last_text:line:{$userId}";
+        $maxStrikes = 5;
+
+        if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
+            return true;
+        }
+
+        $strikes = (int) \Illuminate\Support\Facades\Cache::get($strikeKey, 0);
+        $newStrikes = 0;
+
+        // 🚨 Strike 1: non-text/non-image + ไม่มี active bill
+        if ($messageType && ! in_array($messageType, ['text', 'image'], true)) {
+            $hasActiveBill = \App\Models\FortuneReading::where('facebook_user_id', $userId)
+                ->whereIn('conversation_status', [
+                    \App\Models\FortuneReading::STATUS_PENDING_PAYMENT,
+                    \App\Models\FortuneReading::STATUS_PAID,
+                ])
+                ->exists();
+
+            if (! $hasActiveBill) {
+                $newStrikes++;
+            }
+        }
+
+        // 🚨 Strike 2: ข้อความมี URL/ลิงก์
+        if (! empty($text) && preg_match('#https?://|www\.|t\.me/|\.com/|\.net/|\.online/#i', $text)) {
+            $newStrikes++;
+        }
+
+        // 🚨 Strike 3: ข้อความเหมือนเดิม
+        if (! empty($text)) {
+            $lastText = \Illuminate\Support\Facades\Cache::get($lastTextKey);
+            if ($lastText === $text) {
+                $newStrikes++;
+            }
+            \Illuminate\Support\Facades\Cache::put($lastTextKey, $text, now()->addMinutes(10));
+        }
+
+        if ($newStrikes === 0) {
+            return false;
+        }
+
+        $totalStrikes = $strikes + $newStrikes;
+        \Illuminate\Support\Facades\Cache::put($strikeKey, $totalStrikes, now()->addHour());
+
+        if ($totalStrikes >= $maxStrikes) {
+            \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addHour());
+            Log::warning('🚫 LINE Fortune spam guard: silenced user for 1 hour', [
+                'user_id' => $userId,
+                'total_strikes' => $totalStrikes,
+                'message_type' => $messageType,
+                'last_text' => mb_substr($text, 0, 80),
+            ]);
+            return true;
+        }
+
+        Log::info('LINE Fortune spam guard: strike recorded', [
+            'user_id' => $userId,
+            'strikes' => "{$totalStrikes}/{$maxStrikes}",
+            'message_type' => $messageType,
+        ]);
+
+        return false;
     }
 }

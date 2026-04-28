@@ -11018,20 +11018,38 @@ PROMPT;
     }
 
     /**
-     * เริ่ม tarot intention prompt (DRY — ใช้ logic เดียวกับ flow เดิม)
-     * ส่งข้อความเชิญให้กดเลขเพื่อเลือกไพ่
+     * เริ่ม tarot intention prompt
+     *
+     * ⚠️ ใช้ข้อความเดียวกับ flow เดิม (FortuneConversationService line 3867-3879)
+     * เพื่อให้ handleTarotCardDraw เข้าใจ — ระบบสุ่มไพ่ให้, user แค่พิมพ์ "พร้อม"
+     *
+     * Set conversation_state:
+     *   - tarot_intention_prompted_at: now (handleTarotCardDraw จะตรวจ)
+     *   - tarot_intention_confirmed: false (จะเปลี่ยนเป็น true เมื่อ user ตอบ)
      */
     protected function promptTarotIntention(FortuneReading $reading): array
     {
         $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+        $reading->setConversationState('tarot_intention_confirmed', false);
 
         return [
-            'action' => 'collecting_tarot',
-            'message' => "🃏 *เปิดไพ่ยิปซี*\n\n"
-                . "หลับตา หายใจลึก แล้วนึกถึงเรื่องที่ถามมา\n"
-                . "เมื่อพร้อม — พิมพ์เลข **1-78** เพื่อเปิดไพ่\n\n"
-                . "(หรือพิมพ์ \"สุ่ม\" ให้หมอเปิดให้ก็ได้ค่ะ ✨)",
+            'action' => 'awaiting_tarot_intention',
+            'message' => "✨ รับทราบ — ดำเนินการต่อค่ะ\n\n"
+                . "═══════════════════════\n"
+                . "🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                . "═══════════════════════\n\n"
+                . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                . "นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
+                . "🃏 ที่นี่ไพ่ที่ออก = ไพ่ที่จิตของเจ้าชะตาเลือกเอง\n"
+                . "ไม่ต่างจากการจับไพ่จริงด้วยมือตัวเอง\n"
+                . "เพราะเมื่อจิตตั้งมั่น พลังจิตจะนำทางไพ่ที่ตรงกับชะตา ✨\n\n"
+                . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                . "หรือกดปุ่มด้านล่าง 👇",
             'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['content_type' => 'text', 'title' => '🃏 พร้อมเปิดไพ่', 'payload' => 'TAROT_READY'],
+            ],
         ];
     }
 

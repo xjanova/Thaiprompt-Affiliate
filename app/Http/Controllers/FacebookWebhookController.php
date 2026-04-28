@@ -1136,6 +1136,18 @@ class FacebookWebhookController extends Controller
         $messageText = $messaging['message']['text'] ?? '';
         $attachments = $messaging['message']['attachments'] ?? [];
 
+        // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
+        // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
+        if ($this->isUserSpamming($senderId, $messageText, $attachments)) {
+            // ไม่ตอบ ไม่ log error — แค่ log info สำหรับ audit
+            Log::info('🚫 Fortune: ignore spam message (silenced)', [
+                'sender_id' => $senderId,
+                'has_attachments' => ! empty($attachments),
+                'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+            return;
+        }
+
         // 🙋 Customer Handoff: ลูกค้าพิมพ์ขอคุยกับคนจริง → เทคโอเวอร์ + แจ้งลูกค้า
         if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
             $this->handleCustomerHandoffRequest($senderId, $messageText);
@@ -2737,5 +2749,99 @@ class FacebookWebhookController extends Controller
                 "🔮 ขอโทษค่ะ ลองพิมพ์ 'ดูดวง' เพื่อเริ่มต้นใหม่นะคะ ✨"
             );
         }
+    }
+
+    /**
+     * 🚫 (2026-04-28) Anti-spam guard
+     *
+     * คืน true เมื่อควร silence (ไม่ตอบ — แต่ log)
+     *
+     * Strike rules (เก็บใน Cache 1 ชั่วโมง):
+     *   1. ส่ง attachment + ไม่มี text + ไม่มี active reading → +1 strike
+     *      (ถ้ามี active reading + payment pending → handleSlipImageOnly แทน — ไม่นับ)
+     *   2. ข้อความมี URL → +1 strike (ลิงก์ภายนอก = สแปม spam-y)
+     *   3. ข้อความเหมือนเดิมกับ 2 turn ก่อน → +1 strike (echo spam)
+     *
+     * เมื่อ strike >= 5 ภายใน 1 ชม. → silence (return true เสมอจนกว่าจะ expire)
+     *
+     * @param  string  $senderId
+     * @param  string  $text
+     * @param  array  $attachments
+     */
+    protected function isUserSpamming(string $senderId, string $text, array $attachments): bool
+    {
+        $silencedKey = "fortune:spam:silenced:{$senderId}";
+        $strikeKey = "fortune:spam:strikes:{$senderId}";
+        $lastTextKey = "fortune:spam:last_text:{$senderId}";
+        $maxStrikes = 5;
+
+        // ✅ ถ้า silenced อยู่แล้ว → ปฏิเสธทุกอย่าง
+        if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
+            return true;
+        }
+
+        $strikes = (int) \Illuminate\Support\Facades\Cache::get($strikeKey, 0);
+        $newStrikes = 0;
+
+        // 🚨 Strike 1: attachment + ไม่มี text + ไม่มี active reading payment
+        if (! empty($attachments) && empty(trim($text))) {
+            $hasActiveBill = FortuneReading::where('facebook_user_id', $senderId)
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PAID,
+                ])
+                ->exists();
+
+            if (! $hasActiveBill) {
+                // attachment สุ่ม ๆ ไม่ใช่สลิป → strike
+                $newStrikes++;
+            }
+        }
+
+        // 🚨 Strike 2: ข้อความมี URL/ลิงก์
+        if (! empty($text) && preg_match('#https?://|www\.|t\.me/|\.com/|\.net/|\.online/#i', $text)) {
+            $newStrikes++;
+        }
+
+        // 🚨 Strike 3: ข้อความเหมือนเดิม (echo spam)
+        if (! empty($text)) {
+            $lastText = \Illuminate\Support\Facades\Cache::get($lastTextKey);
+            if ($lastText === $text) {
+                $newStrikes++;
+            }
+            \Illuminate\Support\Facades\Cache::put($lastTextKey, $text, now()->addMinutes(10));
+        }
+
+        // ไม่มี strike → reset/ignore
+        if ($newStrikes === 0) {
+            return false;
+        }
+
+        $totalStrikes = $strikes + $newStrikes;
+        \Illuminate\Support\Facades\Cache::put($strikeKey, $totalStrikes, now()->addHour());
+
+        // ถึงเกณฑ์ → silence 1 ชม.
+        if ($totalStrikes >= $maxStrikes) {
+            \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addHour());
+            Log::warning('🚫 Fortune spam guard: silenced user for 1 hour', [
+                'sender_id' => $senderId,
+                'total_strikes' => $totalStrikes,
+                'last_text' => mb_substr($text, 0, 80),
+                'has_attachments' => ! empty($attachments),
+            ]);
+            return true;
+        }
+
+        // ยังไม่ถึงเกณฑ์ — ตอบปกติ (warn ใน log)
+        Log::info('Fortune spam guard: strike recorded', [
+            'sender_id' => $senderId,
+            'strikes' => "{$totalStrikes}/{$maxStrikes}",
+            'reasons' => [
+                'attachment_no_active' => ! empty($attachments) && empty(trim($text)),
+                'has_url' => ! empty($text) && preg_match('#https?://|www\.#i', $text),
+            ],
+        ]);
+
+        return false;
     }
 }
