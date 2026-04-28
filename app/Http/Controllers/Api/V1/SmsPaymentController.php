@@ -2201,9 +2201,53 @@ class SmsPaymentController extends Controller
             ], 422);
         }
 
+        // 🔒 SECURITY (2026-04-28): บังคับต้องมี SMS valid (เหมือน fortune)
+        // กฎ: amount ตรง, มาหลัง transaction, ยังไม่ถูก match
+        $billAmount = (float) ($payload['amount'] ?? $txn->amount);
+        $txn_created = $txn->created_at;
+
+        $notification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+
+        if (! $notification && $billAmount > 0) {
+            $notification = SmsPaymentNotification::where('amount', $billAmount)
+                ->where('type', 'credit')
+                ->whereIn('status', ['matched', 'pending'])
+                ->whereNull('matched_transaction_id')
+                ->where(function ($q) use ($txn_created) {
+                    $q->where('sms_timestamp', '>=', $txn_created)
+                      ->orWhere('created_at', '>=', $txn_created);
+                })
+                ->orderBy('sms_timestamp', 'asc')
+                ->first();
+        }
+
+        $force = (bool) ($payload['force'] ?? false);
+        if (! $notification && ! $force) {
+            Log::warning('🚫 SMS Payment: ปฏิเสธ approve transaction — ไม่มี SMS valid', [
+                'transaction_id' => $txn->id,
+                'transaction_no' => $txn->transaction_id,
+                'amount' => $billAmount,
+                'device_id' => $device->device_id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ SMS แจ้งเงินเข้าที่ตรงกับรายการนี้ — ไม่อนุมัติ',
+                'error_code' => 'NO_VALID_SMS_FOR_TRANSACTION',
+            ], 422);
+        }
+
+        if (! $notification && $force) {
+            Log::critical('⚠️ SMS Payment: Force approve transaction โดยไม่มี SMS', [
+                'transaction_id' => $txn->id,
+                'amount' => $billAmount,
+                'device_id' => $device->device_id,
+            ]);
+        }
+
         // ใช้ DB transaction ครอบทั้งหมดเพื่อให้ rollback ได้ถ้า completePayment ล้มเหลว
         try {
-            \DB::transaction(function () use ($txn) {
+            \DB::transaction(function () use ($txn, $notification) {
                 // Mark UniquePaymentAmount as used (เหมือน approveOrder)
                 $uniqueAmount = UniquePaymentAmount::where('transaction_id', $txn->id)
                     ->whereIn('status', ['reserved', 'expired'])
@@ -2212,10 +2256,12 @@ class SmsPaymentController extends Controller
                     $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
                 }
 
-                // Update SMS notification status to confirmed (ถ้ามี)
-                $notification = SmsPaymentNotification::where('matched_transaction_id', $txn->id)->first();
+                // Update SMS notification status to confirmed
                 if ($notification) {
-                    $notification->update(['status' => 'confirmed']);
+                    $notification->update([
+                        'status' => 'confirmed',
+                        'matched_transaction_id' => $txn->id,
+                    ]);
                 }
 
                 app(PaymentService::class)->completePayment($txn);
@@ -2330,6 +2376,15 @@ class SmsPaymentController extends Controller
 
     /**
      * Execute encrypted approve action on a FortuneReading
+     *
+     * 🔒 SECURITY (2026-04-28): Strict SMS-required validation
+     *   เคสบั๊กเก่า: แอป SMS Checker ส่ง approve มาโดยไม่มี SMS จริง
+     *   → server dispatch job → mark paid → ลูกค้าได้คำทำนายฟรี
+     *   Fix: บังคับต้องมี SMS ที่:
+     *     a) ยอดตรง
+     *     b) sms_timestamp >= reading.created_at (SMS มาหลังบิล)
+     *     c) ยังไม่ถูก match กับบิลอื่น
+     *   Admin override: ถ้าจริงๆ ต้องการ approve โดยไม่มี SMS → ต้องส่ง force=true ใน payload
      */
     private function executeFortuneApproveAction(array $payload, FortuneReading $reading, SmsCheckerDevice $device, string $ipAddress): JsonResponse
     {
@@ -2342,17 +2397,62 @@ class SmsPaymentController extends Controller
             ]);
         }
 
-        // ค้นหา SMS notification ที่ตรงกับบิลนี้ (จับคู่ด้วย amount + สถานะ matched)
+        // 🔒 ค้นหา SMS notification ที่ valid สำหรับบิลนี้
+        // กฎ: amount ตรง, มาหลังบิล, ยังไม่ถูก match
+        $billAmount = (float) ($payload['amount'] ?? $reading->amount_paid);
+        $reading_created = $reading->created_at;
+
+        // 1. หา notification ที่ match กับ reading นี้แล้ว (idempotent retry)
         $notification = SmsPaymentNotification::where('matched_transaction_id', $reading->id)
             ->first();
 
-        // ถ้าไม่พบจาก matched_transaction_id → ลองหาจากยอดเงินที่ตรงกัน
-        if (! $notification && ! empty($payload['amount'])) {
-            $notification = SmsPaymentNotification::where('amount', $payload['amount'])
+        // 2. ถ้าไม่พบ → หา notification ที่ใช้ได้: ยอดตรง + มาหลังบิล + ยังว่าง
+        if (! $notification && $billAmount > 0) {
+            $notification = SmsPaymentNotification::where('amount', $billAmount)
                 ->where('type', 'credit')
                 ->whereIn('status', ['matched', 'pending'])
-                ->orderBy('created_at', 'desc')
+                ->whereNull('matched_transaction_id')  // 🔒 ยังไม่ถูก match
+                ->where(function ($q) use ($reading_created) {
+                    // 🔒 SMS ต้องมาหลัง bill ถูกสร้าง
+                    $q->where('sms_timestamp', '>=', $reading_created)
+                      ->orWhere('created_at', '>=', $reading_created);
+                })
+                ->orderBy('sms_timestamp', 'asc')
                 ->first();
+        }
+
+        // 🔒 ถ้าไม่มี SMS valid → ปฏิเสธ (เว้นแต่จะส่ง force=true)
+        $force = (bool) ($payload['force'] ?? false);
+        if (! $notification && ! $force) {
+            Log::warning('🚫 SMS Payment: ปฏิเสธ approve — ไม่มี SMS valid สำหรับบิลนี้', [
+                'fortune_reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'amount' => $billAmount,
+                'device_id' => $device->device_id,
+                'reading_created' => $reading_created->toIso8601String(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'ไม่พบ SMS แจ้งเงินเข้าที่ตรงกับบิลนี้ หรือ SMS มาก่อนบิลถูกสร้าง — ไม่อนุมัติ',
+                'error_code' => 'NO_VALID_SMS_FOR_BILL',
+                'data' => [
+                    'bill_amount' => $billAmount,
+                    'bill_created' => $reading_created->toIso8601String(),
+                    'hint' => 'รอ SMS แจ้งเงินเข้า หรือใช้ web admin panel เพื่อ override',
+                ],
+            ], 422);
+        }
+
+        // ⚠️ Force approve โดยไม่มี SMS — log critical สำหรับ audit
+        if (! $notification && $force) {
+            Log::critical('⚠️ SMS Payment: Force approve โดยไม่มี SMS', [
+                'fortune_reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'amount' => $billAmount,
+                'device_id' => $device->device_id,
+                'admin_action' => 'force_approve_no_sms',
+            ]);
         }
 
         // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
@@ -2393,6 +2493,7 @@ class SmsPaymentController extends Controller
             'amount' => $payload['amount'] ?? null,
             'device_id' => $device->device_id,
             'sms_notification_id' => $notification?->id,
+            'force_used' => $force && ! $notification,
         ]);
 
         return response()->json([
