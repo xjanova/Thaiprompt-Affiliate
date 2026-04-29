@@ -761,7 +761,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'contents' => [
                     [
                         'type' => 'text',
-                        'text' => '🌟 ดูดวงละเอียด 🌟',
+                        'text' => '🌟 ดูดวง 🌟',
                         'color' => '#FFFFFF',
                         'size' => 'lg',
                         'weight' => 'bold',
@@ -830,7 +830,7 @@ class LineFortuneService implements MessagingPlatformInterface
                         'action' => [
                             'type' => 'message',
                             'label' => '✨ ต้องการ',
-                            'text' => 'ต้องการดูดวงละเอียด',
+                            'text' => 'ดูดวง',
                         ],
                     ],
                     [
@@ -1085,7 +1085,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     'flex' => 1,
                     'paddingStart' => 'md',
                     'contents' => [
-                        ['type' => 'text', 'text' => 'ดูดวงละเอียด ('.number_format($this->getDeepReadingPrice(), 0).' บาท)', 'size' => 'sm', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => 'ดูดวง ('.number_format($this->getDeepReadingPrice(), 0).' บาท)', 'size' => 'sm', 'weight' => 'bold'],
                         ['type' => 'text', 'text' => 'ถาม '.FortuneConversationService::REQUIRED_QUESTIONS.' คำถาม พร้อมวันเกิด', 'size' => 'xs', 'color' => '#888888'],
                     ],
                 ],
@@ -2164,7 +2164,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => "ดูดวงละเอียด (ค่าครู {$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => "ดูดวง (ค่าครู {$priceDisplay} บาท)", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
                             ['type' => 'text', 'text' => '1 คำถาม + ดาวเจ้าชนะ + ไพ่ยิปซีจริง', 'size' => 'xs', 'color' => '#999999'],
                         ],
                     ],
@@ -2183,7 +2183,7 @@ class LineFortuneService implements MessagingPlatformInterface
         if ($deepReadingEnabled) {
             $footerContents[] = [
                 'type' => 'button', 'style' => 'secondary', 'height' => 'sm',
-                'action' => ['type' => 'message', 'label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+                'action' => ['type' => 'message', 'label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
             ];
         }
         if (empty($footerContents)) {
@@ -2242,7 +2242,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => 'ดูดวงละเอียด', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
+                            ['type' => 'text', 'text' => 'ดูดวง', 'color' => '#FFFFFF', 'size' => 'lg', 'weight' => 'bold'],
                             ['type' => 'text', 'text' => "{$priceDisplay} บาท • 1 คำถามโฟกัสเดียว", 'color' => '#FFFFFFCC', 'size' => 'xs'],
                         ],
                     ],
@@ -2366,7 +2366,7 @@ class LineFortuneService implements MessagingPlatformInterface
         if ($deepReadingEnabled) {
             $bodyContents[] = ['type' => 'separator', 'margin' => 'xl', 'color' => '#E8E0FF'];
             $bodyContents[] = [
-                'type' => 'text', 'text' => '💎 แนะนำ: ดูดวงละเอียด', 'size' => 'md', 'weight' => 'bold', 'color' => '#E8890C', 'margin' => 'xl',
+                'type' => 'text', 'text' => '💎 แนะนำ: ดูดวงเชิงลึก', 'size' => 'md', 'weight' => 'bold', 'color' => '#E8890C', 'margin' => 'xl',
             ];
             $bodyContents[] = [
                 'type' => 'box', 'layout' => 'vertical', 'margin' => 'lg', 'backgroundColor' => '#FFF8E1', 'cornerRadius' => 'lg', 'paddingAll' => 'md',
@@ -2384,7 +2384,7 @@ class LineFortuneService implements MessagingPlatformInterface
         if ($deepReadingEnabled) {
             $footerContents[] = [
                 'type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm',
-                'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด'],
+                'action' => ['type' => 'message', 'label' => "💎 ดูดวง ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวง'],
             ];
         }
         return [
@@ -2475,7 +2475,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     [
                         'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'md',
                         'contents' => [
-                            ['type' => 'text', 'text' => "ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
+                            ['type' => 'text', 'text' => "ดูดวง ค่าครู {$priceDisplay} บาท", 'size' => 'sm', 'weight' => 'bold', 'color' => '#E8890C'],
                             ['type' => 'text', 'text' => '1 คำถาม + ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก', 'size' => 'xs', 'color' => '#999999', 'wrap' => true],
                         ],
                     ],
@@ -2517,7 +2517,7 @@ class LineFortuneService implements MessagingPlatformInterface
             ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวง', 'text' => 'ดูดวง']],
         ];
         if ($deepReadingEnabled) {
-            $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด {$priceDisplay}.-", 'text' => 'ดูดวงละเอียด']];
+            $footerContents[] = ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวง {$priceDisplay}.-", 'text' => 'ดูดวง']];
         }
 
         // ปุ่ม Wallet + คำทำนายล่าสุด + แชร์
@@ -2983,13 +2983,13 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
                     ['type' => 'text', 'text' => 'ระยะเวลาชำระเงินหมดแล้ว', 'size' => 'sm', 'color' => '#555555'],
-                    ['type' => 'text', 'text' => 'สามารถเริ่มดูดวงละเอียดใหม่ได้เลยค่ะ', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
+                    ['type' => 'text', 'text' => 'สามารถเริ่มดูดวงใหม่ได้เลยค่ะ', 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
                 ],
             ],
             'footer' => [
                 'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
                 'contents' => [
-                    ['type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวงละเอียด ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวงละเอียด']],
+                    ['type' => 'button', 'style' => 'primary', 'color' => '#E8890C', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => "💎 ดูดวง ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวง']],
                     ...($this->settings->isFreeReadingEnabled()
                         ? [['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงฟรี', 'text' => 'ดูดวง']]]
                         : []),
@@ -3261,7 +3261,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'type' => 'box', 'layout' => 'vertical', 'spacing' => 'sm', 'paddingAll' => 'lg',
                 'contents' => [
                     ['type' => 'button', 'style' => 'primary', 'color' => '#6B46C1', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '🔮 ดูดวงเลย', 'text' => 'ดูดวง']],
-                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด']],
+                    ['type' => 'button', 'style' => 'secondary', 'height' => 'sm', 'action' => ['type' => 'message', 'label' => '💎 ดูดวง', 'text' => 'ดูดวง']],
                 ],
             ],
         ];
@@ -3365,7 +3365,7 @@ class LineFortuneService implements MessagingPlatformInterface
             'body' => [
                 'type' => 'box', 'layout' => 'vertical', 'paddingAll' => 'xl',
                 'contents' => [
-                    ['type' => 'text', 'text' => 'บริการดูดวงละเอียดปิดให้บริการชั่วคราวค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
+                    ['type' => 'text', 'text' => 'บริการดูดวงปิดให้บริการชั่วคราวค่ะ', 'size' => 'sm', 'color' => '#555555', 'wrap' => true],
                     ['type' => 'text', 'text' => $bodyBottom, 'size' => 'sm', 'color' => '#999999', 'margin' => 'lg', 'wrap' => true],
                 ],
             ],
@@ -3952,7 +3952,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 [
                     'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
                     'contents' => [
-                        ['type' => 'text', 'text' => "ดูดวงละเอียด ({$price} บาท)", 'size' => 'sm', 'weight' => 'bold'],
+                        ['type' => 'text', 'text' => "ดูดวง ({$price} บาท)", 'size' => 'sm', 'weight' => 'bold'],
                         ['type' => 'text', 'text' => "ถาม {$questions} คำถาม + วันเกิด → คำทำนายเชิงลึก", 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
                     ],
                 ],
@@ -4047,7 +4047,7 @@ class LineFortuneService implements MessagingPlatformInterface
                                 'type' => 'box', 'layout' => 'vertical', 'flex' => 1, 'paddingStart' => 'sm',
                                 'contents' => [
                                     ['type' => 'text', 'text' => 'แนะนำเพื่อน รับค่าคอม', 'size' => 'sm', 'weight' => 'bold'],
-                                    ['type' => 'text', 'text' => 'แชร์ให้เพื่อนมาดูดวง รับค่าคอมมิชชั่นทุกยอดดูดวงละเอียด', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
+                                    ['type' => 'text', 'text' => 'แชร์ให้เพื่อนมาดูดวง รับค่าคอมมิชชั่นทุกยอด', 'size' => 'xs', 'color' => '#888888', 'wrap' => true],
                                 ],
                             ],
                         ],

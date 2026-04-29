@@ -38,7 +38,7 @@ trait CelticCrossConversationTrait
         $status = $reading->conversation_status;
 
         return match ($status) {
-            // 🆕 (2026-04-29) Tier choice — ลูกค้าเลือก 39฿ deep หรือ 99฿ Celtic
+            // 🆕 (2026-04-29) Tier choice — ลูกค้าเลือก 39฿ Basic Deep หรือ 99฿ Celtic Cross
             FortuneReading::STATUS_TIER_CHOICE => $this->handleTierChoice($reading, $messageText),
             FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => $this->handleCelticPendingPayment($reading, $messageText),
             FortuneReading::STATUS_CELTIC_PICKING => $this->handleCelticPicking($reading, $messageText),
@@ -55,11 +55,21 @@ trait CelticCrossConversationTrait
     }
 
     /**
-     * Present tier choice menu — ส่งให้ลูกค้าเลือกระหว่าง 39฿ deep หรือ 99฿ Celtic
+     * Present tier choice menu — ส่งให้ลูกค้าเลือกระหว่าง 39฿ Basic Deep หรือ 99฿ Celtic Cross
      *
-     * เรียกจาก handleAfterBasic เมื่อ:
-     *   1. ลูกค้ายอมรับว่าอยากดูเชิงลึก (isDeepReadingAccepted=true)
-     *   2. enable_celtic_cross = true (admin เปิดบริการ Celtic ไว้)
+     * 🎯 จุดประสงค์: เป็นประตูทางเข้า "ดูดวง" ทั้งหมดในระบบ
+     *   - ลูกค้าพิมพ์ "ดูดวง" / "ดูดวงละเอียด" / "ทำนาย" → มาที่นี่ทันที
+     *   - ไม่มีการดูดวงฟรีเป็น dummy ก่อนแล้วค่อยถาม (ทำให้สับสน)
+     *   - ลูกค้าต้องเลือกแพคเกจอย่างใดอย่างหนึ่งเสมอ
+     *
+     * 🆕 (2026-04-29) แพคเกจปัจจุบัน:
+     *   - 39 บาท = ดูวันเดือนปีเกิด + ไพ่ยิปซี 1 ใบ (เข้าถึงง่าย ราคาเป็นมิตร)
+     *   - 99 บาท = ไพ่ยิปซี Celtic Cross เต็มสำรับ 10 ใบ (พรีเมียม แม่นยำลึกซึ้ง)
+     *
+     * เรียกจาก:
+     *   1. startDeepReadingFlow (เมื่อ Celtic เปิด)
+     *   2. handleAfterBasic (เมื่อลูกค้ารับ deep + Celtic เปิด)
+     *   3. askFortuneConfirmation (เมื่อ Celtic + Deep เปิดทั้งคู่ — fast path)
      */
     protected function presentTierChoice(FortuneReading $reading): array
     {
@@ -68,21 +78,48 @@ trait CelticCrossConversationTrait
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
         $celticPrice = number_format(app(\App\Services\CelticCrossService::class)->getPrice(), 0);
 
-        $message = "✨ *เจ้าชะตาเลือกได้ 2 แบบค่ะ*\n\n"
-            . "──────────────────────\n"
-            . "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท*\n"
-            . "  📅 ใช้วันเกิด + คำถาม 2 ข้อ\n"
-            . "  🃏 สุ่มไพ่ยิปซี 1 ใบ ต่อคำถาม\n"
-            . "  📜 คำทำนายเชิงลึก ตามดวงดาว + ไพ่\n\n"
-            . "🔹 *ดูดวงไพ่ยิปซีเต็มสำรับ {$celticPrice} บาท* 🔮\n"
-            . "  🃏 เปิดไพ่ Celtic Cross 10 ใบ — ครบทุกตำแหน่ง\n"
-            . "  💬 ถามได้ 3 คำถาม (ภายใน 1 ชม. หลัง Q1)\n"
-            . "  🖼️ ได้ภาพ Celtic Cross spread สวยๆ\n"
-            . "  📜 คำทำนายแม่นกว่า + ลึกกว่า\n"
-            . "──────────────────────\n\n"
-            . "👉 พิมพ์ \"39\" เพื่อดูแบบเชิงลึก\n"
-            . "👉 พิมพ์ \"99\" หรือ \"celtic\" เพื่อดูเต็มสำรับ\n"
-            . "หรือกดปุ่มด้านล่างเลยค่ะ ✨";
+        // 🌟 คำโฆษณาเปิดใจ — เน้นความตื่นเต้น + ความคุ้มค่า + ความศักดิ์สิทธิ์
+        $message = "🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙\n\n"
+            . "วันนี้เจ้าชะตาอยากให้หมอเปิดทางดวงให้แบบไหนคะ?\n"
+            . "เลือกได้ *1 จาก 2 แพคเกจ* ด้านล่างเลย 👇\n\n"
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🔹 39 บาท — Basic Deep
+            // ━━━━━━━━━━━━━━━━━━━━━━━━
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🔹 *แพคเกจที่ 1 — ดูดวงพื้นฐาน {$deepPrice} บาท* 💫\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "📅 *วิเคราะห์จากวันเดือนปีเกิด*\n"
+            . "    หมอจะคำนวณดาวเจ้าชนะ + ราศี + ลัคนาให้\n\n"
+            . "🃏 *ไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
+            . "    ไพ่ใบเดียว — ตรงประเด็น แม่นยำ ไม่ยกเมฆ\n\n"
+            . "💎 *เหมาะกับ:* คนอยากรู้ดวงรวมๆ — เริ่มต้นง่าย ราคาเป็นมิตร\n"
+            . "⏱️ *เวลา:* ทำนายเสร็จใน 1-3 นาที\n\n"
+
+            // ━━━━━━━━━━━━━━━━━━━━━━━━
+            // 🔮 99 บาท — Celtic Cross (Premium)
+            // ━━━━━━━━━━━━━━━━━━━━━━━━
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🔮 *แพคเกจที่ 2 — ไพ่ยิปซีเต็มสำรับ {$celticPrice} บาท* 👑\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🃏 *เปิดไพ่ Celtic Cross 10 ใบ — เต็มสำรับ*\n"
+            . "    ตำแหน่งครบ: ปัจจุบัน • อุปสรรค • ความหวัง • อนาคต\n\n"
+            . "💬 *ถามได้ 3 คำถาม* (ภายใน 1 ชม.)\n"
+            . "    เจาะลึกหลายมุมในรอบเดียว — ความรัก/งาน/เงิน\n\n"
+            . "🖼️ *ได้ภาพ Celtic Cross spread* สวยงาม\n"
+            . "    เก็บไว้เป็นที่ระลึก แชร์ให้เพื่อนได้\n\n"
+            . "📜 *คำทำนายแม่นกว่า ลึกกว่า เห็นภาพรวม*\n"
+            . "    ใช้ศาสตร์ไพ่ยิปซีโบราณที่หมอดูระดับสูงใช้\n\n"
+            . "👑 *เหมาะกับ:* คนที่จริงจัง อยากเห็นภาพชัดทุกแง่\n"
+            . "⏱️ *เวลา:* เปิดไพ่ + ทำนายเสร็จใน 5-10 นาที\n\n"
+
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "👇 *เลือกแพคเกจของเจ้าชะตา* 👇\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n"
+            . "✦ พิมพ์ *\"{$celticPrice}\"* หรือ *\"celtic\"* — เริ่มแพคเกจเต็มสำรับ\n"
+            . "✦ หรือ *กดปุ่มด้านล่าง* ได้เลยค่ะ ✨\n\n"
+            . "🙏 ถ้ายังไม่พร้อม พิมพ์ *\"ยกเลิก\"* ได้นะคะ";
 
         return [
             'action' => 'tier_choice',
@@ -95,35 +132,60 @@ trait CelticCrossConversationTrait
 
     /**
      * State: STATUS_TIER_CHOICE — ลูกค้าเลือกแพคเกจ
+     *
+     * 🎯 รับการเลือกของลูกค้า — ต้องเลือกอย่างใดอย่างหนึ่ง:
+     *   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
+     *   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
+     *
+     * รองรับ:
+     *   - กดปุ่ม Quick Reply (FB payload "TIER_DEEP_39" / "TIER_CELTIC_99")
+     *   - พิมพ์ตัวเลข "39" / "99"
+     *   - พิมพ์คำหลัก "เชิงลึก" / "ละเอียด" / "celtic" / "เต็มสำรับ"
+     *   - พิมพ์ "ยกเลิก" เพื่อออกจาก flow
      */
     protected function handleTierChoice(FortuneReading $reading, string $messageText): array
     {
-        // ยกเลิก
+        // ❌ ยกเลิก
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop'])) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return [
                 'action' => 'cancelled',
-                'message' => "ยกเลิกแล้วค่ะ — หากเปลี่ยนใจอยากดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                'message' => "🙏 ยกเลิกแล้วค่ะ\n\nหากเปลี่ยนใจอยากให้หมอจันทราดูดวงให้\nพิมพ์ *\"ดูดวง\"* ได้ตลอดเลยนะคะ 🔮✨",
                 'reading' => $reading,
             ];
         }
 
         $textLower = mb_strtolower(trim($messageText));
+        $deepPriceInt = (int) $this->getDeepReadingPrice();
+        $celticPriceInt = (int) app(\App\Services\CelticCrossService::class)->getPrice();
 
-        // 🔮 99฿ Celtic — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม"
-        $celticKeywords = ['99', 'celtic', 'เต็ม', 'เต็มสำรับ', 'ไพ่ยิปซีเต็ม', 'ทาโรต์เต็ม'];
+        // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
+        // ⚠️ เช็ค Celtic ก่อน Deep เผื่อข้อความมีทั้ง "99" และ "39" (ไม่ค่อยเกิด แต่กันไว้)
+        $celticKeywords = [
+            (string) $celticPriceInt,  // "99" (ดึงจาก service ไม่ hardcode)
+            'celtic', 'เซลติก', 'เต็มสำรับ', 'เต็ม สำรับ', 'ไพ่ยิปซีเต็ม', 'ทาโรต์เต็ม',
+            'พรีเมียม', 'premium', 'แพคเกจ 2', 'แพคเกจที่ 2', 'แบบที่ 2',
+            'tier_celtic', 'tier_celtic_99',  // payload จาก FB button
+        ];
         foreach ($celticKeywords as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
                 return $this->startCelticCrossFlow($reading);
             }
         }
 
-        // 🔹 39฿ Deep — keyword: "39", "ปกติ", "deep", "เชิงลึก"
-        $deepKeywords = ['39', 'ปกติ', 'deep', 'เชิงลึก', 'ละเอียด'];
+        // 🔹 39฿ Basic Deep — keyword: "39", "ปกติ", "พื้นฐาน", "deep", "เชิงลึก", "ละเอียด"
+        // ⚠️ ใช้ราคาจาก getDeepReadingPrice() (admin override ได้) — ไม่ hardcode
+        $deepKeywords = [
+            (string) $deepPriceInt,  // "39" (หรือราคาที่ admin ตั้งไว้)
+            'ปกติ', 'พื้นฐาน', 'พื้น ฐาน', 'basic',
+            'deep', 'เชิงลึก', 'เชิง ลึก', 'ละเอียด', 'แบบเชิงลึก', 'แบบละเอียด',
+            'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'อันแรก',
+            'tier_deep', 'tier_deep_39',  // payload จาก FB button
+        ];
         foreach ($deepKeywords as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                // เริ่ม flow 39฿ — ใช้โครงสร้างเดียวกับ handleAfterBasic เดิม
+                // เริ่ม flow Basic Deep — ใช้โครงสร้างเดียวกับ handleAfterBasic เดิม
                 $updateData = [
                     'reading_type' => FortuneReading::READING_TYPE_DEEP,
                     'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
@@ -135,19 +197,23 @@ trait CelticCrossConversationTrait
 
                 return [
                     'action' => 'collecting_birthdate',
-                    'message' => $this->getBirthdateRequestMessage(),
+                    'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
+                        . $this->getBirthdateRequestMessage(),
                     'reading' => $reading,
                 ];
             }
         }
 
-        // ไม่ตรงกับ keyword ใดๆ → re-show menu
+        // ❓ ไม่ตรงกับ keyword ใดๆ → re-show menu แบบกระชับ (ไม่ส่งข้อความยาวซ้ำ)
         return [
             'action' => 'tier_choice_invalid',
-            'message' => "✨ ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
-                . "👉 พิมพ์ \"39\" สำหรับดูเชิงลึก 39 บาท\n"
-                . "👉 พิมพ์ \"99\" สำหรับดูเต็มสำรับ Celtic Cross 99 บาท\n"
-                . "👉 พิมพ์ \"ยกเลิก\" หากไม่ต้องการ",
+            'message' => "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
+                . "🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
+                . "    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
+                . "🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
+                . "    🃏 Celtic Cross 10 ใบ + ถามได้ 3 คำถาม\n\n"
+                . "❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
+                . "👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨",
             'reading' => $reading,
         ];
     }

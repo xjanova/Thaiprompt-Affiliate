@@ -887,7 +887,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         // แนะนำดูดวงเชิงลึก (ถ้าเปิดใช้งาน)
         if ($this->settings->isDeepReadingEnabled()) {
-            $message .= "🌟 หรือลอง 'ดูดวงละเอียด' เพื่อรับคำทำนายเชิงลึก\n";
+            $message .= "🌟 หรือลอง 'ดูดวง' เพื่อรับคำทำนายเชิงลึก\n";
         }
 
         if ($this->settings->payment_qr_image) {
@@ -975,10 +975,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
         if ($freeEnabled) {
             $welcomeText = "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n"
                 ."พิมพ์: \"ดูดวง\" ตามด้วยคำถาม\n"
-                .'🌟 พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายเชิงลึก';
+                .'🌟 หรือกดปุ่ม "ดูดวง" เพื่อเริ่มเลือกแพคเกจ';
         } else {
             $welcomeText = "🔮 สวัสดี ยินดีต้อนรับสู่ระบบดูดวง!\n\n"
-                .'พิมพ์ "ดูดวงละเอียด" เพื่อเริ่มค่ะ 🙏';
+                .'พิมพ์ "ดูดวง" เพื่อเริ่มค่ะ 🙏';
         }
 
         return $this->sendMessage($recipientId, $welcomeText);
@@ -1395,7 +1395,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // 2️⃣ ดูดวงละเอียด → postback เริ่ม flow
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'MENU_DEEP_FORTUNE',
             ],
             // 3️⃣ รู้จักเรา → postback แสดงข้อมูลศาสตร์ + xman studio + ปุ่มต่างๆ
@@ -1453,7 +1453,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // 2️⃣ ดูดวงละเอียด → เริ่ม flow
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'MENU_DEEP_FORTUNE',
             ],
 

@@ -699,7 +699,7 @@ class LineFortuneWebhookController extends Controller
                     ['type' => 'text', 'text' => '📋 วิธีเริ่ม 3 ขั้น', 'weight' => 'bold', 'margin' => 'md', 'size' => 'md'],
                     [
                         'type' => 'text',
-                        'text' => "1️⃣ ดูดวงละเอียด {$deepPrice} บาท/ครั้ง\n2️⃣ ได้เป็นสมาชิกอัตโนมัติ\n3️⃣ รับลิงก์แชร์ส่วนตัว",
+                        'text' => "1️⃣ ดูดวง {$deepPrice} บาท/ครั้ง\n2️⃣ ได้เป็นสมาชิกอัตโนมัติ\n3️⃣ รับลิงก์แชร์ส่วนตัว",
                         'wrap' => true,
                         'size' => 'sm',
                         'margin' => 'sm',
@@ -726,7 +726,7 @@ class LineFortuneWebhookController extends Controller
                         'style' => 'primary',
                         'color' => '#6b46c1',
                         'height' => 'sm',
-                        'action' => ['type' => 'message', 'label' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'text' => 'ดูดวงละเอียด'],
+                        'action' => ['type' => 'message', 'label' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'text' => 'ดูดวง'],
                     ],
                     [
                         'type' => 'button',
@@ -748,7 +748,7 @@ class LineFortuneWebhookController extends Controller
             $this->lineService->replyMessage($replyToken, $messages);
         } else {
             // fallback เป็น text เมื่อ reply token หมดอายุ
-            $fallback = "🎉 วิธีเริ่มง่ายๆ 3 ขั้น\n\n1️⃣ ดูดวงละเอียด {$deepPrice} บาท\n2️⃣ ได้เป็นสมาชิก\n3️⃣ แชร์ลิงก์ได้เลย\n\n💰 ชวนคน → 10 บาท/คน\n\nพิมพ์ \"ดูดวงละเอียด\" เพื่อเริ่มค่ะ";
+            $fallback = "🎉 วิธีเริ่มง่ายๆ 3 ขั้น\n\n1️⃣ ดูดวง {$deepPrice} บาท\n2️⃣ ได้เป็นสมาชิก\n3️⃣ แชร์ลิงก์ได้เลย\n\n💰 ชวนคน → 10 บาท/คน\n\nพิมพ์ \"ดูดวง\" เพื่อเริ่มค่ะ";
             $this->lineService->sendMessageWithReplyFallback($userId, $fallback, null);
         }
         Log::info('💰 LINE Affiliate YES clicked', ['user_id' => $userId]);
@@ -851,7 +851,7 @@ class LineFortuneWebhookController extends Controller
             $this->channelManager->processMessage(
                 FortuneChannelManager::PLATFORM_LINE,
                 $userId,
-                'ต้องการดูดวงละเอียด',
+                'ดูดวง',
                 $userProfile,
                 ['reply_token' => $replyToken]
             );

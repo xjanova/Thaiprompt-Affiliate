@@ -189,7 +189,7 @@ class FortuneRichMenuService
                     'glow' => true,
                 ],
                 [
-                    'label' => 'ดูดวงละเอียด',
+                    'label' => 'ดูดวงเชิงลึก',
                     'subtitle' => "{$price} บาท",
                     'extra_text' => 'วิเคราะห์เจาะลึก + ดวงชะตา',
                     'icon' => 'star',
@@ -200,7 +200,7 @@ class FortuneRichMenuService
                     'subtitle_size' => 44,
                     'action_type' => 'postback',
                     'action_data' => 'action=deep_reading',
-                    'display_text' => 'ดูดวงละเอียด',
+                    'display_text' => 'ดูดวง',
                     'glow' => false,
                 ],
                 [
@@ -473,7 +473,7 @@ class FortuneRichMenuService
             // Row 1, Col 2: ✨ ดูดวงละเอียด
             [
                 'bounds' => ['x' => self::COL_WIDTH_1, 'y' => 0, 'width' => self::COL_WIDTH_2, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=deep_reading', 'displayText' => 'ดูดวงละเอียด'],
+                'action' => ['type' => 'postback', 'data' => 'action=deep_reading', 'displayText' => 'ดูดวง'],
             ],
             // Row 1, Col 3: 📖 ดูคำทำนายล่าสุด
             [

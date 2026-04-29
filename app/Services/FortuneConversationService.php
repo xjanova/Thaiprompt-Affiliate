@@ -51,6 +51,10 @@ class FortuneConversationService
     /**
      * ราคาดูดวงละเอียด (บาท) — ค่า fallback สุดท้ายเมื่อ admin ไม่ได้ตั้งราคา
      *
+     * 🎯 (2026-04-29) แพคเกจปัจจุบัน:
+     *   - 39 บาท = ดูวันเดือนปีเกิด + ไพ่ 1 ใบ (Tier Basic Deep)
+     *   - 99 บาท = ไพ่ยิปซีเต็มสำรับ Celtic Cross 10 ใบ (Tier Premium)
+     *
      * ⚠️ ห้าม hardcode ราคาในข้อความ — ใช้ getDeepReadingPrice() เสมอ
      *    (จะดึงจาก settings ก่อน — admin ตั้งราคาได้จากหน้า Admin → Fortune → Settings)
      */
@@ -1693,7 +1697,7 @@ class FortuneConversationService
             $brandName = $this->settings->getFortuneBrandName();
             if ($this->settings->isDeepReadingEnabled()) {
                 $message = "💎 ดูดวงโดย{$brandName} — {$price} บาท\n\n";
-                $message .= "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่ม 👇";
+                $message .= "พิมพ์ 'ดูดวง' เพื่อเริ่ม 👇";
             } else {
                 $message = 'ขณะนี้ระบบปิดให้บริการชั่วคราว กรุณาติดต่อแอดมินค่ะ 🙏';
             }
@@ -1736,7 +1740,7 @@ class FortuneConversationService
             if ($this->settings->isDeepReadingEnabled()) {
                 $message .= "กลับมาใหม่พรุ่งนี้ หรือ\n\n";
                 $qCount = self::REQUIRED_QUESTIONS;
-                $message .= "💎 *ดูดวงละเอียด {$qCount} คำถาม {$price} บาท*\n";
+                $message .= "💎 *ดูดวง {$qCount} คำถาม {$price} บาท*\n";
                 $message .= "📌 วิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีจริง ไม่ยกเมฆ\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
@@ -1868,7 +1872,7 @@ class FortuneConversationService
             return [
                 'action' => 'my_bills_empty',
                 'message' => "📚 ยังไม่มีบิลคำทำนายในประวัติของคุณค่ะ\n\n"
-                    . "ถ้าต้องการดูดวงเชิงลึก พิมพ์ 'ดูดวงละเอียด' ได้เลย ✨",
+                    . "ถ้าต้องการดูดวง พิมพ์ 'ดูดวง' ได้เลย ✨",
                 'reading' => null,
             ];
         }
@@ -1999,7 +2003,7 @@ class FortuneConversationService
         return [
             'action' => 'view_bill_unpaid',
             'message' => "⚠️ บิล *{$billRef}* ยังไม่ได้รับการชำระเงิน\n\n"
-                . "ถ้าต้องการเริ่มดูดวงใหม่ พิมพ์ 'ดูดวงละเอียด' ได้เลย ✨",
+                . "ถ้าต้องการเริ่มดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย ✨",
             'reading' => $reading,
         ];
     }
@@ -2127,8 +2131,8 @@ class FortuneConversationService
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
                 $message .= "\n\n═══════════════════════\n";
-                $message .= "💎 อยากรู้ลึกกว่านี้? ดูดวงละเอียดเริ่มต้น {$price} บาท\n";
-                $message .= "พิมพ์ 'ดูดวงละเอียด' ได้เลย ✨";
+                $message .= "💎 อยากรู้ลึกกว่านี้? ดูดวงเริ่มต้น {$price} บาท\n";
+                $message .= "พิมพ์ 'ดูดวง' ได้เลย ✨";
             }
 
             return [
@@ -2270,12 +2274,26 @@ class FortuneConversationService
 
         $name = $userProfile['name'] ?? 'คุณ';
 
-        // ⚡ FAST PATH: ถ้าปิดบริการฟรี + เปิด deep → ข้ามการสร้าง basic reading
+        // ⚡ FAST PATH 1 (2026-04-29): ถ้าเปิด Celtic + Deep → ไปที่ tier menu ทันที
+        // เหตุผล: ตามนโยบายใหม่ "ดูดวง" คือคำเดียวที่ใช้ — ไม่มีคำว่า "ดูดวงละเอียด" แยก
+        //         ลูกค้าต้องเลือกแพคเกจ 39฿ หรือ 99฿ เสมอ — ไม่มี dummy basic ให้สับสน
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        if ($celticEnabled && $deepEnabled) {
+            Log::info('Fortune: Celtic+Deep เปิด → redirect เข้า tier menu ตรง (skip basic confirmation)', [
+                'facebook_user_id' => $facebookUserId,
+                'original_message' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+        }
+
+        // ⚡ FAST PATH 2: ถ้าปิดบริการฟรี + เปิด deep → ข้ามการสร้าง basic reading
         // ไปเข้า deep flow ทันที (เก็บวันเกิด → คำถาม → ชำระ) ไม่ต้องถามซ้ำ
         // เหตุผล: เมื่อไม่มี free reading เลย การสร้าง dummy reading + ถามยืนยัน
         //         เป็นขั้นตอนสิ้นเปลือง ผู้สูงอายุงง
         $freeEnabled = $this->settings->isFreeReadingEnabled();
-        if (! $freeEnabled && $this->settings->isDeepReadingEnabled()) {
+        if (! $freeEnabled && $deepEnabled) {
             Log::info('Fortune: ปิด free → redirect เข้า deep flow ตรง', [
                 'facebook_user_id' => $facebookUserId,
                 'original_message' => mb_substr($messageText, 0, 50),
@@ -3121,7 +3139,7 @@ class FortuneConversationService
 
                 return [
                     'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดถูกปิดการใช้งานชั่วคราว\n\n".
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n".
                                  "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n".
                                  "พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
                     'reading' => $reading,
@@ -3185,7 +3203,7 @@ class FortuneConversationService
 
                 return [
                     'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดถูกปิดการใช้งานชั่วคราว\n\n".
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n".
                                  "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n".
                                  "พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
                     'reading' => null,
@@ -3343,7 +3361,7 @@ class FortuneConversationService
             if (! $this->settings->isDeepReadingEnabled()) {
                 return [
                     'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงละเอียดปิดชั่วคราว\n\n"
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงปิดชั่วคราว\n\n"
                         . "หากต้องการดูดวงทั่วไปฟรี พิมพ์ 'ดูดวง' ได้เลย 🙏",
                     'reading' => null,
                 ];
@@ -3931,12 +3949,12 @@ class FortuneConversationService
                     'action' => 'question_rejected',
                     'message' => "🔄 ยกเลิกคำถามเดิมแล้วค่ะ\n\n"
                         . "ไม่เป็นไรเลย — แม่หมอเข้าใจว่าบางทีอยากปรับคำถามให้ชัดเจนขึ้น 🙏\n\n"
-                        . "👉 พิมพ์ *\"ดูดวงละเอียด\"* เพื่อเริ่มดูดวงใหม่\n"
+                        . "👉 พิมพ์ *\"ดูดวง\"* เพื่อเริ่มดูดวงใหม่\n"
                         . "หรือพิมพ์คำถามใหม่ที่ต้องการมาเลยค่ะ ✨",
                     'reading' => $reading,
                     'show_quick_replies' => true,
                     'quick_replies' => [
-                        ['title' => '🔮 เริ่มดูดวงใหม่', 'text' => 'ดูดวงละเอียด'],
+                        ['title' => '🔮 เริ่มดูดวงใหม่', 'text' => 'ดูดวง'],
                     ],
                 ];
             }
@@ -4143,8 +4161,8 @@ class FortuneConversationService
 
             return [
                 'action' => 'payment_expired',
-                'message' => "⏰ บิลดูดวงละเอียดหมดอายุแล้ว\n\n".
-                             "ถ้าต้องการดูดวงละเอียดอีกครั้ง พิมพ์ 'ดูดวงละเอียด' ได้เลย\n".
+                'message' => "⏰ บิลดูดวงหมดอายุแล้ว\n\n".
+                             "ถ้าต้องการดูดวงอีกครั้ง พิมพ์ 'ดูดวง' ได้เลย\n".
                              'หรือพิมพ์คำถามใหม่มาได้เลย หมอจันทราพร้อมดูดวงให้ 🔮✨',
                 'reading' => $reading,
             ];
@@ -4283,7 +4301,7 @@ class FortuneConversationService
                 return [
                     'action' => 'bill_creation_failed',
                     'message' => "🙏 ขออภัยค่ะ — ระบบเตรียมบิลไม่สำเร็จ\n\n"
-                        . "กรุณาพิมพ์ 'ดูดวงละเอียด' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
+                        . "กรุณาพิมพ์ 'ดูดวง' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
                         . "⚠️ *อย่าโอนเงิน*จนกว่าจะได้รับบิลใหม่ที่สมบูรณ์ — ป้องกันเงินเข้าบิลที่ระบบไม่รู้จัก",
                     'reading' => $reading,
                     // 🚫 ไม่ส่ง payment_qr_url ออกเด็ดขาด
@@ -4407,7 +4425,7 @@ class FortuneConversationService
 
             return [
                 'action' => 'error',
-                'message' => "🔮 ระบบกำลังจัดเตรียมให้ค่ะ\n\nพิมพ์คำถามใหม่ได้เลย หรือพิมพ์ 'ดูดวงละเอียด' อีกครั้งค่ะ ✨",
+                'message' => "🔮 ระบบกำลังจัดเตรียมให้ค่ะ\n\nพิมพ์คำถามใหม่ได้เลย หรือพิมพ์ 'ดูดวง' อีกครั้งค่ะ ✨",
                 'reading' => $reading,
             ];
         }
@@ -4941,7 +4959,7 @@ class FortuneConversationService
         if (! $this->settings->isFreeReadingEnabled()) {
             $price = $this->getDeepReadingPrice();
 
-            return "💎 ดูดวง {$price} บาท — พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่ม";
+            return "💎 ดูดวง {$price} บาท — พิมพ์ 'ดูดวง' เพื่อเริ่ม";
         }
 
         $remaining = $this->getRemainingFreeQuestions($userId);
@@ -4961,7 +4979,7 @@ class FortuneConversationService
         }
 
         if ($remaining <= 0) {
-            $msg .= "\n💡 สิทธิ์ฟรีหมดแล้ว สามารถดูดวงละเอียดได้ค่ะ";
+            $msg .= "\n💡 สิทธิ์ฟรีหมดแล้ว สามารถดูดวงแบบเสียค่าครูได้ค่ะ";
         }
 
         return $msg;
@@ -4981,7 +4999,7 @@ class FortuneConversationService
         $qCount = self::REQUIRED_QUESTIONS;
 
         return "═══════════════════════\n".
-               "🌟 *ดูดวงละเอียด* 🌟\n".
+               "🌟 *ดูดวง* 🌟\n".
                "═══════════════════════\n\n".
                "คุณ{$name} อยากรู้ลึกกว่านี้ไหมคะ?\n\n".
                "📍 บอกวันเดือนปีเกิด\n".
@@ -5123,6 +5141,23 @@ class FortuneConversationService
     {
         $deepEnabled = $this->settings->isDeepReadingEnabled();
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+        // 🆕 (2026-04-29) ถ้าเปิดทั้ง Celtic + Deep → แนะนำ 2 แพคเกจ tier
+        //    ไม่ใช้ดูดวงฟรีเป็น dummy entry อีก เพราะลูกค้าต้องเลือกแพคเกจเสมอ
+        if ($deepEnabled && $celticEnabled) {
+            $deepPrice = (int) $this->getDeepReadingPrice();
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+
+            return "🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙\n\n"
+                . "อยากให้หมอเปิดทางดวงให้ไหมคะ?\n"
+                . "เลือกแพคเกจที่ใช่สำหรับเจ้าชะตา 👇\n\n"
+                . "🔹 *แพคเกจพื้นฐาน — {$deepPrice} บาท*\n"
+                . "    📅 ดูจากวันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
+                . "🔮 *แพคเกจเต็มสำรับ — {$celticPrice} บาท*\n"
+                . "    🃏 Celtic Cross 10 ใบ + ถามได้ 3 คำถาม\n\n"
+                . "👇 กดปุ่ม *\"🔮 ดูดวง\"* ด้านล่างเพื่อดูรายละเอียดแพคเกจ ✨";
+        }
 
         if ($deepEnabled && $freeEnabled) {
             $price = (int) $this->getDeepReadingPrice();
@@ -5130,7 +5165,7 @@ class FortuneConversationService
             return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
                 . "อยากให้หมอดูดวงให้ไหมคะ?\n"
                 . "   • 🔮 ดูดวงฟรี  — ถามเรื่องที่อยากรู้\n"
-                . "   • 💎 ดูดวงละเอียด — ค่าครู {$price} บาท วิเคราะห์จากวันเกิด\n\n"
+                . "   • 💎 ดูดวง — ค่าครู {$price} บาท วิเคราะห์จากวันเกิด\n\n"
                 . "👇 กดปุ่มด้านล่างเพื่อเริ่ม";
         }
 
@@ -5139,10 +5174,10 @@ class FortuneConversationService
             $qCount = self::REQUIRED_QUESTIONS;
 
             return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
-                . "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? ({$qCount} คำถาม {$price} บาท)\n"
+                . "💎 อยากให้หมอดูดวงให้ไหม? ({$qCount} คำถาม {$price} บาท)\n"
                 . "   • โฟกัสคำถามเดียว — แม่นยำกว่ากระจาย\n"
                 . "   • วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n\n"
-                . "👇 กดปุ่ม \"💎 ดูดวงละเอียด\" ด้านล่างเพื่อเริ่ม";
+                . "👇 กดปุ่ม \"🔮 ดูดวง\" ด้านล่างเพื่อเริ่ม";
         }
 
         if ($freeEnabled) {
@@ -5404,7 +5439,7 @@ class FortuneConversationService
         if ($freeEnabled) {
             return "🔮 *ระบบดูดวง AI*\n\n".
                    "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
-                   'หลังจากนั้นสามารถเลือกดูดวงละเอียดได้ ✨';
+                   'หลังจากนั้นสามารถเลือกดูดวงเชิงลึกได้ ✨';
         }
 
         $price = $this->getDeepReadingPrice();
@@ -5444,7 +5479,7 @@ class FortuneConversationService
             $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
             $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
             $qCount = self::REQUIRED_QUESTIONS;
-            $message .= "💎 *ดูดวงละเอียด — {$qCount} คำถาม {$price} บาท*\n";
+            $message .= "💎 *ดูดวงเชิงลึก — {$qCount} คำถาม {$price} บาท*\n";
             $message .= "   วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n";
             $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
         } else {
@@ -6162,7 +6197,7 @@ class FortuneConversationService
 
             $qCount = self::REQUIRED_QUESTIONS;
             $message .= "═══════════════════════\n";
-            $message .= "💎 *ดูดวงละเอียด — {$qCount} คำถาม {$price} บาท*\n";
+            $message .= "💎 *ดูดวงเชิงลึก — {$qCount} คำถาม {$price} บาท*\n";
             $message .= "═══════════════════════\n\n";
 
             $message .= "📌 โฟกัสคำถามเดียว — แม่นกว่าถามกระจาย\n";
@@ -7579,7 +7614,7 @@ class FortuneConversationService
                 ."เช่น \"ดวงความรักเดือนนี้\" หรือ \"การเงินจะดีไหม\"\n\n"
                 ."━━━━━━━━━━━━━━━━━\n"
                 .$freeLine
-                ."💎 ดูดวงละเอียด — {$price} บาท\n"
+                ."💎 ดูดวงเชิงลึก — {$price} บาท\n"
                 ."📖 ดูคำทำนาย — พิมพ์ \"ดูคำทำนาย\"\n"
                 ."💰 เช็คสิทธิ์/Wallet — พิมพ์ \"เช็คสิทธิ์\"\n"
                 ."🏦 ดูบัญชี — พิมพ์ \"บัญชี\"\n"
@@ -7652,7 +7687,7 @@ class FortuneConversationService
             $message = "🏦 บัญชีธนาคารสำหรับชำระเงิน\n\n";
             $message .= $this->getBankAccountsListMessage();
             $message .= "ℹ️ ตอนนี้ยังไม่มีบิลรอชำระค่ะ\n";
-            $message .= "พิมพ์ 'ดูดวงละเอียด' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮";
+            $message .= "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮";
 
             return [
                 'action' => 'bank_account_info',
@@ -7970,7 +8005,7 @@ class FortuneConversationService
 ⭐ **ดวงภาพรวม**: วิเคราะห์ดวงชะตาภาพรวม อ้างชื่อดาวเคราะห์ที่ส่งผลในช่วงนี้
 💫 **ตอบคำถามหลัก**: ตอบอย่างละเอียด กล้าบอกตรงๆ ระบุช่วงเวลาชัดเจน
 🎯 **คำแนะนำ**: สีมงคล 2-3 สี, เลขมงคล 2-3 เลข, วันมงคล, สิ่งที่ควรระวัง
-🌟 **ปิดท้ายชวนดูต่อ**: hint ว่ายังเห็นอะไรอีก กระตุ้นให้อยากดูดวงละเอียด
+🌟 **ปิดท้ายชวนดูต่อ**: hint ว่ายังเห็นอะไรอีก กระตุ้นให้อยากดูดวงเชิงลึก
 
 ถ้ายังไม่มีวันเกิด ให้ถามท้ายว่า "บอกวันเดือนปีเกิดให้หมอจันทราได้ไหมคะ?"
 ท้ายสุดเชิญชวน "ฝากส่งต่อให้เพื่อนๆ มาลองดูดวงกับหมอจันทราด้วยนะคะ 🔮✨"
@@ -8238,7 +8273,7 @@ PROMPT;
    - 📅 วันมงคล: วันที่เหมาะทำสิ่งสำคัญ (อ้างอิงวันของดาวมิตร)
    - ⚠️ สิ่งที่ควรระวัง: บอกตรงๆ อ้างดาวศัตรู แต่ให้ทางแก้ด้วย
 
-🌟 **ปิดท้ายชวนดูต่อ**: ปิดท้ายด้วยการ hint ว่าหมอจันทรายังเห็นอะไรอีกมากที่ยังไม่ได้บอก เพื่อกระตุ้นให้อยากดูดวงละเอียด เช่น:
+🌟 **ปิดท้ายชวนดูต่อ**: ปิดท้ายด้วยการ hint ว่าหมอจันทรายังเห็นอะไรอีกมากที่ยังไม่ได้บอก เพื่อกระตุ้นให้อยากดูดวงเชิงลึก เช่น:
 \"✨ หมอจันทราสัมผัสได้ว่ายังมีเรื่องสำคัญที่ต้องบอก{$genderPrefix}{$name}อีกนะคะ โดยเฉพาะเรื่อง [ระบุเรื่องที่เกี่ยวข้อง] แต่ต้องรู้วันเกิดถึงจะบอกได้ละเอียดค่ะ\"
 \"🔮 ถ้า{$genderPrefix}{$name}อยากรู้ลึกกว่านี้ เช่น ตำแหน่งดาวเจ้าชนะ ดาวโคจรที่ส่งผล ภพที่ต้องระวัง ทิศมงคล วิธีเสริมดวง... บอกหมอจันทราได้นะคะ หมอจันทราจะดูให้ละเอียดเลยค่ะ ✨\"
 

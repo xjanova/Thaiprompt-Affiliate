@@ -571,10 +571,12 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                 ]),
 
-                // 🆕 (2026-04-29) Tier choice menu — แทน Discovery Chat
+                // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2 แพคเกจ
+                //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
+                //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 'tier_choice', 'tier_choice_invalid' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🔹 39฿ เชิงลึก', 'payload' => 'TIER_DEEP_39'],
-                    ['content_type' => 'text', 'title' => '🔮 99฿ Celtic', 'payload' => 'TIER_CELTIC_99'],
+                    ['content_type' => 'text', 'title' => '🔹 39฿ พื้นฐาน', 'payload' => 'TIER_DEEP_39'],
+                    ['content_type' => 'text', 'title' => '🔮 99฿ เต็มสำรับ', 'payload' => 'TIER_CELTIC_99'],
                     ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
 
@@ -1063,12 +1065,12 @@ class FortuneChannelManager
             'ai_chat_response' => $offerFortune
                 ? [
                     ['content_type' => 'text', 'title' => '🔮 เริ่มดูดวง', 'payload' => 'START_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
                 ]
                 : [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
                 ],
 
@@ -1083,7 +1085,7 @@ class FortuneChannelManager
             // ยูสเซ่อร์ขอเริ่มใหม่ระหว่างกรอกวันเกิด
             'restart_from_birthdate' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_FORTUNE'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
                 ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
             ],
 
@@ -1176,7 +1178,7 @@ class FortuneChannelManager
                     $replyToken,
                     [
                         ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
-                        ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+                        ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
                         ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                     ]
                 ),
@@ -1303,10 +1305,12 @@ class FortuneChannelManager
                     $lineService, $userId, $result, $replyToken
                 ),
 
-                // 🆕 (2026-04-29) Tier choice menu — แทน Discovery Chat
+                // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2 แพคเกจ
+                //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
+                //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 'tier_choice', 'tier_choice_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '🔹 39฿ เชิงลึก', 'text' => '39'],
-                    ['label' => '🔮 99฿ Celtic', 'text' => '99'],
+                    ['label' => '🔹 39฿ พื้นฐาน', 'text' => '39'],
+                    ['label' => '🔮 99฿ เต็มสำรับ', 'text' => '99'],
                     ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                 ]),
 
@@ -1444,7 +1448,7 @@ class FortuneChannelManager
                         $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
                         $replyMessages[] = [
                             'type' => 'flex',
-                            'altText' => 'ดูดวงละเอียด',
+                            'altText' => 'ดูดวง',
                             'contents' => $upsellFlex,
                         ];
                     }
@@ -1503,7 +1507,7 @@ class FortuneChannelManager
             $upsellFlex = $lineService->buildUpsellFlexMessage($userName, $this->getReadingPrice());
 
             return $lineService->sendRichMessage($userId, [
-                'alt_text' => 'ดูดวงละเอียด',
+                'alt_text' => 'ดูดวง',
                 'contents' => $upsellFlex,
             ]);
         }
@@ -2917,7 +2921,7 @@ class FortuneChannelManager
         if ($offerFortune) {
             return [
                 ['label' => '🔮 เริ่มดูดวง', 'text' => 'ดูดวง'],
-                ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+                ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
                 ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ['label' => '💬 คุยต่อ', 'text' => 'ขอคำแนะนำเพิ่ม'],
             ];
@@ -2925,7 +2929,7 @@ class FortuneChannelManager
 
         return [
             ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
-            ['label' => '💎 ดูดวงละเอียด', 'text' => 'ดูดวงละเอียด'],
+            ['label' => '💎 ดูดวง', 'text' => 'ดูดวง'],
             ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
             ['label' => '📖 อ่านคำทำนาย', 'text' => 'ดูคำทำนาย'],
         ];
@@ -3399,7 +3403,7 @@ class FortuneChannelManager
             ],
             'basic_done' => $this->settings->isDeepReadingEnabled()
                 ? [
-                    ['label' => '✨ ต้องการ', 'text' => 'ต้องการดูดวงละเอียด'],
+                    ['label' => '✨ ต้องการ', 'text' => 'ดูดวง'],
                     ['label' => 'ไม่ต้องการ', 'text' => 'ไม่ต้องการ'],
                 ]
                 : [],

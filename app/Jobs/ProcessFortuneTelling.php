@@ -165,7 +165,7 @@ class ProcessFortuneTelling implements ShouldQueue
                 $tryBeforeBuyMsg = $settings->getTryBeforeBuyMessage();
                 $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
-                    ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                    ['title' => 'ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
                     ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
                 ]);
             }
@@ -179,7 +179,7 @@ class ProcessFortuneTelling implements ShouldQueue
 
                 $facebookService->sendQuickReplies($fromId, $referMsg, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวงอีก', 'payload' => 'FORTUNE_BASIC'],
-                    ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                    ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
                 ]);
             }
 

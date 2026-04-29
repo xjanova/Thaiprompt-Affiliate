@@ -68,7 +68,7 @@ class FacebookRichMessageService
             ],
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'MENU_DEEP_FORTUNE',
             ],
         ];
@@ -85,15 +85,15 @@ class FacebookRichMessageService
             // 🎯 Phase M — แทน "เช็คสิทธิ์" ด้วย "ดูดวงละเอียด" (useful กว่า)
             $buttons[] = [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'FORTUNE_DEEP',
             ];
         }
 
         // ข้อความแนะนำบริการ — เปลี่ยนตามสถานะระบบฟรี
         $serviceLines = $freeEnabled
-            ? "🆓 ดูดวงพื้นฐาน (ฟรี)\n💎 ดูดวงละเอียด (เชิงลึก)"
-            : "🔮 ดูดวงแม่นยำ ทำนายชัดเจน\n💎 ดูดวงละเอียดเชิงลึก";
+            ? "🆓 ดูดวงพื้นฐาน (ฟรี)\n💎 ดูดวงเชิงลึก"
+            : "🔮 ดูดวงแม่นยำ ทำนายชัดเจน\n💎 ดูดวงเชิงลึก";
 
         return [
             'attachment' => [
@@ -132,7 +132,7 @@ class FacebookRichMessageService
         $buttons = [
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
             ],
         ];
@@ -156,7 +156,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "💎 {$subject}ต้องการดูดวงละเอียดไหม?\n\n✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า\n✅ ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก\n✅ ไม่ยกเมฆ — มีหลักการณ์ พิสูจน์ได้\n\n💰 ค่าครู {$priceText} บาท",
+                    'text' => "💎 {$subject}ต้องการดูดวงเชิงลึกไหม?\n\n✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า\n✅ ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก\n✅ ไม่ยกเมฆ — มีหลักการณ์ พิสูจน์ได้\n\n💰 ค่าครู {$priceText} บาท",
                     'buttons' => $buttons,
                 ],
             ],
@@ -342,7 +342,7 @@ class FacebookRichMessageService
             if ($remaining > 0) {
                 $text .= '💡 พิมพ์คำถามมาได้เลย!';
             } else {
-                $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงละเอียดสิ!';
+                $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงเชิงลึกสิ!';
             }
         } else {
             // ปิดบริการฟรี — ไม่พูดถึงฟรี (ใช้ brand name จาก settings)
@@ -366,7 +366,7 @@ class FacebookRichMessageService
 
         $buttons[] = [
             'type' => 'postback',
-            'title' => '💎 ดูดวงละเอียด',
+            'title' => '💎 ดูดวง',
             'payload' => 'DEEP_READING_ACCEPT',
         ];
 
@@ -470,7 +470,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "📅 กรุณาบอกวันเดือนปีเกิด\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวงละเอียด: {$priceText} บาท",
+                    'text' => "📅 กรุณาบอกวันเดือนปีเกิด\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวง: {$priceText} บาท",
                     // 🎯 Phase M — เอาปุ่ม "วิธีใช้งาน" + "เช็คสิทธิ์" ออก (ซ้ำซ้อน งง)
                     'buttons' => [
                         [
@@ -501,7 +501,7 @@ class FacebookRichMessageService
         $buttons = [
             [
                 'type' => 'postback',
-                'title' => '💎 เริ่มดูดวงละเอียด',
+                'title' => '💎 เริ่มดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
             ],
         ];
@@ -520,7 +520,7 @@ class FacebookRichMessageService
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "⏰ บิลดูดวงหมดอายุแล้วค่ะ\n\nหากต้องการดูดวงละเอียด สามารถเริ่มใหม่ได้เลยนะคะ",
+                    'text' => "⏰ บิลดูดวงหมดอายุแล้วค่ะ\n\nหากต้องการดูดวง สามารถเริ่มใหม่ได้เลยนะคะ",
                     'buttons' => $buttons,
                 ],
             ],
@@ -545,7 +545,7 @@ class FacebookRichMessageService
         $buttons = [
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวงละเอียด',
+                'title' => '💎 ดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
             ],
         ];
@@ -564,7 +564,7 @@ class FacebookRichMessageService
         // ข้อความแตกต่างตามสถานะฟรี
         $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
         $text = $freeEnabled
-            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงละเอียดสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
+            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงเชิงลึกสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
             : "💎 ดูดวงโดย{$this->brandName}\n\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซี (ไม่ยกเมฆ)\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท";
 
         return [
@@ -624,7 +624,7 @@ class FacebookRichMessageService
     {
         return [
             ['content_type' => 'text', 'title' => '🔮 ดูดวงอีก', 'payload' => 'FORTUNE_BASIC'],
-            ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+            ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
             ['content_type' => 'text', 'title' => '📢 เชิญเพื่อน', 'payload' => 'AFFILIATE_SHARE'],
             ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
             // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก
@@ -812,12 +812,12 @@ class FacebookRichMessageService
 
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
             ],
             'collecting_questions', 'need_more_questions', 'retry_question' => $this->buildQuestionQuickReplies(),
             'ai_limit', 'payment_expired' => [
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ],

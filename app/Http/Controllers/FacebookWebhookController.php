@@ -408,7 +408,7 @@ class FacebookWebhookController extends Controller
 
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
             ];
 
             // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin)
@@ -812,7 +812,7 @@ class FacebookWebhookController extends Controller
         // และแก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ)
         $quickReplies = [
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-            ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+            ['content_type' => 'text', 'title' => '🌟 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
         ];
 
         // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
@@ -1380,8 +1380,8 @@ class FacebookWebhookController extends Controller
             // Persistent Menu options
             // ⚠️ ผู้สูงอายุงงระหว่าง "ดูดวง" vs "ดูดวงละเอียด" → ให้ทั้ง 2 เมนูเข้า deep flow
             // ตรงๆ ลูกค้ากดอะไรก็ได้ → ถูกพาเข้ากระบวนการทำนายทันที
-            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
-            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
@@ -1451,7 +1451,7 @@ class FacebookWebhookController extends Controller
         $deepPrice = number_format($this->getDeepReadingPriceFromSettings(), 0);
 
         $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
-            ."1️⃣ ดูดวงละเอียดกับแม่หมอ {$deepPrice} บาท/ครั้ง\n"
+            ."1️⃣ ดูดวงเชิงลึกกับแม่หมอ {$deepPrice} บาท/ครั้ง\n"
             ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
             ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
             ."💰 รายได้:\n"
@@ -1481,7 +1481,7 @@ class FacebookWebhookController extends Controller
 
         $quickReplies = [
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
-            ['content_type' => 'text', 'title' => '🌟 ดูดวงละเอียด', 'payload' => 'MENU_DEEP_FORTUNE'],
+            ['content_type' => 'text', 'title' => '🌟 ดูดวง', 'payload' => 'MENU_DEEP_FORTUNE'],
         ];
 
         $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
@@ -1744,7 +1744,7 @@ class FacebookWebhookController extends Controller
                     ],
                 ];
                 if ($this->settings->isDeepReadingEnabled()) {
-                    $quickReplies[] = ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
+                    $quickReplies[] = ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'];
                 }
                 $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
             }
@@ -1795,7 +1795,7 @@ class FacebookWebhookController extends Controller
         // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
         $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
         $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
-        $message .= "💎 *ดูดวงละเอียด ({$qCount} คำถาม {$deepPriceText} บาท)*\n";
+        $message .= "💎 *ดูดวงเชิงลึก ({$qCount} คำถาม {$deepPriceText} บาท)*\n";
         $message .= "ทำนายเชิงลึกจากดาวเจ้าชนะ + ไพ่ยิปซีจริง — ไม่ยกเมฆ\n\n";
 
         $message .= "═══════════════════════\n";
@@ -2084,14 +2084,14 @@ class FacebookWebhookController extends Controller
             ],
             // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
             'basic_done' => [
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'DEEP_READING_ACCEPT'],
                 ['content_type' => 'text', 'title' => '❌ ไม่ต้องค่ะ', 'payload' => 'DEEP_READING_NO'],
                 ['content_type' => 'text', 'title' => '💕 ถามเรื่องรัก', 'payload' => 'FORTUNE_LOVE'],
                 ['content_type' => 'text', 'title' => '💼 ถามเรื่องงาน', 'payload' => 'FORTUNE_WORK'],
             ],
             'check_remaining' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
             ],
             'collecting_questions', 'need_more_questions', 'retry_question' => [
                 ['content_type' => 'text', 'title' => '💕 ความรัก', 'payload' => 'QUESTION_LOVE'],
@@ -2101,17 +2101,17 @@ class FacebookWebhookController extends Controller
                 ['content_type' => 'text', 'title' => '✏️ พิมพ์เอง', 'payload' => 'QUESTION_CUSTOM'],
             ],
             'ai_limit', 'payment_expired' => [
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ],
             // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
             'declined', 'completed' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
             ],
             'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
             ],
             // 🎯 Phase A.2 (FB) — escape-hatch buttons ระหว่างขั้นตอนกรอกข้อมูล
             // รองรับผู้สูงวัยที่พิมพ์ keyword ไม่ได้ ให้กดปุ่มแทน
@@ -2140,7 +2140,7 @@ class FacebookWebhookController extends Controller
             //   ชี้ปุ่มชัดเจน — ผู้สูงวัยไม่ต้องเดาว่าต้อง "พิมพ์" อะไร
             // 🎯 Phase E — เอาปุ่ม "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
             'welcome_guide_button' => [
-                ['content_type' => 'text', 'title' => '💎 ดูดวงละเอียด', 'payload' => 'DEEP_READING_ACCEPT'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'DEEP_READING_ACCEPT'],
                 ['content_type' => 'text', 'title' => '🔮 ดูดวงฟรี', 'payload' => 'FORTUNE_OVERVIEW'],
             ],
             default => null,
@@ -2378,7 +2378,7 @@ class FacebookWebhookController extends Controller
                 $tryBeforeBuyMsg = $this->settings->getTryBeforeBuyMessage();
                 $this->facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
-                    ['title' => 'ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'],
+                    ['title' => 'ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
                     ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
                 ]);
             }
@@ -2424,7 +2424,7 @@ class FacebookWebhookController extends Controller
     {
         match ($payload) {
             // Quick Replies ใหม่สำหรับ conversational flow
-            'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'DEEP_READING_ACCEPT' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'DEEP_READING_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             'DEEP_READING_NO' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
 
@@ -2457,8 +2457,8 @@ class FacebookWebhookController extends Controller
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ
-            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
-            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
@@ -2466,14 +2466,14 @@ class FacebookWebhookController extends Controller
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             // ผู้สูงอายุงง → ปุ่ม "ดูดวงใหม่/ต่อ" → deep flow ตรง
-            'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'VIEW_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),
 
             // ✅ Phase A quick reply payloads (จาก FortuneChannelManager getFacebookFallbackQuickReplies)
             'TALK_HUMAN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
             // ผู้สูงอายุงง → ปุ่ม "เริ่มดูดวง" → deep flow ตรง
-            'START_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
-            'DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'START_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'CHECK_STATUS' => $this->processConversationalMessage($senderId, 'เช็คสถานะ'),
             'RESTART' => $this->processConversationalMessage($senderId, 'เริ่มใหม่'),
             'CANCEL' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
@@ -2488,8 +2488,8 @@ class FacebookWebhookController extends Controller
 
             // Quick Replies เดิม (backward compatibility)
             // ผู้สูงอายุงง → ปุ่ม "ดูดวง" และ "ดูดวงละเอียด" → deep flow เดียวกัน
-            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
-            'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ต้องการดูละเอียด'),
+            'FORTUNE_BASIC' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            'FORTUNE_DEEP' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'SUBSCRIBE' => $this->facebookService->sendMessage(
                 $senderId,
@@ -2633,8 +2633,8 @@ class FacebookWebhookController extends Controller
         $message .= "ตัวอย่าง: ดูดวง เรื่องความรัก, เรื่องการเงิน\n\n";
 
         if ($this->settings->isDeepReadingEnabled()) {
-            $message .= "🌟 ดูดวงเชิงลึก (ละเอียด):\n";
-            $message .= "พิมพ์: ดูดวงละเอียด ตามด้วยคำถาม\n";
+            $message .= "🌟 ดูดวงเชิงลึก:\n";
+            $message .= "พิมพ์: ดูดวง ตามด้วยคำถาม\n";
             $message .= "ราคา {$deepPriceText} บาท/ครั้ง";
             if ($freeDeep > 0) {
                 $message .= " (ทดลองฟรี {$freeDeep} ครั้ง/วัน)";
@@ -2643,7 +2643,7 @@ class FacebookWebhookController extends Controller
         }
 
         $message .= "📸 ส่งรูปภาพ:\n";
-        $message .= "ส่งรูปพร้อมข้อความ 'ดูดวง' หรือ 'ดูดวงละเอียด'\n";
+        $message .= "ส่งรูปพร้อมข้อความ 'ดูดวง'\n";
 
         // ส่งพร้อม quick reply buttons
         // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน)
@@ -2651,7 +2651,7 @@ class FacebookWebhookController extends Controller
             ['title' => $freeEnabled ? '🔮 ดูดวง' : '🔮 เริ่มดูดวง', 'payload' => 'FORTUNE_BASIC'],
         ];
         if ($this->settings->isDeepReadingEnabled()) {
-            $quickReplies[] = ['title' => '💎 ดูดวงละเอียด', 'payload' => 'FORTUNE_DEEP'];
+            $quickReplies[] = ['title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'];
         }
 
         $this->facebookService->sendQuickReplies($userId, $message, $quickReplies);
