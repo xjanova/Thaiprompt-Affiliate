@@ -90,7 +90,7 @@ class CelticCrossService
                 'picked_count' => $reading->getCelticPickedCount(),
                 'is_complete' => $reading->getCelticPickedCount() >= 10,
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('CelticCross: pickNextCard ล้มเหลว', [
                 'reading_id' => $reading->id,
                 'position' => $position,
@@ -194,15 +194,22 @@ class CelticCrossService
                 'questions_used' => $reading->fresh()->celtic_questions_used,
                 'questions_remaining' => max(0, $this->getMaxQuestions() - $reading->fresh()->celtic_questions_used),
             ];
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
+            // ⚠️ catch Throwable (ไม่ใช่แค่ Exception) — กัน PHP Error/TypeError
+            // ทำให้ reading ค้างที่ STATUS_CELTIC_GENERATING ตลอดไป
             Log::error('CelticCross: askQuestion ล้มเหลว', [
                 'reading_id' => $reading->id,
                 'sequence' => $sequence,
                 'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
             // ลบ record ที่ตอบไม่ได้ ให้ลูกค้าลองใหม่ได้
-            $questionRecord->delete();
+            try {
+                $questionRecord->delete();
+            } catch (\Throwable $delErr) {
+                // ignore — ไม่ critical
+            }
 
             return [
                 'success' => false,

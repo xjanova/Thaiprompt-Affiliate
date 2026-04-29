@@ -135,6 +135,20 @@ trait CelticCrossConversationTrait
             $payAmount = number_format((float) $uniqueAmount->unique_amount, 2);
             $baseAmountStr = number_format($basePrice, 0);
 
+            // 🎯 สร้าง PromptPay QR (dynamic ยอดเงิน) — fallback เป็น static QR ถ้าสร้างไม่ได้
+            // method นี้อยู่ใน FortuneConversationService (parent class) — เรียกได้เพราะ trait อยู่ใน class
+            $qrImageUrl = null;
+            try {
+                if (method_exists($this, 'generatePromptPayQrImage')) {
+                    $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
+                }
+                if (! $qrImageUrl && method_exists($this, 'getPaymentQrImageUrl')) {
+                    $qrImageUrl = $this->getPaymentQrImageUrl();
+                }
+            } catch (\Throwable $qrErr) {
+                Log::warning('Celtic: QR gen fail (ส่ง text-only แทน)', ['error' => $qrErr->getMessage()]);
+            }
+
             return [
                 'action' => 'celtic_pending_payment',
                 'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
@@ -152,6 +166,7 @@ trait CelticCrossConversationTrait
                 'celtic_base_price' => $basePrice,
                 'celtic_bill_reference' => $reading->bill_reference,
                 'unique_payment_amount' => $uniqueAmount,
+                'payment_qr_url' => $qrImageUrl, // ✅ FortuneChannelManager จะส่งภาพ QR ออก
                 'show_qr' => true,
             ];
         } catch (\Throwable $e) {

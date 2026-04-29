@@ -1166,7 +1166,7 @@ class FortuneReading extends Model
      */
     protected static function expireOldConversationsQuery($baseQuery): int
     {
-        // ปิด conversation ทั่วไป + pending_payment ที่ค้างเกิน 30 นาที
+        // ปิด conversation ทั่วไป + pending_payment (Deep + Celtic) ที่ค้างเกิน 30 นาที
         $expired = (clone $baseQuery)
             ->whereIn('conversation_status', [
                 self::STATUS_AWAITING_CONFIRMATION,
@@ -1177,6 +1177,7 @@ class FortuneReading extends Model
                 self::STATUS_DISCOVERY_CHAT,
                 self::STATUS_DISCOVERY_CONFIRM,
                 self::STATUS_PENDING_PAYMENT,
+                self::STATUS_CELTIC_PENDING_PAYMENT, // 🔮 Celtic ก็ expire 30 นาที (UPA หมดอายุพอดี)
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
@@ -1187,7 +1188,24 @@ class FortuneReading extends Model
             ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
-        return $expired + $expiredPaid;
+        // 🔮 Celtic flow states (PICKING / AWAITING / GENERATING / QA_PROMPT) ที่ค้างเกิน 90 นาที
+        //    90 = QA window 60 + buffer 30 (หากลูกค้าตอบ Q1 แล้วทิ้ง > 1 ชม. ก็ปิด)
+        //    GENERATING ค้างเกิน 5 นาที = AI hang → ปิดเลย (เหมือน STATUS_PAID)
+        $expiredCelticGenerating = (clone $baseQuery)
+            ->where('conversation_status', self::STATUS_CELTIC_GENERATING)
+            ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
+            ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        $expiredCelticFlow = (clone $baseQuery)
+            ->whereIn('conversation_status', [
+                self::STATUS_CELTIC_PICKING,
+                self::STATUS_CELTIC_AWAITING_QUESTION,
+                self::STATUS_CELTIC_QA_PROMPT,
+            ])
+            ->where('updated_at', '<', now()->subMinutes(90))
+            ->update(['conversation_status' => self::STATUS_COMPLETED]);
+
+        return $expired + $expiredPaid + $expiredCelticGenerating + $expiredCelticFlow;
     }
 
     /**

@@ -571,6 +571,66 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                 ]),
 
+                // 🔮 Celtic Cross actions (2026-04-29)
+                // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
+                'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+
+                // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "พร้อม" สำหรับใบถัดไป
+                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($fbService, $userId, $message, $result) {
+                    // ส่งรูปไพ่ก่อน (ถ้ามี)
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['tarot_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
+
+                    // ส่งข้อความ + ปุ่ม "พร้อม" / "ยกเลิก"
+                    return $fbService->sendQuickReplies($userId, $message, [
+                        ['content_type' => 'text', 'title' => '🙏 พร้อม', 'payload' => 'CELTIC_READY'],
+                        ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                    ]);
+                })(),
+
+                // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1
+                'celtic_all_picked' => (function () use ($fbService, $userId, $message, $result) {
+                    // ส่งรูปไพ่ใบสุดท้าย (ถ้ามี)
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['tarot_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+
+                    // ส่งภาพ composite Celtic Cross spread
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['celtic_summary_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+
+                    // ส่งข้อความ (ขอ Q1) — ไม่มีปุ่ม เพราะลูกค้าต้องพิมพ์คำถามเอง
+                    return $fbService->sendMessage($userId, $message);
+                })(),
+
+                // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
+                'celtic_question_answered' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🙏 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
+                    ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                ]),
+
+                // celtic actions ที่เป็น text-only (cancelled, completed, expired, ai_failed, etc.)
+                'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
+                'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
+                'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
+                'celtic_awaiting_payment', 'celtic_bill_creation_failed'
+                    => $fbService->sendMessage($userId, $message),
+
                 // อื่นๆ → ส่ง text ธรรมดา
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏'),
             };
@@ -1235,6 +1295,55 @@ class FortuneChannelManager
                 'fortune_ready_notification' => $this->sendLineFortuneReadyNotification(
                     $lineService, $userId, $result, $replyToken
                 ),
+
+                // 🔮 Celtic Cross actions (2026-04-29)
+                'celtic_pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+
+                // celtic_card_picked → ส่งรูปไพ่ + ปุ่ม "พร้อม"
+                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['tarot_image_url']);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                        ['label' => '🙏 พร้อม', 'text' => 'พร้อม'],
+                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                    ]);
+                })(),
+
+                // celtic_all_picked → ส่งภาพ composite + ขอ Q1 (ไม่มีปุ่ม)
+                'celtic_all_picked' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['tarot_image_url']);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+
+                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                })(),
+
+                // celtic_question_answered → ปุ่ม "ถามต่อ" / "พอแค่นี้"
+                'celtic_question_answered' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🙏 ถามต่อ', 'text' => 'ถามต่อ'],
+                    ['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้'],
+                ]),
+
+                // Celtic actions ที่เป็น text-only
+                'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
+                'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
+                'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
+                'celtic_awaiting_payment', 'celtic_bill_creation_failed'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
