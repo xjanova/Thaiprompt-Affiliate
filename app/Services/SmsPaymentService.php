@@ -629,13 +629,19 @@ class SmsPaymentService
         }
 
         // Recovery: ถ้า reading ถูก cleanup ปิดไปแล้ว (completed) แต่ยังไม่ได้จ่าย → กู้คืนกลับมา
-        if ($reading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT && ! $reading->is_paid) {
+        // แยกเช็คตาม reading_type เพราะ Celtic Cross ใช้ status คนละชุด
+        $expectedPendingStatus = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+            ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+            : FortuneReading::STATUS_PENDING_PAYMENT;
+
+        if ($reading->conversation_status !== $expectedPendingStatus && ! $reading->is_paid) {
             Log::info('SMS Payment: กู้คืน Fortune Reading ที่หมดอายุ/ถูกปิด กลับเป็น pending_payment', [
                 'reading_id' => $reading->id,
                 'old_status' => $reading->conversation_status,
+                'expected_status' => $expectedPendingStatus,
                 'amount' => $amount,
             ]);
-            $reading->update(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT]);
+            $reading->update(['conversation_status' => $expectedPendingStatus]);
         }
 
         // ระบุ platform และ user ID ที่จะส่งข้อความ
@@ -665,7 +671,13 @@ class SmsPaymentService
             'notification_id' => $notification->id,
             'is_paid' => $reading->is_paid,
             'conversation_status' => $reading->conversation_status,
+            'reading_type' => $reading->reading_type,
         ]);
+
+        // 🔮 Celtic Cross fork — push "ตัดบิลแล้ว + เปิดไพ่ใบ 1/10" ทันที (ไม่ต้องรอ AI generate)
+        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            return $this->handleCelticPaymentMatched($reading, $notification, $platform, $userId, $amount);
+        }
 
         // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
         // ใช้ message_tag: POST_PURCHASE_UPDATE เพื่อ push นอก messaging window ได้
@@ -900,8 +912,94 @@ class SmsPaymentService
             ->where('is_paid', false)
             ->whereIn('conversation_status', [
                 FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT, // 🔮 Celtic Cross รองรับ recovery ด้วย
                 FortuneReading::STATUS_COMPLETED, // cleanup อาจปิดไปแล้ว → recover
             ])
             ->first();
+    }
+
+    /**
+     * 🔮 จัดการ Celtic Cross payment matched — push "เริ่มเปิดไพ่ใบที่ 1/10" ทันที
+     *
+     * ต่างจาก 39฿ flow:
+     * - ไม่ dispatch ProcessDeepFortuneReadingJob (ยังไม่ต้องสร้างคำทำนาย)
+     * - แต่ transition reading ไป STATUS_CELTIC_PICKING แล้ว push ข้อความเชิญตั้งจิตเปิดไพ่ใบที่ 1
+     *
+     * เรียกจาก: matchAndProcessFortuneReading() เมื่อ reading.reading_type === 'celtic_cross'
+     */
+    protected function handleCelticPaymentMatched(
+        FortuneReading $reading,
+        SmsPaymentNotification $notification,
+        string $platform,
+        string $userId,
+        float $amount
+    ): bool {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            // 1. ส่งข้อความ "ตัดบิลเรียบร้อย" + เริ่มเปิดไพ่ใบที่ 1/10
+            //    เรียก trait method ผ่าน FortuneConversationService::onCelticPaymentConfirmed
+            //    ซึ่งจะ:
+            //      - update conversation_status → CELTIC_PICKING
+            //      - return array ที่มี message + first card prompt
+            $conversationService = new FortuneConversationService($settings);
+            $celticResponse = $conversationService->onCelticPaymentConfirmed($reading);
+
+            // 2. ปรับข้อความให้มี "ตัดบิลเรียบร้อย" prefix สำหรับ proactive push
+            $userName = $reading->facebook_user_name ?? 'เจ้าชะตา';
+            $billRef = $reading->bill_reference ?? '-';
+            $payAmountStr = number_format($amount, 2);
+
+            $billConfirmHeader = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                . "🔖 เลขที่บิล: {$billRef}\n"
+                . "💰 ค่าครูที่ได้รับ: ฿{$payAmountStr}\n\n"
+                . "═══════════════════════\n"
+                . "🔮 *Celtic Cross Tarot — เริ่มเลย!*\n"
+                . "═══════════════════════\n\n";
+
+            $celticResponse['message'] = $billConfirmHeader . ($celticResponse['message'] ?? '');
+
+            // 3. Push ผ่าน channel manager (ใช้ POST_PURCHASE_UPDATE tag)
+            $channelManager = new FortuneChannelManager($settings);
+            $pushSent = $channelManager->sendResponse($platform, $userId, $celticResponse, [
+                'from_admin' => true,
+                'message_tag' => 'POST_PURCHASE_UPDATE',
+            ]);
+
+            Log::info('SMS Payment (Celtic): push เริ่มเปิดไพ่ สำเร็จ', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'sent' => $pushSent,
+                'next_position' => $reading->fresh()->getNextCelticPosition(),
+            ]);
+
+            // 4. Mark notification matched
+            $notification->update([
+                'status' => 'matched',
+                'matched_transaction_id' => $reading->id,
+            ]);
+
+            // 5. FCM push ให้แอพ SMS Checker อัพเดทสถานะ
+            try {
+                app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
+            } catch (\Exception $fcmErr) {
+                Log::warning('SMS Payment (Celtic): FCM push ล้มเหลว (ไม่ critical)', [
+                    'error' => $fcmErr->getMessage(),
+                ]);
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::critical('SMS Payment (Celtic): handleCelticPaymentMatched ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
+            ]);
+
+            // confirmPayment() ถูกเรียกไปแล้ว — เงินอยู่ใน DB เรียบร้อย
+            // ลูกค้าจะได้ message ตอนทักกลับ (handleCelticPendingPayment refresh เจอ is_paid)
+            return true;
+        }
     }
 }
