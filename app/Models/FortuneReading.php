@@ -1918,6 +1918,27 @@ class FortuneReading extends Model
     }
 
     /**
+     * ตั้งค่า unique payment amount สำหรับ Celtic Cross + เปลี่ยนสถานะเป็น CELTIC_PENDING_PAYMENT
+     *
+     * แยกจาก setPendingPayment() เพราะอันนั้นบังคับ reading_type='deep'
+     */
+    public function setCelticPendingPayment(UniquePaymentAmount $uniqueAmount): void
+    {
+        $updateData = [
+            'unique_payment_amount_id' => $uniqueAmount->id,
+            'amount_paid' => $uniqueAmount->unique_amount,
+            'conversation_status' => self::STATUS_CELTIC_PENDING_PAYMENT,
+            'reading_type' => self::READING_TYPE_CELTIC_CROSS,
+        ];
+
+        if (empty($this->bill_reference)) {
+            $updateData['bill_reference'] = self::generateBillReference();
+        }
+
+        $this->update($updateData);
+    }
+
+    /**
      * เวลาเหลือ (นาที) ใน QA window — null ถ้ายังไม่เริ่ม Q1
      */
     public function getCelticQaRemainingMinutes(): ?int

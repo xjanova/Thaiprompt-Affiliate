@@ -3,8 +3,10 @@
 namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
+use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
 use App\Services\CelticSpreadImageGenerator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -52,6 +54,12 @@ trait CelticCrossConversationTrait
 
     /**
      * เริ่ม Celtic Cross flow — เรียกจาก handleAfterBasic หรือ keyword detection
+     *
+     * Flow ปลอดภัย (เหมือน 39฿ deep flow):
+     * 1. DB::transaction wrap ทั้งหมด
+     * 2. UniquePaymentAmount::generate(99, ...) → ได้ราคามีทศนิยม เช่น 99.07
+     * 3. setCelticPendingPayment(UPA) → reading.unique_payment_amount_id + amount_paid + status
+     * 4. Post-commit verify — ถ้า inconsistency → cleanup UPA + แจ้งลูกค้าให้ลองใหม่ (ห้ามส่ง QR)
      */
     protected function startCelticCrossFlow(FortuneReading $reading): array
     {
@@ -67,31 +75,97 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        $price = number_format(app(CelticCrossService::class)->getPrice(), 0);
+        $service = app(CelticCrossService::class);
+        $basePrice = $service->getPrice(); // float (เช่น 99.00)
 
-        $updateData = [
-            'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
-            'conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
-        ];
-        if (empty($reading->bill_reference)) {
-            $updateData['bill_reference'] = FortuneReading::generateBillReference();
+        try {
+            // ⚠️ CRITICAL — ห้ามส่ง QR ออกจนกว่าจะ verify ว่า UPA + reading consistency
+            $billData = DB::transaction(function () use ($reading, $basePrice) {
+                $uniqueAmount = UniquePaymentAmount::generate(
+                    $basePrice,
+                    $reading->id,
+                    'fortune_reading',
+                    30 // หมดอายุใน 30 นาที (เหมือน 39฿)
+                );
+
+                if (! $uniqueAmount) {
+                    throw new \RuntimeException('Celtic UPA generate ล้มเหลว');
+                }
+
+                $reading->setCelticPendingPayment($uniqueAmount);
+
+                return ['upa' => $uniqueAmount, 'reading' => $reading];
+            });
+
+            $uniqueAmount = $billData['upa'];
+
+            // 🔒 Post-commit verification
+            $verified = FortuneReading::where('id', $reading->id)
+                ->where('unique_payment_amount_id', $uniqueAmount->id)
+                ->where('conversation_status', FortuneReading::STATUS_CELTIC_PENDING_PAYMENT)
+                ->whereNotNull('bill_reference')
+                ->first();
+
+            if (! $verified) {
+                Log::critical('Celtic: createPaymentBill verification fail — ห้ามส่ง QR', [
+                    'reading_id' => $reading->id,
+                    'upa_id' => $uniqueAmount->id,
+                ]);
+
+                // เคลียร์ UPA ที่ orphan
+                try {
+                    $uniqueAmount->refresh();
+                    if ($uniqueAmount->status === 'reserved') {
+                        $uniqueAmount->cancel();
+                    }
+                } catch (\Throwable $e) {
+                    // ignore
+                }
+
+                return [
+                    'action' => 'celtic_bill_creation_failed',
+                    'message' => "🙏 ขออภัยค่ะ — ระบบเตรียมบิลไม่สำเร็จ\n\n"
+                        . "กรุณาพิมพ์ 'celtic cross' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
+                        . '⚠️ *อย่าโอนเงิน*จนกว่าจะได้รับบิลใหม่',
+                    'reading' => $reading,
+                ];
+            }
+
+            $reading = $verified;
+            $payAmount = number_format((float) $uniqueAmount->unique_amount, 2);
+            $baseAmountStr = number_format($basePrice, 0);
+
+            return [
+                'action' => 'celtic_pending_payment',
+                'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
+                    . "✨ ค่าครู: {$baseAmountStr} บาท\n"
+                    . "🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
+                    . "💬 ถามได้ 3 คำถาม (ภายใน 1 ชั่วโมงหลังคำถามแรก)\n"
+                    . "🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ดูครบทุกใบ\n\n"
+                    . "──────────────────────\n"
+                    . "💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
+                    . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
+                    . "👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n"
+                    . "หลังโอนเสร็จ หมอจะให้เจ้าชะตาเปิดไพ่ทันที",
+                'reading' => $reading,
+                'celtic_price' => $payAmount,
+                'celtic_base_price' => $basePrice,
+                'celtic_bill_reference' => $reading->bill_reference,
+                'unique_payment_amount' => $uniqueAmount,
+                'show_qr' => true,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Celtic: startCelticCrossFlow error', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'celtic_bill_creation_failed',
+                'message' => "🙏 ขออภัยค่ะ ระบบขัดข้องชั่วคราว\nกรุณาลองใหม่อีกครั้งใน 10 วินาที",
+                'reading' => $reading,
+            ];
         }
-        $reading->update($updateData);
-
-        return [
-            'action' => 'celtic_pending_payment',
-            'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
-                . "✨ ค่าครู: {$price} บาท\n"
-                . "🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
-                . "💬 ถามได้ 3 คำถาม (ภายใน 1 ชั่วโมงหลังคำถามแรก)\n"
-                . "🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ดูครบทุกใบ\n\n"
-                . "👉 ค่าครู 99 บาท คลิกชำระค่าครูตาม QR ที่ส่งให้ค่ะ\n"
-                . "หลังโอนเสร็จ หมอจะให้เจ้าชะตาเปิดไพ่ทันที",
-            'reading' => $reading,
-            'celtic_price' => $price,
-            'celtic_bill_reference' => $reading->fresh()->bill_reference,
-            'show_qr' => true,
-        ];
     }
 
     /**
