@@ -175,6 +175,14 @@ class FortuneTellingSetting extends Model
         'mystic_content_hashtag_count',
         'tavily_api_key',
         'brave_search_api_key',
+        // 🔮 Celtic Cross Tarot Mode (2026-04-29)
+        'enable_celtic_cross',
+        'celtic_cross_price',
+        'celtic_cross_max_questions',
+        'celtic_cross_qa_window_minutes',
+        'celtic_cross_main_prompt',
+        'celtic_cross_followup_prompt',
+        'celtic_cross_proactive_enabled',
     ];
 
     /**
@@ -234,6 +242,12 @@ class FortuneTellingSetting extends Model
         'mystic_content_caption_min' => 'integer',
         'mystic_content_caption_max' => 'integer',
         'mystic_content_hashtag_count' => 'integer',
+        // 🔮 Celtic Cross
+        'enable_celtic_cross' => 'boolean',
+        'celtic_cross_price' => 'decimal:2',
+        'celtic_cross_max_questions' => 'integer',
+        'celtic_cross_qa_window_minutes' => 'integer',
+        'celtic_cross_proactive_enabled' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -296,6 +310,12 @@ class FortuneTellingSetting extends Model
         'mystic_content_caption_min' => 400,
         'mystic_content_caption_max' => 700,
         'mystic_content_hashtag_count' => 6,
+        // 🔮 Celtic Cross — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
+        'enable_celtic_cross' => false,
+        'celtic_cross_price' => 99.00,
+        'celtic_cross_max_questions' => 3,
+        'celtic_cross_qa_window_minutes' => 60,
+        'celtic_cross_proactive_enabled' => true,
     ];
 
     /**

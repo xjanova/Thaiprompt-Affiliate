@@ -87,6 +87,49 @@ class FortuneReading extends Model
 
     public const STATUS_COMPLETED = 'completed';
 
+    // ───────────────────────────────────────────────────────────
+    // 🔮 Celtic Cross Tarot Mode (2026-04-29) — 99฿ ค่าครู
+    // ───────────────────────────────────────────────────────────
+    public const STATUS_CELTIC_PENDING_PAYMENT = 'celtic_pending_payment';
+
+    public const STATUS_CELTIC_PICKING = 'celtic_picking'; // เลือกไพ่ 1-10 (track ใน conversation_state.celtic_pick_index)
+
+    public const STATUS_CELTIC_AWAITING_QUESTION = 'celtic_awaiting_question'; // รอ Q1, Q2, หรือ Q3
+
+    public const STATUS_CELTIC_GENERATING = 'celtic_generating'; // AI กำลังทำนาย Q ปัจจุบัน
+
+    public const STATUS_CELTIC_QA_PROMPT = 'celtic_qa_prompt'; // หลังตอบ Q เสร็จ ถามว่าจะถามต่อไหม
+
+    public const READING_TYPE_BASIC = 'basic';
+
+    public const READING_TYPE_DEEP = 'deep';
+
+    public const READING_TYPE_CELTIC_CROSS = 'celtic_cross';
+
+    /**
+     * ตำแหน่ง Celtic Cross 10 ตำแหน่งมาตรฐาน
+     *
+     * Layout (ตามภาพมาตรฐาน):
+     *               [10]
+     *         [3]   [9]
+     *         ↓     [8]
+     *  [5]  [1+2]  [6]
+     *               [7]
+     *         [4]
+     */
+    public const CELTIC_POSITIONS = [
+        1 => ['name' => 'หัวใจของเรื่อง', 'description' => 'สถานการณ์หลักที่เจ้าชะตากำลังเผชิญ', 'short_en' => 'present'],
+        2 => ['name' => 'อุปสรรค', 'description' => 'สิ่งที่ขวางหรือท้าทาย ไพ่นี้ต้องอ่านในมุมว่ามันคือสิ่งที่ขวาง', 'short_en' => 'challenge'],
+        3 => ['name' => 'จิตสำนึก / เป้าหมาย', 'description' => 'สิ่งที่ตระหนัก สิ่งที่อยากได้ใจกลาง', 'short_en' => 'goal'],
+        4 => ['name' => 'จิตใต้สำนึก / รากฐาน', 'description' => 'รากของเรื่อง สิ่งที่ฝังลึกในใจ', 'short_en' => 'foundation'],
+        5 => ['name' => 'อดีต', 'description' => 'เหตุการณ์ที่เพิ่งผ่าน หรือสิ่งที่กำลังเลือนหายไป', 'short_en' => 'past'],
+        6 => ['name' => 'อนาคตอันใกล้', 'description' => 'สิ่งที่กำลังจะเกิดในอนาคตอันใกล้', 'short_en' => 'near_future'],
+        7 => ['name' => 'ตัวเจ้าชะตา', 'description' => 'ทัศนคติ ท่าทาง พลังของเจ้าชะตาที่มีต่อเรื่องนี้', 'short_en' => 'self'],
+        8 => ['name' => 'อิทธิพลภายนอก', 'description' => 'คน สิ่งแวดล้อมรอบตัว ที่กำลังส่งผล', 'short_en' => 'external'],
+        9 => ['name' => 'ความหวัง & ความกลัว', 'description' => 'ภายในใจที่ซ่อนไว้ ทั้งหวังและกลัว', 'short_en' => 'hopes_fears'],
+        10 => ['name' => 'ผลลัพธ์', 'description' => 'จุดจบของเรื่องราวนี้ ตามแนวโน้มปัจจุบัน', 'short_en' => 'outcome'],
+    ];
+
     /**
      * คอลัมน์ที่สามารถ mass assign ได้
      *
@@ -137,6 +180,10 @@ class FortuneReading extends Model
         'admin_takeover_by',
         'admin_takeover_reason',
         'admin_takeover_started_at',
+        // 🔮 Celtic Cross Mode (2026-04-29)
+        'celtic_summary_image_path',
+        'celtic_questions_used',
+        'celtic_first_answered_at',
     ];
 
     /**
@@ -163,6 +210,9 @@ class FortuneReading extends Model
         'transfer_reported_at' => 'datetime',
         'admin_takeover_until' => 'datetime',
         'admin_takeover_started_at' => 'datetime',
+        // 🔮 Celtic Cross
+        'celtic_questions_used' => 'integer',
+        'celtic_first_answered_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -1711,5 +1761,179 @@ class FortuneReading extends Model
         $userId = $this->platform_user_id ?: $this->facebook_user_id;
 
         return "fortune_admin_active:{$platform}:{$userId}";
+    }
+
+    // ════════════════════════════════════════════════════════════════
+    // 🔮 Celtic Cross Tarot Mode helpers (2026-04-29)
+    // ════════════════════════════════════════════════════════════════
+
+    /**
+     * relation: คำถาม-คำตอบทั้งหมดใน Celtic Cross reading
+     */
+    public function celticQuestions()
+    {
+        return $this->hasMany(FortuneCelticQuestion::class, 'fortune_reading_id')
+            ->orderBy('sequence');
+    }
+
+    /**
+     * เป็น Celtic Cross reading ไหม
+     */
+    public function isCelticCrossMode(): bool
+    {
+        return $this->reading_type === self::READING_TYPE_CELTIC_CROSS;
+    }
+
+    /**
+     * เพิ่มไพ่ที่เลือกได้ใน Celtic Cross spread (เก็บใน conversation_state.celtic_cards)
+     *
+     * @param  int  $position  1-10
+     * @param  int  $cardId  TarotCard ID
+     * @param  string  $cardNameTh
+     * @param  string  $cardNameEn
+     * @param  bool  $isReversed
+     * @param  string  $meaning
+     * @param  string|null  $imageUrl
+     */
+    public function addCelticCard(
+        int $position,
+        int $cardId,
+        string $cardNameTh,
+        string $cardNameEn,
+        bool $isReversed,
+        string $meaning,
+        ?string $imageUrl = null
+    ): void {
+        $cards = $this->getConversationState('celtic_cards', []);
+        $cards[$position] = [
+            'position' => $position,
+            'position_name' => self::CELTIC_POSITIONS[$position]['name'] ?? '?',
+            'position_description' => self::CELTIC_POSITIONS[$position]['description'] ?? '',
+            'card_id' => $cardId,
+            'card_name_th' => $cardNameTh,
+            'card_name_en' => $cardNameEn,
+            'is_reversed' => $isReversed,
+            'meaning' => $meaning,
+            'image_url' => $imageUrl,
+            'picked_at' => now()->toIso8601String(),
+        ];
+        $this->setConversationState('celtic_cards', $cards);
+    }
+
+    /**
+     * ดึงไพ่ Celtic ที่เลือกแล้วทั้งหมด (key = position 1-10)
+     *
+     * @return array<int, array>
+     */
+    public function getCelticCards(): array
+    {
+        $cards = $this->getConversationState('celtic_cards', []);
+
+        // อาจเป็น associative array หรือ indexed array — normalize
+        if (! is_array($cards)) {
+            return [];
+        }
+
+        return $cards;
+    }
+
+    /**
+     * จำนวนไพ่ที่เลือกแล้ว (0-10)
+     */
+    public function getCelticPickedCount(): int
+    {
+        return count($this->getCelticCards());
+    }
+
+    /**
+     * Position ถัดไปที่ต้องเลือก (1-10) หรือ null ถ้าครบแล้ว
+     */
+    public function getNextCelticPosition(): ?int
+    {
+        $cards = $this->getCelticCards();
+        for ($i = 1; $i <= 10; $i++) {
+            if (! isset($cards[$i])) {
+                return $i;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * ดึง card_ids ของไพ่ที่เลือกแล้ว (ใช้ filter inRandomOrder ไม่ให้ซ้ำ)
+     *
+     * @return array<int>
+     */
+    public function getCelticPickedCardIds(): array
+    {
+        $cards = $this->getCelticCards();
+
+        return array_values(array_map(fn ($c) => (int) ($c['card_id'] ?? 0), $cards));
+    }
+
+    /**
+     * ลูกค้าสามารถถามคำถาม Celtic Cross ต่อได้ไหม
+     *
+     * เงื่อนไข:
+     *   1. celtic_questions_used < settings.celtic_cross_max_questions (default 3)
+     *   2. ถ้า Q1 ตอบแล้ว → ต้องอยู่ภายใน QA window (default 60 นาที)
+     */
+    public function canAskMoreCeltic(): bool
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 3);
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 60);
+
+        if ($this->celtic_questions_used >= $maxQuestions) {
+            return false;
+        }
+
+        // ถ้า Q1 ตอบไปแล้ว เช็ค window
+        if ($this->celtic_first_answered_at) {
+            $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
+            if (now()->greaterThan($deadline)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * บันทึกว่าตอบ Celtic question ไปแล้ว
+     * ถ้าเป็น Q1 → set celtic_first_answered_at (start QA window)
+     */
+    public function markCelticAnswered(int $sequence): void
+    {
+        $update = [
+            'celtic_questions_used' => max($this->celtic_questions_used, $sequence),
+        ];
+
+        if ($sequence === 1 && empty($this->celtic_first_answered_at)) {
+            $update['celtic_first_answered_at'] = now();
+        }
+
+        $this->update($update);
+    }
+
+    /**
+     * เวลาเหลือ (นาที) ใน QA window — null ถ้ายังไม่เริ่ม Q1
+     */
+    public function getCelticQaRemainingMinutes(): ?int
+    {
+        if (! $this->celtic_first_answered_at) {
+            return null;
+        }
+
+        $settings = FortuneTellingSetting::getSettings();
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 60);
+        $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
+
+        if (now()->greaterThan($deadline)) {
+            return 0;
+        }
+
+        return (int) ceil(now()->diffInSeconds($deadline, false) / 60);
     }
 }
