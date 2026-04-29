@@ -571,6 +571,13 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                 ]),
 
+                // 🆕 (2026-04-29) Tier choice menu — แทน Discovery Chat
+                'tier_choice', 'tier_choice_invalid' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔹 39฿ เชิงลึก', 'payload' => 'TIER_DEEP_39'],
+                    ['content_type' => 'text', 'title' => '🔮 99฿ Celtic', 'payload' => 'TIER_CELTIC_99'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                ]),
+
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
                 'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
@@ -1295,6 +1302,13 @@ class FortuneChannelManager
                 'fortune_ready_notification' => $this->sendLineFortuneReadyNotification(
                     $lineService, $userId, $result, $replyToken
                 ),
+
+                // 🆕 (2026-04-29) Tier choice menu — แทน Discovery Chat
+                'tier_choice', 'tier_choice_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔹 39฿ เชิงลึก', 'text' => '39'],
+                    ['label' => '🔮 99฿ Celtic', 'text' => '99'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 'celtic_pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),

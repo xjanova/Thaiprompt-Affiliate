@@ -90,6 +90,12 @@ class FortuneReading extends Model
     // ───────────────────────────────────────────────────────────
     // 🔮 Celtic Cross Tarot Mode (2026-04-29) — 99฿ ค่าครู
     // ───────────────────────────────────────────────────────────
+    /**
+     * Tier choice — รอลูกค้าเลือก 39฿ deep หรือ 99฿ Celtic Cross
+     * ใช้แทน discovery_chat (เพราะ feedback ว่าไม่เวิร์ค)
+     */
+    public const STATUS_TIER_CHOICE = 'tier_choice';
+
     public const STATUS_CELTIC_PENDING_PAYMENT = 'celtic_pending_payment';
 
     public const STATUS_CELTIC_PICKING = 'celtic_picking'; // เลือกไพ่ 1-10 (track ใน conversation_state.celtic_pick_index)
@@ -568,6 +574,7 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_TAROT,
                 self::STATUS_DISCOVERY_CHAT,    // 🆕 (2026-04-28) AI psychology chat
                 self::STATUS_DISCOVERY_CONFIRM, // 🆕 รอ user ยืนยันสรุปจาก AI
+                self::STATUS_TIER_CHOICE,       // 🆕 (2026-04-29) รอเลือก tier 39฿ vs 99฿
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_PAID, // เพิ่ม: ระหว่าง AI กำลังประมวลผลคำทำนาย
                 // 🔮 Celtic Cross states (2026-04-29) — ทุก state ของ Celtic ต้องนับว่ายัง active อยู่
@@ -588,6 +595,7 @@ class FortuneReading extends Model
                         self::STATUS_COLLECTING_TAROT,
                         self::STATUS_DISCOVERY_CHAT,
                         self::STATUS_DISCOVERY_CONFIRM,
+                        self::STATUS_TIER_CHOICE,
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
@@ -1176,6 +1184,7 @@ class FortuneReading extends Model
                 self::STATUS_COLLECTING_TAROT,
                 self::STATUS_DISCOVERY_CHAT,
                 self::STATUS_DISCOVERY_CONFIRM,
+                self::STATUS_TIER_CHOICE,
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_CELTIC_PENDING_PAYMENT, // 🔮 Celtic ก็ expire 30 นาที (UPA หมดอายุพอดี)
             ])

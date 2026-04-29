@@ -3101,13 +3101,20 @@ class FortuneConversationService
      */
     protected function handleAfterBasic(FortuneReading $reading, string $messageText): array
     {
-        // 🔮 Celtic Cross detection — ถ้าลูกค้าพูดถึงไพ่ยิปซีเต็มสำรับ/celtic
+        // 🔮 Celtic Cross direct keyword — ถ้าลูกค้าพิมพ์ "celtic"/"เต็มสำรับ" เจาะจง → ตรงไป Celtic
         if ($this->matchesCelticCrossKeyword($messageText)) {
             return $this->startCelticCrossFlow($reading);
         }
 
         // ตรวจสอบว่าต้องการดูดวงละเอียดหรือไม่
         if ($this->isDeepReadingAccepted($messageText)) {
+            // 🆕 (2026-04-29) ถ้า Celtic เปิดใช้งานอยู่ → present tier menu (39฿ vs 99฿)
+            //    แทน Discovery Chat (ที่ลูกค้า feedback ว่าไม่เวิร์ค)
+            if ($this->settings->enable_celtic_cross && $this->settings->isDeepReadingEnabled()) {
+                return $this->presentTierChoice($reading);
+            }
+
+            // Celtic ปิด → flow 39฿ rigid เดิม
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
             if (! $this->settings->isDeepReadingEnabled()) {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -3206,9 +3213,14 @@ class FortuneConversationService
 
             $name = $userProfile['name'] ?? 'คุณ';
 
-            // 🧠 (2026-04-28) Discovery Chat Mode — ถ้าเปิดใช้งาน → AI ชวนคุยเก็บข้อมูล
-            //    แทน flow แข็ง (ขอวันเกิด → ขอคำถาม)
-            $useDiscoveryChat = (bool) ($this->settings->enable_discovery_chat ?? true);
+            // 🆕 (2026-04-29) Tier choice mode — ถ้า Celtic เปิด → ตั้ง state TIER_CHOICE
+            //    user feedback: Discovery Chat ไม่เวิร์ค → ใช้ tier menu (39฿ vs 99฿) ตรงไป
+            $useTierChoice = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+            // 🧠 (2026-04-28) Discovery Chat Mode — fallback ถ้าไม่ใช้ tier menu
+            //    Default false หลัง user feedback ว่าไม่เวิร์ค
+            $useDiscoveryChat = ! $useTierChoice
+                && (bool) ($this->settings->enable_discovery_chat ?? false);
 
             // 🛡️ Pre-check: ถ้าไม่มี Chat AI API key → ใช้ rigid flow ทันที (กัน user ค้าง)
             if ($useDiscoveryChat && empty($this->settings->getChatAIApiKey())) {
@@ -3218,9 +3230,11 @@ class FortuneConversationService
                 $useDiscoveryChat = false;
             }
 
-            $initialStatus = $useDiscoveryChat
-                ? FortuneReading::STATUS_DISCOVERY_CHAT
-                : FortuneReading::STATUS_COLLECTING_BIRTHDATE;
+            $initialStatus = match (true) {
+                $useTierChoice => FortuneReading::STATUS_TIER_CHOICE,
+                $useDiscoveryChat => FortuneReading::STATUS_DISCOVERY_CHAT,
+                default => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+            };
 
             // สร้าง FortuneReading ใหม่สำหรับ deep reading
             $reading = FortuneReading::create([
@@ -3242,6 +3256,11 @@ class FortuneConversationService
                 'reading_id' => $reading->id,
                 'discovery_chat_mode' => $useDiscoveryChat,
             ]);
+
+            // 🆕 Tier Choice: ส่ง menu ให้ลูกค้าเลือก 39฿ vs 99฿ Celtic
+            if ($useTierChoice) {
+                return $this->presentTierChoice($reading);
+            }
 
             // Discovery Chat: เปิดด้วย greeting อบอุ่น + invite ให้เล่า (ไม่ขอวันเกิดทันที)
             if ($useDiscoveryChat) {

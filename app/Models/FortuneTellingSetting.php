@@ -297,6 +297,10 @@ class FortuneTellingSetting extends Model
         'enable_ai_chat' => true,
         'chat_ai_provider' => 'groq',
         'chat_ai_model' => 'llama-3.3-70b-versatile',
+        // 🧠 Discovery Chat — ปิดเป็น default (2026-04-29: user feedback ว่าไม่เวิร์ค)
+        //   จะใช้ tier menu (39฿ vs 99฿ Celtic) แทน — admin เปิดได้ใน settings ถ้าอยากลอง
+        'enable_discovery_chat' => false,
+        'discovery_chat_max_turns' => 8,
         // 🖼️ Banner DM — เปิดทันทีหลัง deploy
         'enable_dm_banner' => true,
         'banner_pick_strategy' => 'rotation',

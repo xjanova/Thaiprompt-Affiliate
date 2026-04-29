@@ -28,7 +28,7 @@ use Illuminate\Support\Facades\Log;
 trait CelticCrossConversationTrait
 {
     /**
-     * Dispatch handler สำหรับ Celtic Cross states
+     * Dispatch handler สำหรับ Celtic Cross states + Tier Choice
      * เรียกจาก main dispatch ใน FortuneConversationService
      *
      * @return array|null  null ถ้าไม่ใช่ Celtic state — ให้ caller ส่งต่อ default handler
@@ -38,6 +38,8 @@ trait CelticCrossConversationTrait
         $status = $reading->conversation_status;
 
         return match ($status) {
+            // 🆕 (2026-04-29) Tier choice — ลูกค้าเลือก 39฿ deep หรือ 99฿ Celtic
+            FortuneReading::STATUS_TIER_CHOICE => $this->handleTierChoice($reading, $messageText),
             FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => $this->handleCelticPendingPayment($reading, $messageText),
             FortuneReading::STATUS_CELTIC_PICKING => $this->handleCelticPicking($reading, $messageText),
             FortuneReading::STATUS_CELTIC_AWAITING_QUESTION => $this->handleCelticAwaitingQuestion($reading, $messageText),
@@ -50,6 +52,104 @@ trait CelticCrossConversationTrait
             ],
             default => null, // ไม่ใช่ Celtic state → ให้ caller จัดการต่อ
         };
+    }
+
+    /**
+     * Present tier choice menu — ส่งให้ลูกค้าเลือกระหว่าง 39฿ deep หรือ 99฿ Celtic
+     *
+     * เรียกจาก handleAfterBasic เมื่อ:
+     *   1. ลูกค้ายอมรับว่าอยากดูเชิงลึก (isDeepReadingAccepted=true)
+     *   2. enable_celtic_cross = true (admin เปิดบริการ Celtic ไว้)
+     */
+    protected function presentTierChoice(FortuneReading $reading): array
+    {
+        $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
+
+        $deepPrice = number_format($this->getDeepReadingPrice(), 0);
+        $celticPrice = number_format(app(\App\Services\CelticCrossService::class)->getPrice(), 0);
+
+        $message = "✨ *เจ้าชะตาเลือกได้ 2 แบบค่ะ*\n\n"
+            . "──────────────────────\n"
+            . "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท*\n"
+            . "  📅 ใช้วันเกิด + คำถาม 2 ข้อ\n"
+            . "  🃏 สุ่มไพ่ยิปซี 1 ใบ ต่อคำถาม\n"
+            . "  📜 คำทำนายเชิงลึก ตามดวงดาว + ไพ่\n\n"
+            . "🔹 *ดูดวงไพ่ยิปซีเต็มสำรับ {$celticPrice} บาท* 🔮\n"
+            . "  🃏 เปิดไพ่ Celtic Cross 10 ใบ — ครบทุกตำแหน่ง\n"
+            . "  💬 ถามได้ 3 คำถาม (ภายใน 1 ชม. หลัง Q1)\n"
+            . "  🖼️ ได้ภาพ Celtic Cross spread สวยๆ\n"
+            . "  📜 คำทำนายแม่นกว่า + ลึกกว่า\n"
+            . "──────────────────────\n\n"
+            . "👉 พิมพ์ \"39\" เพื่อดูแบบเชิงลึก\n"
+            . "👉 พิมพ์ \"99\" หรือ \"celtic\" เพื่อดูเต็มสำรับ\n"
+            . "หรือกดปุ่มด้านล่างเลยค่ะ ✨";
+
+        return [
+            'action' => 'tier_choice',
+            'message' => $message,
+            'reading' => $reading,
+            'deep_price' => $deepPrice,
+            'celtic_price' => $celticPrice,
+        ];
+    }
+
+    /**
+     * State: STATUS_TIER_CHOICE — ลูกค้าเลือกแพคเกจ
+     */
+    protected function handleTierChoice(FortuneReading $reading, string $messageText): array
+    {
+        // ยกเลิก
+        if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop'])) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'cancelled',
+                'message' => "ยกเลิกแล้วค่ะ — หากเปลี่ยนใจอยากดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                'reading' => $reading,
+            ];
+        }
+
+        $textLower = mb_strtolower(trim($messageText));
+
+        // 🔮 99฿ Celtic — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม"
+        $celticKeywords = ['99', 'celtic', 'เต็ม', 'เต็มสำรับ', 'ไพ่ยิปซีเต็ม', 'ทาโรต์เต็ม'];
+        foreach ($celticKeywords as $kw) {
+            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                return $this->startCelticCrossFlow($reading);
+            }
+        }
+
+        // 🔹 39฿ Deep — keyword: "39", "ปกติ", "deep", "เชิงลึก"
+        $deepKeywords = ['39', 'ปกติ', 'deep', 'เชิงลึก', 'ละเอียด'];
+        foreach ($deepKeywords as $kw) {
+            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                // เริ่ม flow 39฿ — ใช้โครงสร้างเดียวกับ handleAfterBasic เดิม
+                $updateData = [
+                    'reading_type' => FortuneReading::READING_TYPE_DEEP,
+                    'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                ];
+                if (empty($reading->bill_reference)) {
+                    $updateData['bill_reference'] = FortuneReading::generateBillReference();
+                }
+                $reading->update($updateData);
+
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => $this->getBirthdateRequestMessage(),
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        // ไม่ตรงกับ keyword ใดๆ → re-show menu
+        return [
+            'action' => 'tier_choice_invalid',
+            'message' => "✨ ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
+                . "👉 พิมพ์ \"39\" สำหรับดูเชิงลึก 39 บาท\n"
+                . "👉 พิมพ์ \"99\" สำหรับดูเต็มสำรับ Celtic Cross 99 บาท\n"
+                . "👉 พิมพ์ \"ยกเลิก\" หากไม่ต้องการ",
+            'reading' => $reading,
+        ];
     }
 
     /**
