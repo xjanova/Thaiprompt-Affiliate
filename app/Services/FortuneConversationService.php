@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\Log;
  */
 class FortuneConversationService
 {
+    use \App\Services\Fortune\CelticCrossConversationTrait;
+
     protected FortuneTellingSetting $settings;
 
     protected FortuneAIService $aiService;
@@ -3064,6 +3066,12 @@ class FortuneConversationService
             ];
         }
 
+        // 🔮 Celtic Cross dispatch (ถ้าใช่ Celtic state — handle, else fall through)
+        $celticResult = $this->handleCelticState($reading, $messageText);
+        if ($celticResult !== null) {
+            return $celticResult;
+        }
+
         return match ($status) {
             FortuneReading::STATUS_BASIC_DONE => $this->handleAfterBasic($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText, $userProfile),
@@ -3093,6 +3101,11 @@ class FortuneConversationService
      */
     protected function handleAfterBasic(FortuneReading $reading, string $messageText): array
     {
+        // 🔮 Celtic Cross detection — ถ้าลูกค้าพูดถึงไพ่ยิปซีเต็มสำรับ/celtic
+        if ($this->matchesCelticCrossKeyword($messageText)) {
+            return $this->startCelticCrossFlow($reading);
+        }
+
         // ตรวจสอบว่าต้องการดูดวงละเอียดหรือไม่
         if ($this->isDeepReadingAccepted($messageText)) {
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
