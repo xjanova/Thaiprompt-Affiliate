@@ -1,0 +1,239 @@
+{{-- Celtic Cross Tarot Mode Settings --}}
+@extends('layouts.admin-v3')
+
+@section('title', $pageTitle)
+
+@section('content')
+<div class="container mx-auto px-4 py-8">
+
+    {{-- Header --}}
+    <div class="mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-1">
+            🔮 Celtic Cross Tarot Mode
+        </h1>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">
+            ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross — ค่าครู 99 บาท / 3 คำถาม / 1 ชั่วโมง window
+        </p>
+    </div>
+
+    {{-- Flash --}}
+    @if(session('success'))
+        <div class="mb-6 p-4 bg-green-100 dark:bg-green-900/30 border border-green-300 dark:border-green-700 rounded-xl text-green-800 dark:text-green-200">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="mb-6 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-xl">
+            <ul class="list-disc list-inside text-sm text-red-700 dark:text-red-300">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
+    {{-- Stats --}}
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">Readings ทั้งหมด</p>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white mt-1">{{ number_format($stats['total_readings']) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">ชำระแล้ว</p>
+            <p class="text-2xl font-bold text-green-600 mt-1">{{ number_format($stats['paid_readings']) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">เสร็จวันนี้</p>
+            <p class="text-2xl font-bold text-purple-600 mt-1">{{ $stats['completed_today'] }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">รายได้รวม</p>
+            <p class="text-xl font-bold text-amber-600 mt-1">฿{{ number_format($stats['total_revenue'], 0) }}</p>
+        </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
+            <p class="text-xs text-gray-500 dark:text-gray-400">คำถามรวม</p>
+            <p class="text-2xl font-bold text-blue-600 mt-1">{{ number_format($stats['total_questions']) }}</p>
+        </div>
+    </div>
+
+    <form action="{{ route('admin.fortune.celtic-cross.settings.update') }}" method="POST" class="mb-8">
+        @csrf
+        @method('PUT')
+
+        {{-- Toggles --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                ⚙️ สถานะระบบ
+            </h2>
+
+            <label class="flex items-start gap-3 cursor-pointer p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border-2 border-purple-300 dark:border-purple-700 mb-3">
+                <input type="hidden" name="enable_celtic_cross" value="0">
+                <input type="checkbox" name="enable_celtic_cross" value="1"
+                       class="w-5 h-5 mt-0.5 text-purple-600 rounded focus:ring-purple-500"
+                       {{ $settings->enable_celtic_cross ? 'checked' : '' }}>
+                <div class="flex-1">
+                    <span class="font-semibold text-gray-900 dark:text-white">🔮 เปิดบริการ Celtic Cross Tarot Mode</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        เมื่อเปิด — ลูกค้าจะเลือกเมนูนี้ได้ตอนทำนายเสร็จพื้นฐาน หรือพิมพ์ "celtic cross" เพื่อเริ่ม
+                    </p>
+                </div>
+            </label>
+
+            <label class="flex items-start gap-3 cursor-pointer p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <input type="hidden" name="celtic_cross_proactive_enabled" value="0">
+                <input type="checkbox" name="celtic_cross_proactive_enabled" value="1"
+                       class="w-5 h-5 mt-0.5 text-purple-600 rounded focus:ring-purple-500"
+                       {{ $settings->celtic_cross_proactive_enabled ? 'checked' : '' }}>
+                <div class="flex-1">
+                    <span class="font-semibold text-gray-900 dark:text-white">🤖 AI เชิญชวนเองเมื่อลูกค้าทุกข์มาก</span>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        AI จะแนะนำ Celtic Cross เมื่อตรวจพบสัญญาณความทุกข์ในแชทปกติ (throttled — เสนอครั้งเดียวต่อ session)
+                    </p>
+                </div>
+            </label>
+        </div>
+
+        {{-- Pricing --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">💰 ราคา & เงื่อนไข</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ค่าครู (บาท)
+                    </label>
+                    <input type="number" name="celtic_cross_price" step="0.01"
+                           value="{{ $settings->celtic_cross_price ?? 99 }}"
+                           min="1" max="9999"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        จำนวนคำถาม/บิล
+                    </label>
+                    <input type="number" name="celtic_cross_max_questions"
+                           value="{{ $settings->celtic_cross_max_questions ?? 3 }}"
+                           min="1" max="10"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-500 mt-1">Q1 = full storytelling, Q2-3 = follow-up</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        เวลาถามต่อ (นาที)
+                    </label>
+                    <input type="number" name="celtic_cross_qa_window_minutes"
+                           value="{{ $settings->celtic_cross_qa_window_minutes ?? 60 }}"
+                           min="5" max="1440"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-500 mt-1">นับจาก Q1 ตอบเสร็จ — เกินเวลา ถามต่อไม่ได้</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- AI Prompts --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🤖 AI Prompts (ขั้นสูง)</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                เว้นว่างเพื่อใช้ default — แก้ที่นี่ถ้าอยากปรับโทน/สไตล์ AI<br>
+                ตัวแปรที่ใช้ได้: <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{question}</code>
+                <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{cards}</code>
+                <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{brand_name}</code>
+                <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{birth_date}</code>
+                <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{sequence}</code>
+            </p>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📝 Main Prompt — Q1 (full storytelling)
+                </label>
+                <textarea name="celtic_cross_main_prompt" rows="10"
+                          placeholder="เว้นว่างใช้ default — แต่งคำสั่ง AI ที่นี่ ใช้ตัวแปร {question}, {cards}, {brand_name}"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-purple-500">{{ $settings->celtic_cross_main_prompt }}</textarea>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📝 Followup Prompt — Q2/Q3 (no card explain)
+                </label>
+                <textarea name="celtic_cross_followup_prompt" rows="8"
+                          placeholder="เว้นว่างใช้ default"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-purple-500">{{ $settings->celtic_cross_followup_prompt }}</textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-end mb-8">
+            <button type="submit"
+                    class="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl shadow-lg font-semibold transition">
+                💾 บันทึกการตั้งค่า
+            </button>
+        </div>
+    </form>
+
+    {{-- Recent Readings --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📜 Reading ล่าสุด (20 รายการ)</h2>
+
+        @if($recentReadings->isEmpty())
+            <p class="text-center text-gray-500 dark:text-gray-400 py-8">ยังไม่มี Celtic Cross reading</p>
+        @else
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs uppercase">Bill</th>
+                            <th class="px-3 py-2 text-left text-xs uppercase">ลูกค้า</th>
+                            <th class="px-3 py-2 text-left text-xs uppercase">สถานะ</th>
+                            <th class="px-3 py-2 text-left text-xs uppercase">ค่าครู</th>
+                            <th class="px-3 py-2 text-left text-xs uppercase">Q ใช้</th>
+                            <th class="px-3 py-2 text-left text-xs uppercase">เวลาเหลือ</th>
+                            <th class="px-3 py-2 text-right text-xs uppercase">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach($recentReadings as $reading)
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="px-3 py-2 font-mono text-xs">{{ $reading->bill_reference ?? '#'.$reading->id }}</td>
+                                <td class="px-3 py-2">{{ $reading->facebook_user_name ?? '-' }}</td>
+                                <td class="px-3 py-2">
+                                    <span class="px-2 py-1 rounded text-xs
+                                        {{ $reading->conversation_status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' }}">
+                                        {{ $reading->conversation_status }}
+                                    </span>
+                                </td>
+                                <td class="px-3 py-2">
+                                    @if($reading->is_paid)
+                                        <span class="text-green-600">฿{{ number_format($reading->amount_paid, 0) }} ✓</span>
+                                    @else
+                                        <span class="text-gray-400">รอ</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2">{{ $reading->celtic_questions_used }}/{{ $settings->celtic_cross_max_questions ?? 3 }}</td>
+                                <td class="px-3 py-2 text-xs text-gray-500">
+                                    @if($reading->celtic_first_answered_at)
+                                        @php
+                                            $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 60);
+                                            $minRemaining = max(0, (int) ceil(now()->diffInSeconds($deadline, false) / 60));
+                                        @endphp
+                                        @if($minRemaining > 0)
+                                            <span class="text-green-600">{{ $minRemaining }} นาที</span>
+                                        @else
+                                            <span class="text-red-600">หมดเวลา</span>
+                                        @endif
+                                    @else
+                                        <span>—</span>
+                                    @endif
+                                </td>
+                                <td class="px-3 py-2 text-right">
+                                    <a href="{{ route('admin.fortune.celtic-cross.show', $reading) }}"
+                                       class="text-purple-600 hover:underline text-xs">ดู</a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
+    </div>
+</div>
+@endsection

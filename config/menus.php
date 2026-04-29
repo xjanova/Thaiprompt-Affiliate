@@ -747,6 +747,7 @@ return [
                 ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
                 ['label' => '🌟 ดวงรายวันอัตโนมัติ', 'route' => 'admin.fortune.horoscope.index', 'description' => 'AI สร้างดวง 7 วันเกิด + โพส FB/LINE อัตโนมัติ'],
                 ['label' => '🌙 คอนเทนต์สายมูอัตโนมัติ', 'route' => 'admin.fortune.mystic.index', 'description' => 'โพส FB อัตโนมัติ — สายมู/แก้เคล็ด/ปัญหาชีวิต/สิ่งลี้ลับ/รู้หรือไม่ทั่วโลก'],
+                ['label' => '🔮 Celtic Cross Tarot (99฿)', 'route' => 'admin.fortune.celtic-cross.index', 'description' => 'ดูดวงไพ่ยิปซีเต็มสำรับ 10 ใบ — toggle, ราคา, prompt, log Q&A'],
                 ['label' => '❓ คำถามรอตอบ', 'route' => 'admin.fortune.saved-questions.index', 'description' => 'คำถามที่ AI ตอบไม่ได้ รอแอดมินตอบกลับ'],
                 ['label' => '📝 เทมเพลตตอบกลับ', 'route' => 'admin.fortune.response-templates.index', 'description' => 'จัดการเทมเพลตคำตอบ รูปภาพ QR Code'],
                 ['label' => '💰 จัดการบิลดูดวง', 'route' => 'admin.fortune.billing.index', 'description' => 'ดูรายได้ บิลลอย การชำระเงิน'],

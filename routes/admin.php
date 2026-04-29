@@ -4026,6 +4026,15 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     });
 
     // ========================================
+    // CELTIC CROSS TAROT — โหมดดูดวงไพ่ยิปซีเต็มสำรับ 99฿
+    // ========================================
+    Route::prefix('celtic-cross')->name('celtic-cross.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'index'])->name('index');
+        Route::put('/settings', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'updateSettings'])->name('settings.update');
+        Route::get('/readings/{reading}', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'showReading'])->name('show');
+    });
+
+    // ========================================
     // MYSTIC CONTENT — โพสคอนเทนต์สายมูอัตโนมัติ (Facebook Page)
     // ========================================
     Route::prefix('mystic')->name('mystic.')->group(function () {
