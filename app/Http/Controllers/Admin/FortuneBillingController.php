@@ -44,7 +44,8 @@ class FortuneBillingController extends Controller
         if ($status === 'paid') {
             $query->where('is_paid', true)->where('is_floating', false);
         } elseif ($status === 'pending') {
-            $query->where('is_paid', false)->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT);
+            // รองรับทั้ง Deep 39฿ และ Celtic Cross 99฿
+            $query->where('is_paid', false)->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES);
         } elseif ($status === 'floating') {
             $query->where('is_floating', true);
         } elseif ($status === 'free') {
@@ -401,8 +402,8 @@ class FortuneBillingController extends Controller
         $floatingCount = FortuneReading::where('is_floating', true)->count();
         $floatingAmount = FortuneReading::where('is_floating', true)->sum('amount_paid');
 
-        // รอชำระ
-        $pendingCount = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+        // รอชำระ (Deep 39฿ + Celtic Cross 99฿)
+        $pendingCount = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->count();
 

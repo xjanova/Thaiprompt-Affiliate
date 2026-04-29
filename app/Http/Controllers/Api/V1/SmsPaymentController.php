@@ -1722,11 +1722,16 @@ class SmsPaymentController extends Controller
             $fortuneReading = $this->matchFortuneReadingByAmount($amount, $graceMinutes);
 
             if ($fortuneReading) {
-                // Recovery: ถ้า cleanup ปิดไปแล้ว → กู้คืนเป็น pending_payment
-                if (! $fortuneReading->is_paid && $fortuneReading->conversation_status !== FortuneReading::STATUS_PENDING_PAYMENT) {
-                    $fortuneReading->update(['conversation_status' => FortuneReading::STATUS_PENDING_PAYMENT]);
+                // Recovery: ถ้า cleanup ปิดไปแล้ว → กู้คืนเป็น pending_payment ตาม reading_type
+                $expectedStatus = $fortuneReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                    ? FortuneReading::STATUS_CELTIC_PENDING_PAYMENT
+                    : FortuneReading::STATUS_PENDING_PAYMENT;
+
+                if (! $fortuneReading->is_paid && $fortuneReading->conversation_status !== $expectedStatus) {
+                    $fortuneReading->update(['conversation_status' => $expectedStatus]);
                     Log::info('SMS Payment: Recovered fortune reading for match', [
                         'fortune_reading_id' => $fortuneReading->id,
+                        'expected_status' => $expectedStatus,
                     ]);
                 }
 

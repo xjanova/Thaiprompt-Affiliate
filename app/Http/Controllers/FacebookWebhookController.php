@@ -1214,7 +1214,8 @@ class FacebookWebhookController extends Controller
             }
 
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + บังคับให้กด "แจ้งชำระเงิน"
-            if ($activeReading && $activeReading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT) {
+            // (ครอบคลุม Celtic Cross 99฿ ด้วย — ทั้ง deep และ celtic ใช้ flow ตอบเดียวกันตรงนี้)
+            if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
                     . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"

@@ -46,7 +46,7 @@ class FortuneExpireConversations extends Command
         $remindersSent = 0;
 
         if ($dryRun) {
-            $remindersSent = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            $remindersSent = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
                 ->whereBetween('updated_at', [
@@ -65,7 +65,7 @@ class FortuneExpireConversations extends Command
         $cancelledBills = 0;
 
         if ($dryRun) {
-            $cancelledBills = FortuneReading::where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+            $cancelledBills = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
                 ->where('updated_at', '<', now()->subMinutes(FortuneReading::PAYMENT_TIMEOUT_MINUTES))

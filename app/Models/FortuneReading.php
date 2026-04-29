@@ -107,6 +107,16 @@ class FortuneReading extends Model
     public const READING_TYPE_CELTIC_CROSS = 'celtic_cross';
 
     /**
+     * รายการ status ที่หมายถึง "รอชำระเงิน" — ครอบคลุมทั้ง Deep 39฿ และ Celtic 99฿
+     *
+     * ใช้ใน whereIn() เวลาคิวรี่หา pending bills ทุกประเภท
+     */
+    public const PENDING_PAYMENT_STATUSES = [
+        self::STATUS_PENDING_PAYMENT,
+        self::STATUS_CELTIC_PENDING_PAYMENT,
+    ];
+
+    /**
      * ตำแหน่ง Celtic Cross 10 ตำแหน่งมาตรฐาน
      *
      * Layout (ตามภาพมาตรฐาน):
@@ -513,7 +523,7 @@ class FortuneReading extends Model
     public function scopePendingPaymentByUser($query, string $facebookUserId)
     {
         return $query->where('facebook_user_id', $facebookUserId)
-            ->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->whereNotNull('unique_payment_amount_id');
     }
 
@@ -560,6 +570,12 @@ class FortuneReading extends Model
                 self::STATUS_DISCOVERY_CONFIRM, // 🆕 รอ user ยืนยันสรุปจาก AI
                 self::STATUS_PENDING_PAYMENT,
                 self::STATUS_PAID, // เพิ่ม: ระหว่าง AI กำลังประมวลผลคำทำนาย
+                // 🔮 Celtic Cross states (2026-04-29) — ทุก state ของ Celtic ต้องนับว่ายัง active อยู่
+                self::STATUS_CELTIC_PENDING_PAYMENT,
+                self::STATUS_CELTIC_PICKING,
+                self::STATUS_CELTIC_AWAITING_QUESTION,
+                self::STATUS_CELTIC_GENERATING,
+                self::STATUS_CELTIC_QA_PROMPT,
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -575,15 +591,25 @@ class FortuneReading extends Model
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
-                // pending_payment: timeout 30 นาที (รอโอนเงิน)
+                // pending_payment (Deep + Celtic): timeout 30 นาที (รอโอนเงิน)
                     ->orWhere(function ($sub) {
-                        $sub->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+                        $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
                             ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
                     })
                 // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)
                     ->orWhere(function ($sub) {
                         $sub->where('conversation_status', self::STATUS_PAID)
                             ->where('updated_at', '>=', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES));
+                    })
+                // 🔮 Celtic Cross flow states (รวม picking, awaiting_question, generating, qa_prompt)
+                //    timeout 90 นาที — Celtic flow มี QA window 60 นาทีหลัง Q1 + buffer
+                    ->orWhere(function ($sub) {
+                        $sub->whereIn('conversation_status', [
+                            self::STATUS_CELTIC_PICKING,
+                            self::STATUS_CELTIC_AWAITING_QUESTION,
+                            self::STATUS_CELTIC_GENERATING,
+                            self::STATUS_CELTIC_QA_PROMPT,
+                        ])->where('updated_at', '>=', now()->subMinutes(90));
                     });
             })
             ->latest();
@@ -643,7 +669,7 @@ class FortuneReading extends Model
         // หาบิลอายุ 25-30 นาที (window 5 นาทีก่อนหมด)
         //   เก่าสุด 30 นาที = now - PAYMENT_TIMEOUT_MINUTES  (ใกล้หมด)
         //   ใหม่สุด 25 นาที = now - (PAYMENT_TIMEOUT_MINUTES - 5) (เริ่มเตือน)
-        $readings = self::where('conversation_status', self::STATUS_PENDING_PAYMENT)
+        $readings = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
             ->whereBetween('updated_at', [
@@ -796,7 +822,7 @@ class FortuneReading extends Model
      */
     public static function cancelExpiredPendingBills(): int
     {
-        $expiredReadings = self::where('conversation_status', self::STATUS_PENDING_PAYMENT)
+        $expiredReadings = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
@@ -1184,8 +1210,13 @@ class FortuneReading extends Model
             return null;
         }
 
+        // 🔮 รองรับทั้ง Deep 39฿ (STATUS_PENDING_PAYMENT) และ Celtic Cross 99฿ (STATUS_CELTIC_PENDING_PAYMENT)
+        // ทั้งสองระบบใช้ UniquePaymentAmount type='fortune_reading' เหมือนกัน — branch ตาม reading_type ใน caller
         return self::where('unique_payment_amount_id', $uniquePayment->id)
-            ->where('conversation_status', self::STATUS_PENDING_PAYMENT)
+            ->whereIn('conversation_status', [
+                self::STATUS_PENDING_PAYMENT,
+                self::STATUS_CELTIC_PENDING_PAYMENT,
+            ])
             ->first();
     }
 
@@ -1608,9 +1639,10 @@ class FortuneReading extends Model
         parent::boot();
 
         static::creating(function ($reading) {
-            // สร้าง bill_reference เฉพาะ deep reading (เสียเงิน) เท่านั้น
+            // สร้าง bill_reference เฉพาะ reading ที่เสียเงิน (deep + celtic_cross)
             // basic reading (ฟรี) ไม่ต้องมีเลขบิล
-            if (empty($reading->bill_reference) && $reading->reading_type === 'deep') {
+            $paidTypes = ['deep', 'celtic_cross'];
+            if (empty($reading->bill_reference) && in_array($reading->reading_type, $paidTypes, true)) {
                 $reading->bill_reference = self::generateBillReference();
             }
         });

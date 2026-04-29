@@ -552,7 +552,7 @@ class LineFortuneWebhookController extends Controller
 
             // ยกเลิก pending payment bills + คืน UniquePaymentAmount
             $pendingReadings = FortuneReading::where('facebook_user_id', $userId)
-                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
                 ->with('uniquePaymentAmount')
@@ -1030,7 +1030,7 @@ class LineFortuneWebhookController extends Controller
         try {
             // หาบิลที่รอชำระ
             $pendingReading = FortuneReading::where('facebook_user_id', $userId)
-                ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                ->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                 ->where('is_paid', false)
                 ->whereNotNull('unique_payment_amount_id')
                 ->with('uniquePaymentAmount')
@@ -1110,7 +1110,7 @@ class LineFortuneWebhookController extends Controller
             // ถ้าไม่มี reading_id → หาจาก pending ล่าสุด
             if (! $reading) {
                 $reading = FortuneReading::where('facebook_user_id', $userId)
-                    ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                    ->whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
                     ->where('is_paid', false)
                     ->latest()
                     ->first();
@@ -1227,7 +1227,7 @@ class LineFortuneWebhookController extends Controller
             }
 
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
-            if ($activeReading && $activeReading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT) {
+            if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
                     . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
