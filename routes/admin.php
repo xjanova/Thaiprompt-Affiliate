@@ -88,6 +88,16 @@ Route::redirect('/', '/dashboard');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+// ─────────────────────────────────────────────────────────────
+// Admin Mobile App Pairing (QR-based device pairing)
+// ─────────────────────────────────────────────────────────────
+Route::prefix('mobile-pair')->name('mobile-pair.')->group(function () {
+    Route::get('/', [\App\Http\Controllers\Admin\MobilePairController::class, 'index'])->name('index');
+    Route::post('/init', [\App\Http\Controllers\Admin\MobilePairController::class, 'init'])->name('init');
+    Route::get('/status', [\App\Http\Controllers\Admin\MobilePairController::class, 'status'])->name('status');
+    Route::post('/cancel', [\App\Http\Controllers\Admin\MobilePairController::class, 'cancel'])->name('cancel');
+});
+
 // System Analytics
 Route::prefix('analytics')->name('analytics.')->group(function () {
     Route::get('/', [AnalyticsController::class, 'index'])->name('index');
