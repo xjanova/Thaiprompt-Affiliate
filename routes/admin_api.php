@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\Ai\AiBotsController;
+use App\Http\Controllers\Api\Admin\Ai\AiDashboardController;
+use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
@@ -87,5 +90,27 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('reject');
         Route::post('/{withdrawal}/complete', [WithdrawalController::class, 'complete'])->name('complete');
         Route::post('/batch-approve', [WithdrawalController::class, 'batchApprove'])->name('batch-approve');
+    });
+
+    // ── AI: Dashboard ──
+    Route::prefix('ai/dashboard')->name('api.admin.ai.dashboard.')->group(function () {
+        Route::get('/', [AiDashboardController::class, 'index'])->name('index');
+        Route::get('/timeseries', [AiDashboardController::class, 'timeseries'])->name('timeseries');
+    });
+
+    // ── AI: Providers ──
+    Route::prefix('ai/providers')->name('api.admin.ai.providers.')->group(function () {
+        Route::get('/', [AiProvidersController::class, 'index'])->name('index');
+        Route::get('/{provider}', [AiProvidersController::class, 'show'])->name('show');
+        Route::post('/{provider}/toggle', [AiProvidersController::class, 'toggle'])->name('toggle');
+        Route::post('/{provider}/test-connection', [AiProvidersController::class, 'testConnection'])->name('test-connection');
+    });
+
+    // ── AI: Bots ──
+    Route::prefix('ai/bots')->name('api.admin.ai.bots.')->group(function () {
+        Route::get('/', [AiBotsController::class, 'index'])->name('index');
+        Route::get('/{bot}', [AiBotsController::class, 'show'])->name('show');
+        Route::post('/{bot}/toggle', [AiBotsController::class, 'toggle'])->name('toggle');
+        Route::post('/{bot}/test', [AiBotsController::class, 'test'])->name('test');
     });
 });
