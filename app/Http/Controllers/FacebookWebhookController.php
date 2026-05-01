@@ -1160,12 +1160,41 @@ class FacebookWebhookController extends Controller
         if (! empty($attachments)) {
             $userImageUrl = $this->facebookService->extractImageFromAttachments($attachments);
 
+            // 🎯 (2026-05-01) แยก sticker / image / อื่นๆ ออกจากกัน
+            //    - sticker → ส่งแบนเนอร์ดูดวง (throttle 1/วัน) ไม่ปล่อยทะลุไป AI
+            //    - image  → handleSlipImageOnly (อาจเป็นสลิป)
+            //    - อื่นๆ (audio/video/file) → silent skip
+            $hasSticker = false;
+            foreach ($attachments as $att) {
+                if (($att['type'] ?? '') === 'sticker' || isset($att['payload']['sticker_id'])) {
+                    $hasSticker = true;
+                    break;
+                }
+            }
+
             // 📸 ส่งมาเฉพาะรูป (ไม่มี text) → ตอบตามบริบทของ active reading
             //   - PENDING_PAYMENT → assume เป็นสลิป → AI ปลอบ + ขอให้กดปุ่ม "แจ้งชำระเงิน"
             //   - PAID (กำลังประมวลผล) → "ระบบรับเงินแล้ว แม่หมอกำลังคำนวณ"
             //   - ไม่มี active → ส่ง guidance generic
             if (empty($messageText) && $userImageUrl) {
                 $this->handleSlipImageOnly($senderId);
+
+                return;
+            }
+
+            // 👋 sticker (ไม่มี text) → ส่งแบนเนอร์ welcome (throttle 1/วัน)
+            if (empty($messageText) && $hasSticker) {
+                $this->handleStickerReceived($senderId);
+
+                return;
+            }
+
+            // 🔇 attachment ประเภทอื่น (audio/video/file) ที่ไม่มี text → silent skip
+            if (empty($messageText)) {
+                Log::debug('FB: silent ignore non-text attachment', [
+                    'sender_id' => $senderId,
+                    'attachment_types' => array_column($attachments, 'type'),
+                ]);
 
                 return;
             }
@@ -1282,6 +1311,91 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * จัดการเมื่อลูกค้าส่ง sticker เข้ามา (ไม่มี text)
+     *
+     * 🎯 (2026-05-01) Throttled banner reply
+     *   - กลางโฟลว์ดูดวง → silent (ไม่รบกวน)
+     *   - นอกโฟลว์ + ไม่เคยส่ง banner ใน 24 ชม. → ส่ง welcome template ครั้งเดียว
+     *   - นอกโฟลว์ + เคยส่งแล้ว → silent
+     */
+    protected function handleStickerReceived(string $senderId): void
+    {
+        try {
+            // กลางโฟลว์ดูดวง → ไม่ตอบ (กันรบกวน)
+            // ⚠️ FortuneReading ไม่มี STATUS_CANCELLED — flows ที่ยกเลิกใช้ STATUS_COMPLETED + cancellation_reason ใน conversation_state
+            $hasActive = FortuneReading::where('facebook_user_id', $senderId)
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->exists();
+
+            if ($hasActive) {
+                Log::debug('FB Sticker: silent (active reading)', ['sender_id' => $senderId]);
+
+                return;
+            }
+
+            // Throttle 1 ครั้ง/วัน (กันสแปม banner ทุก sticker)
+            // 🛡️ ใช้ Cache::add (atomic) — กัน race condition ที่ webhook ขนานกันเข้ามา
+            $cacheKey = "fb_sticker_banner_sent:{$senderId}";
+            $acquired = \Illuminate\Support\Facades\Cache::add($cacheKey, true, now()->addDay());
+            if (! $acquired) {
+                Log::debug('FB Sticker: throttled (banner already sent today)', ['sender_id' => $senderId]);
+
+                return;
+            }
+
+            // ส่ง welcome banner — ใช้ template ที่มีอยู่แล้ว
+            $userProfile = $this->facebookService->getUserProfile($senderId);
+            $userName = (is_array($userProfile) && ! empty($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
+
+            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $welcomeTemplate = $richService->buildWelcomeTemplate($userName);
+
+            // sendButtonTemplate expects message-form { attachment: {...} } — pass full template
+            $this->facebookService->sendButtonTemplate($senderId, $welcomeTemplate);
+
+            Log::info('👋 FB Sticker: ส่ง welcome banner (1 ครั้ง/วัน)', [
+                'sender_id' => $senderId,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('FB Sticker: handleStickerReceived ล้มเหลว — silent', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+            // silent — ไม่ fallback message เพื่อกันสแปม
+        }
+    }
+
+    /**
+     * 🆓 ปุ่ม "ดูดวงฟรี" จาก welcome — ส่งข้อความขอคำถาม (ไม่ใช้ category quick replies)
+     *
+     * (2026-05-01)
+     *   - ถ้า admin ปิดบริการฟรี → ทะลุไป tier menu (39/99)
+     *   - ⚠️ ห้ามใช้ FORTUNE_LOVE / FORTUNE_WORK ฯลฯ เป็น quick reply ที่นี่
+     *     เพราะ payload เหล่านั้น dispatch text "ดูดวงความรัก..." → trigger tier menu (paid)
+     *     ขัดเจตนา "ฟรี" — ลูกค้าคาดหวังฟรีแต่จะได้เมนูจ่ายเงิน
+     *   - ทางออก: ขอให้ลูกค้าพิมพ์คำถามตรงๆ (ไม่ขึ้นต้นด้วย "ดูดวง") → free quota เปิดทำงาน
+     */
+    protected function handleFortuneFreePicker(string $senderId): void
+    {
+        // ถ้า free ปิด → ทะลุไป tier menu (39 vs 99)
+        if (! $this->settings->isFreeReadingEnabled()) {
+            $this->processConversationalMessage($senderId, 'ดูดวง');
+
+            return;
+        }
+
+        $message = "🌙 *ดูดวงฟรีพร้อมแล้วค่ะ* ✨\n\n"
+            . "💡 พิมพ์ *คำถามที่อยากรู้* มาได้เลย เช่น:\n"
+            . "  ✦ \"ความรักช่วงนี้จะเป็นยังไง\"\n"
+            . "  ✦ \"การงานปีนี้จะดีขึ้นไหม\"\n"
+            . "  ✦ \"การเงินจะเข้ามาเมื่อไหร่\"\n"
+            . "  ✦ \"สุขภาพช่วงนี้ต้องระวังอะไร\"\n\n"
+            . "🌙 หมอจันทราพร้อมรับฟังเสมอค่ะ";
+
+        $this->facebookService->sendMessage($senderId, $message);
+    }
+
+    /**
      * จัดการเมื่อลูกค้าขอคุยกับคนจริง (customer handoff request)
      *
      * Flow:
@@ -1382,6 +1496,8 @@ class FacebookWebhookController extends Controller
             // ตรงๆ ลูกค้ากดอะไรก็ได้ → ถูกพาเข้ากระบวนการทำนายทันที
             'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
+            'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
@@ -1395,6 +1511,12 @@ class FacebookWebhookController extends Controller
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+            // 📅 (2026-05-01) ทวนวันเกิด — confirm/reject buttons → ส่ง keyword ที่ handler รับได้
+            'BIRTHDATE_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
+            'BIRTHDATE_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ใช่'),
+            // ❓ (2026-05-01) ทวนคำถาม — confirm/reject buttons
+            'QUESTION_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
+            'QUESTION_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ตรงคำถาม'),
 
             // ✅ ปุ่ม LINE Invite + Affiliate Share
             'LINE_ADD_FRIEND' => $this->handleLineAddFriend($senderId),
@@ -1637,58 +1759,21 @@ class FacebookWebhookController extends Controller
      */
     protected function handleMessageReaction(array $messaging): void
     {
+        // 🧹 (2026-05-01) Mute reactions ทุกกรณี — ไม่ตอบ emoji
+        //    เหตุผล: reactions ไม่ใช่ข้อความที่ต้อง engage; การตอบทำให้ลูกค้ารำคาญ
+        //    + ยังเสี่ยงโดน FB rate limit ถ้า user รัวกด
         $senderId = $messaging['sender']['id'] ?? null;
-        $reaction = $messaging['reaction']['reaction'] ?? null; // love/like/wow/haha/sad/angry
-        $action = $messaging['reaction']['action'] ?? null; // 'react' หรือ 'unreact'
+        $reaction = $messaging['reaction']['reaction'] ?? null;
+        $action = $messaging['reaction']['action'] ?? null;
 
-        if (! $senderId || ! $reaction || $action !== 'react') {
-            return;
-        }
-
-        // 🛑 Admin Handover guard — ถ้าแอดมินกำลังดูแล → ข้าม
-        if ($this->takeoverService->isActiveByPlatform('facebook', $senderId)) {
-            return;
-        }
-
-        // ⏱ Throttle — 1 ครั้ง/user ในช่วง 60 วินาที (กันรัว)
-        $cacheKey = "fb_reaction_replied:{$senderId}";
-        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-            Log::debug('FB Reaction: throttle hit (เคยตอบในรอบ 60 วิ)', [
+        if ($senderId && $reaction) {
+            Log::debug('💗 FB Reaction: silenced (no auto-reply)', [
                 'user_id' => $senderId,
                 'reaction' => $reaction,
-            ]);
-
-            return;
-        }
-        \Illuminate\Support\Facades\Cache::put($cacheKey, true, 60);
-
-        // Map reaction → emoji เดียวกันที่จะส่งกลับ
-        $emojiMap = [
-            'love' => '❤️',
-            'like' => '👍',
-            'wow' => '😮',
-            'haha' => '😆',
-            'sad' => '😢',
-            'angry' => '😡',
-            'dislike' => '👎',
-            'smile' => '😊',
-        ];
-        $emoji = $emojiMap[$reaction] ?? '✨';
-
-        // ส่ง emoji กลับเป็น text — FB Messenger ไม่มี react reply API
-        try {
-            $this->facebookService->sendMessage($senderId, $emoji);
-            Log::info('💗 FB Reaction: ส่ง emoji กลับ', [
-                'user_id' => $senderId,
-                'reaction' => $reaction,
-                'emoji' => $emoji,
-            ]);
-        } catch (\Exception $e) {
-            Log::warning('FB Reaction: ส่ง emoji ล้มเหลว', [
-                'user_id' => $senderId,
-                'error' => $e->getMessage(),
+                'action' => $action,
             ]);
         }
+        // ไม่ตอบกลับใดๆ
     }
 
     /**
@@ -2456,15 +2541,25 @@ class FacebookWebhookController extends Controller
             'AFFILIATE_RECRUIT_NO' => $this->handleAffiliateRecruitNo($senderId),
 
             // Quick Replies ที่ mirror Postback payloads จาก Rich Templates
-            // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ
+            // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)
             'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
+            // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
+            'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
+            // 🛠️ (2026-05-01) CANCEL_FORTUNE จาก tier menu — pre-existing payload ไม่เคยมี handler
+            //    ทำให้ปุ่ม ❌ ยกเลิก ใน tier menu ไม่ทำงาน → fix ที่นี่
+            'CANCEL_FORTUNE' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            // 📅 (2026-05-01) confirm/reject buttons (mirror postback handler)
+            'BIRTHDATE_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
+            'BIRTHDATE_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ใช่'),
+            'QUESTION_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
+            'QUESTION_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ตรงคำถาม'),
             // ผู้สูงอายุงง → ปุ่ม "ดูดวงใหม่/ต่อ" → deep flow ตรง
             'NEW_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'VIEW_READING' => $this->processConversationalMessage($senderId, 'ดูคำทำนาย'),

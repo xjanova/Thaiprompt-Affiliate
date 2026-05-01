@@ -3493,6 +3493,8 @@ class FortuneConversationService
             $reading->setConversationState('birthdate_step_mode', false);
             $reading->setConversationState('birthdate_partial', []);
             $reading->setConversationState('birthdate_attempts', 0);
+            $reading->setConversationState('awaiting_birthdate_confirmation', false);
+            $reading->setConversationState('pending_birthdate', null);
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return [
@@ -3500,6 +3502,11 @@ class FortuneConversationService
                 'message' => "🔄 ยกเลิกการดูดวงรอบก่อนแล้ว\n\nพิมพ์ 'ดูดวง' หรือเรื่องที่อยากรู้ เพื่อเริ่มใหม่",
                 'reading' => $reading,
             ];
+        }
+
+        // 🔁 (2026-05-01) ถ้ากำลังรอ user ยืนยันวันเกิดที่ระบบ parse ไว้แล้ว → route ไป confirmation
+        if ($reading->getConversationState('awaiting_birthdate_confirmation', false)) {
+            return $this->handleBirthdateConfirmation($reading, $messageText);
         }
 
         // 🎯 Phase A.3 — ถ้าอยู่ในโหมดถามทีละส่วน → ไปจัดการใน handler แยก
@@ -3543,21 +3550,122 @@ class FortuneConversationService
             ];
         }
 
-        // Parse สำเร็จ → บันทึก + รีเซ็ต state ของ step mode
+        // Parse สำเร็จ → 🎯 (2026-05-01) ทวน + ขอยืนยัน (กันคนแก่พิมพ์ผิด)
+        //                ⚠️ ยังไม่ commit เข้า birth_date ของ reading — รอ confirm
         $reading->setConversationState('birthdate_attempts', 0);
         $reading->setConversationState('birthdate_step_mode', false);
         $reading->setConversationState('birthdate_partial', []);
-        $reading->update([
-            'birth_date' => $birthDate,
-            'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
-        ]);
-        $reading->setConversationState('collected_questions', []);
+        $reading->setConversationState('awaiting_birthdate_confirmation', true);
+        $reading->setConversationState('pending_birthdate', $birthDate);
+
+        return $this->buildBirthdateConfirmationPrompt($reading, $birthDate);
+    }
+
+    /**
+     * 🔒 (2026-05-01) สร้าง prompt ทวนวันเกิด + ขอยืนยัน
+     *
+     * เน้น *วันเกิด* ที่ระบบ parse ได้ — ใช้ visual emphasis ขนาบ + format ภาษาไทยอ่านง่าย
+     */
+    protected function buildBirthdateConfirmationPrompt(FortuneReading $reading, string $birthDate): array
+    {
+        $formatted = $this->formatThaiDate($birthDate);
+        // 🛡️ guard: explode ต้องได้ 3 ส่วน YYYY-MM-DD — ถ้า malformed ใช้ raw birthDate
+        $parts = explode('-', $birthDate);
+        if (count($parts) === 3) {
+            [$y, $m, $d] = $parts;
+            $beYear = (int) $y + 543;
+            $numericDisplay = "{$d}/{$m}/{$beYear} (ค.ศ. {$y})";
+        } else {
+            $numericDisplay = $birthDate ?: '—';
+        }
+
+        $message = "📅 *ขอยืนยันวันเกิดอีกครั้งนะคะ*\n\n"
+            . "═══════════════════════\n"
+            . "🎂 *วันเกิดที่บันทึก:*\n\n"
+            . "      📌 *{$formatted}*\n"
+            . "      📌 *{$numericDisplay}*\n"
+            . "═══════════════════════\n\n"
+            . "🔍 ใช่วันเกิดที่ถูกต้องไหมคะ?\n\n"
+            . "👉 ถ้า *ใช่* → กดปุ่ม *\"✅ ใช่\"* หรือพิมพ์ \"ใช่\"\n"
+            . "👉 ถ้า *ไม่ใช่* → กดปุ่ม *\"❌ ไม่ใช่\"* (เริ่มกรอกใหม่)\n\n"
+            . "💡 ตรวจให้แน่ใจ — ดวงดาวคำนวณจากวันเกิดนี้";
 
         return [
-            'action' => 'collecting_questions',
-            'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $birthDate),
+            'action' => 'awaiting_birthdate_confirmation',
+            'message' => $message,
             'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
+                ['title' => '❌ ไม่ใช่ พิมพ์ใหม่', 'text' => 'ไม่ใช่'],
+            ],
         ];
+    }
+
+    /**
+     * 🔒 (2026-05-01) จัดการ confirmation step ของวันเกิด
+     *
+     * Outcomes:
+     *   - "ใช่" → commit birth_date → ไป COLLECTING_QUESTIONS
+     *   - "ไม่ใช่" → ล้าง pending → ขอวันเกิดใหม่
+     *   - อื่น ๆ → re-prompt
+     */
+    protected function handleBirthdateConfirmation(FortuneReading $reading, string $messageText): array
+    {
+        $text = mb_strtolower(trim($messageText));
+        $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u', '', $text);
+
+        $pendingBirthdate = $reading->getConversationState('pending_birthdate');
+
+        // ✅ ยืนยัน → commit + ไปต่อ
+        $confirmKeywords = ['ใช่', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'ถูก', 'ใช่ค่ะ', 'ใช่ครับ', 'yes', 'y', 'confirm'];
+        foreach ($confirmKeywords as $kw) {
+            if ($normalized === $kw || str_starts_with($normalized, $kw)) {
+                if (! $pendingBirthdate) {
+                    // ไม่มี pending — กลับไปถามใหม่
+                    $reading->setConversationState('awaiting_birthdate_confirmation', false);
+
+                    return [
+                        'action' => 'collecting_birthdate',
+                        'message' => "❓ ระบบไม่พบวันเกิดที่บันทึกไว้\n\n" . $this->getBirthdateRequestMessage(),
+                        'reading' => $reading,
+                    ];
+                }
+
+                $reading->setConversationState('awaiting_birthdate_confirmation', false);
+                $reading->setConversationState('pending_birthdate', null);
+                $reading->update([
+                    'birth_date' => $pendingBirthdate,
+                    'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                ]);
+                $reading->setConversationState('collected_questions', []);
+
+                return [
+                    'action' => 'collecting_questions',
+                    'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $pendingBirthdate),
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        // ❌ ไม่ใช่ → ล้าง pending + ขอใหม่
+        $rejectKeywords = ['ไม่ใช่', 'ไม่ถูก', 'ผิด', 'ไม่', 'no', 'n', 'พิมพ์ใหม่', 'แก้', 'cancel'];
+        foreach ($rejectKeywords as $kw) {
+            if ($normalized === $kw || str_starts_with($normalized, $kw)) {
+                $reading->setConversationState('awaiting_birthdate_confirmation', false);
+                $reading->setConversationState('pending_birthdate', null);
+                $reading->setConversationState('birthdate_attempts', 0);
+
+                return [
+                    'action' => 'collecting_birthdate',
+                    'message' => "🔄 เข้าใจค่ะ ลองพิมพ์ใหม่อีกครั้งนะคะ\n\n" . $this->getBirthdateRequestMessage(),
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        // อื่น ๆ → re-prompt confirmation (กันพิมพ์มั่ว)
+        return $this->buildBirthdateConfirmationPrompt($reading, $pendingBirthdate ?? '');
     }
 
     /**
@@ -3572,22 +3680,16 @@ class FortuneConversationService
 
         // 🎯 Short-circuit: ถ้าใน step mode ผู้ใช้ดันพิมพ์วันเกิดเต็มรูปแบบ
         //    ("15/8/1990") → รับทั้งชุดเลย ไม่ต้องถามทีละส่วน
+        // 🔒 (2026-05-01) ผ่านขั้น confirmation ก่อน commit (เหมือน path ปกติ)
         $fullDate = $this->parseBirthDate($messageText);
         if ($fullDate) {
             $reading->setConversationState('birthdate_attempts', 0);
             $reading->setConversationState('birthdate_step_mode', false);
             $reading->setConversationState('birthdate_partial', []);
-            $reading->update([
-                'birth_date' => $fullDate,
-                'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
-            ]);
-            $reading->setConversationState('collected_questions', []);
+            $reading->setConversationState('awaiting_birthdate_confirmation', true);
+            $reading->setConversationState('pending_birthdate', $fullDate);
 
-            return [
-                'action' => 'collecting_questions',
-                'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $fullDate),
-                'reading' => $reading,
-            ];
+            return $this->buildBirthdateConfirmationPrompt($reading, $fullDate);
         }
 
         // Step 1: เก็บปี
@@ -3656,23 +3758,16 @@ class FortuneConversationService
             ];
         }
 
-        // สำเร็จ → บันทึกวันเกิด + reset state ของ step mode
+        // สำเร็จ → 🔒 (2026-05-01) ขอยืนยันก่อน commit (เหมือน path ปกติ)
         $birthDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
 
         $reading->setConversationState('birthdate_attempts', 0);
         $reading->setConversationState('birthdate_step_mode', false);
         $reading->setConversationState('birthdate_partial', []);
-        $reading->update([
-            'birth_date' => $birthDate,
-            'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
-        ]);
-        $reading->setConversationState('collected_questions', []);
+        $reading->setConversationState('awaiting_birthdate_confirmation', true);
+        $reading->setConversationState('pending_birthdate', $birthDate);
 
-        return [
-            'action' => 'collecting_questions',
-            'message' => $this->getQuestionsRequestMessage($reading->facebook_user_name ?? 'คุณ', $birthDate),
-            'reading' => $reading,
-        ];
+        return $this->buildBirthdateConfirmationPrompt($reading, $birthDate);
     }
 
     /**
@@ -3795,6 +3890,35 @@ class FortuneConversationService
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
         try {
+            // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
+            //    (ตรวจ FIRST — มิฉะนั้น race-guard ด้านล่างจะบล็อก "ใช่" ที่ legitimate)
+            if ($reading->getConversationState('awaiting_question_confirmation', false)) {
+                return $this->handleQuestionConfirmation($reading, $messageText);
+            }
+
+            // 🛡️ (2026-05-01) Race-guard: ถ้าผู้ใช้พิมพ์ "ใช่" / "ไม่ใช่" / "ไม่ตรงคำถาม" ขณะ
+            //    awaiting_question_confirmation = false (เช่น double-tap ปุ่ม birthdate confirm
+            //    จาก state ก่อนหน้า — 2nd tap หลุดมาสู่ COLLECTING_QUESTIONS)
+            //    → ไม่ถือเป็นคำถาม เพราะถ้าปล่อยผ่าน จะกลายเป็น "ใช่" = คำถามดูดวง ทำให้สับสน
+            $stripped = trim(mb_strtolower(preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ)\s*$/u', '', $messageText) ?? ''));
+            $confirmJunk = ['ใช่', 'ไม่ใช่', 'ไม่ตรง', 'ไม่ตรงคำถาม', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'yes', 'y', 'no', 'n'];
+            if (in_array($stripped, $confirmJunk, true)) {
+                Log::info('Fortune: handleQuestionInput ignored stale confirm-keyword', [
+                    'reading_id' => $reading->id,
+                    'text' => $stripped,
+                ]);
+
+                return [
+                    'action' => 'awaiting_question',
+                    'message' => "🔮 ตอนนี้หมอรอ*คำถามดูดวง*ของเจ้าชะตาอยู่ค่ะ\n\n"
+                        . "ลองพิมพ์เรื่องที่อยากรู้มาเลย เช่น:\n"
+                        . "  • ดวงความรักช่วงนี้จะเป็นยังไง\n"
+                        . "  • การงานปีนี้จะดีขึ้นไหม\n"
+                        . "  • การเงินจะเข้ามาเมื่อไหร่",
+                    'reading' => $reading,
+                ];
+            }
+
             // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "สวัสดี", "วิธีใช้")
             //    ไม่ถือเป็นคำถามดูดวง → ให้ AI รับฟังและย้ำขั้นตอน
             if ($this->looksLikeMetaOrChitchat($messageText)) {
@@ -3813,11 +3937,7 @@ class FortuneConversationService
                 ];
             }
 
-            // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
-            //    (ไม่เก็บ message เป็นคำถามใหม่ — ไม่งั้นจะ overwrite คำถามเดิม)
-            if ($reading->getConversationState('awaiting_question_confirmation', false)) {
-                return $this->handleQuestionConfirmation($reading, $messageText);
-            }
+            // (awaiting_question_confirmation check moved to top of method — see above)
 
             // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
             $question = trim($messageText);
@@ -3853,15 +3973,15 @@ class FortuneConversationService
                     . "═══════════════════════\n\n"
                     . "🔍 *ขอยืนยันคำถามอีกครั้ง*\n"
                     . "ใช่คำถามที่เจ้าชะตาต้องการถามจริงไหม?\n\n"
-                    . "👉 ถ้า *ใช่* → พิมพ์ *\"ใช่\"* หรือ *\"ยืนยัน\"* (จะเปิดไพ่ + สร้างบิลค่าครู)\n"
-                    . "👉 ถ้า *ไม่ใช่* → พิมพ์ *\"ไม่ใช่\"* หรือ *\"ยกเลิก\"* (เริ่มดูดวงใหม่)\n\n"
+                    . "👉 ถ้า *ใช่* → กดปุ่ม *\"✅ ใช่\"* (จะเปิดไพ่ + สร้างบิลค่าครู)\n"
+                    . "👉 ถ้า *ไม่ตรง* → กดปุ่ม *\"❌ ไม่ตรงคำถาม\"* (เริ่มดูดวงใหม่)\n\n"
                     . "💡 ตรวจให้ชัวร์ก่อนนะคะ — แต่ละคำถามแม่หมอจะลงพลังเรียงไพ่ใหม่ทั้งหมด",
                 'reading' => $reading,
                 'question_number' => $questionCount,
                 'show_quick_replies' => true,
                 'quick_replies' => [
-                    ['title' => '✅ ใช่ ดำเนินการต่อ', 'text' => 'ใช่'],
-                    ['title' => '❌ ไม่ใช่ เริ่มใหม่', 'text' => 'ยกเลิก'],
+                    ['title' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
+                    ['title' => '❌ ไม่ตรงคำถาม', 'text' => 'ไม่ตรงคำถาม'],
                 ],
             ];
 
@@ -3930,8 +4050,8 @@ class FortuneConversationService
             }
         }
 
-        // ❌ ยกเลิก / ไม่ใช่ / เริ่มใหม่ → ปิด conversation + offer ใหม่
-        $cancelKeywords = ['ไม่ใช่', 'ไม่', 'ผิด', 'ยกเลิก', 'cancel', 'no', 'n', 'เริ่มใหม่', 'restart', 'reset', 'แก้', 'แก้คำถาม'];
+        // ❌ ยกเลิก / ไม่ใช่ / ไม่ตรงคำถาม / เริ่มใหม่ → ปิด conversation + offer ใหม่
+        $cancelKeywords = ['ไม่ใช่', 'ไม่', 'ไม่ตรง', 'ไม่ตรงคำถาม', 'ผิด', 'ยกเลิก', 'cancel', 'no', 'n', 'เริ่มใหม่', 'restart', 'reset', 'แก้', 'แก้คำถาม'];
         foreach ($cancelKeywords as $kw) {
             if ($normalized === $kw || str_starts_with($normalized, $kw)) {
                 Log::info('Fortune: ลูกค้าปฏิเสธคำถาม → ยกเลิก + offer เริ่มใหม่', [
@@ -3968,13 +4088,13 @@ class FortuneConversationService
             'action' => 'awaiting_question_confirmation',
             'message' => "🤔 ขอยืนยันอีกครั้งค่ะ\n\n"
                 . "❓ คำถามของเจ้าชะตา: \"{$latestQuestion}\"\n\n"
-                . "👉 ถ้าใช่ → พิมพ์ *\"ใช่\"*\n"
-                . "👉 ถ้าไม่ใช่ → พิมพ์ *\"ยกเลิก\"*",
+                . "👉 ถ้าใช่ → กดปุ่ม *\"✅ ใช่\"*\n"
+                . "👉 ถ้าไม่ตรง → กดปุ่ม *\"❌ ไม่ตรงคำถาม\"*",
             'reading' => $reading,
             'show_quick_replies' => true,
             'quick_replies' => [
-                ['title' => '✅ ใช่ ดำเนินการต่อ', 'text' => 'ใช่'],
-                ['title' => '❌ ไม่ใช่ เริ่มใหม่', 'text' => 'ยกเลิก'],
+                ['title' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
+                ['title' => '❌ ไม่ตรงคำถาม', 'text' => 'ไม่ตรงคำถาม'],
             ],
         ];
     }
@@ -4558,29 +4678,57 @@ class FortuneConversationService
                 //    เพื่อให้ AI ตีความไพ่สอดคล้อง ไม่ขัดแย้งกับคำตอบหลักที่ลูกค้ากำลังจะเห็น
                 $tarotAiResponse = '';
                 if (! empty($tarotCard) && LineGatekeeperService::canCallAI('fortune')) {
+                    // 🎯 (2026-05-01) Strengthened tarot generation — validate + retry + programmatic fallback
+                    //    ปัญหาเดิม: AI ทำนายดวงดาวสำเร็จ แต่ทำนายไพ่บางครั้งหายไป (empty/short response)
+                    //    แก้: validate response มีชื่อไพ่หรือไม่, retry 1 ครั้ง, ถ้ายังไม่ผ่านใช้ fallback แบบโปรแกรม
                     $tarotPrompt = $this->buildTarotOnlyPrompt(
                         $userProfile, $question, $questionNum, $totalQuestions, $birthDate, $tarotCard,
                         $aiResult['response'] ?? null
                     );
 
-                    try {
-                        $tarotAiResult = $this->aiService->generateWithRetryAndFallback(
-                            [$question],
-                            $userProfile,
-                            null,
-                            $tarotPrompt,
-                            'deep',
-                            $birthDate
-                        );
-                        LineGatekeeperService::recordAICall('fortune');
-                        $tarotAiResponse = $tarotAiResult['response'] ?? '';
-                        $totalTokens += $tarotAiResult['tokens_used'] ?? 0;
+                    $maxAttempts = 2;
+                    for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                        try {
+                            $tarotAiResult = $this->aiService->generateWithRetryAndFallback(
+                                [$question],
+                                $userProfile,
+                                null,
+                                $tarotPrompt,
+                                'deep',
+                                $birthDate
+                            );
+                            LineGatekeeperService::recordAICall('fortune');
+                            $candidate = trim((string) ($tarotAiResult['response'] ?? ''));
+                            $totalTokens += $tarotAiResult['tokens_used'] ?? 0;
 
-                        Log::info("Fortune Deep: ไพ่ยิปซีข้อ {$questionNum} ยาว ".mb_strlen($tarotAiResponse).' ตัวอักษร');
-                    } catch (\Exception $tarotErr) {
-                        Log::warning("Fortune Deep: สร้างคำทำนายไพ่ข้อ {$questionNum} ล้มเหลว", [
+                            // ✅ Validation — ต้องไม่ว่าง + ยาวพอ + พูดถึงชื่อไพ่
+                            if ($this->isValidTarotResponse($candidate, $tarotCard)) {
+                                $tarotAiResponse = $candidate;
+                                Log::info("Fortune Deep: ไพ่ข้อ {$questionNum} ผ่าน validation (attempt {$attempt})", [
+                                    'length' => mb_strlen($candidate),
+                                ]);
+                                break;
+                            }
+
+                            Log::warning("Fortune Deep: ไพ่ข้อ {$questionNum} validation FAIL (attempt {$attempt})", [
+                                'length' => mb_strlen($candidate),
+                                'has_card_name' => mb_stripos($candidate, $tarotCard['card_name_th'] ?? '') !== false,
+                                'preview' => mb_substr($candidate, 0, 100),
+                            ]);
+                        } catch (\Exception $tarotErr) {
+                            Log::warning("Fortune Deep: สร้างคำทำนายไพ่ข้อ {$questionNum} ล้มเหลว (attempt {$attempt})", [
+                                'reading_id' => $reading->id,
+                                'error' => $tarotErr->getMessage(),
+                            ]);
+                        }
+                    }
+
+                    // 🛡️ Programmatic fallback — ถ้า AI ล้มเหลวทุก attempt → ใช้ฟอร์แมตจากความหมายไพ่
+                    if (empty($tarotAiResponse)) {
+                        $tarotAiResponse = $this->buildTarotFallbackResponse($tarotCard, $question, $userProfile);
+                        Log::info("Fortune Deep: ไพ่ข้อ {$questionNum} ใช้ programmatic fallback", [
                             'reading_id' => $reading->id,
-                            'error' => $tarotErr->getMessage(),
+                            'card' => $tarotCard['card_name_th'] ?? '?',
                         ]);
                     }
                 }
@@ -5196,14 +5344,15 @@ class FortuneConversationService
      */
     protected function getBirthdateRequestMessage(): string
     {
-        return "🎂 กรุณาบอกวันเดือนปีเกิดค่ะ\n\n"
-            . "พิมพ์ได้หลายแบบ:\n"
-            . "  • 15/8/1990\n"
-            . "  • 15/8/2533  (ปีพ.ศ. ก็ได้)\n"
-            . "  • 15 สิงหาคม 2533\n"
-            . "  • 15 ส.ค. 33\n\n"
-            . "💡 ถ้าไม่แน่ใจ ตอบทีละอย่างก็ได้นะคะ — "
-            . "หมอจะถามทีละส่วนให้";
+        // 🎯 (2026-05-01) Simplify — เน้นรูปแบบเดียวที่เข้าใจง่ายสำหรับผู้สูงอายุ
+        //    เตือนเรื่องปี 2 หลักว่าอาจสับสน
+        return "🎂 *กรุณาพิมพ์วันเดือนปีเกิด*\n\n"
+            . "💡 พิมพ์แค่ 1 บรรทัด ตามแบบนี้:\n"
+            . "  ✦ *1/1/2521*  (ปี พ.ศ.)\n"
+            . "  ✦ *1/1/1978*  (ปี ค.ศ.)\n\n"
+            . "⚠️ ปี 2 หลัก (เช่น 1/1/40) อาจตีความผิด\n"
+            . "   👉 พิมพ์ปีเต็ม 4 หลักดีกว่าค่ะ\n\n"
+            . "💡 ถ้าไม่แน่ใจ พิมพ์ \"ทีละส่วน\" หมอจะถามทีละอย่างให้นะคะ";
     }
 
     /**
@@ -8928,6 +9077,71 @@ PROMPT;
 - ใช้ \"หมอจันทรา\" แทนตัวเอง
 - ตอบเป็นภาษาไทย อบอุ่น เป็นกันเอง น่าเชื่อถือ
 - กล้าบอกตรงๆ ทั้งเรื่องดีและไม่ดี";
+    }
+
+    /**
+     * 🎯 (2026-05-01) Validate tarot response — กัน empty/short/ไม่มีชื่อไพ่
+     *
+     * ผ่านเกณฑ์:
+     *   1. ไม่ว่าง
+     *   2. ยาว ≥ 80 ตัวอักษร (response สั้นเกินไป = AI งุบงิบ)
+     *   3. พูดถึงชื่อไพ่ (ไทยหรืออังกฤษ) อย่างน้อย 1 ครั้ง
+     */
+    protected function isValidTarotResponse(string $response, array $tarotCard): bool
+    {
+        $trimmed = trim($response);
+        if (mb_strlen($trimmed) < 80) {
+            return false;
+        }
+
+        $cardNameTh = (string) ($tarotCard['card_name_th'] ?? '');
+        $cardNameEn = (string) ($tarotCard['card_name_en'] ?? '');
+
+        // อย่างน้อยต้องมีชื่อไพ่ 1 รูปแบบ (ไทย หรือ อังกฤษ)
+        $hasCardName = false;
+        if ($cardNameTh !== '' && mb_stripos($trimmed, $cardNameTh) !== false) {
+            $hasCardName = true;
+        }
+        if (! $hasCardName && $cardNameEn !== '' && stripos($trimmed, $cardNameEn) !== false) {
+            $hasCardName = true;
+        }
+
+        return $hasCardName;
+    }
+
+    /**
+     * 🛡️ (2026-05-01) Programmatic fallback — สร้างคำทำนายไพ่จากความหมายไพ่ + คำถาม
+     *
+     * ใช้เมื่อ AI ล้มเหลวทุก attempt — แทนที่จะส่งข้อความว่างให้ลูกค้า
+     * เนื้อหาไม่สวยงามเท่า AI แต่ไม่หายไปเลย
+     */
+    protected function buildTarotFallbackResponse(array $tarotCard, string $question, ?array $userProfile = null): string
+    {
+        $cardNameTh = $tarotCard['card_name_th'] ?? 'ไพ่ที่จิตเลือก';
+        $cardNameEn = $tarotCard['card_name_en'] ?? '';
+        $isReversed = (bool) ($tarotCard['is_reversed'] ?? false);
+        $position = $isReversed ? 'กลับหัว (Reversed)' : 'หงาย (Upright)';
+        $meaning = trim((string) ($tarotCard['meaning'] ?? ''));
+        $name = $userProfile['name'] ?? 'เจ้าชะตา';
+
+        $positionAdvice = $isReversed
+            ? "ไพ่ {$cardNameTh} ออกในตำแหน่ง*กลับหัว* — บ่งบอกถึงอุปสรรคที่ต้องระวัง พลังงานติดขัด หรือบทเรียนที่ต้องเรียนรู้"
+            : "ไพ่ {$cardNameTh} ออกในตำแหน่ง*หงาย* — บ่งบอกถึงพลังงานเชิงบวก โอกาส และจุดแข็งที่กำลังเสริมดวงให้";
+
+        $meaningSection = $meaning !== ''
+            ? "\n\n📖 *ความหมายของไพ่ {$cardNameTh}:*\n{$meaning}"
+            : '';
+
+        // ⚠️ FB Messenger / LINE ไม่ render markdown — ใช้ *single* (กลาง) + emoji + visual divider แทน
+        return "🃏 *วิเคราะห์ไพ่ยิปซี — ไพ่ {$cardNameTh}* ({$cardNameEn})\n\n"
+            . "ไพ่ที่ {$name} เปิดได้คือไพ่ *{$cardNameTh}* ในตำแหน่ง {$position}\n\n"
+            . "{$positionAdvice}{$meaningSection}\n\n"
+            . "🔮 *เกี่ยวกับคำถาม \"{$question}\":*\n"
+            . "ไพ่ใบนี้บอกให้ {$name} ตั้งสติพิจารณาเหตุการณ์อย่างใจเย็น "
+            . ($isReversed
+                ? "เพราะมีอุปสรรคบางอย่างที่ต้องผ่านไปก่อน — แต่ถ้าเรียนรู้และปรับตัว สิ่งดี ๆ จะเข้ามาในที่สุด"
+                : "เพราะพลังของไพ่ใบนี้กำลังเปิดทางให้ — ใช้โอกาสที่กำลังจะเข้ามาให้คุ้ม")
+            . "\n\n💫 หมอจันทราขอเป็นกำลังใจให้ {$name} นะคะ ✨";
     }
 
     /**
