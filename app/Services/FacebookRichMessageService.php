@@ -51,56 +51,75 @@ class FacebookRichMessageService
      */
     public function buildWelcomeTemplate(string $userName): array
     {
-        // ตรวจสอบว่าเปิดระบบดูดวงฟรีหรือไม่
-        // ถ้า max_free_readings = 0 → ไม่พูดถึง "ฟรี" เลย
+        // ตรวจสอบ flags ของระบบ (ฟรี / Celtic Cross 99฿)
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
+        $celticPrice = 99;
+        try {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+            // ถ้า service ไม่พร้อม ใช้ default 99
+        }
+
         // กันซ้อน "คุณคุณ" เมื่อไม่มีชื่อจริง
         $hasName = ! empty($userName) && $userName !== 'คุณ';
         $greeting = $hasName
             ? "✨ สวัสดีค่ะ คุณ{$userName}!"
             : '✨ สวัสดีค่ะ!';
 
-        $buttons = [
-            [
+        // 🎯 Welcome buttons (FB button template max 3 ปุ่ม)
+        //   ปุ่ม "ดูดวง" หลัก → tier menu (39 vs 99)
+        //   ปุ่ม "ดูดวงฟรี" (เฉพาะเมื่อ admin เปิด)
+        //   ปุ่ม LINE add friend (ถ้ามี URL)
+        $buttons = [];
+
+        // ปุ่ม 1: ดูดวงฟรี (เฉพาะเมื่อ admin เปิดบริการฟรี)
+        if ($freeEnabled) {
+            $buttons[] = [
                 'type' => 'postback',
-                'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
-                'payload' => 'MENU_FORTUNE',
-            ],
-            [
-                'type' => 'postback',
-                'title' => '💎 ดูดวง',
-                'payload' => 'MENU_DEEP_FORTUNE',
-            ],
+                'title' => '🆓 ดูดวงฟรี',
+                'payload' => 'FORTUNE_FREE',
+            ];
+        }
+
+        // ปุ่ม 2: ดูดวง (entry หลัก → tier menu)
+        $buttons[] = [
+            'type' => 'postback',
+            'title' => '🔮 ดูดวง',
+            'payload' => 'MENU_FORTUNE',
         ];
 
-        // เพิ่มปุ่ม LINE ถ้ามีการตั้งค่า
+        // ปุ่ม 3: LINE (เฉพาะเมื่อตั้งค่า URL ไว้)
         $lineUrl = $this->getLineAddFriendUrl();
-        if ($lineUrl) {
+        if ($lineUrl && count($buttons) < 3) {
             $buttons[] = [
                 'type' => 'web_url',
                 'title' => '💚 เพิ่มเพื่อน LINE',
                 'url' => $lineUrl,
             ];
-        } else {
-            // 🎯 Phase M — แทน "เช็คสิทธิ์" ด้วย "ดูดวงละเอียด" (useful กว่า)
-            $buttons[] = [
-                'type' => 'postback',
-                'title' => '💎 ดูดวง',
-                'payload' => 'FORTUNE_DEEP',
-            ];
         }
 
-        // ข้อความแนะนำบริการ — เปลี่ยนตามสถานะระบบฟรี
-        $serviceLines = $freeEnabled
-            ? "🆓 ดูดวงพื้นฐาน (ฟรี)\n💎 ดูดวงเชิงลึก"
-            : "🔮 ดูดวงแม่นยำ ทำนายชัดเจน\n💎 ดูดวงเชิงลึก";
+        // 💰 ข้อความแนะนำบริการ — เน้นยอดเงินด้วย CAPS + emoji ขนาบ
+        //    (FB Messenger ไม่รองรับ markdown bold — ใช้ visual emphasis แทน)
+        $serviceLines = [];
+        $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
+        if ($celticEnabled) {
+            $serviceLines[] = "🔮 ไพ่ยิปซี 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ใบ + ❓ 3 คำถาม";
+        }
+        if ($freeEnabled) {
+            $serviceLines[] = '🆓 ดูดวงฟรี — พิมพ์คำถามมาได้เลย';
+        }
+        $serviceText = implode("\n\n", $serviceLines);
+
+        $welcomeText = "{$greeting}\n\n🌙 ยินดีต้อนรับสู่ {$this->brandName}\n\n{$serviceText}\n\n💡 กดปุ่มด้านล่างเพื่อเริ่มได้เลยค่ะ!";
 
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "{$greeting}\n\n🔮 ยินดีต้อนรับสู่ {$this->brandName}\n\nพร้อมทำนายดวงชะตาให้คุณค่ะ\n\n{$serviceLines}\n\n💡 พิมพ์อะไรก็ได้มาคุยกันเลยค่ะ!",
+                    'text' => mb_substr($welcomeText, 0, 630), // safety cut < 640
                     'buttons' => $buttons,
                 ],
             ],
@@ -183,7 +202,9 @@ class FacebookRichMessageService
         $amountText = number_format($amount, 2);
         $billRef = $reading->bill_reference ?? "FR-{$reading->id}";
 
-        $text = "📋 บิล: {$billRef} — {$amountText} บาท\n";
+        // 💰 (2026-05-01) เน้นยอดเงินด้วย 💰💰 ขนาบ + uppercase BAHT (FB ไม่รองรับ markdown bold)
+        $text = "📋 บิล: {$billRef}\n\n";
+        $text .= "💰💰 {$amountText} BAHT 💰💰\n\n";
         $text .= "⏰ กรุณาชำระภายใน 30 นาที\n";
         $text .= "✅ โอนแล้วกดปุ่ม \"แจ้งชำระเงินแล้ว\" ด้านล่างค่ะ";
 
@@ -465,13 +486,21 @@ class FacebookRichMessageService
     {
         $priceText = number_format($price, 0);
 
+        // 🎯 (2026-05-01) Simplify — ผู้สูงอายุพิมพ์เยอะแล้วผิด
+        //    แนะนำแบบเดียว (วัน/เดือน/ปี) — รองรับทั้ง พ.ศ. และ ค.ศ.
+        //    เตือนเรื่องปี 2 หลัก (อาจจะตีความผิดได้)
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "📅 กรุณาบอกวันเดือนปีเกิด\n\nเพื่อวิเคราะห์ดวงชะตาให้แม่นยำขึ้น\n\n💡 ตัวอย่าง:\n• 15 มกราคม 2540\n• 15/01/2540\n• 15 ม.ค. 40\n\n💰 ราคาดูดวง: {$priceText} บาท",
-                    // 🎯 Phase M — เอาปุ่ม "วิธีใช้งาน" + "เช็คสิทธิ์" ออก (ซ้ำซ้อน งง)
+                    'text' => "📅 *กรุณาพิมพ์วันเดือนปีเกิด*\n\n"
+                        . "💡 พิมพ์แค่ 1 บรรทัด ตามแบบนี้:\n"
+                        . "   ✦ *1/1/2521*  (พ.ศ.)\n"
+                        . "   ✦ *1/1/1978*  (ค.ศ.)\n\n"
+                        . "⚠️ ปี 2 หลัก เช่น 1/1/40 อาจตีความผิด\n"
+                        . "    👉 พิมพ์ปีเต็ม 4 หลักดีกว่าค่ะ\n\n"
+                        . "💰💰 ค่าครู {$priceText} BAHT 💰💰",
                     'buttons' => [
                         [
                             'type' => 'postback',
@@ -803,26 +832,26 @@ class FacebookRichMessageService
             ],
 
             // 💬 ทำนายจบแล้ว — ขอบคุณ + เชิญชวนทำการตลาด + แชร์
+            //    🧹 (2026-05-01) ตัดปุ่ม "💬 คุยกับแม่หมอ" ออกจาก FB (ทับซ้อนกับ admin handover keyword detection)
             'reading_complete', 'deep_reading_result', 'view_reading_deep' => [
                 ['content_type' => 'text', 'title' => '📢 ชวนเพื่อน/รับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
                 ['content_type' => 'text', 'title' => '🔗 แชร์เพจ', 'payload' => 'SHARE_PAGE'],
-                ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'MENU_FORTUNE'],
             ],
 
+            // 📊 เช็คสิทธิ์ — dedupe ปุ่ม "ดูดวง" ที่เคยซ้ำกัน
             'check_remaining' => [
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
                 ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
             ],
             'collecting_questions', 'need_more_questions', 'retry_question' => $this->buildQuestionQuickReplies(),
+            // dedupe — เคยมี "💎 ดูดวง" + "🔮 ดูดวง" ซ้ำ
             'ai_limit', 'payment_expired' => [
-                ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
                 ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
             ],
             'declined', 'cancelled' => [
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
+                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
                 ['content_type' => 'text', 'title' => '💚 แอด LINE', 'payload' => 'LINE_INVITE'],
                 ['content_type' => 'text', 'title' => '📢 เชิญเพื่อน', 'payload' => 'AFFILIATE_SHARE'],
             ],

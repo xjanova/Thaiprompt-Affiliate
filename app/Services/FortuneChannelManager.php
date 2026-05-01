@@ -501,16 +501,16 @@ class FortuneChannelManager
                 // 🔍 เช็คสถานะบิล (ผู้ใช้กดปุ่ม) — ตอบสถานะจริงพร้อมปุ่ม
                 'payment_check_processing' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
                 ]),
                 'payment_check_pending' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
                     ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
                 'payment_check_expired' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_TO_ADMIN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
                 ]),
 
                 // เช็คสถานะ → เช็คสิทธิ์
@@ -560,6 +560,18 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
 
+                // 📅 (2026-05-01) ทวนวันเกิด — ปุ่ม ✅ ใช่ / ❌ ไม่ใช่ พิมพ์ใหม่
+                'awaiting_birthdate_confirmation' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ ถูกต้อง', 'payload' => 'BIRTHDATE_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ไม่ใช่ พิมพ์ใหม่', 'payload' => 'BIRTHDATE_CONFIRM_NO'],
+                ]),
+
+                // ❓ (2026-05-01) ทวนคำถาม — ปุ่ม ✅ ใช่ / ❌ ไม่ตรงคำถาม
+                'awaiting_question_confirmation' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ ถูกต้อง', 'payload' => 'QUESTION_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ไม่ตรงคำถาม', 'payload' => 'QUESTION_CONFIRM_NO'],
+                ]),
+
                 // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
                 'awaiting_tarot_draw' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => 'เปิดไพ่', 'payload' => 'DRAW_TAROT'],
@@ -574,9 +586,10 @@ class FortuneChannelManager
                 // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2 แพคเกจ
                 //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
                 //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
+                //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
                 'tier_choice', 'tier_choice_invalid' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🔹 39฿ พื้นฐาน', 'payload' => 'TIER_DEEP_39'],
-                    ['content_type' => 'text', 'title' => '🔮 99฿ เต็มสำรับ', 'payload' => 'TIER_CELTIC_99'],
+                    ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'],
+                    ['content_type' => 'text', 'title' => '🔮 ไพ่ 10 ใบ 99 บาท', 'payload' => 'TIER_CELTIC_99'],
                     ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                 ]),
 
@@ -1066,19 +1079,19 @@ class FortuneChannelManager
                 ? [
                     ['content_type' => 'text', 'title' => '🔮 เริ่มดูดวง', 'payload' => 'START_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
                 ]
                 : [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
                 ],
 
             // PAID stuck → เช็คสถานะ + คุยกับแม่หมอ
             'processing' => ($result['is_stuck'] ?? false)
                 ? [
                     ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_STATUS'],
-                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                    // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
                 ]
                 : [],
 
@@ -1086,14 +1099,14 @@ class FortuneChannelManager
             'restart_from_birthdate' => [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                 ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
-                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
             ],
 
             // วันเกิดผิดรูปแบบ
             'invalid_birthdate', 'retry_birthdate' => [
                 ['content_type' => 'text', 'title' => '🔄 เริ่มใหม่', 'payload' => 'RESTART'],
                 ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL'],
-                ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
             ],
 
             default => [],
@@ -1150,6 +1163,18 @@ class FortuneChannelManager
                 'awaiting_tarot_intention' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🧘 พร้อมแล้ว', 'text' => 'พร้อม'],
                     ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
+
+                // 📅 (2026-05-01) ทวนวันเกิด → quick reply ใช่/ไม่ใช่ (LINE)
+                'awaiting_birthdate_confirmation' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
+                    ['label' => '❌ ไม่ใช่ พิมพ์ใหม่', 'text' => 'ไม่ใช่'],
+                ]),
+
+                // ❓ (2026-05-01) ทวนคำถาม → quick reply ใช่/ไม่ตรงคำถาม (LINE)
+                'awaiting_question_confirmation' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
+                    ['label' => '❌ ไม่ตรงคำถาม', 'text' => 'ไม่ตรงคำถาม'],
                 ]),
 
                 // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
@@ -3242,7 +3267,7 @@ class FortuneChannelManager
             'buttons' => [
                 ['type' => 'postback', 'title' => '📖 อ่านคำทำนาย', 'payload' => 'VIEW_READING'],
                 ['type' => 'postback', 'title' => '⏰ ไว้ดูทีหลัง', 'payload' => 'VIEW_LATER'],
-                ['type' => 'postback', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_HUMAN'],
+                // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
             ],
         ]);
     }
