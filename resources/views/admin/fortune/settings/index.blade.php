@@ -1347,6 +1347,22 @@
                         </button>
                     </div>
 
+                    {{-- 🆕 (2026-05-01) Pattern update notice --}}
+                    @if(empty($settings->deep_prompt_template) && !empty($settings->deep_prompt_template_legacy ?? null))
+                    <div class="mb-3 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700 rounded-lg">
+                        <div class="flex items-start gap-2">
+                            <span class="text-2xl">🔔</span>
+                            <div class="flex-1 text-sm">
+                                <p class="font-bold text-amber-900 dark:text-amber-100">Prompt ถูกอัปเดตเป็นแพทเทิร์นใหม่ (2026-05-01)</p>
+                                <p class="mt-1 text-amber-700 dark:text-amber-300">
+                                    เวอร์ชันเดิมของคุณถูก backup ใน <code class="px-1 bg-amber-100 dark:bg-amber-800 rounded">deep_prompt_template_legacy</code> ใน DB
+                                    <br>เวอร์ชันใหม่ มี: Section A (ทาย persona) + closing + Thai cultural context + ความยาว 600-900 คำ
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
+
                     <textarea name="deep_prompt_template" rows="25" x-ref="deepPrompt"
                               class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-sm leading-relaxed"
                               placeholder="ใส่ Prompt สำหรับดูดวงเชิงลึก...">{{ old('deep_prompt_template', $settings->deep_prompt_template ?? $defaultDeepPrompt) }}</textarea>
@@ -1364,8 +1380,13 @@
                             <span>{zodiac_info} — ข้อมูลราศี</span>
                             <span>{planet_positions} — ตำแหน่งดาวในภพ</span>
                             <span>{transit_info} — ดาวโคจรปัจจุบัน</span>
+                            <span>{tarot_card} — ไพ่ที่เปิดได้ (ถ้ามี)</span>
                             <span>{previous_context} — คำทำนายก่อนหน้า</span>
                             <span>{user_profile} — ข้อมูลผู้ถาม (JSON)</span>
+                            <span class="font-bold text-purple-800 dark:text-purple-200">{section_a_block} — 🆕 Section A (Q1)</span>
+                            <span class="font-bold text-purple-800 dark:text-purple-200">{closing_section} — 🆕 ปิดท้าย (Q สุดท้าย)</span>
+                            <span class="font-bold text-purple-800 dark:text-purple-200">{thai_context} — 🆕 บริบทไทย (วันหวย ฯลฯ)</span>
+                            <span class="font-bold text-purple-800 dark:text-purple-200">{life_stage_hint} — 🆕 ช่วงชีวิต</span>
                         </div>
                     </div>
                 </div>
