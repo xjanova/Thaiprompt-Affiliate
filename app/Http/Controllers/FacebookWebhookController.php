@@ -1155,15 +1155,17 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🔇 (2026-05-01) Silent rule — ลูกค้าสั่ง: รูป/ลิงก์/วิดีโอ/อีโมจิ/sticker นอก fortune flow → ห้ามตอบ
+        //    เช็ค active fortune flow ก่อน (มี active = อยู่กลางขั้นตอนทำนาย/ชำระ)
+        $hasActiveFortune = FortuneReading::where('facebook_user_id', $senderId)
+            ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+            ->exists();
+
         // ตรวจสอบว่ามีรูปภาพแนบมาหรือไม่
         $userImageUrl = null;
         if (! empty($attachments)) {
             $userImageUrl = $this->facebookService->extractImageFromAttachments($attachments);
 
-            // 🎯 (2026-05-01) แยก sticker / image / อื่นๆ ออกจากกัน
-            //    - sticker → ส่งแบนเนอร์ดูดวง (throttle 1/วัน) ไม่ปล่อยทะลุไป AI
-            //    - image  → handleSlipImageOnly (อาจเป็นสลิป)
-            //    - อื่นๆ (audio/video/file) → silent skip
             $hasSticker = false;
             foreach ($attachments as $att) {
                 if (($att['type'] ?? '') === 'sticker' || isset($att['payload']['sticker_id'])) {
@@ -1172,32 +1174,48 @@ class FacebookWebhookController extends Controller
                 }
             }
 
-            // 📸 ส่งมาเฉพาะรูป (ไม่มี text) → ตอบตามบริบทของ active reading
-            //   - PENDING_PAYMENT → assume เป็นสลิป → AI ปลอบ + ขอให้กดปุ่ม "แจ้งชำระเงิน"
-            //   - PAID (กำลังประมวลผล) → "ระบบรับเงินแล้ว แม่หมอกำลังคำนวณ"
-            //   - ไม่มี active → ส่ง guidance generic
-            if (empty($messageText) && $userImageUrl) {
-                $this->handleSlipImageOnly($senderId);
-
-                return;
-            }
-
-            // 👋 sticker (ไม่มี text) → ส่งแบนเนอร์ welcome (throttle 1/วัน)
-            if (empty($messageText) && $hasSticker) {
-                $this->handleStickerReceived($senderId);
-
-                return;
-            }
-
-            // 🔇 attachment ประเภทอื่น (audio/video/file) ที่ไม่มี text → silent skip
-            if (empty($messageText)) {
-                Log::debug('FB: silent ignore non-text attachment', [
+            // 🔇 ไม่มี active flow + attachment ใดๆ → silent (ทุกประเภท)
+            if (empty($messageText) && ! $hasActiveFortune) {
+                Log::debug('FB: silent ignore attachment (no active fortune flow)', [
                     'sender_id' => $senderId,
+                    'has_image' => ! empty($userImageUrl),
+                    'has_sticker' => $hasSticker,
                     'attachment_types' => array_column($attachments, 'type'),
                 ]);
 
                 return;
             }
+
+            // 📸 มี active flow + รูป (อาจเป็นสลิป) → handleSlipImageOnly
+            //   จะตอบเฉพาะ PENDING_PAYMENT + PAID (พฤติกรรมเดิม)
+            if (empty($messageText) && $userImageUrl && $hasActiveFortune) {
+                $this->handleSlipImageOnly($senderId);
+
+                return;
+            }
+
+            // 🔇 sticker / video / audio / file ระหว่างกลาง active flow แต่ไม่ใช่รูป → silent
+            //   (ไม่อยากรบกวนถ้าผู้ใช้กำลังคิดวันเกิด/คำถาม)
+            if (empty($messageText)) {
+                Log::debug('FB: silent ignore non-image attachment in active flow', [
+                    'sender_id' => $senderId,
+                    'has_sticker' => $hasSticker,
+                    'attachment_types' => array_column($attachments, 'type'),
+                ]);
+
+                return;
+            }
+        }
+
+        // 🔇 (2026-05-01) ไม่มี active flow + ข้อความเป็นแค่ลิงก์/อีโมจิล้วน → silent
+        //   (ป้องกันลูกค้าทดลองส่ง junk ทำให้บอทพยายามตอบไม่ตรงประเด็น)
+        if (! empty($messageText) && ! $hasActiveFortune && $this->isNonFortuneNoise($messageText)) {
+            Log::debug('FB: silent ignore non-fortune noise (link/emoji-only, no active flow)', [
+                'sender_id' => $senderId,
+                'preview' => mb_substr($messageText, 0, 60),
+            ]);
+
+            return;
         }
 
         // ใช้ Conversational Flow ใหม่
@@ -1289,80 +1307,57 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // ⚪ ไม่มี active → ส่ง guidance generic
-            $this->facebookService->sendMessage(
-                $senderId,
-                "📸 ได้รับรูปภาพแล้วค่ะ\n\n"
-                . "💡 ถ้าเป็นสลิปการโอน — ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ ไม่ต้องส่งสลิปให้แอดมินค่ะ\n\n"
-                . "🔮 ถ้าต้องการเริ่มดูดวง พิมพ์ 'ดูดวง' หรือคำถามที่อยากรู้มาได้เลย ✨"
-            );
+            // ⚪ (2026-05-01) ไม่มี active reading → silent (ผู้ใช้สั่ง: ห้ามตอบรูปนอกโฟล)
+            //    เคสนี้เกิดเมื่อ user ส่งรูปขณะที่กำลังจะหมดอายุ paid window (>30 นาที)
+            //    หรือ status เปลี่ยนเป็น COMPLETED ระหว่างที่ส่ง — ไม่อยากรบกวน
+            Log::debug('Facebook: handleSlipImageOnly — no active reading → silent', [
+                'sender_id' => $senderId,
+            ]);
         } catch (\Throwable $e) {
-            Log::warning('Facebook: handleSlipImageOnly ล้มเหลว fallback generic', [
+            Log::warning('Facebook: handleSlipImageOnly ล้มเหลว — silent', [
                 'sender_id' => $senderId,
                 'error' => $e->getMessage(),
             ]);
-
-            // Fallback เดิม
-            $this->facebookService->sendMessage(
-                $senderId,
-                "📸 ได้รับรูปภาพแล้ว\n\nกรุณาพิมพ์ 'ดูดวง' เพื่อเริ่มดูดวง\n\nตัวอย่าง: ดูดวง เรื่องความรัก"
-            );
+            // silent — กันสแปม
         }
     }
 
     /**
-     * จัดการเมื่อลูกค้าส่ง sticker เข้ามา (ไม่มี text)
+     * 🔇 (2026-05-01) ตรวจว่าข้อความเป็น "noise" ที่ไม่เกี่ยวกับการดูดวง
      *
-     * 🎯 (2026-05-01) Throttled banner reply
-     *   - กลางโฟลว์ดูดวง → silent (ไม่รบกวน)
-     *   - นอกโฟลว์ + ไม่เคยส่ง banner ใน 24 ชม. → ส่ง welcome template ครั้งเดียว
-     *   - นอกโฟลว์ + เคยส่งแล้ว → silent
+     * คืน true เมื่อข้อความเป็น:
+     *   - ลิงก์/URL ล้วน (http/https/www/.com)
+     *   - อีโมจิล้วน (ไม่มีอักษรไทย/อังกฤษ/ตัวเลข)
+     *
+     * ใช้กรองข้อความตอน*ไม่มี active fortune flow* — ไม่ตอบ ไม่เปลือง AI
+     *
+     * @param  string  $text  ข้อความที่ลูกค้าส่งมา
      */
-    protected function handleStickerReceived(string $senderId): void
+    protected function isNonFortuneNoise(string $text): bool
     {
-        try {
-            // กลางโฟลว์ดูดวง → ไม่ตอบ (กันรบกวน)
-            // ⚠️ FortuneReading ไม่มี STATUS_CANCELLED — flows ที่ยกเลิกใช้ STATUS_COMPLETED + cancellation_reason ใน conversation_state
-            $hasActive = FortuneReading::where('facebook_user_id', $senderId)
-                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
-                ->exists();
-
-            if ($hasActive) {
-                Log::debug('FB Sticker: silent (active reading)', ['sender_id' => $senderId]);
-
-                return;
-            }
-
-            // Throttle 1 ครั้ง/วัน (กันสแปม banner ทุก sticker)
-            // 🛡️ ใช้ Cache::add (atomic) — กัน race condition ที่ webhook ขนานกันเข้ามา
-            $cacheKey = "fb_sticker_banner_sent:{$senderId}";
-            $acquired = \Illuminate\Support\Facades\Cache::add($cacheKey, true, now()->addDay());
-            if (! $acquired) {
-                Log::debug('FB Sticker: throttled (banner already sent today)', ['sender_id' => $senderId]);
-
-                return;
-            }
-
-            // ส่ง welcome banner — ใช้ template ที่มีอยู่แล้ว
-            $userProfile = $this->facebookService->getUserProfile($senderId);
-            $userName = (is_array($userProfile) && ! empty($userProfile['name'])) ? $userProfile['name'] : 'คุณ';
-
-            $richService = new \App\Services\FacebookRichMessageService($this->settings);
-            $welcomeTemplate = $richService->buildWelcomeTemplate($userName);
-
-            // sendButtonTemplate expects message-form { attachment: {...} } — pass full template
-            $this->facebookService->sendButtonTemplate($senderId, $welcomeTemplate);
-
-            Log::info('👋 FB Sticker: ส่ง welcome banner (1 ครั้ง/วัน)', [
-                'sender_id' => $senderId,
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('FB Sticker: handleStickerReceived ล้มเหลว — silent', [
-                'sender_id' => $senderId,
-                'error' => $e->getMessage(),
-            ]);
-            // silent — ไม่ fallback message เพื่อกันสแปม
+        $trimmed = trim($text);
+        if ($trimmed === '') {
+            return false;
         }
+
+        // ลิงก์ล้วน — ตัด URL ออกแล้วเหลือ text < 5 chars
+        $withoutUrls = preg_replace('#https?://\S+|www\.\S+|\b\S+\.(com|net|org|co|io|ai|app|in|me|tv)\b#iu', '', $trimmed) ?? $trimmed;
+        if (mb_strlen(trim($withoutUrls)) < 5 && $withoutUrls !== $trimmed) {
+            return true; // ลิงก์ล้วน
+        }
+
+        // อีโมจิล้วน — ลบ emoji + space แล้วเหลือว่าง
+        // ครอบคลุม emoji unicode ranges + symbols
+        $withoutEmoji = preg_replace(
+            '#[\x{1F600}-\x{1F64F}\x{1F300}-\x{1F5FF}\x{1F680}-\x{1F6FF}\x{1F700}-\x{1F77F}\x{1F780}-\x{1F7FF}\x{1F800}-\x{1F8FF}\x{1F900}-\x{1F9FF}\x{1FA00}-\x{1FA6F}\x{1FA70}-\x{1FAFF}\x{2600}-\x{26FF}\x{2700}-\x{27BF}\x{1F000}-\x{1F02F}\x{1F0A0}-\x{1F0FF}\x{200D}\x{FE0F}\s]+#u',
+            '',
+            $trimmed
+        ) ?? $trimmed;
+        if (trim((string) $withoutEmoji) === '') {
+            return true; // อีโมจิ/space ล้วน
+        }
+
+        return false;
     }
 
     /**
