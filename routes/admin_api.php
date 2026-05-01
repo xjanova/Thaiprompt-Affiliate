@@ -3,8 +3,11 @@
 use App\Http\Controllers\Api\Admin\Ai\AiBotsController;
 use App\Http\Controllers\Api\Admin\Ai\AiDashboardController;
 use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
+use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceDashboardController;
+use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceOrdersController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
 use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
@@ -138,5 +141,16 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
 
     Route::prefix('ranks')->name('api.admin.ranks.')->group(function () {
         Route::get('/', [RanksController::class, 'index'])->name('index');
+    });
+
+    // ── Marketplace ──
+    Route::prefix('marketplace')->name('api.admin.marketplace.')->group(function () {
+        Route::get('/dashboard', [MarketplaceDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/orders', [MarketplaceOrdersController::class, 'index'])->name('orders.index');
+    });
+
+    // ── Analytics ──
+    Route::prefix('analytics')->name('api.admin.analytics.')->group(function () {
+        Route::get('/overview', [AnalyticsController::class, 'overview'])->name('overview');
     });
 });
