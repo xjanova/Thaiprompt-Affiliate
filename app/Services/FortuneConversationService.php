@@ -11038,39 +11038,107 @@ PROMPT;
                 : '(ไม่ระบุ)';
 
             $deepResponse = $reading->deep_response ?? '';
-            $deepSummary = mb_strlen($deepResponse) > 1500
-                ? mb_substr($deepResponse, 0, 1500) . '...'
+            $deepSummary = mb_strlen($deepResponse) > 1200
+                ? mb_substr($deepResponse, 0, 1200) . '...'
                 : $deepResponse;
 
             $name = $reading->resolveCustomerName();
 
-            $systemMessage = "คุณคือ \"แม่หมอจันทรา\" — หมอดูที่อ่อนโยน เป็นมิตร พูดไทยเท่านั้น\n\n"
-                . "บริบท: ลูกค้าชื่อ {$name} เพิ่งจ่ายเงินดูดวงเชิงลึก คุณทำนายให้แล้วเรียบร้อย\n"
-                . "ตอนนี้เขามาคุยต่อเพื่อขยายความ/ถามคำถามเสริมจากคำทำนายเดิม (ฟรี — ในขอบเขตเรื่องเดิม)\n\n"
-                . "ข้อมูลที่ใช้ทำนายไปแล้ว:\n"
-                . "- วันเกิด: {$birthDateThai}\n"
-                . "- คำทำนายที่ส่งไปแล้ว (สรุป):\n{$deepSummary}\n\n"
-                . "หน้าที่:\n"
-                . "1. ตอบจากบริบทคำทำนายเดิม + ดวงดาวเดิม + ไพ่ที่เปิดไปแล้ว\n"
-                . "2. อธิบายเพิ่ม วิเคราะห์เพิ่ม ยืนยัน หรือตอบคำถามที่เกี่ยวเนื่องกับเรื่องเดิม\n"
-                . "3. ห้ามทำนายเรื่องใหม่ที่ต้องเปิดไพ่/ดูดวงใหม่ — ถ้าจำเป็นต้องบอกว่า \"เรื่องนี้ต้องเปิดไพ่ใหม่\"\n"
-                . "4. ตอบสั้น กระชับ ไม่เกิน 200 คำ — ใช้ภาษาธรรมชาติ\n"
-                . "5. ห้ามขอวันเกิดใหม่ ห้ามขอข้อมูลใหม่ที่มีอยู่แล้ว\n";
+            // 🆕 (2026-05-01) Planet positions context — ให้ AI อ้างอิงตำแหน่งดาวเดิมในตอบ
+            $birthChartContext = '';
+            if ($reading->birth_date) {
+                try {
+                    $dayOfWeek = \Carbon\Carbon::parse($reading->birth_date->format('Y-m-d'))->dayOfWeek;
+                    $chartService = new FortuneChartService;
+                    $positions = $chartService->calculatePlanetPositions($dayOfWeek);
+                    $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+
+                    $lines = [];
+                    foreach ($positions as $houseNum => $planets) {
+                        if (! empty($planets)) {
+                            $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
+                            $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                            $lines[] = "ภพ{$houseNum}.{$houseName}: " . implode(',', $planetNames);
+                        }
+                    }
+                    if (! empty($lines)) {
+                        $birthChartContext = "\n[🪐 ตำแหน่งดาวเดิม — ใช้ผูกในการตอบ]\n" . implode(' | ', $lines) . "\n";
+                        if ($chaochana) {
+                            $birthChartContext .= "ดาวเจ้าชนะ: {$chaochana['planet']} | ธาตุ: {$chaochana['element']}\n";
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    // ข้ามไปได้ ไม่ critical
+                }
+            }
+
+            // 🆕 (2026-05-01) Tarot cards context — ไพ่ที่เปิดไปแล้ว ใช้อ้างอิง
+            $tarotCardContext = '';
+            $tarotCards = $reading->getCollectedTarotCards();
+            if (! empty($tarotCards)) {
+                $cardLines = [];
+                foreach ($tarotCards as $card) {
+                    $cardName = $card['card_name_th'] ?? $card['card_name_en'] ?? '?';
+                    $position = ($card['is_reversed'] ?? false) ? 'กลับหัว' : 'หงาย';
+                    $cardLines[] = "{$cardName} ({$position})";
+                }
+                $tarotCardContext = "\n[🃏 ไพ่ที่เปิดไปแล้ว — ใช้อ้างอิง ห้ามแต่งไพ่ใหม่]\n" . implode(' | ', $cardLines) . "\n";
+            }
+
+            // 🆕 (2026-05-01) Conversation history — จำบริบท Q+A ที่ผ่านมา (max last 6 turns)
+            $history = $reading->getConversationState('post_reading_history', []) ?: [];
+            $historyMessages = [];
+            $recentHistory = array_slice($history, -12); // last 12 entries = ~6 turns Q+A
+            foreach ($recentHistory as $turn) {
+                $historyMessages[] = [
+                    'role' => $turn['role'] ?? 'user',
+                    'content' => mb_substr((string) ($turn['content'] ?? ''), 0, 400),
+                ];
+            }
+            // เพิ่ม user message ปัจจุบัน
+            $historyMessages[] = ['role' => 'user', 'content' => $messageText];
+
+            $systemMessage = "คุณคือ *แม่หมอจันทรา* (ผู้หญิงวัย 40+) — หมอดูที่อ่อนโยน เป็นมิตร พูดไทยเท่านั้น
+แทนตัวเองด้วย *แม่หมอ/หมอจันทรา* + ลงท้าย *ค่ะ/นะคะ* — ห้าม: ครับ/ผม | หนู/เรา | ดิฉัน
+
+[บริบท]
+ลูกค้าชื่อ {$name} เพิ่งจ่ายเงินดูดวงเชิงลึกและได้รับคำทำนายจากแม่หมอแล้ว
+ตอนนี้เขากลับมาคุยต่อเพื่อขยายความ/ถามคำถามเสริม*ในขอบเขตเรื่องเดิม* (ฟรี ภายใน 48 ชม.)
+
+[ข้อมูลที่ใช้ทำนายไปแล้ว]
+- วันเกิด: {$birthDateThai}
+{$birthChartContext}{$tarotCardContext}
+[คำทำนายที่ส่งไปแล้ว — สรุป]
+{$deepSummary}
+
+[หน้าที่]
+1. *ตอบจากบริบทคำทำนายเดิม + ดวงดาวข้างบน + ไพ่ที่เปิดไปแล้ว* — ห้ามแต่งดาว/ไพ่ใหม่
+2. *จำบริบทการสนทนา* (history ด้านล่าง) — ถ้าลูกค้าเคยถามอะไรไปแล้ว อย่าซ้ำ ให้ต่อยอด
+3. ขยายความ วิเคราะห์เพิ่ม ยืนยัน หรือเชื่อมประเด็นจากคำทำนายเดิม
+4. *ห้ามทำนายเรื่องใหม่ที่ต้องเปิดไพ่/ดูดวงใหม่* — ถ้าจำเป็นบอก \"เรื่องนี้ต้องเปิดไพ่ใหม่ค่ะ\"
+5. *ตอบสั้น กระชับ 80-180 คำ* — ภาษาธรรมชาติ ฟันธง อย่าคลุมเครือ
+6. ห้ามขอวันเกิด/ข้อมูลใหม่ที่มีอยู่แล้ว";
 
             if (empty($this->settings->getChatAIApiKey())) {
                 return null; // ไม่มี API key → fallback ไป default flow
             }
 
-            $result = $aiService->chatWithCustomSystemPrompt(
+            // 🆕 ใช้ chatWithCustomSystemPromptHistory เพื่อส่ง history เข้า AI
+            $result = $aiService->chatWithCustomSystemPromptHistory(
                 $systemMessage,
-                $messageText,
-                ['temperature' => 0.7, 'max_tokens' => 600]
+                $historyMessages,
+                ['temperature' => 0.7, 'max_tokens' => 500]
             );
 
             $response = trim($result['response'] ?? '');
             if (empty($response)) {
                 return null;
             }
+
+            // 🆕 บันทึก Q+A เข้า history (เก็บ 16 turns ล่าสุด — กัน DB column โต)
+            $history[] = ['role' => 'user', 'content' => mb_substr($messageText, 0, 400)];
+            $history[] = ['role' => 'assistant', 'content' => mb_substr($response, 0, 400)];
+            $reading->setConversationState('post_reading_history', array_slice($history, -16));
 
             // นับ turn + บันทึก context
             $reading->setConversationState('post_reading_turns', $currentTurns + 1);
