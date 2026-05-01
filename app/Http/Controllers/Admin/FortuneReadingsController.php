@@ -261,15 +261,30 @@ class FortuneReadingsController extends Controller
             'admin' => auth()->user()?->name,
         ]);
 
-        // 🚀 Defer dispatch ไปหลัง response ส่งกลับ — กัน fastcgi_finish_request() ใน
-        //    ProcessDeepFortuneReadingJob::dispatchSmart() ทำ response body ว่างเปล่า
-        //    (เคสเดิม: คลิกปุ่ม → หน้าขาว เพราะ fastcgi_finish_request ถูกเรียกก่อน redirect)
+        // 🐛 (2026-05-02) Hardened against white-screen on QUEUE_CONNECTION=sync
+        //   Production มี QUEUE_CONNECTION=sync → ProcessDeepFortuneReadingJob::dispatchSmart()
+        //   จะ block 30-90s ระหว่างเรียก AI → PHP-FPM request_terminate_timeout (default 30s)
+        //   อาจ kill worker ก่อน response ส่งจริง → client เห็นหน้าขาว
+        //
+        //   Fix:
+        //   1) ใช้ app()->terminating() แทน register_shutdown_function — Laravel-canonical
+        //      callback runs *หลัง* $response->send() ใน Kernel::terminate()
+        //   2) เรียก fastcgi_finish_request() ใน callback เพื่อบังคับปิด FCGI connection
+        //      → client ได้ redirect 100% ก่อน AI call จะเริ่ม
+        //   3) set_time_limit(120) → กัน FPM kill กลางทาง
         $readingId = $reading->id;
-        register_shutdown_function(function () use ($readingId, $platform, $userId) {
+        app()->terminating(function () use ($readingId, $platform, $userId) {
+            // ส่ง response กลับ client ทันที + ตัด FCGI connection
+            if (function_exists('fastcgi_finish_request')) {
+                @fastcgi_finish_request();
+            }
+            // ขยาย timeout เพื่อให้ AI call จบโดยไม่โดน FPM kill
+            @set_time_limit(120);
+
             try {
                 ProcessDeepFortuneReadingJob::dispatchSmart($readingId, null, $platform, $userId);
             } catch (\Throwable $e) {
-                Log::error('Admin retry: dispatch failed in shutdown', [
+                Log::error('Admin retry: dispatch failed in terminating', [
                     'reading_id' => $readingId,
                     'error' => $e->getMessage(),
                 ]);
