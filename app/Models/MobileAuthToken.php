@@ -56,6 +56,14 @@ class MobileAuthToken extends Model
         'ip_address',
         'user_agent',
         'used_at',
+        // ── Admin QR Pairing fields (เพิ่ม 2026-05-01) ──
+        'is_admin',
+        'pair_code',
+        'pair_code_expires_at',
+        'generator_user_id',
+        'requires_2fa',
+        'two_factor_passed',
+        'claimed_at',
     ];
 
     /**
@@ -67,6 +75,12 @@ class MobileAuthToken extends Model
         'login_token_expires_at' => 'datetime',
         'auth_code_expires_at' => 'datetime',
         'used_at' => 'datetime',
+        // ── Admin pairing casts ──
+        'is_admin' => 'boolean',
+        'pair_code_expires_at' => 'datetime',
+        'requires_2fa' => 'boolean',
+        'two_factor_passed' => 'boolean',
+        'claimed_at' => 'datetime',
     ];
 
     /**
@@ -78,14 +92,35 @@ class MobileAuthToken extends Model
         'login_token',
         'code_challenge',
         'auth_code',
+        'pair_code',
     ];
 
     /**
-     * ความสัมพันธ์กับ User
+     * ความสัมพันธ์กับ User (ผู้ที่ login สำเร็จ)
      */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * ความสัมพันธ์กับ User ผู้สร้าง pair_code (admin web)
+     */
+    public function generator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'generator_user_id');
+    }
+
+    /**
+     * ตรวจสอบว่า pair_code หมดอายุหรือยัง
+     */
+    public function isPairCodeExpired(): bool
+    {
+        if (! $this->pair_code_expires_at) {
+            return true;
+        }
+
+        return $this->pair_code_expires_at < now();
     }
 
     /**

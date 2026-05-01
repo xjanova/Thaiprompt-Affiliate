@@ -24,6 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
 
             // Fresh Market routes (ตลาดสดไทยพร๊อม)
             Route::middleware('web')->group(base_path('routes/taladsod.php'));
+
+            // Admin Mobile API (Flutter app - /api/admin/*)
+            // ใช้ middleware 'api' เพื่อ skip CSRF + ใช้ stateless auth
+            Route::middleware('api')
+                ->prefix('api/admin')
+                ->group(base_path('routes/admin_api.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware) {
@@ -65,6 +71,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
             'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
+            'admin.api' => \App\Http\Middleware\AdminApiMiddleware::class,
             'super_admin' => \App\Http\Middleware\SuperAdminMiddleware::class,
             'hotel-admin' => \App\Http\Middleware\HotelAdminMiddleware::class,
             'role' => \App\Http\Middleware\CheckRole::class,

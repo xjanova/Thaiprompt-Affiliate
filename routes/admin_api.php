@@ -1,0 +1,91 @@
+<?php
+
+use App\Http\Controllers\Api\Admin\AuthController;
+use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\Finance\WalletController;
+use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
+use App\Http\Controllers\Api\Admin\PairingController;
+use Illuminate\Support\Facades\Route;
+
+/*
+|--------------------------------------------------------------------------
+| Admin Mobile API Routes
+|--------------------------------------------------------------------------
+|
+| Routes สำหรับ Thaiprompt Admin Mobile App (Flutter)
+| Mounted ภายใต้ /api/admin/*
+|
+| Authentication: Laravel Sanctum + AdminApiMiddleware
+| Token abilities: ['admin'] (ออกจาก /api/admin/login หรือ /api/admin/pair/claim)
+|
+| Convention:
+| - JSON envelope: { success: bool, data: any, message?: string, errors?: object }
+| - HTTP status: 200/201 success, 401 unauth, 403 forbidden, 422 validation, 500 server
+| - Pagination: Laravel default { data, current_page, last_page, per_page, total, links }
+|
+*/
+
+// ────────────────────────────────────────────────────────────
+// Public endpoints (ไม่ต้อง login) — สำหรับ login flow
+// ────────────────────────────────────────────────────────────
+Route::prefix('auth')->name('api.admin.auth.')->group(function () {
+
+    // Login ด้วย email + password (จะคืน { requires_2fa, challenge_token } ถ้าเปิด 2FA)
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
+
+    // ยืนยัน 2FA จาก challenge_token → ได้ admin Sanctum token จริง
+    Route::post('/verify-2fa', [AuthController::class, 'verifyTwoFactor'])->name('verify-2fa');
+
+    // App ส่ง pair_code (จาก QR ที่สแกน) → ได้ admin token
+    Route::post('/pair/claim', [PairingController::class, 'claim'])->name('pair.claim');
+
+    // App polling สถานะ pair_code (เผื่อต้องรอ admin กดยืนยันที่ web)
+    Route::get('/pair/status', [PairingController::class, 'status'])->name('pair.status');
+});
+
+// ────────────────────────────────────────────────────────────
+// Authenticated endpoints (ต้อง admin token)
+// ────────────────────────────────────────────────────────────
+Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
+
+    // ── Auth/Profile ──
+    Route::prefix('auth')->name('api.admin.auth.')->group(function () {
+        Route::get('/me', [AuthController::class, 'me'])->name('me');
+        Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+        Route::post('/logout-all', [AuthController::class, 'logoutAll'])->name('logout-all');
+
+        // สร้าง pair_code (เฉพาะ admin ที่ login web อยู่ → POST จาก admin web เพื่อสร้าง QR)
+        Route::post('/pair/init', [PairingController::class, 'init'])->name('pair.init');
+        Route::post('/pair/cancel', [PairingController::class, 'cancel'])->name('pair.cancel');
+    });
+
+    // ── Dashboard ──
+    Route::prefix('dashboard')->name('api.admin.dashboard.')->group(function () {
+        Route::get('/', [DashboardController::class, 'index'])->name('index');
+        Route::get('/sparkline', [DashboardController::class, 'sparkline'])->name('sparkline');
+    });
+
+    // ── Finance: Wallets ──
+    Route::prefix('finance/wallets')->name('api.admin.finance.wallets.')->group(function () {
+        Route::get('/', [WalletController::class, 'index'])->name('index');
+        Route::get('/system-stats', [WalletController::class, 'systemStats'])->name('system-stats');
+        Route::get('/transactions', [WalletController::class, 'transactions'])->name('transactions');
+        Route::get('/{wallet}', [WalletController::class, 'show'])->name('show');
+        Route::post('/{wallet}/adjust', [WalletController::class, 'adjustBalance'])->name('adjust');
+        Route::post('/{wallet}/lock', [WalletController::class, 'lock'])->name('lock');
+        Route::post('/{wallet}/unlock', [WalletController::class, 'unlock'])->name('unlock');
+        Route::post('/{wallet}/suspend', [WalletController::class, 'suspend'])->name('suspend');
+        Route::post('/{wallet}/unsuspend', [WalletController::class, 'unsuspend'])->name('unsuspend');
+    });
+
+    // ── Finance: Withdrawals ──
+    Route::prefix('finance/withdrawals')->name('api.admin.finance.withdrawals.')->group(function () {
+        Route::get('/', [WithdrawalController::class, 'index'])->name('index');
+        Route::get('/pending', [WithdrawalController::class, 'pending'])->name('pending');
+        Route::get('/{withdrawal}', [WithdrawalController::class, 'show'])->name('show');
+        Route::post('/{withdrawal}/approve', [WithdrawalController::class, 'approve'])->name('approve');
+        Route::post('/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('reject');
+        Route::post('/{withdrawal}/complete', [WithdrawalController::class, 'complete'])->name('complete');
+        Route::post('/batch-approve', [WithdrawalController::class, 'batchApprove'])->name('batch-approve');
+    });
+});
