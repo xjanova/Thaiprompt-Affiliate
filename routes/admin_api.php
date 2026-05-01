@@ -10,6 +10,8 @@ use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneReadingsController;
 use App\Http\Controllers\Api\Admin\PairingController;
+use App\Http\Controllers\Api\Admin\RanksController;
+use App\Http\Controllers\Api\Admin\UsersController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -125,5 +127,16 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
             Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
             Route::get('/{reading}', [FortuneReadingsController::class, 'show'])->name('show');
         });
+    });
+
+    // ── Users + MLM ──
+    Route::prefix('users')->name('api.admin.users.')->group(function () {
+        Route::get('/', [UsersController::class, 'index'])->name('index');
+        Route::get('/stats', [UsersController::class, 'stats'])->name('stats');
+        Route::get('/{user}', [UsersController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('ranks')->name('api.admin.ranks.')->group(function () {
+        Route::get('/', [RanksController::class, 'index'])->name('index');
     });
 });
