@@ -1019,6 +1019,15 @@ class LineFortuneService implements MessagingPlatformInterface
                     ],
                     [
                         'type' => 'text',
+                        'text' => '📌 บริการดิจิทัล — งดคืนเงินทุกกรณี',
+                        'size' => 'xxs',
+                        'color' => '#999999',
+                        'align' => 'center',
+                        'margin' => 'md',
+                        'wrap' => true,
+                    ],
+                    [
+                        'type' => 'text',
                         'text' => "💡 หากโอนแล้วระบบไม่แจ้งเตือน\nให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้",
                         'size' => 'xs',
                         'color' => '#E65100',
