@@ -1,10 +1,20 @@
 <?php
 
+use App\Http\Controllers\Api\Admin\Ai\AiBotsController;
+use App\Http\Controllers\Api\Admin\Ai\AiDashboardController;
+use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
+use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
 use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneReadingsController;
+use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceDashboardController;
+use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceOrdersController;
 use App\Http\Controllers\Api\Admin\PairingController;
+use App\Http\Controllers\Api\Admin\RanksController;
+use App\Http\Controllers\Api\Admin\UsersController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -87,5 +97,60 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/{withdrawal}/reject', [WithdrawalController::class, 'reject'])->name('reject');
         Route::post('/{withdrawal}/complete', [WithdrawalController::class, 'complete'])->name('complete');
         Route::post('/batch-approve', [WithdrawalController::class, 'batchApprove'])->name('batch-approve');
+    });
+
+    // ── AI: Dashboard ──
+    Route::prefix('ai/dashboard')->name('api.admin.ai.dashboard.')->group(function () {
+        Route::get('/', [AiDashboardController::class, 'index'])->name('index');
+        Route::get('/timeseries', [AiDashboardController::class, 'timeseries'])->name('timeseries');
+    });
+
+    // ── AI: Providers ──
+    Route::prefix('ai/providers')->name('api.admin.ai.providers.')->group(function () {
+        Route::get('/', [AiProvidersController::class, 'index'])->name('index');
+        Route::get('/{provider}', [AiProvidersController::class, 'show'])->name('show');
+        Route::post('/{provider}/toggle', [AiProvidersController::class, 'toggle'])->name('toggle');
+        Route::post('/{provider}/test-connection', [AiProvidersController::class, 'testConnection'])->name('test-connection');
+    });
+
+    // ── AI: Bots ──
+    Route::prefix('ai/bots')->name('api.admin.ai.bots.')->group(function () {
+        Route::get('/', [AiBotsController::class, 'index'])->name('index');
+        Route::get('/{bot}', [AiBotsController::class, 'show'])->name('show');
+        Route::post('/{bot}/toggle', [AiBotsController::class, 'toggle'])->name('toggle');
+        Route::post('/{bot}/test', [AiBotsController::class, 'test'])->name('test');
+    });
+
+    // ── Fortune (ดูดวง) ──
+    Route::prefix('fortune')->name('api.admin.fortune.')->group(function () {
+        Route::get('/dashboard', [FortuneDashboardController::class, 'index'])->name('dashboard');
+
+        Route::prefix('readings')->name('readings.')->group(function () {
+            Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
+            Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
+            Route::get('/{reading}', [FortuneReadingsController::class, 'show'])->name('show');
+        });
+    });
+
+    // ── Users + MLM ──
+    Route::prefix('users')->name('api.admin.users.')->group(function () {
+        Route::get('/', [UsersController::class, 'index'])->name('index');
+        Route::get('/stats', [UsersController::class, 'stats'])->name('stats');
+        Route::get('/{user}', [UsersController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('ranks')->name('api.admin.ranks.')->group(function () {
+        Route::get('/', [RanksController::class, 'index'])->name('index');
+    });
+
+    // ── Marketplace ──
+    Route::prefix('marketplace')->name('api.admin.marketplace.')->group(function () {
+        Route::get('/dashboard', [MarketplaceDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/orders', [MarketplaceOrdersController::class, 'index'])->name('orders.index');
+    });
+
+    // ── Analytics ──
+    Route::prefix('analytics')->name('api.admin.analytics.')->group(function () {
+        Route::get('/overview', [AnalyticsController::class, 'overview'])->name('overview');
     });
 });
