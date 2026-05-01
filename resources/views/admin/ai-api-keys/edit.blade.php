@@ -34,6 +34,63 @@
                        class="w-full px-4 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-600 text-gray-500 dark:text-gray-400">
             </div>
 
+            {{-- 🎯 Model — per-key override --}}
+            @if(!empty($modelsByProvider[$key->provider]))
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Model <span class="text-xs text-gray-500">(ค่า default = ตัวแรก)</span>
+                </label>
+                <select x-model="form.model"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">-- ใช้ค่า default ของ provider --</option>
+                    @foreach($modelsByProvider[$key->provider] as $m)
+                        <option value="{{ $m }}" {{ $key->model === $m ? 'selected' : '' }}>{{ $m }}</option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Default: <span class="font-mono text-blue-600 dark:text-blue-400">{{ $modelsByProvider[$key->provider][0] ?? '—' }}</span>
+                </p>
+            </div>
+            @endif
+
+            {{-- 🌐 Custom Base URL --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Custom Base URL <span class="text-xs text-gray-500">(เลือกใช้)</span>
+                </label>
+                <input type="url" x-model="form.base_url"
+                       placeholder="{{ $defaultBaseUrls[$key->provider] ?? 'https://api.example.com/v1' }}"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Default: <span class="font-mono text-blue-600 dark:text-blue-400">{{ $defaultBaseUrls[$key->provider] ?? '—' }}</span>
+                </p>
+            </div>
+
+            {{-- 🔴 Critical alert (ถ้า key ติด critical) --}}
+            @if($key->is_critical)
+            <div class="bg-red-50 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg p-4">
+                <div class="flex items-start gap-3">
+                    <span class="text-2xl">🔴</span>
+                    <div class="flex-1">
+                        <h4 class="font-bold text-red-900 dark:text-red-100">Critical State</h4>
+                        <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                            Key นี้ติด critical (3 strikes) — ระบบไม่ใช้อัตโนมัติ
+                            ถ้าตรวจสอบแล้วใช้ได้ กดปุ่ม "ปลด Critical" เพื่อเปิดกลับ
+                        </p>
+                        @if($key->last_error)
+                        <p class="mt-2 text-xs text-red-600 dark:text-red-400 font-mono break-all">
+                            Last error: {{ Str::limit($key->last_error, 200) }}
+                        </p>
+                        @endif
+                        <button type="button" @click="clearCritical()"
+                                class="mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition">
+                            🔓 ปลด Critical
+                        </button>
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- API Key --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">API Key</label>
@@ -148,14 +205,38 @@ function editApiKey() {
         showApiKey: false,
         submitting: false,
         form: {
-            name: '{{ $key->name }}',
+            name: @json($key->name),
+            model: @json($key->model ?? ''),
+            base_url: @json($key->base_url ?? ''),
             api_key: '',
             is_active: {{ $key->is_active ? 'true' : 'false' }},
             priority: {{ $key->priority ?? 0 }},
             tokens_limit_daily: {{ $key->tokens_limit_daily ?? 'null' }},
             tokens_limit_monthly: {{ $key->tokens_limit_monthly ?? 'null' }},
             rate_limit_per_minute: {{ $key->rate_limit_per_minute ?? 'null' }},
-            notes: `{{ $key->notes ?? '' }}`
+            notes: @json($key->notes ?? '')
+        },
+
+        async clearCritical() {
+            if (!confirm('ปลด critical state? Key จะกลับมาใช้งานได้')) return;
+            try {
+                const response = await fetch('{{ route('admin.ai-api-keys.clear-critical', $key->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message);
+                    window.location.reload();
+                } else {
+                    alert(data.message || 'เกิดข้อผิดพลาด');
+                }
+            } catch (e) {
+                alert('เกิดข้อผิดพลาด: ' + e.message);
+            }
         },
 
         async submitForm() {

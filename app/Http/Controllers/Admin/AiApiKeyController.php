@@ -70,6 +70,8 @@ class AiApiKeyController extends Controller
         return view('admin.ai-api-keys.create', [
             'provider' => $provider,
             'providers' => AiApiKey::PROVIDERS,
+            'modelsByProvider' => AiApiKey::MODELS_BY_PROVIDER,
+            'defaultBaseUrls' => AiApiKey::DEFAULT_BASE_URLS,
             'pageTitle' => 'เพิ่ม API Key ใหม่',
         ]);
     }
@@ -82,6 +84,8 @@ class AiApiKeyController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:100',
             'provider' => 'required|string|in:'.implode(',', array_keys(AiApiKey::PROVIDERS)),
+            'model' => 'nullable|string|max:100',                  // 🎯 Per-key model
+            'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'required|string|min:10',
             'priority' => 'nullable|integer|min:0|max:100',
             'tokens_limit_daily' => 'nullable|integer|min:0',
@@ -113,6 +117,8 @@ class AiApiKeyController extends Controller
         return view('admin.ai-api-keys.edit', [
             'key' => $key,
             'providers' => AiApiKey::PROVIDERS,
+            'modelsByProvider' => AiApiKey::MODELS_BY_PROVIDER,
+            'defaultBaseUrls' => AiApiKey::DEFAULT_BASE_URLS,
             'pageTitle' => "แก้ไข {$key->name}",
         ]);
     }
@@ -124,6 +130,8 @@ class AiApiKeyController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100',
+            'model' => 'nullable|string|max:100',                  // 🎯 Per-key model
+            'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'nullable|string|min:10',  // nullable เพื่อไม่ต้องส่งถ้าไม่เปลี่ยน
             'priority' => 'nullable|integer|min:0|max:100',
             'tokens_limit_daily' => 'nullable|integer|min:0',
@@ -189,6 +197,7 @@ class AiApiKeyController extends Controller
         $key = AiApiKey::findOrFail($id);
         $key->update([
             'consecutive_errors' => 0,
+            'error_check_attempts' => 0,    // 🩺 reset health-check counter
             'last_error' => null,
             'last_error_at' => null,
             'disabled_until' => null,
@@ -197,6 +206,33 @@ class AiApiKeyController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'รีเซ็ต error counters สำเร็จ',
+        ]);
+    }
+
+    /**
+     * 🔴 (2026-05-01) ปลด critical state — admin ตรวจสอบแล้ว
+     */
+    public function clearCritical(int $id): JsonResponse
+    {
+        $key = AiApiKey::findOrFail($id);
+
+        if (! $key->is_critical) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Key นี้ไม่ได้อยู่ใน critical state',
+            ], 400);
+        }
+
+        $key->clearCritical();
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ ปลด critical state สำเร็จ — key พร้อมใช้งานอีกครั้ง',
+            'data' => [
+                'id' => $key->id,
+                'is_active' => $key->is_active,
+                'is_critical' => $key->is_critical,
+            ],
         ]);
     }
 

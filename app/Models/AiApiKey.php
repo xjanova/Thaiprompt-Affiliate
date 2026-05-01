@@ -58,6 +58,114 @@ class AiApiKey extends Model
         'anthropic' => 'Anthropic Claude',
         'deepseek' => 'DeepSeek',
         'typhoon' => 'Typhoon (SCB 10X)',
+        'xiaomi' => 'Xiaomi MiMo',
+    ];
+
+    /**
+     * 🎯 (2026-05-01) Default base URL ต่อ provider — แต่ละ key สามารถ override ได้ผ่าน $key->base_url
+     */
+    public const DEFAULT_BASE_URLS = [
+        'grok' => 'https://api.x.ai/v1',
+        'groq' => 'https://api.groq.com/openai/v1',
+        'openai' => 'https://api.openai.com/v1',
+        'gemini' => 'https://generativelanguage.googleapis.com/v1beta',
+        'qwen' => 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        'openrouter' => 'https://openrouter.ai/api/v1',
+        'anthropic' => 'https://api.anthropic.com/v1',
+        'deepseek' => 'https://api.deepseek.com/v1',
+        'typhoon' => 'https://api.opentyphoon.ai/v1',
+        'xiaomi' => 'https://api.xiaomimimo.com/v1',
+    ];
+
+    /**
+     * 🎯 (2026-05-01) Models ที่มีให้เลือกแต่ละ provider — สำหรับ admin dropdown
+     *
+     * ⚠️ Maintenance: เมื่อ provider ออกโมเดลใหม่ ให้เพิ่มที่นี่ — ลำดับแสดง = ลำดับใน array
+     *    ตัวแรกของแต่ละ provider = default model
+     */
+    public const MODELS_BY_PROVIDER = [
+        'grok' => [
+            'grok-2-latest',
+            'grok-2-1212',
+            'grok-2-vision-1212',
+            'grok-beta',
+            'grok-vision-beta',
+        ],
+        'groq' => [
+            'llama-3.3-70b-versatile',
+            'llama-3.1-8b-instant',
+            'llama-3.1-70b-versatile',
+            'meta-llama/llama-4-scout-17b-16e-instruct',
+            'meta-llama/llama-4-maverick-17b-128e-instruct',
+            'openai/gpt-oss-120b',
+            'openai/gpt-oss-20b',
+            'gemma2-9b-it',
+            'mixtral-8x7b-32768',
+        ],
+        'openai' => [
+            'gpt-4o',
+            'gpt-4o-mini',
+            'gpt-4-turbo',
+            'gpt-4',
+            'gpt-3.5-turbo',
+            'o1-preview',
+            'o1-mini',
+            'o3-mini',
+        ],
+        'gemini' => [
+            'gemini-2.0-flash-exp',
+            'gemini-2.0-flash',
+            'gemini-1.5-pro',
+            'gemini-1.5-flash',
+            'gemini-1.5-flash-8b',
+        ],
+        'qwen' => [
+            'qwen-max',
+            'qwen-plus',
+            'qwen-turbo',
+            'qwen2.5-72b-instruct',
+            'qwen2.5-coder-32b-instruct',
+        ],
+        'openrouter' => [
+            'anthropic/claude-3.5-sonnet',
+            'anthropic/claude-3.5-haiku',
+            'anthropic/claude-3-opus',
+            'openai/gpt-4o',
+            'openai/gpt-4o-mini',
+            'meta-llama/llama-3.3-70b-instruct',
+            'meta-llama/llama-3.1-405b-instruct',
+            'google/gemini-2.0-flash-exp:free',
+            'mistralai/mistral-large',
+            'deepseek/deepseek-chat',
+            'x-ai/grok-2-1212',
+        ],
+        'anthropic' => [
+            'claude-opus-4-7',
+            'claude-sonnet-4-6',
+            'claude-haiku-4-5',
+            'claude-opus-4',
+            'claude-sonnet-4',
+            'claude-3-5-sonnet-20241022',
+            'claude-3-5-haiku-20241022',
+            'claude-3-opus-20240229',
+        ],
+        'deepseek' => [
+            'deepseek-chat',
+            'deepseek-coder',
+            'deepseek-reasoner',
+        ],
+        'typhoon' => [
+            'typhoon-v2-70b-instruct',
+            'typhoon-v2-8b-instruct',
+            'typhoon-v1.5x-70b-instruct',
+        ],
+        'xiaomi' => [
+            'mimo-v2.5-pro',
+            'mimo-v2-pro',
+            'mimo-v2.5',
+            'mimo-v2-omni',
+            'mimo-v2-flash',
+        ],
     ];
 
     /**
@@ -78,8 +186,11 @@ class AiApiKey extends Model
     protected $fillable = [
         'name',
         'provider',
+        'model',                  // 🎯 (2026-05-01) Per-key model override
+        'base_url',               // 🌐 (2026-05-01) Per-key base URL override
         'api_key',
         'is_active',
+        'is_critical',            // 🔴 (2026-05-01) 3-strikes critical state
         'priority',
         'tokens_used_today',
         'tokens_used_month',
@@ -92,6 +203,8 @@ class AiApiKey extends Model
         'last_rate_limit_reset',
         'last_used_at',
         'consecutive_errors',
+        'error_check_attempts',   // 🩺 (2026-05-01) จำนวนครั้ง re-check หลัง disabled
+        'last_health_check_at',   // 🩺 (2026-05-01) เวลา health check ล่าสุด
         'last_error',
         'last_error_at',
         'disabled_until',
@@ -105,6 +218,7 @@ class AiApiKey extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'is_critical' => 'boolean',
         'priority' => 'integer',
         'tokens_used_today' => 'integer',
         'tokens_used_month' => 'integer',
@@ -115,9 +229,11 @@ class AiApiKey extends Model
         'requests_minute' => 'integer',
         'rate_limit_per_minute' => 'integer',
         'consecutive_errors' => 'integer',
+        'error_check_attempts' => 'integer',
         'last_rate_limit_reset' => 'datetime',
         'last_used_at' => 'datetime',
         'last_error_at' => 'datetime',
+        'last_health_check_at' => 'datetime',
         'disabled_until' => 'datetime',
         'metadata' => 'array',
         'tokens_reset_date' => 'date',
@@ -268,11 +384,18 @@ class AiApiKey extends Model
     }
 
     /**
-     * Scope: Keys ที่พร้อมใช้งาน (active + ไม่ถูก disable ชั่วคราว + ไม่เกิน limit)
+     * Scope: Keys ที่พร้อมใช้งาน
+     *  - active = true
+     *  - is_critical = false (🔴 critical keys ไม่ใช้อัตโนมัติ — 2026-05-01)
+     *  - ไม่ถูก disable ชั่วคราว
      */
     public function scopeAvailable($query)
     {
         return $query->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('is_critical')
+                    ->orWhere('is_critical', false);
+            })
             ->where(function ($q) {
                 $q->whereNull('disabled_until')
                     ->orWhere('disabled_until', '<=', now());
@@ -309,6 +432,11 @@ class AiApiKey extends Model
             return false;
         }
 
+        // 🔴 (2026-05-01) Critical = ไม่ใช้อัตโนมัติ
+        if ($this->is_critical) {
+            return false;
+        }
+
         // ถูก disable ชั่วคราว
         if ($this->disabled_until && $this->disabled_until > now()) {
             return false;
@@ -335,6 +463,175 @@ class AiApiKey extends Model
         return true;
     }
 
+    // ============================================================
+    // 🎯 (2026-05-01) Per-key model + base URL resolution
+    // ============================================================
+
+    /**
+     * คืน model ที่จะใช้สำหรับ key นี้
+     *
+     * Priority:
+     *   1. $this->model (per-key override)
+     *   2. ตัวแรกของ MODELS_BY_PROVIDER[provider]
+     *   3. null
+     */
+    public function resolveModel(): ?string
+    {
+        if (! empty($this->model)) {
+            return $this->model;
+        }
+
+        $list = self::MODELS_BY_PROVIDER[$this->provider] ?? [];
+
+        return $list[0] ?? null;
+    }
+
+    /**
+     * คืน base URL ที่จะใช้สำหรับ key นี้
+     *
+     * Priority:
+     *   1. $this->base_url (per-key override)
+     *   2. DEFAULT_BASE_URLS[provider]
+     *   3. null
+     */
+    public function resolveBaseUrl(): ?string
+    {
+        if (! empty($this->base_url)) {
+            return $this->base_url;
+        }
+
+        return self::DEFAULT_BASE_URLS[$this->provider] ?? null;
+    }
+
+    // ============================================================
+    // 🩺 (2026-05-01) Smart Error Handling + 3-Strikes Critical
+    // ============================================================
+
+    /**
+     * บันทึก error แบบฉลาด — แยก 429 (rate limit) จาก error อื่น
+     *
+     * Behavior:
+     *   - 429 → ไม่นับ consecutive_errors (เป็นเรื่องชั่วคราว)
+     *           ใช้ retry_after header ถ้ามี (default 60s)
+     *   - error อื่น → exponential backoff 5/15/30 min
+     *   - error_check_attempts >= 3 → mark critical, ไม่ใช้อัตโนมัติ รอ admin
+     *
+     * @param  string  $errorMessage   ข้อความ error
+     * @param  string|null  $model     model ที่ใช้ตอน error (สำหรับ log)
+     * @param  bool  $isRateLimit      true ถ้าเป็น 429 หรือ rate limit
+     * @param  int|null  $retryAfter   retry_after seconds (จาก response header)
+     */
+    public function recordSmartError(
+        string $errorMessage,
+        ?string $model = null,
+        bool $isRateLimit = false,
+        ?int $retryAfter = null
+    ): void {
+        // ถ้า critical แล้ว ไม่ทำอะไร (รอ admin)
+        if ($this->is_critical) {
+            return;
+        }
+
+        // 🛡️ (2026-05-01) Concurrent-error guard
+        //   ถ้า key ถูก disable อยู่แล้ว (cooldown ยังไม่หมด) → error นี้คือ in-flight call ที่ยังไม่ทันรู้ว่าโดน disable
+        //   ไม่ควรนับ strike ซ้ำ — แค่ update last_error
+        $stillInCooldown = $this->disabled_until && $this->disabled_until->isFuture();
+        if ($stillInCooldown) {
+            $this->update([
+                'last_error' => $errorMessage,
+                'last_error_at' => now(),
+            ]);
+            $this->usageLogs()->create([
+                'model' => $model,
+                'is_success' => false,
+                'error_message' => '[CONCURRENT] ' . $errorMessage,
+            ]);
+
+            return;
+        }
+
+        // 🎯 (2026-05-01) 429 ไม่นับ strike toward critical
+        //   เหตุผล: rate-limit เป็นเรื่องชั่วคราว, ไม่ใช่สัญญาณว่า key พัง
+        //   admin จะตัดสินใจ mark critical เองเมื่อเห็นว่า key โดน ban จริง
+        if ($isRateLimit) {
+            $cooldownSeconds = max(60, min($retryAfter ?? 60, 600));
+            $this->update([
+                'last_error' => $errorMessage,
+                'last_error_at' => now(),
+                'disabled_until' => now()->addSeconds($cooldownSeconds),
+                'last_health_check_at' => now(),
+                // ⚠️ ไม่แตะ consecutive_errors / error_check_attempts
+            ]);
+            $this->usageLogs()->create([
+                'model' => $model,
+                'is_success' => false,
+                'error_message' => "[429] {$errorMessage}",
+            ]);
+
+            return;
+        }
+
+        // Non-429 error: นับ strike + exponential backoff
+        $checkAttempts = ($this->error_check_attempts ?? 0) + 1;
+
+        // 🔴 3 strikes → critical → ไม่ใช้อัตโนมัติ
+        if ($checkAttempts >= 3) {
+            $this->update([
+                'is_critical' => true,
+                'is_active' => false,
+                'last_error' => $errorMessage,
+                'last_error_at' => now(),
+                'error_check_attempts' => $checkAttempts,
+                'disabled_until' => null,
+                'last_health_check_at' => now(),
+            ]);
+
+            // log critical
+            $this->usageLogs()->create([
+                'model' => $model,
+                'is_success' => false,
+                'error_message' => "[CRITICAL] {$errorMessage}",
+            ]);
+
+            return;
+        }
+
+        // คำนวณ cooldown — exponential backoff 5 / 15 / 30 min
+        $multiplier = [1, 3, 6][$checkAttempts - 1] ?? 1;
+        $cooldownSeconds = 5 * 60 * $multiplier;
+
+        $this->update([
+            'consecutive_errors' => ($this->consecutive_errors ?? 0) + 1,
+            'last_error' => $errorMessage,
+            'last_error_at' => now(),
+            'disabled_until' => now()->addSeconds($cooldownSeconds),
+            'error_check_attempts' => $checkAttempts,
+            'last_health_check_at' => now(),
+        ]);
+
+        $this->usageLogs()->create([
+            'model' => $model,
+            'is_success' => false,
+            'error_message' => $errorMessage,
+        ]);
+    }
+
+    /**
+     * ปลด critical (เมื่อ admin ตรวจสอบแล้ว)
+     */
+    public function clearCritical(): void
+    {
+        $this->update([
+            'is_critical' => false,
+            'is_active' => true,
+            'consecutive_errors' => 0,
+            'error_check_attempts' => 0,
+            'disabled_until' => null,
+            'last_error' => null,
+            'last_error_at' => null,
+        ]);
+    }
+
     /**
      * บันทึกการใช้งาน tokens
      */
@@ -353,7 +650,9 @@ class AiApiKey extends Model
 
         $this->update([
             'last_used_at' => now(),
-            'consecutive_errors' => 0,  // reset errors เมื่อใช้งานสำเร็จ
+            'consecutive_errors' => 0,        // reset errors เมื่อใช้งานสำเร็จ
+            'error_check_attempts' => 0,      // 🩺 (2026-05-01) reset health-check counter
+            'disabled_until' => null,         // ปลด temporary disable
         ]);
 
         // บันทึก log

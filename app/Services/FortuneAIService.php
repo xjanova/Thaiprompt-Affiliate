@@ -32,6 +32,13 @@ class FortuneAIService
 
     protected ?AiApiKey $currentKey = null;
 
+    /**
+     * 🎯 (2026-05-01) base URL ของ key ที่กำลัง call อยู่
+     *   - ถูก override โดย callProviderDirect() เมื่อมี per-key base_url
+     *   - ใช้ใน callXiaomi() (และ provider อื่นที่อาจมี endpoint custom)
+     */
+    protected ?string $currentBaseUrl = null;
+
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
@@ -1343,7 +1350,8 @@ PROMPT;
                 Log::info("FortuneAI: ลอง key [{$keyNum}/{$totalKeys}] {$keyLabel} (elapsed={$elapsedSec}s)");
 
                 $result = $this->callProviderDirect(
-                    $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config
+                    $keyInfo['provider'], $keyInfo['api_key'], $keyInfo['model'], $prompt, $config,
+                    $keyInfo['base_url'] ?? null
                 );
 
                 // สำเร็จ! — บันทึก usage + release in-flight
@@ -1414,15 +1422,17 @@ PROMPT;
      * @param  array  $config  การตั้งค่า
      * @return array ผลลัพธ์
      */
-    protected function callProviderDirect(string $provider, string $apiKey, string $model, string $prompt, array $config): array
+    protected function callProviderDirect(string $provider, string $apiKey, string $model, string $prompt, array $config, ?string $baseUrl = null): array
     {
         // บันทึก original values
         $origApiKey = $this->apiKey;
         $origModel = $this->model;
+        $origBaseUrl = $this->currentBaseUrl;
 
         // Override ชั่วคราว
         $this->apiKey = $apiKey;
         $this->model = $model;
+        $this->currentBaseUrl = $baseUrl;  // 🎯 (2026-05-01) per-call base URL — ใช้กับ callXiaomi ฯลฯ
 
         try {
             return match ($provider) {
@@ -1433,12 +1443,14 @@ PROMPT;
                 'openrouter' => $this->callOpenRouter($prompt, $config),
                 'deepseek' => $this->callDeepSeek($prompt, $config),
                 'typhoon' => $this->callTyphoon($prompt, $config),
+                'xiaomi' => $this->callXiaomi($prompt, $config),    // 🆕 (2026-05-01) Xiaomi MiMo
                 default => throw new Exception("Provider '{$provider}' ไม่รองรับ"),
             };
         } finally {
             // คืนค่า original เสมอ
             $this->apiKey = $origApiKey;
             $this->model = $origModel;
+            $this->currentBaseUrl = $origBaseUrl;
         }
     }
 
@@ -1462,7 +1474,7 @@ PROMPT;
     protected function getDownProviders(): array
     {
         $downList = [];
-        foreach (['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'openai', 'anthropic'] as $provider) {
+        foreach (['gemini', 'groq', 'grok', 'qwen', 'openrouter', 'deepseek', 'typhoon', 'openai', 'anthropic', 'xiaomi'] as $provider) {
             if (cache()->has("ai_circuit_breaker:{$provider}")) {
                 $downList[] = $provider;
             }
@@ -1623,10 +1635,12 @@ PROMPT;
                         continue;
                     }
 
+                    // 🎯 (2026-05-01) ใช้ per-key model + base_url (override default ของ provider)
                     $keys[] = [
                         'provider' => $provider,
                         'api_key' => $poolKey->api_key,
-                        'model' => $this->getDefaultModelForProvider($provider),
+                        'model' => $poolKey->resolveModel() ?? $this->getDefaultModelForProvider($provider),
+                        'base_url' => $poolKey->resolveBaseUrl(),
                         'pool_key' => $poolKey,
                         'source' => 'pool',
                         'name' => $poolKey->name ?? "Pool #{$poolKey->id}",
@@ -1860,6 +1874,9 @@ PROMPT;
             'openrouter' => 'anthropic/claude-3-haiku',
             'deepseek' => 'deepseek-chat',
             'typhoon' => 'typhoon-v2-70b-instruct',
+            'xiaomi' => 'mimo-v2.5-pro',          // 🆕 (2026-05-01) Xiaomi MiMo
+            'openai' => 'gpt-4o-mini',
+            'anthropic' => 'claude-haiku-4-5',
             default => 'gemini-2.0-flash',
         };
     }
@@ -2211,6 +2228,56 @@ PROMPT;
                 'model' => $this->model,
             ]);
             throw new Exception("Groq API Error: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-01) Xiaomi MiMo API (OpenAI-compatible)
+     *
+     * Endpoint: https://api.xiaomimimo.com/v1/chat/completions (default)
+     *           https://token-plan-cn.xiaomimimo.com/v1/chat/completions (Token Plan)
+     *
+     * Models (chat): mimo-v2.5-pro, mimo-v2-pro, mimo-v2.5, mimo-v2-omni, mimo-v2-flash
+     * API Key format: sk-xxxxx (pay-as-you-go) or tp-xxxxx (token plan)
+     *
+     * Per-key base_url override:
+     *   1. ใช้ $this->currentBaseUrl ที่ callProviderDirect() override ให้ (ถูกต้องในกรณี failover)
+     *   2. fallback ไป DEFAULT_BASE_URLS['xiaomi']
+     */
+    protected function callXiaomi(string $prompt, array $config = []): array
+    {
+        $baseUrl = $this->currentBaseUrl
+            ?: (\App\Models\AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/chat/completions';
+
+        try {
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
+                ->withToken($this->apiKey)
+                ->post($endpoint, [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'provider' => 'xiaomi',
+                'model' => $this->model,
+            ];
+        } catch (Exception $e) {
+            Log::error('Xiaomi MiMo API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+                'endpoint' => $endpoint,
+            ]);
+            throw new Exception("Xiaomi MiMo API Error: {$e->getMessage()}");
         }
     }
 
@@ -2781,7 +2848,9 @@ PROMPT;
         }
 
         try {
-            $this->currentKey->recordError($errorMessage, $model);
+            // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
+            [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
+            $this->currentKey->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
         } catch (\Exception $e) {
             Log::warning('FortuneAIService: บันทึก error ไม่สำเร็จ', ['error' => $e->getMessage()]);
         }
@@ -2820,12 +2889,51 @@ PROMPT;
     protected function recordErrorForKey(AiApiKey $key, string $errorMessage, ?string $model = null): void
     {
         try {
-            $key->recordError($errorMessage, $model);
+            // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
+            [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
+            $key->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
         } catch (\Exception $e) {
             Log::warning('FortuneAI: บันทึก error สำหรับ key ไม่สำเร็จ', [
                 'key_id' => $key->id,
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🩺 (2026-05-01) ตรวจจับ rate limit (429) จากข้อความ error + ดึง retry_after ถ้ามี
+     *
+     * รองรับรูปแบบที่พบบ่อย:
+     *   - HTTP 429 / "Too Many Requests"
+     *   - "rate_limit_exceeded" / "rate limit"
+     *   - "quota exceeded"
+     *   - "Retry-After: 60"
+     *   - "retry after 30 seconds"
+     *
+     * @return array{0: bool, 1: int|null}  [isRateLimit, retryAfterSeconds]
+     */
+    protected function detectRateLimit(string $errorMessage): array
+    {
+        $msg = mb_strtolower($errorMessage);
+        $isRateLimit = (
+            str_contains($msg, '429')
+            || str_contains($msg, 'too many requests')
+            || str_contains($msg, 'rate limit')
+            || str_contains($msg, 'rate_limit')
+            || str_contains($msg, 'quota exceeded')
+            || str_contains($msg, 'quota_exceeded')
+        );
+
+        $retryAfter = null;
+        if ($isRateLimit) {
+            // จับ retry_after / Retry-After: NNN
+            if (preg_match('/retry[\s_-]?after[:\s]+(\d{1,5})/i', $errorMessage, $m)) {
+                $retryAfter = (int) $m[1];
+            } elseif (preg_match('/(\d{1,4})\s*(?:s|seconds?)\b/i', $errorMessage, $m)) {
+                $retryAfter = (int) $m[1];
+            }
+        }
+
+        return [$isRateLimit, $retryAfter];
     }
 }

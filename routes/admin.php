@@ -4130,6 +4130,8 @@ Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
     Route::post('/{id}/toggle', [AiApiKeyController::class, 'toggle'])->name('toggle');
     Route::post('/{id}/reset-errors', [AiApiKeyController::class, 'resetErrors'])->name('reset-errors');
     Route::post('/{id}/test', [AiApiKeyController::class, 'test'])->name('test');
+    // 🔴 (2026-05-01) Clear critical state — admin ตรวจสอบแล้วและยืนยันให้ key กลับมาใช้
+    Route::post('/{id}/clear-critical', [AiApiKeyController::class, 'clearCritical'])->name('clear-critical');
 
     // Logs for specific key
     Route::get('/{id}/logs', [AiApiKeyController::class, 'logs'])->name('key.logs');

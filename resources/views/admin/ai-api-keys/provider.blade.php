@@ -129,7 +129,12 @@
                             </div>
                         </td>
                         <td class="px-6 py-4">
-                            @if($key['is_available'])
+                            {{-- 🔴 (2026-05-01) Critical state — สูงสุด priority --}}
+                            @if(!empty($key['is_critical']))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white animate-pulse">
+                                🔴 CRITICAL
+                            </span>
+                            @elseif($key['is_available'])
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                                 พร้อมใช้
                             </span>
@@ -146,6 +151,22 @@
                             @else
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                                 ปิดใช้งาน
+                            </span>
+                            @endif
+
+                            {{-- 🩺 Health-check attempts (1/3, 2/3, 3/3) --}}
+                            @if(!empty($key['error_check_attempts']) && $key['error_check_attempts'] > 0)
+                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300"
+                                  title="Health-check attempts ก่อน critical">
+                                🩺 {{ $key['error_check_attempts'] }}/3
+                            </span>
+                            @endif
+
+                            {{-- 🎯 Per-key model badge --}}
+                            @if(!empty($key['model']))
+                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-mono bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
+                                  title="Model สำหรับ key นี้">
+                                🎯 {{ $key['model'] }}
                             </span>
                             @endif
 

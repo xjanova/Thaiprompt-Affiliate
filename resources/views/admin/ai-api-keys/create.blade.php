@@ -33,13 +33,46 @@
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Provider <span class="text-red-500">*</span>
                 </label>
-                <select x-model="form.provider" required
+                <select x-model="form.provider" @change="onProviderChange()" required
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     <option value="">-- เลือก Provider --</option>
                     @foreach($providers as $key => $name)
                     <option value="{{ $key }}" {{ $provider === $key ? 'selected' : '' }}>{{ $name }}</option>
                     @endforeach
                 </select>
+            </div>
+
+            {{-- Model — cascading dropdown ตาม provider --}}
+            <div x-show="form.provider && availableModels.length > 0" x-cloak>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Model <span class="text-xs text-gray-500">(ค่า default ของ provider จะใช้ตัวแรก)</span>
+                </label>
+                <select x-model="form.model"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">-- ใช้ค่า default ของ provider --</option>
+                    <template x-for="m in availableModels" :key="m">
+                        <option :value="m" x-text="m"></option>
+                    </template>
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    เลือก model ที่จะใช้กับ key นี้ — ถ้าไม่เลือก จะใช้ตัวแรก:
+                    <span class="font-mono text-blue-600 dark:text-blue-400" x-text="availableModels[0] || '—'"></span>
+                </p>
+            </div>
+
+            {{-- Base URL — สำหรับ provider ที่มี endpoint ต่างกัน (Xiaomi, custom proxy) --}}
+            <div x-show="form.provider" x-cloak>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Custom Base URL
+                    <span class="text-xs text-gray-500">(เลือกใช้ — ปล่อยว่างเพื่อใช้ default)</span>
+                </label>
+                <input type="url" x-model="form.base_url"
+                       :placeholder="defaultBaseUrl || 'https://api.example.com/v1'"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Default ของ provider:
+                    <span class="font-mono text-blue-600 dark:text-blue-400" x-text="defaultBaseUrl || '—'"></span>
+                </p>
             </div>
 
             {{-- API Key --}}
@@ -130,15 +163,36 @@ function createApiKey() {
     return {
         showApiKey: false,
         submitting: false,
+        // 🎯 (2026-05-01) provider → models map (cascading dropdown)
+        modelsByProvider: @json($modelsByProvider),
+        defaultBaseUrls: @json($defaultBaseUrls),
+        availableModels: [],
+        defaultBaseUrl: '',
         form: {
             name: '',
             provider: '{{ $provider ?? '' }}',
+            model: '',
+            base_url: '',
             api_key: '',
             priority: 0,
             tokens_limit_daily: '',
             tokens_limit_monthly: '',
             rate_limit_per_minute: '',
             notes: ''
+        },
+
+        init() {
+            this.onProviderChange();
+        },
+
+        onProviderChange() {
+            const p = this.form.provider;
+            this.availableModels = this.modelsByProvider[p] || [];
+            this.defaultBaseUrl = this.defaultBaseUrls[p] || '';
+            // ถ้า model ที่เลือกอยู่ ไม่อยู่ใน list ใหม่ → reset
+            if (this.form.model && !this.availableModels.includes(this.form.model)) {
+                this.form.model = '';
+            }
         },
 
         async submitForm() {

@@ -478,6 +478,11 @@ class AiApiKeyPoolService
                 'masked_key' => $key->masked_key,
                 'is_active' => $key->is_active,
                 'is_available' => $key->isAvailable(),
+                'is_critical' => $key->is_critical ?? false,        // 🔴 (2026-05-01) Critical state
+                'model' => $key->model,                              // 🎯 (2026-05-01) Per-key model
+                'resolved_model' => $key->resolveModel(),            // model ที่จะใช้จริง
+                'base_url' => $key->base_url,                        // 🌐 (2026-05-01) Per-key base URL
+                'resolved_base_url' => $key->resolveBaseUrl(),       // base URL ที่จะใช้จริง
                 'priority' => $key->priority,
                 'tokens_used_today' => $key->tokens_used_today,
                 'tokens_used_month' => $key->tokens_used_month,
@@ -491,6 +496,7 @@ class AiApiKeyPoolService
                 'requests_today' => $key->requests_today,
                 'last_used_at' => $key->last_used_at?->diffForHumans(),
                 'consecutive_errors' => $key->consecutive_errors,
+                'error_check_attempts' => $key->error_check_attempts ?? 0,    // 🩺 (2026-05-01) 3-strikes counter
                 'last_error' => $key->last_error,
                 'last_error_at' => $key->last_error_at?->diffForHumans(),
                 'disabled_until' => $key->disabled_until?->diffForHumans(),
