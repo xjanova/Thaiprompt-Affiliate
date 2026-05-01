@@ -164,8 +164,9 @@ class FortuneChannelManager
         // เพิ่ม platform info + ชื่อผู้ใช้ (ให้ handler ใช้ fallback ได้)
         $result['platform'] = $platform;
         $result['user_id'] = $userId;
-        $result['user_name'] = $result['reading']?->facebook_user_name
-            ?? $userProfile['name']
+        // 🛠️ (2026-05-01) ใช้ ?: เพื่อ fallback empty string → 'คุณ' (?? ไม่ catch '')
+        $result['user_name'] = ($result['reading']?->facebook_user_name ?: null)
+            ?? ($userProfile['name'] ?: null)
             ?? 'คุณ';
 
         // อัพเดท reading ด้วย platform info

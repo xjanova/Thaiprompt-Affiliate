@@ -2272,7 +2272,8 @@ class FortuneConversationService
             ];
         }
 
-        $name = $userProfile['name'] ?? 'คุณ';
+        // 🛠️ (2026-05-01) ใช้ ?: เพื่อ fallback empty string → 'คุณ' (?? ไม่ catch '')
+        $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
 
         // ⚡ FAST PATH 1 (2026-04-29): ถ้าเปิด Celtic + Deep → ไปที่ tier menu ทันที
         // เหตุผล: ตามนโยบายใหม่ "ดูดวง" คือคำเดียวที่ใช้ — ไม่มีคำว่า "ดูดวงละเอียด" แยก
@@ -2704,7 +2705,8 @@ class FortuneConversationService
             ];
         }
 
-        $name = $userProfile['name'] ?? 'คุณ';
+        // 🛠️ (2026-05-01) ใช้ !empty เพื่อ fallback empty string → 'คุณ' (?? ไม่ catch '')
+        $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
 
         // เช็คสิทธิ์ก่อน
@@ -3229,7 +3231,8 @@ class FortuneConversationService
             // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
             $this->closeAllActiveConversations($facebookUserId);
 
-            $name = $userProfile['name'] ?? 'คุณ';
+            // 🛠️ (2026-05-01) ใช้ !empty เพื่อ fallback empty string → 'คุณ' (?? ไม่ catch '')
+            $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
 
             // 🆕 (2026-04-29) Tier choice mode — ถ้า Celtic เปิด → ตั้ง state TIER_CHOICE
             //    user feedback: Discovery Chat ไม่เวิร์ค → ใช้ tier menu (39฿ vs 99฿) ตรงไป

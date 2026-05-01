@@ -1948,13 +1948,18 @@ class FacebookWebhookController extends Controller
             if (! is_array($userProfile) || empty($userProfile['name']) || $userProfile['name'] === 'คุณ') {
                 $savedName = \App\Models\FortuneUserCredit::findByUser($senderId, 'facebook')?->facebook_user_name;
 
+                // 🛠️ (2026-05-01) ห้ามใช้ '' เป็น fallback — กัน DB save empty string
+                //    ChannelManager::resolveUserName() จะ scan historical readings ต่อให้
+                //    เป็น 'คุณ' (treated as not-human-like ใน isHumanLikeName)
                 $userProfile = [
-                    'name' => ($savedName && $savedName !== 'คุณ') ? $savedName : '',
+                    'name' => ($savedName && $savedName !== 'คุณ' && $savedName !== '')
+                        ? $savedName
+                        : 'คุณ',
                     'id' => $senderId,
                 ];
-                Log::info('Facebook: ดึงโปรไฟล์ไม่สำเร็จ ใช้ชื่อที่บันทึกไว้/ว่าง', [
+                Log::info('Facebook: ดึงโปรไฟล์ไม่สำเร็จ ใช้ชื่อที่บันทึกไว้/fallback "คุณ"', [
                     'sender_id' => $senderId,
-                    'used_saved_name' => ! empty($savedName),
+                    'used_saved_name' => ! empty($savedName) && $savedName !== 'คุณ',
                 ]);
             }
 
