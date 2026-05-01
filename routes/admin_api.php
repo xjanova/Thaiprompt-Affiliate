@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
 use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
+use App\Http\Controllers\Api\Admin\Fortune\FortuneReadingsController;
 use App\Http\Controllers\Api\Admin\PairingController;
 use Illuminate\Support\Facades\Route;
 
@@ -112,5 +114,16 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::get('/{bot}', [AiBotsController::class, 'show'])->name('show');
         Route::post('/{bot}/toggle', [AiBotsController::class, 'toggle'])->name('toggle');
         Route::post('/{bot}/test', [AiBotsController::class, 'test'])->name('test');
+    });
+
+    // ── Fortune (ดูดวง) ──
+    Route::prefix('fortune')->name('api.admin.fortune.')->group(function () {
+        Route::get('/dashboard', [FortuneDashboardController::class, 'index'])->name('dashboard');
+
+        Route::prefix('readings')->name('readings.')->group(function () {
+            Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
+            Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
+            Route::get('/{reading}', [FortuneReadingsController::class, 'show'])->name('show');
+        });
     });
 });
