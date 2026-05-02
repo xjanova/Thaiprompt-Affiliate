@@ -75,7 +75,7 @@ class FortuneCelticCrossController extends Controller
         $settings->enable_celtic_cross = $request->boolean('enable_celtic_cross');
         $settings->celtic_cross_proactive_enabled = $request->boolean('celtic_cross_proactive_enabled');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
-        $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 3;
+        $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
         $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 60;
 
         // เก็บ prompt เฉพาะถ้าส่งมา (เว้นว่าง = ใช้ default ใน CelticCrossService)

@@ -670,6 +670,21 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
                 ]),
 
+                // celtic_session_ended → ส่งภาพ Celtic Cross spread (ที่ระลึก) + closing message
+                // 🖼️ (2026-05-03) ภาพ composite ส่งตอนจบ ไม่ใช่ตอนเปิดครบ 10 ใบ
+                'celtic_session_ended' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['celtic_summary_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
+
+                    return $fbService->sendMessage($userId, $message, $extra ?? []);
+                })(),
+
                 // celtic actions ที่เป็น text-only (cancelled, completed, expired, ai_failed, etc.)
                 'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',

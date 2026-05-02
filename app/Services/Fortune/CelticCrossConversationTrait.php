@@ -578,35 +578,28 @@ trait CelticCrossConversationTrait
      */
     protected function onCelticAllCardsPicked(FortuneReading $reading, string $lastCardMessage, ?string $lastCardImage = null): array
     {
-        // สร้างภาพ composite
-        $composeUrl = null;
-        try {
-            $generator = app(CelticSpreadImageGenerator::class);
-            $composeUrl = $generator->generate($reading);
-        } catch (\Exception $e) {
-            Log::warning('Celtic: composite image fail', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
+        // 🖼️ (2026-05-03) ไม่ส่งภาพ composite ตอนนี้ — เก็บไว้โชว์ตอนจบ session
+        //    เดิม: ส่งภาพหลังเปิดครบ 10 ใบ → ลูกค้าเห็นก่อนถาม Q1
+        //    ใหม่: รวบเป็น "ที่ระลึก" ตอน endCelticSession (ดูดีกว่า)
 
         // ขยับ state เข้า awaiting question
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
+        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
         $followupText = "\n\n──────────────────────\n"
-            . "🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n"
-            . "เจ้าชะตาดูภาพ Celtic Cross ที่จัดเรียงให้แล้วนะคะ ✨\n\n"
+            . "🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n\n"
             . "🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
             . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
-            . "✨ หลังคำทำนายแรก เจ้าชะตาถามต่อได้ไม่จำกัดภายใน 30 นาที\n"
-            . "🔚 เมื่อแม่หมอเห็นว่าครบแล้ว แม่หมอจะกล่าวลาเอง";
+            . "❓ ถามได้ *{$maxQ} คำถาม* (ภายใน 30 นาที)\n"
+            . "🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบทำนาย เป็นที่ระลึก ✨\n"
+            . "🔚 พิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
 
         return [
             'action' => 'celtic_all_picked',
             'message' => $lastCardMessage . $followupText,
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
-            'celtic_summary_image_url' => $composeUrl, // ส่งภาพ composite ก่อนข้อความถามคำถาม
+            // celtic_summary_image_url removed — เลื่อนไป endCelticSession
         ];
     }
 
@@ -654,9 +647,15 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // เช็ค time window 30 นาที (นับจาก Q1 ตอบเสร็จ — anti-troll, ไม่จำกัดจำนวนคำถาม)
+        // เช็ค time window (นับจาก Q1 ตอบเสร็จ)
         if (! $reading->canAskMoreCeltic()) {
             return $this->endCelticSession($reading, 'time_expired');
+        }
+
+        // 🔢 (2026-05-03) เช็คจำนวนคำถาม — admin ตั้งใน celtic_cross_max_questions (default 5)
+        $maxQuestions = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        if ($reading->celtic_questions_used >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached');
         }
 
         // ส่งให้ AI Pool
@@ -686,16 +685,24 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'ai_signal', $result['response']);
         }
 
+        // 🔢 (2026-05-03) ถ้าตอบไปครบ max แล้ว → จบ session พร้อมคำตอบสุดท้าย
+        if ($sequence >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached', $result['response']);
+        }
+
         // ปกติ — ตอบเสร็จ ให้ลูกค้าถามต่อได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $remainingQs = max(0, $maxQuestions - $sequence);
         $timeHint = $remainingMin !== null
             ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
             : '⏳ เจ้าชะตาคุยต่อได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+        $qHint = "❓ ถามได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
 
         $followupOffer = "\n\n──────────────────────\n"
             . $timeHint . "\n"
+            . $qHint . "\n"
             . "💬 พิมพ์คำถามถัดไปได้เลย — หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา ✨";
 
         return [
@@ -723,6 +730,8 @@ trait CelticCrossConversationTrait
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
+        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+
         $closingMessage = match ($reason) {
             'time_expired' => "⏰ *เวลาคุยกับแม่หมอหมดแล้วค่ะ*\n\n"
                 . "30 นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
@@ -739,17 +748,39 @@ trait CelticCrossConversationTrait
                 . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ นะคะ ✨\n\n"
                 . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
 
+            // 🔢 (2026-05-03) ครบโควต้าคำถาม
+            'max_questions_reached' => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
+                . "🌟 *เจ้าชะตาถามครบ {$maxQ} คำถามแล้วค่ะ*\n\n"
+                . "แม่หมอตอบครบทุกข้อสงสัยของเจ้าชะตา 🙏✨\n"
+                . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 💫\n\n"
+                . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",
+
             default => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
                 . "🌟 *แม่หมอกล่าวลาเจ้าชะตา*\n\n"
                 . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 🙏\n\n"
                 . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",
         };
 
+        // 🖼️ (2026-05-03) สร้างภาพ Celtic Cross spread ตอนจบ — โชว์ทีเดียวสวยๆ
+        //   เดิมโชว์หลังเปิดครบ 10 ใบ (ก่อนถาม Q1) → ลูกค้าตื่นเต้นเกินไป
+        //   ตอนนี้: รวบรวมเป็น "ที่ระลึก" ตอนปิดทำนาย
+        $composeUrl = null;
+        try {
+            $generator = app(CelticSpreadImageGenerator::class);
+            $composeUrl = $generator->generate($reading);
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: composite image fail (endCelticSession)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return [
             'action' => 'celtic_session_ended',
             'message' => $closingMessage,
             'reading' => $reading,
             'end_reason' => $reason,
+            'celtic_summary_image_url' => $composeUrl,
         ];
     }
 

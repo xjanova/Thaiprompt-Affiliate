@@ -1668,6 +1668,9 @@ class FortuneConversationService
             ->first();
         $userName = $latestReading?->facebook_user_name ?? 'คุณ';
 
+        // 📦 (2026-05-03) แสดงสถานะแพคเกจที่ซื้อ (paid reading ล่าสุด)
+        $packageStatus = $this->buildActivePackageStatus($facebookUserId);
+
         // ✅ ดึงข้อมูล wallet + รายได้ค่าคอม
         $walletBalance = 0;
         $totalCommission = 0;
@@ -1728,6 +1731,9 @@ class FortuneConversationService
 
         $message = "🔮 *สิทธิ์ดูดวงของคุณ{$userName}วันนี้*\n";
         $message .= "═══════════════════════\n\n";
+        if (! empty($packageStatus)) {
+            $message .= $packageStatus . "\n";
+        }
         $message .= "📊 ใช้ไปแล้ว: {$usedToday} / {$maxFreeReadings} ครั้ง\n";
 
         // แสดงข้อมูลเครดิตพิเศษ
@@ -2027,6 +2033,128 @@ class FortuneConversationService
      * 3. ไม่เสียเงิน + มี basic_response → ส่งคำทำนายพื้นฐาน
      * 4. ไม่มีคำทำนายเลย → แจ้งไม่พบ
      */
+    /**
+     * 📦 (2026-05-03) สรุปแพคเกจที่ซื้อ + สถานะ — แสดงตอน "เช็คสิทธิ์"
+     *
+     * Output (text block สำหรับ prepend):
+     *   📦 แพคเกจล่าสุด: ดูดวง 39฿ — ✅ จบแล้ว
+     *   📦 แพคเกจล่าสุด: Celtic Cross 99฿ — ⏳ กำลังดูดวง (Q 2/5)
+     *   ''  (empty ถ้าไม่เคยซื้อ)
+     */
+    protected function buildActivePackageStatus(string $facebookUserId): string
+    {
+        $reading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('is_paid', true)
+            ->latest()
+            ->first();
+
+        if (! $reading) {
+            return '';
+        }
+
+        $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+        $packageLabel = $isCeltic
+            ? '🔮 Celtic Cross 99฿'
+            : '🔹 ดูดวง ' . (int) ($this->settings->deep_reading_price ?? 39) . '฿';
+
+        // สถานะ
+        $status = $reading->conversation_status;
+        $isOngoing = ! in_array($status, [
+            FortuneReading::STATUS_COMPLETED,
+            'cancelled',
+            'celtic_qa_window_expired',
+            'expired',
+        ], true);
+
+        if ($isCeltic && $isOngoing) {
+            $picked = $reading->getCelticPickedCount();
+            $qUsed = (int) $reading->celtic_questions_used;
+            $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+            if ($picked < 10) {
+                $progress = "เปิดไพ่ {$picked}/10 ใบ";
+            } else {
+                $progress = "ถามไปแล้ว {$qUsed}/{$maxQ} คำถาม";
+            }
+            $statusText = "⏳ กำลังดูดวง ({$progress})";
+        } elseif ($isOngoing) {
+            $statusText = '⏳ กำลังดำเนินการ';
+        } else {
+            $statusText = '✅ จบแล้ว';
+        }
+
+        $billRef = $reading->bill_reference ?? '-';
+        $createdAt = $reading->created_at?->format('d/m/Y H:i') ?? '-';
+
+        return "📦 แพคเกจล่าสุด: {$packageLabel} — {$statusText}\n"
+            . "   🔖 บิล: {$billRef} | 📅 {$createdAt}";
+    }
+
+    /**
+     * 🔮 (2026-05-03) สรุป Celtic reading — แสดงตอน "ดูคำทำนายล่าสุด"
+     */
+    protected function buildCelticReadingSummary(FortuneReading $reading): array
+    {
+        $name = $reading->facebook_user_name ?? 'คุณ';
+        $billRef = $reading->bill_reference ?? '-';
+        $picked = $reading->getCelticPickedCount();
+        $qUsed = (int) $reading->celtic_questions_used;
+        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+
+        // ยังเปิดไพ่ไม่ครบ
+        if ($picked < 10) {
+            return [
+                'action' => 'celtic_already_in_session',
+                'message' => "🔮 *Celtic Cross ของคุณ{$name}*\n"
+                    . "📋 บิล: {$billRef}\n"
+                    . "═══════════════════════\n\n"
+                    . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ยังเปิดไม่ครบ\n\n"
+                    . "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* เพื่อต่อ\n"
+                    . "🔄 หรือ *\"สับใหม่\"* ถ้าอยากเริ่มใหม่",
+                'reading' => $reading,
+            ];
+        }
+
+        // ดึง Q&A ทั้งหมด
+        $qas = $reading->celticQuestions()->get();
+        if ($qas->isEmpty()) {
+            return [
+                'action' => 'celtic_already_in_session',
+                'message' => "🔮 *Celtic Cross ของคุณ{$name}*\n"
+                    . "📋 บิล: {$billRef}\n"
+                    . "═══════════════════════\n\n"
+                    . "✅ เปิดไพ่ครบ 10 ใบแล้ว — แต่ยังไม่ได้ถามคำถาม\n\n"
+                    . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลยค่ะ\n"
+                    . "❓ ถามได้ {$maxQ} คำถาม",
+                'reading' => $reading,
+            ];
+        }
+
+        $message = "🔮 *Celtic Cross ของคุณ{$name}*\n"
+            . "📋 บิล: {$billRef}\n"
+            . "📅 " . $reading->created_at->format('d/m/Y H:i') . "\n"
+            . "═══════════════════════\n\n";
+
+        foreach ($qas as $qa) {
+            $message .= "❓ *Q{$qa->sequence}:* {$qa->question}\n\n";
+            $message .= "🌙 {$qa->response}\n\n";
+            $message .= "──────────────────────\n\n";
+        }
+
+        $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
+        $remaining = max(0, $maxQ - $qUsed);
+        if ($isOngoing && $remaining > 0) {
+            $message .= "💬 ยังถามได้อีก *{$remaining} คำถาม* — พิมพ์คำถามต่อได้เลย";
+        } else {
+            $message .= "✅ จบทำนายแล้ว — ขอบคุณที่ใช้บริการค่ะ 🙏";
+        }
+
+        return [
+            'action' => 'celtic_already_in_session',
+            'message' => $message,
+            'reading' => $reading,
+        ];
+    }
+
     protected function handleViewLastReading(string $facebookUserId): array
     {
         // ✅ ลำดับที่ 1: เช็คคำทำนายที่ชำระเงินแล้วก่อน (ให้ความสำคัญกับ paid reading)
@@ -2036,6 +2164,11 @@ class FortuneConversationService
             ->first();
 
         if ($lastPaidReading) {
+            // 🔮 (2026-05-03) Celtic Cross — คำทำนายอยู่ใน celtic_questions ไม่ใช่ deep_response
+            if ($lastPaidReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                return $this->buildCelticReadingSummary($lastPaidReading);
+            }
+
             // ชำระเงินแล้ว + มี deep_response → แสดงคำทำนายเชิงลึก
             if (! empty($lastPaidReading->deep_response)) {
                 $name = $lastPaidReading->facebook_user_name ?? 'คุณ';
