@@ -963,17 +963,23 @@ PROMPT;
             'parts' => [['text' => $prompt]],
         ];
 
+        // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5 → output ได้เต็ม max_tokens
+        $genConfigChat1 = [
+            'temperature' => $config['temperature'] ?? 0.8,
+            'topK' => 40,
+            'topP' => 0.95,
+            'maxOutputTokens' => $config['max_tokens'] ?? 512,
+        ];
+        if (str_contains($model ?? '', '2.5') || str_contains($this->model ?? '', '2.5')) {
+            $genConfigChat1['thinkingConfig'] = ['thinkingBudget' => 0];
+        }
+
         $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
             'contents' => $contents,
-            'generationConfig' => [
-                'temperature' => $config['temperature'] ?? 0.8,
-                'topK' => 40,
-                'topP' => 0.95,
-                'maxOutputTokens' => $config['max_tokens'] ?? 512,
-            ],
+            'generationConfig' => $genConfigChat1,
         ]);
 
         if (! $response->successful()) {
@@ -1132,17 +1138,23 @@ PROMPT;
     {
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
 
+        // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5
+        $genConfigChat2 = [
+            'temperature' => $config['temperature'] ?? 0.8,
+            'topK' => 40,
+            'topP' => 0.95,
+            'maxOutputTokens' => $config['max_tokens'] ?? 512,
+        ];
+        if (str_contains($model, '2.5')) {
+            $genConfigChat2['thinkingConfig'] = ['thinkingBudget' => 0];
+        }
+
         $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
             'contents' => [['parts' => [['text' => $prompt]]]],
-            'generationConfig' => [
-                'temperature' => $config['temperature'] ?? 0.8,
-                'topK' => 40,
-                'topP' => 0.95,
-                'maxOutputTokens' => $config['max_tokens'] ?? 512,
-            ],
+            'generationConfig' => $genConfigChat2,
         ]);
 
         if (! $response->successful()) {
@@ -2162,17 +2174,26 @@ PROMPT;
         try {
             $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
+            // 🐛 (2026-05-02) Gemini 2.5 Flash thinking mode กิน max_tokens ก่อนตอบจริง
+            //    user feedback: "Tokens 11,876 แต่คำทำนายแค่ 425 ตัวอักษร = สั้นจุดจู๋"
+            //    Fix: thinkingConfig.thinkingBudget = 0 → ปิด thinking → output ได้เต็ม max_tokens
+            //    (เฉพาะ Gemini 2.5 family — รุ่นเก่าจะ ignore field นี้)
+            $generationConfig = [
+                'temperature' => $config['temperature'] ?? 0.7,
+                'topK' => 40,
+                'topP' => 0.95,
+                'maxOutputTokens' => $config['max_tokens'] ?? 2048,
+            ];
+            if (str_contains($this->model, '2.5')) {
+                $generationConfig['thinkingConfig'] = ['thinkingBudget' => 0];
+            }
+
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)->post($url, [
                 'system_instruction' => [
                     'parts' => [['text' => self::SYSTEM_MESSAGE]],
                 ],
                 'contents' => [['parts' => [['text' => $prompt]]]],
-                'generationConfig' => [
-                    'temperature' => $config['temperature'] ?? 0.7,
-                    'topK' => 40,
-                    'topP' => 0.95,
-                    'maxOutputTokens' => $config['max_tokens'] ?? 2048,
-                ],
+                'generationConfig' => $generationConfig,
             ]);
 
             if (! $response->successful()) {
@@ -2778,14 +2799,20 @@ PROMPT;
 
         $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
 
+        // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5 — playground
+        $genConfigPlayground = [
+            'temperature' => $config['temperature'] ?? 0.75,
+            'topK' => 40,
+            'topP' => 0.95,
+            'maxOutputTokens' => $config['max_tokens'] ?? 2048,
+        ];
+        if (str_contains($this->model, '2.5')) {
+            $genConfigPlayground['thinkingConfig'] = ['thinkingBudget' => 0];
+        }
+
         $body = [
             'contents' => $contents,
-            'generationConfig' => [
-                'temperature' => $config['temperature'] ?? 0.75,
-                'topK' => 40,
-                'topP' => 0.95,
-                'maxOutputTokens' => $config['max_tokens'] ?? 2048,
-            ],
+            'generationConfig' => $genConfigPlayground,
         ];
 
         if (! empty($systemMessage)) {
