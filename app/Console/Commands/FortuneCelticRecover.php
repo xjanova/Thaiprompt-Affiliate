@@ -61,22 +61,24 @@ class FortuneCelticRecover extends Command
         if ($auto) {
             $cutoff = now()->subMinutes($minutes);
 
-            // Stuck case 1: paid + still in CELTIC_PENDING_PAYMENT
-            $case1 = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            // 🎯 Universal stuck detector: Celtic + paid + 0 picked + ค้าง > N นาที
+            //   จับทุก status — pending_payment, picking, completed (force-completed bug),
+            //   awaiting_question (เคยแสดงไพ่แต่ flow หลุด)
+            //   ยกเว้น: cancelled / qa_window_expired (legitimate end)
+            $excludedStatuses = [
+                'cancelled',                    // ลูกค้ายกเลิกเอง
+                'celtic_qa_window_expired',     // หมดเวลาถาม Q
+                'expired',                      // บิลหมดอายุ
+            ];
+
+            $candidates = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
                 ->where('is_paid', true)
-                ->where('conversation_status', FortuneReading::STATUS_CELTIC_PENDING_PAYMENT)
+                ->whereNotIn('conversation_status', $excludedStatuses)
                 ->where('updated_at', '<=', $cutoff)
                 ->get();
 
-            // Stuck case 2: in CELTIC_PICKING but no cards picked yet
-            $case2 = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->where('is_paid', true)
-                ->where('conversation_status', FortuneReading::STATUS_CELTIC_PICKING)
-                ->where('updated_at', '<=', $cutoff)
-                ->get()
-                ->filter(fn ($r) => $r->getCelticPickedCount() === 0);
-
-            $readings = $case1->merge($case2)->unique('id');
+            // Filter ใน PHP — getCelticPickedCount() อ่านจาก JSON column
+            $readings = $candidates->filter(fn ($r) => $r->getCelticPickedCount() === 0);
         }
 
         if ($readings->isEmpty()) {
