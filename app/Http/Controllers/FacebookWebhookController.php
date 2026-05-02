@@ -1591,6 +1591,41 @@ class FacebookWebhookController extends Controller
     }
 
     /**
+     * 📜 (2026-05-03) ดู Celtic Q&A list — state ไม่เปลี่ยน (read-only)
+     */
+    protected function handleCelticViewList(string $senderId): void
+    {
+        try {
+            $result = $this->conversationService->handleViewCelticList($senderId);
+            $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+            $channelManager->sendResponse('facebook', $senderId, $result);
+        } catch (\Throwable $e) {
+            Log::warning('handleCelticViewList error', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 📜 (2026-05-03) ดูคำตอบ Celtic Q[N] — state ไม่เปลี่ยน (read-only)
+     */
+    protected function handleCelticViewQuestion(string $senderId, int $sequence): void
+    {
+        try {
+            $result = $this->conversationService->handleViewCelticQuestion($senderId, $sequence);
+            $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+            $channelManager->sendResponse('facebook', $senderId, $result);
+        } catch (\Throwable $e) {
+            Log::warning('handleCelticViewQuestion error', [
+                'sender_id' => $senderId,
+                'sequence' => $sequence,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
      * 🌐 บันทึกภาษาที่ user เลือก (manual override) + ส่งข้อความยืนยัน
      */
     protected function handleLanguagePick(string $senderId, string $locale): void
@@ -2653,6 +2688,19 @@ class FacebookWebhookController extends Controller
             'CELTIC_RESET' => $this->processConversationalMessage($senderId, 'สับใหม่'),
             'CELTIC_CONTINUE' => $this->processConversationalMessage($senderId, 'ถามต่อ'),
             'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'พอแค่นี้'),
+
+            // 📜 (2026-05-03) Celtic Q&A review — ดูคำตอบที่ผ่านมา (state ไม่เปลี่ยน)
+            'CELTIC_VIEW_LIST' => $this->handleCelticViewList($senderId),
+            'CELTIC_VIEW_Q1' => $this->handleCelticViewQuestion($senderId, 1),
+            'CELTIC_VIEW_Q2' => $this->handleCelticViewQuestion($senderId, 2),
+            'CELTIC_VIEW_Q3' => $this->handleCelticViewQuestion($senderId, 3),
+            'CELTIC_VIEW_Q4' => $this->handleCelticViewQuestion($senderId, 4),
+            'CELTIC_VIEW_Q5' => $this->handleCelticViewQuestion($senderId, 5),
+            'CELTIC_VIEW_Q6' => $this->handleCelticViewQuestion($senderId, 6),
+            'CELTIC_VIEW_Q7' => $this->handleCelticViewQuestion($senderId, 7),
+            'CELTIC_VIEW_Q8' => $this->handleCelticViewQuestion($senderId, 8),
+            'CELTIC_VIEW_Q9' => $this->handleCelticViewQuestion($senderId, 9),
+            'CELTIC_VIEW_Q10' => $this->handleCelticViewQuestion($senderId, 10),
             // 📅 (2026-05-01) confirm/reject buttons (mirror postback handler)
             'BIRTHDATE_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
             'BIRTHDATE_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ใช่'),

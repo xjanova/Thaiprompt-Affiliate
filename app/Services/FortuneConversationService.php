@@ -2090,7 +2090,13 @@ class FortuneConversationService
     }
 
     /**
-     * 🔮 (2026-05-03) สรุป Celtic reading — แสดงตอน "ดูคำทำนายล่าสุด"
+     * 🔮 (2026-05-03) สรุป Celtic reading — list view + ปุ่มเลือกคำถาม
+     *
+     * Behavior:
+     * - ถ้ายังเปิดไพ่ไม่ครบ → แจ้งให้กดปุ่มเปิดไพ่ต่อ (state ไม่เปลี่ยน)
+     * - ถ้าเปิดครบแต่ยังไม่ถาม → ขอคำถามแรก (state ไม่เปลี่ยน)
+     * - ถ้ามี Q&A → แสดง LIST พร้อม Quick Reply ปุ่ม Q1-QN ให้กดดู
+     *   (state ไม่เปลี่ยน — viewing read-only ไม่กระทบ flow)
      */
     protected function buildCelticReadingSummary(FortuneReading $reading): array
     {
@@ -2100,22 +2106,22 @@ class FortuneConversationService
         $qUsed = (int) $reading->celtic_questions_used;
         $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
 
-        // ยังเปิดไพ่ไม่ครบ
+        // ยังเปิดไพ่ไม่ครบ — แนะนำให้ต่อ
         if ($picked < 10) {
             return [
-                'action' => 'celtic_already_in_session',
+                'action' => 'celtic_pick_prompt',
                 'message' => "🔮 *Celtic Cross ของคุณ{$name}*\n"
                     . "📋 บิล: {$billRef}\n"
                     . "═══════════════════════\n\n"
                     . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ยังเปิดไม่ครบ\n\n"
-                    . "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* เพื่อต่อ\n"
-                    . "🔄 หรือ *\"สับใหม่\"* ถ้าอยากเริ่มใหม่",
+                    . "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* เพื่อต่อ",
                 'reading' => $reading,
             ];
         }
 
         // ดึง Q&A ทั้งหมด
         $qas = $reading->celticQuestions()->get();
+
         if ($qas->isEmpty()) {
             return [
                 'action' => 'celtic_already_in_session',
@@ -2129,30 +2135,131 @@ class FortuneConversationService
             ];
         }
 
+        $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
+        $remaining = max(0, $maxQ - $qUsed);
+
+        // 📜 สร้าง list view
         $message = "🔮 *Celtic Cross ของคุณ{$name}*\n"
             . "📋 บิล: {$billRef}\n"
             . "📅 " . $reading->created_at->format('d/m/Y H:i') . "\n"
-            . "═══════════════════════\n\n";
+            . "═══════════════════════\n\n"
+            . "📜 *รายการคำถามที่ถามไป {$qas->count()} ข้อ:*\n\n";
 
         foreach ($qas as $qa) {
-            $message .= "❓ *Q{$qa->sequence}:* {$qa->question}\n\n";
-            $message .= "🌙 {$qa->response}\n\n";
-            $message .= "──────────────────────\n\n";
+            $shortQ = mb_substr($qa->question, 0, 60);
+            if (mb_strlen($qa->question) > 60) {
+                $shortQ .= '...';
+            }
+            $message .= "{$qa->sequence}️⃣ *Q{$qa->sequence}:* {$shortQ}\n\n";
         }
 
-        $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
-        $remaining = max(0, $maxQ - $qUsed);
+        $message .= "──────────────────────\n";
+        $message .= "👉 *กดปุ่มด้านล่างเพื่อดูคำตอบเต็มของแต่ละคำถาม*\n\n";
+
         if ($isOngoing && $remaining > 0) {
-            $message .= "💬 ยังถามได้อีก *{$remaining} คำถาม* — พิมพ์คำถามต่อได้เลย";
+            $message .= "💬 หรือถามต่อ — เหลืออีก *{$remaining}* คำถาม";
         } else {
-            $message .= "✅ จบทำนายแล้ว — ขอบคุณที่ใช้บริการค่ะ 🙏";
+            $message .= "✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏";
+        }
+
+        // 🎯 Build Quick Replies — Q1, Q2, ... (max 13, FB limit)
+        $quickReplies = [];
+        foreach ($qas->take(11) as $qa) {
+            $shortLabel = '📜 Q' . $qa->sequence . ': ' . mb_substr($qa->question, 0, 12);
+            $quickReplies[] = [
+                'content_type' => 'text',
+                'title' => mb_substr($shortLabel, 0, 20),
+                'payload' => 'CELTIC_VIEW_Q' . $qa->sequence,
+            ];
+        }
+        if ($isOngoing && $remaining > 0) {
+            $quickReplies[] = [
+                'content_type' => 'text',
+                'title' => '✨ พอแค่นี้',
+                'payload' => 'CELTIC_DONE',
+            ];
         }
 
         return [
-            'action' => 'celtic_already_in_session',
+            'action' => 'celtic_review_list',
             'message' => $message,
             'reading' => $reading,
+            'celtic_review_quick_replies' => $quickReplies,
         ];
+    }
+
+    /**
+     * 🔮 (2026-05-03) แสดงคำตอบ Q[N] ของ Celtic — เรียกจากปุ่ม CELTIC_VIEW_Q[N]
+     *
+     * State ไม่เปลี่ยน — viewing read-only
+     */
+    public function handleViewCelticQuestion(string $facebookUserId, int $sequence): array
+    {
+        $reading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('is_paid', true)
+            ->latest()
+            ->first();
+
+        if (! $reading) {
+            return [
+                'action' => 'view_reading_empty',
+                'message' => '🔮 ไม่พบคำทำนาย Celtic ที่ผ่านมาค่ะ',
+                'reading' => null,
+            ];
+        }
+
+        $qa = $reading->celticQuestions()->where('sequence', $sequence)->first();
+        if (! $qa) {
+            return [
+                'action' => 'celtic_review_not_found',
+                'message' => "🔮 ไม่พบคำถามข้อที่ {$sequence} ค่ะ\n"
+                    . "พิมพ์ *\"ดูคำทำนายล่าสุด\"* เพื่อดูรายการคำถามทั้งหมด",
+                'reading' => $reading,
+            ];
+        }
+
+        $name = $reading->facebook_user_name ?? 'คุณ';
+        $billRef = $reading->bill_reference ?? '-';
+        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        $qUsed = (int) $reading->celtic_questions_used;
+        $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
+
+        $message = "🔮 *Celtic Cross — Q{$sequence}*\n"
+            . "📋 บิล: {$billRef}\n"
+            . "═══════════════════════\n\n"
+            . "❓ *คำถาม:*\n{$qa->question}\n\n"
+            . "──────────────────────\n\n"
+            . "🌙 *คำตอบจากแม่หมอ:*\n\n"
+            . $qa->response . "\n\n"
+            . "──────────────────────\n";
+
+        // Quick replies — กลับไปที่ list + ตัวเลือกอื่น
+        $quickReplies = [
+            ['content_type' => 'text', 'title' => '📜 ดู Q อื่น', 'payload' => 'CELTIC_VIEW_LIST'],
+        ];
+        if ($isOngoing && $qUsed < $maxQ) {
+            $remaining = $maxQ - $qUsed;
+            $message .= "💬 ถามต่อได้อีก *{$remaining}* คำถาม";
+            $quickReplies[] = ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'];
+        } else {
+            $message .= "✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏";
+        }
+
+        return [
+            'action' => 'celtic_review_detail',
+            'message' => $message,
+            'reading' => $reading,
+            'celtic_review_quick_replies' => $quickReplies,
+        ];
+    }
+
+    /**
+     * 🔮 (2026-05-03) แสดง list ของ Celtic Q&A — เรียกจากปุ่ม CELTIC_VIEW_LIST
+     */
+    public function handleViewCelticList(string $facebookUserId): array
+    {
+        return $this->handleViewLastReading($facebookUserId);
     }
 
     protected function handleViewLastReading(string $facebookUserId): array
