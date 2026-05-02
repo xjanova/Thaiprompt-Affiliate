@@ -113,8 +113,10 @@ class AiApiKey extends Model
             'o3-mini',
         ],
         'gemini' => [
-            'gemini-2.0-flash-exp',
-            'gemini-2.0-flash',
+            // 🔄 (2026-05-02) ลบ gemini-2.0-flash-exp (404 — Google ปิดแล้ว)
+            'gemini-2.0-flash',           // ⭐ stable
+            'gemini-2.5-pro',             // ⭐ ใหม่ ฉลาดสุด
+            'gemini-2.5-flash',           // ⭐ ใหม่ เร็ว+ดี
             'gemini-1.5-pro',
             'gemini-1.5-flash',
             'gemini-1.5-flash-8b',
@@ -127,14 +129,17 @@ class AiApiKey extends Model
             'qwen2.5-coder-32b-instruct',
         ],
         'openrouter' => [
-            'anthropic/claude-3.5-sonnet',
-            'anthropic/claude-3.5-haiku',
-            'anthropic/claude-3-opus',
+            // 🔄 (2026-05-02) อัปเดตชื่อ model ตาม OpenRouter ปัจจุบัน
+            //   ตัวเก่า "anthropic/claude-3.5-sonnet" ถูก deprecate → 404
+            'anthropic/claude-sonnet-4',          // ⭐ Claude Sonnet 4 — แทน 3.5-sonnet
+            'anthropic/claude-haiku-4.5',         // ⭐ Claude Haiku 4.5 — เร็ว+ถูก
+            'anthropic/claude-3-5-sonnet',        // hyphenated alias (ถ้ายังมี)
+            'anthropic/claude-3.7-sonnet',
             'openai/gpt-4o',
             'openai/gpt-4o-mini',
             'meta-llama/llama-3.3-70b-instruct',
             'meta-llama/llama-3.1-405b-instruct',
-            'google/gemini-2.0-flash-exp:free',
+            'google/gemini-2.0-flash-001',        // ⭐ stable แทน :free experimental
             'mistralai/mistral-large',
             'deepseek/deepseek-chat',
             'x-ai/grok-2-1212',
