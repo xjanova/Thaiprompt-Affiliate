@@ -58,6 +58,54 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * @param  string  $message  ข้อความที่ต้องการส่ง
      * @return bool สำเร็จหรือไม่
      */
+    /**
+     * 🌐 Default Quick Replies — แสดงในทุก DM ที่ไม่ได้ระบุ quick_replies
+     *
+     * 2 tier shortcuts (39฿ Deep / 99฿ Celtic) + เช็คสิทธิ์
+     * Locale-aware (อ่านจาก FortuneLocaleService::current())
+     * ราคาดึงจาก settings (admin override ได้)
+     *
+     * ⚠️ Title FB Quick Reply max 20 chars — ต้องสั้น
+     *
+     * @return array<int, array{content_type: string, title: string, payload: string}>
+     */
+    public function getDefaultQuickReplies(): array
+    {
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        try {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+            // ใช้ default 99
+        }
+
+        $items = [
+            [
+                'content_type' => 'text',
+                'title' => $isLao ? "🔹 ດວງ {$deepPrice}฿" : "🔹 ดูดวง {$deepPrice}฿",
+                'payload' => 'TIER_DEEP_39',
+            ],
+        ];
+
+        if ($celticEnabled) {
+            $items[] = [
+                'content_type' => 'text',
+                'title' => $isLao ? "🔮 ໄພ່ 10 ໃບ {$celticPrice}฿" : "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'payload' => 'TIER_CELTIC_99',
+            ];
+        }
+
+        $items[] = [
+            'content_type' => 'text',
+            'title' => $isLao ? '📊 ກວດສິດ' : '📊 เช็คสิทธิ์',
+            'payload' => 'MENU_CHECK_REMAINING',
+        ];
+
+        return $items;
+    }
+
     public function sendMessage(string $recipientId, string $message, array $options = []): bool
     {
         // ตรวจสอบ Page Access Token ก่อนส่ง
@@ -114,6 +162,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
                                 'payload' => $reply['text'] ?? $reply['payload'] ?? $reply['label'] ?? '',
                             ];
                         }, array_slice($options['quick_replies'], 0, 13));
+                    } elseif ($isLastChunk && empty($options['no_default_qr'])) {
+                        // 🌐 (2026-05-03) Default Quick Reply "ดูดวง" — แสดงทุก DM
+                        //   เพื่อให้ลูกค้ากดเริ่มดูดวงใหม่ได้ทันทีจากที่ใดก็ได้
+                        //   ⚠️ หาก flow ใดต้องการปิด → ส่ง option 'no_default_qr' => true
+                        //   (เช่น flow รอ user พิมพ์วันเกิด — ปุ่มอาจสร้างความสับสน)
+                        $messagePayload['quick_replies'] = $this->getDefaultQuickReplies();
                     }
 
                     $payload = [
