@@ -119,16 +119,25 @@ class FortuneAIService
     /**
      * กำหนด maxTokens และ temperature ตาม reading type
      *
-     * (2026-05-01) เพิ่ม max_tokens ให้ยาวขึ้น — ลูกค้าจ่ายเงินมาแล้ว ต้องคุ้มค่า
-     *   Thai language ~1 token ≈ 0.5-1 char → 3500 tokens ≈ 1750-3500 chars (≈ 500-1000 คำ)
+     * (2026-05-02) ลด max_tokens ลง — Groq llama-3.3-70b-versatile (free tier) มี
+     *   per-request TPM cap ~6000 tokens. prompt ใหม่ของเรา (DNA + ภพ + lottery + tarot)
+     *   ยาวขึ้น 2-3x ทำให้ทั้ง prompt + max_tokens เกิน cap → 413 "Request too large"
+     *
+     *   Math:
+     *   - new prompt ~2500-3500 input tokens
+     *   - max_tokens (output) ต้องไม่เกิน cap - input
+     *   - target word count: Q1 350-500 / Q2-Q3 250-350 → 600-1000 tokens output ก็พอ
+     *   - 1500-2000 max_tokens = ปลอดภัย + เผื่อเหลือเฟือ
+     *
+     *   Thai language ~1 token ≈ 0.5-1 char → 2000 tokens ≈ 1000-2000 chars (≈ 300-600 คำ)
      */
     protected const READING_CONFIG = [
         'basic' => [
-            'max_tokens' => 3072,   // ↑ จาก 2048 — free reading ก็ให้เนื้อหาดีกว่าเดิม
+            'max_tokens' => 1800,   // ↓ จาก 3072 — basic ตอบสั้นกว่า
             'temperature' => 0.75,
         ],
         'deep' => [
-            'max_tokens' => 3500,   // ↑ จาก 1500 — paid deep reading ต้องเต็มที่
+            'max_tokens' => 2000,   // ↓ จาก 3500 — กัน Groq 413 + ตรงกับ word target ใหม่
             'temperature' => 0.8,
         ],
     ];
