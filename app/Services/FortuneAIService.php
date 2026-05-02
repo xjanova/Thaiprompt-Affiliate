@@ -863,7 +863,8 @@ PROMPT;
         ];
 
         // 🎯 Phase H — ส่ง userContext เพื่อให้ key ordering กระจายตาม user
-        $allKeys = $this->getAllAvailableKeys($userContext);
+        // 🎯 (2026-05-02) ระบุ purpose='chat' → กรอง keys ที่ไม่ใช่ purpose=chat/any ออก
+        $allKeys = $this->getAllAvailableKeys($userContext, 'chat');
 
         if (empty($allKeys)) {
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
@@ -1319,7 +1320,8 @@ PROMPT;
 
         // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
         //    key ที่โหลดน้อย/ไม่ 429 → มาก่อน; users ต่างคน key ต่างลำดับ
-        $allKeys = $this->getAllAvailableKeys($userContext);
+        // 🎯 (2026-05-02) purpose='prediction' → กัน chat-only keys
+        $allKeys = $this->getAllAvailableKeys($userContext, 'prediction');
 
         Log::info('FortuneAI: เริ่มสร้างคำทำนาย — Smart pool ordering', [
             'primary_provider' => $this->provider,
@@ -1365,6 +1367,25 @@ PROMPT;
 
             // 🎯 Phase H — Acquire in-flight slot (ป้องกัน hammer key เดียว)
             $inflightCache = $this->acquireKeyInflight($keyInfo);
+
+            // 🎯 (2026-05-02) Cache::lock — serialize calls per-key (queue สำหรับ concurrent predictions)
+            //   user request: "ถ้ามีการทำนายพร้อมๆ กันต้องมีคิว ในการส่ง request เพื่อไม่ติด limit"
+            //   - Try get lock 12s (พอให้คน อื่นจบ AI call)
+            //   - ถ้า lock ไม่ได้ → skip ไป key ถัดไป (ไม่บล็อกนาน)
+            $lockKey = 'ai_key_lock:'.$keyInfo['provider'].':'.md5($keyInfo['api_key']);
+            $aiLock = \Illuminate\Support\Facades\Cache::lock($lockKey, 90); // hold up to 90s
+            $lockAcquired = false;
+            try {
+                $lockAcquired = $aiLock->block(12); // wait max 12s for slot
+            } catch (\Throwable $lockErr) {
+                Log::info('FortuneAI: ข้าม key — รอ lock เกิน 12s', [
+                    'key' => $keyInfo['name'] ?? '?',
+                    'provider' => $keyInfo['provider'],
+                ]);
+                $this->releaseKeyInflight($keyInfo, $inflightCache, false);
+
+                continue;
+            }
 
             try {
                 $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
@@ -1422,6 +1443,17 @@ PROMPT;
                 // เหตุผล: provider พังแล้ว ลอง provider ถัดไปเลย ไม่ต้องรอ
                 if ($index < $totalKeys - 1 && $is429) {
                     sleep(1);
+                }
+            } finally {
+                // 🎯 (2026-05-02) Release lock เพื่อให้ request ถัดไปเรียกได้
+                if ($lockAcquired) {
+                    try {
+                        $aiLock->release();
+                    } catch (\Throwable $unlockErr) {
+                        Log::debug('FortuneAI: lock release failed (non-critical)', [
+                            'error' => $unlockErr->getMessage(),
+                        ]);
+                    }
                 }
             }
         }
@@ -1590,11 +1622,15 @@ PROMPT;
      *
      * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId)
      */
-    protected function getAllAvailableKeys(?string $userContext = null): array
+    protected function getAllAvailableKeys(?string $userContext = null, string $purpose = 'prediction'): array
     {
         $keys = [];
         $addedApiKeys = [];
         $primaryProvider = $this->provider;
+        // 🎯 (2026-05-02) Filter keys ตาม purpose ที่ caller ระบุ
+        //   prediction = generateWithRetryAndFallback, generateFortuneTelling
+        //   chat       = generateChatResponse*, playgroundChat
+        //   keys ที่มี purpose='any' จะใช้ได้ทั้ง 2 (default)
 
         // Circuit Breaker: skip providers ที่เพิ่งโดน 429 หนัก
         $downProviders = $this->getDownProviders();
@@ -1619,7 +1655,11 @@ PROMPT;
                     continue;
                 }
 
-                $poolKeys = AiApiKey::forProvider($provider)->available()->get();
+                // 🎯 (2026-05-02) เพิ่ม forPurpose($purpose) — กรอง key ตามวัตถุประสงค์
+                $poolKeys = AiApiKey::forProvider($provider)
+                    ->available()
+                    ->forPurpose($purpose)
+                    ->get();
 
                 foreach ($poolKeys as $poolKey) {
                     if (in_array($poolKey->api_key, $addedApiKeys)) {

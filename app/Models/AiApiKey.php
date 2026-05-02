@@ -173,6 +173,19 @@ class AiApiKey extends Model
     ];
 
     /**
+     * 🎯 (2026-05-02) วัตถุประสงค์การใช้ key
+     *
+     * any        = ใช้ได้ทุกอย่าง (default)
+     * prediction = เฉพาะคำทำนาย deep readings (กัน chat ใช้แล้วเปลือง quota)
+     * chat       = เฉพาะ chat conversation (กัน prediction ดูดหมด)
+     */
+    public const PURPOSES = [
+        'any' => 'ใช้ได้ทุกอย่าง (default)',
+        'prediction' => 'เฉพาะคำทำนาย (paid deep reading)',
+        'chat' => 'เฉพาะแชทสนทนา (chat)',
+    ];
+
+    /**
      * โหมดการวนใช้
      */
     public const ROTATION_MODES = [
@@ -196,6 +209,7 @@ class AiApiKey extends Model
         'is_active',
         'is_critical',            // 🔴 (2026-05-01) 3-strikes critical state
         'priority',
+        'purpose',                // 🎯 (2026-05-02) any/prediction/chat
         'tokens_used_today',
         'tokens_used_month',
         'tokens_used_total',
@@ -404,6 +418,21 @@ class AiApiKey extends Model
                 $q->whereNull('disabled_until')
                     ->orWhere('disabled_until', '<=', now());
             });
+    }
+
+    /**
+     * 🎯 (2026-05-02) Scope: filter ตาม purpose
+     *
+     * @param  string  $purpose  'prediction' หรือ 'chat'
+     *   → return keys ที่มี purpose='any' หรือ purpose=$purpose
+     */
+    public function scopeForPurpose($query, string $purpose)
+    {
+        return $query->where(function ($q) use ($purpose) {
+            $q->whereNull('purpose')           // กรณี migrate ใหม่ ค่ายังว่าง
+                ->orWhere('purpose', 'any')
+                ->orWhere('purpose', $purpose);
+        });
     }
 
     /**

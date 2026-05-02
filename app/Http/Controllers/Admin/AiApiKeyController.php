@@ -88,6 +88,7 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'required|string|min:10',
             'priority' => 'nullable|integer|min:0|max:100',
+            'purpose' => 'nullable|in:any,prediction,chat',  // 🎯 (2026-05-02) วัตถุประสงค์ key
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',
@@ -134,6 +135,7 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'nullable|string|min:10',  // nullable เพื่อไม่ต้องส่งถ้าไม่เปลี่ยน
             'priority' => 'nullable|integer|min:0|max:100',
+            'purpose' => 'nullable|in:any,prediction,chat',  // 🎯 (2026-05-02) วัตถุประสงค์ key
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',

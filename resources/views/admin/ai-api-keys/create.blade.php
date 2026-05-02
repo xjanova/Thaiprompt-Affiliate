@@ -107,6 +107,22 @@
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">ค่า priority สูงจะถูกเลือกใช้ก่อนในโหมด Priority และ Failover</p>
             </div>
 
+            {{-- 🎯 (2026-05-02) Purpose — จำกัดการใช้ key ตามวัตถุประสงค์ --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    🎯 วัตถุประสงค์ (Purpose)
+                </label>
+                <select x-model="form.purpose"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
+                    <option value="any">ใช้ได้ทุกอย่าง (default)</option>
+                    <option value="prediction">เฉพาะคำทำนาย — paid deep reading</option>
+                    <option value="chat">เฉพาะแชทสนทนา — chat</option>
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    "เฉพาะคำทำนาย" = chat ใช้ key นี้ไม่ได้ — กันโควต้าหมดเวลาลูกค้าจ่ายเงิน
+                </p>
+            </div>
+
             {{-- Limits --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
@@ -175,6 +191,7 @@ function createApiKey() {
             base_url: '',
             api_key: '',
             priority: 0,
+            purpose: 'any',
             tokens_limit_daily: '',
             tokens_limit_monthly: '',
             rate_limit_per_minute: '',
