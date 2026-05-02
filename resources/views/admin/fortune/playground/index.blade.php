@@ -261,21 +261,22 @@
         </div>
     </div>
 
-    {{-- 🧪 (2026-05-02) Deep Prediction Test — ทดสอบ prompt จริงด้วยข้อมูลกำหนดเอง --}}
-    <div class="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl shadow-lg p-6 border-2 border-purple-300 dark:border-purple-700"
-         x-data="deepPredictionTest()">
+    {{-- 🧪 (2026-05-02) Deep Prediction Test — ใช้ Alpine state เดียวกับ fortunePlayground() --}}
+    {{--    เดิมใช้ x-data="deepPredictionTest()" → $root ไม่ส่ง provider ที่เลือก --}}
+    {{--    fix: รวม state เข้า fortunePlayground() อันเดียว → provider dropdown มีผลทั้งหน้า --}}
+    <div class="mt-8 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl shadow-lg p-6 border-2 border-purple-300 dark:border-purple-700">
         <div class="flex items-center justify-between mb-4">
             <div>
                 <h2 class="text-2xl font-bold text-purple-900 dark:text-purple-100 flex items-center gap-2">
                     🧪 ทดสอบสร้างคำทำนายเชิงลึก (Deep)
                 </h2>
                 <p class="text-sm text-purple-700 dark:text-purple-300 mt-1">
-                    ใช้ <b>prompt จริง</b>ที่ส่งให้ AI เวลาลูกค้าจ่ายเงิน — ใส่วันเกิด+คำถาม → ดูผลก่อนตัดสินใจเลือก provider
+                    ใช้ <b>prompt จริง</b>ที่ส่งให้ AI เวลาลูกค้าจ่ายเงิน — เปลี่ยน provider ดรอปดาวน์ด้านบน → มีผลที่นี่ด้วย
                 </p>
             </div>
-            <div class="text-xs text-purple-600 dark:text-purple-300 text-right">
-                Provider ปัจจุบัน:<br>
-                <span class="font-bold" x-text="$root.currentProvider + ' / ' + $root.currentModel"></span>
+            <div class="text-xs text-purple-600 dark:text-purple-300 text-right bg-white/50 dark:bg-gray-800/50 px-3 py-2 rounded-lg">
+                Provider ที่จะใช้:<br>
+                <span class="font-bold text-base" x-text="currentProvider + ' / ' + currentModel"></span>
             </div>
         </div>
 
@@ -285,12 +286,12 @@
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">ชื่อเล่น (ทดสอบ)</label>
-                        <input type="text" x-model="form.name" placeholder="เช่น สมหญิง"
+                        <input type="text" x-model="deepForm.name" placeholder="เช่น สมหญิง"
                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">เพศ</label>
-                        <select x-model="form.gender" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
+                        <select x-model="deepForm.gender" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
                             <option value="female">หญิง</option>
                             <option value="male">ชาย</option>
                             <option value="">ไม่ระบุ</option>
@@ -299,17 +300,17 @@
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">วันเกิด *</label>
-                    <input type="date" x-model="form.birth_date" :max="maxBirthDate"
+                    <input type="date" x-model="deepForm.birth_date" :max="maxBirthDate"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm">
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">คำถามที่จะทำนาย *</label>
-                    <textarea x-model="form.question" rows="2" placeholder="เช่น ความรักปีนี้จะเป็นอย่างไร / ถูกหวยงวดนี้ไหม / จะได้เลื่อนตำแหน่งไหม"
+                    <textarea x-model="deepForm.question" rows="2" placeholder="เช่น ความรักปีนี้จะเป็นอย่างไร / ถูกหวยงวดนี้ไหม / จะได้เลื่อนตำแหน่งไหม"
                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm"></textarea>
                 </div>
                 <div>
                     <label class="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
-                        <input type="checkbox" x-model="form.show_prompt" class="rounded">
+                        <input type="checkbox" x-model="deepForm.show_prompt" class="rounded">
                         แสดง prompt ที่ส่งให้ AI (debug)
                     </label>
                 </div>
@@ -318,21 +319,21 @@
                 <div class="pt-2 border-t border-purple-200 dark:border-purple-800">
                     <p class="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">ตัวอย่างคำถาม:</p>
                     <div class="flex flex-wrap gap-1.5">
-                        <button @click="form.question='ปีนี้ความรักจะเป็นอย่างไรคะ จะได้แฟนใหม่ไหม'"
+                        <button @click="deepForm.question='ปีนี้ความรักจะเป็นอย่างไรคะ จะได้แฟนใหม่ไหม'"
                                 class="px-2 py-1 text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300 rounded hover:bg-pink-200">💕 ความรัก</button>
-                        <button @click="form.question='ถูกหวยงวดนี้ไหมคะ ลองเสี่ยงโชคได้ไหม'"
+                        <button @click="deepForm.question='ถูกหวยงวดนี้ไหมคะ ลองเสี่ยงโชคได้ไหม'"
                                 class="px-2 py-1 text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 rounded hover:bg-yellow-200">🎰 หวย</button>
-                        <button @click="form.question='งานที่ทำอยู่ควรเปลี่ยนไหม จะได้เลื่อนขั้นไหม'"
+                        <button @click="deepForm.question='งานที่ทำอยู่ควรเปลี่ยนไหม จะได้เลื่อนขั้นไหม'"
                                 class="px-2 py-1 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200">💼 งาน</button>
-                        <button @click="form.question='สุขภาพปีนี้เป็นอย่างไร ต้องระวังอะไรบ้าง'"
+                        <button @click="deepForm.question='สุขภาพปีนี้เป็นอย่างไร ต้องระวังอะไรบ้าง'"
                                 class="px-2 py-1 text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded hover:bg-green-200">🏥 สุขภาพ</button>
                     </div>
                 </div>
 
-                <button @click="runTest()" :disabled="loading || !form.birth_date || !form.question"
+                <button @click="runDeepTest()" :disabled="deepLoading || !deepForm.birth_date || !deepForm.question"
                         class="w-full mt-3 px-5 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-400 disabled:to-gray-400 text-white rounded-xl shadow font-semibold flex items-center justify-center gap-2 transition">
-                    <span x-show="!loading">🧪 ทดสอบสร้างคำทำนาย</span>
-                    <span x-show="loading" class="flex items-center gap-2">
+                    <span x-show="!deepLoading">🧪 ทดสอบสร้างคำทำนาย (ใช้ <span class="underline" x-text="currentProvider"></span>)</span>
+                    <span x-show="deepLoading" class="flex items-center gap-2">
                         <span class="animate-spin">⏳</span> กำลังเรียก AI... (30-60 วิ)
                     </span>
                 </button>
@@ -344,7 +345,7 @@
 
             {{-- ผลลัพธ์ (ขวา) --}}
             <div class="space-y-3">
-                <div x-show="!result && !error && !loading"
+                <div x-show="!deepResult && !deepError && !deepLoading"
                      class="h-full min-h-[300px] flex items-center justify-center text-center text-gray-400 dark:text-gray-500 border-2 border-dashed border-purple-300 dark:border-purple-700 rounded-xl p-6">
                     <div>
                         <span class="text-5xl block mb-3">🔮</span>
@@ -352,52 +353,52 @@
                     </div>
                 </div>
 
-                <div x-show="error" class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4">
+                <div x-show="deepError" class="bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded-xl p-4">
                     <p class="text-sm font-semibold text-red-800 dark:text-red-200 mb-1">❌ เกิดข้อผิดพลาด</p>
-                    <p class="text-xs text-red-600 dark:text-red-400" x-text="error"></p>
+                    <p class="text-xs text-red-600 dark:text-red-400" x-text="deepError"></p>
                 </div>
 
-                <div x-show="result" x-transition>
+                <div x-show="deepResult" x-transition>
                     {{-- Metrics --}}
                     <div class="bg-white dark:bg-gray-800 rounded-lg p-3 mb-3 grid grid-cols-2 gap-2 text-xs">
                         <div>
                             <span class="text-gray-500 dark:text-gray-400">Provider:</span>
-                            <span class="font-bold text-purple-600 dark:text-purple-400 block" x-text="result?.debug?.provider"></span>
+                            <span class="font-bold text-purple-600 dark:text-purple-400 block" x-text="deepResult?.debug?.provider"></span>
                         </div>
                         <div>
                             <span class="text-gray-500 dark:text-gray-400">Model:</span>
-                            <span class="font-bold text-blue-600 dark:text-blue-400 block" x-text="result?.debug?.model"></span>
+                            <span class="font-bold text-blue-600 dark:text-blue-400 block" x-text="deepResult?.debug?.model"></span>
                         </div>
                         <div>
                             <span class="text-gray-500 dark:text-gray-400">Tokens:</span>
-                            <span class="font-bold text-orange-600 dark:text-orange-400 block" x-text="(result?.debug?.tokens_used || 0).toLocaleString()"></span>
+                            <span class="font-bold text-orange-600 dark:text-orange-400 block" x-text="(deepResult?.debug?.tokens_used || 0).toLocaleString()"></span>
                         </div>
                         <div>
                             <span class="text-gray-500 dark:text-gray-400">เวลา:</span>
-                            <span class="font-bold text-green-600 dark:text-green-400 block" x-text="(result?.debug?.response_time_ms || 0) + 'ms'"></span>
+                            <span class="font-bold text-green-600 dark:text-green-400 block" x-text="(deepResult?.debug?.response_time_ms || 0) + 'ms'"></span>
                         </div>
                     </div>
 
                     {{-- คำทำนาย --}}
                     <div class="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-purple-200 dark:border-purple-700 max-h-[500px] overflow-y-auto">
                         <h4 class="text-sm font-bold text-purple-900 dark:text-purple-100 mb-2">📜 คำทำนาย</h4>
-                        <div class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-text="result?.response"></div>
+                        <div class="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap" x-text="deepResult?.response"></div>
                     </div>
 
                     {{-- Word/Char count --}}
-                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right" x-show="result?.response">
-                        ตัวอักษร: <span x-text="(result?.response || '').length"></span> | คำ: <span x-text="(result?.response || '').split(/\s+/).filter(w => w).length"></span>
+                    <div class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-right" x-show="deepResult?.response">
+                        ตัวอักษร: <span x-text="(deepResult?.response || '').length"></span> | คำ: <span x-text="(deepResult?.response || '').split(/\s+/).filter(w => w).length"></span>
                     </div>
 
                     {{-- Prompt (collapsible) --}}
-                    <details x-show="result?.prompt" class="mt-3 bg-gray-100 dark:bg-gray-900 rounded-lg p-3">
+                    <details x-show="deepResult?.prompt" class="mt-3 bg-gray-100 dark:bg-gray-900 rounded-lg p-3">
                         <summary class="cursor-pointer text-xs font-semibold text-gray-700 dark:text-gray-300">
-                            🔍 ดู prompt ที่ส่งให้ AI (<span x-text="result?.prompt_length"></span> ตัวอักษร)
+                            🔍 ดู prompt ที่ส่งให้ AI (<span x-text="deepResult?.prompt_length"></span> ตัวอักษร)
                         </summary>
-                        <pre class="mt-2 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono max-h-[400px] overflow-y-auto" x-text="result?.prompt"></pre>
+                        <pre class="mt-2 text-xs text-gray-600 dark:text-gray-400 whitespace-pre-wrap font-mono max-h-[400px] overflow-y-auto" x-text="deepResult?.prompt"></pre>
                     </details>
 
-                    <button @click="result=null; error=null"
+                    <button @click="deepResult=null; deepError=null"
                             class="mt-3 px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
                         🗑️ ล้างผลลัพธ์
                     </button>
@@ -529,50 +530,48 @@ function fortunePlayground() {
                     container.scrollTop = container.scrollHeight;
                 }
             });
-        }
-    };
-}
+        },
 
-// 🧪 (2026-05-02) Deep Prediction Test — share provider จาก fortunePlayground() ผ่าน $root
-function deepPredictionTest() {
-    return {
-        form: {
+        // ========================================
+        // 🧪 Deep Prediction Test — รวมเป็น state เดียวกับ chat
+        //    เพื่อให้ provider dropdown มีผลทั้ง 2 panel
+        // ========================================
+        deepForm: {
             name: 'สมหญิง',
             gender: 'female',
             birth_date: '1990-03-15',
             question: '',
             show_prompt: true,
         },
-        loading: false,
-        error: null,
-        result: null,
+        deepLoading: false,
+        deepError: null,
+        deepResult: null,
 
         get maxBirthDate() {
-            // วันนี้ - 1 วัน (กันใส่อนาคต)
             const d = new Date();
             d.setDate(d.getDate() - 1);
             return d.toISOString().slice(0, 10);
         },
 
-        async runTest() {
-            if (this.loading) return;
-            this.loading = true;
-            this.error = null;
-            this.result = null;
+        async runDeepTest() {
+            if (this.deepLoading) return;
+            this.deepLoading = true;
+            this.deepError = null;
+            this.deepResult = null;
 
             try {
+                // ใช้ currentProvider จาก state เดียวกัน (dropdown ด้านบน) — ตรงนี้แหละที่ fix bug $root
                 const payload = {
-                    name: this.form.name || null,
-                    gender: this.form.gender || null,
-                    birth_date: this.form.birth_date,
-                    question: this.form.question,
-                    show_prompt: this.form.show_prompt,
-                    // ดึง provider จาก parent component ($root)
-                    provider: this.$root.currentProvider || null,
-                    model: this.$root.currentModel || null,
+                    name: this.deepForm.name || null,
+                    gender: this.deepForm.gender || null,
+                    birth_date: this.deepForm.birth_date,
+                    question: this.deepForm.question,
+                    show_prompt: this.deepForm.show_prompt,
+                    provider: this.currentProvider || null,
+                    model: this.currentModel || null,
                 };
-                if (this.$root.poolKeyId) {
-                    payload.pool_key_id = this.$root.poolKeyId;
+                if (this.poolKeyId) {
+                    payload.pool_key_id = this.poolKeyId;
                 }
 
                 const response = await fetch('{{ route("admin.fortune.playground.test-deep") }}', {
@@ -588,14 +587,14 @@ function deepPredictionTest() {
                 const data = await response.json();
 
                 if (data.success) {
-                    this.result = data;
+                    this.deepResult = data;
                 } else {
-                    this.error = data.error || 'ไม่ทราบสาเหตุ';
+                    this.deepError = data.error || 'ไม่ทราบสาเหตุ';
                 }
             } catch (err) {
-                this.error = 'เชื่อมต่อไม่ได้: ' + err.message;
+                this.deepError = 'เชื่อมต่อไม่ได้: ' + err.message;
             } finally {
-                this.loading = false;
+                this.deepLoading = false;
             }
         }
     };
