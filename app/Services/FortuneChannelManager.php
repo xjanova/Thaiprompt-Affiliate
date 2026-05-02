@@ -607,7 +607,7 @@ class FortuneChannelManager
                 'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
                 // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "พร้อม" สำหรับใบถัดไป
-                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($fbService, $userId, $message, $result) {
+                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -618,11 +618,13 @@ class FortuneChannelManager
                         }
                     }
 
-                    // ส่งข้อความ + ปุ่ม "พร้อม" / "ยกเลิก"
+                    // 🔧 (2026-05-03) CRITICAL FIX — pass $extra (message_tag, from_admin)
+                    //   เคสที่กัน: SMS payment confirmation push หลัง 24hr — ลูกค้าจ่ายแล้วเงียบ
+                    //   เดิม: ไม่ส่ง $extra → sendQuickReplies ใช้ RESPONSE → fail เงียบ
                     return $fbService->sendQuickReplies($userId, $message, [
                         ['content_type' => 'text', 'title' => '🙏 พร้อม', 'payload' => 'CELTIC_READY'],
                         ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                    ]);
+                    ], $extra);
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1

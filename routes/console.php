@@ -9,6 +9,21 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote')->hourly();
 
 // ════════════════════════════════════════════════════════════════
+// 🚨 (2026-05-03) Celtic Cross Auto-Recovery
+// ════════════════════════════════════════════════════════════════
+// เคสที่กัน: ลูกค้าจ่าย 99฿ แล้วบอทเงียบ ไม่ส่งให้เลือกไพ่
+// สาเหตุ: FB push fail (24hr expired) ตอน SMS confirmation hook
+//
+// สแกนทุก 5 นาที — paid + ค้างที่ celtic_pending_payment / picking ไม่มีไพ่ > 5 นาที
+// → re-push first card prompt ผ่าน MESSAGE_TAG=POST_PURCHASE_UPDATE
+Schedule::command('fortune:celtic-recover --auto --minutes=5')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('celtic-auto-recovery')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🔮 Daily Horoscope Auto-Post — โพสดวงประจำวัน 7 วันเกิด (ระบบเดิม)
 // ════════════════════════════════════════════════════════════════
 // 01:00 → จันทร์ | 02:00 → อังคาร | ... | 07:00 → อาทิตย์

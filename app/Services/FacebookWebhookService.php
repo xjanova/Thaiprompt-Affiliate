@@ -379,6 +379,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $messageTag = $options['message_tag'] ?? null;
             $fromCommentEngagement = $options['from_comment_engagement'] ?? false;
             $commentId = $options['comment_id'] ?? null;
+            $fromAdmin = $options['from_admin'] ?? false;
+
+            // 🔧 (2026-05-03) ถ้า from_admin + ระบุ message_tag → ใช้ MESSAGE_TAG ตั้งแต่แรก
+            //   เคสหลัก: SMS payment confirmation push หลัง 24hr (ลูกค้าจ่ายแล้วเงียบ)
+            if ($fromAdmin && ! empty($messageTag)) {
+                $messagingType = 'MESSAGE_TAG';
+            }
 
             // ถ้าเป็น comment engagement + มี comment_id → ลอง Private Replies ก่อน
             // Private Replies รองรับ 7 วันหลังคอมเม้นต์ และไม่ต้องอยู่ใน conversation window
@@ -421,16 +428,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $errorSubcode = $errorBody['error']['error_subcode'] ?? 0;
             $errorCode = $errorBody['error']['code'] ?? 0;
 
-            // กรณี comment engagement: user ไม่เคยทักเพจ หรือเกิน 24 ชม.
-            // → ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE
-            if ($fromCommentEngagement && $messagingType === 'RESPONSE' && in_array($errorSubcode, [2018278, 2018065, 2018001])) {
-                Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (comment engagement) → ลองใหม่ด้วย MESSAGE_TAG', [
+            // กรณี 24hr expired → ลองใหม่ด้วย MESSAGE_TAG + POST_PURCHASE_UPDATE
+            // 🔧 (2026-05-03) ขยายเงื่อนไข — ไม่ต้องเป็นแค่ comment engagement
+            //   เคสที่กันตอนนี้: SMS payment confirmation push หลัง 24hr (ลูกค้า paid แล้วเงียบ)
+            $is24hrError = in_array($errorSubcode, [2018278, 2018065, 2018001]);
+            if ($is24hrError && $messagingType === 'RESPONSE') {
+                Log::info('🔄 Quick Replies: RESPONSE ล้มเหลว (24hr expired) → ลองใหม่ด้วย MESSAGE_TAG', [
                     'recipient' => $recipientId,
                     'error_subcode' => $errorSubcode,
+                    'from_comment_engagement' => $fromCommentEngagement,
+                    'from_admin' => $fromAdmin,
                 ]);
 
                 $payload['messaging_type'] = 'MESSAGE_TAG';
-                $payload['tag'] = 'POST_PURCHASE_UPDATE';
+                $payload['tag'] = $messageTag ?? 'POST_PURCHASE_UPDATE';
 
                 $retryResponse = Http::timeout(30)
                     ->post($this->graphUrl('/me/messages'), $payload);
