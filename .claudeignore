@@ -1,0 +1,8 @@
+node_modules/
+vendor/
+.git/
+dist/
+build/
+storage/framework/
+*.log
+*.cache

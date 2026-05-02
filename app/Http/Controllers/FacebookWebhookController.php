@@ -2648,6 +2648,11 @@ class FacebookWebhookController extends Controller
             // 🛠️ (2026-05-01) CANCEL_FORTUNE จาก tier menu — pre-existing payload ไม่เคยมี handler
             //    ทำให้ปุ่ม ❌ ยกเลิก ใน tier menu ไม่ทำงาน → fix ที่นี่
             'CANCEL_FORTUNE' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            // 🃏 (2026-05-03) Celtic pick buttons — คนแก่กดปุ่มแทนการพิมพ์
+            'CELTIC_READY' => $this->processConversationalMessage($senderId, 'พร้อม'),
+            'CELTIC_RESET' => $this->processConversationalMessage($senderId, 'สับใหม่'),
+            'CELTIC_CONTINUE' => $this->processConversationalMessage($senderId, 'ถามต่อ'),
+            'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'พอแค่นี้'),
             // 📅 (2026-05-01) confirm/reject buttons (mirror postback handler)
             'BIRTHDATE_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
             'BIRTHDATE_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ไม่ใช่'),

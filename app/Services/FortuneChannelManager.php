@@ -596,18 +596,28 @@ class FortuneChannelManager
                 //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
                 //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
-                'tier_choice', 'tier_choice_invalid' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'],
-                    ['content_type' => 'text', 'title' => '🔮 ไพ่ 10 ใบ 99 บาท', 'payload' => 'TIER_CELTIC_99'],
-                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                ]),
+                //   ✏️ (2026-05-03) ซ่อนปุ่ม 99 ถ้า admin ปิด Celtic
+                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message) {
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    $buttons = [
+                        ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'],
+                    ];
+                    if ($celticEnabled) {
+                        $buttons[] = ['content_type' => 'text', 'title' => '🔮 ไพ่ 10 ใบ 99 บาท', 'payload' => 'TIER_CELTIC_99'];
+                    }
+                    $buttons[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
+
+                    return $fbService->sendQuickReplies($userId, $message, $buttons);
+                })(),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
                 'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
-                // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "พร้อม" สำหรับใบถัดไป
-                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "เปิดไพ่" สำหรับใบถัดไป
+                // ✏️ (2026-05-03) เปลี่ยน label ให้คนแก่เข้าใจชัดเจน + เพิ่มปุ่มสับใหม่
+                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
+                'celtic_restart_hint', 'celtic_already_in_session' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ก่อน (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -618,12 +628,15 @@ class FortuneChannelManager
                         }
                     }
 
-                    // 🔧 (2026-05-03) CRITICAL FIX — pass $extra (message_tag, from_admin)
-                    //   เคสที่กัน: SMS payment confirmation push หลัง 24hr — ลูกค้าจ่ายแล้วเงียบ
-                    //   เดิม: ไม่ส่ง $extra → sendQuickReplies ใช้ RESPONSE → fail เงียบ
+                    // 🃏 ปุ่มชัดเจนสำหรับผู้สูงอายุ
+                    $reading = $result['reading'] ?? null;
+                    $picked = $reading?->getCelticPickedCount() ?? 0;
+                    $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+
                     return $fbService->sendQuickReplies($userId, $message, [
-                        ['content_type' => 'text', 'title' => '🙏 พร้อม', 'payload' => 'CELTIC_READY'],
-                        ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                        ['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY'],
+                        ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'],
+                        ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                     ], $extra);
                 })(),
 

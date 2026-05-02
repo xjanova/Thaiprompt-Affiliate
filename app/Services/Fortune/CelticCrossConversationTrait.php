@@ -73,6 +73,26 @@ trait CelticCrossConversationTrait
      */
     protected function presentTierChoice(FortuneReading $reading): array
     {
+        // 🔒 (2026-05-03) ถ้า admin ปิด Celtic — ข้าม tier menu ไปดูดวง 39฿ ตรงๆ
+        //    ไม่แสดงข้อมูล Celtic 99฿ เพื่อไม่ให้ลูกค้าสับสน
+        if (! $this->settings->enable_celtic_cross) {
+            $deepPriceInt = (int) $this->getDeepReadingPrice();
+            $reading->update([
+                'reading_type' => FortuneReading::READING_TYPE_DEEP,
+                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+            ]);
+            if (empty($reading->bill_reference)) {
+                $reading->update(['bill_reference' => FortuneReading::generateBillReference()]);
+            }
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => "✨ เริ่มดูดวง *{$deepPriceInt} บาท* 🔹\n\n"
+                    . $this->getBirthdateRequestMessage(),
+                'reading' => $reading,
+            ];
+        }
+
         $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
 
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
