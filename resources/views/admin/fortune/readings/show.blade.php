@@ -267,17 +267,32 @@
 
                 {{-- สถานะ: กำลังสร้างคำทำนาย (conversation_status = paid แต่ยังไม่มี deep_response) --}}
                 @if($reading->conversation_status === 'paid' && empty($reading->deep_response))
-                    <div id="ai-processing-banner" class="mb-4 px-4 py-3 rounded-lg bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700">
-                        <div class="flex items-center gap-3">
-                            <div class="animate-spin h-5 w-5 border-2 border-purple-600 border-t-transparent rounded-full"></div>
-                            <div>
-                                <p class="text-purple-800 dark:text-purple-200 font-medium">🔮 AI กำลังสร้างคำทำนายเชิงลึก...</p>
-                                <p class="text-purple-600 dark:text-purple-400 text-sm">ใช้เวลาประมาณ 30-60 วินาที หน้าจะรีเฟรชอัตโนมัติเมื่อเสร็จ</p>
+                    @php
+                        // 🎯 (2026-05-02) คำนวณเวลา + provider เพื่อให้ admin เห็นชัด
+                        $paidElapsedSec = $reading->updated_at?->diffInSeconds(now()) ?? 0;
+                        $primaryProvider = strtoupper(\App\Models\FortuneTellingSetting::getSettings()->ai_provider ?? 'gemini');
+                    @endphp
+                    <div id="ai-processing-banner" class="mb-4 px-5 py-4 rounded-xl bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 border-2 border-purple-300 dark:border-purple-700 shadow-sm">
+                        <div class="flex items-start gap-4">
+                            <div class="flex-shrink-0">
+                                <div class="animate-spin h-8 w-8 border-3 border-purple-600 border-t-transparent rounded-full"></div>
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <p class="text-purple-900 dark:text-purple-100 font-bold text-lg">🔮 AI กำลังสร้างคำทำนาย</p>
+                                    <span class="px-2 py-0.5 bg-purple-600 text-white text-xs font-bold rounded-full">{{ $primaryProvider }}</span>
+                                </div>
+                                <p class="text-purple-700 dark:text-purple-300 text-sm">
+                                    ระบบกำลังประมวลผลคำทำนายเชิงลึก — <b>แอดมินไม่ต้องทำอะไร</b> หน้าจะรีเฟรชอัตโนมัติเมื่อเสร็จ
+                                </p>
+                                <p class="text-purple-600 dark:text-purple-400 text-xs mt-1">
+                                    ⏱️ รอมาแล้ว <span id="ai-elapsed">{{ $paidElapsedSec }}</span> วินาที (ปกติใช้ 30-60 วินาที)
+                                </p>
                             </div>
                         </div>
-                        <div class="mt-2">
-                            <div class="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-1.5">
-                                <div id="ai-progress-bar" class="bg-purple-600 h-1.5 rounded-full transition-all duration-1000" style="width: 5%"></div>
+                        <div class="mt-3">
+                            <div class="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
+                                <div id="ai-progress-bar" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-1000" style="width: 5%"></div>
                             </div>
                         </div>
                     </div>
@@ -288,15 +303,23 @@
                             const statusUrl = '{{ route('admin.fortune.readings.status', $reading) }}';
                             const progressBar = document.getElementById('ai-progress-bar');
                             const banner = document.getElementById('ai-processing-banner');
+                            const elapsedDisplay = document.getElementById('ai-elapsed');
+                            const initialElapsed = {{ $paidElapsedSec ?? 0 }};
                             const startedAt = Date.now();
                             const maxWaitMs = 180 * 1000; // 3 นาที
 
                             const tick = setInterval(async () => {
                                 const elapsedSec = (Date.now() - startedAt) / 1000;
+                                const totalElapsed = Math.round(initialElapsed + elapsedSec);
+
+                                // อัพเดท elapsed counter ทุก 1 วินาที
+                                if (elapsedDisplay) {
+                                    elapsedDisplay.textContent = totalElapsed;
+                                }
 
                                 // อัพเดท progress bar (visual only)
                                 if (progressBar) {
-                                    const progress = Math.min(95, (elapsedSec / 60) * 100);
+                                    const progress = Math.min(95, (totalElapsed / 60) * 100);
                                     progressBar.style.width = progress + '%';
                                 }
 
