@@ -2188,11 +2188,24 @@ class FortuneConversationService
             ];
         }
 
+        // 🖼️ (2026-05-03) แนบภาพไพ่ Celtic Cross spread — ที่ระลึก
+        $compositeUrl = null;
+        try {
+            $generator = app(\App\Services\CelticSpreadImageGenerator::class);
+            $compositeUrl = $generator->generate($reading);
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic review list: composite image fail', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return [
             'action' => 'celtic_review_list',
             'message' => $message,
             'reading' => $reading,
             'celtic_review_quick_replies' => $quickReplies,
+            'celtic_summary_image_url' => $compositeUrl,
         ];
     }
 
@@ -2260,11 +2273,27 @@ class FortuneConversationService
             $message .= "✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏";
         }
 
+        // 🖼️ (2026-05-03) แนบภาพไพ่ Celtic Cross spread (ที่ระลึก) ถ้าเปิดครบ 10 ใบ
+        //   — เพื่อให้ลูกค้าเห็นภาพไพ่ที่ใช้ทำนายข้อนั้น
+        $compositeUrl = null;
+        if ($reading->getCelticPickedCount() >= 10) {
+            try {
+                $generator = app(\App\Services\CelticSpreadImageGenerator::class);
+                $compositeUrl = $generator->generate($reading);
+            } catch (\Throwable $e) {
+                \Log::warning('Celtic review: composite image fail', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
         return [
             'action' => 'celtic_review_detail',
             'message' => $message,
             'reading' => $reading,
             'celtic_review_quick_replies' => $quickReplies,
+            'celtic_summary_image_url' => $compositeUrl,
         ];
     }
 

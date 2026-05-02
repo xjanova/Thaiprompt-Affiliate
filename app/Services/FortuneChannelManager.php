@@ -670,15 +670,27 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
                 ]),
 
-                // 📜 (2026-05-03) Celtic Q&A review — list + detail พร้อมปุ่มเลือกคำถาม
-                'celtic_review_list', 'celtic_review_detail', 'celtic_review_not_found' => $fbService->sendQuickReplies(
-                    $userId,
-                    $message,
-                    $result['celtic_review_quick_replies'] ?? [
-                        ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
-                    ],
-                    $extra
-                ),
+                // 📜 (2026-05-03) Celtic Q&A review — list + detail พร้อมปุ่มเลือกคำถาม + ภาพไพ่ที่ระลึก
+                'celtic_review_list', 'celtic_review_detail', 'celtic_review_not_found' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 🖼️ ส่งภาพไพ่ก่อน (ถ้ามี)
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['celtic_summary_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
+
+                    return $fbService->sendQuickReplies(
+                        $userId,
+                        $message,
+                        $result['celtic_review_quick_replies'] ?? [
+                            ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
+                        ],
+                        $extra
+                    );
+                })(),
 
                 // celtic_session_ended → ส่งภาพ Celtic Cross spread (ที่ระลึก) + closing message
                 // 🖼️ (2026-05-03) ภาพ composite ส่งตอนจบ ไม่ใช่ตอนเปิดครบ 10 ใบ
