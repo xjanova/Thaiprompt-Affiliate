@@ -113,7 +113,13 @@ class FacebookRichMessageService
         if ($isLao) {
             $serviceLines[] = "🔹 ເບິ່ງດວງ 💰💰 {$deepPrice} BAHT 💰💰\n   📅 ວັນເດືອນປີເກີດ + 🃏 ໄພ່ຍິບຊີ 1 ໃບ";
             if ($celticEnabled) {
-                $serviceLines[] = "🔮 ໄພ່ຍິບຊີ 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ໃບ + ❓ 3 ຄຳຖາມ";
+                // 🃏 (2026-05-03) ອະທິບາຍ Celtic Cross 10 ໃບ — ໃຫ້ລູກຄ້າເຫັນຄຸນຄ່າ
+                $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
+                    . "   🃏 ຈິດເລືອກໄພ່ 10 ໃບ ຄອບຄຸມ:\n"
+                    . "   • ອະດີດ → ປັດຈຸບັນ → ອະນາຄົດ\n"
+                    . "   • ອຸປະສັກ + ຕົວທ່ານ + ຄົນຮອບຂ້າງ\n"
+                    . "   • ຄວາມຫວັງ&ຢ້ານ + ຜົນລັບ\n"
+                    . "   ❓ ຖາມໄດ້ 3 ຄຳຖາມ — ແມ່ນຍຳເລິກກວ່າ";
             }
             if ($freeEnabled) {
                 $serviceLines[] = '🆓 ເບິ່ງດວງຟຣີ — ພິມຄຳຖາມເຂົ້າມາໄດ້ເລີຍ';
@@ -121,7 +127,14 @@ class FacebookRichMessageService
         } else {
             $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
             if ($celticEnabled) {
-                $serviceLines[] = "🔮 ไพ่ยิปซี 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ใบ + ❓ 3 คำถาม";
+                // 🃏 (2026-05-03) อธิบาย Celtic Cross 10 ใบ — ให้ลูกค้าเห็นคุณค่า
+                //   ชื่อ position จริงจาก FortuneReading::CELTIC_POSITIONS
+                $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
+                    . "   🃏 จิตเลือกไพ่ 10 ใบ ครอบคลุม:\n"
+                    . "   • อดีต → ปัจจุบัน → อนาคต\n"
+                    . "   • อุปสรรค + ตัวคุณ + คนรอบข้าง\n"
+                    . "   • ความหวัง&กลัว + ผลลัพธ์\n"
+                    . "   ❓ ถามได้ 3 คำถาม — แม่นยำลึกกว่า";
             }
             if ($freeEnabled) {
                 $serviceLines[] = '🆓 ดูดวงฟรี — พิมพ์คำถามมาได้เลย';
