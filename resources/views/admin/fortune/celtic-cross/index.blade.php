@@ -109,13 +109,13 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        จำนวนคำถาม/บิล <span class="text-xs text-gray-400">(legacy)</span>
+                        จำนวนคำถาม/บิล <span class="text-xs text-purple-600 dark:text-purple-400">(0 = ไม่จำกัด)</span>
                     </label>
                     <input type="number" name="celtic_cross_max_questions"
-                           value="{{ $settings->celtic_cross_max_questions ?? 3 }}"
-                           min="1" max="10" disabled
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed">
-                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">⚠️ เลิกใช้ตั้งแต่ 2026-05-02 — แม่หมอจันทรา AI-driven จบเองเมื่อครอบคลุม</p>
+                           value="{{ $settings->celtic_cross_max_questions ?? 5 }}"
+                           min="0" max="50"
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">📊 บังคับ enforcement (2026-05-03) — ครบโควต้าจะจบ session ให้คำตอบสุดท้าย</p>
                 </div>
 
                 <div>
@@ -172,7 +172,42 @@
 
     {{-- Recent Readings --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📜 Reading ล่าสุด (20 รายการ)</h2>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📜 Celtic Cross Readings</h2>
+
+        {{-- Flash messages --}}
+        @if(session('success'))
+            <div class="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-3 mb-4 rounded-r-lg text-sm">
+                {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-3 mb-4 rounded-r-lg text-sm">
+                {{ session('error') }}
+            </div>
+        @endif
+
+        {{-- 🔍 (2026-05-03) Filter form --}}
+        <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-5 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+            <input type="text" name="search" value="{{ $filters['search'] ?? '' }}"
+                   placeholder="🔍 ค้นชื่อ / Bill / FB ID / #ID"
+                   class="md:col-span-2 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+            <select name="status" class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+                <option value="">— ทุกสถานะ —</option>
+                <option value="paid" {{ ($filters['status'] ?? '') === 'paid' ? 'selected' : '' }}>จ่ายแล้ว</option>
+                <option value="unpaid" {{ ($filters['status'] ?? '') === 'unpaid' ? 'selected' : '' }}>ยังไม่จ่าย</option>
+                <option value="stuck" {{ ($filters['status'] ?? '') === 'stuck' ? 'selected' : '' }}>ค้าง (paid + ไม่ครบ 10)</option>
+                <option value="celtic_pending_payment" {{ ($filters['status'] ?? '') === 'celtic_pending_payment' ? 'selected' : '' }}>รอชำระ</option>
+                <option value="celtic_picking" {{ ($filters['status'] ?? '') === 'celtic_picking' ? 'selected' : '' }}>กำลังเลือกไพ่</option>
+                <option value="celtic_awaiting_question" {{ ($filters['status'] ?? '') === 'celtic_awaiting_question' ? 'selected' : '' }}>รอคำถาม</option>
+                <option value="completed" {{ ($filters['status'] ?? '') === 'completed' ? 'selected' : '' }}>จบแล้ว</option>
+                <option value="cancelled" {{ ($filters['status'] ?? '') === 'cancelled' ? 'selected' : '' }}>ยกเลิก</option>
+            </select>
+            <input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"
+                   class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-sm">
+            <button type="submit" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded text-sm font-semibold">
+                🔍 ค้นหา
+            </button>
+        </form>
 
         @if($recentReadings->isEmpty())
             <p class="text-center text-gray-500 dark:text-gray-400 py-8">ยังไม่มี Celtic Cross reading</p>
@@ -227,11 +262,25 @@
                                 <td class="px-3 py-2 text-right">
                                     <a href="{{ route('admin.fortune.celtic-cross.show', $reading) }}"
                                        class="text-purple-600 hover:underline text-xs">ดู</a>
+                                    @if($reading->is_paid && $reading->celticQuestions_count == 0 && $reading->getCelticPickedCount() < 10)
+                                        {{-- 🔄 Quick reset for stuck readings --}}
+                                        <form action="{{ route('admin.fortune.celtic-cross.reset', $reading) }}" method="POST"
+                                              onsubmit="return confirm('Reset reading #{{ $reading->id }}?');"
+                                              class="inline ml-2">
+                                            @csrf
+                                            <button type="submit" class="text-amber-600 hover:underline text-xs">🔄 reset</button>
+                                        </form>
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            {{-- Pagination --}}
+            <div class="mt-4">
+                {{ $recentReadings->links() }}
             </div>
         @endif
     </div>

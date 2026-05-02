@@ -6,7 +6,7 @@
 @section('content')
 <div class="container mx-auto px-4 py-8">
 
-    <div class="mb-6 flex items-center justify-between">
+    <div class="mb-6 flex items-center justify-between flex-wrap gap-3">
         <div>
             <a href="{{ route('admin.fortune.celtic-cross.index') }}" class="text-sm text-purple-600 hover:underline">← กลับไปหน้ารวม</a>
             <h1 class="text-3xl font-bold text-gray-900 dark:text-white mt-2">
@@ -18,13 +18,40 @@
                 {{ $reading->created_at->format('d/m/Y H:i') }}
             </p>
         </div>
-        @if($reading->celtic_summary_image_path)
-            <a href="{{ asset('storage/' . $reading->celtic_summary_image_path) }}" target="_blank"
-               class="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm">
-                🖼️ เปิดภาพ Spread
-            </a>
-        @endif
+        <div class="flex gap-2 flex-wrap">
+            @if($reading->celtic_summary_image_path)
+                <a href="{{ asset('storage/' . $reading->celtic_summary_image_path) }}" target="_blank"
+                   class="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg text-sm">
+                    🖼️ เปิดภาพ Spread
+                </a>
+            @endif
+            @if($reading->is_paid)
+                {{-- 🔄 (2026-05-03) Admin reset — ใช้เมื่อ flow ไม่สมบูรณ์ --}}
+                <form action="{{ route('admin.fortune.celtic-cross.reset', $reading) }}" method="POST"
+                      onsubmit="return confirm('ยืนยัน reset reading #{{ $reading->id }}?\n\nจะล้างไพ่ + Q&A ทั้งหมด แล้วให้ลูกค้าเริ่มเปิดไพ่ใหม่ (ไม่ต้องจ่ายซ้ำ)');"
+                      class="inline">
+                    @csrf
+                    <input type="hidden" name="notify" value="1">
+                    <button type="submit"
+                            class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 rounded-lg text-sm font-semibold">
+                        🔄 Reset + แจ้งลูกค้า
+                    </button>
+                </form>
+            @endif
+        </div>
     </div>
+
+    {{-- Flash messages --}}
+    @if(session('success'))
+        <div class="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-6 rounded-r-lg">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="bg-red-100 dark:bg-red-900/30 border-l-4 border-red-500 text-red-700 dark:text-red-300 p-4 mb-6 rounded-r-lg">
+            {{ session('error') }}
+        </div>
+    @endif
 
     {{-- Status Card --}}
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -40,7 +67,7 @@
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
             <p class="text-xs text-gray-500 dark:text-gray-400">คำถามใช้ไป</p>
-            <p class="text-base font-bold text-purple-600 mt-1">{{ $reading->celtic_questions_used }}/3</p>
+            <p class="text-base font-bold text-purple-600 mt-1">{{ $reading->celtic_questions_used }}/{{ $maxQuestions > 0 ? $maxQuestions : '∞' }}</p>
         </div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-4 border border-gray-100 dark:border-gray-700">
             <p class="text-xs text-gray-500 dark:text-gray-400">Q1 ตอบเมื่อ</p>
