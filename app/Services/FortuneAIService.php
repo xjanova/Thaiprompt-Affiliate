@@ -1643,6 +1643,20 @@ PROMPT;
             $keys = $this->collectAvailableKeys($userContext, $purpose, true);  // ignore_cooldown=true
         }
 
+        // 🎯 (2026-05-02) Strict provider mode — สำหรับ prediction
+        //   user request: "ออปชั่นว่าจะ fallback ไหม หรือใช้แค่ Gemini เท่านั้น"
+        //   ถ้า prediction_strict_provider=true → กรอง keys เฉพาะ primary provider
+        //   ถ้า primary fail → ไม่ fallback ไป provider อื่น (admin จะรู้ทันที)
+        if ($purpose === 'prediction'
+            && ! empty($primaryProvider)
+            && (bool) ($this->settings->prediction_strict_provider ?? false)) {
+            $keys = array_values(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $primaryProvider));
+            Log::info('FortuneAI: Strict provider mode — กรอง keys เฉพาะ primary', [
+                'primary_provider' => $primaryProvider,
+                'keys_count_after_filter' => count($keys),
+            ]);
+        }
+
         return $keys;
     }
 

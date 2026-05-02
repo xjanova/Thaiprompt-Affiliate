@@ -181,6 +181,7 @@ class FortuneSettingsController extends Controller
             'ai_provider' => 'required|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
             'ai_api_key' => 'nullable|string',
             'ai_model' => 'required|string|max:100',
+            'prediction_strict_provider' => 'boolean',  // 🎯 (2026-05-02) strict mode
             'basic_prompt_template' => 'nullable|string',
             'deep_prompt_template' => 'nullable|string',
             'use_global_ai_settings' => 'boolean',

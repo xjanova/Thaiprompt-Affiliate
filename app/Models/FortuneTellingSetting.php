@@ -73,6 +73,7 @@ class FortuneTellingSetting extends Model
         'ai_provider',
         'ai_api_key',
         'ai_model',
+        'prediction_strict_provider',  // 🎯 (2026-05-02) ใช้แค่ provider ที่เลือก ไม่ fallback
         'prompt_template',
         'basic_prompt_template',
         'deep_prompt_template',
@@ -193,6 +194,7 @@ class FortuneTellingSetting extends Model
     protected $casts = [
         'is_enabled' => 'boolean',
         'use_global_ai_settings' => 'boolean',
+        'prediction_strict_provider' => 'boolean',  // 🎯 (2026-05-02) strict provider mode
         'respond_in_comment' => 'boolean',
         'require_registration' => 'boolean',
         'enable_deep_reading' => 'boolean',

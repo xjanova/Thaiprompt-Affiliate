@@ -487,6 +487,30 @@
                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                            placeholder="AIz...">
                 </div>
+
+                {{-- 🎯 (2026-05-02) Strict provider mode — เลือกใช้ provider เดียว ไม่ fallback --}}
+                <div class="md:col-span-2">
+                    <label class="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
+                        <input type="hidden" name="prediction_strict_provider" value="0">
+                        <input type="checkbox" name="prediction_strict_provider" value="1"
+                               {{ old('prediction_strict_provider', $settings->prediction_strict_provider ?? false) ? 'checked' : '' }}
+                               class="mt-1 w-5 h-5 rounded text-purple-600 focus:ring-purple-500 focus:ring-2">
+                        <div class="flex-1">
+                            <p class="font-bold text-purple-900 dark:text-purple-100 mb-1">
+                                🎯 ใช้เฉพาะ provider ที่เลือก (ไม่ fallback ไป provider อื่น)
+                            </p>
+                            <p class="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">
+                                <b>เปิด</b> = ใช้แค่ <code class="bg-white/50 dark:bg-gray-800/50 px-1 rounded">{{ $settings->ai_provider ?? 'gemini' }}</code> เท่านั้น —
+                                ถ้า fail (quota หมด/error) → ระบบจะแจ้ง error ทันที ไม่ใช้ provider อื่น<br>
+                                <b>ปิด</b> (default) = ลอง primary ก่อน, ถ้า fail → fallback ไป provider อื่นใน pool อัตโนมัติ
+                            </p>
+                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-2">
+                                💡 เลือกเปิดถ้าต้องการคุณภาพคำทำนายคงที่จาก provider เดียว (เช่น Gemini เท่านั้น)
+                                — เผื่อ provider อื่นให้ผลลัพธ์ต่างกันมาก
+                            </p>
+                        </div>
+                    </label>
+                </div>
             </div> {{-- End of custom settings grid --}}
 
             {{-- ลิงก์ตั้งค่าที่เกี่ยวข้อง --}}
