@@ -1607,8 +1607,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
     {
         try {
             $credit = \App\Models\FortuneUserCredit::getOrCreate($recipientId, 'facebook');
-            if (! $credit->shouldPromptFollow()) {
-                return false; // ติดตามแล้ว หรือ cooldown ยังไม่หมด
+            // 🔄 (2026-05-02) เปลี่ยนจาก shouldPromptFollow() (7-day cooldown)
+            //    → shouldPromptFollowToday() (daily cooldown — ครั้งแรกของวันเท่านั้น)
+            //    user request: "ในการทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏ"
+            if (! $credit->shouldPromptFollowToday()) {
+                return false; // ติดตามแล้ว หรือ ส่งวันนี้ไปแล้ว
             }
 
             $pageId = $this->settings->facebook_page_id ?? null;

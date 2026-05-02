@@ -488,6 +488,30 @@ class FortuneUserCredit extends Model
     }
 
     /**
+     * 🆕 (2026-05-02) ควรส่งกล่อง "ติดตามเพจ" วันนี้หรือไม่ — daily cooldown
+     *
+     * User feedback: "ในการทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏ"
+     *
+     * Rules:
+     * 1. ถ้ายืนยันติดตามแล้ว → false
+     * 2. ถ้ายังไม่เคยส่ง → true
+     * 3. ถ้าส่งวันนี้ไปแล้ว → false (ไม่สแปม ทักหลายครั้งใน 1 วัน)
+     * 4. วันใหม่ + ยังไม่ติดตาม → true (re-prompt ครั้งแรกของวัน)
+     */
+    public function shouldPromptFollowToday(): bool
+    {
+        if ($this->hasFacebookFollowed()) {
+            return false;
+        }
+
+        if ($this->facebook_follow_prompted_at === null) {
+            return true;
+        }
+
+        return ! $this->facebook_follow_prompted_at->isToday();
+    }
+
+    /**
      * บันทึกว่าส่งกล่อง "ติดตามเพจ" ไปแล้ว
      */
     public function markFollowPrompted(): self

@@ -1222,7 +1222,8 @@ class FacebookWebhookController extends Controller
         $this->processConversationalMessage($senderId, $messageText);
 
         // 👁️ Follow-page prompt: ส่งหลัง bot ตอบ — gated ที่ DB
-        //   (skip ถ้า user ติดตามแล้ว / cooldown 7 วัน — ไม่สแปม)
+        //   (2026-05-02) ปรับเป็น "ครั้งแรกของวัน" — skip ถ้าติดตามแล้ว / ส่งวันนี้ไปแล้ว
+        //   user request: "ทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏเสมอ"
         $this->facebookService->sendFollowPagePromptToUser($senderId);
     }
 
