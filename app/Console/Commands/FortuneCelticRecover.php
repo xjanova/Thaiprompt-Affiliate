@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
-use App\Services\FortuneTellingSetting;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
