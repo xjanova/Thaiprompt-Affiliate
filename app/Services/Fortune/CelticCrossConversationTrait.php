@@ -104,12 +104,14 @@ trait CelticCrossConversationTrait
             . "━━━━━━━━━━━━━━━━━\n"
             . "🃏 *เปิดไพ่ Celtic Cross 10 ใบ — เต็มสำรับ*\n"
             . "    ตำแหน่งครบ: ปัจจุบัน • อุปสรรค • ความหวัง • อนาคต\n\n"
-            . "💬 *ถามได้ 3 คำถาม* (ภายใน 1 ชม.)\n"
-            . "    เจาะลึกหลายมุมในรอบเดียว — ความรัก/งาน/เงิน\n\n"
+            . "🌌 *แม่หมอใช้พลังจักรวาล + จิตเจ้าชะตา*\n"
+            . "    ไม่ต้องบอกวันเกิด — แม่หมอล้วงลึกผ่านไพ่ที่เจ้าชะตาเลือกเอง\n\n"
+            . "💬 *ถามได้ไม่จำกัด* (ภายใน 30 นาทีหลังคำทำนายแรก)\n"
+            . "    คุยกับแม่หมอจนพอใจ — แม่หมอจะตัดสินใจจบเองเมื่อครอบคลุม\n\n"
             . "🖼️ *ได้ภาพ Celtic Cross spread* สวยงาม\n"
             . "    เก็บไว้เป็นที่ระลึก แชร์ให้เพื่อนได้\n\n"
             . "📜 *คำทำนายแม่นกว่า ลึกกว่า เห็นภาพรวม*\n"
-            . "    ใช้ศาสตร์ไพ่ยิปซีโบราณที่หมอดูระดับสูงใช้\n\n"
+            . "    ใช้ศาสตร์ไพ่ยิปซีโบราณ + จิตวิทยาสุขุม เห็นเหมือนตาเห็น\n\n"
             . "👑 *เหมาะกับ:* คนที่จริงจัง อยากเห็นภาพชัดทุกแง่\n"
             . "⏱️ *เวลา:* เปิดไพ่ + ทำนายเสร็จใน 5-10 นาที\n\n"
 
@@ -373,10 +375,28 @@ trait CelticCrossConversationTrait
             return $this->onCelticPaymentConfirmed($reading);
         }
 
+        $payAmount = $reading->amount_paid
+            ? number_format((float) $reading->amount_paid, 2)
+            : '99.00';
+
+        // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — แจ้งสถานะรอจ่ายให้ชัด
+        if ($this->looksLikeFortuneRestartRequest($messageText)) {
+            return [
+                'action' => 'celtic_pending_payment_hint',
+                'message' => "🌙 เจ้าชะตาเลือกแพคเกจไพ่ยิปซีเต็มสำรับ 99 บาทไว้แล้วนะคะ\n\n"
+                    . "💸 ตอนนี้รอเจ้าชะตา *โอนค่าครู {$payAmount} บาท* ตาม QR ที่ส่งให้\n"
+                    . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิล)\n\n"
+                    . "──────────────────────\n"
+                    . "✅ หลังโอนเสร็จ — พิมพ์ *\"โอนแล้ว\"* ระบบจะเช็คให้\n"
+                    . "❌ หรือพิมพ์ *\"ยกเลิก\"* เพื่อไม่ดูแล้ว",
+                'reading' => $reading,
+            ];
+        }
+
         // ยังไม่จ่าย — ตอบเตือนเรื่องจ่ายเงิน
         return [
             'action' => 'celtic_awaiting_payment',
-            'message' => "💸 รอเจ้าชะตาโอนค่าครู 99 บาทตาม QR ที่ส่งให้นะคะ\n\n"
+            'message' => "💸 รอเจ้าชะตาโอนค่าครู {$payAmount} บาทตาม QR ที่ส่งให้นะคะ\n\n"
                 . "📌 หลังโอนเสร็จ หมอจะรู้อัตโนมัติแล้วเปิดไพ่ให้\n"
                 . "📌 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการต่อ",
             'reading' => $reading,
@@ -421,6 +441,23 @@ trait CelticCrossConversationTrait
                     'reading' => $reading,
                 ];
             }
+        }
+
+        // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — ห้ามถือเป็น "พร้อม" สุ่มไพ่
+        if ($this->looksLikeFortuneRestartRequest($messageText)) {
+            $picked = $reading->getCelticPickedCount();
+            $next = $reading->getNextCelticPosition() ?? 11;
+
+            return [
+                'action' => 'celtic_restart_hint',
+                'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีอยู่แล้วนะคะ\n\n"
+                    . "🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
+                    . "──────────────────────\n"
+                    . "👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
+                    . "🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่เริ่มใหม่ (ยังไม่จ่ายซ้ำ)\n"
+                    . "❌ พิมพ์ *\"ยกเลิก\"* ถ้าไม่อยากดูแล้ว",
+                'reading' => $reading,
+            ];
         }
 
         // chitchat → ย้ำขั้นตอน
@@ -539,8 +576,10 @@ trait CelticCrossConversationTrait
         $followupText = "\n\n──────────────────────\n"
             . "🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n"
             . "เจ้าชะตาดูภาพ Celtic Cross ที่จัดเรียงให้แล้วนะคะ ✨\n\n"
-            . "💬 ตอนนี้เจ้าชะตาต้องการ **ถามอะไรเป็นคำถามที่ 1/3** คะ?\n"
-            . "พิมพ์คำถามมาได้เลย หมอจะวิเคราะห์ไพ่ทั้ง 10 ใบให้ตอบค่ะ";
+            . "🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
+            . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
+            . "✨ หลังคำทำนายแรก เจ้าชะตาถามต่อได้ไม่จำกัดภายใน 30 นาที\n"
+            . "🔚 เมื่อแม่หมอเห็นว่าครบแล้ว แม่หมอจะกล่าวลาเอง";
 
         return [
             'action' => 'celtic_all_picked',
@@ -557,8 +596,35 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticAwaitingQuestion(FortuneReading $reading, string $messageText): array
     {
-        // ❌ คำถามสั้นเกินไป — ขอใหม่
         $question = trim($messageText);
+
+        // 🔚 ลูกค้าขอจบ → จบสุขุม
+        if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
+            return $this->endCelticSession($reading, 'customer_said_done');
+        }
+
+        // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม
+        // ตอบ contextual ว่าเจ้าชะตาอยู่ในรอบดูดวงอยู่แล้ว ให้พิมพ์คำถามจริง
+        if ($this->looksLikeFortuneRestartRequest($messageText)) {
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $timeHint = $remainingMin !== null && $remainingMin > 0
+                ? "⏳ คุยกับแม่หมอได้อีก {$remainingMin} นาที"
+                : '⏳ คุยกับแม่หมอได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+
+            return [
+                'action' => 'celtic_already_in_session',
+                'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีกับแม่หมออยู่แล้วนะคะ\n\n"
+                    . "💬 พิมพ์คำถามเฉพาะที่อยากรู้มาได้เลย เช่น:\n"
+                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
+                    . "   • *\"งานในเดือนหน้า\"*\n"
+                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
+                    . $timeHint . "\n"
+                    . "❌ หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา",
+                'reading' => $reading,
+            ];
+        }
+
+        // ❌ คำถามสั้นเกินไป — ขอใหม่
         if (mb_strlen($question) < 5) {
             return [
                 'action' => 'celtic_question_too_short',
@@ -568,17 +634,9 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // เช็ค anti-fraud: window 1 ชม. (ถ้า Q1 ตอบไปแล้วและเลยเวลา → ปฏิเสธ)
+        // เช็ค time window 30 นาที (นับจาก Q1 ตอบเสร็จ — anti-troll, ไม่จำกัดจำนวนคำถาม)
         if (! $reading->canAskMoreCeltic()) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-
-            return [
-                'action' => 'celtic_qa_window_expired',
-                'message' => "⏰ ครบเวลา 1 ชั่วโมงในการถามต่อแล้วค่ะ\n\n"
-                    . "หากเจ้าชะตาต้องการดูใหม่ ต้องเริ่มรอบใหม่ (ค่าครู 99 บาท)\n"
-                    . "พิมพ์ 'celtic cross' เพื่อเริ่มใหม่ค่ะ 🔮",
-                'reading' => $reading,
-            ];
+            return $this->endCelticSession($reading, 'time_expired');
         }
 
         // ส่งให้ AI Pool
@@ -598,60 +656,129 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // สำเร็จ → ขยับเข้า QA prompt state
         $reading->refresh();
         $sequence = $result['sequence'];
-        $remaining = $result['questions_remaining'];
-        $used = $result['questions_used'];
+        $wantsEnd = (bool) ($result['wants_end'] ?? false);
 
-        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_QA_PROMPT]);
-
-        $followupOffer = '';
-        if ($remaining > 0) {
-            $maxQ = $service->getMaxQuestions();
-            $followupOffer = "\n\n──────────────────────\n"
-                . "💬 *เจ้าชะตาอยากถามต่อไหมคะ? (ใช้ไป {$used}/{$maxQ})*\n"
-                . "ถามได้อีก {$remaining} คำถาม ภายในเวลา 1 ชั่วโมงนับจาก Q1\n\n"
-                . "👉 พิมพ์คำถามใหม่ — หรือ พิมพ์ 'พอแค่นี้' เพื่อจบ";
-        } else {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-            $followupOffer = "\n\n──────────────────────\n"
-                . "🌟 ครบ 3/3 คำถามแล้วค่ะ\n"
-                . 'ขอให้เจ้าชะตาโชคดี เจอแต่สิ่งดีๆ นะคะ 🙏✨';
+        // 🔚 AI signal ว่าพร้อมจบ session (ลูกค้านอกเรื่อง / ถามครอบคลุมแล้ว / ลูกค้าวกวน)
+        // 🛡️ guard: Q1 ห้ามจบ — ลูกค้าเพิ่งจ่ายค่าครู ต้องเปิดให้ถามต่ออย่างน้อยรอบหนึ่ง
+        if ($wantsEnd && $sequence > 1) {
+            return $this->endCelticSession($reading, 'ai_signal', $result['response']);
         }
+
+        // ปกติ — ตอบเสร็จ ให้ลูกค้าถามต่อได้
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+        $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $timeHint = $remainingMin !== null
+            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+            : '⏳ เจ้าชะตาคุยต่อได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+
+        $followupOffer = "\n\n──────────────────────\n"
+            . $timeHint . "\n"
+            . "💬 พิมพ์คำถามถัดไปได้เลย — หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา ✨";
 
         return [
             'action' => 'celtic_question_answered',
             'message' => $result['response'] . $followupOffer,
             'reading' => $reading,
             'celtic_sequence' => $sequence,
-            'celtic_questions_remaining' => $remaining,
         ];
     }
 
     /**
-     * State: CELTIC_QA_PROMPT
-     * รอลูกค้าตอบว่าจะถามต่อหรือพอแค่นี้
+     * จบ Celtic session อย่างสุขุม → reset state ให้กลับเข้า normal loop ของระบบ
+     *
+     * เรียกเมื่อ:
+     *   - AI ส่ง [END_SESSION] token (นอกเรื่อง / ครอบคลุม / วกวน)
+     *   - Time window 30 นาที หมด
+     *   - ลูกค้าพิมพ์ "พอแค่นี้" / "จบ"
+     *   - Idle timeout (เรียกจาก scheduled command)
+     *
+     * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'idle'
+     * @param  string|null  $aiMessage  ถ้า AI ส่งข้อความปิดมาด้วย — แสดงข้อความนั้นแทน default
+     */
+    public function endCelticSession(FortuneReading $reading, string $reason = 'ai_signal', ?string $aiMessage = null): array
+    {
+        // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
+        $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        $closingMessage = match ($reason) {
+            'time_expired' => "⏰ *เวลาคุยกับแม่หมอหมดแล้วค่ะ*\n\n"
+                . "30 นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
+                . "เพื่อไปสร้างบารมีกับเจ้าชะตาท่านอื่นต่อ ขอให้เจ้าชะตาโชคดีนะคะ 🙏✨\n\n"
+                . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
+
+            'idle' => "🌙 *แม่หมอเห็นว่าเจ้าชะตาเงียบไปนาน*\n\n"
+                . "พลังงานในวงไพ่จางลงแล้ว แม่หมอขอจบบทสนทนานี้นะคะ\n"
+                . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ 🙏✨\n\n"
+                . "💜 พิมพ์ *\"ดูดวง\"* ได้ตลอดเมื่อพร้อมนะคะ",
+
+            'customer_said_done' => "🌟 *ขอบคุณที่ใช้บริการดูดวงไพ่ยิปซี Celtic Cross นะคะ*\n\n"
+                . "คำทำนายเป็นแสงไฟชี้ทาง — แต่การตัดสินใจอยู่ที่เจ้าชะตาเอง 🙏\n"
+                . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ นะคะ ✨\n\n"
+                . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
+
+            default => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
+                . "🌟 *แม่หมอกล่าวลาเจ้าชะตา*\n\n"
+                . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 🙏\n\n"
+                . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",
+        };
+
+        return [
+            'action' => 'celtic_session_ended',
+            'message' => $closingMessage,
+            'reading' => $reading,
+            'end_reason' => $reason,
+        ];
+    }
+
+    /**
+     * State: CELTIC_QA_PROMPT (legacy — ปัจจุบันใช้ CELTIC_AWAITING_QUESTION เป็นหลัก)
+     *
+     * 🆕 (2026-05-02) AI-driven flow — ระบบไม่ส่ง state นี้แล้ว
+     * เก็บ handler ไว้กรณี reading เก่าค้างอยู่ใน state นี้
      */
     protected function handleCelticQaPrompt(FortuneReading $reading, string $messageText): array
     {
-        // "พอแค่นี้" / "จบ"
+        // "พอแค่นี้" / "จบ" → จบ session อย่างสุขุม
         if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ'])) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-
-            return [
-                'action' => 'celtic_completed',
-                'message' => "🌟 ขอบคุณที่ใช้บริการดูดวง Celtic Cross นะคะ\n"
-                    . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ คำทำนายเป็นแสงไฟชี้ทาง — แต่ตัดสินใจอยู่ที่เจ้าชะตาเอง\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ 'ดูดวง' หรือ 'celtic cross' ได้เลย 🙏",
-                'reading' => $reading,
-            ];
+            return $this->endCelticSession($reading, 'customer_said_done');
         }
 
         // อย่างอื่น = ถือเป็นคำถามใหม่
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         return $this->handleCelticAwaitingQuestion($reading, $messageText);
+    }
+
+    /**
+     * Detection: ลูกค้าพิมพ์คำขอเริ่มดูดวงใหม่ระหว่างอยู่ใน Celtic flow
+     *
+     * เช่น "ดูดวง", "ดูดวงใหม่", "เริ่มใหม่", "ทำนาย" — คำเปล่าๆ ไม่มีบริบท
+     * ใช้กัน UX ปัญหา: ลูกค้าพิมพ์ "ดูดวง" ระหว่างเปิดไพ่ → ถือเป็น "พร้อม" สุ่มไพ่ผิด
+     */
+    protected function looksLikeFortuneRestartRequest(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        // ลบคำลงท้ายไทย
+        $clean = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|หน่อย|ที|สิ|เลย)\s*$/u', '', $clean);
+
+        // จำกัดเฉพาะข้อความสั้น (≤ 25 char) เพื่อไม่จับคำถามจริง เช่น "ดูดวงเรื่องความรักหน่อย"
+        if (mb_strlen($clean) > 25) {
+            return false;
+        }
+
+        $exact = ['ดูดวง', 'ดูดวงใหม่', 'ขอดูดวง', 'อยากดูดวง', 'ทำนาย', 'ทำนายให้', 'หมอดู',
+            'เริ่มใหม่', 'ดูใหม่', 'restart', 'reset', 'ใหม่', 'start over'];
+
+        foreach ($exact as $kw) {
+            if ($clean === $kw || $clean === mb_strtolower($kw)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

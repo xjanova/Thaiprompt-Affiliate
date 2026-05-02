@@ -1934,29 +1934,26 @@ class FortuneReading extends Model
     /**
      * ลูกค้าสามารถถามคำถาม Celtic Cross ต่อได้ไหม
      *
-     * เงื่อนไข:
-     *   1. celtic_questions_used < settings.celtic_cross_max_questions (default 3)
-     *   2. ถ้า Q1 ตอบแล้ว → ต้องอยู่ภายใน QA window (default 60 นาที)
+     * 🆕 (2026-05-02) AI-driven dialog — ไม่จำกัดจำนวนคำถาม
+     *   • Q1 ยังไม่ตอบ → ถามได้เสมอ (เปิดให้พิมพ์คำถามแรก)
+     *   • Q1 ตอบไปแล้ว → ภายใน window (default 30 นาที) นับจาก celtic_first_answered_at
+     *   • AI จะเป็นผู้ตัดสินใจเองว่าจบ session ตอนไหน (ส่ง [END_SESSION] token)
+     *   • ระบบ + ลูกค้ายังกด "พอแค่นี้" ได้ตลอด
      */
     public function canAskMoreCeltic(): bool
     {
         $settings = FortuneTellingSetting::getSettings();
-        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 3);
-        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 60);
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
 
-        if ($this->celtic_questions_used >= $maxQuestions) {
-            return false;
+        // ยังไม่ได้ตอบ Q1 → ถามได้
+        if (! $this->celtic_first_answered_at) {
+            return true;
         }
 
-        // ถ้า Q1 ตอบไปแล้ว เช็ค window
-        if ($this->celtic_first_answered_at) {
-            $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
-            if (now()->greaterThan($deadline)) {
-                return false;
-            }
-        }
+        // หลัง Q1 → เช็ค window 30 นาที (anti-troll)
+        $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 
-        return true;
+        return now()->lessThanOrEqualTo($deadline);
     }
 
     /**
@@ -2007,7 +2004,7 @@ class FortuneReading extends Model
         }
 
         $settings = FortuneTellingSetting::getSettings();
-        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 60);
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
         $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 
         if (now()->greaterThan($deadline)) {

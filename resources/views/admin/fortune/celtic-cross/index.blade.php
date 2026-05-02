@@ -109,13 +109,13 @@
 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        จำนวนคำถาม/บิล
+                        จำนวนคำถาม/บิล <span class="text-xs text-gray-400">(legacy)</span>
                     </label>
                     <input type="number" name="celtic_cross_max_questions"
                            value="{{ $settings->celtic_cross_max_questions ?? 3 }}"
-                           min="1" max="10"
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                    <p class="text-xs text-gray-500 mt-1">Q1 = full storytelling, Q2-3 = follow-up</p>
+                           min="1" max="10" disabled
+                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-100 dark:bg-gray-900 text-gray-500 dark:text-gray-400 cursor-not-allowed">
+                    <p class="text-xs text-amber-600 dark:text-amber-400 mt-1">⚠️ เลิกใช้ตั้งแต่ 2026-05-02 — แม่หมอจันทรา AI-driven จบเองเมื่อครอบคลุม</p>
                 </div>
 
                 <div>
@@ -123,10 +123,10 @@
                         เวลาถามต่อ (นาที)
                     </label>
                     <input type="number" name="celtic_cross_qa_window_minutes"
-                           value="{{ $settings->celtic_cross_qa_window_minutes ?? 60 }}"
+                           value="{{ $settings->celtic_cross_qa_window_minutes ?? 30 }}"
                            min="5" max="1440"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                    <p class="text-xs text-gray-500 mt-1">นับจาก Q1 ตอบเสร็จ — เกินเวลา ถามต่อไม่ได้</p>
+                    <p class="text-xs text-gray-500 mt-1">นับจากคำทำนายแรก — เกินเวลา session จบอัตโนมัติ (default 30 นาที)</p>
                 </div>
             </div>
         </div>
@@ -139,8 +139,8 @@
                 ตัวแปรที่ใช้ได้: <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{question}</code>
                 <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{cards}</code>
                 <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{brand_name}</code>
-                <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{birth_date}</code>
                 <code class="text-xs bg-gray-100 dark:bg-gray-900 px-1">{sequence}</code>
+                <br><span class="text-xs text-amber-600 dark:text-amber-400">⚠️ แม่หมอจันทรา ไม่ใช้วันเกิด — ใช้พลังจักรวาล + จิตเจ้าชะตาเท่านั้น</span>
             </p>
 
             <div class="mb-4">
@@ -208,11 +208,11 @@
                                         <span class="text-gray-400">รอ</span>
                                     @endif
                                 </td>
-                                <td class="px-3 py-2">{{ $reading->celtic_questions_used }}/{{ $settings->celtic_cross_max_questions ?? 3 }}</td>
+                                <td class="px-3 py-2">{{ $reading->celtic_questions_used }} คำถาม</td>
                                 <td class="px-3 py-2 text-xs text-gray-500">
                                     @if($reading->celtic_first_answered_at)
                                         @php
-                                            $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 60);
+                                            $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 30);
                                             $minRemaining = max(0, (int) ceil(now()->diffInSeconds($deadline, false) / 60));
                                         @endphp
                                         @if($minRemaining > 0)

@@ -319,8 +319,8 @@ class FortuneTellingSetting extends Model
         // 🔮 Celtic Cross — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
         'enable_celtic_cross' => false,
         'celtic_cross_price' => 99.00,
-        'celtic_cross_max_questions' => 3,
-        'celtic_cross_qa_window_minutes' => 60,
+        'celtic_cross_max_questions' => 3, // legacy — ไม่ได้ใช้ใน AI-driven flow แล้ว (2026-05-02)
+        'celtic_cross_qa_window_minutes' => 30,
         'celtic_cross_proactive_enabled' => true,
     ];
 
