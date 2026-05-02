@@ -113,13 +113,12 @@ class AiApiKey extends Model
             'o3-mini',
         ],
         'gemini' => [
-            // 🔄 (2026-05-02) ลบ gemini-2.0-flash-exp (404 — Google ปิดแล้ว)
-            'gemini-2.0-flash',           // ⭐ stable
-            'gemini-2.5-pro',             // ⭐ ใหม่ ฉลาดสุด
-            'gemini-2.5-flash',           // ⭐ ใหม่ เร็ว+ดี
-            'gemini-1.5-pro',
-            'gemini-1.5-flash',
-            'gemini-1.5-flash-8b',
+            // 🔄 (2026-05-02 v2) gemini-2.0-flash ก็ deprecate แล้ว ("no longer available to new users")
+            'gemini-2.5-flash',           // ⭐ default ใหม่ — เร็ว+ดี+ใช้งานได้
+            'gemini-2.5-pro',             // ⭐ ฉลาดสุด
+            'gemini-2.5-flash-lite',      // ⭐ ถูกสุด
+            'gemini-2.0-flash-001',       // ⭐ specific ver — บางครั้งใช้ได้
+            'gemini-1.5-flash',           // legacy fallback
         ],
         'qwen' => [
             'qwen-max',

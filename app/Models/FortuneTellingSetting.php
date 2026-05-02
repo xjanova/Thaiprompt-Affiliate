@@ -261,7 +261,7 @@ class FortuneTellingSetting extends Model
     protected $attributes = [
         'use_global_ai_settings' => true,
         'ai_provider' => 'gemini',
-        'ai_model' => 'gemini-2.0-flash',
+        'ai_model' => 'gemini-2.5-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
         'enable_deep_reading' => true,
@@ -358,7 +358,7 @@ class FortuneTellingSetting extends Model
         if (! $settings) {
             $settings = self::create([
                 'ai_provider' => 'gemini',
-                'ai_model' => 'gemini-2.0-flash',
+                'ai_model' => 'gemini-2.5-flash',
                 'max_free_readings' => 3,
                 'reading_price' => 0,
                 'is_enabled' => true,
@@ -557,13 +557,13 @@ class FortuneTellingSetting extends Model
             $provider = $this->getActualAIProvider();
 
             return match ($provider) {
-                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash'),
+                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
                 'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
                 'groq' => 'llama-3.3-70b-versatile',
                 'deepseek' => 'deepseek-chat',
                 'typhoon' => 'typhoon-v2-70b-instruct',
                 'grok' => 'grok-2-latest',
-                default => 'gemini-2.0-flash',
+                default => 'gemini-2.5-flash',
             };
         }
 

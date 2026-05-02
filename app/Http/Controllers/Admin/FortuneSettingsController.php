@@ -711,7 +711,7 @@ class FortuneSettingsController extends Controller
                 ->get();
 
             $defaultModels = [
-                'gemini' => 'gemini-2.0-flash',
+                'gemini' => 'gemini-2.5-flash',
                 'groq' => 'llama-3.3-70b-versatile',
                 'grok' => 'grok-2-latest',
                 'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
@@ -745,7 +745,7 @@ class FortuneSettingsController extends Controller
         // ดึงจาก Global AI Settings (AiContentSetting)
         try {
             $globalKeys = [
-                'gemini' => ['key_field' => 'gemini_api_key', 'model_field' => 'gemini_model', 'default_model' => 'gemini-2.0-flash'],
+                'gemini' => ['key_field' => 'gemini_api_key', 'model_field' => 'gemini_model', 'default_model' => 'gemini-2.5-flash'],
                 'openrouter' => ['key_field' => 'claude_api_key', 'model_field' => 'claude_model', 'default_model' => 'anthropic/claude-3-haiku'],
             ];
 

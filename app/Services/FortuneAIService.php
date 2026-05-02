@@ -1694,7 +1694,7 @@ PROMPT;
         try {
             $geminiKey = AiContentSetting::getValue('gemini_api_key');
             if (! empty($geminiKey) && ! in_array($geminiKey, $addedApiKeys)) {
-                $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.0-flash');
+                $geminiModel = AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash');
                 $keys[] = [
                     'provider' => 'gemini',
                     'api_key' => $geminiKey,
@@ -1878,7 +1878,7 @@ PROMPT;
     protected function getDefaultModelForProvider(string $provider): string
     {
         return match ($provider) {
-            'gemini' => 'gemini-2.0-flash',
+            'gemini' => 'gemini-2.5-flash',
             'groq' => 'llama-3.3-70b-versatile',
             'grok' => 'grok-2-latest',
             'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
@@ -1888,7 +1888,7 @@ PROMPT;
             'xiaomi' => 'mimo-v2.5-pro',          // 🆕 (2026-05-01) Xiaomi MiMo
             'openai' => 'gpt-4o-mini',
             'anthropic' => 'claude-haiku-4-5',
-            default => 'gemini-2.0-flash',
+            default => 'gemini-2.5-flash',
         };
     }
 
