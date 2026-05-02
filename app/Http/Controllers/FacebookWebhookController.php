@@ -2895,80 +2895,89 @@ class FacebookWebhookController extends Controller
      * @param  string  $text
      * @param  array  $attachments
      */
+    /**
+     * 🎯 (2026-05-02 — ปรับใหม่) Spam guard — แยก flood จากแชทปกติ
+     *
+     * user feedback: "การ block ที่บอกว่าส่งข้อความเยอะเกินไป ควรเป็น flood จงใจ
+     *                ไม่ใช่การพูดคุยปกติ ต้องดูให้ออก"
+     *
+     * เกณฑ์ใหม่ (ทุกอันต้องเป็น "เร็วมาก/บ่อยมาก" ในช่วงเวลาสั้น — ไม่ใช่นานๆ ทีละครั้ง):
+     *   1. RATE FLOOD: ส่ง > 10 messages ภายใน 30s = ตั้งใจ flood (ปกติคนพิมพ์ ~3-5/30s)
+     *   2. REPEAT FLOOD: ส่งข้อความเดียวกัน ≥ 3 ครั้งติด ภายใน 30s
+     *   3. SPAM URL: text มี URL ที่ไม่ใช่ domain ของเรา (link ภายนอก = สแปม)
+     *
+     * เกณฑ์เก่าที่ลบออก (เพราะ block ลูกค้าปกติ):
+     *   ❌ Sticker/attachment เปล่า → คนแก่ส่งบ่อย ไม่ใช่ spam
+     *   ❌ Same text ในช่วง 10 นาที → ลูกค้าพิมพ์ "ดูดวง" 2-3 ครั้งในวันเดียวกันเป็นเรื่องปกติ
+     *   ❌ Strike accumulator 1 ชม. → ทำให้ลูกค้าค้าง strike จาก request เก่า
+     *
+     * Silence: 5 นาที (ลดจาก 1 ชม.) — ถ้าคน flood จริงๆ จะหายไปเอง,
+     *   ลูกค้าปกติจะ recover ได้เร็ว
+     */
     protected function isUserSpamming(string $senderId, string $text, array $attachments): bool
     {
         $silencedKey = "fortune:spam:silenced:{$senderId}";
-        $strikeKey = "fortune:spam:strikes:{$senderId}";
-        $lastTextKey = "fortune:spam:last_text:{$senderId}";
-        $maxStrikes = 5;
 
-        // ✅ ถ้า silenced อยู่แล้ว → ปฏิเสธทุกอย่าง
+        // ถ้า silenced อยู่ → ยังคง block จนกว่าจะหมดเวลา
         if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
             return true;
         }
 
-        $strikes = (int) \Illuminate\Support\Facades\Cache::get($strikeKey, 0);
-        $newStrikes = 0;
+        $now = time();
+        $reason = null;
 
-        // 🚨 Strike 1: attachment + ไม่มี text + ไม่มี active reading payment
-        if (! empty($attachments) && empty(trim($text))) {
-            $hasActiveBill = FortuneReading::where('facebook_user_id', $senderId)
-                ->whereIn('conversation_status', [
-                    FortuneReading::STATUS_PENDING_PAYMENT,
-                    FortuneReading::STATUS_PAID,
-                ])
-                ->exists();
+        // 🚨 Rule 1: RATE FLOOD — > 10 messages ใน 30s = ตั้งใจ flood
+        $rateKey = "fortune:spam:rate:{$senderId}";
+        $rateLog = \Illuminate\Support\Facades\Cache::get($rateKey, []);
+        $rateLog = array_values(array_filter($rateLog, fn ($t) => ($now - $t) < 30));
+        $rateLog[] = $now;
+        \Illuminate\Support\Facades\Cache::put($rateKey, $rateLog, 60);
+        if (count($rateLog) > 10) {
+            $reason = 'rate_flood (>10 msg/30s)';
+        }
 
-            if (! $hasActiveBill) {
-                // attachment สุ่ม ๆ ไม่ใช่สลิป → strike
-                $newStrikes++;
+        // 🚨 Rule 2: REPEAT FLOOD — ส่งข้อความเดียวกัน ≥ 3 ครั้งติด ใน 30s
+        if ($reason === null && ! empty(trim($text)) && mb_strlen($text) > 1) {
+            $repeatKey = "fortune:spam:repeat:{$senderId}";
+            $cached = \Illuminate\Support\Facades\Cache::get($repeatKey, ['text' => '', 't' => 0, 'count' => 0]);
+
+            if ($cached['text'] === $text && ($now - $cached['t']) < 30) {
+                $newCount = $cached['count'] + 1;
+                \Illuminate\Support\Facades\Cache::put($repeatKey, [
+                    'text' => $text, 't' => $now, 'count' => $newCount,
+                ], 60);
+                if ($newCount >= 3) {
+                    $reason = 'repeat_flood (3x same text/30s)';
+                }
+            } else {
+                \Illuminate\Support\Facades\Cache::put($repeatKey, [
+                    'text' => $text, 't' => $now, 'count' => 1,
+                ], 60);
             }
         }
 
-        // 🚨 Strike 2: ข้อความมี URL/ลิงก์
-        if (! empty($text) && preg_match('#https?://|www\.|t\.me/|\.com/|\.net/|\.online/#i', $text)) {
-            $newStrikes++;
-        }
-
-        // 🚨 Strike 3: ข้อความเหมือนเดิม (echo spam)
-        if (! empty($text)) {
-            $lastText = \Illuminate\Support\Facades\Cache::get($lastTextKey);
-            if ($lastText === $text) {
-                $newStrikes++;
+        // 🚨 Rule 3: SPAM URL — link ภายนอก (ไม่ใช่ domain ของเรา)
+        if ($reason === null && ! empty($text)) {
+            // ใช้ negative lookahead — ละเว้น domain ของเรา
+            if (preg_match('#https?://(?!(www\.)?(main\.)?thaiprompt\.online)|t\.me/|bit\.ly/|tinyurl\.com#i', $text)) {
+                $reason = 'spam_url (external link)';
             }
-            \Illuminate\Support\Facades\Cache::put($lastTextKey, $text, now()->addMinutes(10));
         }
 
-        // ไม่มี strike → reset/ignore
-        if ($newStrikes === 0) {
+        // ไม่ trigger rule ใด → แชทปกติ ไม่ block
+        if ($reason === null) {
             return false;
         }
 
-        $totalStrikes = $strikes + $newStrikes;
-        \Illuminate\Support\Facades\Cache::put($strikeKey, $totalStrikes, now()->addHour());
-
-        // ถึงเกณฑ์ → silence 1 ชม.
-        if ($totalStrikes >= $maxStrikes) {
-            \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addHour());
-            Log::warning('🚫 Fortune spam guard: silenced user for 1 hour', [
-                'sender_id' => $senderId,
-                'total_strikes' => $totalStrikes,
-                'last_text' => mb_substr($text, 0, 80),
-                'has_attachments' => ! empty($attachments),
-            ]);
-            return true;
-        }
-
-        // ยังไม่ถึงเกณฑ์ — ตอบปกติ (warn ใน log)
-        Log::info('Fortune spam guard: strike recorded', [
+        // Silence 5 นาที (ลดจาก 1 ชม. — ลูกค้าปกติ recovery ได้)
+        \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addMinutes(5));
+        Log::warning('🚫 Fortune spam guard: silenced 5 min', [
             'sender_id' => $senderId,
-            'strikes' => "{$totalStrikes}/{$maxStrikes}",
-            'reasons' => [
-                'attachment_no_active' => ! empty($attachments) && empty(trim($text)),
-                'has_url' => ! empty($text) && preg_match('#https?://|www\.#i', $text),
-            ],
+            'reason' => $reason,
+            'text_preview' => mb_substr($text, 0, 80),
+            'rate_count' => count($rateLog),
         ]);
 
-        return false;
+        return true;
     }
 }
