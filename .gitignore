@@ -82,3 +82,9 @@ plptdb-firebase-adminsdk-*.json
 *.db
 *.db-shm
 *.db-wal
+
+# Auto-generated runtime files
+.claude/scheduled_tasks.lock
+banner1.zip
+thaiprompt web.zip
+*.zip
