@@ -8217,6 +8217,36 @@ PROMPT;
      * ดึง default prompt เชิงลึก (hardcode) สำหรับแสดงในหน้า admin settings
      * ใช้ตัวแปร placeholder เช่น {name}, {question}, {planet_positions} เพื่อให้แก้ไขได้
      */
+    /**
+     * 🧪 (2026-05-02) Public wrapper สำหรับ admin Test Deep Prediction
+     *
+     * เรียก buildPerQuestionDeepPrompt (protected) จากภายนอก เพื่อให้
+     * admin playground สามารถสร้าง prompt deep reading ตัวอย่างได้
+     * ก่อนตัดสินใจเลือก provider/priority จริง
+     *
+     * @param  array  $userProfile  ['name' => string, 'gender' => 'male'|'female'|null]
+     * @param  string  $question  คำถามดูดวง (1 ข้อ)
+     * @param  string|null  $birthDate  Y-m-d
+     * @param  array|null  $tarotCard  ['card_name_th', 'card_name_en', 'is_reversed', 'meaning']
+     * @return string  prompt ที่จะส่งให้ AI
+     */
+    public function buildDeepPromptForTest(
+        array $userProfile,
+        string $question,
+        ?string $birthDate = null,
+        ?array $tarotCard = null
+    ): string {
+        return $this->buildPerQuestionDeepPrompt(
+            $userProfile,
+            $question,
+            1,                    // questionNumber = 1 (จะเปิด Section A persona)
+            1,                    // totalQuestions = 1 (จะเปิด closing section)
+            $birthDate,
+            [],                   // ไม่มี previous readings
+            $tarotCard
+        );
+    }
+
     public static function getDefaultDeepPrompt(): string
     {
         return <<<'PROMPT'

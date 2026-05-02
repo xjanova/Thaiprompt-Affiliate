@@ -882,6 +882,141 @@ class FortuneSettingsController extends Controller
     }
 
     /**
+     * 🧪 (2026-05-02) Test Deep Prediction
+     *
+     * ทดสอบสร้างคำทำนายเชิงลึกตัวอย่าง (โดยไม่กระทบ FortuneReading จริง)
+     * เพื่อให้ admin ตรวจสอบคุณภาพ prompt + ตัดสินใจเลือก provider/priority
+     *
+     * Flow:
+     *   1. รับ name/gender/birth_date/question/(tarot_card_id) จาก admin
+     *   2. เรียก FortuneConversationService->buildDeepPromptForTest() สร้าง prompt จริง
+     *   3. เลือก provider override (จาก dropdown ของ playground)
+     *   4. ส่ง prompt ให้ AI → return response + prompt + metrics
+     */
+    public function testDeepPrediction(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:50',
+            'gender' => 'nullable|in:male,female',
+            'birth_date' => 'required|date_format:Y-m-d|before:today',
+            'question' => 'required|string|max:500',
+            'tarot_card_id' => 'nullable|integer',
+            'provider' => 'nullable|string|max:50',
+            'model' => 'nullable|string|max:100',
+            'pool_key_id' => 'nullable|integer',
+            'show_prompt' => 'nullable|boolean',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+        $overrideProvider = $validated['provider'] ?? null;
+        $overrideModel = $validated['model'] ?? null;
+        $poolKeyId = $validated['pool_key_id'] ?? null;
+        $showPrompt = (bool) ($validated['show_prompt'] ?? true);
+
+        try {
+            // 1) สร้าง user profile + (optional) tarot card
+            $userProfile = [
+                'name' => trim((string) ($validated['name'] ?? '')),
+                'gender' => $validated['gender'] ?? null,
+            ];
+
+            $tarotCard = null;
+            if (! empty($validated['tarot_card_id'])) {
+                $tarot = \App\Models\TarotCard::find($validated['tarot_card_id']);
+                if ($tarot) {
+                    $tarotCard = [
+                        'card_name_th' => $tarot->name_th ?? $tarot->name_en ?? 'ไพ่',
+                        'card_name_en' => $tarot->name_en ?? '',
+                        'is_reversed' => false,
+                        'meaning' => $tarot->upright_meaning_th ?? $tarot->description_th ?? '',
+                    ];
+                }
+            }
+
+            // 2) สร้าง prompt deep reading (เหมือนที่ใช้จริง)
+            $convService = new FortuneConversationService($settings);
+            $prompt = $convService->buildDeepPromptForTest(
+                $userProfile,
+                $validated['question'],
+                $validated['birth_date'],
+                $tarotCard
+            );
+
+            // 3) เลือก provider — reuse logic เดียวกับ playgroundChat
+            $aiService = new FortuneAIService($settings);
+            if ($overrideProvider) {
+                $apiKey = null;
+                if ($poolKeyId) {
+                    $poolKey = AiApiKey::where('id', $poolKeyId)->where('is_active', true)->first();
+                    if ($poolKey) {
+                        $apiKey = $poolKey->api_key;
+                    }
+                }
+                if (empty($apiKey)) {
+                    $poolKey = AiApiKey::where('provider', $overrideProvider)
+                        ->where('is_active', true)
+                        ->where(function ($q) {
+                            $q->whereNull('disabled_until')->orWhere('disabled_until', '<', now());
+                        })
+                        ->orderBy('priority', 'desc')
+                        ->first();
+                    if ($poolKey) {
+                        $apiKey = $poolKey->api_key;
+                    }
+                }
+                if (empty($apiKey)) {
+                    $globalKeyMap = ['gemini' => 'gemini_api_key', 'openrouter' => 'claude_api_key'];
+                    if (isset($globalKeyMap[$overrideProvider])) {
+                        $apiKey = AiContentSetting::getValue($globalKeyMap[$overrideProvider]);
+                    }
+                }
+                if (empty($apiKey) && $overrideProvider === $settings->getActualAIProvider()) {
+                    $apiKey = $settings->getActualAIApiKey();
+                }
+                if (empty($apiKey)) {
+                    throw new \Exception("ไม่พบ API Key สำหรับ {$overrideProvider}");
+                }
+                $aiService->overrideForPlayground($overrideProvider, $overrideModel, $apiKey);
+            }
+
+            // 4) ส่ง prompt ให้ AI ผ่าน playgroundChat (single-turn เป็น user message)
+            $startTime = microtime(true);
+            $result = $aiService->playgroundChat(
+                [['role' => 'user', 'content' => $prompt]],
+                'deep'
+            );
+            $elapsedMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            return response()->json([
+                'success' => true,
+                'response' => $result['response'] ?? '',
+                'prompt' => $showPrompt ? $prompt : null,
+                'prompt_length' => mb_strlen($prompt),
+                'debug' => [
+                    'provider' => $result['provider'] ?? $overrideProvider,
+                    'model' => $result['model'] ?? $overrideModel,
+                    'tokens_used' => $result['tokens_used'] ?? 0,
+                    'response_time_ms' => $result['response_time_ms'] ?? $elapsedMs,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Admin test deep prediction failed', [
+                'error' => $e->getMessage(),
+                'provider' => $overrideProvider,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'debug' => [
+                    'provider' => $overrideProvider ?? $settings->getActualAIProvider(),
+                    'model' => $overrideModel ?? $settings->getActualAIModel(),
+                ],
+            ], 500);
+        }
+    }
+
+    /**
      * Debug endpoint - ทดสอบ AI call แบบเดียวกับ webhook flow
      * ใช้ generateWithRetryAndFallback เหมือนที่ Facebook webhook เรียก
      */

@@ -3883,6 +3883,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');
     Route::post('/playground/chat', [FortuneSettingsController::class, 'playgroundChat'])->name('playground.chat');
+    // 🧪 (2026-05-02) ทดสอบสร้างคำทำนายเชิงลึกด้วย prompt จริง (เพื่อเลือก provider/priority)
+    Route::post('/playground/test-deep', [FortuneSettingsController::class, 'testDeepPrediction'])->name('playground.test-deep');
 
     // ช่องทางรับข้อความ (Facebook, LINE, etc.)
     Route::get('/channels', [FortuneChannelController::class, 'index'])->name('channels.index');
