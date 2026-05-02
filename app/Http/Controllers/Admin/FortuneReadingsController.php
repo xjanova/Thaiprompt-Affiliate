@@ -261,30 +261,20 @@ class FortuneReadingsController extends Controller
             'admin' => auth()->user()?->name,
         ]);
 
-        // 🐛 (2026-05-02) Hardened against white-screen on QUEUE_CONNECTION=sync
-        //   Production มี QUEUE_CONNECTION=sync → ProcessDeepFortuneReadingJob::dispatchSmart()
-        //   จะ block 30-90s ระหว่างเรียก AI → PHP-FPM request_terminate_timeout (default 30s)
-        //   อาจ kill worker ก่อน response ส่งจริง → client เห็นหน้าขาว
+        // 🐛 (2026-05-02 - REVERTED) — terminating() approach broke admin retry
+        //   เหตุผล: dispatchSmart() เรียก fastcgi_finish_request() + Artisan::call() อยู่แล้วภายใน
+        //   ถ้าเรียก fastcgi_finish_request ซ้ำใน terminating callback → Laravel กำลัง teardown
+        //   service container → Artisan::call ใน dispatchSmart พังเงียบ → job ไม่รัน
         //
-        //   Fix:
-        //   1) ใช้ app()->terminating() แทน register_shutdown_function — Laravel-canonical
-        //      callback runs *หลัง* $response->send() ใน Kernel::terminate()
-        //   2) เรียก fastcgi_finish_request() ใน callback เพื่อบังคับปิด FCGI connection
-        //      → client ได้ redirect 100% ก่อน AI call จะเริ่ม
-        //   3) set_time_limit(120) → กัน FPM kill กลางทาง
+        //   Auto flow (webhook/SMS) ใช้ dispatchSmart โดยตรง (ไม่ผ่าน HTTP) → ใช้ได้
+        //   Admin path ต้องส่ง response กลับก่อน — ใช้ register_shutdown_function ซึ่งรัน
+        //   หลัง Laravel teardown หมดแล้ว → service container clean → Artisan::call ทำงานได้
         $readingId = $reading->id;
-        app()->terminating(function () use ($readingId, $platform, $userId) {
-            // ส่ง response กลับ client ทันที + ตัด FCGI connection
-            if (function_exists('fastcgi_finish_request')) {
-                @fastcgi_finish_request();
-            }
-            // ขยาย timeout เพื่อให้ AI call จบโดยไม่โดน FPM kill
-            @set_time_limit(120);
-
+        register_shutdown_function(function () use ($readingId, $platform, $userId) {
             try {
                 ProcessDeepFortuneReadingJob::dispatchSmart($readingId, null, $platform, $userId);
             } catch (\Throwable $e) {
-                Log::error('Admin retry: dispatch failed in terminating', [
+                Log::error('Admin retry: dispatch failed in shutdown', [
                     'reading_id' => $readingId,
                     'error' => $e->getMessage(),
                 ]);
