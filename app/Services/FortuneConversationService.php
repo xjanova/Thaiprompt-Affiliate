@@ -863,8 +863,12 @@ class FortuneConversationService
             $hasActiveConversation = FortuneReading::findActiveConversation($facebookUserId);
 
             if (! $hasActiveConversation) {
+                // 🛡️ (2026-05-03) Exclude Celtic Cross — Celtic legitimately มี is_paid=true
+                //   + status=COMPLETED + no deep_response (เก็บใน fortune_celtic_questions แทน)
+                //   เดิม: จับ Celtic เป็น "processing" → ลูกค้าพิมพ์ "อ่านคำทำนาย" ได้ข้อความรอแทน Q&A list
                 $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
                     ->where('is_paid', true)
+                    ->where('reading_type', '!=', FortuneReading::READING_TYPE_CELTIC_CROSS)
                     ->where(function ($q) {
                         $q->where('conversation_status', FortuneReading::STATUS_PAID)
                             ->orWhere(function ($q2) {
