@@ -97,6 +97,10 @@ trait CelticCrossConversationTrait
 
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
         $celticPrice = number_format(app(\App\Services\CelticCrossService::class)->getPrice(), 0);
+        // 🔢 (2026-05-03) อ่านจาก settings — ตรงกับที่ admin ตั้ง (0 = ไม่จำกัด)
+        $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
         // 🌟 คำโฆษณาเปิดใจ — เน้นความตื่นเต้น + ความคุ้มค่า + ความศักดิ์สิทธิ์
         $message = "🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙\n\n"
@@ -126,7 +130,7 @@ trait CelticCrossConversationTrait
             . "    ตำแหน่งครบ: ปัจจุบัน • อุปสรรค • ความหวัง • อนาคต\n\n"
             . "🌌 *แม่หมอใช้พลังจักรวาล + จิตเจ้าชะตา*\n"
             . "    ไม่ต้องบอกวันเกิด — แม่หมอล้วงลึกผ่านไพ่ที่เจ้าชะตาเลือกเอง\n\n"
-            . "💬 *ถามได้ไม่จำกัด* (ภายใน 30 นาทีหลังคำทำนายแรก)\n"
+            . "💬 *ถามได้ {$qLimitText}* (ภายใน {$qaWindow} นาทีหลังคำทำนายแรก)\n"
             . "    คุยกับแม่หมอจนพอใจ — แม่หมอจะตัดสินใจจบเองเมื่อครอบคลุม\n\n"
             . "🖼️ *ได้ภาพ Celtic Cross spread* สวยงาม\n"
             . "    เก็บไว้เป็นที่ระลึก แชร์ให้เพื่อนได้\n\n"
@@ -181,6 +185,8 @@ trait CelticCrossConversationTrait
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
         $celticPriceInt = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
         // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
         // ⚠️ เช็ค Celtic ก่อน Deep เผื่อข้อความมีทั้ง "99" และ "39" (ไม่ค่อยเกิด แต่กันไว้)
@@ -233,7 +239,7 @@ trait CelticCrossConversationTrait
                 . "🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
                 . "    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
                 . "🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
-                . "    🃏 Celtic Cross 10 ใบ + ถามได้ 3 คำถาม\n\n"
+                . "    🃏 Celtic Cross 10 ใบ + ถามได้ {$qLimitText}\n\n"
                 . "❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
                 . "👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨",
             'reading' => $reading,
@@ -337,13 +343,17 @@ trait CelticCrossConversationTrait
                 Log::warning('Celtic: QR gen fail (ส่ง text-only แทน)', ['error' => $qrErr->getMessage()]);
             }
 
+            $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+            $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
+
             return [
                 'action' => 'celtic_pending_payment',
                 'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
                     . "✨ ค่าครู: {$baseAmountStr} บาท\n"
                     . "🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
-                    . "💬 ถามได้ 3 คำถาม (ภายใน 1 ชั่วโมงหลังคำถามแรก)\n"
-                    . "🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ดูครบทุกใบ\n\n"
+                    . "💬 ถามได้ {$qLimitText} (ภายใน {$qaWindow} นาทีหลังคำถามแรก)\n"
+                    . "🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ตอนจบทำนาย เป็นที่ระลึก\n\n"
                     . "──────────────────────\n"
                     . "💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
                     . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
@@ -585,12 +595,14 @@ trait CelticCrossConversationTrait
         // ขยับ state เข้า awaiting question
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
-        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
         $followupText = "\n\n──────────────────────\n"
             . "🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n\n"
             . "🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
             . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
-            . "❓ ถามได้ *{$maxQ} คำถาม* (ภายใน 30 นาที)\n"
+            . "❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
             . "🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบทำนาย เป็นที่ระลึก ✨\n"
             . "🔚 พิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
 
@@ -652,9 +664,10 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'time_expired');
         }
 
-        // 🔢 (2026-05-03) เช็คจำนวนคำถาม — admin ตั้งใน celtic_cross_max_questions (default 5)
-        $maxQuestions = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
-        if ($reading->celtic_questions_used >= $maxQuestions) {
+        // 🔢 (2026-05-03) เช็คจำนวนคำถาม — admin ตั้งใน celtic_cross_max_questions
+        //   0 = ไม่จำกัด (skip enforcement), N>0 = max N คำถาม
+        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        if ($maxQuestions > 0 && $reading->celtic_questions_used >= $maxQuestions) {
             return $this->endCelticSession($reading, 'max_questions_reached');
         }
 
@@ -686,7 +699,8 @@ trait CelticCrossConversationTrait
         }
 
         // 🔢 (2026-05-03) ถ้าตอบไปครบ max แล้ว → จบ session พร้อมคำตอบสุดท้าย
-        if ($sequence >= $maxQuestions) {
+        //   เฉพาะเมื่อ maxQuestions > 0 (0 = unlimited)
+        if ($maxQuestions > 0 && $sequence >= $maxQuestions) {
             return $this->endCelticSession($reading, 'max_questions_reached', $result['response']);
         }
 
@@ -694,11 +708,17 @@ trait CelticCrossConversationTrait
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         $remainingMin = $reading->getCelticQaRemainingMinutes();
-        $remainingQs = max(0, $maxQuestions - $sequence);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $timeHint = $remainingMin !== null
             ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
-            : '⏳ เจ้าชะตาคุยต่อได้ภายใน 30 นาทีนับจากคำทำนายแรก';
-        $qHint = "❓ ถามได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
+            : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+        if ($maxQuestions > 0) {
+            $remainingQs = max(0, $maxQuestions - $sequence);
+            $qHint = "❓ ถามได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
+        } else {
+            $qHint = "❓ ถามได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
+        }
 
         $followupOffer = "\n\n──────────────────────\n"
             . $timeHint . "\n"
@@ -730,11 +750,12 @@ trait CelticCrossConversationTrait
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
 
         $closingMessage = match ($reason) {
             'time_expired' => "⏰ *เวลาคุยกับแม่หมอหมดแล้วค่ะ*\n\n"
-                . "30 นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
+                . "{$qaWindow} นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
                 . "เพื่อไปสร้างบารมีกับเจ้าชะตาท่านอื่นต่อ ขอให้เจ้าชะตาโชคดีนะคะ 🙏✨\n\n"
                 . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
 
@@ -748,9 +769,9 @@ trait CelticCrossConversationTrait
                 . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ นะคะ ✨\n\n"
                 . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
 
-            // 🔢 (2026-05-03) ครบโควต้าคำถาม
+            // 🔢 (2026-05-03) ครบโควต้าคำถาม (เกิดเฉพาะเมื่อ maxQ > 0)
             'max_questions_reached' => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
-                . "🌟 *เจ้าชะตาถามครบ {$maxQ} คำถามแล้วค่ะ*\n\n"
+                . "🌟 *เจ้าชะตาถามครบ " . max(1, $maxQ) . " คำถามแล้วค่ะ*\n\n"
                 . "แม่หมอตอบครบทุกข้อสงสัยของเจ้าชะตา 🙏✨\n"
                 . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 💫\n\n"
                 . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",

@@ -64,7 +64,7 @@ class FortuneCelticCrossController extends Controller
             'enable_celtic_cross' => 'sometimes|boolean',
             'celtic_cross_proactive_enabled' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
-            'celtic_cross_max_questions' => 'integer|min:1|max:10',
+            'celtic_cross_max_questions' => 'integer|min:0|max:50', // 0 = ไม่จำกัด
             'celtic_cross_qa_window_minutes' => 'integer|min:5|max:1440',
             'celtic_cross_main_prompt' => 'nullable|string|max:10000',
             'celtic_cross_followup_prompt' => 'nullable|string|max:10000',

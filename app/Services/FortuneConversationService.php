@@ -2069,11 +2069,14 @@ class FortuneConversationService
         if ($isCeltic && $isOngoing) {
             $picked = $reading->getCelticPickedCount();
             $qUsed = (int) $reading->celtic_questions_used;
-            $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+            $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
             if ($picked < 10) {
                 $progress = "เปิดไพ่ {$picked}/10 ใบ";
             } else {
-                $progress = "ถามไปแล้ว {$qUsed}/{$maxQ} คำถาม";
+                // 0 = ไม่จำกัด → แสดงแค่จำนวนที่ถามไป
+                $progress = $maxQ > 0
+                    ? "ถามไปแล้ว {$qUsed}/{$maxQ} คำถาม"
+                    : "ถามไปแล้ว {$qUsed} คำถาม (ไม่จำกัด)";
             }
             $statusText = "⏳ กำลังดูดวง ({$progress})";
         } elseif ($isOngoing) {
@@ -2104,7 +2107,8 @@ class FortuneConversationService
         $billRef = $reading->bill_reference ?? '-';
         $picked = $reading->getCelticPickedCount();
         $qUsed = (int) $reading->celtic_questions_used;
-        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
 
         // ยังเปิดไพ่ไม่ครบ — แนะนำให้ต่อ
         if ($picked < 10) {
@@ -2130,7 +2134,7 @@ class FortuneConversationService
                     . "═══════════════════════\n\n"
                     . "✅ เปิดไพ่ครบ 10 ใบแล้ว — แต่ยังไม่ได้ถามคำถาม\n\n"
                     . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลยค่ะ\n"
-                    . "❓ ถามได้ {$maxQ} คำถาม",
+                    . "❓ ถามได้ {$qLimitText}",
                 'reading' => $reading,
             ];
         }
@@ -2156,8 +2160,12 @@ class FortuneConversationService
         $message .= "──────────────────────\n";
         $message .= "👉 *กดปุ่มด้านล่างเพื่อดูคำตอบเต็มของแต่ละคำถาม*\n\n";
 
-        if ($isOngoing && $remaining > 0) {
-            $message .= "💬 หรือถามต่อ — เหลืออีก *{$remaining}* คำถาม";
+        // 0 = ไม่จำกัด → แสดงเฉพาะถ้า ongoing
+        $canAskMore = $isOngoing && ($maxQ <= 0 || $remaining > 0);
+        if ($canAskMore) {
+            $message .= $maxQ > 0
+                ? "💬 หรือถามต่อ — เหลืออีก *{$remaining}* คำถาม"
+                : "💬 หรือถามต่อได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
         } else {
             $message .= "✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏";
         }
@@ -2172,7 +2180,7 @@ class FortuneConversationService
                 'payload' => 'CELTIC_VIEW_Q' . $qa->sequence,
             ];
         }
-        if ($isOngoing && $remaining > 0) {
+        if ($canAskMore) {
             $quickReplies[] = [
                 'content_type' => 'text',
                 'title' => '✨ พอแค่นี้',
@@ -2221,7 +2229,8 @@ class FortuneConversationService
 
         $name = $reading->facebook_user_name ?? 'คุณ';
         $billRef = $reading->bill_reference ?? '-';
-        $maxQ = max(1, (int) ($this->settings->celtic_cross_max_questions ?? 5));
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
         $qUsed = (int) $reading->celtic_questions_used;
         $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
 
@@ -2238,9 +2247,14 @@ class FortuneConversationService
         $quickReplies = [
             ['content_type' => 'text', 'title' => '📜 ดู Q อื่น', 'payload' => 'CELTIC_VIEW_LIST'],
         ];
-        if ($isOngoing && $qUsed < $maxQ) {
-            $remaining = $maxQ - $qUsed;
-            $message .= "💬 ถามต่อได้อีก *{$remaining}* คำถาม";
+        $canAskMore = $isOngoing && ($maxQ <= 0 || $qUsed < $maxQ);
+        if ($canAskMore) {
+            if ($maxQ > 0) {
+                $remaining = $maxQ - $qUsed;
+                $message .= "💬 ถามต่อได้อีก *{$remaining}* คำถาม";
+            } else {
+                $message .= "💬 ถามต่อได้ *ไม่จำกัด*";
+            }
             $quickReplies[] = ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'];
         } else {
             $message .= "✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏";
@@ -5551,6 +5565,8 @@ class FortuneConversationService
         if ($deepEnabled && $celticEnabled) {
             $deepPrice = (int) $this->getDeepReadingPrice();
             $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
             return "🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙\n\n"
                 . "อยากให้หมอเปิดทางดวงให้ไหมคะ?\n"
@@ -5558,7 +5574,7 @@ class FortuneConversationService
                 . "🔹 *แพคเกจพื้นฐาน — {$deepPrice} บาท*\n"
                 . "    📅 ดูจากวันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
                 . "🔮 *แพคเกจเต็มสำรับ — {$celticPrice} บาท*\n"
-                . "    🃏 Celtic Cross 10 ใบ + ถามได้ 3 คำถาม\n\n"
+                . "    🃏 Celtic Cross 10 ใบ + ถามได้ {$qLimitText}\n\n"
                 . "👇 กดปุ่ม *\"🔮 ดูดวง\"* ด้านล่างเพื่อดูรายละเอียดแพคเกจ ✨";
         }
 
