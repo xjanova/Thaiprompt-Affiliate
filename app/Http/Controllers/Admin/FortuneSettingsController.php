@@ -979,11 +979,21 @@ class FortuneSettingsController extends Controller
                 $aiService->overrideForPlayground($overrideProvider, $overrideModel, $apiKey);
             }
 
-            // 4) ส่ง prompt ให้ AI ผ่าน playgroundChat (single-turn เป็น user message)
+            // 4) 🔄 (2026-05-02) ส่ง prompt ให้ AI ผ่าน generateWithRetryAndFallback
+            //    เดิมใช้ playgroundChat → prompt ถูกส่งเป็น "user message"
+            //    แต่ production (auto/admin retry) ส่ง prompt เป็น "system message"
+            //    AI ตีความต่างกัน → output ต่างกัน → ทดสอบไม่ตรงกับของจริง!
+            //
+            //    generateWithRetryAndFallback ใช้ promptTemplate เป็น system role
+            //    เหมือนที่ processPaymentConfirmed ทำ → output ตรงกับของลูกค้าจริง
             $startTime = microtime(true);
-            $result = $aiService->playgroundChat(
-                [['role' => 'user', 'content' => $prompt]],
-                'deep'
+            $result = $aiService->generateWithRetryAndFallback(
+                [$validated['question']],   // questions
+                $userProfile,
+                null,                       // userPosts
+                $prompt,                    // promptTemplate → system role
+                'deep',
+                $validated['birth_date']
             );
             $elapsedMs = (int) round((microtime(true) - $startTime) * 1000);
 
