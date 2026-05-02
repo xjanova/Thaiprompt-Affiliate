@@ -1624,6 +1624,55 @@ PROMPT;
      */
     protected function getAllAvailableKeys(?string $userContext = null, string $purpose = 'prediction'): array
     {
+        // 🎯 (2026-05-02) Self-healing: ลอง normal filter ก่อน
+        //   ถ้า primary provider ไม่มี key เลย (ทุกตัวติด cooldown/rpm/inflight)
+        //   → reset cache สำหรับ primary provider's keys + retry
+        //   → กัน Gemini ค้าง → fallback Groq → rate limit → ทำนายไม่ได้
+        $keys = $this->collectAvailableKeys($userContext, $purpose, false);
+
+        $primaryProvider = $this->provider;
+        $hasPrimaryKey = ! empty(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $primaryProvider));
+
+        if (! $hasPrimaryKey && ! empty($primaryProvider)) {
+            // 🛡️ Self-heal: primary provider ถูก filter ออกหมด → clear cache + retry
+            Log::warning('FortuneAI: Self-healing — primary provider ถูก filter ออก, clear cache + retry', [
+                'primary_provider' => $primaryProvider,
+                'purpose' => $purpose,
+            ]);
+            $this->clearProviderCacheState($primaryProvider);
+            $keys = $this->collectAvailableKeys($userContext, $purpose, true);  // ignore_cooldown=true
+        }
+
+        return $keys;
+    }
+
+    /**
+     * 🆕 (2026-05-02) Clear pool cache state สำหรับ provider เฉพาะ
+     *  ใช้เมื่อ self-healing detect ว่า primary provider ติด cache ค้าง
+     */
+    protected function clearProviderCacheState(string $provider): void
+    {
+        try {
+            $poolKeys = AiApiKey::forProvider($provider)->get();
+            foreach ($poolKeys as $key) {
+                cache()->forget("pool:cooldown:{$provider}:{$key->id}");
+                cache()->forget("pool:rpm:{$provider}:{$key->id}");
+                cache()->forget("pool:inflight:{$provider}:{$key->id}");
+            }
+            Log::info('FortuneAI: cleared pool cache state', [
+                'provider' => $provider,
+                'keys_cleared' => $poolKeys->count(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('FortuneAI: clearProviderCacheState failed', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-02) Extract: collect keys with filters (separated for self-healing retry)
+     */
+    protected function collectAvailableKeys(?string $userContext, string $purpose, bool $ignoreCooldown = false): array
+    {
         $keys = [];
         $addedApiKeys = [];
         $primaryProvider = $this->provider;
@@ -1667,7 +1716,8 @@ PROMPT;
                     }
 
                     // 🛡️ ข้าม key ที่อยู่ใน per-key cooldown (429 ล่าสุด)
-                    if (cache()->has("pool:cooldown:{$provider}:{$poolKey->id}")) {
+                    //   self-healing: ถ้า ignoreCooldown=true → ไม่ skip (2nd pass)
+                    if (! $ignoreCooldown && cache()->has("pool:cooldown:{$provider}:{$poolKey->id}")) {
                         continue;
                     }
 

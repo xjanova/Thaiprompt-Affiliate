@@ -194,12 +194,44 @@
                 </div>
             @endif
 
-            {{-- Deep Response --}}
+            {{-- 🌟 Deep Response — (2026-05-02) แสดงเต็ม + ปุ่มคัดลอก + scrollable --}}
             @if($reading->deep_response)
-                <div class="mt-4">
-                    <h4 class="font-semibold text-gray-700 dark:text-gray-300 mb-2">🌟 คำทำนายเชิงลึก</h4>
-                    <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-sm">
-                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200">{{ Str::limit($reading->deep_response, 500) }}</div>
+                <div class="mt-4" x-data="{ expanded: false }">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-semibold text-gray-700 dark:text-gray-300">🌟 คำทำนายเชิงลึก
+                            <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                                ({{ number_format(mb_strlen($reading->deep_response)) }} ตัวอักษร)
+                            </span>
+                        </h4>
+                        <div class="flex gap-2">
+                            <button @click="expanded = !expanded"
+                                    class="px-3 py-1.5 text-xs bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition flex items-center gap-1.5">
+                                <span x-show="!expanded">📖 อ่านคำทำนายเต็ม</span>
+                                <span x-show="expanded">📕 ย่อกลับ</span>
+                            </button>
+                            <button @click="navigator.clipboard.writeText($refs.deepText.textContent); $el.textContent='✅ คัดลอกแล้ว'; setTimeout(() => $el.textContent='📋 คัดลอก', 2000)"
+                                    class="px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg font-medium transition">
+                                📋 คัดลอก
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Preview (collapsed) --}}
+                    <div x-show="!expanded"
+                         class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 text-sm border-l-4 border-purple-400">
+                        <div class="whitespace-pre-wrap text-gray-800 dark:text-gray-200 leading-relaxed">{{ Str::limit($reading->deep_response, 500) }}</div>
+                        @if(mb_strlen($reading->deep_response) > 500)
+                            <button @click="expanded = true"
+                                    class="mt-2 text-purple-600 dark:text-purple-400 text-xs font-medium hover:underline">
+                                ▼ กดอ่านส่วนที่เหลือ ({{ number_format(mb_strlen($reading->deep_response) - 500) }} ตัวอักษร)
+                            </button>
+                        @endif
+                    </div>
+
+                    {{-- Full (expanded) --}}
+                    <div x-show="expanded" x-transition x-ref="deepFull"
+                         class="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 rounded-xl p-5 text-sm border-2 border-purple-300 dark:border-purple-700 shadow-md">
+                        <div x-ref="deepText" class="whitespace-pre-wrap text-gray-900 dark:text-gray-100 leading-loose max-h-[600px] overflow-y-auto pr-2">{{ $reading->deep_response }}</div>
                     </div>
                 </div>
             @endif

@@ -1136,6 +1136,32 @@ class FacebookWebhookController extends Controller
         $messageText = $messaging['message']['text'] ?? '';
         $attachments = $messaging['message']['attachments'] ?? [];
 
+        // 🎯 (2026-05-02) Auto-deliver pending prediction — กัน sticker/emoji silent ignore
+        //   user request: "คนแก่ส่ง sticker → ระบบควรส่งคำทำนายเลย ไม่ต้องพิมพ์"
+        //   ถ้ามี deep_response รอส่ง → ส่งทันที ไม่ว่า user ส่งอะไรมา (text/sticker/emoji/image)
+        $pendingDelivery = FortuneReading::where('facebook_user_id', $senderId)
+            ->where('is_paid', true)
+            ->whereNotNull('deep_response')
+            ->where('deep_response', '!=', '')
+            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+            ->latest()
+            ->first();
+
+        if ($pendingDelivery && ! $pendingDelivery->getConversationState('reading_sent_directly', false)) {
+            Log::info('FB: pending deep reading detected → bypass silent rules + deliver', [
+                'sender_id' => $senderId,
+                'reading_id' => $pendingDelivery->id,
+                'has_text' => ! empty($messageText),
+                'has_attachments' => ! empty($attachments),
+            ]);
+            // ใช้ processConversationalMessage ที่มี logic ส่งคำทำนายเต็มในตัว
+            // ส่ง text เป็น 'อ่านคำทำนาย' ถ้า user ส่ง sticker/emoji เพื่อ trigger ส่งคำทำนาย
+            $effectiveText = $messageText ?: 'อ่านคำทำนาย';
+            $this->processConversationalMessage($senderId, $effectiveText);
+
+            return;
+        }
+
         // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
         // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
         if ($this->isUserSpamming($senderId, $messageText, $attachments)) {
@@ -1525,6 +1551,10 @@ class FacebookWebhookController extends Controller
 
             // 👁️ Follow-page confirmation — user คลิก "✅ ติดตามแล้ว"
             'FOLLOW_CONFIRMED' => $this->handleFollowConfirmed($senderId),
+
+            // 📖 (2026-05-02) คนแก่ใช้งานง่าย — กดปุ่มอ่านคำทำนาย
+            //   ใช้ใน fortune_ready_notification (Button Template) → ส่งคำทำนายเต็มทันที
+            'READ_PREDICTION' => $this->processConversationalMessage($senderId, 'อ่านคำทำนาย'),
 
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
