@@ -64,9 +64,16 @@ class FacebookRichMessageService
 
         // กันซ้อน "คุณคุณ" เมื่อไม่มีชื่อจริง
         $hasName = ! empty($userName) && $userName !== 'คุณ';
-        $greeting = $hasName
-            ? "✨ สวัสดีค่ะ คุณ{$userName}!"
-            : '✨ สวัสดีค่ะ!';
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        if ($isLao) {
+            $greeting = $hasName
+                ? "✨ ສະບາຍດີ ທ່ານ{$userName}!"
+                : '✨ ສະບາຍດີ!';
+        } else {
+            $greeting = $hasName
+                ? "✨ สวัสดีค่ะ คุณ{$userName}!"
+                : '✨ สวัสดีค่ะ!';
+        }
 
         // 🎯 Welcome buttons (FB button template max 3 ปุ่ม)
         //   ปุ่ม "ดูดวง" หลัก → tier menu (39 vs 99)
@@ -78,7 +85,7 @@ class FacebookRichMessageService
         if ($freeEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => '🆓 ดูดวงฟรี',
+                'title' => $isLao ? '🆓 ເບິ່ງດວງຟຣີ' : '🆓 ดูดวงฟรี',
                 'payload' => 'FORTUNE_FREE',
             ];
         }
@@ -86,7 +93,7 @@ class FacebookRichMessageService
         // ปุ่ม 2: ดูดวง (entry หลัก → tier menu)
         $buttons[] = [
             'type' => 'postback',
-            'title' => '🔮 ดูดวง',
+            'title' => $isLao ? '🔮 ເບິ່ງດວງ' : '🔮 ดูดวง',
             'payload' => 'MENU_FORTUNE',
         ];
 
@@ -95,7 +102,7 @@ class FacebookRichMessageService
         if ($lineUrl && count($buttons) < 3) {
             $buttons[] = [
                 'type' => 'web_url',
-                'title' => '💚 เพิ่มเพื่อน LINE',
+                'title' => $isLao ? '💚 ເພີ່ມເພື່ອນ LINE' : '💚 เพิ่มเพื่อน LINE',
                 'url' => $lineUrl,
             ];
         }
@@ -103,16 +110,30 @@ class FacebookRichMessageService
         // 💰 ข้อความแนะนำบริการ — เน้นยอดเงินด้วย CAPS + emoji ขนาบ
         //    (FB Messenger ไม่รองรับ markdown bold — ใช้ visual emphasis แทน)
         $serviceLines = [];
-        $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
-        if ($celticEnabled) {
-            $serviceLines[] = "🔮 ไพ่ยิปซี 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ใบ + ❓ 3 คำถาม";
-        }
-        if ($freeEnabled) {
-            $serviceLines[] = '🆓 ดูดวงฟรี — พิมพ์คำถามมาได้เลย';
+        if ($isLao) {
+            $serviceLines[] = "🔹 ເບິ່ງດວງ 💰💰 {$deepPrice} BAHT 💰💰\n   📅 ວັນເດືອນປີເກີດ + 🃏 ໄພ່ຍິບຊີ 1 ໃບ";
+            if ($celticEnabled) {
+                $serviceLines[] = "🔮 ໄພ່ຍິບຊີ 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ໃບ + ❓ 3 ຄຳຖາມ";
+            }
+            if ($freeEnabled) {
+                $serviceLines[] = '🆓 ເບິ່ງດວງຟຣີ — ພິມຄຳຖາມເຂົ້າມາໄດ້ເລີຍ';
+            }
+        } else {
+            $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
+            if ($celticEnabled) {
+                $serviceLines[] = "🔮 ไพ่ยิปซี 💰💰 {$celticPrice} BAHT 💰💰\n   🃏 Celtic Cross 10 ใบ + ❓ 3 คำถาม";
+            }
+            if ($freeEnabled) {
+                $serviceLines[] = '🆓 ดูดวงฟรี — พิมพ์คำถามมาได้เลย';
+            }
         }
         $serviceText = implode("\n\n", $serviceLines);
 
-        $welcomeText = "{$greeting}\n\n🌙 ยินดีต้อนรับสู่ {$this->brandName}\n\n{$serviceText}\n\n💡 กดปุ่มด้านล่างเพื่อเริ่มได้เลยค่ะ!";
+        if ($isLao) {
+            $welcomeText = "{$greeting}\n\n🌙 ຍິນດີຕ້ອນຮັບສູ່ {$this->brandName}\n\n{$serviceText}\n\n💡 ກົດປຸ່ມດ້ານລຸ່ມເພື່ອເລີ່ມໄດ້ເລີຍ!";
+        } else {
+            $welcomeText = "{$greeting}\n\n🌙 ยินดีต้อนรับสู่ {$this->brandName}\n\n{$serviceText}\n\n💡 กดปุ่มด้านล่างเพื่อเริ่มได้เลยค่ะ!";
+        }
 
         return [
             'attachment' => [
@@ -147,11 +168,13 @@ class FacebookRichMessageService
         $hasName = ! empty($userName) && $userName !== 'คุณ';
         $subject = $hasName ? "คุณ{$userName}" : 'คุณ';
 
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+
         // สร้างปุ่ม — ซ่อนปุ่ม "ถามเพิ่ม (ฟรี)" เมื่อระบบฟรีปิดอยู่
         $buttons = [
             [
                 'type' => 'postback',
-                'title' => '💎 ดูดวง',
+                'title' => $isLao ? '💎 ເບິ່ງດວງ' : '💎 ดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
             ],
         ];
@@ -159,23 +182,29 @@ class FacebookRichMessageService
         if ($freeEnabled) {
             $buttons[] = [
                 'type' => 'postback',
-                'title' => '🔮 ถามเพิ่ม (ฟรี)',
+                'title' => $isLao ? '🔮 ຖາມເພີ່ມ (ຟຣີ)' : '🔮 ถามเพิ่ม (ฟรี)',
                 'payload' => 'FORTUNE_BASIC',
             ];
         }
 
         $buttons[] = [
             'type' => 'postback',
-            'title' => '❌ ไม่ต้อง',
+            'title' => $isLao ? '❌ ບໍ່ເອົາ' : '❌ ไม่ต้อง',
             'payload' => 'DEEP_READING_NO',
         ];
+
+        if ($isLao) {
+            $bodyText = "💎 {$subject}ຕ້ອງການເບິ່ງດວງເຊິງເລິກບໍ?\n\n✅ 1 ຄຳຖາມໂຟກັສດຽວ — ແມ່ນຍຳກວ່າ\n✅ ດາວເຈົ້າຊະຕາ + ໄພ່ຍິບຊີທີ່ຈິດເລືອກ\n✅ ບໍ່ຍົກເມກ — ມີຫຼັກການ ພິສູດໄດ້\n\n💰 ຄ່າຄູ {$priceText} ບາດ";
+        } else {
+            $bodyText = "💎 {$subject}ต้องการดูดวงเชิงลึกไหม?\n\n✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า\n✅ ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก\n✅ ไม่ยกเมฆ — มีหลักการณ์ พิสูจน์ได้\n\n💰 ค่าครู {$priceText} บาท";
+        }
 
         return [
             'attachment' => [
                 'type' => 'template',
                 'payload' => [
                     'template_type' => 'button',
-                    'text' => "💎 {$subject}ต้องการดูดวงเชิงลึกไหม?\n\n✅ 1 คำถามโฟกัสเดียว — แม่นยำกว่า\n✅ ดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเลือก\n✅ ไม่ยกเมฆ — มีหลักการณ์ พิสูจน์ได้\n\n💰 ค่าครู {$priceText} บาท",
+                    'text' => $bodyText,
                     'buttons' => $buttons,
                 ],
             ],
@@ -205,16 +234,35 @@ class FacebookRichMessageService
         // 💰 (2026-05-01) เน้นยอดเงินด้วย 💰💰 ขนาบ + เตือนทศนิยมต้องตรง
         //    เหตุผล: ระบบตัดบิลอัตโนมัติใช้ทศนิยม unique จับคู่ slip
         //    ถ้าโอนยอดผิด → ระบบไม่ตัด → ต้องรอแอดมินเช็ค (ช้า)
-        $text = "📋 บิล: {$billRef}\n";
-        $text .= "━━━━━━━━━━━━━━━\n";
-        $text .= "💰💰 *{$amountText}* BAHT 💰💰\n";
-        $text .= "━━━━━━━━━━━━━━━\n\n";
-        $text .= "⚠️ *โอนยอดให้ตรงเป๊ะ {$amountText} บาท* (ทศนิยมด้วย!)\n";
-        $text .= "✅ ตรง → ระบบตัดบิลอัตโนมัติ ส่งคำทำนายภายใน 1-3 นาที\n";
-        $text .= "❌ ผิด → ต้องรอแอดมินตรวจ อาจช้าหลายชั่วโมง\n\n";
-        $text .= "⏰ ชำระภายใน 30 นาที — โอนแล้วกดปุ่มด้านล่างค่ะ\n\n";
-        $text .= "📌 *นโยบายคืนเงิน*: บริการดิจิทัลส่งคำทำนายทันทีหลังชำระ\n";
-        $text .= "   ทางร้านขอ*งดคืนเงิน*ทุกกรณีค่ะ กรุณาตรวจสอบก่อนชำระ 🙏";
+        // 🌐 (2026-05-03) Lao variant — สำหรับลูกค้าลาวที่ใช้ Cross-Border QR (BCEL One, LDB, JDB)
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+
+        if ($isLao) {
+            $text = "📋 ບິນ: {$billRef}\n";
+            $text .= "━━━━━━━━━━━━━━━\n";
+            $text .= "💰💰 *{$amountText}* BAHT 💰💰\n";
+            $text .= "━━━━━━━━━━━━━━━\n\n";
+            $text .= "⚠️ *ໂອນຍອດໃຫ້ຄົບ {$amountText} ບາດ* (ມີທົດສະນິຍົມ!)\n";
+            $text .= "🇱🇦 ສະແກນ QR ດ້ວຍແອັບທະນາຄານລາວ (BCEL One, LDB, JDB, APB)\n";
+            $text .= "   ຍອດຈະຖືກແປງຈາກ KIP ເປັນ BAHT ອັດຕະໂນມັດ\n";
+            $text .= "   (ອາດໃຊ້ເວລາ 1-5 ນາທີ ກວ່າຍອດຈະເຂົ້າ)\n\n";
+            $text .= "✅ ຄົບ → ລະບົບຕັດບິນອັດຕະໂນມັດ ສົ່ງຄຳທຳນາຍພາຍໃນ 1-5 ນາທີ\n";
+            $text .= "❌ ບໍ່ຄົບ → ຕ້ອງລໍຖ້າແອັດມິນກວດ\n\n";
+            $text .= "⏰ ຊຳລະພາຍໃນ 30 ນາທີ — ໂອນແລ້ວກົດປຸ່ມດ້ານລຸ່ມ\n\n";
+            $text .= "📌 *ນະໂຍບາຍຄືນເງິນ*: ບໍລິການດິຈິຕອນສົ່ງທັນທີຫຼັງຊຳລະ\n";
+            $text .= "   ຮ້ານ*ງົດຄືນເງິນ*ທຸກກໍລະນີ ກະລຸນາກວດກ່ອນຊຳລະ 🙏";
+        } else {
+            $text = "📋 บิล: {$billRef}\n";
+            $text .= "━━━━━━━━━━━━━━━\n";
+            $text .= "💰💰 *{$amountText}* BAHT 💰💰\n";
+            $text .= "━━━━━━━━━━━━━━━\n\n";
+            $text .= "⚠️ *โอนยอดให้ตรงเป๊ะ {$amountText} บาท* (ทศนิยมด้วย!)\n";
+            $text .= "✅ ตรง → ระบบตัดบิลอัตโนมัติ ส่งคำทำนายภายใน 1-3 นาที\n";
+            $text .= "❌ ผิด → ต้องรอแอดมินตรวจ อาจช้าหลายชั่วโมง\n\n";
+            $text .= "⏰ ชำระภายใน 30 นาที — โอนแล้วกดปุ่มด้านล่างค่ะ\n\n";
+            $text .= "📌 *นโยบายคืนเงิน*: บริการดิจิทัลส่งคำทำนายทันทีหลังชำระ\n";
+            $text .= "   ทางร้านขอ*งดคืนเงิน*ทุกกรณีค่ะ กรุณาตรวจสอบก่อนชำระ 🙏";
+        }
 
         // ตัดให้ไม่เกิน 640 ตัวอักษร (Facebook limit)
         $text = mb_substr($text, 0, 630);
@@ -229,12 +277,12 @@ class FacebookRichMessageService
                     'buttons' => [
                         [
                             'type' => 'postback',
-                            'title' => '✅ แจ้งชำระเงินแล้ว',
+                            'title' => $isLao ? '✅ ແຈ້ງໂອນແລ້ວ' : '✅ แจ้งชำระเงินแล้ว',
                             'payload' => 'REPORT_PAYMENT',
                         ],
                         [
                             'type' => 'postback',
-                            'title' => '❌ ยกเลิก',
+                            'title' => $isLao ? '❌ ຍົກເລີກ' : '❌ ยกเลิก',
                             'payload' => 'CANCEL_PAYMENT',
                         ],
                     ],

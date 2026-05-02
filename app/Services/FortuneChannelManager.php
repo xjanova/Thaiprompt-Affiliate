@@ -158,6 +158,14 @@ class FortuneChannelManager
         // ✅ ตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
         $this->conversationService->setPlatform($platform);
 
+        // 🌐 (2026-05-03) Resolve locale (Facebook only — รองรับลาว auto-detect)
+        //   LINE บังคับไทยเสมอ ไม่กระทบ flow เดิม
+        //   - manual choice (picker) ชนะเสมอ
+        //   - ถ้ายังไม่มี / auto → detect จาก messageText (Lao block U+0E80–U+0EFF)
+        //   - ถ้า DB error → fallback 'th' (safe)
+        $locale = \App\Services\FortuneLocaleService::resolveForMessage($platform, $userId, $messageText);
+        \App\Services\FortuneLocaleService::setCurrent($locale);
+
         // ใช้ conversation service ประมวลผล
         $result = $this->conversationService->processMessage($userId, $messageText, $userProfile);
 

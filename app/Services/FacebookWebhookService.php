@@ -1476,6 +1476,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     protected function buildIceBreakerActions(): array
     {
+        // ⚠️ Facebook จำกัด 4 ice breakers ต่อ persona — เกินจะ reject ทั้งชุด
+        // 🌐 (2026-05-03) ใช้ "MENU_REFERRAL" + ไม่เพิ่ม language picker ตรงนี้
+        //    เหตุผล: auto-detect ทำงานเป็น default แล้ว, manual picker ใช้ผ่าน
+        //    chat command "Lao"/"ลาว"/"ไทย" หรือ postback LANG_TH/LANG_LO จากที่อื่น
         return [
             [
                 'question' => '🔮 อยากดูดวงเชิงลึกแม่นๆ',
@@ -1490,8 +1494,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'payload' => 'MENU_ABOUT_US',
             ],
             [
-                'question' => '👥 ชวนเพื่อน รับรายได้แบบไหน?',
-                'payload' => 'MENU_REFERRAL',
+                'question' => '🌐 ภาษา / ພາສາ / Language',
+                'payload' => 'LANG_PICKER',
             ],
         ];
     }

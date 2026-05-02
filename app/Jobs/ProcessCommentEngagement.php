@@ -115,6 +115,11 @@ class ProcessCommentEngagement implements ShouldQueue
             //   → flow ดูดวงครั้งต่อไปจะหาชื่อจริงเจอ ไม่ตก fallback "FACEBOOK-XXXXXX"
             \App\Models\FortuneUserCredit::rememberName($userId, 'facebook', $name);
 
+            // 🌐 (2026-05-03) Detect locale จาก comment text — ตอบภาษาเดียวกับที่ comment
+            //   AI mirror ภาษา input อยู่แล้ว → set current() ก็พอ ไม่ต้องแตะ prompt
+            $commentLocale = \App\Services\FortuneLocaleService::resolveForMessage('facebook', $userId, $commentText);
+            \App\Services\FortuneLocaleService::setCurrent($commentLocale);
+
             Log::info('Comment Engagement: กำลังสร้างข้อความชวนดูดวง', [
                 'user_id' => $userId,
                 'comment' => mb_substr($commentText, 0, 50),

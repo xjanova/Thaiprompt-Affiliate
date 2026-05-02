@@ -1556,9 +1556,66 @@ class FacebookWebhookController extends Controller
             //   ใช้ใน fortune_ready_notification (Button Template) → ส่งคำทำนายเต็มทันที
             'READ_PREDICTION' => $this->processConversationalMessage($senderId, 'อ่านคำทำนาย'),
 
+            // 🌐 (2026-05-03) Language picker — manual override (auto-detect ทำงานเป็น default)
+            'LANG_PICKER' => $this->handleLanguagePicker($senderId),
+            'LANG_TH' => $this->handleLanguagePick($senderId, 'th'),
+            'LANG_LO' => $this->handleLanguagePick($senderId, 'lo'),
+
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
         };
+    }
+
+    /**
+     * 🌐 ส่ง Quick Reply ให้เลือกภาษา (เรียกจาก Ice Breaker LANG_PICKER)
+     */
+    protected function handleLanguagePicker(string $senderId): void
+    {
+        try {
+            $this->facebookService->sendMessage(
+                $senderId,
+                "🌐 เลือกภาษา / ເລືອກພາສາ / Choose language",
+                [
+                    'quick_replies' => [
+                        ['title' => '🇹🇭 ไทย', 'payload' => 'LANG_TH'],
+                        ['title' => '🇱🇦 ລາວ', 'payload' => 'LANG_LO'],
+                    ],
+                ]
+            );
+        } catch (\Throwable $e) {
+            Log::warning('handleLanguagePicker error', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 🌐 บันทึกภาษาที่ user เลือก (manual override) + ส่งข้อความยืนยัน
+     */
+    protected function handleLanguagePick(string $senderId, string $locale): void
+    {
+        try {
+            \App\Services\FortuneLocaleService::set(
+                'facebook',
+                $senderId,
+                $locale,
+                \App\Services\FortuneLocaleService::SOURCE_MANUAL
+            );
+            \App\Services\FortuneLocaleService::setCurrent($locale);
+
+            $msg = $locale === 'lo'
+                ? "🇱🇦 ປ່ຽນເປັນພາສາລາວແລ້ວ ✓\nພິມຄຳຖາມເຂົ້າມາໄດ້ເລີຍ"
+                : "🇹🇭 เปลี่ยนเป็นภาษาไทยแล้ว ✓\nพิมพ์คำถามมาได้เลยค่ะ";
+
+            $this->facebookService->sendMessage($senderId, $msg);
+        } catch (\Throwable $e) {
+            Log::warning('handleLanguagePick error', [
+                'sender_id' => $senderId,
+                'locale' => $locale,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
