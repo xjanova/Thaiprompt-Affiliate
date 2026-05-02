@@ -119,23 +119,24 @@ class FortuneAIService
     /**
      * กำหนด maxTokens และ temperature ตาม reading type
      *
-     * (2026-05-02 v2) เพิ่ม max_tokens deep กลับเป็น 3000 — user feedback "สั้นมาก"
-     *   ก่อนหน้านี้ลดเป็น 2000 กลัว Groq 413 แต่ output สั้นเกินไป
+     * (2026-05-02 v3) user feedback: "ตอนนี้สั้นเกินไป" — bump เพิ่มอีกครั้ง
+     *   เดิม 3000 → 4096 (รองรับคำทำนาย Q1 600-900 คำ ตามที่ user ขอ)
      *
-     *   Math (Groq llama-3.3-70b free tier ~6000 TPM):
-     *   - prompt input: ~2500-3000 tokens (planet positions + tarot + section A)
-     *   - max_tokens output: 3000 → total 5500-6000 → เฉียดแต่พอผ่าน
-     *   - ถ้าโดน 413 อีก → จะลดอีก หรือลด prompt
+     *   Math:
+     *   - prompt input: ~2200-2700 tokens (trim ลง ใน prompt template ใหม่)
+     *   - max_tokens output: 4096 → total ~6500-7000
+     *   - Groq llama-3.3-70b free TPM cap: 6000/min → อาจ 413
+     *     → ถ้า 413 ระบบ fallback ไป OpenRouter/Gemini อัตโนมัติ (มี key pool รองรับ)
      *
-     *   Thai: 1 token ≈ 0.5-1 char → 3000 tokens ≈ 1500-3000 chars (≈ 500-900 คำ)
+     *   Thai: 1 token ≈ 0.5-1 char → 4096 tokens ≈ 2000-4000 chars (≈ 700-1300 คำ)
      */
     protected const READING_CONFIG = [
         'basic' => [
-            'max_tokens' => 2200,   // ↑ จาก 1800 — basic ก็ต้องครบ
+            'max_tokens' => 2800,   // ↑ จาก 2200
             'temperature' => 0.75,
         ],
         'deep' => [
-            'max_tokens' => 3000,   // ↑ จาก 2000 — user "สั้นมาก" + word target Q1 350-500
+            'max_tokens' => 4096,   // ↑ จาก 3000 — user "สั้นเกินไป"
             'temperature' => 0.8,
         ],
     ];
