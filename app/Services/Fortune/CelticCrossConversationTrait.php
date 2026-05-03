@@ -351,17 +351,36 @@ trait CelticCrossConversationTrait
                 //    ตรวจ + mark flag ตอนนี้ (ก่อน collect birthdate) → handleQuestionInput อ่านภายหลัง
                 $platform = $this->currentPlatform;
                 $platformUserId = $reading->platform_user_id ?? $reading->facebook_user_id;
+                $isRequestBeforePay = false;
                 if ($platformUserId && FortuneReading::shouldUseRequestBeforePay($platform, $platformUserId)) {
                     $reading->setConversationState('is_request_before_pay', true);
+                    $isRequestBeforePay = true;
                     \Log::info('Fortune: Deep 39 → enable Request-Before-Pay (first-time)', [
                         'reading_id' => $reading->id,
                         'platform' => $platform,
                     ]);
                 }
 
+                // 🎁 (2026-05-04) ถ้าเข้าโหมด "ดูก่อนจ่ายทีหลัง" — บอกลูกค้าให้ชัดเจนตั้งแต่แรก
+                //    user feedback: "ตอนเปิดระบบดูก่อนจ่ายทีหลัง ต้องบอกชัดเจนแต่แรกด้วยว่า ดูก่อนจ่ายทีหลัง"
+                $payLaterIntro = '';
+                if ($isRequestBeforePay) {
+                    $payLaterIntro = \App\Services\FortuneLocaleService::lo(
+                        "🎁 *สิทธิพิเศษครั้งแรก: ดูก่อนจ่ายทีหลัง* 💎\n"
+                        . "✨ แม่หมอจะเปิดดวงทำนายให้ก่อน — รับคำทำนายเสร็จแล้วค่อยชำระ {$deepPriceInt} บาท\n"
+                        . "🔒 ใช้สิทธิ์ได้แค่ครั้งแรกครั้งเดียวเท่านั้น/ท่าน\n"
+                        . "═══════════════════════\n\n",
+                        "🎁 *ສິດທິພິເສດຄັ້ງທຳອິດ: ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ* 💎\n"
+                        . "✨ ແມ່ໝໍຈະເປີດດວງທຳນາຍໃຫ້ກ່ອນ — ຮັບຄຳທຳນາຍແລ້ວຄ່ອຍຊຳລະ {$deepPriceInt} ບາດ\n"
+                        . "🔒 ໃຊ້ສິດໄດ້ແຄ່ຄັ້ງທຳອິດຄັ້ງດຽວເທົ່ານັ້ນ/ທ່ານ\n"
+                        . "═══════════════════════\n\n"
+                    );
+                }
+
                 return [
                     'action' => 'collecting_birthdate',
-                    'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
+                    'message' => $payLaterIntro
+                        . "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
                         . $this->getBirthdateRequestMessage(),
                     'reading' => $reading,
                 ];

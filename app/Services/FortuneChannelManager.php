@@ -702,6 +702,15 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'DELIVERY_CONFIRM_NO'],
                 ], $extra),
 
+                // 🆕 (2026-05-04) Pay-later reconfirm — Quick Reply ยืนยันก่อน AI gen
+                'pay_later_reconfirm', 'pay_later_reconfirm_invalid' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ เริ่มเลย', 'payload' => 'PAY_LATER_ACK_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'PAY_LATER_ACK_NO'],
+                ], $extra),
+
+                // 🆕 (2026-05-04) Pay-later declined — text only
+                'pay_later_declined' => $fbService->sendMessage($userId, $message, $extra),
+
                 // 💎 ลูกค้ายกเลิกการรับคำทำนาย — ปิด conversation (text only)
                 'delivery_cancelled' => $fbService->sendMessage($userId, $message, $extra),
 
@@ -713,6 +722,18 @@ class FortuneChannelManager
 
                 // 💎 deliver_with_qr — ส่งคำทำนาย + QR (ใช้ payment template)
                 'deliver_with_qr' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+
+                // 💎 (2026-05-04) bill creation failed — ส่งคำทำนายอย่างน้อยให้ลูกค้าได้อ่าน + แจ้ง error
+                'delivery_bill_failed' => (function () use ($fbService, $userId, $message, $result) {
+                    if (! empty($result['chart_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['chart_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                    return $fbService->sendMessage($userId, $message);
+                })(),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
@@ -1602,6 +1623,17 @@ class FortuneChannelManager
                         ['label' => '✅ รับคำทำนาย', 'text' => 'รับคำทำนาย'],
                         ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                     ]),
+
+                // 🆕 (2026-05-04) Pay-later reconfirm (LINE Quick Reply)
+                'pay_later_reconfirm', 'pay_later_reconfirm_invalid'
+                    => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                        ['label' => '✅ ใช่ เริ่มเลย', 'text' => 'ใช่'],
+                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                    ]),
+
+                // 🆕 (2026-05-04) Pay-later declined — text only
+                'pay_later_declined'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 💎 ยกเลิกการรับคำทำนาย — text only
                 'delivery_cancelled'

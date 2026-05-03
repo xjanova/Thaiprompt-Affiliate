@@ -4440,6 +4440,12 @@ class FortuneConversationService
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
         try {
+            // 🆕 (2026-05-04) Pay-later ack — ถ้ารอลูกค้ายืนยัน "เข้าใจไหมต้องจ่ายเมื่อได้คำทำนาย"
+            //    intercept ก่อนทุก handler เพื่อกัน race + กันคำถามสับสน
+            if ($reading->getConversationState('awaiting_pay_later_ack', false)) {
+                return $this->handlePayLaterAck($reading, $messageText);
+            }
+
             // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
             //    (ตรวจ FIRST — มิฉะนั้น race-guard ด้านล่างจะบล็อก "ใช่" ที่ legitimate)
             if ($reading->getConversationState('awaiting_question_confirmation', false)) {
@@ -4844,6 +4850,39 @@ class FortuneConversationService
      */
     protected function processRequestBeforePay(FortuneReading $reading, array $questions): array
     {
+        // 🆕 (2026-05-04) Reconfirm step ก่อน AI generation
+        //    user feedback: "ก่อนเข้าสู่ขั้นตอนดูดวงต้องย้ำอีกทีว่า เข้าใจใช่ไหม
+        //                    ต้องชำระเมื่อได้คำทำนาย"
+        //    ก่อนหน้านี้ dispatch job ทันที → ลูกค้าอาจตกใจตอนได้บิล
+        //    ใหม่: เก็บ questions, set flag, ส่ง prompt → รอ ack → ค่อย dispatch
+        $payLaterAcked = $reading->getConversationState('pay_later_acked', false);
+        if (! $payLaterAcked) {
+            $reading->update(['questions' => $questions]);
+            $reading->setConversationState('awaiting_pay_later_ack', true);
+            $reading->setConversationState('pending_pay_later_questions', $questions);
+
+            $price = (int) $this->getDeepReadingPrice();
+
+            return [
+                'action' => 'pay_later_reconfirm',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🌙 *ก่อนเปิดดวง — แม่หมอขอย้ำอีกครั้งนะคะ* 💎\n"
+                        . "═══════════════════════\n\n"
+                        . "✨ แม่หมอจะทำนายดวงให้เจ้าชะตา*ก่อน*\n"
+                        . "💸 เมื่อได้รับคำทำนายแล้ว — เจ้าชะตาต้องชำระค่าครู *{$price} บาท*\n\n"
+                        . "🙏 *เข้าใจและยินยอมใช่ไหมคะ?*\n"
+                        . "    กดปุ่มข้างล่าง หรือพิมพ์ \"ใช่\" เพื่อให้แม่หมอเริ่มเปิดดวงเลย",
+                    "🌙 *ກ່ອນເປີດດວງ — ແມ່ໝໍຂໍຢ້ຳອີກຄັ້ງເດີ* 💎\n"
+                        . "═══════════════════════\n\n"
+                        . "✨ ແມ່ໝໍຈະທຳນາຍດວງໃຫ້ເຈົ້າຊາຕາ*ກ່ອນ*\n"
+                        . "💸 ເມື່ອໄດ້ຮັບຄຳທຳນາຍແລ້ວ — ເຈົ້າຊາຕາຕ້ອງຊຳລະຄ່າຄູ *{$price} ບາດ*\n\n"
+                        . "🙏 *ເຂົ້າໃຈແລະຍິນຍອມໃຊ່ບໍ່?*\n"
+                        . "    ກົດປຸ່ມລຸ່ມນີ້ ຫຼື ພິມ \"ໃຊ່\" ເພື່ອໃຫ້ແມ່ໝໍເລີ່ມເປີດດວງເລີຍ"
+                ),
+                'reading' => $reading,
+            ];
+        }
+
         // 1. อัพเดท questions + status (state STATUS_PAID = AI processing — กัน race ส่งซ้ำ)
         $reading->update([
             'questions' => $questions,
@@ -4885,6 +4924,82 @@ class FortuneConversationService
                 "🔮 *ໝໍຈັນທາກຳລັງເປີດດວງໃຫ້ເຈົ້າຊາຕາແລ້ວ* ✨\n\n"
                     . "🌙 ໃຊ້ເວລາປະມານ 1-2 ນາທີ\n"
                     . "ຢ່າຟ້າວທັກມາຊ້ຳເດີ — ແມ່ໝໍຈະສົ່ງໃຫ້ທັນທີເມື່ອແລ້ວ 🙏"
+            ),
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-04) Pay-later ack handler
+     *
+     * เรียกตอนลูกค้าตอบ prompt "เข้าใจไหมต้องชำระเมื่อได้คำทำนาย" (Request-Before-Pay)
+     *   - "ใช่" / "ตกลง" → set acked + เรียก processRequestBeforePay ใหม่ (จะ dispatch job ทีนี้)
+     *   - "ไม่" / "ยกเลิก" → ปิด session
+     *   - อื่นๆ → re-prompt
+     */
+    protected function handlePayLaterAck(FortuneReading $reading, string $messageText): array
+    {
+        $clean = mb_strtolower(trim($messageText));
+
+        // ❌ ยกเลิก
+        $cancelKw = ['ไม่', 'ไม่เอา', 'ยกเลิก', 'cancel', 'no', 'pay_later_ack_no',
+            'ບໍ່', 'ບໍ່ເອົາ', 'ຍົກເລີກ'];
+        foreach ($cancelKw as $kw) {
+            if ($clean === mb_strtolower($kw) || (str_contains($clean, mb_strtolower($kw)) && mb_strlen($clean) <= 30)) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                $reading->setConversationState('awaiting_pay_later_ack', false);
+                $reading->setConversationState('pending_pay_later_questions', null);
+
+                Log::info('Fortune: Pay-later ack → ลูกค้ากดยกเลิก', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return [
+                    'action' => 'pay_later_declined',
+                    'message' => \App\Services\FortuneLocaleService::lo(
+                        "🙏 *ได้เลยค่ะ — ไม่เป็นไรนะคะ*\n\n"
+                            . "ถ้าเปลี่ยนใจอยากดูดวง พิมพ์ \"ดูดวง\" ได้ตลอด ✨",
+                        "🙏 *ໄດ້ເລີຍເດີ — ບໍ່ເປັນຫຍັງເດີ*\n\n"
+                            . "ຖ້າປ່ຽນໃຈຢາກເບິ່ງດວງ ພິມ \"ເບິ່ງດວງ\" ໄດ້ຕະຫຼອດ ✨"
+                    ),
+                    'reading' => $reading,
+                ];
+            }
+        }
+
+        // ✅ ยืนยัน
+        $ackKw = ['ใช่', 'ตกลง', 'เข้าใจ', 'ยินยอม', 'ok', 'okay', 'yes', 'y', 'pay_later_ack_yes',
+            'ໃຊ່', 'ຕົກລົງ', 'ເຂົ້າໃຈ', 'ຍິນຍອມ'];
+        foreach ($ackKw as $kw) {
+            if ($clean === mb_strtolower($kw) || (str_contains($clean, mb_strtolower($kw)) && mb_strlen($clean) <= 30)) {
+                $reading->setConversationState('pay_later_acked', true);
+                $reading->setConversationState('awaiting_pay_later_ack', false);
+
+                $questions = $reading->getConversationState('pending_pay_later_questions', $reading->questions ?? []);
+                if (! is_array($questions) || empty($questions)) {
+                    $questions = $reading->questions ?? [];
+                }
+
+                Log::info('Fortune: Pay-later ack → ยืนยัน → dispatch AI job', [
+                    'reading_id' => $reading->id,
+                    'questions_count' => count($questions),
+                ]);
+
+                // เรียก processRequestBeforePay ใหม่ — รอบนี้ผ่าน ack แล้ว → dispatch job
+                return $this->processRequestBeforePay($reading, $questions);
+            }
+        }
+
+        // ❓ ไม่ตรง keyword → re-prompt
+        return [
+            'action' => 'pay_later_reconfirm_invalid',
+            'message' => \App\Services\FortuneLocaleService::lo(
+                "🙏 ขอให้เจ้าชะตายืนยันอีกครั้งนะคะ:\n\n"
+                    . "✅ พิมพ์ *\"ใช่\"* — เริ่มเปิดดวง (ชำระค่าครู 39 บาท เมื่อได้คำทำนาย)\n"
+                    . "❌ พิมพ์ *\"ยกเลิก\"* — ไม่ต่อตอนนี้",
+                "🙏 ຂໍໃຫ້ເຈົ້າຊາຕາຢືນຢັນອີກຄັ້ງເດີ:\n\n"
+                    . "✅ ພິມ *\"ໃຊ່\"* — ເລີ່ມເປີດດວງ (ຊຳລະຄ່າຄູ 39 ບາດ ເມື່ອໄດ້ຄຳທຳນາຍ)\n"
+                    . "❌ ພິມ *\"ຍົກເລີກ\"* — ບໍ່ຕໍ່ຕອນນີ້"
             ),
             'reading' => $reading,
         ];
@@ -4976,9 +5091,38 @@ class FortuneConversationService
         // 1. สร้าง UPA + ตั้ง bill
         try {
             $billResult = $this->createPaymentBill($reading, $reading->questions ?? []);
-            $name = $reading->facebook_user_name ?? 'คุณ';
+
+            // 🩹 (2026-05-04) ตรวจ createPaymentBill failure ก่อน override action
+            //    เคสจริง: bill_creation_failed → payment_qr_url null → ลูกค้าไม่เห็น QR
+            //    ก่อนหน้า: blindly override → ChannelManager พยายามส่ง QR ที่ไม่มี → ลูกค้างง
+            $billAction = $billResult['action'] ?? 'unknown';
+            if (! in_array($billAction, ['pending_payment'], true)) {
+                Log::error('💎 Request-Before-Pay: createPaymentBill ล้มเหลว — ส่ง error message แทน', [
+                    'reading_id' => $reading->id,
+                    'bill_result_action' => $billAction,
+                ]);
+
+                // ส่งคำทำนายให้ก่อน + บอกว่าระบบเตรียมบิลไม่สำเร็จ ให้ลองใหม่
+                $name = $reading->facebook_user_name ?? 'คุณ';
+                $readingHeaderFallback = \App\Services\FortuneLocaleService::lo(
+                    "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n═══════════════════════\n\n",
+                    "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n═══════════════════════\n\n"
+                );
+                $errorMsg = $billResult['message'] ?? \App\Services\FortuneLocaleService::lo(
+                    '🙏 ขออภัยค่ะ ระบบเตรียมบิลไม่สำเร็จ — กรุณาพิมพ์ "ดูดวง" อีกครั้ง',
+                    '🙏 ຂໍອະໄພເດີ ລະບົບຕຽມບິນບໍ່ສຳເລັດ — ກະລຸນາພິມ "ເບິ່ງດວງ" ອີກຄັ້ງ'
+                );
+
+                return [
+                    'action' => 'delivery_bill_failed',
+                    'message' => $readingHeaderFallback . $reading->deep_response . "\n\n══════════\n\n" . $errorMsg,
+                    'reading' => $reading,
+                    'chart_image_url' => $reading->reading_image_url,
+                ];
+            }
 
             // 2. ประกอบข้อความ: คำทำนาย + payment QR + decimal warning
+            $name = $reading->facebook_user_name ?? 'คุณ';
             $readingHeader = \App\Services\FortuneLocaleService::lo(
                 "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
                     . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
@@ -4994,8 +5138,20 @@ class FortuneConversationService
             $billResult['action'] = 'deliver_with_qr';
             $billResult['chart_image_url'] = $reading->reading_image_url;
 
+            // 🩹 (2026-05-04) Diagnostic — log ถ้า payment_qr_url null
+            //    ช่วย admin debug เคสที่ลูกค้าไม่เห็น QR (PromptPay ไม่ตั้งค่า / file gen fail / etc.)
+            if (empty($billResult['payment_qr_url'])) {
+                Log::warning('💎 Request-Before-Pay: payment_qr_url is NULL — ลูกค้าจะไม่เห็น QR', [
+                    'reading_id' => $reading->id,
+                    'bill_reference' => $reading->bill_reference,
+                    'amount' => $reading->amount_paid,
+                    'hint' => 'ตรวจ PromptPay ID config + storage symlink + GD extension',
+                ]);
+            }
+
             Log::info('💎 Request-Before-Pay: ลูกค้ารับคำทำนาย → ส่ง reading + QR', [
                 'reading_id' => $reading->id,
+                'has_qr' => ! empty($billResult['payment_qr_url']),
             ]);
 
             return $billResult;
@@ -5191,9 +5347,20 @@ class FortuneConversationService
 
             // สร้าง Birth Chart ส่งให้ผู้ใช้เห็นก่อนชำระเงิน (เป็น preview)
             // ✅ ข้ามถ้าใช้เวลาเกิน → ส่งบิลก่อน ส่ง chart ทีหลังได้
-            $chartImageUrl = null;
+            // 🩹 (2026-05-04) ถ้า reading มี chart อยู่แล้ว → reuse ไม่ regen
+            //    เคสจริง: Request-Before-Pay flow — Job gen chart ตั้งแต่ AI predict
+            //    แล้ว createPaymentBill ถูกเรียกอีกที (handleAwaitingDeliveryConfirm) → regen เปลือง 5-10 sec
+            //    → QR generation อาจถูก skip เพราะเลย maxBillTime → ลูกค้าไม่เห็น QR
+            $chartImageUrl = $reading->reading_image_url;
+            if (! empty($chartImageUrl)) {
+                Log::info('Fortune: reuse existing chart — skip regen', [
+                    'reading_id' => $reading->id,
+                    'chart_url' => $chartImageUrl,
+                ]);
+            }
+
             $elapsed = microtime(true) - $billStartTime;
-            if ($elapsed < $maxBillTime) {
+            if (empty($chartImageUrl) && $elapsed < $maxBillTime) {
                 try {
                     $birthDate = $reading->birth_date?->format('Y-m-d');
                     $name = $reading->facebook_user_name ?? 'คุณ';
@@ -5216,7 +5383,7 @@ class FortuneConversationService
                         'error_class' => get_class($chartErr),
                     ]);
                 }
-            } else {
+            } elseif (empty($chartImageUrl)) {
                 Log::info('Fortune: ข้าม chart generation เพื่อความเร็ว', [
                     'reading_id' => $reading->id,
                     'elapsed' => round($elapsed, 2),

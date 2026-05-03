@@ -2811,6 +2811,9 @@ class FacebookWebhookController extends Controller
             // 💎 (2026-05-03) Request-Before-Pay confirmation (Deep 39 first-time only)
             'DELIVERY_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'รับคำทำนาย'),
             'DELIVERY_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            // 🆕 (2026-05-04) Pay-later reconfirm payloads
+            'PAY_LATER_ACK_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
+            'PAY_LATER_ACK_NO' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
