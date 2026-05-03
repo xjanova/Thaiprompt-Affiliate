@@ -1734,10 +1734,17 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'access_token' => $this->pageAccessToken,
             ];
 
+            // 🆕 (2026-05-03) H8 — รองรับ from_admin เหมือน sendMessage()
+            //    ถ้า from_admin (push หลัง payment / admin alert) → ลอง RESPONSE ก่อน
+            //    ถ้าเกิน 24hr (subcode 2018278/2018065/2018001) → fallback เป็น MESSAGE_TAG
+            //    เดิม: ขาด subcode 2018001 → push หลัง 24hr ของ button template เงียบไม่มี fallback
+            $fromAdmin = ! empty($options['from_admin']);
+
             // เพิ่ม message_tag ถ้าระบุ (สำหรับส่งนอก 24 ชั่วโมง)
             if (! empty($options['message_tag'])) {
                 $requestBody['messaging_type'] = 'MESSAGE_TAG';
                 $requestBody['tag'] = $options['message_tag'];
+                $messagingType = 'MESSAGE_TAG';
             }
 
             $response = Http::timeout(30)->post($this->graphUrl('/me/messages'), $requestBody);
@@ -1747,20 +1754,38 @@ class FacebookWebhookService implements MessagingPlatformInterface
             }
 
             // ลอง fallback เป็น MESSAGE_TAG ถ้า 24 ชั่วโมงหมดอายุ
+            // 🔒 (2026-05-03) H8 — เพิ่ม subcode 2018001 (มีใน sendMessage แต่ขาดที่นี่)
+            //    ทำให้สอดคล้องกับ sendMessage:434 (ซึ่งมีครบทั้ง 3 subcode)
             $error = $response->json('error', []);
             $subcode = $error['error_subcode'] ?? 0;
-            if (in_array($subcode, [2018278, 2018065]) && empty($options['message_tag'])) {
-                Log::info('Facebook Button Template: 24hr expired, retry with MESSAGE_TAG');
+            $is24hrError = in_array($subcode, [2018278, 2018065, 2018001]);
+
+            if ($is24hrError && empty($options['message_tag']) && $messagingType === 'RESPONSE') {
+                Log::info('Facebook Button Template: 24hr expired, retry with MESSAGE_TAG', [
+                    'recipient' => $recipientId,
+                    'subcode' => $subcode,
+                    'from_admin' => $fromAdmin,
+                ]);
                 $requestBody['messaging_type'] = 'MESSAGE_TAG';
                 $requestBody['tag'] = 'POST_PURCHASE_UPDATE';
 
                 $retry = Http::timeout(30)->post($this->graphUrl('/me/messages'), $requestBody);
 
-                return $retry->successful();
+                if ($retry->successful()) {
+                    return true;
+                }
+
+                Log::error('Facebook Button Template MESSAGE_TAG fallback ล้ม', [
+                    'recipient' => $recipientId,
+                    'retry_error' => $retry->json('error', []),
+                ]);
+
+                return false;
             }
 
             Log::error('Facebook Button Template ส่งไม่สำเร็จ', [
                 'recipient' => $recipientId,
+                'subcode' => $subcode,
                 'error' => $error,
             ]);
 

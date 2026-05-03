@@ -383,7 +383,16 @@ class FortuneTakeoverService
     /**
      * ตรวจสอบว่าข้อความลูกค้าบ่งบอกว่าอยากคุยกับคนจริงหรือไม่
      *
-     * Match แบบ substring + case-insensitive
+     * 🔒 (2026-05-03) H2 — Tightened matching เพื่อกัน false positive
+     *    เดิม: substring match → "ขอคุยกับคนรู้ใจ" → จับ "ขอคุยกับคน" → handoff ผิด
+     *    ใหม่: ต้องเป็น exact match หรือ keyword เป็น "core" ของข้อความ
+     *      (หลังตัด politeness suffixes แล้ว)
+     *
+     *    Logic:
+     *    1. Strip politeness suffixes (ค่ะ, ครับ, นะ, ฯลฯ) + Lao equivalents
+     *    2. exact match → handoff
+     *    3. starts_with keyword + space/punctuation → handoff
+     *    4. else → no match (กัน substring กลางข้อความ)
      */
     public function detectCustomerHandoffRequest(string $message): bool
     {
@@ -393,11 +402,34 @@ class FortuneTakeoverService
         }
 
         $lower = mb_strtolower($message);
+
+        // 🧹 Strip politeness suffixes (TH+LAO+EN) เพื่อจับ "core" ของข้อความ
+        //    เช่น "ขอคุยกับคนค่ะ" → "ขอคุยกับคน" (จะ exact match)
+        $normalized = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ|please)\s*$/u',
+            '',
+            $lower
+        );
+        $normalized = trim($normalized);
+
         $keywords = $this->settings()->getCustomerHandoffKeywords();
 
         foreach ($keywords as $keyword) {
             $k = mb_strtolower(trim($keyword));
-            if ($k !== '' && mb_strpos($lower, $k) !== false) {
+            if ($k === '') {
+                continue;
+            }
+
+            // 1. Exact match (ทั้งหลัง trim และหลัง strip politeness)
+            if ($lower === $k || $normalized === $k) {
+                return true;
+            }
+
+            // 2. Starts-with + word break (กัน substring กลางข้อความ)
+            //    "ขอแม่หมอ" + space/punct → match
+            //    "ขอแม่หมอดูดวง" → ไม่ match (ไม่มี boundary หลัง keyword)
+            $pattern = '/^' . preg_quote($k, '/') . '(\s|[!?,.ๆฯ]|$)/u';
+            if (preg_match($pattern, $lower) || preg_match($pattern, $normalized)) {
                 return true;
             }
         }

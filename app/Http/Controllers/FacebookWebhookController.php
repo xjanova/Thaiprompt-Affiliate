@@ -385,6 +385,22 @@ class FacebookWebhookController extends Controller
         $reaction->dm_attempted = true;
 
         try {
+            // 🔒 (2026-05-03) H4 — Per-user 24h guard (กัน reaction DM spam)
+            //    เดิม: dedupe per (user_id, post_id) → user reaction หลายโพสต์ → DM 5 ครั้ง
+            //    ใหม่: ถ้าเคยส่ง DM ให้ user คนนี้ใน 24hr → ข้าม (ไม่ว่าจะ post ไหน)
+            //    ⚠️ Anti-pattern guard (lesson #5): เขียน Cache เฉพาะตอนสำเร็จ ไม่เขียน false
+            $userGuardKey = 'reaction_dm_user_24h:' . $reaction->facebook_user_id;
+            if (Cache::has($userGuardKey)) {
+                Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ในช่วง 24hr แล้ว', [
+                    'user_id' => $reaction->facebook_user_id,
+                    'post_id' => $reaction->facebook_post_id,
+                ]);
+                $reaction->dm_success = false;
+                $reaction->save();
+
+                return;
+            }
+
             // 🚫 ถ้าลูกค้ากำลังคุยกับบอท (มี active reading) → ห้ามส่ง DM "ขอบคุณที่กดไลก์"
             //    แทรก เพราะจะทำให้ลูกค้างง (กำลังคุยเรื่องดูดวงอยู่แล้ว)
             try {
@@ -430,6 +446,10 @@ class FacebookWebhookController extends Controller
             $reaction->save();
 
             if ($success) {
+                // 🔒 H4 — เขียน guard เฉพาะเมื่อส่งสำเร็จ (anti-pattern lesson #5: ห้าม lock retry)
+                //    user รับ DM แล้ว → block 24hr ไม่ให้ส่งซ้ำจาก reaction post อื่น
+                Cache::put($userGuardKey, true, now()->addHours(24));
+
                 Log::info('✅ Reaction DM sent', [
                     'user_id' => $reaction->facebook_user_id,
                     'post_id' => $reaction->facebook_post_id,
@@ -1113,6 +1133,25 @@ class FacebookWebhookController extends Controller
 
         if (empty($senderId)) {
             return;
+        }
+
+        // 🔒 (2026-05-03) H1 — Message ID dedupe (กัน FB webhook retry สร้าง reading ซ้ำ)
+        //    FB จะ retry ถ้า server ตอบ non-200 ภายในไม่กี่วินาที — เคยทำให้:
+        //      - reading ซ้ำ (start fortune flow 2 ครั้งสำหรับ message เดียว)
+        //      - state machine สับสน (ถาม "วันเกิด" สอง message พร้อมกัน)
+        //    Cache::add (atomic) — เขียนเฉพาะถ้า key ยังไม่มี = first wins, retry skip
+        //    TTL 10 นาที — FB retry จะเสร็จในไม่กี่นาที, ไม่ต้องเก็บนาน
+        $mid = $messaging['message']['mid'] ?? null;
+        if (! empty($mid)) {
+            $dedupeKey = 'fb_webhook_mid:' . $mid;
+            if (! Cache::add($dedupeKey, true, now()->addMinutes(10))) {
+                Log::info('🔁 FB webhook: skip duplicate mid (retry/replay)', [
+                    'mid' => $mid,
+                    'sender_id' => $senderId,
+                    'has_text' => ! empty($messaging['message']['text']),
+                ]);
+                return;
+            }
         }
 
         // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ → บอทหยุดทำงาน
