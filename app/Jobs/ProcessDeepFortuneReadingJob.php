@@ -364,7 +364,90 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             //    ลูกค้า first-time 39 ที่อยู่ใน flow นี้ → reading พร้อมแล้ว แต่ยังไม่ส่ง
             //    ส่ง prompt "เข้าใจไหมต้องจ่าย 39?" + 2 ปุ่ม [รับคำทำนาย][ยกเลิก]
             //    state → AWAITING_DELIVERY_CONFIRM (รอลูกค้าตัดสินใจ)
+            //
+            // 🆕 (2026-05-04) Skip ถ้าลูกค้า pay_later_acked แล้ว (NEW reconfirm step ก่อน AI gen)
+            //    เคสที่เกิดขึ้น: ลูกค้าได้ ack ก่อน AI gen แล้ว → ไม่ควรถามซ้ำหลัง AI เสร็จ
+            //    User report: "ลูกค้าได้คำทำนายแล้ว มันหยุดแค่นั้น ไม่ยอมส่ง qrcode"
+            //    Fix: ถ้า pay_later_acked=true → skip AWAITING_DELIVERY_CONFIRM step
+            //         → fall through ไป push reading + bill + QR ตามปกติ (แต่ผ่าน auto-create-bill)
             $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+            $alreadyAcked = (bool) $reading->getConversationState('pay_later_acked', false);
+
+            if ($isRequestBeforePay && $alreadyAcked && ! empty($reading->deep_response) && $this->userId) {
+                // ✨ ลูกค้า ack แล้วก่อน AI gen → ส่ง reading + bill + QR ทันที (no extra confirmation)
+                Log::info('💎 Request-Before-Pay (acked): auto-deliver reading + bill + QR', [
+                    'reading_id' => $reading->id,
+                    'platform' => $this->platform,
+                ]);
+
+                try {
+                    // สร้าง bill + UPA + QR (ใช้ logic เดียวกับ handleAwaitingDeliveryConfirm)
+                    $convService = new \App\Services\FortuneConversationService($settings);
+                    $reflectMethod = new \ReflectionMethod($convService, 'createPaymentBill');
+                    $reflectMethod->setAccessible(true);
+                    $billResult = $reflectMethod->invoke($convService, $reading, $reading->questions ?? []);
+
+                    if (($billResult['action'] ?? null) === 'pending_payment') {
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+                        $readingHeader = FortuneLocaleService::lo(
+                            "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
+                                . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
+                                . '📅 วันที่: '.now()->format('d/m/Y H:i')."\n"
+                                . "═══════════════════════\n\n",
+                            "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n"
+                                . '📋 ເລກບິນ: '.($reading->bill_reference ?? '-')."\n"
+                                . '📅 ວັນທີ: '.now()->format('d/m/Y H:i')."\n"
+                                . "═══════════════════════\n\n"
+                        );
+
+                        $billResult['message'] = $readingHeader . $reading->deep_response . "\n\n" . ($billResult['message'] ?? '');
+                        $billResult['action'] = 'deliver_with_qr';
+                        $billResult['chart_image_url'] = $reading->reading_image_url;
+
+                        $channelManager->sendResponse($this->platform, $this->userId, $billResult, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                        $reading->setConversationState('reading_sent_directly', true);
+                        $reading->setConversationState('reading_ready_sent', true);
+                        $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+                        Log::info('💎 Request-Before-Pay (acked): auto-deliver SUCCESS', [
+                            'reading_id' => $reading->id,
+                            'has_qr' => ! empty($billResult['payment_qr_url']),
+                        ]);
+                    } else {
+                        Log::error('💎 Request-Before-Pay (acked): createPaymentBill ล้มเหลว — fallback ส่ง reading อย่างเดียว', [
+                            'reading_id' => $reading->id,
+                            'bill_action' => $billResult['action'] ?? 'unknown',
+                        ]);
+
+                        // Fallback: ส่ง reading อย่างเดียว + แจ้งให้ลูกค้าทักใหม่เพื่อรับบิล
+                        $name = $reading->facebook_user_name ?? 'คุณ';
+                        $msg = FortuneLocaleService::lo(
+                            "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n═══════════════════════\n\n"
+                                . $reading->deep_response . "\n\n══════════\n\n"
+                                . "🙏 ระบบเตรียมบิลไม่สำเร็จ — กรุณาพิมพ์ \"เช็คสถานะ\" เพื่อรับ QR ใหม่",
+                            "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n═══════════════════════\n\n"
+                                . $reading->deep_response . "\n\n══════════\n\n"
+                                . "🙏 ລະບົບຕຽມບິນບໍ່ສຳເລັດ — ກະລຸນາພິມ \"ເຊັກສະຖານະ\" ເພື່ອຮັບ QR ໃໝ່"
+                        );
+                        $channelManager->sendResponse($this->platform, $this->userId, [
+                            'action' => 'view_reading_deep',
+                            'message' => $msg,
+                            'reading' => $reading,
+                            'chart_image_url' => $reading->reading_image_url,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('💎 Request-Before-Pay (acked): auto-deliver ล้มเหลว', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                        'trace' => substr($e->getTraceAsString(), 0, 500),
+                    ]);
+                }
+
+                return; // ⛔ จบที่นี่ — ส่ง reading + bill ครบแล้ว
+            }
+
             if ($isRequestBeforePay && ! empty($reading->deep_response) && $this->userId) {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM]);
 
