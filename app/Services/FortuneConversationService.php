@@ -2361,10 +2361,6 @@ class FortuneConversationService
         // 🔄 (2026-05-03) Refactor — find LATEST reading of ANY type then route by type+status
         //   เดิม: 2 query (paid first, then basic/deep_response) → Celtic unpaid + free_card หาย
         //   ใหม่: 1 query หา latest → route ทุก type ครบ (Celtic + free_card + deep + basic)
-        //
-        //   Bug ที่แก้:
-        //   - Celtic unpaid + activeConversation หมดอายุ → เคยตอบ "ยังไม่มีคำทำนาย"
-        //   - Free card reading → is_paid=false + ไม่มี deep/basic_response → เคยหาย
         $latestReading = FortuneReading::where('facebook_user_id', $facebookUserId)
             ->whereIn('reading_type', [
                 FortuneReading::READING_TYPE_BASIC,
@@ -2375,22 +2371,97 @@ class FortuneConversationService
             ->latest()
             ->first();
 
+        // 🩹 (2026-05-04) Skip stuck Deep — ถ้า Deep paid > 5 นาที + ไม่มี deep_response → AI fail
+        //   ลูกค้าเห็น "view_reading_processing" วนซ้ำ → ไม่เคยได้อ่านคำทำนายเก่า (Celtic/Deep ก่อนหน้า)
+        //   Bug case: ลูกค้าทำ Celtic จบแล้ว → พิมพ์ "คำทำนายล่าสุด" → เห็น "Deep กำลังประมวลผล"
+        //              เพราะมี Deep ใหม่กว่า Celtic แต่ AI fail → stuck
+        //   Fix: ถ้า latest = Deep stuck → หา previous reading ที่มีเนื้อหามาโชว์แทน
+        $stuckBillRef = null;
+        if ($latestReading
+            && $latestReading->reading_type === FortuneReading::READING_TYPE_DEEP
+            && $latestReading->is_paid
+            && empty($latestReading->deep_response)
+            && $latestReading->paid_at
+            && $latestReading->paid_at->copy()->addMinutes(5)->isPast()) {
+
+            // หา previous reading ที่มีเนื้อหา — จาก reading ก่อนหน้า stuck Deep
+            $prevWithContent = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('id', '<', $latestReading->id)
+                ->whereIn('reading_type', [
+                    FortuneReading::READING_TYPE_BASIC,
+                    FortuneReading::READING_TYPE_DEEP,
+                    FortuneReading::READING_TYPE_CELTIC_CROSS,
+                    FortuneReading::READING_TYPE_FREE_CARD,
+                ])
+                ->where(function ($q) {
+                    // Deep ที่มี response
+                    $q->where(function ($q2) {
+                        $q2->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+                            ->whereNotNull('deep_response')
+                            ->where('deep_response', '!=', '');
+                    })->orWhere(function ($q2) {
+                        // Celtic paid + มี Q&A อย่างน้อย 1 คำถาม
+                        $q2->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                            ->where('is_paid', true)
+                            ->where('celtic_questions_used', '>=', 1);
+                    })->orWhere(function ($q2) {
+                        // Free card ที่มี ai_response
+                        $q2->where('reading_type', FortuneReading::READING_TYPE_FREE_CARD)
+                            ->whereNotNull('ai_response')
+                            ->where('ai_response', '!=', '');
+                    })->orWhere(function ($q2) {
+                        // Basic ที่มี response
+                        $q2->where('reading_type', FortuneReading::READING_TYPE_BASIC)
+                            ->whereNotNull('basic_response')
+                            ->where('basic_response', '!=', '');
+                    });
+                })
+                ->latest()
+                ->first();
+
+            if ($prevWithContent) {
+                Log::info('Fortune handleViewLastReading: ข้าม stuck Deep → โชว์ previous reading', [
+                    'facebook_user_id' => $facebookUserId,
+                    'stuck_deep_id' => $latestReading->id,
+                    'stuck_bill' => $latestReading->bill_reference,
+                    'prev_reading_id' => $prevWithContent->id,
+                    'prev_type' => $prevWithContent->reading_type,
+                ]);
+                $stuckBillRef = $latestReading->bill_reference;
+                $latestReading = $prevWithContent;
+            }
+        }
+
+        // 🩹 (2026-05-04) Wrapper closure — append stuck-Deep note ลงทุก response
+        //   เพื่อให้ลูกค้ารู้ว่ามีบิล Deep ค้างที่ต้องคุยกับแอดมิน
+        $appendStuckNote = function (array $result) use ($stuckBillRef): array {
+            if (empty($stuckBillRef) || empty($result['message'])) {
+                return $result;
+            }
+            $note = "\n\n──────────────────────\n"
+                . "⚠️ *หมายเหตุ:* บิล *{$stuckBillRef}* (Deep 39฿) ค้างในระบบ AI\n"
+                . "ทักแชทแอดมินเพื่อขอคืน/ทำใหม่ — หรือพิมพ์ 'ดูดวง' เริ่มดูใหม่ได้เลยค่ะ";
+            $result['message'] .= $note;
+
+            return $result;
+        };
+
         if (! $latestReading) {
-            return [
+            return $appendStuckNote([
                 'action' => 'view_reading_empty',
                 'message' => \App\Services\FortuneLocaleService::lo(
                     "🔮 ยังไม่มีคำทำนาย\n\nพิมพ์คำถามมาได้เลย\nหมอจันทราพร้อมดูดวงให้ ✨",
                     "🔮 ຍັງບໍ່ມີຄຳທຳນາຍ\n\nພິມຄຳຖາມມາໄດ້ເລີຍ\nໝໍຈັນທາພ້ອມເບິ່ງດວງໃຫ້ ✨"
                 ),
                 'reading' => null,
-            ];
+            ]);
         }
 
         // 🔮 Celtic Cross — paid + Q&A อยู่ใน celtic_questions / unpaid → pending message
         if ($latestReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
             if ($latestReading->is_paid) {
                 // จ่ายแล้ว → buildCelticReadingSummary จัดการครบ (picking / awaiting / Q&A list)
-                return $this->buildCelticReadingSummary($latestReading);
+                return $appendStuckNote($this->buildCelticReadingSummary($latestReading));
             }
 
             // ยังไม่จ่าย — บอก status + เลขบิล + ยอดเงิน + คำแนะนำต่อไป
@@ -2454,12 +2525,12 @@ class FortuneConversationService
                     . "═══════════════════════\n\n"
                     . $latestReading->ai_response;
 
-                return [
+                return $appendStuckNote([
                     'action' => 'view_reading_free',
                     'message' => $message,
                     'reading' => $latestReading,
                     'tarot_image_url' => $cardData['image_url'] ?? null,
-                ];
+                ]);
             }
 
             // free_card สร้างแล้วแต่ AI fail → empty
@@ -2495,12 +2566,12 @@ class FortuneConversationService
                     . "═══════════════════════\n\n"
                     . $latestReading->deep_response;
 
-                return [
+                return $appendStuckNote([
                     'action' => 'view_reading_deep',
                     'message' => $message,
                     'reading' => $latestReading,
                     'chart_image_url' => $latestReading->reading_image_url,
-                ];
+                ]);
             }
 
             if ($latestReading->is_paid) {
@@ -2575,11 +2646,11 @@ class FortuneConversationService
                 $message .= $upsell;
             }
 
-            return [
+            return $appendStuckNote([
                 'action' => 'view_reading_basic',
                 'message' => $message,
                 'reading' => $latestReading,
-            ];
+            ]);
         }
 
         // Fallback — มี reading แต่ไม่มีข้อมูลที่จะแสดง
