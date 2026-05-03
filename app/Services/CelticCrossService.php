@@ -480,6 +480,259 @@ class CelticCrossService
     }
 
     /**
+     * 🌟 (2026-05-04) Generate Grand Finale Master Summary
+     *
+     * เรียกตอนจบ session — สรุประดับปรมาจารย์ ผูกทุกคำถามกับไพ่ทั้ง 10 ใบ
+     * + ดึงข้อมูลจาก Deep 39฿ reading ของ user เดียวกัน (ถ้ามี) มาใช้:
+     *   - วันเดือนปีเกิด → astrology
+     *   - ดาวเจ้าชนะ จากผลทำนายเดิม
+     *
+     * Returns ['success' => bool, 'summary' => string, 'has_deep_link' => bool]
+     *
+     * Sync AI call ~20-30s — เรียกจาก endCelticSession เมื่อ customer ยังออนไลน์
+     * (customer_said_done / max_questions_reached / ai_signal)
+     */
+    public function generateGrandFinaleSummary(FortuneReading $reading): array
+    {
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return [
+                'success' => false,
+                'summary' => '',
+                'has_deep_link' => false,
+                'reason' => 'cards_incomplete',
+            ];
+        }
+
+        // ดึง Q&A ทั้งหมด
+        $questions = $reading->celticQuestions()
+            ->whereNotNull('answered_at')
+            ->orderBy('sequence')
+            ->get();
+
+        if ($questions->isEmpty()) {
+            return [
+                'success' => false,
+                'summary' => '',
+                'has_deep_link' => false,
+                'reason' => 'no_questions',
+            ];
+        }
+
+        // ค้นหา Deep 39฿ reading ของ user เดียวกัน (ใช้ birth_date + ดาวเจ้าชนะ)
+        $deepReading = $this->findLinkedDeepReading($reading);
+
+        $prompt = $this->buildGrandFinalePrompt($reading, $cards, $questions, $deepReading);
+
+        try {
+            $startTime = microtime(true);
+            $aiService = new FortuneAIService($this->settings);
+            $result = $aiService->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'deep',
+                birthDate: $deepReading?->birth_date?->format('Y-m-d'),
+                userContext: "celtic_finale:{$reading->id}",
+            );
+
+            $summary = trim($result['response'] ?? '');
+            $tokensUsed = (int) ($result['tokens_used'] ?? 0);
+            $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            // ลบ token [END_SESSION] ถ้า AI ติดมา
+            $summary = trim(preg_replace('/\[\s*(END[_\s]?SESSION|จบ|END)\s*\]/iu', '', $summary));
+
+            if ($summary === '' || mb_strlen($summary) < 200) {
+                throw new Exception('AI Grand Finale ตอบสั้นเกินไป (' . mb_strlen($summary) . ' chars)');
+            }
+
+            // อัพเดต token tracking
+            $reading->update([
+                'tokens_used' => ($reading->tokens_used ?? 0) + $tokensUsed,
+            ]);
+            $reading->setConversationState('celtic_grand_finale_at', now()->toIso8601String());
+            $reading->setConversationState('celtic_grand_finale_summary', $summary);
+
+            Log::info('CelticCross: Grand Finale สำเร็จ', [
+                'reading_id' => $reading->id,
+                'questions_count' => $questions->count(),
+                'has_deep_link' => $deepReading !== null,
+                'summary_len' => mb_strlen($summary),
+                'tokens' => $tokensUsed,
+                'response_time_ms' => $responseTimeMs,
+            ]);
+
+            return [
+                'success' => true,
+                'summary' => $summary,
+                'has_deep_link' => $deepReading !== null,
+                'tokens_used' => $tokensUsed,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('CelticCross: Grand Finale ล้มเหลว — fallback simple closing', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'summary' => '',
+                'has_deep_link' => $deepReading !== null,
+                'reason' => 'ai_failed',
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ค้นหา Deep 39฿ reading ของ user เดียวกัน (มี birth_date)
+     *
+     * ใช้สำหรับ Grand Finale ผสมข้อมูลโหราศาสตร์เข้ากับ Celtic
+     */
+    protected function findLinkedDeepReading(FortuneReading $reading): ?FortuneReading
+    {
+        $fbId = $reading->facebook_user_id;
+        $platformId = $reading->platform_user_id;
+
+        if (empty($fbId) && empty($platformId)) {
+            return null;
+        }
+
+        return FortuneReading::query()
+            ->where(function ($q) use ($fbId, $platformId) {
+                if (! empty($fbId)) {
+                    $q->where('facebook_user_id', $fbId);
+                }
+                if (! empty($platformId)) {
+                    $q->orWhere('platform_user_id', $platformId);
+                }
+            })
+            ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+            ->where('is_paid', true)
+            ->whereNotNull('birth_date')
+            ->whereNotNull('deep_response')
+            ->orderByDesc('responded_at')
+            ->first();
+    }
+
+    /**
+     * 🌟 Build Grand Finale Prompt — ปรมาจารย์ผูกเรื่องเนียนๆ
+     *
+     * โครงสร้าง:
+     *   - Persona: นักพยากรณ์ระดับเซียน 30+ ปี เห็นชะตามาเป็นพันคน
+     *   - Context: ทุกคำถาม + ทุกคำตอบ + ไพ่ 10 ใบ + (optional) วันเกิด/ดาวเจ้าชนะ
+     *   - Output: บทสรุประดับศาสตร์ลึก ผูกเรื่องเนียน + ทำนายช่วงเวลา + ลักษณะบุคคล + คำคมส่วนตัว
+     */
+    protected function buildGrandFinalePrompt(
+        FortuneReading $reading,
+        array $cards,
+        \Illuminate\Database\Eloquent\Collection $questions,
+        ?FortuneReading $deepReading
+    ): string {
+        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
+        $cardsText = $this->formatCardsForPrompt($cards);
+
+        // สร้าง Q&A history ครบ
+        $qaHistory = '';
+        foreach ($questions as $i => $q) {
+            $idx = $i + 1;
+            $question = mb_substr($q->question, 0, 500);
+            $answer = mb_substr($q->response ?? '', 0, 1500);
+            $qaHistory .= "Q{$idx}: {$question}\n";
+            $qaHistory .= "A{$idx}: {$answer}\n\n";
+        }
+
+        // Deep 39฿ context (ถ้ามี)
+        $deepContext = '';
+        if ($deepReading) {
+            $birthDate = $deepReading->birth_date?->format('d/m/Y') ?? '-';
+            $deepResponse = mb_substr((string) $deepReading->deep_response, 0, 800);
+            $deepContext = "\n━━━━━━━━━━━━━━━━━\n"
+                . "📅 ข้อมูลโหราศาสตร์เพิ่มเติม (จากการดูดวงพื้นฐาน 39฿ ครั้งก่อน):\n"
+                . "วันเดือนปีเกิด: {$birthDate}\n"
+                . "ดาว/ราศี/ลัคนา/ดวงดาวเจ้าชนะ จากผลทำนายเดิม:\n"
+                . $deepResponse . "\n"
+                . "━━━━━━━━━━━━━━━━━\n\n"
+                . "👉 ในบทสรุปนี้ให้นำข้อมูลโหราศาสตร์ผสมกับไพ่ Celtic — ทำให้คำทำนายแน่นกว่าเดิม\n"
+                . "    เช่น เชื่อมจังหวะดาวเจ้าชนะกับไพ่ตำแหน่ง \"อนาคตอันใกล้\" → ระบุเดือนได้แม่นขึ้น\n\n";
+        }
+
+        // ปัจจุบัน — เดือน/ฤดู (ใช้ผูกช่วงเวลา)
+        $now = now();
+        $monthTh = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+            'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        $currentMonth = $monthTh[(int) $now->format('n')];
+        $currentYearBE = (int) $now->format('Y') + 543;
+
+        return "คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
+            . "สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
+            . "บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
+
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🃏 ไพ่ Celtic Cross 10 ใบที่เจ้าชะตาเลือก:\n{$cardsText}\n"
+            . "━━━━━━━━━━━━━━━━━\n\n"
+
+            . "💬 บทสนทนาที่คุยกันมาทั้งหมด ({$questions->count()} คำถาม):\n"
+            . "{$qaHistory}"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . $deepContext
+            . "📆 บริบทช่วงเวลาปัจจุบัน: เดือน{$currentMonth} ปี {$currentYearBE} — ใช้ผูกการทำนายช่วงเวลา\n\n"
+
+            . "✍️ ภารกิจ: สร้างบทสรุปสุดท้าย ระดับ *ปรมาจารย์ฟังธง* (กฎเข้มงวด):\n\n"
+
+            . "🌟 โครงสร้างบทสรุป (ย่อหน้าแยก ไม่มีหัวข้อ ไม่มี markdown):\n\n"
+
+            . "ย่อหน้า 1 — *ทักทายและโยงรวม* (50-80 คำ):\n"
+            . "   เปิดด้วยคำเรียกอบอุ่น (เจ้าชะตา/คุณ) → กล่าวถึงประเด็นหลักที่ถามมา ผูกเป็นเส้นเรื่องเดียว\n"
+            . "   ไม่ใช่ \"คำถาม 1 คือ A คำถาม 2 คือ B\" — ต้องเล่าให้เห็นภาพรวมชีวิตเจ้าชะตาที่กำลังเผชิญ\n\n"
+
+            . "ย่อหน้า 2 — *ลักษณะบุคคล + อายุ + ธาตุ จากไพ่* (80-120 คำ):\n"
+            . "   อ่านลักษณะนิสัย/ช่วงอายุ/ธาตุประจำตัวจากไพ่ที่ออก (ดู Major Arcana + Court Cards เป็นตัวบ่งชี้)\n"
+            . "   ตัวอย่าง: \"เจ้าชะตาเป็นคนธาตุน้ำ จิตอ่อนไหว สังเกตจากไพ่ Cups ที่ออกถึง 3 ใบ...\"\n"
+            . "   หรือ: \"จากไพ่ตำแหน่งตัวเจ้าชะตา + ภายนอก แม่หมอเห็นวัยประมาณ 30-45 ปี ช่วงสะสมประสบการณ์...\"\n\n"
+
+            . "ย่อหน้า 3 — *บทสรุปคำถามทั้งหมด ผูกเรื่องเนียน* (200-350 คำ):\n"
+            . "   นี่คือ *หัวใจของบทสรุป* — ต้องเก่งระดับให้เจ้าชะตาสาธุได้\n"
+            . "   1. ผูกทุกคำถามที่คุยกันมาเป็นเรื่องเดียว เห็นว่าทุกประเด็นเชื่อมกันอย่างไร\n"
+            . "   2. ใช้ไพ่อ้างอิงเฉพาะใบที่จำเป็น (เรียกชื่อ + ตำแหน่ง) — *ห้ามไล่อธิบายไพ่ทีละใบ*\n"
+            . "   3. ฟันธงทิศทางหลัก — เลี่ยง \"อาจจะ/น่าจะ\" ตอบให้แม่น\n"
+            . "   4. ถ้าหลายคำถามตอบไปคนละทิศ — ให้สังเคราะห์จุดร่วม + จุดที่ต้องเลือก\n\n"
+
+            . "ย่อหน้า 4 — *ทำนายช่วงเวลาที่จะเกิดผล* (80-120 คำ):\n"
+            . "   ไพ่ยิปซีบอกช่วงเวลาได้ — ใช้ตำแหน่ง 5 (อดีต), 6 (อนาคตอันใกล้), 10 (ผลลัพธ์) เป็นหลัก\n"
+            . "   ระบุชัดเจน: \"ภายใน 1-3 เดือนข้างหน้า (ราว{$currentMonth} ถึง...)\" หรือ \"ฤดูปลายฝน-ต้นหนาวปีนี้\"\n"
+            . "   *ถ้ามีข้อมูลโหราศาสตร์ Deep 39฿* → เชื่อมกับจังหวะดาวเจ้าชนะ ให้แม่นขึ้น\n"
+            . "   เหตุการณ์รอบตัว (เศรษฐกิจ/สิ่งแวดล้อม/ฤดูกาล) — ใส่เนียนๆ ไม่บอกว่าเป็นข่าว\n\n"
+
+            . "ย่อหน้า 5 — *คำแนะนำปฏิบัติได้จริง 3 ข้อ* (60-100 คำ):\n"
+            . "   ข้อปฏิบัติเฉพาะตัวที่ตรงกับลักษณะบุคคลที่อ่านได้ในย่อหน้า 2\n"
+            . "   เช่น คนธาตุไฟ → \"นิ่งให้เป็น คิดก่อนพูด\"  คนธาตุน้ำ → \"กล้าพูดในสิ่งที่รู้สึก\"\n\n"
+
+            . "ย่อหน้า 6 — *คำคมจากลาส่วนตัว* (40-60 คำ — สำคัญที่สุด):\n"
+            . "   นี่คือ *signature ของแม่หมอ* — เจ้าชะตาต้องจดจำคำนี้ไปทั้งชีวิต\n"
+            . "   ✅ ต้องตรงกับอุปนิสัยและช่วงอายุที่อ่านได้\n"
+            . "   ✅ ใช้ภาษาเปี่ยมความหมาย — เปรียบเทียบกับธรรมชาติ/วิถีชีวิต\n"
+            . "   ✅ ห้ามทั่วไป (\"ขอให้โชคดี\", \"ทุกอย่างจะดีขึ้น\") — ต้องเฉพาะคนคนนี้เท่านั้น\n"
+            . "   ตัวอย่าง: คนวัยกลางคน + ธาตุน้ำ → \"แม่น้ำที่เคยเชี่ยวกราก เมื่อพบทะเลก็ต้องนิ่งสงบ — เจ้าชะตาถึงจุดที่ใจต้องเรียนรู้สงบ\"\n"
+            . "   ปิดด้วย \"แม่หมอขอลาเจ้าชะตาเพียงเท่านี้ ขอให้... 🙏✨\"\n\n"
+
+            . "🚫 ข้อห้ามเด็ดขาด:\n"
+            . "   1. ห้ามใช้ markdown (** ## - ฯลฯ) — plain text ล้วน\n"
+            . "   2. ห้ามไล่ไพ่ทีละใบ — ผูกเรื่อง ไม่ใช่ list\n"
+            . "   3. ห้ามทักทายว่า \"สวัสดี\" — เริ่มด้วย \"เจ้าชะตา...\" หรือชื่อโดยตรง\n"
+            . "   4. ห้ามคำเลี่ยง \"อาจจะ/น่าจะ/บางที\" บ่อยเกินไป — ฟันธง\n"
+            . "   5. ห้ามใส่ [END_SESSION] หรือ token พิเศษใดๆ\n"
+            . "   6. ห้ามขายของ ขอติดตาม ขอแชร์ — บทสุดท้ายต้องสุขุม สง่างาม\n\n"
+
+            . "📏 ความยาวรวม: 600-1000 คำ (พอดี อ่านสบาย)\n"
+            . "🎭 โทน: ปรมาจารย์ผู้ผ่านโลกมามาก สุขุมอบอุ่น พูดน้อยแต่ลึก — เหมือนปู่ย่าให้พรหลานคนสนิท\n\n"
+
+            . "เริ่มเขียนบทสรุปสุดท้ายเลย (อย่าทักทายซ้ำ อย่าใส่ \"นี่คือบทสรุป...\"):";
+    }
+
+    /**
      * 🔮 สร้างข้อความ "นำลูกค้ากลับมาที่จุดเดิม" สำหรับ Celtic active state
      *
      * ใช้กับ 2 เคสหลัก:

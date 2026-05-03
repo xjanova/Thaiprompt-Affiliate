@@ -627,7 +627,7 @@ class FortuneChannelManager
                         'payload' => 'TIER_DEEP_39'];
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo('🔮 ไพ่ 10 ใบ 99 บาท', '🔮 ໄພ່ 10 ໃບ 99 ບາດ'),
+                            'title' => \App\Services\FortuneLocaleService::lo('👑 VIP ไพ่ 10 ใบ 99฿', '👑 VIP ໄພ່ 10 ໃບ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -661,7 +661,7 @@ class FortuneChannelManager
                     ];
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo("🔮 ไพ่ 10 ใบ {$celticPrice}฿", "🔮 ໄພ່ 10 ໃບ {$celticPrice}฿"),
+                            'title' => \App\Services\FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ — ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ — ໄພ່ 10 ໃບ"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
@@ -1519,7 +1519,7 @@ class FortuneChannelManager
                     ];
                     if ($celticEnabled) {
                         $quickReplies[] = [
-                            'label' => \App\Services\FortuneLocaleService::lo('🔮 99฿ เต็มสำรับ', '🔮 99฿ ເຕັມສຳລັບ'),
+                            'label' => \App\Services\FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
                             'text' => '99',
                         ];
                     }
@@ -1553,7 +1553,7 @@ class FortuneChannelManager
                     ];
                     if ($celticEnabled) {
                         $quickReplies[] = [
-                            'label' => "🔮 {$celticPrice}฿",
+                            'label' => "👑 VIP {$celticPrice}฿",
                             'text' => '99',
                         ];
                     }
