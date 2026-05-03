@@ -360,28 +360,22 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 $reading->setConversationState('reading_ready_at', now()->toIso8601String());
             }
 
-            // 💎 (2026-05-03) Request-Before-Pay flow — แทนที่จะ deliver ทันที, ขอยืนยันก่อน
-            //    ลูกค้า first-time 39 ที่อยู่ใน flow นี้ → reading พร้อมแล้ว แต่ยังไม่ส่ง
-            //    ส่ง prompt "เข้าใจไหมต้องจ่าย 39?" + 2 ปุ่ม [รับคำทำนาย][ยกเลิก]
-            //    state → AWAITING_DELIVERY_CONFIRM (รอลูกค้าตัดสินใจ)
-            //
-            // 🆕 (2026-05-04) Skip ถ้าลูกค้า pay_later_acked แล้ว (NEW reconfirm step ก่อน AI gen)
-            //    เคสที่เกิดขึ้น: ลูกค้าได้ ack ก่อน AI gen แล้ว → ไม่ควรถามซ้ำหลัง AI เสร็จ
-            //    User report: "ลูกค้าได้คำทำนายแล้ว มันหยุดแค่นั้น ไม่ยอมส่ง qrcode"
-            //    Fix: ถ้า pay_later_acked=true → skip AWAITING_DELIVERY_CONFIRM step
-            //         → fall through ไป push reading + bill + QR ตามปกติ (แต่ผ่าน auto-create-bill)
+            // 💎 (2026-05-04 simplified) Pay-Later flow — deliver reading + bill + QR ในข้อความเดียว
+            //    User design: "ย้าย QR มาไว้หลังคำทำนาย แล้วมาร์คบิลรอชำระ"
+            //    เลิกใช้ AWAITING_DELIVERY_CONFIRM state + extra "รับคำทำนาย" button — friction ไม่จำเป็น
+            //    Flow: AI gen เสร็จ → createPaymentBill → push reading+bill+QR → status=PENDING_PAYMENT
+            //    ลูกค้าโอน 39.XX → SMS match → confirmPayment(notification) → mark is_paid=true ตอนนั้น
             $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
-            $alreadyAcked = (bool) $reading->getConversationState('pay_later_acked', false);
 
-            if ($isRequestBeforePay && $alreadyAcked && ! empty($reading->deep_response) && $this->userId) {
-                // ✨ ลูกค้า ack แล้วก่อน AI gen → ส่ง reading + bill + QR ทันที (no extra confirmation)
-                Log::info('💎 Request-Before-Pay (acked): auto-deliver reading + bill + QR', [
+            if ($isRequestBeforePay && ! empty($reading->deep_response) && $this->userId) {
+                Log::info('💎 Pay-Later: AI gen done → create bill + send reading + QR (single message)', [
                     'reading_id' => $reading->id,
                     'platform' => $this->platform,
                 ]);
 
                 try {
-                    // สร้าง bill + UPA + QR (ใช้ logic เดียวกับ handleAwaitingDeliveryConfirm)
+                    // สร้าง bill + UPA + QR (ใช้ existing logic จาก createPaymentBill)
+                    //    setPendingPayment ภายใน → status=PENDING_PAYMENT, amount_paid=39.XX (ทศนิยม), bill_reference
                     $convService = new \App\Services\FortuneConversationService($settings);
                     $reflectMethod = new \ReflectionMethod($convService, 'createPaymentBill');
                     $reflectMethod->setAccessible(true);
@@ -410,17 +404,17 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         $reading->setConversationState('reading_ready_sent', true);
                         $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
-                        Log::info('💎 Request-Before-Pay (acked): auto-deliver SUCCESS', [
+                        Log::info('💎 Pay-Later: deliver SUCCESS (reading + bill + QR sent, bill marked PENDING_PAYMENT)', [
                             'reading_id' => $reading->id,
+                            'bill_reference' => $reading->bill_reference,
                             'has_qr' => ! empty($billResult['payment_qr_url']),
                         ]);
                     } else {
-                        Log::error('💎 Request-Before-Pay (acked): createPaymentBill ล้มเหลว — fallback ส่ง reading อย่างเดียว', [
+                        Log::error('💎 Pay-Later: createPaymentBill ล้มเหลว — fallback ส่ง reading อย่างเดียว', [
                             'reading_id' => $reading->id,
                             'bill_action' => $billResult['action'] ?? 'unknown',
                         ]);
 
-                        // Fallback: ส่ง reading อย่างเดียว + แจ้งให้ลูกค้าทักใหม่เพื่อรับบิล
                         $name = $reading->facebook_user_name ?? 'คุณ';
                         $msg = FortuneLocaleService::lo(
                             "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n═══════════════════════\n\n"
@@ -438,67 +432,14 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
                     }
                 } catch (\Throwable $e) {
-                    Log::error('💎 Request-Before-Pay (acked): auto-deliver ล้มเหลว', [
+                    Log::error('💎 Pay-Later: deliver ล้มเหลว', [
                         'reading_id' => $reading->id,
                         'error' => $e->getMessage(),
                         'trace' => substr($e->getTraceAsString(), 0, 500),
                     ]);
                 }
 
-                return; // ⛔ จบที่นี่ — ส่ง reading + bill ครบแล้ว
-            }
-
-            if ($isRequestBeforePay && ! empty($reading->deep_response) && $this->userId) {
-                $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM]);
-
-                $deepPrice = (int) ($settings->deep_reading_price ?? 39);
-                $name = $reading->facebook_user_name ?? 'คุณ';
-
-                $confirmMessage = FortuneLocaleService::lo(
-                    "💎 *คำทำนายของเจ้าชะตาพร้อมแล้ว* ✨\n\n"
-                        . "🔮 หมอจันทราเปิดดวงเรียบร้อย — ดาวเจ้าชนะ + ไพ่ที่จิตเจ้าชะตาเลือกมาให้\n\n"
-                        . "━━━━━━━━━━━━━━━━━\n"
-                        . "⚠️ *ก่อนรับคำทำนาย — เจ้าชะตาเข้าใจใช่ไหม?*\n"
-                        . "💸 หลังรับคำทำนาย ต้องโอนค่าครู *{$deepPrice} บาท*\n"
-                        . "🔔 *เศษทศนิยมต้องตรงเป๊ะ* (โอนผิดยอด = บิลค้างถาวร ต้องทักแอดมิน)\n"
-                        . "🎁 *สิทธิ์รับคำทำนายก่อนจ่ายมีครั้งเดียวต่อท่าน* — รอบหน้าต้องโอนก่อนรับเสมอ\n"
-                        . "━━━━━━━━━━━━━━━━━\n\n"
-                        . "👇 กดปุ่มด้านล่าง:\n"
-                        . "✅ *รับคำทำนาย* — ยืนยันเข้าใจ\n"
-                        . "❌ *ยกเลิก* — ไม่รับ ปิดเลย",
-                    "💎 *ຄຳທຳນາຍຂອງເຈົ້າຊາຕາພ້ອມແລ້ວ* ✨\n\n"
-                        . "🔮 ໝໍຈັນທາເປີດດວງແລ້ວ — ດາວເຈົ້າຊະນະ + ໄພ່ທີ່ຈິດເຈົ້າຊາຕາເລືອກມາໃຫ້\n\n"
-                        . "━━━━━━━━━━━━━━━━━\n"
-                        . "⚠️ *ກ່ອນຮັບຄຳທຳນາຍ — ເຈົ້າຊາຕາເຂົ້າໃຈໃຊ່ບໍ?*\n"
-                        . "💸 ຫຼັງຮັບຄຳທຳນາຍ ຕ້ອງໂອນຄ່າຄູ *{$deepPrice} ບາດ*\n"
-                        . "🔔 *ເສດທົດສະນິຍົມຕ້ອງຕົງເປັະ* (ໂອນຜິດຍອດ = ບິນຄ້າງຖາວອນ ຕ້ອງທັກແອັດມິນ)\n"
-                        . "🎁 *ສິດທິຮັບຄຳທຳນາຍກ່ອນຈ່າຍມີຄັ້ງດຽວຕໍ່ທ່ານ* — ຮອບໜ້າຕ້ອງໂອນກ່ອນຮັບສະເໝີ\n"
-                        . "━━━━━━━━━━━━━━━━━\n\n"
-                        . "👇 ກົດປຸ່ມດ້ານລຸ່ມ:\n"
-                        . "✅ *ຮັບຄຳທຳນາຍ* — ຢືນຢັນເຂົ້າໃຈ\n"
-                        . "❌ *ຍົກເລີກ* — ບໍ່ຮັບ ປິດເລີຍ"
-                );
-
-                try {
-                    $confirmResult = [
-                        'action' => 'delivery_confirm_prompt',
-                        'message' => $confirmMessage,
-                        'reading' => $reading,
-                    ];
-                    $channelManager->sendResponse($this->platform, $this->userId, $confirmResult, ['from_admin' => true]);
-
-                    Log::info('💎 Request-Before-Pay: ส่ง confirmation prompt', [
-                        'reading_id' => $reading->id,
-                        'platform' => $this->platform,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::error('💎 Request-Before-Pay: push prompt ล้มเหลว', [
-                        'reading_id' => $reading->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-
-                return; // ⛔ หยุดที่นี่ — ไม่ deliver reading auto, รอลูกค้ายืนยัน
+                return; // ⛔ จบที่นี่ — Pay-Later flow ส่ง reading + bill ครบแล้ว
             }
 
             // ✅ Push เมื่อคำทำนายพร้อม (2026-04-27 — แตกต่างกันตาม platform)
