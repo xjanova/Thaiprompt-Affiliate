@@ -351,11 +351,57 @@ trait CelticCrossConversationTrait
                 //    ตรวจ + mark flag ตอนนี้ (ก่อน collect birthdate) → handleQuestionInput อ่านภายหลัง
                 $platform = $this->currentPlatform;
                 $platformUserId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+                // 🚨 (2026-05-04) Anti-fraud: ตรวจบิล Request-Before-Pay ค้างก่อน
+                //    user spec: "ควรขึ้น qrcode บิลที่ยังไม่จ่ายมาให้ก่อน"
+                //    ถ้ามีบิลค้าง → ส่ง QR เก่า ไม่สร้างบิลใหม่
+                if ($platformUserId) {
+                    $existingPendingBill = FortuneReading::where('platform', $platform)
+                        ->where(function ($q) use ($platformUserId) {
+                            $q->where('platform_user_id', $platformUserId)
+                                ->orWhere('facebook_user_id', $platformUserId);
+                        })
+                        ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+                        ->where('is_paid', false)
+                        ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+                        ->whereJsonContains('conversation_state->is_request_before_pay', true)
+                        ->where('id', '!=', $reading->id)
+                        ->latest('updated_at')
+                        ->first();
+
+                    if ($existingPendingBill) {
+                        \Log::info('💎 Fortune: ลูกค้ามีบิล Request-Before-Pay ค้าง → resend QR + ปิด reading ใหม่', [
+                            'new_reading_id' => $reading->id,
+                            'existing_bill_id' => $existingPendingBill->id,
+                            'bill_ref' => $existingPendingBill->bill_reference,
+                        ]);
+
+                        // ลบ reading ใหม่ทิ้ง (เป็น duplicate) — ลูกค้ายังอยู่ในบิลเก่า
+                        try {
+                            $reading->forceDelete();
+                        } catch (\Throwable $e) {
+                            // best-effort
+                        }
+
+                        // route ไป handlePendingPayment ให้ส่ง QR + bill detail (ใช้ logic เดียวกับ "เช็คสถานะ")
+                        return $this->handlePendingPayment($existingPendingBill, 'เช็คสถานะ');
+                    }
+                }
+
                 $isRequestBeforePay = false;
+                $alreadyUsedPayLater = false;
                 if ($platformUserId && FortuneReading::shouldUseRequestBeforePay($platform, $platformUserId)) {
                     $reading->setConversationState('is_request_before_pay', true);
                     $isRequestBeforePay = true;
                     \Log::info('Fortune: Deep 39 → enable Request-Before-Pay (first-time)', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                    ]);
+                } elseif ($platformUserId) {
+                    // 🔒 (2026-05-04) ลูกค้าใช้สิทธิ์ดูก่อนจ่ายไปแล้ว → ต้องจ่ายก่อนทุกครั้ง
+                    //    user spec: "เมื่อใช้สิทธิ์ไปแล้ว บิลต่อไปต้องจ่ายก่อนอย่างเดียว ถึงจะดูได้"
+                    $alreadyUsedPayLater = true;
+                    \Log::info('Fortune: Deep 39 → ลูกค้าใช้สิทธิ์ดูก่อนจ่ายแล้ว — ใช้ pay-first', [
                         'reading_id' => $reading->id,
                         'platform' => $platform,
                     ]);
@@ -376,6 +422,19 @@ trait CelticCrossConversationTrait
                         . "✨ ແມ່ໝໍຈະເປີດດວງທຳນາຍໃຫ້ກ່ອນ — ຮັບຄຳທຳນາຍແລ້ວຄ່ອຍຊຳລະ {$deepPriceInt} ບາດ\n"
                         . "⏰ *ຕ້ອງໂອນພາຍໃນ 24 ຊົ່ວໂມງ* ຫຼັງໄດ້ຮັບຄຳທຳນາຍ\n"
                         . "🔒 ໃຊ້ສິດໄດ້ແຄ່ຄັ້ງທຳອິດຄັ້ງດຽວເທົ່ານັ້ນ/ທ່ານ\n"
+                        . "═══════════════════════\n\n"
+                    );
+                } elseif ($alreadyUsedPayLater) {
+                    // 🔒 (2026-05-04) ใช้สิทธิ์ไปแล้ว — บอกชัดเจนว่ารอบนี้ต้องจ่ายก่อน
+                    //    user spec: "ระบบควรบอกให้ชัดเจน"
+                    $payLaterIntro = \App\Services\FortuneLocaleService::lo(
+                        "🔒 *เจ้าชะตาใช้สิทธิ์ \"ดูก่อนจ่ายทีหลัง\" ไปแล้วในรอบก่อนนะคะ*\n"
+                        . "💸 *รอบนี้ต้องโอนค่าครู {$deepPriceInt} บาทก่อน* แม่หมอถึงจะเปิดดวงให้\n"
+                        . "🙏 ขอบคุณที่เข้าใจค่ะ — เป็นกฎของระบบเพื่อความเป็นธรรม\n"
+                        . "═══════════════════════\n\n",
+                        "🔒 *ເຈົ້າຊາຕາໃຊ້ສິດ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" ໄປແລ້ວໃນຮອບກ່ອນເດີ*\n"
+                        . "💸 *ຮອບນີ້ຕ້ອງໂອນຄ່າຄູ {$deepPriceInt} ບາດກ່ອນ* ແມ່ໝໍຈຶ່ງຈະເປີດດວງໃຫ້\n"
+                        . "🙏 ຂອບໃຈທີ່ເຂົ້າໃຈເດີ — ເປັນກົດຂອງລະບົບເພື່ອຄວາມເປັນທຳ\n"
                         . "═══════════════════════\n\n"
                     );
                 }
