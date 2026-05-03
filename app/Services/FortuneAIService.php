@@ -462,6 +462,12 @@ class FortuneAIService
 
         $extractedJson = json_encode($extracted, JSON_UNESCAPED_UNICODE);
 
+        // 🇱🇦 (2026-05-03) Locale directive — ลูกค้าลาวต้องได้ reply เป็นลาว
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $localeDirective = $isLao
+            ? "\n[🇱🇦 ສຳຄັນ] ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → field 'reply' ໃນ JSON output **ຕ້ອງເປັນພາສາລາວ** (ບໍ່ແມ່ນພາສາໄທ). ຄຳເອີ້ນຕົນເອງ 'ແມ່ໝໍຈັນທະຣາ', ຄຳເອີ້ນລູກຄ້າ 'ເຈົ້າຊາຕາ'.\n"
+            : '';
+
         $systemPrompt = <<<PROMPT
 คุณคือ "แม่หมอจันทรา" หมอดูสายจิตวิทยาที่อบอุ่น ใจดี ฟังเป็น
 **ภารกิจ**: ชวนลูกค้าคุยเนียนๆ เก็บข้อมูล 2 อย่าง:
@@ -478,10 +484,10 @@ class FortuneAIService
 
 **ข้อมูลที่เก็บได้แล้ว**: {$extractedJson}
 {$nameLine}
-
+{$localeDirective}
 **Output แบบ JSON เท่านั้น** (ห้ามมี markdown/code fence):
 {
-  "reply": "ข้อความที่จะส่งให้ลูกค้า (Thai, 2-3 ประโยค + emoji เบาๆ)",
+  "reply": "ข้อความที่จะส่งให้ลูกค้า (2-3 ประโยค + emoji เบาๆ — ภาษาตามที่ระบุข้างต้น)",
   "extracted": {
     "birthdate": "YYYY-MM-DD" หรือ null (ถ้าจาก turn นี้+ก่อนหน้ารู้แล้ว ใส่ค่าเสมอ),
     "concern": "เรื่องที่กังวลแบบสั้น 1 ประโยค" หรือ null
@@ -1127,6 +1133,22 @@ PROMPT;
         // ถ้าปิดฟรี → เปลี่ยนคำว่า "ค่าบริการ" ให้เป็น "ค่าครู" และเน้นว่าไม่มีฟรี
         if (! $freeEnabled) {
             $message .= "\n\n[สำคัญ] บริการดูดวงฟรีถูกปิดชั่วคราว — ห้ามพูดถึงฟรีเลย ถ้าลูกค้าถามเรื่องราคา ให้ตอบว่าเป็น 'ค่าครู' ทุกครั้ง ไม่ใช่ 'ค่าบริการ'";
+        }
+
+        // 🇱🇦 (2026-05-03) Locale directive — บังคับ AI ตอบภาษาลาวเมื่อลูกค้าใช้ลาว
+        //   เคสเดิม: prompt ฮาร์ดโค้ด "ตอบภาษาไทย" → AI ก็ตอบไทย ไม่ mirror
+        //   FortuneLocaleService::current() ตั้งโดย ChannelManager / ProcessCommentEngagement / Job
+        //   ก่อนเรียก AI service (resolveForMessage + setCurrent)
+        if (\App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO) {
+            $message .= "\n\n[🇱🇦 ພາສາ — ສຳຄັນທີ່ສຸດ / Language directive — OVERRIDES ALL OTHER LANGUAGE RULES]\n"
+                . "ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → **ຕອບກັບເປັນພາສາລາວສະເໝີ** (Reply in LAO, not Thai)\n"
+                . "- ຫ້າມຕອບເປັນພາສາໄທ ເຖິງວ່າຕົວຢ່າງໃນ prompt ຈະເປັນພາສາໄທ\n"
+                . "- ກົດ 'ຕອບພາສາໄທ ກະຊັບ 2-4 ປະໂຫຍກ' ໃນຂໍ້ກຳນົດດ້ານເທິງ — ໃຫ້ປ່ຽນເປັນພາສາລາວທັງໝົດ\n"
+                . "- ຄຳເອີ້ນຕົນເອງ: 'ແມ່ໝໍຈັນທະຣາ' (ບໍ່ແມ່ນ 'หมอจันทรา')\n"
+                . "- ຄຳເອີ້ນລູກຄ້າ: 'ເຈົ້າຊາຕາ' / 'ທ່ານ' (ບໍ່ແມ່ນ 'เจ้าชะตา')\n"
+                . "- ໃຊ້ຄຳລົງທ້າຍລາວເຊັ່ນ 'ເດີ້' / 'ເນາະ' / 'ນັ້ນແຫຼະ' (ບໍ່ແມ່ນ 'ค่ะ/คะ/นะคะ')\n"
+                . "- ຄຳສັ່ງລະບົບ (ເຊັ່ນ 'ดูดวง', 'แชร์', 'อ่านคำทำนาย') — ໃຫ້ຮັກສາພາສາໄທຕົ້ນສະບັບໄວ້ ເພາະ keyword detection ໃຊ້ພາສາໄທ — ສາມາດໃສ່ວົງເລັບແປເປັນລາວໄດ້ ເຊັ່ນ 'ดูดวง (ເບິ່ງດວງ)'\n"
+                . "- Tag ພິເສດ [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ໃຊ້ຕົ້ນສະບັບເທົ່ານັ້ນ ຫ້າມແປ";
         }
 
         return $message;
