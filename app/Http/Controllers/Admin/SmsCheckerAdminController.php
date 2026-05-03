@@ -886,30 +886,35 @@ class SmsCheckerAdminController extends Controller
     /**
      * Replicate SmsPaymentController::transformFortuneReadingToOrderApproval()
      * with extra debug fields.
+     *
+     * 🔮 (2026-05-03) แก้ให้รองรับ Celtic Cross statuses + reading_type ถูกต้อง
+     *    เดิมใช้ field `fortune_type` / `bill_amount` ที่ไม่มีใน model จริง
+     *    และไม่รองรับ Celtic statuses → admin debug แสดงผิด
      */
     private function transformFortuneForDebug($reading, int $idOffset): array
     {
         $statusMap = [
-            'pending_payment' => 'pending_review',
-            'paid' => 'auto_approved',
-            'completed' => 'auto_approved',
-            'cancelled' => 'cancelled',
-            'expired' => 'expired',
+            \App\Models\FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
+            \App\Models\FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => 'pending_review',
+            \App\Models\FortuneReading::STATUS_PAID => 'auto_approved',
+            \App\Models\FortuneReading::STATUS_CELTIC_PICKING => 'auto_approved',
+            \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION => 'auto_approved',
+            \App\Models\FortuneReading::STATUS_CELTIC_GENERATING => 'auto_approved',
+            \App\Models\FortuneReading::STATUS_CELTIC_QA_PROMPT => 'auto_approved',
+            \App\Models\FortuneReading::STATUS_COMPLETED => $reading->is_paid ? 'auto_approved' : 'cancelled',
         ];
 
         $approvalStatus = $statusMap[$reading->conversation_status] ?? 'pending_review';
-        $amount = 0;
 
-        // Try to get amount from bill_amount or fortune_type pricing
-        if ($reading->bill_amount) {
-            $amount = (float) $reading->bill_amount;
-        } elseif ($reading->fortune_type) {
-            // Look up pricing
-            $pricing = \App\Models\FortuneType::where('slug', $reading->fortune_type)->first();
-            if ($pricing) {
-                $amount = (float) $pricing->price;
-            }
-        }
+        // ดึงยอดเงินจริง — ใช้ amount_paid เป็นหลัก (มีค่าเสมอเมื่อบิลถูกสร้าง)
+        $amount = (float) ($reading->amount_paid ?? 0);
+
+        // 🏷️ ชื่อสินค้าตามประเภทคำทำนาย
+        $productName = match ($reading->reading_type) {
+            \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS => 'ดูดวงไพ่เซลติก',
+            \App\Models\FortuneReading::READING_TYPE_DEEP => 'ดูดวง (เชิงลึก)',
+            default => 'ดูดวง',
+        };
 
         return [
             'id' => $reading->id + $idOffset,
@@ -924,10 +929,11 @@ class SmsCheckerAdminController extends Controller
             'rejection_reason' => null,
             'order_details_json' => [
                 'order_number' => $reading->bill_reference,
-                'product_name' => 'ดูดวง: ' . ($reading->fortune_type ?? 'ทั่วไป'),
+                'product_name' => $productName,
                 'product_details' => $reading->question ?? null,
                 'amount' => $amount,
-                'customer_name' => $reading->customer_name ?? ($reading->line_user_id ? 'LINE:' . substr($reading->line_user_id, 0, 8) : null),
+                'customer_name' => $reading->facebook_user_name
+                    ?? ($reading->line_user_id ? 'LINE:' . substr($reading->line_user_id, 0, 8) : null),
                 'website_name' => 'thaiprompt.com',
             ],
             'server_name' => config('app.name', 'Thaiprompt'),
@@ -939,9 +945,10 @@ class SmsCheckerAdminController extends Controller
             '_debug' => [
                 'real_id' => $reading->id,
                 'conversation_status' => $reading->conversation_status,
+                'reading_type' => $reading->reading_type,
                 'bill_reference' => $reading->bill_reference,
-                'bill_amount' => $reading->bill_amount,
-                'fortune_type' => $reading->fortune_type,
+                'amount_paid' => $reading->amount_paid,
+                'is_paid' => $reading->is_paid,
                 'paid_at' => $reading->paid_at?->toIso8601String(),
                 'line_user_id' => $reading->line_user_id,
             ],

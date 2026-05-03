@@ -216,9 +216,18 @@ class SmsPaymentController extends Controller
     {
         // แปลง conversation_status → approval_status ที่ Android เข้าใจ
         // ถ้า completed แต่ไม่ได้จ่ายเงิน = ลูกค้ายกเลิก → ส่ง 'cancelled'
+        // 🔮 Celtic Cross statuses (post-payment): PICKING / AWAITING_QUESTION / GENERATING / QA_PROMPT
+        //    → ทุก status หลังจ่ายเงิน is_paid=true ให้ส่ง 'auto_approved' (บิลถูกตัดแล้ว)
         $approvalStatus = match (true) {
             $reading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
+            $reading->conversation_status === FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => 'pending_review',
             $reading->conversation_status === FortuneReading::STATUS_PAID => 'auto_approved',
+            $reading->is_paid && in_array($reading->conversation_status, [
+                FortuneReading::STATUS_CELTIC_PICKING,
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+                FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            ], true) => 'auto_approved',
             $reading->conversation_status === FortuneReading::STATUS_COMPLETED && $reading->is_paid => 'auto_approved',
             $reading->conversation_status === FortuneReading::STATUS_COMPLETED && ! $reading->is_paid => 'cancelled',
             default => 'pending_review',
@@ -282,9 +291,19 @@ class SmsPaymentController extends Controller
             $customerName = 'ลูกค้าดูดวง';
         }
 
+        // 🏷️ ชื่อสินค้าตามประเภทคำทำนาย — ให้ SMS Checker app แสดงประเภทถูกต้อง
+        //    'celtic_cross' → "ดูดวงไพ่เซลติก" (99฿ — ไพ่ยิปซีเต็มสำรับ 10 ใบ)
+        //    'deep'         → "ดูดวง (เชิงลึก)" (39฿ — วันเกิด + ไพ่ 1 ใบ)
+        //    'basic'/null   → "ดูดวง" (ฟรี dummy หรือ legacy)
+        $productName = match ($reading->reading_type) {
+            FortuneReading::READING_TYPE_CELTIC_CROSS => 'ดูดวงไพ่เซลติก',
+            FortuneReading::READING_TYPE_DEEP => 'ดูดวง (เชิงลึก)',
+            default => 'ดูดวง',
+        };
+
         $orderDetails = [
             'order_number' => $reading->bill_reference,
-            'product_name' => 'ดูดวง'.($reading->reading_type === 'deep' ? ' (เชิงลึก)' : ''),
+            'product_name' => $productName,
             'product_details' => $customerName,
             'quantity' => 1,
             'website_name' => config('app.name'),
@@ -797,16 +816,23 @@ class SmsPaymentController extends Controller
 
             if ($status === 'waiting') {
                 // 'waiting' รวม:
-                //  - PENDING_PAYMENT (รอชำระ) — บิลใหม่
+                //  - PENDING_PAYMENT / CELTIC_PENDING_PAYMENT (รอชำระ) — บิลใหม่
                 //  - PAID (เพิ่ง auto-approve จาก SMS — ยังประมวลผล AI)
+                //  - 🔮 CELTIC_PICKING/AWAITING_QUESTION/GENERATING/QA_PROMPT (Celtic หลังจ่าย — ยัง active)
                 //  - COMPLETED ภายใน 24 ชม. — ทั้งบิล cancelled (is_paid=false)
                 //    และบิลทำนายเสร็จ (is_paid=true) เพื่อให้แอพเห็นการเปลี่ยนแปลงสถานะ
                 //    และ "ลบ" บิลที่ cancel แล้วออกจาก UI
                 //    ⚠️ เคยมีบั๊ก: ไม่รวม COMPLETED → บิล cancelled ค้างใน UI ตลอดไป
+                //    ⚠️ เคยมีบั๊ก: ไม่รวม Celtic statuses → บิล Celtic 99฿ หายจาก UI หลัง FCM push
                 $fortuneQuery->where(function ($q) {
                     $q->whereIn('conversation_status', [
                         FortuneReading::STATUS_PENDING_PAYMENT,
+                        FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                         FortuneReading::STATUS_PAID,
+                        FortuneReading::STATUS_CELTIC_PICKING,
+                        FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                        FortuneReading::STATUS_CELTIC_GENERATING,
+                        FortuneReading::STATUS_CELTIC_QA_PROMPT,
                     ])
                         ->orWhere(function ($q2) {
                             $q2->where('conversation_status', FortuneReading::STATUS_COMPLETED)
@@ -816,7 +842,12 @@ class SmsPaymentController extends Controller
             } elseif ($status === 'all') {
                 $fortuneQuery->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
+                    FortuneReading::STATUS_CELTIC_PICKING,
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                    FortuneReading::STATUS_CELTIC_QA_PROMPT,
                     FortuneReading::STATUS_COMPLETED,
                 ]);
             }
@@ -959,26 +990,10 @@ class SmsPaymentController extends Controller
                 $model->confirmPayment($notification);
             }
 
-            // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
-            // ใช้ queue job แทน sync call → ไม่ติด web server timeout
-            $userId = $model->platform_user_id ?? $model->facebook_user_id;
-            $platform = $model->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
-
-            if ($userId) {
-                ProcessDeepFortuneReadingJob::dispatchSmart(
-                    $model->id, $notification?->id, $platform, $userId
-                );
-            } else {
-                // ⚠️ ไม่มี userId → ไม่สามารถ dispatch job ได้
-                // บันทึก log เพื่อให้แอดมินตรวจสอบ
-                Log::warning('SMS Payment: approveOrder — ไม่มี userId สำหรับส่งคำทำนาย', [
-                    'fortune_reading_id' => $model->id,
-                    'bill_reference' => $model->bill_reference,
-                    'platform' => $platform,
-                    'platform_user_id' => $model->platform_user_id,
-                    'facebook_user_id' => $model->facebook_user_id,
-                ]);
-            }
+            // 🔮 Route ตาม reading_type — Celtic ใช้ flow คนละแบบจาก Deep 39฿
+            //    helper จะ dispatch ProcessDeepFortuneReadingJob (deep) หรือ
+            //    call handleCelticPaymentMatched (celtic) ตาม reading.reading_type
+            $this->dispatchFortuneApprovalFlow($model, $notification);
 
             // อัพเดท notification สถานะเป็น confirmed
             if ($notification) {
@@ -1154,6 +1169,72 @@ class SmsPaymentController extends Controller
                 'error' => $e->getMessage(),
             ]);
         }
+    }
+
+    /**
+     * 🔮 Dispatch flow ที่ถูกต้องตาม reading_type — ใช้แทน ProcessDeepFortuneReadingJob ตรงๆ
+     *
+     * - Deep 39฿  → dispatch ProcessDeepFortuneReadingJob (สร้างคำทำนายใน background)
+     * - Celtic 99฿ → call SmsPaymentService::handleCelticPaymentMatched()
+     *               (transition status → CELTIC_PICKING + push "เริ่มเปิดไพ่ใบที่ 1")
+     *               ❌ ห้าม dispatch ProcessDeepFortuneReadingJob — Celtic ไม่มีวันเกิด/คำทำนาย deep
+     *
+     * @param  FortuneReading  $reading  บิลที่จ่ายแล้ว (is_paid=true)
+     * @param  SmsPaymentNotification|null  $notification  SMS ที่ตรงบิล (null ถ้า admin force approve)
+     */
+    private function dispatchFortuneApprovalFlow(
+        FortuneReading $reading,
+        ?SmsPaymentNotification $notification
+    ): bool {
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            Log::warning('SMS Payment: dispatchFortuneApprovalFlow — ไม่มี userId', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'reading_type' => $reading->reading_type,
+            ]);
+
+            return false;
+        }
+
+        $platform = $reading->platform
+            ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+
+        // 🔮 Celtic Cross — push เริ่มเปิดไพ่ + transition CELTIC_PICKING (ไม่ dispatch deep job)
+        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            try {
+                // ⚠️ confirmPayment ก่อน handleCelticPaymentMatched เสมอ
+                //    handleCelticPaymentMatched assume is_paid=true
+                //    (auto SMS match flow ที่ matchAndProcessFortuneReading: บรรทัด 667 ของ SmsPaymentService
+                //     จะ confirmPayment ก่อนเรียก handleCelticPaymentMatched อยู่แล้ว)
+                if (! $reading->is_paid) {
+                    $reading->confirmPayment($notification);
+                    $reading = $reading->fresh();
+                }
+
+                return app(SmsPaymentService::class)->handleCelticPaymentMatched(
+                    $reading,
+                    $notification,
+                    $platform,
+                    (string) $userId,
+                    (float) $reading->amount_paid
+                );
+            } catch (\Throwable $e) {
+                Log::critical('SMS Payment: dispatchFortuneApprovalFlow Celtic ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+
+                return false;
+            }
+        }
+
+        // 🔹 Deep 39฿ — dispatch background job เพื่อสร้างคำทำนาย
+        ProcessDeepFortuneReadingJob::dispatchSmart(
+            $reading->id, $notification?->id, $platform, $userId
+        );
+
+        return true;
     }
 
     /**
@@ -1408,17 +1489,14 @@ class SmsPaymentController extends Controller
                     continue;
                 }
                 if (! $model->is_paid) {
-                    // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
-                    $userId = $model->platform_user_id ?? $model->facebook_user_id;
-                    $platform = $model->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
+                    // 🔮 Route ตาม reading_type — Deep dispatch background job, Celtic push เปิดไพ่
+                    //    helper จะ confirm payment + เลือก flow ที่ถูกต้อง
+                    $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+                    $dispatched = $this->dispatchFortuneApprovalFlow($model, $notification);
 
-                    if ($userId) {
-                        ProcessDeepFortuneReadingJob::dispatchSmart(
-                            $model->id, null, $platform, $userId
-                        );
-                    } else {
-                        // ไม่มี user ID → แค่ confirm payment
-                        $model->confirmPayment();
+                    if (! $dispatched) {
+                        // ไม่มี userId → fallback แค่ confirm payment
+                        $model->confirmPayment($notification);
                     }
                     $approved++;
                 } else {
@@ -1520,7 +1598,13 @@ class SmsPaymentController extends Controller
                 ->whereNotNull('bill_reference')
                 ->whereIn('conversation_status', [
                     FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
+                    // 🔮 Celtic statuses (post-payment) — sync ให้ SMS app เห็นการเปลี่ยน status
+                    FortuneReading::STATUS_CELTIC_PICKING,
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                    FortuneReading::STATUS_CELTIC_QA_PROMPT,
                     FortuneReading::STATUS_COMPLETED,
                 ])
                 // ไม่ส่งบิลที่ยอด 0
@@ -1739,25 +1823,28 @@ class SmsPaymentController extends Controller
                 $autoConfirm = config('smschecker.auto_confirm_matched', true);
                 if ($autoConfirm && ! $fortuneReading->is_paid) {
                     try {
-                        $fortuneReading->confirmPayment();
+                        // 🔮 หา notification ที่เพิ่งส่ง (จาก /match endpoint)
+                        $notification = SmsPaymentNotification::where('amount', $amount)
+                            ->where('type', 'credit')
+                            ->whereNull('matched_transaction_id')
+                            ->orderBy('sms_timestamp', 'desc')
+                            ->first();
+
+                        $fortuneReading->confirmPayment($notification);
                         $fortuneReading = $fortuneReading->fresh();
 
-                        // Dispatch job สร้างคำทำนาย + ส่งข้อความ (เหมือน approveOrder)
-                        // ถ้าไม่ dispatch ตรงนี้ → Android เห็น auto_approved → skip เรียก /approve → ไม่มีใครสร้างคำทำนาย
-                        $userId = $fortuneReading->platform_user_id ?? $fortuneReading->facebook_user_id;
-                        $platform = $fortuneReading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
-
-                        if ($userId) {
-                            \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
-                                $fortuneReading->id, null, $platform, $userId
-                            );
-                        }
+                        // 🔮 Route ตาม reading_type — Celtic / Deep flow ต่างกัน
+                        //    helper จะเลือก ProcessDeepFortuneReadingJob (deep) หรือ
+                        //    handleCelticPaymentMatched (celtic) ตาม reading.reading_type
+                        //    ⚠️ เคยมีบั๊ก: dispatchSmart ทุก reading_type → Celtic ได้ flow Deep ผิด
+                        $dispatched = $this->dispatchFortuneApprovalFlow($fortuneReading, $notification);
 
                         Log::info('SMS Payment: Auto-approved fortune reading on match', [
                             'device_id' => $device->device_id,
                             'amount' => $amount,
                             'fortune_reading_id' => $fortuneReading->id,
-                            'job_dispatched' => (bool) $userId,
+                            'reading_type' => $fortuneReading->reading_type,
+                            'flow_dispatched' => $dispatched,
                         ]);
                     } catch (\Exception $e) {
                         Log::error('SMS Payment: Auto-approve fortune reading failed', [
@@ -2460,21 +2547,15 @@ class SmsPaymentController extends Controller
             ]);
         }
 
-        // Dispatch background job สร้างคำทำนาย + ส่งข้อความ
-        // ใช้ queue job แทน sync call → ไม่ติด web server timeout
-        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-        $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
-
-        if ($userId) {
-            ProcessDeepFortuneReadingJob::dispatchSmart(
-                $reading->id, $notification?->id, $platform, $userId
-            );
-        } else {
-            // ไม่มี user ID → แค่ confirm payment
-            if (! $reading->is_paid) {
-                $reading->confirmPayment($notification);
-            }
+        // 🔮 Route ตาม reading_type — Celtic 99฿ ต่างจาก Deep 39฿ flow
+        //    helper จะ dispatch ProcessDeepFortuneReadingJob (deep) หรือ
+        //    call handleCelticPaymentMatched (celtic) — confirm payment เองในแต่ละ flow
+        //    ⚠️ เคยมีบั๊ก: ProcessDeepFortuneReadingJob ทำงานกับ Celtic = สร้างคำทำนายผิด schema
+        if (! $reading->is_paid) {
+            $reading->confirmPayment($notification);
+            $reading = $reading->fresh();
         }
+        $this->dispatchFortuneApprovalFlow($reading, $notification);
 
         // อัพเดท notification สถานะเป็น confirmed
         if ($notification) {

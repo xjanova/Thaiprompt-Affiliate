@@ -925,11 +925,15 @@ class SmsPaymentService
      * - ไม่ dispatch ProcessDeepFortuneReadingJob (ยังไม่ต้องสร้างคำทำนาย)
      * - แต่ transition reading ไป STATUS_CELTIC_PICKING แล้ว push ข้อความเชิญตั้งจิตเปิดไพ่ใบที่ 1
      *
-     * เรียกจาก: matchAndProcessFortuneReading() เมื่อ reading.reading_type === 'celtic_cross'
+     * เรียกจาก:
+     *   1. matchAndProcessFortuneReading() — auto SMS match (มี notification เสมอ)
+     *   2. SmsPaymentController::approveOrder/bulkApprove/etc. — admin manual approve (notification อาจเป็น null)
+     *
+     * @param  SmsPaymentNotification|null  $notification  ถ้า null จะข้าม update notification status (admin force approve case)
      */
-    protected function handleCelticPaymentMatched(
+    public function handleCelticPaymentMatched(
         FortuneReading $reading,
-        SmsPaymentNotification $notification,
+        ?SmsPaymentNotification $notification,
         string $platform,
         string $userId,
         float $amount
@@ -973,19 +977,21 @@ class SmsPaymentService
                 'next_position' => $reading->fresh()->getNextCelticPosition(),
             ]);
 
-            // 4. Mark notification matched
-            $notification->update([
-                'status' => 'matched',
-                'matched_transaction_id' => $reading->id,
-            ]);
-
-            // 5. FCM push ให้แอพ SMS Checker อัพเดทสถานะ
-            try {
-                app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
-            } catch (\Exception $fcmErr) {
-                Log::warning('SMS Payment (Celtic): FCM push ล้มเหลว (ไม่ critical)', [
-                    'error' => $fcmErr->getMessage(),
+            // 4. Mark notification matched (skip ถ้า admin force approve โดยไม่มี SMS)
+            if ($notification) {
+                $notification->update([
+                    'status' => 'matched',
+                    'matched_transaction_id' => $reading->id,
                 ]);
+
+                // 5. FCM push ให้แอพ SMS Checker อัพเดทสถานะ (ต้องมี notification)
+                try {
+                    app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
+                } catch (\Exception $fcmErr) {
+                    Log::warning('SMS Payment (Celtic): FCM push ล้มเหลว (ไม่ critical)', [
+                        'error' => $fcmErr->getMessage(),
+                    ]);
+                }
             }
 
             return true;
