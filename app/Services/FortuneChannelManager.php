@@ -608,14 +608,23 @@ class FortuneChannelManager
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $buttons = [];
                     // 🎁 (2026-05-03) ปุ่ม "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด (offer_free flag)
+                    // 🌐 localize labels — ลูกค้าลาวเห็น Quick Reply เป็นลาว
                     if ($offerFree) {
-                        $buttons[] = ['content_type' => 'text', 'title' => '🎁 ทำนายฟรี (1 ใบ)', 'payload' => 'FREE_CARD_START'];
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => \App\Services\FortuneLocaleService::lo('🎁 ทำนายฟรี (1 ใบ)', '🎁 ທຳນາຍຟຣີ (1 ໃບ)'),
+                            'payload' => 'FREE_CARD_START'];
                     }
-                    $buttons[] = ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'];
+                    $buttons[] = ['content_type' => 'text',
+                        'title' => \App\Services\FortuneLocaleService::lo('🔹 ดูดวง 39 บาท', '🔹 ເບິ່ງດວງ 39 ບາດ'),
+                        'payload' => 'TIER_DEEP_39'];
                     if ($celticEnabled) {
-                        $buttons[] = ['content_type' => 'text', 'title' => '🔮 ไพ่ 10 ใบ 99 บาท', 'payload' => 'TIER_CELTIC_99'];
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => \App\Services\FortuneLocaleService::lo('🔮 ไพ่ 10 ใบ 99 บาท', '🔮 ໄພ່ 10 ໃບ 99 ບາດ'),
+                            'payload' => 'TIER_CELTIC_99'];
                     }
-                    $buttons[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
+                    $buttons[] = ['content_type' => 'text',
+                        'title' => \App\Services\FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
+                        'payload' => 'CANCEL_FORTUNE'];
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
@@ -632,18 +641,24 @@ class FortuneChannelManager
                         }
                     }
 
-                    // 2. ส่งข้อความทำนาย + Quick Reply ตัวเลือก
+                    // 2. ส่งข้อความทำนาย + Quick Reply ตัวเลือก (🌐 localize labels)
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
                     $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
 
                     $buttons = [
-                        ['content_type' => 'text', 'title' => "🔹 ดูดวง {$deepPrice}฿", 'payload' => 'TIER_DEEP_39'],
+                        ['content_type' => 'text',
+                            'title' => \App\Services\FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
+                            'payload' => 'TIER_DEEP_39'],
                     ];
                     if ($celticEnabled) {
-                        $buttons[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿", 'payload' => 'TIER_CELTIC_99'];
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => \App\Services\FortuneLocaleService::lo("🔮 ไพ่ 10 ใบ {$celticPrice}฿", "🔮 ໄພ່ 10 ໃບ {$celticPrice}฿"),
+                            'payload' => 'TIER_CELTIC_99'];
                     }
-                    $buttons[] = ['content_type' => 'text', 'title' => '🌙 ไม่สนใจ', 'payload' => 'FREE_CARD_DECLINE'];
+                    $buttons[] = ['content_type' => 'text',
+                        'title' => \App\Services\FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
+                        'payload' => 'FREE_CARD_DECLINE'];
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
@@ -1444,14 +1459,27 @@ class FortuneChannelManager
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $quickReplies = [];
+                    // 🌐 localize Quick Reply labels
                     if ($offerFree) {
-                        $quickReplies[] = ['label' => '🎁 ทำนายฟรี', 'text' => 'ทำนายฟรี'];
+                        $quickReplies[] = [
+                            'label' => \App\Services\FortuneLocaleService::lo('🎁 ทำนายฟรี', '🎁 ທຳນາຍຟຣີ'),
+                            'text' => \App\Services\FortuneLocaleService::lo('ทำนายฟรี', 'ທຳນາຍຟຣີ'),
+                        ];
                     }
-                    $quickReplies[] = ['label' => '🔹 39฿ พื้นฐาน', 'text' => '39'];
+                    $quickReplies[] = [
+                        'label' => \App\Services\FortuneLocaleService::lo('🔹 39฿ พื้นฐาน', '🔹 39฿ ພື້ນຖານ'),
+                        'text' => '39',
+                    ];
                     if ($celticEnabled) {
-                        $quickReplies[] = ['label' => '🔮 99฿ เต็มสำรับ', 'text' => '99'];
+                        $quickReplies[] = [
+                            'label' => \App\Services\FortuneLocaleService::lo('🔮 99฿ เต็มสำรับ', '🔮 99฿ ເຕັມສຳລັບ'),
+                            'text' => '99',
+                        ];
                     }
-                    $quickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
+                    $quickReplies[] = [
+                        'label' => \App\Services\FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
+                        'text' => \App\Services\FortuneLocaleService::lo('ยกเลิก', 'ຍົກເລີກ'),
+                    ];
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
                 })(),
@@ -1469,13 +1497,23 @@ class FortuneChannelManager
                     $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
                     $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
 
+                    // 🌐 localize Quick Reply labels
                     $quickReplies = [
-                        ['label' => "🔹 ดูดวง {$deepPrice}฿", 'text' => '39'],
+                        [
+                            'label' => \App\Services\FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
+                            'text' => '39',
+                        ],
                     ];
                     if ($celticEnabled) {
-                        $quickReplies[] = ['label' => "🔮 99฿", 'text' => '99'];
+                        $quickReplies[] = [
+                            'label' => "🔮 {$celticPrice}฿",
+                            'text' => '99',
+                        ];
                     }
-                    $quickReplies[] = ['label' => '🌙 ไม่สนใจ', 'text' => 'ไม่สนใจ'];
+                    $quickReplies[] = [
+                        'label' => \App\Services\FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
+                        'text' => \App\Services\FortuneLocaleService::lo('ไม่สนใจ', 'ບໍ່ສົນໃຈ'),
+                    ];
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
                 })(),

@@ -164,7 +164,10 @@ trait FreeCardConversationTrait
 
             return [
                 'action' => 'free_card_draw_failed',
-                'message' => "🙏 ขออภัยค่ะ ระบบสุ่มไพ่ขัดข้องชั่วคราว\nลองทักมาใหม่ในอีกครู่ได้นะคะ ✨",
+                'message' => FortuneLocaleService::lo(
+                    "🙏 ขออภัยค่ะ ระบบสุ่มไพ่ขัดข้องชั่วคราว\nลองทักมาใหม่ในอีกครู่ได้นะคะ ✨",
+                    "🙏 ຂໍອະໄພເດີ ລະບົບສຸ່ມໄພ່ຂັດຂ້ອງຊົ່ວຄາວ\nລອງທັກມາໃໝ່ໃນອີກບຶດນຶງເດີ ✨"
+                ),
                 'reading' => $reading,
             ];
         }
@@ -211,8 +214,12 @@ trait FreeCardConversationTrait
 
             return [
                 'action' => 'free_card_ai_failed',
-                'message' => "🙏 ขออภัยค่ะ แม่หมอเชื่อมพลังจักรวาลไม่ติดในจังหวะนี้\n"
-                    . "ลองทักมาใหม่ในอีก 1-2 นาทีนะคะ — สิทธิ์ฟรียังไม่ถูกใช้ค่ะ ✨",
+                'message' => FortuneLocaleService::lo(
+                    "🙏 ขออภัยค่ะ แม่หมอเชื่อมพลังจักรวาลไม่ติดในจังหวะนี้\n"
+                        . "ลองทักมาใหม่ในอีก 1-2 นาทีนะคะ — สิทธิ์ฟรียังไม่ถูกใช้ค่ะ ✨",
+                    "🙏 ຂໍອະໄພເດີ ແມ່ໝໍເຊື່ອມພະລັງຈັກກະວານບໍ່ຕິດໃນຈັງຫວະນີ້\n"
+                        . "ລອງທັກມາໃໝ່ໃນອີກ 1-2 ນາທີເດີ — ສິດທິຟຣີຍັງບໍ່ໄດ້ໃຊ້ ✨"
+                ),
                 'reading' => $reading,
             ];
         }
@@ -239,8 +246,15 @@ trait FreeCardConversationTrait
         //   - ส่งภาพไพ่ก่อน (จาก tarot_image_url)
         //   - ส่งข้อความคำทำนาย
         //   - ส่ง Quick Reply [🔹 ดูดวง 39][🔮 99][🌙 ไม่สนใจ]
-        $orientation = $card['is_reversed'] ? '(กลับหัว)' : '(ตั้งตรง)';
-        $cardHeader = "🃏✨ *ไพ่ที่จิตเจ้าชะตาเลือก:*\n"
+        // 🌐 (2026-05-03) localize header — ลูกค้าลาวเห็น label ลาว ไม่ใช่ไทยตามด้วย AI ลาว
+        $orientation = $card['is_reversed']
+            ? FortuneLocaleService::lo('(กลับหัว)', '(ກັບຫົວ)')
+            : FortuneLocaleService::lo('(ตั้งตรง)', '(ຕັ້ງຊື່)');
+        $cardHeaderLabel = FortuneLocaleService::lo(
+            '🃏✨ *ไพ่ที่จิตเจ้าชะตาเลือก:*',
+            '🃏✨ *ໄພ່ທີ່ຈິດເຈົ້າຊາຕາເລືອກ:*'
+        );
+        $cardHeader = "{$cardHeaderLabel}\n"
             . "*{$card['card_name_th']}* {$orientation}\n"
             . "({$card['card_name_en']})\n\n"
             . "━━━━━━━━━━━━━━━━━\n\n";
@@ -350,12 +364,31 @@ trait FreeCardConversationTrait
         // ❓ ข้อความอื่น — chitchat → ส่งให้ AI Chat (Groq) ตอบต่อ + แทรก hint ปุ่ม
         //    เพราะ state คือ FREE_PREDICTED → AI chat (Groq) จะตอบต่อตามปกติ
         //    ระบบจะ route กลับมาที่นี่ถ้าลูกค้าตอบใหม่ → ลองจับ keyword อีกรอบ
+        $hintLine = FortuneLocaleService::lo(
+            '🌙 หากเจ้าชะตาอยากเจาะลึก เลือกได้ที่ปุ่มด้านล่างเลยนะคะ ✨',
+            '🌙 ຫາກເຈົ້າຊາຕາຢາກເຈາະເລິກ ເລືອກໄດ້ທີ່ປຸ່ມດ້ານລຸ່ມເລີຍເດີ ✨'
+        );
+        $deepLine = FortuneLocaleService::lo(
+            "🔹 *ดูดวงเชิงลึก {$deepPriceInt} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี",
+            "🔹 *ເບິ່ງດວງເຈາະເລິກ {$deepPriceInt} ບາດ* — ວິເຄາະດາວເຈົ້າຊະນະ + ໄພ່ຍິບຊີ"
+        );
+        $celticLine = $celticEnabled
+            ? FortuneLocaleService::lo(
+                "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้หลายคำถาม",
+                "🔮 *Celtic Cross {$celticPriceInt} ບາດ* — ໄພ່ 10 ໃບ ຖາມໄດ້ຫຼາຍຄຳຖາມ"
+            )
+            : null;
+        $declineLine = FortuneLocaleService::lo(
+            '🌙 *ไม่สนใจ* — ลาแม่หมอแบบสุภาพ',
+            '🌙 *ບໍ່ສົນໃຈ* — ລາແມ່ໝໍແບບສຸພາບ'
+        );
+
         return [
             'action' => 'free_card_chitchat',
-            'message' => "🌙 หากเจ้าชะตาอยากเจาะลึก เลือกได้ที่ปุ่มด้านล่างเลยนะคะ ✨\n\n"
-                . "🔹 *ดูดวงเชิงลึก {$deepPriceInt} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n"
-                . ($celticEnabled ? "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้หลายคำถาม\n" : '')
-                . "🌙 *ไม่สนใจ* — ลาแม่หมอแบบสุภาพ",
+            'message' => $hintLine . "\n\n"
+                . $deepLine . "\n"
+                . ($celticLine ? $celticLine . "\n" : '')
+                . $declineLine,
             'reading' => $reading,
         ];
     }
