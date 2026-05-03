@@ -405,8 +405,9 @@ class FortuneTakeoverService
 
         // 🧹 Strip politeness suffixes (TH+LAO+EN) เพื่อจับ "core" ของข้อความ
         //    เช่น "ขอคุยกับคนค่ะ" → "ขอคุยกับคน" (จะ exact match)
+        // 🇱🇦 Lao particles: ເດີ, ແດ່ (please), ຫລາຍ (very/much), ດ້ວຍ (with/too), ຄ່ະ (Lao "ค่ะ")
         $normalized = preg_replace(
-            '/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ|please)\s*$/u',
+            '/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ|please|ເດີ|ແດ່|ຫລາຍ|ດ້ວຍ|ຄ່ະ|ເນາະ)\s*$/u',
             '',
             $lower
         );

@@ -4095,9 +4095,12 @@ class FortuneConversationService
      */
     protected function parseLooseYear(string $text): ?int
     {
+        // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
         $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
         $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $text = str_replace($thaiDigits, $arabicDigits, $text);
+        $text = str_replace($laoDigits, $arabicDigits, $text);
 
         // ลองจับเลข 4 หลักก่อน (ปีเต็ม) — กัน case เช่น "15/8/1990" หยิบ "15" เป็นปี
         if (preg_match('/(?<!\d)(\d{4})(?!\d)/', $text, $m)) {
@@ -4125,16 +4128,24 @@ class FortuneConversationService
      */
     protected function parseLooseMonth(string $text): ?int
     {
+        // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
         $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
         $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $text = str_replace($thaiDigits, $arabicDigits, $text);
+        $text = str_replace($laoDigits, $arabicDigits, $text);
         $textLower = mb_strtolower(trim($text));
 
         // ชื่อเดือนไทย (ต้องเช็คชื่อเต็มก่อนย่อ เพื่อไม่ให้ "สิงหาคม" match "ส.ค." ก่อน)
+        // 🇱🇦 รวมชื่อเดือนลาว (ມັງກອນ-ທັນວາ) — ไม่ false-match ไทย เพราะใช้ Unicode block ต่างกัน
         $thaiMonthsFull = [
             'มกราคม' => 1, 'กุมภาพันธ์' => 2, 'มีนาคม' => 3, 'เมษายน' => 4,
             'พฤษภาคม' => 5, 'มิถุนายน' => 6, 'กรกฎาคม' => 7, 'สิงหาคม' => 8,
             'กันยายน' => 9, 'ตุลาคม' => 10, 'พฤศจิกายน' => 11, 'ธันวาคม' => 12,
+            // 🇱🇦 Lao months
+            'ມັງກອນ' => 1, 'ກຸມພາ' => 2, 'ມີນາ' => 3, 'ເມສາ' => 4,
+            'ພຶດສະພາ' => 5, 'ມິຖຸນາ' => 6, 'ກໍລະກົດ' => 7, 'ສິງຫາ' => 8,
+            'ກັນຍາ' => 9, 'ຕຸລາ' => 10, 'ພະຈິກ' => 11, 'ທັນວາ' => 12,
         ];
         foreach ($thaiMonthsFull as $name => $num) {
             if (str_contains($textLower, $name)) {
@@ -4184,9 +4195,12 @@ class FortuneConversationService
      */
     protected function parseLooseDay(string $text): ?int
     {
+        // 🇱🇦 (2026-05-03) เพิ่ม Lao digits + Thai digits
         $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
         $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $text = str_replace($thaiDigits, $arabicDigits, $text);
+        $text = str_replace($laoDigits, $arabicDigits, $text);
 
         if (preg_match('/(?<!\d)(\d{1,2})(?!\d)/', $text, $m)) {
             $n = (int) $m[1];
