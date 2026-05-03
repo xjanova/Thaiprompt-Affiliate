@@ -2027,6 +2027,16 @@ class FortuneConversationService
             ];
         }
 
+        // 🔮 (2026-05-04) Celtic Cross — paid + Q&A อยู่ใน fortune_celtic_questions ไม่ใช่ deep_response
+        //    เคยเป็น bug: Celtic paid → fall to "view_bill_processing" → ลูกค้าเห็น "AI กำลังคำนวณ" (ผิด)
+        //    Fix: route Celtic ไป buildCelticReadingSummary เหมือน handleViewLastReading
+        if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            if ($reading->is_paid) {
+                return $this->buildCelticReadingSummary($reading);
+            }
+            // Celtic ยังไม่จ่าย → fall through ลง "ยังไม่ paid" branch ด้านล่าง
+        }
+
         // เคส 1: บิล paid + มี deep_response → ส่งคำทำนายเต็ม
         if ($reading->is_paid && ! empty($reading->deep_response)) {
             $name = $reading->facebook_user_name ?? 'คุณ';
@@ -2046,7 +2056,7 @@ class FortuneConversationService
             ];
         }
 
-        // เคส 2: paid แต่ยังไม่มี deep_response → กำลังประมวลผล
+        // เคส 2: paid แต่ยังไม่มี deep_response → กำลังประมวลผล (Deep เท่านั้น — Celtic ถูก route ออกไปด้านบนแล้ว)
         if ($reading->is_paid && empty($reading->deep_response)) {
             return [
                 'action' => 'view_bill_processing',

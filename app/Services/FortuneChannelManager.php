@@ -660,8 +660,9 @@ class FortuneChannelManager
                             'payload' => 'TIER_DEEP_39'],
                     ];
                     if ($celticEnabled) {
+                        // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ — ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ — ໄພ່ 10 ໃບ"),
+                            'title' => \App\Services\FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ ໄພ່ 10 ໃບ"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',

@@ -1292,8 +1292,11 @@ class LineFortuneWebhookController extends Controller
             }
 
             // 🟢 PAID / processing — ระบบรับเงินแล้ว แม่หมอกำลังคำนวณ
-            if ($activeReading && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
-                || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
+            //   🔮 (2026-05-04) ยกเว้น Celtic — เพราะ Celtic จบแล้วก็ is_paid=true + empty(deep_response)
+            //      Celtic ACTIVE state catch ด้านบนแล้ว, COMPLETED มี branch เฉพาะข้างล่าง
+            if ($activeReading && $activeReading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS
+                && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
+                    || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
                     . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
@@ -1304,6 +1307,30 @@ class LineFortuneWebhookController extends Controller
                 $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
                 Log::info('LINE: รับสลิประหว่าง PAID → ปลอบ แม่หมอกำลังคำนวณ', [
+                    'user_id' => $userId,
+                    'reading_id' => $activeReading->id,
+                ]);
+
+                return;
+            }
+
+            // 🔮 (2026-05-04) Celtic COMPLETED — ลูกค้าส่งรูปหลัง Celtic จบ
+            //   เคยตกเข้า PAID branch (เพราะ is_paid + empty deep_response) → "AI กำลังคำนวณ" ผิด
+            //   ตอนนี้: ขอบคุณ + แนะให้พิมพ์ "ดูคำทำนายล่าสุด" เพื่อดู Q&A
+            if ($activeReading
+                && $activeReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                && $activeReading->is_paid) {
+                $billRef = $activeReading->bill_reference ?? '-';
+                $message = "💖 ขอบคุณค่ะ — ได้รับรูปแล้ว\n\n"
+                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    . "🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
+                    . "💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
+                    . "    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
+                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ ✨";
+
+                $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                Log::info('LINE: รับรูปหลัง Celtic จบ → แนะให้พิมพ์ดูคำทำนายล่าสุด', [
                     'user_id' => $userId,
                     'reading_id' => $activeReading->id,
                 ]);

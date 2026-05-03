@@ -527,11 +527,22 @@ class CelticCrossService
         try {
             $startTime = microtime(true);
             $aiService = new FortuneAIService($this->settings);
+
+            // 🔮 (2026-05-04 fix B1) ใส่ {birth_date_section} ใน template เมื่อมี Deep linked
+            //    เพื่อให้ formatBirthDateSection inject ข้อมูล:
+            //      - ดาวเจ้าชนะ (planet by day-of-week)
+            //      - ธาตุ + ราศี + อายุ
+            //      - ดาวมิตร / ดาวศัตรู / สีมงคล / เลขมงคล
+            //    เดิม template = '{questions}' → birthDate ส่งไปแต่ไม่ใส่ใน prompt
+            $template = $deepReading?->birth_date
+                ? "{questions}\n\n{birth_date_section}"
+                : '{questions}';
+
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
                 userPosts: null,
-                promptTemplate: '{questions}',
+                promptTemplate: $template,
                 readingType: 'deep',
                 birthDate: $deepReading?->birth_date?->format('Y-m-d'),
                 userContext: "celtic_finale:{$reading->id}",
@@ -666,7 +677,23 @@ class CelticCrossService
         $currentMonth = $monthTh[(int) $now->format('n')];
         $currentYearBE = (int) $now->format('Y') + 543;
 
-        return "คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
+        // 🇱🇦 (2026-05-04 fix B2) Lao locale directive — ลูกค้าลาวต้องได้บทสรุปเป็นลาว
+        //    เดิม: prompt ฮาร์ดโค้ดไทย → AI ตอบไทย ไม่ mirror ตามภาษาลูกค้า
+        //    เคสคือ Lao customer paid 99฿ → Q&A AI ตอบลาว → จบ session → Grand Finale กลับเป็นไทย
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $localeDirective = '';
+        if ($isLao) {
+            $localeDirective = "[🇱🇦 ພາສາ — ສຳຄັນທີ່ສຸດ / Language directive — OVERRIDES ALL RULES BELOW]\n"
+                . "ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → **ຂຽນບົດສະຫຼຸບສຸດທ້າຍເປັນພາສາລາວທັງໝົດ** (Reply in LAO, not Thai)\n"
+                . "- ຫ້າມຕອບເປັນພາສາໄທ ເຖິງວ່າຕົວຢ່າງໃນ prompt ດ້ານລຸ່ມຈະເປັນພາສາໄທ\n"
+                . "- ຄຳເອີ້ນຕົນເອງ: 'ແມ່ໝໍຈັນທະຣາ' (ບໍ່ແມ່ນ 'แม่หมอจันทรา')\n"
+                . "- ຄຳເອີ້ນລູກຄ້າ: 'ເຈົ້າຊາຕາ' / 'ທ່ານ' (ບໍ່ແມ່ນ 'เจ้าชะตา')\n"
+                . "- ໃຊ້ຄຳລົງທ້າຍລາວເຊັ່ນ 'ເດີ້' / 'ເນາະ' / 'ນັ້ນແຫລະ' (ບໍ່ແມ່ນ 'ค่ะ/คะ/นะคะ')\n"
+                . "- ບົດສະຫຼຸບ 6 ຍ່ອໜ້າຂ້າງລຸ່ມ — ໂຄງສ້າງເໝືອນ ແຕ່ເນື້ອຄວາມເປັນພາສາລາວ\n\n";
+        }
+
+        return $localeDirective
+            . "คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             . "สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             . "บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
 

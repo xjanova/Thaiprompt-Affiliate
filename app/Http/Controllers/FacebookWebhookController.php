@@ -1412,8 +1412,13 @@ class FacebookWebhookController extends Controller
             }
 
             // 🟢 PAID — ลูกค้าจ่ายแล้ว ระหว่าง AI ประมวลผล → ปลอบ "แม่หมอกำลังคำนวณ"
-            if ($activeReading && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
-                || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
+            //   🔮 (2026-05-04) ยกเว้น Celtic — เพราะ Celtic จบแล้วก็ is_paid=true + empty(deep_response)
+            //      ถ้าไม่ filter จะส่ง "AI กำลังคำนวณ" ทั้งที่จริงๆ Celtic เสร็จแล้ว
+            //      Celtic ACTIVE state ถูก catch ใน Celtic branch ก่อนหน้านี้ (line ~1356) แล้ว
+            //      Celtic COMPLETED → ตอบเป็นการขอดูคำทำนายล่าสุดแทน
+            if ($activeReading && $activeReading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS
+                && ($activeReading->conversation_status === FortuneReading::STATUS_PAID
+                    || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
                     . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
@@ -1424,6 +1429,31 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendMessage($senderId, $message);
 
                 Log::info('Facebook: รับสลิประหว่าง PAID → ปลอบ แม่หมอกำลังคำนวณ', [
+                    'sender_id' => $senderId,
+                    'reading_id' => $activeReading->id,
+                ]);
+
+                return;
+            }
+
+            // 🔮 (2026-05-04) Celtic COMPLETED — ลูกค้าส่งรูปหลัง Celtic จบ
+            //   เคยเป็น bug: ตกเข้า PAID branch (เพราะ is_paid+empty deep_response)
+            //   → "AI กำลังคำนวณ" ผิด — Celtic จบไปแล้ว ไม่ใช่กำลังคำนวณ
+            //   ตอนนี้: ตอบขอบคุณ + แนะนำให้พิมพ์ "ดูคำทำนายล่าสุด" เพื่อดู Q&A list
+            if ($activeReading
+                && $activeReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                && $activeReading->is_paid) {
+                $billRef = $activeReading->bill_reference ?? '-';
+                $message = "💖 ขอบคุณค่ะ — ได้รับรูปแล้ว\n\n"
+                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    . "🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
+                    . "💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
+                    . "    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
+                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ ✨";
+
+                $this->facebookService->sendMessage($senderId, $message);
+
+                Log::info('Facebook: รับรูปหลัง Celtic จบ → แนะให้พิมพ์ดูคำทำนายล่าสุด', [
                     'sender_id' => $senderId,
                     'reading_id' => $activeReading->id,
                 ]);
