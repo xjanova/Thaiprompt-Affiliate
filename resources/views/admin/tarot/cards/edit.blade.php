@@ -104,7 +104,7 @@
                     </div>
 
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-                        รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 5MB<br>
+                        รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 20MB<br>
                         <span class="text-green-600 dark:text-green-400">✓ อัพโหลดทันทีเมื่อเลือกรูป</span><br>
                         <span class="text-purple-600 dark:text-purple-400">✓ ปรับขนาดให้พอดี 400x600px</span>
                     </p>
@@ -301,9 +301,9 @@ function cardImageUpload() {
         },
 
         async uploadImage(file) {
-            // Validate file size (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                this.showStatus('ไฟล์ใหญ่เกินไป (ขนาดสูงสุด 5MB)', 'error');
+            // Validate file size (20MB — synced with TarotManagementController validation 2026-05-04)
+            if (file.size > 20 * 1024 * 1024) {
+                this.showStatus('ไฟล์ใหญ่เกินไป (ขนาดสูงสุด 20MB)', 'error');
                 return;
             }
 

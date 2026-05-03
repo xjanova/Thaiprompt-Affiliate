@@ -79,7 +79,7 @@
                     </label>
 
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-3 text-center">
-                        รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 5MB<br>
+                        รองรับ JPG, PNG, GIF, WebP ขนาดไม่เกิน 20MB<br>
                         <span class="text-green-600 dark:text-green-400">✓ แปลงเป็น WebP อัตโนมัติ</span><br>
                         <span class="text-purple-600 dark:text-purple-400">✓ ปรับขนาดให้พอดี 400x600px</span>
                     </p>
