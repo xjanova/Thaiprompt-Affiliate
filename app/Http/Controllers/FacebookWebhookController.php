@@ -2713,7 +2713,14 @@ class FacebookWebhookController extends Controller
             'TIER_DEEP_39' => $this->processConversationalMessage($senderId, 'ดูดวง 39 บาท'),
             'TIER_CELTIC_99' => $this->processConversationalMessage($senderId, 'ดูดวง celtic 99 บาท'),
             // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
+            //   ⚠️ legacy — ระบบฟรีแบบเก่า, ค่อยๆ หายไป
             'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),
+            // 🎁 (2026-05-03) ทำนายฟรี 1 ใบ — ระบบใหม่ (ครั้งแรก/platform)
+            //   ส่ง keyword "ทำนายฟรี" → matchesFreeCardKeyword() จับได้ใน processMessage
+            //   → startFreeCardFlow() เช็ค first-timer + เปิดสิทธิ์ → จั่วไพ่ + AI ทำนาย
+            'FREE_CARD_START' => $this->processConversationalMessage($senderId, 'ทำนายฟรี'),
+            // 🌙 (2026-05-03) ลูกค้าปฏิเสธ upsell หลังทำนายฟรี — ส่งไปที่ trait
+            'FREE_CARD_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่สนใจ'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),

@@ -35,6 +35,7 @@ use Illuminate\Support\Facades\Log;
 class FortuneConversationService
 {
     use \App\Services\Fortune\CelticCrossConversationTrait;
+    use \App\Services\Fortune\FreeCardConversationTrait;
 
     protected FortuneTellingSetting $settings;
 
@@ -1232,6 +1233,13 @@ class FortuneConversationService
                         return $discussionResult;
                     }
                 }
+            }
+
+            // 🎁 (2026-05-03) ตรวจสอบว่าลูกค้าขอ "ทำนายฟรี" — explicit keyword หรือกดปุ่ม FREE_CARD_START
+            //    มาก่อน isExplicitDeepReadingRequest เพื่อจับ keyword ฟรีให้ถูก
+            //    startFreeCardFlow จะเช็ค first-timer + feature toggle เอง — ถ้าไม่ผ่าน จะ fallback tier menu
+            if ($this->matchesFreeCardKeyword($messageText)) {
+                return $this->startFreeCardFlow($facebookUserId, $userProfile);
             }
 
             // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
@@ -3405,6 +3413,12 @@ class FortuneConversationService
         $celticResult = $this->handleCelticState($reading, $messageText);
         if ($celticResult !== null) {
             return $celticResult;
+        }
+
+        // 🎁 Free Card dispatch (ถ้าใช่ FREE_PREDICTED state — handle, else fall through)
+        $freeCardResult = $this->handleFreeCardState($reading, $messageText);
+        if ($freeCardResult !== null) {
+            return $freeCardResult;
         }
 
         return match ($status) {

@@ -714,23 +714,29 @@
             </h3>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {{-- 🎁 (2026-05-03) ระบบใหม่: ทำนายฟรี 1 ใบ ครั้งเดียว/platform --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        จำนวนดูดวงฟรี/วัน (พื้นฐาน)
+                        🎁 ทำนายฟรี 1 ใบ (ครั้งแรก/ลูกค้า)
                     </label>
-                    <input type="number" name="max_free_readings" min="0" max="100"
-                           value="{{ old('max_free_readings', $settings->max_free_readings) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">จำนวนครั้งที่ผู้ใช้ดูดวงพื้นฐานได้ฟรีต่อวัน</p>
-                    @if(($settings->max_free_readings ?? 0) == 0)
-                        <p class="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
-                            ⚠️ ตอนนี้ตั้งเป็น <strong>0</strong> = <strong>ปิดบริการดูดวงฟรี</strong><br>
-                            ระบบจะไม่พูดถึงดูดวงฟรีเลย — ลูกค้าจะเห็นแต่ดูดวงเสียค่าครูเท่านั้น
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-amber-400 transition">
+                        <input type="checkbox" name="enable_free_card_reading" value="1"
+                               {{ old('enable_free_card_reading', $settings->enable_free_card_reading ?? true) ? 'checked' : '' }}
+                               class="w-5 h-5 text-amber-600 rounded focus:ring-amber-500">
+                        <span class="text-sm text-gray-900 dark:text-white">เปิดระบบทำนายฟรี 1 ใบ</span>
+                    </label>
+                    <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        เปิด → ลูกค้าใหม่ครั้งแรก/platform เห็นปุ่ม "🎁 ทำนายฟรี (1 ใบ)" ใน DM แรก
+                        <br>กดปุ่ม → จั่วไพ่ 1 ใบ + Gemini ทำนายสถานการณ์ปัจจุบัน + ชวนซื้อ 39/99 เนียน
+                        <br>ปฏิเสธ → คำลา + ปรัชญาชีวิต (ไม่ฮาร์ดเซล)
+                    </p>
+                    @if(($settings->enable_free_card_reading ?? true))
+                        <p class="mt-2 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded px-2 py-1">
+                            ✅ เปิดสิทธิ์ฟรี — ลูกค้าใหม่ทุกคนได้ทำนาย 1 ใบฟรี <strong>ครั้งเดียวต่อท่าน</strong>
                         </p>
                     @else
-                        <p class="mt-2 text-xs text-emerald-700 dark:text-emerald-400">
-                            ✅ เปิดบริการดูดวงฟรีวันละ {{ $settings->max_free_readings }} ครั้ง
-                            <span class="text-gray-500">(ตั้งเป็น 0 = ปิดบริการฟรี)</span>
+                        <p class="mt-2 text-xs font-medium text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded px-2 py-1">
+                            ⚠️ ปิดอยู่ — ลูกค้าใหม่จะเห็นแค่ 39฿ / 99฿ (ไม่มีปุ่มฟรี)
                         </p>
                     @endif
                 </div>
@@ -755,6 +761,20 @@
                         <p class="mt-1 text-xs text-green-600 dark:text-green-400">มี QR Code อยู่แล้ว</p>
                     @endif
                 </div>
+            </div>
+
+            {{-- 📰 (2026-05-03) บริบทข่าวบ้านเมืองสำหรับทำนายฟรี --}}
+            <div class="mt-6">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    📰 บริบทข่าว/เหตุการณ์บ้านเมืองปัจจุบัน (ใช้กับทำนายฟรี)
+                </label>
+                <textarea name="free_card_news_context" rows="3"
+                          placeholder="เช่น: เศรษฐกิจชะลอตัว, การเลือกตั้งใกล้, น้ำมันแพง, ดอกเบี้ยขึ้น"
+                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">{{ old('free_card_news_context', $settings->free_card_news_context ?? '') }}</textarea>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    💡 AI Gemini จะ inject บริบทนี้ลง prompt ทำนายฟรี เพื่อให้คำทำนายผูกกับยุคปัจจุบัน
+                    <br>เว้นว่าง = ใช้ความรู้ทั่วไปของ AI เอง
+                </p>
             </div>
 
             {{-- โหมดแสดงช่องทางชำระเงิน --}}

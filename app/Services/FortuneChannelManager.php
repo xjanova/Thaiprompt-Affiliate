@@ -603,11 +603,15 @@ class FortuneChannelManager
                 //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
                 //   ✏️ (2026-05-03) ซ่อนปุ่ม 99 ถ้า admin ปิด Celtic
-                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message, $extra) {
+                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
-                    $buttons = [
-                        ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'],
-                    ];
+                    $offerFree = (bool) ($result['offer_free'] ?? false);
+                    $buttons = [];
+                    // 🎁 (2026-05-03) ปุ่ม "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด (offer_free flag)
+                    if ($offerFree) {
+                        $buttons[] = ['content_type' => 'text', 'title' => '🎁 ทำนายฟรี (1 ใบ)', 'payload' => 'FREE_CARD_START'];
+                    }
+                    $buttons[] = ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'];
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text', 'title' => '🔮 ไพ่ 10 ใบ 99 บาท', 'payload' => 'TIER_CELTIC_99'];
                     }
@@ -615,6 +619,41 @@ class FortuneChannelManager
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
+
+                // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
+                'free_card_drawn' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 1. ส่งภาพไพ่ก่อน (ถ้ามี)
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['tarot_image_url']);
+                            usleep(500000); // delay 0.5s ให้ภาพปรากฏก่อนข้อความ
+                        } catch (\Throwable $e) {
+                            // image fail ไม่เป็นไร — ส่งข้อความต่อ
+                        }
+                    }
+
+                    // 2. ส่งข้อความทำนาย + Quick Reply ตัวเลือก
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+                    $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+
+                    $buttons = [
+                        ['content_type' => 'text', 'title' => "🔹 ดูดวง {$deepPrice}฿", 'payload' => 'TIER_DEEP_39'],
+                    ];
+                    if ($celticEnabled) {
+                        $buttons[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿", 'payload' => 'TIER_CELTIC_99'];
+                    }
+                    $buttons[] = ['content_type' => 'text', 'title' => '🌙 ไม่สนใจ', 'payload' => 'FREE_CARD_DECLINE'];
+
+                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                })(),
+
+                // 🌙 (2026-05-03) ลูกค้าปฏิเสธ upsell หลังฟรี — คำลา + ปรัชญา (ไม่ฮาร์ดเซล ไม่มีปุ่ม)
+                'free_card_declined' => $fbService->sendMessage($userId, $message, $extra),
+
+                // 🎁 (2026-05-03) free flow chitchat / ไพ่จั่วไม่สำเร็จ / AI fail — ส่งข้อความ + Quick Reply เลือก tier
+                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
+                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
@@ -1397,14 +1436,56 @@ class FortuneChannelManager
                     $lineService, $userId, $result, $replyToken
                 ),
 
-                // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2 แพคเกจ
-                //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
-                //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
-                'tier_choice', 'tier_choice_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '🔹 39฿ พื้นฐาน', 'text' => '39'],
-                    ['label' => '🔮 99฿ เต็มสำรับ', 'text' => '99'],
-                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                ]),
+                // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2-3 แพคเกจ
+                //   - 🎁 ฟรี (เฉพาะ first-timer + feature เปิด — flag offer_free)
+                //   - 39฿ Basic Deep
+                //   - 99฿ Celtic Cross (ถ้า admin เปิด)
+                'tier_choice', 'tier_choice_invalid' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    $offerFree = (bool) ($result['offer_free'] ?? false);
+                    $quickReplies = [];
+                    if ($offerFree) {
+                        $quickReplies[] = ['label' => '🎁 ทำนายฟรี', 'text' => 'ทำนายฟรี'];
+                    }
+                    $quickReplies[] = ['label' => '🔹 39฿ พื้นฐาน', 'text' => '39'];
+                    if ($celticEnabled) {
+                        $quickReplies[] = ['label' => '🔮 99฿ เต็มสำรับ', 'text' => '99'];
+                    }
+                    $quickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                })(),
+
+                // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]
+                'free_card_drawn' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['tarot_image_url']);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+                    $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+
+                    $quickReplies = [
+                        ['label' => "🔹 ดูดวง {$deepPrice}฿", 'text' => '39'],
+                    ];
+                    if ($celticEnabled) {
+                        $quickReplies[] = ['label' => "🔮 99฿", 'text' => '99'];
+                    }
+                    $quickReplies[] = ['label' => '🌙 ไม่สนใจ', 'text' => 'ไม่สนใจ'];
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                })(),
+
+                // 🌙 (2026-05-03) ลูกค้าปฏิเสธ upsell — คำลา + ปรัชญา (ไม่ฮาร์ดเซล ไม่มีปุ่ม)
+                'free_card_declined' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🎁 (2026-05-03) free flow chitchat / fail — text + tier menu QR
+                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 'celtic_pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),

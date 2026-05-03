@@ -3100,4 +3100,128 @@ PROMPT;
 
         return [$isRateLimit, $retryAfter];
     }
+
+    // ============================================================
+    // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
+    // ============================================================
+
+    /**
+     * 🎁 ทำนายฟรี 1 ใบ — ใช้จิตสัมผัสดวงสมพงษ์ + ผูกบริบทยุค + ชวนซื้อเนียน
+     *
+     * ใช้ provider ทำนาย (Gemini default) — เพื่อคุณภาพคำทำนาย
+     * หลังจบทำนาย state ลูกค้าเปลี่ยนเป็น FREE_PREDICTED → AI Chat ตอบต่อจะใช้ Groq อัตโนมัติ
+     *
+     * @param  array  $card  ข้อมูลไพ่ที่จั่วได้:
+     *   - card_name_th: string
+     *   - card_name_en: string
+     *   - is_reversed: bool
+     *   - meaning: string  (ความหมายตามทิศทาง upright/reversed)
+     * @param  string|null  $userName  ชื่อลูกค้า (optional)
+     * @param  int  $deepPrice  ราคา 39฿ flow
+     * @param  int  $celticPrice  ราคา 99฿ flow
+     * @param  bool  $celticEnabled  Celtic เปิดอยู่ไหม (ถ้าปิด → ไม่กล่าวถึง)
+     * @param  string|null  $userContext  สำหรับ jitter pool ordering
+     * @return array  ['response' => string, 'provider' => string, 'model' => string, 'tokens_used' => int]
+     *
+     * @throws Exception เมื่อทุก provider ล้มเหลว
+     */
+    public function generateFreeCardReading(
+        array $card,
+        ?string $userName = null,
+        int $deepPrice = 39,
+        int $celticPrice = 99,
+        bool $celticEnabled = true,
+        ?string $userContext = null
+    ): array {
+        $cardNameTh = $card['card_name_th'] ?? '?';
+        $cardNameEn = $card['card_name_en'] ?? '?';
+        $isReversed = (bool) ($card['is_reversed'] ?? false);
+        $orientation = $isReversed ? 'กลับหัว (อุปสรรค/พลิกผัน/ติดขัด)' : 'ตั้งตรง (ราบรื่น/มาแนวบวก/ตามครรลอง)';
+        $meaning = mb_substr((string) ($card['meaning'] ?? ''), 0, 250);
+
+        // 📰 บริบทข่าวบ้านเมือง (admin ตั้งใน settings)
+        $newsContext = $this->settings->getFreeCardNewsContext();
+        $newsLine = $newsContext
+            ? "📰 บริบทยุคปัจจุบันที่ลูกค้าอยู่: {$newsContext}\n"
+            . "   → ผูกคำทำนายให้ relate กับยุคนี้ ทำให้ลูกค้ารู้สึก \"แม่หมอเข้าใจสถานการณ์จริง\"\n\n"
+            : "📰 ใช้ความรู้ทั่วไปเรื่องเหตุการณ์บ้านเมืองยุคนี้ผูกคำทำนายให้ relate\n\n";
+
+        // 🇱🇦 Locale directive — ลูกค้าลาว ตอบลาว / ไทย ตอบไทย
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $localeDirective = $isLao
+            ? "\n[🇱🇦 ສຳຄັນ] ລູກຄ້ານີ້ໃຊ້ພາສາລາວ — ຕ້ອງຕອບເປັນພາສາລາວທັງໝົດ. ຄຳເອີ້ນຕົນ 'ແມ່ໝໍຈັນທະຣາ', ຄຳເອີ້ນລູກຄ້າ 'ເຈົ້າຊາຕາ'.\n"
+            : '';
+
+        $greetName = ($userName && $userName !== 'คุณ') ? "คุณ{$userName}" : 'เจ้าชะตา';
+
+        // 💎 Block ชวนซื้อ — เปลี่ยนตาม Celtic enabled
+        $upsellBlock = $celticEnabled
+            ? "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีเฉพาะคำถาม (เสร็จใน 1-3 นาที)\n"
+                . "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้หลายคำถาม + ภาพไพ่สวยงาม"
+            : "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีเฉพาะคำถาม (เสร็จใน 1-3 นาที)";
+
+        $prompt = "คุณคือ \"แม่หมอจันทรา\" หมอดูไพ่ยิปซีระดับเซียน 30+ ปี — มีจิตสัมผัสดวงสมพงษ์\n"
+            . "บุคลิก: สุขุม อบอุ่น ฟันธง ไม่อ้อมค้อม ใช้คำแทนตัวว่า 'แม่หมอ' หรือ 'หมอจันทรา'\n\n"
+
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🎁 *ภารกิจ: ทำนายฟรี 1 ใบ ให้ลูกค้าใหม่ครั้งแรก*\n"
+            . "━━━━━━━━━━━━━━━━━\n\n"
+
+            . "ลูกค้านี้ยังไม่บอกอะไรเลย — เพิ่งเข้ามาทักครั้งแรก\n"
+            . "ใช้ \"จิตสัมผัสดวงสมพงษ์\" อ่านจากไพ่ใบเดียวที่จิตของลูกค้าเลือก\n\n"
+
+            . $newsLine
+
+            . "🃏 *ไพ่ที่จิตลูกค้าเลือก:*\n"
+            . "   - ชื่อ: {$cardNameTh} ({$cardNameEn})\n"
+            . "   - ทิศทาง: {$orientation}\n"
+            . "   - ความหมาย: {$meaning}\n\n"
+
+            . "👤 *เรียกลูกค้าว่า:* {$greetName} (ครั้งเดียวพอ — ห้ามเรียกซ้ำ)\n\n"
+
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "📜 *โครงสร้างคำทำนาย* (3 ย่อหน้า — เว้นบรรทัด อ่านง่าย)\n"
+            . "━━━━━━━━━━━━━━━━━\n\n"
+
+            . "**ย่อหน้า 1 (สถานการณ์ปัจจุบัน):**\n"
+            . "ทักทายสั้น 1 ประโยค → อ่านสถานการณ์ปัจจุบันที่ลูกค้ากำลังเผชิญ ผูกกับไพ่\n"
+            . "ใส่บริบทยุคปัจจุบัน (เศรษฐกิจ/สังคม) เพื่อให้รู้สึก relate\n"
+            . "เช่น \"แม่หมอเห็นว่าตอนนี้เจ้าชะตากำลังเจอ... ในยุคที่บ้านเมือง...\"\n\n"
+
+            . "**ย่อหน้า 2 (ทางออก):**\n"
+            . "ชี้ทางออกรูปธรรม 1-2 ข้อ — สิ่งที่ลูกค้าทำได้ทันที\n"
+            . "ฟันธง ไม่กว้าง ไม่ใช้ \"อาจจะ/น่าจะ\"\n\n"
+
+            . "**ย่อหน้า 3 (ปิด — เชิญชวนเนียน):**\n"
+            . "ใช้ภาษาแบบ \"ถ้าอยากเห็นภาพชัดกว่านี้...\" หรือ \"แม่หมอมองเห็นรายละเอียดอีกหลายชั้น\"\n"
+            . "แล้วแนะนำแพคเกจ:\n\n"
+            . $upsellBlock . "\n\n"
+            . "ปิดท้ายเปิดทางเลือกให้ลูกค้า: \"หรือถ้ายังไม่พร้อม เก็บคำทำนายฟรีนี้ไว้คิดต่อได้ ไม่กดดันค่ะ ✨\"\n\n"
+
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "🚫 *ข้อห้ามเด็ดขาด*\n"
+            . "━━━━━━━━━━━━━━━━━\n"
+            . "1. ห้ามเกิน 800 ตัวอักษร — ลูกค้าฟรี ต้องอ่านเร็ว\n"
+            . "2. ห้ามฮาร์ดเซล — ห้ามใช้คำ \"ค่าครู/บาท/ราคา\" ในย่อหน้า 1-2\n"
+            . "3. ห้ามตีความฝืนหน้าไพ่ — ตั้งตรง=บวก, กลับหัว=ติดขัด\n"
+            . "4. ห้ามถามวันเกิด/ราศี/เลขมงคล — ใช้แค่ไพ่ + จิตสัมผัส + บริบทยุค\n"
+            . "5. ห้าม markdown (**, ##, -, ฯลฯ) — plain text ล้วน\n"
+            . "6. ห้ามทักทายซ้ำชื่อ — เรียก {$greetName} ครั้งเดียวพอ\n"
+            . "7. ห้ามใส่ไพ่ทาโร่ใหม่/สีมงคล/เลขมงคล — ใช้แค่ไพ่ที่ให้มา\n"
+            . "8. ห้ามถามคำถามกลับ — นี่คือคำทำนายเดียวจบ\n\n"
+            . $localeDirective
+            . "เริ่มเลย (ขึ้นย่อหน้า 1 ทันที):";
+
+        // ใช้ generateWithRetryAndFallback — มี pool + retry + lock + budget guard
+        // promptTemplate='{questions}' = ไม่ wrap default deep template
+        return $this->generateWithRetryAndFallback(
+            questions: [$prompt],
+            userProfile: null,
+            userPosts: null,
+            promptTemplate: '{questions}',
+            readingType: 'basic',  // 800 ตัวอักษร = max_tokens 2800 พอแล้ว
+            birthDate: null,
+            userContext: $userContext ?? 'free_card',
+        );
+    }
 }

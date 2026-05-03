@@ -186,8 +186,13 @@ class FortuneSettingsController extends Controller
             'deep_prompt_template' => 'nullable|string',
             'use_global_ai_settings' => 'boolean',
             // การตั้งค่าพื้นฐาน
-            'max_free_readings' => 'required|integer|min:0|max:100',
+            // ⚠️ (2026-05-03) max_free_readings deprecated — แทนด้วย enable_free_card_reading
+            //   เก็บ validation ไว้เผื่อ backward compat (admin ส่งมาจาก form เก่า)
+            'max_free_readings' => 'nullable|integer|min:0|max:100',
             'reading_price' => 'required|numeric|min:0',
+            // 🎁 (2026-05-03) ระบบทำนายฟรี 1 ใบ ครั้งแรก/ลูกค้า
+            'enable_free_card_reading' => 'boolean',
+            'free_card_news_context' => 'nullable|string|max:1000',
             'is_enabled' => 'boolean',
             'respond_in_comment' => 'boolean',
             'require_registration' => 'boolean',
@@ -274,6 +279,8 @@ class FortuneSettingsController extends Controller
             'fortune_central_fallback_enabled',
             'enable_ai_chat',
             'admin_handover_enabled', 'takeover_notify_customer',
+            // 🎁 (2026-05-03) ระบบทำนายฟรี 1 ใบ
+            'enable_free_card_reading',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

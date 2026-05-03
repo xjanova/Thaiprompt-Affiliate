@@ -184,6 +184,9 @@ class FortuneTellingSetting extends Model
         'celtic_cross_main_prompt',
         'celtic_cross_followup_prompt',
         'celtic_cross_proactive_enabled',
+        // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
+        'enable_free_card_reading',
+        'free_card_news_context',
     ];
 
     /**
@@ -250,6 +253,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
         'celtic_cross_proactive_enabled' => 'boolean',
+        // 🎁 Free Card Reading (2026-05-03)
+        'enable_free_card_reading' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -322,6 +327,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_max_questions' => 5, // (2026-05-03) จำกัด 5 คำถาม default — admin override ได้
         'celtic_cross_qa_window_minutes' => 30,
         'celtic_cross_proactive_enabled' => true,
+        // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
+        'enable_free_card_reading' => true,
     ];
 
     /**
@@ -660,14 +667,33 @@ EOT;
     }
 
     /**
-     * ตรวจสอบว่าเปิดบริการดูดวงฟรีหรือไม่
+     * ตรวจสอบว่าเปิดบริการ "ทำนายฟรี 1 ใบ ครั้งแรก/platform" หรือไม่
      *
-     * เปิดเมื่อ max_free_readings > 0 เท่านั้น
-     * ถ้าปิด → ระบบจะไม่พูดถึงการดูดวงฟรีเลย และชี้ไปที่ดูดวงเสียค่าครูแทน
+     * 🎁 (2026-05-03) เปลี่ยนจาก max_free_readings (โควต้า/วัน) → enable_free_card_reading (boolean)
+     *   นโยบายใหม่: ฟรีครั้งเดียวต่อ platform_user_id เท่านั้น
+     *   - true  → ลูกค้าใหม่ครั้งแรกเห็นปุ่ม "🎁 ทำนายฟรี (1 ใบ)" + 39/99
+     *   - false → ลูกค้าทุกคนเห็นแค่ 39/99 (ปิดระบบฟรีทั้งหมด)
+     *
+     * ⚠️ การเช็คว่าลูกค้าใช้สิทธิ์ฟรีไปแล้วหรือยัง ใช้ FortuneReading::hasUsedFreeCard() แยกต่างหาก
+     *    method นี้แค่บอกว่า "feature เปิดอยู่ไหม"
      */
     public function isFreeReadingEnabled(): bool
     {
-        return (int) ($this->max_free_readings ?? 0) > 0;
+        return (bool) ($this->enable_free_card_reading ?? false);
+    }
+
+    /**
+     * 📰 (2026-05-03) ดึงบริบทข่าว/เหตุการณ์บ้านเมืองปัจจุบัน
+     *
+     * Admin ตั้งใน settings ได้ — AI จะ inject ลง prompt ทำนายฟรี
+     * ตัวอย่าง: "เศรษฐกิจชะลอ, การเมืองตึง, น้ำมันแพง, เลือกตั้งใกล้"
+     * AI จะใช้ผูกกับสถานการณ์ที่ลูกค้ากำลังเผชิญ ทำให้คำทำนายสมจริง + relate กับยุค
+     */
+    public function getFreeCardNewsContext(): ?string
+    {
+        $ctx = trim((string) ($this->free_card_news_context ?? ''));
+
+        return $ctx !== '' ? $ctx : null;
     }
 
     /**

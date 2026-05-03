@@ -113,6 +113,22 @@ class FortuneReading extends Model
     public const READING_TYPE_CELTIC_CROSS = 'celtic_cross';
 
     /**
+     * 🎁 (2026-05-03) ทำนายฟรี 1 ใบ — เฉพาะลูกค้าใหม่ครั้งแรก/platform
+     * จั่วไพ่ 1 ใบ + Gemini ทำนายสถานการณ์ปัจจุบัน + ทางออก
+     * จบแล้วชวนซื้อ 39/99 เนียน — ปฏิเสธ → คำลา + ปรัชญา (ไม่ฮาร์ดเซล)
+     */
+    public const READING_TYPE_FREE_CARD = 'free_card';
+
+    // ───────────────────────────────────────────────────────────
+    // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรกครั้งเดียว
+    // ───────────────────────────────────────────────────────────
+    /** สถานะหลังจั่วไพ่ + AI ทำนายเสร็จ — รอลูกค้าตอบ Quick Reply (39/99/ไม่สนใจ) */
+    public const STATUS_FREE_PREDICTED = 'free_predicted';
+
+    /** สถานะหลังลูกค้าปฏิเสธ upsell — ส่งคำลา + ปรัชญาแล้ว (ปิด conversation) */
+    public const STATUS_FREE_DECLINED = 'free_declined';
+
+    /**
      * รายการ status ที่หมายถึง "รอชำระเงิน" — ครอบคลุมทั้ง Deep 39฿ และ Celtic 99฿
      *
      * ใช้ใน whereIn() เวลาคิวรี่หา pending bills ทุกประเภท
@@ -365,6 +381,61 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🎁 Scope: เฉพาะการทำนายฟรี 1 ใบ (ระบบใหม่ 2026-05-03)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeFreeCard($query)
+    {
+        return $query->where('reading_type', self::READING_TYPE_FREE_CARD);
+    }
+
+    /**
+     * 🎁 ตรวจสอบว่าผู้ใช้ใช้สิทธิ์ทำนายฟรี 1 ใบแล้วหรือยัง (ตาม platform + platform_user_id)
+     *
+     * นโยบาย: ฟรีครั้งเดียวเท่านั้นต่อ platform_user_id
+     *   - FB user A กับ LINE user A เป็นคนละสิทธิ์ (link cross-platform ไม่ได้)
+     *   - นับว่าใช้สิทธิ์เมื่อ free_card reading มี responded_at != null
+     *     (หมายถึง AI ตอบสำเร็จแล้ว) — ถ้าจั่วแล้ว AI fail ก่อนตอบ → ยังไม่นับ ลองใหม่ได้
+     *
+     * @param  string  $platform        'facebook' หรือ 'line'
+     * @param  string  $platformUserId  ID ของผู้ใช้ใน platform นั้น
+     * @return bool  true = ใช้แล้ว / false = ยังเป็น first-timer
+     */
+    public static function hasUsedFreeCard(string $platform, string $platformUserId): bool
+    {
+        return self::where('platform', $platform)
+            ->where(function ($q) use ($platformUserId) {
+                // รองรับทั้งคอลัมน์ใหม่ (platform_user_id) และเก่า (facebook_user_id) เผื่อ legacy data
+                $q->where('platform_user_id', $platformUserId)
+                    ->orWhere('facebook_user_id', $platformUserId);
+            })
+            ->where('reading_type', self::READING_TYPE_FREE_CARD)
+            ->whereNotNull('responded_at')
+            ->exists();
+    }
+
+    /**
+     * 🎁 ตรวจสอบว่าควรเสนอ "ทำนายฟรี" ปุ่มให้ลูกค้าหรือไม่
+     *
+     * เงื่อนไข: settings เปิด + ลูกค้ายังไม่เคยใช้สิทธิ์ฟรี
+     *
+     * @param  string  $platform
+     * @param  string  $platformUserId
+     * @return bool
+     */
+    public static function shouldOfferFreeCard(string $platform, string $platformUserId): bool
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        if (! $settings->isFreeReadingEnabled()) {
+            return false;
+        }
+
+        return ! self::hasUsedFreeCard($platform, $platformUserId);
+    }
+
+    /**
      * นับจำนวนการทำนายเชิงลึกฟรีของผู้ใช้ Facebook ในวันนี้
      */
     public static function countTodayDeepReadings(string $facebookUserId): int
@@ -583,6 +654,8 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_AWAITING_QUESTION,
                 self::STATUS_CELTIC_GENERATING,
                 self::STATUS_CELTIC_QA_PROMPT,
+                // 🎁 Free Card states (2026-05-03) — รอลูกค้าตอบหลังทำนายฟรี
+                self::STATUS_FREE_PREDICTED,
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -603,6 +676,11 @@ class FortuneReading extends Model
                     ->orWhere(function ($sub) {
                         $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
                             ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                    })
+                // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
+                    ->orWhere(function ($sub) {
+                        $sub->where('conversation_status', self::STATUS_FREE_PREDICTED)
+                            ->where('updated_at', '>=', now()->subMinutes(15));
                     })
                 // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)
                     ->orWhere(function ($sub) {

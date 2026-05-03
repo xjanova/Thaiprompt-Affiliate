@@ -1,0 +1,411 @@
+<?php
+
+namespace App\Services\Fortune;
+
+use App\Models\FortuneReading;
+use App\Models\TarotCard;
+use App\Services\FortuneAIService;
+use App\Services\FortuneLocaleService;
+use Exception;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * 🎁 Trait: ระบบ "ทำนายฟรี 1 ใบ ครั้งแรก/platform" (2026-05-03)
+ *
+ * นโยบาย:
+ *   - ฟรีครั้งเดียวต่อ platform_user_id (FB / LINE แยกกัน)
+ *   - ลูกค้าใหม่ครั้งแรก DM → เห็นปุ่ม "🎁 ทำนายฟรี (1 ใบ)"
+ *   - กดปุ่ม → จั่วไพ่ 1 ใบทันที (ไม่ขอ context จากลูกค้า)
+ *   - Gemini ทำนายโดยใช้ "จิตสัมผัสดวงสมพงษ์" + ผูกกับบริบทยุค
+ *   - ทำนายเสร็จ → AI พ่วงท้ายชวนซื้อ 39/99 เนียน
+ *   - ลูกค้าปฏิเสธ → คำลา + ปรัชญาชีวิต (ไม่ฮาร์ดเซล ไม่ตบท้าย)
+ *   - หลังจบ state ลูกค้าจะคุยกับ Groq (chat AI) ตามปกติ
+ *
+ * State flow:
+ *   [first-time DM] → tier menu (มีปุ่มฟรีเพิ่ม)
+ *      → กด FREE_CARD_START → startFreeCardFlow()
+ *         → จั่วไพ่ + AI ทำนาย → STATUS_FREE_PREDICTED
+ *            → ลูกค้ากด 39 → ไป tier 39
+ *            → ลูกค้ากด 99 → ไป Celtic 99
+ *            → ลูกค้ากด ไม่สนใจ → endFreeCardWithGoodbye() → STATUS_FREE_DECLINED
+ *
+ * ใช้:
+ *   class FortuneConversationService { use FreeCardConversationTrait; }
+ */
+trait FreeCardConversationTrait
+{
+    /**
+     * Dispatch handler สำหรับ free card states
+     * เรียกจาก main dispatch ใน FortuneConversationService
+     *
+     * @return array|null  null ถ้าไม่ใช่ free state — ให้ caller ส่งต่อ default handler
+     */
+    protected function handleFreeCardState(FortuneReading $reading, string $messageText): ?array
+    {
+        if ($reading->conversation_status !== FortuneReading::STATUS_FREE_PREDICTED) {
+            return null;
+        }
+
+        return $this->handleFreeCardUpsellResponse($reading, $messageText);
+    }
+
+    /**
+     * 🎯 ตรวจสอบว่าข้อความเป็นการขอ "ทำนายฟรี" หรือไม่
+     *
+     * รองรับ:
+     *   - กดปุ่ม Quick Reply (FB payload "FREE_CARD_START" → text "ทำนายฟรี")
+     *   - พิมพ์ตรงๆ "ทำนายฟรี" / "ดูดวงฟรี" / "ฟรี"
+     *   - 🇱🇦 ลาว: "ທຳນາຍຟຣີ" / "ເບິ່ງດວງຟຣີ"
+     */
+    protected function matchesFreeCardKeyword(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        // ลบคำลงท้ายไทย/ลาว
+        $clean = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|หน่อย|ที|สิ|เลย|เດີ|ແດ່)\s*$/u', '', $clean);
+
+        $exact = [
+            // ไทย
+            'ทำนายฟรี', 'ทำนายฟรี1ใบ', 'ทำนายฟรี 1 ใบ', 'ทำนายฟรี1', 'ทำนาย ฟรี',
+            'ดูดวงฟรี', 'ดูดวง ฟรี', 'ขอฟรี', 'ฟรี', 'free',
+            'free_card_start', 'free card start', 'free card',
+            // 🇱🇦 ລາວ
+            'ທຳນາຍຟຣີ', 'ເບິ່ງດວງຟຣີ', 'ຟຣີ',
+        ];
+
+        foreach ($exact as $kw) {
+            if ($clean === $kw || $clean === mb_strtolower($kw)) {
+                return true;
+            }
+        }
+
+        // ตรวจ "ทำนาย" + "ฟรี" ในข้อความเดียวกัน (allow: "ขอทำนายฟรีหน่อย")
+        if (mb_strpos($clean, 'ฟรี') !== false &&
+            (mb_strpos($clean, 'ทำนาย') !== false || mb_strpos($clean, 'ดูดวง') !== false)) {
+            return mb_strlen($clean) <= 30;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🎯 Entry point: เริ่ม free card flow
+     *
+     * เรียกจาก:
+     *   - dispatchAction เมื่อข้อความ match matchesFreeCardKeyword()
+     *   - presentTierChoice → handleTierChoice เมื่อลูกค้าพิมพ์ "ฟรี"
+     *
+     * Logic:
+     *   1. เช็ค feature toggle (isFreeReadingEnabled) — ถ้าปิด → fallback tier menu
+     *   2. เช็คว่าลูกค้าเคยใช้สิทธิ์ฟรีแล้วหรือยัง (hasUsedFreeCard) — ถ้าใช้แล้ว → fallback tier menu
+     *   3. สร้าง FortuneReading type='free_card' status='new' (placeholder)
+     *   4. จั่วไพ่ 1 ใบ
+     *   5. เรียก AI generateFreeCardReading() → ส่งคืน 'free_card_drawn' action
+     *   6. ChannelManager จะส่งภาพไพ่ + ข้อความ + Quick Reply [39][99][ไม่สนใจ]
+     */
+    protected function startFreeCardFlow(string $platformUserId, ?array $userProfile = null): array
+    {
+        $platform = $this->currentPlatform;
+        $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
+
+        // 🔒 Feature toggle
+        if (! $this->settings->isFreeReadingEnabled()) {
+            Log::info('FreeCard: ระบบฟรีปิดอยู่ — fallback tier menu', [
+                'platform' => $platform,
+                'platform_user_id' => $platformUserId,
+            ]);
+
+            return $this->startDeepReadingFlow($platformUserId, $userProfile);
+        }
+
+        // 🔒 First-timer check — ถ้าใช้สิทธิ์แล้ว → ไป tier menu ตรง (ไม่กล่าวถึงฟรีอีก)
+        if (FortuneReading::hasUsedFreeCard($platform, $platformUserId)) {
+            Log::info('FreeCard: ลูกค้าใช้สิทธิ์ฟรีไปแล้ว — fallback tier menu', [
+                'platform' => $platform,
+                'platform_user_id' => $platformUserId,
+            ]);
+
+            return $this->startDeepReadingFlow($platformUserId, $userProfile);
+        }
+
+        // ⚠️ ปิด conversation เก่า (กัน orphan state)
+        $this->closeAllActiveConversations($platformUserId);
+
+        // 1️⃣ สร้าง reading สถานะ 'new' (placeholder ก่อนจั่วไพ่)
+        $reading = FortuneReading::create([
+            'facebook_user_id' => $platformUserId,
+            'facebook_user_name' => $name,
+            'user_profile' => $userProfile,
+            'questions' => [],
+            'reading_type' => FortuneReading::READING_TYPE_FREE_CARD,
+            'conversation_status' => FortuneReading::STATUS_NEW,
+            'response_type' => 'private_message',
+            'ai_response' => '',
+            'ai_provider' => '',
+            'platform' => $platform,
+            'platform_user_id' => $platformUserId,
+        ]);
+
+        Log::info('FreeCard: สร้าง free_card reading ใหม่', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'platform_user_id' => $platformUserId,
+        ]);
+
+        // 2️⃣ จั่วไพ่ 1 ใบ — สุ่มจากทั้งสำรับ + 50/50 reversed
+        try {
+            $card = $this->drawSingleTarotCard();
+        } catch (Exception $e) {
+            Log::error('FreeCard: จั่วไพ่ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'free_card_draw_failed',
+                'message' => "🙏 ขออภัยค่ะ ระบบสุ่มไพ่ขัดข้องชั่วคราว\nลองทักมาใหม่ในอีกครู่ได้นะคะ ✨",
+                'reading' => $reading,
+            ];
+        }
+
+        // เก็บข้อมูลไพ่ลง conversation_state เพื่อ debug + record
+        $reading->setConversationState('free_card', [
+            'card_id' => $card['card_id'],
+            'card_name_th' => $card['card_name_th'],
+            'card_name_en' => $card['card_name_en'],
+            'is_reversed' => $card['is_reversed'],
+            'image_url' => $card['image_url'],
+            'drawn_at' => now()->toIso8601String(),
+        ]);
+
+        // 3️⃣ เรียก AI ทำนาย
+        try {
+            $deepPrice = (int) $this->getDeepReadingPrice();
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+            $aiService = new FortuneAIService($this->settings);
+            $result = $aiService->generateFreeCardReading(
+                card: $card,
+                userName: $name,
+                deepPrice: $deepPrice,
+                celticPrice: $celticPrice,
+                celticEnabled: $celticEnabled,
+                userContext: "free_card:{$reading->id}",
+            );
+
+            $response = trim($result['response'] ?? '');
+            if ($response === '' || mb_strlen($response) < 100) {
+                throw new Exception('AI ตอบกลับสั้นเกินไป (' . mb_strlen($response) . ' ตัวอักษร)');
+            }
+        } catch (\Throwable $e) {
+            Log::error('FreeCard: AI ทำนายล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            // ❌ AI fail → ปิด reading (ไม่ mark consumed — ลูกค้าลองใหม่ได้)
+            //    เพราะ hasUsedFreeCard() เช็ค responded_at != null เท่านั้น
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'free_card_ai_failed',
+                'message' => "🙏 ขออภัยค่ะ แม่หมอเชื่อมพลังจักรวาลไม่ติดในจังหวะนี้\n"
+                    . "ลองทักมาใหม่ในอีก 1-2 นาทีนะคะ — สิทธิ์ฟรียังไม่ถูกใช้ค่ะ ✨",
+                'reading' => $reading,
+            ];
+        }
+
+        // 4️⃣ บันทึกผลลง reading + เปลี่ยน state เป็น FREE_PREDICTED
+        $reading->update([
+            'ai_response' => $response,
+            'ai_provider' => $result['provider'] ?? null,
+            'ai_model' => $result['model'] ?? null,
+            'tokens_used' => (int) ($result['tokens_used'] ?? 0),
+            'responded_at' => now(), // ⭐ mark ว่าใช้สิทธิ์ฟรีแล้ว
+            'conversation_status' => FortuneReading::STATUS_FREE_PREDICTED,
+        ]);
+
+        Log::info('FreeCard: ทำนายสำเร็จ → STATUS_FREE_PREDICTED', [
+            'reading_id' => $reading->id,
+            'card' => $card['card_name_th'] . ($card['is_reversed'] ? ' (กลับหัว)' : ' (ตั้งตรง)'),
+            'response_len' => mb_strlen($response),
+            'provider' => $result['provider'] ?? '?',
+            'tokens' => $result['tokens_used'] ?? 0,
+        ]);
+
+        // 5️⃣ ส่ง response — ChannelManager จะ:
+        //   - ส่งภาพไพ่ก่อน (จาก tarot_image_url)
+        //   - ส่งข้อความคำทำนาย
+        //   - ส่ง Quick Reply [🔹 ดูดวง 39][🔮 99][🌙 ไม่สนใจ]
+        $orientation = $card['is_reversed'] ? '(กลับหัว)' : '(ตั้งตรง)';
+        $cardHeader = "🃏✨ *ไพ่ที่จิตเจ้าชะตาเลือก:*\n"
+            . "*{$card['card_name_th']}* {$orientation}\n"
+            . "({$card['card_name_en']})\n\n"
+            . "━━━━━━━━━━━━━━━━━\n\n";
+
+        return [
+            'action' => 'free_card_drawn',
+            'message' => $cardHeader . $response,
+            'reading' => $reading,
+            'tarot_image_url' => $card['image_url'],
+            'free_card_data' => $card,
+        ];
+    }
+
+    /**
+     * จั่วไพ่ 1 ใบ — สุ่มจากทั้งสำรับ + 50/50 reversed
+     *
+     * @return array  ['card_id', 'card_name_th', 'card_name_en', 'is_reversed', 'meaning', 'image_url']
+     *
+     * @throws Exception เมื่อไม่พบไพ่ในระบบ
+     */
+    protected function drawSingleTarotCard(): array
+    {
+        $card = TarotCard::where('is_active', true)
+            ->inRandomOrder()
+            ->first();
+
+        if (! $card) {
+            throw new Exception('ไม่พบไพ่ทาโรต์ในระบบ — กรุณา seed tarot_cards table');
+        }
+
+        $isReversed = (bool) random_int(0, 1);
+
+        return [
+            'card_id' => $card->id,
+            'card_name_th' => $card->getName('th'),
+            'card_name_en' => $card->getName('en'),
+            'is_reversed' => $isReversed,
+            'meaning' => $card->getMeaning($isReversed, 'th'),
+            'image_url' => $card->image_url,
+        ];
+    }
+
+    /**
+     * State: STATUS_FREE_PREDICTED
+     * ลูกค้าตอบกลับหลังเห็นคำทำนายฟรี — เลือกซื้อ 39/99 หรือปฏิเสธ
+     */
+    protected function handleFreeCardUpsellResponse(FortuneReading $reading, string $messageText): array
+    {
+        $textLower = mb_strtolower(trim($messageText));
+        $deepPriceInt = (int) $this->getDeepReadingPrice();
+        $celticPriceInt = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+        // ❌ ปฏิเสธ / ไม่สนใจ — ส่งคำลา + ปรัชญา (ไม่ฮาร์ดเซล)
+        $declineKeywords = [
+            'ไม่สนใจ', 'ไม่เอา', 'ไม่อยาก', 'ไม่จ่าย', 'ไม่ดู', 'ไม่', 'ขอบคุณ', 'ขอบคุณค่ะ',
+            'พอแค่นี้', 'พอแล้ว', 'จบ', 'ไม่ขอบคุณ', 'no', 'no thanks', 'cancel', 'ยกเลิก',
+            'ไว้ก่อน', 'ไว้ทีหลัง', 'ไว้คิดดู', 'ขอคิดดูก่อน',
+            // 🇱🇦 ลาว
+            'ບໍ່ສົນໃຈ', 'ບໍ່ເອົາ', 'ບໍ່ຢາກ', 'ບໍ່', 'ຂອບໃຈ', 'ພໍແລ້ວ', 'ຍົກເລີກ',
+            'free_card_decline',
+        ];
+        foreach ($declineKeywords as $kw) {
+            if ($textLower === mb_strtolower($kw) || str_contains($textLower, mb_strtolower($kw))) {
+                if (mb_strlen($textLower) <= 30) { // ป้องกันจับผิด — keyword ต้องอยู่ในข้อความสั้น
+                    return $this->endFreeCardWithGoodbye($reading);
+                }
+            }
+        }
+
+        // 🔮 99฿ Celtic — เช็คก่อน 39 (กันชน)
+        if ($celticEnabled) {
+            $celticKeywords = [
+                (string) $celticPriceInt, 'celtic', 'เซลติก', 'เต็มสำรับ', 'ไพ่ยิปซีเต็ม',
+                'แพคเกจ 2', 'แพคเกจที่ 2', 'แบบที่ 2', 'tier_celtic', 'tier_celtic_99',
+            ];
+            foreach ($celticKeywords as $kw) {
+                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                    Log::info('FreeCard: ลูกค้าเลือก Celtic 99฿ หลังทำนายฟรี', [
+                        'reading_id' => $reading->id,
+                    ]);
+                    // ปิด free reading + เริ่ม Celtic flow ใหม่
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+                }
+            }
+        }
+
+        // 🔹 39฿ Deep
+        $deepKeywords = [
+            (string) $deepPriceInt, 'ดูดวง 39', 'เชิงลึก', 'ละเอียด', 'พื้นฐาน',
+            'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'tier_deep', 'tier_deep_39',
+            'ดูดวง', 'ทำนาย', // ลูกค้าพิมพ์ "ดูดวง" lone หลังฟรี = อยากซื้อต่อ
+        ];
+        foreach ($deepKeywords as $kw) {
+            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                Log::info('FreeCard: ลูกค้าเลือก Deep 39฿ หลังทำนายฟรี', [
+                    'reading_id' => $reading->id,
+                ]);
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+            }
+        }
+
+        // ❓ ข้อความอื่น — chitchat → ส่งให้ AI Chat (Groq) ตอบต่อ + แทรก hint ปุ่ม
+        //    เพราะ state คือ FREE_PREDICTED → AI chat (Groq) จะตอบต่อตามปกติ
+        //    ระบบจะ route กลับมาที่นี่ถ้าลูกค้าตอบใหม่ → ลองจับ keyword อีกรอบ
+        return [
+            'action' => 'free_card_chitchat',
+            'message' => "🌙 หากเจ้าชะตาอยากเจาะลึก เลือกได้ที่ปุ่มด้านล่างเลยนะคะ ✨\n\n"
+                . "🔹 *ดูดวงเชิงลึก {$deepPriceInt} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี\n"
+                . ($celticEnabled ? "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้หลายคำถาม\n" : '')
+                . "🌙 *ไม่สนใจ* — ลาแม่หมอแบบสุภาพ",
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 🌙 จบ free flow แบบสุภาพ + ปรัชญา (ไม่ฮาร์ดเซล)
+     *
+     * ส่ง:
+     *   - คำลา (สุ่ม 1 จาก 3 แบบ)
+     *   - ปรัชญาชีวิต (สุ่ม 1 จาก 7 quote — theme "ยังไม่ถึงเวลา")
+     *
+     * ❌ ห้าม: ขายของ / กดดัน / "ถ้าเปลี่ยนใจ..." / "ค่าครูแค่..."
+     */
+    protected function endFreeCardWithGoodbye(FortuneReading $reading): array
+    {
+        // เลือก locale ปัจจุบัน (TH หรือ Lao)
+        $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
+        $locale = $isLao ? 'lo' : 'th';
+
+        // โหลดจาก config
+        $quotes = config('fortune-philosophies.quotes', []);
+        $goodbyes = config('fortune-philosophies.goodbyes', []);
+
+        // 🎲 สุ่ม 1 ข้อ
+        $quote = ! empty($quotes) ? $quotes[array_rand($quotes)] : null;
+        $goodbye = ! empty($goodbyes) ? $goodbyes[array_rand($goodbyes)] : null;
+
+        // เลือกข้อความตาม locale (fallback Thai)
+        $quoteText = $quote ? ($quote[$locale] ?? $quote['th'] ?? '') : '';
+        $goodbyeText = $goodbye ? ($goodbye[$locale] ?? $goodbye['th'] ?? '') : '';
+
+        // ปิด state
+        $reading->update(['conversation_status' => FortuneReading::STATUS_FREE_DECLINED]);
+
+        // ประกอบข้อความ
+        $message = $goodbyeText . "\n\n"
+            . "━━━━━━━━━━━━━━━━━\n\n"
+            . "💭 " . $quoteText . "\n\n"
+            . "🙏";
+
+        Log::info('FreeCard: ลูกค้าปฏิเสธ → ส่งคำลา + ปรัชญา', [
+            'reading_id' => $reading->id,
+            'locale' => $locale,
+        ]);
+
+        return [
+            'action' => 'free_card_declined',
+            'message' => $message,
+            'reading' => $reading,
+            'no_default_qr' => true, // ⛔ ห้าม ChannelManager ใส่ default QR (ไม่ฮาร์ดเซล)
+        ];
+    }
+}
