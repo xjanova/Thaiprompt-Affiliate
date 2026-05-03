@@ -483,11 +483,17 @@ class FacebookWebhookController extends Controller
             $price = 39;
         }
 
+        // 🎁 (2026-05-04) Pay-Later teaser — โฆษณาสิทธิ์ครั้งแรกใน DM
+        //   gate downstream: shouldUseRequestBeforePay() เช็ค first-time/platform ให้
+        //   ถ้าใช้สิทธิ์ไปแล้ว → flow ในระบบจะ fallback เป็น pay-first อัตโนมัติ
+        $payLaterTeaser = "🎁 *สิทธิ์ครั้งแรก: ดูคำทำนายก่อน — จ่ายทีหลังได้* ✨";
+
         $variants = [
             // v1: coffee + self-drawn card
             "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
                 ."☕ ลองดูดวงดูไหม? {$price} บาท เท่าค่ากาแฟ 1 แก้ว\n"
                 ."แต่ได้คำทำนายจาก **ดาวเจ้าชนะของคุณ** + ไพ่ที่พลังจิตคุณเลือกเอง\n\n"
+                .$payLaterTeaser."\n\n"
                 ."พิมพ์ \"ดูดวง\" ได้เลยค่ะ 🔮",
 
             // v2: testimonial
@@ -495,6 +501,7 @@ class FacebookWebhookController extends Controller
                 ."หลายคนบอกว่า คำทำนายของหมอจันทรา\n"
                 ."\"เจอจุดที่ไม่เคยคิดมาก่อน\" ✨\n\n"
                 ."💎 ดูดวงเชิงลึก {$price} บาท\n"
+                .$payLaterTeaser."\n\n"
                 ."พิมพ์ \"ดูดวง\" เพื่อเริ่มนะคะ",
 
             // v3: astrology transit
@@ -502,6 +509,7 @@ class FacebookWebhookController extends Controller
                 ."ดาวช่วงนี้โคจรส่งผลพิเศษต่อหลายราศี\n"
                 ."อยากรู้ไหมว่า ดาวของคุณจะพาไปทางไหน?\n\n"
                 ."🔮 {$price} บาท วิเคราะห์จาก ดาวเจ้าชนะ + ไพ่ยิปซี\n"
+                .$payLaterTeaser."\n\n"
                 ."พิมพ์ \"ดูดวง\" ได้เลยนะคะ",
 
             // v4: emotional
@@ -509,6 +517,7 @@ class FacebookWebhookController extends Controller
                 ."มีเรื่องในใจที่อยากระบาย แต่ไม่รู้จะไปปรึกษาใคร?\n"
                 ."หมอจันทราฟัง + ชี้ทางออกจาก ดวงของคุณเอง\n\n"
                 ."{$price} บาท = ค่าที่ปรึกษาที่ตั้งใจ\n"
+                .$payLaterTeaser."\n\n"
                 ."พิมพ์ \"ดูดวง\" ลองดูนะคะ",
         ];
 
