@@ -775,7 +775,10 @@ return [
                 ['label' => 'WebP Image Converter', 'route' => 'admin.webp.index', 'icon' => 'fas fa-image'],
                 ['label' => 'Page Builder', 'route' => 'admin.page-builder.index', 'icon' => 'fas fa-puzzle-piece'],
                 ['label' => 'Tarot System', 'route' => 'admin.tarot.index', 'icon' => 'fas fa-magic'],
-                ['label' => 'Video Rewards', 'route' => 'admin.video-rewards.dashboard', 'icon' => 'fas fa-video'],
+                // 🚧 (2026-05-04) Video Rewards ซ่อนชั่วคราว — VideoRewardAdminController เป็น API-only
+                //    ทุก method return JSON ไม่มี Blade view — คลิกแล้วเจอ raw JSON แทน UI
+                //    ดูบันทึกบักเต็ม: brain note "Bug — Video Rewards admin missing UI (API-only controller)"
+                //    ['label' => 'Video Rewards', 'route' => 'admin.video-rewards.dashboard', 'icon' => 'fas fa-video'],
             ],
         ],
 
