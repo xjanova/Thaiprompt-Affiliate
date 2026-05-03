@@ -618,8 +618,13 @@ trait CelticCrossConversationTrait
             }
         }
 
+        // ✅ (2026-05-04) Explicit pick keywords — ชัดเจนว่าจะเปิดไพ่ ห้ามถือเป็น chitchat
+        //    เคสที่เคยติด: "พร้อมแล้วค่ะ", "เปิดเลย", "ok", "yes", "ใช่" — ลูกค้ายืนยันชัด
+        //    ที่เคย bug: looksLikeMetaOrChitchat อาจจับ "ดี" prefix → "ดีค่ะเปิดเลย" → chitchat → ไม่เปิดไพ่
+        $isExplicitPick = $this->matchesCelticReadyKeyword($messageText);
+
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — ห้ามถือเป็น "พร้อม" สุ่มไพ่
-        if ($this->looksLikeFortuneRestartRequest($messageText)) {
+        if (! $isExplicitPick && $this->looksLikeFortuneRestartRequest($messageText)) {
             $picked = $reading->getCelticPickedCount();
             $next = $reading->getNextCelticPosition() ?? 11;
 
@@ -635,8 +640,8 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // chitchat → ย้ำขั้นตอน
-        if ($this->looksLikeMetaOrChitchat($messageText)) {
+        // chitchat → ย้ำขั้นตอน (ข้ามได้ถ้า explicit pick keyword)
+        if (! $isExplicitPick && $this->looksLikeMetaOrChitchat($messageText)) {
             return [
                 'action' => 'celtic_chitchat_reminder',
                 'message' => "🃏 ตอนนี้อยู่ขั้นเปิดไพ่นะคะ\n\n"
@@ -646,14 +651,38 @@ trait CelticCrossConversationTrait
             ];
         }
 
+        // 📊 (2026-05-04) Diagnostic log — ทำให้ debug stuck-at-card-N ในอนาคตง่าย
+        \Illuminate\Support\Facades\Log::info('🃏 Celtic: handleCelticPicking → attempt pickNextCard', [
+            'reading_id' => $reading->id,
+            'picked_count_before' => $reading->getCelticPickedCount(),
+            'next_position' => $reading->getNextCelticPosition(),
+            'message_preview' => mb_substr($messageText, 0, 80),
+            'explicit_pick_kw' => $isExplicitPick,
+        ]);
+
         // ไม่ใช่ chitchat — ถือว่า "พร้อม" เปิดไพ่
         $service = app(CelticCrossService::class);
         $result = $service->pickNextCard($reading);
 
         if (! $result['success']) {
+            // 📊 (2026-05-04) Log failure ชัดเจน — กัน silent stuck
+            \Illuminate\Support\Facades\Log::warning('🃏 Celtic: pickNextCard ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'next_position' => $reading->getNextCelticPosition(),
+                'failure_message' => $result['message'] ?? null,
+            ]);
+
+            // 🛟 (2026-05-04) ใส่ Quick Reply ในข้อความ failure ด้วย — ไม่ให้ลูกค้าค้าง
+            //    เปลี่ยน action เป็น celtic_chitchat_reminder ที่ ChannelManager มี QR อยู่แล้ว
+            $picked = $reading->getCelticPickedCount();
+            $next = $reading->getNextCelticPosition() ?? '?';
+
             return [
-                'action' => 'celtic_pick_failed',
-                'message' => '⚠️ ' . ($result['message'] ?? 'สุ่มไพ่ไม่สำเร็จ ลองอีกครั้ง'),
+                'action' => 'celtic_chitchat_reminder',
+                'message' => "⚠️ สุ่มไพ่ใบที่ {$next} ไม่สำเร็จ — ลองพิมพ์ 'พร้อม' หรือกดปุ่มข้างล่างอีกครั้งนะคะ\n\n"
+                    . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
+                    . ($result['message'] ?? '')
+                    . "\n\nหากกดแล้วไม่หาย ลองพิมพ์ *'สับใหม่'* เพื่อรีเซ็ตไพ่ (ไม่ต้องจ่ายซ้ำ)",
                 'reading' => $reading,
             ];
         }
@@ -975,6 +1004,41 @@ trait CelticCrossConversationTrait
      * เช่น "ดูดวง", "ดูดวงใหม่", "เริ่มใหม่", "ทำนาย" — คำเปล่าๆ ไม่มีบริบท
      * ใช้กัน UX ปัญหา: ลูกค้าพิมพ์ "ดูดวง" ระหว่างเปิดไพ่ → ถือเป็น "พร้อม" สุ่มไพ่ผิด
      */
+    /**
+     * 🃏 (2026-05-04) ตรวจ explicit pick keywords สำหรับ CELTIC_PICKING
+     *
+     * เคยมี bug: ลูกค้าพิมพ์ "ดีค่ะเปิดเลย" / "ok พร้อม" / "เอาเลย" → ถูก looksLikeMetaOrChitchat
+     * จับว่าเป็น chitchat (เพราะ "ดี" prefix หรือ "OK" มี "k") → ส่ง reminder วน ไม่เปิดไพ่
+     *
+     * แก้: ถ้า text มี keyword ชัดเจน → ตัดสินใจ "เปิดไพ่" ทันที ข้าม chitchat heuristic
+     *
+     * Match strategy: str_contains (ไม่ใช่ exact) เพื่อจับ "พร้อมแล้วค่ะเปิดเลย" / "ok เปิด"
+     */
+    protected function matchesCelticReadyKeyword(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if ($clean === '') {
+            return false;
+        }
+
+        // คำที่บ่งชี้ชัดว่าจะเปิดไพ่ — ทั้งไทย/อังกฤษ/ลาว
+        $keywords = [
+            'พร้อม', 'พรอม', 'เปิดเลย', 'เปิดไพ่', 'เปิดต่อ', 'เปิด', 'เอาเลย', 'เอาแล้ว',
+            'ok', 'okay', 'โอเค', 'oke', 'okok',
+            'yes', 'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'จัด', 'จัดไป', 'ไป', 'go',
+            'ໄພ່ຕໍ່', 'ພ້ອມ', 'ເປີດ', 'ເປີດໄພ່',
+        ];
+
+        foreach ($keywords as $kw) {
+            $kwLower = mb_strtolower($kw);
+            if (str_contains($clean, $kwLower)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     protected function looksLikeFortuneRestartRequest(string $text): bool
     {
         $clean = mb_strtolower(trim($text));

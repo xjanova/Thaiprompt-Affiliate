@@ -478,4 +478,115 @@ class CelticCrossService
             'celtic_summary_image_path' => null,
         ]);
     }
+
+    /**
+     * 🔮 สร้างข้อความ "นำลูกค้ากลับมาที่จุดเดิม" สำหรับ Celtic active state
+     *
+     * ใช้กับ 2 เคสหลัก:
+     *   1. ลูกค้าส่งรูป/สลิป/sticker ระหว่างกลาง flow → ตอบเตือนแทน silent
+     *   2. ลูกค้าหายไปแล้วกลับมา (พิมพ์อะไรก็ตาม) → resume ที่ position เดิม
+     *
+     * Returns ['message' => str, 'quick_replies' => array]
+     * Caller responsible สำหรับการส่ง — ใช้ FB sendMessage หรือ LINE replyMessage
+     *
+     * @param  string  $reason  context สำหรับปรับ wording (image|sticker|generic|reentry)
+     */
+    public function buildResumeMessage(FortuneReading $reading, string $reason = 'generic'): array
+    {
+        $status = $reading->conversation_status;
+        $billRef = $reading->bill_reference ?? '-';
+
+        // Header ตาม reason
+        $header = match ($reason) {
+            'image' => "📸 รับรูปแล้วค่ะ — แต่ตอนนี้เจ้าชะตาอยู่ในรอบดูดวงไพ่ Celtic นะคะ\n\n",
+            'sticker' => "💖 ขอบคุณค่ะ — แต่ตอนนี้เจ้าชะตาอยู่ในรอบดูดวงไพ่ Celtic นะคะ\n\n",
+            'reentry' => "🌙 ยินดีต้อนรับกลับมาค่ะเจ้าชะตา — แม่หมอรอเจ้าชะตาอยู่\n\n",
+            default => "🔮 เจ้าชะตาอยู่ในรอบดูดวงไพ่ Celtic Cross อยู่นะคะ\n\n",
+        };
+
+        return match ($status) {
+            FortuneReading::STATUS_CELTIC_PICKING => $this->buildPickingResume($reading, $header, $billRef),
+            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION => $this->buildAwaitingQuestionResume($reading, $header, $billRef),
+            FortuneReading::STATUS_CELTIC_QA_PROMPT => $this->buildAwaitingQuestionResume($reading, $header, $billRef),
+            FortuneReading::STATUS_CELTIC_GENERATING => [
+                'message' => $header
+                    . "🔮 *แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่*\n"
+                    . "ใช้เวลาประมาณ 30-60 วินาที — รอสักครู่นะคะ ✨\n\n"
+                    . "📋 บิลของเจ้าชะตา: {$billRef}",
+                'quick_replies' => [],
+            ],
+            default => [
+                'message' => $header . "💬 พิมพ์ข้อความถึงแม่หมอได้เลยค่ะ",
+                'quick_replies' => [],
+            ],
+        };
+    }
+
+    /**
+     * Resume message สำหรับ STATUS_CELTIC_PICKING
+     */
+    protected function buildPickingResume(FortuneReading $reading, string $header, string $billRef): array
+    {
+        $picked = $reading->getCelticPickedCount();
+        $next = $reading->getNextCelticPosition();
+
+        if ($next === null) {
+            return [
+                'message' => $header . "✨ เจ้าชะตาเปิดไพ่ครบ 10 ใบแล้ว — พิมพ์คำถามที่อยากรู้มาได้เลยค่ะ",
+                'quick_replies' => [],
+            ];
+        }
+
+        $meta = FortuneReading::CELTIC_POSITIONS[$next] ?? null;
+        $name = $meta['name'] ?? '?';
+        $desc = $meta['description'] ?? '';
+        $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+
+        return [
+            'message' => $header
+                . "🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n"
+                . "📍 ใบถัดไป — *ใบที่ {$next}: [{$name}]*\n"
+                . "💭 ตำแหน่งนี้บอกถึง: {$desc}\n\n"
+                . "──────────────────────\n"
+                . "👉 พิมพ์ *\"พร้อม\"* (หรือกดปุ่มข้างล่าง) เพื่อให้แม่หมอเปิดไพ่ใบนี้\n"
+                . "📋 บิล: {$billRef}",
+            'quick_replies' => [
+                ['title' => $btnLabel, 'payload' => 'CELTIC_READY'],
+            ],
+        ];
+    }
+
+    /**
+     * Resume message สำหรับ STATUS_CELTIC_AWAITING_QUESTION / QA_PROMPT
+     */
+    protected function buildAwaitingQuestionResume(FortuneReading $reading, string $header, string $billRef): array
+    {
+        $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $maxQ = $this->getMaxQuestions();
+        $usedQ = (int) ($reading->celtic_questions_used ?? 0);
+
+        $timeHint = $remainingMin !== null && $remainingMin > 0
+            ? "⏳ คุยกับแม่หมอได้อีก {$remainingMin} นาที"
+            : ($remainingMin === 0
+                ? '⏳ หมดเวลาคุยแล้ว — แม่หมอจะปิด session'
+                : "⏳ คุยกับแม่หมอได้ภายใน {$this->getQaWindowMinutes()} นาทีนับจากคำทำนายแรก");
+
+        $qHint = $maxQ > 0
+            ? "❓ ถามได้อีก *" . max(0, $maxQ - $usedQ) . "* จาก {$maxQ} คำถาม"
+            : "❓ ถามได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
+
+        $promptLine = $usedQ === 0
+            ? "💬 พิมพ์ *คำถามแรก* ที่อยากรู้มาเลยค่ะ — แม่หมอจะอ่านพลังจากไพ่ทั้ง 10 ใบ"
+            : "💬 พิมพ์ *คำถามถัดไป* ที่อยากรู้ — หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา";
+
+        return [
+            'message' => $header
+                . "🃏 เจ้าชะตาเปิดไพ่ครบ 10 ใบแล้ว ✅\n\n"
+                . $promptLine . "\n\n"
+                . $timeHint . "\n"
+                . $qHint . "\n"
+                . "📋 บิล: {$billRef}",
+            'quick_replies' => [],
+        ];
+    }
 }

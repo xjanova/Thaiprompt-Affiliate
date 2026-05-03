@@ -164,6 +164,30 @@ class LineFortuneWebhookController extends Controller
 
         // รองรับเฉพาะ text message (sticker, video, audio, file → fallback)
         if ($messageType !== 'text') {
+            // 🔮 (2026-05-04) Celtic active state — sticker/video ฯลฯ ต้องนำกลับเปิดไพ่ ไม่ใช่ generic
+            $celticActive = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)
+                    ->orWhere('facebook_user_id', $userId);
+            })
+                ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
+                ->latest()
+                ->first();
+
+            if ($celticActive) {
+                $reason = $messageType === 'sticker' ? 'sticker' : 'generic';
+                $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($celticActive, $reason);
+                $this->lineService->sendMessageWithReplyFallback($userId, $resume['message'], $replyToken);
+
+                Log::info('LINE: Celtic active + non-text message → นำกลับเปิดไพ่/ถาม', [
+                    'user_id' => $userId,
+                    'reading_id' => $celticActive->id,
+                    'celtic_status' => $celticActive->conversation_status,
+                    'message_type' => $messageType,
+                ]);
+
+                return;
+            }
+
             $this->lineService->replyMessage($replyToken, [
                 [
                     'type' => 'text',
@@ -1196,14 +1220,18 @@ class LineFortuneWebhookController extends Controller
     {
         try {
             // หา reading ที่ user กำลังใช้งานอยู่ (LINE platform)
+            //   🔮 (2026-05-04) ครอบคลุม Celtic active states ด้วย — กันลูกค้าส่งสลิประหว่างเปิดไพ่
             $activeReading = FortuneReading::where(function ($q) use ($userId) {
                 $q->where('platform_user_id', $userId)
                     ->orWhere('facebook_user_id', $userId);
             })
-                ->whereIn('conversation_status', [
-                    FortuneReading::STATUS_PENDING_PAYMENT,
-                    FortuneReading::STATUS_PAID,
-                ])
+                ->whereIn('conversation_status', array_merge(
+                    [
+                        FortuneReading::STATUS_PENDING_PAYMENT,
+                        FortuneReading::STATUS_PAID,
+                    ],
+                    FortuneReading::CELTIC_ACTIVE_STATUSES
+                ))
                 ->latest()
                 ->first();
 
@@ -1224,6 +1252,22 @@ class LineFortuneWebhookController extends Controller
                 if ($recentReading && $recentReading->is_paid) {
                     $activeReading = $recentReading;
                 }
+            }
+
+            // 🔮 (2026-05-04) Celtic active state — ลูกค้าส่งรูประหว่างเปิดไพ่/ถามคำถาม
+            //    → ห้ามตอบ "แม่หมอกำลังคำนวณ" — ต้องนำกลับไปเปิดไพ่ต่อ/พิมพ์คำถาม
+            if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::CELTIC_ACTIVE_STATUSES, true)) {
+                $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($activeReading, 'image');
+                $this->lineService->sendMessageWithReplyFallback($userId, $resume['message'], $replyToken);
+
+                Log::info('LINE: รับรูประหว่าง Celtic active → นำกลับเปิดไพ่/ถาม', [
+                    'user_id' => $userId,
+                    'reading_id' => $activeReading->id,
+                    'celtic_status' => $activeReading->conversation_status,
+                    'picked_count' => $activeReading->getCelticPickedCount(),
+                ]);
+
+                return;
             }
 
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"

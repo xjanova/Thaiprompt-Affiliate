@@ -1260,8 +1260,38 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 🔮 (2026-05-04) Celtic active state — sticker/non-image ต้องไม่ silent
+            //    ลูกค้าจ่าย 99฿ แล้วส่ง sticker → ระบบเงียบ → ลูกค้าเข้าใจผิดว่าบอทตาย
+            //    ต้องนำกลับไปเปิดไพ่/พิมพ์คำถามต่อ
+            if (empty($messageText)) {
+                $celticActive = FortuneReading::where('facebook_user_id', $senderId)
+                    ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
+                    ->latest()
+                    ->first();
+
+                if ($celticActive) {
+                    $reason = $hasSticker ? 'sticker' : 'generic';
+                    $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($celticActive, $reason);
+                    $opts = [];
+                    if (! empty($resume['quick_replies'])) {
+                        $opts['quick_replies'] = $resume['quick_replies'];
+                    }
+
+                    $this->facebookService->sendMessage($senderId, $resume['message'], $opts);
+
+                    Log::info('FB: Celtic active + non-image attachment → นำกลับเปิดไพ่/ถาม', [
+                        'sender_id' => $senderId,
+                        'reading_id' => $celticActive->id,
+                        'celtic_status' => $celticActive->conversation_status,
+                        'has_sticker' => $hasSticker,
+                    ]);
+
+                    return;
+                }
+            }
+
             // 🔇 sticker / video / audio / file ระหว่างกลาง active flow แต่ไม่ใช่รูป → silent
-            //   (ไม่อยากรบกวนถ้าผู้ใช้กำลังคิดวันเกิด/คำถาม)
+            //   (ไม่อยากรบกวนถ้าผู้ใช้กำลังคิดวันเกิด/คำถาม — non-Celtic)
             if (empty($messageText)) {
                 Log::debug('FB: silent ignore non-image attachment in active flow', [
                     'sender_id' => $senderId,
@@ -1303,11 +1333,16 @@ class FacebookWebhookController extends Controller
     {
         try {
             // หา reading ที่ user กำลังใช้งานอยู่
+            //   🔮 (2026-05-04) ครอบคลุม Celtic active states ด้วย — กันลูกค้าส่งสลิประหว่างเปิดไพ่
+            //   แล้วโดนข้อความ "แม่หมอกำลังคำนวณ" ที่ผิดความจริง (ที่จริงต้องเปิดไพ่ต่อ)
             $activeReading = FortuneReading::where('facebook_user_id', $senderId)
-                ->whereIn('conversation_status', [
-                    FortuneReading::STATUS_PENDING_PAYMENT,
-                    FortuneReading::STATUS_PAID,
-                ])
+                ->whereIn('conversation_status', array_merge(
+                    [
+                        FortuneReading::STATUS_PENDING_PAYMENT,
+                        FortuneReading::STATUS_PAID,
+                    ],
+                    FortuneReading::CELTIC_ACTIVE_STATUSES
+                ))
                 ->latest()
                 ->first();
 
@@ -1325,6 +1360,28 @@ class FacebookWebhookController extends Controller
                 if ($recentReading && $recentReading->is_paid) {
                     $activeReading = $recentReading;
                 }
+            }
+
+            // 🔮 (2026-05-04) Celtic active state — ลูกค้าส่งรูประหว่างเปิดไพ่/ถามคำถาม
+            //    → ห้ามตอบ "แม่หมอกำลังคำนวณ" — ต้องนำกลับไปเปิดไพ่ต่อ/พิมพ์คำถาม
+            //    เคสลูกค้าจ่าย Celtic 99฿ แล้วส่งสลิปอีก หรือส่งรูปสุ่ม → จะเข้า branch นี้
+            if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::CELTIC_ACTIVE_STATUSES, true)) {
+                $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($activeReading, 'image');
+                $opts = [];
+                if (! empty($resume['quick_replies'])) {
+                    $opts['quick_replies'] = $resume['quick_replies'];
+                }
+
+                $this->facebookService->sendMessage($senderId, $resume['message'], $opts);
+
+                Log::info('Facebook: รับรูประหว่าง Celtic active → นำกลับเปิดไพ่/ถาม', [
+                    'sender_id' => $senderId,
+                    'reading_id' => $activeReading->id,
+                    'celtic_status' => $activeReading->conversation_status,
+                    'picked_count' => $activeReading->getCelticPickedCount(),
+                ]);
+
+                return;
             }
 
             // 🟢 PENDING_PAYMENT — ลูกค้าส่งสลิป → ปลอบ + บังคับให้กด "แจ้งชำระเงิน"

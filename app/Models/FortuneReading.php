@@ -147,6 +147,23 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🔮 Celtic active states — หลังจ่ายแล้ว แต่ยังไม่จบ session
+     *
+     * ใช้เป็น "lock guard" — เมื่อ status ใดๆ ในนี้ active:
+     *   - ห้าม flow อื่น (Deep 39฿, Free Card, tier menu) แทรก
+     *   - รูป/สลิป/sticker จากลูกค้า → ตอบเป็น "นำกลับ pick-card / awaiting-question"
+     *   - ลูกค้าหาย/หลุด แล้วกลับ → resume ที่ position/state เดิมเป๊ะๆ
+     *
+     * ⚠️ ห้ามรวม STATUS_CELTIC_PENDING_PAYMENT (รอจ่าย) — นั่นใช้ PENDING_PAYMENT_STATUSES แทน
+     */
+    public const CELTIC_ACTIVE_STATUSES = [
+        self::STATUS_CELTIC_PICKING,
+        self::STATUS_CELTIC_AWAITING_QUESTION,
+        self::STATUS_CELTIC_GENERATING,
+        self::STATUS_CELTIC_QA_PROMPT,
+    ];
+
+    /**
      * ตำแหน่ง Celtic Cross 10 ตำแหน่งมาตรฐาน
      *
      * Layout (ตามภาพมาตรฐาน):
