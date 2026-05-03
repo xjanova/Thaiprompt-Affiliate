@@ -1117,10 +1117,15 @@ class FortuneReading extends Model
             $stateKey = null;
 
             // เลือก stage ตามอายุบิล (24-hour window — Request-Before-Pay)
-            if ($ageHours >= 20 && empty($reading->getConversationState('reminder_r3_sent_at'))) {
+            //   R1 @ 4hr:  gentle reminder ("ค่าครูค้าง + ภายใน N ชม")
+            //   R2 @ 12hr: warn ("ค่าครูใกล้หมดเวลา")
+            //   R3 @ 18hr: 🆕 (2026-05-04) interactive ASK ("จะโอนหรือยกเลิก?")
+            //              user spec: "ต้องถามก่อนถึง 24 ชม ผ่านไป 18ชม จากได้คำทำนาย"
+            //              เหลือเวลา 6 ชม — ถามให้ลูกค้าตัดสินใจตรงๆ
+            if ($ageHours >= 18 && empty($reading->getConversationState('reminder_r3_sent_at'))) {
                 $stage = 'r3';
                 $stateKey = 'reminder_r3_sent_at';
-            } elseif ($ageHours >= 12 && $ageHours < 20 && empty($reading->getConversationState('reminder_r2_sent_at'))) {
+            } elseif ($ageHours >= 12 && $ageHours < 18 && empty($reading->getConversationState('reminder_r2_sent_at'))) {
                 $stage = 'r2';
                 $stateKey = 'reminder_r2_sent_at';
             } elseif ($ageHours >= 4 && $ageHours < 12 && empty($reading->getConversationState('reminder_r1_sent_at'))) {
@@ -1143,14 +1148,24 @@ class FortuneReading extends Model
             try {
                 $platformService = $channelManager->getPlatform($platform);
                 if ($platformService) {
-                    $platformService->sendMessage($userId, $message);
+                    // 🆕 (2026-05-04) R3 = ASK — ใช้ Quick Reply ถ้า FB (UX ดีกว่า)
+                    if ($stage === 'r3' && $platform === 'facebook'
+                        && method_exists($platformService, 'sendQuickReplies')) {
+                        $platformService->sendQuickReplies($userId, $message, [
+                            ['content_type' => 'text', 'title' => '✅ เช็คสถานะ + รับ QR', 'payload' => 'check_payment'],
+                            ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                        ], ['message_tag' => 'POST_PURCHASE_UPDATE']); // หลัง 18 ชม FB 24-hr window อาจหมด
+                    } else {
+                        $platformService->sendMessage($userId, $message);
+                    }
                     $sent++;
 
                     \Log::info("FortuneReading: ส่ง reminder DM stage {$stage}", [
                         'reading_id' => $reading->id,
                         'platform' => $platform,
                         'bill_reference' => $reading->bill_reference,
-                        'age_minutes' => $age,
+                        'age_minutes' => $ageMinutes,
+                        'age_hours' => $ageHours,
                     ]);
                 }
             } catch (\Throwable $e) {
@@ -1218,22 +1233,30 @@ class FortuneReading extends Model
                     . "💡 ໂອນແລ້ວພິມ 'ໂອນແລ້ວ' — ຂອບໃຈທີ່ຮັກສາຄຳເວົ້າເດີ"
             ),
 
-            // r3 = closing pitch — เน้น "ใกล้หมดอายุ + อาจโดน block สิทธิ์ครั้งหน้า"
+            // r3 = 🆕 (2026-05-04) Interactive ASK — ถามตรงๆ "จะโอนหรือยกเลิก?"
+            //    user spec: "ต้องถามก่อนถึง 24 ชม ผ่านไป 18ชม จากได้คำทำนาย ทวงถาม"
+            //    ใช้ existing keywords ("เช็คสถานะ" / "ยกเลิก") — handlePendingPayment + isCancelRequest จัดการให้
             default => \App\Services\FortuneLocaleService::lo(
-                "🚨 *เจ้าชะตา — ค่าครูใกล้หมดเวลาแล้ว!*\n\n"
+                "🙏 *เจ้าชะตา — แม่หมอขอถามตรงๆ นะคะ*\n\n"
                     . "📋 บิล: {$billRef}\n"
                     . "💸 ค่าครู: {$payAmount} บาท\n"
-                    . "⏰ *เหลือเวลา {$remainingHours} ชั่วโมงสุดท้าย*\n\n"
-                    . "🙏 แม่หมอเชื่อใจให้เจ้าชะตาดูดวงก่อน — ขอเจ้าชะตาอย่าทำให้แม่หมอผิดหวังนะคะ\n"
-                    . "⚠️ ถ้าครบ 24 ชม ยังไม่จ่าย — ระบบจะปิดสิทธิ์ \"ดูก่อนจ่ายทีหลัง\" ของเจ้าชะตาถาวร\n\n"
-                    . "💡 โอนเลยตอนนี้ + พิมพ์ 'โอนแล้ว' ✨",
-                "🚨 *ເຈົ້າຊາຕາ — ຄ່າຄູໃກ້ໝົດເວລາແລ້ວ!*\n\n"
+                    . "⏰ *เหลือเวลาอีก {$remainingHours} ชั่วโมง* — บิลใกล้หมดอายุแล้ว\n"
+                    . "═══════════════════════\n\n"
+                    . "เจ้าชะตาได้รับคำทำนายจากแม่หมอไปแล้ว\n"
+                    . "💜 *ตอนนี้เจ้าชะตาจะตัดสินใจอย่างไร?*\n\n"
+                    . "✅ พิมพ์ *\"เช็คสถานะ\"* — แม่หมอจะส่ง QR + รายละเอียดบิลให้อีกครั้ง พร้อมโอนเลย\n"
+                    . "❌ พิมพ์ *\"ยกเลิก\"* — ปิดบิล (แต่จะถูกปิดสิทธิ์ดูก่อนจ่ายทีหลังถาวร)\n\n"
+                    . "🌙 ถ้าเงียบเฉยจนครบ 24 ชม — ระบบจะปิดสิทธิ์อัตโนมัติ + แอดมินจะเห็น",
+                "🙏 *ເຈົ້າຊາຕາ — ແມ່ໝໍຂໍຖາມຕົງໆ ເດີ*\n\n"
                     . "📋 ບິນ: {$billRef}\n"
                     . "💸 ຄ່າຄູ: {$payAmount} ບາດ\n"
-                    . "⏰ *ເຫຼືອເວລາ {$remainingHours} ຊົ່ວໂມງສຸດທ້າຍ*\n\n"
-                    . "🙏 ແມ່ໝໍເຊື່ອໃຈໃຫ້ເຈົ້າຊາຕາເບິ່ງດວງກ່ອນ — ຂໍເຈົ້າຊາຕາຢ່າເຮັດໃຫ້ແມ່ໝໍຜິດຫວັງເດີ\n"
-                    . "⚠️ ຖ້າຄົບ 24 ຊມ ຍັງບໍ່ຈ່າຍ — ລະບົບຈະປິດສິດ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" ຂອງເຈົ້າຊາຕາຖາວອນ\n\n"
-                    . "💡 ໂອນເລີຍຕອນນີ້ + ພິມ 'ໂອນແລ້ວ' ✨"
+                    . "⏰ *ເຫຼືອເວລາອີກ {$remainingHours} ຊົ່ວໂມງ* — ບິນໃກ້ໝົດອາຍຸແລ້ວ\n"
+                    . "═══════════════════════\n\n"
+                    . "ເຈົ້າຊາຕາໄດ້ຮັບຄຳທຳນາຍຈາກແມ່ໝໍໄປແລ້ວ\n"
+                    . "💜 *ຕອນນີ້ເຈົ້າຊາຕາຈະຕັດສິນໃຈແນວໃດ?*\n\n"
+                    . "✅ ພິມ *\"ເຊັກສະຖານະ\"* — ແມ່ໝໍຈະສົ່ງ QR + ລາຍລະອຽດບິນໃຫ້ອີກຄັ້ງ ພ້ອມໂອນເລີຍ\n"
+                    . "❌ ພິມ *\"ຍົກເລີກ\"* — ປິດບິນ (ແຕ່ຈະຖືກປິດສິດເບິ່ງກ່ອນຈ່າຍທີຫຼັງຖາວອນ)\n\n"
+                    . "🌙 ຖ້າມິດງຽບຈົນຄົບ 24 ຊມ — ລະບົບຈະປິດສິດອັດຕະໂນມັດ + ແອັດມິນຈະເຫັນ"
             ),
         };
     }
