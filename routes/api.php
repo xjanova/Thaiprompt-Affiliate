@@ -1596,3 +1596,45 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
 
 // SMS Payment Checker Routes
 require __DIR__.'/sms_payment_api.php';
+
+// ─── Juntra (จันทราพยากรณ์) Mobile API ───────────────────────
+// Mobile-facing endpoints for the Juntra fortune-telling Flutter app.
+// All AI calls reuse the existing FortuneAIService key pool — Juntra
+// holds NO provider keys directly. Auth via Sanctum tokens issued by
+// the existing /v1/login + /v1/auth/mobile flow.
+Route::prefix('v1')->middleware('auth:sanctum')->name('api.juntra.')->group(function () {
+
+    Route::prefix('fortune')->name('fortune.')->group(function () {
+        Route::get('/categories', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'categories'])->name('categories');
+        Route::get('/spreads',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'spreads'])->name('spreads');
+        Route::get('/credits',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'credits'])->name('credits');
+        Route::get('/history',    [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'history'])->name('history');
+        Route::post('/draw',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'draw'])->name('draw');
+        Route::post('/read',      [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'read'])->name('read');
+        Route::get('/readings/{id}', [\App\Http\Controllers\Api\Juntra\FortuneController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('chat/mae-mor')->name('chat.')->group(function () {
+        Route::post('/start',        [\App\Http\Controllers\Api\Juntra\ChatController::class, 'start'])->name('start');
+        Route::post('/send',         [\App\Http\Controllers\Api\Juntra\ChatController::class, 'send'])->name('send');
+        Route::get('/sessions/{id}', [\App\Http\Controllers\Api\Juntra\ChatController::class, 'show'])->name('show');
+    });
+
+    Route::prefix('natal')->name('natal.')->group(function () {
+        Route::post('/compute',      [\App\Http\Controllers\Api\Juntra\NatalController::class, 'compute'])->name('compute');
+        Route::get('/daily-transit', [\App\Http\Controllers\Api\Juntra\NatalController::class, 'dailyTransit'])->name('transit');
+    });
+
+    Route::prefix('affiliate')->name('affiliate.')->group(function () {
+        Route::get('/dashboard',   [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'dashboard'])->name('dashboard');
+        Route::get('/downline',    [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'downline'])->name('downline');
+        Route::get('/commissions', [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'commissions'])->name('commissions');
+        Route::get('/link',        [\App\Http\Controllers\Api\Juntra\AffiliateController::class, 'link'])->name('link');
+    });
+
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/methods',     [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'methods'])->name('methods');
+        Route::post('/initiate',   [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'initiate'])->name('initiate');
+        Route::get('/{id}/status', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'status'])->name('status');
+    });
+});

@@ -459,6 +459,10 @@ class FortuneChannelManager
         $message = $result['message'] ?? '';
         $reading = $result['reading'] ?? null;
 
+        // 🔔 (2026-05-03 v2) Apply payment warning prefix if set by PayFirstGateTrait
+        //    ยกเว้น actions ที่เกี่ยวกับ payment โดยตรง (ไม่ต้องเตือนซ้ำ)
+        $message = $this->maybeApplyPaymentWarning($message, $action);
+
         Log::info('Facebook sendFacebookResponse: เริ่มจัดการ action', [
             'action' => $action,
             'user_id' => $userId,
@@ -466,6 +470,8 @@ class FortuneChannelManager
         ]);
 
         $richService = new FacebookRichMessageService($this->settings);
+        // อัพเดท message ใน result array ด้วย (handlers อ่านจาก $result['message'])
+        $result['message'] = $message;
 
         try {
             $sent = match ($action) {
@@ -1265,6 +1271,10 @@ class FortuneChannelManager
         $message = $result['message'] ?? '';
         $reading = $result['reading'] ?? null;
         $replyToken = $extra['reply_token'] ?? null;
+
+        // 🔔 (2026-05-03 v2) Apply payment warning prefix (LINE)
+        $message = $this->maybeApplyPaymentWarning($message, $action);
+        $result['message'] = $message;
 
         Log::info('LINE sendLineResponse: เริ่มจัดการ action', [
             'action' => $action,
@@ -3738,5 +3748,48 @@ class FortuneChannelManager
             'reading' => $reading,
             'streaming' => true,
         ];
+    }
+
+    /**
+     * 🔔 (2026-05-03 v2) Apply payment warning prefix from PayFirstGateTrait
+     *
+     * อ่าน FortuneConversationService::$pendingPaymentWarning (set โดย gate)
+     * Prepend ลง message ยกเว้น actions ที่เกี่ยวกับ payment โดยตรง
+     * Clear static หลัง apply เพื่อกัน leak ไป next request
+     *
+     * @param  string|null  $message  ข้อความเดิม
+     * @param  string  $action  action key เพื่อตัดสินใจว่าจะ apply หรือข้าม
+     * @return string|null  ข้อความที่ใส่ warning แล้ว
+     */
+    protected function maybeApplyPaymentWarning(?string $message, string $action): ?string
+    {
+        $warning = \App\Services\FortuneConversationService::$pendingPaymentWarning;
+        if (empty($warning) || empty($message)) {
+            return $message;
+        }
+
+        // ⛔ Actions ที่ไม่ apply warning (เกี่ยวกับ payment โดยตรง — ลูกค้ารู้อยู่แล้ว)
+        $skipActions = [
+            'pending_payment', 'celtic_pending_payment',
+            'waiting_payment',
+            'payment_check_processing', 'payment_check_pending', 'payment_check_expired',
+            'payment_confirmed_wait',
+            'view_reading_celtic_pending', 'view_reading_deep_pending',
+            'celtic_awaiting_payment', 'celtic_bill_creation_failed',
+            'celtic_pending_payment_hint', 'celtic_pick_prompt',
+            // ⛔ Free card flow ก็ skip ไม่ให้ wallet ลูกค้าใหม่งง
+            'free_card_drawn', 'free_card_chitchat',
+            'free_card_declined', 'free_card_draw_failed', 'free_card_ai_failed',
+            // Payment lock actions (legacy v1 — ตอนนี้ไม่ใช้แล้ว แต่กัน BC)
+            'payment_lock_pending', 'payment_lock_revived', 'payment_lock_admin',
+        ];
+        if (in_array($action, $skipActions, true)) {
+            return $message;
+        }
+
+        // ✅ Apply + clear (ป้องกัน leak ไป next request ในเดียวกัน worker)
+        \App\Services\FortuneConversationService::$pendingPaymentWarning = null;
+
+        return $warning . $message;
     }
 }

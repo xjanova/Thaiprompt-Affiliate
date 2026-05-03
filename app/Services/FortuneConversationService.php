@@ -38,6 +38,15 @@ class FortuneConversationService
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
 
+    /**
+     * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
+     *
+     * เมื่อลูกค้ามีบิลค้าง ระบบใส่ warning string ที่นี่
+     * ChannelManager อ่าน + prepend ลงทุก response message (ยกเว้น actions ที่เกี่ยวกับ payment โดยตรง)
+     * ใช้ static เพราะ scope = single processMessage call (clear ที่ start ทุกครั้ง)
+     */
+    public static ?string $pendingPaymentWarning = null;
+
     protected FortuneTellingSetting $settings;
 
     protected FortuneAIService $aiService;
@@ -1015,14 +1024,14 @@ class FortuneConversationService
                 return $pendingSaveResult;
             }
 
-            // 🔒 (2026-05-03) Pay-First Gate — ลูกค้ามีบิลค้างไม่จ่าย → lock ทุก service
-            //    Bypass: keyword "แอดมิน" / "โอนแล้ว" / "เช็คสถานะ"
-            //    Auto-revive expired bills (≤3 รอบ) — เกินนั้น admin only
-            //    Re-engagement greeting หลัง 24hr (FB window)
-            //    ⚠️ ต้องเรียก *ก่อน* findActiveConversation() เพื่อ override pending payment handlers
-            $gateResult = $this->payFirstGate($this->currentPlatform, $facebookUserId, $messageText, $userProfile);
-            if ($gateResult !== null) {
-                return $gateResult;
+            // 🔔 (2026-05-03 v2) Pay-First WARNING Gate (refactored จาก BLOCK → WARN)
+            //    ลูกค้ามีบิลค้างไม่จ่าย → set static warning, ChannelManager จะ prepend ลง reply
+            //    ลูกค้ายังสร้างบิลใหม่/ใช้ service อื่นได้ตามปกติ (ไม่ block)
+            //    Bypass: keyword "แอดมิน" / "โอนแล้ว" / "เช็คสถานะ" / "ยกเลิก" → ไม่เตือน
+            self::$pendingPaymentWarning = null; // clear จาก previous call
+            $warning = $this->payFirstGate($this->currentPlatform, $facebookUserId, $messageText, $userProfile);
+            if ($warning !== null) {
+                self::$pendingPaymentWarning = $warning;
             }
 
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
