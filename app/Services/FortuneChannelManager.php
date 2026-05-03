@@ -547,6 +547,7 @@ class FortuneChannelManager
                 'share_no_user', 'share_error',
                 'deep_reading_disabled',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
+                'view_reading_celtic_pending', 'view_reading_deep_pending', // 🔧 (2026-05-03) bills รอชำระ
                 'view_later',
                 'invalid_birthdate', 'retry_birthdate',
                 'restart_from_birthdate',
@@ -669,6 +670,18 @@ class FortuneChannelManager
                 // 🎁 (2026-05-03) free flow chitchat / ไพ่จั่วไม่สำเร็จ / AI fail — ส่งข้อความ + Quick Reply เลือก tier
                 'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
                     => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
+
+                // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ก่อน + ข้อความ
+                'view_reading_free' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['tarot_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                    return $fbService->sendMessage($userId, $message, $extra);
+                })(),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
@@ -1523,6 +1536,21 @@ class FortuneChannelManager
 
                 // 🎁 (2026-05-03) free flow chitchat / fail — text + tier menu QR
                 'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ก่อน + ข้อความ
+                'view_reading_free' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    if (! empty($result['tarot_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['tarot_image_url']);
+                        } catch (\Throwable $e) {
+                        }
+                    }
+                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                })(),
+
+                // 🔧 (2026-05-03) bills รอชำระ — text only (LINE)
+                'view_reading_celtic_pending', 'view_reading_deep_pending'
                     => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)

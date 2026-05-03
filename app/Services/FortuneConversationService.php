@@ -2328,139 +2328,238 @@ class FortuneConversationService
 
     protected function handleViewLastReading(string $facebookUserId): array
     {
-        // ✅ ลำดับที่ 1: เช็คคำทำนายที่ชำระเงินแล้วก่อน (ให้ความสำคัญกับ paid reading)
-        $lastPaidReading = FortuneReading::where('facebook_user_id', $facebookUserId)
-            ->where('is_paid', true)
+        // 🔄 (2026-05-03) Refactor — find LATEST reading of ANY type then route by type+status
+        //   เดิม: 2 query (paid first, then basic/deep_response) → Celtic unpaid + free_card หาย
+        //   ใหม่: 1 query หา latest → route ทุก type ครบ (Celtic + free_card + deep + basic)
+        //
+        //   Bug ที่แก้:
+        //   - Celtic unpaid + activeConversation หมดอายุ → เคยตอบ "ยังไม่มีคำทำนาย"
+        //   - Free card reading → is_paid=false + ไม่มี deep/basic_response → เคยหาย
+        $latestReading = FortuneReading::where('facebook_user_id', $facebookUserId)
+            ->whereIn('reading_type', [
+                FortuneReading::READING_TYPE_BASIC,
+                FortuneReading::READING_TYPE_DEEP,
+                FortuneReading::READING_TYPE_CELTIC_CROSS,
+                FortuneReading::READING_TYPE_FREE_CARD,
+            ])
             ->latest()
             ->first();
 
-        if ($lastPaidReading) {
-            // 🔮 (2026-05-03) Celtic Cross — คำทำนายอยู่ใน celtic_questions ไม่ใช่ deep_response
-            if ($lastPaidReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
-                return $this->buildCelticReadingSummary($lastPaidReading);
-            }
-
-            // ชำระเงินแล้ว + มี deep_response → แสดงคำทำนายเชิงลึก
-            if (! empty($lastPaidReading->deep_response)) {
-                $name = $lastPaidReading->facebook_user_name ?? 'คุณ';
-
-                // ✅ FIX: ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
-                $lastPaidReading->setConversationState('reading_sent_directly', true);
-                $lastPaidReading->setConversationState('reading_ready_sent', true);
-                $lastPaidReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-
-                $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
-                $message .= '📋 เลขที่บิล: '.($lastPaidReading->bill_reference ?? '-')."\n";
-                $message .= '📅 วันที่: '.$lastPaidReading->created_at->format('d/m/Y H:i')."\n";
-                $message .= "═══════════════════════\n\n";
-                $message .= $lastPaidReading->deep_response;
-
-                return [
-                    'action' => 'view_reading_deep',
-                    'message' => $message,
-                    'reading' => $lastPaidReading,
-                    'chart_image_url' => $lastPaidReading->reading_image_url,
-                ];
-            }
-
-            // ชำระเงินแล้ว + ยังไม่มี deep_response → กำลังประมวลผล
-            return [
-                'action' => 'view_reading_processing',
-                'message' => "🔮 คำทำนายเชิงลึกกำลังประมวลผล\n"
-                    ."📋 เลขที่บิล: {$lastPaidReading->bill_reference}\n\n"
-                    ."⏳ ระบบ AI กำลังสร้างคำทำนายให้อยู่\n"
-                    ."ใช้เวลาประมาณ 1-2 นาที\n\n"
-                    ."💡 พิมพ์ 'ดูผล' อีกครั้งเพื่อเช็คสถานะได้\n"
-                    .'หรือทักแชทแอดมินหากรอนานเกิน 5 นาที 🙏',
-                'reading' => $lastPaidReading,
-            ];
-        }
-
-        // ✅ ลำดับที่ 2: ไม่มี paid reading → ดึงคำทำนายล่าสุด (ฟรี)
-        $lastReading = FortuneReading::where('facebook_user_id', $facebookUserId)
-            ->where(function ($q) {
-                $q->whereNotNull('basic_response')
-                    ->orWhereNotNull('deep_response');
-            })
-            ->latest()
-            ->first();
-
-        if (! $lastReading) {
+        if (! $latestReading) {
             return [
                 'action' => 'view_reading_empty',
-                'message' => "🔮 ยังไม่มีคำทำนาย\n\n"
-                    ."พิมพ์คำถามมาได้เลย\n"
-                    .'หมอจันทราพร้อมดูดวงให้ ✨',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🔮 ยังไม่มีคำทำนาย\n\nพิมพ์คำถามมาได้เลย\nหมอจันทราพร้อมดูดวงให้ ✨",
+                    "🔮 ຍັງບໍ່ມີຄຳທຳນາຍ\n\nພິມຄຳຖາມມາໄດ້ເລີຍ\nໝໍຈັນທາພ້ອມເບິ່ງດວງໃຫ້ ✨"
+                ),
                 'reading' => null,
             ];
         }
 
-        // กรณี 1: ชำระเงินแล้ว + มี deep_response
-        if ($lastReading->is_paid && ! empty($lastReading->deep_response)) {
-            $name = $lastReading->facebook_user_name ?? 'คุณ';
+        // 🔮 Celtic Cross — paid + Q&A อยู่ใน celtic_questions / unpaid → pending message
+        if ($latestReading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            if ($latestReading->is_paid) {
+                // จ่ายแล้ว → buildCelticReadingSummary จัดการครบ (picking / awaiting / Q&A list)
+                return $this->buildCelticReadingSummary($latestReading);
+            }
 
-            // ✅ FIX: ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
-            $lastReading->setConversationState('reading_sent_directly', true);
-            $lastReading->setConversationState('reading_ready_sent', true);
-            $lastReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-
-            $message = "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*\n";
-            $message .= '📋 เลขที่บิล: '.($lastReading->bill_reference ?? '-')."\n";
-            $message .= '📅 วันที่: '.$lastReading->created_at->format('d/m/Y H:i')."\n";
-            $message .= "═══════════════════════\n\n";
-            $message .= $lastReading->deep_response;
+            // ยังไม่จ่าย — บอก status + เลขบิล + ยอดเงิน + คำแนะนำต่อไป
+            $name = $latestReading->facebook_user_name ?? 'คุณ';
+            $billRef = $latestReading->bill_reference ?? '-';
+            $payAmount = $latestReading->amount_paid
+                ? number_format((float) $latestReading->amount_paid, 2)
+                : '99.00';
+            $createdAt = $latestReading->created_at?->format('d/m/Y H:i') ?? '-';
 
             return [
-                'action' => 'view_reading_deep',
-                'message' => $message,
-                'reading' => $lastReading,
-                'chart_image_url' => $lastReading->reading_image_url,
+                'action' => 'view_reading_celtic_pending',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🔮 *Celtic Cross ของคุณ{$name} — รอชำระเงิน*\n"
+                        . "📋 บิล: {$billRef}\n"
+                        . "📅 {$createdAt}\n"
+                        . "═══════════════════════\n\n"
+                        . "💸 *ค่าครู: {$payAmount} บาท*\n"
+                        . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิล)\n\n"
+                        . "✅ หลังโอนเสร็จ — หมอจะให้เจ้าชะตาเปิดไพ่ทันที\n"
+                        . "❌ ถ้าไม่ต้องการต่อ พิมพ์ 'ยกเลิก'\n"
+                        . "🔄 ถ้าต้องการเริ่มใหม่ พิมพ์ 'ดูดวง'",
+                    "🔮 *Celtic Cross ຂອງເຈົ້າ{$name} — ລໍຖ້າຊຳລະເງິນ*\n"
+                        . "📋 ບິນ: {$billRef}\n"
+                        . "📅 {$createdAt}\n"
+                        . "═══════════════════════\n\n"
+                        . "💸 *ຄ່າຄູ: {$payAmount} ບາດ*\n"
+                        . "(ຕ້ອງໂອນທົດສະນິຍົມຕົງເປັະ ລະບົບໃຊ້ທົດສະນິຍົມຈັບຄູ່ບິນ)\n\n"
+                        . "✅ ຫຼັງໂອນແລ້ວ — ໝໍຈະໃຫ້ເຈົ້າຊາຕາເປີດໄພ່ທັນທີ\n"
+                        . "❌ ຖ້າບໍ່ຢາກຕໍ່ ພິມ 'ຍົກເລີກ'\n"
+                        . "🔄 ຖ້າຢາກເລີ່ມໃໝ່ ພິມ 'ເບິ່ງດວງ'"
+                ),
+                'reading' => $latestReading,
             ];
         }
 
-        // กรณี 2: ชำระเงินแล้ว + ยังไม่มี deep_response (กำลังประมวลผล)
-        if ($lastReading->is_paid && empty($lastReading->deep_response)) {
+        // 🎁 Free card — แสดง ai_response (ถ้ามี) + ภาพไพ่
+        if ($latestReading->reading_type === FortuneReading::READING_TYPE_FREE_CARD) {
+            if (! empty($latestReading->ai_response) && $latestReading->responded_at) {
+                $name = $latestReading->facebook_user_name ?? 'คุณ';
+                $cardData = $latestReading->getConversationState('free_card', []);
+                $createdAt = $latestReading->created_at?->format('d/m/Y H:i') ?? '-';
+
+                $headerLabel = \App\Services\FortuneLocaleService::lo(
+                    "🎁 *คำทำนายฟรีล่าสุดของคุณ{$name}*",
+                    "🎁 *ຄຳທຳນາຍຟຣີຫຼ້າສຸດຂອງເຈົ້າ{$name}*"
+                );
+                $dateLabel = \App\Services\FortuneLocaleService::lo('📅 วันที่:', '📅 ວັນທີ:');
+
+                $cardLine = '';
+                if (! empty($cardData['card_name_th'])) {
+                    $orientation = ($cardData['is_reversed'] ?? false)
+                        ? \App\Services\FortuneLocaleService::lo('(กลับหัว)', '(ກັບຫົວ)')
+                        : \App\Services\FortuneLocaleService::lo('(ตั้งตรง)', '(ຕັ້ງຊື່)');
+                    $cardLine = "🃏 *{$cardData['card_name_th']}* {$orientation} ({$cardData['card_name_en']})\n";
+                }
+
+                $message = $headerLabel . "\n"
+                    . $dateLabel . " {$createdAt}\n"
+                    . $cardLine
+                    . "═══════════════════════\n\n"
+                    . $latestReading->ai_response;
+
+                return [
+                    'action' => 'view_reading_free',
+                    'message' => $message,
+                    'reading' => $latestReading,
+                    'tarot_image_url' => $cardData['image_url'] ?? null,
+                ];
+            }
+
+            // free_card สร้างแล้วแต่ AI fail → empty
             return [
-                'action' => 'view_reading_processing',
-                'message' => "🔮 คำทำนายเชิงลึกกำลังประมวลผล\n"
-                    ."📋 เลขที่บิล: {$lastReading->bill_reference}\n\n"
-                    ."⏳ ระบบ AI กำลังสร้างคำทำนายให้อยู่\n"
-                    ."ใช้เวลาประมาณ 1-2 นาที\n\n"
-                    ."💡 พิมพ์ 'ดูผล' อีกครั้งเพื่อเช็คสถานะได้\n"
-                    .'หรือทักแชทแอดมินหากรอนานเกิน 5 นาที 🙏',
-                'reading' => $lastReading,
+                'action' => 'view_reading_empty',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🔮 คำทำนายฟรีล่าสุดยังไม่สมบูรณ์\nพิมพ์ 'ทำนายฟรี' เพื่อลองใหม่ได้เลยค่ะ ✨",
+                    "🔮 ຄຳທຳນາຍຟຣີຫຼ້າສຸດຍັງບໍ່ສົມບູນ\nພິມ 'ທຳນາຍຟຣີ' ເພື່ອລອງໃໝ່ໄດ້ເລີຍເດີ ✨"
+                ),
+                'reading' => $latestReading,
             ];
         }
 
-        // กรณี 3: มี basic_response (ไม่เสียเงิน)
-        if (! empty($lastReading->basic_response)) {
-            $name = $lastReading->facebook_user_name ?? 'คุณ';
+        // 🔹 Deep — paid + has deep_response → show / paid + no response → processing
+        if ($latestReading->reading_type === FortuneReading::READING_TYPE_DEEP) {
+            $name = $latestReading->facebook_user_name ?? 'คุณ';
 
-            $message = "🔮 *คำทำนายล่าสุดของคุณ{$name}*\n";
-            $message .= '📅 วันที่: '.$lastReading->created_at->format('d/m/Y H:i')."\n";
-            $message .= "═══════════════════════\n\n";
-            $message .= $lastReading->basic_response;
+            if ($latestReading->is_paid && ! empty($latestReading->deep_response)) {
+                // ✅ ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
+                $latestReading->setConversationState('reading_sent_directly', true);
+                $latestReading->setConversationState('reading_ready_sent', true);
+                $latestReading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+
+                $headerLabel = \App\Services\FortuneLocaleService::lo(
+                    "🌟 *คำทำนายเชิงลึกล่าสุดของคุณ{$name}*",
+                    "🌟 *ຄຳທຳນາຍເຈາະເລິກຫຼ້າສຸດຂອງເຈົ້າ{$name}*"
+                );
+                $message = $headerLabel . "\n"
+                    . '📋 ' . \App\Services\FortuneLocaleService::lo('เลขที่บิล:', 'ເລກບິນ:') . ' '
+                    . ($latestReading->bill_reference ?? '-') . "\n"
+                    . '📅 ' . \App\Services\FortuneLocaleService::lo('วันที่:', 'ວັນທີ:') . ' '
+                    . $latestReading->created_at->format('d/m/Y H:i') . "\n"
+                    . "═══════════════════════\n\n"
+                    . $latestReading->deep_response;
+
+                return [
+                    'action' => 'view_reading_deep',
+                    'message' => $message,
+                    'reading' => $latestReading,
+                    'chart_image_url' => $latestReading->reading_image_url,
+                ];
+            }
+
+            if ($latestReading->is_paid) {
+                // จ่ายแล้ว แต่ยังไม่มี response → กำลังประมวลผล
+                return [
+                    'action' => 'view_reading_processing',
+                    'message' => \App\Services\FortuneLocaleService::lo(
+                        "🔮 คำทำนายเชิงลึกกำลังประมวลผล\n"
+                            . "📋 เลขที่บิล: {$latestReading->bill_reference}\n\n"
+                            . "⏳ ระบบ AI กำลังสร้างคำทำนายให้อยู่\n"
+                            . "ใช้เวลาประมาณ 1-2 นาที\n\n"
+                            . "💡 พิมพ์ 'ดูผล' อีกครั้งเพื่อเช็คสถานะได้\n"
+                            . 'หรือทักแชทแอดมินหากรอนานเกิน 5 นาที 🙏',
+                        "🔮 ຄຳທຳນາຍກຳລັງປະມວນຜົນ\n"
+                            . "📋 ເລກບິນ: {$latestReading->bill_reference}\n\n"
+                            . "⏳ ລະບົບ AI ກຳລັງສ້າງຄຳທຳນາຍຢູ່\n"
+                            . "ໃຊ້ເວລາປະມານ 1-2 ນາທີ\n\n"
+                            . "💡 ພິມ 'ເບິ່ງຜົນ' ອີກຄັ້ງເພື່ອເຊັກໄດ້\n"
+                            . 'ຫຼືທັກແອັດມິນຫາກລໍ້ນານເກີນ 5 ນາທີ 🙏'
+                    ),
+                    'reading' => $latestReading,
+                ];
+            }
+
+            // Deep ที่ยังไม่จ่าย — บอกสถานะ + เลขบิล + ยอด
+            $billRef = $latestReading->bill_reference ?? '-';
+            $payAmount = $latestReading->amount_paid
+                ? number_format((float) $latestReading->amount_paid, 2)
+                : number_format($this->getDeepReadingPrice(), 2);
+
+            return [
+                'action' => 'view_reading_deep_pending',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🔹 *ดูดวงเชิงลึกของคุณ{$name} — รอชำระเงิน*\n"
+                        . "📋 บิล: {$billRef}\n"
+                        . "═══════════════════════\n\n"
+                        . "💸 *ค่าครู: {$payAmount} บาท*\n\n"
+                        . "✅ หลังโอนเสร็จ คำทำนายจะส่งให้ทันที\n"
+                        . "❌ ไม่ต่อ พิมพ์ 'ยกเลิก' / 🔄 เริ่มใหม่ พิมพ์ 'ดูดวง'",
+                    "🔹 *ເບິ່ງດວງເຈາະເລິກຂອງເຈົ້າ{$name} — ລໍຖ້າຊຳລະເງິນ*\n"
+                        . "📋 ບິນ: {$billRef}\n"
+                        . "═══════════════════════\n\n"
+                        . "💸 *ຄ່າຄູ: {$payAmount} ບາດ*\n\n"
+                        . "✅ ຫຼັງໂອນແລ້ວ ຄຳທຳນາຍຈະສົ່ງໃຫ້ທັນທີ\n"
+                        . "❌ ບໍ່ຕໍ່ ພິມ 'ຍົກເລີກ' / 🔄 ເລີ່ມໃໝ່ ພິມ 'ເບິ່ງດວງ'"
+                ),
+                'reading' => $latestReading,
+            ];
+        }
+
+        // 🟢 Basic — แสดง basic_response ถ้ามี
+        if (! empty($latestReading->basic_response)) {
+            $name = $latestReading->facebook_user_name ?? 'คุณ';
+            $headerLabel = \App\Services\FortuneLocaleService::lo(
+                "🔮 *คำทำนายล่าสุดของคุณ{$name}*",
+                "🔮 *ຄຳທຳນາຍຫຼ້າສຸດຂອງເຈົ້າ{$name}*"
+            );
+
+            $message = $headerLabel . "\n"
+                . '📅 ' . \App\Services\FortuneLocaleService::lo('วันที่:', 'ວັນທີ:') . ' '
+                . $latestReading->created_at->format('d/m/Y H:i') . "\n"
+                . "═══════════════════════\n\n"
+                . $latestReading->basic_response;
 
             // ชวน upsell ถ้าเปิดอยู่
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
-                $message .= "\n\n═══════════════════════\n";
-                $message .= "💎 อยากรู้ลึกกว่านี้? ดูดวงเริ่มต้น {$price} บาท\n";
-                $message .= "พิมพ์ 'ดูดวง' ได้เลย ✨";
+                $upsell = \App\Services\FortuneLocaleService::lo(
+                    "\n\n═══════════════════════\n💎 อยากรู้ลึกกว่านี้? ดูดวงเริ่มต้น {$price} บาท\nพิมพ์ 'ดูดวง' ได้เลย ✨",
+                    "\n\n═══════════════════════\n💎 ຢາກຮູ້ເລິກກວ່ານີ້? ເບິ່ງດວງເລີ່ມຕົ້ນ {$price} ບາດ\nພິມ 'ເບິ່ງດວງ' ໄດ້ເລີຍ ✨"
+                );
+                $message .= $upsell;
             }
 
             return [
                 'action' => 'view_reading_basic',
                 'message' => $message,
-                'reading' => $lastReading,
+                'reading' => $latestReading,
             ];
         }
 
-        // Fallback
+        // Fallback — มี reading แต่ไม่มีข้อมูลที่จะแสดง
         return [
             'action' => 'view_reading_empty',
-            'message' => "🔮 ยังไม่มีคำทำนาย พิมพ์คำถามมาได้เลย ✨",
-            'reading' => null,
+            'message' => \App\Services\FortuneLocaleService::lo(
+                "🔮 ยังไม่มีคำทำนายที่พร้อมแสดง พิมพ์คำถามมาได้เลย ✨",
+                "🔮 ຍັງບໍ່ມີຄຳທຳນາຍທີ່ພ້ອມສະແດງ ພິມຄຳຖາມມາໄດ້ເລີຍ ✨"
+            ),
+            'reading' => $latestReading,
         ];
     }
 
