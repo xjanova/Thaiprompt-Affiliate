@@ -144,7 +144,9 @@ class FortuneController extends Controller
             $cards[] = [
                 'tarot_id' => $tarotId,
                 'position' => $positions[$i] ?? "ใบที่ " . ($i + 1),
-                'reversed' => (bool) random_int(0, 4) === false, // ~20% reversed
+                // ~20% reversed. The previous one-liner was broken — operator
+                // precedence made it always false. Use plain int comparison.
+                'reversed' => random_int(0, 4) === 0,
             ];
         }
 
