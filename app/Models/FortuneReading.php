@@ -551,9 +551,14 @@ class FortuneReading extends Model
 
     public static function findBlockingUnpaidBill(string $platform, string $platformUserId): ?self
     {
-        // 🔒 หา reading ล่าสุดของ deep/celtic ที่มี bill_reference
-        //    ถ้าตัวล่าสุดเป็น paid → unlock (ลูกค้ายืนยัน commitment แล้ว)
-        //    ถ้าตัวล่าสุดเป็น unpaid → block (ทั้ง active pending + expired completed)
+        // 🔒 หา reading ล่าสุดของ deep/celtic ที่ active รอจ่ายเท่านั้น
+        //
+        // 🆕 (2026-05-04) Refined: เตือนเฉพาะบิลที่อยู่ใน "pending payment flow" จริงเท่านั้น
+        //    User feedback: "ข้อความทักท้วงบิลควรขึ้นเฉพาะบิลที่ไม่ได้จ่ายของระบบ
+        //                   ทำนายก่อนจ่ายทีหลังเท่านั้น บิลเก่าที่ไม่เกี่ยวไม่ต้องทักท้วง"
+        //    เคสบักที่เจอ: บิล FTU-260422-Q9637 status=COMPLETED + amount_paid=0
+        //                  (เก่าหมดอายุ ลูกค้าเลิกแล้ว) → เคยเตือนเปลือง
+        //    Fix: ตัด STATUS_COMPLETED ออก → expired bills ไม่ block อีกต่อไป
         //
         // 🆕 (2026-05-03 audit fix #1) Recency filter — บิลเก่ากว่า 30 วันไม่ block
         //    เดิม: ลูกค้าที่ทิ้งบิลเมื่อ 6 เดือนก่อน → block ตลอดชีวิต = bug
@@ -567,15 +572,16 @@ class FortuneReading extends Model
             ->whereIn('reading_type', [self::READING_TYPE_DEEP, self::READING_TYPE_CELTIC_CROSS])
             ->whereNotNull('bill_reference')
             ->whereIn('conversation_status', [
-                self::STATUS_PENDING_PAYMENT,
-                self::STATUS_CELTIC_PENDING_PAYMENT,
-                self::STATUS_COMPLETED, // ⭐ COMPLETED + unpaid = expired bill
+                self::STATUS_PENDING_PAYMENT,         // 🔹 Deep 39฿ active รอจ่าย
+                self::STATUS_CELTIC_PENDING_PAYMENT,  // 🔮 Celtic 99฿ active รอจ่าย
+                // ❌ ไม่รวม STATUS_COMPLETED — บิลเก่าหมดอายุ ลูกค้าเลิกแล้ว ไม่ต้องเตือน
             ])
+            ->where('is_paid', false)  // ⭐ ย้ำ — เฉพาะที่ยังไม่จ่ายเท่านั้น
             ->where('updated_at', '>=', $cutoff)
             ->latest('updated_at')
             ->first();
 
-        // ✅ ถ้าไม่มี reading หรือ reading ล่าสุดจ่ายแล้ว → ไม่ block
+        // (defensive) ถ้าไม่มี หรือบังเอิญจ่ายแล้ว → ไม่ block
         if (! $latest || $latest->is_paid) {
             return null;
         }
