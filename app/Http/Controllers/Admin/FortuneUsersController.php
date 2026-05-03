@@ -67,6 +67,42 @@ class FortuneUsersController extends Controller
 
         $users = $query->paginate(20)->withQueryString();
 
+        // 🔒 (2026-05-04) Pay-later usage per user (current page only — performance)
+        //    user spec: "โชว์สิทธิ์ pay later ด้วย" + "ใช้แล้วใช้กับบิลไหนต้องรู้"
+        $userIds = $users->pluck('facebook_user_id')->filter()->unique()->values()->toArray();
+        $payLaterMap = [];
+        if (! empty($userIds)) {
+            $rows = FortuneReading::whereIn('facebook_user_id', $userIds)
+                ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
+                ->whereJsonContains('conversation_state->is_request_before_pay', true)
+                ->orderByDesc('created_at')
+                ->get(['facebook_user_id', 'platform', 'bill_reference', 'is_paid', 'amount_paid', 'created_at']);
+
+            foreach ($rows as $row) {
+                $key = $row->facebook_user_id . '|' . $row->platform;
+                if (! isset($payLaterMap[$key])) {
+                    $payLaterMap[$key] = [
+                        'count' => 0,
+                        'paid_count' => 0,
+                        'unpaid_count' => 0,
+                        'first_bill_ref' => null,
+                        'first_bill_paid' => false,
+                        'first_used_at' => null,
+                    ];
+                }
+                $payLaterMap[$key]['count']++;
+                if ($row->is_paid) {
+                    $payLaterMap[$key]['paid_count']++;
+                } else {
+                    $payLaterMap[$key]['unpaid_count']++;
+                }
+                // earliest used bill (rows are DESC, so last assignment = oldest)
+                $payLaterMap[$key]['first_bill_ref'] = $row->bill_reference;
+                $payLaterMap[$key]['first_bill_paid'] = (bool) $row->is_paid;
+                $payLaterMap[$key]['first_used_at'] = $row->created_at;
+            }
+        }
+
         // สถิติรวม
         $stats = [
             'total_users' => FortuneReading::select('facebook_user_id')->distinct()->count(),
@@ -79,6 +115,7 @@ class FortuneUsersController extends Controller
         return view('admin.fortune.users.index', [
             'users' => $users,
             'stats' => $stats,
+            'payLaterMap' => $payLaterMap,
             'pageTitle' => 'ผู้ใช้ดูดวง',
         ]);
     }
