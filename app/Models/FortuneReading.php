@@ -128,6 +128,14 @@ class FortuneReading extends Model
     /** สถานะหลังลูกค้าปฏิเสธ upsell — ส่งคำลา + ปรัชญาแล้ว (ปิด conversation) */
     public const STATUS_FREE_DECLINED = 'free_declined';
 
+    // ───────────────────────────────────────────────────────────
+    // 💎 Request-Before-Pay (2026-05-03) — Deep 39 first-time only
+    //   AI สร้างคำทำนายก่อน → bot ถามยืนยันความเข้าใจ → ลูกค้ากดรับ → ส่งคำทำนาย+QR
+    //   สิทธิ์ครั้งเดียวเท่านั้นต่อ platform_user_id (ไม่ว่าจ่ายหรือไม่)
+    // ───────────────────────────────────────────────────────────
+    /** AI generated, รอลูกค้าตอบ "รับคำทำนาย" หรือ "ยกเลิก" */
+    public const STATUS_AWAITING_DELIVERY_CONFIRM = 'awaiting_delivery_confirm';
+
     /**
      * รายการ status ที่หมายถึง "รอชำระเงิน" — ครอบคลุมทั้ง Deep 39฿ และ Celtic 99฿
      *
@@ -433,6 +441,51 @@ class FortuneReading extends Model
         }
 
         return ! self::hasUsedFreeCard($platform, $platformUserId);
+    }
+
+    /**
+     * 💎 (2026-05-03) ตรวจสอบว่าลูกค้าใช้สิทธิ์ Request-Before-Pay (Deep 39 first-time) ไปแล้วหรือยัง
+     *
+     * นโยบาย "ครั้งเดียวต่อ 1 คน":
+     *   - 39 first-time: รับคำทำนายก่อน → ค่อยจ่าย (request-before-pay flow)
+     *   - 39 ครั้งที่ 2+ : ต้องจ่ายก่อน ถึงรับคำทำนาย (pay-first flow)
+     *
+     * Detection: ใช้แล้วถ้ามี Deep reading ใดๆ ที่มี bill_reference (ไม่ว่าจ่ายหรือไม่)
+     *   - กดยืนยัน "รับคำทำนาย" แล้ว → bill ถูกสร้าง → flag set
+     *   - กดยกเลิก → reading status COMPLETED แต่ยังคง bill_reference null (ไม่นับ)
+     *   หรืออาจเช็ค `is_request_before_pay_used` flag ใน conversation_state แทน (precise)
+     *
+     * เพื่อความเข้มงวด: ใช้ flag-based check (กันเคสที่ admin reset)
+     *
+     * @param  string  $platform        'facebook' หรือ 'line'
+     * @param  string  $platformUserId
+     * @return bool  true = ใช้แล้ว / false = first-time eligible
+     */
+    public static function hasUsedRequestBeforePay(string $platform, string $platformUserId): bool
+    {
+        return self::where('platform', $platform)
+            ->where(function ($q) use ($platformUserId) {
+                $q->where('platform_user_id', $platformUserId)
+                    ->orWhere('facebook_user_id', $platformUserId);
+            })
+            ->where('reading_type', self::READING_TYPE_DEEP)
+            // JSON path query — work for both MySQL 5.7+ JSON column และ Postgres JSONB
+            ->whereJsonContains('conversation_state->is_request_before_pay', true)
+            ->exists();
+    }
+
+    /**
+     * 💎 ตรวจสอบว่าควรเข้า Request-Before-Pay flow หรือไม่ (สำหรับ Deep 39)
+     *
+     * เงื่อนไข: ลูกค้ายังไม่เคยใช้สิทธิ์
+     *
+     * @param  string  $platform
+     * @param  string  $platformUserId
+     * @return bool
+     */
+    public static function shouldUseRequestBeforePay(string $platform, string $platformUserId): bool
+    {
+        return ! self::hasUsedRequestBeforePay($platform, $platformUserId);
     }
 
     // ============================================================
@@ -881,6 +934,8 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_QA_PROMPT,
                 // 🎁 Free Card states (2026-05-03) — รอลูกค้าตอบหลังทำนายฟรี
                 self::STATUS_FREE_PREDICTED,
+                // 💎 Request-Before-Pay (2026-05-03) — รอลูกค้ายืนยันรับคำทำนาย
+                self::STATUS_AWAITING_DELIVERY_CONFIRM,
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -905,6 +960,11 @@ class FortuneReading extends Model
                 // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
                     ->orWhere(function ($sub) {
                         $sub->where('conversation_status', self::STATUS_FREE_PREDICTED)
+                            ->where('updated_at', '>=', now()->subMinutes(15));
+                    })
+                // 💎 awaiting_delivery_confirm: timeout 15 นาที (ลูกค้ามีเวลาตัดสินใจรับ/ไม่รับ)
+                    ->orWhere(function ($sub) {
+                        $sub->where('conversation_status', self::STATUS_AWAITING_DELIVERY_CONFIRM)
                             ->where('updated_at', '>=', now()->subMinutes(15));
                     })
                 // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)

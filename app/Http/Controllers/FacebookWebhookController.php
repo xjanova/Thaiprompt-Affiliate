@@ -2721,6 +2721,9 @@ class FacebookWebhookController extends Controller
             'FREE_CARD_START' => $this->processConversationalMessage($senderId, 'ทำนายฟรี'),
             // 🌙 (2026-05-03) ลูกค้าปฏิเสธ upsell หลังทำนายฟรี — ส่งไปที่ trait
             'FREE_CARD_DECLINE' => $this->processConversationalMessage($senderId, 'ไม่สนใจ'),
+            // 💎 (2026-05-03) Request-Before-Pay confirmation (Deep 39 first-time only)
+            'DELIVERY_CONFIRM_YES' => $this->processConversationalMessage($senderId, 'รับคำทำนาย'),
+            'DELIVERY_CONFIRM_NO' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
 
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),

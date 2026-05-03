@@ -695,6 +695,24 @@ class FortuneChannelManager
                 'payment_lock_pending', 'payment_lock_revived'
                     => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
+                // 💎 (2026-05-03) Request-Before-Pay — confirmation prompt + 2 buttons
+                'delivery_confirm_prompt' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ รับคำทำนาย', 'payload' => 'DELIVERY_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'DELIVERY_CONFIRM_NO'],
+                ], $extra),
+
+                // 💎 ลูกค้ายกเลิกการรับคำทำนาย — ปิด conversation (text only)
+                'delivery_cancelled' => $fbService->sendMessage($userId, $message, $extra),
+
+                // 💎 invalid response → re-prompt with same buttons
+                'delivery_confirm_invalid' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ รับคำทำนาย', 'payload' => 'DELIVERY_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'DELIVERY_CONFIRM_NO'],
+                ], $extra),
+
+                // 💎 deliver_with_qr — ส่งคำทำนาย + QR (ใช้ payment template)
+                'deliver_with_qr' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
                 'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
@@ -1576,6 +1594,21 @@ class FortuneChannelManager
                 // 🔒 (2026-05-03) reach revive limit — admin only (text-only)
                 'payment_lock_admin'
                     => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 💎 (2026-05-03) Request-Before-Pay confirmation (LINE Quick Reply)
+                'delivery_confirm_prompt', 'delivery_confirm_invalid'
+                    => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                        ['label' => '✅ รับคำทำนาย', 'text' => 'รับคำทำนาย'],
+                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                    ]),
+
+                // 💎 ยกเลิกการรับคำทำนาย — text only
+                'delivery_cancelled'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 💎 deliver_with_qr — ใช้ payment template (LINE)
+                'deliver_with_qr'
+                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 'celtic_pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),

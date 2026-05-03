@@ -341,6 +341,18 @@ trait CelticCrossConversationTrait
                 }
                 $reading->update($updateData);
 
+                // 💎 (2026-05-03) Request-Before-Pay eligibility — first-time 39 only
+                //    ตรวจ + mark flag ตอนนี้ (ก่อน collect birthdate) → handleQuestionInput อ่านภายหลัง
+                $platform = $this->currentPlatform;
+                $platformUserId = $reading->platform_user_id ?? $reading->facebook_user_id;
+                if ($platformUserId && FortuneReading::shouldUseRequestBeforePay($platform, $platformUserId)) {
+                    $reading->setConversationState('is_request_before_pay', true);
+                    \Log::info('Fortune: Deep 39 → enable Request-Before-Pay (first-time)', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                    ]);
+                }
+
                 return [
                     'action' => 'collecting_birthdate',
                     'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"

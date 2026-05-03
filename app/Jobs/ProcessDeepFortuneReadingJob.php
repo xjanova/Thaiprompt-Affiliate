@@ -360,6 +360,64 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 $reading->setConversationState('reading_ready_at', now()->toIso8601String());
             }
 
+            // 💎 (2026-05-03) Request-Before-Pay flow — แทนที่จะ deliver ทันที, ขอยืนยันก่อน
+            //    ลูกค้า first-time 39 ที่อยู่ใน flow นี้ → reading พร้อมแล้ว แต่ยังไม่ส่ง
+            //    ส่ง prompt "เข้าใจไหมต้องจ่าย 39?" + 2 ปุ่ม [รับคำทำนาย][ยกเลิก]
+            //    state → AWAITING_DELIVERY_CONFIRM (รอลูกค้าตัดสินใจ)
+            $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+            if ($isRequestBeforePay && ! empty($reading->deep_response) && $this->userId) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM]);
+
+                $deepPrice = (int) ($settings->deep_reading_price ?? 39);
+                $name = $reading->facebook_user_name ?? 'คุณ';
+
+                $confirmMessage = FortuneLocaleService::lo(
+                    "💎 *คำทำนายของเจ้าชะตาพร้อมแล้ว* ✨\n\n"
+                        . "🔮 หมอจันทราเปิดดวงเรียบร้อย — ดาวเจ้าชนะ + ไพ่ที่จิตเจ้าชะตาเลือกมาให้\n\n"
+                        . "━━━━━━━━━━━━━━━━━\n"
+                        . "⚠️ *ก่อนรับคำทำนาย — เจ้าชะตาเข้าใจใช่ไหม?*\n"
+                        . "💸 หลังรับคำทำนาย ต้องโอนค่าครู *{$deepPrice} บาท*\n"
+                        . "🔔 *เศษทศนิยมต้องตรงเป๊ะ* (โอนผิดยอด = บิลค้างถาวร ต้องทักแอดมิน)\n"
+                        . "🎁 *สิทธิ์รับคำทำนายก่อนจ่ายมีครั้งเดียวต่อท่าน* — รอบหน้าต้องโอนก่อนรับเสมอ\n"
+                        . "━━━━━━━━━━━━━━━━━\n\n"
+                        . "👇 กดปุ่มด้านล่าง:\n"
+                        . "✅ *รับคำทำนาย* — ยืนยันเข้าใจ\n"
+                        . "❌ *ยกเลิก* — ไม่รับ ปิดเลย",
+                    "💎 *ຄຳທຳນາຍຂອງເຈົ້າຊາຕາພ້ອມແລ້ວ* ✨\n\n"
+                        . "🔮 ໝໍຈັນທາເປີດດວງແລ້ວ — ດາວເຈົ້າຊະນະ + ໄພ່ທີ່ຈິດເຈົ້າຊາຕາເລືອກມາໃຫ້\n\n"
+                        . "━━━━━━━━━━━━━━━━━\n"
+                        . "⚠️ *ກ່ອນຮັບຄຳທຳນາຍ — ເຈົ້າຊາຕາເຂົ້າໃຈໃຊ່ບໍ?*\n"
+                        . "💸 ຫຼັງຮັບຄຳທຳນາຍ ຕ້ອງໂອນຄ່າຄູ *{$deepPrice} ບາດ*\n"
+                        . "🔔 *ເສດທົດສະນິຍົມຕ້ອງຕົງເປັະ* (ໂອນຜິດຍອດ = ບິນຄ້າງຖາວອນ ຕ້ອງທັກແອັດມິນ)\n"
+                        . "🎁 *ສິດທິຮັບຄຳທຳນາຍກ່ອນຈ່າຍມີຄັ້ງດຽວຕໍ່ທ່ານ* — ຮອບໜ້າຕ້ອງໂອນກ່ອນຮັບສະເໝີ\n"
+                        . "━━━━━━━━━━━━━━━━━\n\n"
+                        . "👇 ກົດປຸ່ມດ້ານລຸ່ມ:\n"
+                        . "✅ *ຮັບຄຳທຳນາຍ* — ຢືນຢັນເຂົ້າໃຈ\n"
+                        . "❌ *ຍົກເລີກ* — ບໍ່ຮັບ ປິດເລີຍ"
+                );
+
+                try {
+                    $confirmResult = [
+                        'action' => 'delivery_confirm_prompt',
+                        'message' => $confirmMessage,
+                        'reading' => $reading,
+                    ];
+                    $channelManager->sendResponse($this->platform, $this->userId, $confirmResult, ['from_admin' => true]);
+
+                    Log::info('💎 Request-Before-Pay: ส่ง confirmation prompt', [
+                        'reading_id' => $reading->id,
+                        'platform' => $this->platform,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::error('💎 Request-Before-Pay: push prompt ล้มเหลว', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+
+                return; // ⛔ หยุดที่นี่ — ไม่ deliver reading auto, รอลูกค้ายืนยัน
+            }
+
             // ✅ Push เมื่อคำทำนายพร้อม (2026-04-27 — แตกต่างกันตาม platform)
             //
             // 📱 Facebook → push **คำทำนายเต็มทันที** (ไม่ถาม "พร้อมไหม?")

@@ -3547,6 +3547,8 @@ class FortuneConversationService
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText, $userProfile),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_TAROT => $this->handleTarotCardDraw($reading, $messageText),
+            // 💎 (2026-05-03) Request-Before-Pay — รอลูกค้ายืนยันรับคำทำนาย/ยกเลิก
+            FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM => $this->handleAwaitingDeliveryConfirm($reading, $messageText),
             FortuneReading::STATUS_DISCOVERY_CHAT => $this->handleDiscoveryChat($reading, $messageText, $userProfile),
             FortuneReading::STATUS_DISCOVERY_CONFIRM => $this->handleDiscoveryConfirm($reading, $messageText, $userProfile),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
@@ -4713,20 +4715,224 @@ class FortuneConversationService
             ];
         }
 
-        // ครบแล้ว → สร้างบิล
-        Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล', [
+        // ครบแล้ว → 💎 (2026-05-03) Request-Before-Pay routing
+        //   ถ้าลูกค้า first-time 39 (flag is_request_before_pay = true) → AI generate ก่อน → ถามยืนยัน
+        //   ไม่งั้น → existing createPaymentBill (pay-first)
+        if ($reading->getConversationState('is_request_before_pay', false)) {
+            Log::info('Fortune: Deep 39 → Request-Before-Pay flow (AI gen ก่อน, bill ทีหลัง)', [
+                'reading_id' => $reading->id,
+                'questions' => $collectedQuestions,
+            ]);
+
+            $result = $this->processRequestBeforePay($reading, $collectedQuestions);
+            if (! empty($prefixMessage)) {
+                $result['message'] = $prefixMessage . ($result['message'] ?? '');
+            }
+            return $result;
+        }
+
+        // ปกติ (pay-first) → สร้างบิล
+        Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล (pay-first)', [
             'reading_id' => $reading->id,
             'questions' => $collectedQuestions,
             'tarot_cards' => $reading->getCollectedTarotCards(),
         ]);
 
-        // เพิ่มข้อความไพ่ก่อนบิล (ถ้ามี)
         $billResult = $this->createPaymentBill($reading, $collectedQuestions);
         if (! empty($prefixMessage)) {
             $billResult['message'] = $prefixMessage . $billResult['message'];
         }
 
         return $billResult;
+    }
+
+    /**
+     * 💎 (2026-05-03) Request-Before-Pay flow — AI generate ก่อน → ถามยืนยัน → จ่ายทีหลัง
+     *
+     * เฉพาะ Deep 39 first-time per platform (flag is_request_before_pay = true)
+     * ขั้นตอน:
+     *   1. บันทึก questions + transition state → STATUS_PAID (borrow for "AI processing")
+     *   2. Dispatch ProcessDeepFortuneReadingJob ทันที (ไม่ต้องรอจ่าย — flag carry through)
+     *   3. Job จะ generate AI → check flag → push "เข้าใจไหมต้องจ่าย?" prompt + state AWAITING_DELIVERY_CONFIRM
+     *   4. ลูกค้ากด "รับคำทำนาย" → handleAwaitingDeliveryConfirm → deliver + create UPA + send QR
+     *   5. ลูกค้ากด "ยกเลิก" → cancel
+     *
+     * @param  FortuneReading  $reading
+     * @param  array  $questions  คำถามที่เก็บมา
+     * @return array  immediate response: "AI กำลังคิด..."
+     */
+    protected function processRequestBeforePay(FortuneReading $reading, array $questions): array
+    {
+        // 1. อัพเดท questions + status (state STATUS_PAID = AI processing — กัน race ส่งซ้ำ)
+        $reading->update([
+            'questions' => $questions,
+            'conversation_status' => FortuneReading::STATUS_PAID,
+        ]);
+
+        // 2. Dispatch job — flag is_request_before_pay จะถูก check ใน handle()
+        try {
+            \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                $reading->id,
+                null,
+                $this->currentPlatform,
+                $reading->platform_user_id ?? $reading->facebook_user_id
+            );
+        } catch (\Throwable $e) {
+            Log::error('Fortune: dispatch ProcessDeepFortuneReadingJob ล้มเหลว (request-before-pay)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return [
+                'action' => 'error',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🙏 ขออภัยค่ะ ระบบขัดข้องชั่วคราว กรุณาทักมาใหม่ในอีกครู่",
+                    "🙏 ຂໍອະໄພເດີ ລະບົບຂັດຂ້ອງຊົ່ວຄາວ ກະລຸນາທັກມາໃໝ່ໃນອີກບຶດ"
+                ),
+                'reading' => $reading,
+            ];
+        }
+
+        return [
+            'action' => 'processing',
+            'message' => \App\Services\FortuneLocaleService::lo(
+                "🔮 *หมอจันทรากำลังเปิดดวงให้เจ้าชะตาแล้ว* ✨\n\n"
+                    . "🌙 ใช้เวลาประมาณ 1-2 นาที\n"
+                    . "อย่าเพิ่งทักมาซ้ำนะ — แม่หมอจะส่งให้ทันทีเมื่อเสร็จ 🙏",
+                "🔮 *ໝໍຈັນທາກຳລັງເປີດດວງໃຫ້ເຈົ້າຊາຕາແລ້ວ* ✨\n\n"
+                    . "🌙 ໃຊ້ເວລາປະມານ 1-2 ນາທີ\n"
+                    . "ຢ່າຟ້າວທັກມາຊ້ຳເດີ — ແມ່ໝໍຈະສົ່ງໃຫ້ທັນທີເມື່ອແລ້ວ 🙏"
+            ),
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 💎 (2026-05-03) State handler: STATUS_AWAITING_DELIVERY_CONFIRM
+     *
+     * ลูกค้าตอบหลังเห็น "เข้าใจไหมต้องจ่าย?" prompt:
+     *   - "รับคำทำนาย" / "ใช่" / "เข้าใจ" → deliver + create UPA + send QR
+     *   - "ยกเลิก" / "ไม่" → ปิด conversation, สิทธิ์ครั้งเดียวถูกใช้แล้ว (flag ยังคง)
+     */
+    protected function handleAwaitingDeliveryConfirm(FortuneReading $reading, string $messageText): array
+    {
+        $clean = mb_strtolower(trim($messageText));
+
+        // ❌ ยกเลิก
+        $cancelKw = ['ยกเลิก', 'ไม่', 'ไม่รับ', 'ไม่เอา', 'cancel', 'no',
+            'ຍົກເລີກ', 'ບໍ່', 'ບໍ່ຮັບ', 'ບໍ່ເອົາ',
+            'delivery_confirm_no'];
+        foreach ($cancelKw as $kw) {
+            if ($clean === mb_strtolower($kw) || str_contains($clean, mb_strtolower($kw))) {
+                if (mb_strlen($clean) <= 30) {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    Log::info('Fortune: Request-Before-Pay → ลูกค้ากดยกเลิก (สิทธิ์ครั้งเดียวถูกใช้)', [
+                        'reading_id' => $reading->id,
+                    ]);
+
+                    return [
+                        'action' => 'delivery_cancelled',
+                        'message' => \App\Services\FortuneLocaleService::lo(
+                            "🙏 *ขอบคุณที่สนใจดูดวงนะคะ*\n\n"
+                                . "หากเปลี่ยนใจอยากดูดวง พิมพ์ 'ดูดวง' ได้ตลอด ✨\n"
+                                . "(ครั้งหน้าระบบจะให้โอนค่าครูก่อนรับคำทำนายนะคะ)",
+                            "🙏 *ຂອບໃຈທີ່ສົນໃຈເບິ່ງດວງເດີ*\n\n"
+                                . "ຫາກປ່ຽນໃຈຢາກເບິ່ງດວງ ພິມ 'ເບິ່ງດວງ' ໄດ້ຕະຫຼອດ ✨\n"
+                                . "(ຄັ້ງໜ້າລະບົບຈະໃຫ້ໂອນຄ່າຄູກ່ອນຮັບຄຳທຳນາຍເດີ)"
+                        ),
+                        'reading' => $reading,
+                    ];
+                }
+            }
+        }
+
+        // ✅ รับคำทำนาย / ยืนยัน
+        $acceptKw = ['รับคำทำนาย', 'รับ', 'ใช่', 'เข้าใจ', 'ตกลง', 'ok', 'yes',
+            'ຮັບຄຳທຳນາຍ', 'ຮັບ', 'ໃຊ່', 'ເຂົ້າໃຈ', 'ຕົກລົງ',
+            'delivery_confirm_yes'];
+        $accepted = false;
+        foreach ($acceptKw as $kw) {
+            if ($clean === mb_strtolower($kw) || str_contains($clean, mb_strtolower($kw))) {
+                if (mb_strlen($clean) <= 30) {
+                    $accepted = true;
+                    break;
+                }
+            }
+        }
+
+        if (! $accepted) {
+            // ไม่ตรง keyword → re-prompt
+            return [
+                'action' => 'delivery_confirm_invalid',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🙏 ขอให้เจ้าชะตากดปุ่มอีกครั้งนะคะ:\n\n"
+                        . "✅ *รับคำทำนาย* — ยืนยันเข้าใจว่าต้องจ่ายค่าครู\n"
+                        . "❌ *ยกเลิก* — ไม่รับ ปิดเลย",
+                    "🙏 ຂໍໃຫ້ເຈົ້າຊາຕາກົດປຸ່ມອີກຄັ້ງເດີ:\n\n"
+                        . "✅ *ຮັບຄຳທຳນາຍ* — ຢືນຢັນເຂົ້າໃຈວ່າຕ້ອງຈ່າຍຄ່າຄູ\n"
+                        . "❌ *ຍົກເລີກ* — ບໍ່ຮັບ ປິດເລີຍ"
+                ),
+                'reading' => $reading,
+            ];
+        }
+
+        // ✅ รับ → deliver reading + create UPA + send QR
+        $reading->refresh();
+        if (empty($reading->deep_response)) {
+            // ปกติไม่ควรเกิด — AI gen เสร็จก่อนส่ง confirmation prompt
+            return [
+                'action' => 'error',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🙏 ขออภัยค่ะ คำทำนายยังไม่พร้อม — กรุณารอสักครู่",
+                    "🙏 ຂໍອະໄພເດີ ຄຳທຳນາຍຍັງບໍ່ພ້ອມ — ກະລຸນາລໍຖ້າສັກຄູ່"
+                ),
+                'reading' => $reading,
+            ];
+        }
+
+        // 1. สร้าง UPA + ตั้ง bill
+        try {
+            $billResult = $this->createPaymentBill($reading, $reading->questions ?? []);
+            $name = $reading->facebook_user_name ?? 'คุณ';
+
+            // 2. ประกอบข้อความ: คำทำนาย + payment QR + decimal warning
+            $readingHeader = \App\Services\FortuneLocaleService::lo(
+                "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
+                    . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
+                    . '📅 วันที่: '.now()->format('d/m/Y H:i')."\n"
+                    . "═══════════════════════\n\n",
+                "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n"
+                    . '📋 ເລກບິນ: '.($reading->bill_reference ?? '-')."\n"
+                    . '📅 ວັນທີ: '.now()->format('d/m/Y H:i')."\n"
+                    . "═══════════════════════\n\n"
+            );
+
+            $billResult['message'] = $readingHeader . $reading->deep_response . "\n\n" . ($billResult['message'] ?? '');
+            $billResult['action'] = 'deliver_with_qr';
+            $billResult['chart_image_url'] = $reading->reading_image_url;
+
+            Log::info('💎 Request-Before-Pay: ลูกค้ารับคำทำนาย → ส่ง reading + QR', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return $billResult;
+        } catch (\Throwable $e) {
+            Log::error('💎 Request-Before-Pay: deliver+bill ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'action' => 'error',
+                'message' => \App\Services\FortuneLocaleService::lo(
+                    "🙏 ขออภัยค่ะ ระบบขัดข้องชั่วคราว — กรุณาทักมาใหม่ในอีกครู่",
+                    "🙏 ຂໍອະໄພເດີ ລະບົບຂັດຂ້ອງຊົ່ວຄາວ — ກະລຸນາທັກມາໃໝ່ໃນອີກບຶດ"
+                ),
+                'reading' => $reading,
+            ];
+        }
     }
 
     /**
