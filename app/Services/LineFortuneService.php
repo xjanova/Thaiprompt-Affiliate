@@ -2363,13 +2363,13 @@ class LineFortuneService implements MessagingPlatformInterface
     {
         $priceDisplay = number_format($deepReadingPrice, 0);
         $freeEnabled = $this->settings->isFreeReadingEnabled();
-        $maxFree = (int) ($this->settings->max_free_readings ?? 0);
 
-        // Header box — เปลี่ยนข้อความตามสถานะฟรี (ใช้ brand name จาก settings)
+        // 🆕 (2026-05-03 audit fix #7) แทน "ฟรีวันละ X คำถาม" → "ทำนายฟรี 1 ใบ/platform"
+        //    ระบบใหม่ไม่ใช่ daily quota แต่เป็น 1 ใบ/ตลอดชีวิต
         $brandName = $this->settings->getFortuneBrandName();
-        $headerText = $freeEnabled ? 'สิทธิ์ฟรีวันนี้หมดแล้ว' : "ดูดวงโดย{$brandName}";
+        $headerText = $freeEnabled ? 'สิทธิ์ทำนายฟรีถูกใช้แล้ว' : "ดูดวงโดย{$brandName}";
         $subText = $freeEnabled
-            ? "ฟรีวันละ {$maxFree} คำถาม"
+            ? "ทำนายฟรี 1 ใบ/ท่าน (ใช้แล้ว)"
             : "ค่าครู {$priceDisplay} บาท/ครั้ง";
 
         $bodyContents = [

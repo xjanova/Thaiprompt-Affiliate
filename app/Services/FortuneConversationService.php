@@ -2755,9 +2755,12 @@ class FortuneConversationService
         // หลักการ: นำด้วย action ก่อน context (ไม่ใช่กำแพงข้อความ)
         // LINE และ edge cases (ปิดบริการ/สิทธิ์หมด) ใช้โค้ดเดิมต่อด้านล่าง
         if ($this->currentPlatform === 'facebook' && $freeEnabled && $remaining > 0) {
+            // 🆕 (2026-05-03 audit fix #4) ระบบฟรีเปลี่ยนเป็น 1 ใบ/platform/ตลอดชีวิต
+            //    เดิม: "วันนี้ดูดวงฟรีได้ X ครั้ง" — ผิด
+            //    ใหม่: "🎁 มีสิทธิ์ทำนายฟรี 1 ใบ (สิทธิ์ครั้งแรก)"
             $quotaLine = (($userCredit && $userCredit->isCurrentlyUnlimited()) || $remaining >= 99)
-                ? '🌟 ดูดวงฟรีไม่จำกัดวันนี้'
-                : "✨ วันนี้ดูดวงฟรีได้ {$remaining} ครั้ง";
+                ? '🌟 มีสิทธิ์ทำนายไม่จำกัด (เครดิตพิเศษ)'
+                : '🎁 มีสิทธิ์ *ทำนายฟรี 1 ใบ* (สิทธิ์ครั้งแรกเท่านั้น)';
 
             // 🎯 Phase E — ใช้ greetName เพื่อกัน "คุณคุณ"
             $greet = $this->greetName($name);
@@ -2806,15 +2809,15 @@ class FortuneConversationService
             ];
         }
 
-        // เปิดบริการฟรี — แจ้งสิทธิ์
+        // 🆕 (2026-05-03 audit fix #5) ระบบฟรี = 1 ใบ/platform/ตลอดชีวิต
         if ($userCredit && $userCredit->isCurrentlyUnlimited()) {
             $message .= "🌟 คุณมีสิทธิ์ดูดวงไม่จำกัด! (โปรโมชั่นพิเศษ)\n\n";
         } elseif ($remaining >= 99) {
             $message .= "🌟 คุณมีสิทธิ์ดูดวงไม่จำกัด!\n\n";
         } elseif ($remaining > 0) {
-            $message .= "📊 วันนี้คุณมีสิทธิ์ดูดวง {$remaining} ครั้ง\n\n";
+            $message .= "🎁 มีสิทธิ์ *ทำนายฟรี 1 ใบ* (สิทธิ์ครั้งแรกเท่านั้น)\n\n";
         } else {
-            $message .= "⏰ สิทธิ์วันนี้หมดแล้ว\n\n";
+            $message .= "💎 สิทธิ์ทำนายฟรีถูกใช้แล้ว — ดูดวงเสียค่าครูได้ค่ะ\n\n";
         }
 
         if ($remaining > 0) {
@@ -2822,12 +2825,11 @@ class FortuneConversationService
             $message .= "ไม่ว่าจะเรื่อง ความรัก 💕 การงาน 💼 การเงิน 💰 สุขภาพ 🏥\n\n";
             $message .= 'กดเลือกด้านล่าง หรือพิมพ์คำถามมาได้เลย 👇';
         } else {
-            // สิทธิ์ฟรีหมด → ปิด conversation แล้วแนะนำดูดวงเสียค่าครู
+            // สิทธิ์ฟรีถูกใช้แล้ว → ปิด conversation + แนะนำดูดวงเสียค่าครู
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             if ($this->settings->isDeepReadingEnabled()) {
                 $price = $this->getDeepReadingPrice();
-                $message .= "กลับมาใหม่พรุ่งนี้ได้ หรือ\n\n";
                 $qCount = self::REQUIRED_QUESTIONS;
                 $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — {$qCount} คำถาม {$price} บาท*\n";
                 $message .= "📌 วิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเจ้าชะตาเลือก ไม่ยกเมฆ\n";
@@ -6537,32 +6539,31 @@ class FortuneConversationService
     }
 
     /**
-     * ตรวจสอบจำนวนคำถามฟรีที่เหลือวันนี้
+     * ⚠️ DEPRECATED (2026-05-03 audit fix #4+#5) — Old daily-quota concept gone
      *
-     * @return int จำนวนครั้งที่เหลือ
+     * เดิม: คืน "จำนวนครั้งฟรีที่เหลือวันนี้" จาก max_free_readings - countTodayReadings
+     * ใหม่: ระบบ free_card 1 ใบ/platform/ตลอดชีวิต
+     *
+     * Backward compat: คืน 1 ถ้ายังไม่ใช้สิทธิ์ฟรี (มีปุ่มได้), 0 ถ้าใช้แล้ว
+     * 99 = unlimited credit (admin granted) ยังคงใช้ได้
+     *
+     * @return int 0=ไม่มีสิทธิ์ฟรี, 1=ใช้ได้, 99=unlimited credit
      */
     public function getRemainingFreeQuestions(string $userId): int
     {
-        $maxFreeReadings = $this->settings->max_free_readings ?? self::MAX_AI_CALLS_PER_DAY;
-        $usedToday = FortuneReading::countTodayReadings($userId);
-        $normalRemaining = max(0, $maxFreeReadings - $usedToday);
-
-        // เพิ่มเครดิตพิเศษรายคน (ถ้ามี)
+        // Special unlimited credit (admin-granted) ยังคงทำงาน
         $userCredit = FortuneUserCredit::findByUser($userId);
-        if ($userCredit) {
-            // ดูฟรีไม่จำกัด → แสดง 99
-            if ($userCredit->isCurrentlyUnlimited()) {
-                return 99;
-            }
-            // รีเซ็ตวันนี้ → คืนสิทธิ์เท่ากับ max
-            if ($userCredit->isDailyResetActive()) {
-                return max($normalRemaining, $maxFreeReadings);
-            }
-            // มีเครดิตเหลือ → บวกเพิ่ม
-            $normalRemaining += $userCredit->getRemainingCredits();
+        if ($userCredit && $userCredit->isCurrentlyUnlimited()) {
+            return 99;
         }
 
-        return $normalRemaining;
+        // ใหม่: free_card 1 ใบ/platform — เช็คว่าใช้สิทธิ์แล้วยัง
+        $platform = (preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? 'line' : 'facebook';
+        if (FortuneReading::hasUsedFreeCard($platform, $userId)) {
+            return 0;
+        }
+
+        return 1;
     }
 
     /**

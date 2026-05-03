@@ -258,7 +258,7 @@ class FortuneAIService
 - ห้าม: "หมอจันทราแนะนำให้ลองดูดวงความรักค่ะ พิมพ์ดูดวงความรักมาเลยนะคะ รอบเดียวค่ะ 🔮"
 
 [ข้อมูลระบบดูดวง Thaiprompt ที่คุณต้องรู้]
-- ดูดวงฟรีได้วันละ {maxFreeReadings} ครั้ง
+- ทำนายฟรี 1 ใบ/platform (สิทธิ์ครั้งแรกเท่านั้น — ใช้แล้วใช้อีกไม่ได้)
 - ดูดวงเชิงลึก (Deep Reading) ค่าครู {deepReadingPrice} บาท/ครั้ง โดยหมอจันทราวิเคราะห์จากวันเกิดและคำถามของผู้ใช้ (ใช้คำว่า "ค่าครู" เสมอ ไม่ใช่ "ค่าบริการ")
 - หัวข้อดูดวงที่ได้: ความรัก, การเงิน, การงาน, สุขภาพ, โชคลาภ, ครอบครัว, การเรียน, เดินทาง
 - วิธีดูดวง: พิมพ์ "ดูดวง" หรือพิมพ์หัวข้อตรงๆ เช่น "ดวงความรัก" "ดวงการเงินปีนี้"
@@ -1088,13 +1088,16 @@ PROMPT;
      */
     protected function buildChatSystemMessage(): string
     {
-        $maxFreeReadings = (int) ($this->settings->max_free_readings ?? 3);
+        // 🆕 (2026-05-03 audit fix #6) ระบบฟรีเปลี่ยนเป็น 1 ใบ/platform/ตลอดชีวิต
+        //    เดิม AI ถูกบอก "ดูดวงฟรีได้วันละ X ครั้ง" — ผิด ลูกค้าได้ฟรีครั้งเดียวเท่านั้น
+        //    ใหม่: บอก AI ว่า "ทำนายฟรี 1 ใบ/platform — ครั้งแรกเท่านั้น"
+        $maxFreeReadings = 1; // ⚠️ deprecated placeholder — ใช้สำหรับ template เก่า
         $deepReadingPrice = number_format((float) ($this->settings->deep_reading_price ?? 99), 0);
         $freeEnabled = $this->settings->isFreeReadingEnabled();
 
         // หากปิดบริการฟรี → ใช้ข้อความแบบไม่พูดถึงฟรีเลย
         $freeLineForPrompt = $freeEnabled
-            ? "- ดูดวงฟรีได้วันละ {$maxFreeReadings} ครั้ง"
+            ? "- ทำนายฟรี 1 ใบต่อ platform (สิทธิ์ครั้งแรกเท่านั้น)"
             : "- บริการดูดวงฟรีปิดอยู่ — ทุกคำถามคิดเป็นค่าครูตามราคา";
 
         // คำนวณค่าคอมมิชชั่นจาก settings

@@ -50,6 +50,13 @@ trait PayFirstGateTrait
             return null;
         }
 
+        // ✅ (2026-05-03 audit fix #3) ยกเว้น cancel keyword — ลูกค้าต้องยกเลิกได้เสมอ
+        //    หลังยกเลิก bill จะ status=COMPLETED + unpaid → gate ยังคง lock ในรอบหน้า
+        //    (ป้องกันการ abuse: ยกเลิกแล้ว create ใหม่วน)
+        if (method_exists($this, 'isCancelRequest') && $this->isCancelRequest($messageText)) {
+            return null;
+        }
+
         // 🚫 BLOCK + ส่งข้อความตามสถานะบิล
         return $this->buildBlockingResponse($blockingBill, $messageText, $userProfile);
     }
@@ -90,7 +97,9 @@ trait PayFirstGateTrait
 
         $isExpired = $bill->conversation_status === FortuneReading::STATUS_COMPLETED;
 
-        // 🌙 Re-engagement greeting (เฉพาะ window แรก / >24hr)
+        // 🌙 Re-engagement greeting (FB: >24hr / LINE: >1hr — guard ใน shouldSendReengagement)
+        // 🆕 (2026-05-03 audit fix #12) เพิ่มข้อความบอกว่า "สิทธิ์ฟรีถูกใช้ไปแล้ว"
+        //    ถ้าลูกค้าใช้ free_card ไปแล้ว — ป้องกันความสับสน
         $reengagement = '';
         if ($bill->shouldSendReengagement()) {
             $reengagement = FortuneLocaleService::lo(
@@ -100,6 +109,16 @@ trait PayFirstGateTrait
             $bill->setConversationState('last_reengagement_at', now()->toIso8601String());
             $reengageCount = (int) $bill->getConversationState('reengagement_count', 0);
             $bill->setConversationState('reengagement_count', $reengageCount + 1);
+        }
+
+        // 💎 ถ้าใช้ free_card แล้ว — แทรก context กันสับสน
+        $platformUserId = $bill->platform_user_id ?? $bill->facebook_user_id;
+        $platform = $bill->platform ?? 'facebook';
+        if ($platformUserId && FortuneReading::hasUsedFreeCard($platform, $platformUserId)) {
+            $reengagement .= FortuneLocaleService::lo(
+                "💎 *(สิทธิ์ทำนายฟรีของเจ้าชะตาถูกใช้ไปแล้ว — ครั้งนี้ต้องโอนค่าครู)*\n\n",
+                "💎 *(ສິດທິທຳນາຍຟຣີຂອງເຈົ້າຊາຕາໃຊ້ໄປແລ້ວ — ຄັ້ງນີ້ຕ້ອງໂອນຄ່າຄູ)*\n\n"
+            );
         }
 
         // 📊 Case A: บิล active pending → resend QR + ยอดเดิม

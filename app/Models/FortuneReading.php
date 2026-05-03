@@ -471,11 +471,24 @@ class FortuneReading extends Model
      * @param  string  $platformUserId
      * @return self|null
      */
+    /**
+     * ระยะเวลา lookback (วัน) สำหรับ blocking unpaid bills
+     *
+     * บิลที่ค้างเก่ากว่านี้ ไม่ block ลูกค้าอีกต่อไป (เริ่มต้นใหม่ได้)
+     * เหตุผล: ลูกค้าอาจเปลี่ยนใจ, เปลี่ยนเครื่อง, หรือลืมไปแล้ว — ห้ามล็อกตลอดชีวิต
+     */
+    public const BLOCKING_BILL_LOOKBACK_DAYS = 30;
+
     public static function findBlockingUnpaidBill(string $platform, string $platformUserId): ?self
     {
         // 🔒 หา reading ล่าสุดของ deep/celtic ที่มี bill_reference
         //    ถ้าตัวล่าสุดเป็น paid → unlock (ลูกค้ายืนยัน commitment แล้ว)
         //    ถ้าตัวล่าสุดเป็น unpaid → block (ทั้ง active pending + expired completed)
+        //
+        // 🆕 (2026-05-03 audit fix #1) Recency filter — บิลเก่ากว่า 30 วันไม่ block
+        //    เดิม: ลูกค้าที่ทิ้งบิลเมื่อ 6 เดือนก่อน → block ตลอดชีวิต = bug
+        $cutoff = now()->subDays(self::BLOCKING_BILL_LOOKBACK_DAYS);
+
         $latest = self::where('platform', $platform)
             ->where(function ($q) use ($platformUserId) {
                 $q->where('platform_user_id', $platformUserId)
@@ -488,6 +501,7 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_PENDING_PAYMENT,
                 self::STATUS_COMPLETED, // ⭐ COMPLETED + unpaid = expired bill
             ])
+            ->where('updated_at', '>=', $cutoff)
             ->latest('updated_at')
             ->first();
 
@@ -532,63 +546,72 @@ class FortuneReading extends Model
      */
     public function reviveBillForRepay(): ?self
     {
-        if ($this->reachedReviveLimit()) {
-            return null;
-        }
-
+        // 🔒 (2026-05-03 audit fix #2) Race-safe via DB transaction + row lock
+        //    เดิม: 2 messages พร้อมๆ → 2 UPAs สร้างพร้อมกัน → 1 UPA orphan
+        //    ใหม่: lockForUpdate() บล็อกอีก message ให้รอ → re-check limit หลัง lock
         try {
-            // สร้าง UPA ใหม่ตาม reading_type
-            $basePrice = $this->reading_type === self::READING_TYPE_CELTIC_CROSS
-                ? (float) (FortuneTellingSetting::getSettings()->celtic_cross_price ?? 99)
-                : (float) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+            return \Illuminate\Support\Facades\DB::transaction(function () {
+                /** @var self|null $locked */
+                $locked = self::where('id', $this->id)->lockForUpdate()->first();
+                if (! $locked) {
+                    return null;
+                }
 
-            $newUpa = UniquePaymentAmount::generate(
-                $basePrice,
-                $this->id,
-                'fortune_reading',
-                30 // หมดอายุ 30 นาที เหมือนเดิม
-            );
+                // Re-check limit หลังจาก lock (กันเคส count เพิ่มขึ้นใน race)
+                if ($locked->reachedReviveLimit()) {
+                    return null;
+                }
 
-            if (! $newUpa) {
-                \Log::warning('FortuneReading::reviveBillForRepay — UPA generate fail', [
-                    'reading_id' => $this->id,
+                $basePrice = $locked->reading_type === self::READING_TYPE_CELTIC_CROSS
+                    ? (float) (FortuneTellingSetting::getSettings()->celtic_cross_price ?? 99)
+                    : (float) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+
+                $newUpa = UniquePaymentAmount::generate(
+                    $basePrice,
+                    $locked->id,
+                    'fortune_reading',
+                    30
+                );
+
+                if (! $newUpa) {
+                    \Log::warning('FortuneReading::reviveBillForRepay — UPA generate fail', [
+                        'reading_id' => $locked->id,
+                    ]);
+
+                    return null;
+                }
+
+                $newStatus = $locked->reading_type === self::READING_TYPE_CELTIC_CROSS
+                    ? self::STATUS_CELTIC_PENDING_PAYMENT
+                    : self::STATUS_PENDING_PAYMENT;
+
+                $reviveCount = $locked->getReviveCount() + 1;
+                $locked->setConversationState('revive_count', $reviveCount);
+                $locked->setConversationState('revived_at', now()->toIso8601String());
+                $locked->setConversationState('reminder_r1_sent_at', null);
+                $locked->setConversationState('reminder_r2_sent_at', null);
+                $locked->setConversationState('reminder_r3_sent_at', null);
+                $locked->setConversationState('expiry_reminder_sent_at', null);
+                $locked->setConversationState('cancelled_at', null);
+                $locked->setConversationState('cancellation_reason', null);
+
+                $locked->update([
+                    'unique_payment_amount_id' => $newUpa->id,
+                    'amount_paid' => $newUpa->unique_amount,
+                    'conversation_status' => $newStatus,
+                    'updated_at' => now(),
                 ]);
-                return null;
-            }
 
-            $newStatus = $this->reading_type === self::READING_TYPE_CELTIC_CROSS
-                ? self::STATUS_CELTIC_PENDING_PAYMENT
-                : self::STATUS_PENDING_PAYMENT;
+                \Log::info('FortuneReading: revive bill สำเร็จ', [
+                    'reading_id' => $locked->id,
+                    'bill_reference' => $locked->bill_reference,
+                    'revive_count' => $reviveCount,
+                    'new_amount' => $newUpa->unique_amount,
+                    'new_upa_id' => $newUpa->id,
+                ]);
 
-            // ⭐ เพิ่ม revive_count + reset reminder flags
-            $reviveCount = $this->getReviveCount() + 1;
-            $this->setConversationState('revive_count', $reviveCount);
-            $this->setConversationState('revived_at', now()->toIso8601String());
-            // ล้าง reminder flags ทั้งหมดให้ส่งใหม่
-            $this->setConversationState('reminder_r1_sent_at', null);
-            $this->setConversationState('reminder_r2_sent_at', null);
-            $this->setConversationState('reminder_r3_sent_at', null);
-            $this->setConversationState('expiry_reminder_sent_at', null); // legacy key
-            $this->setConversationState('cancelled_at', null);
-            $this->setConversationState('cancellation_reason', null);
-
-            $this->update([
-                'unique_payment_amount_id' => $newUpa->id,
-                'amount_paid' => $newUpa->unique_amount,
-                'conversation_status' => $newStatus,
-                // bill_reference เดิม (ไม่เปลี่ยน — ลูกค้าจะได้รู้ว่าบิลเดิม revive)
-                'updated_at' => now(),
-            ]);
-
-            \Log::info('FortuneReading: revive bill สำเร็จ', [
-                'reading_id' => $this->id,
-                'bill_reference' => $this->bill_reference,
-                'revive_count' => $reviveCount,
-                'new_amount' => $newUpa->unique_amount,
-                'new_upa_id' => $newUpa->id,
-            ]);
-
-            return $this->fresh();
+                return $locked->fresh();
+            });
         } catch (\Throwable $e) {
             \Log::error('FortuneReading::reviveBillForRepay — exception', [
                 'reading_id' => $this->id,
@@ -610,6 +633,8 @@ class FortuneReading extends Model
      */
     public function shouldSendReengagement(): bool
     {
+        // 🆕 (2026-05-03 audit fix #8) LINE ไม่มี 24hr window แบบ FB
+        //    LINE ส่งฟรีได้ทุกเวลา → ไม่ต้องเช็ค 24hr (กันส่งซ้ำใน 1 ชม. แทน)
         $lastEngageIso = $this->getConversationState('last_reengagement_at');
         if (empty($lastEngageIso)) {
             return true;
@@ -617,9 +642,15 @@ class FortuneReading extends Model
 
         try {
             $hours = abs(now()->diffInHours(\Carbon\Carbon::parse($lastEngageIso), true));
-            return $hours >= 24;
+            $platform = $this->platform ?? 'facebook';
+
+            // FB: 24hr window — re-engage หลัง window reset
+            // LINE: ไม่มี window — กันสแปมโดยส่งทุก 1 ชม. (ลูกค้าทักรัวๆ ใน 1 ชม. ไม่โดน greeting ซ้ำ)
+            $threshold = $platform === 'line' ? 1 : 24;
+
+            return $hours >= $threshold;
         } catch (\Throwable $e) {
-            return true; // ถ้า parse fail ส่งดีกว่าไม่ส่ง
+            return true;
         }
     }
 
@@ -650,13 +681,19 @@ class FortuneReading extends Model
     }
 
     /**
-     * ตรวจสอบว่าผู้ใช้ใช้งานครบจำนวนฟรีแล้วหรือยัง
+     * ⚠️ DEPRECATED (2026-05-03) — แทนด้วย hasUsedFreeCard() (one-per-platform model)
+     *
+     * เดิม: เช็ค daily quota — ปัจจุบันระบบเป็น 1 ใบ/platform/ตลอดชีวิต
+     * เก็บไว้เผื่อ legacy callers ที่ยังไม่ refactor — return based on free_card consumption แทน
+     *
+     * @param  string  $facebookUserId  ใช้ชื่อเดิมแต่หมายถึง platform_user_id (FB หรือ LINE)
+     * @param  int  $maxFreeReadings  ignored — ของเดิม
      */
     public static function hasReachedFreeLimit(string $facebookUserId, int $maxFreeReadings): bool
     {
-        $todayCount = self::countTodayReadings($facebookUserId);
-
-        return $todayCount >= $maxFreeReadings;
+        // ปัจจุบัน: ใช้สิทธิ์ฟรีหรือยัง? (per platform หา auto)
+        $platform = (preg_match('/^U[0-9a-f]{32}$/i', $facebookUserId)) ? 'line' : 'facebook';
+        return self::hasUsedFreeCard($platform, $facebookUserId);
     }
 
     /**
