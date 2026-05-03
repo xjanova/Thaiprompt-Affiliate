@@ -4517,6 +4517,46 @@ class FortuneConversationService
             $collectedQuestions = $reading->getCollectedQuestions();
             $questionCount = count($collectedQuestions);
 
+            $latestQuestion = end($collectedQuestions) ?: $question;
+
+            // 🩹 (2026-05-04) Pay-Later → skip confirm step → ตรงเข้า tarot (UX simplification)
+            //    User report: ลูกค้าใส่คำถาม Pay-Later → ค้างที่ confirm prompt (ไม่ตอบ "ใช่")
+            //    Root cause: confirm step สำหรับ pay-first ป้องกันสร้างบิลผิด — แต่ Pay-Later ยังไม่สร้างบิล
+            //                AI gen ฟรีอยู่แล้ว (ลูกค้าจ่ายตอนรับคำทำนาย) → confirm step ไม่จำเป็น
+            //    Fix: ถ้า is_request_before_pay=true → enter COLLECTING_TAROT ทันที + ส่ง prompt ตั้งจิต
+            //         pay-first flow ยังคง confirm step เดิม (ป้องกันสร้างบิลผิด)
+            $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+
+            if ($isRequestBeforePay) {
+                Log::info('Fortune: handleQuestionInput → Pay-Later skip confirm → COLLECTING_TAROT', [
+                    'reading_id' => $reading->id,
+                    'question_count' => $questionCount,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
+                $reading->setConversationState('awaiting_question_confirmation', false);
+                $reading->setConversationState('confirmed_question_at', now()->toIso8601String());
+                $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+                $reading->setConversationState('tarot_intention_confirmed', false);
+
+                return [
+                    'action' => 'awaiting_tarot_intention',
+                    'message' => "✨ รับคำถามแล้วค่ะ\n\n"
+                        . "❓ *คำถาม:* \"{$latestQuestion}\"\n\n"
+                        . "═══════════════════════\n"
+                        . "🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                        . "═══════════════════════\n\n"
+                        . "หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                        . "นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
+                        . "🃏 ที่นี่ไพ่ที่ออก = ไพ่ที่จิตของเจ้าชะตาเลือกเอง\n"
+                        . "ไม่ต่างจากการจับไพ่จริงด้วยมือตัวเอง ✨\n\n"
+                        . "เมื่อพร้อมแล้ว → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                        . "หรือกดปุ่มด้านล่าง 👇",
+                    'reading' => $reading,
+                ];
+            }
+
             Log::info('Fortune: handleQuestionInput → ขอ confirm คำถามก่อนเปิดไพ่+สร้างบิล', [
                 'reading_id' => $reading->id,
                 'question_count' => $questionCount,
@@ -4524,14 +4564,12 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            // 🔒 Confirmation step (ก่อนเปิดไพ่ + สร้างบิล)
+            // 🔒 Confirmation step (ก่อนเปิดไพ่ + สร้างบิล) — pay-first flow เท่านั้น
             //    เหตุผล: ลูกค้ามักพิมพ์คำถามผิด/พิมพ์ผ่าน — ถ้าสร้างบิลทันที
             //    จะต้องยกเลิก + เริ่มใหม่ (สับสน + เสียเวลา)
             //    ใช้ flag ใน conversation_state — ค้าง status ที่ COLLECTING_QUESTIONS
             $reading->setConversationState('awaiting_question_confirmation', true);
             $reading->setConversationState('confirmed_question_at', null);
-
-            $latestQuestion = end($collectedQuestions) ?: $question;
 
             return [
                 'action' => 'awaiting_question_confirmation',
@@ -5501,8 +5539,26 @@ class FortuneConversationService
         set_time_limit(180);
 
         try {
-            // ยืนยันการชำระเงิน
-            $reading->confirmPayment($notification);
+            // 🩹 (2026-05-04) Pay-Later guard — ห้าม mark is_paid=true ก่อนลูกค้าโอนจริง
+            //    User report: บิล Pay-Later ขึ้น is_paid=1 + amount_paid=0 → SMS app filter ทิ้ง → ลูกค้าโอนแล้วระบบไม่จับ
+            //    Root cause: Job เรียก processPaymentConfirmed ตอน AI gen (Pay-Later flow) — แต่ลูกค้ายังไม่ได้โอน
+            //                confirmPayment(null) → mark is_paid=true + paid_at=now + amount_paid ยัง 0 (default)
+            //    Fix: ถ้าเป็น Pay-Later AI-gen path (notification=null + is_request_before_pay=true)
+            //         → skip confirmPayment ทั้ง block — รอ real payment confirm ผ่าน SmsPaymentService ทีหลัง
+            //    Real flow: ลูกค้ากด "รับคำทำนาย" → createPaymentBill → setPendingPayment (amount_paid=39.XX, status=PENDING_PAYMENT)
+            //               → ลูกค้าโอน 39.XX → SMS match UPA → confirmPayment(notification) → is_paid=true ตอนนั้น
+            $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+            $payLaterPrePayment = $isRequestBeforePay && $notification === null;
+
+            if (! $payLaterPrePayment) {
+                // ยืนยันการชำระเงิน (pay-first flow OR pay-later real-payment confirmation)
+                $reading->confirmPayment($notification);
+            } else {
+                Log::info('Fortune: Pay-Later AI gen — skip confirmPayment (customer not yet paid)', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                ]);
+            }
 
             // ดึงข้อมูลสำหรับทำนาย
             $questions = $reading->questions ?? $reading->getCollectedQuestions();
