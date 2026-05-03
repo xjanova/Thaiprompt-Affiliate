@@ -3953,6 +3953,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/send-message', [FortuneUsersController::class, 'sendMessage'])->name('send-message');
         Route::post('/broadcast', [FortuneUsersController::class, 'broadcastMessage'])->name('broadcast');
         Route::post('/quick-add-credits', [FortuneUsersController::class, 'quickAddCredits'])->name('quick-add-credits');
+        // 🔒 (2026-05-04) Reset pay-later eligibility — admin override
+        Route::post('/{platform}/{userId}/reset-pay-later', [FortuneUsersController::class, 'resetPayLaterEligibility'])->name('reset-pay-later');
     });
 
     // เทมเพลตตอบกลับ
