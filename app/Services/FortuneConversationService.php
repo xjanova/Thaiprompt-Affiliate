@@ -651,7 +651,10 @@ class FortuneConversationService
 
                 return [
                     'action' => 'busy',
-                    'message' => 'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏',
+                    'message' => \App\Services\FortuneLocaleService::lo(
+                        'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏',
+                        'ກຳລັງປະມວນຜົນຢູ່ ກະລຸນາລໍຖ້າສັກຄູ່ 🙏'
+                    ),
                     'reading' => null,
                 ];
             }
@@ -1074,7 +1077,10 @@ class FortuneConversationService
 
                     return [
                         'action' => 'cancelled',
-                        'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                        'message' => \App\Services\FortuneLocaleService::lo(
+                            "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
+                            "ຍົກເລີກແລ້ວ ຫາກຕ້ອງການເບິ່ງດວງໃໝ່ ພິມ 'ເບິ່ງດວງ' ໄດ້ເລີຍ 🔮"
+                        ),
                         'reading' => $activeReading,
                     ];
                 }
@@ -1425,7 +1431,10 @@ class FortuneConversationService
                     if ($status === FortuneReading::STATUS_PAID) {
                         return [
                             'action' => 'processing',
-                            'message' => "🔮 กำลังวิเคราะห์ดวงชะตาให้อยู่\n\nใช้เวลาประมาณ 1-3 นาที กรุณารอสักครู่ ✨",
+                            'message' => \App\Services\FortuneLocaleService::lo(
+                                "🔮 กำลังวิเคราะห์ดวงชะตาให้อยู่\n\nใช้เวลาประมาณ 1-3 นาที กรุณารอสักครู่ ✨",
+                                "🔮 ກຳລັງວິເຄາະດວງຊະຕາໃຫ້ຢູ່\n\nໃຊ້ເວລາປະມານ 1-3 ນາທີ ກະລຸນາລໍຖ້າສັກຄູ່ ✨"
+                            ),
                             'reading' => $activeReading,
                         ];
                     }
@@ -2885,7 +2894,9 @@ class FortuneConversationService
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
 
-        $declineKeywords = ['ไม่', 'ไม่เอา', 'ไม่ต้อง', 'ไม่ต้องการ', 'ยังก่อน', 'ไว้ก่อน', 'ไม่ดู', 'no'];
+        // 🇱🇦 Lao decline (ບໍ່ = "no", ບໍ່ເອົາ = "don't want", ບໍ່ຕ້ອງ = "don't need")
+        $declineKeywords = ['ไม่', 'ไม่เอา', 'ไม่ต้อง', 'ไม่ต้องการ', 'ยังก่อน', 'ไว้ก่อน', 'ไม่ดู', 'no',
+            'ບໍ່', 'ບໍ່ເອົາ', 'ບໍ່ຕ້ອງ', 'ບໍ່ຕ້ອງການ', 'ບໍ່ດູ', 'ຍັງ'];
 
         foreach ($declineKeywords as $keyword) {
             if ($normalized === $keyword
@@ -2905,7 +2916,9 @@ class FortuneConversationService
      */
     protected function isSimpleConfirmResponse(string $text): bool
     {
-        $confirmKeywords = ['ดู', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'ดูเลย', 'ดูดวง', 'เอาเลย', 'ต้องการ', 'ดูค่ะ', 'ดูครับ', 'เอาค่ะ', 'เอาครับ'];
+        // 🇱🇦 Lao confirm (ແມ່ນ = "yes", ເອົາ = "want/take", ດູ = "see", ຕົກລົງ = "ok")
+        $confirmKeywords = ['ดู', 'เอา', 'ใช่', 'ได้', 'ok', 'yes', 'ตกลง', 'โอเค', 'อยาก', 'ดูเลย', 'ดูดวง', 'เอาเลย', 'ต้องการ', 'ดูค่ะ', 'ดูครับ', 'เอาค่ะ', 'เอาครับ',
+            'ແມ່ນ', 'ເອົາ', 'ດູ', 'ຕົກລົງ', 'ໂອເຄ', 'ເບິ່ງ', 'ເບິ່ງເລີຍ', 'ເອົາເລີຍ', 'ຕ້ອງການ'];
         $text = mb_strtolower(trim($text));
 
         foreach ($confirmKeywords as $keyword) {
@@ -2956,9 +2969,12 @@ class FortuneConversationService
 
         // ✅ คำนำหน้าที่ชี้เจตนาชัดว่าอยากดูดวง
         // จับทั้งคำเดี่ยว ("ดูดวง") และ "ดูดวง + อะไรก็ตาม" ("ดูดวงความรัก")
+        // 🇱🇦 Lao: ເບິ່ງດວງ (see fortune), ທຳນາຍ (predict), ຫມໍດູ (fortune teller)
         $explicitPrefixes = [
             'ดูดวง', 'ทำนาย', 'หมอดู', 'อยากดูดวง', 'ขอดูดวง',
             'ทำนายดวง', 'ดูดวงให้', 'ทำนายให้', 'ช่วยดูดวง', 'ช่วยทำนาย',
+            'ເບິ່ງດວງ', 'ທຳນາຍ', 'ຫມໍດູ', 'ຫມໍດວງ', 'ຢາກເບິ່ງດວງ', 'ຂໍເບິ່ງດວງ',
+            'ທຳນາຍດວງ', 'ເບິ່ງດວງໃຫ້', 'ທຳນາຍໃຫ້', 'ຊ່ວຍເບິ່ງດວງ', 'ຊ່ວຍທຳນາຍ',
         ];
 
         foreach ($explicitPrefixes as $prefix) {
@@ -2974,8 +2990,10 @@ class FortuneConversationService
         }
 
         // ✅ คำที่เป็นคำเดียวสั้นๆ เกี่ยวกับดวง → ถือเป็นคำขอดูดวง
+        // 🇱🇦 Lao: ດວງ (fortune), ໄພ່ (cards), ເບິ່ງໄພ່ (see cards)
         if (mb_strlen($textNormalized) <= 15) {
-            $shortExactWords = ['ดวง', 'ไพ่', 'ทาโรต์', 'ดูไพ่', 'เปิดไพ่'];
+            $shortExactWords = ['ดวง', 'ไพ่', 'ทาโรต์', 'ดูไพ่', 'เปิดไพ่',
+                'ດວງ', 'ໄພ່', 'ທາໂລ', 'ເບິ່ງໄພ່', 'ເປີດໄພ່'];
             foreach ($shortExactWords as $word) {
                 if ($textNormalized === mb_strtolower($word)) {
                     return true;
@@ -5699,13 +5717,23 @@ class FortuneConversationService
     {
         // 🎯 (2026-05-01) Simplify — เน้นรูปแบบเดียวที่เข้าใจง่ายสำหรับผู้สูงอายุ
         //    เตือนเรื่องปี 2 หลักว่าอาจสับสน
-        return "🎂 *กรุณาพิมพ์วันเดือนปีเกิด*\n\n"
+        // 🇱🇦 (2026-05-03) Lao Phase 2 — locale-aware via FortuneLocaleService::lo()
+        return \App\Services\FortuneLocaleService::lo(
+            "🎂 *กรุณาพิมพ์วันเดือนปีเกิด*\n\n"
             . "💡 พิมพ์แค่ 1 บรรทัด ตามแบบนี้:\n"
             . "  ✦ *1/1/2521*  (ปี พ.ศ.)\n"
             . "  ✦ *1/1/1978*  (ปี ค.ศ.)\n\n"
             . "⚠️ ปี 2 หลัก (เช่น 1/1/40) อาจตีความผิด\n"
             . "   👉 พิมพ์ปีเต็ม 4 หลักดีกว่าค่ะ\n\n"
-            . "💡 ถ้าไม่แน่ใจ พิมพ์ \"ทีละส่วน\" หมอจะถามทีละอย่างให้นะคะ";
+            . "💡 ถ้าไม่แน่ใจ พิมพ์ \"ทีละส่วน\" หมอจะถามทีละอย่างให้นะคะ",
+            "🎂 *ກະລຸນາພິມວັນເດືອນປີເກີດ*\n\n"
+            . "💡 ພິມພຽງ 1 ບັນທັດ ຕາມຮູບແບບນີ້:\n"
+            . "  ✦ *1/1/2521*  (ປີ ພ.ສ.)\n"
+            . "  ✦ *1/1/1978*  (ປີ ຄ.ສ.)\n\n"
+            . "⚠️ ປີ 2 ຫລັກ (ເຊັ່ນ 1/1/40) ອາດຕີຄວາມໝາຍຜິດ\n"
+            . "   👉 ພິມປີເຕັມ 4 ຫລັກດີກວ່າເດີ\n\n"
+            . "💡 ຖ້າບໍ່ໝັ້ນໃຈ ພິມ \"ທີລະສ່ວນ\" ໝໍຈະຖາມທີລະຢ່າງໃຫ້ເດີ"
+        );
     }
 
     /**
@@ -6867,6 +6895,10 @@ class FortuneConversationService
             'ดูดวงแบบละเอียด',
             'ดูแบบละเอียด',
             'ดูดวงdeep',
+            // 🇱🇦 Lao: ລະອຽດ = detailed, ເລິກ = deep
+            'ເບິ່ງດວງລະອຽດ', 'ເບິ່ງລະອຽດ', 'ຢາກເບິ່ງລະອຽດ',
+            'ເບິ່ງດວງເລິກ', 'ເບິ່ງເລິກ', 'ຢາກເບິ່ງເລິກ',
+            'ເບິ່ງດວງແບບລະອຽດ',
         ];
         $text = mb_strtolower(trim($text));
 
@@ -7098,8 +7130,9 @@ class FortuneConversationService
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
 
+        // 🇱🇦 Lao keywords (additive — Lao chars ไม่ชน Thai chars จึงไม่ false-match)
         // คำสั่งยกเลิกชัดเจน → ใช้ str_contains (ข้อความยาวก็ match)
-        $strongKeywords = ['ยกเลิก', 'cancel', 'stop'];
+        $strongKeywords = ['ยกเลิก', 'cancel', 'stop', 'ຍົກເລີກ', 'ເລີ່ມໃໝ່'];
         foreach ($strongKeywords as $keyword) {
             if (str_contains($normalized, $keyword) || str_contains($noSpace, $keyword)) {
                 return true;
@@ -7108,7 +7141,7 @@ class FortuneConversationService
 
         // คำสั้นที่อาจกำกวม → ใช้ exact match เท่านั้น
         // เพื่อไม่ให้ "ไม่เอาดูดวงละเอียด" → ยกเลิกทั้ง session
-        $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด'];
+        $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด', 'ບໍ່ເອົາ', 'ບໍ່ດູ', 'ຢຸດ'];
         foreach ($exactKeywords as $keyword) {
             if ($normalized === $keyword || $noSpace === $keyword) {
                 return true;
@@ -7219,10 +7252,12 @@ class FortuneConversationService
         $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u', '', $text);
 
         // ทักทาย / ขอบคุณ (exact match หรือ starts_with)
+        // 🇱🇦 Lao: ສະບາຍດີ (hello), ຂອບໃຈ (thanks), ດີ (good)
         $chitchatPrefixes = [
             'สวัสดี', 'ขอบคุณ', 'ขอบพระคุณ', 'ขอบใจ',
             'ดีค่ะ', 'ดีครับ', 'ดีจ้า', 'hi', 'hello', 'hey',
             'เฮลโล', 'หวัดดี', 'หวัดดีค่ะ',
+            'ສະບາຍດີ', 'ຂອບໃຈ', 'ດີ', 'ດີຫລາຍ', 'ຂອບໃຈຫລາຍ',
         ];
         foreach ($chitchatPrefixes as $prefix) {
             if ($normalized === $prefix || str_starts_with($normalized, $prefix)) {
@@ -7231,6 +7266,7 @@ class FortuneConversationService
         }
 
         // meta / help / pricing / trust / service queries
+        // 🇱🇦 Lao: ລາຄາເທົ່າໃດ (price?), ແມ່ນບໍ (really?), ເປັນໃຜ (who are you?)
         $metaPatterns = [
             'ทำยังไง', 'ทำอย่างไร', 'ทำไง', 'ทำไรได้', 'ใช้ยังไง',
             'ใช้งานยังไง', 'ใช้งานอย่างไร', 'วิธีใช้', 'วิธีการใช้', 'วิธีการ',
@@ -7241,6 +7277,15 @@ class FortuneConversationService
             'ขอถาม', 'ถามหน่อย', 'อยากถาม',
             'เป็นใคร', 'คือใคร', 'คุณใคร', 'นี่ใคร',
             'บอท', 'หุ่นยนต์', 'คนจริงไหม',
+            // 🇱🇦 Lao
+            'ເຮັດແນວໃດ', 'ໃຊ້ແນວໃດ', 'ວິທີໃຊ້',
+            'ລາຄາເທົ່າໃດ', 'ເທົ່າໃດ', 'ກີບ', 'ບາດ',
+            'ແມ່ນບໍ', 'ແມ່ນຫລາຍບໍ', 'ນ່າເຊື່ອບໍ', 'ຈິງບໍ',
+            'ມີຫຍັງ', 'ຊ່ວຍຫຍັງໄດ້',
+            'ສອນແດ່', 'ຂໍຄຳແນະນຳ',
+            'ຂໍຖາມ', 'ຖາມແດ່', 'ຢາກຖາມ',
+            'ເປັນໃຜ', 'ແມ່ນໃຜ', 'ນີ້ໃຜ',
+            'ຫຸ່ນຍົນ', 'ຄົນຈິງບໍ',
         ];
         foreach ($metaPatterns as $pattern) {
             if (str_contains($text, $pattern)) {
@@ -8220,13 +8265,16 @@ class FortuneConversationService
     {
         $text = trim($text);
 
-        // 🔢 แปลงเลขไทย (๐-๙) เป็นเลขอารบิก ก่อน parse
+        // 🔢 แปลงเลขไทย (๐-๙) + เลขลาว (໐-໙) เป็นเลขอารบิก ก่อน parse
         $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
+        $laoDigits = ['໐', '໑', '໒', '໓', '໔', '໕', '໖', '໗', '໘', '໙'];
         $arabicDigits = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
         $text = str_replace($thaiDigits, $arabicDigits, $text);
+        $text = str_replace($laoDigits, $arabicDigits, $text);
 
         // ตัดคำนำหน้าที่ผู้สูงวัยมักใส่: "เกิด", "เกิดวันที่", "วันเกิด", "วันที่"
-        $text = preg_replace('/^(เกิดวันที่|วันเกิด|วันที่|เกิด)\s*/u', '', $text);
+        // 🇱🇦 Lao: ເກີດ (born), ວັນເກີດ (birthday), ວັນທີ (date)
+        $text = preg_replace('/^(เกิดวันที่|วันเกิด|วันที่|เกิด|ເກີດວັນທີ|ວັນເກີດ|ວັນທີ|ເກີດ)\s*/u', '', $text);
 
         // รูปแบบ: dd/mm/yyyy (รับ separator หลากหลาย: / - . space)
         //   - ใช้ [\/\-\.\s] ครอบคลุมทั้ง "15/8/90", "15-8-90", "15.8.90", "15 8 90"
@@ -8244,7 +8292,8 @@ class FortuneConversationService
 
         // รูปแบบ: dd เดือนไทย yyyy (รับทั้ง 2 และ 4 หลัก)
         // 🎯 (2026-04-28) เพิ่มชื่อย่อแบบไม่มีจุด: สค, กพ, มค, ฯลฯ
-        $thaiMonths = [
+        // 🇱🇦 (2026-05-03) เพิ่มชื่อเดือนลาว: ມັງກອນ, ກຸມພາ, ມີນາ, ...
+        $monthNames = [
             'มกราคม' => 1, 'กุมภาพันธ์' => 2, 'มีนาคม' => 3, 'เมษายน' => 4,
             'พฤษภาคม' => 5, 'มิถุนายน' => 6, 'กรกฎาคม' => 7, 'สิงหาคม' => 8,
             'กันยายน' => 9, 'ตุลาคม' => 10, 'พฤศจิกายน' => 11, 'ธันวาคม' => 12,
@@ -8259,9 +8308,13 @@ class FortuneConversationService
             'มกรา' => 1, 'กุมภา' => 2, 'มีนา' => 3, 'เมษา' => 4,
             'พฤษภา' => 5, 'มิถุนา' => 6, 'กรกฎา' => 7, 'สิงหา' => 8,
             'กันยา' => 9, 'ตุลา' => 10, 'พฤศจิกา' => 11, 'ธันวา' => 12,
+            // 🇱🇦 Lao months — full names
+            'ມັງກອນ' => 1, 'ກຸມພາ' => 2, 'ມີນາ' => 3, 'ເມສາ' => 4,
+            'ພຶດສະພາ' => 5, 'ມິຖຸນາ' => 6, 'ກໍລະກົດ' => 7, 'ສິງຫາ' => 8,
+            'ກັນຍາ' => 9, 'ຕຸລາ' => 10, 'ພະຈິກ' => 11, 'ທັນວາ' => 12,
         ];
 
-        foreach ($thaiMonths as $monthName => $monthNum) {
+        foreach ($monthNames as $monthName => $monthNum) {
             if (preg_match('/(\d{1,2})\s*'.$monthName.'\s*(\d{2,4})/', $text, $matches)) {
                 $day = (int) $matches[1];
                 $year = (int) $matches[2];
