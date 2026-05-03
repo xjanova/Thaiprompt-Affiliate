@@ -435,6 +435,194 @@ class FortuneReading extends Model
         return ! self::hasUsedFreeCard($platform, $platformUserId);
     }
 
+    // ============================================================
+    // 🔒 Must-Pay-First Lock (2026-05-03) — บล็อกทุก service ถ้ามีบิลค้าง
+    // ============================================================
+
+    /**
+     * จำนวน revive ครั้งสูงสุดก่อน block admin-only
+     *
+     * รอบที่ 1 = บิลแรก expire → revive อัตโนมัติเมื่อกลับมา (UPA ใหม่)
+     * รอบที่ 2 = บิล revive expire → revive อีก
+     * รอบที่ 3 = บิล revive expire → revive อีก (รอบสุดท้าย)
+     * รอบที่ 4 = block — ต้องทักแอดมินเท่านั้น
+     */
+    public const MAX_BILL_REVIVE_COUNT = 3;
+
+    /**
+     * 🔒 ค้นหาบิลที่ "blocking" — ยังไม่จ่ายและต้องบังคับให้จ่ายก่อนทำอะไรได้
+     *
+     * นโยบาย (ตามที่ user spec 2026-05-03):
+     *   - ลูกค้ามีบิล deep/celtic ที่ยังไม่จ่าย → lock ทุก service
+     *   - ทุกข้อความที่ส่งมา → bot redirect ไปจ่ายเงิน + resend QR
+     *   - free_card ไม่นับเป็นบิล (ไม่มีค่าใช้จ่าย)
+     *
+     * Returns:
+     *   - reading object ของบิลล่าสุดที่ยังไม่จ่าย
+     *   - null ถ้าไม่มีบิลค้าง
+     *
+     * Detection criteria:
+     *   - reading_type IN [deep, celtic_cross]
+     *   - is_paid = false
+     *   - bill_reference != null (เคยสร้างบิลจริง — ไม่ใช่ placeholder)
+     *   - status = pending_payment (active) OR completed (expired by cron)
+     *
+     * @param  string  $platform        'facebook' หรือ 'line'
+     * @param  string  $platformUserId
+     * @return self|null
+     */
+    public static function findBlockingUnpaidBill(string $platform, string $platformUserId): ?self
+    {
+        // 🔒 หา reading ล่าสุดของ deep/celtic ที่มี bill_reference
+        //    ถ้าตัวล่าสุดเป็น paid → unlock (ลูกค้ายืนยัน commitment แล้ว)
+        //    ถ้าตัวล่าสุดเป็น unpaid → block (ทั้ง active pending + expired completed)
+        $latest = self::where('platform', $platform)
+            ->where(function ($q) use ($platformUserId) {
+                $q->where('platform_user_id', $platformUserId)
+                    ->orWhere('facebook_user_id', $platformUserId);
+            })
+            ->whereIn('reading_type', [self::READING_TYPE_DEEP, self::READING_TYPE_CELTIC_CROSS])
+            ->whereNotNull('bill_reference')
+            ->whereIn('conversation_status', [
+                self::STATUS_PENDING_PAYMENT,
+                self::STATUS_CELTIC_PENDING_PAYMENT,
+                self::STATUS_COMPLETED, // ⭐ COMPLETED + unpaid = expired bill
+            ])
+            ->latest('updated_at')
+            ->first();
+
+        // ✅ ถ้าไม่มี reading หรือ reading ล่าสุดจ่ายแล้ว → ไม่ block
+        if (! $latest || $latest->is_paid) {
+            return null;
+        }
+
+        return $latest;
+    }
+
+    /**
+     * 🔄 นับจำนวน revive ที่ผ่านมาของ reading นี้ (ดูจาก conversation_state)
+     */
+    public function getReviveCount(): int
+    {
+        return (int) ($this->getConversationState('revive_count', 0));
+    }
+
+    /**
+     * 🚫 เช็คว่าบิลนี้ถึง revive cap (ห้าม revive ต่อ — ต้อง admin only)
+     */
+    public function reachedReviveLimit(): bool
+    {
+        return $this->getReviveCount() >= self::MAX_BILL_REVIVE_COUNT;
+    }
+
+    /**
+     * 🔄 Revive บิลที่ expired — สร้าง UPA ใหม่ + reset state กลับไปรอจ่าย
+     *
+     * ใช้เมื่อลูกค้ากลับมาหลัง bill expire (status=COMPLETED + is_paid=false)
+     *
+     * Logic:
+     *   1. เพิ่ม revive_count
+     *   2. ถ้าเกิน MAX_BILL_REVIVE_COUNT → return null (caller ต้อง block + admin)
+     *   3. สร้าง UPA ใหม่ (อาจได้ amount ใหม่ที่ unique กว่าเดิม)
+     *   4. อัพเดท reading: amount_paid, unique_payment_amount_id, status กลับเป็น pending
+     *   5. เก็บ bill_reference เดิม (ลูกค้าจะได้รู้ว่าเป็นบิลเก่า)
+     *   6. reset reminder flags ทั้งหมด (จะส่งทวงใหม่ใน cycle ถัดไป)
+     *
+     * @return self|null  reading หลัง revive / null ถ้า reach limit
+     */
+    public function reviveBillForRepay(): ?self
+    {
+        if ($this->reachedReviveLimit()) {
+            return null;
+        }
+
+        try {
+            // สร้าง UPA ใหม่ตาม reading_type
+            $basePrice = $this->reading_type === self::READING_TYPE_CELTIC_CROSS
+                ? (float) (FortuneTellingSetting::getSettings()->celtic_cross_price ?? 99)
+                : (float) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+
+            $newUpa = UniquePaymentAmount::generate(
+                $basePrice,
+                $this->id,
+                'fortune_reading',
+                30 // หมดอายุ 30 นาที เหมือนเดิม
+            );
+
+            if (! $newUpa) {
+                \Log::warning('FortuneReading::reviveBillForRepay — UPA generate fail', [
+                    'reading_id' => $this->id,
+                ]);
+                return null;
+            }
+
+            $newStatus = $this->reading_type === self::READING_TYPE_CELTIC_CROSS
+                ? self::STATUS_CELTIC_PENDING_PAYMENT
+                : self::STATUS_PENDING_PAYMENT;
+
+            // ⭐ เพิ่ม revive_count + reset reminder flags
+            $reviveCount = $this->getReviveCount() + 1;
+            $this->setConversationState('revive_count', $reviveCount);
+            $this->setConversationState('revived_at', now()->toIso8601String());
+            // ล้าง reminder flags ทั้งหมดให้ส่งใหม่
+            $this->setConversationState('reminder_r1_sent_at', null);
+            $this->setConversationState('reminder_r2_sent_at', null);
+            $this->setConversationState('reminder_r3_sent_at', null);
+            $this->setConversationState('expiry_reminder_sent_at', null); // legacy key
+            $this->setConversationState('cancelled_at', null);
+            $this->setConversationState('cancellation_reason', null);
+
+            $this->update([
+                'unique_payment_amount_id' => $newUpa->id,
+                'amount_paid' => $newUpa->unique_amount,
+                'conversation_status' => $newStatus,
+                // bill_reference เดิม (ไม่เปลี่ยน — ลูกค้าจะได้รู้ว่าบิลเดิม revive)
+                'updated_at' => now(),
+            ]);
+
+            \Log::info('FortuneReading: revive bill สำเร็จ', [
+                'reading_id' => $this->id,
+                'bill_reference' => $this->bill_reference,
+                'revive_count' => $reviveCount,
+                'new_amount' => $newUpa->unique_amount,
+                'new_upa_id' => $newUpa->id,
+            ]);
+
+            return $this->fresh();
+        } catch (\Throwable $e) {
+            \Log::error('FortuneReading::reviveBillForRepay — exception', [
+                'reading_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * 🕒 เช็คว่าควรส่ง re-engagement message ตอนลูกค้ากลับมาหรือไม่
+     *
+     * นโยบาย:
+     *   - ส่ง re-engagement ถ้า last engage > 24 ชม. (FB window reset แล้ว)
+     *   - หรือยังไม่เคยส่งเลย
+     *   - กันส่งซ้ำใน window เดียว
+     *
+     * @return bool
+     */
+    public function shouldSendReengagement(): bool
+    {
+        $lastEngageIso = $this->getConversationState('last_reengagement_at');
+        if (empty($lastEngageIso)) {
+            return true;
+        }
+
+        try {
+            $hours = abs(now()->diffInHours(\Carbon\Carbon::parse($lastEngageIso), true));
+            return $hours >= 24;
+        } catch (\Throwable $e) {
+            return true; // ถ้า parse fail ส่งดีกว่าไม่ส่ง
+        }
+    }
+
     /**
      * นับจำนวนการทำนายเชิงลึกฟรีของผู้ใช้ Facebook ในวันนี้
      */
@@ -752,23 +940,24 @@ class FortuneReading extends Model
      */
     public static function sendExpiryReminders(): int
     {
-        // หาบิลอายุ 25-30 นาที (window 5 นาทีก่อนหมด)
-        //   เก่าสุด 30 นาที = now - PAYMENT_TIMEOUT_MINUTES  (ใกล้หมด)
-        //   ใหม่สุด 25 นาที = now - (PAYMENT_TIMEOUT_MINUTES - 5) (เริ่มเตือน)
-        $readings = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
+        // 🌙 (2026-05-03) refactor → 3-stage แม่หมอ cadence
+        //   R1 (8-13 นาที):  gentle "ดาวกำลังเรียง" — ตอน vibe ยังร้อน
+        //   R2 (16-21 นาที): mystical "ดาวเริ่มเคลื่อน" — เพิ่มแรงดึง
+        //   R3 (24-29 นาที): closing pitch — reframe ราคา (เดิม)
+        //
+        //   แต่ละ stage track key แยก (reminder_r1/r2/r3_sent_at) — กันซ้ำ
+        //   Mark sent แม้ส่ง fail — กันวนซ้ำใน cron tick ถัดไป (FB 24hr window อาจหมด)
+
+        $now = now();
+        $candidates = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
-            ->whereBetween('updated_at', [
-                now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES),
-                now()->subMinutes(max(1, self::PAYMENT_TIMEOUT_MINUTES - 5)),
-            ])
+            ->where('updated_at', '>=', $now->copy()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
             ->get();
 
-        if ($readings->isEmpty()) {
+        if ($candidates->isEmpty()) {
             return 0;
         }
-
-        $sent = 0;
 
         $channelManager = null;
         try {
@@ -781,13 +970,30 @@ class FortuneReading extends Model
             return 0;
         }
 
-        foreach ($readings as $reading) {
-            // ข้ามถ้าเคยเตือนแล้ว
-            if (! empty($reading->getConversationState('expiry_reminder_sent_at'))) {
+        $sent = 0;
+
+        foreach ($candidates as $reading) {
+            $age = (int) abs($now->diffInMinutes($reading->updated_at, true));
+            $stage = null;
+            $stateKey = null;
+
+            // เลือก stage ตามอายุบิล (window กว้างพอครอบ cron 5min)
+            if ($age >= 24 && empty($reading->getConversationState('reminder_r3_sent_at'))) {
+                $stage = 'r3';
+                $stateKey = 'reminder_r3_sent_at';
+            } elseif ($age >= 16 && $age < 24 && empty($reading->getConversationState('reminder_r2_sent_at'))) {
+                $stage = 'r2';
+                $stateKey = 'reminder_r2_sent_at';
+            } elseif ($age >= 8 && $age < 16 && empty($reading->getConversationState('reminder_r1_sent_at'))) {
+                $stage = 'r1';
+                $stateKey = 'reminder_r1_sent_at';
+            }
+
+            if (! $stage) {
                 continue;
             }
 
-            $message = self::buildExpiryReminderMessage($reading);
+            $message = self::buildReminderMessage($reading, $stage);
             $platform = $reading->platform ?? 'facebook';
             $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
@@ -801,43 +1007,85 @@ class FortuneReading extends Model
                     $platformService->sendMessage($userId, $message);
                     $sent++;
 
-                    \Log::info('FortuneReading: ส่ง expiry reminder DM', [
+                    \Log::info("FortuneReading: ส่ง reminder DM stage {$stage}", [
                         'reading_id' => $reading->id,
                         'platform' => $platform,
                         'bill_reference' => $reading->bill_reference,
+                        'age_minutes' => $age,
                     ]);
                 }
             } catch (\Throwable $e) {
-                \Log::warning('FortuneReading: expiry reminder DM ล้มเหลว (best-effort)', [
+                \Log::warning("FortuneReading: reminder {$stage} DM ล้มเหลว (best-effort)", [
                     'reading_id' => $reading->id,
                     'platform' => $platform,
                     'error' => $e->getMessage(),
                 ]);
             }
 
-            // ⚠️ mark sent แม้ fail — กันวนส่งซ้ำใน cron tick ถัดไป
-            $reading->setConversationState('expiry_reminder_sent_at', now()->toIso8601String());
+            // ⚠️ mark sent แม้ fail — กันวนซ้ำใน cron tick ถัดไป
+            $reading->setConversationState($stateKey, $now->toIso8601String());
         }
 
         return $sent;
     }
 
     /**
-     * 🎯 Phase K — สร้างข้อความ closing pitch (4 variants, rotate ตาม reading ID)
+     * 🌙 สร้างข้อความ reminder ตาม stage — แม่หมอ persona + Lao locale
      *
-     * ทุก variant สะท้อนสาร 3 อย่าง:
-     *   1. ราคาเทียบกับของธรรมดา (ค่ากาแฟ/ที่ปรึกษา)
-     *   2. การทำนายอิงดาวเจ้าชนะ (ไม่ใช่คำตอบ generic)
-     *   3. ไพ่ที่สุ่มออกมา มาจากพลังจิตของลูกค้าเอง (จิตตั้งมั่น = ไพ่ถึง)
+     * @param  string  $stage  'r1' | 'r2' | 'r3'
      */
-    protected static function buildExpiryReminderMessage(self $reading): string
+    protected static function buildReminderMessage(self $reading, string $stage): string
     {
         $expiresAt = $reading->updated_at->copy()->addMinutes(self::PAYMENT_TIMEOUT_MINUTES);
-        $remainingMinutes = (int) max(1, ceil(now()->diffInMinutes($expiresAt, false)));
+        $remainingMinutes = (int) max(1, ceil(abs(now()->diffInMinutes($expiresAt, true))));
+        $billRef = $reading->bill_reference ?? '-';
+        $payAmount = $reading->amount_paid
+            ? number_format((float) $reading->amount_paid, 2)
+            : '0.00';
 
-        // 🎯 Phase L — ราคา: ใช้ amount ของ bill นั้นก่อน (คือราคาที่ลูกค้าเห็น)
-        //   ถ้าไม่มี → fallback ไปดึงจาก admin settings (deep_reading_price → reading_price)
-        //   ถ้า settings ก็ไม่มี → 39 (ค่าเริ่มต้นจริง ไม่ใช่ 49)
+        return match ($stage) {
+            'r1' => \App\Services\FortuneLocaleService::lo(
+                "🌙 *แม่หมอเริ่มเรียงดาวให้เจ้าชะตาแล้วนะ*\n\n"
+                    . "📋 บิล: {$billRef}\n"
+                    . "💸 ค่าครู: {$payAmount} บาท (ทศนิยมต้องตรงเป๊ะ)\n\n"
+                    . "🃏 ไพ่ที่จิตของเจ้าชะตาสัมผัส รอเปิดเผย\n"
+                    . "✨ ดาวเจ้าชนะเริ่มขยับ — แม่หมอรอเจ้าชะตาอยู่นะ\n\n"
+                    . "⏳ บิลยังเปิดอยู่อีก {$remainingMinutes} นาที — โอนได้ทุกเมื่อค่ะ",
+                "🌙 *ແມ່ໝໍເລີ່ມຮຽງດາວໃຫ້ເຈົ້າຊາຕາແລ້ວເດີ*\n\n"
+                    . "📋 ບິນ: {$billRef}\n"
+                    . "💸 ຄ່າຄູ: {$payAmount} ບາດ (ທົດສະນິຍົມຕ້ອງຕົງເປັະ)\n\n"
+                    . "🃏 ໄພ່ທີ່ຈິດເຈົ້າຊາຕາສຳຜັດ ລໍຖ້າເປີດເຜີຍ\n"
+                    . "✨ ດາວເຈົ້າຊະນະເລີ່ມຂະຫຍັບ — ແມ່ໝໍລໍເຈົ້າຊາຕາຢູ່ເດີ\n\n"
+                    . "⏳ ບິນຍັງເປີດຢູ່ອີກ {$remainingMinutes} ນາທີ — ໂອນໄດ້ທຸກເວລາ"
+            ),
+
+            'r2' => \App\Services\FortuneLocaleService::lo(
+                "✨ *ดาวเริ่มเคลื่อนแล้วนะเจ้าชะตา*\n\n"
+                    . "📋 บิล: {$billRef}\n"
+                    . "💸 ค่าครู: {$payAmount} บาท\n\n"
+                    . "🌌 จักรวาลเริ่มจัดวางตำแหน่ง — ถ้าจิตเจ้าชะตาแน่วแน่ ดาวจะส่งสัญญาณตอบ\n"
+                    . "🃏 ไพ่ที่จะเปิดเผย รอใจเจ้าชะตาตัดสิน\n\n"
+                    . "⏳ เหลืออีก {$remainingMinutes} นาที — โอนแล้วบอก 'โอนแล้ว' ได้เลยค่ะ",
+                "✨ *ດາວເລີ່ມເຄື່ອນແລ້ວເດີເຈົ້າຊາຕາ*\n\n"
+                    . "📋 ບິນ: {$billRef}\n"
+                    . "💸 ຄ່າຄູ: {$payAmount} ບາດ\n\n"
+                    . "🌌 ຈັກກະວານເລີ່ມຈັດວາງຕຳແໜ່ງ — ຖ້າຈິດເຈົ້າຊາຕາໝັ້ນແນ່ ດາວຈະສົ່ງສັນຍານຕອບ\n"
+                    . "🃏 ໄພ່ທີ່ຈະເປີດເຜີຍ ລໍຖ້າໃຈເຈົ້າຊາຕາຕັດສິນ\n\n"
+                    . "⏳ ເຫຼືອອີກ {$remainingMinutes} ນາທີ — ໂອນແລ້ວບອກ 'ໂອນແລ້ວ' ໄດ້ເລີຍເດີ"
+            ),
+
+            // r3 = closing pitch (รวม 4 variants เดิม — rotate ตาม reading_id)
+            default => self::buildClosingPitchMessage($reading, $remainingMinutes),
+        };
+    }
+
+    /**
+     * 🎯 Closing pitch (R3 — 25-30 นาที) — เดิม Phase K (4 variants)
+     *
+     * 🌐 (2026-05-03) wrap Lao: ลูกค้าลาวเห็นข้อความลาว variant เดียวที่ปรับเฉพาะ
+     */
+    protected static function buildClosingPitchMessage(self $reading, int $remainingMinutes): string
+    {
         $price = (int) ($reading->amount_paid ?? 0);
         if ($price <= 0) {
             try {
@@ -852,6 +1100,18 @@ class FortuneReading extends Model
             }
         }
 
+        // 🇱🇦 ลูกค้าลาว — ใช้ closing pitch ลาวเดียว
+        if (\App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO) {
+            return "⏰ ບິນເບິ່ງດວງເຫຼືອອີກ {$remainingMinutes} ນາທີຈະໝົດອາຍຸ\n\n"
+                . "🪙 {$price} ບາດ — ທຽບເທົ່າຄ່າກາເຟ 1 ຈອກ\n"
+                . "ແຕ່ໄດ້ຄຳທຳນາຍສະເພາະຕົວຈາກ\n"
+                . "   • ດາວເຈົ້າຊະນະຂອງເຈົ້າຊາຕາ\n"
+                . "   • ໄພ່ທີ່ສຸ່ມຈາກພະລັງຈິດຂອງເຈົ້າຊາຕາເອງ\n\n"
+                . "ເໝືອນຈັບໄພ່ເອງ ເພາະຈິດໝັ້ນແນ່ກໍ່ສື່ເຖິງດາວແລ້ວ ✨\n"
+                . "ຖ້າພ້ອມ → ໂອນໄດ້ເລີຍ";
+        }
+
+        // 🇹🇭 ลูกค้าไทย — variant ตาม reading_id (รักษาพฤติกรรมเดิม)
         $variants = [
             "🔮 บิลดูดวงยังรออยู่นะคะ — อีก {$remainingMinutes} นาทีจะหมดอายุ\n\n"
                 ."☕ ค่าครู {$price} บาท น้อยกว่าค่ากาแฟ 1 แก้วเสียอีก\n"

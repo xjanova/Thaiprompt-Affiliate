@@ -548,6 +548,7 @@ class FortuneChannelManager
                 'deep_reading_disabled',
                 'view_reading_basic', 'view_reading_deep', 'view_reading_processing', 'view_reading_empty',
                 'view_reading_celtic_pending', 'view_reading_deep_pending', // 🔧 (2026-05-03) bills รอชำระ
+                'payment_lock_admin', // 🔒 (2026-05-03) reach revive limit — admin only
                 'view_later',
                 'invalid_birthdate', 'retry_birthdate',
                 'restart_from_birthdate',
@@ -682,6 +683,11 @@ class FortuneChannelManager
                     }
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
+
+                // 🔒 (2026-05-03) Pay-First Gate responses — บิลค้าง resend QR / revive
+                //    ใช้ template เดียวกับ pending_payment / celtic_pending_payment (มี QR + ปุ่ม)
+                'payment_lock_pending', 'payment_lock_revived'
+                    => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
@@ -1551,6 +1557,14 @@ class FortuneChannelManager
 
                 // 🔧 (2026-05-03) bills รอชำระ — text only (LINE)
                 'view_reading_celtic_pending', 'view_reading_deep_pending'
+                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🔒 (2026-05-03) Pay-First Gate responses — บิลค้าง resend QR / revive (LINE)
+                'payment_lock_pending', 'payment_lock_revived'
+                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+
+                // 🔒 (2026-05-03) reach revive limit — admin only (text-only)
+                'payment_lock_admin'
                     => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)

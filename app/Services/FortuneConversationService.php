@@ -36,6 +36,7 @@ class FortuneConversationService
 {
     use \App\Services\Fortune\CelticCrossConversationTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
+    use \App\Services\Fortune\PayFirstGateTrait;
 
     protected FortuneTellingSetting $settings;
 
@@ -1012,6 +1013,16 @@ class FortuneConversationService
             $pendingSaveResult = $this->handlePendingSaveResponse($facebookUserId, $messageText, $userProfile);
             if ($pendingSaveResult) {
                 return $pendingSaveResult;
+            }
+
+            // 🔒 (2026-05-03) Pay-First Gate — ลูกค้ามีบิลค้างไม่จ่าย → lock ทุก service
+            //    Bypass: keyword "แอดมิน" / "โอนแล้ว" / "เช็คสถานะ"
+            //    Auto-revive expired bills (≤3 รอบ) — เกินนั้น admin only
+            //    Re-engagement greeting หลัง 24hr (FB window)
+            //    ⚠️ ต้องเรียก *ก่อน* findActiveConversation() เพื่อ override pending payment handlers
+            $gateResult = $this->payFirstGate($this->currentPlatform, $facebookUserId, $messageText, $userProfile);
+            if ($gateResult !== null) {
+                return $gateResult;
             }
 
             // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
