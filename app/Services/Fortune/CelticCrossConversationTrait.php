@@ -326,6 +326,21 @@ trait CelticCrossConversationTrait
             }
 
             $reading = $verified;
+
+            // 📲 (2026-05-03) FCM push ให้แอพ SMS Checker เห็นบิล Celtic ใหม่ทันที
+            //    bug เดิม: Deep 39฿ มี FCM push แต่ Celtic 99฿ ขาด → SMS app ไม่รู้บิล →
+            //    ต้องรอ polling หรือ admin manual review (ลูกค้าโอนแล้วบิลค้างยาว)
+            //    notifyNewFortuneReading ใช้ field generic (bill_reference, amount_paid)
+            //    → ใช้กับ Celtic ได้เลย ไม่ต้องเพิ่ม method แยก
+            try {
+                app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+            } catch (\Throwable $fcmErr) {
+                Log::warning('Celtic: FCM push new_fortune_reading ล้มเหลว (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $fcmErr->getMessage(),
+                ]);
+            }
+
             $payAmount = number_format((float) $uniqueAmount->unique_amount, 2);
             $baseAmountStr = number_format($basePrice, 0);
 
