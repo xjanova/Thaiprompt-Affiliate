@@ -480,14 +480,21 @@ class FortuneReading extends Model
      */
     public static function hasUsedRequestBeforePay(string $platform, string $platformUserId): bool
     {
+        // 🆕 (2026-05-04) "ใช้สิทธิ์" = ได้รับคำทำนายไปแล้วเท่านั้น (deep_response กรอกแล้ว)
+        //    user spec: "การหักสิทธิ์ paylater ควรหักหลังได้คำทำนาย"
+        //    เคสเดิม: flag set ตอนเลือก 39฿ → ลูกค้าเลือกแล้วยกเลิกก็เสียสิทธิ์ (ไม่ยุติธรรม)
+        //    เคสใหม่: flag set ตอนเลือก แต่ "used" ต้องมีคำทำนายจริง
+        //    → ลูกค้ายกเลิกก่อน AI gen → ไม่ถือว่าใช้ → eligible ต่อไป
+        //    → ลูกค้าได้คำทำนาย → ถือว่าใช้สิทธิ์ → not eligible
         return self::where('platform', $platform)
             ->where(function ($q) use ($platformUserId) {
                 $q->where('platform_user_id', $platformUserId)
                     ->orWhere('facebook_user_id', $platformUserId);
             })
             ->where('reading_type', self::READING_TYPE_DEEP)
-            // JSON path query — work for both MySQL 5.7+ JSON column และ Postgres JSONB
             ->whereJsonContains('conversation_state->is_request_before_pay', true)
+            ->whereNotNull('deep_response')           // ⭐ ต้องได้รับคำทำนายแล้ว
+            ->where('deep_response', '!=', '')         // ⭐ ไม่ใช่ string ว่าง
             ->exists();
     }
 

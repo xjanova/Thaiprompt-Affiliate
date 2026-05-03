@@ -75,6 +75,8 @@ class FortuneUsersController extends Controller
             $rows = FortuneReading::whereIn('facebook_user_id', $userIds)
                 ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
                 ->whereJsonContains('conversation_state->is_request_before_pay', true)
+                ->whereNotNull('deep_response')         // ⭐ "used" = ได้คำทำนายแล้วเท่านั้น
+                ->where('deep_response', '!=', '')
                 ->orderByDesc('created_at')
                 ->get(['facebook_user_id', 'platform', 'bill_reference', 'is_paid', 'amount_paid', 'created_at']);
 
@@ -151,6 +153,8 @@ class FortuneUsersController extends Controller
         $credit = FortuneUserCredit::findByUser($userId);
 
         // 🔒 (2026-05-04) Pay-later eligibility — ตรวจว่า user คนนี้ใช้สิทธิ์ "ดูก่อนจ่ายทีหลัง" ไปแล้วหรือยัง
+        //    user spec: "การหักสิทธิ์ paylater ควรหักหลังได้คำทำนาย"
+        //    "used" = ได้รับคำทำนาย (deep_response filled) — ไม่ใช่แค่ flag set
         $payLaterReadings = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
                 ->orWhere('platform_user_id', $userId);
@@ -159,17 +163,21 @@ class FortuneUsersController extends Controller
             ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
             ->whereJsonContains('conversation_state->is_request_before_pay', true)
             ->orderByDesc('created_at')
-            ->get(['id', 'bill_reference', 'is_paid', 'amount_paid', 'conversation_status', 'created_at', 'paid_at']);
+            ->get(['id', 'bill_reference', 'is_paid', 'amount_paid', 'conversation_status', 'deep_response', 'created_at', 'paid_at']);
+
+        // แยก "used" (got reading) จาก "abandoned" (chose but never received reading)
+        $usedReadings = $payLaterReadings->filter(fn ($r) => ! empty($r->deep_response));
 
         $payLaterStatus = [
-            'has_used' => $payLaterReadings->isNotEmpty(),
-            'eligible' => $payLaterReadings->isEmpty(),
-            'usage_count' => $payLaterReadings->count(),
-            'paid_count' => $payLaterReadings->where('is_paid', true)->count(),
-            'unpaid_count' => $payLaterReadings->where('is_paid', false)->count(),
-            'first_used_at' => $payLaterReadings->last()?->created_at,
-            'last_used_at' => $payLaterReadings->first()?->created_at,
-            'readings' => $payLaterReadings,
+            'has_used' => $usedReadings->isNotEmpty(),
+            'eligible' => $usedReadings->isEmpty(),
+            'usage_count' => $usedReadings->count(),
+            'paid_count' => $usedReadings->where('is_paid', true)->count(),
+            'unpaid_count' => $usedReadings->where('is_paid', false)->count(),
+            'first_used_at' => $usedReadings->last()?->created_at,
+            'last_used_at' => $usedReadings->first()?->created_at,
+            'readings' => $usedReadings,
+            'abandoned_count' => $payLaterReadings->count() - $usedReadings->count(),
         ];
 
         return view('admin.fortune.users.show', [

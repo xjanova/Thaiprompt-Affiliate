@@ -3607,13 +3607,15 @@ class FortuneConversationService
     {
         $status = $reading->conversation_status;
 
-        // 🆕 (2026-05-04) Pay-later ack intercept — ตรวจ FIRST ก่อน state dispatch
-        //    เคสบักที่เจอ: หลังจบ COLLECTING_TAROT → processRequestBeforePay ส่ง prompt
-        //    แต่ status ยังเป็น COLLECTING_TAROT — ลูกค้าตอบ "ใช่" → handleTarotCardDraw รัน
-        //    → loop กลับ processRequestBeforePay (เพราะ tarot+questions ครบแล้ว) → ส่ง prompt ซ้ำ
-        //    Fix: ตรวจ flag ที่ continueConversation ก่อน dispatch state → ครอบคลุมทุก status
+        // 🩹 (2026-05-04) Legacy pay_later_ack intercept — กัน customer ที่ยังค้างอยู่ใน flag เก่า
+        //    ปัจจุบัน flag นี้ไม่ถูกเซ็ตใหม่แล้ว (รุ่นก่อนหน้าเคยเซ็ต)
+        //    ถ้าเจอ flag → clear แล้วดำเนินการต่อ (ไม่ block flow)
         if ($reading->getConversationState('awaiting_pay_later_ack', false)) {
-            return $this->handlePayLaterAck($reading, $messageText);
+            $reading->setConversationState('awaiting_pay_later_ack', false);
+            $reading->setConversationState('pay_later_acked', true);
+            Log::info('Fortune: cleared legacy pay_later_ack flag — auto-acked', [
+                'reading_id' => $reading->id,
+            ]);
         }
 
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
@@ -4861,42 +4863,11 @@ class FortuneConversationService
      */
     protected function processRequestBeforePay(FortuneReading $reading, array $questions): array
     {
-        // 🆕 (2026-05-04) Reconfirm step ก่อน AI generation
-        //    user feedback: "ก่อนเข้าสู่ขั้นตอนดูดวงต้องย้ำอีกทีว่า เข้าใจใช่ไหม
-        //                    ต้องชำระเมื่อได้คำทำนาย"
-        //    ก่อนหน้านี้ dispatch job ทันที → ลูกค้าอาจตกใจตอนได้บิล
-        //    ใหม่: เก็บ questions, set flag, ส่ง prompt → รอ ack → ค่อย dispatch
-        $payLaterAcked = $reading->getConversationState('pay_later_acked', false);
-        if (! $payLaterAcked) {
-            $reading->update(['questions' => $questions]);
-            $reading->setConversationState('awaiting_pay_later_ack', true);
-            $reading->setConversationState('pending_pay_later_questions', $questions);
-
-            $price = (int) $this->getDeepReadingPrice();
-
-            return [
-                'action' => 'pay_later_reconfirm',
-                'message' => \App\Services\FortuneLocaleService::lo(
-                    "🌙 *ก่อนเปิดดวง — แม่หมอขอย้ำอีกครั้งนะคะ* 💎\n"
-                        . "═══════════════════════\n\n"
-                        . "✨ แม่หมอจะทำนายดวงให้เจ้าชะตา*ก่อน*\n"
-                        . "💸 เมื่อได้รับคำทำนายแล้ว — เจ้าชะตาต้องชำระค่าครู *{$price} บาท*\n"
-                        . "⏰ *ต้องโอนภายใน 24 ชั่วโมง* หลังได้รับคำทำนาย\n"
-                        . "🔒 ถ้าไม่จ่าย — ระบบจะปิดสิทธิ์ \"ดูก่อนจ่ายทีหลัง\" ของเจ้าชะตาถาวร\n\n"
-                        . "🙏 *เข้าใจและยินยอมใช่ไหมคะ?*\n"
-                        . "    กดปุ่มข้างล่าง หรือพิมพ์ \"ใช่\" เพื่อให้แม่หมอเริ่มเปิดดวงเลย",
-                    "🌙 *ກ່ອນເປີດດວງ — ແມ່ໝໍຂໍຢ້ຳອີກຄັ້ງເດີ* 💎\n"
-                        . "═══════════════════════\n\n"
-                        . "✨ ແມ່ໝໍຈະທຳນາຍດວງໃຫ້ເຈົ້າຊາຕາ*ກ່ອນ*\n"
-                        . "💸 ເມື່ອໄດ້ຮັບຄຳທຳນາຍແລ້ວ — ເຈົ້າຊາຕາຕ້ອງຊຳລະຄ່າຄູ *{$price} ບາດ*\n"
-                        . "⏰ *ຕ້ອງໂອນພາຍໃນ 24 ຊົ່ວໂມງ* ຫຼັງໄດ້ຮັບຄຳທຳນາຍ\n"
-                        . "🔒 ຖ້າບໍ່ຈ່າຍ — ລະບົບຈະປິດສິດ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" ຂອງເຈົ້າຊາຕາຖາວອນ\n\n"
-                        . "🙏 *ເຂົ້າໃຈແລະຍິນຍອມໃຊ່ບໍ່?*\n"
-                        . "    ກົດປຸ່ມລຸ່ມນີ້ ຫຼື ພິມ \"ໃຊ່\" ເພື່ອໃຫ້ແມ່ໝໍເລີ່ມເປີດດວງເລີຍ"
-                ),
-                'reading' => $reading,
-            ];
-        }
+        // 🩹 (2026-05-04) ลบ reconfirm step ก่อน AI gen — ทำให้ลูกค้าค้างหลังเปิดไพ่
+        //    user feedback: "ค้างตรงเริ่มเปิดไพ่ หลังรับคำถามแล้ว"
+        //    เหตุผล: customer พิมพ์ "พร้อม" → tarot draw → reconfirm prompt → confused
+        //    ใหม่: ใช้ existing AWAITING_DELIVERY_CONFIRM หลัง AI gen แทน (ส่งจาก Job)
+        //    → customer ได้คำทำนาย ready notification + click "รับคำทำนาย" → reading + QR
 
         // 1. อัพเดท questions + status (state STATUS_PAID = AI processing — กัน race ส่งซ้ำ)
         $reading->update([
