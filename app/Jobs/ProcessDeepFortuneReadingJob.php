@@ -7,6 +7,7 @@ use App\Models\FortuneTellingSetting;
 use App\Models\SmsPaymentNotification;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
+use App\Services\FortuneLocaleService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -315,6 +316,18 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
+        // 🌐 (2026-05-03) Restore locale จาก stored value — queue worker ไม่มี request context
+        //    หาก Lao ลูกค้าจ่าย — ทุก push (ทั้ง processPaymentConfirmed streaming + FB push branch)
+        //    ต้องใช้ภาษาที่ resolve ไว้ก่อนหน้า ไม่งั้น lo() fallback กลับเป็น TH
+        try {
+            $storedLocale = FortuneLocaleService::getStored($this->platform, $this->userId)
+                ?? FortuneLocaleService::LOCALE_TH;
+            FortuneLocaleService::setCurrent($storedLocale);
+        } catch (\Throwable $e) {
+            // safe fallback — ไม่ทำให้ job fail เพราะ locale
+            FortuneLocaleService::setCurrent(FortuneLocaleService::LOCALE_TH);
+        }
+
         // ดึง SMS notification (ถ้ามี)
         $notification = $this->notificationId
             ? SmsPaymentNotification::find($this->notificationId)
@@ -403,8 +416,18 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 ]);
                             }
 
-                            $reading->setConversationState('reading_notification_sent', $notifySent);
-                            $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+                            // 🛡️ (2026-05-03) เขียน flag เฉพาะ true — กัน transient lock
+                            //    เคสเดิม: $notifySent=false → flag เขียน false → retry counter ขึ้น → 3 fail = lock
+                            //    ตอนนี้: false → ไม่เขียน → reply path ตอน user ทักกลับยังทำงาน
+                            if ($notifySent) {
+                                $reading->setConversationState('reading_notification_sent', true);
+                                $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+                            } else {
+                                Log::warning('ProcessDeepFortuneReadingJob: LINE push fail (transient) — ไม่ lock, fallback ตอน user ทักกลับ', [
+                                    'reading_id' => $this->readingId,
+                                    'retry_count' => $retryCount,
+                                ]);
+                            }
 
                             Log::info('ProcessDeepFortuneReadingJob: LINE push แจ้งเตือนสั้น ผลลัพธ์', [
                                 'reading_id' => $this->readingId,
@@ -442,17 +465,25 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 'chart_image_url' => $reading->reading_image_url,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                            // Mark as sent — กัน duplicate ตอน user ทักกลับมา
-                            $reading->setConversationState('reading_sent_directly', $sent);
-                            $reading->setConversationState('reading_notification_sent', $sent);
-                            $reading->setConversationState('reading_ready_sent', $sent);
-                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                            $reading->setConversationState('delivered_by_push', $sent);
-
-                            // 🆕 (2026-04-28) ส่ง follow-up DM แจ้งว่าคุยต่อได้
-                            // ใน 48 ชม. ลูกค้าถามต่อเรื่องเดิมได้ฟรี (ระบบ post-reading discussion)
+                            // 🛡️ (2026-05-03) เขียน flag เฉพาะเมื่อ $sent === true
+                            //    เคสเดิม: transient FB error → $sent=false → flag เขียน false → retry counter
+                            //    ขึ้นไป → 3 fail = lock ออกจาก push ถาวร (ลูกค้าจ่ายแล้วเงียบ)
+                            //    ตอนนี้: false → ไม่เขียน flag → reply path (ตอนลูกค้าทักกลับ) ยังส่งได้
                             if ($sent) {
+                                $reading->setConversationState('reading_sent_directly', true);
+                                $reading->setConversationState('reading_notification_sent', true);
+                                $reading->setConversationState('reading_ready_sent', true);
+                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                                $reading->setConversationState('delivered_by_push', true);
+
+                                // 🆕 (2026-04-28) ส่ง follow-up DM แจ้งว่าคุยต่อได้
+                                // ใน 48 ชม. ลูกค้าถามต่อเรื่องเดิมได้ฟรี (ระบบ post-reading discussion)
                                 $this->sendPostReadingFollowUp($channelManager, $reading, $name);
+                            } else {
+                                Log::warning('ProcessDeepFortuneReadingJob: Facebook push fail (transient) — ไม่ lock retry, จะ fallback ตอน user ทักกลับ', [
+                                    'reading_id' => $this->readingId,
+                                    'retry_count' => $retryCount,
+                                ]);
                             }
 
                             Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
@@ -529,6 +560,10 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             ]);
         }
 
+        // 🚨 (2026-05-03) Alert admin — ลูกค้าจ่ายเงินแล้ว AI ล้ม → admin ต้องรู้เพื่อ recover
+        //    ก่อนหน้านี้: แค่ Log::critical (admin ต้องเข้าดู log เอง = ไม่ทันการ)
+        $this->alertAdminAfterAiFailure($exception);
+
         // 🚨 V3.2: Push error notification ให้ลูกค้า (สำคัญ — ลูกค้าจ่ายเงินแล้ว ต้องรู้ว่าเกิดอะไรขึ้น)
         // ยอมเสีย LINE push 1 ครั้ง เพื่อรักษา trust + ลดกรณีลูกค้าคิดว่าโดนโกง
         try {
@@ -537,6 +572,70 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             Log::error('ProcessDeepFortuneReadingJob: push failure notification ล้มเหลว', [
                 'reading_id' => $this->readingId,
                 'error' => $pushErr->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * แจ้งแอดมินว่า AI ล้มเหลวถาวร — ลูกค้าจ่ายเงินแล้ว ต้องการ human recovery
+     *
+     * ทำ 3 อย่าง (best-effort, แยก try/catch อย่ายอม block อะไร):
+     * 1. ส่ง LINE alert ผ่าน LineAlertService (admin LINE OA)
+     * 2. บันทึกใน FortuneTakeoverLog เพื่อ trace ใน admin UI
+     * 3. ตั้ง flag ai_failed_alert ใน reading conversation_state — UI filter หาบิลที่ stuck ได้
+     */
+    protected function alertAdminAfterAiFailure(Throwable $exception): void
+    {
+        // 1. LINE alert (best-effort)
+        try {
+            $alertService = app(\App\Services\LineAlertService::class);
+            $alertService->alertSystemError(
+                'AI ดูดวงล้มเหลวถาวร — ลูกค้าจ่ายเงินแล้ว ต้อง recover ด่วน',
+                [
+                    'reading_id' => $this->readingId,
+                    'platform' => $this->platform,
+                    'user_id' => $this->userId,
+                    'error' => mb_substr($exception->getMessage(), 0, 200),
+                    'attempts' => $this->attempts(),
+                    'admin_action' => "ไปที่ /admin/fortune/billing แล้วกด retry หรือทำคำทำนายเอง — ลูกค้าได้ failure notification แล้ว",
+                ]
+            );
+        } catch (\Throwable $alertErr) {
+            Log::warning('ProcessDeepFortuneReadingJob: LINE alert admin ล้มเหลว (non-blocking)', [
+                'reading_id' => $this->readingId,
+                'error' => $alertErr->getMessage(),
+            ]);
+        }
+
+        // 2. บันทึก takeover log + 3. ตั้ง flag ใน reading
+        try {
+            $reading = FortuneReading::find($this->readingId);
+            if (! $reading) {
+                return;
+            }
+
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => null,
+                'action' => \App\Models\FortuneTakeoverLog::ACTION_MESSAGE,
+                'reason' => 'ai_failed_after_retries',
+                'message' => 'AI ล้มเหลวถาวร — ต้อง admin recover (ลูกค้าจ่ายเงินแล้ว)',
+                'platform' => $this->platform,
+                'metadata' => [
+                    'alert_type' => 'ai_failed_after_retries',
+                    'error' => mb_substr($exception->getMessage(), 0, 500),
+                    'attempts' => $this->attempts(),
+                    'requires_admin_action' => true,
+                ],
+            ]);
+
+            $reading->setConversationState('ai_failed_alert', true);
+            $reading->setConversationState('ai_failed_alert_at', now()->toIso8601String());
+            $reading->setConversationState('ai_failed_alert_error', mb_substr($exception->getMessage(), 0, 200));
+        } catch (\Throwable $logErr) {
+            Log::warning('ProcessDeepFortuneReadingJob: บันทึก ai_failed alert ล้มเหลว (non-blocking)', [
+                'reading_id' => $this->readingId,
+                'error' => $logErr->getMessage(),
             ]);
         }
     }

@@ -1136,6 +1136,14 @@ class FacebookWebhookController extends Controller
         $messageText = $messaging['message']['text'] ?? '';
         $attachments = $messaging['message']['attachments'] ?? [];
 
+        // 🙋 (2026-05-03) Customer Handoff ต้องเช็คก่อน pendingDelivery — กันลูกค้า
+        //    paid แล้วพิมพ์ "คุยกับคน" / "ขอแม่หมอตอบ" แล้วโดน push คำทำนายซ้ำแทนเข้า handoff
+        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+            $this->handleCustomerHandoffRequest($senderId, $messageText);
+
+            return;
+        }
+
         // 🎯 (2026-05-02) Auto-deliver pending prediction — กัน sticker/emoji silent ignore
         //   user request: "คนแก่ส่ง sticker → ระบบควรส่งคำทำนายเลย ไม่ต้องพิมพ์"
         //   ถ้ามี deep_response รอส่ง → ส่งทันที ไม่ว่า user ส่งอะไรมา (text/sticker/emoji/image)
@@ -1171,13 +1179,6 @@ class FacebookWebhookController extends Controller
                 'has_attachments' => ! empty($attachments),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
-            return;
-        }
-
-        // 🙋 Customer Handoff: ลูกค้าพิมพ์ขอคุยกับคนจริง → เทคโอเวอร์ + แจ้งลูกค้า
-        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
-            $this->handleCustomerHandoffRequest($senderId, $messageText);
-
             return;
         }
 

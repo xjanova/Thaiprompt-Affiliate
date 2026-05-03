@@ -158,12 +158,18 @@ class FortuneChannelManager
         // ✅ ตั้ง platform ก่อน processMessage เพื่อให้ saveQuestionForAdmin() เก็บค่าถูก
         $this->conversationService->setPlatform($platform);
 
-        // 🌐 (2026-05-03) Resolve locale (Facebook only — รองรับลาว auto-detect)
-        //   LINE บังคับไทยเสมอ ไม่กระทบ flow เดิม
+        // 🌐 (2026-05-03) Resolve locale — รองรับลาว auto-detect ทั้ง FB & LINE
         //   - manual choice (picker) ชนะเสมอ
-        //   - ถ้ายังไม่มี / auto → detect จาก messageText (Lao block U+0E80–U+0EFF)
+        //   - FB: detect จาก messageText + profileName (ชื่อช่วย boost confidence)
+        //   - LINE: detect จาก profileName เท่านั้น (ชื่อลาวล้วน → 'lo')
         //   - ถ้า DB error → fallback 'th' (safe)
-        $locale = \App\Services\FortuneLocaleService::resolveForMessage($platform, $userId, $messageText);
+        $profileName = $userProfile['name'] ?? null;
+        $locale = \App\Services\FortuneLocaleService::resolveForMessage(
+            $platform,
+            $userId,
+            $messageText,
+            $profileName,
+        );
         \App\Services\FortuneLocaleService::setCurrent($locale);
 
         // ใช้ conversation service ประมวลผล
@@ -511,16 +517,16 @@ class FortuneChannelManager
                 'payment_check_processing' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
                     // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
-                ]),
+                ], $extra),
                 'payment_check_pending' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
                     // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
                     ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                ]),
+                ], $extra),
                 'payment_check_expired' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                     // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
-                ]),
+                ], $extra),
 
                 // เช็คสถานะ → เช็คสิทธิ์
                 'check_status' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
@@ -547,7 +553,7 @@ class FortuneChannelManager
                 'error',
                 'ai_ask_save_question',
                 'send_chart', 'deep_reading_result', 'reading_ready'
-                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result),
+                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
 
                 // 🔔 คำทำนายพร้อม → ส่ง Button Template พร้อมปุ่ม "อ่านคำทำนาย" โดดเด่น
                 'fortune_ready_notification' => $this->sendFacebookFortuneReadyNotification($fbService, $userId, $message, $result),
@@ -560,44 +566,44 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🃏 สุ่มไพ่ยิปซี', 'payload' => 'DRAW_TAROT'],
                     ['content_type' => 'text', 'title' => '🔮 เลือกไพ่ 1', 'payload' => 'DRAW_TAROT_1'],
                     ['content_type' => 'text', 'title' => '✨ เลือกไพ่ 2', 'payload' => 'DRAW_TAROT_2'],
-                ]),
+                ], $extra),
 
                 // 🧘 ตั้งจิตเลือกไพ่ → Quick Reply ปุ่ม "พร้อม" / "ยกเลิก"
                 //    title คือสิ่งที่ส่งกลับเป็น message text → ใช้คำสั้น (ไม่มี emoji ในคำหลัก) เพื่อให้ระบบเข้าใจง่าย
                 'awaiting_tarot_intention' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => 'พร้อม', 'payload' => 'TAROT_READY'],
                     ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                ]),
+                ], $extra),
 
                 // 📅 (2026-05-01) ทวนวันเกิด — ปุ่ม ✅ ใช่ / ❌ ไม่ใช่ พิมพ์ใหม่
                 'awaiting_birthdate_confirmation' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '✅ ใช่ ถูกต้อง', 'payload' => 'BIRTHDATE_CONFIRM_YES'],
                     ['content_type' => 'text', 'title' => '❌ ไม่ใช่ พิมพ์ใหม่', 'payload' => 'BIRTHDATE_CONFIRM_NO'],
-                ]),
+                ], $extra),
 
                 // ❓ (2026-05-01) ทวนคำถาม — ปุ่ม ✅ ใช่ / ❌ ไม่ตรงคำถาม
                 'awaiting_question_confirmation' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '✅ ใช่ ถูกต้อง', 'payload' => 'QUESTION_CONFIRM_YES'],
                     ['content_type' => 'text', 'title' => '❌ ไม่ตรงคำถาม', 'payload' => 'QUESTION_CONFIRM_NO'],
-                ]),
+                ], $extra),
 
                 // 🃏 รอเปิดไพ่ (หลังตั้งจิตแล้ว)
                 'awaiting_tarot_draw' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => 'เปิดไพ่', 'payload' => 'DRAW_TAROT'],
                     ['content_type' => 'text', 'title' => 'ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                ]),
+                ], $extra),
 
                 // 📜 บิลถูกยกเลิก / AI rebuttal → ข้อความ + ปุ่มเริ่มใหม่
                 'ai_rebuttal' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
-                ]),
+                ], $extra),
 
                 // 🆕 (2026-04-29) Tier choice menu — ลูกค้าเลือก 1 จาก 2 แพคเกจ
                 //   - 39฿ Basic Deep (วันเกิด + ไพ่ 1 ใบ)
                 //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
                 //   ✏️ (2026-05-03) ซ่อนปุ่ม 99 ถ้า admin ปิด Celtic
-                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message) {
+                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message, $extra) {
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $buttons = [
                         ['content_type' => 'text', 'title' => '🔹 ดูดวง 39 บาท', 'payload' => 'TIER_DEEP_39'],
@@ -607,7 +613,7 @@ class FortuneChannelManager
                     }
                     $buttons[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
 
-                    return $fbService->sendQuickReplies($userId, $message, $buttons);
+                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
@@ -641,7 +647,7 @@ class FortuneChannelManager
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1
-                'celtic_all_picked' => (function () use ($fbService, $userId, $message, $result) {
+                'celtic_all_picked' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ใบสุดท้าย (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -661,14 +667,14 @@ class FortuneChannelManager
                     }
 
                     // ส่งข้อความ (ขอ Q1) — ไม่มีปุ่ม เพราะลูกค้าต้องพิมพ์คำถามเอง
-                    return $fbService->sendMessage($userId, $message);
+                    return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
                 // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
                 'celtic_question_answered' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🙏 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
                     ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
-                ]),
+                ], $extra),
 
                 // 📜 (2026-05-03) Celtic Q&A review — list + detail พร้อมปุ่มเลือกคำถาม + ภาพไพ่ที่ระลึก
                 'celtic_review_list', 'celtic_review_detail', 'celtic_review_not_found' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -704,7 +710,7 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $fbService->sendMessage($userId, $message, $extra ?? []);
+                    return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
                 // celtic actions ที่เป็น text-only (cancelled, completed, expired, ai_failed, etc.)
@@ -712,10 +718,10 @@ class FortuneChannelManager
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed'
-                    => $fbService->sendMessage($userId, $message),
+                    => $fbService->sendMessage($userId, $message, $extra),
 
                 // อื่นๆ → ส่ง text ธรรมดา
-                default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏'),
+                default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
 
             // Log ถ้าส่งไม่สำเร็จ
@@ -1073,7 +1079,7 @@ class FortuneChannelManager
      * ใช้กับ actions ที่ไม่ต้องการ Button Template เช่น:
      * keyword_matched, ai_chat_response, error, ฯลฯ
      */
-    protected function sendFacebookTextWithOptionalQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result): bool
+    protected function sendFacebookTextWithOptionalQuickReplies(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, string $message, string $action, array $result, array $extra = []): bool
     {
         if (empty($message)) {
             $message = 'ระบบกำลังดำเนินการ 🙏';
@@ -1100,7 +1106,7 @@ class FortuneChannelManager
         // ส่ง QR code (ถ้ามี)
         $paymentQrUrl = $result['payment_qr_url'] ?? null;
         if ($paymentQrUrl) {
-            $fbService->sendMessage($userId, $message);
+            $fbService->sendMessage($userId, $message, $extra);
             usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
             try {
                 $fbService->sendImage($userId, $paymentQrUrl);
@@ -1121,10 +1127,10 @@ class FortuneChannelManager
         }
 
         if (! empty($quickReplies)) {
-            return $fbService->sendQuickReplies($userId, $message, $quickReplies);
+            return $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
         }
 
-        return $fbService->sendMessage($userId, $message);
+        return $fbService->sendMessage($userId, $message, $extra);
     }
 
     /**

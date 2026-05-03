@@ -4867,6 +4867,22 @@ class FortuneConversationService
         // ถ้ามี channelManager → ส่งผลทีละคำถามแบบ streaming (ป้องกัน timeout)
         $streaming = $channelManager && $platform && $userId;
 
+        // 🌐 (2026-05-03) Restore locale ก่อน push streaming — caller ที่มาจาก
+        //    queue / SMS / console / admin retry ไม่มี request context → lo() จะ fallback TH
+        //    Resolution priority: arg $platform/$userId → reading->platform/platform_user_id
+        try {
+            $localePlatform = $platform ?: ($reading->platform ?? null);
+            $localeUserId = $userId ?: ($reading->platform_user_id ?? null);
+            if ($localePlatform && $localeUserId) {
+                $storedLocale = \App\Services\FortuneLocaleService::getStored($localePlatform, $localeUserId)
+                    ?? \App\Services\FortuneLocaleService::LOCALE_TH;
+                \App\Services\FortuneLocaleService::setCurrent($storedLocale);
+            }
+        } catch (\Throwable $e) {
+            // safe fallback — locale resolution ห้าม block flow ของ payment
+            \App\Services\FortuneLocaleService::setCurrent(\App\Services\FortuneLocaleService::LOCALE_TH);
+        }
+
         // ขยายเวลา execution เป็น 3 นาที (AI ใช้เวลา ~15-20 วินาทีต่อคำถาม × 2 ข้อ)
         set_time_limit(180);
 
@@ -5262,6 +5278,39 @@ class FortuneConversationService
                     Log::critical('Fortune Deep: ไม่สามารถเปลี่ยนสถานะเป็น completed ได้เลย!', [
                         'reading_id' => $reading->id,
                         'error' => $forceErr->getMessage(),
+                    ]);
+                }
+
+                // 🚨 (2026-05-03) Alert admin — save fail ก็เท่ากับลูกค้าไม่ได้คำทำนาย
+                //    (เหมือน AI fail ใน ProcessDeepFortuneReadingJob::failed())
+                try {
+                    app(\App\Services\LineAlertService::class)->alertSystemError(
+                        'Fortune Deep: deep_response save ล้มเหลว — ลูกค้าจ่ายเงินแล้วแต่คำทำนายไม่ได้บันทึก',
+                        [
+                            'reading_id' => $reading->id,
+                            'platform' => $platform ?? $reading->platform ?? '?',
+                            'admin_action' => 'ไปที่ /admin/fortune/billing แล้ว retry หรือทำคำทำนายเอง',
+                        ]
+                    );
+                    \App\Models\FortuneTakeoverLog::create([
+                        'fortune_reading_id' => $reading->id,
+                        'user_id' => null,
+                        'action' => \App\Models\FortuneTakeoverLog::ACTION_MESSAGE,
+                        'reason' => 'deep_response_save_failed',
+                        'message' => 'AI ตอบสำเร็จแต่บันทึกล้มเหลว — ต้อง admin recover',
+                        'platform' => $platform ?? $reading->platform ?? null,
+                        'metadata' => [
+                            'alert_type' => 'deep_response_save_failed',
+                            'requires_admin_action' => true,
+                        ],
+                    ]);
+                    $reading->setConversationState('ai_failed_alert', true);
+                    $reading->setConversationState('ai_failed_alert_at', now()->toIso8601String());
+                    $reading->setConversationState('ai_failed_alert_error', 'deep_response save failed (DB)');
+                } catch (\Throwable $alertErr) {
+                    Log::warning('Fortune Deep: alert admin save-fail ล้มเหลว (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $alertErr->getMessage(),
                     ]);
                 }
             }
