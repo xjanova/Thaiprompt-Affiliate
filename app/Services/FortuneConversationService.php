@@ -3607,6 +3607,15 @@ class FortuneConversationService
     {
         $status = $reading->conversation_status;
 
+        // 🆕 (2026-05-04) Pay-later ack intercept — ตรวจ FIRST ก่อน state dispatch
+        //    เคสบักที่เจอ: หลังจบ COLLECTING_TAROT → processRequestBeforePay ส่ง prompt
+        //    แต่ status ยังเป็น COLLECTING_TAROT — ลูกค้าตอบ "ใช่" → handleTarotCardDraw รัน
+        //    → loop กลับ processRequestBeforePay (เพราะ tarot+questions ครบแล้ว) → ส่ง prompt ซ้ำ
+        //    Fix: ตรวจ flag ที่ continueConversation ก่อน dispatch state → ครอบคลุมทุก status
+        if ($reading->getConversationState('awaiting_pay_later_ack', false)) {
+            return $this->handlePayLaterAck($reading, $messageText);
+        }
+
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
         if ($this->isCancelRequest($messageText)) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -4447,13 +4456,8 @@ class FortuneConversationService
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
         try {
-            // 🆕 (2026-05-04) Pay-later ack — ถ้ารอลูกค้ายืนยัน "เข้าใจไหมต้องจ่ายเมื่อได้คำทำนาย"
-            //    intercept ก่อนทุก handler เพื่อกัน race + กันคำถามสับสน
-            if ($reading->getConversationState('awaiting_pay_later_ack', false)) {
-                return $this->handlePayLaterAck($reading, $messageText);
-            }
-
             // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
+            //    (pay_later_ack ถูก intercept ที่ continueConversation level แล้ว — ครอบคลุมทุก status)
             //    (ตรวจ FIRST — มิฉะนั้น race-guard ด้านล่างจะบล็อก "ใช่" ที่ legitimate)
             if ($reading->getConversationState('awaiting_question_confirmation', false)) {
                 return $this->handleQuestionConfirmation($reading, $messageText);
