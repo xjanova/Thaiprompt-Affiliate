@@ -12,12 +12,12 @@ use Illuminate\Support\Facades\Log;
  * จัดการภาษาของผู้ใช้ Fortune Bot ต่อ platform+user
  *
  * ออกแบบ:
- * - LINE → ไทยล้วนเสมอ (return 'th')
- * - Facebook → auto-detect จากข้อความ + เก็บ DB
- * - manual override (picker) → priority สูงกว่า auto
+ * - Facebook → auto-detect จาก message text + profile name
+ * - LINE → auto-detect จาก display name (ลาวล้วน → 'lo'); default 'th'
+ * - manual override (picker) → priority สูงกว่า auto ทุก platform
  * - มี static current() สำหรับเข้าถึงจาก template/builder ระหว่าง request
  *
- * ⚠️ ใช้แบบ additive — ไม่กระทบ flow เดิม
+ * ⚠️ ใช้แบบ additive — ผู้ใช้เดิมที่ชื่อไม่ใช่ลาวยังคงได้ 'th' เหมือนเดิม
  *    ถ้า table ยังไม่ migrate / DB error → fallback 'th' เสมอ (safe)
  */
 class FortuneLocaleService
@@ -69,6 +69,43 @@ class FortuneLocaleService
         }
 
         return self::LOCALE_TH;
+    }
+
+    /**
+     * Detect locale จากชื่อ (display name / FB profile name)
+     *
+     * ชื่อเป็น signal ที่เสถียร (ไม่ค่อยเปลี่ยน) → ใช้ persist ทันทีได้
+     * เกณฑ์เข้มงวด — ต้องมีตัวลาวและไม่มีไทยเลย ถึงจะ flag Lao
+     *
+     * - ลาวล้วน (มี Lao char ≥ 1 + ไม่มีไทย) → 'lo'
+     * - ไทยล้วน (มี Thai char ≥ 1 + ไม่มีลาว) → 'th'
+     * - English / mixed / empty → null (ไม่มี signal — ปล่อยให้ logic อื่นตัดสิน)
+     *
+     * ตัวอย่างชื่อลาว: "ສົມຊາຍ ວົງສາ", "ໂກນ ສຸກສະຫວັນ"
+     * ตัวอย่างชื่อไทย: "สมชาย ใจดี"
+     * ตัวอย่าง mixed/null: "John Smith", "ABC123", "" → null
+     */
+    public static function detectFromName(?string $name): ?string
+    {
+        if (empty($name)) {
+            return null;
+        }
+
+        $laoCount = preg_match_all('/[\x{0E80}-\x{0EFF}]/u', $name);
+        $thaiCount = preg_match_all('/[\x{0E00}-\x{0E7F}]/u', $name);
+
+        // ลาวล้วน (มี Lao + ไม่มีไทย) → confident Lao
+        if ($laoCount > 0 && $thaiCount === 0) {
+            return self::LOCALE_LO;
+        }
+
+        // ไทยล้วน (มี Thai + ไม่มีลาว) → confident Thai
+        if ($thaiCount > 0 && $laoCount === 0) {
+            return self::LOCALE_TH;
+        }
+
+        // English / mixed / unknown → ไม่ตัดสิน
+        return null;
     }
 
     /**
@@ -144,19 +181,25 @@ class FortuneLocaleService
      *
      * Logic:
      * - Reset static $current ก่อน (กัน leak ข้าม queue job)
-     * - LINE → 'th' เสมอ
+     * - Manual choice (picker) ชนะเสมอ
+     * - LINE: เปิด detect เฉพาะ "ชื่อเป็นลาวชัดเจน" → switch เป็น lo + persist
+     *         (ผู้ใช้เดิมไม่กระทบ — ชื่อไทย/อังกฤษยังคงได้ 'th')
      * - FB: stored manual → ใช้ stored
-     * - FB: ไม่มี stored / auto → detect จาก text ใหม่ + update DB เฉพาะข้อความที่ "ชัด"
+     * - FB: detect จาก text + name → ใช้ Lao ถ้า text หรือ name ชี้ว่าเป็นลาว
+     *
+     * @param  string|null  $messageText  ข้อความล่าสุดของ user
+     * @param  string|null  $profileName  ชื่อ user (FB display name / LINE displayName)
      */
-    public static function resolveForMessage(string $platform, string $userId, ?string $messageText = null): string
-    {
+    public static function resolveForMessage(
+        string $platform,
+        string $userId,
+        ?string $messageText = null,
+        ?string $profileName = null,
+    ): string {
         // 🛡️ Reset stale state — จัดการ queue worker reuse
         self::$current = self::LOCALE_TH;
 
-        // LINE บังคับไทย — ไม่กระทบของเดิม
-        if ($platform !== 'facebook') {
-            return self::LOCALE_TH;
-        }
+        $nameDetected = self::detectFromName($profileName);
 
         // อ่าน row ครั้งเดียว — เช็คทั้ง manual override + stored auto
         try {
@@ -171,20 +214,51 @@ class FortuneLocaleService
             return self::LOCALE_TH;
         }
 
-        // Manual choice ชนะเสมอ
+        // Manual choice ชนะเสมอ (ทุก platform)
         if ($row && $row->source === self::SOURCE_MANUAL) {
             return $row->locale ?: self::LOCALE_TH;
         }
 
-        // Auto-detect จากข้อความ
-        $detected = self::detectFromText($messageText);
-
-        // 🛡️ Persist เฉพาะเมื่อ "ชัด": text ยาว ≥ 3 อักขระ + detected != stored
-        //    กัน 1 ข้อความสั้นๆ ลาวปนไทย flip user permanent
-        $textLen = $messageText ? mb_strlen(trim($messageText)) : 0;
         $stored = $row?->locale;
-        if ($textLen >= 3 && $detected !== $stored) {
-            self::set($platform, $userId, $detected, self::SOURCE_AUTO);
+
+        // 🇱🇦 LINE: detect จากชื่ออย่างเดียว (text-based detect ปิดอยู่เดิม)
+        //    เกณฑ์เข้ม — ต้องเป็นลาวล้วน ถึงจะ switch (กันชื่อไทยที่ปนตัวอักษรลาวเฉยๆ)
+        if ($platform !== 'facebook') {
+            // ถ้าเคย persist auto ไว้แล้ว — เคารพค่าเดิม (กัน flip ตอน profile API ล้มเหลว)
+            if ($stored === self::LOCALE_LO) {
+                return self::LOCALE_LO;
+            }
+
+            if ($nameDetected === self::LOCALE_LO) {
+                self::set($platform, $userId, self::LOCALE_LO, self::SOURCE_AUTO);
+
+                return self::LOCALE_LO;
+            }
+
+            return self::LOCALE_TH;
+        }
+
+        // 📘 Facebook: combine text + name signals
+        $textDetected = self::detectFromText($messageText);
+        $detected = $textDetected;
+
+        // ถ้า text ดูเป็นไทย แต่ชื่อเป็นลาวชัดเจน → ใช้ลาว (ชื่อ stable กว่า)
+        if ($detected === self::LOCALE_TH && $nameDetected === self::LOCALE_LO) {
+            $detected = self::LOCALE_LO;
+        }
+
+        // 🛡️ Persist:
+        //   - signal จากชื่อ (Lao) → persist ทันที (no min text length — ชื่อ stable)
+        //   - signal จาก text → ใช้กฎเดิม (text ≥ 3 อักขระ)
+        if ($detected !== $stored) {
+            if ($nameDetected === self::LOCALE_LO && $detected === self::LOCALE_LO) {
+                self::set($platform, $userId, self::LOCALE_LO, self::SOURCE_AUTO);
+            } else {
+                $textLen = $messageText ? mb_strlen(trim($messageText)) : 0;
+                if ($textLen >= 3) {
+                    self::set($platform, $userId, $detected, self::SOURCE_AUTO);
+                }
+            }
         }
 
         return $detected;
