@@ -4869,13 +4869,17 @@ class FortuneConversationService
                     "🌙 *ก่อนเปิดดวง — แม่หมอขอย้ำอีกครั้งนะคะ* 💎\n"
                         . "═══════════════════════\n\n"
                         . "✨ แม่หมอจะทำนายดวงให้เจ้าชะตา*ก่อน*\n"
-                        . "💸 เมื่อได้รับคำทำนายแล้ว — เจ้าชะตาต้องชำระค่าครู *{$price} บาท*\n\n"
+                        . "💸 เมื่อได้รับคำทำนายแล้ว — เจ้าชะตาต้องชำระค่าครู *{$price} บาท*\n"
+                        . "⏰ *ต้องโอนภายใน 24 ชั่วโมง* หลังได้รับคำทำนาย\n"
+                        . "🔒 ถ้าไม่จ่าย — ระบบจะปิดสิทธิ์ \"ดูก่อนจ่ายทีหลัง\" ของเจ้าชะตาถาวร\n\n"
                         . "🙏 *เข้าใจและยินยอมใช่ไหมคะ?*\n"
                         . "    กดปุ่มข้างล่าง หรือพิมพ์ \"ใช่\" เพื่อให้แม่หมอเริ่มเปิดดวงเลย",
                     "🌙 *ກ່ອນເປີດດວງ — ແມ່ໝໍຂໍຢ້ຳອີກຄັ້ງເດີ* 💎\n"
                         . "═══════════════════════\n\n"
                         . "✨ ແມ່ໝໍຈະທຳນາຍດວງໃຫ້ເຈົ້າຊາຕາ*ກ່ອນ*\n"
-                        . "💸 ເມື່ອໄດ້ຮັບຄຳທຳນາຍແລ້ວ — ເຈົ້າຊາຕາຕ້ອງຊຳລະຄ່າຄູ *{$price} ບາດ*\n\n"
+                        . "💸 ເມື່ອໄດ້ຮັບຄຳທຳນາຍແລ້ວ — ເຈົ້າຊາຕາຕ້ອງຊຳລະຄ່າຄູ *{$price} ບາດ*\n"
+                        . "⏰ *ຕ້ອງໂອນພາຍໃນ 24 ຊົ່ວໂມງ* ຫຼັງໄດ້ຮັບຄຳທຳນາຍ\n"
+                        . "🔒 ຖ້າບໍ່ຈ່າຍ — ລະບົບຈະປິດສິດ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" ຂອງເຈົ້າຊາຕາຖາວອນ\n\n"
                         . "🙏 *ເຂົ້າໃຈແລະຍິນຍອມໃຊ່ບໍ່?*\n"
                         . "    ກົດປຸ່ມລຸ່ມນີ້ ຫຼື ພິມ \"ໃຊ່\" ເພື່ອໃຫ້ແມ່ໝໍເລີ່ມເປີດດວງເລີຍ"
                 ),
@@ -5272,11 +5276,18 @@ class FortuneConversationService
             //         แล้ว fresh query verify หลัง commit ว่าทุกอย่างอยู่จริง
             $billData = \DB::transaction(function () use ($reading, $questions) {
                 $basePrice = $this->getDeepReadingPrice();
+                // 🌙 (2026-05-04) Request-Before-Pay → UPA 24 ชม
+                //    Pay-first → UPA 30 นาที (เดิม)
+                //    user spec: "ต้องโอนภายใน 24 ชม"
+                $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+                $expiryMinutes = $isRequestBeforePay
+                    ? FortuneReading::REQUEST_BEFORE_PAY_TIMEOUT_MINUTES  // 1440 (24 ชม)
+                    : FortuneReading::PAYMENT_TIMEOUT_MINUTES;             // 30
                 $uniqueAmount = UniquePaymentAmount::generate(
                     $basePrice,
                     $reading->id,
                     'fortune_reading',
-                    30  // หมดอายุใน 30 นาที
+                    $expiryMinutes
                 );
 
                 if (! $uniqueAmount) {
