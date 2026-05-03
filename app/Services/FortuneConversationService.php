@@ -149,10 +149,17 @@ class FortuneConversationService
     /**
      * 🎯 Phase N — Rapid-fire spam detection
      *   ส่งข้อความ/รูป เกิน N ครั้งใน X วินาที → เข้า silent mode
+     *
+     * 🆕 (2026-05-04) Relax threshold — เคสจริง: ลูกค้าทำตาม Request-Before-Pay flow
+     *    (เลือก tier → วันเกิด → คำถาม 1 → คำถาม 2 → ใช่ ack → ฯลฯ) = 6+ messages
+     *    ใน 30 วินาที = legitimate flow ไม่ใช่ spam
+     *    ก่อนหน้า: THRESHOLD=6, WINDOW=30 → trip silent mode บ่อย ลูกค้าเสียอารมณ์
+     *    ใหม่: THRESHOLD=20, WINDOW=15 → จับเฉพาะ real flood (>20 msg ใน 15 วินาที)
+     *    SILENT: 3→2 นาที (forgiving ถ้า false-positive)
      */
-    public const RAPID_FIRE_THRESHOLD = 6;         // จำนวนข้อความในหน้าต่าง
-    public const RAPID_FIRE_WINDOW_SECONDS = 30;   // หน้าต่างเวลา (วินาที)
-    public const SILENT_MODE_MINUTES = 3;          // พักการตอบกลับ N นาที
+    public const RAPID_FIRE_THRESHOLD = 20;        // จำนวนข้อความในหน้าต่าง
+    public const RAPID_FIRE_WINDOW_SECONDS = 15;   // หน้าต่างเวลา (วินาที)
+    public const SILENT_MODE_MINUTES = 2;          // พักการตอบกลับ N นาที
 
     /**
      * Prompt Injection Patterns - คำสั่งที่พยายาม manipulate AI
