@@ -1004,12 +1004,63 @@ class SmsPaymentController extends Controller
             // เพื่อให้แอพแสดงสถานะ "ชำระแล้ว" ทันที ไม่ต้องรอ job รัน
             if (! $model->is_paid) {
                 $model->confirmPayment($notification);
+                $model = $model->fresh();
             }
 
-            // 🔮 Route ตาม reading_type — Celtic ใช้ flow คนละแบบจาก Deep 39฿
-            //    helper จะ dispatch ProcessDeepFortuneReadingJob (deep) หรือ
-            //    call handleCelticPaymentMatched (celtic) ตาม reading.reading_type
-            $this->dispatchFortuneApprovalFlow($model, $notification);
+            // 💎 (2026-05-04) Request-Before-Pay + ลูกค้ารับคำทำนายไปแล้ว → skip dispatch
+            //    user spec: "บิล pay later แอดมินก็ approve ได้นะ"
+            //    ลูกค้าได้คำทำนายไปแล้ว (deep_response filled) — admin manual approve
+            //    แค่ปิดบิล + ส่ง "ขอบคุณ ระบบรับเงินแล้ว" — ห้าม regenerate AI / re-push reading
+            $isRequestBeforePay = (bool) ($model->conversation_state['is_request_before_pay'] ?? false);
+            $hasDeepResponse = ! empty($model->deep_response);
+
+            if ($isRequestBeforePay && $hasDeepResponse) {
+                try {
+                    $platform = $model->platform
+                        ?: ((preg_match('/^U[0-9a-f]{32}$/i', $model->facebook_user_id ?? '')) ? 'line' : 'facebook');
+                    $userId = $model->platform_user_id ?? $model->facebook_user_id;
+
+                    if ($userId) {
+                        $name = $model->facebook_user_name ?? 'คุณ';
+                        $thankMsg = \App\Services\FortuneLocaleService::lo(
+                            "✅ *ระบบรับการชำระเงินแล้วค่ะ คุณ{$name}* 🙏\n\n"
+                                . "📋 บิล: {$model->bill_reference}\n"
+                                . "💰 ยอด: ฿" . number_format($model->amount_paid, 2) . "\n\n"
+                                . "ขอบคุณที่ไว้วางใจแม่หมอจันทรานะคะ ✨\n"
+                                . "หวังว่าคำทำนายจะเป็นประโยชน์กับเจ้าชะตา 🙏",
+                            "✅ *ລະບົບຮັບການຊຳລະເງິນແລ້ວເດີ ເຈົ້າ{$name}* 🙏\n\n"
+                                . "📋 ບິນ: {$model->bill_reference}\n"
+                                . "💰 ຍອດ: ฿" . number_format($model->amount_paid, 2) . "\n\n"
+                                . "ຂອບໃຈທີ່ໄວ້ວາງໃຈແມ່ໝໍຈັນທະຣາເດີ ✨"
+                        );
+
+                        $settings = FortuneTellingSetting::getSettings();
+                        $channelManager = new FortuneChannelManager($settings);
+                        $platformService = $channelManager->getPlatform($platform);
+                        if ($platformService) {
+                            $platformService->sendMessage($userId, $thankMsg, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        }
+
+                        // ปิด conversation_status เป็น COMPLETED — บิลปิดถาวร
+                        $model->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    }
+
+                    Log::info('💎 SMS Payment: admin approved Request-Before-Pay (skip Job — already delivered)', [
+                        'reading_id' => $model->id,
+                        'bill_reference' => $model->bill_reference,
+                    ]);
+                } catch (\Throwable $e) {
+                    Log::warning('💎 SMS Payment: thank-you push ล้มเหลว (best-effort)', [
+                        'reading_id' => $model->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            } else {
+                // 🔮 ปกติ — Route ตาม reading_type — Celtic ใช้ flow คนละแบบจาก Deep 39฿
+                //    helper จะ dispatch ProcessDeepFortuneReadingJob (deep) หรือ
+                //    call handleCelticPaymentMatched (celtic) ตาม reading.reading_type
+                $this->dispatchFortuneApprovalFlow($model, $notification);
+            }
 
             // อัพเดท notification สถานะเป็น confirmed
             if ($notification) {
