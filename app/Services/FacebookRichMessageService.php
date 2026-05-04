@@ -47,12 +47,25 @@ class FacebookRichMessageService
      * ใช้ตอน: GET_STARTED postback หรือ ผู้ใช้เข้ามาครั้งแรก
      *
      * @param string $userName ชื่อผู้ใช้
+     * @param string|null $facebookUserId FB PSID — ใช้ตรวจว่า user คนนี้ใช้สิทธิ์ฟรีไปแล้วหรือยัง
+     *                                    (ถ้า null → behave เดิม โชว์ปุ่มฟรีตาม admin setting)
      * @return array Facebook Messenger API payload
      */
-    public function buildWelcomeTemplate(string $userName): array
+    public function buildWelcomeTemplate(string $userName, ?string $facebookUserId = null): array
     {
         // ตรวจสอบ flags ของระบบ (ฟรี / Celtic Cross 99฿)
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // 🩹 (2026-05-04) ซ่อนปุ่ม+ข้อความฟรี ถ้า user คนนี้ใช้สิทธิ์ไปแล้ว
+        //    user request: "คนใช้สิทธิ์ฟรีไปแล้ว ไม่ต้องขึ้นดูฟรี + นำออกจากกล่องรายการ"
+        if ($freeEnabled && $facebookUserId) {
+            try {
+                if (\App\Models\FortuneReading::hasUsedFreeCard('facebook', $facebookUserId)) {
+                    $freeEnabled = false;
+                }
+            } catch (\Throwable $e) {
+                // ถ้า DB error → fall back behave เดิม (ไม่ block welcome)
+            }
+        }
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
         $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
         $celticPrice = 99;

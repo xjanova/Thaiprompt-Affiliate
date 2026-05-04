@@ -425,7 +425,8 @@ class LineFortuneWebhookController extends Controller
         // ========================================
 
         // ส่ง Welcome Message พร้อมชื่อ
-        $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName);
+        // 🩹 (2026-05-04) pass userId เพื่อตรวจ hasUsedFreeCard → ซ่อนการ์ดฟรีถ้าใช้แล้ว
+        $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName, $userId);
 
         $this->lineService->replyMessage($replyToken, [
             [

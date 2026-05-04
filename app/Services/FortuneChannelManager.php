@@ -1140,7 +1140,8 @@ class FortuneChannelManager
         }
 
         $userName = $result['user_name'] ?? 'คุณ';
-        $template = $richService->buildWelcomeTemplate($userName);
+        // 🩹 (2026-05-04) pass userId เพื่อให้ buildWelcomeTemplate ตรวจ hasUsedFreeCard
+        $template = $richService->buildWelcomeTemplate($userName, $userId);
 
         return $fbService->sendButtonTemplate($userId, $template);
     }
@@ -2191,7 +2192,8 @@ class FortuneChannelManager
             return $lineService->sendMessageWithReplyFallback($userId, $contextual['message'], $replyToken);
         }
 
-        $welcomeFlex = $lineService->buildWelcomeFlexMessage();
+        // 🩹 (2026-05-04) pass userId เพื่อตรวจ hasUsedFreeCard → ซ่อนการ์ดฟรีถ้าใช้แล้ว
+        $welcomeFlex = $lineService->buildWelcomeFlexMessage('', $userId);
 
         return $lineService->sendFlexWithReplyFallback(
             $userId, $welcomeFlex, "{$this->settings->getFortuneBrandName()}ยินดีต้อนรับค่ะ", $replyToken

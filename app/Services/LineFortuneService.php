@@ -1045,7 +1045,11 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * @return array Flex Message content
      */
-    public function buildWelcomeFlexMessage(string $userName = ''): array
+    /**
+     * @param  string  $userName
+     * @param  string|null  $lineUserId  LINE user ID — ถ้าระบุ จะตรวจ hasUsedFreeCard ซ่อนปุ่ม/การ์ดฟรีถ้าใช้แล้ว
+     */
+    public function buildWelcomeFlexMessage(string $userName = '', ?string $lineUserId = null): array
     {
         $userName = $this->sanitizeUserName($userName);
         $brandName = $this->settings->getFortuneBrandName();
@@ -1059,6 +1063,17 @@ class LineFortuneService implements MessagingPlatformInterface
         // ตรวจสอบว่าเปิดระบบดูดวงฟรีหรือไม่
         // ถ้า max_free_readings = 0 → ไม่แสดงการ์ด "ดูดวงพื้นฐาน (ฟรี)"
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // 🩹 (2026-05-04) ซ่อนการ์ดฟรี ถ้า user คนนี้ใช้สิทธิ์ไปแล้ว
+        //    user request: "คนใช้สิทธิ์ฟรีไปแล้ว ไม่ต้องขึ้นดูฟรี + นำออกจากกล่องรายการ"
+        if ($freeEnabled && $lineUserId) {
+            try {
+                if (\App\Models\FortuneReading::hasUsedFreeCard('line', $lineUserId)) {
+                    $freeEnabled = false;
+                }
+            } catch (\Throwable $e) {
+                // DB error → fall back behave เดิม (ไม่ block welcome)
+            }
+        }
 
         // สร้างรายการ service cards แบบมีเงื่อนไข
         $serviceCards = [

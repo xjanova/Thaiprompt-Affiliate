@@ -2057,7 +2057,8 @@ class FacebookWebhookController extends Controller
 
             // ✅ ส่ง Rich Welcome Template พร้อม Quick Replies
             $richService = new \App\Services\FacebookRichMessageService($this->settings);
-            $welcomeTemplate = $richService->buildWelcomeTemplate($userName);
+            // 🩹 (2026-05-04) pass senderId เพื่อตรวจ hasUsedFreeCard → ซ่อนปุ่ม/ข้อความฟรีถ้าใช้แล้ว
+            $welcomeTemplate = $richService->buildWelcomeTemplate($userName, $senderId);
             $welcomeQuickReplies = $richService->getQuickRepliesForAction('help');
 
             if ($welcomeTemplate && ! empty($welcomeTemplate['elements'])) {
@@ -2987,7 +2988,8 @@ class FacebookWebhookController extends Controller
         // ✅ ใช้ Rich Welcome Template แทนข้อความธรรมดา
         try {
             $richService = new \App\Services\FacebookRichMessageService($this->settings);
-            $helpTemplate = $richService->buildWelcomeTemplate('คุณ');
+            // 🩹 (2026-05-04) pass userId เพื่อตรวจ hasUsedFreeCard → ซ่อนปุ่ม/ข้อความฟรีถ้าใช้แล้ว
+            $helpTemplate = $richService->buildWelcomeTemplate('คุณ', $userId);
             $helpQuickReplies = $richService->getQuickRepliesForAction('help');
 
             if ($helpTemplate && ! empty($helpTemplate['elements'])) {

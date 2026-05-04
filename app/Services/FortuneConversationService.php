@@ -3629,6 +3629,13 @@ class FortuneConversationService
             ];
         }
 
+        // 🌍 (2026-05-04) International payment query — ลูกค้าลาว/ต่างประเทศถามเรื่องโอน
+        //   user request: "คนบอกจ่ายไม่ได้เช่นอยู่ลาว ต้องอธิบาย PromptPay international"
+        $intl = $this->tryInternationalPaymentNudge($messageText, $reading);
+        if ($intl !== null) {
+            return $intl;
+        }
+
         // 🔮 Celtic Cross dispatch (ถ้าใช่ Celtic state — handle, else fall through)
         $celticResult = $this->handleCelticState($reading, $messageText);
         if ($celticResult !== null) {
@@ -7887,6 +7894,83 @@ class FortuneConversationService
      * หมายเหตุ: ไม่ใช่ผลลัพธ์สมบูรณ์ 100% — แค่กันกรณีชัดเจน
      * เพื่อไม่ให้ถือเป็นคำตอบสเตปไปประมวลผลผิด
      */
+    /**
+     * 🌍 (2026-05-04) ตรวจ intent "อยู่ลาว/ต่างประเทศ + โอนไม่ได้/จ่ายยังไง" → ตอบ PromptPay international
+     *
+     * User request: "คนที่บอกจ่ายเงินไม่ได้เช่นอยู่ลาว ต้องอธิบายว่า พร้อมเพย์ จ่ายผ่านธนาคารต่างประเทศได้
+     *                การเปิดจักรวาลพลิกชะตา เราต้องพยายามด้วย ถ้าไม่พร้อมก็ไม่เป็นไร"
+     *
+     * Persona: warm + ไม่ฮาร์ดเซล — บอกข้อเท็จจริง + ปรัชญา "พยายาม / ไม่พร้อมก็ไม่เป็นไร"
+     *
+     * @return array|null  response array (action='international_payment_info') หรือ null ถ้าไม่ตรง
+     */
+    protected function tryInternationalPaymentNudge(string $messageText, ?FortuneReading $reading = null): ?array
+    {
+        $text = mb_strtolower(trim($messageText));
+        if ($text === '' || mb_strlen($text) > 200) {
+            return null; // เร็ว skip ถ้าข้อความยาวเกิน (น่าจะเป็นคำถามดูดวง ไม่ใช่ payment query)
+        }
+
+        // 🎯 Detection ต้องเข้ม: 1 keyword "ตำแหน่ง" (อยู่ลาว/ต่างประเทศ) + 1 keyword "ชำระ" (โอน/จ่าย)
+        //    หรือ keyword ผสม (PromptPay/cross-border) ที่เฉพาะเจาะจง
+        $locationKw = ['อยู่ลาว', 'อยู่ที่ลาว', 'มาจากลาว', 'คนลาว', 'ในลาว', 'จากลาว',
+            'ต่างประเทศ', 'อยู่นอก', 'ไม่ได้อยู่ไทย', 'นอกประเทศ',
+            'ກຳປູເຈຍ', 'ໃນລາວ', 'ຢູ່ລາວ', 'ຄົນລາວ', 'ຈາກລາວ', 'ຕ່າງປະເທດ'];
+        $paymentKw = ['โอนไม่ได้', 'จ่ายไม่ได้', 'จ่ายยังไง', 'โอนยังไง', 'จะจ่าย', 'จ่ายเท่าไร',
+            'พร้อมเพย์ไม่ได้', 'ไม่มีพร้อมเพย์', 'ไม่มี promptpay',
+            'ໂອນບໍ່ໄດ້', 'ຈ່າຍບໍ່ໄດ້', 'ຈ່າຍແນວໃດ', 'ໂອນແນວໃດ'];
+        $strongKw = ['cross-border', 'cross border', 'international transfer',
+            'promptpay ลาว', 'promptpay international', 'thai promptpay'];
+
+        $hasLocation = false;
+        foreach ($locationKw as $kw) {
+            if (str_contains($text, mb_strtolower($kw))) { $hasLocation = true; break; }
+        }
+        $hasPayment = false;
+        foreach ($paymentKw as $kw) {
+            if (str_contains($text, mb_strtolower($kw))) { $hasPayment = true; break; }
+        }
+        $hasStrong = false;
+        foreach ($strongKw as $kw) {
+            if (str_contains($text, mb_strtolower($kw))) { $hasStrong = true; break; }
+        }
+
+        // ตรงเงื่อนไข: ต้องมี (location + payment) หรือ strong keyword เดี่ยว
+        if (! $hasStrong && ! ($hasLocation && $hasPayment)) {
+            return null;
+        }
+
+        $message = \App\Services\FortuneLocaleService::lo(
+            "🌙 *แม่หมอเข้าใจค่ะ ลูกพ่อ*\n\n"
+                . "📲 ระบบ *พร้อมเพย์ (PromptPay ของไทย)* รับเงินจากธนาคารต่างประเทศได้\n"
+                . "   ✦ ลาว / กัมพูชา / สิงคโปร์ / มาเลเซีย — ใช้ mobile banking ของท่านได้\n"
+                . "   ✦ ค้นหาเมนู *\"ส่งเงินไทย / Thai PromptPay\"* หรือ *\"Cross-border QR\"*\n"
+                . "   ✦ สแกน QR ที่แม่หมอส่งให้ → ใส่ยอดทศนิยมตรงเป๊ะ\n\n"
+                . "✨ *การเปิดจักรวาลพลิกชะตา* — แม่หมอต้องการให้เจ้าชะตาพยายามนิดหน่อยค่ะ 🙏\n"
+                . "🌙 ถ้ายังไม่พร้อม ก็ไม่เป็นไรเลยค่ะ — *เราเลือกเดินทางของเราเองได้*\n\n"
+                . "🔮 พอโอนเรียบร้อย → พิมพ์ *\"เช็คสถานะ\"* แม่หมอจะตามให้ค่ะ ✨",
+            "🌙 *ແມ່ໝໍເຂົ້າໃຈເດີ ລູກພໍ່*\n\n"
+                . "📲 ລະບົບ *PromptPay (ຂອງໄທ)* ຮັບເງິນຈາກທະນາຄານຕ່າງປະເທດໄດ້\n"
+                . "   ✦ ລາວ / ກຳປູເຈຍ / ສິງກະໂປ / ມາເລ — ໃຊ້ mobile banking ຂອງທ່ານໄດ້\n"
+                . "   ✦ ຄົ້ນຫາເມນູ *\"ສົ່ງເງິນໄທ / Thai PromptPay\"* ຫຼື *\"Cross-border QR\"*\n"
+                . "   ✦ ສະແກນ QR ທີ່ແມ່ໝໍສົ່ງໃຫ້ → ໃສ່ຍອດທົດສະນິຍົມຕົງເປັະ\n\n"
+                . "✨ *ການເປີດຈັກກະວານພິກຊາຕາ* — ແມ່ໝໍຢາກໃຫ້ເຈົ້າຊາຕາພະຍາຍາມໜ້ອຍໜຶ່ງເດີ 🙏\n"
+                . "🌙 ຖ້າຍັງບໍ່ພ້ອມ ກໍ່ບໍ່ເປັນຫຍັງເລີຍ — *ເລືອກເດີນທາງຂອງເຮົາເອງໄດ້*\n\n"
+                . "🔮 ໂອນແລ້ວ → ພິມ *\"ເຊັກສະຖານະ\"* ແມ່ໝໍຈະຕາມໃຫ້ເດີ ✨"
+        );
+
+        Log::info('Fortune: international payment nudge triggered', [
+            'reading_id' => $reading?->id,
+            'text_preview' => mb_substr($messageText, 0, 60),
+        ]);
+
+        return [
+            'action' => 'international_payment_info',
+            'message' => $message,
+            'reading' => $reading,
+        ];
+    }
+
     protected function looksLikeMetaOrChitchat(string $message): bool
     {
         $text = mb_strtolower(trim($message));
