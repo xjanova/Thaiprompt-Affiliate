@@ -430,7 +430,8 @@ class FortuneReading extends Model
      */
     public static function hasUsedFreeCard(string $platform, string $platformUserId): bool
     {
-        return self::where('platform', $platform)
+        // หา free reading ล่าสุดที่ AI ตอบสำเร็จแล้ว
+        $latestFree = self::where('platform', $platform)
             ->where(function ($q) use ($platformUserId) {
                 // รองรับทั้งคอลัมน์ใหม่ (platform_user_id) และเก่า (facebook_user_id) เผื่อ legacy data
                 $q->where('platform_user_id', $platformUserId)
@@ -438,7 +439,35 @@ class FortuneReading extends Model
             })
             ->where('reading_type', self::READING_TYPE_FREE_CARD)
             ->whereNotNull('responded_at')
-            ->exists();
+            ->latest('responded_at')
+            ->first();
+
+        // ยังไม่เคยใช้สิทธิ์เลย → eligible
+        if (! $latestFree) {
+            return false;
+        }
+
+        // 🎁 (2026-05-04) Monthly claim reset — รีเซ็ตได้ตามกิจกรรมในกลุ่ม
+        //   ถ้ามี FortuneMonthlyFreeClaim ใหม่กว่า responded_at ของ free reading ล่าสุด
+        //   → ถือว่าฟรียังไม่ใช้ (ลูกค้าได้สิทธิ์ใหม่ผ่านการ claim รายเดือน)
+        try {
+            $latestClaim = \App\Models\FortuneMonthlyFreeClaim::where('psid', $platformUserId)
+                ->where('platform', $platform)
+                ->latest('claimed_at')
+                ->first();
+
+            if ($latestClaim
+                && $latestClaim->claimed_at
+                && $latestFree->responded_at
+                && $latestClaim->claimed_at->greaterThan($latestFree->responded_at)) {
+                // claim ใหม่กว่า reading ล่าสุด → reset สิทธิ์
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // ถ้า table ยังไม่มี (migration ยังไม่รัน) — fall back ใช้ logic เดิม
+        }
+
+        return true; // ใช้แล้ว ยังไม่มี claim ใหม่
     }
 
     /**

@@ -340,7 +340,36 @@ class FacebookWebhookController extends Controller
                 ['referrer' => $ref]
             );
 
-            // ส่งข้อความตอบกลับ — ใช้ FacebookWebhookService ตรง (ไม่ผ่าน Quick Reply)
+            // 🎁 (2026-05-04) Auto-trigger ทำนายฟรีทันทีหลัง claim สำเร็จ
+            //   เคสเดิม: ส่งแค่ข้อความ "รับสิทธิ์แล้ว — พิมพ์ดูดวง" → ลูกค้าต้องพิมพ์เอง
+            //   เคสใหม่: claim สำเร็จ → ทำนายฟรีให้เลย (ลูกค้าได้คำทำนายทันที)
+            //
+            //   hasUsedFreeCard ถูกแก้ให้ตรวจ claimed_at vs responded_at →
+            //   ลูกค้าที่เคยใช้ฟรีไปแล้วจะ eligible ใหม่หลัง claim
+            if ($result['status'] === 'granted' && $this->channelManager && $this->facebookService) {
+                try {
+                    // ส่งข้อความขอบคุณก่อน (สั้นๆ — ทำนายจะตามมาทันที)
+                    $this->facebookService->sendMessage(
+                        $senderId,
+                        "🎁 รับสิทธิ์ดูฟรีประจำเดือนเรียบร้อยค่ะ ✨\nแม่หมอจะเปิดไพ่ให้ทันทีเลยนะคะ 🌙"
+                    );
+                    usleep(500_000);
+
+                    // trigger startFreeCardFlow ผ่าน processConversationalMessage
+                    //   ส่ง keyword "ทำนายฟรี" → matchesFreeCardKeyword → startFreeCardFlow
+                    //   (hasUsedFreeCard จะคืน false เพราะ claim ใหม่กว่า responded_at)
+                    $this->processConversationalMessage($senderId, 'ทำนายฟรี');
+
+                    return;
+                } catch (\Throwable $autoErr) {
+                    Log::warning('🎁 Auto-trigger free card หลัง claim ล้ม — fallback ส่งข้อความปกติ', [
+                        'sender_id' => $senderId,
+                        'error' => $autoErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // Fallback: ส่งข้อความตอบกลับเฉยๆ (สำหรับ already_claimed / disabled / error)
             if ($this->facebookService) {
                 $this->facebookService->sendMessage($senderId, $result['message']);
             }
