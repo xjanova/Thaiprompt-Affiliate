@@ -5617,24 +5617,39 @@ class FortuneConversationService
         set_time_limit(180);
 
         try {
-            // 🩹 (2026-05-04) Pay-Later guard — ห้าม mark is_paid=true ก่อนลูกค้าโอนจริง
-            //    User report: บิล Pay-Later ขึ้น is_paid=1 + amount_paid=0 → SMS app filter ทิ้ง → ลูกค้าโอนแล้วระบบไม่จับ
-            //    Root cause: Job เรียก processPaymentConfirmed ตอน AI gen (Pay-Later flow) — แต่ลูกค้ายังไม่ได้โอน
-            //                confirmPayment(null) → mark is_paid=true + paid_at=now + amount_paid ยัง 0 (default)
-            //    Fix: ถ้าเป็น Pay-Later AI-gen path (notification=null + is_request_before_pay=true)
-            //         → skip confirmPayment ทั้ง block — รอ real payment confirm ผ่าน SmsPaymentService ทีหลัง
-            //    Real flow: ลูกค้ากด "รับคำทำนาย" → createPaymentBill → setPendingPayment (amount_paid=39.XX, status=PENDING_PAYMENT)
-            //               → ลูกค้าโอน 39.XX → SMS match UPA → confirmPayment(notification) → is_paid=true ตอนนั้น
-            $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
-            $payLaterPrePayment = $isRequestBeforePay && $notification === null;
+            // 🩹 (2026-05-04 b) Universal payment guard — ห้าม mark is_paid=true ถ้าไม่มี SMS notification
+            //    + ลูกค้ายังไม่ paid (regardless of is_request_before_pay flag)
+            //
+            //    Root cause user report (2026-05-04): บิล Pay-Later มี is_paid=true + amount_paid=0
+            //      → SMS app filter ทิ้ง → ลูกค้าโอนแล้วระบบไม่จับ
+            //
+            //    Old guard: $isRequestBeforePay && $notification === null
+            //      ปัญหา: ถ้า flag ไม่ถูก set (เช่น ลูกค้าใช้สิทธิ์ pay-later แล้ว → fallback pay-first
+            //             แต่ Job ยังเรียก processPaymentConfirmed กับ notification=null) → guard fail
+    //             → confirmPayment(null) → is_paid=true + paid_at=now + amount_paid ยัง 0
+            //
+            //    New guard: $notification === null && ! $reading->is_paid
+            //      Logic: ถ้าไม่มีหลักฐานการจ่าย (notification) + reading ยังไม่ paid → skip universal
+            //      ครอบคลุมเคส:
+            //        ✓ Pay-Later AI gen (flag set, notification=null) → skip
+            //        ✓ Pay-First admin retry (flag false, notification=null, is_paid=true อยู่แล้ว) → ไม่ skip → confirmPayment idempotent
+            //        ✓ Pay-Later flag fail edge case (flag false, notification=null, is_paid=false) → skip (ของใหม่ — กันบิลผิด)
+            //        ✓ Real SMS confirm (notification != null) → ไม่ skip → confirmPayment(notification)
+            //
+            //    Real Pay-First flow: setPendingPayment ตอนเลือก tier (UPA, amount_paid=39.XX, is_paid=false)
+            //      → ลูกค้าโอน → SMS match UPA → confirmPayment(notification) → is_paid=true
+            //    Real Pay-Later flow: AI gen → setPendingPayment ใน createPaymentBill (UPA, amount_paid=39.XX)
+            //      → ส่ง reading + bill + QR → ลูกค้าโอน 24 ชม → SMS match → confirmPayment(notification) → is_paid=true
+            $skipConfirm = $notification === null && ! $reading->is_paid;
 
-            if (! $payLaterPrePayment) {
-                // ยืนยันการชำระเงิน (pay-first flow OR pay-later real-payment confirmation)
+            if (! $skipConfirm) {
+                // ยืนยันการชำระเงิน (มี SMS หลักฐาน OR reading paid อยู่แล้ว — confirmPayment idempotent)
                 $reading->confirmPayment($notification);
             } else {
-                Log::info('Fortune: Pay-Later AI gen — skip confirmPayment (customer not yet paid)', [
+                Log::info('Fortune: skip confirmPayment — no SMS notification + reading not yet paid', [
                     'reading_id' => $reading->id,
                     'platform' => $platform,
+                    'is_request_before_pay' => (bool) $reading->getConversationState('is_request_before_pay', false),
                 ]);
             }
 

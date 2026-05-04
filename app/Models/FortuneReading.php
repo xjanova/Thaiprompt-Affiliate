@@ -541,6 +541,21 @@ class FortuneReading extends Model
         return ! self::hasUsedRequestBeforePay($platform, $platformUserId);
     }
 
+    /**
+     * 🩹 (2026-05-04) ตรวจว่า reading นี้เป็น Pay-Later flow หรือไม่
+     *
+     * Pay-Later (Request-Before-Pay): ดูคำทำนายก่อน → จ่ายทีหลัง (สิทธิ์ first-time)
+     * Pay-First: จ่ายก่อน → ค่อยดูคำทำนาย (เคสปกติ + เคสที่ใช้ Pay-Later สิทธิ์ครั้งที่ 1 ไปแล้ว)
+     *
+     * ใช้:
+     *   - admin UI แยก badge "ดูก่อนจ่าย" vs "จ่ายก่อนดู"
+     *   - flow guard ที่ต้องตัดสินใจตามประเภทบิล
+     */
+    public function isPayLaterFlow(): bool
+    {
+        return (bool) $this->getConversationState('is_request_before_pay', false);
+    }
+
     // ============================================================
     // 🔒 Must-Pay-First Lock (2026-05-03) — บล็อกทุก service ถ้ามีบิลค้าง
     // ============================================================
