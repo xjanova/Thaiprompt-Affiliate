@@ -402,6 +402,19 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ]);
             }
 
+            // 🩹 (2026-05-04) Defensive guard — ถ้า quick_replies ว่าง (caller ตั้งใจไม่มีปุ่ม)
+            //    Facebook reject empty array ใน quick_replies key
+            //    → ส่งข้อความปกติแทน (ไม่ใส่ quick_replies key) ผ่าน sendMessage
+            //    เพื่อรักษา 24hr-fallback + chunk-split ใน sendMessage
+            if (empty($formattedReplies)) {
+                return $this->sendMessage($recipientId, $message, [
+                    'messaging_type' => $messagingType,
+                    'message_tag' => $messageTag,
+                    'no_default_qr' => true,
+                    'from_admin' => $fromAdmin,
+                ]);
+            }
+
             $payload = [
                 'recipient' => ['id' => $recipientId],
                 'message' => [
