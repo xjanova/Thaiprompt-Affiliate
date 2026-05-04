@@ -73,11 +73,10 @@ trait CelticCrossConversationTrait
      */
     protected function presentTierChoice(FortuneReading $reading): array
     {
-        // 🎁 (2026-05-03) ตรวจสอบว่าควรเสนอ "ทำนายฟรี 1 ใบ" หรือไม่ (first-timer + feature เปิด)
-        $offerFree = FortuneReading::shouldOfferFreeCard(
-            $this->currentPlatform,
-            $reading->platform_user_id ?? $reading->facebook_user_id ?? ''
-        );
+        // 🎁 (2026-05-04) ห้ามเสนอ "ทำนายฟรี" ใน tier menu — ระบบฟรีให้เฉพาะตอบกลับ DM react/comment
+        //   เดิม: shouldOfferFreeCard() เช็ค first-timer + feature → user-facing free button
+        //   ใหม่: ฟรี trigger ผ่าน tryAutoFreeCardForFirstReply() เท่านั้น (silent)
+        $offerFree = false;
 
         // 🔒 (2026-05-03) ถ้า admin ปิด Celtic — ปกติข้าม tier menu ไปดูดวง 39฿ ตรงๆ
         //    แต่ถ้า offerFree = true → ต้องโชว์ menu (มีปุ่ม [ฟรี] [39]) ก่อน

@@ -90,20 +90,13 @@ class FacebookRichMessageService
 
         // 🎯 Welcome buttons (FB button template max 3 ปุ่ม)
         //   ปุ่ม "ดูดวง" หลัก → tier menu (39 vs 99)
-        //   ปุ่ม "ดูดวงฟรี" (เฉพาะเมื่อ admin เปิด)
         //   ปุ่ม LINE add friend (ถ้ามี URL)
+        // 🎁 (2026-05-04) ลบปุ่ม "🆓 ดูดวงฟรี" ออกจาก welcome bubble
+        //   เพราะระบบฟรีได้รับเฉพาะการตอบกลับ DM react/comment เท่านั้น
+        //   (auto-trigger ผ่าน tryAutoFreeCardForFirstReply — ลูกค้าไม่ต้องกดปุ่ม)
         $buttons = [];
 
-        // ปุ่ม 1: ดูดวงฟรี (เฉพาะเมื่อ admin เปิดบริการฟรี)
-        if ($freeEnabled) {
-            $buttons[] = [
-                'type' => 'postback',
-                'title' => $isLao ? '🆓 ເບິ່ງດວງຟຣີ' : '🆓 ดูดวงฟรี',
-                'payload' => 'FORTUNE_FREE',
-            ];
-        }
-
-        // ปุ่ม 2: ดูดวง (entry หลัก → tier menu)
+        // ปุ่ม 1: ดูดวง (entry หลัก → tier menu)
         $buttons[] = [
             'type' => 'postback',
             'title' => $isLao ? '🔮 ເບິ່ງດວງ' : '🔮 ดูดวง',
@@ -137,9 +130,7 @@ class FacebookRichMessageService
                     . "   • ຄວາມຫວັງ&ຢ້ານ + ຜົນລັບ\n"
                     . "   ❓ ຖາມໄດ້ {$qLimitTextLao} — ແມ່ນຍຳເລິກກວ່າ";
             }
-            if ($freeEnabled) {
-                $serviceLines[] = '🆓 ເບິ່ງດວງຟຣີ — ພິມຄຳຖາມເຂົ້າມາໄດ້ເລີຍ';
-            }
+            // 🎁 (2026-05-04) ลบบรรทัด "🆓 ດູດວງຟຣີ" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         } else {
             $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
             if ($celticEnabled) {
@@ -155,9 +146,7 @@ class FacebookRichMessageService
                     . "   • ความหวัง&กลัว + ผลลัพธ์\n"
                     . "   ❓ ถามได้ {$qLimitText} — แม่นยำลึกกว่า";
             }
-            if ($freeEnabled) {
-                $serviceLines[] = '🆓 ดูดวงฟรี — พิมพ์คำถามมาได้เลย';
-            }
+            // 🎁 (2026-05-04) ลบบรรทัด "🆓 ดูดวงฟรี" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         }
         $serviceText = implode("\n\n", $serviceLines);
 

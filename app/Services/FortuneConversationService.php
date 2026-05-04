@@ -1269,6 +1269,15 @@ class FortuneConversationService
                 return $this->startFreeCardFlow($facebookUserId, $userProfile);
             }
 
+            // 🎁 (2026-05-04) Auto-trigger Free Card สำหรับ first-reply หลังได้ DM react/comment
+            //    Strategy: DM react/comment เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับ → ทำนายฟรีทันที
+            //    (ไม่ถามวันเกิด/คำถาม) → ลูกค้าเชื่อใจ → ค่อย soft-sell หลังได้คำทำนาย
+            //    Guards: isFreeReadingEnabled + ยังไม่เคยใช้ฟรี + เพิ่งได้ DM react/comment ใน 24 ชม.
+            $autoFree = $this->tryAutoFreeCardForFirstReply($facebookUserId, $userProfile);
+            if ($autoFree !== null) {
+                return $autoFree;
+            }
+
             // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
             // เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" จาก ai_limit → ต้องเข้า flow เก็บวันเกิด+คำถาม ไม่ใช่วน ai_limit ซ้ำ
             // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
@@ -3744,6 +3753,68 @@ class FortuneConversationService
     public function startDeepReadingFlowPublic(string $userId, ?array $userProfile = null): array
     {
         return $this->startDeepReadingFlow($userId, $userProfile);
+    }
+
+    /**
+     * 🎁 (2026-05-04) Auto Free Card trigger สำหรับ first-reply หลัง DM react/comment
+     *
+     * Use case: ลูกค้ากด react/comment โพสต์ → ระบบส่ง DM "เน้นฟรี ไม่เน้นขาย" →
+     *           ลูกค้าตอบกลับครั้งแรก → ระบบทำนายฟรีทันที (ไม่ถามอะไร)
+     *           → ลูกค้าเห็นคำทำนาย เชื่อใจว่าฟรีจริง → ค่อย soft-sell ขายต่อ
+     *
+     * Guards:
+     *   1. ระบบฟรีเปิดอยู่ (isFreeReadingEnabled)
+     *   2. ลูกค้ายังไม่เคยใช้สิทธิ์ฟรี (hasUsedFreeCard=false)
+     *   3. มี DM record สำหรับ user คนนี้ใน 24 ชม.
+     *      - FortunePostReaction.dm_success=true หรือ
+     *      - FortuneCommentEngagement.engaged_at >= 24h ago
+     *
+     * @return array|null  null = ไม่เข้าเงื่อนไข (ให้ flow เดิมรับช่วง)
+     */
+    protected function tryAutoFreeCardForFirstReply(string $facebookUserId, ?array $userProfile = null): ?array
+    {
+        // Guard 1: ระบบฟรีเปิดอยู่
+        if (! $this->settings->isFreeReadingEnabled()) {
+            return null;
+        }
+
+        // Guard 2: ลูกค้ายังไม่เคยใช้สิทธิ์ฟรี
+        if (FortuneReading::hasUsedFreeCard($this->currentPlatform, $facebookUserId)) {
+            return null;
+        }
+
+        // Guard 3: มี DM record ใน 24 ชม. — react หรือ comment
+        $cutoff = now()->subHours(24);
+
+        try {
+            $hasReactionDm = \App\Models\FortunePostReaction::where('facebook_user_id', $facebookUserId)
+                ->where('dm_success', true)
+                ->where('updated_at', '>=', $cutoff)
+                ->exists();
+        } catch (\Throwable $e) {
+            $hasReactionDm = false;
+        }
+
+        try {
+            $hasCommentDm = \App\Models\FortuneCommentEngagement::where('facebook_user_id', $facebookUserId)
+                ->where('engaged_at', '>=', $cutoff)
+                ->exists();
+        } catch (\Throwable $e) {
+            $hasCommentDm = false;
+        }
+
+        if (! $hasReactionDm && ! $hasCommentDm) {
+            return null;
+        }
+
+        Log::info('🎁 Auto Free Card: trigger หลังลูกค้าตอบกลับ DM react/comment', [
+            'facebook_user_id' => $facebookUserId,
+            'platform' => $this->currentPlatform,
+            'reaction_dm' => $hasReactionDm,
+            'comment_dm' => $hasCommentDm,
+        ]);
+
+        return $this->startFreeCardFlow($facebookUserId, $userProfile);
     }
 
     /**

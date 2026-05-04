@@ -480,12 +480,12 @@ class FacebookWebhookController extends Controller
             }
 
             // 🎯 Phase L — rotating reaction DM variants (คนละข้อความตาม userId)
+            // 🎁 (2026-05-04) เน้นฟรี ไม่เน้นขาย — เพื่อ conversion ตอบกลับสูง
+            //   เมื่อลูกค้าตอบกลับครั้งแรก → tryAutoFreeCardForFirstReply ทำนายฟรีทันที
             $message = $this->pickReactionDmVariant($reaction->facebook_user_id);
 
-            $quickReplies = [
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
-            ];
+            // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
+            $quickReplies = [];
 
             // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin)
             if ($this->bannerService) {
@@ -532,61 +532,50 @@ class FacebookWebhookController extends Controller
     /**
      * 🎯 Phase L — เลือก reaction DM variant ตาม userId (stable per user)
      *
-     * 4 variants สะท้อน: ค่ากาแฟ, ดาวเจ้าชนะ, timing, no-hedge
-     * ถ้าปิดบริการฟรี — ตัดคำว่า "ฟรี" ออก (guard isFreeReadingEnabled)
+     * 🎁 (2026-05-04) Strategy reset: เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับสูง
+     *   เมื่อลูกค้าตอบ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที (ไม่ถามอะไร)
+     *   ลูกค้าเชื่อใจว่าฟรีจริง → ค่อย soft-sell หลังคำทำนาย
+     *
+     *   ⚠️ ห้ามใส่ราคา 39/99 / "ค่ากาแฟ" / pay-later teaser ใน DM นี้
+     *      เพราะลูกค้าจะรู้สึก "ขายตั้งแต่แรก" → ไม่ตอบกลับ
+     *
+     * Fallback: ถ้าปิดระบบฟรี → ใช้ shorter variant ที่ไม่กล่าวถึงราคา (ชวนทักธรรมดา)
      */
     protected function pickReactionDmVariant(string $facebookUserId): string
     {
         $freeEnabled = $this->settings->isFreeReadingEnabled();
-        $price = (int) $this->getDeepReadingPriceFromSettings();
-        if ($price <= 0) {
-            $price = 39;
-        }
 
-        // 🎁 (2026-05-04) Pay-Later teaser — โฆษณาสิทธิ์ครั้งแรกใน DM
-        //   gate downstream: shouldUseRequestBeforePay() เช็ค first-time/platform ให้
-        //   ถ้าใช้สิทธิ์ไปแล้ว → flow ในระบบจะ fallback เป็น pay-first อัตโนมัติ
-        $payLaterTeaser = "🎁 *สิทธิ์ครั้งแรก: ดูคำทำนายก่อน — จ่ายทีหลังได้* ✨";
-
-        $variants = [
-            // v1: coffee + self-drawn card
-            "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
-                ."☕ ลองดูดวงดูไหม? {$price} บาท เท่าค่ากาแฟ 1 แก้ว\n"
-                ."แต่ได้คำทำนายจาก **ดาวเจ้าชนะของคุณ** + ไพ่ที่พลังจิตคุณเลือกเอง\n\n"
-                .$payLaterTeaser."\n\n"
-                ."พิมพ์ \"ดูดวง\" ได้เลยค่ะ 🔮",
-
-            // v2: testimonial
-            "🌙 เห็นคุณกดไลก์ ขอบคุณนะคะ\n\n"
-                ."หลายคนบอกว่า คำทำนายของหมอจันทรา\n"
-                ."\"เจอจุดที่ไม่เคยคิดมาก่อน\" ✨\n\n"
-                ."💎 ดูดวงเชิงลึก {$price} บาท\n"
-                .$payLaterTeaser."\n\n"
-                ."พิมพ์ \"ดูดวง\" เพื่อเริ่มนะคะ",
-
-            // v3: astrology transit
-            "✨ ขอบคุณที่สนใจเพจเราค่ะ\n\n"
-                ."ดาวช่วงนี้โคจรส่งผลพิเศษต่อหลายราศี\n"
-                ."อยากรู้ไหมว่า ดาวของคุณจะพาไปทางไหน?\n\n"
-                ."🔮 {$price} บาท วิเคราะห์จาก ดาวเจ้าชนะ + ไพ่ยิปซี\n"
-                .$payLaterTeaser."\n\n"
-                ."พิมพ์ \"ดูดวง\" ได้เลยนะคะ",
-
-            // v4: emotional
-            "🙏 ขอบคุณที่กดไลก์ค่ะ 💫\n\n"
-                ."มีเรื่องในใจที่อยากระบาย แต่ไม่รู้จะไปปรึกษาใคร?\n"
-                ."หมอจันทราฟัง + ชี้ทางออกจาก ดวงของคุณเอง\n\n"
-                ."{$price} บาท = ค่าที่ปรึกษาที่ตั้งใจ\n"
-                .$payLaterTeaser."\n\n"
-                ."พิมพ์ \"ดูดวง\" ลองดูนะคะ",
-        ];
-
-        // ถ้าเปิดฟรี เพิ่ม variant ฟรีเข้าไปด้วย
         if ($freeEnabled) {
-            $variants[] = "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
-                ."🔮 วันนี้หมอเปิดดูดวงฟรีให้\n"
-                ."พิมพ์ \"ดูดวง\" มาได้เลยค่ะ\n\n"
-                ."หรือถ้าอยากลึกกว่า → ดูดวงเชิงลึก {$price} บาท";
+            // 🎁 4 variants — ทุกตัวเน้น "ทำนายฟรี" + "ทักมาคุย" ไม่ใส่ราคา
+            $variants = [
+                // v1: invite — เน้นทักมา
+                "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
+                    ."🌙 หมอจันทราอยากเปิดไพ่ทำนายฟรีให้สักใบ\n"
+                    ."ลองทักทายมาสักคำสิคะ — แม่หมอจะอ่านพลังให้ทันที 🔮",
+
+                // v2: curious + free hint
+                "✨ เห็นคุณกดไลก์ — รู้สึกถึงพลังที่เชื่อมถึงกันเลยนะคะ\n\n"
+                    ."🃏 หมอเปิดดูดวงไพ่ยิปซี *ฟรี 1 ใบ* รออยู่\n"
+                    ."ทักคำว่า \"สวัสดี\" หรืออะไรก็ได้ มาคุยกันได้เลยค่ะ 🌙",
+
+                // v3: warm + cosmic
+                "🌙 ดวงดาวช่วงนี้กำลังส่งสัญญาณบางอย่าง...\n\n"
+                    ."🎁 หมอจันทราเปิดทำนาย *ฟรี* ให้ลูกเพจที่กดไลก์ค่ะ\n"
+                    ."ทักมาทักทายได้เลย — แม่หมอพร้อมเปิดไพ่ให้ ✨",
+
+                // v4: gentle + non-pushy
+                "🙏 ขอบคุณที่ติดตามเพจค่ะ 💫\n\n"
+                    ."🔮 อยากให้ลองรู้จักหมอจันทราผ่าน *การทำนายฟรี 1 ใบ*\n"
+                    ."ทักมาตอบกลับ — หมอจะเปิดไพ่ให้เลยค่ะ 🌙\n"
+                    ."(ไม่มีค่าใช้จ่าย ไม่ต้องกรอกอะไร)",
+            ];
+        } else {
+            // ระบบฟรีปิด — variant กลางๆ ชวนทัก (ไม่ใส่ราคา ไม่ขาย)
+            $variants = [
+                "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\nหมอจันทราอยากชวนทักทายค่ะ — ทักคำสั้นๆ มาเลยได้เลย 🔮",
+                "🌙 เห็นคุณกดไลก์ — อยากชวนคุยสักนิดค่ะ\nทักทายมาเลยนะคะ ✨",
+                "✨ ขอบคุณที่สนใจเพจเรา\nทักคำสวัสดีมาได้เลยนะคะ 🙏",
+            ];
         }
 
         $idx = abs(crc32($facebookUserId)) % count($variants);
@@ -899,10 +888,9 @@ class FacebookWebhookController extends Controller
         // 2. ส่ง inbox + Quick Replies
         // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
         // และแก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ)
-        $quickReplies = [
-            ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-            ['content_type' => 'text', 'title' => '🌟 ดูดวง', 'payload' => 'FORTUNE_DEEP'],
-        ];
+        // 🎁 (2026-05-04) ลบปุ่ม Quick Reply ขายออก — ให้ลูกค้าตอบเอง
+        //    เมื่อตอบกลับ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที
+        $quickReplies = [];
 
         // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
         if ($this->bannerService) {
@@ -2135,14 +2123,8 @@ class FacebookWebhookController extends Controller
                 // Fallback: ส่งข้อความต้อนรับธรรมดา + Quick Replies
                 // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" + "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
                 $welcomeMessage = $this->buildWelcomeMessage($userName);
-                $freeEnabled = $this->settings->isFreeReadingEnabled();
-                $quickReplies = [
-                    [
-                        'content_type' => 'text',
-                        'title' => $freeEnabled ? '🔮 ดูดวงฟรี' : '🔮 เริ่มดูดวง',
-                        'payload' => 'FORTUNE_BASIC',
-                    ],
-                ];
+                // 🎁 (2026-05-04) ลบปุ่ม "ดูดวงฟรี" ออก — ฟรีให้เฉพาะตอบกลับ DM react/comment
+                $quickReplies = [];
                 if ($this->settings->isDeepReadingEnabled()) {
                     $quickReplies[] = ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'];
                 }
@@ -2209,8 +2191,9 @@ class FacebookWebhookController extends Controller
      */
     protected function buildWelcomeMessage(string $userName): string
     {
-        // ตรวจสอบสถานะระบบฟรี — ถ้า max_free_readings = 0 → ซ่อนการพูดถึง "ฟรี"
-        $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // 🎁 (2026-05-04) ลบ mention "ฟรี" ออกทั้งหมด — ฟรีให้เฉพาะตอบกลับ DM react/comment
+        //   เดิม: มีบล็อก "🆓 ดูดวงพื้นฐาน (ฟรี)" + "พิมพ์ 'เช็คสิทธิ์' เพื่อดูครั้งฟรี"
+        //   ใหม่: เน้นบริการเสียเงิน 39/99 อย่างเดียว (welcome ปกติ — ไม่ใช่ react/comment DM)
 
         // กันซ้อน "คุณคุณ" — ถ้า fallback เป็น 'คุณ' ให้ใช้ greeting สั้น
         $greeting = ($userName === 'คุณ' || $userName === '' || empty($userName))
@@ -2223,14 +2206,6 @@ class FacebookWebhookController extends Controller
         $message .= "═══════════════════════\n";
         $message .= "📋 *บริการของเรา*\n";
         $message .= "═══════════════════════\n\n";
-
-        if ($freeEnabled) {
-            $message .= "🆓 *ดูดวงพื้นฐาน (ฟรี)*\n";
-            $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
-        } else {
-            $message .= "🔮 *ดูดวงพื้นฐาน*\n";
-            $message .= "ทำนายเรื่องทั่วไป ความรัก การงาน การเงิน\n\n";
-        }
 
         // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
         $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
@@ -2248,11 +2223,6 @@ class FacebookWebhookController extends Controller
         $message .= "• ดวงความรักปีนี้เป็นอย่างไร\n";
         $message .= "• ปีนี้จะได้เลื่อนตำแหน่งไหม\n";
         $message .= "• การเงินเดือนหน้าเป็นอย่างไร\n\n";
-
-        // แสดงข้อความ "เช็คสิทธิ์ฟรี" เฉพาะเมื่อระบบฟรีเปิดอยู่
-        if ($freeEnabled) {
-            $message .= "📊 พิมพ์ 'เช็คสิทธิ์' เพื่อดูจำนวนครั้งฟรีที่เหลือ\n\n";
-        }
 
         $message .= 'กดปุ่มด้านล่างหรือพิมพ์เลยค่ะ 👇';
 
