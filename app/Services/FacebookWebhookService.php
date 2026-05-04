@@ -586,36 +586,38 @@ class FacebookWebhookService implements MessagingPlatformInterface
     public function sendPrivateReply(string $commentId, string $message, array $quickReplies = []): bool
     {
         try {
-            // ลอง structured message ก่อน — ใช้ Send API + recipient.comment_id
-            // FB Private Reply via Send API รองรับ full message object รวม quick_replies
-            // หมายเหตุ: ส่ง message เป็น array (ไม่ json_encode) เพราะ Laravel Http::post
-            // จะ serialize payload ทั้งก้อนเป็น JSON body ให้อัตโนมัติ
+            // 🎯 (2026-05-04) ลอง Send API + recipient.comment_id ก่อนเสมอ (รวมเคส empty quick_replies)
+            //   เหตุผล: endpoint นี้รองรับ Reels comment ที่ /private_replies endpoint ไม่รองรับ
+            //   (regression จาก commit 67bbbd4da ที่ลบปุ่ม Quick Reply → fall back ไป /private_replies
+            //    → Reels comment_id error 100 "Object does not exist")
+            //   ส่ง message เป็น array (ไม่ json_encode) เพราะ Laravel Http::post serialize ให้
+            $messagePayload = ['text' => $message];
             if (! empty($quickReplies)) {
-                $structuredPayload = [
-                    'recipient' => ['comment_id' => $commentId],
-                    'message' => [
-                        'text' => $message,
-                        'quick_replies' => $quickReplies,
-                    ],
-                    'access_token' => $this->pageAccessToken,
-                ];
-
-                $response = Http::timeout(30)
-                    ->post($this->graphUrl('/me/messages'), $structuredPayload);
-
-                if ($response->successful()) {
-                    Log::info('✅ Private Reply สำเร็จ (structured + quick_replies)', [
-                        'comment_id' => $commentId,
-                    ]);
-
-                    return true;
-                }
-
-                Log::info('Private Reply structured ล้มเหลว → ลอง text-only', [
-                    'comment_id' => $commentId,
-                    'error' => $response->json()['error']['message'] ?? $response->body(),
-                ]);
+                $messagePayload['quick_replies'] = $quickReplies;
             }
+
+            $structuredPayload = [
+                'recipient' => ['comment_id' => $commentId],
+                'message' => $messagePayload,
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            $response = Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), $structuredPayload);
+
+            if ($response->successful()) {
+                Log::info('✅ Private Reply สำเร็จ (Send API + recipient.comment_id)', [
+                    'comment_id' => $commentId,
+                    'has_quick_replies' => ! empty($quickReplies),
+                ]);
+
+                return true;
+            }
+
+            Log::info('Private Reply (Send API) ล้มเหลว → fallback text-only', [
+                'comment_id' => $commentId,
+                'error' => $response->json()['error']['message'] ?? $response->body(),
+            ]);
 
             // Fallback: text-only ผ่าน /{comment-id}/private_replies
             $textResponse = Http::timeout(30)
