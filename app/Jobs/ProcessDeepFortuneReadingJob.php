@@ -398,17 +398,33 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         $billResult['action'] = 'deliver_with_qr';
                         $billResult['chart_image_url'] = $reading->reading_image_url;
 
-                        $channelManager->sendResponse($this->platform, $this->userId, $billResult, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        // 🩹 (2026-05-04) ตรวจ return ของ sendResponse — ถ้าล้มเหลว ห้าม set flag
+                        //    เพราะถ้าตั้ง reading_sent_directly=true แม้ส่งไม่สำเร็จ →
+                        //    ลูกค้ากลับมาทัก ระบบจะไม่ trigger re-send → ค้างถาวร
+                        //    Bug ที่ user รายงาน 2026-05-04: Pay-Later 39฿ คำทำนายเสร็จ
+                        //    แต่ลูกค้าไม่ได้รับ + admin ไม่มีปุ่มกด
+                        $sent = $channelManager->sendResponse($this->platform, $this->userId, $billResult, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                        $reading->setConversationState('reading_sent_directly', true);
-                        $reading->setConversationState('reading_ready_sent', true);
-                        $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                        if ($sent) {
+                            $reading->setConversationState('reading_sent_directly', true);
+                            $reading->setConversationState('reading_ready_sent', true);
+                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
 
-                        Log::info('💎 Pay-Later: deliver SUCCESS (reading + bill + QR sent, bill marked PENDING_PAYMENT)', [
-                            'reading_id' => $reading->id,
-                            'bill_reference' => $reading->bill_reference,
-                            'has_qr' => ! empty($billResult['payment_qr_url']),
-                        ]);
+                            Log::info('💎 Pay-Later: deliver SUCCESS (reading + bill + QR sent, bill marked PENDING_PAYMENT)', [
+                                'reading_id' => $reading->id,
+                                'bill_reference' => $reading->bill_reference,
+                                'has_qr' => ! empty($billResult['payment_qr_url']),
+                            ]);
+                        } else {
+                            // ส่งไม่สำเร็จ (FB 24hr expired / LINE quota) — flag ไม่ set
+                            //   → admin ใช้ปุ่ม "ส่งคำทำนายซ้ำ" ในหน้า show ได้
+                            //   → หรือ ลูกค้ากลับมาทัก → FCS:766 จะตรวจ unsent reading + ส่งให้
+                            Log::warning('💎 Pay-Later: sendResponse ล้มเหลว — ไม่ set reading_sent_directly flag', [
+                                'reading_id' => $reading->id,
+                                'bill_reference' => $reading->bill_reference,
+                                'platform' => $this->platform,
+                            ]);
+                        }
                     } else {
                         Log::error('💎 Pay-Later: createPaymentBill ล้มเหลว — fallback ส่ง reading อย่างเดียว', [
                             'reading_id' => $reading->id,

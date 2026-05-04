@@ -266,8 +266,11 @@
             </div>
         </div>
 
-        {{-- ปุ่ม Manual Action สำหรับ Admin (เฉพาะ deep reading ที่ชำระเงินแล้ว) --}}
-        @if($reading->reading_type === 'deep' && $reading->is_paid)
+        {{-- ปุ่ม Manual Action สำหรับ Admin (deep reading) --}}
+        {{-- 🩹 (2026-05-04) เปิดให้กดได้รวม Pay-Later flow (is_paid=false แต่มี deep_response แล้ว)
+             เคสจริงที่ user รายงาน: ลูกค้าทำ Pay-Later 39฿ คำทำนายเสร็จแต่ระบบส่งไม่ถึง
+             (FB 24hr window expired / sendResponse fail) → admin ต้องส่งซ้ำได้ --}}
+        @if($reading->reading_type === 'deep' && ($reading->is_paid || ! empty($reading->deep_response) || $reading->conversation_status === 'paid'))
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                 {{-- ⚠️ Warning: ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ --}}
                 @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response))
