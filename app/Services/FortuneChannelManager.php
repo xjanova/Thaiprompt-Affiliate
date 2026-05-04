@@ -2297,6 +2297,54 @@ class FortuneChannelManager
                     ],
                 ];
             }
+
+            // 🔮 Rule 4 (2026-05-04): Celtic Cross flow active → "กำลังเปิดไพ่ X/10"
+            //   กัน welcome bubble โผล่กลาง flow เมื่อมี trigger 'help'/'filtered' จากเหตุอื่น
+            //   (รวม: repetitive-filter false-positive, GET_STARTED, MENU_HELP)
+            $celticActiveStatuses = [
+                FortuneReading::STATUS_CELTIC_PICKING,
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+                FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            ];
+            if (in_array($reading->conversation_status, $celticActiveStatuses, true)) {
+                $picked = (int) $reading->getCelticPickedCount();
+                $next = $reading->getNextCelticPosition();
+
+                if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PICKING) {
+                    $hint = $picked === 0
+                        ? "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบที่ 1\"* เพื่อเริ่ม"
+                        : "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* (ใบที่ {$next})";
+                    $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                    $quickReplies = [
+                        ['content_type' => 'text', 'title' => $btnLabel, 'payload' => 'CELTIC_READY'],
+                        ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'],
+                        ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
+                    ];
+                } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
+                    $hint = "👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้";
+                    $quickReplies = [
+                        ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                    ];
+                } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
+                    $hint = "🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨";
+                    $quickReplies = [];
+                } else { // CELTIC_QA_PROMPT
+                    $hint = "👉 ถามต่อ หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบรอบ";
+                    $quickReplies = [
+                        ['content_type' => 'text', 'title' => '💬 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
+                        ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                    ];
+                }
+
+                return [
+                    'message' => "🔮 คุณ{$name} กำลังอยู่ในรอบ Celtic Cross นะคะ\n\n"
+                        . "📋 เลขบิล: {$billRef}\n"
+                        . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
+                        . $hint,
+                    'quick_replies' => $quickReplies,
+                ];
+            }
         } catch (\Throwable $e) {
             \Log::warning('FortuneChannelManager: buildActiveBillContextMessage ล้ม (fallback to welcome)', [
                 'platform' => $platform,

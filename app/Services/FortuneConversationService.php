@@ -7119,9 +7119,39 @@ class FortuneConversationService
 
     /**
      * ตรวจสอบข้อความซ้ำ
+     *
+     * 🩹 (2026-05-04) Bug: Celtic Cross 99฿ เปิดไพ่ 10 ใบ → ลูกค้ากดปุ่ม
+     *   "🃏 เปิดไพ่ใบถัดไป" (postback CELTIC_READY → 'พร้อม') ซ้ำ 10 ครั้ง
+     *   → trigger MAX_REPETITIVE_MESSAGES (=3) → action='filtered' → welcome bubble
+     *   โผล่กลาง flow หยุดชะงักการเปิดไพ่
+     *
+     *   Why: button-tap quick replies ส่งข้อความเดียวกันทุกครั้ง legitimately
+     *        (ไม่ใช่ spam — ลูกค้ากดปุ่มในแอปแชท)
+     *   Fix: bypass repetitive filter สำหรับ button-tap keywords ที่ system รู้จัก
      */
     protected function isRepetitiveMessage(string $userId, string $text): bool
     {
+        // 🩹 Bypass: button-tap quick reply keywords — ลูกค้ากดซ้ำเป็นเรื่องปกติของ flow
+        //    (Celtic เปิดไพ่ 10 ครั้ง / Q&A ตอบ ใช่/ไม่ใช่ ตามสถานะ / ฯลฯ)
+        $normalized = mb_strtolower(trim($text));
+        $buttonTapKeywords = [
+            // Celtic Cross flow
+            'พร้อม', 'พร้อมแล้ว', 'พร้อมค่ะ', 'พร้อมครับ',
+            'ถามต่อ', 'พอแค่นี้', 'พอ',
+            'เปิดไพ่ใบถัดไป', 'เปิดไพ่ใบที่ 1',
+            'สับใหม่', 'เริ่มใหม่',
+            // Confirmation flow
+            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'ไม่ใช่',
+            'ok', 'okay', 'yes', 'no',
+            'รับคำทำนาย', 'อ่านคำทำนาย', 'อ่านเลย',
+            'เช็คสถานะ', 'เช็คสิทธิ์',
+            // Lao equivalents
+            'ພ້ອມ', 'ແມ່ນ', 'ບໍ່ແມ່ນ',
+        ];
+        if (in_array($normalized, $buttonTapKeywords, true)) {
+            return false;
+        }
+
         $historyKey = "fortune_history:{$userId}";
         $history = Cache::get($historyKey, []);
 
