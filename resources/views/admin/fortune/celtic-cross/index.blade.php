@@ -270,6 +270,14 @@
                                             @csrf
                                             <button type="submit" class="text-amber-600 hover:underline text-xs">🔄 reset</button>
                                         </form>
+                                    @elseif(! $reading->is_paid && (int) ($reading->celtic_questions_used ?? 0) === 0)
+                                        {{-- 🗑️ (2026-05-04) Quick cancel for pending-payment bills (ขัดกัน) --}}
+                                        <form action="{{ route('admin.fortune.celtic-cross.cancel', $reading) }}" method="POST"
+                                              onsubmit="return confirm('ยกเลิกบิล {{ $reading->bill_reference ?? '#' . $reading->id }}? (ปลอดภัยเพราะยังไม่จ่าย)');"
+                                              class="inline ml-2">
+                                            @csrf
+                                            <button type="submit" class="text-red-600 hover:underline text-xs">🗑️ ลบ</button>
+                                        </form>
                                     @endif
                                 </td>
                             </tr>

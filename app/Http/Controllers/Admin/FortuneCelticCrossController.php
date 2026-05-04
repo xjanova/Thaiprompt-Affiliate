@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneCelticQuestion;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -235,6 +237,96 @@ class FortuneCelticCrossController extends Controller
             ]);
 
             return back()->with('error', "❌ Reset ล้มเหลว: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * 🗑️ (2026-05-04) Cancel/Delete Celtic reading
+     *
+     * Use case: บิลขัดกัน (เช่น user รายงาน FTU-260504-T8747) — ลูกค้ามี Celtic
+     * pending payment ค้าง + กด 99 ใหม่ → 2 บิลขัด → admin ต้องลบบิลที่ไม่ใช้
+     *
+     * Action:
+     *   - cancel UPA (ปลดล็อกยอดทศนิยม)
+     *   - update reading.conversation_status = COMPLETED (ปิด conversation)
+     *   - log
+     *   - แจ้งลูกค้า (optional via ?notify=1)
+     *
+     * Safety:
+     *   - ห้าม cancel reading ที่ is_paid=true (ลูกค้าจ่ายแล้ว ใช้ reset แทน)
+     *   - ห้าม cancel reading ที่ celtic_questions_used > 0 (เคยใช้สิทธิ์)
+     */
+    public function cancelReading(Request $request, FortuneReading $reading)
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            abort(404);
+        }
+
+        if ($reading->is_paid) {
+            return back()->with('error', '❌ Reading นี้จ่ายแล้ว — ใช้ปุ่ม "Reset" แทน (กัน refund ผิด)');
+        }
+
+        if ((int) ($reading->celtic_questions_used ?? 0) > 0) {
+            return back()->with('error', '❌ Reading นี้ใช้สิทธิ์ถามไปแล้ว — ใช้ปุ่ม "Reset" แทน');
+        }
+
+        $notify = (bool) $request->input('notify', false);
+        $billRef = $reading->bill_reference ?? "FR-{$reading->id}";
+
+        try {
+            DB::transaction(function () use ($reading) {
+                // 1. Cancel UPA (ปลดล็อกยอดทศนิยม)
+                $upa = $reading->uniquePaymentAmount;
+                if ($upa && $upa->status === 'reserved') {
+                    $upa->cancel();
+                }
+
+                // 2. Mark reading completed (ปิด conversation)
+                $reading->update([
+                    'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                ]);
+            });
+
+            // 3. แจ้งลูกค้า (optional)
+            if ($notify) {
+                $platform = $reading->platform
+                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->platform_user_id ?? $reading->facebook_user_id) ? 'line' : 'facebook');
+                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+
+                if (! empty($userId)) {
+                    $settings = FortuneTellingSetting::getSettings();
+                    $channelManager = new FortuneChannelManager($settings);
+
+                    $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+                    $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'celtic_cancelled',
+                        'message' => "🙏 *แอดมินยกเลิกบิลให้แล้วค่ะ คุณ{$name}*\n\n"
+                            . "📋 บิล: {$billRef}\n\n"
+                            . "หากต้องการดูดวง Celtic Cross อีกครั้ง พิมพ์ 'celtic' ได้เลย\n"
+                            . "ระบบจะสร้างบิลใหม่ให้ — ค่าครู 99 บาท ✨",
+                        'reading' => $reading,
+                    ], [
+                        'from_admin' => true,
+                        'message_tag' => 'POST_PURCHASE_UPDATE',
+                    ]);
+                }
+            }
+
+            Log::info('Celtic admin cancel reading', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $billRef,
+                'admin_id' => auth()->id(),
+                'notify' => $notify,
+            ]);
+
+            return back()->with('success', "✅ ยกเลิกบิล {$billRef} สำเร็จ" . ($notify ? ' + แจ้งลูกค้าแล้ว' : ''));
+        } catch (\Throwable $e) {
+            Log::error('Celtic admin cancel failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', "❌ ยกเลิกล้มเหลว: {$e->getMessage()}");
         }
     }
 }

@@ -37,6 +37,20 @@
                         🔄 Reset + แจ้งลูกค้า
                     </button>
                 </form>
+            @else
+                {{-- 🗑️ (2026-05-04) Admin cancel — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย --}}
+                @if((int) ($reading->celtic_questions_used ?? 0) === 0)
+                    <form action="{{ route('admin.fortune.celtic-cross.cancel', $reading) }}" method="POST"
+                          onsubmit="return confirm('ยืนยันยกเลิกบิล {{ $reading->bill_reference ?? '#' . $reading->id }}?\n\nจะปลด UPA + ปิด conversation (ปลอดภัยเพราะยังไม่จ่าย)');"
+                          class="inline">
+                        @csrf
+                        <input type="hidden" name="notify" value="1">
+                        <button type="submit"
+                                class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg text-sm font-semibold">
+                            🗑️ ยกเลิกบิล + แจ้งลูกค้า
+                        </button>
+                    </form>
+                @endif
             @endif
         </div>
     </div>

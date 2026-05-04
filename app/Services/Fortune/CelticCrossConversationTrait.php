@@ -467,8 +467,11 @@ trait CelticCrossConversationTrait
         //        → กดปุ่ม 99฿ ใหม่ ระบบเดิมสร้างบิลใหม่ → จ่ายซ้ำ
         //     2. แอดมินรัน fortune:celtic-reset → reading พร้อมใช้แล้ว
         //        แต่ลูกค้าไม่อ่าน DM → กด 99฿ → เดิมสร้างบิลใหม่
-        //   กฎ: ถ้ามี Celtic ที่ paid + ยังไม่ได้ถามคำถามเลย (questions_used=0)
-        //        + ภายใน 24 ชม. → resume แทนสร้างใหม่
+        //     3. (2026-05-04 expanded) ลูกค้ามีบิล CELTIC_PENDING_PAYMENT ค้างจ่าย
+        //        + UPA ยัง reserved (ภายใน 30 นาที) → กด 99 ใหม่ ระบบเดิมสร้างบิลใหม่
+        //        ทำให้บิลขัดกัน (เคสที่ user รายงาน FTU-260504-T8747)
+        //   กฎ: ถ้ามี Celtic ที่ paid + questions_used=0 + 24h → resume (เคส 1, 2)
+        //        ถ้ามี Celtic pending payment + UPA active → ใช้บิล/QR เดิม (เคส 3)
         $resumable = $this->findResumableCelticReading($reading);
         if ($resumable && $resumable->id !== $reading->id) {
             Log::info('Celtic: resume existing paid reading (skip new bill)', [
@@ -482,6 +485,21 @@ trait CelticCrossConversationTrait
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return $this->buildCelticResumeResponse($resumable, /*fromAdminReset:*/ false);
+        }
+
+        // 🩹 (2026-05-04) Pending-payment dedup — ใช้บิลเดิมถ้า UPA ยัง active
+        $pending = $this->findPendingCelticBill($reading);
+        if ($pending && $pending->id !== $reading->id) {
+            Log::info('Celtic: reuse existing pending payment bill (skip new UPA)', [
+                'new_reading_id' => $reading->id,
+                'pending_reading_id' => $pending->id,
+                'bill_reference' => $pending->bill_reference,
+            ]);
+
+            // ปิด reading ใหม่ที่ trigger (กัน orphan)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return $this->buildCelticPendingPaymentReuseResponse($pending);
         }
 
         $service = app(CelticCrossService::class);
@@ -878,6 +896,91 @@ trait CelticCrossConversationTrait
             ])
             ->latest('paid_at')
             ->first();
+    }
+
+    /**
+     * หา Celtic reading ที่ยังรอจ่าย — ใช้ดูซ้ำแทนสร้างบิลใหม่
+     *
+     * เกณฑ์:
+     *   - reading_type = celtic_cross
+     *   - status = CELTIC_PENDING_PAYMENT
+     *   - is_paid = false
+     *   - มี UPA reserved + ยังไม่หมดอายุ
+     *
+     * เคสที่ปัด: UPA expired/cancelled → ปล่อยให้ flow สร้างบิลใหม่ตามปกติ
+     */
+    protected function findPendingCelticBill(FortuneReading $context): ?FortuneReading
+    {
+        $userId = $context->facebook_user_id ?? $context->platform_user_id;
+        if (empty($userId)) {
+            return null;
+        }
+
+        $candidate = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('conversation_status', FortuneReading::STATUS_CELTIC_PENDING_PAYMENT)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->latest('updated_at')
+            ->first();
+
+        if (! $candidate) {
+            return null;
+        }
+
+        // เช็ค UPA ว่ายัง reserved + ไม่หมดอายุ
+        $upa = $candidate->uniquePaymentAmount;
+        if (! $upa || $upa->status !== 'reserved' || $upa->expires_at <= now()) {
+            return null;
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Build response สำหรับ reuse pending payment bill (เคส 3 ใน resume guard)
+     * ส่ง QR + bill_ref + เวลาเหลือ — ลูกค้าโอนยอดเดิม
+     */
+    protected function buildCelticPendingPaymentReuseResponse(FortuneReading $reading): array
+    {
+        $upa = $reading->uniquePaymentAmount;
+        $payAmount = number_format((float) $upa->unique_amount, 2);
+        $billRef = $reading->bill_reference ?? '-';
+        $remainingMin = (int) max(0, now()->diffInMinutes($upa->expires_at, false));
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+        // หา QR image (ถ้ามี method generatePromptPayQrImage)
+        $qrImageUrl = null;
+        try {
+            if (method_exists($this, 'generatePromptPayQrImage')) {
+                $qrImageUrl = $this->generatePromptPayQrImage((float) $upa->unique_amount, $reading->id);
+            }
+            if (! $qrImageUrl && method_exists($this, 'getPaymentQrImageUrl')) {
+                $qrImageUrl = $this->getPaymentQrImageUrl();
+            }
+        } catch (\Throwable $e) {
+            // ignore QR fail — ส่ง text only ก็ได้
+        }
+
+        $message = "🌙 *พบบิล Celtic Cross ของคุณ{$name}ที่ยังรอชำระ*\n\n"
+            . "📋 เลขบิล: {$billRef}\n"
+            . "💰💰 ยอดที่ต้องโอน: *{$payAmount}* บาท 💰💰\n"
+            . "⏳ เหลือเวลา: {$remainingMin} นาที\n\n"
+            . "═══════════════════════\n\n"
+            . "⚠️ *โอนยอดให้ตรงเป๊ะ {$payAmount} บาท* (ทศนิยมด้วย!)\n"
+            . "✅ โอนแล้ว ระบบตัดบิลอัตโนมัติ → เริ่มเปิดไพ่ทันที\n"
+            . "❌ พิมพ์ *\"ยกเลิก\"* ถ้าไม่ต้องการต่อ\n\n"
+            . "💡 ไม่ต้องสร้างบิลใหม่ — ใช้บิลนี้โอนเลยค่ะ";
+
+        return [
+            'action' => 'celtic_pending_payment_reuse',
+            'message' => $message,
+            'reading' => $reading,
+            'payment_qr_url' => $qrImageUrl,
+        ];
     }
 
     /**

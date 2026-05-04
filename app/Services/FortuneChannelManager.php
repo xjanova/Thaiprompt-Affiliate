@@ -737,7 +737,9 @@ class FortuneChannelManager
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
-                'celtic_pending_payment' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+                // celtic_pending_payment_reuse → resume guard เจอบิลเก่า → ใช้ template เดียวกัน (2026-05-04)
+                'celtic_pending_payment', 'celtic_pending_payment_reuse'
+                    => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
                 // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "เปิดไพ่" สำหรับใบถัดไป
                 // ✏️ (2026-05-03) เปลี่ยน label ให้คนแก่เข้าใจชัดเจน + เพิ่มปุ่มสับใหม่
@@ -1648,7 +1650,9 @@ class FortuneChannelManager
                     => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
-                'celtic_pending_payment' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+                // celtic_pending_payment_reuse → resume guard เจอบิลเก่า (2026-05-04)
+                'celtic_pending_payment', 'celtic_pending_payment_reuse'
+                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // celtic_card_picked → ส่งรูปไพ่ + ปุ่ม "พร้อม"
                 'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
@@ -3892,7 +3896,7 @@ class FortuneChannelManager
 
         // ⛔ Actions ที่ไม่ apply warning (เกี่ยวกับ payment โดยตรง — ลูกค้ารู้อยู่แล้ว)
         $skipActions = [
-            'pending_payment', 'celtic_pending_payment',
+            'pending_payment', 'celtic_pending_payment', 'celtic_pending_payment_reuse',
             'waiting_payment',
             'payment_check_processing', 'payment_check_pending', 'payment_check_expired',
             'payment_confirmed_wait',

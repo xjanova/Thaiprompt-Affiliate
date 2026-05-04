@@ -4048,6 +4048,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/readings/{reading}', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'showReading'])->name('show');
         // 🔄 (2026-05-04) Reset reading — admin force ให้ลูกค้าเปิดไพ่ใหม่ (route ขาดหาย ทำให้ show page crash)
         Route::post('/readings/{reading}/reset', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'resetReading'])->name('reset');
+        // 🗑️ (2026-05-04) Cancel reading — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย
+        Route::post('/readings/{reading}/cancel', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'cancelReading'])->name('cancel');
     });
 
     // ========================================
