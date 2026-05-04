@@ -1268,6 +1268,10 @@ use App\Http\Controllers\FortuneReferralController;
 Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landing'])
     ->name('fortune.invite');
 
+// 🎁 (2026-05-04) แคมเปญรับสิทธิ์ดูฟรีรายเดือน — ลิงก์ในโพสต์กลุ่ม Facebook
+Route::get('/fortune/monthly-claim', [\App\Http\Controllers\Frontend\FortuneMonthlyClaimController::class, 'show'])
+    ->name('fortune.monthly-claim');
+
 // ========= THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =========
 // `throttle:60,1` caps a compromised or scripted admin account at 60
 // admin-panel requests/min — legitimate UI work never touches this

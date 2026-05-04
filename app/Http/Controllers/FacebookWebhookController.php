@@ -289,6 +289,66 @@ class FacebookWebhookController extends Controller
             if (isset($messaging['reaction'])) {
                 $this->handleMessageReaction($messaging);
             }
+
+            // 🎁 (2026-05-04) ประมวลผล m.me referral
+            //   - ผู้ใช้ใหม่: postback.referral.ref (ส่งคู่กับ GET_STARTED postback)
+            //   - ผู้ใช้เก่า: referral.ref (event เดี่ยว)
+            //   ใช้สำหรับแคมเปญ MONTHLY_CLAIM_YYYY-MM
+            $referralRef = $messaging['referral']['ref']
+                ?? $messaging['postback']['referral']['ref']
+                ?? null;
+            if ($referralRef) {
+                $this->processMessengerReferral($messaging, $referralRef);
+            }
+        }
+    }
+
+    /**
+     * 🎁 ประมวลผล m.me referral — handle MONTHLY_CLAIM_YYYY-MM
+     *
+     * รองรับ ref pattern อื่นๆ ในอนาคตได้ (campaign tracking, deep-link landing)
+     */
+    protected function processMessengerReferral(array $messaging, string $ref): void
+    {
+        try {
+            $senderId = $messaging['sender']['id'] ?? null;
+            if (! $senderId) {
+                return;
+            }
+
+            Log::info('🎁 Facebook referral received', [
+                'sender_id' => $senderId,
+                'ref' => $ref,
+            ]);
+
+            $claimService = app(\App\Services\FortuneMonthlyClaimService::class);
+            $monthKey = $claimService->parseRefForCurrentMonth($ref);
+
+            // ไม่ใช่ ref ของแคมเปญรายเดือน หรือเป็น month_key เก่า → skip
+            if (! $monthKey) {
+                Log::info('🎁 Referral ref ไม่ใช่ MONTHLY_CLAIM ของเดือนปัจจุบัน', [
+                    'ref' => $ref,
+                ]);
+
+                return;
+            }
+
+            $result = $claimService->claimForUser(
+                $senderId,
+                'facebook',
+                \App\Services\FortuneMonthlyClaimService::SOURCE_GROUP_POST,
+                ['referrer' => $ref]
+            );
+
+            // ส่งข้อความตอบกลับ — ใช้ FacebookWebhookService ตรง (ไม่ผ่าน Quick Reply)
+            if ($this->facebookService) {
+                $this->facebookService->sendMessage($senderId, $result['message']);
+            }
+        } catch (\Throwable $e) {
+            Log::error('🎁 processMessengerReferral failed', [
+                'error' => $e->getMessage(),
+                'ref' => $ref,
+            ]);
         }
     }
 
@@ -2089,6 +2149,10 @@ class FacebookWebhookController extends Controller
                 $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
             }
 
+            // 🌟 (2026-05-04) ชวนเข้ากลุ่ม — เฉพาะคนที่ยังไม่ดูดวง (ใหม่)
+            //   gated โดย settings.fortune_group_invite_enabled + Cache cooldown 7d
+            $this->maybeInviteToGroup($senderId, 'get_started');
+
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [
                 'sender_id' => $senderId,
@@ -2099,6 +2163,42 @@ class FacebookWebhookController extends Controller
                 $senderId,
                 "🔮 ยินดีต้อนรับค่ะ!\n\nพิมพ์ 'ดูดวง' เพื่อเริ่มต้นดูดวงได้เลยนะคะ ✨"
             );
+        }
+    }
+
+    /**
+     * 🌟 ชวนเข้ากลุ่ม Facebook (non-blocking)
+     *
+     * เงื่อนไขการเชิญ:
+     *   - get_started: ทุก user ที่กด GET_STARTED
+     *   - post_prediction: หลังส่งคำทำนาย (อนาคต)
+     *   - comment_dm: หลัง comment engagement DM (อนาคต)
+     *
+     * Service ภายใน gate ด้วย: toggle, group_url, 7-day cooldown
+     */
+    protected function maybeInviteToGroup(string $senderId, string $context = 'get_started'): void
+    {
+        try {
+            // ✅ เชิญเฉพาะคนที่ยังไม่เคยดูดวงเลย (ตาม spec ของ user)
+            if ($context === 'get_started') {
+                $hasReading = \App\Models\FortuneReading::where('facebook_user_id', $senderId)
+                    ->where('platform', 'facebook')
+                    ->exists();
+                if ($hasReading) {
+                    return; // เคยดูดวงแล้ว ไม่ต้องเชิญ
+                }
+            }
+
+            // หน่วงเล็กน้อยให้ welcome ขึ้นก่อนเป็น UX ที่ดี
+            usleep(300_000); // 0.3 วินาที
+
+            $this->facebookService->sendGroupInvitePrompt($senderId);
+        } catch (\Throwable $e) {
+            Log::debug('maybeInviteToGroup failed (non-blocking)', [
+                'sender_id' => $senderId,
+                'context' => $context,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 

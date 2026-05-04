@@ -1723,6 +1723,79 @@ class FacebookWebhookService implements MessagingPlatformInterface
         }
     }
 
+    /**
+     * 🌟 (2026-05-04) ส่งกล่องเชิญเข้ากลุ่ม Facebook
+     *
+     * - Gated โดย settings.fortune_group_invite_enabled + fortune_group_url
+     * - Cache cooldown 7 วัน/user (กันสแปม) — key: fb:group_invite_sent:{psid}
+     * - non-blocking — ถ้า fail ไม่กระทบ flow หลัก
+     *
+     * @param  string  $recipientId  Facebook PSID
+     * @return bool  true = ส่งสำเร็จ + mark cooldown, false = gated/failed
+     */
+    public function sendGroupInvitePrompt(string $recipientId): bool
+    {
+        try {
+            // ตรวจ toggle + URL
+            if (! ($this->settings->fortune_group_invite_enabled ?? false)) {
+                return false;
+            }
+
+            $groupUrl = $this->settings->fortune_group_url ?? null;
+            if (empty($groupUrl)) {
+                return false;
+            }
+
+            // Cooldown 7 วัน/user — กันส่งซ้ำซ้อนกับ DM อื่นๆ
+            $cacheKey = "fb:group_invite_sent:{$recipientId}";
+            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+                return false;
+            }
+
+            $message = trim($this->settings->fortune_group_invite_message ?? '');
+            if (empty($message)) {
+                $message = "🌟 อยากดูดวงฟรีทุกเดือนกับแม่หมอจันทรา?\n\n"
+                    . "เข้ากลุ่มสมาชิกของเรา จะได้:\n"
+                    . "🎁 สิทธิ์ดูไพ่ฟรี 1 ใบทุกเดือน\n"
+                    . "🔮 สุ่มดูดวงส่วนตัวกับแม่หมอ\n"
+                    . "✨ ความรู้ดีๆ + กิจกรรมพิเศษ\n\n"
+                    . "👇 กดเข้ากลุ่มเลย";
+            }
+
+            $payload = [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => mb_substr($message, 0, 640),
+                        'buttons' => [
+                            [
+                                'type' => 'web_url',
+                                'title' => '🌟 เข้ากลุ่มแม่หมอ',
+                                'url' => $groupUrl,
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            $sent = $this->sendButtonTemplate($recipientId, $payload);
+            if ($sent) {
+                // mark cooldown 7 วัน
+                \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), now()->addDays(7));
+            }
+
+            return (bool) $sent;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('sendGroupInvitePrompt failed (non-blocking)', [
+                'user_id' => $recipientId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     public function sendButtonTemplate(string $recipientId, array $templatePayload, array $options = []): bool
     {
         try {

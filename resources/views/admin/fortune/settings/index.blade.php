@@ -1193,6 +1193,141 @@
             </div>
         </div>
 
+        {{-- 🌟 (2026-05-04) Group Invite + Monthly Free Claim --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-2 border-purple-200 dark:border-purple-700">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                🌟 ระบบเชิญเข้ากลุ่ม Facebook + แคมเปญดูฟรีรายเดือน
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                บอทส่งปุ่มเชิญเข้ากลุ่มอัตโนมัติให้คนทักใหม่ที่ยังไม่ดูดวง<br>
+                + ลิงก์ในโพสต์กลุ่มให้สมาชิกกดรับสิทธิ์ดูไพ่ฟรี 1 ใบทุกเดือน (รีเซ็ตวันที่ 1)
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {{-- URL กลุ่ม --}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🔗 URL กลุ่ม Facebook
+                    </label>
+                    <input type="url" name="fortune_group_url"
+                           value="{{ old('fortune_group_url', $settings->fortune_group_url ?? '') }}"
+                           placeholder="https://www.facebook.com/groups/1539006181120751"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        💡 ใส่ URL กลุ่มเต็มรูป facebook.com/groups/...
+                    </p>
+                </div>
+
+                {{-- Toggle เชิญเข้ากลุ่ม --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🎯 ปุ่มเชิญเข้ากลุ่มใน Messenger
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-purple-400 transition">
+                        <input type="checkbox" name="fortune_group_invite_enabled" value="1"
+                               {{ old('fortune_group_invite_enabled', $settings->fortune_group_invite_enabled ?? false) ? 'checked' : '' }}
+                               class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                        <span class="text-sm text-gray-900 dark:text-white">เปิดใช้งานปุ่มเชิญ</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        บอทจะส่งปุ่มเชิญให้ลูกค้าใหม่ (ที่ยังไม่ดูดวง) ตอน GET_STARTED
+                        <br>Cooldown 7 วัน/คน — ไม่สแปม
+                    </p>
+                </div>
+
+                {{-- Toggle Monthly Claim --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🎁 แคมเปญดูฟรีรายเดือน
+                    </label>
+                    <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 cursor-pointer hover:border-purple-400 transition">
+                        <input type="checkbox" name="monthly_free_claim_enabled" value="1"
+                               {{ old('monthly_free_claim_enabled', $settings->monthly_free_claim_enabled ?? false) ? 'checked' : '' }}
+                               class="w-5 h-5 text-purple-600 rounded focus:ring-purple-500">
+                        <span class="text-sm text-gray-900 dark:text-white">เปิดให้ claim ผ่านลิงก์</span>
+                    </label>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        Landing: <code class="text-purple-600">/fortune/monthly-claim</code>
+                        <br>กดได้ครั้งเดียวต่อเดือน — รีเซ็ตวันที่ 1
+                    </p>
+                </div>
+
+                {{-- ข้อความเชิญ --}}
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        💬 ข้อความเชิญเข้ากลุ่ม (เว้นว่าง = ใช้ default)
+                    </label>
+                    <textarea name="fortune_group_invite_message" rows="4"
+                              placeholder="🌟 อยากดูดวงฟรีทุกเดือน? เข้ากลุ่มสมาชิก..."
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">{{ old('fortune_group_invite_message', $settings->fortune_group_invite_message ?? '') }}</textarea>
+                </div>
+
+                {{-- ข้อความหลัง claim สำเร็จ --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ✅ ข้อความหลัง claim สำเร็จ
+                    </label>
+                    <textarea name="monthly_free_claim_success_message" rows="3"
+                              placeholder="🎁 รับสิทธิ์ดูไพ่ฟรี 1 ใบประจำเดือนเรียบร้อย..."
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">{{ old('monthly_free_claim_success_message', $settings->monthly_free_claim_success_message ?? '') }}</textarea>
+                </div>
+
+                {{-- ข้อความ claim ซ้ำ --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ⛔ ข้อความเมื่อ claim ซ้ำเดือนเดียวกัน
+                    </label>
+                    <textarea name="monthly_free_claim_already_message" rows="3"
+                              placeholder="🌙 คุณได้รับสิทธิ์ดูฟรีของเดือนนี้ไปแล้ว..."
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">{{ old('monthly_free_claim_already_message', $settings->monthly_free_claim_already_message ?? '') }}</textarea>
+                </div>
+            </div>
+
+            {{-- เครื่องมือ: คัดลอก bait post + ลิงก์ --}}
+            @php
+                $claimSvc = app(\App\Services\FortuneMonthlyClaimService::class);
+                $baitCopy = $claimSvc->generateBaitPostCopy();
+                $landingUrl = $claimSvc->landingUrl();
+            @endphp
+            <div class="mt-6 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-700">
+                <div class="flex items-center justify-between mb-3">
+                    <h4 class="font-semibold text-gray-900 dark:text-white">
+                        📋 คัดลอกโพสต์ "ล่อเป้า" สำหรับโพสต์ในกลุ่ม
+                    </h4>
+                    <button type="button"
+                            onclick="navigator.clipboard.writeText(document.getElementById('bait-post-copy').value); this.textContent='✅ คัดลอกแล้ว!'; setTimeout(()=>this.textContent='📋 คัดลอก',2000)"
+                            class="px-3 py-1 bg-purple-600 hover:bg-purple-700 text-white text-sm rounded transition">
+                        📋 คัดลอก
+                    </button>
+                </div>
+                <textarea id="bait-post-copy" rows="10" readonly
+                          class="w-full px-3 py-2 text-sm font-mono bg-white dark:bg-gray-900 border border-purple-300 dark:border-purple-600 rounded text-gray-900 dark:text-gray-100">{{ $baitCopy }}</textarea>
+                <p class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    💡 Copy-paste ไปโพสต์ในกลุ่ม เป็นโพสต์รายเดือน (ทุกวันที่ 1) — บอทจะ handle ลิงก์เอง
+                    <br>📍 Landing URL: <code class="text-purple-600 dark:text-purple-400">{{ $landingUrl }}</code>
+                </p>
+            </div>
+
+            {{-- คำแนะนำ Linked Pages --}}
+            <div class="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">
+                    💡 อยากให้โพสต์ของเพจ auto-mirror เข้ากลุ่ม?
+                </h4>
+                <p class="text-sm text-gray-700 dark:text-gray-300 mb-2">
+                    Meta บล็อก API auto-post ของ Page เข้ากลุ่มแล้ว (ตั้งแต่ April 2024) — แต่มี <strong>Linked Pages</strong> feature ใช้แทนได้:
+                </p>
+                <ol class="list-decimal list-inside text-sm text-gray-700 dark:text-gray-300 space-y-1">
+                    <li>เปิดกลุ่ม → <strong>Settings</strong> (จัดการกลุ่ม)</li>
+                    <li>ไปที่ <strong>Manage</strong> → <strong>Linked Pages</strong></li>
+                    <li>เลือกเพจของคุณ → <strong>Link</strong></li>
+                    <li>หลังจากนั้น โพสต์ของเพจจะ auto-appear ในกลุ่ม (treated as native, reach เต็ม)</li>
+                </ol>
+                <p class="mt-2 text-xs text-gray-600 dark:text-gray-400">
+                    ⚠️ Auto-post ระบบ Mystic Content (08:00/20:00) จะโพสต์ในเพจ + mirror เข้ากลุ่มอัตโนมัติ
+                </p>
+            </div>
+        </div>
+
         {{-- Freemium: Deep Reading Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ enableDeep: {{ old('enable_deep_reading', $settings->enable_deep_reading ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">

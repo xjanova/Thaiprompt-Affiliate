@@ -258,6 +258,14 @@ class FortuneSettingsController extends Controller
             'takeover_notify_customer' => 'boolean',
             'takeover_customer_message' => 'nullable|string|max:500',
             'takeover_resume_message' => 'nullable|string|max:500',
+            // 🌟 (2026-05-04) Group Invite + Monthly Free Claim
+            'fortune_group_url' => 'nullable|url|max:500',
+            'fortune_group_invite_enabled' => 'boolean',
+            'fortune_group_invite_message' => 'nullable|string|max:1000',
+            'monthly_free_claim_enabled' => 'boolean',
+            'monthly_free_claim_secret' => 'nullable|string|max:128',
+            'monthly_free_claim_success_message' => 'nullable|string|max:1000',
+            'monthly_free_claim_already_message' => 'nullable|string|max:1000',
         ]);
 
         // แปลง customer_handoff_keywords จาก textarea → array
@@ -281,6 +289,9 @@ class FortuneSettingsController extends Controller
             'admin_handover_enabled', 'takeover_notify_customer',
             // 🎁 (2026-05-03) ระบบทำนายฟรี 1 ใบ
             'enable_free_card_reading',
+            // 🌟 (2026-05-04) Group Invite + Monthly Claim
+            'fortune_group_invite_enabled',
+            'monthly_free_claim_enabled',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

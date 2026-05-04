@@ -187,6 +187,14 @@ class FortuneTellingSetting extends Model
         // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
         'enable_free_card_reading',
         'free_card_news_context',
+        // 🌟 Group Invite + Monthly Free Claim (2026-05-04)
+        'fortune_group_url',
+        'fortune_group_invite_enabled',
+        'fortune_group_invite_message',
+        'monthly_free_claim_enabled',
+        'monthly_free_claim_secret',
+        'monthly_free_claim_success_message',
+        'monthly_free_claim_already_message',
     ];
 
     /**
@@ -255,6 +263,9 @@ class FortuneTellingSetting extends Model
         'celtic_cross_proactive_enabled' => 'boolean',
         // 🎁 Free Card Reading (2026-05-03)
         'enable_free_card_reading' => 'boolean',
+        // 🌟 Group Invite + Monthly Free Claim (2026-05-04)
+        'fortune_group_invite_enabled' => 'boolean',
+        'monthly_free_claim_enabled' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -329,6 +340,9 @@ class FortuneTellingSetting extends Model
         'celtic_cross_proactive_enabled' => true,
         // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
         'enable_free_card_reading' => true,
+        // 🌟 Group Invite + Monthly Free Claim — ปิดเป็น default (admin เปิด + ใส่ URL ก่อน)
+        'fortune_group_invite_enabled' => false,
+        'monthly_free_claim_enabled' => false,
     ];
 
     /**
