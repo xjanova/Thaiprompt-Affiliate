@@ -397,6 +397,16 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         $billResult['message'] = $readingHeader . $reading->deep_response . "\n\n" . ($billResult['message'] ?? '');
                         $billResult['action'] = 'deliver_with_qr';
                         $billResult['chart_image_url'] = $reading->reading_image_url;
+                        // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย — user request
+                        //    user feedback: "การดูแบบ 39 ต้องส่งรูปไพ่ที่จับได้ด้วย ตอนนี้มีแต่กราฟดวงดาว"
+                        $tarotImageUrls = collect($reading->getCollectedTarotCards())
+                            ->pluck('image_url')
+                            ->filter()
+                            ->values()
+                            ->all();
+                        if (! empty($tarotImageUrls)) {
+                            $billResult['tarot_image_urls'] = $tarotImageUrls;
+                        }
 
                         // 🩹 (2026-05-04) ตรวจ return ของ sendResponse — ถ้าล้มเหลว ห้าม set flag
                         //    เพราะถ้าตั้ง reading_sent_directly=true แม้ส่งไม่สำเร็จ →

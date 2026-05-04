@@ -930,22 +930,63 @@ class FortuneChannelManager
      * Facebook: ส่งข้อมูลชำระเงิน
      * ⚠️ ไม่แก้ logic การจับคู่ SMS — แค่แสดงข้อมูลบิลสวยขึ้น
      */
+    /**
+     * 🃏 (2026-05-04) Helper: ดึงรายการ image URLs ของไพ่ยิปซีจาก result array
+     *
+     * รองรับทั้ง 2 รูปแบบ:
+     *   - tarot_image_url (single string) — เดิม (เคส single card pick)
+     *   - tarot_image_urls (array) — ใหม่ (เคส Pay-Later/Deep view ที่จับหลายใบ)
+     *   - reading.getCollectedTarotCards() — fallback ถ้ามี reading
+     */
+    protected function normalizeTarotImageUrls(array $result): array
+    {
+        // 1) ถ้ามี tarot_image_urls (array) ใช้เลย
+        if (! empty($result['tarot_image_urls']) && is_array($result['tarot_image_urls'])) {
+            return array_values(array_filter($result['tarot_image_urls']));
+        }
+
+        // 2) ถ้ามี tarot_image_url (single) — wrap เป็น array
+        if (! empty($result['tarot_image_url']) && is_string($result['tarot_image_url'])) {
+            return [$result['tarot_image_url']];
+        }
+
+        // 3) Fallback — ดึงจาก reading.getCollectedTarotCards()
+        $reading = $result['reading'] ?? null;
+        if ($reading && method_exists($reading, 'getCollectedTarotCards')) {
+            try {
+                $urls = collect($reading->getCollectedTarotCards())
+                    ->pluck('image_url')
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                return $urls;
+            } catch (\Throwable $e) {
+                // ignore
+            }
+        }
+
+        return [];
+    }
+
     protected function sendFacebookPaymentResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $reading = $result['reading'] ?? null;
         $message = $result['message'] ?? '';
 
-        // 🃏 ส่งรูปไพ่ยิปซีก่อน (ถ้ามี) — เมื่อ REQUIRED_QUESTIONS=1 flow จะข้าม
-        //    draw_tarot_card action มาที่ pending_payment ตรงๆ พร้อม tarot_image_url
-        $tarotImageUrl = $result['tarot_image_url'] ?? null;
-        if ($tarotImageUrl) {
+        // 🃏 ส่งรูปไพ่ยิปซีก่อน (ถ้ามี) — รองรับทั้ง single (tarot_image_url) และ array (tarot_image_urls)
+        //    draw_tarot_card action: tarot_image_url (single — สำหรับเคส single card pick)
+        //    Pay-Later/Deep view: tarot_image_urls (array — ทุกใบที่ลูกค้าจับ)
+        $tarotImageUrls = $this->normalizeTarotImageUrls($result);
+        foreach ($tarotImageUrls as $idx => $imgUrl) {
             try {
-                $fbService->sendImage($userId, $tarotImageUrl);
+                $fbService->sendImage($userId, $imgUrl);
                 usleep(500000); // 0.5s
             } catch (\Exception $e) {
                 Log::warning('Facebook: ส่งรูปไพ่ยิปซีไม่สำเร็จ (payment)', [
                     'error' => $e->getMessage(),
-                    'image_url' => $tarotImageUrl,
+                    'image_url' => $imgUrl,
+                    'card_index' => $idx,
                 ]);
             }
         }
@@ -995,6 +1036,17 @@ class FortuneChannelManager
     protected function sendFacebookCompletedResponse(FacebookWebhookService $fbService, FacebookRichMessageService $richService, string $userId, array $result): bool
     {
         $message = $result['message'] ?? '';
+
+        // 🃏 (2026-05-04) ส่งรูปไพ่ยิปซีก่อน chart — user request
+        $tarotImageUrls = $this->normalizeTarotImageUrls($result);
+        foreach ($tarotImageUrls as $imgUrl) {
+            try {
+                $fbService->sendImage($userId, $imgUrl);
+                usleep(500000);
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่งรูปไพ่ยิปซีไม่สำเร็จ (completed)', ['error' => $e->getMessage()]);
+            }
+        }
 
         // ส่ง Birth Chart ก่อน (ถ้ามี)
         $chartUrl = $result['chart_image_url'] ?? null;
@@ -1215,6 +1267,18 @@ class FortuneChannelManager
         if (mb_strpos($message, '[OFFER_FORTUNE]') !== false) {
             $offerFortune = true;
             $message = trim(str_replace('[OFFER_FORTUNE]', '', $message));
+        }
+
+        // 🃏 (2026-05-04) ส่งรูปไพ่ยิปซีก่อน chart (ถ้ามี) — เห็นไพ่ก่อนเข้าคำทำนาย
+        //    user request: "การดูแบบ 39 ต้องส่งรูปไพ่ที่จับได้ด้วย ตอนนี้มีแต่กราฟดวงดาว"
+        $tarotImageUrls = $this->normalizeTarotImageUrls($result);
+        foreach ($tarotImageUrls as $imgUrl) {
+            try {
+                $fbService->sendImage($userId, $imgUrl);
+                usleep(500000); // 0.5s
+            } catch (\Exception $e) {
+                Log::warning('Facebook: ส่งรูปไพ่ยิปซีไม่สำเร็จ (text+options)', ['error' => $e->getMessage()]);
+            }
         }
 
         // ส่ง chart image ก่อน (ถ้ามี)

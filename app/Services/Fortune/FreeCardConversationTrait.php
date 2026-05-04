@@ -102,7 +102,7 @@ trait FreeCardConversationTrait
      *   5. เรียก AI generateFreeCardReading() → ส่งคืน 'free_card_drawn' action
      *   6. ChannelManager จะส่งภาพไพ่ + ข้อความ + Quick Reply [39][99][ไม่สนใจ]
      */
-    protected function startFreeCardFlow(string $platformUserId, ?array $userProfile = null): array
+    protected function startFreeCardFlow(string $platformUserId, ?array $userProfile = null, ?string $customerMessage = null): array
     {
         $platform = $this->currentPlatform;
         $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
@@ -196,6 +196,8 @@ trait FreeCardConversationTrait
                 celticPrice: $celticPrice,
                 celticEnabled: $celticEnabled,
                 userContext: "free_card:{$reading->id}",
+                // 💬 (2026-05-04) pass customer message → AI ใช้เป็น context ในการทำนาย
+                customerMessage: $customerMessage,
             );
 
             $response = trim($result['response'] ?? '');

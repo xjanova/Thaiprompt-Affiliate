@@ -815,6 +815,9 @@ class FortuneConversationService
                             'message' => $message,
                             'reading' => $unsentReading,
                             'chart_image_url' => $unsentReading->reading_image_url,
+                            // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย
+                            'tarot_image_urls' => collect($unsentReading->getCollectedTarotCards())
+                                ->pluck('image_url')->filter()->values()->all(),
                         ];
                     }
 
@@ -847,6 +850,9 @@ class FortuneConversationService
                             'message' => $message,
                             'reading' => $unsentReading,
                             'chart_image_url' => $unsentReading->reading_image_url,
+                            // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย
+                            'tarot_image_urls' => collect($unsentReading->getCollectedTarotCards())
+                                ->pluck('image_url')->filter()->values()->all(),
                         ];
                     }
 
@@ -1266,14 +1272,15 @@ class FortuneConversationService
             //    มาก่อน isExplicitDeepReadingRequest เพื่อจับ keyword ฟรีให้ถูก
             //    startFreeCardFlow จะเช็ค first-timer + feature toggle เอง — ถ้าไม่ผ่าน จะ fallback tier menu
             if ($this->matchesFreeCardKeyword($messageText)) {
-                return $this->startFreeCardFlow($facebookUserId, $userProfile);
+                return $this->startFreeCardFlow($facebookUserId, $userProfile, $messageText);
             }
 
             // 🎁 (2026-05-04) Auto-trigger Free Card สำหรับ first-reply หลังได้ DM react/comment
             //    Strategy: DM react/comment เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับ → ทำนายฟรีทันที
             //    (ไม่ถามวันเกิด/คำถาม) → ลูกค้าเชื่อใจ → ค่อย soft-sell หลังได้คำทำนาย
             //    Guards: isFreeReadingEnabled + ยังไม่เคยใช้ฟรี + เพิ่งได้ DM react/comment ใน 24 ชม.
-            $autoFree = $this->tryAutoFreeCardForFirstReply($facebookUserId, $userProfile);
+            //    💬 ส่ง $messageText เป็น context — AI ใช้เดาเรื่องที่ลูกค้าสนใจ
+            $autoFree = $this->tryAutoFreeCardForFirstReply($facebookUserId, $userProfile, $messageText);
             if ($autoFree !== null) {
                 return $autoFree;
             }
@@ -2587,6 +2594,9 @@ class FortuneConversationService
                     'message' => $message,
                     'reading' => $latestReading,
                     'chart_image_url' => $latestReading->reading_image_url,
+                    // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย
+                    'tarot_image_urls' => collect($latestReading->getCollectedTarotCards())
+                        ->pluck('image_url')->filter()->values()->all(),
                 ]);
             }
 
@@ -3771,7 +3781,7 @@ class FortuneConversationService
      *
      * @return array|null  null = ไม่เข้าเงื่อนไข (ให้ flow เดิมรับช่วง)
      */
-    protected function tryAutoFreeCardForFirstReply(string $facebookUserId, ?array $userProfile = null): ?array
+    protected function tryAutoFreeCardForFirstReply(string $facebookUserId, ?array $userProfile = null, ?string $customerMessage = null): ?array
     {
         // Guard 1: ระบบฟรีเปิดอยู่
         if (! $this->settings->isFreeReadingEnabled()) {
@@ -3812,9 +3822,10 @@ class FortuneConversationService
             'platform' => $this->currentPlatform,
             'reaction_dm' => $hasReactionDm,
             'comment_dm' => $hasCommentDm,
+            'message_preview' => $customerMessage ? mb_substr($customerMessage, 0, 60) : null,
         ]);
 
-        return $this->startFreeCardFlow($facebookUserId, $userProfile);
+        return $this->startFreeCardFlow($facebookUserId, $userProfile, $customerMessage);
     }
 
     /**
