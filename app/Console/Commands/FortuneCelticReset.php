@@ -115,11 +115,11 @@ class FortuneCelticReset extends Command
                     $conversationService = new FortuneConversationService($settings);
                     $channelManager = new FortuneChannelManager($settings);
 
-                    $response = $conversationService->onCelticPaymentConfirmed($reading);
-                    $response['message'] = "🔄 *แอดมินรีเซ็ตการดูดวงให้แล้วค่ะ*\n"
-                        . "เจ้าชะตาสามารถเริ่มเปิดไพ่ใหม่ได้เลย — ค่าครูเดิมยังใช้ได้ ไม่ต้องจ่ายซ้ำ\n\n"
-                        . "═══════════════════════\n\n"
-                        . ($response['message'] ?? '');
+                    // 🆕 (2026-05-04) ใช้ buildCelticResumeResponse(fromAdminReset=true)
+                    //   หัวข้อจะแจ้งชัดเจนว่า "แอดมินรีเซ็ตให้แล้ว — ใช้ค่าครูเดิม ไม่ต้องจ่ายซ้ำ"
+                    //   หาก reading state ไม่ใช่ CELTIC_PICKING (เพราะ reset เพิ่ง force ไปแล้ว)
+                    //   ก็ยังทำงานถูก — switch case ใน helper รองรับ
+                    $response = $conversationService->buildCelticResumeResponse($reading->fresh(), true);
 
                     $sent = $channelManager->sendResponse($platform, $userId, $response, [
                         'from_admin' => true,
@@ -129,7 +129,7 @@ class FortuneCelticReset extends Command
                     if ($sent) {
                         $this->info("📤 แจ้งลูกค้าผ่าน {$platform} สำเร็จ");
                     } else {
-                        $this->warn("⚠️ ส่ง DM ไม่สำเร็จ — ลูกค้าจะเห็นเมื่อทักกลับ");
+                        $this->warn("⚠️ ส่ง DM ไม่สำเร็จ — ลูกค้าจะเห็นเมื่อทักกลับ (resume guard ใน startCelticCrossFlow ก็ครอบคลุม)");
                     }
                 }
             }

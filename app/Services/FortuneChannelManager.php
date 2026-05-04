@@ -790,7 +790,8 @@ class FortuneChannelManager
                 })(),
 
                 // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
-                'celtic_question_answered' => $fbService->sendQuickReplies($userId, $message, [
+                // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
+                'celtic_question_answered', 'celtic_qa_prompt_resume' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🙏 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
                     ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
                 ], $extra),
@@ -833,10 +834,12 @@ class FortuneChannelManager
                 })(),
 
                 // celtic actions ที่เป็น text-only (cancelled, completed, expired, ai_failed, etc.)
+                // celtic_resume_qa → resume เข้า AWAITING_QUESTION (ลูกค้าพิมพ์คำถามเอง — ไม่ใส่ปุ่ม)
                 'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
-                'celtic_awaiting_payment', 'celtic_bill_creation_failed'
+                'celtic_awaiting_payment', 'celtic_bill_creation_failed',
+                'celtic_resume_qa'
                     => $fbService->sendMessage($userId, $message, $extra),
 
                 // อื่นๆ → ส่ง text ธรรมดา
@@ -1681,16 +1684,19 @@ class FortuneChannelManager
                 })(),
 
                 // celtic_question_answered → ปุ่ม "ถามต่อ" / "พอแค่นี้"
-                'celtic_question_answered' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
+                'celtic_question_answered', 'celtic_qa_prompt_resume' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🙏 ถามต่อ', 'text' => 'ถามต่อ'],
                     ['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้'],
                 ]),
 
                 // Celtic actions ที่เป็น text-only
+                // celtic_resume_qa → resume เข้า AWAITING_QUESTION (ลูกค้าพิมพ์คำถามเอง — ไม่ใส่ปุ่ม)
                 'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
-                'celtic_awaiting_payment', 'celtic_bill_creation_failed'
+                'celtic_awaiting_payment', 'celtic_bill_creation_failed',
+                'celtic_resume_qa'
                     => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)

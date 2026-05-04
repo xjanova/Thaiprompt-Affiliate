@@ -17,11 +17,14 @@ use Illuminate\Support\Facades\Log;
  * 2. Auto-recover all stuck (paid but no card picked > 5min): php artisan fortune:celtic-recover --auto
  * 3. Dry run: php artisan fortune:celtic-recover --auto --dry
  *
- * เคสที่กู้:
- * - is_paid=true แต่ conversation_status ยังเป็น celtic_pending_payment
- * - conversation_status=celtic_picking แต่ไม่ได้สุ่มไพ่ใบไหนเลย (count=0) > 5 นาที
+ * เคสที่กู้ (2026-05-04 expanded scope):
+ * - is_paid=true แต่ conversation_status ยังเป็น celtic_pending_payment (transition fail)
+ * - conversation_status=celtic_picking แต่ไม่ได้สุ่มไพ่ใบไหนเลย (count=0) > N นาที
+ * - 🆕 conversation_status ใดๆ ของ Celtic active flow + celtic_questions_used=0 + ค้าง > N นาที
+ *      → ครอบคลุมเคส "เปิดไพ่กลางทางหลุด" (เช่น เปิด 6/10 แล้วหายไป) + "เปิดครบ 10 แต่ไม่ถาม"
  *
- * Action: re-push first card prompt ผ่าน FB MESSAGE_TAG=POST_PURCHASE_UPDATE
+ * Action: re-push prompt ที่ตรงกับ state ปัจจุบัน ผ่าน FB MESSAGE_TAG=POST_PURCHASE_UPDATE
+ *         (ใช้ buildCelticResumeResponse — สร้าง message ตาม state)
  */
 class FortuneCelticRecover extends Command
 {
@@ -77,8 +80,10 @@ class FortuneCelticRecover extends Command
                 ->where('updated_at', '<=', $cutoff)
                 ->get();
 
-            // Filter ใน PHP — getCelticPickedCount() อ่านจาก JSON column
-            $readings = $candidates->filter(fn ($r) => $r->getCelticPickedCount() === 0);
+            // 🆕 (2026-05-04) Filter: เคสที่ user ยังไม่ได้ใช้สิทธิ์ถามคำถาม (questions_used=0)
+            //    เดิม: filter เฉพาะ picked=0 → ตกหล่น "เปิดไพ่ 6/10 แล้วหลุด" / "เปิดครบไม่ถาม"
+            //    ใหม่: ครอบคลุมทุกสถานะที่ลูกค้าจ่ายแล้วยังไม่ได้คำตอบเลย
+            $readings = $candidates->filter(fn ($r) => (int) ($r->celtic_questions_used ?? 0) === 0);
         }
 
         if ($readings->isEmpty()) {
@@ -125,13 +130,19 @@ class FortuneCelticRecover extends Command
                     continue;
                 }
 
-                // Re-trigger Celtic onPaymentConfirmed (idempotent — แค่ update status + return prompt)
-                $response = $conversationService->onCelticPaymentConfirmed($reading);
+                // 🆕 (2026-05-04) Build resume response ตาม state ปัจจุบัน
+                //   - CELTIC_PENDING_PAYMENT + is_paid=true → ใช้ onCelticPaymentConfirmed
+                //     (transition → CELTIC_PICKING + return prompt ใบ 1)
+                //   - state อื่นๆ → ใช้ buildCelticResumeResponse (resume ที่จุดเดิม)
+                if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
+                    $response = $conversationService->onCelticPaymentConfirmed($reading);
+                } else {
+                    $response = $conversationService->buildCelticResumeResponse($reading->fresh(), false);
+                }
 
-                // Add recovery header
+                // Add recovery header (override ส่วนหัวเดิม)
                 $response['message'] = "🔔 *ขออภัยที่ทำให้รอนะคะ*\n"
-                    . "ระบบเพิ่งตรวจพบว่ายังไม่ได้ส่งให้เจ้าชะตาเลือกไพ่\n"
-                    . "ขอเริ่มเปิดไพ่ให้ตอนนี้เลยค่ะ ⬇️\n\n"
+                    . "ระบบตรวจพบว่ายังไม่ได้ทำนายให้สมบูรณ์ — ขอกู้ข้อมูลให้ตอนนี้ค่ะ ⬇️\n\n"
                     . "═══════════════════════\n\n"
                     . ($response['message'] ?? '');
 

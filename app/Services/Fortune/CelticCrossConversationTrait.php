@@ -461,6 +461,29 @@ trait CelticCrossConversationTrait
             ];
         }
 
+        // 🩹 (2026-05-04) Resume guard — กัน double-charge เมื่อมีบิลค้าง
+        //   เคสที่จับ:
+        //     1. ลูกค้าจ่าย 99฿ แล้วหลุดกลาง flow (เปิดไพ่ 6/10 → bug welcome bubble)
+        //        → กดปุ่ม 99฿ ใหม่ ระบบเดิมสร้างบิลใหม่ → จ่ายซ้ำ
+        //     2. แอดมินรัน fortune:celtic-reset → reading พร้อมใช้แล้ว
+        //        แต่ลูกค้าไม่อ่าน DM → กด 99฿ → เดิมสร้างบิลใหม่
+        //   กฎ: ถ้ามี Celtic ที่ paid + ยังไม่ได้ถามคำถามเลย (questions_used=0)
+        //        + ภายใน 24 ชม. → resume แทนสร้างใหม่
+        $resumable = $this->findResumableCelticReading($reading);
+        if ($resumable && $resumable->id !== $reading->id) {
+            Log::info('Celtic: resume existing paid reading (skip new bill)', [
+                'new_reading_id' => $reading->id,
+                'resume_reading_id' => $resumable->id,
+                'resume_status' => $resumable->conversation_status,
+                'picked_count' => $resumable->getCelticPickedCount(),
+            ]);
+
+            // ปิด reading ใหม่ที่ trigger เข้ามา (กัน orphan)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+            return $this->buildCelticResumeResponse($resumable, /*fromAdminReset:*/ false);
+        }
+
         $service = app(CelticCrossService::class);
         $basePrice = $service->getPrice(); // float (เช่น 99.00)
 
@@ -817,6 +840,145 @@ trait CelticCrossConversationTrait
                 . $this->buildCelticPickPromptText($reading),
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * หา Celtic reading ที่ paid + ยังไม่สำเร็จ — ใช้ resume แทนสร้างบิลใหม่
+     *
+     * เกณฑ์:
+     *   - reading_type = celtic_cross
+     *   - is_paid = true
+     *   - celtic_questions_used = 0 (ลูกค้ายังไม่ได้ใช้สิทธิ์ถามเลย)
+     *   - paid_at >= now()-24h (กันเก่าเกินไป)
+     *   - conversation_status ∈ {CELTIC_PICKING, AWAITING_QUESTION, GENERATING, QA_PROMPT}
+     *     (ไม่รวม COMPLETED — เสร็จแล้วไม่ resume)
+     *
+     * รองรับทั้ง $context.facebook_user_id และ platform_user_id
+     */
+    protected function findResumableCelticReading(FortuneReading $context): ?FortuneReading
+    {
+        $userId = $context->facebook_user_id ?? $context->platform_user_id;
+        if (empty($userId)) {
+            return null;
+        }
+
+        return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+            ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('is_paid', true)
+            ->where('celtic_questions_used', 0)
+            ->where('paid_at', '>=', now()->subHours(24))
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_CELTIC_PICKING,
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+                FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            ])
+            ->latest('paid_at')
+            ->first();
+    }
+
+    /**
+     * สร้าง response สำหรับ resume Celtic reading — ใช้ทั้ง 3 จุด:
+     *   1. startCelticCrossFlow (ลูกค้ากด 99฿ ใหม่ทั้งที่มีบิลค้าง)
+     *   2. fortune:celtic-recover --auto (auto-recovery scheduled task)
+     *   3. fortune:celtic-reset (admin reset → DM ลูกค้า)
+     *
+     * Response message ตรงกับ state ปัจจุบัน:
+     *   - CELTIC_PICKING + 0 picked → "เริ่มเปิดไพ่ใบที่ 1"
+     *   - CELTIC_PICKING + N picked → "ต่อจากใบที่ N+1"
+     *   - CELTIC_AWAITING_QUESTION → "เปิดครบแล้ว ถามคำถามได้เลย"
+     *   - CELTIC_GENERATING → "แม่หมอกำลังพิจารณาอยู่"
+     *   - CELTIC_QA_PROMPT → "ถามต่อ / พอแค่นี้"
+     *
+     * Public — ให้ console commands (recover/reset) เรียกได้ด้วย
+     */
+    public function buildCelticResumeResponse(FortuneReading $reading, bool $fromAdminReset = false): array
+    {
+        $picked = (int) $reading->getCelticPickedCount();
+        $billRef = $reading->bill_reference ?? '-';
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+        // หัวข้อ — แตกต่างกันระหว่าง admin reset / customer-triggered resume
+        if ($fromAdminReset) {
+            $header = "🔄 *แอดมินรีเซ็ตการดูดวงให้แล้วค่ะ คุณ{$name}*\n"
+                . "💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                . "📋 เลขบิล: {$billRef}\n\n"
+                . "═══════════════════════\n\n";
+        } else {
+            $header = "✨ *พบบิลของคุณ{$name}ที่ยังใช้สิทธิ์ไม่ครบ*\n"
+                . "💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                . "📋 เลขบิล: {$billRef}\n\n"
+                . "═══════════════════════\n\n";
+        }
+
+        switch ($reading->conversation_status) {
+            case FortuneReading::STATUS_CELTIC_PICKING:
+                if ($picked === 0) {
+                    $body = "🔮 *เริ่มเปิดไพ่ Celtic Cross กันเลย*\n"
+                        . "หมอจะเปิดไพ่ให้ทีละใบ พร้อมตำแหน่งที่ได้\n\n"
+                        . "──────────────────────\n"
+                        . $this->buildCelticPickPromptText($reading);
+                } else {
+                    $body = "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — เริ่มต่อกันค่ะ!\n\n"
+                        . "──────────────────────\n"
+                        . $this->buildCelticPickPromptText($reading);
+                }
+
+                return [
+                    'action' => 'celtic_pick_prompt',
+                    'message' => $header . $body,
+                    'reading' => $reading,
+                ];
+
+            case FortuneReading::STATUS_CELTIC_AWAITING_QUESTION:
+                $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+                $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+                $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
+                $body = "🌟 *เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมตอบคำถาม*\n\n"
+                    . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
+                    . "❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
+                    . "🔚 พิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
+
+                return [
+                    'action' => 'celtic_resume_qa',
+                    'message' => $header . $body,
+                    'reading' => $reading,
+                ];
+
+            case FortuneReading::STATUS_CELTIC_GENERATING:
+                $body = "🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่...\n"
+                    . "กรุณารอสักครู่ (~30-60 วินาที) ✨";
+
+                return [
+                    'action' => 'celtic_processing',
+                    'message' => $header . $body,
+                    'reading' => $reading,
+                ];
+
+            case FortuneReading::STATUS_CELTIC_QA_PROMPT:
+                $body = "💬 *ต้องการถามต่อหรือพอแค่นี้?*\n\n"
+                    . "👉 พิมพ์ *\"ถามต่อ\"* เพื่อถามคำถามถัดไป\n"
+                    . "🔚 พิมพ์ *\"พอแค่นี้\"* เพื่อจบรอบ";
+
+                return [
+                    'action' => 'celtic_qa_prompt_resume',
+                    'message' => $header . $body,
+                    'reading' => $reading,
+                ];
+
+            default:
+                // Fallback — ถือว่าเริ่มใหม่
+                $body = "🔮 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไปค่ะ";
+
+                return [
+                    'action' => 'celtic_pick_prompt',
+                    'message' => $header . $body,
+                    'reading' => $reading,
+                ];
+        }
     }
 
     /**
