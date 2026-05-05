@@ -138,9 +138,19 @@ class FortuneCelticRecover extends Command
                 // 🆕 (2026-05-04) Build resume response ตาม state ปัจจุบัน
                 //   - CELTIC_PENDING_PAYMENT + is_paid=true → ใช้ onCelticPaymentConfirmed
                 //     (transition → CELTIC_PICKING + return prompt ใบ 1)
+                //   - 🚨 (2026-05-05) status='new' + is_paid=true → force-promote เป็น CELTIC + ทำเหมือน PENDING_PAYMENT
+                //     เคสที่เจอ: บิล FTU-260505-J1439 — slip matcher ไม่ transition reading_type/status
                 //   - state อื่นๆ → ใช้ buildCelticResumeResponse (resume ที่จุดเดิม)
-                if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
-                    $response = $conversationService->onCelticPaymentConfirmed($reading);
+                if ($reading->is_paid
+                    && in_array($reading->conversation_status, [FortuneReading::STATUS_NEW, FortuneReading::STATUS_CELTIC_PENDING_PAYMENT], true)
+                    && $reading->getCelticPickedCount() === 0) {
+                    if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                        $reading->update(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS]);
+                    }
+                    if ($reading->conversation_status !== FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
+                        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]);
+                    }
+                    $response = $conversationService->onCelticPaymentConfirmed($reading->fresh());
                 } else {
                     $response = $conversationService->buildCelticResumeResponse($reading->fresh(), false);
                 }
