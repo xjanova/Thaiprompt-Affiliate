@@ -170,6 +170,22 @@
                             </span>
                             @endif
 
+                            {{-- 🌟 (2026-05-05) Purpose badge — แสดงวัตถุประสงค์ของ key --}}
+                            @php
+                                $purposeBadges = [
+                                    'free_card' => ['emoji' => '🎁', 'label' => 'ฟรี', 'class' => 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'],
+                                    'prediction' => ['emoji' => '💎', 'label' => 'ทำนายเสีย', 'class' => 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'],
+                                    'chat' => ['emoji' => '💬', 'label' => 'แชท', 'class' => 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'],
+                                ];
+                                $purpose = $key['purpose'] ?? 'any';
+                            @endphp
+                            @if(isset($purposeBadges[$purpose]))
+                            <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $purposeBadges[$purpose]['class'] }}"
+                                  title="วัตถุประสงค์: {{ $purpose }}">
+                                {{ $purposeBadges[$purpose]['emoji'] }} {{ $purposeBadges[$purpose]['label'] }}
+                            </span>
+                            @endif
+
                             @if($key['consecutive_errors'] > 0)
                             {{-- 🔍 Clickable error badge — เปิด modal แสดง last_error + ปุ่มไปดู logs ทั้งหมด --}}
                             <button type="button"

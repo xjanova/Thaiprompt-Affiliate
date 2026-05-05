@@ -483,6 +483,7 @@ class AiApiKeyPoolService
                 'resolved_model' => $key->resolveModel(),            // model ที่จะใช้จริง
                 'base_url' => $key->base_url,                        // 🌐 (2026-05-01) Per-key base URL
                 'resolved_base_url' => $key->resolveBaseUrl(),       // base URL ที่จะใช้จริง
+                'purpose' => $key->purpose,                          // 🌟 (2026-05-05) any/prediction/free_card/chat
                 'priority' => $key->priority,
                 'tokens_used_today' => $key->tokens_used_today,
                 'tokens_used_month' => $key->tokens_used_month,
