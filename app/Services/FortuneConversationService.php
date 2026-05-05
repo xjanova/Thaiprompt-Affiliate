@@ -686,12 +686,21 @@ class FortuneConversationService
                     'text_preview' => mb_substr($messageText, 0, 30),
                 ]);
 
+                // 🌊 (2026-05-05) Throttle "busy" reply — รัวข้อความ 5 ครั้ง = "busy" 1 ครั้ง
+                //    เดิม: ทุกข้อความที่ติด lock → ส่ง "busy" → ลูกค้าเห็น "กำลังประมวลผล" รัว → หนัก
+                //    ใหม่: 1 reply ต่อ 10 วินาที — ที่เหลือ silent (mutex จะ release < 5s ปกติ)
+                $busyKey = "fortune:busy_throttle:{$facebookUserId}";
+                if (! Cache::add($busyKey, true, 10)) {
+                    return [
+                        'action' => 'busy_throttled',
+                        'message' => null,
+                        'reading' => null,
+                    ];
+                }
+
                 return [
                     'action' => 'busy',
-                    'message' => \App\Services\FortuneLocaleService::lo(
-                        'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏',
-                        'ກຳລັງປະມວນຜົນຢູ່ ກະລຸນາລໍຖ້າສັກຄູ່ 🙏'
-                    ),
+                    'message' => 'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏',
                     'reading' => null,
                 ];
             }
