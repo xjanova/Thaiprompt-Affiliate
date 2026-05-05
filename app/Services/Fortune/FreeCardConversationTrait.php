@@ -201,8 +201,10 @@ trait FreeCardConversationTrait
             );
 
             $response = trim($result['response'] ?? '');
-            if ($response === '' || mb_strlen($response) < 100) {
-                throw new Exception('AI ตอบกลับสั้นเกินไป (' . mb_strlen($response) . ' ตัวอักษร)');
+            // 🩹 (2026-05-05) ขั้นต่ำ 600 ตัวอักษร — prompt ใหม่ขอ 1500-2000 chars
+            //   user spec: "ทำนายฟรีสั้นไป" → reject ถ้า AI ตอบสั้นเกิน
+            if ($response === '' || mb_strlen($response) < 600) {
+                throw new Exception('AI ตอบกลับสั้นเกินไป (' . mb_strlen($response) . ' ตัวอักษร — ต้อง ≥ 600)');
             }
         } catch (\Throwable $e) {
             Log::error('FreeCard: AI ทำนายล้มเหลว', [

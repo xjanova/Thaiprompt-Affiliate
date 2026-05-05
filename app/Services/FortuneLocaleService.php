@@ -179,13 +179,19 @@ class FortuneLocaleService
     /**
      * Resolve locale ที่ใช้จริงสำหรับ user คนนี้
      *
-     * Logic:
-     * - Reset static $current ก่อน (กัน leak ข้าม queue job)
-     * - Manual choice (picker) ชนะเสมอ
-     * - LINE: เปิด detect เฉพาะ "ชื่อเป็นลาวชัดเจน" → switch เป็น lo + persist
-     *         (ผู้ใช้เดิมไม่กระทบ — ชื่อไทย/อังกฤษยังคงได้ 'th')
-     * - FB: stored manual → ใช้ stored
-     * - FB: detect จาก text + name → ใช้ Lao ถ้า text หรือ name ชี้ว่าเป็นลาว
+     * 🩹 (2026-05-05) Refactor — Text wins over name
+     *   user spec: "ถ้าชื่อลาว แต่พิมพ์ไทย ให้ใช้ภาษาไทยเป็นหลัก"
+     *
+     * Logic ใหม่ (เหมือนทั้ง LINE + FB):
+     *   1. Manual choice (picker) → ชนะเสมอ
+     *   2. Text มี Thai chars + ไม่มี Lao chars → ไทย (ชื่อ Lao ก็ไม่ override)
+     *   3. Text มี Lao chars + ไม่มี Thai chars → ลาว
+     *   4. Text mixed → ใช้ threshold เดิม (Lao ≥ 2 + Lao > Thai → ลาว, ไม่งั้น ไทย)
+     *   5. Text empty/English (ไม่มี script) → fallback ไป name detection
+     *
+     * เปลี่ยนแปลงจากของเดิม:
+     *   - ❌ ลบ "name overrides text" rule (line 246) — text Thai + name Lao เคยถูก force เป็น Lao
+     *   - ✅ Unify LINE + FB ใช้ text + name fallback เหมือนกัน
      *
      * @param  string|null  $messageText  ข้อความล่าสุดของ user
      * @param  string|null  $profileName  ชื่อ user (FB display name / LINE displayName)
@@ -214,50 +220,56 @@ class FortuneLocaleService
             return self::LOCALE_TH;
         }
 
-        // Manual choice ชนะเสมอ (ทุก platform)
+        // 🔒 1. Manual choice ชนะเสมอ (ทุก platform)
         if ($row && $row->source === self::SOURCE_MANUAL) {
             return $row->locale ?: self::LOCALE_TH;
         }
 
         $stored = $row?->locale;
 
-        // 🇱🇦 LINE: detect จากชื่ออย่างเดียว (text-based detect ปิดอยู่เดิม)
-        //    เกณฑ์เข้ม — ต้องเป็นลาวล้วน ถึงจะ switch (กันชื่อไทยที่ปนตัวอักษรลาวเฉยๆ)
-        if ($platform !== 'facebook') {
-            // ถ้าเคย persist auto ไว้แล้ว — เคารพค่าเดิม (กัน flip ตอน profile API ล้มเหลว)
-            if ($stored === self::LOCALE_LO) {
-                return self::LOCALE_LO;
-            }
+        // 🔍 2. Text-first detection — script-aware
+        $textHasThai = $messageText && preg_match('/[\x{0E00}-\x{0E7F}]/u', $messageText);
+        $textHasLao = $messageText && preg_match('/[\x{0E80}-\x{0EFF}]/u', $messageText);
 
-            if ($nameDetected === self::LOCALE_LO) {
-                self::set($platform, $userId, self::LOCALE_LO, self::SOURCE_AUTO);
+        $detected = null;
 
-                return self::LOCALE_LO;
-            }
-
-            return self::LOCALE_TH;
-        }
-
-        // 📘 Facebook: combine text + name signals
-        $textDetected = self::detectFromText($messageText);
-        $detected = $textDetected;
-
-        // ถ้า text ดูเป็นไทย แต่ชื่อเป็นลาวชัดเจน → ใช้ลาว (ชื่อ stable กว่า)
-        if ($detected === self::LOCALE_TH && $nameDetected === self::LOCALE_LO) {
+        if ($textHasThai && ! $textHasLao) {
+            // ✅ Pure Thai → ไทย (ชื่อ Lao ก็ไม่ override per user spec)
+            $detected = self::LOCALE_TH;
+        } elseif ($textHasLao && ! $textHasThai) {
+            // ✅ Pure Lao → ลาว (ตัวเดียวก็พอ)
             $detected = self::LOCALE_LO;
+        } elseif ($textHasThai && $textHasLao) {
+            // ⚖️ Mixed → ใช้ threshold (Lao ≥ 2 + Lao > Thai → ลาว, ไม่งั้น ไทย)
+            $detected = self::detectFromText($messageText);
+        }
+        // ถ้า $detected ยังเป็น null → text ไม่มี script signal (English/empty)
+        // → fallback ไป name detection หรือ stored
+
+        // 🔄 3. ถ้าไม่มี text signal → ใช้ stored ก่อน (เคารพประวัติ) แล้ว name
+        if ($detected === null) {
+            if ($stored !== null) {
+                $detected = $stored;
+            } elseif ($nameDetected === self::LOCALE_LO) {
+                $detected = self::LOCALE_LO;
+            } else {
+                $detected = self::LOCALE_TH; // default
+            }
         }
 
-        // 🛡️ Persist:
-        //   - signal จากชื่อ (Lao) → persist ทันที (no min text length — ชื่อ stable)
-        //   - signal จาก text → ใช้กฎเดิม (text ≥ 3 อักขระ)
+        // 🛡️ Persist auto-detect (text signal มีน้ำหนักมากที่สุด)
+        //   - ถ้า text ชัดเจน (≥ 3 อักขระ) + detected ต่างจาก stored → persist
+        //   - ถ้าไม่มี text แต่ name = Lao → persist Lao (จากชื่อ)
         if ($detected !== $stored) {
-            if ($nameDetected === self::LOCALE_LO && $detected === self::LOCALE_LO) {
+            $textLen = $messageText ? mb_strlen(trim($messageText)) : 0;
+            $hasScriptSignal = $textHasThai || $textHasLao;
+
+            if ($hasScriptSignal && $textLen >= 3) {
+                // text มี script + ยาวพอ → persist (ลูกค้าเปลี่ยนภาษาจริง)
+                self::set($platform, $userId, $detected, self::SOURCE_AUTO);
+            } elseif (! $hasScriptSignal && $nameDetected === self::LOCALE_LO && $detected === self::LOCALE_LO) {
+                // ไม่มี text signal + name Lao → persist Lao (default ลาว)
                 self::set($platform, $userId, self::LOCALE_LO, self::SOURCE_AUTO);
-            } else {
-                $textLen = $messageText ? mb_strlen(trim($messageText)) : 0;
-                if ($textLen >= 3) {
-                    self::set($platform, $userId, $detected, self::SOURCE_AUTO);
-                }
             }
         }
 
