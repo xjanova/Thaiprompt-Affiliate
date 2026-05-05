@@ -1713,8 +1713,19 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $groupUrl = $this->settings->fortune_group_url
                 ?? 'https://www.facebook.com/groups/1539006181120751';
 
-            $trackFollowUrl = url("/fortune/track/fb-follow/{$recipientId}");
-            $trackGroupUrl = url("/fortune/track/fb-group/{$recipientId}");
+            // 🔒 (2026-05-05 review) Signed URLs — ป้องกัน enumeration spam
+            //   ใครๆ จะเรียก /fortune/track/fb-follow/{any_psid} ตรงไม่ได้ (signed middleware reject)
+            //   URL จะมี ?signature=... + ?expires=... append อัตโนมัติ
+            $trackFollowUrl = \Illuminate\Support\Facades\URL::signedRoute(
+                'fortune.track.fb-follow',
+                ['psid' => $recipientId],
+                now()->addDays(30)  // ลิงก์ใช้ได้ 30 วัน — กัน user ที่เก็บ DM ไว้เปิดทีหลัง
+            );
+            $trackGroupUrl = \Illuminate\Support\Facades\URL::signedRoute(
+                'fortune.track.fb-group',
+                ['psid' => $recipientId],
+                now()->addDays(30)
+            );
 
             $message = "🌙 *เจ้าชะตา รับสิทธิ์พิเศษจากแม่หมอ* ✨\n\n"
                 . "👁️ *ติดตามเพจ* — รับดวงประจำวันฟรี (ตี 1 - 7 โมงเช้า)\n\n"

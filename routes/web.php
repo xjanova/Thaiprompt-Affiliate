@@ -1274,11 +1274,14 @@ Route::get('/fortune/monthly-claim', [\App\Http\Controllers\Frontend\FortuneMont
 
 // 🌟 (2026-05-05) Tracking redirects — บันทึก click + redirect ไป FB page/group
 //   ใช้ใน button template ที่ส่งใน Messenger DM (ปุ่ม web_url ไม่ส่ง postback กลับ)
+//   🔒 (2026-05-05 review) signed middleware — กัน enumeration spam (มี signature ใน URL)
 Route::get('/fortune/track/fb-follow/{psid}', [\App\Http\Controllers\Frontend\FortuneTrackingController::class, 'fbFollow'])
+    ->middleware('signed')
     ->name('fortune.track.fb-follow')
     ->where('psid', '[A-Za-z0-9_-]+');
 
 Route::get('/fortune/track/fb-group/{psid}', [\App\Http\Controllers\Frontend\FortuneTrackingController::class, 'fbGroup'])
+    ->middleware('signed')
     ->name('fortune.track.fb-group')
     ->where('psid', '[A-Za-z0-9_-]+');
 

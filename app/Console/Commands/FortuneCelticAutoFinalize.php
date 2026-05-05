@@ -97,8 +97,19 @@ class FortuneCelticAutoFinalize extends Command
                 }
 
                 // 🛡️ Double-check idempotency — กัน double-finalize ถ้า command รันคู่กัน
-                if ($reading->fresh()->getConversationState('celtic_grand_finale_at')) {
+                $freshReading = $reading->fresh();
+                if ($freshReading->getConversationState('celtic_grand_finale_at')) {
                     $this->warn("  #{$reading->id} skip — finalize ไปแล้ว");
+                    $skipped++;
+                    continue;
+                }
+
+                // 🛡️ (2026-05-05 review) Retry guard — กัน AI cost ระเบิดถ้า Grand Finale fail ซ้ำ
+                //   เคสจริง: AI down 1 ชม → command รันทุก 5 นาที = 12 fail/ชม × cost
+                //   Logic: ถ้า fail >= 3 ครั้ง → skip ตลอด (admin ตรวจ + reset flag เอง)
+                $finaleFailCount = (int) $freshReading->getConversationState('celtic_grand_finale_fail_count', 0);
+                if ($finaleFailCount >= 3) {
+                    $this->warn("  #{$reading->id} skip — finalize fail >= 3 ครั้ง (admin ตรวจ + reset flag)");
                     $skipped++;
                     continue;
                 }
@@ -114,6 +125,13 @@ class FortuneCelticAutoFinalize extends Command
 
                 // เรียก endCelticSession — ครั้งนี้ Grand Finale generate ทุกครั้ง (per 2026-05-05 fix)
                 $response = $conversationService->endCelticSession($reading, 'time_expired');
+
+                // 🛡️ (2026-05-05 review) ถ้า Grand Finale generate ไม่สำเร็จ → นับ fail
+                //   เพื่อ retry guard skip หลังครบ 3 ครั้ง — กัน AI cost ระเบิด
+                if (empty($response['has_grand_finale'])) {
+                    $reading->setConversationState('celtic_grand_finale_fail_count', $finaleFailCount + 1);
+                    $reading->setConversationState('celtic_grand_finale_last_fail_at', now()->toIso8601String());
+                }
 
                 // Push ผ่าน POST_PURCHASE_UPDATE — ฟรีตาม FB policy
                 $sent = $channelManager->sendResponse($platform, $userId, $response, [

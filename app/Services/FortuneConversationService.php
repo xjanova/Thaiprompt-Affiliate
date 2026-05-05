@@ -768,7 +768,15 @@ class FortuneConversationService
             //    เคสนี้: findActiveConversation ไม่จับ COMPLETED → fall through → FCS:766 ไม่จับ (is_paid=false)
             //    → ลูกค้าค้างถาวร / เห็น tier menu ใหม่ / general flow
             //    Fix: ตรวจ Pay-Later orphan ก่อน → ลอง recreate bill + ส่ง reading + bill + QR
-            $payLaterOrphan = FortuneReading::where('facebook_user_id', $facebookUserId)
+            // 🩹 (2026-05-05 review) เพิ่ม platform filter — กัน LINE PSID ตรงกับ FB PSID legacy
+            //                       ใช้ created_at แทน updated_at — กัน orphan recovery loop ทำให้
+            //                       ลูกค้าเก่า > 24 ชม. ทักมา → recover ใหม่ (ลูกค้าเดิมจ่ายไปแล้ว)
+            $orphanCutoff = now()->subHours(24);
+            $payLaterOrphan = FortuneReading::where('platform', $this->currentPlatform)
+                ->where(function ($q) use ($facebookUserId) {
+                    $q->where('facebook_user_id', $facebookUserId)
+                        ->orWhere('platform_user_id', $facebookUserId);
+                })
                 ->where('is_paid', false)
                 ->whereNotNull('deep_response')
                 ->where('deep_response', '!=', '')
@@ -779,7 +787,7 @@ class FortuneConversationService
                     $q->where('status', 'reserved')
                         ->where('expires_at', '>', now());
                 })
-                ->where('updated_at', '>=', now()->subHours(24)) // ภายใน 24 ชม. (ภายใน Pay-Later window)
+                ->where('created_at', '>=', $orphanCutoff)  // ใช้ created_at — fixed window 24 ชม.
                 ->latest()
                 ->first();
 
@@ -2688,10 +2696,13 @@ class FortuneConversationService
                     $upa = $latestReading->uniquePaymentAmount;
                     if ($upa && $upa->expires_at && $upa->expires_at->greaterThan(now())) {
                         $payAmount = number_format((float) $upa->unique_amount, 2);
-                        $remainingMin = max(0, (int) now()->diffInMinutes($upa->expires_at, false));
-                        $remainingHr = (int) floor($remainingMin / 60);
+                        // 🩹 (2026-05-05 review) ใช้ ceil + % 60 — ก่อนหน้าแสดง "1 ชม. 95 น." ผิด
+                        $totalSec = max(0, (int) abs(now()->diffInSeconds($upa->expires_at, false)));
+                        $remainingMin = (int) ceil($totalSec / 60);
+                        $remainingHr = intdiv($remainingMin, 60);
+                        $remainingMinPart = $remainingMin % 60;
                         $remainingText = $remainingHr > 0
-                            ? "{$remainingHr} ชม. {$remainingMin}น."
+                            ? "{$remainingHr} ชม. {$remainingMinPart} น."
                             : "{$remainingMin} นาที";
 
                         $payLaterPaymentReminder = "\n\n══════════\n\n"
@@ -5552,7 +5563,9 @@ class FortuneConversationService
         $payAmount = number_format((float) $uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $billRef = $reading->bill_reference ?? '-';
-        $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
+        // 🩹 (2026-05-05 review) ใช้ ceil — กัน "เหลือ 0 นาที" แต่ UPA ยังไม่หมด (truncate bug)
+        $totalSec = max(0, (int) abs(now()->diffInSeconds($uniqueAmount->expires_at, false)));
+        $remainingMinutes = (int) ceil($totalSec / 60);
 
         // 🌟 Reading header (รูปแบบเดียวกับ Job + handleAwaitingDeliveryConfirm)
         $readingHeader = \App\Services\FortuneLocaleService::lo(
