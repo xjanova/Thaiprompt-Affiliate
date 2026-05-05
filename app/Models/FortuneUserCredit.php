@@ -55,6 +55,8 @@ class FortuneUserCredit extends Model
         // 👁️ Follow-page tracking (2026-04-28)
         'facebook_follow_prompted_at',
         'facebook_followed_confirmed_at',
+        // 👥 Group invite tracking (2026-05-05)
+        'facebook_group_clicked_at',
     ];
 
     /**
@@ -75,6 +77,8 @@ class FortuneUserCredit extends Model
         // 👁️ Follow-page tracking
         'facebook_follow_prompted_at' => 'datetime',
         'facebook_followed_confirmed_at' => 'datetime',
+        // 👥 Group invite tracking
+        'facebook_group_clicked_at' => 'datetime',
     ];
 
     /**

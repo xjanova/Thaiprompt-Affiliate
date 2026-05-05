@@ -1272,6 +1272,16 @@ Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landin
 Route::get('/fortune/monthly-claim', [\App\Http\Controllers\Frontend\FortuneMonthlyClaimController::class, 'show'])
     ->name('fortune.monthly-claim');
 
+// 🌟 (2026-05-05) Tracking redirects — บันทึก click + redirect ไป FB page/group
+//   ใช้ใน button template ที่ส่งใน Messenger DM (ปุ่ม web_url ไม่ส่ง postback กลับ)
+Route::get('/fortune/track/fb-follow/{psid}', [\App\Http\Controllers\Frontend\FortuneTrackingController::class, 'fbFollow'])
+    ->name('fortune.track.fb-follow')
+    ->where('psid', '[A-Za-z0-9_-]+');
+
+Route::get('/fortune/track/fb-group/{psid}', [\App\Http\Controllers\Frontend\FortuneTrackingController::class, 'fbGroup'])
+    ->name('fortune.track.fb-group')
+    ->where('psid', '[A-Za-z0-9_-]+');
+
 // ========= THAIPROMPT_THAIAPP_MANAGER (v1.0.21) =========
 // `throttle:60,1` caps a compromised or scripted admin account at 60
 // admin-panel requests/min — legitimate UI work never touches this

@@ -1703,10 +1703,27 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 return false;
             }
 
-            $message = "🎁 พิเศษ! รับดวงฟรีทุกวัน\n"
-                . "เราพยากรณ์ดวงประจำวันให้ทั้ง 7 วันเกิด\n"
-                . "ตั้งแต่ตี 1 ถึง 7 โมงเช้า ทุกวัน\n\n"
-                . "👉 กดติดตามเพจรับการแจ้งเตือนเลยค่ะ ✨";
+            // 🌟 (2026-05-05) Redesign — ลบปุ่ม "ติดตามแล้ว" postback
+            //                          + เพิ่มปุ่ม "เข้ากลุ่มแม่หมอจันทรา" + ใช้ tracking URLs
+            //   user spec: "ปุ่มติดตามแล้วให้นำออก ให้เพิ่มเข้ากลุ่ม + ลิงก์ขอเข้ากลุ่ม
+            //               + การกดปุ่มติดตามต้องเด้งให้กดติดตาม + บันทึกว่ายูสเซ่อร์กดติดตามแล้ว"
+            //
+            //   Tracking URL pattern: /fortune/track/fb-follow/{psid} → record + 302 redirect
+            //   web_url button ไม่ส่ง postback กลับ — ต้องใช้ redirect tracking แทน
+            $groupUrl = $this->settings->fortune_group_url
+                ?? 'https://www.facebook.com/groups/1539006181120751';
+
+            $trackFollowUrl = url("/fortune/track/fb-follow/{$recipientId}");
+            $trackGroupUrl = url("/fortune/track/fb-group/{$recipientId}");
+
+            $message = "🌙 *เจ้าชะตา รับสิทธิ์พิเศษจากแม่หมอ* ✨\n\n"
+                . "👁️ *ติดตามเพจ* — รับดวงประจำวันฟรี (ตี 1 - 7 โมงเช้า)\n\n"
+                . "👥 *เข้ากลุ่มแม่หมอจันทรา* — สิทธิ์พิเศษ:\n"
+                . "🎁 ฟรีดวงไพ่เพิ่ม 1 ครั้ง/เดือน (รีเซ็ตสิทธิ์)\n"
+                . "💬 ปรึกษาแม่หมอ + พูดคุยกับสมาชิกในกลุ่ม\n"
+                . "🃏 อัพเดต tarot tip + เคล็ดโหราศาสตร์\n"
+                . "🌟 เป็นกลุ่มสายมูทำดวง บอกบุญถึงกัน\n\n"
+                . "👇 กดเลือกได้เลยค่ะ";
 
             $payload = [
                 'attachment' => [
@@ -1715,8 +1732,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'template_type' => 'button',
                         'text' => mb_substr($message, 0, 640),
                         'buttons' => [
-                            ['type' => 'web_url', 'title' => '👁️ ติดตามเพจ', 'url' => "https://www.facebook.com/{$pageId}"],
-                            ['type' => 'postback', 'title' => '✅ ติดตามแล้ว', 'payload' => 'FOLLOW_CONFIRMED'],
+                            ['type' => 'web_url', 'title' => '👁️ ติดตามเพจ', 'url' => $trackFollowUrl],
+                            ['type' => 'web_url', 'title' => '👥 เข้ากลุ่มแม่หมอ', 'url' => $trackGroupUrl],
                         ],
                     ],
                 ],
