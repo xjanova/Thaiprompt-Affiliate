@@ -2653,7 +2653,17 @@ class FortuneConversationService
         if ($latestReading->reading_type === FortuneReading::READING_TYPE_DEEP) {
             $name = $latestReading->facebook_user_name ?? 'คุณ';
 
-            if ($latestReading->is_paid && ! empty($latestReading->deep_response)) {
+            // 🩹 (2026-05-05) Pay-Later unpaid อ่านย้อนหลังได้ — user spec
+            //   "การอ่านย้อนหลังถ้าบิลนั้นเป็น pay later ก็อ่านได้แม้ยังไม่จ่าย"
+            //   เคสจริง: Pay-Later flow ส่ง reading+bill+QR แล้ว แต่ยังไม่ชำระ
+            //              → is_paid=false, status=PENDING_PAYMENT, has deep_response
+            //              → เดิมตกไป view_reading_deep_pending (แสดงแค่ "รอชำระ")
+            //              → ใหม่: แสดงคำทำนายเต็ม + เตือนชำระท้ายข้อความ
+            $isPayLaterWithReading = ! $latestReading->is_paid
+                && ! empty($latestReading->deep_response)
+                && (bool) $latestReading->getConversationState('is_request_before_pay', false);
+
+            if (($latestReading->is_paid && ! empty($latestReading->deep_response)) || $isPayLaterWithReading) {
                 // ✅ ตั้ง flag ว่าส่งแล้ว เพื่อป้องกันแจ้งเตือนซ้ำ
                 $latestReading->setConversationState('reading_sent_directly', true);
                 $latestReading->setConversationState('reading_ready_sent', true);
@@ -2671,7 +2681,53 @@ class FortuneConversationService
                     . "═══════════════════════\n\n"
                     . $latestReading->deep_response;
 
-                return $appendStuckNote([
+                // 💎 Pay-Later unpaid → เตือนชำระท้ายข้อความ + แสดง QR ถ้ายังไม่หมดอายุ
+                $payLaterPaymentReminder = '';
+                $payLaterQrUrl = null;
+                if ($isPayLaterWithReading) {
+                    $upa = $latestReading->uniquePaymentAmount;
+                    if ($upa && $upa->expires_at && $upa->expires_at->greaterThan(now())) {
+                        $payAmount = number_format((float) $upa->unique_amount, 2);
+                        $remainingMin = max(0, (int) now()->diffInMinutes($upa->expires_at, false));
+                        $remainingHr = (int) floor($remainingMin / 60);
+                        $remainingText = $remainingHr > 0
+                            ? "{$remainingHr} ชม. {$remainingMin}น."
+                            : "{$remainingMin} นาที";
+
+                        $payLaterPaymentReminder = "\n\n══════════\n\n"
+                            . \App\Services\FortuneLocaleService::lo(
+                                "💎 *บิลนี้เป็น \"ดูก่อนจ่ายทีหลัง\"*\n"
+                                    . "🔖 บิล: " . ($latestReading->bill_reference ?? '-') . "\n"
+                                    . "💸 ค่าครู: ฿{$payAmount} (ทศนิยมตรงเป๊ะ)\n"
+                                    . "⏰ เหลือเวลาโอน: {$remainingText}\n"
+                                    . 'พิมพ์ "เช็คสถานะ" เพื่อรับ QR + รายละเอียดบัญชีอีกครั้ง',
+                                "💎 *ບິນນີ້ເປັນ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\"*\n"
+                                    . "🔖 ບິນ: " . ($latestReading->bill_reference ?? '-') . "\n"
+                                    . "💸 ຄ່າຄູ: ฿{$payAmount} (ເສດສ່ວນຕົງເປັະ)\n"
+                                    . "⏰ ເຫຼືອເວລາໂອນ: {$remainingText}\n"
+                                    . 'ພິມ "ເຊັກສະຖານະ" ເພື່ອຮັບ QR + ລາຍລະອຽດບັນຊີອີກຄັ້ງ'
+                            );
+
+                        // แนบ QR เพื่อให้สแกนได้ทันที
+                        try {
+                            $payLaterQrUrl = $this->generatePromptPayQrImage((float) $upa->unique_amount, $latestReading->id);
+                        } catch (\Throwable $qrErr) {
+                            $payLaterQrUrl = $this->getPaymentQrImageUrl();
+                        }
+                    } else {
+                        // UPA หมดอายุ → แนะนำให้สร้างบิลใหม่
+                        $payLaterPaymentReminder = "\n\n══════════\n\n"
+                            . \App\Services\FortuneLocaleService::lo(
+                                "💎 บิลนี้เป็น \"ดูก่อนจ่ายทีหลัง\" — แต่บิลหมดอายุแล้ว\n"
+                                    . 'พิมพ์ "ดูดวง" เพื่อสร้างบิลใหม่หรือ "คุยกับแม่หมอ" ได้',
+                                "💎 ບິນນີ້ເປັນ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" — ແຕ່ບິນໝົດອາຍຸແລ້ວ\n"
+                                    . 'ພິມ "ເບິ່ງດວງ" ເພື່ອສ້າງບິນໃໝ່ ຫຼື "ຄຸຍກັບແມ່ໝໍ" ໄດ້'
+                            );
+                    }
+                    $message .= $payLaterPaymentReminder;
+                }
+
+                $response = [
                     'action' => 'view_reading_deep',
                     'message' => $message,
                     'reading' => $latestReading,
@@ -2679,7 +2735,14 @@ class FortuneConversationService
                     // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย
                     'tarot_image_urls' => collect($latestReading->getCollectedTarotCards())
                         ->pluck('image_url')->filter()->values()->all(),
-                ]);
+                ];
+
+                if ($payLaterQrUrl) {
+                    $response['payment_qr_url'] = $payLaterQrUrl;
+                    $response['action'] = 'deliver_with_qr'; // routing — ChannelManager render รวม
+                }
+
+                return $appendStuckNote($response);
             }
 
             if ($latestReading->is_paid) {

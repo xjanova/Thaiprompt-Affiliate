@@ -94,21 +94,47 @@ class CelticSpreadImageGenerator
             $absolutePath = storage_path("app/public/{$relativePath}");
             $dir = dirname($absolutePath);
             if (! is_dir($dir)) {
-                mkdir($dir, 0755, true);
+                @mkdir($dir, 0755, true);
             }
 
-            imagejpeg($canvas, $absolutePath, 90);
+            // 🩹 (2026-05-05) Verify directory writable + file write
+            if (! is_writable($dir)) {
+                Log::error('CelticSpreadImage: directory ไม่สามารถเขียนได้', [
+                    'reading_id' => $reading->id,
+                    'dir' => $dir,
+                ]);
+                imagedestroy($canvas);
+                return null;
+            }
+
+            $writeOk = @imagejpeg($canvas, $absolutePath, 90);
             imagedestroy($canvas);
+
+            if (! $writeOk || ! is_file($absolutePath) || filesize($absolutePath) < 1024) {
+                Log::error('CelticSpreadImage: บันทึกไฟล์ล้มเหลว / ไฟล์เล็กผิดปกติ', [
+                    'reading_id' => $reading->id,
+                    'path' => $absolutePath,
+                    'write_ok' => $writeOk,
+                    'exists' => is_file($absolutePath),
+                    'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
+                ]);
+                return null;
+            }
 
             // 6. อัพเดต reading
             $reading->update(['celtic_summary_image_path' => $relativePath]);
 
-            $url = asset('storage/' . $relativePath);
+            // 🩹 (2026-05-05) URL with cache buster (mtime) — กัน FB cache ภาพเก่า
+            //   เคสจริง: FB cache รูป URL → ลูกค้าเห็นรูปเก่าตอนเปิดไพ่ แทนรูปครบ 10 ใบ
+            //   Fix: ?v={mtime} → unique URL ทุกครั้งที่ regen
+            $cacheBuster = filemtime($absolutePath) ?: time();
+            $url = asset('storage/' . $relativePath) . '?v=' . $cacheBuster;
 
             Log::info('CelticSpreadImage: สร้างสำเร็จ', [
                 'reading_id' => $reading->id,
                 'path' => $relativePath,
-                'size' => is_file($absolutePath) ? filesize($absolutePath) : 0,
+                'size' => filesize($absolutePath),
+                'url' => $url,
             ]);
 
             return $url;
