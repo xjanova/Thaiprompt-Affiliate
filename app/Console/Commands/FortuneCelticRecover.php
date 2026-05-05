@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Log;
 class FortuneCelticRecover extends Command
 {
     protected $signature = 'fortune:celtic-recover
-                            {id? : Reading ID เฉพาะที่จะกู้}
+                            {id? : Reading ID หรือ bill_reference (เช่น FTU-260505-J1439)}
                             {--auto : สแกนหา readings ที่ติดทั้งหมด}
                             {--dry : Dry run — แสดงรายการแต่ไม่ส่งจริง}
                             {--minutes=5 : เกณฑ์เวลาที่ถือว่าค้าง (นาที)}';
@@ -52,9 +52,14 @@ class FortuneCelticRecover extends Command
         $readings = collect();
 
         if ($id) {
-            $reading = FortuneReading::find($id);
+            // 🩹 (2026-05-05) รับทั้ง numeric ID และ bill_reference (FTU-XXXXXX-XXXXX)
+            //   ลูกค้า/แอดมินจะเห็น bill_reference ใน slip — ใช้กู้ตรงๆ ได้เลย
+            $reading = is_numeric($id)
+                ? FortuneReading::find($id)
+                : FortuneReading::where('bill_reference', $id)->first();
+
             if (! $reading) {
-                $this->error("ไม่พบ reading #{$id}");
+                $this->error("ไม่พบ reading — id/bill: {$id}");
 
                 return 1;
             }
@@ -133,9 +138,19 @@ class FortuneCelticRecover extends Command
                 // 🆕 (2026-05-04) Build resume response ตาม state ปัจจุบัน
                 //   - CELTIC_PENDING_PAYMENT + is_paid=true → ใช้ onCelticPaymentConfirmed
                 //     (transition → CELTIC_PICKING + return prompt ใบ 1)
+                //   - 🚨 (2026-05-05) status='new' + is_paid=true → force-promote เป็น CELTIC + ทำเหมือน PENDING_PAYMENT
+                //     เคสที่เจอ: บิล FTU-260505-J1439 — slip matcher ไม่ transition reading_type/status
                 //   - state อื่นๆ → ใช้ buildCelticResumeResponse (resume ที่จุดเดิม)
-                if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
-                    $response = $conversationService->onCelticPaymentConfirmed($reading);
+                if ($reading->is_paid
+                    && in_array($reading->conversation_status, [FortuneReading::STATUS_NEW, FortuneReading::STATUS_CELTIC_PENDING_PAYMENT], true)
+                    && $reading->getCelticPickedCount() === 0) {
+                    if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                        $reading->update(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS]);
+                    }
+                    if ($reading->conversation_status !== FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
+                        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]);
+                    }
+                    $response = $conversationService->onCelticPaymentConfirmed($reading->fresh());
                 } else {
                     $response = $conversationService->buildCelticResumeResponse($reading->fresh(), false);
                 }

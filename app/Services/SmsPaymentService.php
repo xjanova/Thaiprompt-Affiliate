@@ -689,6 +689,14 @@ class SmsPaymentService
         // ไม่ใช่ค้างที่ "pending_review" จนกว่า job จะรัน confirmPayment()
         $reading->confirmPayment($notification);
 
+        // 🛡️ (2026-05-05) Clear spam guards — ลูกค้าจ่ายเงินแล้ว ห้ามถูก silent_mode ดัก
+        //   เคส: ลูกค้ารัวข้อความก่อนจ่าย → silent_mode triggered → จ่ายแล้ว push prompt
+        //   → ลูกค้าตอบ "พร้อม" → silent_mode ยังอยู่ → บอทเงียบ
+        //   Fix: clear silent + rapid + paid_active cache ทุกครั้งที่ payment matched
+        \Illuminate\Support\Facades\Cache::forget("fortune:silent:{$userId}");
+        \Illuminate\Support\Facades\Cache::forget("fortune:rapid:{$userId}");
+        \Illuminate\Support\Facades\Cache::forget("fortune:has_paid_active:{$userId}");
+
         Log::info('SMS Payment: confirmPayment ทันที (ก่อน dispatch job)', [
             'reading_id' => $reading->id,
             'notification_id' => $notification->id,

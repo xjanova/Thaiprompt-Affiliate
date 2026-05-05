@@ -4050,6 +4050,9 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/readings/{reading}/reset', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'resetReading'])->name('reset');
         // 🗑️ (2026-05-04) Cancel reading — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย
         Route::post('/readings/{reading}/cancel', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'cancelReading'])->name('cancel');
+        // 🚨 (2026-05-05) Emergency Recovery — กู้บิลด่วน (ใส่เลขบิล / auto-scan)
+        Route::get('/emergency-recover', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'emergencyRecover'])->name('emergency-recover');
+        Route::post('/emergency-recover', [\App\Http\Controllers\Admin\FortuneCelticCrossController::class, 'emergencyRecoverAction'])->name('emergency-recover.action');
     });
 
     // ========================================

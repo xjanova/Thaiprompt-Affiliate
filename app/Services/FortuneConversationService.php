@@ -578,23 +578,42 @@ class FortuneConversationService
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
         try {
-            // 🎯 Phase N — ถ้าผู้ใช้อยู่ใน silent mode → ไม่ตอบกลับเลย (สแปมตรวจพบแล้ว)
-            if ($this->isInSilentMode($facebookUserId)) {
-                Log::info('Fortune: ข้ามข้อความ — user อยู่ใน silent mode', [
-                    'facebook_user_id' => $facebookUserId,
-                    'text_preview' => mb_substr($messageText, 0, 30),
-                ]);
+            // 🛡️ (2026-05-05) VIP Bypass — ลูกค้าจ่ายเงินแล้วต้องไม่ถูก spam guard ดัก
+            //   เคสที่ทำให้บล็อก: ลูกค้าจ่าย Celtic 99฿ → รัวข้อความ "ตอบสิ ทำไมไม่ตอบ"
+            //   → silent_mode trigger → บอทเงียบ → ลูกค้าด่ากระจาย
+            //   นโยบาย: ถ้ามี active reading + is_paid=true → bypass silent + double rapid threshold
+            $hasPaidActiveReading = $this->hasPaidActiveReading($facebookUserId);
 
-                return [
-                    'action' => 'silent_skip',
-                    'message' => null,
-                    'reading' => null,
-                ];
+            // 🎯 Phase N — ถ้าผู้ใช้อยู่ใน silent mode → ไม่ตอบกลับเลย (สแปมตรวจพบแล้ว)
+            //   ⚠️ ยกเว้น: ลูกค้าจ่ายเงินแล้ว (paid customer) → bypass + clear silent mode
+            if ($this->isInSilentMode($facebookUserId)) {
+                if ($hasPaidActiveReading) {
+                    Log::info('Fortune: paid customer ติด silent_mode → bypass + clear', [
+                        'facebook_user_id' => $facebookUserId,
+                    ]);
+                    Cache::forget("fortune:silent:{$facebookUserId}");
+                    Cache::forget("fortune:rapid:{$facebookUserId}");
+                } else {
+                    Log::info('Fortune: ข้ามข้อความ — user อยู่ใน silent mode', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return [
+                        'action' => 'silent_skip',
+                        'message' => null,
+                        'reading' => null,
+                    ];
+                }
             }
 
             // 🎯 Phase N — นับ rapid-fire: เกินเกณฑ์ → เข้า silent mode พร้อม warning 1 ครั้ง
+            //   🛡️ (2026-05-05) Paid customer → threshold 2x (ลูกค้าใจร้อนหลังจ่าย ปกติ)
             $rapidCount = $this->countRapidFire($facebookUserId);
-            if ($rapidCount >= self::RAPID_FIRE_THRESHOLD) {
+            $rapidThreshold = $hasPaidActiveReading
+                ? self::RAPID_FIRE_THRESHOLD * 2
+                : self::RAPID_FIRE_THRESHOLD;
+            if ($rapidCount >= $rapidThreshold) {
                 $this->enterSilentMode($facebookUserId);
                 $this->clearRapidFire($facebookUserId);
 
@@ -1147,6 +1166,31 @@ class FortuneConversationService
             ]);
 
             if ($activeReading) {
+                // 🚨 (2026-05-05) Auto-recover: paid + status='new'/'celtic_pending_payment' + picked=0
+                //   เคสที่เจอ: SMS slip matched + confirmPayment() แต่ celtic transition ไม่ทำงาน
+                //              (อาจเป็นเพราะ reading_type ไม่ใช่ celtic_cross ตอน match)
+                //   → force-promote เป็น celtic + push prompt ใบ 1 อัตโนมัติ ไม่ต้องรอ admin recover
+                if ($activeReading->is_paid
+                    && in_array($activeReading->conversation_status, [FortuneReading::STATUS_NEW, FortuneReading::STATUS_CELTIC_PENDING_PAYMENT], true)
+                    && $activeReading->getCelticPickedCount() === 0
+                    && (float) ($activeReading->amount_paid ?? 0) >= 99) {
+                    Log::warning('Fortune processMessage: 🚨 Auto-recover paid+stuck reading', [
+                        'reading_id' => $activeReading->id,
+                        'status' => $activeReading->conversation_status,
+                        'reading_type' => $activeReading->reading_type,
+                        'amount_paid' => $activeReading->amount_paid,
+                    ]);
+
+                    if ($activeReading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                        $activeReading->update(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS]);
+                    }
+                    if ($activeReading->conversation_status !== FortuneReading::STATUS_CELTIC_PENDING_PAYMENT) {
+                        $activeReading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]);
+                    }
+
+                    return $this->onCelticPaymentConfirmed($activeReading->fresh());
+                }
+
                 // ✅ ถ้าสถานะเป็น PAID (AI กำลังประมวลผลคำทำนาย) → แจ้งให้รอ
                 // ไม่ว่าจะพิมพ์อะไรมา ห้าม cancel/สร้างใหม่ เพราะลูกค้าจ่ายเงินแล้ว
                 if ($activeReading->conversation_status === FortuneReading::STATUS_PAID) {
@@ -5112,7 +5156,8 @@ class FortuneConversationService
         // ครบแล้ว → 💎 (2026-05-03) Request-Before-Pay routing
         //   ถ้าลูกค้า first-time 39 (flag is_request_before_pay = true) → AI generate ก่อน → ถามยืนยัน
         //   ไม่งั้น → existing createPaymentBill (pay-first)
-        if ($reading->getConversationState('is_request_before_pay', false)) {
+        // 🛑 (2026-05-05) PAY_LATER_ENABLED kill switch — ถ้าปิด → bypass ทุกอย่าง ไป pay-first
+        if (FortuneReading::PAY_LATER_ENABLED && $reading->getConversationState('is_request_before_pay', false)) {
             Log::info('Fortune: Deep 39 → Request-Before-Pay flow (AI gen ก่อน, bill ทีหลัง)', [
                 'reading_id' => $reading->id,
                 'questions' => $collectedQuestions,
@@ -7370,6 +7415,47 @@ class FortuneConversationService
     protected function clearRapidFire(string $userId): void
     {
         Cache::forget("fortune:rapid:{$userId}");
+    }
+
+    /**
+     * 🛡️ (2026-05-05) Detection: ลูกค้ามี active reading ที่จ่ายเงินแล้ว
+     *
+     * ใช้สำหรับ bypass spam guard — ลูกค้าจ่ายเงินจริงไม่ควรถูก silent_mode ดัก
+     *
+     * เคสที่ครอบคลุม:
+     *   - Celtic 99฿ paid + status='new'/'celtic_pending_payment'/'celtic_picking'/etc.
+     *   - Deep 39฿ paid + status='paid'/'collecting_*'
+     *   - บิลใดๆ ที่ is_paid=true + ยังไม่ closed/cancelled
+     *
+     * Cache 30s — ไม่ query DB ทุก message
+     */
+    protected function hasPaidActiveReading(string $userId): bool
+    {
+        $key = "fortune:has_paid_active:{$userId}";
+
+        return (bool) Cache::remember($key, 30, function () use ($userId) {
+            return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where('is_paid', true)
+                ->whereNotIn('conversation_status', [
+                    FortuneReading::STATUS_COMPLETED,
+                    'cancelled',
+                    'expired',
+                    'celtic_qa_window_expired',
+                ])
+                ->where('updated_at', '>=', now()->subHours(2))
+                ->exists();
+        });
+    }
+
+    /**
+     * 🛡️ Helper: clear paid-active cache (call หลัง state transition)
+     */
+    public function clearPaidActiveCache(string $userId): void
+    {
+        Cache::forget("fortune:has_paid_active:{$userId}");
     }
 
     /**
