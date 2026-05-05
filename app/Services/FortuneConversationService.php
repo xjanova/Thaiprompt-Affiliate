@@ -5156,7 +5156,8 @@ class FortuneConversationService
         // ครบแล้ว → 💎 (2026-05-03) Request-Before-Pay routing
         //   ถ้าลูกค้า first-time 39 (flag is_request_before_pay = true) → AI generate ก่อน → ถามยืนยัน
         //   ไม่งั้น → existing createPaymentBill (pay-first)
-        if ($reading->getConversationState('is_request_before_pay', false)) {
+        // 🛑 (2026-05-05) PAY_LATER_ENABLED kill switch — ถ้าปิด → bypass ทุกอย่าง ไป pay-first
+        if (FortuneReading::PAY_LATER_ENABLED && $reading->getConversationState('is_request_before_pay', false)) {
             Log::info('Fortune: Deep 39 → Request-Before-Pay flow (AI gen ก่อน, bill ทีหลัง)', [
                 'reading_id' => $reading->id,
                 'questions' => $collectedQuestions,

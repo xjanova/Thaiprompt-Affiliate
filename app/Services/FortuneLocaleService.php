@@ -30,6 +30,15 @@ class FortuneLocaleService
     public const SOURCE_ADMIN = 'admin';
 
     /**
+     * 🛑 (2026-05-05) KILL SWITCH — ปิดทั้งระบบ Lao
+     *
+     * User decision: ระบบเสถียรกว่าก่อนเพิ่ม Lao + Pay-Later — เอา Lao ออกหมด
+     * ทุก method return 'th' เสมอ ไม่ persist anything
+     * เปลี่ยนเป็น true เมื่อพร้อม re-enable
+     */
+    public const ENABLED = false;
+
+    /**
      * Locale ปัจจุบันของ request (set ระหว่าง processMessage)
      */
     protected static string $current = self::LOCALE_TH;
@@ -202,6 +211,12 @@ class FortuneLocaleService
         ?string $messageText = null,
         ?string $profileName = null,
     ): string {
+        // 🛑 KILL SWITCH — ปิด Lao detection + persistence
+        if (! self::ENABLED) {
+            self::$current = self::LOCALE_TH;
+            return self::LOCALE_TH;
+        }
+
         // 🛡️ Reset stale state — จัดการ queue worker reuse
         self::$current = self::LOCALE_TH;
 
@@ -281,6 +296,11 @@ class FortuneLocaleService
      */
     public static function current(): string
     {
+        // 🛑 KILL SWITCH — บังคับ TH เสมอ
+        if (! self::ENABLED) {
+            return self::LOCALE_TH;
+        }
+
         return self::$current;
     }
 
@@ -289,6 +309,12 @@ class FortuneLocaleService
      */
     public static function setCurrent(string $locale): void
     {
+        // 🛑 KILL SWITCH — no-op (signature เก็บไว้ backwards compat)
+        if (! self::ENABLED) {
+            self::$current = self::LOCALE_TH;
+            return;
+        }
+
         if (in_array($locale, [self::LOCALE_TH, self::LOCALE_LO], true)) {
             self::$current = $locale;
         }
@@ -301,6 +327,11 @@ class FortuneLocaleService
      */
     public static function lo(string $thText, string $loText): string
     {
+        // 🛑 KILL SWITCH — return Thai เสมอ ไม่สนใจ $loText
+        if (! self::ENABLED) {
+            return $thText;
+        }
+
         return self::current() === self::LOCALE_LO ? $loText : $thText;
     }
 }
