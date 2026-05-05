@@ -1009,10 +1009,26 @@ class SmsPaymentController extends Controller
                 ], 403);
             }
 
-            if ($model->is_paid) {
+            // 🩹 (2026-05-05) Admin approve = re-trigger reading flow ถ้ายังไม่ได้ส่ง
+            //   user spec: "เมื่ออนุมัติบิลแล้ว ก็ปล่อยกระตุ้นโฟลว์ให้ปล่อยคำทำนาย"
+            //   เคสจริง: บิล is_paid=true แต่ AI fail / push fail → ลูกค้ายังไม่ได้คำทำนาย
+            //              เดิม: admin กด approve → "already paid" — ไม่ทำอะไร
+            //              ใหม่: ตรวจว่าส่งคำทำนายไปแล้วหรือยัง
+            //   - Deep: has deep_response + reading_sent_directly=true → delivered ✓
+            //   - Celtic: celtic_questions_used >= 1 → started Q&A ✓
+            //   ถ้ายังไม่ deliver → dispatch flow แม้ paid อยู่แล้ว
+            $alreadyDelivered = false;
+            if ($model->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                $alreadyDelivered = (int) ($model->celtic_questions_used ?? 0) >= 1;
+            } else {
+                $alreadyDelivered = ! empty($model->deep_response)
+                    && (bool) ($model->conversation_state['reading_sent_directly'] ?? false);
+            }
+
+            if ($model->is_paid && $alreadyDelivered) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Fortune reading already paid',
+                    'message' => 'Fortune reading already paid and delivered',
                     'data' => ['bill_reference' => $model->bill_reference, 'status' => 'paid'],
                 ]);
             }
@@ -1121,21 +1137,28 @@ class SmsPaymentController extends Controller
             ]);
         }
 
+        // 🩹 (2026-05-05) Admin force approve — user spec: "การกดอนุมัติบิลต้อง force เสมอ"
+        //   เคสจริง: บิลที่ status = expired / cancelled / failed → admin กด approve ได้ไม่ผ่าน (422)
+        //            แต่ admin ตัดสินใจแล้วว่าได้รับเงินจริง — ต้อง override status ทุกกรณี
+        //   เดิม: ! in_array($model->status, ['pending', 'processing']) → return 422
+        //   ใหม่: log warning ถ้าจะ approve บิลที่ไม่ใช่ pending — แต่ดำเนินการต่อ (admin authority)
         if (! in_array($model->status, ['pending', 'processing'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Transaction is not pending (current: '.$model->status.')',
-            ], 422);
+            Log::warning('SMS Payment: admin force-approve transaction with non-pending status', [
+                'transaction_id' => $model->transaction_id,
+                'current_status' => $model->status,
+                'device_id' => $device->device_id,
+            ]);
+            // ไม่ block — admin มี authority อนุมัติทุก status (รวม expired/cancelled/failed)
         }
 
         // ใช้ DB transaction ครอบทั้งหมดเพื่อให้ rollback ได้ถ้า completePayment ล้มเหลว
         try {
             \DB::transaction(function () use ($model) {
-                // Mark UniquePaymentAmount as used (เหมือน xmanstudio)
-                $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
-                    ->whereIn('status', ['reserved', 'expired'])
-                    ->first();
-                if ($uniqueAmount) {
+                // 🩹 (2026-05-05) Mark UPA as used — รวมทุก status (force approve)
+                //   เดิม: filter เฉพาะ reserved/expired → admin force approve UPA cancelled ไม่อัปเดต
+                //   ใหม่: รวม cancelled, used (idempotent) — admin ตัดสินใจอัปเดตให้ตรงกับการรับเงินจริง
+                $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)->first();
+                if ($uniqueAmount && $uniqueAmount->status !== 'used') {
                     $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
                 }
 
@@ -1143,6 +1166,13 @@ class SmsPaymentController extends Controller
                 $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
                 if ($notification) {
                     $notification->update(['status' => 'confirmed']);
+                }
+
+                // 🩹 (2026-05-05) ถ้า status เป็น cancelled/failed/expired — reset เป็น pending ก่อน
+                //   เพราะ markAsCompleted() อาจตรวจ guard internally ใน completePayment
+                if (! in_array($model->status, ['pending', 'processing', 'completed'])) {
+                    $model->update(['status' => 'pending']);
+                    $model->refresh();
                 }
 
                 app(PaymentService::class)->completePayment($model);
@@ -1575,19 +1605,31 @@ class SmsPaymentController extends Controller
 
                     continue;
                 }
-                if (! $model->is_paid) {
-                    // 🔮 Route ตาม reading_type — Deep dispatch background job, Celtic push เปิดไพ่
-                    //    helper จะ confirm payment + เลือก flow ที่ถูกต้อง
-                    $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
-                    $dispatched = $this->dispatchFortuneApprovalFlow($model, $notification);
 
-                    if (! $dispatched) {
+                // 🩹 (2026-05-05) Force re-trigger flow แม้ paid แล้ว ถ้ายังไม่ delivered
+                //   เดิม: paid แล้ว → failed++ (skip — admin re-dispatch ไม่ได้)
+                //   ใหม่: ตรวจ delivered → ถ้ายังไม่ส่ง → dispatch flow อีกครั้ง
+                $alreadyDelivered = $model->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                    ? (int) ($model->celtic_questions_used ?? 0) >= 1
+                    : (! empty($model->deep_response)
+                        && (bool) ($model->conversation_state['reading_sent_directly'] ?? false));
+
+                if ($model->is_paid && $alreadyDelivered) {
+                    $failed++; // already paid + delivered — count as skip
+                } else {
+                    $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
+
+                    if (! $model->is_paid) {
+                        $model->confirmPayment($notification);
+                        $model = $model->fresh();
+                    }
+
+                    $dispatched = $this->dispatchFortuneApprovalFlow($model, $notification);
+                    if (! $dispatched && ! $model->is_paid) {
                         // ไม่มี userId → fallback แค่ confirm payment
                         $model->confirmPayment($notification);
                     }
                     $approved++;
-                } else {
-                    $failed++; // already paid
                 }
             } else {
                 /** @var PaymentTransaction $model */
@@ -1597,14 +1639,26 @@ class SmsPaymentController extends Controller
 
                     continue;
                 }
-                if (in_array($model->status, ['pending', 'processing'])) {
+                // 🩹 (2026-05-05) Bulk admin force approve — ตรงกับ approveOrder
+                //   user spec: "การกดอนุมัติบิลต้อง force เสมอ"
+                //   เดิม: skip ถ้า status != pending/processing → admin force ไม่ได้
+                //   ใหม่: log warning + ดำเนินการต่อ (ครอบคลุม cancelled/expired/failed)
+                if ($model->status === 'completed') {
+                    $failed++; // already approved — count as skip
+                } else {
+                    if (! in_array($model->status, ['pending', 'processing'])) {
+                        Log::warning('SMS Payment: bulk admin force-approve transaction with non-pending status', [
+                            'transaction_id' => $model->transaction_id,
+                            'current_status' => $model->status,
+                            'device_id' => $device->device_id,
+                        ]);
+                    }
+
                     try {
                         \DB::transaction(function () use ($model, $paymentService) {
-                            // Mark UniquePaymentAmount as used
-                            $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)
-                                ->whereIn('status', ['reserved', 'expired'])
-                                ->first();
-                            if ($uniqueAmount) {
+                            // Mark UniquePaymentAmount as used (force — รวมทุก status)
+                            $uniqueAmount = UniquePaymentAmount::where('transaction_id', $model->id)->first();
+                            if ($uniqueAmount && $uniqueAmount->status !== 'used') {
                                 $uniqueAmount->update(['status' => 'used', 'matched_at' => now()]);
                             }
 
@@ -1612,6 +1666,12 @@ class SmsPaymentController extends Controller
                             $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
                             if ($notification) {
                                 $notification->update(['status' => 'confirmed']);
+                            }
+
+                            // ถ้า status ไม่ใช่ pending/processing/completed → reset เป็น pending ก่อน
+                            if (! in_array($model->status, ['pending', 'processing', 'completed'])) {
+                                $model->update(['status' => 'pending']);
+                                $model->refresh();
                             }
 
                             $paymentService->completePayment($model);
@@ -1624,8 +1684,6 @@ class SmsPaymentController extends Controller
                         ]);
                         $failed++;
                     }
-                } else {
-                    $failed++;
                 }
             }
         }
