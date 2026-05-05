@@ -1043,14 +1043,16 @@ class SmsPaymentController extends Controller
                 $model = $model->fresh();
             }
 
-            // 💎 (2026-05-04) Request-Before-Pay + ลูกค้ารับคำทำนายไปแล้ว → skip dispatch
-            //    user spec: "บิล pay later แอดมินก็ approve ได้นะ"
-            //    ลูกค้าได้คำทำนายไปแล้ว (deep_response filled) — admin manual approve
-            //    แค่ปิดบิล + ส่ง "ขอบคุณ ระบบรับเงินแล้ว" — ห้าม regenerate AI / re-push reading
-            $isRequestBeforePay = (bool) ($model->conversation_state['is_request_before_pay'] ?? false);
-            $hasDeepResponse = ! empty($model->deep_response);
-
-            if ($isRequestBeforePay && $hasDeepResponse) {
+            // 🩹 (2026-05-05) Unified delivery routing — user spec: "ส่งคำทำนายทุกกรณี"
+            //   Logic ใหม่ใช้ $alreadyDelivered (คำนวณก่อนหน้า) เป็น single source of truth:
+            //     ✓ alreadyDelivered=true  → ส่ง "thank-you" อย่างเดียว (กัน re-spam คำทำนายซ้ำ)
+            //     ✓ alreadyDelivered=false → dispatch flow → AI gen / re-push เสมอ
+            //   ครอบคลุม edge cases:
+            //     • Pay-Later ลูกค้าได้รับคำทำนายแล้ว → thank-you only ✓
+            //     • Pay-Later AI gen เสร็จแต่ delivery fail (sent_directly=false) → dispatch re-push ✓
+            //     • Pay-First AI fail / push fail → dispatch re-gen + push ✓
+            //     • Pay-First สำเร็จเรียบร้อย → thank-you only ✓
+            if ($alreadyDelivered) {
                 try {
                     $platform = $model->platform
                         ?: ((preg_match('/^U[0-9a-f]{32}$/i', $model->facebook_user_id ?? '')) ? 'line' : 'facebook');
@@ -1081,9 +1083,10 @@ class SmsPaymentController extends Controller
                         $model->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
                     }
 
-                    Log::info('💎 SMS Payment: admin approved Request-Before-Pay (skip Job — already delivered)', [
+                    Log::info('💎 SMS Payment: admin approved + reading delivered → thank-you only (no re-dispatch)', [
                         'reading_id' => $model->id,
                         'bill_reference' => $model->bill_reference,
+                        'reading_type' => $model->reading_type,
                     ]);
                 } catch (\Throwable $e) {
                     Log::warning('💎 SMS Payment: thank-you push ล้มเหลว (best-effort)', [
@@ -1092,9 +1095,19 @@ class SmsPaymentController extends Controller
                     ]);
                 }
             } else {
-                // 🔮 ปกติ — Route ตาม reading_type — Celtic ใช้ flow คนละแบบจาก Deep 39฿
-                //    helper จะ dispatch ProcessDeepFortuneReadingJob (deep) หรือ
-                //    call handleCelticPaymentMatched (celtic) ตาม reading.reading_type
+                // 🔮 ยังไม่ deliver — dispatch flow (Deep gen+push / Celtic เปิดไพ่)
+                //   user spec: "เมื่ออนุมัติบิลแล้ว ก็ปล่อยกระตุ้นโฟลว์ให้ปล่อยคำทำนาย"
+                //   ครอบคลุม:
+                //     • Pay-First not yet delivered (AI fail / push fail / not started)
+                //     • Pay-Later AI gen เสร็จแต่ delivery fail
+                //     • Celtic paid but not started Q&A (push first card prompt)
+                Log::info('💎 SMS Payment: admin approve + reading NOT delivered → dispatch flow', [
+                    'reading_id' => $model->id,
+                    'bill_reference' => $model->bill_reference,
+                    'reading_type' => $model->reading_type,
+                    'has_deep_response' => ! empty($model->deep_response),
+                    'celtic_q_used' => $model->celtic_questions_used ?? 0,
+                ]);
                 $this->dispatchFortuneApprovalFlow($model, $notification);
             }
 
@@ -1606,16 +1619,16 @@ class SmsPaymentController extends Controller
                     continue;
                 }
 
-                // 🩹 (2026-05-05) Force re-trigger flow แม้ paid แล้ว ถ้ายังไม่ delivered
-                //   เดิม: paid แล้ว → failed++ (skip — admin re-dispatch ไม่ได้)
-                //   ใหม่: ตรวจ delivered → ถ้ายังไม่ส่ง → dispatch flow อีกครั้ง
+                // 🩹 (2026-05-05) Unified delivery routing — ตรงกับ approveOrder
+                //   alreadyDelivered=true  → confirm + thank-you (กัน re-spam)
+                //   alreadyDelivered=false → confirm + dispatch flow (ส่งคำทำนายทุกกรณี)
                 $alreadyDelivered = $model->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
                     ? (int) ($model->celtic_questions_used ?? 0) >= 1
                     : (! empty($model->deep_response)
                         && (bool) ($model->conversation_state['reading_sent_directly'] ?? false));
 
                 if ($model->is_paid && $alreadyDelivered) {
-                    $failed++; // already paid + delivered — count as skip
+                    $failed++; // already paid + delivered — count as skip (idempotent)
                 } else {
                     $notification = SmsPaymentNotification::where('matched_transaction_id', $model->id)->first();
 
@@ -1624,10 +1637,19 @@ class SmsPaymentController extends Controller
                         $model = $model->fresh();
                     }
 
-                    $dispatched = $this->dispatchFortuneApprovalFlow($model, $notification);
-                    if (! $dispatched && ! $model->is_paid) {
-                        // ไม่มี userId → fallback แค่ confirm payment
-                        $model->confirmPayment($notification);
+                    if ($alreadyDelivered) {
+                        // Pay-Later เคสที่ลูกค้าได้รับคำทำนายแล้ว — ไม่ต้อง re-spam
+                        // (admin force confirm payment เฉยๆ — ไม่ dispatch ซ้ำ)
+                        Log::info('💎 SMS Payment: bulk approved + delivered → confirm only', [
+                            'reading_id' => $model->id,
+                            'bill_reference' => $model->bill_reference,
+                        ]);
+                    } else {
+                        // ยังไม่ deliver — dispatch flow ส่งคำทำนาย
+                        $dispatched = $this->dispatchFortuneApprovalFlow($model, $notification);
+                        if (! $dispatched && ! $model->is_paid) {
+                            $model->confirmPayment($notification);
+                        }
                     }
                     $approved++;
                 }
