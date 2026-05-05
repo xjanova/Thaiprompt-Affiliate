@@ -4412,12 +4412,23 @@ class FortuneConversationService
     protected function handleBirthdateConfirmation(FortuneReading $reading, string $messageText): array
     {
         $text = mb_strtolower(trim($messageText));
-        $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u', '', $text);
+        // 🩹 (2026-05-05) เพิ่ม "แล้ว"/"ละ"/"ล่ะ" ใน suffix stripper
+        //   user report: "ลูกค้าตอบ 'ใช่แล้ว' แต่ระบบไม่ไปต่อ"
+        //   เคสจริง: "ใช่แล้ว", "ใช่แล้วค่ะ", "ใช่ละ", "ใช่ล่ะครับ"
+        $normalized = preg_replace('/\s*(แล้ว|ละ|ล่ะ|ค่ะ|ครับ|คะ|จ้า|จ้ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)+\s*$/u', '', $text);
+        $normalized = trim($normalized);
 
         $pendingBirthdate = $reading->getConversationState('pending_birthdate');
 
         // ✅ ยืนยัน → commit + ไปต่อ
-        $confirmKeywords = ['ใช่', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'ถูก', 'ใช่ค่ะ', 'ใช่ครับ', 'yes', 'y', 'confirm'];
+        // 🩹 (2026-05-05) เพิ่ม keyword variants — ครอบคลุม "ใช่แล้ว", "ถูกแล้ว", "ใช่ๆ"
+        $confirmKeywords = [
+            'ใช่', 'ยืนยัน', 'ok', 'okay', 'โอเค', 'ถูกต้อง', 'ถูก',
+            'ใช่ค่ะ', 'ใช่ครับ', 'ใช่ๆ', 'ใช่ๆๆ',
+            'yes', 'y', 'confirm', 'ตกลง', 'ครับ', 'ค่ะ',  // ครับ/ค่ะ เดี่ยว ๆ ก็ถือว่ายืนยัน (หลัง strip suffix)
+            // 🇱🇦 ลาว
+            'ໃຊ່', 'ຍືນຍັນ', 'ຖືກ', 'ຕົກລົງ',
+        ];
         foreach ($confirmKeywords as $kw) {
             if ($normalized === $kw || str_starts_with($normalized, $kw)) {
                 if (! $pendingBirthdate) {
