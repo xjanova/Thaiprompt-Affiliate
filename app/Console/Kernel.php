@@ -362,6 +362,22 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // 🌟 (2026-05-05) Fortune Celtic Auto-Finalize
+        //   หา Celtic sessions ที่ QA window หมดอายุ + push Grand Finale + คำทำนายสุดท้าย
+        //   user spec: ลูกค้าจ่าย 99 บาท ต้องได้ summary ทุกครั้ง ไม่ว่าจบยังไง
+        // ========================================
+        $schedule->command('fortune:celtic-auto-finalize', ['--limit=20'])
+            ->everyFiveMinutes()
+            ->withoutOverlapping(15) // lock 15 นาที (AI Grand Finale ใช้เวลา ~20-30s ต่อ session)
+            ->runInBackground()
+            ->onSuccess(function () {
+                // ไม่ log ทุกครั้ง (รันถี่) — log เฉพาะใน command เมื่อเจอ candidate
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Celtic Auto-Finalize] auto-finalize Celtic sessions ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
         //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
         //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ

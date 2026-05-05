@@ -1192,14 +1192,21 @@ trait CelticCrossConversationTrait
         $sequence = $result['sequence'];
         $wantsEnd = (bool) ($result['wants_end'] ?? false);
 
-        // 🔚 AI signal ว่าพร้อมจบ session (ลูกค้านอกเรื่อง / ถามครอบคลุมแล้ว / ลูกค้าวกวน)
-        // 🛡️ guard: Q1 ห้ามจบ — ลูกค้าเพิ่งจ่ายค่าครู ต้องเปิดให้ถามต่ออย่างน้อยรอบหนึ่ง
-        if ($wantsEnd && $sequence > 1) {
-            return $this->endCelticSession($reading, 'ai_signal', $result['response']);
+        // 🛡️ (2026-05-05) DISABLE ai_signal early-end ตาม user spec
+        //   user 2026-05-05: "สำคัญอย่าสรุปก่อนลูกค้าถามคำถามสุดท้ายต้องสรุปที่คำถามสุดท้าย"
+        //   เดิม: wants_end จาก AI → end session ตั้งแต่ Q2 → ลูกค้าโดนตัดก่อนถามครบ
+        //   ใหม่: AI's wants_end ignore ทั้งหมด — ลูกค้าตัดสินใจเอง (พิมพ์ "พอแค่นี้") หรือ max reached
+        if ($wantsEnd) {
+            \Log::info('Celtic: AI signaled wants_end — ignored (user spec: never auto-end before max)', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+                'max_questions' => $maxQuestions,
+            ]);
         }
 
         // 🔢 (2026-05-03) ถ้าตอบไปครบ max แล้ว → จบ session พร้อมคำตอบสุดท้าย
         //   เฉพาะเมื่อ maxQuestions > 0 (0 = unlimited)
+        //   ⭐ (2026-05-05) endCelticSession จะ combine คำตอบสุดท้าย ($result['response']) + Grand Finale
         if ($maxQuestions > 0 && $sequence >= $maxQuestions) {
             return $this->endCelticSession($reading, 'max_questions_reached', $result['response']);
         }
@@ -1237,13 +1244,14 @@ trait CelticCrossConversationTrait
      * จบ Celtic session อย่างสุขุม → reset state ให้กลับเข้า normal loop ของระบบ
      *
      * เรียกเมื่อ:
-     *   - AI ส่ง [END_SESSION] token (นอกเรื่อง / ครอบคลุม / วกวน)
-     *   - Time window 30 นาที หมด
-     *   - ลูกค้าพิมพ์ "พอแค่นี้" / "จบ"
-     *   - Idle timeout (เรียกจาก scheduled command)
+     *   - AI ส่ง [END_SESSION] token (นอกเรื่อง / ครอบคลุม / วกวน) — DEPRECATED 2026-05-05
+     *   - Time window QA หมด (time_expired) — ลูกค้าจ่ายแล้ว ต้องได้ summary ทุกครั้ง
+     *   - ลูกค้าพิมพ์ "พอแค่นี้" / "จบ" (customer_said_done)
+     *   - ครบ max questions (max_questions_reached) — combine final answer + summary
+     *   - Idle timeout (idle) — เรียกจาก scheduled command fortune:celtic-auto-finalize
      *
-     * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'idle'
-     * @param  string|null  $aiMessage  ถ้า AI ส่งข้อความปิดมาด้วย — แสดงข้อความนั้นแทน default
+     * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'max_questions_reached' | 'idle'
+     * @param  string|null  $aiMessage  ถ้ามีคำตอบสุดท้ายจาก AI — รวมเข้ากับ summary
      */
     public function endCelticSession(FortuneReading $reading, string $reason = 'ai_signal', ?string $aiMessage = null): array
     {
@@ -1253,12 +1261,13 @@ trait CelticCrossConversationTrait
         $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
 
-        // 🌟 (2026-05-04) Grand Finale Master Summary
-        //   เรียกเฉพาะเมื่อลูกค้ายังออนไลน์อยู่ (active end reasons) — ไม่เรียกตอน time_expired/idle
-        //   เพราะลูกค้าหายไปแล้ว AI call เปลืองโทเคน + ไม่ส่งถึงทันที
-        //   นโยบาย: ผ่อนแรงด้วยการตรวจ celtic_questions_used >= 1 ด้วย — ถามอย่างน้อย 1 ข้อค่อยมีบทสรุป
-        $shouldGenerateFinale = in_array($reason, ['customer_said_done', 'max_questions_reached', 'ai_signal'], true)
-            && $reading->fresh()->celtic_questions_used >= 1
+        // 🌟 (2026-05-05) Grand Finale Master Summary — generate ทุกครั้งที่เข้าเงื่อนไข
+        //   user spec 2026-05-05: "หากยังถามไม่ครบแต่ยุติลงก่อน...หลุดหมดเวลาคุย ให้เข้าโฟลว์
+        //   บทสรุปเองและส่งคำทำนายสุดท้ายไปให้อัตโนมัติ"
+        //   เดิม: skip ตอน time_expired/idle (เพราะคิดว่าลูกค้า offline)
+        //   ใหม่: generate ทุกครั้งถ้ามีคำถาม + ไพ่ครบ — ลูกค้าจ่าย 99 บาท สมควรได้ summary
+        //         (idle/time_expired pushed ผ่าน fortune:celtic-auto-finalize command)
+        $shouldGenerateFinale = $reading->fresh()->celtic_questions_used >= 1
             && $reading->getCelticPickedCount() >= 10;
 
         $grandFinale = null;
@@ -1285,8 +1294,20 @@ trait CelticCrossConversationTrait
         }
 
         // 🌟 ถ้ามี Grand Finale → ใช้แทน default closing (สวยกว่า ลึกกว่า)
+        // 🩹 (2026-05-05) max_questions_reached + has aiMessage → combine final answer + summary
+        //   user spec: "เมื่อลูกค้าถามคำถามที่ 3 ก็ให้ตอบคำถามพร้อมสรุป"
+        //   เดิม: aiMessage ถูก replace ด้วย Grand Finale (ลูกค้าไม่ได้คำตอบสุดท้าย!)
+        //   ใหม่: ส่งคำตอบสุดท้ายก่อน → แล้วต่อด้วย Grand Finale
         if (! empty($grandFinale)) {
-            $closingMessage = "🌟✨ *บทสรุปสุดท้ายจากแม่หมอจันทรา* ✨🌟\n"
+            $finalAnswerSection = '';
+            if (! empty($aiMessage) && in_array($reason, ['max_questions_reached', 'time_expired', 'idle'], true)) {
+                $finalAnswerSection = "🎴 *คำทำนายข้อสุดท้ายของเจ้าชะตา:*\n\n"
+                    . trim($aiMessage) . "\n\n"
+                    . str_repeat('━', 17) . "\n\n";
+            }
+
+            $closingMessage = $finalAnswerSection
+                . "🌟✨ *บทสรุปสุดท้ายจากแม่หมอจันทรา* ✨🌟\n"
                 . "👑 *VIP Master Reading*\n\n"
                 . str_repeat('━', 17) . "\n\n"
                 . $grandFinale . "\n\n"

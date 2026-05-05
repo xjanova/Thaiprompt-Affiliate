@@ -468,6 +468,27 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             'bill_action' => $billResult['action'] ?? 'unknown',
                         ]);
 
+                        // 🩹 (2026-05-05) Safety net — ตั้ง amount_paid = base price (39)
+                        //    เคสจริง: createPaymentBill fail → setPendingPayment ไม่ถูกเรียก
+                        //              → DB amount_paid=0 → SMS Checker app เห็น 0 บาท → filter ผิด
+                        //    Fix: ถึงไม่มี UPA จับคู่ ก็ตั้งราคาฐานก่อน (admin/SMS app เห็นถูก)
+                        //         ลูกค้ามาทักใหม่ → orphan recovery (FCS) สร้างบิล + UPA แท้
+                        try {
+                            if ((float) $reading->amount_paid <= 0) {
+                                $basePrice = (float) ($settings->deep_reading_price ?? 39);
+                                $reading->update(['amount_paid' => $basePrice]);
+                                Log::info('💎 Pay-Later: safety net — set amount_paid to base price', [
+                                    'reading_id' => $reading->id,
+                                    'amount_paid' => $basePrice,
+                                ]);
+                            }
+                        } catch (\Throwable $amountErr) {
+                            Log::warning('💎 Pay-Later: safety net set amount_paid ล้มเหลว (non-blocking)', [
+                                'reading_id' => $reading->id,
+                                'error' => $amountErr->getMessage(),
+                            ]);
+                        }
+
                         $name = $reading->facebook_user_name ?? 'คุณ';
                         $msg = FortuneLocaleService::lo(
                             "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n═══════════════════════\n\n"

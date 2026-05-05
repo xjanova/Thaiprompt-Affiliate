@@ -254,12 +254,32 @@ class SmsPaymentController extends Controller
         }
 
         // ดึงยอดเงินจริงที่ต้องชำระ (unique amount)
+        // 🩹 (2026-05-05) Fallback chain — กัน amount=0 บน SMS Checker app
+        //   เคสจริง: Pay-Later createPaymentBill fail → setPendingPayment ไม่ถูกเรียก
+        //             → reading.amount_paid=0 → SMS Checker app แสดง ฿0 → admin filter ผิด
+        //   Fix: 1) UPA.unique_amount (จริงสุด — ทศนิยม unique)
+        //        2) reading.amount_paid (ถ้าเคย setPendingPayment)
+        //        3) settings price ตาม reading_type (ปลอดภัยสุด — แสดงราคาฐาน)
         $uniquePayment = $reading->unique_payment_amount_id
             ? UniquePaymentAmount::find($reading->unique_payment_amount_id)
             : null;
-        $displayAmount = $uniquePayment
-            ? (float) $uniquePayment->unique_amount
-            : (float) $reading->amount_paid;
+        if ($uniquePayment) {
+            $displayAmount = (float) $uniquePayment->unique_amount;
+        } elseif ((float) $reading->amount_paid > 0) {
+            $displayAmount = (float) $reading->amount_paid;
+        } else {
+            // Fallback ตาม reading_type → ราคาฐานจาก settings
+            try {
+                $fortuneSettings = \App\Models\FortuneTellingSetting::getSettings();
+                $displayAmount = match ($reading->reading_type) {
+                    FortuneReading::READING_TYPE_CELTIC_CROSS => (float) ($fortuneSettings->celtic_cross_price ?? 99),
+                    FortuneReading::READING_TYPE_DEEP => (float) ($fortuneSettings->deep_reading_price ?? 39),
+                    default => 0.0,
+                };
+            } catch (\Throwable $e) {
+                $displayAmount = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS ? 99.0 : 39.0;
+            }
+        }
 
         // 👤 Customer name resolution (priority chain — รองรับทุก platform)
         //   1. facebook_user_name        — Facebook ที่ extract มาจาก profile
