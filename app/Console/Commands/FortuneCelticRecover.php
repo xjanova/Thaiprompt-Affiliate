@@ -29,7 +29,7 @@ use Illuminate\Support\Facades\Log;
 class FortuneCelticRecover extends Command
 {
     protected $signature = 'fortune:celtic-recover
-                            {id? : Reading ID เฉพาะที่จะกู้}
+                            {id? : Reading ID หรือ bill_reference (เช่น FTU-260505-J1439)}
                             {--auto : สแกนหา readings ที่ติดทั้งหมด}
                             {--dry : Dry run — แสดงรายการแต่ไม่ส่งจริง}
                             {--minutes=5 : เกณฑ์เวลาที่ถือว่าค้าง (นาที)}';
@@ -52,9 +52,14 @@ class FortuneCelticRecover extends Command
         $readings = collect();
 
         if ($id) {
-            $reading = FortuneReading::find($id);
+            // 🩹 (2026-05-05) รับทั้ง numeric ID และ bill_reference (FTU-XXXXXX-XXXXX)
+            //   ลูกค้า/แอดมินจะเห็น bill_reference ใน slip — ใช้กู้ตรงๆ ได้เลย
+            $reading = is_numeric($id)
+                ? FortuneReading::find($id)
+                : FortuneReading::where('bill_reference', $id)->first();
+
             if (! $reading) {
-                $this->error("ไม่พบ reading #{$id}");
+                $this->error("ไม่พบ reading — id/bill: {$id}");
 
                 return 1;
             }
