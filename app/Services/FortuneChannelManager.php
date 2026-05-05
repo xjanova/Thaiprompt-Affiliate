@@ -1718,8 +1718,50 @@ class FortuneChannelManager
                 'celtic_pending_payment', 'celtic_pending_payment_reuse'
                     => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
-                // celtic_card_picked → ส่งรูปไพ่ + ปุ่ม "พร้อม"
-                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                // celtic_card_picked → ส่งรูปไพ่ + ปุ่ม "เปิดไพ่ใบที่ N"
+                // 🩹 (2026-05-05) Refactor — combine image+text ใน reply call เดียว
+                //   เดิม: sendImage (push, ใช้ quota) + sendLineMessageWithQuickReply (reply)
+                //         → 2 API calls + ดูค้าง ลื่นไหลไม่ดี
+                //   ใหม่: replyMessage([image, text+quickReply]) → 1 call ฟรี + เร็วขึ้น
+                //   + dynamic label "🃏 เปิดไพ่ใบที่ N" (เหมือน FB) — ผู้สูงอายุเข้าใจ
+                //   + เพิ่ม 'celtic_restart_hint', 'celtic_already_in_session'
+                'celtic_card_picked', 'celtic_pick_prompt', 'celtic_chitchat_reminder', 'celtic_reset',
+                'celtic_restart_hint', 'celtic_already_in_session' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    // 🃏 Dynamic label ตามจำนวนไพ่ที่เปิด
+                    $reading = $result['reading'] ?? null;
+                    $picked = method_exists($reading, 'getCelticPickedCount') ? $reading->getCelticPickedCount() : 0;
+                    $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+
+                    $quickReplyItems = [
+                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => $nextLabel, 'text' => 'พร้อม']],
+                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🔄 สับใหม่', 'text' => 'สับใหม่']],
+                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
+                    ];
+
+                    // 🚀 Single replyMessage with [image, text+quickReply] — ฟรี + เร็ว
+                    $messages = [];
+                    if (! empty($result['tarot_image_url'])) {
+                        $imageUrl = $lineService->ensureHttps($result['tarot_image_url']);
+                        $messages[] = [
+                            'type' => 'image',
+                            'originalContentUrl' => $imageUrl,
+                            'previewImageUrl' => $imageUrl,
+                        ];
+                    }
+                    $messages[] = [
+                        'type' => 'text',
+                        'text' => mb_substr($message, 0, 4900),  // LINE text max 5000
+                        'quickReply' => ['items' => $quickReplyItems],
+                    ];
+
+                    // Try replyMessage — ฟรี + atomic (1 ทริปทั้ง image + text)
+                    if ($replyToken) {
+                        if ($lineService->replyMessage($replyToken, $messages)) {
+                            return true;
+                        }
+                    }
+
+                    // Fallback: sendImage (push) + sendMessage (push) แยกกัน
                     if (! empty($result['tarot_image_url'])) {
                         try {
                             $lineService->sendImage($userId, $result['tarot_image_url']);
@@ -1727,9 +1769,12 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                        ['label' => '🙏 พร้อม', 'text' => 'พร้อม'],
-                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                    return $lineService->sendMessage($userId, $message, [
+                        'quick_replies' => [
+                            ['label' => $nextLabel, 'text' => 'พร้อม'],
+                            ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'],
+                            ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                        ],
                     ]);
                 })(),
 

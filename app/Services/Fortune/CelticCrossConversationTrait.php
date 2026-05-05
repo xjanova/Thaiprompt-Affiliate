@@ -825,6 +825,8 @@ trait CelticCrossConversationTrait
 
     /**
      * สร้างข้อความเชิญตั้งจิต + เปิดไพ่ใบถัดไป
+     *
+     * 🩹 (2026-05-05) เพิ่มข้อความ "ต้องเปิดครบ 10 ใบก่อนทำนาย" — user spec
      */
     protected function buildCelticPickPromptText(FortuneReading $reading): string
     {
@@ -836,11 +838,15 @@ trait CelticCrossConversationTrait
         $meta = FortuneReading::CELTIC_POSITIONS[$next] ?? null;
         $name = $meta['name'] ?? '?';
         $desc = $meta['description'] ?? '';
+        $picked = $reading->getCelticPickedCount();
+        $remaining = 10 - $picked;
 
         return "🃏 *ใบที่ {$next}/10 — ตำแหน่ง [{$name}]*\n"
             . "💭 ตำแหน่งนี้บอกถึง: {$desc}\n\n"
             . "🧘 ตั้งจิต หลับตา 3 วินาที นึกถึงสิ่งที่อยากรู้\n"
-            . "เมื่อพร้อมแล้ว พิมพ์ 'พร้อม' เพื่อให้หมอเปิดไพ่ใบนี้ค่ะ";
+            . "เมื่อพร้อมแล้ว พิมพ์ 'พร้อม' เพื่อให้หมอเปิดไพ่ใบนี้ค่ะ\n\n"
+            . "📌 *ต้องเปิดครบ 10 ใบก่อน แม่หมอจึงเริ่มทำนาย*\n"
+            . "   เปิดไปแล้ว {$picked}/10 — เหลืออีก *{$remaining} ใบ*";
     }
 
     /**
@@ -852,7 +858,8 @@ trait CelticCrossConversationTrait
             'action' => 'celtic_pick_prompt',
             'message' => "✅ ค่าครูเข้าระบบแล้ว ขอบคุณค่ะ\n\n"
                 . "🔮 *ดูดวง Celtic Cross เริ่มเลย*\n"
-                . 'หมอจะเปิดไพ่ให้ทีละใบ พร้อมตำแหน่งที่ได้\n\n'
+                . "🃏 หมอจะเปิดไพ่ให้ทีละใบ ทั้งหมด *10 ใบ*\n"
+                . "📌 ต้องเปิดครบทั้ง 10 ใบก่อน — แม่หมอจึงจะเริ่มทำนายและให้เจ้าชะตาถามคำถามได้\n\n"
                 . "──────────────────────\n"
                 . $this->buildCelticPickPromptText($reading),
             'reading' => $reading,
