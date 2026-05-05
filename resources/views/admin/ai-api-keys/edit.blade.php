@@ -134,11 +134,14 @@
                 <select x-model="form.purpose"
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
                     <option value="any">ใช้ได้ทุกอย่าง (default)</option>
-                    <option value="prediction">เฉพาะคำทำนาย — paid deep reading</option>
+                    <option value="prediction">เฉพาะคำทำนาย — paid deep reading (Deep 39 / Celtic 99)</option>
+                    <option value="free_card">🎁 เฉพาะทำนายฟรี — 1 ใบ หลัง DM react/comment</option>
                     <option value="chat">เฉพาะแชทสนทนา — chat</option>
                 </select>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    เลือก "เฉพาะคำทำนาย" จะกัน chat ดูดโควต้า + ทำนายลูกค้าจะใช้ตลอดได้
+                    💡 <strong>free_card</strong> ถูกเลือก<u>ก่อน</u> prediction/any (boost +1000) — สงวน paid keys ไว้สำหรับลูกค้าจ่ายเงิน<br>
+                    💎 <strong>prediction</strong> ใช้กับลูกค้าที่จ่ายแล้ว (Deep 39 / Celtic 99) — กัน free/chat ดูดโควต้า<br>
+                    🔼 <strong>Priority</strong> สูง = เลือกก่อนใน purpose เดียวกัน (100 = สูงสุด)
                 </p>
             </div>
 
@@ -192,6 +195,19 @@
                     <div>
                         <span class="text-gray-500 dark:text-gray-400">Requests วันนี้</span>
                         <p class="font-semibold text-gray-900 dark:text-white">{{ number_format($key->requests_today) }}</p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500 dark:text-gray-400">RPM ปัจจุบัน (real-time)</span>
+                        <p class="font-semibold text-gray-900 dark:text-white">
+                            {{ number_format($key->current_rpm) }}
+                            @if ($key->rate_limit_per_minute)
+                                <span class="text-xs text-gray-500">/ {{ $key->rate_limit_per_minute }}</span>
+                            @endif
+                        </p>
+                    </div>
+                    <div>
+                        <span class="text-gray-500 dark:text-gray-400">In-flight (concurrent)</span>
+                        <p class="font-semibold text-gray-900 dark:text-white">{{ number_format($key->current_inflight) }}</p>
                     </div>
                 </div>
             </div>

@@ -176,12 +176,15 @@ class AiApiKey extends Model
      * 🎯 (2026-05-02) วัตถุประสงค์การใช้ key
      *
      * any        = ใช้ได้ทุกอย่าง (default)
-     * prediction = เฉพาะคำทำนาย deep readings (กัน chat ใช้แล้วเปลือง quota)
+     * prediction = เฉพาะคำทำนาย deep readings (paid Deep 39 / Celtic 99)
      * chat       = เฉพาะ chat conversation (กัน prediction ดูดหมด)
+     * free_card  = (2026-05-05) เฉพาะทำนายฟรีหลัง DM react/comment
+     *              เจาะจงกว่า 'prediction' — priority สูงกว่าตอนเลือก key
      */
     public const PURPOSES = [
         'any' => 'ใช้ได้ทุกอย่าง (default)',
         'prediction' => 'เฉพาะคำทำนาย (paid deep reading)',
+        'free_card' => '🎁 เฉพาะทำนายฟรี (1 ใบ หลัง DM)',
         'chat' => 'เฉพาะแชทสนทนา (chat)',
     ];
 
@@ -322,6 +325,28 @@ class AiApiKey extends Model
     }
 
     /**
+     * 🩹 (2026-05-05) ดึง requests/minute แบบ real-time จาก Cache (TTL 60s)
+     *   ใช้แทน column requests_minute ที่ DB อาจ stale (sync ตอน recordUsage เท่านั้น)
+     *   เคสที่ค่า real-time ต่างจาก DB:
+     *     - Cache TTL 60s — ค่าใน cache รีเซ็ตเองทุกนาที (DB column ไม่)
+     *     - หลัง recordUsage ล่าสุด เกิน 60s แต่ DB ยังเก็บค่าเดิม → DB stale
+     *
+     * @return int  RPM ปัจจุบัน (real-time)
+     */
+    public function getCurrentRpmAttribute(): int
+    {
+        return (int) Cache::get("pool:rpm:{$this->provider}:{$this->id}", 0);
+    }
+
+    /**
+     * 🩹 (2026-05-05) ดึง concurrent in-flight requests แบบ real-time
+     */
+    public function getCurrentInflightAttribute(): int
+    {
+        return (int) Cache::get("pool:inflight:{$this->provider}:{$this->id}", 0);
+    }
+
+    /**
      * คำนวณ % การใช้งาน tokens วันนี้
      */
     public function getDailyUsagePercentAttribute(): ?float
@@ -421,15 +446,41 @@ class AiApiKey extends Model
     }
 
     /**
-     * 🎯 (2026-05-02) Scope: filter ตาม purpose
+     * 🎯 (2026-05-02) Scope: filter ตาม purpose (hierarchical)
      *
-     * @param  string  $purpose  'prediction' หรือ 'chat'
-     *   → return keys ที่มี purpose='any' หรือ purpose=$purpose
+     * @param  string  $purpose  'prediction' / 'chat' / 'free_card'
+     *
+     * Hierarchy (เจาะจงสูง → ทั่วไป):
+     *   - 'free_card'  → match ['free_card', 'prediction', 'any', null]
+     *                    เพราะ free_card เป็น subset ของ prediction
+     *                    (key prediction ใช้ทำนายฟรีได้ ถ้าไม่มี free_card key)
+     *   - 'prediction' → match ['prediction', 'any', null]
+     *                    (ไม่ใช้ free_card key — สงวนไว้เฉพาะฟรี)
+     *   - 'chat'       → match ['chat', 'any', null]
+     *
+     * 🩹 (2026-05-05) Update — รองรับ free_card hierarchy
      */
     public function scopeForPurpose($query, string $purpose)
     {
+        // free_card เป็น subset ของ prediction → fallback ให้ prediction key ทำได้
+        if ($purpose === 'free_card') {
+            return $query->where(function ($q) {
+                $q->whereNull('purpose')
+                    ->orWhereIn('purpose', ['any', 'prediction', 'free_card']);
+            });
+        }
+
+        // prediction = ห้าม free_card key (สงวนไว้เฉพาะฟรี)
+        if ($purpose === 'prediction') {
+            return $query->where(function ($q) {
+                $q->whereNull('purpose')
+                    ->orWhereIn('purpose', ['any', 'prediction']);
+            });
+        }
+
+        // chat / อื่นๆ = match purpose ตรง + any/null
         return $query->where(function ($q) use ($purpose) {
-            $q->whereNull('purpose')           // กรณี migrate ใหม่ ค่ายังว่าง
+            $q->whereNull('purpose')
                 ->orWhere('purpose', 'any')
                 ->orWhere('purpose', $purpose);
         });
@@ -681,11 +732,18 @@ class AiApiKey extends Model
         $this->increment('tokens_used_total', $totalTokens);
         $this->increment('requests_today');
 
+        // 🩹 (2026-05-05) Sync cache RPM → DB column requests_minute
+        //   เดิม: requests_minute ใน DB never incremented (dead column) — admin เห็น 0 เสมอ
+        //   ใหม่: อ่าน cache RPM (real-time) แล้ว mirror ลง DB เพื่อให้ admin query/dashboard เห็นค่าจริง
+        $cachedRpm = (int) Cache::get("pool:rpm:{$this->provider}:{$this->id}", 0);
+
         $this->update([
             'last_used_at' => now(),
-            'consecutive_errors' => 0,        // reset errors เมื่อใช้งานสำเร็จ
-            'error_check_attempts' => 0,      // 🩺 (2026-05-01) reset health-check counter
-            'disabled_until' => null,         // ปลด temporary disable
+            'requests_minute' => $cachedRpm,   // 🩹 sync จาก cache (TTL 60s)
+            'last_rate_limit_reset' => now(),  // 🩹 บันทึกเวลาที่ sync
+            'consecutive_errors' => 0,         // reset errors เมื่อใช้งานสำเร็จ
+            'error_check_attempts' => 0,       // 🩺 (2026-05-01) reset health-check counter
+            'disabled_until' => null,          // ปลด temporary disable
         ]);
 
         // บันทึก log

@@ -1336,7 +1336,8 @@ PROMPT;
         ?string $promptTemplate = null,
         string $readingType = 'basic',
         ?string $birthDate = null,
-        ?string $userContext = null
+        ?string $userContext = null,
+        string $purpose = 'prediction'
     ): array {
         $errors = [];
         $prompt = $this->buildPrompt($questions, $userProfile, $userPosts, $promptTemplate, $birthDate);
@@ -1346,7 +1347,8 @@ PROMPT;
         // 🎯 Phase H — ใช้ smart load-balanced ordering ตาม user context
         //    key ที่โหลดน้อย/ไม่ 429 → มาก่อน; users ต่างคน key ต่างลำดับ
         // 🎯 (2026-05-02) purpose='prediction' → กัน chat-only keys
-        $allKeys = $this->getAllAvailableKeys($userContext, 'prediction');
+        // 🩹 (2026-05-05) รองรับ $purpose พารามิเตอร์ — 'free_card' จะดึง key เจาะจงก่อน
+        $allKeys = $this->getAllAvailableKeys($userContext, $purpose);
 
         Log::info('FortuneAI: เริ่มสร้างคำทำนาย — Smart pool ordering', [
             'primary_provider' => $this->provider,
@@ -1803,7 +1805,8 @@ PROMPT;
                             $userContext,
                             $currentRpm,
                             $currentInflight,
-                            $effectiveRpmLimit
+                            $effectiveRpmLimit,
+                            $purpose
                         ),
                     ];
                     $addedApiKeys[] = $poolKey->api_key;
@@ -1909,7 +1912,8 @@ PROMPT;
         ?string $userContext = null,
         ?int $currentRpm = null,
         ?int $currentInflight = null,
-        ?int $effectiveRpmLimit = null
+        ?int $effectiveRpmLimit = null,
+        string $requestedPurpose = 'prediction'
     ): int {
         $rpm = $currentRpm ?? (int) cache()->get("pool:rpm:{$provider}:{$poolKey->id}", 0);
         $inflight = $currentInflight ?? (int) cache()->get("pool:inflight:{$provider}:{$poolKey->id}", 0);
@@ -1932,6 +1936,19 @@ PROMPT;
         if ($userContext !== null && $userContext !== '') {
             $jitter = abs(crc32($userContext.'|'.$provider.'|'.$poolKey->id)) % 10;
             $score += $jitter;
+        }
+
+        // 🩹 (2026-05-05) Purpose-specificity boost — เจาะจงสูง → priority สูง
+        //   user spec: "ใช้โมเดลที่ใช้ทำนายต้องอยู่เหนือกว่า เฉพาะคำทำนาย"
+        //   - exact match (free_card requested + key.purpose=free_card) → +1000 boost
+        //   - prediction match (free_card requested + key.purpose=prediction) → +500
+        //   - any/null match → no boost
+        //   ผลลัพธ์: free_card request → free_card key มาก่อนเสมอ (แม้ priority field ต่ำกว่า)
+        $keyPurpose = $poolKey->purpose ?? 'any';
+        if ($keyPurpose === $requestedPurpose && $requestedPurpose !== 'any') {
+            $score += 1000; // exact match — สูงสุด
+        } elseif ($requestedPurpose === 'free_card' && $keyPurpose === 'prediction') {
+            $score += 500;  // free_card → prediction fallback (ดีกว่า any)
         }
 
         return $score;
@@ -3230,6 +3247,8 @@ PROMPT;
 
         // ใช้ generateWithRetryAndFallback — มี pool + retry + lock + budget guard
         // promptTemplate='{questions}' = ไม่ wrap default deep template
+        // 🩹 (2026-05-05) purpose='free_card' → ดึง key ที่ตั้ง free_card ก่อน
+        //   (fallback ไป prediction/any ถ้าไม่มี — ตาม scopeForPurpose hierarchy)
         return $this->generateWithRetryAndFallback(
             questions: [$prompt],
             userProfile: null,
@@ -3238,6 +3257,7 @@ PROMPT;
             readingType: 'basic',  // 800 ตัวอักษร = max_tokens 2800 พอแล้ว
             birthDate: null,
             userContext: $userContext ?? 'free_card',
+            purpose: 'free_card',
         );
     }
 }
