@@ -625,13 +625,19 @@ class FortuneConversationService
             }
 
             // ✅ Duplicate message filter: ป้องกันข้อความเดียวกันถูก process ซ้ำ
-            // เช่น LINE retry, กดปุ่มหลายครั้ง (ตรวจจากข้อความ hash)
-            // ⚠️ ไม่ block คำถามข้อถัดไป เพราะเช็ค message content ไม่ใช่ user ID
+            // 🩹 (2026-05-05) Bug fix — dedup TTL 30s ทำให้ลูกค้าพิมพ์ "พร้อม" ซ้ำถูก drop เงียบ
+            //   เคสจริง (Celtic 99): ลูกค้ากด "พร้อม" → บอทสุ่มไพ่ + ภาพแตก → ลูกค้ากด "พร้อม"
+            //   ครั้งที่ 2-3 → dedup BLOCK → บอทเงียบ ลูกค้าค้าง
+            //   Fix:
+            //     1. ลด TTL 30 → 8 วินาที (พอสำหรับ FB webhook retry ~5s)
+            //     2. SKIP dedup สำหรับข้อความสั้น (≤ 15 chars) — เป็น intentional retry ของลูกค้า
+            //        (เช่น "พร้อม" / "ใช่" / "OK") — ใช้ mutex แทนเพื่อกัน concurrent
             $msgHash = md5($facebookUserId.':'.$messageText);
             $dedupKey = "fortune:dedup:{$msgHash}";
-            // ใช้ Cache::add() (atomic) แทน has()+put() เพื่อป้องกัน race condition
-            // ⚠️ TTL 30 วินาที (เดิม 5s → Facebook retry หลัง ~5s ทำให้ dedup หมดอายุแล้ว process ซ้ำ)
-            if (! Cache::add($dedupKey, true, 30)) {
+            $msgLen = mb_strlen(trim($messageText));
+            $skipDedup = $msgLen <= 15;  // ข้อความสั้น ๆ ลูกค้าตั้งใจกดซ้ำ
+
+            if (! $skipDedup && ! Cache::add($dedupKey, true, 8)) {
                 Log::info('Fortune processMessage: ข้อความซ้ำ (dedup) ข้ามไป', [
                     'facebook_user_id' => $facebookUserId,
                     'text_preview' => mb_substr($messageText, 0, 30),
@@ -3828,8 +3834,7 @@ class FortuneConversationService
             FortuneReading::STATUS_COLLECTING_BIRTHDATE => $this->handleBirthdateInput($reading, $messageText, $userProfile),
             FortuneReading::STATUS_COLLECTING_QUESTIONS => $this->handleQuestionInput($reading, $messageText),
             FortuneReading::STATUS_COLLECTING_TAROT => $this->handleTarotCardDraw($reading, $messageText),
-            // 💎 (2026-05-03) Request-Before-Pay — รอลูกค้ายืนยันรับคำทำนาย/ยกเลิก
-            FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM => $this->handleAwaitingDeliveryConfirm($reading, $messageText),
+            // 🌊 (2026-05-05) AWAITING_DELIVERY_CONFIRM ลบทิ้ง — Pay-Later kill switch
             FortuneReading::STATUS_DISCOVERY_CHAT => $this->handleDiscoveryChat($reading, $messageText, $userProfile),
             FortuneReading::STATUS_DISCOVERY_CONFIRM => $this->handleDiscoveryConfirm($reading, $messageText, $userProfile),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
@@ -5109,23 +5114,9 @@ class FortuneConversationService
             ];
         }
 
-        // ครบแล้ว → 💎 (2026-05-03) Request-Before-Pay routing
-        //   ถ้าลูกค้า first-time 39 (flag is_request_before_pay = true) → AI generate ก่อน → ถามยืนยัน
-        //   ไม่งั้น → existing createPaymentBill (pay-first)
-        if ($reading->getConversationState('is_request_before_pay', false)) {
-            Log::info('Fortune: Deep 39 → Request-Before-Pay flow (AI gen ก่อน, bill ทีหลัง)', [
-                'reading_id' => $reading->id,
-                'questions' => $collectedQuestions,
-            ]);
-
-            $result = $this->processRequestBeforePay($reading, $collectedQuestions);
-            if (! empty($prefixMessage)) {
-                $result['message'] = $prefixMessage . ($result['message'] ?? '');
-            }
-            return $result;
-        }
-
-        // ปกติ (pay-first) → สร้างบิล
+        // 🌊 (2026-05-05) Pay-First only — ลบ Request-Before-Pay branch ออก (kill switch)
+        //   ทุกคนเข้า createPaymentBill — จ่ายก่อนดู
+        // (pay-first) → สร้างบิล
         Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล (pay-first)', [
             'reading_id' => $reading->id,
             'questions' => $collectedQuestions,
