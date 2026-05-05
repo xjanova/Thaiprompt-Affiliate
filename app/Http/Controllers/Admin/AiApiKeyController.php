@@ -88,14 +88,27 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'required|string|min:10',
             'priority' => 'nullable|integer|min:0|max:100',
-            'purpose' => 'nullable|in:any,prediction,chat',  // 🎯 (2026-05-02) วัตถุประสงค์ key
+            'purpose' => 'nullable|in:any,prediction,free_card,chat',  // 🎯 (2026-05-05) เพิ่ม free_card
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',
             'notes' => 'nullable|string|max:500',
         ]);
 
-        $key = $this->poolService->addKey($validated);
+        try {
+            $key = $this->poolService->addKey($validated);
+        } catch (\Illuminate\Database\QueryException $sqlErr) {
+            // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มี free_card
+            if (($validated['purpose'] ?? null) === 'free_card'
+                && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '❌ Migration ยังไม่รัน — โปรดรัน `php artisan migrate` แล้วลองใหม่ '
+                        . '(เพิ่ม free_card ใน enum purpose)',
+                ], 422);
+            }
+            throw $sqlErr;
+        }
 
         return response()->json([
             'success' => true,
@@ -135,7 +148,7 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'nullable|string|min:10',  // nullable เพื่อไม่ต้องส่งถ้าไม่เปลี่ยน
             'priority' => 'nullable|integer|min:0|max:100',
-            'purpose' => 'nullable|in:any,prediction,chat',  // 🎯 (2026-05-02) วัตถุประสงค์ key
+            'purpose' => 'nullable|in:any,prediction,free_card,chat',  // 🎯 (2026-05-05) เพิ่ม free_card
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',
@@ -148,7 +161,20 @@ class AiApiKeyController extends Controller
             unset($validated['api_key']);
         }
 
-        $key = $this->poolService->updateKey($id, $validated);
+        try {
+            $key = $this->poolService->updateKey($id, $validated);
+        } catch (\Illuminate\Database\QueryException $sqlErr) {
+            // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มี free_card
+            if (($validated['purpose'] ?? null) === 'free_card'
+                && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => '❌ Migration ยังไม่รัน — โปรดรัน `php artisan migrate` แล้วลองใหม่ '
+                        . '(เพิ่ม free_card ใน enum purpose)',
+                ], 422);
+            }
+            throw $sqlErr;
+        }
 
         return response()->json([
             'success' => true,
