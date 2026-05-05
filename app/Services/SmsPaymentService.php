@@ -544,16 +544,39 @@ class SmsPaymentService
         }
 
         // Mark notification — admin จะเห็นใน UI พร้อม flag
-        $notification->update([
-            'status' => 'requires_admin_review',
-            // เก็บเหตุผลใน raw_data (notification model มี json field นี้)
-            'raw_data' => array_merge((array) ($notification->raw_data ?? []), [
-                'orphan_fortune_payment' => true,
-                'orphan_reason' => 'amount_in_fortune_range_but_no_matching_bill',
-                'expected_price_range' => [$fortunePrice, $fortunePrice + 0.99],
-                'flagged_at' => now()->toIso8601String(),
-            ]),
+        // 🩹 (2026-05-05) Defensive: enum 'requires_admin_review' อาจยังไม่ถูก migrate
+        //                  → ลอง update เต็ม → ถ้า SQL truncation error → fallback แค่ raw_data
+        //                  → กัน exception bubble up ทำให้ payment flow พัง
+        $rawDataMerged = array_merge((array) ($notification->raw_data ?? []), [
+            'orphan_fortune_payment' => true,
+            'orphan_reason' => 'amount_in_fortune_range_but_no_matching_bill',
+            'expected_price_range' => [$fortunePrice, $fortunePrice + 0.99],
+            'flagged_at' => now()->toIso8601String(),
         ]);
+
+        try {
+            $notification->update([
+                'status' => 'requires_admin_review',
+                'raw_data' => $rawDataMerged,
+            ]);
+        } catch (\Illuminate\Database\QueryException $sqlErr) {
+            // เคสจริง production (2026-05-05): enum status ยังไม่มี 'requires_admin_review'
+            //   → "Data truncated for column 'status'" → notification ยังเป็น pending
+            //   → fallback เก็บแค่ raw_data + log critical (admin queue ใช้ raw_data flag ก็ได้)
+            Log::error('SMS Payment: status enum migration ขาด — fallback to raw_data only', [
+                'notification_id' => $notification->id,
+                'sql_error' => $sqlErr->getMessage(),
+                'hint' => 'ต้องรัน migration 2026_05_05_000100_add_requires_admin_review_to_sms_notifications_status_enum',
+            ]);
+            try {
+                $notification->update(['raw_data' => $rawDataMerged]);
+            } catch (\Throwable $rawErr) {
+                Log::critical('SMS Payment: fallback raw_data update ก็ล้ม — admin ต้อง check log', [
+                    'notification_id' => $notification->id,
+                    'error' => $rawErr->getMessage(),
+                ]);
+            }
+        }
 
         Log::critical('🚨 SMS Payment: Orphan fortune payment — ลูกค้าโอนแต่ไม่มีบิล (admin ต้องตรวจ)', [
             'notification_id' => $notification->id,

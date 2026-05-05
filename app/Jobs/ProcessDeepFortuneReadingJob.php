@@ -308,13 +308,30 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
         }
 
         // ถ้า reading เสร็จแล้ว (deep_response มีอยู่) → ข้าม
-        if (! empty($reading->deep_response) && $reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
-            Log::info('ProcessDeepFortuneReadingJob: คำทำนายเสร็จแล้ว — ข้าม', [
+        // 🩹 (2026-05-05) เพิ่มเงื่อนไข reading_sent_directly — ป้องกัน Pay-Later retry block
+        //    เคสจริง: Pay-Later AI gen เสร็จ + status COMPLETED แล้ว แต่ Job's sendResponse fail
+        //              (FB 24hr expired / network error) → flag reading_sent_directly ไม่ set
+        //    เดิม: early-return → admin retry ก็ block (ลูกค้าไม่ได้คำทำนาย/QR ตลอดไป)
+        //    ใหม่: เช็ค reading_sent_directly ด้วย — ถ้ายังไม่ส่ง → ผ่าน → Pay-Later block deliver ใหม่
+        $alreadyDelivered = (bool) $reading->getConversationState('reading_sent_directly', false);
+        if (! empty($reading->deep_response)
+            && $reading->conversation_status === FortuneReading::STATUS_COMPLETED
+            && $alreadyDelivered) {
+            Log::info('ProcessDeepFortuneReadingJob: คำทำนายเสร็จและส่งแล้ว — ข้าม', [
                 'reading_id' => $this->readingId,
             ]);
 
             return;
         }
+
+        // 🩹 (2026-05-05) Pay-Later partial recovery — AI gen เสร็จแต่ยังไม่ deliver
+        //    ถ้า status COMPLETED + has deep_response + ! alreadyDelivered + is_request_before_pay=true
+        //    → skip processPaymentConfirmed (AI gen ทำไปแล้ว) → ตรงเข้า Pay-Later deliver block
+        $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
+        $skipAiRegenerate = ! empty($reading->deep_response)
+            && $reading->conversation_status === FortuneReading::STATUS_COMPLETED
+            && $isRequestBeforePay
+            && ! $alreadyDelivered;
 
         // 🌐 (2026-05-03) Restore locale จาก stored value — queue worker ไม่มี request context
         //    หาก Lao ลูกค้าจ่าย — ทุก push (ทั้ง processPaymentConfirmed streaming + FB push branch)
@@ -343,13 +360,23 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             // เนื้อหาจริงจะส่งผ่าน replyMessage เมื่อ user ส่งข้อความมา (ฟรี!)
             // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
             // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
-            $result = $conversationService->processPaymentConfirmed(
-                $reading,
-                $notification,
-                null, // channelManager = null → streaming ปิด
-                $this->platform,
-                $this->userId
-            );
+            // 🩹 (2026-05-05) skipAiRegenerate guard — Pay-Later partial recovery
+            //    ถ้า AI gen เสร็จแล้ว (deep_response มี) แต่ยัง deliver ไม่สำเร็จ → ข้าม regenerate
+            //    ป้องกัน double AI cost + potential prompt drift จากการ generate ซ้ำ
+            if (! $skipAiRegenerate) {
+                $result = $conversationService->processPaymentConfirmed(
+                    $reading,
+                    $notification,
+                    null, // channelManager = null → streaming ปิด
+                    $this->platform,
+                    $this->userId
+                );
+            } else {
+                Log::info('💎 Pay-Later recovery: skip AI regenerate — AI gen done previously, delivering only', [
+                    'reading_id' => $this->readingId,
+                ]);
+                $result = ['action' => 'recovery_skip_ai'];
+            }
 
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
@@ -566,11 +593,22 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 'retry_count' => $retryCount,
                             ]);
 
+                            // 🃏 (2026-05-05) ส่งรูปไพ่ Pay-First explicit (เหมือน Pay-Later branch)
+                            //    เดิม: pay-first push ไม่มี tarot_image_urls → ChannelManager fallback
+                            //          ผ่าน normalizeTarotImageUrls อาจ fail ถ้า reading hydration ไม่ครบ
+                            //    ใหม่: ส่งตรงๆ เหมือน Pay-Later block (line 402-409)
+                            $tarotImageUrls = collect($reading->getCollectedTarotCards())
+                                ->pluck('image_url')
+                                ->filter()
+                                ->values()
+                                ->all();
+
                             $sent = $channelManager->sendResponse($this->platform, $this->userId, [
                                 'action' => 'view_reading_deep',
                                 'message' => $readingMessage,
                                 'reading' => $reading,
                                 'chart_image_url' => $reading->reading_image_url,
+                                'tarot_image_urls' => $tarotImageUrls,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
                             // 🛡️ (2026-05-03) เขียน flag เฉพาะเมื่อ $sent === true

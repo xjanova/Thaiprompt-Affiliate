@@ -761,6 +761,85 @@ class FortuneConversationService
                 return $this->handleViewLater($facebookUserId);
             }
 
+            // 🩹 (2026-05-05) Pay-Later orphan recovery — เคสที่ AI gen เสร็จแต่ createPaymentBill fail
+            //    Flow: AI gen → saveDeepReading sets status COMPLETED + deep_response
+            //          → Job tries createPaymentBill → FAIL (UPA generate / verify / etc.)
+            //          → status ค้าง COMPLETED, no UPA, is_paid=false, reading_sent_directly=false
+            //    เคสนี้: findActiveConversation ไม่จับ COMPLETED → fall through → FCS:766 ไม่จับ (is_paid=false)
+            //    → ลูกค้าค้างถาวร / เห็น tier menu ใหม่ / general flow
+            //    Fix: ตรวจ Pay-Later orphan ก่อน → ลอง recreate bill + ส่ง reading + bill + QR
+            $payLaterOrphan = FortuneReading::where('facebook_user_id', $facebookUserId)
+                ->where('is_paid', false)
+                ->whereNotNull('deep_response')
+                ->where('deep_response', '!=', '')
+                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                ->whereJsonContains('conversation_state->is_request_before_pay', true)
+                ->whereDoesntHave('uniquePaymentAmount', function ($q) {
+                    // ไม่มี UPA active (cancelled/expired ถือว่าไม่มี → recreate)
+                    $q->where('status', 'reserved')
+                        ->where('expires_at', '>', now());
+                })
+                ->where('updated_at', '>=', now()->subHours(24)) // ภายใน 24 ชม. (ภายใน Pay-Later window)
+                ->latest()
+                ->first();
+
+            if ($payLaterOrphan
+                && ! $payLaterOrphan->getConversationState('reading_sent_directly', false)) {
+                Log::warning('💎 Pay-Later orphan recovery: AI gen done แต่ bill creation fail → recreate', [
+                    'reading_id' => $payLaterOrphan->id,
+                    'bill_reference' => $payLaterOrphan->bill_reference,
+                ]);
+
+                try {
+                    // ลอง recreate bill — createPaymentBill จะ generate UPA ใหม่ + setPendingPayment
+                    $billResult = $this->createPaymentBill($payLaterOrphan, $payLaterOrphan->questions ?? []);
+
+                    if (($billResult['action'] ?? null) === 'pending_payment') {
+                        // ✅ Bill recreated → refresh + ใช้ resendPayLaterReadingWithBill ส่งครบ
+                        $payLaterOrphan->refresh();
+                        $upa = $payLaterOrphan->uniquePaymentAmount;
+                        if ($upa) {
+                            return $this->resendPayLaterReadingWithBill($payLaterOrphan, $upa);
+                        }
+                    }
+
+                    // ❌ recreate ก็ fail → ส่ง reading + admin handoff message
+                    Log::error('💎 Pay-Later orphan: recreate bill ก็ fail — ส่ง reading + admin handoff', [
+                        'reading_id' => $payLaterOrphan->id,
+                        'bill_action' => $billResult['action'] ?? '?',
+                    ]);
+
+                    $payLaterOrphan->setConversationState('reading_sent_directly', true);
+                    $payLaterOrphan->setConversationState('reading_ready_sent', true);
+                    $payLaterOrphan->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                    $payLaterOrphan->setConversationState('delivered_by_orphan_recovery', true);
+
+                    $name = $payLaterOrphan->facebook_user_name ?? 'คุณ';
+                    $msg = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
+                        . '📋 เลขที่บิล: '.($payLaterOrphan->bill_reference ?? '-')."\n"
+                        . "═══════════════════════\n\n"
+                        . $payLaterOrphan->deep_response
+                        . "\n\n══════════\n\n"
+                        . "🙏 ระบบเตรียมบิลใหม่ไม่สำเร็จ — กรุณาพิมพ์ 'คุยกับแม่หมอ' เพื่อให้ทีมงานช่วย\n"
+                        . 'หรือพิมพ์ "ดูดวง" เพื่อเริ่มใหม่อีกครั้ง';
+
+                    return [
+                        'action' => 'view_reading_deep',
+                        'message' => $msg,
+                        'reading' => $payLaterOrphan,
+                        'chart_image_url' => $payLaterOrphan->reading_image_url,
+                        'tarot_image_urls' => collect($payLaterOrphan->getCollectedTarotCards())
+                            ->pluck('image_url')->filter()->values()->all(),
+                    ];
+                } catch (\Throwable $orphanErr) {
+                    Log::error('💎 Pay-Later orphan: recovery exception', [
+                        'reading_id' => $payLaterOrphan->id,
+                        'error' => $orphanErr->getMessage(),
+                    ]);
+                    // ตกลงผ่าน — ให้ general flow รับช่วง (ลูกค้าจะเห็น tier menu / etc.)
+                }
+            }
+
             // ✅ V3: เช็คคำทำนายที่พร้อมส่งแต่ยังไม่ได้ส่ง (ไม่ใช้ push เลย — ส่งผ่าน replyMessage ฟรี!)
             // Flow: แจ้ง "คำทำนายพร้อมแล้ว" → user ตอบ → ส่งคำทำนายเต็ม
             $unsentReading = FortuneReading::where('facebook_user_id', $facebookUserId)
@@ -1275,6 +1354,16 @@ class FortuneConversationService
                 return $this->startFreeCardFlow($facebookUserId, $userProfile, $messageText);
             }
 
+            // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
+            // 🩹 (2026-05-05) Reorder: explicit deep request ต้องชนะ auto-free trigger
+            //    เคสจริง: ลูกค้าอ่าน DM ฟรี → ตั้งใจขยับเข้าระดับเสีย → พิมพ์ "ดูดวงเชิงลึก"
+            //              เดิม: tryAutoFreeCardForFirstReply ขโมย control → ฟรีกลายเป็น default → ลูกค้างง
+            //    ใหม่: ตรวจ explicit deep keyword ก่อน → respect customer intent
+            // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
+            if ($this->isExplicitDeepReadingRequest($messageText)) {
+                return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            }
+
             // 🎁 (2026-05-04) Auto-trigger Free Card สำหรับ first-reply หลังได้ DM react/comment
             //    Strategy: DM react/comment เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับ → ทำนายฟรีทันที
             //    (ไม่ถามวันเกิด/คำถาม) → ลูกค้าเชื่อใจ → ค่อย soft-sell หลังได้คำทำนาย
@@ -1283,13 +1372,6 @@ class FortuneConversationService
             $autoFree = $this->tryAutoFreeCardForFirstReply($facebookUserId, $userProfile, $messageText);
             if ($autoFree !== null) {
                 return $autoFree;
-            }
-
-            // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
-            // เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" จาก ai_limit → ต้องเข้า flow เก็บวันเกิด+คำถาม ไม่ใช่วน ai_limit ซ้ำ
-            // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
-            if ($this->isExplicitDeepReadingRequest($messageText)) {
-                return $this->startDeepReadingFlow($facebookUserId, $userProfile);
             }
 
             // 🎯 Phase C — ลูกค้าพิมพ์วันเกิด standalone มาก่อน (เช่น "15/8/1990")
@@ -5311,6 +5393,22 @@ class FortuneConversationService
             ];
         }
 
+        // 🩹 (2026-05-05) Pay-Later resend recovery — ก่อน claim handler และก่อน QR-only path
+        //    เคสจริง: Pay-Later flow Job's sendResponse fail (FB 24hr expired / network)
+        //              → flag reading_sent_directly ไม่ set
+        //              + deep_response มีอยู่ + status PENDING_PAYMENT
+        //              → ลูกค้ากลับมาทักครั้งหน้า → handlePendingPayment ส่งแค่ QR (ไม่ส่งคำทำนาย!)
+        //    Fix: ตรวจ is_request_before_pay + has deep_response + ! reading_sent_directly
+        //         → ส่ง reading + bill + QR + tarot images ในข้อความเดียว (เหมือน Job line 384-409)
+        //         → mark flag กัน infinite re-send
+        $isPayLaterUnsent = $reading->getConversationState('is_request_before_pay', false)
+            && ! empty($reading->deep_response)
+            && ! $reading->getConversationState('reading_sent_directly', false);
+
+        if ($isPayLaterUnsent) {
+            return $this->resendPayLaterReadingWithBill($reading, $uniqueAmount);
+        }
+
         // 💰 ถ้าผู้ใช้พิมพ์เคลม "โอนแล้ว/จ่ายแล้ว/payment claim" → ตรวจสถานะจริง
         //    ตอบตามจริง: paid แล้ว / กำลังตรวจสอบ / ยังไม่พบ
         if ($this->isPaymentClaimRequest($messageText)) {
@@ -5367,6 +5465,97 @@ class FortuneConversationService
             'message' => $message,
             'reading' => $reading,
             'payment_qr_url' => $qrImageUrl,
+        ];
+    }
+
+    /**
+     * 🩹 (2026-05-05) Pay-Later resend recovery — ส่ง reading + bill + QR + tarot ในข้อความเดียว
+     *
+     * เรียกจาก handlePendingPayment เมื่อตรวจเจอ Pay-Later reading ที่ AI gen เสร็จแล้ว
+     * แต่ Job's first sendResponse fail (FB 24hr expired / LINE quota) → flag ไม่ set
+     *
+     * ป้องกัน customer stuck: เดิมลูกค้ากลับมาทัก → ได้แค่ QR (no reading)
+     * Fix นี้: customer ได้ reading + QR ครบในข้อความเดียว + flag set กัน duplicate
+     *
+     * @param  FortuneReading  $reading  Pay-Later reading ที่ยังไม่ deliver
+     * @param  UniquePaymentAmount  $uniqueAmount
+     * @return array  response action=deliver_with_qr (ChannelManager render image+text+QR)
+     */
+    protected function resendPayLaterReadingWithBill(
+        FortuneReading $reading,
+        UniquePaymentAmount $uniqueAmount
+    ): array {
+        $name = $reading->facebook_user_name ?? 'คุณ';
+        $payAmount = number_format((float) $uniqueAmount->unique_amount, 2);
+        $expiresAt = $uniqueAmount->expires_at->format('H:i');
+        $billRef = $reading->bill_reference ?? '-';
+        $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
+
+        // 🌟 Reading header (รูปแบบเดียวกับ Job + handleAwaitingDeliveryConfirm)
+        $readingHeader = \App\Services\FortuneLocaleService::lo(
+            "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
+                . "📋 เลขที่บิล: {$billRef}\n"
+                . '📅 วันที่: '.now()->format('d/m/Y H:i')."\n"
+                . "═══════════════════════\n\n",
+            "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n"
+                . "📋 ເລກບິນ: {$billRef}\n"
+                . '📅 ວັນທີ: '.now()->format('d/m/Y H:i')."\n"
+                . "═══════════════════════\n\n"
+        );
+
+        // 💰 Bill section (ใช้ template เดียวกับ getPaymentSummaryMessage แต่ย่อ)
+        $billSection = "\n\n══════════\n\n"
+            . \App\Services\FortuneLocaleService::lo(
+                "💰 *กรุณาโอนค่าครู เพื่อใช้คำทำนายต่อได้เต็มที่*\n\n"
+                    . "🔖 เลขที่บิล: {$billRef}\n"
+                    . "💸 ยอดชำระ: ฿{$payAmount} (ตรงตามทศนิยม)\n"
+                    . "⏰ โอนก่อน: {$expiresAt} น. (เหลือ {$remainingMinutes} นาที)\n"
+                    . "═══════════════════════\n\n"
+                    . $this->getBankAccountsListMessage()
+                    . "⚠️ *สำคัญ*: โอนยอด ฿{$payAmount} (รวมทศนิยม) เพื่อระบบจับคู่อัตโนมัติ\n"
+                    . "พิมพ์ \"เช็คสถานะ\" เพื่อตรวจหรือ \"ยกเลิก\" หากไม่ต้องการต่อ",
+                "💰 *ກະລຸນາໂອນຄ່າຄູ ເພື່ອໃຊ້ຄຳທຳນາຍຕໍ່ໄດ້ເຕັມທີ່*\n\n"
+                    . "🔖 ເລກບິນ: {$billRef}\n"
+                    . "💸 ຍອດຊຳລະ: ฿{$payAmount} (ຕົງຕາມເສດສ່ວນ)\n"
+                    . "⏰ ໂອນກ່ອນ: {$expiresAt} ໂມງ (ເຫຼືອ {$remainingMinutes} ນາທີ)\n"
+                    . "═══════════════════════\n\n"
+                    . $this->getBankAccountsListMessage()
+                    . "⚠️ *ສຳຄັນ*: ໂອນຍອດ ฿{$payAmount} (ຮວມເສດສ່ວນ) ເພື່ອລະບົບຈັບຄູ່ອັດຕະໂນມັດ\n"
+                    . "ພິມ \"ເຊັກສະຖານະ\" ເພື່ອກວດ ຫຼື \"ຍົກເລີກ\" ຫາກບໍ່ຕ້ອງການຕໍ່"
+            );
+
+        // 🎴 QR — ลองสร้างใหม่ (ทศนิยมเดิม) → fallback static
+        $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
+        if (! $qrImageUrl) {
+            $qrImageUrl = $this->getPaymentQrImageUrl();
+        }
+
+        // 🃏 Tarot images (ลูกค้าเห็นไพ่ที่จับเดิม)
+        $tarotImageUrls = collect($reading->getCollectedTarotCards())
+            ->pluck('image_url')->filter()->values()->all();
+
+        // 🛡️ Mark sent ก่อน return — ป้องกัน FCS:766 หรือ handler อื่นจับซ้ำ
+        $reading->setConversationState('reading_sent_directly', true);
+        $reading->setConversationState('reading_ready_sent', true);
+        $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+        $reading->setConversationState('delivered_by_handle_pending_payment', true);
+
+        Log::info('💎 Pay-Later: handlePendingPayment resend — recovering from failed first delivery', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $billRef,
+            'amount' => $payAmount,
+            'remaining_min' => $remainingMinutes,
+            'has_qr' => ! empty($qrImageUrl),
+            'tarot_count' => count($tarotImageUrls),
+        ]);
+
+        return [
+            'action' => 'deliver_with_qr',
+            'message' => $readingHeader . $reading->deep_response . $billSection,
+            'reading' => $reading,
+            'payment_qr_url' => $qrImageUrl,
+            'chart_image_url' => $reading->reading_image_url,
+            'tarot_image_urls' => $tarotImageUrls,
         ];
     }
 
