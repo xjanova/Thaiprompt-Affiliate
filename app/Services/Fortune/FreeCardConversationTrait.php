@@ -88,6 +88,107 @@ trait FreeCardConversationTrait
     }
 
     /**
+     * 🩹 (2026-05-05) ตรวจว่า message เป็นคำถามที่ทำนายได้ หรือเป็นทักทาย/บริบทไม่พอ
+     *
+     * user spec:
+     *   "ถ้าจับใจความไม่ได้ เช่น สวัสดี ค่ะ → ควรบอกให้ตอบเป็นคำถามที่อยากดูฟรี"
+     *
+     * Reject (ไม่ใช่คำถาม):
+     *   - empty / whitespace-only
+     *   - ความยาว < 10 chars (น้อยเกินจะมี context)
+     *   - greeting keywords: สวัสดี, ดี, hello, hi, ฮัลโหล, สบายดี
+     *   - acknowledgment: ค่ะ, ครับ, ok, โอเค, ขอบคุณ, thanks
+     *   - free card keyword (ลูกค้ากดปุ่ม "ทำนายฟรี" → message=keyword ไม่ใช่คำถาม)
+     *   - emoji-only / sticker
+     *
+     * Accept (เป็นคำถาม):
+     *   - มี keyword เนื้อหา (รัก, งาน, เงิน, สุขภาพ, คน, จะ, อยาก, เรื่อง, ฯลฯ)
+     *   - หรือยาว ≥ 10 chars + ไม่ใช่ทักทาย/acknowledgment ล้วน
+     */
+    protected function isSubstantiveQuestion(?string $text): bool
+    {
+        if (empty($text)) {
+            return false;
+        }
+
+        $clean = mb_strtolower(trim($text));
+        // ลบคำลงท้ายไทย/ลาว
+        $clean = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|หน่อย|ที|สิ|เลย|เດີ|ແດ່|\?|\.|!)\s*$/u', '', $clean);
+        $clean = trim($clean);
+
+        if (mb_strlen($clean) === 0) {
+            return false;
+        }
+
+        // ❌ Reject — สั้นเกินไป (greetings มักสั้น)
+        if (mb_strlen($clean) < 10) {
+            return false;
+        }
+
+        // ❌ Reject — free card keyword (ลูกค้ากดปุ่ม)
+        if ($this->matchesFreeCardKeyword($text)) {
+            return false;
+        }
+
+        // ❌ Reject — pure greeting / acknowledgment list
+        $nonQuestionKeywords = [
+            // ทักทาย ไทย
+            'สวัสดี', 'สวัสดีค่ะ', 'สวัสดีครับ', 'หวัดดี', 'ดีค่ะ', 'ดีครับ', 'ฮัลโหล', 'สบายดี',
+            'ทักทาย', 'อยู่ไหม', 'อยู่ป่ะ', 'หมอจันทรา', 'แม่หมอ',
+            // ทักทาย English
+            'hello', 'hi', 'hey', 'good morning', 'good evening', 'good night',
+            // Acknowledgment ไทย
+            'ขอบคุณ', 'ขอบคุณค่ะ', 'ขอบคุณครับ', 'ขอบใจ', 'โอเค', 'ตกลง', 'รับทราบ',
+            'จ้า', 'จ้ะ', 'จ๊ะ', 'อืม', 'อ่อ', 'ครับผม', 'ค่าาา',
+            // Acknowledgment English
+            'ok', 'okay', 'thanks', 'thank you', 'tnx', 'yep', 'yes', 'yeah',
+            // 🇱🇦 ลาว
+            'ສະບາຍດີ', 'ດີ', 'ຂອບໃຈ', 'ຕົກລົງ', 'ໂອເຄ',
+            // ทดสอบ / สั้น ๆ
+            'test', 'ทดสอบ', '???', '...', 'มีไรเหรอ', 'ทำไม',
+        ];
+
+        foreach ($nonQuestionKeywords as $kw) {
+            if ($clean === mb_strtolower($kw)) {
+                return false;
+            }
+        }
+
+        // ❌ Reject — emoji-only (ไม่มีตัวอักษร Thai/Lao/English)
+        $hasLetter = preg_match('/[\x{0E00}-\x{0E7F}\x{0E80}-\x{0EFF}a-zA-Z]/u', $clean);
+        if (! $hasLetter) {
+            return false;
+        }
+
+        // ✅ Accept — มี keyword เนื้อหา
+        $contentKeywords = [
+            // ไทย
+            'รัก', 'แฟน', 'คู่', 'ความรัก', 'งาน', 'การงาน', 'อาชีพ', 'เงิน', 'การเงิน',
+            'สุขภาพ', 'ลูก', 'ครอบครัว', 'คน', 'เพื่อน', 'ศัตรู', 'เจ้านาย',
+            'อยาก', 'จะ', 'ควร', 'ต้อง', 'มี', 'ได้', 'ไหม', 'หรือ', 'ทำไง', 'ยังไง', 'เมื่อไหร่',
+            'เป็นไง', 'เป็นยังไง', 'ดีไหม', 'ดีมั้ย', 'ดีหรือ', 'ปีนี้', 'เดือนนี้', 'ช่วงนี้',
+            'ดวง', 'ชะตา', 'อนาคต', 'โชค', 'เคราะห์', 'อุปสรรค', 'ปัญหา', 'เรื่อง', 'ทุกข์', 'สุข',
+            'ย้าย', 'ลาออก', 'เปลี่ยน', 'ตัดสินใจ', 'รอ', 'หา', 'พบ',
+            // ลาว
+            'ຮັກ', 'ແຟນ', 'ວຽກ', 'ເງິນ', 'ສຸຂະພາບ', 'ດວງ', 'ຊາຕາ', 'ອານາຄົດ',
+        ];
+
+        foreach ($contentKeywords as $kw) {
+            if (mb_strpos($clean, mb_strtolower($kw)) !== false) {
+                return true;
+            }
+        }
+
+        // ✅ Fallback: ยาว ≥ 15 chars + ไม่ใช่ greeting → ถือว่ามี context พอ
+        if (mb_strlen($clean) >= 15) {
+            return true;
+        }
+
+        // ❌ ไม่ผ่านเกณฑ์ใด ๆ
+        return false;
+    }
+
+    /**
      * 🎯 Entry point: เริ่ม free card flow
      *
      * เรียกจาก:
@@ -126,6 +227,54 @@ trait FreeCardConversationTrait
 
             return $this->startDeepReadingFlow($platformUserId, $userProfile);
         }
+
+        // 🩹 (2026-05-05) Question gate — user spec:
+        //   "ถ้าจับใจความไม่ได้ เช่น สวัสดี ค่ะ → ควรบอกให้ตอบเป็นคำถามที่อยากดูฟรี
+        //    เพื่อจะได้ทำนายครั้งแรกให้แม่นยำ"
+        //
+        //   ถาม customer ก่อนจั่วไพ่ ถ้า message ไม่ใช่คำถามที่ทำนายได้
+        //   เช็ค Cache pending count — ถ้าถามไป 2 ครั้งแล้ว → proceed (ไม่ loop ถาวร)
+        $pendingCacheKey = "fortune:free_card_ask:{$platform}:{$platformUserId}";
+        $askedCount = (int) \Illuminate\Support\Facades\Cache::get($pendingCacheKey, 0);
+
+        if (! $this->isSubstantiveQuestion($customerMessage) && $askedCount < 2) {
+            \Illuminate\Support\Facades\Cache::put($pendingCacheKey, $askedCount + 1, now()->addMinutes(30));
+
+            Log::info('FreeCard: ขอ customer พิมพ์คำถามก่อนทำนาย', [
+                'platform' => $platform,
+                'platform_user_id' => $platformUserId,
+                'asked_count' => $askedCount + 1,
+                'message_preview' => $customerMessage ? mb_substr($customerMessage, 0, 50) : null,
+            ]);
+
+            $greetName = ($name && $name !== 'คุณ') ? "คุณ{$name}" : 'เจ้าชะตา';
+            $askMessage = FortuneLocaleService::lo(
+                "🌙 *แม่หมอจับจิต{$greetName}แล้ว — แต่ขอถามนิดนะคะ*\n\n"
+                    . "💬 ตอนนี้เจ้าชะตา *อยากให้แม่หมอทำนายเรื่องอะไร* คะ?\n"
+                    . "พิมพ์คำถามมาให้แม่หมอ เช่น:\n"
+                    . "  • \"ความรักช่วงนี้เป็นไง\"\n"
+                    . "  • \"งานในเดือนหน้า ควรเปลี่ยนไหม\"\n"
+                    . "  • \"การเงินช่วงนี้ติดขัด ต้องทำยังไง\"\n"
+                    . "  • \"คนที่คิดถึง เขายังคิดถึงเราไหม\"\n\n"
+                    . "✨ ยิ่งเล่ารายละเอียดเยอะ — ไพ่ที่จิตเลือกจะแม่นเป๊ะค่ะ 🃏",
+                "🌙 *ແມ່ໝໍຈັບຈິດ{$greetName}ແລ້ວ — ແຕ່ຂໍຖາມໜ້ອຍເດີ*\n\n"
+                    . "💬 ຕອນນີ້ເຈົ້າຊາຕາ *ຢາກໃຫ້ແມ່ໝໍທຳນາຍເລື່ອງຫຍັງ* ເດີ?\n"
+                    . "ພິມຄຳຖາມມາໃຫ້ແມ່ໝໍ ເຊັ່ນ:\n"
+                    . "  • \"ຄວາມຮັກຊ່ວງນີ້ເປັນຫຍັງ\"\n"
+                    . "  • \"ວຽກໃນເດືອນໜ້າ ຄວນປ່ຽນບໍ່\"\n"
+                    . "  • \"ການເງິນຊ່ວງນີ້ຕິດຂັດ ຕ້ອງເຮັດແນວໃດ\"\n\n"
+                    . "✨ ຍິ່ງເລົ່າລາຍລະອຽດເຍາະ — ໄພ່ທີ່ຈິດເລືອກຈະແມ່ນເປັະເດີ 🃏"
+            );
+
+            return [
+                'action' => 'free_card_ask_question',
+                'message' => $askMessage,
+                'reading' => null,
+            ];
+        }
+
+        // ✅ ผ่าน gate — clear pending counter
+        \Illuminate\Support\Facades\Cache::forget($pendingCacheKey);
 
         // ⚠️ ปิด conversation เก่า (กัน orphan state)
         $this->closeAllActiveConversations($platformUserId);
