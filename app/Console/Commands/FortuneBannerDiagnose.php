@@ -105,13 +105,21 @@ class FortuneBannerDiagnose extends Command
         $this->newLine();
 
         // ── 4. User cooldown (optional) ────────────────────────
+        // 🆕 (2026-05-06) cache key รวมวันที่ — รีเซ็ตทุกเที่ยงคืน
         $userId = $this->option('user');
         if ($userId) {
-            $this->line('⏱️  Cooldown ของ user '.$userId.':');
+            $today = now()->format('Y-m-d');
+            $this->line('⏱️  Cooldown ของ user '.$userId.' (วันนี้: '.$today.'):');
             foreach (['welcome', 'reaction', 'comment'] as $ch) {
-                $key = "fortune_banner_sent:{$ch}:{$userId}";
-                $exists = Cache::has($key);
-                $this->line('  '.str_pad($ch, 9).': '.($exists ? '🔒 ในระยะเวลาห้ามส่งซ้ำ' : '🟢 พร้อมส่ง'));
+                // ลอง key ใหม่ (date-based) ก่อน, fallback key เก่า (legacy)
+                $newKey = "fortune_banner_sent:{$ch}:{$userId}:{$today}";
+                $oldKey = "fortune_banner_sent:{$ch}:{$userId}";
+                $existsNew = Cache::has($newKey);
+                $existsOld = Cache::has($oldKey);
+                $status = $existsNew
+                    ? '🔒 ส่งให้วันนี้ไปแล้ว (รอเที่ยงคืน)'
+                    : ($existsOld ? '🔒 (legacy 24hr cooldown)' : '🟢 พร้อมส่ง');
+                $this->line('  '.str_pad($ch, 9).': '.$status);
             }
             $this->newLine();
             $this->line('💡 ล้าง cooldown: php artisan fortune:banner-diagnose --clear-cooldown='.$userId);
@@ -137,17 +145,27 @@ class FortuneBannerDiagnose extends Command
     }
 
     /**
-     * ล้าง cooldown ของ user ทุก channel
+     * ล้าง cooldown ของ user ทุก channel (ทั้ง key ใหม่ date-based และ legacy 24hr)
      */
     protected function clearCooldown(string $userId): int
     {
         $cleared = 0;
+        $today = now()->format('Y-m-d');
+        $yesterday = now()->subDay()->format('Y-m-d');
+
         foreach (['welcome', 'reaction', 'comment'] as $ch) {
-            $key = "fortune_banner_sent:{$ch}:{$userId}";
-            if (Cache::has($key)) {
-                Cache::forget($key);
-                $cleared++;
-                $this->line("  ✅ ล้าง {$key}");
+            // ล้าง key ทั้ง date-based (วันนี้+เมื่อวาน) และ legacy
+            $keys = [
+                "fortune_banner_sent:{$ch}:{$userId}:{$today}",
+                "fortune_banner_sent:{$ch}:{$userId}:{$yesterday}",
+                "fortune_banner_sent:{$ch}:{$userId}", // legacy
+            ];
+            foreach ($keys as $key) {
+                if (Cache::has($key)) {
+                    Cache::forget($key);
+                    $cleared++;
+                    $this->line("  ✅ ล้าง {$key}");
+                }
             }
         }
         $this->newLine();
