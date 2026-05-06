@@ -27,7 +27,9 @@ class FortuneBannerDiagnose extends Command
 {
     protected $signature = 'fortune:banner-diagnose
                             {--user= : Facebook/LINE user id ที่จะเช็ค cooldown}
-                            {--clear-cooldown= : ล้าง cooldown ของ user (welcome/reaction/comment ทั้งหมด)}';
+                            {--clear-cooldown= : ล้าง cooldown ของ user (welcome/reaction/comment ทั้งหมด)}
+                            {--clear-all : ล้าง cooldown ของ "ทุก user" — ใช้เมื่อเปลี่ยน cooldown logic ใหม่}
+                            {--last-sent : โชว์ last_sent_at ของแต่ละ banner}';
 
     protected $description = 'วินิจฉัยระบบส่งแบนเนอร์ DM — เช็คทุกชั้น gate';
 
@@ -36,6 +38,10 @@ class FortuneBannerDiagnose extends Command
         $clearUser = $this->option('clear-cooldown');
         if ($clearUser) {
             return $this->clearCooldown($clearUser);
+        }
+
+        if ($this->option('clear-all')) {
+            return $this->clearAllCooldowns();
         }
 
         $this->info('🔍 Fortune Banner Diagnose');
@@ -74,16 +80,35 @@ class FortuneBannerDiagnose extends Command
         if ($activeBanners === 0) {
             $this->error('❌ ไม่มี banner active ในตาราง — ต้องเพิ่มที่ /admin/fortune/banners');
         } else {
-            $banners = FortuneBanner::active()->ordered()->limit(5)->get();
-            $this->line('  รายการ active (top 5):');
+            $banners = FortuneBanner::active()->ordered()->limit(10)->get();
+            $this->line('  รายการ active:');
             foreach ($banners as $b) {
+                $lastSent = $b->last_sent_at ? $b->last_sent_at->format('Y-m-d H:i:s') : '(never)';
                 $this->line(sprintf(
-                    '    #%d  %s  ส่งไปแล้ว %d ครั้ง  ภาพ: %s',
+                    '    #%d  %s  ส่ง %d ครั้ง  last: %s',
                     $b->id,
                     $b->name,
                     $b->send_count,
-                    $b->image_path
+                    $lastSent
                 ));
+            }
+
+            // เตือนถ้า last_sent_at เก่ามาก
+            $latest = FortuneBanner::active()->orderByDesc('last_sent_at')->first();
+            if ($latest && $latest->last_sent_at) {
+                $hoursAgo = (int) abs($latest->last_sent_at->diffInHours(now()));
+                if ($hoursAgo >= 6) {
+                    $this->warn(sprintf(
+                        '  ⚠️  Banner ล่าสุดถูกส่งเมื่อ %d ชั่วโมงที่แล้ว (#%d %s) — ถ้ามี webhook traffic แต่ไม่ส่ง = ติด cooldown',
+                        $hoursAgo,
+                        $latest->id,
+                        $latest->name
+                    ));
+                } else {
+                    $this->info(sprintf('  ✅ ส่งล่าสุดเมื่อ %d ชม.ที่แล้ว — ระบบทำงาน', $hoursAgo));
+                }
+            } elseif ($latest) {
+                $this->warn('  ⚠️  ยังไม่เคยส่ง banner เลย (last_sent_at = null) — ลอง --clear-all แล้วทดสอบใหม่');
             }
             $this->newLine();
         }
@@ -141,6 +166,47 @@ class FortuneBannerDiagnose extends Command
             $this->line('     3. FB webhook ถูก trigger ผ่าน processConversationalMessage หรือไม่');
         }
 
+        return self::SUCCESS;
+    }
+
+    /**
+     * ล้าง cooldown ของทุก user — ใช้เมื่อ deploy logic ใหม่ + ต้องการรีเซ็ต
+     *
+     * Cache::flush() จะลบ cache ทั้งหมด (ไม่ใช่แค่ banner) — ดังนั้นใช้ pattern หากเป็น Redis
+     * ถ้า file driver: ใช้ artisan cache:clear ภายนอก เพราะ Laravel ไม่มี wildcard delete
+     */
+    protected function clearAllCooldowns(): int
+    {
+        $driver = config('cache.default');
+        $this->line('🗑️  Clearing ALL banner cooldowns (cache driver: ' . $driver . ')');
+
+        if ($driver === 'redis') {
+            try {
+                $redis = \Illuminate\Support\Facades\Cache::store('redis')->getRedis();
+                $prefix = config('cache.prefix') . ':';
+                $patterns = [
+                    $prefix . 'fortune_banner_sent:*',
+                ];
+                $deleted = 0;
+                foreach ($patterns as $p) {
+                    $keys = $redis->keys($p);
+                    if (! empty($keys)) {
+                        $redis->del($keys);
+                        $deleted += count($keys);
+                    }
+                }
+                $this->info("✅ Redis: ลบ key ที่ match แล้ว: {$deleted}");
+                return self::SUCCESS;
+            } catch (\Throwable $e) {
+                $this->error('Redis pattern delete fail: ' . $e->getMessage());
+                $this->line('Fallback: ใช้ php artisan cache:clear แทน');
+                return self::FAILURE;
+            }
+        }
+
+        // file/database driver — ไม่มี wildcard delete → แนะนำ cache:clear
+        $this->warn('⚠️  driver = ' . $driver . ' — ไม่รองรับ wildcard delete');
+        $this->line('   ใช้: php artisan cache:clear (ระวัง: ลบ cache ทั้งหมด ไม่ใช่แค่ banner)');
         return self::SUCCESS;
     }
 
