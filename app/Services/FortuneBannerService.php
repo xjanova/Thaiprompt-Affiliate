@@ -35,15 +35,22 @@ class FortuneBannerService
     {
         // Master toggle — ปิดทั้งระบบ
         if (! ($this->settings->enable_dm_banner ?? false)) {
+            Log::debug('FortuneBanner: enable_dm_banner = false', ['channel' => $channel]);
             return false;
         }
 
-        return match ($channel) {
+        $perChannel = match ($channel) {
             'reaction' => (bool) ($this->settings->banner_send_on_reaction ?? true),
             'comment' => (bool) ($this->settings->banner_send_on_comment ?? true),
             'welcome' => (bool) ($this->settings->banner_send_on_welcome ?? true),
             default => false,
         };
+
+        if (! $perChannel) {
+            Log::debug('FortuneBanner: per-channel toggle off', ['channel' => $channel]);
+        }
+
+        return $perChannel;
     }
 
     /**
@@ -61,7 +68,14 @@ class FortuneBannerService
         $strategy = $this->settings->banner_pick_strategy ?? 'rotation';
 
         try {
-            return FortuneBanner::pickByStrategy($strategy);
+            $banner = FortuneBanner::pickByStrategy($strategy);
+            if (! $banner) {
+                Log::warning('FortuneBanner: ไม่มี active banner ในตาราง — ตรวจ /admin/fortune/banners', [
+                    'channel' => $channel,
+                    'strategy' => $strategy,
+                ]);
+            }
+            return $banner;
         } catch (\Throwable $e) {
             Log::warning('FortuneBannerService: pick failed', [
                 'channel' => $channel,
@@ -73,28 +87,41 @@ class FortuneBannerService
     }
 
     /**
-     * ส่งแบนเนอร์ครั้งเดียวต่อ user/channel ภายใน cooldown
+     * ส่งแบนเนอร์ครั้งเดียวต่อ user/channel — รีเซ็ต cooldown ตอนเที่ยงคืน
      *
-     * ใช้สำหรับ welcome flow — ไม่อยากให้แบนเนอร์เด้งทุกข้อความที่ user พิมพ์
+     * 🆕 (2026-05-06) เปลี่ยน semantics: cooldown หมดอายุตอน end-of-day (Asia/Bangkok)
+     *   user spec: "ต้องส่งอย่างน้อยวันละ 1 ครั้ง ต่อ 1 คน ที่ทัก"
+     *   เดิม: 24-hour absolute — ถ้าส่งเที่ยงวานนี้ จะส่งซ้ำได้แค่เที่ยงวันนี้
+     *   ใหม่: calendar day — ส่ง 23:59 วานนี้ + ทักครั้งแรก 00:01 วันนี้ = ได้ banner ใหม่
      *
      * @param  string  $userId  Facebook/LINE user ID
      * @param  callable  $sendFn  function($imageUrl): bool
      * @param  string  $channel  'welcome' | 'reaction' | 'comment'
-     * @param  int  $cooldownHours  cooldown per user (default 24 ชม.)
+     * @param  int  $cooldownHours  legacy param (ignored — ใช้ calendar day แทน)
      * @return bool
      */
     public function sendBannerOnce(string $userId, callable $sendFn, string $channel, int $cooldownHours = 24): bool
     {
-        $cacheKey = "fortune_banner_sent:{$channel}:{$userId}";
+        // 📅 cache key รวมวันที่ — auto-rotate ทุกเที่ยงคืน
+        //   timezone = Asia/Bangkok (config('app.timezone') ก็ได้)
+        $today = now()->format('Y-m-d');
+        $cacheKey = "fortune_banner_sent:{$channel}:{$userId}:{$today}";
 
         if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-            return false; // ส่งไปแล้วใน cooldown — skip
+            Log::debug('FortuneBanner: ส่งให้ user คนนี้ไปแล้ววันนี้ — skip', [
+                'user_id' => $userId,
+                'channel' => $channel,
+                'date' => $today,
+            ]);
+            return false;
         }
 
         $sent = $this->sendBannerThenWait($sendFn, $channel);
 
         if ($sent) {
-            \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addHours($cooldownHours));
+            // cache ถึงเที่ยงคืน (end of day) — ใช้ remaining seconds ไม่ใช่ 24hr absolute
+            $secondsUntilMidnight = max(60, now()->endOfDay()->diffInSeconds(now(), absolute: true));
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, $secondsUntilMidnight);
         }
 
         return $sent;

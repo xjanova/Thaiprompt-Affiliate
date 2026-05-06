@@ -2207,6 +2207,17 @@ class FacebookWebhookController extends Controller
                 'user_name' => $userName,
             ]);
 
+            // 🖼️ (2026-05-06) ส่ง banner welcome ก่อน (ครั้งแรกที่กด GET_STARTED ก็ควรเห็น)
+            //   เดิม: banner ส่งเฉพาะใน processConversationalMessage → คนที่กด GET_STARTED แล้วไม่ทักต่อ ไม่เคยเห็น
+            if ($this->bannerService) {
+                $this->bannerService->sendBannerOnce(
+                    $senderId,
+                    fn ($url) => $this->facebookService->sendImage($senderId, $url),
+                    'welcome',
+                    24
+                );
+            }
+
             // ปิด typing indicator
             $this->facebookService->sendTypingIndicator($senderId, false);
 
