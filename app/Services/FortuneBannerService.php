@@ -108,13 +108,22 @@ class FortuneBannerService
         $cacheKey = "fortune_banner_sent:{$channel}:{$userId}:{$today}";
 
         if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
-            Log::debug('FortuneBanner: ส่งให้ user คนนี้ไปแล้ววันนี้ — skip', [
+            // 🔍 (2026-05-07) ใช้ info แทน debug — production log level ส่วนใหญ่ปิด debug
+            Log::info('FortuneBanner: ส่งให้ user คนนี้ไปแล้ววันนี้ — skip', [
                 'user_id' => $userId,
                 'channel' => $channel,
                 'date' => $today,
+                'cache_key' => $cacheKey,
             ]);
             return false;
         }
+
+        // 🔍 (2026-05-07) Log entry ที่บอกว่าจะลองส่ง — debug ทุกขั้น
+        Log::info('FortuneBanner: เข้า sendBannerOnce — กำลังลองส่ง', [
+            'user_id' => $userId,
+            'channel' => $channel,
+            'date' => $today,
+        ]);
 
         $sent = $this->sendBannerThenWait($sendFn, $channel);
 
