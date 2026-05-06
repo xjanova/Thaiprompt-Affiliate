@@ -329,4 +329,215 @@ class FortuneCelticCrossController extends Controller
             return back()->with('error', "❌ ยกเลิกล้มเหลว: {$e->getMessage()}");
         }
     }
+
+    /**
+     * 🚨 Emergency Recovery — แสดงหน้าฟอร์มกู้บิลด่วน
+     *
+     * ใช้กรณีลูกค้าจ่ายแล้วบอทเงียบ — แอดมินใส่เลขบิลเพื่อ re-push prompt ทันที
+     */
+    public function emergencyRecover()
+    {
+        // นับ readings ค้างที่ scanner จะเจอ (ตัวอย่าง 5 นาทีตามค่า default)
+        $cutoff = now()->subMinutes(5);
+        $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+        $stuckCount = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('is_paid', true)
+            ->whereNotIn('conversation_status', $excluded)
+            ->where('updated_at', '<=', $cutoff)
+            ->where(function ($q) {
+                $q->whereNull('celtic_questions_used')->orWhere('celtic_questions_used', 0);
+            })
+            ->count();
+
+        return view('admin.fortune.celtic-cross.emergency-recover', [
+            'pageTitle' => '🚨 Emergency Recovery — Celtic Cross',
+            'stuckCount' => $stuckCount,
+            'results' => null,
+        ]);
+    }
+
+    /**
+     * 🚨 Emergency Recovery — ดำเนินการกู้
+     *
+     * รับ:
+     *   - mode=bills: textarea "bills" (1 บรรทัด/บิล รับทั้ง bill_reference และ numeric id)
+     *   - mode=auto: scan Celtic ที่ paid + questions_used=0 + ค้าง > N นาที
+     *   - notify_message (optional): override header message
+     *
+     * Action ต่อแต่ละ reading:
+     *   1. status=CELTIC_PENDING_PAYMENT → onCelticPaymentConfirmed (transition + prompt ใบ 1)
+     *   2. status='new' + is_paid=true → 🚨 Force-promote → CELTIC_PICKING + prompt ใบ 1
+     *      (เคสที่ slip matcher transition ไม่ครบ — บิล FTU-260505-J1439 เจอแบบนี้)
+     *   3. อื่นๆ → buildCelticResumeResponse (resume ที่จุดเดิม)
+     */
+    public function emergencyRecoverAction(Request $request)
+    {
+        $mode = $request->input('mode', 'bills');
+        $minutes = max(1, (int) $request->input('minutes', 5));
+        $customHeader = trim((string) $request->input('notify_message', ''));
+
+        $readings = collect();
+        $notFound = [];
+
+        if ($mode === 'bills') {
+            $billsRaw = trim((string) $request->input('bills', ''));
+            if ($billsRaw === '') {
+                return back()->with('error', '❌ กรุณาระบุเลขบิลอย่างน้อย 1 รายการ');
+            }
+            $tokens = preg_split('/[\s,]+/', $billsRaw, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $tokens = array_unique(array_map('trim', $tokens));
+
+            foreach ($tokens as $tok) {
+                if ($tok === '') {
+                    continue;
+                }
+                $r = is_numeric($tok)
+                    ? FortuneReading::find((int) $tok)
+                    : FortuneReading::where('bill_reference', $tok)->first();
+                if ($r) {
+                    $readings->push($r);
+                } else {
+                    $notFound[] = $tok;
+                }
+            }
+        } elseif ($mode === 'auto') {
+            $cutoff = now()->subMinutes($minutes);
+            $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+            $candidates = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->where('is_paid', true)
+                ->whereNotIn('conversation_status', $excluded)
+                ->where('updated_at', '<=', $cutoff)
+                ->get();
+            $readings = $candidates->filter(fn ($r) => (int) ($r->celtic_questions_used ?? 0) === 0);
+        } else {
+            return back()->with('error', '❌ mode ไม่ถูกต้อง');
+        }
+
+        if ($readings->isEmpty()) {
+            $msg = '✅ ไม่พบ reading ที่ต้องกู้';
+            if (! empty($notFound)) {
+                $msg .= ' — บิลที่ไม่พบ: ' . implode(', ', $notFound);
+            }
+
+            return back()->with('error', $msg);
+        }
+
+        $settings = FortuneTellingSetting::getSettings();
+        $svc = new FortuneConversationService($settings);
+        $cm = new FortuneChannelManager($settings);
+
+        $results = [];
+        $okCount = 0;
+        $failCount = 0;
+
+        foreach ($readings as $r) {
+            $row = [
+                'id' => $r->id,
+                'bill' => $r->bill_reference ?? '-',
+                'user' => $r->facebook_user_name ?? '-',
+                'platform' => $r->platform ?? '-',
+                'status_before' => $r->conversation_status,
+                'picked' => $r->getCelticPickedCount(),
+                'ok' => false,
+                'msg' => '',
+            ];
+
+            try {
+                $platform = $r->platform
+                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $r->platform_user_id ?? $r->facebook_user_id ?? '') ? 'line' : 'facebook');
+                $userId = $r->platform_user_id ?? $r->facebook_user_id;
+
+                if (empty($userId)) {
+                    $row['msg'] = '❌ ไม่มี user_id';
+                    $results[] = $row;
+                    $failCount++;
+                    continue;
+                }
+
+                // 🩹 Force-promote stuck-at-'new' reading (slip matched + transition skipped)
+                $forcePromoted = false;
+                if ($r->is_paid
+                    && in_array($r->conversation_status, [FortuneReading::STATUS_NEW, FortuneReading::STATUS_CELTIC_PENDING_PAYMENT], true)
+                    && $r->getCelticPickedCount() === 0) {
+                    if ($r->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                        $r->update(['reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS]);
+                    }
+                    $r->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]);
+                    $response = $svc->onCelticPaymentConfirmed($r->fresh());
+                    $forcePromoted = true;
+                } else {
+                    $response = $svc->buildCelticResumeResponse($r->fresh(), false);
+                }
+
+                $defaultHeader = "🔔 *ขออภัยที่ทำให้รอนะคะ*\n"
+                    . "ระบบกู้สถานะให้แล้ว — ดำเนินการต่อได้เลยค่ะ ⬇️\n\n"
+                    . "═══════════════════════\n\n";
+                $header = $customHeader !== ''
+                    ? rtrim($customHeader) . "\n\n═══════════════════════\n\n"
+                    : $defaultHeader;
+                $response['message'] = $header . ($response['message'] ?? '');
+
+                $sent = $cm->sendResponse($platform, $userId, $response, [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+
+                $row['ok'] = (bool) $sent;
+                $row['msg'] = $sent
+                    ? ($forcePromoted ? '✅ Force-promote + ส่งสำเร็จ' : '✅ ส่งสำเร็จ')
+                    : '❌ ส่งไม่สำเร็จ (ดู log)';
+                $row['status_after'] = $r->fresh()->conversation_status;
+
+                $sent ? $okCount++ : $failCount++;
+
+                Log::info('Celtic Emergency Recovery', [
+                    'reading_id' => $r->id,
+                    'bill' => $r->bill_reference,
+                    'platform' => $platform,
+                    'force_promoted' => $forcePromoted,
+                    'sent' => $sent,
+                    'admin_id' => auth()->id(),
+                ]);
+            } catch (\Throwable $e) {
+                $row['msg'] = '❌ Error: ' . mb_substr($e->getMessage(), 0, 120);
+                $results[] = $row;
+                $failCount++;
+                Log::error('Celtic Emergency Recovery: exception', [
+                    'reading_id' => $r->id,
+                    'error' => $e->getMessage(),
+                ]);
+                continue;
+            }
+
+            $results[] = $row;
+        }
+
+        $cutoff = now()->subMinutes(5);
+        $excluded = ['cancelled', 'celtic_qa_window_expired', 'expired'];
+        $stuckCount = FortuneReading::where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+            ->where('is_paid', true)
+            ->whereNotIn('conversation_status', $excluded)
+            ->where('updated_at', '<=', $cutoff)
+            ->where(function ($q) {
+                $q->whereNull('celtic_questions_used')->orWhere('celtic_questions_used', 0);
+            })
+            ->count();
+
+        $summary = sprintf(
+            '📊 กู้สำเร็จ %d | ล้มเหลว %d%s',
+            $okCount,
+            $failCount,
+            $notFound ? ' | ไม่พบบิล: ' . implode(', ', $notFound) : ''
+        );
+
+        return view('admin.fortune.celtic-cross.emergency-recover', [
+            'pageTitle' => '🚨 Emergency Recovery — Celtic Cross',
+            'stuckCount' => $stuckCount,
+            'results' => $results,
+            'summary' => $summary,
+            'okCount' => $okCount,
+            'failCount' => $failCount,
+            'notFound' => $notFound,
+        ]);
+    }
 }

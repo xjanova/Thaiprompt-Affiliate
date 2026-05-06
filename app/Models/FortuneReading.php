@@ -595,8 +595,26 @@ class FortuneReading extends Model
      */
     public static function shouldUseRequestBeforePay(string $platform, string $platformUserId): bool
     {
+        // 🛑 (2026-05-05) KILL SWITCH — Pay-Later disabled (user decision: ระบบเสถียรกว่าตอน pay-first only)
+        //   เอา Pay-Later ออกหมด — ทุกคนต้องจ่ายก่อนถึงดู
+        //   เปลี่ยน const เป็น true เมื่อพร้อม re-enable
+        if (! self::PAY_LATER_ENABLED) {
+            return false;
+        }
+
         return ! self::hasUsedRequestBeforePay($platform, $platformUserId);
     }
+
+    /**
+     * 🛑 (2026-05-05) Pay-Later (Request-Before-Pay) kill switch
+     *
+     * User decision: ระบบเสถียรกว่าก่อนเพิ่ม Pay-Later flow — เอาออกหมด
+     * Effect:
+     *   - shouldUseRequestBeforePay() return false เสมอ
+     *   - isPayLaterFlow() return false เสมอ (ลูกค้าใหม่ไม่ติด flag นี้)
+     *   - existing readings ที่ flag set ไว้แล้ว → fall through pay-first naturally
+     */
+    public const PAY_LATER_ENABLED = false;
 
     /**
      * 🩹 (2026-05-04) ตรวจว่า reading นี้เป็น Pay-Later flow หรือไม่
@@ -610,6 +628,11 @@ class FortuneReading extends Model
      */
     public function isPayLaterFlow(): bool
     {
+        // 🛑 (2026-05-05) Pay-Later disabled — return false เสมอ (kill switch)
+        if (! self::PAY_LATER_ENABLED) {
+            return false;
+        }
+
         return (bool) $this->getConversationState('is_request_before_pay', false);
     }
 
@@ -1963,6 +1986,14 @@ class FortuneReading extends Model
      */
     public function getConversationState(string $key, $default = null)
     {
+        // 🛑 (2026-05-05) Pay-Later kill switch — บังคับ false ทุก read site
+        //   เคสนี้ครอบคลุมทุกจุดในระบบที่เช็ค flag is_request_before_pay
+        //   (CelticCrossConversationTrait, FortuneConversationService, ProcessDeepFortuneReadingJob ฯลฯ)
+        //   → flow ทุกจุดจะ fall-through ไป pay-first โดยไม่ต้องแก้ทีละจุด
+        if (! self::PAY_LATER_ENABLED && $key === 'is_request_before_pay') {
+            return false;
+        }
+
         $state = $this->conversation_state;
 
         return is_array($state) ? ($state[$key] ?? $default) : $default;
