@@ -362,61 +362,11 @@ trait CelticCrossConversationTrait
                     }
                 }
 
-                $isRequestBeforePay = false;
-                $alreadyUsedPayLater = false;
-                if ($platformUserId && FortuneReading::shouldUseRequestBeforePay($platform, $platformUserId)) {
-                    $reading->setConversationState('is_request_before_pay', true);
-                    $isRequestBeforePay = true;
-                    \Log::info('Fortune: Deep 39 → enable Request-Before-Pay (first-time)', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                    ]);
-                } elseif ($platformUserId) {
-                    // 🔒 (2026-05-04) ลูกค้าใช้สิทธิ์ดูก่อนจ่ายไปแล้ว → ต้องจ่ายก่อนทุกครั้ง
-                    //    user spec: "เมื่อใช้สิทธิ์ไปแล้ว บิลต่อไปต้องจ่ายก่อนอย่างเดียว ถึงจะดูได้"
-                    $alreadyUsedPayLater = true;
-                    \Log::info('Fortune: Deep 39 → ลูกค้าใช้สิทธิ์ดูก่อนจ่ายแล้ว — ใช้ pay-first', [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                    ]);
-                }
-
-                // 🎁 (2026-05-04) ถ้าเข้าโหมด "ดูก่อนจ่ายทีหลัง" — บอกลูกค้าให้ชัดเจนตั้งแต่แรก
-                //    user feedback: "ตอนเปิดระบบดูก่อนจ่ายทีหลัง ต้องบอกชัดเจนแต่แรกด้วยว่า ดูก่อนจ่ายทีหลัง"
-                //    + "ย้ำลูกค้าด้วยว่าต้องโอนภายใน 24 ชม"
-                $payLaterIntro = '';
-                if ($isRequestBeforePay) {
-                    $payLaterIntro = \App\Services\FortuneLocaleService::lo(
-                        "🎁 *สิทธิพิเศษครั้งแรก: ดูก่อนจ่ายทีหลัง* 💎\n"
-                        . "✨ แม่หมอจะเปิดดวงทำนายให้ก่อน — รับคำทำนายเสร็จแล้วค่อยชำระ {$deepPriceInt} บาท\n"
-                        . "⏰ *ต้องโอนภายใน 24 ชั่วโมง* หลังได้รับคำทำนาย\n"
-                        . "🔒 ใช้สิทธิ์ได้แค่ครั้งแรกครั้งเดียวเท่านั้น/ท่าน\n"
-                        . "═══════════════════════\n\n",
-                        "🎁 *ສິດທິພິເສດຄັ້ງທຳອິດ: ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ* 💎\n"
-                        . "✨ ແມ່ໝໍຈະເປີດດວງທຳນາຍໃຫ້ກ່ອນ — ຮັບຄຳທຳນາຍແລ້ວຄ່ອຍຊຳລະ {$deepPriceInt} ບາດ\n"
-                        . "⏰ *ຕ້ອງໂອນພາຍໃນ 24 ຊົ່ວໂມງ* ຫຼັງໄດ້ຮັບຄຳທຳນາຍ\n"
-                        . "🔒 ໃຊ້ສິດໄດ້ແຄ່ຄັ້ງທຳອິດຄັ້ງດຽວເທົ່ານັ້ນ/ທ່ານ\n"
-                        . "═══════════════════════\n\n"
-                    );
-                } elseif ($alreadyUsedPayLater) {
-                    // 🔒 (2026-05-04) ใช้สิทธิ์ไปแล้ว — บอกชัดเจนว่ารอบนี้ต้องจ่ายก่อน
-                    //    user spec: "ระบบควรบอกให้ชัดเจน"
-                    $payLaterIntro = \App\Services\FortuneLocaleService::lo(
-                        "🔒 *เจ้าชะตาใช้สิทธิ์ \"ดูก่อนจ่ายทีหลัง\" ไปแล้วในรอบก่อนนะคะ*\n"
-                        . "💸 *รอบนี้ต้องโอนค่าครู {$deepPriceInt} บาทก่อน* แม่หมอถึงจะเปิดดวงให้\n"
-                        . "🙏 ขอบคุณที่เข้าใจค่ะ — เป็นกฎของระบบเพื่อความเป็นธรรม\n"
-                        . "═══════════════════════\n\n",
-                        "🔒 *ເຈົ້າຊາຕາໃຊ້ສິດ \"ເບິ່ງກ່ອນຈ່າຍທີຫຼັງ\" ໄປແລ້ວໃນຮອບກ່ອນເດີ*\n"
-                        . "💸 *ຮອບນີ້ຕ້ອງໂອນຄ່າຄູ {$deepPriceInt} ບາດກ່ອນ* ແມ່ໝໍຈຶ່ງຈະເປີດດວງໃຫ້\n"
-                        . "🙏 ຂອບໃຈທີ່ເຂົ້າໃຈເດີ — ເປັນກົດຂອງລະບົບເພື່ອຄວາມເປັນທຳ\n"
-                        . "═══════════════════════\n\n"
-                    );
-                }
-
+                // 🌊 (2026-05-05) Pay-First only — ลบ Pay-Later (Request-Before-Pay) flow ออกหมด
+                //    user decision: ระบบเสถียรกว่าตอน pay-first only — ทุกคนจ่ายก่อนถึงดู
                 return [
                     'action' => 'collecting_birthdate',
-                    'message' => $payLaterIntro
-                        . "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
+                    'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
                         . $this->getBirthdateRequestMessage(),
                     'reading' => $reading,
                 ];
@@ -1119,6 +1069,16 @@ trait CelticCrossConversationTrait
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
             // celtic_summary_image_url removed — เลื่อนไป endCelticSession
+            // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม"
+            //    ลูกค้าหลังเปิดไพ่ครบ มักงงไม่รู้ต้องทำอะไรต่อ
+            //    ปุ่มนี้เป็น UX cue — กดแล้ว bot ส่ง prompt ตัวอย่างคำถามซ้ำ
+            'quick_replies' => [
+                [
+                    'content_type' => 'text',
+                    'title' => '💬 เริ่มถามคำถาม',
+                    'payload' => 'CELTIC_START_Q',
+                ],
+            ],
         ];
     }
 
@@ -1133,6 +1093,26 @@ trait CelticCrossConversationTrait
         // 🔚 ลูกค้าขอจบ → จบสุขุม
         if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
             return $this->endCelticSession($reading, 'customer_said_done');
+        }
+
+        // 💬 (2026-05-06) ลูกค้ากดปุ่ม "เริ่มถามคำถาม" — แค่ส่ง prompt hint ใหม่ ไม่ใช่คำถามจริง
+        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $timeHint = $remainingMin !== null && $remainingMin > 0
+                ? "⏳ ถามได้อีก {$remainingMin} นาที"
+                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+
+            return [
+                'action' => 'celtic_start_question_hint',
+                'message' => "💬 *เริ่มถามคำถามได้เลย*\n\n"
+                    . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ เช่น:\n\n"
+                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
+                    . "   • *\"งานในเดือนหน้า\"*\n"
+                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
+                    . $timeHint . "\n"
+                    . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ",
+                'reading' => $reading,
+            ];
         }
 
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม

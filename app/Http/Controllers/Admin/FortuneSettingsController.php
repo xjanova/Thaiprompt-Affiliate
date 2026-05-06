@@ -688,9 +688,14 @@ class FortuneSettingsController extends Controller
         // รวบรวม providers ที่มี API key พร้อมใช้
         $availableProviders = $this->getAvailableProvidersForPlayground($settings);
 
+        // 🆕 (2026-05-06) ส่ง MODELS_BY_PROVIDER ให้ FE — ใช้ populate model picker
+        //   ทำให้ admin ทดสอบ model อะไรก็ได้ของ provider นั้นก่อนล็อกเป็น default
+        $modelsByProvider = AiApiKey::MODELS_BY_PROVIDER;
+
         return view('admin.fortune.playground.index', [
             'settings' => $settings,
             'availableProviders' => $availableProviders,
+            'modelsByProvider' => $modelsByProvider,
             'pageTitle' => 'AI Playground - ทดสอบดูดวง',
         ]);
     }
@@ -740,20 +745,37 @@ class FortuneSettingsController extends Controller
             ];
 
             foreach ($poolKeys as $poolKey) {
-                $model = $poolKey->metadata['model'] ?? ($defaultModels[$poolKey->provider] ?? $poolKey->provider);
-                $key = $poolKey->provider.':'.$model;
+                // 🎯 (2026-05-06) ใช้ resolveModel() แทน metadata['model'] โดยตรง
+                //   resolveModel จะอ่านจาก column `model` ก่อน (per-key override)
+                //   fallback ไป metadata['model'] → settings default
+                $model = method_exists($poolKey, 'resolveModel')
+                    ? $poolKey->resolveModel()
+                    : ($poolKey->metadata['model'] ?? ($defaultModels[$poolKey->provider] ?? $poolKey->provider));
+                $key = $poolKey->provider.':'.$model.':'.$poolKey->id;
 
                 if (in_array($key, $addedKeys)) {
                     continue;
                 }
 
                 $providerLabel = AiApiKey::PROVIDERS[$poolKey->provider] ?? ucfirst($poolKey->provider);
+
+                // 🆕 (2026-05-06) แสดง purpose badge ใน label
+                //   admin จะเห็นว่า key นี้ถูก lock ใช้งานเฉพาะอะไร (prediction/chat/free_card)
+                $purpose = $poolKey->purpose ?? 'any';
+                $purposeBadge = match ($purpose) {
+                    'prediction' => ' 🎯[prediction]',
+                    'chat'       => ' 💬[chat]',
+                    'free_card'  => ' 🎁[free_card]',
+                    default      => '',
+                };
+
                 $providers[] = [
                     'provider' => $poolKey->provider,
                     'model' => $model,
-                    'label' => $providerLabel.' - '.$model.' (Pool: '.$poolKey->name.')',
+                    'label' => $providerLabel.' - '.$model.$purposeBadge.' (Pool: '.$poolKey->name.')',
                     'source' => 'pool',
                     'pool_key_id' => $poolKey->id,
+                    'purpose' => $purpose,
                 ];
                 $addedKeys[] = $key;
             }

@@ -164,6 +164,63 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🚦 (2026-05-06) Active reading statuses — รวมทั้ง Deep 39 + Celtic 99
+     *
+     * ใช้ในการ "ปิดปุ่ม Quick Reply ลอย" (default QR) ระหว่างทำนาย
+     * เพราะลูกค้าสับสนได้ถ้าเห็นปุ่ม "ดูดวง 39฿ / 99฿" ขณะกำลังทำนายอยู่
+     *
+     * รวม: confirmation, birthdate, questions, tarot, pending payment,
+     *       awaiting delivery confirm, tier choice, celtic active states
+     */
+    public const ACTIVE_READING_STATUSES = [
+        self::STATUS_AWAITING_CONFIRMATION,
+        self::STATUS_COLLECTING_BIRTHDATE,
+        self::STATUS_COLLECTING_QUESTIONS,
+        self::STATUS_DISCOVERY_CHAT,
+        self::STATUS_DISCOVERY_CONFIRM,
+        self::STATUS_COLLECTING_TAROT,
+        self::STATUS_PENDING_PAYMENT,
+        self::STATUS_AWAITING_DELIVERY_CONFIRM,
+        self::STATUS_TIER_CHOICE,
+        self::STATUS_CELTIC_PENDING_PAYMENT,
+        self::STATUS_CELTIC_PICKING,
+        self::STATUS_CELTIC_AWAITING_QUESTION,
+        self::STATUS_CELTIC_GENERATING,
+        self::STATUS_CELTIC_QA_PROMPT,
+    ];
+
+    /**
+     * เช็คว่า user มี reading ที่ active อยู่หรือไม่ (cached 30s ลด DB hit)
+     *
+     * @param  string  $platform  'facebook' | 'line'
+     * @param  string  $userId    Facebook page-scoped ID หรือ LINE user ID
+     */
+    public static function hasActiveReading(string $platform, string $userId): bool
+    {
+        $cacheKey = "fortune_active_reading:{$platform}:{$userId}";
+
+        return (bool) \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addSeconds(30),
+            function () use ($platform, $userId) {
+                $column = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
+
+                return self::where($column, $userId)
+                    ->whereIn('conversation_status', self::ACTIVE_READING_STATUSES)
+                    ->exists();
+            }
+        );
+    }
+
+    /**
+     * ล้าง cache hasActiveReading (เรียกเมื่อ status เปลี่ยน)
+     */
+    public static function clearActiveReadingCache(string $platform, string $userId): void
+    {
+        \Illuminate\Support\Facades\Cache::forget("fortune_active_reading:{$platform}:{$userId}");
+    }
+
+    /**
      * ตำแหน่ง Celtic Cross 10 ตำแหน่งมาตรฐาน
      *
      * Layout (ตามภาพมาตรฐาน):
@@ -2333,6 +2390,21 @@ class FortuneReading extends Model
             $paidTypes = ['deep', 'celtic_cross'];
             if (empty($reading->bill_reference) && in_array($reading->reading_type, $paidTypes, true)) {
                 $reading->bill_reference = self::generateBillReference();
+            }
+        });
+
+        // 🚦 (2026-05-06) ล้าง active-reading cache เมื่อ status เปลี่ยน
+        //   ใช้กัน "ปุ่ม QR ลอยหายช้า" หลัง flow จบ หรือเริ่มใหม่
+        static::saved(function ($reading) {
+            if (! $reading->isDirty('conversation_status')) {
+                return;
+            }
+
+            if (! empty($reading->facebook_user_id)) {
+                self::clearActiveReadingCache('facebook', $reading->facebook_user_id);
+            }
+            if (! empty($reading->line_user_id)) {
+                self::clearActiveReadingCache('line', $reading->line_user_id);
             }
         });
     }

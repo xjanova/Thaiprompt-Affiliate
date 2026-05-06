@@ -113,11 +113,20 @@ class AiApiKey extends Model
             'o3-mini',
         ],
         'gemini' => [
-            // 🔄 (2026-05-02 v2) gemini-2.0-flash ก็ deprecate แล้ว ("no longer available to new users")
-            'gemini-2.5-flash',           // ⭐ default ใหม่ — เร็ว+ดี+ใช้งานได้
-            'gemini-2.5-pro',             // ⭐ ฉลาดสุด
-            'gemini-2.5-flash-lite',      // ⭐ ถูกสุด
-            'gemini-2.0-flash-001',       // ⭐ specific ver — บางครั้งใช้ได้
+            // 🆕 (2026-05-06) Gemini 3.x — current generation (May 2026)
+            //   ตรวจชื่อ model จาก ai.google.dev/gemini-api/docs/models
+            //   ⚠️ "preview" suffix = ยังไม่ stable — ใช้แล้วระวังเปลี่ยน
+            'gemini-3.1-pro-preview',         // ⭐ ฉลาดสุด — agentic + reasoning
+            'gemini-3-flash-preview',         // ⭐ multimodal/agentic
+            'gemini-3.1-flash-lite-preview',  // ⭐ ถูกที่สุด — high-volume
+
+            // Gemini 2.5 — stable (still available)
+            'gemini-2.5-flash',           // default ปลอดภัย
+            'gemini-2.5-pro',             // stable + ฉลาด
+            'gemini-2.5-flash-lite',      // stable + ถูก
+
+            // Gemini 2.0 — deprecated (เก็บไว้กัน BC)
+            'gemini-2.0-flash-001',       // legacy
             'gemini-1.5-flash',           // legacy fallback
         ],
         'qwen' => [
