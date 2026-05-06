@@ -99,8 +99,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
         $items[] = [
             'content_type' => 'text',
-            'title' => $isLao ? '📊 ກວດສິດ' : '📊 เช็คสิทธิ์',
-            'payload' => 'MENU_CHECK_REMAINING',
+            'title' => $isLao ? '📋 ເມນູ' : '📋 เมนู',
+            'payload' => 'MENU_OPEN',
         ];
 
         return $items;

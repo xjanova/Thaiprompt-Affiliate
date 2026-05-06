@@ -83,65 +83,7 @@
             </div>
         @endif
 
-        {{-- 🔒 (2026-05-04) Pay-Later Eligibility (Request-Before-Pay) --}}
-        @isset($payLaterStatus)
-            <div class="mt-4 p-4 rounded-lg border-2 {{ $payLaterStatus['eligible'] ? 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700' }}">
-                <div class="flex items-start justify-between gap-4 mb-3">
-                    <div>
-                        <h3 class="font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                            💎 สิทธิ์ "ดูก่อนจ่ายทีหลัง" (Request-Before-Pay)
-                        </h3>
-                        @if($payLaterStatus['eligible'])
-                            <p class="text-sm text-green-700 dark:text-green-300 mt-1">
-                                ✅ <strong>ยังไม่เคยใช้สิทธิ์</strong> — ลูกค้าจะได้ดูดวง 39฿ ก่อนจ่ายในรอบถัดไป
-                            </p>
-                        @else
-                            <p class="text-sm text-amber-700 dark:text-amber-300 mt-1">
-                                🔒 <strong>ใช้สิทธิ์ไปแล้ว</strong> — ลูกค้าต้องจ่ายก่อนในทุกบิลถัดไป
-                            </p>
-                            <div class="mt-2 text-xs text-gray-600 dark:text-gray-400 grid grid-cols-2 gap-x-4 gap-y-1">
-                                <div>📊 ใช้ทั้งหมด: <strong>{{ $payLaterStatus['usage_count'] }}</strong> ครั้ง</div>
-                                <div>💰 จ่ายแล้ว: <strong class="text-green-600 dark:text-green-400">{{ $payLaterStatus['paid_count'] }}</strong></div>
-                                <div>⚠️ ยังไม่จ่าย: <strong class="text-red-600 dark:text-red-400">{{ $payLaterStatus['unpaid_count'] }}</strong></div>
-                                <div>🕐 ใช้ครั้งแรก: {{ $payLaterStatus['first_used_at']?->format('d/m/Y H:i') ?? '-' }}</div>
-                            </div>
-                        @endif
-                    </div>
-
-                    @if(!$payLaterStatus['eligible'])
-                        <form action="{{ route('admin.fortune.users.reset-pay-later', ['platform' => $userInfo['platform'], 'userId' => $userInfo['facebook_user_id']]) }}"
-                              method="POST"
-                              onsubmit="return confirm('⚠️ ยืนยันรีเซ็ตสิทธิ์ดูก่อนจ่ายทีหลัง?\n\nลูกค้าจะใช้สิทธิ์ดูก่อนจ่ายได้อีกครั้ง (ในบิลถัดไป)\nflag จะถูกล้างจาก {{ $payLaterStatus['usage_count'] }} reading');"
-                              class="shrink-0">
-                            @csrf
-                            <button type="submit"
-                                    class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-semibold rounded-lg shadow transition">
-                                🔓 รีเซ็ตสิทธิ์
-                            </button>
-                        </form>
-                    @endif
-                </div>
-
-                @if(!$payLaterStatus['eligible'] && $payLaterStatus['readings']->isNotEmpty())
-                    <div class="mt-3 pt-3 border-t border-amber-200 dark:border-amber-800">
-                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">📋 ประวัติการใช้:</p>
-                        <div class="space-y-1 text-xs max-h-40 overflow-y-auto">
-                            @foreach($payLaterStatus['readings'] as $r)
-                                <div class="flex items-center justify-between gap-2 p-2 rounded bg-white dark:bg-gray-800/50">
-                                    <code class="text-gray-700 dark:text-gray-300">{{ $r->bill_reference ?? '-' }}</code>
-                                    <span class="text-gray-500 dark:text-gray-400">{{ $r->created_at->format('d/m/Y H:i') }}</span>
-                                    @if($r->is_paid)
-                                        <span class="px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 rounded font-semibold">จ่ายแล้ว ฿{{ number_format($r->amount_paid, 2) }}</span>
-                                    @else
-                                        <span class="px-2 py-0.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 rounded font-semibold">ยังไม่จ่าย</span>
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            </div>
-        @endisset
+        {{-- 🛑 (2026-05-06) Pay-Later Eligibility section ลบทิ้ง — Pay-Later removed --}}
     </div>
 
     {{-- Flash Messages --}}

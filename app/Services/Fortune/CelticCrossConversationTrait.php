@@ -321,49 +321,7 @@ trait CelticCrossConversationTrait
                 }
                 $reading->update($updateData);
 
-                // 💎 (2026-05-03) Request-Before-Pay eligibility — first-time 39 only
-                //    ตรวจ + mark flag ตอนนี้ (ก่อน collect birthdate) → handleQuestionInput อ่านภายหลัง
-                $platform = $this->currentPlatform;
-                $platformUserId = $reading->platform_user_id ?? $reading->facebook_user_id;
-
-                // 🚨 (2026-05-04) Anti-fraud: ตรวจบิล Request-Before-Pay ค้างก่อน
-                //    user spec: "ควรขึ้น qrcode บิลที่ยังไม่จ่ายมาให้ก่อน"
-                //    ถ้ามีบิลค้าง → ส่ง QR เก่า ไม่สร้างบิลใหม่
-                if ($platformUserId) {
-                    $existingPendingBill = FortuneReading::where('platform', $platform)
-                        ->where(function ($q) use ($platformUserId) {
-                            $q->where('platform_user_id', $platformUserId)
-                                ->orWhere('facebook_user_id', $platformUserId);
-                        })
-                        ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
-                        ->where('is_paid', false)
-                        ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
-                        ->whereJsonContains('conversation_state->is_request_before_pay', true)
-                        ->where('id', '!=', $reading->id)
-                        ->latest('updated_at')
-                        ->first();
-
-                    if ($existingPendingBill) {
-                        \Log::info('💎 Fortune: ลูกค้ามีบิล Request-Before-Pay ค้าง → resend QR + ปิด reading ใหม่', [
-                            'new_reading_id' => $reading->id,
-                            'existing_bill_id' => $existingPendingBill->id,
-                            'bill_ref' => $existingPendingBill->bill_reference,
-                        ]);
-
-                        // ลบ reading ใหม่ทิ้ง (เป็น duplicate) — ลูกค้ายังอยู่ในบิลเก่า
-                        try {
-                            $reading->forceDelete();
-                        } catch (\Throwable $e) {
-                            // best-effort
-                        }
-
-                        // route ไป handlePendingPayment ให้ส่ง QR + bill detail (ใช้ logic เดียวกับ "เช็คสถานะ")
-                        return $this->handlePendingPayment($existingPendingBill, 'เช็คสถานะ');
-                    }
-                }
-
-                // 🌊 (2026-05-05) Pay-First only — ลบ Pay-Later (Request-Before-Pay) flow ออกหมด
-                //    user decision: ระบบเสถียรกว่าตอน pay-first only — ทุกคนจ่ายก่อนถึงดู
+                // 🛑 (2026-05-06) Pay-Later removed — ทุกคนเข้า pay-first ตรงๆ
                 return [
                     'action' => 'collecting_birthdate',
                     'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"

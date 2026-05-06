@@ -324,14 +324,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             return;
         }
 
-        // 🩹 (2026-05-05) Pay-Later partial recovery — AI gen เสร็จแต่ยังไม่ deliver
-        //    ถ้า status COMPLETED + has deep_response + ! alreadyDelivered + is_request_before_pay=true
-        //    → skip processPaymentConfirmed (AI gen ทำไปแล้ว) → ตรงเข้า Pay-Later deliver block
-        $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
-        $skipAiRegenerate = ! empty($reading->deep_response)
-            && $reading->conversation_status === FortuneReading::STATUS_COMPLETED
-            && $isRequestBeforePay
-            && ! $alreadyDelivered;
+        // 🛑 (2026-05-06) Pay-Later removed — ไม่มี skipAiRegenerate (always regenerate ถ้ายังไม่จ่าย)
+        $skipAiRegenerate = false;
 
         // 🌐 (2026-05-03) Restore locale จาก stored value — queue worker ไม่มี request context
         //    หาก Lao ลูกค้าจ่าย — ทุก push (ทั้ง processPaymentConfirmed streaming + FB push branch)
@@ -387,134 +381,10 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 $reading->setConversationState('reading_ready_at', now()->toIso8601String());
             }
 
-            // 💎 (2026-05-04 simplified) Pay-Later flow — deliver reading + bill + QR ในข้อความเดียว
-            //    User design: "ย้าย QR มาไว้หลังคำทำนาย แล้วมาร์คบิลรอชำระ"
-            //    เลิกใช้ AWAITING_DELIVERY_CONFIRM state + extra "รับคำทำนาย" button — friction ไม่จำเป็น
-            //    Flow: AI gen เสร็จ → createPaymentBill → push reading+bill+QR → status=PENDING_PAYMENT
-            //    ลูกค้าโอน 39.XX → SMS match → confirmPayment(notification) → mark is_paid=true ตอนนั้น
-            $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
-
-            if ($isRequestBeforePay && ! empty($reading->deep_response) && $this->userId) {
-                Log::info('💎 Pay-Later: AI gen done → create bill + send reading + QR (single message)', [
-                    'reading_id' => $reading->id,
-                    'platform' => $this->platform,
-                ]);
-
-                try {
-                    // สร้าง bill + UPA + QR (ใช้ existing logic จาก createPaymentBill)
-                    //    setPendingPayment ภายใน → status=PENDING_PAYMENT, amount_paid=39.XX (ทศนิยม), bill_reference
-                    $convService = new \App\Services\FortuneConversationService($settings);
-                    $reflectMethod = new \ReflectionMethod($convService, 'createPaymentBill');
-                    $reflectMethod->setAccessible(true);
-                    $billResult = $reflectMethod->invoke($convService, $reading, $reading->questions ?? []);
-
-                    if (($billResult['action'] ?? null) === 'pending_payment') {
-                        $name = $reading->facebook_user_name ?? 'คุณ';
-                        $readingHeader = FortuneLocaleService::lo(
-                            "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n"
-                                . '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n"
-                                . '📅 วันที่: '.now()->format('d/m/Y H:i')."\n"
-                                . "═══════════════════════\n\n",
-                            "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n"
-                                . '📋 ເລກບິນ: '.($reading->bill_reference ?? '-')."\n"
-                                . '📅 ວັນທີ: '.now()->format('d/m/Y H:i')."\n"
-                                . "═══════════════════════\n\n"
-                        );
-
-                        $billResult['message'] = $readingHeader . $reading->deep_response . "\n\n" . ($billResult['message'] ?? '');
-                        $billResult['action'] = 'deliver_with_qr';
-                        $billResult['chart_image_url'] = $reading->reading_image_url;
-                        // 🃏 (2026-05-04) ส่งรูปไพ่ที่ลูกค้าจับได้ด้วย — user request
-                        //    user feedback: "การดูแบบ 39 ต้องส่งรูปไพ่ที่จับได้ด้วย ตอนนี้มีแต่กราฟดวงดาว"
-                        $tarotImageUrls = collect($reading->getCollectedTarotCards())
-                            ->pluck('image_url')
-                            ->filter()
-                            ->values()
-                            ->all();
-                        if (! empty($tarotImageUrls)) {
-                            $billResult['tarot_image_urls'] = $tarotImageUrls;
-                        }
-
-                        // 🩹 (2026-05-04) ตรวจ return ของ sendResponse — ถ้าล้มเหลว ห้าม set flag
-                        //    เพราะถ้าตั้ง reading_sent_directly=true แม้ส่งไม่สำเร็จ →
-                        //    ลูกค้ากลับมาทัก ระบบจะไม่ trigger re-send → ค้างถาวร
-                        //    Bug ที่ user รายงาน 2026-05-04: Pay-Later 39฿ คำทำนายเสร็จ
-                        //    แต่ลูกค้าไม่ได้รับ + admin ไม่มีปุ่มกด
-                        $sent = $channelManager->sendResponse($this->platform, $this->userId, $billResult, ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-
-                        if ($sent) {
-                            $reading->setConversationState('reading_sent_directly', true);
-                            $reading->setConversationState('reading_ready_sent', true);
-                            $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-
-                            Log::info('💎 Pay-Later: deliver SUCCESS (reading + bill + QR sent, bill marked PENDING_PAYMENT)', [
-                                'reading_id' => $reading->id,
-                                'bill_reference' => $reading->bill_reference,
-                                'has_qr' => ! empty($billResult['payment_qr_url']),
-                            ]);
-                        } else {
-                            // ส่งไม่สำเร็จ (FB 24hr expired / LINE quota) — flag ไม่ set
-                            //   → admin ใช้ปุ่ม "ส่งคำทำนายซ้ำ" ในหน้า show ได้
-                            //   → หรือ ลูกค้ากลับมาทัก → FCS:766 จะตรวจ unsent reading + ส่งให้
-                            Log::warning('💎 Pay-Later: sendResponse ล้มเหลว — ไม่ set reading_sent_directly flag', [
-                                'reading_id' => $reading->id,
-                                'bill_reference' => $reading->bill_reference,
-                                'platform' => $this->platform,
-                            ]);
-                        }
-                    } else {
-                        Log::error('💎 Pay-Later: createPaymentBill ล้มเหลว — fallback ส่ง reading อย่างเดียว', [
-                            'reading_id' => $reading->id,
-                            'bill_action' => $billResult['action'] ?? 'unknown',
-                        ]);
-
-                        // 🩹 (2026-05-05) Safety net — ตั้ง amount_paid = base price (39)
-                        //    เคสจริง: createPaymentBill fail → setPendingPayment ไม่ถูกเรียก
-                        //              → DB amount_paid=0 → SMS Checker app เห็น 0 บาท → filter ผิด
-                        //    Fix: ถึงไม่มี UPA จับคู่ ก็ตั้งราคาฐานก่อน (admin/SMS app เห็นถูก)
-                        //         ลูกค้ามาทักใหม่ → orphan recovery (FCS) สร้างบิล + UPA แท้
-                        try {
-                            if ((float) $reading->amount_paid <= 0) {
-                                $basePrice = (float) ($settings->deep_reading_price ?? 39);
-                                $reading->update(['amount_paid' => $basePrice]);
-                                Log::info('💎 Pay-Later: safety net — set amount_paid to base price', [
-                                    'reading_id' => $reading->id,
-                                    'amount_paid' => $basePrice,
-                                ]);
-                            }
-                        } catch (\Throwable $amountErr) {
-                            Log::warning('💎 Pay-Later: safety net set amount_paid ล้มเหลว (non-blocking)', [
-                                'reading_id' => $reading->id,
-                                'error' => $amountErr->getMessage(),
-                            ]);
-                        }
-
-                        $name = $reading->facebook_user_name ?? 'คุณ';
-                        $msg = FortuneLocaleService::lo(
-                            "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n═══════════════════════\n\n"
-                                . $reading->deep_response . "\n\n══════════\n\n"
-                                . "🙏 ระบบเตรียมบิลไม่สำเร็จ — กรุณาพิมพ์ \"เช็คสถานะ\" เพื่อรับ QR ใหม่",
-                            "🌟 *ຄຳທຳນາຍເຈາະເລິກຂອງເຈົ້າ{$name}*\n═══════════════════════\n\n"
-                                . $reading->deep_response . "\n\n══════════\n\n"
-                                . "🙏 ລະບົບຕຽມບິນບໍ່ສຳເລັດ — ກະລຸນາພິມ \"ເຊັກສະຖານະ\" ເພື່ອຮັບ QR ໃໝ່"
-                        );
-                        $channelManager->sendResponse($this->platform, $this->userId, [
-                            'action' => 'view_reading_deep',
-                            'message' => $msg,
-                            'reading' => $reading,
-                            'chart_image_url' => $reading->reading_image_url,
-                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
-                    }
-                } catch (\Throwable $e) {
-                    Log::error('💎 Pay-Later: deliver ล้มเหลว', [
-                        'reading_id' => $reading->id,
-                        'error' => $e->getMessage(),
-                        'trace' => substr($e->getTraceAsString(), 0, 500),
-                    ]);
-                }
-
-                return; // ⛔ จบที่นี่ — Pay-Later flow ส่ง reading + bill ครบแล้ว
-            }
+            // 🛑 (2026-05-06) Pay-Later flow ลบทิ้ง — Job รันเฉพาะ pay-first
+            //   เดิม 130+ บรรทัด: createPaymentBill + send reading+QR ในข้อความเดียว
+            //   ใหม่: ทุก paid reading รัน processPaymentConfirmed ตามปกติ → push reading
+            //   (ลูกค้าจ่ายก่อน → SMS match → Job dispatch → AI gen → push)
 
             // ✅ Push เมื่อคำทำนายพร้อม (2026-04-27 — แตกต่างกันตาม platform)
             //
