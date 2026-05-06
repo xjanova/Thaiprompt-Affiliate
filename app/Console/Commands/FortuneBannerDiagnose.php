@@ -29,7 +29,8 @@ class FortuneBannerDiagnose extends Command
                             {--user= : Facebook/LINE user id ที่จะเช็ค cooldown}
                             {--clear-cooldown= : ล้าง cooldown ของ user (welcome/reaction/comment ทั้งหมด)}
                             {--clear-all : ล้าง cooldown ของ "ทุก user" — ใช้เมื่อเปลี่ยน cooldown logic ใหม่}
-                            {--last-sent : โชว์ last_sent_at ของแต่ละ banner}';
+                            {--last-sent : โชว์ last_sent_at ของแต่ละ banner}
+                            {--test-send= : ส่ง banner welcome จริงให้ Facebook user (PSID) — ใช้ debug/test}';
 
     protected $description = 'วินิจฉัยระบบส่งแบนเนอร์ DM — เช็คทุกชั้น gate';
 
@@ -42,6 +43,11 @@ class FortuneBannerDiagnose extends Command
 
         if ($this->option('clear-all')) {
             return $this->clearAllCooldowns();
+        }
+
+        $testUser = $this->option('test-send');
+        if ($testUser) {
+            return $this->testSendToUser($testUser);
         }
 
         $this->info('🔍 Fortune Banner Diagnose');
@@ -207,6 +213,67 @@ class FortuneBannerDiagnose extends Command
         // file/database driver — ไม่มี wildcard delete → แนะนำ cache:clear
         $this->warn('⚠️  driver = ' . $driver . ' — ไม่รองรับ wildcard delete');
         $this->line('   ใช้: php artisan cache:clear (ระวัง: ลบ cache ทั้งหมด ไม่ใช่แค่ banner)');
+        return self::SUCCESS;
+    }
+
+    /**
+     * ส่ง banner welcome จริงให้ Facebook user (debug/test)
+     *
+     * - ล้าง cooldown ของวันนี้ก่อน (กัน skip)
+     * - เลือก banner ตาม strategy
+     * - ส่งผ่าน FacebookWebhookService::sendImage
+     * - แสดงผล + URL ที่ใช้ส่ง
+     */
+    protected function testSendToUser(string $userId): int
+    {
+        $this->info("🧪 ทดสอบส่ง banner welcome ไปที่ user: {$userId}");
+        $this->newLine();
+
+        // 1. ล้าง cooldown ของวันนี้ก่อน
+        $today = now()->format('Y-m-d');
+        $cacheKey = "fortune_banner_sent:welcome:{$userId}:{$today}";
+        $legacyKey = "fortune_banner_sent:welcome:{$userId}";
+        Cache::forget($cacheKey);
+        Cache::forget($legacyKey);
+        $this->line('🗑️  Cleared cooldown keys (today + legacy)');
+
+        // 2. ดึง settings
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        if (! ($settings->enable_dm_banner ?? false)) {
+            $this->error('❌ enable_dm_banner = OFF — ต้องเปิดที่ /admin/fortune/banners ก่อน');
+            return self::FAILURE;
+        }
+
+        // 3. Pick banner
+        $bannerService = new \App\Services\FortuneBannerService($settings);
+        $banner = $bannerService->pickForChannel('welcome');
+        if (! $banner) {
+            $this->error('❌ pickForChannel(welcome) return null — ไม่มี active banner');
+            return self::FAILURE;
+        }
+        $this->line(sprintf('🖼️  Picked banner: #%d %s', $banner->id, $banner->name));
+        $this->line('   URL: ' . $banner->image_url);
+        $this->newLine();
+
+        // 4. ส่งจริง
+        $fbService = new \App\Services\FacebookWebhookService($settings);
+        $this->line('📤 ส่งภาพไป Facebook Messenger...');
+
+        try {
+            $sent = $fbService->sendImage($userId, $banner->image_url);
+            if ($sent) {
+                $banner->recordSend();
+                $this->info('  ✅ ส่งสำเร็จ! ลูกค้าควรเห็นภาพในแชท');
+                $this->line('  📊 send_count = ' . ($banner->send_count + 1));
+            } else {
+                $this->error('  ❌ sendImage() return false — ดู log: storage/logs/laravel.log → grep "ส่งรูปภาพ"');
+                return self::FAILURE;
+            }
+        } catch (\Throwable $e) {
+            $this->error('  ❌ Exception: ' . $e->getMessage());
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
     }
 
