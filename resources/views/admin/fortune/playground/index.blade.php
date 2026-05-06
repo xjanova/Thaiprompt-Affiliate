@@ -33,29 +33,57 @@
 
     {{-- AI Provider Selector --}}
     <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg p-4 mb-6 text-white">
-        <div class="flex items-center justify-between flex-wrap gap-3">
-            <div class="flex items-center gap-3">
-                <span class="text-3xl">🔮</span>
-                <div>
-                    <div class="font-bold text-sm mb-1">เลือก AI Provider ทดสอบ</div>
-                    <select x-model="selectedProviderIndex"
-                            @change="onProviderChange()"
-                            class="w-full min-w-[280px] px-3 py-1.5 rounded-lg bg-white/20 text-white border border-white/30 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none">
-                        @foreach($availableProviders as $index => $p)
-                        <option value="{{ $index }}" class="text-gray-900">{{ $p['label'] }}</option>
-                        @endforeach
-                        @if(count($availableProviders) === 0)
-                        <option value="-1" class="text-gray-900">❌ ไม่มี Provider ที่พร้อมใช้</option>
-                        @endif
-                    </select>
+        <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between flex-wrap gap-3">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🔮</span>
+                    <div>
+                        <div class="font-bold text-sm mb-1">เลือก AI Provider ทดสอบ</div>
+                        <select x-model="selectedProviderIndex"
+                                @change="onProviderChange()"
+                                class="w-full min-w-[280px] px-3 py-1.5 rounded-lg bg-white/20 text-white border border-white/30 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none">
+                            @foreach($availableProviders as $index => $p)
+                            <option value="{{ $index }}" class="text-gray-900">{{ $p['label'] }}</option>
+                            @endforeach
+                            @if(count($availableProviders) === 0)
+                            <option value="-1" class="text-gray-900">❌ ไม่มี Provider ที่พร้อมใช้</option>
+                            @endif
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-400/30 text-green-100"
+                          x-text="'✅ ' + currentProvider + ' / ' + currentModel">
+                    </span>
+                    <span class="px-3 py-1 bg-yellow-400/30 text-yellow-100 rounded-full text-xs font-semibold"
+                          x-text="'📦 ' + providerSource">
+                    </span>
+                    <span x-show="currentPurpose && currentPurpose !== 'any'"
+                          class="px-3 py-1 bg-pink-400/30 text-pink-100 rounded-full text-xs font-semibold"
+                          x-text="'🔒 ' + currentPurpose">
+                    </span>
                 </div>
             </div>
-            <div class="flex items-center gap-2 flex-wrap">
-                <span class="px-3 py-1 rounded-full text-xs font-semibold bg-green-400/30 text-green-100"
-                      x-text="'✅ ' + currentProvider + ' / ' + currentModel">
-                </span>
-                <span class="px-3 py-1 bg-yellow-400/30 text-yellow-100 rounded-full text-xs font-semibold"
-                      x-text="'📦 ' + providerSource">
+
+            {{-- 🆕 (2026-05-06) Model picker — ทดสอบ model อื่น ๆ ของ provider เดียวกันได้ --}}
+            <div class="flex items-center gap-3 flex-wrap pt-2 border-t border-white/20">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🎛️</span>
+                    <span class="font-semibold text-sm">Model ทดสอบ:</span>
+                </div>
+                <select x-model="currentModel"
+                        class="min-w-[260px] px-3 py-1.5 rounded-lg bg-white/20 text-white border border-white/30 text-sm focus:ring-2 focus:ring-white/50 focus:outline-none">
+                    <template x-for="m in availableModelsForCurrentProvider" :key="m">
+                        <option :value="m" x-text="m" class="text-gray-900"></option>
+                    </template>
+                </select>
+                <button @click="resetModelToDefault()"
+                        class="text-xs px-3 py-1.5 bg-white/10 hover:bg-white/20 rounded-lg transition"
+                        title="กลับไปใช้ model เริ่มต้นของ key นี้">
+                    ↩️ Reset
+                </button>
+                <span class="text-xs opacity-80">
+                    💡 เลือกต่างจากค่าเริ่มต้นเพื่อทดสอบ — ไม่กระทบการใช้งานจริง
                 </span>
             </div>
         </div>
@@ -412,6 +440,8 @@
 <script>
 function fortunePlayground() {
     const providers = @json($availableProviders);
+    // 🆕 (2026-05-06) MODELS_BY_PROVIDER จาก AiApiKey — ใช้ populate model picker
+    const modelsByProvider = @json($modelsByProvider ?? []);
 
     return {
         messages: [],
@@ -425,11 +455,14 @@ function fortunePlayground() {
 
         // Provider selection
         providers: providers,
+        modelsByProvider: modelsByProvider,
         selectedProviderIndex: 0,
         currentProvider: providers.length ? providers[0].provider : '',
         currentModel: providers.length ? providers[0].model : '',
         providerSource: providers.length ? providers[0].source : '',
         poolKeyId: providers.length ? (providers[0].pool_key_id || null) : null,
+        currentPurpose: providers.length ? (providers[0].purpose || 'any') : 'any',
+        defaultModelForKey: providers.length ? providers[0].model : '',
 
         onProviderChange() {
             const idx = parseInt(this.selectedProviderIndex);
@@ -439,6 +472,25 @@ function fortunePlayground() {
                 this.currentModel = p.model;
                 this.providerSource = p.source;
                 this.poolKeyId = p.pool_key_id || null;
+                this.currentPurpose = p.purpose || 'any';
+                this.defaultModelForKey = p.model;
+            }
+        },
+
+        // 🆕 (2026-05-06) Model dropdown — populate จาก MODELS_BY_PROVIDER
+        get availableModelsForCurrentProvider() {
+            const list = this.modelsByProvider[this.currentProvider] || [];
+            // ถ้า currentModel ไม่อยู่ใน list (เช่น custom) → prepend ไว้บนสุด
+            if (this.currentModel && !list.includes(this.currentModel)) {
+                return [this.currentModel, ...list];
+            }
+            return list;
+        },
+
+        // ↩️ Reset model กลับเป็น default ของ key
+        resetModelToDefault() {
+            if (this.defaultModelForKey) {
+                this.currentModel = this.defaultModelForKey;
             }
         },
 

@@ -167,7 +167,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         //   เพื่อให้ลูกค้ากดเริ่มดูดวงใหม่ได้ทันทีจากที่ใดก็ได้
                         //   ⚠️ หาก flow ใดต้องการปิด → ส่ง option 'no_default_qr' => true
                         //   (เช่น flow รอ user พิมพ์วันเกิด — ปุ่มอาจสร้างความสับสน)
-                        $messagePayload['quick_replies'] = $this->getDefaultQuickReplies();
+                        //
+                        // 🚦 (2026-05-06) ปิดอัตโนมัติเมื่อ user มี active reading
+                        //   ลูกค้าบอก: ปุ่มลอยทำให้สับสนระหว่างกำลังทำนาย
+                        //   เช็ค ACTIVE_READING_STATUSES (cached 30s กัน DB hammer)
+                        $hasActive = false;
+                        try {
+                            $hasActive = \App\Models\FortuneReading::hasActiveReading('facebook', $recipientId);
+                        } catch (\Throwable $e) {
+                            // ถ้าเช็คไม่ได้ — ใช้ default behaviour (แสดง QR)
+                        }
+
+                        if (! $hasActive) {
+                            $messagePayload['quick_replies'] = $this->getDefaultQuickReplies();
+                        }
                     }
 
                     $payload = [
@@ -662,6 +675,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function getUserProfile(string $facebookUserId): ?array
     {
+        // 🚀 (2026-05-06) Cache 24hr — กัน sync HTTP call ทุกข้อความ (200-800ms)
+        //   FB profile name ไม่เปลี่ยนบ่อย — 24hr TTL พอ
+        //   ถ้า cache hit → return ทันที (ไม่ทำ HTTP call)
+        $cacheKey = "fb:user_profile:{$facebookUserId}";
+        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if (is_array($cached) && ! empty($cached['name'])) {
+            return $cached;
+        }
+
         try {
             // ดึงข้อมูลพื้นฐาน + ลอง fields เพิ่มเติม (gender, birthday, locale)
             // หมายเหตุ: gender/birthday/locale อาจไม่ได้รับจาก PSID เนื่องจาก Facebook API restrictions
@@ -704,6 +726,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'has_birthday' => ! empty($profile['birthday']),
                 'has_locale' => ! empty($profile['locale']),
             ]);
+
+            // 💾 cache profile 24hr (เฉพาะตอนได้ name) — กัน HTTP roundtrip ทุก message
+            if (! empty($profile['name'])) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $profile, now()->addHours(24));
+            }
 
             return $profile;
         } catch (Exception $e) {

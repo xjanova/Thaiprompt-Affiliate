@@ -8453,6 +8453,22 @@ class FortuneConversationService
             return $stepHint;
         }
 
+        // 🚦 (2026-05-06) Rate-limit ต่อ user — 1 AI ack ต่อ 60 วินาที
+        //   กัน AI call ทุกข้อความตอน user พิมพ์รัวๆ — ลด latency + cost
+        //   key ใช้ profile.id ถ้ามี (FB PSID / LINE userId) — fallback hash messageText
+        try {
+            $rateLimitId = $userProfile['id'] ?? null;
+            if ($rateLimitId) {
+                $rateLimitKey = "fortune:ai_ack_throttle:{$rateLimitId}";
+                if (\Illuminate\Support\Facades\Cache::has($rateLimitKey)) {
+                    return $stepHint; // ส่ง AI ack ไปแล้วใน 60s ที่แล้ว — ใช้ hint อย่างเดียว
+                }
+                \Illuminate\Support\Facades\Cache::put($rateLimitKey, true, now()->addSeconds(60));
+            }
+        } catch (\Throwable $e) {
+            // throttle ล้ม → ปล่อยให้ทำงานต่อไป
+        }
+
         // ลอง AI ตอบสั้นๆ แบบ acknowledge
         try {
             // Gatekeeper: กัน AI call ล้นระบบ

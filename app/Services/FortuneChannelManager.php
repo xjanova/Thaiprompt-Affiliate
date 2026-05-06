@@ -163,13 +163,29 @@ class FortuneChannelManager
         //   - FB: detect จาก messageText + profileName (ชื่อช่วย boost confidence)
         //   - LINE: detect จาก profileName เท่านั้น (ชื่อลาวล้วน → 'lo')
         //   - ถ้า DB error → fallback 'th' (safe)
+        //
+        // 🚦 (2026-05-06) ระหว่าง active reading — ใช้ locale ที่ stored ไว้แล้วเท่านั้น
+        //   ห้ามรัน text-detect (ทำให้ flip locale กลางคันถ้าลูกค้าพิมพ์อังกฤษ/ผสมไทย-ลาว)
+        //   ลูกค้าบอก: "เอา Lao detect ออกระหว่างการทำนาย"
         $profileName = $userProfile['name'] ?? null;
-        $locale = \App\Services\FortuneLocaleService::resolveForMessage(
-            $platform,
-            $userId,
-            $messageText,
-            $profileName,
-        );
+        $hasActive = false;
+        try {
+            $hasActive = FortuneReading::hasActiveReading($platform, $userId);
+        } catch (\Throwable $e) {
+            // ถ้าเช็คไม่ได้ → ใช้ behaviour เดิม (run detect)
+        }
+
+        if ($hasActive) {
+            // ใช้ locale ที่ stored ไว้แล้วเท่านั้น — ห้าม detect จาก text
+            $locale = \App\Services\FortuneLocaleService::getStored($platform, $userId) ?? 'th';
+        } else {
+            $locale = \App\Services\FortuneLocaleService::resolveForMessage(
+                $platform,
+                $userId,
+                $messageText,
+                $profileName,
+            );
+        }
         \App\Services\FortuneLocaleService::setCurrent($locale);
 
         // ใช้ conversation service ประมวลผล
@@ -768,6 +784,8 @@ class FortuneChannelManager
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1
+                // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม"
+                //   ลูกค้าหลังเปิดไพ่ครบ มักงงไม่รู้ต้องทำอะไรต่อ — ปุ่มนี้เป็น UX cue
                 'celtic_all_picked' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // ส่งรูปไพ่ใบสุดท้าย (ถ้ามี)
                     if (! empty($result['tarot_image_url'])) {
@@ -787,8 +805,12 @@ class FortuneChannelManager
                         }
                     }
 
-                    // ส่งข้อความ (ขอ Q1) — ไม่มีปุ่ม เพราะลูกค้าต้องพิมพ์คำถามเอง
-                    return $fbService->sendMessage($userId, $message, $extra);
+                    // ใช้ quick_replies จาก trait ถ้ามี — ไม่งั้น default "เริ่มถามคำถาม"
+                    $qrs = ! empty($result['quick_replies'])
+                        ? $result['quick_replies']
+                        : [['content_type' => 'text', 'title' => '💬 เริ่มถามคำถาม', 'payload' => 'CELTIC_START_Q']];
+
+                    return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
                 })(),
 
                 // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
@@ -1778,7 +1800,8 @@ class FortuneChannelManager
                     ]);
                 })(),
 
-                // celtic_all_picked → ส่งภาพ composite + ขอ Q1 (ไม่มีปุ่ม)
+                // celtic_all_picked → ส่งภาพ composite + ขอ Q1 + ปุ่ม "เริ่มถามคำถาม"
+                // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม" ให้ user รู้ว่าทำอะไรต่อ
                 'celtic_all_picked' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     if (! empty($result['tarot_image_url'])) {
                         try {
@@ -1793,7 +1816,9 @@ class FortuneChannelManager
                         }
                     }
 
-                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                        ['label' => '💬 เริ่มถามคำถาม', 'text' => 'เริ่มถามคำถาม'],
+                    ]);
                 })(),
 
                 // celtic_question_answered → ปุ่ม "ถามต่อ" / "พอแค่นี้"

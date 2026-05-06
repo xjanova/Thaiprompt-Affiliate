@@ -121,8 +121,9 @@ class FortuneBannerService
             if ($sent) {
                 $banner->recordSend();
 
-                // หน่วงให้ภาพมาก่อนข้อความ (FB ไม่การันตี ordering)
-                usleep(300_000); // 300 ms
+                // 🚀 (2026-05-06) ลบ usleep(300ms) — ไม่ block request thread
+                //   FB ส่งภาพ + text ใน same request → ภาพมักมาก่อนอยู่แล้ว
+                //   ถ้ายังเจอ ordering ผิด ค่อยใช้ async queue / scheduled message
 
                 Log::info('🖼️ Fortune banner sent', [
                     'banner_id' => $banner->id,

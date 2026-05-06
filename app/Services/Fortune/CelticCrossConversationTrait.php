@@ -1069,6 +1069,16 @@ trait CelticCrossConversationTrait
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
             // celtic_summary_image_url removed — เลื่อนไป endCelticSession
+            // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม"
+            //    ลูกค้าหลังเปิดไพ่ครบ มักงงไม่รู้ต้องทำอะไรต่อ
+            //    ปุ่มนี้เป็น UX cue — กดแล้ว bot ส่ง prompt ตัวอย่างคำถามซ้ำ
+            'quick_replies' => [
+                [
+                    'content_type' => 'text',
+                    'title' => '💬 เริ่มถามคำถาม',
+                    'payload' => 'CELTIC_START_Q',
+                ],
+            ],
         ];
     }
 
@@ -1083,6 +1093,26 @@ trait CelticCrossConversationTrait
         // 🔚 ลูกค้าขอจบ → จบสุขุม
         if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
             return $this->endCelticSession($reading, 'customer_said_done');
+        }
+
+        // 💬 (2026-05-06) ลูกค้ากดปุ่ม "เริ่มถามคำถาม" — แค่ส่ง prompt hint ใหม่ ไม่ใช่คำถามจริง
+        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $timeHint = $remainingMin !== null && $remainingMin > 0
+                ? "⏳ ถามได้อีก {$remainingMin} นาที"
+                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+
+            return [
+                'action' => 'celtic_start_question_hint',
+                'message' => "💬 *เริ่มถามคำถามได้เลย*\n\n"
+                    . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ เช่น:\n\n"
+                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
+                    . "   • *\"งานในเดือนหน้า\"*\n"
+                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
+                    . $timeHint . "\n"
+                    . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ",
+                'reading' => $reading,
+            ];
         }
 
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม

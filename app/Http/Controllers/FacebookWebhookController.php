@@ -69,7 +69,11 @@ class FacebookWebhookController extends Controller
             $this->conversationService = new FortuneConversationService($this->settings);
             $this->channelManager = new FortuneChannelManager($this->settings);
             $this->takeoverService = app(FortuneTakeoverService::class);
-            $this->bannerService = new FortuneBannerService($this->settings);
+            // 🛡️ (2026-05-06) แยก try/catch ออกมา — กัน bannerService = null
+            //    ถ้า service ตัวข้างบนไม่ throw แต่ banner init ดันพัง
+            //    (ก่อนหน้าถ้า init ก่อนหน้านี้ throw แล้วรันเข้า catch fallback
+            //     bannerService ก็จะเป็น null ตลอด → DM banner ไม่ส่งเลย)
+            $this->initBannerService();
         } catch (\Exception $e) {
             // ป้องกัน controller พังทั้งหมดถ้า DB/Pool มีปัญหา
             Log::error('FacebookWebhookController: เริ่มต้นระบบไม่สำเร็จ', [
@@ -128,6 +132,29 @@ class FacebookWebhookController extends Controller
                     ]);
                 }
             }
+            // ✅ (2026-05-06) สร้าง fallback สำหรับ bannerService
+            //    ก่อนหน้านี้ขาด — ทำให้ DM banner ไม่ส่งเงียบ ๆ ถ้า init ตัวบนพัง
+            $this->initBannerService();
+        }
+    }
+
+    /**
+     * Initialize FortuneBannerService แยก try/catch
+     * เพื่อให้ banner ทำงานได้ แม้ service ตัวอื่นจะ throw ตอน init
+     */
+    protected function initBannerService(): void
+    {
+        if ($this->bannerService) {
+            return; // มีอยู่แล้ว
+        }
+
+        try {
+            $settings = $this->settings ?? FortuneTellingSetting::getSettings();
+            $this->bannerService = new FortuneBannerService($settings);
+        } catch (\Throwable $e) {
+            Log::error('FacebookWebhookController: สร้าง FortuneBannerService ไม่ได้', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -1774,6 +1801,10 @@ class FacebookWebhookController extends Controller
             'LANG_TH' => $this->handleLanguagePick($senderId, 'th'),
             'LANG_LO' => $this->handleLanguagePick($senderId, 'lo'),
 
+            // 💬 (2026-05-06) Celtic — ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
+            //   ส่ง prompt ตัวอย่างคำถามให้ user (ไม่เปลี่ยน state — แค่ UX hint)
+            'CELTIC_START_Q' => $this->handleCelticStartQuestion($senderId),
+
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
         };
@@ -1797,6 +1828,51 @@ class FacebookWebhookController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('handleLanguagePicker error', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * 💬 (2026-05-06) ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
+     *
+     * แค่ส่ง prompt ตัวอย่างคำถาม — ไม่เปลี่ยน state
+     * (state ตอนนี้เป็น CELTIC_AWAITING_QUESTION อยู่แล้ว)
+     */
+    protected function handleCelticStartQuestion(string $senderId): void
+    {
+        try {
+            $reading = FortuneReading::where('facebook_user_id', $senderId)
+                ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
+                ->latest()
+                ->first();
+
+            // ถ้าไม่มี Celtic active → fallback เข้า conversational flow ปกติ
+            if (! $reading) {
+                $this->processConversationalMessage($senderId, 'ดูดวง');
+                return;
+            }
+
+            $remainingMin = method_exists($reading, 'getCelticQaRemainingMinutes')
+                ? $reading->getCelticQaRemainingMinutes()
+                : null;
+            $timeHint = $remainingMin !== null && $remainingMin > 0
+                ? "⏳ ถามได้อีก {$remainingMin} นาที"
+                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+
+            $message = "💬 *เริ่มถามคำถามได้เลย*\n\n"
+                . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ — เช่น:\n\n"
+                . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
+                . "   • *\"งานในเดือนหน้า\"*\n"
+                . "   • *\"ควรย้ายงานไหม\"*\n"
+                . "   • *\"การเงินครึ่งปีหลัง\"*\n\n"
+                . $timeHint . "\n"
+                . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
+
+            $this->facebookService->sendMessage($senderId, $message, ['no_default_qr' => true]);
+        } catch (\Throwable $e) {
+            Log::warning('handleCelticStartQuestion error', [
                 'sender_id' => $senderId,
                 'error' => $e->getMessage(),
             ]);
@@ -3302,7 +3378,19 @@ class FacebookWebhookController extends Controller
         }
 
         // 🚨 Rule 2: REPEAT FLOOD — ส่งข้อความเดียวกัน ≥ 3 ครั้งติด ใน 30s
-        if ($reason === null && ! empty(trim($text)) && mb_strlen($text) > 1) {
+        // 🆎 (2026-05-06) ยกเว้น state-expected inputs (กัน false-positive คนแก่กดซ้ำ)
+        //   เช่น "พร้อม" "ใช่" "ไม่ใช่" — ลูกค้าอาจกดซ้ำเพราะคิดว่าบอทไม่ตอบ
+        $stateExpectedInputs = [
+            'พร้อม', 'ใช่', 'ไม่ใช่', 'ใช่เลย', 'ไม่', 'ตกลง', 'ok', 'OK',
+            'ดูดวง', 'เริ่มถามคำถาม', 'พอแค่นี้', 'พอ', 'หยุด',
+            'อ่านคำทำนาย', 'รับคำทำนาย', 'ยกเลิก',
+            'ດວງ', 'ແມ່ນ', 'ບໍ່', 'ພ້ອມ', // Lao
+        ];
+        $normalizedText = trim($text);
+        $isStateInput = in_array($normalizedText, $stateExpectedInputs, true)
+            || mb_strlen($normalizedText) <= 4; // ข้อความสั้นมาก ≤ 4 chars = น่าจะเป็น state input
+
+        if ($reason === null && ! empty($normalizedText) && mb_strlen($text) > 1 && ! $isStateInput) {
             $repeatKey = "fortune:spam:repeat:{$senderId}";
             $cached = \Illuminate\Support\Facades\Cache::get($repeatKey, ['text' => '', 't' => 0, 'count' => 0]);
 
