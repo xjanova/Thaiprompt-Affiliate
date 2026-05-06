@@ -300,43 +300,96 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
     {
-        try {
-            // ส่งรูปภาพ
-            Http::timeout(30)
-                ->post($this->graphUrl('/me/messages'), [
-                    'recipient' => ['id' => $recipientId],
-                    'message' => [
-                        'attachment' => [
-                            'type' => 'image',
-                            'payload' => [
-                                'url' => $imageUrl,
-                                'is_reusable' => true,
-                            ],
+        // 🩹 (2026-05-07) Auto-fallback ถ้า RESPONSE fail (error 551 / 24hr window expired)
+        //   เคสจริง: banner welcome push หลังลูกค้าเก่าทักอีกครั้ง — บางครั้ง 24hr window ปิดแล้ว
+        //   FB error_subcode 1545041 → RESPONSE rejected → ต้อง MESSAGE_TAG=POST_PURCHASE_UPDATE
+        $messagingTypes = ['RESPONSE', 'MESSAGE_TAG'];
+
+        foreach ($messagingTypes as $msgType) {
+            $payload = [
+                'recipient' => ['id' => $recipientId],
+                'message' => [
+                    'attachment' => [
+                        'type' => 'image',
+                        'payload' => [
+                            'url' => $imageUrl,
+                            'is_reusable' => true,
                         ],
                     ],
-                    'messaging_type' => 'RESPONSE',
-                    'access_token' => $this->pageAccessToken,
-                ])->throw();
+                ],
+                'messaging_type' => $msgType,
+                'access_token' => $this->pageAccessToken,
+            ];
 
-            // ส่งข้อความกำกับรูป (ถ้ามี previewUrl ใช้เป็น caption)
-            if (! empty($previewUrl)) {
-                $this->sendMessage($recipientId, $previewUrl);
+            if ($msgType === 'MESSAGE_TAG') {
+                $payload['tag'] = 'POST_PURCHASE_UPDATE';
             }
 
-            Log::info('ส่งรูปภาพสำเร็จ', [
-                'recipient' => $recipientId,
-                'image_url' => $imageUrl,
-            ]);
+            try {
+                $response = Http::timeout(30)->post($this->graphUrl('/me/messages'), $payload);
 
-            return true;
-        } catch (Exception $e) {
-            Log::error('ส่งรูปภาพไม่สำเร็จ: '.$e->getMessage(), [
-                'recipient' => $recipientId,
-                'image_url' => $imageUrl,
-            ]);
+                if ($response->successful()) {
+                    if (! empty($previewUrl)) {
+                        $this->sendMessage($recipientId, $previewUrl);
+                    }
 
-            return false;
+                    Log::info('ส่งรูปภาพสำเร็จ', [
+                        'recipient' => $recipientId,
+                        'image_url' => $imageUrl,
+                        'messaging_type' => $msgType,
+                    ]);
+
+                    return true;
+                }
+
+                $errBody = $response->json();
+                $errSubcode = $errBody['error']['error_subcode'] ?? 0;
+                $errMsg = $errBody['error']['message'] ?? $response->body();
+
+                Log::warning('ส่งรูปภาพ ' . $msgType . ' fail', [
+                    'recipient' => $recipientId,
+                    'http_status' => $response->status(),
+                    'error_subcode' => $errSubcode,
+                    'error_message' => $errMsg,
+                ]);
+
+                // ถ้า RESPONSE fail ด้วย 24hr-window error → ลอง MESSAGE_TAG ต่อ
+                // 1545041 = "บุคคลนี้ไม่พร้อมใช้งาน" (24hr expired)
+                // 2018278/2018065 = window expired
+                if ($msgType === 'RESPONSE' && in_array($errSubcode, [1545041, 2018278, 2018065])) {
+                    continue; // fallback to MESSAGE_TAG
+                }
+
+                // Token/permission errors → หยุด ไม่ retry
+                $errCode = $errBody['error']['code'] ?? 0;
+                if (in_array($errCode, [190, 10, 200])) {
+                    Log::error('ส่งรูปภาพ: token/permission error — หยุด retry', [
+                        'recipient' => $recipientId,
+                        'error_code' => $errCode,
+                    ]);
+                    return false;
+                }
+
+                // ถ้า MESSAGE_TAG ก็ fail แล้ว → return false
+                if ($msgType === 'MESSAGE_TAG') {
+                    Log::error('ส่งรูปภาพล้มเหลว ทั้ง RESPONSE และ MESSAGE_TAG', [
+                        'recipient' => $recipientId,
+                        'image_url' => $imageUrl,
+                        'last_error' => $errMsg,
+                    ]);
+                    return false;
+                }
+            } catch (Exception $e) {
+                Log::error('ส่งรูปภาพ ' . $msgType . ' exception: ' . $e->getMessage(), [
+                    'recipient' => $recipientId,
+                ]);
+                if ($msgType === 'MESSAGE_TAG') {
+                    return false;
+                }
+            }
         }
+
+        return false;
     }
 
     /**
