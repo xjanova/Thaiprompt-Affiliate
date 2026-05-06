@@ -255,12 +255,8 @@
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">ฟรี</span>
                     @endif
 
-                    {{-- 🩹 (2026-05-04) Badge แยก Pay-Later vs Pay-First --}}
-                    @if($reading->reading_type === 'deep' && $reading->isPayLaterFlow())
-                        <span class="ml-1 px-3 py-1 text-xs font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200" title="ลูกค้าใช้สิทธิ์ดูคำทำนายก่อนจ่าย — มีเวลาโอน 24 ชม. หลังได้รับคำทำนาย">
-                            🎁 ดูก่อนจ่าย
-                        </span>
-                    @elseif($reading->reading_type === 'deep' && ! $reading->is_paid && $reading->amount_paid > 0)
+                    {{-- 🛑 (2026-05-07) Pay-Later removed — เหลือเฉพาะ pay-first badge --}}
+                    @if($reading->reading_type === 'deep' && ! $reading->is_paid && $reading->amount_paid > 0)
                         <span class="ml-1 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" title="ลูกค้าต้องจ่ายก่อนถึงจะได้รับคำทำนาย — UPA หมดอายุ 30 นาที">
                             💳 จ่ายก่อนดู
                         </span>
