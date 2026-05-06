@@ -1761,6 +1761,8 @@ class FacebookWebhookController extends Controller
             // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
             'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),
             'MENU_CHECK_REMAINING' => $this->processConversationalMessage($senderId, 'เช็คสิทธิ์'),
+            // 📋 (2026-05-06) Default QR ปุ่ม "เมนู" — ส่ง keyword "เมนู" → handleMenuRequest
+            'MENU_OPEN' => $this->processConversationalMessage($senderId, 'เมนู'),
             'MENU_HELP' => $this->sendHelpMessage($senderId),
 
             // ✨ Ice Breakers + Persistent Menu (2026-04-27)

@@ -215,7 +215,6 @@
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Platform</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ดูดวง</th>
                         <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จ่ายเงิน</th>
-                        <th class="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-300 uppercase" title="สิทธิ์ดูก่อนจ่ายทีหลัง (Request-Before-Pay)">💎 Pay-Later</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ยอดจ่ายรวม</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">ดูล่าสุด</th>
                         <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">จัดการ</th>
@@ -265,36 +264,7 @@
                                 @endif
                             </td>
 
-                            {{-- 💎 Pay-Later (Request-Before-Pay) — 2026-05-04 --}}
-                            <td class="px-4 py-3 text-center">
-                                @php
-                                    $plKey = $user->facebook_user_id . '|' . ($user->platform ?? 'facebook');
-                                    $pl = $payLaterMap[$plKey] ?? null;
-                                @endphp
-                                @if($pl === null)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                                          title="ยังไม่เคยใช้สิทธิ์ pay-later — ใช้ได้ในรอบหน้า">
-                                        ✅ ใช้ได้
-                                    </span>
-                                @else
-                                    <div class="flex flex-col items-center gap-0.5">
-                                        @if($pl['unpaid_count'] > 0)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                                                  title="ใช้สิทธิ์ไปแล้ว + มีบิลค้าง {{ $pl['unpaid_count'] }} บิล">
-                                                🚨 ค้าง {{ $pl['unpaid_count'] }}
-                                            </span>
-                                        @else
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300"
-                                                  title="ใช้สิทธิ์ไปแล้ว — รอบต่อไปต้องจ่ายก่อน">
-                                                🔒 ใช้แล้ว
-                                            </span>
-                                        @endif
-                                        <code class="text-[10px] text-gray-500 dark:text-gray-400 font-mono mt-0.5">
-                                            {{ $pl['first_bill_ref'] ?? '-' }}
-                                        </code>
-                                    </div>
-                                @endif
-                            </td>
+                            {{-- 🛑 (2026-05-06) Pay-Later column ลบทิ้ง — Pay-Later removed --}}
 
                             {{-- ยอดจ่ายรวม --}}
                             <td class="px-4 py-3 text-right">

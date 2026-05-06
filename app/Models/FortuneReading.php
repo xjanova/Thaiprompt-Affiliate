@@ -129,12 +129,13 @@ class FortuneReading extends Model
     public const STATUS_FREE_DECLINED = 'free_declined';
 
     // ───────────────────────────────────────────────────────────
-    // 💎 Request-Before-Pay (2026-05-03) — Deep 39 first-time only
-    //   AI สร้างคำทำนายก่อน → bot ถามยืนยันความเข้าใจ → ลูกค้ากดรับ → ส่งคำทำนาย+QR
-    //   สิทธิ์ครั้งเดียวเท่านั้นต่อ platform_user_id (ไม่ว่าจ่ายหรือไม่)
+    // 🛑 (2026-05-06) Pay-Later (Request-Before-Pay) — ลบทั้งระบบ
+    //   user spec: "นำออกให้หมดไม่ต้องเช็คว่ามีบิลค้าง สร้างปัญหามาก"
+    //   ทุกคนต้อง pay-first เท่านั้น
     // ───────────────────────────────────────────────────────────
-    /** AI generated, รอลูกค้าตอบ "รับคำทำนาย" หรือ "ยกเลิก" */
-    public const STATUS_AWAITING_DELIVERY_CONFIRM = 'awaiting_delivery_confirm';
+    // STATUS_AWAITING_DELIVERY_CONFIRM constant ลบทิ้ง — ไม่มี Pay-Later flow แล้ว
+    // (DB rows เก่าที่ status='awaiting_delivery_confirm' จะถูก close โดย findActiveConversation
+    //  เพราะไม่อยู่ใน VALID_STATUSES — fall through เป็น orphan → pay-first ปกติ)
 
     /**
      * รายการ status ที่หมายถึง "รอชำระเงิน" — ครอบคลุมทั้ง Deep 39฿ และ Celtic 99฿
@@ -168,9 +169,6 @@ class FortuneReading extends Model
      *
      * ใช้ในการ "ปิดปุ่ม Quick Reply ลอย" (default QR) ระหว่างทำนาย
      * เพราะลูกค้าสับสนได้ถ้าเห็นปุ่ม "ดูดวง 39฿ / 99฿" ขณะกำลังทำนายอยู่
-     *
-     * รวม: confirmation, birthdate, questions, tarot, pending payment,
-     *       awaiting delivery confirm, tier choice, celtic active states
      */
     public const ACTIVE_READING_STATUSES = [
         self::STATUS_AWAITING_CONFIRMATION,
@@ -180,7 +178,6 @@ class FortuneReading extends Model
         self::STATUS_DISCOVERY_CONFIRM,
         self::STATUS_COLLECTING_TAROT,
         self::STATUS_PENDING_PAYMENT,
-        self::STATUS_AWAITING_DELIVERY_CONFIRM,
         self::STATUS_TIER_CHOICE,
         self::STATUS_CELTIC_PENDING_PAYMENT,
         self::STATUS_CELTIC_PICKING,
@@ -546,95 +543,13 @@ class FortuneReading extends Model
         return ! self::hasUsedFreeCard($platform, $platformUserId);
     }
 
-    /**
-     * 💎 (2026-05-03) ตรวจสอบว่าลูกค้าใช้สิทธิ์ Request-Before-Pay (Deep 39 first-time) ไปแล้วหรือยัง
-     *
-     * นโยบาย "ครั้งเดียวต่อ 1 คน":
-     *   - 39 first-time: รับคำทำนายก่อน → ค่อยจ่าย (request-before-pay flow)
-     *   - 39 ครั้งที่ 2+ : ต้องจ่ายก่อน ถึงรับคำทำนาย (pay-first flow)
-     *
-     * Detection: ใช้แล้วถ้ามี Deep reading ใดๆ ที่มี bill_reference (ไม่ว่าจ่ายหรือไม่)
-     *   - กดยืนยัน "รับคำทำนาย" แล้ว → bill ถูกสร้าง → flag set
-     *   - กดยกเลิก → reading status COMPLETED แต่ยังคง bill_reference null (ไม่นับ)
-     *   หรืออาจเช็ค `is_request_before_pay_used` flag ใน conversation_state แทน (precise)
-     *
-     * เพื่อความเข้มงวด: ใช้ flag-based check (กันเคสที่ admin reset)
-     *
-     * @param  string  $platform        'facebook' หรือ 'line'
-     * @param  string  $platformUserId
-     * @return bool  true = ใช้แล้ว / false = first-time eligible
-     */
-    public static function hasUsedRequestBeforePay(string $platform, string $platformUserId): bool
-    {
-        // 🆕 (2026-05-04) "ใช้สิทธิ์" = ได้รับคำทำนายไปแล้วเท่านั้น (deep_response กรอกแล้ว)
-        //    user spec: "การหักสิทธิ์ paylater ควรหักหลังได้คำทำนาย"
-        //    เคสเดิม: flag set ตอนเลือก 39฿ → ลูกค้าเลือกแล้วยกเลิกก็เสียสิทธิ์ (ไม่ยุติธรรม)
-        //    เคสใหม่: flag set ตอนเลือก แต่ "used" ต้องมีคำทำนายจริง
-        //    → ลูกค้ายกเลิกก่อน AI gen → ไม่ถือว่าใช้ → eligible ต่อไป
-        //    → ลูกค้าได้คำทำนาย → ถือว่าใช้สิทธิ์ → not eligible
-        return self::where('platform', $platform)
-            ->where(function ($q) use ($platformUserId) {
-                $q->where('platform_user_id', $platformUserId)
-                    ->orWhere('facebook_user_id', $platformUserId);
-            })
-            ->where('reading_type', self::READING_TYPE_DEEP)
-            ->whereJsonContains('conversation_state->is_request_before_pay', true)
-            ->whereNotNull('deep_response')           // ⭐ ต้องได้รับคำทำนายแล้ว
-            ->where('deep_response', '!=', '')         // ⭐ ไม่ใช่ string ว่าง
-            ->exists();
-    }
-
-    /**
-     * 💎 ตรวจสอบว่าควรเข้า Request-Before-Pay flow หรือไม่ (สำหรับ Deep 39)
-     *
-     * เงื่อนไข: ลูกค้ายังไม่เคยใช้สิทธิ์
-     *
-     * @param  string  $platform
-     * @param  string  $platformUserId
-     * @return bool
-     */
-    public static function shouldUseRequestBeforePay(string $platform, string $platformUserId): bool
-    {
-        // 🛑 (2026-05-05) KILL SWITCH — Pay-Later disabled (user decision: ระบบเสถียรกว่าตอน pay-first only)
-        //   เอา Pay-Later ออกหมด — ทุกคนต้องจ่ายก่อนถึงดู
-        //   เปลี่ยน const เป็น true เมื่อพร้อม re-enable
-        if (! self::PAY_LATER_ENABLED) {
-            return false;
-        }
-
-        return ! self::hasUsedRequestBeforePay($platform, $platformUserId);
-    }
-
-    /**
-     * 🛑 (2026-05-05) Pay-Later (Request-Before-Pay) kill switch
-     *
-     * User decision: ระบบเสถียรกว่าก่อนเพิ่ม Pay-Later flow — เอาออกหมด
-     * Effect:
-     *   - shouldUseRequestBeforePay() return false เสมอ
-     *   - isPayLaterFlow() return false เสมอ (ลูกค้าใหม่ไม่ติด flag นี้)
-     *   - existing readings ที่ flag set ไว้แล้ว → fall through pay-first naturally
-     */
-    public const PAY_LATER_ENABLED = false;
-
-    /**
-     * 🩹 (2026-05-04) ตรวจว่า reading นี้เป็น Pay-Later flow หรือไม่
-     *
-     * Pay-Later (Request-Before-Pay): ดูคำทำนายก่อน → จ่ายทีหลัง (สิทธิ์ first-time)
-     * Pay-First: จ่ายก่อน → ค่อยดูคำทำนาย (เคสปกติ + เคสที่ใช้ Pay-Later สิทธิ์ครั้งที่ 1 ไปแล้ว)
-     *
-     * ใช้:
-     *   - admin UI แยก badge "ดูก่อนจ่าย" vs "จ่ายก่อนดู"
-     *   - flow guard ที่ต้องตัดสินใจตามประเภทบิล
-     */
-    public function isPayLaterFlow(): bool
-    {
-        // 🛑 (2026-05-05) Pay-Later disabled — return false เสมอ (kill switch)
-        if (! self::PAY_LATER_ENABLED) {
-            return false;
-        }
-
-        return (bool) $this->getConversationState('is_request_before_pay', false);
-    }
+    // 🛑 (2026-05-06) Pay-Later (Request-Before-Pay) — ลบทั้งหมด
+    //   เดิมเก็บ: hasUsedRequestBeforePay(), shouldUseRequestBeforePay(),
+    //            isPayLaterFlow(), PAY_LATER_ENABLED constant
+    //   user spec: "นำออกให้หมด สร้างปัญหามาก"
+    //   Migration safety: DB column conversation_state JSON เก็บได้ทุกอย่าง
+    //                     existing rows ที่มี is_request_before_pay = true ไม่ break
+    //                     (no code reads it anymore — orphan flag, ไม่กระทบ)
 
     // ============================================================
     // 🔒 Must-Pay-First Lock (2026-05-03) — บล็อกทุก service ถ้ามีบิลค้าง
@@ -682,42 +597,11 @@ class FortuneReading extends Model
 
     public static function findBlockingUnpaidBill(string $platform, string $platformUserId): ?self
     {
-        // 🔒 หา reading ล่าสุดของ deep/celtic ที่ active รอจ่าย — เฉพาะ Request-Before-Pay
-        //
-        // 🆕 (2026-05-04) Refined: เตือนเฉพาะบิล Request-Before-Pay ที่ลูกค้าได้คำทำนายไปแล้ว
-        //    User feedback: "บิลที่ไม่เกี่ยวกับการใช้สิทธิ์ดูก่อนจ่ายทีหลังต้องไม่มีการทวงถามตรงไหนเลย"
-        //
-        //    เหตุผล:
-        //    - บิล pay-first (Deep 39 / Celtic 99 ปกติ) — ลูกค้าตัดสินใจไม่จ่าย → เลิกๆ ปล่อยไป
-        //    - บิล Request-Before-Pay — ลูกค้าได้คำทำนายไปแล้ว = "เป็นหนี้" ต้องทวงตามจริง
-        //
-        //    Filter: whereJsonContains('conversation_state->is_request_before_pay', true)
-        $cutoff = now()->subDays(self::BLOCKING_BILL_LOOKBACK_DAYS);
-
-        $latest = self::where('platform', $platform)
-            ->where(function ($q) use ($platformUserId) {
-                $q->where('platform_user_id', $platformUserId)
-                    ->orWhere('facebook_user_id', $platformUserId);
-            })
-            ->whereIn('reading_type', [self::READING_TYPE_DEEP, self::READING_TYPE_CELTIC_CROSS])
-            ->whereNotNull('bill_reference')
-            ->whereIn('conversation_status', [
-                self::STATUS_PENDING_PAYMENT,         // 🔹 Deep 39฿ active รอจ่าย
-                self::STATUS_CELTIC_PENDING_PAYMENT,  // 🔮 Celtic 99฿ active รอจ่าย
-                // ❌ ไม่รวม STATUS_COMPLETED — บิลเก่าหมดอายุ ลูกค้าเลิกแล้ว ไม่ต้องเตือน
-            ])
-            ->where('is_paid', false)  // ⭐ ย้ำ — เฉพาะที่ยังไม่จ่ายเท่านั้น
-            ->whereJsonContains('conversation_state->is_request_before_pay', true)  // ⭐ เฉพาะ Request-Before-Pay
-            ->where('updated_at', '>=', $cutoff)
-            ->latest('updated_at')
-            ->first();
-
-        // (defensive) ถ้าไม่มี หรือบังเอิญจ่ายแล้ว → ไม่ block
-        if (! $latest || $latest->is_paid) {
-            return null;
-        }
-
-        return $latest;
+        // 🛑 (2026-05-06) Pay-Later total removal — return null เสมอ
+        //   user spec: "ไม่ต้องเช็คว่ามีบิลค้าง อะไรที่เกี่ยวกับระบบนี้ นำออกให้หมด"
+        //   ไม่มีระบบ Request-Before-Pay แล้ว → ไม่มี "บิลค้างต้องทวง"
+        //   ลูกค้า pay-first ปกติ ไม่จ่าย = เลิกๆ ปล่อยไป
+        return null;
     }
 
     /**
@@ -1098,8 +982,6 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_QA_PROMPT,
                 // 🎁 Free Card states (2026-05-03) — รอลูกค้าตอบหลังทำนายฟรี
                 self::STATUS_FREE_PREDICTED,
-                // 💎 Request-Before-Pay (2026-05-03) — รอลูกค้ายืนยันรับคำทำนาย
-                self::STATUS_AWAITING_DELIVERY_CONFIRM,
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -1124,11 +1006,6 @@ class FortuneReading extends Model
                 // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
                     ->orWhere(function ($sub) {
                         $sub->where('conversation_status', self::STATUS_FREE_PREDICTED)
-                            ->where('updated_at', '>=', now()->subMinutes(15));
-                    })
-                // 💎 awaiting_delivery_confirm: timeout 15 นาที (ลูกค้ามีเวลาตัดสินใจรับ/ไม่รับ)
-                    ->orWhere(function ($sub) {
-                        $sub->where('conversation_status', self::STATUS_AWAITING_DELIVERY_CONFIRM)
                             ->where('updated_at', '>=', now()->subMinutes(15));
                     })
                 // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)
@@ -1201,117 +1078,11 @@ class FortuneReading extends Model
      */
     public static function sendExpiryReminders(): int
     {
-        // 🌙 (2026-05-04) Refactor — เตือนเฉพาะ Request-Before-Pay (ดูก่อนจ่ายทีหลัง)
-        //   user spec: "บิลที่ไม่เกี่ยวกับสิทธิ์ดูก่อนจ่ายทีหลังต้องไม่มีการทวงถามตรงไหนเลย"
-        //   เหตุผล: pay-first บิลปกติ ลูกค้าเลือกไม่จ่ายเอง — ปล่อยไป ส่วน Request-Before-Pay
-        //          ลูกค้าได้คำทำนายไปแล้ว = "หนี้ค่าครู" → ทวงตามสิทธิ
-        //
-        //   ระยะเวลา 24 ชั่วโมง (Request-Before-Pay UPA expiry):
-        //   R1 (4-7 ชม):    gentle "แม่หมอเริ่มเรียงดาว" + ย้ำ "โอนภายใน 24 ชม"
-        //   R2 (12-15 ชม):  mystical "ดาวเริ่มเคลื่อน" + เน้น "ค่าครูค้าง"
-        //   R3 (20-23 ชม):  closing pitch + เตือน "บิลใกล้หมดอายุ"
-        //
-        //   หลัง 24 ชม + ยังไม่จ่าย → cancelExpiredPendingBills จับ + flag fraud_risk
-        //
-        //   แต่ละ stage track key แยก — กันส่งซ้ำ
-        //   Mark sent แม้ส่ง fail — กันวนซ้ำใน cron tick ถัดไป
-
-        $now = now();
-        $candidates = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
-            ->where('is_paid', false)
-            ->whereNotNull('unique_payment_amount_id')
-            ->whereJsonContains('conversation_state->is_request_before_pay', true)  // ⭐ เฉพาะ Request-Before-Pay
-            ->where('updated_at', '>=', $now->copy()->subMinutes(self::REQUEST_BEFORE_PAY_TIMEOUT_MINUTES))
-            ->get();
-
-        if ($candidates->isEmpty()) {
-            return 0;
-        }
-
-        $channelManager = null;
-        try {
-            $channelManager = app(\App\Services\FortuneChannelManager::class);
-        } catch (\Throwable $e) {
-            \Log::warning('FortuneReading::sendExpiryReminders — channel manager ไม่พร้อม', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return 0;
-        }
-
-        $sent = 0;
-
-        foreach ($candidates as $reading) {
-            $ageMinutes = (int) abs($now->diffInMinutes($reading->updated_at, true));
-            $ageHours = (int) floor($ageMinutes / 60);
-            $stage = null;
-            $stateKey = null;
-
-            // เลือก stage ตามอายุบิล (24-hour window — Request-Before-Pay)
-            //   R1 @ 4hr:  gentle reminder ("ค่าครูค้าง + ภายใน N ชม")
-            //   R2 @ 12hr: warn ("ค่าครูใกล้หมดเวลา")
-            //   R3 @ 18hr: 🆕 (2026-05-04) interactive ASK ("จะโอนหรือยกเลิก?")
-            //              user spec: "ต้องถามก่อนถึง 24 ชม ผ่านไป 18ชม จากได้คำทำนาย"
-            //              เหลือเวลา 6 ชม — ถามให้ลูกค้าตัดสินใจตรงๆ
-            if ($ageHours >= 18 && empty($reading->getConversationState('reminder_r3_sent_at'))) {
-                $stage = 'r3';
-                $stateKey = 'reminder_r3_sent_at';
-            } elseif ($ageHours >= 12 && $ageHours < 18 && empty($reading->getConversationState('reminder_r2_sent_at'))) {
-                $stage = 'r2';
-                $stateKey = 'reminder_r2_sent_at';
-            } elseif ($ageHours >= 4 && $ageHours < 12 && empty($reading->getConversationState('reminder_r1_sent_at'))) {
-                $stage = 'r1';
-                $stateKey = 'reminder_r1_sent_at';
-            }
-
-            if (! $stage) {
-                continue;
-            }
-
-            $message = self::buildReminderMessage($reading, $stage);
-            $platform = $reading->platform ?? 'facebook';
-            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
-
-            if (empty($userId)) {
-                continue;
-            }
-
-            try {
-                $platformService = $channelManager->getPlatform($platform);
-                if ($platformService) {
-                    // 🆕 (2026-05-04) R3 = ASK — ใช้ Quick Reply ถ้า FB (UX ดีกว่า)
-                    if ($stage === 'r3' && $platform === 'facebook'
-                        && method_exists($platformService, 'sendQuickReplies')) {
-                        $platformService->sendQuickReplies($userId, $message, [
-                            ['content_type' => 'text', 'title' => '✅ เช็คสถานะ + รับ QR', 'payload' => 'check_payment'],
-                            ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                        ], ['message_tag' => 'POST_PURCHASE_UPDATE']); // หลัง 18 ชม FB 24-hr window อาจหมด
-                    } else {
-                        $platformService->sendMessage($userId, $message);
-                    }
-                    $sent++;
-
-                    \Log::info("FortuneReading: ส่ง reminder DM stage {$stage}", [
-                        'reading_id' => $reading->id,
-                        'platform' => $platform,
-                        'bill_reference' => $reading->bill_reference,
-                        'age_minutes' => $ageMinutes,
-                        'age_hours' => $ageHours,
-                    ]);
-                }
-            } catch (\Throwable $e) {
-                \Log::warning("FortuneReading: reminder {$stage} DM ล้มเหลว (best-effort)", [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-
-            // ⚠️ mark sent แม้ fail — กันวนซ้ำใน cron tick ถัดไป
-            $reading->setConversationState($stateKey, $now->toIso8601String());
-        }
-
-        return $sent;
+        // 🛑 (2026-05-06) Pay-Later total removal — no-op
+        //   user spec: "นำออกให้หมดไม่ต้องเช็คว่ามีบิลค้าง"
+        //   เดิม: เตือน R1/R2/R3 สำหรับ Request-Before-Pay bills
+        //   ใหม่: ไม่เตือนใครเลย ลูกค้า pay-first ไม่จ่าย = เลิกๆ ปล่อยไป
+        return 0;
     }
 
     /**
@@ -1321,75 +1092,9 @@ class FortuneReading extends Model
      */
     protected static function buildReminderMessage(self $reading, string $stage): string
     {
-        // 🌙 (2026-05-04) Request-Before-Pay timeout = 24 ชม
-        //   user spec: "ต้องโอนภายใน 24 ชม"
-        $expiresAt = $reading->updated_at->copy()->addMinutes(self::REQUEST_BEFORE_PAY_TIMEOUT_MINUTES);
-        $remainingMinutes = (int) max(1, ceil(abs(now()->diffInMinutes($expiresAt, true))));
-        $remainingHours = (int) max(1, ceil($remainingMinutes / 60));
-        $billRef = $reading->bill_reference ?? '-';
-        $payAmount = $reading->amount_paid
-            ? number_format((float) $reading->amount_paid, 2)
-            : '0.00';
-
-        return match ($stage) {
-            'r1' => \App\Services\FortuneLocaleService::lo(
-                "🌙 *แม่หมอเตือนเจ้าชะตาเรื่องค่าครูค้างนะคะ*\n\n"
-                    . "📋 บิล: {$billRef}\n"
-                    . "💸 ค่าครู: {$payAmount} บาท (ทศนิยมต้องตรงเป๊ะ)\n\n"
-                    . "🃏 เจ้าชะตาได้รับคำทำนายไปแล้ว — แม่หมอรอค่าครูอยู่นะ\n"
-                    . "⏰ *ต้องโอนภายใน {$remainingHours} ชั่วโมง* (กฎสิทธิพิเศษดูก่อนจ่ายทีหลัง)\n\n"
-                    . "💡 โอนแล้วพิมพ์ 'โอนแล้ว' ระบบจะเช็คให้ทันที ✨",
-                "🌙 *ແມ່ໝໍເຕືອນເຈົ້າຊາຕາເລື່ອງຄ່າຄູຄ້າງເດີ*\n\n"
-                    . "📋 ບິນ: {$billRef}\n"
-                    . "💸 ຄ່າຄູ: {$payAmount} ບາດ (ທົດສະນິຍົມຕ້ອງຕົງເປັະ)\n\n"
-                    . "🃏 ເຈົ້າຊາຕາໄດ້ຮັບຄຳທຳນາຍໄປແລ້ວ — ແມ່ໝໍລໍຄ່າຄູຢູ່ເດີ\n"
-                    . "⏰ *ຕ້ອງໂອນພາຍໃນ {$remainingHours} ຊົ່ວໂມງ* (ກົດສິດທິພິເສດເບິ່ງກ່ອນຈ່າຍທີຫຼັງ)\n\n"
-                    . "💡 ໂອນແລ້ວພິມ 'ໂອນແລ້ວ' ລະບົບຈະເຊັກໃຫ້ທັນທີ ✨"
-            ),
-
-            'r2' => \App\Services\FortuneLocaleService::lo(
-                "⚠️ *ค่าครูยังค้างอยู่นะเจ้าชะตา*\n\n"
-                    . "📋 บิล: {$billRef}\n"
-                    . "💸 ค่าครู: {$payAmount} บาท\n"
-                    . "⏰ *เหลือเวลา {$remainingHours} ชั่วโมง* — บิลใกล้หมดอายุแล้ว\n\n"
-                    . "🌌 ดาวที่เปิดให้เจ้าชะตาเห็น เป็นพรของแม่หมอ\n"
-                    . "💜 ขอเจ้าชะตาแสดงความซื่อสัตย์ต่อค่าครูที่สัญญาไว้นะคะ\n\n"
-                    . "💡 โอนแล้วพิมพ์ 'โอนแล้ว' — ขอบคุณที่รักษาคำพูดค่ะ",
-                "⚠️ *ຄ່າຄູຍັງຄ້າງຢູ່ເດີເຈົ້າຊາຕາ*\n\n"
-                    . "📋 ບິນ: {$billRef}\n"
-                    . "💸 ຄ່າຄູ: {$payAmount} ບາດ\n"
-                    . "⏰ *ເຫຼືອເວລາ {$remainingHours} ຊົ່ວໂມງ* — ບິນໃກ້ໝົດອາຍຸແລ້ວ\n\n"
-                    . "🌌 ດາວທີ່ເປີດໃຫ້ເຈົ້າຊາຕາເຫັນ ເປັນພອນຂອງແມ່ໝໍ\n"
-                    . "💜 ຂໍເຈົ້າຊາຕາສະແດງຄວາມຊື່ສັດຕໍ່ຄ່າຄູທີ່ສັນຍາໄວ້ເດີ\n\n"
-                    . "💡 ໂອນແລ້ວພິມ 'ໂອນແລ້ວ' — ຂອບໃຈທີ່ຮັກສາຄຳເວົ້າເດີ"
-            ),
-
-            // r3 = 🆕 (2026-05-04) Interactive ASK — ถามตรงๆ "จะโอนหรือยกเลิก?"
-            //    user spec: "ต้องถามก่อนถึง 24 ชม ผ่านไป 18ชม จากได้คำทำนาย ทวงถาม"
-            //    ใช้ existing keywords ("เช็คสถานะ" / "ยกเลิก") — handlePendingPayment + isCancelRequest จัดการให้
-            default => \App\Services\FortuneLocaleService::lo(
-                "🙏 *เจ้าชะตา — แม่หมอขอถามตรงๆ นะคะ*\n\n"
-                    . "📋 บิล: {$billRef}\n"
-                    . "💸 ค่าครู: {$payAmount} บาท\n"
-                    . "⏰ *เหลือเวลาอีก {$remainingHours} ชั่วโมง* — บิลใกล้หมดอายุแล้ว\n"
-                    . "═══════════════════════\n\n"
-                    . "เจ้าชะตาได้รับคำทำนายจากแม่หมอไปแล้ว\n"
-                    . "💜 *ตอนนี้เจ้าชะตาจะตัดสินใจอย่างไร?*\n\n"
-                    . "✅ พิมพ์ *\"เช็คสถานะ\"* — แม่หมอจะส่ง QR + รายละเอียดบิลให้อีกครั้ง พร้อมโอนเลย\n"
-                    . "❌ พิมพ์ *\"ยกเลิก\"* — ปิดบิล (แต่จะถูกปิดสิทธิ์ดูก่อนจ่ายทีหลังถาวร)\n\n"
-                    . "🌙 ถ้าเงียบเฉยจนครบ 24 ชม — ระบบจะปิดสิทธิ์อัตโนมัติ + แอดมินจะเห็น",
-                "🙏 *ເຈົ້າຊາຕາ — ແມ່ໝໍຂໍຖາມຕົງໆ ເດີ*\n\n"
-                    . "📋 ບິນ: {$billRef}\n"
-                    . "💸 ຄ່າຄູ: {$payAmount} ບາດ\n"
-                    . "⏰ *ເຫຼືອເວລາອີກ {$remainingHours} ຊົ່ວໂມງ* — ບິນໃກ້ໝົດອາຍຸແລ້ວ\n"
-                    . "═══════════════════════\n\n"
-                    . "ເຈົ້າຊາຕາໄດ້ຮັບຄຳທຳນາຍຈາກແມ່ໝໍໄປແລ້ວ\n"
-                    . "💜 *ຕອນນີ້ເຈົ້າຊາຕາຈະຕັດສິນໃຈແນວໃດ?*\n\n"
-                    . "✅ ພິມ *\"ເຊັກສະຖານະ\"* — ແມ່ໝໍຈະສົ່ງ QR + ລາຍລະອຽດບິນໃຫ້ອີກຄັ້ງ ພ້ອມໂອນເລີຍ\n"
-                    . "❌ ພິມ *\"ຍົກເລີກ\"* — ປິດບິນ (ແຕ່ຈະຖືກປິດສິດເບິ່ງກ່ອນຈ່າຍທີຫຼັງຖາວອນ)\n\n"
-                    . "🌙 ຖ້າມິດງຽບຈົນຄົບ 24 ຊມ — ລະບົບຈະປິດສິດອັດຕະໂນມັດ + ແອັດມິນຈະເຫັນ"
-            ),
-        };
+        // 🛑 (2026-05-06) Pay-Later removed — สร้าง stub message เผื่อ caller เก่าเรียก
+        //   ปัจจุบัน sendExpiryReminders() return 0 — ฟังก์ชันนี้ไม่น่าถูกเรียก
+        return '';
     }
 
     /**
@@ -1481,31 +1186,15 @@ class FortuneReading extends Model
      */
     public static function cancelExpiredPendingBills(): int
     {
-        // 🌙 (2026-05-04) Refined — แยก timeout ระหว่าง pay-first vs Request-Before-Pay
-        //   - pay-first: 30 นาที (เดิม)
-        //   - Request-Before-Pay: 24 ชม + ติด flag fraud_risk + alert admin
-        $now = now();
-        $payFirstCutoff = $now->copy()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES);
-        $payLaterCutoff = $now->copy()->subMinutes(self::REQUEST_BEFORE_PAY_TIMEOUT_MINUTES);
+        // 🛑 (2026-05-06) Pay-Later removed — pay-first timeout 30 นาที สำหรับทุกบิล
+        //   เดิม: แยก pay-first 30 นาที vs Request-Before-Pay 24 ชม
+        //   ใหม่: ทุกบิล expire ที่ 30 นาที — pay-first only
+        $payFirstCutoff = now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES);
 
         $expiredReadings = self::whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
-            ->where(function ($q) use ($payFirstCutoff, $payLaterCutoff) {
-                // Pay-first bill — expire ที่ 30 นาที (ยังไม่ได้ใช้สิทธิ์ดูก่อนจ่ายทีหลัง)
-                $q->where(function ($q2) use ($payFirstCutoff) {
-                    $q2->where('updated_at', '<', $payFirstCutoff)
-                        ->where(function ($q3) {
-                            $q3->whereJsonDoesntContain('conversation_state->is_request_before_pay', true)
-                                ->orWhereNull('conversation_state');
-                        });
-                })
-                // Request-Before-Pay bill — expire ที่ 24 ชม
-                ->orWhere(function ($q2) use ($payLaterCutoff) {
-                    $q2->where('updated_at', '<', $payLaterCutoff)
-                        ->whereJsonContains('conversation_state->is_request_before_pay', true);
-                });
-            })
+            ->where('updated_at', '<', $payFirstCutoff)
             ->with('uniquePaymentAmount')
             ->get();
 
@@ -1567,44 +1256,9 @@ class FortuneReading extends Model
                 $reading->setConversationState('cancelled_at', now()->toIso8601String());
                 $reading->setConversationState('cancellation_reason', 'auto_expired');
 
-                // 🚨 (2026-05-04) Fraud detection — ลูกค้า Request-Before-Pay ไม่จ่ายภายใน 24 ชม
-                //    ถือว่า "โกง" — ได้รับคำทำนายไปแล้วแต่ไม่จ่ายค่าครู
-                //    Mark fraud_risk + alert admin (existing hasUsedRequestBeforePay() จะ
-                //    block สิทธิ์ใช้ซ้ำของลูกค้าคนนี้อยู่แล้ว เพราะ flag ยังคงอยู่)
-                $isRequestBeforePay = (bool) $reading->getConversationState('is_request_before_pay', false);
-                if ($isRequestBeforePay) {
-                    $reading->setConversationState('fraud_risk_at', now()->toIso8601String());
-                    $reading->setConversationState('fraud_risk_reason', 'unpaid_after_24hr_request_before_pay');
-
-                    // Alert admin ผ่าน LineAlertService (silent fail — ไม่ block flow)
-                    try {
-                        if (class_exists(\App\Services\LineAlertService::class)) {
-                            $alertSvc = app(\App\Services\LineAlertService::class);
-                            if (method_exists($alertSvc, 'alertSystemError')) {
-                                $alertSvc->alertSystemError(
-                                    "🚨 Fraud risk: ลูกค้าได้คำทำนายไปแล้วไม่จ่าย 24 ชม\n"
-                                    . "Bill: {$reading->bill_reference} | Amount: ฿{$reading->amount_paid}\n"
-                                    . "User: {$reading->facebook_user_name} ({$reading->facebook_user_id})\n"
-                                    . "Reading ID: {$reading->id}",
-                                    null
-                                );
-                            }
-                        }
-                    } catch (\Throwable $alertErr) {
-                        \Log::warning('FortuneReading: alert admin fraud risk ล้มเหลว', [
-                            'reading_id' => $reading->id,
-                            'error' => $alertErr->getMessage(),
-                        ]);
-                    }
-
-                    \Log::warning('🚨 Fortune Fraud: Request-Before-Pay ไม่จ่ายภายใน 24 ชม', [
-                        'reading_id' => $reading->id,
-                        'bill_reference' => $reading->bill_reference,
-                        'user_id' => $reading->facebook_user_id ?? $reading->platform_user_id,
-                        'user_name' => $reading->facebook_user_name,
-                        'amount' => $reading->amount_paid,
-                    ]);
-                }
+                // 🛑 (2026-05-06) Pay-Later removed — ไม่มี fraud detection สำหรับ Request-Before-Pay
+                //   เดิม: เช็ค is_request_before_pay flag → mark fraud_risk + alert admin
+                //   ใหม่: ทุกบิล = pay-first → ไม่จ่าย = เลิกๆ ไม่ใช่ "โกง"
 
                 // 4. ปิด conversation
                 $reading->update(['conversation_status' => self::STATUS_COMPLETED]);
@@ -1986,11 +1640,10 @@ class FortuneReading extends Model
      */
     public function getConversationState(string $key, $default = null)
     {
-        // 🛑 (2026-05-05) Pay-Later kill switch — บังคับ false ทุก read site
-        //   เคสนี้ครอบคลุมทุกจุดในระบบที่เช็ค flag is_request_before_pay
-        //   (CelticCrossConversationTrait, FortuneConversationService, ProcessDeepFortuneReadingJob ฯลฯ)
-        //   → flow ทุกจุดจะ fall-through ไป pay-first โดยไม่ต้องแก้ทีละจุด
-        if (! self::PAY_LATER_ENABLED && $key === 'is_request_before_pay') {
+        // 🛑 (2026-05-06) Pay-Later removed — บังคับ false ทุก read site ของ flag เก่า
+        //   ครอบคลุมโค้ดเก่า (Job/Trait) ที่เช็ค is_request_before_pay → fall through pay-first
+        //   safety guard: existing DB rows ที่มี flag = true จะถูก clamp เป็น false
+        if ($key === 'is_request_before_pay') {
             return false;
         }
 

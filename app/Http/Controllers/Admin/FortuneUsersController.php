@@ -67,43 +67,8 @@ class FortuneUsersController extends Controller
 
         $users = $query->paginate(20)->withQueryString();
 
-        // 🔒 (2026-05-04) Pay-later usage per user (current page only — performance)
-        //    user spec: "โชว์สิทธิ์ pay later ด้วย" + "ใช้แล้วใช้กับบิลไหนต้องรู้"
-        $userIds = $users->pluck('facebook_user_id')->filter()->unique()->values()->toArray();
+        // 🛑 (2026-05-06) Pay-later usage map ลบทิ้ง — Pay-Later removed
         $payLaterMap = [];
-        if (! empty($userIds)) {
-            $rows = FortuneReading::whereIn('facebook_user_id', $userIds)
-                ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
-                ->whereJsonContains('conversation_state->is_request_before_pay', true)
-                ->whereNotNull('deep_response')         // ⭐ "used" = ได้คำทำนายแล้วเท่านั้น
-                ->where('deep_response', '!=', '')
-                ->orderByDesc('created_at')
-                ->get(['facebook_user_id', 'platform', 'bill_reference', 'is_paid', 'amount_paid', 'created_at']);
-
-            foreach ($rows as $row) {
-                $key = $row->facebook_user_id . '|' . $row->platform;
-                if (! isset($payLaterMap[$key])) {
-                    $payLaterMap[$key] = [
-                        'count' => 0,
-                        'paid_count' => 0,
-                        'unpaid_count' => 0,
-                        'first_bill_ref' => null,
-                        'first_bill_paid' => false,
-                        'first_used_at' => null,
-                    ];
-                }
-                $payLaterMap[$key]['count']++;
-                if ($row->is_paid) {
-                    $payLaterMap[$key]['paid_count']++;
-                } else {
-                    $payLaterMap[$key]['unpaid_count']++;
-                }
-                // earliest used bill (rows are DESC, so last assignment = oldest)
-                $payLaterMap[$key]['first_bill_ref'] = $row->bill_reference;
-                $payLaterMap[$key]['first_bill_paid'] = (bool) $row->is_paid;
-                $payLaterMap[$key]['first_used_at'] = $row->created_at;
-            }
-        }
 
         // สถิติรวม
         $stats = [
@@ -152,32 +117,17 @@ class FortuneUsersController extends Controller
         // ดึง credit ถ้ามี
         $credit = FortuneUserCredit::findByUser($userId);
 
-        // 🔒 (2026-05-04) Pay-later eligibility — ตรวจว่า user คนนี้ใช้สิทธิ์ "ดูก่อนจ่ายทีหลัง" ไปแล้วหรือยัง
-        //    user spec: "การหักสิทธิ์ paylater ควรหักหลังได้คำทำนาย"
-        //    "used" = ได้รับคำทำนาย (deep_response filled) — ไม่ใช่แค่ flag set
-        $payLaterReadings = FortuneReading::where(function ($q) use ($userId) {
-            $q->where('facebook_user_id', $userId)
-                ->orWhere('platform_user_id', $userId);
-        })
-            ->where('platform', $platform)
-            ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
-            ->whereJsonContains('conversation_state->is_request_before_pay', true)
-            ->orderByDesc('created_at')
-            ->get(['id', 'bill_reference', 'is_paid', 'amount_paid', 'conversation_status', 'deep_response', 'created_at', 'paid_at']);
-
-        // แยก "used" (got reading) จาก "abandoned" (chose but never received reading)
-        $usedReadings = $payLaterReadings->filter(fn ($r) => ! empty($r->deep_response));
-
+        // 🛑 (2026-05-06) Pay-later eligibility ลบทิ้ง — Pay-Later removed
         $payLaterStatus = [
-            'has_used' => $usedReadings->isNotEmpty(),
-            'eligible' => $usedReadings->isEmpty(),
-            'usage_count' => $usedReadings->count(),
-            'paid_count' => $usedReadings->where('is_paid', true)->count(),
-            'unpaid_count' => $usedReadings->where('is_paid', false)->count(),
-            'first_used_at' => $usedReadings->last()?->created_at,
-            'last_used_at' => $usedReadings->first()?->created_at,
-            'readings' => $usedReadings,
-            'abandoned_count' => $payLaterReadings->count() - $usedReadings->count(),
+            'has_used' => false,
+            'eligible' => false,  // ไม่มีระบบ Pay-Later แล้ว
+            'usage_count' => 0,
+            'paid_count' => 0,
+            'unpaid_count' => 0,
+            'first_used_at' => null,
+            'last_used_at' => null,
+            'readings' => collect(),
+            'abandoned_count' => 0,
         ];
 
         return view('admin.fortune.users.show', [
@@ -190,49 +140,11 @@ class FortuneUsersController extends Controller
     }
 
     /**
-     * 🔒 (2026-05-04) Reset pay-later eligibility — ให้ลูกค้าใช้สิทธิ์ "ดูก่อนจ่ายทีหลัง" ได้อีก
-     *
-     * เคลียร์ flag is_request_before_pay + pay_later_acked จากทุก reading ของ user คนนี้
-     * ใช้กรณี: ลูกค้าจ่ายแล้วครบแต่อยากใช้สิทธิ์ใหม่ / admin จัดโปรโมชัน
+     * @deprecated 2026-05-06 — Pay-Later removed. Stub สำหรับ backward-compat route
      */
     public function resetPayLaterEligibility(Request $request, string $platform, string $userId)
     {
-        try {
-            $count = FortuneReading::where(function ($q) use ($userId) {
-                $q->where('facebook_user_id', $userId)
-                    ->orWhere('platform_user_id', $userId);
-            })
-                ->where('platform', $platform)
-                ->where('reading_type', FortuneReading::READING_TYPE_DEEP)
-                ->whereJsonContains('conversation_state->is_request_before_pay', true)
-                ->get()
-                ->each(function (FortuneReading $reading) {
-                    $state = $reading->conversation_state ?? [];
-                    unset($state['is_request_before_pay']);
-                    unset($state['pay_later_acked']);
-                    unset($state['awaiting_pay_later_ack']);
-                    unset($state['pending_pay_later_questions']);
-                    $reading->update(['conversation_state' => $state]);
-                })
-                ->count();
-
-            Log::info('Admin: รีเซ็ตสิทธิ์ pay-later', [
-                'admin_id' => auth()->id(),
-                'platform' => $platform,
-                'user_id' => $userId,
-                'readings_cleared' => $count,
-            ]);
-
-            return back()->with('success', "✅ รีเซ็ตสิทธิ์ดูก่อนจ่ายทีหลังสำเร็จ — เคลียร์ flag จาก {$count} readings");
-        } catch (\Throwable $e) {
-            Log::error('Admin: reset pay-later eligibility ล้มเหลว', [
-                'platform' => $platform,
-                'user_id' => $userId,
-                'error' => $e->getMessage(),
-            ]);
-
-            return back()->with('error', 'รีเซ็ตล้มเหลว: '.$e->getMessage());
-        }
+        return back()->with('info', 'ระบบ Pay-Later ถูกนำออกแล้ว — ไม่มีอะไรต้อง reset');
     }
 
     /**

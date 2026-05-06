@@ -34,46 +34,11 @@ trait PayFirstGateTrait
      */
     protected function payFirstGate(string $platform, string $platformUserId, string $messageText, ?array $userProfile = null): ?string
     {
-        // 🌊 (2026-05-05) FLOW SMOOTHNESS — ไม่เตือนซ้ำตอนลูกค้ากำลังอยู่ใน active flow
-        //    เคสที่ทำให้ flow รุงรัง: ลูกค้าเปิดไพ่ใบ 5 → bot prepend "⚠️ มีบิลค้าง..."
-        //    ทุก reply → ข้อความหนัก ลูกค้าหงุดหงิด
-        //    Skip ถ้า active mid-flow status — flow จะเรียบขึ้นทันที
-        $active = FortuneReading::findActiveConversation($platformUserId);
-        if ($active && in_array($active->conversation_status, [
-            FortuneReading::STATUS_PAID,                          // AI generating
-            FortuneReading::STATUS_COLLECTING_BIRTHDATE,
-            FortuneReading::STATUS_COLLECTING_QUESTIONS,
-            FortuneReading::STATUS_COLLECTING_TAROT,
-            FortuneReading::STATUS_CELTIC_PICKING,
-            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-            FortuneReading::STATUS_CELTIC_QA_PROMPT,
-            FortuneReading::STATUS_CELTIC_GENERATING,
-        ], true)) {
-            return null;
-        }
-
-        $blockingBill = FortuneReading::findBlockingUnpaidBill($platform, $platformUserId);
-
-        if (! $blockingBill) {
-            return null;
-        }
-
-        // ❌ ไม่ใส่ warning ถ้าลูกค้ากำลังจะ:
-        //    - คุยกับแอดมิน (handoff) — มีปัญหาแน่นอน admin จะช่วย
-        //    - แจ้งโอน/เช็คสถานะ — ลูกค้ากำลังจัดการบิลที่ค้างอยู่ ไม่ต้องเตือนซ้ำ
-        //    - ยกเลิก — ลูกค้าตั้งใจยกเลิก
-        if (method_exists($this, 'detectCustomerHandoffRequest')
-            && $this->detectCustomerHandoffRequest($messageText)) {
-            return null;
-        }
-        if ($this->isPaymentConfirmationMessage($messageText)) {
-            return null;
-        }
-        if (method_exists($this, 'isCancelRequest') && $this->isCancelRequest($messageText)) {
-            return null;
-        }
-
-        return $this->buildPaymentWarning($blockingBill);
+        // 🛑 (2026-05-06) Pay-Later total removal — gate disabled
+        //   user spec: "ไม่ต้องเช็คว่ามีบิลค้าง อะไรที่เกี่ยวกับระบบนี้ นำออกให้หมด"
+        //   findBlockingUnpaidBill() return null เสมอ → ไม่มี warning ไหนถูก trigger
+        //   เก็บ method ไว้กัน trait users พัง (FortuneConversationService ยังเรียก)
+        return null;
     }
 
     /**

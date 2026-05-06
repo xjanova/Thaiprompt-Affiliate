@@ -221,7 +221,7 @@ class SmsPaymentController extends Controller
         $approvalStatus = match (true) {
             $reading->conversation_status === FortuneReading::STATUS_PENDING_PAYMENT => 'pending_review',
             $reading->conversation_status === FortuneReading::STATUS_CELTIC_PENDING_PAYMENT => 'pending_review',
-            $reading->conversation_status === FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM => 'pending_review',  // 💎 Request-Before-Pay
+            // 🛑 (2026-05-06) STATUS_AWAITING_DELIVERY_CONFIRM ลบไปแล้ว — Pay-Later removed
             $reading->conversation_status === FortuneReading::STATUS_PAID => 'auto_approved',
             $reading->is_paid && in_array($reading->conversation_status, [
                 FortuneReading::STATUS_CELTIC_PICKING,
@@ -322,13 +322,7 @@ class SmsPaymentController extends Controller
             default => 'ดูดวง',
         };
 
-        // 💎 (2026-05-04) Request-Before-Pay flag — ให้ SMS Checker รู้ว่าเป็น "สิทธิ์ดูก่อนจ่าย"
-        //    user spec: "ให้แอพรู้ว่านี่คือสิทธิ์ฟรีด้วย แต่ก็รอชำระเพื่อจับคู่เครียบิล"
-        $isRequestBeforePay = (bool) ($reading->conversation_state['is_request_before_pay'] ?? false);
-        if ($isRequestBeforePay) {
-            $productName .= ' 💎ดูก่อนจ่าย';  // suffix สำหรับ display ในแอพ
-        }
-
+        // 🛑 (2026-05-06) Pay-Later removed — ไม่มี suffix "ดูก่อนจ่าย" + ไม่ส่ง flag
         $orderDetails = [
             'order_number' => $reading->bill_reference,
             'product_name' => $productName,
@@ -337,12 +331,6 @@ class SmsPaymentController extends Controller
             'website_name' => config('app.name'),
             'customer_name' => $customerName,
             'amount' => $displayAmount,
-            // 💎 Pay-later metadata (Android app ใช้ render badge หรือ context ได้)
-            'is_request_before_pay' => $isRequestBeforePay,
-            'pay_later_acked' => $isRequestBeforePay
-                ? (bool) ($reading->conversation_state['pay_later_acked'] ?? false)
-                : false,
-            'pay_later_used' => $isRequestBeforePay && ! empty($reading->deep_response),
         ];
 
         // ดึง matched notification ถ้ามี
@@ -863,7 +851,6 @@ class SmsPaymentController extends Controller
                         FortuneReading::STATUS_PENDING_PAYMENT,
                         FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                         FortuneReading::STATUS_PAID,
-                        FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM,  // 💎 Request-Before-Pay (รอ ack รับคำทำนาย)
                         FortuneReading::STATUS_CELTIC_PICKING,
                         FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
                         FortuneReading::STATUS_CELTIC_GENERATING,
@@ -879,7 +866,6 @@ class SmsPaymentController extends Controller
                     FortuneReading::STATUS_PENDING_PAYMENT,
                     FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
-                    FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM,  // 💎 Request-Before-Pay
                     FortuneReading::STATUS_CELTIC_PICKING,
                     FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
                     FortuneReading::STATUS_CELTIC_GENERATING,
@@ -1767,7 +1753,6 @@ class SmsPaymentController extends Controller
                     FortuneReading::STATUS_PENDING_PAYMENT,
                     FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                     FortuneReading::STATUS_PAID,
-                    FortuneReading::STATUS_AWAITING_DELIVERY_CONFIRM,  // 💎 Request-Before-Pay
                     // 🔮 Celtic statuses (post-payment) — sync ให้ SMS app เห็นการเปลี่ยน status
                     FortuneReading::STATUS_CELTIC_PICKING,
                     FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
