@@ -4910,7 +4910,36 @@ class FortuneConversationService
         //    จำกัด 3 รอบต่อบิล (กัน loop) — ถ้าเกินรอบ → ใช้แค่ payment details
         $aiPrefix = '';
         if ($this->looksLikeMetaOrChitchat($messageText)) {
-            $aiPrefix = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes);
+            // 💳 (2026-05-07 Phase 2) Bill Psychology ก่อน — Pro model + bill-aware
+            //   ถ้า sensitive key + budget OK → ตอบแบบจิตวิทยาขั้นสูง (replace nudge เดิม)
+            //   ถ้าไม่มี Pro → fallback เป็น nudge เดิม
+            $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
+            $platformUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+
+            if (! empty($platformUserId)) {
+                try {
+                    $billProResponse = $this->tryBillPsychologyResponse(
+                        $platform,
+                        $platformUserId,
+                        $messageText,
+                        $reading,
+                        $remainingMinutes
+                    );
+                    if (! empty($billProResponse)) {
+                        $aiPrefix = $billProResponse."\n\n";
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Fortune: Bill Psychology in handlePendingPayment ล้มเหลว', [
+                        'error' => $e->getMessage(),
+                        'reading_id' => $reading->id,
+                    ]);
+                }
+            }
+
+            // Fallback: ใช้ legacy nudge ถ้า Bill Psychology ไม่ทำงาน
+            if (empty($aiPrefix)) {
+                $aiPrefix = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes);
+            }
         }
 
         $message = $aiPrefix;
@@ -13031,6 +13060,123 @@ PROMPT;
      * @param  string  $context  'chat' / 'deep_question' / 'celtic_turn' / 'free_card'
      * @param  array  $extra  ['used_pro_model', 'pro_provider', 'pro_model', 'tokens_used', 'cost_thb', 'budget_blocked', 'offtopic_blocked']
      */
+    /**
+     * 💳 (2026-05-07 Phase 2) ลอง Bill Psychology — ใช้ใน handlePendingPayment
+     *
+     * @return string|null ข้อความ AI หรือ null ถ้าไม่มี Pro key / fail / disabled
+     */
+    public function tryBillPsychologyResponse(
+        string $platform,
+        string $platformUserId,
+        string $messageText,
+        FortuneReading $reading,
+        int $remainingMinutes
+    ): ?string {
+        if (! ($this->settings->bill_psychology_enabled ?? true)) {
+            return null;
+        }
+
+        $billDetector = new \App\Services\Fortune\FortuneBillContextDetector($this->settings);
+        $billContext = $billDetector->detect($platform, $platformUserId);
+
+        if ($billContext === null) {
+            return null;
+        }
+
+        // อัพเดต minutes_since จาก remainingMinutes (พฤติกรรมเฉพาะ pending bill)
+        $billContext['minutes_remaining_to_expire'] = $remainingMinutes;
+
+        // เช็ค sensitive trigger (อารมณ์ร้าย → ฟาดกลับแบบผู้ดี)
+        $aggressiveCounter = false;
+        try {
+            $tempSensitive = (new \App\Services\Fortune\FortuneSensitivityDetector($this->settings))
+                ->detect($messageText, ['user_id' => $platformUserId]);
+            if (($tempSensitive['mood_level'] ?? 1) >= 4) {
+                $aggressiveCounter = true;
+            }
+        } catch (\Throwable $e) {
+            // ไม่ critical — ข้ามไป
+        }
+
+        // เช็ค anti-spam mention cap
+        $reachedCap = $billDetector->reachedMentionLimit($platform, $platformUserId);
+
+        // เช็ค budget
+        $budget = new \App\Services\Fortune\FortuneSensitiveBudgetGuard($this->settings);
+        $budgetCheck = $budget->canUse($platform, $platformUserId);
+        if (! $budgetCheck['allowed']) {
+            Log::info('Fortune: Bill Psychology budget block', [
+                'reason' => $budgetCheck['reason'],
+                'reading_id' => $reading->id,
+            ]);
+
+            return null;
+        }
+
+        try {
+            $aiSvc = new FortuneAIService($this->settings);
+            $history = $this->getConversationHistoryForAI($platformUserId);
+            $userProfile = ['name' => $reading->facebook_user_name ?? null];
+
+            $billResult = $aiSvc->generateBillPsychologyResponse(
+                $messageText,
+                $userProfile,
+                $history,
+                $billContext,
+                $aggressiveCounter,
+                $reachedCap
+            );
+
+            if ($billResult === null) {
+                return null;
+            }
+
+            $responseText = trim($billResult['response'] ?? '');
+            if (empty($responseText)) {
+                return null;
+            }
+
+            // ถ้ายังไม่เกิน cap + AI mention บิล → increment
+            if (! $reachedCap && preg_match('/(บิล|ค่าครู|โอน|ชำระ|จ่าย|ค่าทำนาย)/u', $responseText)) {
+                $billDetector->incrementMention($platform, $platformUserId);
+            }
+
+            // บันทึก budget + log event
+            $costThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                (int) ($billResult['tokens_used'] ?? 0),
+                $billResult['model'] ?? ''
+            );
+            $budget->recordUse($platform, $platformUserId, $costThb);
+
+            $this->logSensitiveEvent($platform, $platformUserId, 'chat', $messageText, [
+                'is_sensitive' => true,
+                'reasons' => array_filter([
+                    'bill_psychology_pending',
+                    $aggressiveCounter ? 'aggressive_counter' : null,
+                    $reachedCap ? 'mention_capped' : null,
+                ]),
+                'detection_used' => 'bill_detector',
+                'mood_level' => $aggressiveCounter ? 4 : 2,
+                'complexity' => 3,
+            ], [
+                'used_pro_model' => true,
+                'pro_provider' => $billResult['provider'] ?? null,
+                'pro_model' => $billResult['model'] ?? null,
+                'tokens_used' => (int) ($billResult['tokens_used'] ?? 0),
+                'cost_thb' => $costThb,
+            ]);
+
+            return $responseText;
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: tryBillPsychologyResponse exception', [
+                'error' => $e->getMessage(),
+                'reading_id' => $reading->id,
+            ]);
+
+            return null;
+        }
+    }
+
     public function logSensitiveEvent(
         string $platform,
         string $platformUserId,
