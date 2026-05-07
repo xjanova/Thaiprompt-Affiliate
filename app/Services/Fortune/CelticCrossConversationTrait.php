@@ -6,6 +6,8 @@ use App\Models\FortuneReading;
 use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
 use App\Services\CelticSpreadImageGenerator;
+use App\Services\FcmNotificationService;
+use App\Services\FortuneLocaleService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -31,7 +33,7 @@ trait CelticCrossConversationTrait
      * Dispatch handler สำหรับ Celtic Cross states + Tier Choice
      * เรียกจาก main dispatch ใน FortuneConversationService
      *
-     * @return array|null  null ถ้าไม่ใช่ Celtic state — ให้ caller ส่งต่อ default handler
+     * @return array|null null ถ้าไม่ใช่ Celtic state — ให้ caller ส่งต่อ default handler
      */
     protected function handleCelticState(FortuneReading $reading, string $messageText): ?array
     {
@@ -47,7 +49,7 @@ trait CelticCrossConversationTrait
             FortuneReading::STATUS_CELTIC_GENERATING => [
                 'action' => 'celtic_processing',
                 'message' => "🔮 หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่...\n"
-                    . "กรุณารอสักครู่ (~30-60 วินาที) ✨",
+                    .'กรุณารอสักครู่ (~30-60 วินาที) ✨',
                 'reading' => $reading,
             ],
             default => null, // ไม่ใช่ Celtic state → ให้ caller จัดการต่อ
@@ -93,7 +95,7 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'collecting_birthdate',
                 'message' => "✨ เริ่มดูดวง *{$deepPriceInt} บาท* 🔹\n\n"
-                    . $this->getBirthdateRequestMessage(),
+                    .$this->getBirthdateRequestMessage(),
                 'reading' => $reading,
             ];
         }
@@ -101,7 +103,7 @@ trait CelticCrossConversationTrait
         $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
 
         $deepPrice = number_format($this->getDeepReadingPrice(), 0);
-        $celticPrice = number_format(app(\App\Services\CelticCrossService::class)->getPrice(), 0);
+        $celticPrice = number_format(app(CelticCrossService::class)->getPrice(), 0);
         // 🔢 (2026-05-03) อ่านจาก settings — ตรงกับที่ admin ตั้ง (0 = ไม่จำกัด)
         $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
@@ -111,47 +113,47 @@ trait CelticCrossConversationTrait
         // 🎁 หัวเมนู — เปลี่ยนตามว่ามีปุ่มฟรีหรือไม่
         // 🌐 (2026-05-03) localize header + intro — ลูกค้าลาวเห็นเมนูเป็นลาว
         $packageCount = 1 + ($celticEnabled ? 1 : 0) + ($offerFree ? 1 : 0);
-        $welcomeLine = \App\Services\FortuneLocaleService::lo(
+        $welcomeLine = FortuneLocaleService::lo(
             '🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙',
             '🌙✨ *ໝໍຈັນທາຍິນດີຕ້ອນຮັບເຈົ້າຊາຕາເດີ* ✨🌙'
         );
-        $introLine = \App\Services\FortuneLocaleService::lo(
+        $introLine = FortuneLocaleService::lo(
             "วันนี้เจ้าชะตาอยากให้หมอเปิดทางดวงให้แบบไหนคะ?\n"
-                . "เลือกได้ *1 จาก {$packageCount} แพคเกจ* ด้านล่างเลย 👇",
+                ."เลือกได้ *1 จาก {$packageCount} แพคเกจ* ด้านล่างเลย 👇",
             "ມື້ນີ້ເຈົ້າຊາຕາຢາກໃຫ້ໝໍເປີດທາງດວງໃຫ້ແບບໃດເດີ?\n"
-                . "ເລືອກໄດ້ *1 ໃນ {$packageCount} ແພັກເກດ* ດ້ານລຸ່ມເລີຍ 👇"
+                ."ເລືອກໄດ້ *1 ໃນ {$packageCount} ແພັກເກດ* ດ້ານລຸ່ມເລີຍ 👇"
         );
-        $message = $welcomeLine . "\n\n" . $introLine . "\n\n";
+        $message = $welcomeLine."\n\n".$introLine."\n\n";
 
         // 🎁 (2026-05-03) แพคเกจ "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด
         if ($offerFree) {
-            $freeBlock = \App\Services\FortuneLocaleService::lo(
+            $freeBlock = FortuneLocaleService::lo(
                 "━━━━━━━━━━━━━━━━━\n"
-                    . "🎁 *ทำนายฟรี (1 ใบ) — สิทธิ์พิเศษครั้งแรก* 🌙\n"
-                    . "━━━━━━━━━━━━━━━━━\n"
-                    . "🃏 *เปิดไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
-                    . "    แม่หมอใช้จิตสัมผัสดวงสมพงษ์ — ทำนายสถานการณ์ปัจจุบัน + ชี้ทางออก\n\n"
-                    . "✨ *เหมาะกับ:* คนใหม่ที่อยากลองสัมผัสพลังหมอจันทรา\n"
-                    . "⏱️ *เวลา:* ทำนายเสร็จใน 1 นาที\n"
-                    . "💎 *เงื่อนไข:* ใช้ได้ครั้งเดียวเท่านั้น/ท่าน\n\n",
+                    ."🎁 *ทำนายฟรี (1 ใบ) — สิทธิ์พิเศษครั้งแรก* 🌙\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."🃏 *เปิดไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
+                    ."    แม่หมอใช้จิตสัมผัสดวงสมพงษ์ — ทำนายสถานการณ์ปัจจุบัน + ชี้ทางออก\n\n"
+                    ."✨ *เหมาะกับ:* คนใหม่ที่อยากลองสัมผัสพลังหมอจันทรา\n"
+                    ."⏱️ *เวลา:* ทำนายเสร็จใน 1 นาที\n"
+                    ."💎 *เงื่อนไข:* ใช้ได้ครั้งเดียวเท่านั้น/ท่าน\n\n",
                 "━━━━━━━━━━━━━━━━━\n"
-                    . "🎁 *ທຳນາຍຟຣີ (1 ໃບ) — ສິດທິພິເສດຄັ້ງທຳອິດ* 🌙\n"
-                    . "━━━━━━━━━━━━━━━━━\n"
-                    . "🃏 *ເປີດໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
-                    . "    ແມ່ໝໍໃຊ້ຈິດສຳຜັດດວງສົມພົງ — ທຳນາຍສະຖານະການປັດຈຸບັນ + ຊີ້ທາງອອກ\n\n"
-                    . "✨ *ເໝາະກັບ:* ຄົນໃໝ່ທີ່ຢາກລອງສຳຜັດພະລັງໝໍຈັນທາ\n"
-                    . "⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1 ນາທີ\n"
-                    . "💎 *ເງື່ອນໄຂ:* ໃຊ້ໄດ້ຄັ້ງດຽວເທົ່ານັ້ນ/ທ່ານ\n\n"
+                    ."🎁 *ທຳນາຍຟຣີ (1 ໃບ) — ສິດທິພິເສດຄັ້ງທຳອິດ* 🌙\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."🃏 *ເປີດໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
+                    ."    ແມ່ໝໍໃຊ້ຈິດສຳຜັດດວງສົມພົງ — ທຳນາຍສະຖານະການປັດຈຸບັນ + ຊີ້ທາງອອກ\n\n"
+                    ."✨ *ເໝາະກັບ:* ຄົນໃໝ່ທີ່ຢາກລອງສຳຜັດພະລັງໝໍຈັນທາ\n"
+                    ."⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1 ນາທີ\n"
+                    ."💎 *ເງື່ອນໄຂ:* ໃຊ້ໄດ້ຄັ້ງດຽວເທົ່ານັ້ນ/ທ່ານ\n\n"
             );
             $message .= $freeBlock;
         }
 
         // 📌 หมายเลขแพคเกจ — dynamic ตามว่ามีฟรีไหม
-        $deepNum = \App\Services\FortuneLocaleService::lo(
+        $deepNum = FortuneLocaleService::lo(
             $offerFree ? 'ที่ 2' : 'ที่ 1',
             $offerFree ? 'ທີ່ 2' : 'ທີ່ 1'
         );
-        $celticNum = \App\Services\FortuneLocaleService::lo(
+        $celticNum = FortuneLocaleService::lo(
             $offerFree ? 'ที่ 3' : 'ที่ 2',
             $offerFree ? 'ທີ່ 3' : 'ທີ່ 2'
         );
@@ -159,25 +161,25 @@ trait CelticCrossConversationTrait
         // ━━━━━━━━━━━━━━━━━━━━━━━━
         // 🔹 39 บาท — Basic Deep
         // ━━━━━━━━━━━━━━━━━━━━━━━━
-        $deepBlock = \App\Services\FortuneLocaleService::lo(
+        $deepBlock = FortuneLocaleService::lo(
             "━━━━━━━━━━━━━━━━━\n"
-                . "🔹 *แพคเกจ{$deepNum} — ดูดวงพื้นฐาน {$deepPrice} บาท* 💫\n"
-                . "━━━━━━━━━━━━━━━━━\n"
-                . "📅 *วิเคราะห์จากวันเดือนปีเกิด*\n"
-                . "    หมอจะคำนวณดาวเจ้าชนะ + ราศี + ลัคนาให้\n\n"
-                . "🃏 *ไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
-                . "    ไพ่ใบเดียว — ตรงประเด็น แม่นยำ ไม่ยกเมฆ\n\n"
-                . "💎 *เหมาะกับ:* คนอยากรู้ดวงรวมๆ — เริ่มต้นง่าย ราคาเป็นมิตร\n"
-                . "⏱️ *เวลา:* ทำนายเสร็จใน 1-3 นาที\n\n",
+                ."🔹 *แพคเกจ{$deepNum} — ดูดวงพื้นฐาน {$deepPrice} บาท* 💫\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."📅 *วิเคราะห์จากวันเดือนปีเกิด*\n"
+                ."    หมอจะคำนวณดาวเจ้าชนะ + ราศี + ลัคนาให้\n\n"
+                ."🃏 *ไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
+                ."    ไพ่ใบเดียว — ตรงประเด็น แม่นยำ ไม่ยกเมฆ\n\n"
+                ."💎 *เหมาะกับ:* คนอยากรู้ดวงรวมๆ — เริ่มต้นง่าย ราคาเป็นมิตร\n"
+                ."⏱️ *เวลา:* ทำนายเสร็จใน 1-3 นาที\n\n",
             "━━━━━━━━━━━━━━━━━\n"
-                . "🔹 *ແພັກເກດ{$deepNum} — ເບິ່ງດວງພື້ນຖານ {$deepPrice} ບາດ* 💫\n"
-                . "━━━━━━━━━━━━━━━━━\n"
-                . "📅 *ວິເຄາະຈາກວັນເດືອນປີເກີດ*\n"
-                . "    ໝໍຈະຄຳນວນດາວເຈົ້າຊະນະ + ລາສີ + ລັກຄະນາໃຫ້\n\n"
-                . "🃏 *ໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
-                . "    ໄພ່ໃບດຽວ — ກົງປະເດັນ ແມ່ນຍຳ ບໍ່ຍົກເມກ\n\n"
-                . "💎 *ເໝາະກັບ:* ຄົນຢາກຮູ້ດວງລວມໆ — ເລີ່ມຕົ້ນງ່າຍ ລາຄາເປັນມິດ\n"
-                . "⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1-3 ນາທີ\n\n"
+                ."🔹 *ແພັກເກດ{$deepNum} — ເບິ່ງດວງພື້ນຖານ {$deepPrice} ບາດ* 💫\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."📅 *ວິເຄາະຈາກວັນເດືອນປີເກີດ*\n"
+                ."    ໝໍຈະຄຳນວນດາວເຈົ້າຊະນະ + ລາສີ + ລັກຄະນາໃຫ້\n\n"
+                ."🃏 *ໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
+                ."    ໄພ່ໃບດຽວ — ກົງປະເດັນ ແມ່ນຍຳ ບໍ່ຍົກເມກ\n\n"
+                ."💎 *ເໝາະກັບ:* ຄົນຢາກຮູ້ດວງລວມໆ — ເລີ່ມຕົ້ນງ່າຍ ລາຄາເປັນມິດ\n"
+                ."⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1-3 ນາທີ\n\n"
         );
         $message .= $deepBlock;
 
@@ -186,52 +188,52 @@ trait CelticCrossConversationTrait
         // ━━━━━━━━━━━━━━━━━━━━━━━━
         if ($celticEnabled) {
             // 🩹 (2026-05-04) ลด ad copy เหลือสั้น ๆ — user request: "แค่บอกว่าดูแบบโบราณ celtic cross ดั้งเดิม ไม่ต้องสาธยายเยอะ"
-            $celticBlock = \App\Services\FortuneLocaleService::lo(
+            $celticBlock = FortuneLocaleService::lo(
                 "━━━━━━━━━━━━━━━━━\n"
-                    . "👑 *แพคเกจ{$celticNum} — Celtic Cross {$celticPrice} บาท*\n"
-                    . "━━━━━━━━━━━━━━━━━\n"
-                    . "🃏 ไพ่ 10 ใบ ตามหลัก *Celtic Cross โบราณดั้งเดิม*\n"
-                    . "⏱️ ประมาณ 5-10 นาที\n\n",
+                    ."👑 *แพคเกจ{$celticNum} — Celtic Cross {$celticPrice} บาท*\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."🃏 ไพ่ 10 ใบ ตามหลัก *Celtic Cross โบราณดั้งเดิม*\n"
+                    ."⏱️ ประมาณ 5-10 นาที\n\n",
                 "━━━━━━━━━━━━━━━━━\n"
-                    . "👑 *ແພັກເກດ{$celticNum} — Celtic Cross {$celticPrice} ບາດ*\n"
-                    . "━━━━━━━━━━━━━━━━━\n"
-                    . "🃏 ໄພ່ 10 ໃບ ຕາມຫລັກ *Celtic Cross ໂບຮານດັ້ງເດີມ*\n"
-                    . "⏱️ ປະມານ 5-10 ນາທີ\n\n"
+                    ."👑 *ແພັກເກດ{$celticNum} — Celtic Cross {$celticPrice} ບາດ*\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."🃏 ໄພ່ 10 ໃບ ຕາມຫລັກ *Celtic Cross ໂບຮານດັ້ງເດີມ*\n"
+                    ."⏱️ ປະມານ 5-10 ນາທີ\n\n"
             );
             $message .= $celticBlock;
         }
 
         // 👇 CTA — รวมตัวเลือกตามที่มี
-        $ctaHeader = \App\Services\FortuneLocaleService::lo(
+        $ctaHeader = FortuneLocaleService::lo(
             "━━━━━━━━━━━━━━━━━\n"
-                . "👇 *เลือกแพคเกจของเจ้าชะตา* 👇\n"
-                . "━━━━━━━━━━━━━━━━━\n",
+                ."👇 *เลือกแพคเกจของเจ้าชะตา* 👇\n"
+                ."━━━━━━━━━━━━━━━━━\n",
             "━━━━━━━━━━━━━━━━━\n"
-                . "👇 *ເລືອກແພັກເກດຂອງເຈົ້າຊາຕາ* 👇\n"
-                . "━━━━━━━━━━━━━━━━━\n"
+                ."👇 *ເລືອກແພັກເກດຂອງເຈົ້າຊາຕາ* 👇\n"
+                ."━━━━━━━━━━━━━━━━━\n"
         );
         $message .= $ctaHeader;
         if ($offerFree) {
-            $message .= \App\Services\FortuneLocaleService::lo(
+            $message .= FortuneLocaleService::lo(
                 "✦ พิมพ์ *\"ทำนายฟรี\"* — รับสิทธิ์ฟรี 1 ใบ\n",
                 "✦ ພິມ *\"ທຳນາຍຟຣີ\"* — ຮັບສິດທິຟຣີ 1 ໃບ\n"
             );
         }
-        $message .= \App\Services\FortuneLocaleService::lo(
+        $message .= FortuneLocaleService::lo(
             "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n",
             "✦ ພິມ *\"{$deepPrice}\"* — ເລີ່ມແພັກເກດພື້ນຖານ {$deepPrice} ບາດ\n"
         );
         if ($celticEnabled) {
-            $message .= \App\Services\FortuneLocaleService::lo(
+            $message .= FortuneLocaleService::lo(
                 "✦ พิมพ์ *\"{$celticPrice}\"* หรือ *\"celtic\"* — เริ่มแพคเกจเต็มสำรับ\n",
                 "✦ ພິມ *\"{$celticPrice}\"* ຫຼື *\"celtic\"* — ເລີ່ມແພັກເກດເຕັມສຳລັບ\n"
             );
         }
-        $message .= \App\Services\FortuneLocaleService::lo(
+        $message .= FortuneLocaleService::lo(
             "✦ หรือ *กดปุ่มด้านล่าง* ได้เลยค่ะ ✨\n\n"
-                . "🙏 ถ้ายังไม่พร้อม พิมพ์ *\"ยกเลิก\"* ได้นะคะ",
+                .'🙏 ถ้ายังไม่พร้อม พิมพ์ *"ยกเลิก"* ได้นะคะ',
             "✦ ຫຼື *ກົດປຸ່ມດ້ານລຸ່ມ* ໄດ້ເລີຍເດີ ✨\n\n"
-                . "🙏 ຖ້າຍັງບໍ່ພ້ອມ ພິມ *\"ຍົກເລີກ\"* ໄດ້ເດີ"
+                .'🙏 ຖ້າຍັງບໍ່ພ້ອມ ພິມ *"ຍົກເລີກ"* ໄດ້ເດີ'
         );
 
         return [
@@ -282,7 +284,7 @@ trait CelticCrossConversationTrait
 
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
-        $celticPriceInt = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
         $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
@@ -325,7 +327,7 @@ trait CelticCrossConversationTrait
                 return [
                     'action' => 'collecting_birthdate',
                     'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
-                        . $this->getBirthdateRequestMessage(),
+                        .$this->getBirthdateRequestMessage(),
                     'reading' => $reading,
                 ];
             }
@@ -335,12 +337,12 @@ trait CelticCrossConversationTrait
         return [
             'action' => 'tier_choice_invalid',
             'message' => "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
-                . "🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
-                . "    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
-                . "🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
-                . "    🃏 Celtic Cross 10 ใบ + ถามได้ {$qLimitText}\n\n"
-                . "❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
-                . "👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨",
+                ."🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
+                ."    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
+                ."🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
+                ."    🃏 Celtic Cross 10 ใบ + ถามได้ {$qLimitText}\n\n"
+                ."❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
+                .'👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨',
             'reading' => $reading,
         ];
     }
@@ -363,7 +365,7 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_disabled',
                 'message' => "🔮 ขออภัยค่ะ บริการดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross ปิดการใช้งานชั่วคราว\n\n"
-                    . "ขณะนี้สามารถดูดวงพื้นฐานฟรีได้ตามปกติ พิมพ์คำถามมาได้เลย 🙏",
+                    .'ขณะนี้สามารถดูดวงพื้นฐานฟรีได้ตามปกติ พิมพ์คำถามมาได้เลย 🙏',
                 'reading' => $reading,
             ];
         }
@@ -391,7 +393,7 @@ trait CelticCrossConversationTrait
             // ปิด reading ใหม่ที่ trigger เข้ามา (กัน orphan)
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            return $this->buildCelticResumeResponse($resumable, /*fromAdminReset:*/ false);
+            return $this->buildCelticResumeResponse($resumable, /* fromAdminReset: */ false);
         }
 
         // 🩹 (2026-05-04) Pending-payment dedup — ใช้บิลเดิมถ้า UPA ยัง active
@@ -459,8 +461,8 @@ trait CelticCrossConversationTrait
                 return [
                     'action' => 'celtic_bill_creation_failed',
                     'message' => "🙏 ขออภัยค่ะ — ระบบเตรียมบิลไม่สำเร็จ\n\n"
-                        . "กรุณาพิมพ์ 'celtic cross' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
-                        . '⚠️ *อย่าโอนเงิน*จนกว่าจะได้รับบิลใหม่',
+                        ."กรุณาพิมพ์ 'celtic cross' อีกครั้งในอีก 10 วินาที เพื่อให้ระบบสร้างบิลใหม่ค่ะ\n\n"
+                        .'⚠️ *อย่าโอนเงิน*จนกว่าจะได้รับบิลใหม่',
                     'reading' => $reading,
                 ];
             }
@@ -473,7 +475,7 @@ trait CelticCrossConversationTrait
             //    notifyNewFortuneReading ใช้ field generic (bill_reference, amount_paid)
             //    → ใช้กับ Celtic ได้เลย ไม่ต้องเพิ่ม method แยก
             try {
-                app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+                app(FcmNotificationService::class)->notifyNewFortuneReading($reading);
             } catch (\Throwable $fcmErr) {
                 Log::warning('Celtic: FCM push new_fortune_reading ล้มเหลว (non-blocking)', [
                     'reading_id' => $reading->id,
@@ -505,15 +507,15 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_pending_payment',
                 'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
-                    . "✨ ค่าครู: {$baseAmountStr} บาท\n"
-                    . "🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
-                    . "💬 ถามได้ {$qLimitText} (ภายใน {$qaWindow} นาทีหลังคำถามแรก)\n"
-                    . "🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ตอนจบทำนาย เป็นที่ระลึก\n\n"
-                    . "──────────────────────\n"
-                    . "💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
-                    . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
-                    . "👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n"
-                    . "หลังโอนเสร็จ หมอจะให้เจ้าชะตาเปิดไพ่ทันที",
+                    ."✨ ค่าครู: {$baseAmountStr} บาท\n"
+                    ."🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
+                    ."💬 ถามได้ {$qLimitText} (ภายใน {$qaWindow} นาทีหลังคำถามแรก)\n"
+                    ."🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ตอนจบทำนาย เป็นที่ระลึก\n\n"
+                    ."──────────────────────\n"
+                    ."💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
+                    ."(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
+                    ."👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n"
+                    .'หลังโอนเสร็จ หมอจะให้เจ้าชะตาเปิดไพ่ทันที',
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
                 'celtic_base_price' => $basePrice,
@@ -549,7 +551,7 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_cancelled',
                 'message' => "ยกเลิก Celtic Cross แล้วค่ะ — ไม่เป็นไรนะคะ\n\n"
-                    . "หากต้องการดูใหม่ พิมพ์ 'celtic cross' หรือ 'ไพ่ยิปซีเต็ม' ได้เลย 🔮",
+                    ."หากต้องการดูใหม่ พิมพ์ 'celtic cross' หรือ 'ไพ่ยิปซีเต็ม' ได้เลย 🔮",
                 'reading' => $reading,
             ];
         }
@@ -569,11 +571,11 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_pending_payment_hint',
                 'message' => "🌙 เจ้าชะตาเลือกแพคเกจไพ่ยิปซีเต็มสำรับ 99 บาทไว้แล้วนะคะ\n\n"
-                    . "💸 ตอนนี้รอเจ้าชะตา *โอนค่าครู {$payAmount} บาท* ตาม QR ที่ส่งให้\n"
-                    . "(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิล)\n\n"
-                    . "──────────────────────\n"
-                    . "✅ หลังโอนเสร็จ — พิมพ์ *\"โอนแล้ว\"* ระบบจะเช็คให้\n"
-                    . "❌ หรือพิมพ์ *\"ยกเลิก\"* เพื่อไม่ดูแล้ว",
+                    ."💸 ตอนนี้รอเจ้าชะตา *โอนค่าครู {$payAmount} บาท* ตาม QR ที่ส่งให้\n"
+                    ."(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิล)\n\n"
+                    ."──────────────────────\n"
+                    ."✅ หลังโอนเสร็จ — พิมพ์ *\"โอนแล้ว\"* ระบบจะเช็คให้\n"
+                    .'❌ หรือพิมพ์ *"ยกเลิก"* เพื่อไม่ดูแล้ว',
                 'reading' => $reading,
             ];
         }
@@ -582,8 +584,8 @@ trait CelticCrossConversationTrait
         return [
             'action' => 'celtic_awaiting_payment',
             'message' => "💸 รอเจ้าชะตาโอนค่าครู {$payAmount} บาทตาม QR ที่ส่งให้นะคะ\n\n"
-                . "📌 หลังโอนเสร็จ หมอจะรู้อัตโนมัติแล้วเปิดไพ่ให้\n"
-                . "📌 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการต่อ",
+                ."📌 หลังโอนเสร็จ หมอจะรู้อัตโนมัติแล้วเปิดไพ่ให้\n"
+                ."📌 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการต่อ",
             'reading' => $reading,
         ];
     }
@@ -614,15 +616,15 @@ trait CelticCrossConversationTrait
                 return [
                     'action' => 'celtic_reset',
                     'message' => "🔄 เริ่มใหม่ครบ — ไพ่ที่เคยเลือกถูกล้างแล้ว\n"
-                        . "ตอนนี้ตั้งจิตให้แน่วแน่อีกครั้ง แล้วเลือกใหม่นะคะ\n\n"
-                        . $this->buildCelticPickPromptText($reading->fresh()),
+                        ."ตอนนี้ตั้งจิตให้แน่วแน่อีกครั้ง แล้วเลือกใหม่นะคะ\n\n"
+                        .$this->buildCelticPickPromptText($reading->fresh()),
                     'reading' => $reading,
                 ];
             } catch (\Exception $e) {
                 return [
                     'action' => 'celtic_reset_denied',
                     'message' => "❌ ไม่สามารถเริ่มใหม่ได้ — เจ้าชะตาได้รับคำทำนายไปแล้ว\n"
-                        . 'ต้องเริ่มรอบใหม่ (จ่ายค่าครูใหม่) เท่านั้นค่ะ',
+                        .'ต้องเริ่มรอบใหม่ (จ่ายค่าครูใหม่) เท่านั้นค่ะ',
                     'reading' => $reading,
                 ];
             }
@@ -641,11 +643,11 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_restart_hint',
                 'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีอยู่แล้วนะคะ\n\n"
-                    . "🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
-                    . "──────────────────────\n"
-                    . "👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
-                    . "🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่เริ่มใหม่ (ยังไม่จ่ายซ้ำ)\n"
-                    . "❌ พิมพ์ *\"ยกเลิก\"* ถ้าไม่อยากดูแล้ว",
+                    ."🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
+                    ."──────────────────────\n"
+                    ."👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
+                    ."🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่เริ่มใหม่ (ยังไม่จ่ายซ้ำ)\n"
+                    .'❌ พิมพ์ *"ยกเลิก"* ถ้าไม่อยากดูแล้ว',
                 'reading' => $reading,
             ];
         }
@@ -655,14 +657,14 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_chitchat_reminder',
                 'message' => "🃏 ตอนนี้อยู่ขั้นเปิดไพ่นะคะ\n\n"
-                    . $this->buildCelticPickPromptText($reading)
-                    . "\n\nเจ้าชะตาแค่พิมพ์ 'พร้อม' เพื่อให้หมอสุ่มไพ่ใบถัดไปค่ะ",
+                    .$this->buildCelticPickPromptText($reading)
+                    ."\n\nเจ้าชะตาแค่พิมพ์ 'พร้อม' เพื่อให้หมอสุ่มไพ่ใบถัดไปค่ะ",
                 'reading' => $reading,
             ];
         }
 
         // 📊 (2026-05-04) Diagnostic log — ทำให้ debug stuck-at-card-N ในอนาคตง่าย
-        \Illuminate\Support\Facades\Log::info('🃏 Celtic: handleCelticPicking → attempt pickNextCard', [
+        Log::info('🃏 Celtic: handleCelticPicking → attempt pickNextCard', [
             'reading_id' => $reading->id,
             'picked_count_before' => $reading->getCelticPickedCount(),
             'next_position' => $reading->getNextCelticPosition(),
@@ -676,7 +678,7 @@ trait CelticCrossConversationTrait
 
         if (! $result['success']) {
             // 📊 (2026-05-04) Log failure ชัดเจน — กัน silent stuck
-            \Illuminate\Support\Facades\Log::warning('🃏 Celtic: pickNextCard ล้มเหลว', [
+            Log::warning('🃏 Celtic: pickNextCard ล้มเหลว', [
                 'reading_id' => $reading->id,
                 'next_position' => $reading->getNextCelticPosition(),
                 'failure_message' => $result['message'] ?? null,
@@ -690,9 +692,9 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_chitchat_reminder',
                 'message' => "⚠️ สุ่มไพ่ใบที่ {$next} ไม่สำเร็จ — ลองพิมพ์ 'พร้อม' หรือกดปุ่มข้างล่างอีกครั้งนะคะ\n\n"
-                    . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
-                    . ($result['message'] ?? '')
-                    . "\n\nหากกดแล้วไม่หาย ลองพิมพ์ *'สับใหม่'* เพื่อรีเซ็ตไพ่ (ไม่ต้องจ่ายซ้ำ)",
+                    ."🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
+                    .($result['message'] ?? '')
+                    ."\n\nหากกดแล้วไม่หาย ลองพิมพ์ *'สับใหม่'* เพื่อรีเซ็ตไพ่ (ไม่ต้องจ่ายซ้ำ)",
                 'reading' => $reading,
             ];
         }
@@ -707,9 +709,9 @@ trait CelticCrossConversationTrait
         $count = $result['picked_count'];
 
         $message = "🃏✨ *ใบที่ {$count}/10 — ตำแหน่ง [{$positionName}]*\n\n"
-            . "ได้ไพ่ *{$cardNameTh}* {$reversed}\n"
-            . "({$cardNameEn})\n\n"
-            . "📖 ความหมายไพ่นี้: {$meaning}";
+            ."ได้ไพ่ *{$cardNameTh}* {$reversed}\n"
+            ."({$cardNameEn})\n\n"
+            ."📖 ความหมายไพ่นี้: {$meaning}";
 
         // ครบ 10 ใบหรือยัง
         if ($result['is_complete']) {
@@ -719,7 +721,7 @@ trait CelticCrossConversationTrait
         // ขยับไป position ถัดไป
         $reading->refresh();
         $nextPrompt = $this->buildCelticPickPromptText($reading);
-        $message .= "\n\n──────────────────────\n" . $nextPrompt;
+        $message .= "\n\n──────────────────────\n".$nextPrompt;
 
         return [
             'action' => 'celtic_card_picked',
@@ -750,11 +752,11 @@ trait CelticCrossConversationTrait
         $remaining = 10 - $picked;
 
         return "🃏 *ใบที่ {$next}/10 — ตำแหน่ง [{$name}]*\n"
-            . "💭 ตำแหน่งนี้บอกถึง: {$desc}\n\n"
-            . "🧘 ตั้งจิต หลับตา 3 วินาที นึกถึงสิ่งที่อยากรู้\n"
-            . "เมื่อพร้อมแล้ว พิมพ์ 'พร้อม' เพื่อให้หมอเปิดไพ่ใบนี้ค่ะ\n\n"
-            . "📌 *ต้องเปิดครบ 10 ใบก่อน แม่หมอจึงเริ่มทำนาย*\n"
-            . "   เปิดไปแล้ว {$picked}/10 — เหลืออีก *{$remaining} ใบ*";
+            ."💭 ตำแหน่งนี้บอกถึง: {$desc}\n\n"
+            ."🧘 ตั้งจิต หลับตา 3 วินาที นึกถึงสิ่งที่อยากรู้\n"
+            ."เมื่อพร้อมแล้ว พิมพ์ 'พร้อม' เพื่อให้หมอเปิดไพ่ใบนี้ค่ะ\n\n"
+            ."📌 *ต้องเปิดครบ 10 ใบก่อน แม่หมอจึงเริ่มทำนาย*\n"
+            ."   เปิดไปแล้ว {$picked}/10 — เหลืออีก *{$remaining} ใบ*";
     }
 
     /**
@@ -765,11 +767,11 @@ trait CelticCrossConversationTrait
         return [
             'action' => 'celtic_pick_prompt',
             'message' => "✅ ค่าครูเข้าระบบแล้ว ขอบคุณค่ะ\n\n"
-                . "🔮 *ดูดวง Celtic Cross เริ่มเลย*\n"
-                . "🃏 หมอจะเปิดไพ่ให้ทีละใบ ทั้งหมด *10 ใบ*\n"
-                . "📌 ต้องเปิดครบทั้ง 10 ใบก่อน — แม่หมอจึงจะเริ่มทำนายและให้เจ้าชะตาถามคำถามได้\n\n"
-                . "──────────────────────\n"
-                . $this->buildCelticPickPromptText($reading),
+                ."🔮 *ดูดวง Celtic Cross เริ่มเลย*\n"
+                ."🃏 หมอจะเปิดไพ่ให้ทีละใบ ทั้งหมด *10 ใบ*\n"
+                ."📌 ต้องเปิดครบทั้ง 10 ใบก่อน — แม่หมอจึงจะเริ่มทำนายและให้เจ้าชะตาถามคำถามได้\n\n"
+                ."──────────────────────\n"
+                .$this->buildCelticPickPromptText($reading),
             'reading' => $reading,
         ];
     }
@@ -795,9 +797,9 @@ trait CelticCrossConversationTrait
         }
 
         return FortuneReading::where(function ($q) use ($userId) {
-                $q->where('facebook_user_id', $userId)
-                    ->orWhere('platform_user_id', $userId);
-            })
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('is_paid', true)
             ->where('celtic_questions_used', 0)
@@ -831,9 +833,9 @@ trait CelticCrossConversationTrait
         }
 
         $candidate = FortuneReading::where(function ($q) use ($userId) {
-                $q->where('facebook_user_id', $userId)
-                    ->orWhere('platform_user_id', $userId);
-            })
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
             ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
             ->where('conversation_status', FortuneReading::STATUS_CELTIC_PENDING_PAYMENT)
             ->where('is_paid', false)
@@ -880,14 +882,14 @@ trait CelticCrossConversationTrait
         }
 
         $message = "🌙 *พบบิล Celtic Cross ของคุณ{$name}ที่ยังรอชำระ*\n\n"
-            . "📋 เลขบิล: {$billRef}\n"
-            . "💰💰 ยอดที่ต้องโอน: *{$payAmount}* บาท 💰💰\n"
-            . "⏳ เหลือเวลา: {$remainingMin} นาที\n\n"
-            . "═══════════════════════\n\n"
-            . "⚠️ *โอนยอดให้ตรงเป๊ะ {$payAmount} บาท* (ทศนิยมด้วย!)\n"
-            . "✅ โอนแล้ว ระบบตัดบิลอัตโนมัติ → เริ่มเปิดไพ่ทันที\n"
-            . "❌ พิมพ์ *\"ยกเลิก\"* ถ้าไม่ต้องการต่อ\n\n"
-            . "💡 ไม่ต้องสร้างบิลใหม่ — ใช้บิลนี้โอนเลยค่ะ";
+            ."📋 เลขบิล: {$billRef}\n"
+            ."💰💰 ยอดที่ต้องโอน: *{$payAmount}* บาท 💰💰\n"
+            ."⏳ เหลือเวลา: {$remainingMin} นาที\n\n"
+            ."═══════════════════════\n\n"
+            ."⚠️ *โอนยอดให้ตรงเป๊ะ {$payAmount} บาท* (ทศนิยมด้วย!)\n"
+            ."✅ โอนแล้ว ระบบตัดบิลอัตโนมัติ → เริ่มเปิดไพ่ทันที\n"
+            ."❌ พิมพ์ *\"ยกเลิก\"* ถ้าไม่ต้องการต่อ\n\n"
+            .'💡 ไม่ต้องสร้างบิลใหม่ — ใช้บิลนี้โอนเลยค่ะ';
 
         return [
             'action' => 'celtic_pending_payment_reuse',
@@ -921,32 +923,32 @@ trait CelticCrossConversationTrait
         // หัวข้อ — แตกต่างกันระหว่าง admin reset / customer-triggered resume
         if ($fromAdminReset) {
             $header = "🔄 *แอดมินรีเซ็ตการดูดวงให้แล้วค่ะ คุณ{$name}*\n"
-                . "💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
-                . "📋 เลขบิล: {$billRef}\n\n"
-                . "═══════════════════════\n\n";
+                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                ."📋 เลขบิล: {$billRef}\n\n"
+                ."═══════════════════════\n\n";
         } else {
             $header = "✨ *พบบิลของคุณ{$name}ที่ยังใช้สิทธิ์ไม่ครบ*\n"
-                . "💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
-                . "📋 เลขบิล: {$billRef}\n\n"
-                . "═══════════════════════\n\n";
+                ."💚 ค่าครูเดิมยังใช้ได้ — ไม่ต้องจ่ายซ้ำ\n"
+                ."📋 เลขบิล: {$billRef}\n\n"
+                ."═══════════════════════\n\n";
         }
 
         switch ($reading->conversation_status) {
             case FortuneReading::STATUS_CELTIC_PICKING:
                 if ($picked === 0) {
                     $body = "🔮 *เริ่มเปิดไพ่ Celtic Cross กันเลย*\n"
-                        . "หมอจะเปิดไพ่ให้ทีละใบ พร้อมตำแหน่งที่ได้\n\n"
-                        . "──────────────────────\n"
-                        . $this->buildCelticPickPromptText($reading);
+                        ."หมอจะเปิดไพ่ให้ทีละใบ พร้อมตำแหน่งที่ได้\n\n"
+                        ."──────────────────────\n"
+                        .$this->buildCelticPickPromptText($reading);
                 } else {
                     $body = "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — เริ่มต่อกันค่ะ!\n\n"
-                        . "──────────────────────\n"
-                        . $this->buildCelticPickPromptText($reading);
+                        ."──────────────────────\n"
+                        .$this->buildCelticPickPromptText($reading);
                 }
 
                 return [
                     'action' => 'celtic_pick_prompt',
-                    'message' => $header . $body,
+                    'message' => $header.$body,
                     'reading' => $reading,
                 ];
 
@@ -955,44 +957,44 @@ trait CelticCrossConversationTrait
                 $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
                 $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
                 $body = "🌟 *เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมตอบคำถาม*\n\n"
-                    . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
-                    . "❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
-                    . "🔚 พิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
+                    ."💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
+                    ."❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
+                    .'🔚 พิมพ์ *"พอแค่นี้"* เมื่อพอใจ';
 
                 return [
                     'action' => 'celtic_resume_qa',
-                    'message' => $header . $body,
+                    'message' => $header.$body,
                     'reading' => $reading,
                 ];
 
             case FortuneReading::STATUS_CELTIC_GENERATING:
                 $body = "🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่...\n"
-                    . "กรุณารอสักครู่ (~30-60 วินาที) ✨";
+                    .'กรุณารอสักครู่ (~30-60 วินาที) ✨';
 
                 return [
                     'action' => 'celtic_processing',
-                    'message' => $header . $body,
+                    'message' => $header.$body,
                     'reading' => $reading,
                 ];
 
             case FortuneReading::STATUS_CELTIC_QA_PROMPT:
                 $body = "💬 *ต้องการถามต่อหรือพอแค่นี้?*\n\n"
-                    . "👉 พิมพ์ *\"ถามต่อ\"* เพื่อถามคำถามถัดไป\n"
-                    . "🔚 พิมพ์ *\"พอแค่นี้\"* เพื่อจบรอบ";
+                    ."👉 พิมพ์ *\"ถามต่อ\"* เพื่อถามคำถามถัดไป\n"
+                    .'🔚 พิมพ์ *"พอแค่นี้"* เพื่อจบรอบ';
 
                 return [
                     'action' => 'celtic_qa_prompt_resume',
-                    'message' => $header . $body,
+                    'message' => $header.$body,
                     'reading' => $reading,
                 ];
 
             default:
                 // Fallback — ถือว่าเริ่มใหม่
-                $body = "🔮 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไปค่ะ";
+                $body = '🔮 พิมพ์ *"พร้อม"* เพื่อเปิดไพ่ใบถัดไปค่ะ';
 
                 return [
                     'action' => 'celtic_pick_prompt',
-                    'message' => $header . $body,
+                    'message' => $header.$body,
                     'reading' => $reading,
                 ];
         }
@@ -1014,27 +1016,28 @@ trait CelticCrossConversationTrait
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
         $followupText = "\n\n──────────────────────\n"
-            . "🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n\n"
-            . "🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
-            . "💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
-            . "❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
-            . "🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบทำนาย เป็นที่ระลึก ✨\n"
-            . "🔚 พิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
+            ."🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n\n"
+            ."🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
+            ."💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
+            ."❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
+            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบทำนาย เป็นที่ระลึก ✨\n"
+            .'🔚 พิมพ์ *"พอแค่นี้"* เมื่อพอใจ';
 
         return [
             'action' => 'celtic_all_picked',
-            'message' => $lastCardMessage . $followupText,
+            'message' => $lastCardMessage.$followupText,
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
             // celtic_summary_image_url removed — เลื่อนไป endCelticSession
-            // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม"
-            //    ลูกค้าหลังเปิดไพ่ครบ มักงงไม่รู้ต้องทำอะไรต่อ
-            //    ปุ่มนี้เป็น UX cue — กดแล้ว bot ส่ง prompt ตัวอย่างคำถามซ้ำ
+            // 🔮 (2026-05-07) ปุ่ม "ทำนายดวงเดี๋ยวนี้" — กดแล้วทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
+            //    เดิม: "เริ่มถามคำถาม" — แค่ส่ง prompt hint ลูกค้ายังต้องพิมพ์คำถามเอง (สับสน)
+            //    ใหม่: กดแล้ว AI ทำนายพื้นฐานทุกด้าน (รัก/งาน/เงิน/สุขภาพ) จากไพ่ทันที
+            //    ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (handleCelticAwaitingQuestion handle ตามเดิม)
             'quick_replies' => [
                 [
                     'content_type' => 'text',
-                    'title' => '💬 เริ่มถามคำถาม',
-                    'payload' => 'CELTIC_START_Q',
+                    'title' => '🔮 ทำนายดวงเดี๋ยวนี้',
+                    'payload' => 'CELTIC_PREDICT_NOW',
                 ],
             ],
         ];
@@ -1053,24 +1056,20 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
-        // 💬 (2026-05-06) ลูกค้ากดปุ่ม "เริ่มถามคำถาม" — แค่ส่ง prompt hint ใหม่ ไม่ใช่คำถามจริง
-        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
-            $remainingMin = $reading->getCelticQaRemainingMinutes();
-            $timeHint = $remainingMin !== null && $remainingMin > 0
-                ? "⏳ ถามได้อีก {$remainingMin} นาที"
-                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+        // 🔮 (2026-05-07) ลูกค้ากดปุ่ม/พิมพ์ "ทำนายดวงเดี๋ยวนี้" — ทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
+        //   เดิม: "เริ่มถามคำถาม" — ส่ง prompt hint ให้ลูกค้าพิมพ์คำถามเอง (UX สับสน)
+        //   ใหม่: กดแล้ว AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
+        //   ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (path เดิมยังทำงาน)
+        if ($this->matchesExactKeyword($messageText, [
+            'ทำนายดวงเดี๋ยวนี้', 'ทำนายเดี๋ยวนี้', 'ทำนายดวง', 'ทำนายพื้นฐาน', 'ทำนายเลย',
+            'ทำนายให้หมด', 'ทำนายทุกเรื่อง',
+        ])) {
+            return $this->handleCelticPredictAll($reading);
+        }
 
-            return [
-                'action' => 'celtic_start_question_hint',
-                'message' => "💬 *เริ่มถามคำถามได้เลย*\n\n"
-                    . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ เช่น:\n\n"
-                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                    . "   • *\"งานในเดือนหน้า\"*\n"
-                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
-                    . $timeHint . "\n"
-                    . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ",
-                'reading' => $reading,
-            ];
+        // 💬 backward-compat — รองรับลูกค้าเก่าที่จำปุ่ม "เริ่มถามคำถาม" ได้ → redirect ไปทำนายเดี๋ยวนี้
+        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
+            return $this->handleCelticPredictAll($reading);
         }
 
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม
@@ -1084,12 +1083,12 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_already_in_session',
                 'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีกับแม่หมออยู่แล้วนะคะ\n\n"
-                    . "💬 พิมพ์คำถามเฉพาะที่อยากรู้มาได้เลย เช่น:\n"
-                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                    . "   • *\"งานในเดือนหน้า\"*\n"
-                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
-                    . $timeHint . "\n"
-                    . "❌ หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา",
+                    ."💬 พิมพ์คำถามเฉพาะที่อยากรู้มาได้เลย เช่น:\n"
+                    ."   • *\"ความรักช่วงนี้เป็นไง\"*\n"
+                    ."   • *\"งานในเดือนหน้า\"*\n"
+                    ."   • *\"ควรย้ายงานไหม\"*\n\n"
+                    .$timeHint."\n"
+                    .'❌ หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา',
                 'reading' => $reading,
             ];
         }
@@ -1099,7 +1098,7 @@ trait CelticCrossConversationTrait
             return [
                 'action' => 'celtic_question_too_short',
                 'message' => "✍️ คำถามสั้นเกินไป\n"
-                    . 'กรุณาพิมพ์คำถามที่ต้องการให้หมอทำนาย เช่น "ปีนี้ความรักจะเป็นอย่างไร" หรือ "ควรลาออกไหม"',
+                    .'กรุณาพิมพ์คำถามที่ต้องการให้หมอทำนาย เช่น "ปีนี้ความรักจะเป็นอย่างไร" หรือ "ควรลาออกไหม"',
                 'reading' => $reading,
             ];
         }
@@ -1128,7 +1127,7 @@ trait CelticCrossConversationTrait
 
             return [
                 'action' => 'celtic_ai_failed',
-                'message' => '⚠️ ' . ($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
+                'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
                 'reading' => $reading,
             ];
         }
@@ -1169,17 +1168,96 @@ trait CelticCrossConversationTrait
             $remainingQs = max(0, $maxQuestions - $sequence);
             $qHint = "❓ ถามได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
         } else {
-            $qHint = "❓ ถามได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
+            $qHint = '❓ ถามได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)';
         }
 
         $followupOffer = "\n\n──────────────────────\n"
-            . $timeHint . "\n"
-            . $qHint . "\n"
-            . "💬 พิมพ์คำถามถัดไปได้เลย — หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา ✨";
+            .$timeHint."\n"
+            .$qHint."\n"
+            .'💬 พิมพ์คำถามถัดไปได้เลย — หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา ✨';
 
         return [
             'action' => 'celtic_question_answered',
-            'message' => $result['response'] . $followupOffer,
+            'message' => $result['response'].$followupOffer,
+            'reading' => $reading,
+            'celtic_sequence' => $sequence,
+        ];
+    }
+
+    /**
+     * 🔮 (2026-05-07) ทำนายดวงพื้นฐานทุกเรื่องจากไพ่ทั้ง 10 ใบทันที — ไม่ต้องรอคำถาม
+     *
+     * เรียกจาก:
+     *   - ปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" (postback CELTIC_PREDICT_NOW)
+     *   - keyword "ทำนายดวงเดี๋ยวนี้" / "ทำนายเลย"
+     *
+     * Flow:
+     *   1. เช็คเงื่อนไขแบบเดียวกับ handleCelticAwaitingQuestion (time/max)
+     *   2. ใช้ sentinel "__PREDICT_ALL__" เป็น question → CelticCrossService รู้ว่าใช้ buildPredictAllPrompt
+     *   3. AI ทำนายพื้นฐานทุกเรื่อง (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่
+     *   4. ตอนเก็บลง DB → sanitize sentinel → "ทำนายพื้นฐานจากไพ่ทั้ง 10 ใบ"
+     */
+    protected function handleCelticPredictAll(FortuneReading $reading): array
+    {
+        // เช็ค time window
+        if (! $reading->canAskMoreCeltic()) {
+            return $this->endCelticSession($reading, 'time_expired');
+        }
+
+        // เช็ค max questions
+        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        if ($maxQuestions > 0 && $reading->celtic_questions_used >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached');
+        }
+
+        // ส่งให้ AI Pool — ใช้ sentinel ให้ service รู้ว่าทำนายพื้นฐาน
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
+
+        $service = app(CelticCrossService::class);
+        $result = $service->askQuestion($reading, '__PREDICT_ALL__');
+
+        if (! $result['success']) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            return [
+                'action' => 'celtic_ai_failed',
+                'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
+                'reading' => $reading,
+            ];
+        }
+
+        $reading->refresh();
+        $sequence = $result['sequence'];
+
+        // ถ้าครบ max → จบ + Grand Finale
+        if ($maxQuestions > 0 && $sequence >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached', $result['response']);
+        }
+
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+        $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $timeHint = $remainingMin !== null
+            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+            : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+        if ($maxQuestions > 0) {
+            $remainingQs = max(0, $maxQuestions - $sequence);
+            $qHint = "❓ ถามเฉพาะเรื่องได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
+        } else {
+            $qHint = '❓ ถามเฉพาะเรื่องได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)';
+        }
+
+        $followupOffer = "\n\n──────────────────────\n"
+            .$timeHint."\n"
+            .$qHint."\n"
+            ."💬 ถ้าอยากให้แม่หมอเจาะลึกเรื่องไหน — พิมพ์คำถามมาเลย\n"
+            .'🔚 หรือพิมพ์ *"พอแค่นี้"* เมื่อพอใจ ✨';
+
+        return [
+            'action' => 'celtic_question_answered',
+            'message' => $result['response'].$followupOffer,
             'reading' => $reading,
             'celtic_sequence' => $sequence,
         ];
@@ -1247,46 +1325,46 @@ trait CelticCrossConversationTrait
             $finalAnswerSection = '';
             if (! empty($aiMessage) && in_array($reason, ['max_questions_reached', 'time_expired', 'idle'], true)) {
                 $finalAnswerSection = "🎴 *คำทำนายข้อสุดท้ายของเจ้าชะตา:*\n\n"
-                    . trim($aiMessage) . "\n\n"
-                    . str_repeat('━', 17) . "\n\n";
+                    .trim($aiMessage)."\n\n"
+                    .str_repeat('━', 17)."\n\n";
             }
 
             $closingMessage = $finalAnswerSection
-                . "🌟✨ *บทสรุปสุดท้ายจากแม่หมอจันทรา* ✨🌟\n"
-                . "👑 *VIP Master Reading*\n\n"
-                . str_repeat('━', 17) . "\n\n"
-                . $grandFinale . "\n\n"
-                . str_repeat('━', 17) . "\n\n"
-                . "💎 *ขอบคุณที่ไว้วางใจแม่หมอนะคะ*\n"
-                . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ ✨";
+                ."🌟✨ *บทสรุปสุดท้ายจากแม่หมอจันทรา* ✨🌟\n"
+                ."👑 *VIP Master Reading*\n\n"
+                .str_repeat('━', 17)."\n\n"
+                .$grandFinale."\n\n"
+                .str_repeat('━', 17)."\n\n"
+                ."💎 *ขอบคุณที่ไว้วางใจแม่หมอนะคะ*\n"
+                .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ ✨';
         } else {
             // Default closings (เดิม) — ใช้เมื่อ Grand Finale skip หรือ fail
             $closingMessage = match ($reason) {
                 'time_expired' => "⏰ *เวลาคุยกับแม่หมอหมดแล้วค่ะ*\n\n"
-                    . "{$qaWindow} นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
-                    . "เพื่อไปสร้างบารมีกับเจ้าชะตาท่านอื่นต่อ ขอให้เจ้าชะตาโชคดีนะคะ 🙏✨\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
+                    ."{$qaWindow} นาทีนับจากคำทำนายแรก ผ่านไปเรียบร้อย — แม่หมอขอจบบทสนทนานี้\n"
+                    ."เพื่อไปสร้างบารมีกับเจ้าชะตาท่านอื่นต่อ ขอให้เจ้าชะตาโชคดีนะคะ 🙏✨\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ',
 
                 'idle' => "🌙 *แม่หมอเห็นว่าเจ้าชะตาเงียบไปนาน*\n\n"
-                    . "พลังงานในวงไพ่จางลงแล้ว แม่หมอขอจบบทสนทนานี้นะคะ\n"
-                    . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ 🙏✨\n\n"
-                    . "💜 พิมพ์ *\"ดูดวง\"* ได้ตลอดเมื่อพร้อมนะคะ",
+                    ."พลังงานในวงไพ่จางลงแล้ว แม่หมอขอจบบทสนทนานี้นะคะ\n"
+                    ."ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ 🙏✨\n\n"
+                    .'💜 พิมพ์ *"ดูดวง"* ได้ตลอดเมื่อพร้อมนะคะ',
 
                 'customer_said_done' => "🌟 *ขอบคุณที่ใช้บริการดูดวงไพ่ยิปซี Celtic Cross นะคะ*\n\n"
-                    . "คำทำนายเป็นแสงไฟชี้ทาง — แต่การตัดสินใจอยู่ที่เจ้าชะตาเอง 🙏\n"
-                    . "ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ นะคะ ✨\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ",
+                    ."คำทำนายเป็นแสงไฟชี้ทาง — แต่การตัดสินใจอยู่ที่เจ้าชะตาเอง 🙏\n"
+                    ."ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ นะคะ ✨\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ',
 
-                'max_questions_reached' => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
-                    . "🌟 *เจ้าชะตาถามครบ " . max(1, $maxQ) . " คำถามแล้วค่ะ*\n\n"
-                    . "แม่หมอตอบครบทุกข้อสงสัยของเจ้าชะตา 🙏✨\n"
-                    . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 💫\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",
+                'max_questions_reached' => ($aiMessage ? trim($aiMessage)."\n\n" : '')
+                    .'🌟 *เจ้าชะตาถามครบ '.max(1, $maxQ)." คำถามแล้วค่ะ*\n\n"
+                    ."แม่หมอตอบครบทุกข้อสงสัยของเจ้าชะตา 🙏✨\n"
+                    ."คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 💫\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดนะคะ',
 
-                default => ($aiMessage ? trim($aiMessage) . "\n\n" : '')
-                    . "🌟 *แม่หมอกล่าวลาเจ้าชะตา*\n\n"
-                    . "คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 🙏\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดนะคะ",
+                default => ($aiMessage ? trim($aiMessage)."\n\n" : '')
+                    ."🌟 *แม่หมอกล่าวลาเจ้าชะตา*\n\n"
+                    ."คำทำนายเป็นแสงไฟชี้ทาง — เจ้าชะตาตัดสินใจเอง 🙏\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดนะคะ',
             };
         }
 

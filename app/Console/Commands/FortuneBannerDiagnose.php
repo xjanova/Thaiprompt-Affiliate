@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Models\FortuneBanner;
 use App\Models\FortuneTellingSetting;
+use App\Services\FacebookWebhookService;
 use App\Services\FortuneBannerService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
@@ -57,6 +58,7 @@ class FortuneBannerDiagnose extends Command
         $settings = FortuneTellingSetting::getSettings();
         if (! $settings) {
             $this->error('❌ ไม่มี FortuneTellingSetting ในระบบ');
+
             return self::FAILURE;
         }
 
@@ -153,6 +155,17 @@ class FortuneBannerDiagnose extends Command
                 $this->line('  '.str_pad($ch, 9).': '.$status);
             }
             $this->newLine();
+
+            // 🆕 (2026-05-07) Per-user 551 unreachable cache — ลด log spam + skip API calls ที่ fail แน่
+            $unreachableKey = "fb_user_unreachable:{$userId}:{$today}";
+            if (Cache::has($unreachableKey)) {
+                $this->warn('🚫 user marked unreachable today (24hr window expired) — image จะถูก skip');
+                $this->line("   ล้าง: php artisan fortune:banner-diagnose --clear-cooldown={$userId}");
+            } else {
+                $this->line('🟢 user reachable status: OK (ยังไม่เคย fail วันนี้)');
+            }
+            $this->newLine();
+
             $this->line('💡 ล้าง cooldown: php artisan fortune:banner-diagnose --clear-cooldown='.$userId);
             $this->newLine();
         }
@@ -184,14 +197,15 @@ class FortuneBannerDiagnose extends Command
     protected function clearAllCooldowns(): int
     {
         $driver = config('cache.default');
-        $this->line('🗑️  Clearing ALL banner cooldowns (cache driver: ' . $driver . ')');
+        $this->line('🗑️  Clearing ALL banner cooldowns (cache driver: '.$driver.')');
 
         if ($driver === 'redis') {
             try {
-                $redis = \Illuminate\Support\Facades\Cache::store('redis')->getRedis();
-                $prefix = config('cache.prefix') . ':';
+                $redis = Cache::store('redis')->getRedis();
+                $prefix = config('cache.prefix').':';
                 $patterns = [
-                    $prefix . 'fortune_banner_sent:*',
+                    $prefix.'fortune_banner_sent:*',
+                    $prefix.'fb_user_unreachable:*',  // 🆕 (2026-05-07) per-user 551 cache
                 ];
                 $deleted = 0;
                 foreach ($patterns as $p) {
@@ -202,17 +216,20 @@ class FortuneBannerDiagnose extends Command
                     }
                 }
                 $this->info("✅ Redis: ลบ key ที่ match แล้ว: {$deleted}");
+
                 return self::SUCCESS;
             } catch (\Throwable $e) {
-                $this->error('Redis pattern delete fail: ' . $e->getMessage());
+                $this->error('Redis pattern delete fail: '.$e->getMessage());
                 $this->line('Fallback: ใช้ php artisan cache:clear แทน');
+
                 return self::FAILURE;
             }
         }
 
         // file/database driver — ไม่มี wildcard delete → แนะนำ cache:clear
-        $this->warn('⚠️  driver = ' . $driver . ' — ไม่รองรับ wildcard delete');
+        $this->warn('⚠️  driver = '.$driver.' — ไม่รองรับ wildcard delete');
         $this->line('   ใช้: php artisan cache:clear (ระวัง: ลบ cache ทั้งหมด ไม่ใช่แค่ banner)');
+
         return self::SUCCESS;
     }
 
@@ -238,39 +255,46 @@ class FortuneBannerDiagnose extends Command
         $this->line('🗑️  Cleared cooldown keys (today + legacy)');
 
         // 2. ดึง settings
-        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $settings = FortuneTellingSetting::getSettings();
         if (! ($settings->enable_dm_banner ?? false)) {
             $this->error('❌ enable_dm_banner = OFF — ต้องเปิดที่ /admin/fortune/banners ก่อน');
+
             return self::FAILURE;
         }
 
         // 3. Pick banner
-        $bannerService = new \App\Services\FortuneBannerService($settings);
+        $bannerService = new FortuneBannerService($settings);
         $banner = $bannerService->pickForChannel('welcome');
         if (! $banner) {
             $this->error('❌ pickForChannel(welcome) return null — ไม่มี active banner');
+
             return self::FAILURE;
         }
         $this->line(sprintf('🖼️  Picked banner: #%d %s', $banner->id, $banner->name));
-        $this->line('   URL: ' . $banner->image_url);
+        $this->line('   URL: '.$banner->image_url);
         $this->newLine();
 
         // 4. ส่งจริง
-        $fbService = new \App\Services\FacebookWebhookService($settings);
+        $fbService = new FacebookWebhookService($settings);
         $this->line('📤 ส่งภาพไป Facebook Messenger...');
 
         try {
-            $sent = $fbService->sendImage($userId, $banner->image_url);
+            // 🆕 (2026-05-07) skip_unreachable_cache=true → admin debug ต้องส่งแม้ user เคย fail วันนี้
+            $sent = $fbService->sendImage($userId, $banner->image_url, null, [
+                'skip_unreachable_cache' => true,
+            ]);
             if ($sent) {
                 $banner->recordSend();
                 $this->info('  ✅ ส่งสำเร็จ! ลูกค้าควรเห็นภาพในแชท');
-                $this->line('  📊 send_count = ' . ($banner->send_count + 1));
+                $this->line('  📊 send_count = '.($banner->send_count + 1));
             } else {
                 $this->error('  ❌ sendImage() return false — ดู log: storage/logs/laravel.log → grep "ส่งรูปภาพ"');
+
                 return self::FAILURE;
             }
         } catch (\Throwable $e) {
-            $this->error('  ❌ Exception: ' . $e->getMessage());
+            $this->error('  ❌ Exception: '.$e->getMessage());
+
             return self::FAILURE;
         }
 
@@ -301,6 +325,20 @@ class FortuneBannerDiagnose extends Command
                 }
             }
         }
+
+        // 🆕 (2026-05-07) ล้าง per-user 551 unreachable cache ด้วย
+        $unreachableKeys = [
+            "fb_user_unreachable:{$userId}:{$today}",
+            "fb_user_unreachable:{$userId}:{$yesterday}",
+        ];
+        foreach ($unreachableKeys as $key) {
+            if (Cache::has($key)) {
+                Cache::forget($key);
+                $cleared++;
+                $this->line("  ✅ ล้าง {$key} (551-cache)");
+            }
+        }
+
         $this->newLine();
         $this->info("ล้าง cooldown {$cleared} รายการ สำหรับ user {$userId}");
 

@@ -4,9 +4,11 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
 use App\Models\TarotCard;
+use App\Services\CelticCrossService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneLocaleService;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -38,7 +40,7 @@ trait FreeCardConversationTrait
      * Dispatch handler สำหรับ free card states
      * เรียกจาก main dispatch ใน FortuneConversationService
      *
-     * @return array|null  null ถ้าไม่ใช่ free state — ให้ caller ส่งต่อ default handler
+     * @return array|null null ถ้าไม่ใช่ free state — ให้ caller ส่งต่อ default handler
      */
     protected function handleFreeCardState(FortuneReading $reading, string $messageText): ?array
     {
@@ -235,10 +237,10 @@ trait FreeCardConversationTrait
         //   ถาม customer ก่อนจั่วไพ่ ถ้า message ไม่ใช่คำถามที่ทำนายได้
         //   เช็ค Cache pending count — ถ้าถามไป 2 ครั้งแล้ว → proceed (ไม่ loop ถาวร)
         $pendingCacheKey = "fortune:free_card_ask:{$platform}:{$platformUserId}";
-        $askedCount = (int) \Illuminate\Support\Facades\Cache::get($pendingCacheKey, 0);
+        $askedCount = (int) Cache::get($pendingCacheKey, 0);
 
         if (! $this->isSubstantiveQuestion($customerMessage) && $askedCount < 2) {
-            \Illuminate\Support\Facades\Cache::put($pendingCacheKey, $askedCount + 1, now()->addMinutes(30));
+            Cache::put($pendingCacheKey, $askedCount + 1, now()->addMinutes(30));
 
             Log::info('FreeCard: ขอ customer พิมพ์คำถามก่อนทำนาย', [
                 'platform' => $platform,
@@ -250,20 +252,20 @@ trait FreeCardConversationTrait
             $greetName = ($name && $name !== 'คุณ') ? "คุณ{$name}" : 'เจ้าชะตา';
             $askMessage = FortuneLocaleService::lo(
                 "🌙 *แม่หมอจับจิต{$greetName}แล้ว — แต่ขอถามนิดนะคะ*\n\n"
-                    . "💬 ตอนนี้เจ้าชะตา *อยากให้แม่หมอทำนายเรื่องอะไร* คะ?\n"
-                    . "พิมพ์คำถามมาให้แม่หมอ เช่น:\n"
-                    . "  • \"ความรักช่วงนี้เป็นไง\"\n"
-                    . "  • \"งานในเดือนหน้า ควรเปลี่ยนไหม\"\n"
-                    . "  • \"การเงินช่วงนี้ติดขัด ต้องทำยังไง\"\n"
-                    . "  • \"คนที่คิดถึง เขายังคิดถึงเราไหม\"\n\n"
-                    . "✨ ยิ่งเล่ารายละเอียดเยอะ — ไพ่ที่จิตเลือกจะแม่นเป๊ะค่ะ 🃏",
+                    ."💬 ตอนนี้เจ้าชะตา *อยากให้แม่หมอทำนายเรื่องอะไร* คะ?\n"
+                    ."พิมพ์คำถามมาให้แม่หมอ เช่น:\n"
+                    ."  • \"ความรักช่วงนี้เป็นไง\"\n"
+                    ."  • \"งานในเดือนหน้า ควรเปลี่ยนไหม\"\n"
+                    ."  • \"การเงินช่วงนี้ติดขัด ต้องทำยังไง\"\n"
+                    ."  • \"คนที่คิดถึง เขายังคิดถึงเราไหม\"\n\n"
+                    .'✨ ยิ่งเล่ารายละเอียดเยอะ — ไพ่ที่จิตเลือกจะแม่นเป๊ะค่ะ 🃏',
                 "🌙 *ແມ່ໝໍຈັບຈິດ{$greetName}ແລ້ວ — ແຕ່ຂໍຖາມໜ້ອຍເດີ*\n\n"
-                    . "💬 ຕອນນີ້ເຈົ້າຊາຕາ *ຢາກໃຫ້ແມ່ໝໍທຳນາຍເລື່ອງຫຍັງ* ເດີ?\n"
-                    . "ພິມຄຳຖາມມາໃຫ້ແມ່ໝໍ ເຊັ່ນ:\n"
-                    . "  • \"ຄວາມຮັກຊ່ວງນີ້ເປັນຫຍັງ\"\n"
-                    . "  • \"ວຽກໃນເດືອນໜ້າ ຄວນປ່ຽນບໍ່\"\n"
-                    . "  • \"ການເງິນຊ່ວງນີ້ຕິດຂັດ ຕ້ອງເຮັດແນວໃດ\"\n\n"
-                    . "✨ ຍິ່ງເລົ່າລາຍລະອຽດເຍາະ — ໄພ່ທີ່ຈິດເລືອກຈະແມ່ນເປັະເດີ 🃏"
+                    ."💬 ຕອນນີ້ເຈົ້າຊາຕາ *ຢາກໃຫ້ແມ່ໝໍທຳນາຍເລື່ອງຫຍັງ* ເດີ?\n"
+                    ."ພິມຄຳຖາມມາໃຫ້ແມ່ໝໍ ເຊັ່ນ:\n"
+                    ."  • \"ຄວາມຮັກຊ່ວງນີ້ເປັນຫຍັງ\"\n"
+                    ."  • \"ວຽກໃນເດືອນໜ້າ ຄວນປ່ຽນບໍ່\"\n"
+                    ."  • \"ການເງິນຊ່ວງນີ້ຕິດຂັດ ຕ້ອງເຮັດແນວໃດ\"\n\n"
+                    .'✨ ຍິ່ງເລົ່າລາຍລະອຽດເຍາະ — ໄພ່ທີ່ຈິດເລືອກຈະແມ່ນເປັະເດີ 🃏'
             );
 
             return [
@@ -274,7 +276,7 @@ trait FreeCardConversationTrait
         }
 
         // ✅ ผ่าน gate — clear pending counter
-        \Illuminate\Support\Facades\Cache::forget($pendingCacheKey);
+        Cache::forget($pendingCacheKey);
 
         // ⚠️ ปิด conversation เก่า (กัน orphan state)
         $this->closeAllActiveConversations($platformUserId);
@@ -334,10 +336,12 @@ trait FreeCardConversationTrait
         // 3️⃣ เรียก AI ทำนาย
         try {
             $deepPrice = (int) $this->getDeepReadingPrice();
-            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            $celticPrice = (int) app(CelticCrossService::class)->getPrice();
             $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
-            $aiService = new FortuneAIService($this->settings);
+            // 🆕 (2026-05-07) Free Card → request 'free_card' purpose ตอน acquire key
+            //   admin ตั้ง key purpose='free_card' = สงวนเฉพาะทำนายฟรี (ไม่ปนกับ paid prediction)
+            $aiService = new FortuneAIService($this->settings, 'free_card');
             $result = $aiService->generateFreeCardReading(
                 card: $card,
                 userName: $name,
@@ -353,7 +357,7 @@ trait FreeCardConversationTrait
             // 🩹 (2026-05-05) ขั้นต่ำ 600 ตัวอักษร — prompt ใหม่ขอ 1500-2000 chars
             //   user spec: "ทำนายฟรีสั้นไป" → reject ถ้า AI ตอบสั้นเกิน
             if ($response === '' || mb_strlen($response) < 600) {
-                throw new Exception('AI ตอบกลับสั้นเกินไป (' . mb_strlen($response) . ' ตัวอักษร — ต้อง ≥ 600)');
+                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร — ต้อง ≥ 600)');
             }
         } catch (\Throwable $e) {
             Log::error('FreeCard: AI ทำนายล้มเหลว', [
@@ -369,9 +373,9 @@ trait FreeCardConversationTrait
                 'action' => 'free_card_ai_failed',
                 'message' => FortuneLocaleService::lo(
                     "🙏 ขออภัยค่ะ แม่หมอเชื่อมพลังจักรวาลไม่ติดในจังหวะนี้\n"
-                        . "ลองทักมาใหม่ในอีก 1-2 นาทีนะคะ — สิทธิ์ฟรียังไม่ถูกใช้ค่ะ ✨",
+                        .'ลองทักมาใหม่ในอีก 1-2 นาทีนะคะ — สิทธิ์ฟรียังไม่ถูกใช้ค่ะ ✨',
                     "🙏 ຂໍອະໄພເດີ ແມ່ໝໍເຊື່ອມພະລັງຈັກກະວານບໍ່ຕິດໃນຈັງຫວະນີ້\n"
-                        . "ລອງທັກມາໃໝ່ໃນອີກ 1-2 ນາທີເດີ — ສິດທິຟຣີຍັງບໍ່ໄດ້ໃຊ້ ✨"
+                        .'ລອງທັກມາໃໝ່ໃນອີກ 1-2 ນາທີເດີ — ສິດທິຟຣີຍັງບໍ່ໄດ້ໃຊ້ ✨'
                 ),
                 'reading' => $reading,
             ];
@@ -389,7 +393,7 @@ trait FreeCardConversationTrait
 
         Log::info('FreeCard: ทำนายสำเร็จ → STATUS_FREE_PREDICTED', [
             'reading_id' => $reading->id,
-            'card' => $card['card_name_th'] . ($card['is_reversed'] ? ' (กลับหัว)' : ' (ตั้งตรง)'),
+            'card' => $card['card_name_th'].($card['is_reversed'] ? ' (กลับหัว)' : ' (ตั้งตรง)'),
             'response_len' => mb_strlen($response),
             'provider' => $result['provider'] ?? '?',
             'tokens' => $result['tokens_used'] ?? 0,
@@ -408,13 +412,13 @@ trait FreeCardConversationTrait
             '🃏✨ *ໄພ່ທີ່ຈິດເຈົ້າຊາຕາເລືອກ:*'
         );
         $cardHeader = "{$cardHeaderLabel}\n"
-            . "*{$card['card_name_th']}* {$orientation}\n"
-            . "({$card['card_name_en']})\n\n"
-            . "━━━━━━━━━━━━━━━━━\n\n";
+            ."*{$card['card_name_th']}* {$orientation}\n"
+            ."({$card['card_name_en']})\n\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
 
         return [
             'action' => 'free_card_drawn',
-            'message' => $cardHeader . $response,
+            'message' => $cardHeader.$response,
             'reading' => $reading,
             'tarot_image_url' => $card['image_url'],
             'free_card_data' => $card,
@@ -424,7 +428,7 @@ trait FreeCardConversationTrait
     /**
      * จั่วไพ่ 1 ใบ — สุ่มจากทั้งสำรับ + 50/50 reversed
      *
-     * @return array  ['card_id', 'card_name_th', 'card_name_en', 'is_reversed', 'meaning', 'image_url']
+     * @return array ['card_id', 'card_name_th', 'card_name_en', 'is_reversed', 'meaning', 'image_url']
      *
      * @throws Exception เมื่อไม่พบไพ่ในระบบ
      */
@@ -458,7 +462,7 @@ trait FreeCardConversationTrait
     {
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
-        $celticPriceInt = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
         // ❌ ปฏิเสธ / ไม่สนใจ — ส่งคำลา + ปรัชญา (ไม่ฮาร์ดเซล)
@@ -538,10 +542,10 @@ trait FreeCardConversationTrait
 
         return [
             'action' => 'free_card_chitchat',
-            'message' => $hintLine . "\n\n"
-                . $deepLine . "\n"
-                . ($celticLine ? $celticLine . "\n" : '')
-                . $declineLine,
+            'message' => $hintLine."\n\n"
+                .$deepLine."\n"
+                .($celticLine ? $celticLine."\n" : '')
+                .$declineLine,
             'reading' => $reading,
         ];
     }
@@ -577,10 +581,10 @@ trait FreeCardConversationTrait
         $reading->update(['conversation_status' => FortuneReading::STATUS_FREE_DECLINED]);
 
         // ประกอบข้อความ
-        $message = $goodbyeText . "\n\n"
-            . "━━━━━━━━━━━━━━━━━\n\n"
-            . "💭 " . $quoteText . "\n\n"
-            . "🙏";
+        $message = $goodbyeText."\n\n"
+            ."━━━━━━━━━━━━━━━━━\n\n"
+            .'💭 '.$quoteText."\n\n"
+            .'🙏';
 
         Log::info('FreeCard: ลูกค้าปฏิเสธ → ส่งคำลา + ปรัชญา', [
             'reading_id' => $reading->id,

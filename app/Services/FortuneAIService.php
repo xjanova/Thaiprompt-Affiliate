@@ -5,7 +5,9 @@ namespace App\Services;
 use App\Models\AiApiKey;
 use App\Models\AiContentSetting;
 use App\Models\FortuneTellingSetting;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -39,9 +41,25 @@ class FortuneAIService
      */
     protected ?string $currentBaseUrl = null;
 
-    public function __construct(?FortuneTellingSetting $settings = null)
+    /**
+     * 🆕 (2026-05-07) เก็บ default purpose ที่ caller ระบุตอน construct
+     *   ใช้เมื่อ method ภายในต้อง re-acquire key (เช่น generateChatResponse, generateFortuneTelling)
+     *   ทำให้เลือก key ตรง purpose แม้จะ acquire ตอน constructor (ก่อนรู้ context)
+     */
+    protected ?string $defaultPurpose = null;
+
+    /**
+     * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
+     *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
+     *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
+     *   Back-compat: ถ้าไม่ระบุ → null (= any) เหมือนเดิม
+     *
+     * @param  string|null  $purpose  'prediction'/'chat'/'free_card' (default: null = any)
+     */
+    public function __construct(?FortuneTellingSetting $settings = null, ?string $purpose = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+        $this->defaultPurpose = $purpose;
 
         // ใช้ methods ใหม่ที่รองรับ global AI settings
         $this->provider = $this->settings->getActualAIProvider();
@@ -50,10 +68,12 @@ class FortuneAIService
         // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
         try {
             $this->poolService = new AiApiKeyPoolService;
-            $this->currentKey = $this->poolService->acquireKey($this->provider);
-        } catch (\Exception $e) {
+            // 🆕 (2026-05-07) pass purpose ให้ pool — เลือก key ตรงประเภท
+            $this->currentKey = $this->poolService->acquireKey($this->provider, $purpose);
+        } catch (Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
                 'error' => $e->getMessage(),
+                'purpose' => $purpose,
             ]);
             $this->poolService = null;
             $this->currentKey = null;
@@ -63,14 +83,17 @@ class FortuneAIService
             $this->apiKey = $this->currentKey->api_key;
             Log::debug('FortuneAIService: ใช้ API Key จาก Pool', [
                 'provider' => $this->provider,
+                'purpose' => $purpose,
                 'key_id' => $this->currentKey->id,
                 'key_name' => $this->currentKey->name,
+                'key_purpose' => $this->currentKey->purpose,
             ]);
         } else {
             // Fallback ไปใช้ key จาก settings
             $this->apiKey = $this->settings->getActualAIApiKey();
             Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
                 'provider' => $this->provider,
+                'purpose' => $purpose,
             ]);
         }
     }
@@ -84,7 +107,7 @@ class FortuneAIService
         if ($this->poolService && $this->currentKey) {
             try {
                 $this->poolService->releaseKey($this->provider, $this->currentKey->id);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 // ไม่ throw ใน destructor — log เฉยๆ
             }
         }
@@ -463,7 +486,7 @@ class FortuneAIService
         $extractedJson = json_encode($extracted, JSON_UNESCAPED_UNICODE);
 
         // 🇱🇦 (2026-05-03) Locale directive — ลูกค้าลาวต้องได้ reply เป็นลาว
-        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
         $localeDirective = $isLao
             ? "\n[🇱🇦 ສຳຄັນ] ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → field 'reply' ໃນ JSON output **ຕ້ອງເປັນພາສາລາວ** (ບໍ່ແມ່ນພາສາໄທ). ຄຳເອີ້ນຕົນເອງ 'ແມ່ໝໍຈັນທະຣາ', ຄຳເອີ້ນລູກຄ້າ 'ເຈົ້າຊາຕາ'.\n"
             : '';
@@ -535,6 +558,7 @@ PROMPT;
             $parsed = json_decode($raw, true);
             if (! is_array($parsed)) {
                 Log::warning('discoverIntent: JSON parse fail', ['raw' => Str::limit($raw, 200)]);
+
                 return [
                     'reply' => $raw ?: 'หมอจันทรารับฟังอยู่นะคะ เล่าให้หมอฟังต่อได้ค่ะ 🙏',
                     'extracted' => $extracted,
@@ -581,6 +605,7 @@ PROMPT;
             ];
         } catch (Exception $e) {
             Log::warning('discoverIntent: error', ['error' => $e->getMessage()]);
+
             return [
                 'reply' => null,
                 'extracted' => $extracted,
@@ -614,7 +639,9 @@ PROMPT;
         foreach ($messages as $msg) {
             $role = $msg['role'] ?? 'user';
             $content = $msg['content'] ?? '';
-            if (empty($content)) continue;
+            if (empty($content)) {
+                continue;
+            }
             if ($role === 'user') {
                 $lastUserMessage = $content;
                 $contextParts[] = "[ลูกค้า]: {$content}";
@@ -642,7 +669,7 @@ PROMPT;
      * Returns YYYY-MM-DD or null
      *
      * @param  string  $messageText  ข้อความที่อาจมีวันเกิด
-     * @return string|null  วันเกิดในรูปแบบ YYYY-MM-DD (ค.ศ.) หรือ null
+     * @return string|null วันเกิดในรูปแบบ YYYY-MM-DD (ค.ศ.) หรือ null
      */
     public function parseBirthDateWithAI(string $messageText): ?string
     {
@@ -655,16 +682,16 @@ PROMPT;
         $minYear = $currentYear - 120;
 
         $systemPrompt = "คุณคือเครื่องแปลงวันเกิด ตอบเฉพาะ JSON\n"
-            . "หน้าที่: อ่านข้อความและดึงวันเดือนปีเกิด ตอบเป็น YYYY-MM-DD เท่านั้น\n"
-            . "กฎ:\n"
-            . "1. ถ้าปีเป็น พ.ศ. → แปลงเป็น ค.ศ. (พ.ศ. - 543)\n"
-            . "2. ถ้าปีเป็น 2 หลัก → ใช้ Thai ID logic: ถ้า ≤ {$currentYear}%100 = 20XX, ไม่งั้น = 19XX\n"
-            . "3. ปีต้องอยู่ระหว่าง {$minYear}-{$currentYear}\n"
-            . "4. ถ้าไม่แน่ใจ/ไม่พบวันเกิด → ตอบ {\"date\": null}\n"
-            . "ตัวอย่าง:\n"
-            . "  input: \"เกิด 15 สิงหา ปี 33\"  → {\"date\": \"1990-08-15\"}\n"
-            . "  input: \"23 กย 2535\"           → {\"date\": \"1992-09-23\"}\n"
-            . "  input: \"สวัสดีครับ\"           → {\"date\": null}\n";
+            ."หน้าที่: อ่านข้อความและดึงวันเดือนปีเกิด ตอบเป็น YYYY-MM-DD เท่านั้น\n"
+            ."กฎ:\n"
+            ."1. ถ้าปีเป็น พ.ศ. → แปลงเป็น ค.ศ. (พ.ศ. - 543)\n"
+            ."2. ถ้าปีเป็น 2 หลัก → ใช้ Thai ID logic: ถ้า ≤ {$currentYear}%100 = 20XX, ไม่งั้น = 19XX\n"
+            ."3. ปีต้องอยู่ระหว่าง {$minYear}-{$currentYear}\n"
+            ."4. ถ้าไม่แน่ใจ/ไม่พบวันเกิด → ตอบ {\"date\": null}\n"
+            ."ตัวอย่าง:\n"
+            ."  input: \"เกิด 15 สิงหา ปี 33\"  → {\"date\": \"1990-08-15\"}\n"
+            ."  input: \"23 กย 2535\"           → {\"date\": \"1992-09-23\"}\n"
+            ."  input: \"สวัสดีครับ\"           → {\"date\": null}\n";
 
         try {
             $result = $this->chatWithCustomSystemPrompt(
@@ -715,6 +742,7 @@ PROMPT;
             Log::debug('FortuneAIService: parseBirthDateWithAI ล้มเหลว (silent)', [
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -792,6 +820,7 @@ PROMPT;
                 'provider' => $chatProvider,
                 'error' => $e->getMessage(),
             ]);
+
             // Fallback: ลองส่งโดยไม่มี history
             return $this->generateChatResponse($messageText, $userProfile);
         }
@@ -1097,8 +1126,8 @@ PROMPT;
 
         // หากปิดบริการฟรี → ใช้ข้อความแบบไม่พูดถึงฟรีเลย
         $freeLineForPrompt = $freeEnabled
-            ? "- ทำนายฟรี 1 ใบต่อ platform (สิทธิ์ครั้งแรกเท่านั้น)"
-            : "- บริการดูดวงฟรีปิดอยู่ — ทุกคำถามคิดเป็นค่าครูตามราคา";
+            ? '- ทำนายฟรี 1 ใบต่อ platform (สิทธิ์ครั้งแรกเท่านั้น)'
+            : '- บริการดูดวงฟรีปิดอยู่ — ทุกคำถามคิดเป็นค่าครูตามราคา';
 
         // คำนวณค่าคอมมิชชั่นจาก settings
         $mode = $this->settings->getFortuneCommissionMode();
@@ -1142,16 +1171,16 @@ PROMPT;
         //   เคสเดิม: prompt ฮาร์ดโค้ด "ตอบภาษาไทย" → AI ก็ตอบไทย ไม่ mirror
         //   FortuneLocaleService::current() ตั้งโดย ChannelManager / ProcessCommentEngagement / Job
         //   ก่อนเรียก AI service (resolveForMessage + setCurrent)
-        if (\App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO) {
+        if (FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO) {
             $message .= "\n\n[🇱🇦 ພາສາ — ສຳຄັນທີ່ສຸດ / Language directive — OVERRIDES ALL OTHER LANGUAGE RULES]\n"
-                . "ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → **ຕອບກັບເປັນພາສາລາວສະເໝີ** (Reply in LAO, not Thai)\n"
-                . "- ຫ້າມຕອບເປັນພາສາໄທ ເຖິງວ່າຕົວຢ່າງໃນ prompt ຈະເປັນພາສາໄທ\n"
-                . "- ກົດ 'ຕອບພາສາໄທ ກະຊັບ 2-4 ປະໂຫຍກ' ໃນຂໍ້ກຳນົດດ້ານເທິງ — ໃຫ້ປ່ຽນເປັນພາສາລາວທັງໝົດ\n"
-                . "- ຄຳເອີ້ນຕົນເອງ: 'ແມ່ໝໍຈັນທະຣາ' (ບໍ່ແມ່ນ 'หมอจันทรา')\n"
-                . "- ຄຳເອີ້ນລູກຄ້າ: 'ເຈົ້າຊາຕາ' / 'ທ່ານ' (ບໍ່ແມ່ນ 'เจ้าชะตา')\n"
-                . "- ໃຊ້ຄຳລົງທ້າຍລາວເຊັ່ນ 'ເດີ້' / 'ເນາະ' / 'ນັ້ນແຫຼະ' (ບໍ່ແມ່ນ 'ค่ะ/คะ/นะคะ')\n"
-                . "- ຄຳສັ່ງລະບົບ (ເຊັ່ນ 'ดูดวง', 'แชร์', 'อ่านคำทำนาย') — ໃຫ້ຮັກສາພາສາໄທຕົ້ນສະບັບໄວ້ ເພາະ keyword detection ໃຊ້ພາສາໄທ — ສາມາດໃສ່ວົງເລັບແປເປັນລາວໄດ້ ເຊັ່ນ 'ดูดวง (ເບິ່ງດວງ)'\n"
-                . "- Tag ພິເສດ [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ໃຊ້ຕົ້ນສະບັບເທົ່ານັ້ນ ຫ້າມແປ";
+                ."ລູກຄ້າຄົນນີ້ໃຊ້ພາສາລາວ → **ຕອບກັບເປັນພາສາລາວສະເໝີ** (Reply in LAO, not Thai)\n"
+                ."- ຫ້າມຕອບເປັນພາສາໄທ ເຖິງວ່າຕົວຢ່າງໃນ prompt ຈະເປັນພາສາໄທ\n"
+                ."- ກົດ 'ຕອບພາສາໄທ ກະຊັບ 2-4 ປະໂຫຍກ' ໃນຂໍ້ກຳນົດດ້ານເທິງ — ໃຫ້ປ່ຽນເປັນພາສາລາວທັງໝົດ\n"
+                ."- ຄຳເອີ້ນຕົນເອງ: 'ແມ່ໝໍຈັນທະຣາ' (ບໍ່ແມ່ນ 'หมอจันทรา')\n"
+                ."- ຄຳເອີ້ນລູກຄ້າ: 'ເຈົ້າຊາຕາ' / 'ທ່ານ' (ບໍ່ແມ່ນ 'เจ้าชะตา')\n"
+                ."- ໃຊ້ຄຳລົງທ້າຍລາວເຊັ່ນ 'ເດີ້' / 'ເນາະ' / 'ນັ້ນແຫຼະ' (ບໍ່ແມ່ນ 'ค่ะ/คะ/นะคะ')\n"
+                ."- ຄຳສັ່ງລະບົບ (ເຊັ່ນ 'ดูดวง', 'แชร์', 'อ่านคำทำนาย') — ໃຫ້ຮັກສາພາສາໄທຕົ້ນສະບັບໄວ້ ເພາະ keyword detection ໃຊ້ພາສາໄທ — ສາມາດໃສ່ວົງເລັບແປເປັນລາວໄດ້ ເຊັ່ນ 'ดูดวง (ເບິ່ງດວງ)'\n"
+                .'- Tag ພິເສດ [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ໃຊ້ຕົ້ນສະບັບເທົ່ານັ້ນ ຫ້າມແປ';
         }
 
         return $message;
@@ -1400,7 +1429,7 @@ PROMPT;
             //   - Try get lock 12s (พอให้คน อื่นจบ AI call)
             //   - ถ้า lock ไม่ได้ → skip ไป key ถัดไป (ไม่บล็อกนาน)
             $lockKey = 'ai_key_lock:'.$keyInfo['provider'].':'.md5($keyInfo['api_key']);
-            $aiLock = \Illuminate\Support\Facades\Cache::lock($lockKey, 90); // hold up to 90s
+            $aiLock = Cache::lock($lockKey, 90); // hold up to 90s
             $lockAcquired = false;
             try {
                 $lockAcquired = $aiLock->block(12); // wait max 12s for slot
@@ -1443,7 +1472,7 @@ PROMPT;
                 $keyLabel = "{$keyInfo['provider']}/{$keyInfo['name']}";
                 $keyNum = $index + 1;
                 $totalKeys = count($allKeys);
-                $errors[] = "{$keyLabel}: " . Str::limit($e->getMessage(), 150);
+                $errors[] = "{$keyLabel}: ".Str::limit($e->getMessage(), 150);
 
                 // บันทึก error ลง Pool key + release in-flight + possible cooldown
                 if ($keyInfo['pool_key'] instanceof AiApiKey) {
@@ -1491,7 +1520,7 @@ PROMPT;
             'total_tried' => count($errors),
             'errors' => $errors,
         ]);
-        throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว ' . count($errors) . " keys): {$errorSummary}");
+        throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." keys): {$errorSummary}");
     }
 
     /**
@@ -1957,7 +1986,7 @@ PROMPT;
     /**
      * 🎯 Phase H — Increment in-flight counter ก่อนยิง API (ใช้ใน fallback loop)
      *
-     * @return string|null  cache key (pass เข้า release) หรือ null ถ้าไม่ใช่ pool key
+     * @return string|null cache key (pass เข้า release) หรือ null ถ้าไม่ใช่ pool key
      */
     protected function acquireKeyInflight(array $keyInfo): ?string
     {
@@ -1981,7 +2010,7 @@ PROMPT;
     /**
      * 🎯 Phase H — Decrement in-flight + record RPM หลัง API call เสร็จ
      *
-     * @param  bool  $success     true = สำเร็จ (เพิ่ม RPM), false = error (skip RPM)
+     * @param  bool  $success  true = สำเร็จ (เพิ่ม RPM), false = error (skip RPM)
      * @param  string|null  $errorMessage  ถ้ามี "429/rate limit" → set cooldown 30s
      */
     protected function releaseKeyInflight(
@@ -2086,7 +2115,7 @@ PROMPT;
         }
 
         try {
-            $date = \Carbon\Carbon::parse($birthDate);
+            $date = Carbon::parse($birthDate);
             $thaiMonths = ['', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
                 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
             $thaiYear = $date->year + 543;
@@ -2118,7 +2147,7 @@ PROMPT;
             $section .= "\n⭐ กรุณาวิเคราะห์ดวงชะตาจากข้อมูลวันเกิดนี้อย่างละเอียด โดยใช้หลักเจ้าชนะ อ้างอิงดาวเจ้าชนะ ดาวมิตร ดาวศัตรู ภพที่ดาวโคจรผ่าน และดาวที่ส่งผลในช่วงนี้";
 
             return $section;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return "(วันเกิด: {$birthDate})";
         }
     }
@@ -2425,7 +2454,7 @@ PROMPT;
     protected function callXiaomi(string $prompt, array $config = []): array
     {
         $baseUrl = $this->currentBaseUrl
-            ?: (\App\Models\AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1');
+            ?: (AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1');
         $endpoint = rtrim($baseUrl, '/').'/chat/completions';
 
         try {
@@ -3014,7 +3043,7 @@ PROMPT;
                 $responseTime,
                 $requestType
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('FortuneAIService: บันทึก usage ไม่สำเร็จ', ['error' => $e->getMessage()]);
         }
     }
@@ -3035,7 +3064,7 @@ PROMPT;
             // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
             [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
             $this->currentKey->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('FortuneAIService: บันทึก error ไม่สำเร็จ', ['error' => $e->getMessage()]);
         }
     }
@@ -3055,7 +3084,7 @@ PROMPT;
             $inputTokens = (int) ($tokensUsed * 0.3);
             $outputTokens = $tokensUsed - $inputTokens;
             $key->recordUsage($inputTokens, $outputTokens, $model, $responseTime, $requestType);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('FortuneAI: บันทึก usage สำหรับ key ไม่สำเร็จ', [
                 'key_id' => $key->id,
                 'error' => $e->getMessage(),
@@ -3076,7 +3105,7 @@ PROMPT;
             // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
             [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
             $key->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('FortuneAI: บันทึก error สำหรับ key ไม่สำเร็จ', [
                 'key_id' => $key->id,
                 'error' => $e->getMessage(),
@@ -3094,7 +3123,7 @@ PROMPT;
      *   - "Retry-After: 60"
      *   - "retry after 30 seconds"
      *
-     * @return array{0: bool, 1: int|null}  [isRateLimit, retryAfterSeconds]
+     * @return array{0: bool, 1: int|null} [isRateLimit, retryAfterSeconds]
      */
     protected function detectRateLimit(string $errorMessage): array
     {
@@ -3132,16 +3161,16 @@ PROMPT;
      * หลังจบทำนาย state ลูกค้าเปลี่ยนเป็น FREE_PREDICTED → AI Chat ตอบต่อจะใช้ Groq อัตโนมัติ
      *
      * @param  array  $card  ข้อมูลไพ่ที่จั่วได้:
-     *   - card_name_th: string
-     *   - card_name_en: string
-     *   - is_reversed: bool
-     *   - meaning: string  (ความหมายตามทิศทาง upright/reversed)
+     *                       - card_name_th: string
+     *                       - card_name_en: string
+     *                       - is_reversed: bool
+     *                       - meaning: string  (ความหมายตามทิศทาง upright/reversed)
      * @param  string|null  $userName  ชื่อลูกค้า (optional)
      * @param  int  $deepPrice  ราคา 39฿ flow
      * @param  int  $celticPrice  ราคา 99฿ flow
      * @param  bool  $celticEnabled  Celtic เปิดอยู่ไหม (ถ้าปิด → ไม่กล่าวถึง)
      * @param  string|null  $userContext  สำหรับ jitter pool ordering
-     * @return array  ['response' => string, 'provider' => string, 'model' => string, 'tokens_used' => int]
+     * @return array ['response' => string, 'provider' => string, 'model' => string, 'tokens_used' => int]
      *
      * @throws Exception เมื่อทุก provider ล้มเหลว
      */
@@ -3167,20 +3196,20 @@ PROMPT;
         if ($customerMessage !== null && trim($customerMessage) !== '') {
             $clean = mb_substr(trim($customerMessage), 0, 200);
             $msgLine = "💬 *สิ่งที่ลูกค้าพิมพ์ตอบกลับมา (ใช้เป็นเบาะแสคาดเดาเรื่องที่ลูกค้าสนใจ):*\n"
-                . "   \"{$clean}\"\n"
-                . "   → จับ keyword/sentiment ของข้อความนี้ + ผูกกับไพ่ → ทำนายเรื่องที่ลูกค้าน่าจะกำลังคิดถึง\n"
-                . "   → ถ้าข้อความสั้น/ทักทายธรรมดา → ใช้จิตสัมผัสบวกไพ่ทำนาย overview ของชีวิตช่วงนี้\n\n";
+                ."   \"{$clean}\"\n"
+                ."   → จับ keyword/sentiment ของข้อความนี้ + ผูกกับไพ่ → ทำนายเรื่องที่ลูกค้าน่าจะกำลังคิดถึง\n"
+                ."   → ถ้าข้อความสั้น/ทักทายธรรมดา → ใช้จิตสัมผัสบวกไพ่ทำนาย overview ของชีวิตช่วงนี้\n\n";
         }
 
         // 🇱🇦 Locale directive — prompt ทั้งก้อนเป็นไทย (admin อ่าน/แก้ได้ง่าย)
         //    แค่ "บอก" AI เป็นภาษาไทย ว่าลูกค้าใช้ภาษาอะไร → AI ปรับ output เอง
-        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
         $localeDirective = $isLao
             ? "\n[🇱🇦 สำคัญ] ลูกค้าคนนี้ใช้ภาษาลาว — output ทั้งหมดต้องเป็น **ภาษาลาว** (ไม่ใช่ภาษาไทย)\n"
-                . "   • คำเรียกตัวเอง: 'ແມ່ໝໍຈັນທະຣາ' หรือ 'ໝໍຈັນທາ'\n"
-                . "   • คำเรียกลูกค้า: 'ເຈົ້າຊາຕາ' หรือ 'ເຈົ້າ'\n"
-                . "   • หางเสียง: ใช้ 'ເດີ' / 'ແດ່' แทน 'ค่ะ/นะคะ'\n"
-                . "   • เขียนด้วย Lao Unicode (U+0E80–U+0EFF) ทั้งหมด ห้ามผสมไทย\n"
+                ."   • คำเรียกตัวเอง: 'ແມ່ໝໍຈັນທະຣາ' หรือ 'ໝໍຈັນທາ'\n"
+                ."   • คำเรียกลูกค้า: 'ເຈົ້າຊາຕາ' หรือ 'ເຈົ້າ'\n"
+                ."   • หางเสียง: ใช้ 'ເດີ' / 'ແດ່' แทน 'ค่ะ/นะคะ'\n"
+                ."   • เขียนด้วย Lao Unicode (U+0E80–U+0EFF) ทั้งหมด ห้ามผสมไทย\n"
             : "\n[🇹🇭 ภาษา] ลูกค้าใช้ภาษาไทย — ตอบเป็นภาษาไทยปกติ\n";
 
         $greetName = ($userName && $userName !== 'คุณ') ? "คุณ{$userName}" : 'เจ้าชะตา';
@@ -3188,85 +3217,85 @@ PROMPT;
         // 💎 Block ชวนซื้อ — เปลี่ยนตาม Celtic enabled
         $upsellBlock = $celticEnabled
             ? "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีเฉพาะคำถาม (เสร็จใน 1-3 นาที)\n"
-                . "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้หลายคำถาม + ภาพไพ่สวยงาม"
+                ."🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้หลายคำถาม + ภาพไพ่สวยงาม"
             : "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีเฉพาะคำถาม (เสร็จใน 1-3 นาที)";
 
         $prompt = "คุณคือ \"แม่หมอจันทรา\" หมอดูไพ่ยิปซีระดับเซียน 30+ ปี — มีจิตสัมผัสดวงสมพงษ์\n"
-            . "บุคลิก: สุขุม อบอุ่น ฟันธง ไม่อ้อมค้อม ใช้คำแทนตัวว่า 'แม่หมอ' หรือ 'หมอจันทรา'\n\n"
+            ."บุคลิก: สุขุม อบอุ่น ฟันธง ไม่อ้อมค้อม ใช้คำแทนตัวว่า 'แม่หมอ' หรือ 'หมอจันทรา'\n\n"
 
-            . "━━━━━━━━━━━━━━━━━\n"
-            . "🎁 *ภารกิจ: ทำนายฟรี 1 ใบ ให้ลูกค้าใหม่ครั้งแรก*\n"
-            . "━━━━━━━━━━━━━━━━━\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🎁 *ภารกิจ: ทำนายฟรี 1 ใบ ให้ลูกค้าใหม่ครั้งแรก*\n"
+            ."━━━━━━━━━━━━━━━━━\n\n"
 
-            . "ใช้ \"จิตสัมผัสดวงสมพงษ์\" + ข้อความที่ลูกค้าพิมพ์มา (ถ้ามี) อ่านจากไพ่ใบเดียวที่จิตของลูกค้าเลือก\n"
-            . "เป้าหมาย: ทำนายให้ \"แม่นยำ\" — เจาะจง relate กับเรื่องของลูกค้า ไม่กว้างเกิน\n\n"
+            ."ใช้ \"จิตสัมผัสดวงสมพงษ์\" + ข้อความที่ลูกค้าพิมพ์มา (ถ้ามี) อ่านจากไพ่ใบเดียวที่จิตของลูกค้าเลือก\n"
+            ."เป้าหมาย: ทำนายให้ \"แม่นยำ\" — เจาะจง relate กับเรื่องของลูกค้า ไม่กว้างเกิน\n\n"
 
-            . $msgLine
+            .$msgLine
 
-            . "🃏 *ไพ่ที่จิตลูกค้าเลือก:*\n"
-            . "   - ชื่อ: {$cardNameTh} ({$cardNameEn})\n"
-            . "   - ทิศทาง: {$orientation}\n"
-            . "   - ความหมาย: {$meaning}\n\n"
+            ."🃏 *ไพ่ที่จิตลูกค้าเลือก:*\n"
+            ."   - ชื่อ: {$cardNameTh} ({$cardNameEn})\n"
+            ."   - ทิศทาง: {$orientation}\n"
+            ."   - ความหมาย: {$meaning}\n\n"
 
-            . "👤 *เรียกลูกค้าว่า:* {$greetName} (ครั้งเดียวพอ — ห้ามเรียกซ้ำ)\n\n"
+            ."👤 *เรียกลูกค้าว่า:* {$greetName} (ครั้งเดียวพอ — ห้ามเรียกซ้ำ)\n\n"
 
-            . "━━━━━━━━━━━━━━━━━\n"
-            . "📜 *โครงสร้างคำทำนาย* (5 ย่อหน้า — เว้นบรรทัด อ่านง่าย น่าเชื่อถือ)\n"
-            . "━━━━━━━━━━━━━━━━━\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."📜 *โครงสร้างคำทำนาย* (5 ย่อหน้า — เว้นบรรทัด อ่านง่าย น่าเชื่อถือ)\n"
+            ."━━━━━━━━━━━━━━━━━\n\n"
 
-            . "**ย่อหน้า 1 (เปิดด้วยจิตสัมผัส — แสดงพลัง):**\n"
-            . "ทักทายสั้น 1 ประโยค → อ้างถึง \"พลังงาน/ออร่า/คลื่นจิต\" ที่แม่หมอจับได้จากเจ้าชะตา\n"
-            . "เช่น \"แม่หมอจับพลังงานของเจ้าชะตา{$greetName}ได้แล้ว — ตอนนี้คลื่นจิตเจ้าชะตามี [แห้งผาก/วูบไหว/นิ่งสงบ]\"\n"
-            . "เน้น \"ฟิลลิ่ง\" ที่ลูกค้ารู้สึกตรงในใจ → ทำให้ลูกค้ารู้สึกแม่หมอ \"อ่านใจ\" ได้\n"
-            . "ยาว 2-3 บรรทัด\n\n"
+            ."**ย่อหน้า 1 (เปิดด้วยจิตสัมผัส — แสดงพลัง):**\n"
+            ."ทักทายสั้น 1 ประโยค → อ้างถึง \"พลังงาน/ออร่า/คลื่นจิต\" ที่แม่หมอจับได้จากเจ้าชะตา\n"
+            ."เช่น \"แม่หมอจับพลังงานของเจ้าชะตา{$greetName}ได้แล้ว — ตอนนี้คลื่นจิตเจ้าชะตามี [แห้งผาก/วูบไหว/นิ่งสงบ]\"\n"
+            ."เน้น \"ฟิลลิ่ง\" ที่ลูกค้ารู้สึกตรงในใจ → ทำให้ลูกค้ารู้สึกแม่หมอ \"อ่านใจ\" ได้\n"
+            ."ยาว 2-3 บรรทัด\n\n"
 
-            . "**ย่อหน้า 2 (อ่านสถานการณ์ปัจจุบัน — แม่นยำ เจาะจง):**\n"
-            . "อ่านสถานการณ์ที่ลูกค้ากำลังเผชิญ — *เจาะจงรายละเอียด* ไม่กว้าง\n"
-            . "ผูกกับ \"ไพ่ที่ได้\" + \"ข้อความที่ลูกค้าพิมพ์\" (ถ้ามี keyword: รัก/งาน/เงิน/สุขภาพ → focus เรื่องนั้น)\n"
-            . "ใส่ \"จุดเล็ก\" 2-3 จุดที่ลูกค้าน่าจะรู้สึกตรง เช่น:\n"
-            . "  • รู้สึกเหนื่อยล้าทางใจ ทั้งที่ภายนอกยังเดินหน้าได้\n"
-            . "  • มีคนคนหนึ่งวนเวียนในความคิด ตัดไม่ขาดสักที\n"
-            . "  • ตัดสินใจสำคัญที่ค้างคามาหลายเดือน\n"
-            . "เน้น contextual reading — ลูกค้าอ่านแล้วต้อง \"นึกถึง\" เรื่องเฉพาะของตัวเอง\n"
-            . "ยาว 3-4 บรรทัด\n\n"
+            ."**ย่อหน้า 2 (อ่านสถานการณ์ปัจจุบัน — แม่นยำ เจาะจง):**\n"
+            ."อ่านสถานการณ์ที่ลูกค้ากำลังเผชิญ — *เจาะจงรายละเอียด* ไม่กว้าง\n"
+            ."ผูกกับ \"ไพ่ที่ได้\" + \"ข้อความที่ลูกค้าพิมพ์\" (ถ้ามี keyword: รัก/งาน/เงิน/สุขภาพ → focus เรื่องนั้น)\n"
+            ."ใส่ \"จุดเล็ก\" 2-3 จุดที่ลูกค้าน่าจะรู้สึกตรง เช่น:\n"
+            ."  • รู้สึกเหนื่อยล้าทางใจ ทั้งที่ภายนอกยังเดินหน้าได้\n"
+            ."  • มีคนคนหนึ่งวนเวียนในความคิด ตัดไม่ขาดสักที\n"
+            ."  • ตัดสินใจสำคัญที่ค้างคามาหลายเดือน\n"
+            ."เน้น contextual reading — ลูกค้าอ่านแล้วต้อง \"นึกถึง\" เรื่องเฉพาะของตัวเอง\n"
+            ."ยาว 3-4 บรรทัด\n\n"
 
-            . "**ย่อหน้า 3 (วิเคราะห์ไพ่ตามหลักศาสตร์ — สร้างความน่าเชื่อ):**\n"
-            . "อธิบายความหมาย {$cardNameTh} ({$cardNameEn}) แบบหมอดู — เชื่อมกับชีวิตลูกค้า\n"
-            . "ผูกกับสัญลักษณ์/พลังของไพ่ใบนี้ — เน้น \"ทำไมไพ่ใบนี้ถึงมาในช่วงนี้\"\n"
-            . "เพิ่ม insight ลึก เช่น \"ไพ่นี้ไม่ใช่บังเอิญที่จิตเจ้าชะตาเรียกออกมา — มันบอกถึง...\"\n"
-            . "ทำให้ลูกค้ารู้สึกแม่หมอเข้าใจศาสตร์จริง ไม่ได้พูดลอย ๆ\n"
-            . "ยาว 3-4 บรรทัด\n\n"
+            ."**ย่อหน้า 3 (วิเคราะห์ไพ่ตามหลักศาสตร์ — สร้างความน่าเชื่อ):**\n"
+            ."อธิบายความหมาย {$cardNameTh} ({$cardNameEn}) แบบหมอดู — เชื่อมกับชีวิตลูกค้า\n"
+            ."ผูกกับสัญลักษณ์/พลังของไพ่ใบนี้ — เน้น \"ทำไมไพ่ใบนี้ถึงมาในช่วงนี้\"\n"
+            ."เพิ่ม insight ลึก เช่น \"ไพ่นี้ไม่ใช่บังเอิญที่จิตเจ้าชะตาเรียกออกมา — มันบอกถึง...\"\n"
+            ."ทำให้ลูกค้ารู้สึกแม่หมอเข้าใจศาสตร์จริง ไม่ได้พูดลอย ๆ\n"
+            ."ยาว 3-4 บรรทัด\n\n"
 
-            . "**ย่อหน้า 4 (ทางออก + คำเตือน — ฟันธง รูปธรรม):**\n"
-            . "ชี้ทางออกรูปธรรม 2-3 ข้อ — สิ่งที่ลูกค้าทำได้ทันที (action ชัด ไม่กว้าง)\n"
-            . "เพิ่ม 1 คำเตือน — สิ่งที่ห้ามทำในช่วงนี้ (เพิ่มความน่าเชื่อ — หมอดูเก่งจะมี \"ห้าม\")\n"
-            . "ฟันธง ไม่ใช้ \"อาจจะ/น่าจะ/ลองดู\" — แม่หมอเซียน 30 ปี = ตัดสินใจแทนได้\n"
-            . "ยาว 3-4 บรรทัด\n\n"
+            ."**ย่อหน้า 4 (ทางออก + คำเตือน — ฟันธง รูปธรรม):**\n"
+            ."ชี้ทางออกรูปธรรม 2-3 ข้อ — สิ่งที่ลูกค้าทำได้ทันที (action ชัด ไม่กว้าง)\n"
+            ."เพิ่ม 1 คำเตือน — สิ่งที่ห้ามทำในช่วงนี้ (เพิ่มความน่าเชื่อ — หมอดูเก่งจะมี \"ห้าม\")\n"
+            ."ฟันธง ไม่ใช้ \"อาจจะ/น่าจะ/ลองดู\" — แม่หมอเซียน 30 ปี = ตัดสินใจแทนได้\n"
+            ."ยาว 3-4 บรรทัด\n\n"
 
-            . "**ย่อหน้า 5 (ปิด — soft upsell + กำลังใจ):**\n"
-            . "เปิดด้วย: \"แม่หมอเห็นรายละเอียดอีกหลายชั้น...\" หรือ \"ดวงเจ้าชะตามีจังหวะที่ต้องดูลึกกว่านี้...\"\n"
-            . "แล้วแนะนำแพคเกจ:\n\n"
-            . $upsellBlock . "\n\n"
-            . "ปิดท้ายเปิดทางเลือก + กำลังใจ:\n"
-            . "\"หรือถ้ายังไม่พร้อม เก็บคำทำนายฟรีนี้ไว้คิดต่อได้ ไม่กดดันนะคะ\n"
-            . "ขอให้เจ้าชะตา{$greetName}โชคดี เจอแต่สิ่งดี ๆ ✨🙏\"\n"
-            . "ยาว 2-3 บรรทัด\n\n"
+            ."**ย่อหน้า 5 (ปิด — soft upsell + กำลังใจ):**\n"
+            ."เปิดด้วย: \"แม่หมอเห็นรายละเอียดอีกหลายชั้น...\" หรือ \"ดวงเจ้าชะตามีจังหวะที่ต้องดูลึกกว่านี้...\"\n"
+            ."แล้วแนะนำแพคเกจ:\n\n"
+            .$upsellBlock."\n\n"
+            ."ปิดท้ายเปิดทางเลือก + กำลังใจ:\n"
+            ."\"หรือถ้ายังไม่พร้อม เก็บคำทำนายฟรีนี้ไว้คิดต่อได้ ไม่กดดันนะคะ\n"
+            ."ขอให้เจ้าชะตา{$greetName}โชคดี เจอแต่สิ่งดี ๆ ✨🙏\"\n"
+            ."ยาว 2-3 บรรทัด\n\n"
 
-            . "━━━━━━━━━━━━━━━━━\n"
-            . "🚫 *ข้อห้ามเด็ดขาด*\n"
-            . "━━━━━━━━━━━━━━━━━\n"
-            . "1. ความยาว 1500-2000 ตัวอักษร (ไม่ใช่สั้นแบบเดิม) — ให้น่าเชื่อถือ มี depth\n"
-            . "2. ห้ามฮาร์ดเซล — ห้ามใช้คำ \"ค่าครู/บาท/ราคา\" ในย่อหน้า 1-4 (ใช้ได้เฉพาะย่อหน้า 5 ใน upsellBlock)\n"
-            . "3. ห้ามตีความฝืนหน้าไพ่ — ตั้งตรง=บวก, กลับหัว=ติดขัด\n"
-            . "4. ห้ามถามวันเกิด/ราศี/เลขมงคล — ใช้แค่ไพ่ + จิตสัมผัส + ข้อความลูกค้า\n"
-            . "5. ห้าม markdown (**, ##, -, ฯลฯ) — plain text ล้วน\n"
-            . "6. ห้ามทักทายซ้ำชื่อ — เรียก {$greetName} ที่ย่อหน้า 1 และ 5 พอ\n"
-            . "7. ห้ามใส่ไพ่ทาโร่ใหม่/สีมงคล/เลขมงคล — ใช้แค่ไพ่ที่ให้มา\n"
-            . "8. ห้ามถามคำถามกลับ — นี่คือคำทำนายเดียวจบ\n"
-            . "9. ห้ามอ้างข่าว/เศรษฐกิจ/บ้านเมือง — ทำนายเฉพาะเรื่องลูกค้าเท่านั้น\n"
-            . "10. ห้ามใช้ bullet (•, -, 1.) ในย่อหน้า 2,3 — ให้ flow เป็นเรื่องเล่า เนียน\n\n"
-            . $localeDirective
-            . "เริ่มเลย (ขึ้นย่อหน้า 1 ทันที):";
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🚫 *ข้อห้ามเด็ดขาด*\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."1. ความยาว 1500-2000 ตัวอักษร (ไม่ใช่สั้นแบบเดิม) — ให้น่าเชื่อถือ มี depth\n"
+            ."2. ห้ามฮาร์ดเซล — ห้ามใช้คำ \"ค่าครู/บาท/ราคา\" ในย่อหน้า 1-4 (ใช้ได้เฉพาะย่อหน้า 5 ใน upsellBlock)\n"
+            ."3. ห้ามตีความฝืนหน้าไพ่ — ตั้งตรง=บวก, กลับหัว=ติดขัด\n"
+            ."4. ห้ามถามวันเกิด/ราศี/เลขมงคล — ใช้แค่ไพ่ + จิตสัมผัส + ข้อความลูกค้า\n"
+            ."5. ห้าม markdown (**, ##, -, ฯลฯ) — plain text ล้วน\n"
+            ."6. ห้ามทักทายซ้ำชื่อ — เรียก {$greetName} ที่ย่อหน้า 1 และ 5 พอ\n"
+            ."7. ห้ามใส่ไพ่ทาโร่ใหม่/สีมงคล/เลขมงคล — ใช้แค่ไพ่ที่ให้มา\n"
+            ."8. ห้ามถามคำถามกลับ — นี่คือคำทำนายเดียวจบ\n"
+            ."9. ห้ามอ้างข่าว/เศรษฐกิจ/บ้านเมือง — ทำนายเฉพาะเรื่องลูกค้าเท่านั้น\n"
+            ."10. ห้ามใช้ bullet (•, -, 1.) ในย่อหน้า 2,3 — ให้ flow เป็นเรื่องเล่า เนียน\n\n"
+            .$localeDirective
+            .'เริ่มเลย (ขึ้นย่อหน้า 1 ทันที):';
 
         // ใช้ generateWithRetryAndFallback — มี pool + retry + lock + budget guard
         // promptTemplate='{questions}' = ไม่ wrap default deep template

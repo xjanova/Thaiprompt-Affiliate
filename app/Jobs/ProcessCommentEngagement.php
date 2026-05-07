@@ -193,10 +193,11 @@ class ProcessCommentEngagement implements ShouldQueue
             ];
 
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+            // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
             try {
                 $bannerService = new FortuneBannerService($settings);
                 $bannerService->sendBannerThenWait(
-                    fn ($url) => $facebookService->sendImage($userId, $url),
+                    fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
                     'comment'
                 );
             } catch (Throwable $bannerErr) {

@@ -8,11 +8,16 @@ use App\Models\FortuneCommentEngagement;
 use App\Models\FortunePostReaction;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
+use App\Services\CelticCrossService;
+use App\Services\FacebookRichMessageService;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
 use App\Services\FortuneBannerService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
+use App\Services\FortuneLocaleService;
+use App\Services\FortuneMonthlyClaimService;
 use App\Services\FortuneTakeoverService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -348,7 +353,7 @@ class FacebookWebhookController extends Controller
                 'ref' => $ref,
             ]);
 
-            $claimService = app(\App\Services\FortuneMonthlyClaimService::class);
+            $claimService = app(FortuneMonthlyClaimService::class);
             $monthKey = $claimService->parseRefForCurrentMonth($ref);
 
             // ไม่ใช่ ref ของแคมเปญรายเดือน หรือเป็น month_key เก่า → skip
@@ -363,7 +368,7 @@ class FacebookWebhookController extends Controller
             $result = $claimService->claimForUser(
                 $senderId,
                 'facebook',
-                \App\Services\FortuneMonthlyClaimService::SOURCE_GROUP_POST,
+                FortuneMonthlyClaimService::SOURCE_GROUP_POST,
                 ['referrer' => $ref]
             );
 
@@ -493,8 +498,6 @@ class FacebookWebhookController extends Controller
      *
      * ใช้ Send API RESPONSE — ถ้าล้มเหลวด้วย error 551 (user not available)
      * → skip ไม่ fallback MESSAGE_TAG เพราะ reaction อย่างเดียวไม่เพียงพอให้ FB อนุญาต tag
-     *
-     * @param  FortunePostReaction  $reaction
      */
     protected function tryReactionDm(FortunePostReaction $reaction): void
     {
@@ -505,7 +508,7 @@ class FacebookWebhookController extends Controller
             //    เดิม: dedupe per (user_id, post_id) → user reaction หลายโพสต์ → DM 5 ครั้ง
             //    ใหม่: ถ้าเคยส่ง DM ให้ user คนนี้ใน 24hr → ข้าม (ไม่ว่าจะ post ไหน)
             //    ⚠️ Anti-pattern guard (lesson #5): เขียน Cache เฉพาะตอนสำเร็จ ไม่เขียน false
-            $userGuardKey = 'reaction_dm_user_24h:' . $reaction->facebook_user_id;
+            $userGuardKey = 'reaction_dm_user_24h:'.$reaction->facebook_user_id;
             if (Cache::has($userGuardKey)) {
                 Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ในช่วง 24hr แล้ว', [
                     'user_id' => $reaction->facebook_user_id,
@@ -607,23 +610,23 @@ class FacebookWebhookController extends Controller
                 // v1: invite — เน้นทักมา
                 "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
                     ."🌙 หมอจันทราอยากเปิดไพ่ทำนายฟรีให้สักใบ\n"
-                    ."ลองทักทายมาสักคำสิคะ — แม่หมอจะอ่านพลังให้ทันที 🔮",
+                    .'ลองทักทายมาสักคำสิคะ — แม่หมอจะอ่านพลังให้ทันที 🔮',
 
                 // v2: curious + free hint
                 "✨ เห็นคุณกดไลก์ — รู้สึกถึงพลังที่เชื่อมถึงกันเลยนะคะ\n\n"
                     ."🃏 หมอเปิดดูดวงไพ่ยิปซี *ฟรี 1 ใบ* รออยู่\n"
-                    ."ทักคำว่า \"สวัสดี\" หรืออะไรก็ได้ มาคุยกันได้เลยค่ะ 🌙",
+                    .'ทักคำว่า "สวัสดี" หรืออะไรก็ได้ มาคุยกันได้เลยค่ะ 🌙',
 
                 // v3: warm + cosmic
                 "🌙 ดวงดาวช่วงนี้กำลังส่งสัญญาณบางอย่าง...\n\n"
                     ."🎁 หมอจันทราเปิดทำนาย *ฟรี* ให้ลูกเพจที่กดไลก์ค่ะ\n"
-                    ."ทักมาทักทายได้เลย — แม่หมอพร้อมเปิดไพ่ให้ ✨",
+                    .'ทักมาทักทายได้เลย — แม่หมอพร้อมเปิดไพ่ให้ ✨',
 
                 // v4: gentle + non-pushy
                 "🙏 ขอบคุณที่ติดตามเพจค่ะ 💫\n\n"
                     ."🔮 อยากให้ลองรู้จักหมอจันทราผ่าน *การทำนายฟรี 1 ใบ*\n"
                     ."ทักมาตอบกลับ — หมอจะเปิดไพ่ให้เลยค่ะ 🌙\n"
-                    ."(ไม่มีค่าใช้จ่าย ไม่ต้องกรอกอะไร)",
+                    .'(ไม่มีค่าใช้จ่าย ไม่ต้องกรอกอะไร)',
             ];
         } else {
             // ระบบฟรีปิด — variant กลางๆ ชวนทัก (ไม่ใส่ราคา ไม่ขาย)
@@ -907,7 +910,7 @@ class FacebookWebhookController extends Controller
         //   เคสที่เกิด: ระบบ comment ได้ name จริงจาก Facebook payload แต่ flow ดูดวง
         //   หา name ไม่เจอ → ลูกค้าเห็น "FACEBOOK-XXXXXX" ใน DM ครั้งต่อมา
         //   Fix: save name ลง credit ตั้งแต่ point ที่ได้ name → flow อื่นใช้ผ่าน credit
-        \App\Models\FortuneUserCredit::rememberName($fromId, 'facebook', $name);
+        FortuneUserCredit::rememberName($fromId, 'facebook', $name);
 
         // แทนที่ placeholders
         $commentReply = str_replace(
@@ -949,9 +952,10 @@ class FacebookWebhookController extends Controller
         $quickReplies = [];
 
         // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+        // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
         if ($this->bannerService) {
             $this->bannerService->sendBannerThenWait(
-                fn ($url) => $this->facebookService->sendImage($fromId, $url),
+                fn ($url) => $this->facebookService->sendImage($fromId, $url, null, ['comment_id' => $commentId]),
                 'comment'
             );
         }
@@ -1009,7 +1013,7 @@ class FacebookWebhookController extends Controller
             return $price;
         }
 
-        return (float) \App\Services\FortuneConversationService::DEEP_READING_PRICE;
+        return (float) FortuneConversationService::DEEP_READING_PRICE;
     }
 
     /**
@@ -1089,10 +1093,10 @@ class FacebookWebhookController extends Controller
         $name = $userProfile['name'] ?? $fromName;
 
         // 👤 Persist name จาก comment payload ลง FortuneUserCredit (กันชื่อหายใน flow อื่น)
-        \App\Models\FortuneUserCredit::rememberName($fromId, 'facebook', $name);
+        FortuneUserCredit::rememberName($fromId, 'facebook', $name);
 
         // ข้อความตอบใต้คอมเม้นต์ (สั้น ไม่สปอยล์รายละเอียด)
-        $commentReply = "เรื่องเงินมาถูกทางแล้วค่ะ 🙏 แม่หมอมีเคล็ดลับง่ายๆ เช็คใน inbox นะคะ ✨";
+        $commentReply = 'เรื่องเงินมาถูกทางแล้วค่ะ 🙏 แม่หมอมีเคล็ดลับง่ายๆ เช็คใน inbox นะคะ ✨';
 
         // ข้อความ DM — pitch โปรแกรม affiliate (greeting แบบ conditional ไม่ซ้อน "คุณคุณ")
         $hasName = ! empty($name) && $name !== 'คุณ';
@@ -1256,13 +1260,14 @@ class FacebookWebhookController extends Controller
         //    TTL 10 นาที — FB retry จะเสร็จในไม่กี่นาที, ไม่ต้องเก็บนาน
         $mid = $messaging['message']['mid'] ?? null;
         if (! empty($mid)) {
-            $dedupeKey = 'fb_webhook_mid:' . $mid;
+            $dedupeKey = 'fb_webhook_mid:'.$mid;
             if (! Cache::add($dedupeKey, true, now()->addMinutes(10))) {
                 Log::info('🔁 FB webhook: skip duplicate mid (retry/replay)', [
                     'mid' => $mid,
                     'sender_id' => $senderId,
                     'has_text' => ! empty($messaging['message']['text']),
                 ]);
+
                 return;
             }
         }
@@ -1331,6 +1336,7 @@ class FacebookWebhookController extends Controller
                 'has_attachments' => ! empty($attachments),
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
+
             return;
         }
 
@@ -1384,7 +1390,7 @@ class FacebookWebhookController extends Controller
 
                 if ($celticActive) {
                     $reason = $hasSticker ? 'sticker' : 'generic';
-                    $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($celticActive, $reason);
+                    $resume = app(CelticCrossService::class)->buildResumeMessage($celticActive, $reason);
                     $opts = [];
                     if (! empty($resume['quick_replies'])) {
                         $opts['quick_replies'] = $resume['quick_replies'];
@@ -1479,7 +1485,7 @@ class FacebookWebhookController extends Controller
             //    → ห้ามตอบ "แม่หมอกำลังคำนวณ" — ต้องนำกลับไปเปิดไพ่ต่อ/พิมพ์คำถาม
             //    เคสลูกค้าจ่าย Celtic 99฿ แล้วส่งสลิปอีก หรือส่งรูปสุ่ม → จะเข้า branch นี้
             if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::CELTIC_ACTIVE_STATUSES, true)) {
-                $resume = app(\App\Services\CelticCrossService::class)->buildResumeMessage($activeReading, 'image');
+                $resume = app(CelticCrossService::class)->buildResumeMessage($activeReading, 'image');
                 $opts = [];
                 if (! empty($resume['quick_replies'])) {
                     $opts['quick_replies'] = $resume['quick_replies'];
@@ -1502,11 +1508,11 @@ class FacebookWebhookController extends Controller
             if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
-                    . "🔔 *กรุณากดปุ่ม \"แจ้งชำระเงิน\" หรือพิมพ์ \"โอนแล้ว\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"
-                    . "ระบบจะตรวจสอบและตัดบิลภายใน 1-3 นาทีค่ะ ✨\n\n"
-                    . "🪐 ระหว่างรอ ใจเย็นๆ นะคะ — ดาวเจ้าชนะของเจ้าชะตากำลังเรียงตัว";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
+                    ."🔔 *กรุณากดปุ่ม \"แจ้งชำระเงิน\" หรือพิมพ์ \"โอนแล้ว\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"
+                    ."ระบบจะตรวจสอบและตัดบิลภายใน 1-3 นาทีค่ะ ✨\n\n"
+                    .'🪐 ระหว่างรอ ใจเย็นๆ นะคะ — ดาวเจ้าชนะของเจ้าชะตากำลังเรียงตัว';
 
                 $this->facebookService->sendMessage($senderId, $message, [
                     'quick_replies' => [
@@ -1534,10 +1540,10 @@ class FacebookWebhookController extends Controller
                     || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
-                    . "ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
-                    . "💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
+                    ."ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
+                    .'💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)';
 
                 $this->facebookService->sendMessage($senderId, $message);
 
@@ -1558,11 +1564,11 @@ class FacebookWebhookController extends Controller
                 && $activeReading->is_paid) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "💖 ขอบคุณค่ะ — ได้รับรูปแล้ว\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
-                    . "💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
-                    . "    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ ✨";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
+                    ."💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
+                    ."    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ ✨';
 
                 $this->facebookService->sendMessage($senderId, $message);
 
@@ -1647,12 +1653,12 @@ class FacebookWebhookController extends Controller
         }
 
         $message = "🌙 *ดูดวงฟรีพร้อมแล้วค่ะ* ✨\n\n"
-            . "💡 พิมพ์ *คำถามที่อยากรู้* มาได้เลย เช่น:\n"
-            . "  ✦ \"ความรักช่วงนี้จะเป็นยังไง\"\n"
-            . "  ✦ \"การงานปีนี้จะดีขึ้นไหม\"\n"
-            . "  ✦ \"การเงินจะเข้ามาเมื่อไหร่\"\n"
-            . "  ✦ \"สุขภาพช่วงนี้ต้องระวังอะไร\"\n\n"
-            . "🌙 หมอจันทราพร้อมรับฟังเสมอค่ะ";
+            ."💡 พิมพ์ *คำถามที่อยากรู้* มาได้เลย เช่น:\n"
+            ."  ✦ \"ความรักช่วงนี้จะเป็นยังไง\"\n"
+            ."  ✦ \"การงานปีนี้จะดีขึ้นไหม\"\n"
+            ."  ✦ \"การเงินจะเข้ามาเมื่อไหร่\"\n"
+            ."  ✦ \"สุขภาพช่วงนี้ต้องระวังอะไร\"\n\n"
+            .'🌙 หมอจันทราพร้อมรับฟังเสมอค่ะ';
 
         $this->facebookService->sendMessage($senderId, $message);
     }
@@ -1803,9 +1809,12 @@ class FacebookWebhookController extends Controller
             'LANG_TH' => $this->handleLanguagePick($senderId, 'th'),
             'LANG_LO' => $this->handleLanguagePick($senderId, 'lo'),
 
-            // 💬 (2026-05-06) Celtic — ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
-            //   ส่ง prompt ตัวอย่างคำถามให้ user (ไม่เปลี่ยน state — แค่ UX hint)
-            'CELTIC_START_Q' => $this->handleCelticStartQuestion($senderId),
+            // 🔮 (2026-05-07) Celtic — ปุ่ม "ทำนายดวงเดี๋ยวนี้" หลังเปิดไพ่ครบ 10 ใบ
+            //   ส่งให้ AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
+            'CELTIC_PREDICT_NOW' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
+
+            // 💬 backward-compat — ลูกค้าเก่าที่ Quick Reply เก่ายังอยู่ในแชท
+            'CELTIC_START_Q' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
 
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
@@ -1820,7 +1829,7 @@ class FacebookWebhookController extends Controller
         try {
             $this->facebookService->sendMessage(
                 $senderId,
-                "🌐 เลือกภาษา / ເລືອກພາສາ / Choose language",
+                '🌐 เลือกภาษา / ເລືອກພາສາ / Choose language',
                 [
                     'quick_replies' => [
                         ['title' => '🇹🇭 ไทย', 'payload' => 'LANG_TH'],
@@ -1837,58 +1846,13 @@ class FacebookWebhookController extends Controller
     }
 
     /**
-     * 💬 (2026-05-06) ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
-     *
-     * แค่ส่ง prompt ตัวอย่างคำถาม — ไม่เปลี่ยน state
-     * (state ตอนนี้เป็น CELTIC_AWAITING_QUESTION อยู่แล้ว)
-     */
-    protected function handleCelticStartQuestion(string $senderId): void
-    {
-        try {
-            $reading = FortuneReading::where('facebook_user_id', $senderId)
-                ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
-                ->latest()
-                ->first();
-
-            // ถ้าไม่มี Celtic active → fallback เข้า conversational flow ปกติ
-            if (! $reading) {
-                $this->processConversationalMessage($senderId, 'ดูดวง');
-                return;
-            }
-
-            $remainingMin = method_exists($reading, 'getCelticQaRemainingMinutes')
-                ? $reading->getCelticQaRemainingMinutes()
-                : null;
-            $timeHint = $remainingMin !== null && $remainingMin > 0
-                ? "⏳ ถามได้อีก {$remainingMin} นาที"
-                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
-
-            $message = "💬 *เริ่มถามคำถามได้เลย*\n\n"
-                . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ — เช่น:\n\n"
-                . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                . "   • *\"งานในเดือนหน้า\"*\n"
-                . "   • *\"ควรย้ายงานไหม\"*\n"
-                . "   • *\"การเงินครึ่งปีหลัง\"*\n\n"
-                . $timeHint . "\n"
-                . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
-
-            $this->facebookService->sendMessage($senderId, $message, ['no_default_qr' => true]);
-        } catch (\Throwable $e) {
-            Log::warning('handleCelticStartQuestion error', [
-                'sender_id' => $senderId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
      * 📜 (2026-05-03) ดู Celtic Q&A list — state ไม่เปลี่ยน (read-only)
      */
     protected function handleCelticViewList(string $senderId): void
     {
         try {
             $result = $this->conversationService->handleViewCelticList($senderId);
-            $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+            $channelManager = new FortuneChannelManager($this->settings);
             $channelManager->sendResponse('facebook', $senderId, $result);
         } catch (\Throwable $e) {
             Log::warning('handleCelticViewList error', [
@@ -1905,7 +1869,7 @@ class FacebookWebhookController extends Controller
     {
         try {
             $result = $this->conversationService->handleViewCelticQuestion($senderId, $sequence);
-            $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+            $channelManager = new FortuneChannelManager($this->settings);
             $channelManager->sendResponse('facebook', $senderId, $result);
         } catch (\Throwable $e) {
             Log::warning('handleCelticViewQuestion error', [
@@ -1922,13 +1886,13 @@ class FacebookWebhookController extends Controller
     protected function handleLanguagePick(string $senderId, string $locale): void
     {
         try {
-            \App\Services\FortuneLocaleService::set(
+            FortuneLocaleService::set(
                 'facebook',
                 $senderId,
                 $locale,
-                \App\Services\FortuneLocaleService::SOURCE_MANUAL
+                FortuneLocaleService::SOURCE_MANUAL
             );
-            \App\Services\FortuneLocaleService::setCurrent($locale);
+            FortuneLocaleService::setCurrent($locale);
 
             $msg = $locale === 'lo'
                 ? "🇱🇦 ປ່ຽນເປັນພາສາລາວແລ້ວ ✓\nພິມຄຳຖາມເຂົ້າມາໄດ້ເລີຍ"
@@ -1953,14 +1917,14 @@ class FacebookWebhookController extends Controller
     protected function handleFollowConfirmed(string $senderId): void
     {
         try {
-            $credit = \App\Models\FortuneUserCredit::getOrCreate($senderId, 'facebook');
+            $credit = FortuneUserCredit::getOrCreate($senderId, 'facebook');
             $credit->markFacebookFollowed();
 
             $this->facebookService->sendMessage(
                 $senderId,
                 "✨ ขอบคุณที่ติดตามเพจค่ะ\n"
-                . "ตั้งแต่ตี 1-7 โมงเช้าทุกวัน เราจะโพสดวงประจำวันให้\n"
-                . "อย่าลืมกดเปิดการแจ้งเตือนนะคะ 🔔"
+                ."ตั้งแต่ตี 1-7 โมงเช้าทุกวัน เราจะโพสดวงประจำวันให้\n"
+                .'อย่าลืมกดเปิดการแจ้งเตือนนะคะ 🔔'
             );
 
             Log::info('👁️ Follow confirmed', ['user_id' => $senderId]);
@@ -2028,21 +1992,21 @@ class FacebookWebhookController extends Controller
     protected function handleAboutUs(string $senderId): void
     {
         $message = "✨ รู้จัก \"แม่หมอจันทรา\"\n"
-            . "─────────────\n\n"
-            . "🔮 *ศาสตร์ที่เราใช้ทำนาย*\n"
-            . "• โหราศาสตร์ไทยสายเจ้าชนะ (วิชาดั้งเดิมจากสายลังกา)\n"
-            . "• โหราศาสตร์สากล — ตำแหน่งดาวเคราะห์ปัจจุบัน (transit)\n"
-            . "• ไพ่ทาโรต์ — สื่อพลังจิตและสัญลักษณ์\n"
-            . "• เลขศาสตร์ — วันเดือนปีเกิดเชื่อมพลังตัวเลข\n\n"
-            . "💎 *ทำไมแม่นและน่าเชื่อถือ*\n"
-            . "ระบบของเราใช้ AI ระดับ flagship หลักล้าน "
-            . "(Grok, Gemini Pro, GPT-class) ผูกกับ\n"
-            . "ฐานข้อมูลโหราศาสตร์จริงที่ถ่ายทอดจากครูบาอาจารย์\n"
-            . "→ ไม่ใช่ AI มโนเดา แต่วิเคราะห์จากดวงชะตาจริง\n\n"
-            . "🏢 *พัฒนาโดย xman studio*\n"
-            . "ทีมพัฒนาระบบ AI ดูดวงและ Affiliate ระดับองค์กร\n"
-            . "📍 https://xman4289.com\n\n"
-            . "💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio";
+            ."─────────────\n\n"
+            ."🔮 *ศาสตร์ที่เราใช้ทำนาย*\n"
+            ."• โหราศาสตร์ไทยสายเจ้าชนะ (วิชาดั้งเดิมจากสายลังกา)\n"
+            ."• โหราศาสตร์สากล — ตำแหน่งดาวเคราะห์ปัจจุบัน (transit)\n"
+            ."• ไพ่ทาโรต์ — สื่อพลังจิตและสัญลักษณ์\n"
+            ."• เลขศาสตร์ — วันเดือนปีเกิดเชื่อมพลังตัวเลข\n\n"
+            ."💎 *ทำไมแม่นและน่าเชื่อถือ*\n"
+            .'ระบบของเราใช้ AI ระดับ flagship หลักล้าน '
+            ."(Grok, Gemini Pro, GPT-class) ผูกกับ\n"
+            ."ฐานข้อมูลโหราศาสตร์จริงที่ถ่ายทอดจากครูบาอาจารย์\n"
+            ."→ ไม่ใช่ AI มโนเดา แต่วิเคราะห์จากดวงชะตาจริง\n\n"
+            ."🏢 *พัฒนาโดย xman studio*\n"
+            ."ทีมพัฒนาระบบ AI ดูดวงและ Affiliate ระดับองค์กร\n"
+            ."📍 https://xman4289.com\n\n"
+            .'💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio';
 
         $this->sendButtons($senderId, $message, [
             ['type' => 'web_url', 'title' => '🌐 เยี่ยมชม xman studio', 'url' => 'https://xman4289.com'],
@@ -2062,15 +2026,15 @@ class FacebookWebhookController extends Controller
     protected function handleRegisterMenu(string $senderId): void
     {
         $appUrl = rtrim(config('app.url', 'https://main.thaiprompt.online'), '/');
-        $registerUrl = $appUrl . '/auth/facebook';
+        $registerUrl = $appUrl.'/auth/facebook';
 
         $message = "📝 *สมัครสมาชิก thaiprompt — ฟรี!*\n"
-            . "─────────────\n\n"
-            . "✅ ใช้ Facebook ของคุณสมัครได้เลย — ไม่ต้องกรอกอะไร\n"
-            . "✅ ระบบสร้างกระเป๋าให้อัตโนมัติ\n"
-            . "✅ ดูยอดรายได้ค่าแนะนำได้ตลอด\n"
-            . "✅ ถอนเงินได้เมื่อยืนยันตัวตน (KYC)\n\n"
-            . "👉 กดปุ่มด้านล่างเพื่อสมัคร — ใช้เวลา 10 วินาที";
+            ."─────────────\n\n"
+            ."✅ ใช้ Facebook ของคุณสมัครได้เลย — ไม่ต้องกรอกอะไร\n"
+            ."✅ ระบบสร้างกระเป๋าให้อัตโนมัติ\n"
+            ."✅ ดูยอดรายได้ค่าแนะนำได้ตลอด\n"
+            ."✅ ถอนเงินได้เมื่อยืนยันตัวตน (KYC)\n\n"
+            .'👉 กดปุ่มด้านล่างเพื่อสมัคร — ใช้เวลา 10 วินาที';
 
         $this->sendButtons($senderId, $message, [
             ['type' => 'web_url', 'title' => '📝 สมัครด้วย Facebook', 'url' => $registerUrl, 'webview_height_ratio' => 'full'],
@@ -2089,7 +2053,7 @@ class FacebookWebhookController extends Controller
     protected function handleReferralMenu(string $senderId): void
     {
         // ตรวจ membership: มี FortuneReading ที่ is_paid=true หรือไม่
-        $isMember = \App\Models\FortuneReading::where('facebook_user_id', $senderId)
+        $isMember = FortuneReading::where('facebook_user_id', $senderId)
             ->where('is_paid', true)
             ->exists();
 
@@ -2098,18 +2062,18 @@ class FacebookWebhookController extends Controller
         if (! $isMember) {
             // ⛔ ยังไม่ใช่สมาชิก — pitch ให้ดูดวง 1 ครั้ง
             $message = "⚠️ ต้องเป็นสมาชิกก่อนนะคะ\n"
-                . "─────────────\n\n"
-                . "📋 *วิธีเป็นสมาชิก — ง่ายมาก:*\n"
-                . "เพียงดูดวงเชิงลึก *1 ครั้ง* ({$deepPrice} บาท)\n"
-                . "ระบบจะลงทะเบียนให้อัตโนมัติทันที\n\n"
-                . "🎁 *สิทธิ์ที่ได้รับ:*\n"
-                . "• 💎 กระเป๋าเงินส่วนตัวในระบบ\n"
-                . "• 👥 ลิงก์เชิญเพื่อนพิเศษ\n"
-                . "• 💰 ค่าแนะนำ 10 บาท/คนที่เพื่อนของคุณดูดวง (Level 1)\n"
-                . "• 🌳 ค่าแนะนำชั้นหลาน (Level 2) อีกชั้น\n"
-                . "• 📊 Dashboard ดูรายได้แบบ real-time\n"
-                . "• 💸 ถอนเงินเข้าบัญชีได้ (หลัง KYC)\n\n"
-                . "✨ ดูดวง 1 ครั้ง = ได้ทั้งคำทำนายแม่นๆ + เป็นสมาชิกเลยค่ะ";
+                ."─────────────\n\n"
+                ."📋 *วิธีเป็นสมาชิก — ง่ายมาก:*\n"
+                ."เพียงดูดวงเชิงลึก *1 ครั้ง* ({$deepPrice} บาท)\n"
+                ."ระบบจะลงทะเบียนให้อัตโนมัติทันที\n\n"
+                ."🎁 *สิทธิ์ที่ได้รับ:*\n"
+                ."• 💎 กระเป๋าเงินส่วนตัวในระบบ\n"
+                ."• 👥 ลิงก์เชิญเพื่อนพิเศษ\n"
+                ."• 💰 ค่าแนะนำ 10 บาท/คนที่เพื่อนของคุณดูดวง (Level 1)\n"
+                ."• 🌳 ค่าแนะนำชั้นหลาน (Level 2) อีกชั้น\n"
+                ."• 📊 Dashboard ดูรายได้แบบ real-time\n"
+                ."• 💸 ถอนเงินเข้าบัญชีได้ (หลัง KYC)\n\n"
+                .'✨ ดูดวง 1 ครั้ง = ได้ทั้งคำทำนายแม่นๆ + เป็นสมาชิกเลยค่ะ';
 
             $this->sendButtons($senderId, $message, [
                 ['type' => 'postback', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'],
@@ -2207,6 +2171,11 @@ class FacebookWebhookController extends Controller
                 'user_name' => $userName,
             ]);
 
+            // 🔓 (2026-05-07 review fix) GET_STARTED = user just clicked = 24hr window OPEN
+            //   เคลียร์ per-user 551 unreachable cache เพื่อกัน leak จาก reaction/comment-time
+            $unreachableKey = "fb_user_unreachable:{$senderId}:".now()->format('Y-m-d');
+            Cache::forget($unreachableKey);
+
             // 🖼️ (2026-05-06) ส่ง banner welcome ก่อน (ครั้งแรกที่กด GET_STARTED ก็ควรเห็น)
             //   เดิม: banner ส่งเฉพาะใน processConversationalMessage → คนที่กด GET_STARTED แล้วไม่ทักต่อ ไม่เคยเห็น
             if ($this->bannerService) {
@@ -2222,7 +2191,7 @@ class FacebookWebhookController extends Controller
             $this->facebookService->sendTypingIndicator($senderId, false);
 
             // ✅ ส่ง Rich Welcome Template พร้อม Quick Replies
-            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $richService = new FacebookRichMessageService($this->settings);
             // 🩹 (2026-05-04) pass senderId เพื่อตรวจ hasUsedFreeCard → ซ่อนปุ่ม/ข้อความฟรีถ้าใช้แล้ว
             $welcomeTemplate = $richService->buildWelcomeTemplate($userName, $senderId);
             $welcomeQuickReplies = $richService->getQuickRepliesForAction('help');
@@ -2281,7 +2250,7 @@ class FacebookWebhookController extends Controller
         try {
             // ✅ เชิญเฉพาะคนที่ยังไม่เคยดูดวงเลย (ตาม spec ของ user)
             if ($context === 'get_started') {
-                $hasReading = \App\Models\FortuneReading::where('facebook_user_id', $senderId)
+                $hasReading = FortuneReading::where('facebook_user_id', $senderId)
                     ->where('platform', 'facebook')
                     ->exists();
                 if ($hasReading) {
@@ -2327,7 +2296,7 @@ class FacebookWebhookController extends Controller
 
         // ใช้ราคาจาก settings (dynamic) — ไม่ hardcode
         $deepPriceText = number_format($this->getDeepReadingPriceFromSettings(), 0);
-        $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
+        $qCount = FortuneConversationService::REQUIRED_QUESTIONS;
         $message .= "💎 *ดูดวงเชิงลึก ({$qCount} คำถาม {$deepPriceText} บาท)*\n";
         $message .= "ทำนายเชิงลึกจากดาวเจ้าชนะ + ไพ่ยิปซีจริง — ไม่ยกเมฆ\n\n";
 
@@ -2370,6 +2339,13 @@ class FacebookWebhookController extends Controller
     protected function processConversationalMessage(string $senderId, string $messageText): void
     {
         try {
+            // 🔓 (2026-05-07 review fix) เคลียร์ per-user 551 unreachable cache
+            //   เหตุผล: ถ้า user ทักเพจ → 24hr window เปิดใหม่ → ส่ง DM/banner ได้แน่นอน
+            //   เดิม: cache ที่ตั้งจาก reaction/comment-time 551 จะ leak มา block welcome banner
+            //   ใหม่: ทุกครั้งที่ webhook รับ message → clear cache (proves user reachable)
+            $unreachableKey = "fb_user_unreachable:{$senderId}:".now()->format('Y-m-d');
+            Cache::forget($unreachableKey);
+
             // ตรวจสอบว่า channelManager พร้อมใช้งาน (fallback ไป conversationService ถ้าไม่มี)
             if (! $this->channelManager && ! $this->conversationService) {
                 Log::error('ChannelManager และ ConversationService ไม่พร้อม');
@@ -2389,7 +2365,7 @@ class FacebookWebhookController extends Controller
             //    กัน "สวัสดี คุณคุณ" จากการพิมพ์ซ้ำของ prefix
             $userProfile = $this->facebookService->getUserProfile($senderId);
             if (! is_array($userProfile) || empty($userProfile['name']) || $userProfile['name'] === 'คุณ') {
-                $savedName = \App\Models\FortuneUserCredit::findByUser($senderId, 'facebook')?->facebook_user_name;
+                $savedName = FortuneUserCredit::findByUser($senderId, 'facebook')?->facebook_user_name;
 
                 // 🛠️ (2026-05-01) ห้ามใช้ '' เป็น fallback — กัน DB save empty string
                 //    ChannelManager::resolveUserName() จะ scan historical readings ต่อให้
@@ -3145,7 +3121,7 @@ class FacebookWebhookController extends Controller
                 'category' => $category,
             ]);
             // Fallback: ส่งข้อความแจ้ง
-            $this->facebookService->sendMessage($senderId, "🔮 ขอโทษค่ะ ลองกดเลือกอีกครั้งนะคะ ✨");
+            $this->facebookService->sendMessage($senderId, '🔮 ขอโทษค่ะ ลองกดเลือกอีกครั้งนะคะ ✨');
         }
     }
 
@@ -3175,7 +3151,7 @@ class FacebookWebhookController extends Controller
     {
         // ✅ ใช้ Rich Welcome Template แทนข้อความธรรมดา
         try {
-            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $richService = new FacebookRichMessageService($this->settings);
             // 🩹 (2026-05-04) pass userId เพื่อตรวจ hasUsedFreeCard → ซ่อนปุ่ม/ข้อความฟรีถ้าใช้แล้ว
             $helpTemplate = $richService->buildWelcomeTemplate('คุณ', $userId);
             $helpQuickReplies = $richService->getQuickRepliesForAction('help');
@@ -3257,8 +3233,8 @@ class FacebookWebhookController extends Controller
         $this->facebookService->sendButtonTemplate($senderId, [
             'template_type' => 'button',
             'text' => "📢 เชิญเพื่อนมาดูดวง — ได้รายได้จริง!\n\n"
-                . "💰 ทุกครั้งที่เพื่อนคุณดูดวงเชิงลึก คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
-                . "🔗 กดศึกษาวิธีและรับลิงก์เชิญเพื่อนได้ด้านล่าง",
+                ."💰 ทุกครั้งที่เพื่อนคุณดูดวงเชิงลึก คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
+                .'🔗 กดศึกษาวิธีและรับลิงก์เชิญเพื่อนได้ด้านล่าง',
             'buttons' => [
                 ['type' => 'web_url', 'title' => '🔗 รับลิงก์เชิญเพื่อน', 'url' => $recruitUrl],
                 ['type' => 'web_url', 'title' => '📚 ศึกษาวิธีสร้างรายได้', 'url' => $wealthUrl],
@@ -3278,7 +3254,7 @@ class FacebookWebhookController extends Controller
         $this->facebookService->sendButtonTemplate($senderId, [
             'template_type' => 'button',
             'text' => "🙏 ขอบคุณที่ใช้บริการ!\n\n"
-                . "📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมาดูดวงเชิงลึก คุณได้ค่าแนะนำเข้า Wallet",
+                .'📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมาดูดวงเชิงลึก คุณได้ค่าแนะนำเข้า Wallet',
             'buttons' => [
                 ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
                 ['type' => 'postback', 'title' => '📢 ดูวิธีรับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
@@ -3290,7 +3266,7 @@ class FacebookWebhookController extends Controller
     protected function handleLineAddFriend(string $senderId): void
     {
         try {
-            $richService = new \App\Services\FacebookRichMessageService($this->settings);
+            $richService = new FacebookRichMessageService($this->settings);
             $lineUrl = $richService->getLineAddFriendUrl();
 
             if ($lineUrl) {
@@ -3302,9 +3278,9 @@ class FacebookWebhookController extends Controller
                     // Fallback: ส่ง URL โดยตรง
                     $this->facebookService->sendMessage(
                         $senderId,
-                        "💚 เพิ่มเพื่อน LINE เพื่อดูดวงแบบสวยงาม!\n\n" .
-                        "👉 {$lineUrl}\n\n" .
-                        "✨ ดูดวง Flex Message สวยๆ ได้ที่ LINE ค่ะ"
+                        "💚 เพิ่มเพื่อน LINE เพื่อดูดวงแบบสวยงาม!\n\n".
+                        "👉 {$lineUrl}\n\n".
+                        '✨ ดูดวง Flex Message สวยๆ ได้ที่ LINE ค่ะ'
                     );
                 }
             } else {
@@ -3322,7 +3298,7 @@ class FacebookWebhookController extends Controller
                 'has_line_url' => ! empty($lineUrl),
             ]);
         } catch (\Exception $e) {
-            Log::error('handleLineAddFriend error: ' . $e->getMessage(), [
+            Log::error('handleLineAddFriend error: '.$e->getMessage(), [
                 'sender_id' => $senderId,
             ]);
             $this->facebookService->sendMessage(
@@ -3344,10 +3320,6 @@ class FacebookWebhookController extends Controller
      *   3. ข้อความเหมือนเดิมกับ 2 turn ก่อน → +1 strike (echo spam)
      *
      * เมื่อ strike >= 5 ภายใน 1 ชม. → silence (return true เสมอจนกว่าจะ expire)
-     *
-     * @param  string  $senderId
-     * @param  string  $text
-     * @param  array  $attachments
      */
     /**
      * 🎯 (2026-05-02 — ปรับใหม่) Spam guard — แยก flood จากแชทปกติ
@@ -3373,7 +3345,7 @@ class FacebookWebhookController extends Controller
         $silencedKey = "fortune:spam:silenced:{$senderId}";
 
         // ถ้า silenced อยู่ → ยังคง block จนกว่าจะหมดเวลา
-        if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
+        if (Cache::has($silencedKey)) {
             return true;
         }
 
@@ -3382,10 +3354,10 @@ class FacebookWebhookController extends Controller
 
         // 🚨 Rule 1: RATE FLOOD — > 10 messages ใน 30s = ตั้งใจ flood
         $rateKey = "fortune:spam:rate:{$senderId}";
-        $rateLog = \Illuminate\Support\Facades\Cache::get($rateKey, []);
+        $rateLog = Cache::get($rateKey, []);
         $rateLog = array_values(array_filter($rateLog, fn ($t) => ($now - $t) < 30));
         $rateLog[] = $now;
-        \Illuminate\Support\Facades\Cache::put($rateKey, $rateLog, 60);
+        Cache::put($rateKey, $rateLog, 60);
         if (count($rateLog) > 10) {
             $reason = 'rate_flood (>10 msg/30s)';
         }
@@ -3405,18 +3377,18 @@ class FacebookWebhookController extends Controller
 
         if ($reason === null && ! empty($normalizedText) && mb_strlen($text) > 1 && ! $isStateInput) {
             $repeatKey = "fortune:spam:repeat:{$senderId}";
-            $cached = \Illuminate\Support\Facades\Cache::get($repeatKey, ['text' => '', 't' => 0, 'count' => 0]);
+            $cached = Cache::get($repeatKey, ['text' => '', 't' => 0, 'count' => 0]);
 
             if ($cached['text'] === $text && ($now - $cached['t']) < 30) {
                 $newCount = $cached['count'] + 1;
-                \Illuminate\Support\Facades\Cache::put($repeatKey, [
+                Cache::put($repeatKey, [
                     'text' => $text, 't' => $now, 'count' => $newCount,
                 ], 60);
                 if ($newCount >= 3) {
                     $reason = 'repeat_flood (3x same text/30s)';
                 }
             } else {
-                \Illuminate\Support\Facades\Cache::put($repeatKey, [
+                Cache::put($repeatKey, [
                     'text' => $text, 't' => $now, 'count' => 1,
                 ], 60);
             }
@@ -3436,7 +3408,7 @@ class FacebookWebhookController extends Controller
         }
 
         // Silence 5 นาที (ลดจาก 1 ชม. — ลูกค้าปกติ recovery ได้)
-        \Illuminate\Support\Facades\Cache::put($silencedKey, true, now()->addMinutes(5));
+        Cache::put($silencedKey, true, now()->addMinutes(5));
         Log::warning('🚫 Fortune spam guard: silenced 5 min', [
             'sender_id' => $senderId,
             'reason' => $reason,
