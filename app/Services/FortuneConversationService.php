@@ -8333,6 +8333,188 @@ class FortuneConversationService
             //   - 'paid_only' → ไม่ trigger ในแชทธรรมดา (ต้องใน paid prediction/celtic)
             //   - 'off' → ปิดสนิท
             $platform = $this->currentPlatform ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+            // 🙏 (2026-05-07 Phase 2) Satisfaction detector — ทำงานก่อนเสมอ (heuristic เร็ว)
+            //   ถ้าลูกค้าพอใจ + อยากจบ → flag ไว้ ใช้กับ Pro mode prompts
+            $satisfactionDetector = new \App\Services\Fortune\FortuneSatisfactionDetector($this->settings);
+            $satisfaction = $satisfactionDetector->detect($messageText);
+
+            // 🙏 ถ้า wants_to_end ชัดเจน + ไม่อยู่ใน flow พิเศษ → ปิดด้วย warm close ทันที (ประหยัด AI call)
+            //   ตรวจจาก confidence >= 50 หรือมี goodbye signal → เลี่ยง AI ทำให้ลูกค้ารู้สึก "เอาแต่ขาย"
+            if ($satisfaction['wants_to_end'] && $satisfaction['confidence'] >= 50) {
+                $closeMsg = $satisfactionDetector->getCloseMessage($userProfile['name'] ?? null);
+                $this->saveConversationMessage($userId, 'user', $messageText);
+                $this->saveConversationMessage($userId, 'assistant', $closeMsg);
+
+                Log::info('Fortune: Satisfaction wants_to_end → ปิด session อบอุ่น (no AI call)', [
+                    'user_id' => $userId,
+                    'signals' => $satisfaction['signals'],
+                    'confidence' => $satisfaction['confidence'],
+                ]);
+
+                return [
+                    'action' => 'ai_chat_response',
+                    'message' => $closeMsg,
+                    'reading' => null,
+                ];
+            }
+
+            // 🌙 (2026-05-07 Phase 2) Celtic Premium Chat — ถ้าลูกค้ามี Celtic active + ผ่านเงื่อนไข trigger
+            //   → ตอบด้วย Pro model + แม่หมอจันทรา persona + context ไพ่/Q&A
+            $celticPremiumDetector = new \App\Services\Fortune\FortuneCelticPremiumDetector($this->settings);
+            $celticContext = $celticPremiumDetector->detect($platform, $userId);
+
+            if ($celticContext !== null) {
+                try {
+                    $celticReading = $celticContext['reading'];
+                    $celticContextText = $celticPremiumDetector->buildContextForAI($celticReading);
+
+                    // append satisfaction signal ลง prompt context ถ้าจับได้
+                    if ($satisfaction['is_satisfied'] || $satisfaction['wants_to_end']) {
+                        $celticContextText .= "\n\n🙏 **สัญญาณ:** ลูกค้าแสดงความพอใจ (signals: ".implode(',', $satisfaction['signals']).') — ปิด session อย่างอบอุ่น ห้ามขายเพิ่ม';
+                    }
+
+                    $celticAiSvc = new FortuneAIService($this->settings);
+                    $celticPremiumResult = $celticAiSvc->generateCelticPremiumResponse(
+                        $messageText,
+                        $userProfile,
+                        $history,
+                        $celticContext,
+                        $celticContextText
+                    );
+
+                    if ($celticPremiumResult !== null) {
+                        // นับ message + budget tracking
+                        $celticPremiumDetector->incrementMessageCount($celticContext['reading_id']);
+
+                        $costThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                            (int) ($celticPremiumResult['tokens_used'] ?? 0),
+                            $celticPremiumResult['model'] ?? ''
+                        );
+                        app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
+                            ->recordUse($platform, $userId, $costThb);
+
+                        $this->logSensitiveEvent($platform, $userId, 'celtic_turn', $messageText, [
+                            'is_sensitive' => true,
+                            'reasons' => ['celtic_premium_chat'],
+                            'detection_used' => 'celtic_detector',
+                            'mood_level' => 1,
+                            'complexity' => 3,
+                        ], [
+                            'used_pro_model' => true,
+                            'pro_provider' => $celticPremiumResult['provider'] ?? null,
+                            'pro_model' => $celticPremiumResult['model'] ?? null,
+                            'tokens_used' => (int) ($celticPremiumResult['tokens_used'] ?? 0),
+                            'cost_thb' => $costThb,
+                        ]);
+
+                        $this->saveConversationMessage($userId, 'user', $messageText);
+                        $this->saveConversationMessage($userId, 'assistant', trim($celticPremiumResult['response'] ?? ''));
+
+                        return [
+                            'action' => 'ai_chat_response',
+                            'message' => trim($celticPremiumResult['response'] ?? ''),
+                            'reading' => null,
+                        ];
+                    }
+                } catch (Exception $e) {
+                    Log::warning('Fortune: Celtic Premium chat ล้มเหลว → fallback ปกติ', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // 💳 (2026-05-07 Phase 2) Bill Psychology — ถ้าลูกค้ามีบิลค้าง → ใช้ Pro model + bill prompt
+            $billDetector = new \App\Services\Fortune\FortuneBillContextDetector($this->settings);
+            $billContext = $billDetector->detect($platform, $userId);
+
+            if ($billContext !== null) {
+                try {
+                    // เช็ค sensitive trigger (อารมณ์ร้าย → ฟาดกลับแบบผู้ดี)
+                    $aggressiveCounter = false;
+                    $tempSensitive = (new \App\Services\Fortune\FortuneSensitivityDetector($this->settings))
+                        ->detect($messageText, ['user_id' => $userId, 'history' => $history]);
+                    if (($tempSensitive['mood_level'] ?? 1) >= 4) {
+                        $aggressiveCounter = true;
+                    }
+
+                    // เช็ค anti-spam: ถ้าเกิน mention cap → prompt บอก AI ห้าม mention บิล
+                    $reachedCap = $billDetector->reachedMentionLimit($platform, $userId);
+
+                    // เช็ค budget guard
+                    $budget = new \App\Services\Fortune\FortuneSensitiveBudgetGuard($this->settings);
+                    $budgetCheck = $budget->canUse($platform, $userId);
+
+                    if ($budgetCheck['allowed']) {
+                        $billAiSvc = new FortuneAIService($this->settings);
+                        $billResult = $billAiSvc->generateBillPsychologyResponse(
+                            $messageText,
+                            $userProfile,
+                            $history,
+                            $billContext,
+                            $aggressiveCounter,
+                            $reachedCap
+                        );
+
+                        if ($billResult !== null) {
+                            // ถ้า prompt อนุญาต mention บิล (ยังไม่เกิน cap) → increment counter
+                            if (! $reachedCap) {
+                                $responseText = trim($billResult['response'] ?? '');
+                                // heuristic: ถ้า response กล่าวถึง "บิล/ค่าครู/โอน/ชำระ" → นับว่า mention
+                                if (preg_match('/(บิล|ค่าครู|โอน|ชำระ|จ่าย|ค่าทำนาย)/u', $responseText)) {
+                                    $billDetector->incrementMention($platform, $userId);
+                                }
+                            }
+
+                            $costThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                                (int) ($billResult['tokens_used'] ?? 0),
+                                $billResult['model'] ?? ''
+                            );
+                            $budget->recordUse($platform, $userId, $costThb);
+
+                            $this->logSensitiveEvent($platform, $userId, 'chat', $messageText, [
+                                'is_sensitive' => true,
+                                'reasons' => array_filter([
+                                    'bill_psychology',
+                                    $aggressiveCounter ? 'aggressive_counter' : null,
+                                    $reachedCap ? 'mention_capped' : null,
+                                ]),
+                                'detection_used' => 'bill_detector',
+                                'mood_level' => $aggressiveCounter ? 4 : 2,
+                                'complexity' => 3,
+                            ], [
+                                'used_pro_model' => true,
+                                'pro_provider' => $billResult['provider'] ?? null,
+                                'pro_model' => $billResult['model'] ?? null,
+                                'tokens_used' => (int) ($billResult['tokens_used'] ?? 0),
+                                'cost_thb' => $costThb,
+                            ]);
+
+                            $this->saveConversationMessage($userId, 'user', $messageText);
+                            $this->saveConversationMessage($userId, 'assistant', trim($billResult['response'] ?? ''));
+
+                            return [
+                                'action' => 'ai_chat_response',
+                                'message' => trim($billResult['response'] ?? ''),
+                                'reading' => null,
+                            ];
+                        }
+                    } else {
+                        Log::info('Fortune: Bill psychology ถูก budget block — ใช้ default chat', [
+                            'user_id' => $userId,
+                            'reason' => $budgetCheck['reason'],
+                        ]);
+                    }
+                } catch (Exception $e) {
+                    Log::warning('Fortune: Bill psychology ล้มเหลว → fallback ปกติ', [
+                        'user_id' => $userId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Sensitive decision (เคสทั่วไป — chat สนทนาธรรมดา)
             $sensitiveDecision = $this->resolveSensitiveDecision(
                 $messageText,
                 $userId,

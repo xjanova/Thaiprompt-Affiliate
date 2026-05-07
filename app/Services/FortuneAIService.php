@@ -933,6 +933,252 @@ PROMPT;
     }
 
     /**
+     * 💳 (2026-05-07 Phase 2) Bill Psychology Response
+     *
+     * ใช้ Pro model + bill-aware prompt:
+     *   - แก้ objections (ไม่มีเงิน, โอนต่างประเทศ, กลัวโดนหลอก)
+     *   - อธิบายค่าครู (ทำบุญ + พลังงานแลกเปลี่ยน)
+     *   - Anti-spam: reachedMentionCap → ห้าม mention บิลซ้ำ
+     *
+     * @param  array  $billContext  จาก FortuneBillContextDetector::detect()
+     * @param  bool  $aggressiveCounter  true → ฟาดกลับแบบผู้ดี
+     * @param  bool  $reachedMentionCap  true → ห้าม mention บิลอีก
+     */
+    public function generateBillPsychologyResponse(
+        string $messageText,
+        ?array $userProfile,
+        array $history,
+        array $billContext,
+        bool $aggressiveCounter = false,
+        bool $reachedMentionCap = false
+    ): ?array {
+        $systemPrompt = $this->buildBillPsychologySystemMessage($billContext, $aggressiveCounter, $reachedMentionCap);
+
+        return $this->generateProResponse($messageText, $userProfile, $history, $systemPrompt, 'bill_psychology');
+    }
+
+    /**
+     * 🌙 (2026-05-07 Phase 2) Celtic Premium Chat Response
+     */
+    public function generateCelticPremiumResponse(
+        string $messageText,
+        ?array $userProfile,
+        array $history,
+        array $celticContext,
+        string $celticContextText
+    ): ?array {
+        $systemPrompt = $this->buildCelticPremiumSystemMessage($celticContext, $celticContextText);
+
+        return $this->generateProResponse($messageText, $userProfile, $history, $systemPrompt, 'celtic_premium');
+    }
+
+    /**
+     * 🎯 (2026-05-07 Phase 2) Internal: เรียก Pro AI ด้วย system prompt ที่กำหนด
+     *
+     * Shared logic — ใช้กับทุก Phase 2 prompt (sensitive / bill_psychology / celtic_premium)
+     */
+    protected function generateProResponse(
+        string $messageText,
+        ?array $userProfile,
+        array $history,
+        string $systemPrompt,
+        string $requestType
+    ): ?array {
+        $sensitiveProvider = $this->settings->sensitive_provider ?? 'gemini';
+        $sensitiveModel = $this->settings->sensitive_model ?? 'gemini-3.1-pro-preview';
+        $maxTokens = (int) ($this->settings->sensitive_max_tokens_per_call ?? 2000);
+
+        $poolService = new \App\Services\AiApiKeyPoolService;
+        $sensitiveKey = $poolService->acquireKey($sensitiveProvider, 'sensitive');
+
+        if (! $sensitiveKey) {
+            Log::info("FortuneAIService: ไม่มี sensitive key ({$requestType}) — caller fallback", [
+                'provider' => $sensitiveProvider,
+                'request_type' => $requestType,
+            ]);
+
+            return null;
+        }
+
+        try {
+            $apiKey = $sensitiveKey->api_key;
+            $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
+
+            $userName = $userProfile['name'] ?? '';
+            $prompt = $messageText;
+            if (! empty($userName) && $userName !== 'คุณ') {
+                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
+            }
+
+            $config = [
+                'temperature' => 0.7,
+                'max_tokens' => $maxTokens,
+            ];
+
+            $startTime = microtime(true);
+
+            $result = match ($sensitiveProvider) {
+                'gemini' => empty($history)
+                    ? $this->callChatGemini($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                default => empty($history)
+                    ? $this->callChatOpenAICompatible($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+            };
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            $sensitiveKey->recordUsage(
+                (int) ($result['input_tokens'] ?? 0),
+                (int) ($result['output_tokens'] ?? 0),
+                $resolvedModel,
+                $responseTime,
+                $requestType
+            );
+
+            Log::info("FortuneAIService: Pro {$requestType} สำเร็จ", [
+                'provider' => $sensitiveProvider,
+                'model' => $resolvedModel,
+                'response_time_ms' => $responseTime,
+                'tokens' => $result['tokens_used'] ?? 0,
+            ]);
+
+            return $result;
+        } catch (Exception $e) {
+            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
+
+            Log::warning("FortuneAIService: Pro {$requestType} ล้มเหลว — caller fallback", [
+                'error' => $e->getMessage(),
+                'request_type' => $requestType,
+            ]);
+
+            throw $e;
+        } finally {
+            $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+        }
+    }
+
+    /**
+     * 💳 Build Bill Psychology system prompt
+     */
+    protected function buildBillPsychologySystemMessage(
+        array $billContext,
+        bool $aggressiveCounter = false,
+        bool $reachedMentionCap = false
+    ): string {
+        $brand = $this->settings->fortune_brand_name ?? 'แม่หมอจันทรา';
+        $charity = trim($this->settings->bill_charity_message ?? '');
+        if (empty($charity)) {
+            $charity = 'ค่าครูที่ลูกค้าจ่าย แม่หมอเอาไปทำบุญ + ค่าธูปเทียนบูชาพระ + เป็นพลังงานแลกเปลี่ยนตามความเชื่อ — เพื่อให้คำทำนายมีพลังจริง';
+        }
+
+        $package = $billContext['package'] ?? 'การทำนาย';
+        $amount = number_format($billContext['amount'] ?? 0, 0);
+        $hoursSince = $billContext['hours_since'] ?? 0;
+        $minutesSince = $billContext['minutes_since'] ?? 0;
+        $mentionCount = $billContext['mention_count'] ?? 0;
+        $maxMentions = $billContext['max_mentions'] ?? 2;
+
+        $timeStr = $hoursSince >= 1 ? "{$hoursSince} ชั่วโมง" : "{$minutesSince} นาที";
+
+        $extras = [];
+        if ($reachedMentionCap) {
+            $extras[] = "⚠️ **ห้าม mention บิล/การโอน/ค่าครู ในการตอบนี้** — Bot ทวงเกินกำหนดแล้ว ({$mentionCount}/{$maxMentions}) ต้องเปลี่ยนเป็นแชทธรรมดา ถ้าลูกค้าถามอย่างอื่นก็ตอบไป";
+        }
+        if ($aggressiveCounter) {
+            $extras[] = '🛡️ **โหมดฟาดกลับแบบผู้ดี**: ลูกค้าก้าวร้าว/ดูถูก — ใช้คำสุภาพ แต่ตั้งขอบเขตชัด: ไม่อ่อนข้อ ไม่ขอโทษเกินจำเป็น ใช้ I-statement ดึงเข้าหาคุณค่าของบริการ';
+        }
+        $extra = ! empty($extras) ? "\n\n".implode("\n\n", $extras) : '';
+
+        return <<<PROMPT
+คุณคือ{$brand} — กำลังคุยกับลูกค้าที่สร้างบิลแต่ยังไม่กล้าโอน
+
+📋 บริบทบิล:
+  • แพคเกจ: {$package}
+  • ค่าครู: {$amount} บาท
+  • บิลสร้างไป: {$timeStr}
+  • Bot mention บิลไปแล้ว: {$mentionCount}/{$maxMentions} ครั้ง
+
+💡 เกี่ยวกับค่าครู (อ้างอิงตอนคุย):
+{$charity}
+
+🎯 หน้าที่ของคุณ:
+1. **คุยให้ลูกค้าเชื่อใจ — ไม่ทวงรัวๆ** (ดูเหมือนสแกม)
+2. **ฟังและเข้าใจก่อน** — ลูกค้ากำลังลังเลเพราะอะไร?
+3. **แก้ objections ตรงประเด็น**:
+   - "ไม่มีเงิน" → ไม่กดดัน บอกได้ว่ารอเงินเดือน หรือสะดวกตอนไหนค่อยกลับมา
+   - "โอนต่างประเทศไม่ได้" → แนะนำ TrueMoney Wallet / Wise / promptpay overseas
+   - "กลัวโดนหลอก" → reassure + บอกว่ามีบัญชีจริง / รีวิวลูกค้าเก่า
+   - "ทำไมต้องจ่าย" → อธิบายค่าครูตามข้อมูลข้างบน — ไม่เสียเปล่า
+4. **ตอบคำถามอื่นได้ปกติ** — ลูกค้าถามเรื่องดวงทั่วไปก็ตอบ ห้ามวกเรื่องบิลทุกประโยค
+5. **เคารพการตัดสินใจ** — ลูกค้าบอก "เดี๋ยวค่อยจ่าย" → ไม่ติงตำหนิ
+
+🚫 ห้าม:
+- ทวงบิลซ้ำ ๆ ("จ่ายหรือยัง", "อย่าลืมจ่ายนะ")
+- กดดันด้วยคำว่า "ด่วน/รีบ/ก่อนจะหมดสิทธิ์"
+- ใช้คำแสดงอารมณ์ลบกับลูกค้า
+- สัญญาผลทำนายเกินจริงเพื่อจูงใจให้จ่าย{$extra}
+
+✅ ตอบสั้น 2-4 ประโยค กระชับ อบอุ่น เหมือนคนจริง — ไม่เหมือนสคริปต์
+PROMPT;
+    }
+
+    /**
+     * 🌙 Build Celtic Premium Chat system prompt
+     */
+    protected function buildCelticPremiumSystemMessage(array $celticContext, string $celticContextText): string
+    {
+        $brand = $this->settings->fortune_brand_name ?? 'แม่หมอจันทรา';
+        $minutesRemaining = $celticContext['minutes_remaining'] ?? 0;
+        $shouldWarn = $celticContext['should_warn_time'] ?? false;
+        $msgCount = $celticContext['message_count'] ?? 0;
+        $maxMsg = $celticContext['max_messages'] ?? 30;
+
+        $override = trim($this->settings->celtic_premium_chat_prompt_override ?? '');
+        if (! empty($override)) {
+            return str_replace(
+                ['{minutes_remaining}', '{cards_and_qa}', '{msg_count}', '{max_msg}'],
+                [(string) $minutesRemaining, $celticContextText, (string) $msgCount, (string) $maxMsg],
+                $override
+            );
+        }
+
+        $warnDirective = $shouldWarn
+            ? "\n⏰ **เหลือเวลาน้อยแล้ว ({$minutesRemaining} นาที)** — เตือนลูกค้าอย่างนุ่มนวล (ครั้งเดียวพอ): \"แม่หมอเหลือเวลาอีก {$minutesRemaining} นาทีก่อนพลังไพ่จะคืนสู่จักรวาล อยากถามอะไรเพิ่มเติม รีบบอกแม่หมอได้นะคะ ✨\""
+            : '';
+
+        return <<<PROMPT
+คุณคือ{$brand} — ผู้เปิดไพ่ Celtic Cross 10 ใบให้ลูกค้าคนนี้เมื่อสักครู่
+
+📜 บริบทเดิมของลูกค้า:
+{$celticContextText}
+
+⏰ สถานะ session:
+  • เหลือเวลา: {$minutesRemaining} นาที (ก่อนพลังไพ่หมด)
+  • ข้อความที่คุยมาแล้ว: {$msgCount}/{$maxMsg}{$warnDirective}
+
+🎯 หลักการตอบ:
+1. **ใช้ context จากไพ่ + Q&A เดิม** — ห้ามขอเปิดไพ่ใหม่ ห้ามเริ่มทำนายใหม่
+2. **ลึก แบบหมอดูจริง** — ไม่ผิวเผิน ไม่เป็น AI ทั่วไป
+   - อ้างอิงไพ่ใบที่เกี่ยวข้องในตำแหน่งต่างๆ
+   - เชื่อมโยงกับคำตอบก่อนหน้า
+   - ใช้ภาษาแบบหมอดู: "ดวงคุณ...", "ไพ่ใบนี้บอกว่า...", "เจ้าชะตา..."
+3. **ดึงกลับเข้าไพ่** ถ้าลูกค้าถามนอกเรื่อง — เชื่อมเข้ากับไพ่ใบใดใบหนึ่งเสมอ
+4. **ลึกซึ้งทางใจ** — แนะนำเชิงปลอบใจ ไม่ตัดสิน ไม่ทำนายตาย/ฆ่าตัวตาย
+5. **ปิด session อบอุ่นเมื่อลูกค้าพอใจ** — "ขอบคุณ"/"พอแล้ว" → ปิดอย่างอบอุ่น ไม่ขายเพิ่ม
+6. **ห้ามขายบริการอื่น** — เจ้าชะตาจ่ายแล้ว เคารพเวลาเขา
+
+🚫 ห้าม:
+- เริ่มทำนายใหม่ / ขอเปิดไพ่ใหม่
+- บอก "ฉันเป็น AI" / "ฉันคือบอท"
+- ทำนายเรื่องตาย ความตาย หรืออายุสั้น
+- เสนอบริการเพิ่มในจังหวะที่ลูกค้ากำลังพอใจ
+
+✅ ตอบยาวพอเหมาะ 3-6 ประโยค — ลึก แต่ไม่เยิ่นเย้อ
+PROMPT;
+    }
+
+    /**
      * 🌟 (2026-05-07) System message สำหรับ Sensitive Mode
      *
      * จิตวิทยาขั้นสูง — ต้อนแต่ไม่ด่า, ไม้แข็งแต่สุภาพ

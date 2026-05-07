@@ -166,6 +166,20 @@ class FortuneTellingSetting extends Model
         'sensitive_offtopic_action',
         'sensitive_offtopic_block_message',
         'sensitive_log_enabled',
+        // 💳 Bill Psychology (2026-05-07 Phase 2)
+        'bill_psychology_enabled',
+        'bill_charity_message',
+        'bill_max_mentions_per_session',
+        'bill_psychology_window_hours',
+        // 🌙 Celtic Premium Chat (2026-05-07 Phase 2)
+        'celtic_premium_chat_enabled',
+        'celtic_premium_chat_trigger',
+        'celtic_premium_chat_warn_minutes_left',
+        'celtic_premium_chat_max_messages',
+        'celtic_premium_chat_prompt_override',
+        // 🙏 Satisfaction Detector (2026-05-07 Phase 2)
+        'satisfaction_detection_enabled',
+        'satisfaction_close_message',
         // ระบบดูดวงสาธารณะ (Horoscope Public)
         'horoscope_public_enabled',
         'horoscope_free_daily_limit',
@@ -261,6 +275,16 @@ class FortuneTellingSetting extends Model
         'sensitive_max_tokens_per_call' => 'integer',
         'sensitive_offtopic_strikes' => 'integer',
         'sensitive_log_enabled' => 'boolean',
+        // 💳 Bill Psychology (2026-05-07 Phase 2)
+        'bill_psychology_enabled' => 'boolean',
+        'bill_max_mentions_per_session' => 'integer',
+        'bill_psychology_window_hours' => 'integer',
+        // 🌙 Celtic Premium Chat (2026-05-07 Phase 2)
+        'celtic_premium_chat_enabled' => 'boolean',
+        'celtic_premium_chat_warn_minutes_left' => 'integer',
+        'celtic_premium_chat_max_messages' => 'integer',
+        // 🙏 Satisfaction Detector (2026-05-07 Phase 2)
+        'satisfaction_detection_enabled' => 'boolean',
         // ระบบดูดวงสาธารณะ
         'horoscope_public_enabled' => 'boolean',
         'horoscope_free_daily_limit' => 'integer',
@@ -380,6 +404,17 @@ class FortuneTellingSetting extends Model
         'sensitive_offtopic_strikes' => 3,
         'sensitive_offtopic_action' => 'revert',  // revert / block / handoff
         'sensitive_log_enabled' => true,
+        // 💳 Bill Psychology defaults (2026-05-07 Phase 2)
+        'bill_psychology_enabled' => true,
+        'bill_max_mentions_per_session' => 2,
+        'bill_psychology_window_hours' => 24,
+        // 🌙 Celtic Premium Chat defaults
+        'celtic_premium_chat_enabled' => true,
+        'celtic_premium_chat_trigger' => 'after_questions_done',
+        'celtic_premium_chat_warn_minutes_left' => 5,
+        'celtic_premium_chat_max_messages' => 30,
+        // 🙏 Satisfaction Detector defaults
+        'satisfaction_detection_enabled' => true,
     ];
 
     /**

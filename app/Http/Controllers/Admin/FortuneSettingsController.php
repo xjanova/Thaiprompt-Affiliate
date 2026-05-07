@@ -282,6 +282,20 @@ class FortuneSettingsController extends Controller
             'sensitive_offtopic_action' => 'nullable|in:revert,block,handoff',
             'sensitive_offtopic_block_message' => 'nullable|string|max:1000',
             'sensitive_log_enabled' => 'boolean',
+            // 💳 (2026-05-07 Phase 2) Bill Psychology
+            'bill_psychology_enabled' => 'boolean',
+            'bill_charity_message' => 'nullable|string|max:2000',
+            'bill_max_mentions_per_session' => 'nullable|integer|min:1|max:10',
+            'bill_psychology_window_hours' => 'nullable|integer|min:1|max:168',
+            // 🌙 Celtic Premium Chat
+            'celtic_premium_chat_enabled' => 'boolean',
+            'celtic_premium_chat_trigger' => 'nullable|in:after_questions_done,always_after_q1',
+            'celtic_premium_chat_warn_minutes_left' => 'nullable|integer|min:1|max:30',
+            'celtic_premium_chat_max_messages' => 'nullable|integer|min:0|max:200',
+            'celtic_premium_chat_prompt_override' => 'nullable|string|max:8000',
+            // 🙏 Satisfaction Detector
+            'satisfaction_detection_enabled' => 'boolean',
+            'satisfaction_close_message' => 'nullable|string|max:1000',
         ]);
 
         // 🌟 (2026-05-07) แปลง textarea → array สำหรับ keywords/topics
@@ -324,6 +338,10 @@ class FortuneSettingsController extends Controller
             'monthly_free_claim_enabled',
             // 🌟 (2026-05-07) Sensitive AI Mode
             'sensitive_log_enabled',
+            // 💳 (2026-05-07 Phase 2)
+            'bill_psychology_enabled',
+            'celtic_premium_chat_enabled',
+            'satisfaction_detection_enabled',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

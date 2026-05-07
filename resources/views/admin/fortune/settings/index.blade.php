@@ -865,6 +865,160 @@
             </div> {{-- End config (hidden when off) --}}
         </div> {{-- End Sensitive AI Mode card --}}
 
+        {{-- ===== 💳 Bill Psychology (2026-05-07 Phase 2) ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                 billEnabled: {{ old('bill_psychology_enabled', $settings->bill_psychology_enabled ?? true) ? 'true' : 'false' }},
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    💳 Bill Psychology
+                    <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">(แม่หมอใจดีคุยให้ลูกค้ายอมโอน)</span>
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="bill_psychology_enabled" value="0">
+                    <input type="checkbox" name="bill_psychology_enabled" value="1" x-model="billEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-emerald-600"></div>
+                </label>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                ⚠️ ใช้ Pro model (sensitive key) — เปิด Sensitive AI Mode + เพิ่ม sensitive key ก่อน
+            </p>
+
+            <div x-show="billEnabled" x-cloak x-collapse>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            ⏰ Window (ชั่วโมง)
+                        </label>
+                        <input type="number" name="bill_psychology_window_hours" min="1" max="168"
+                               value="{{ old('bill_psychology_window_hours', $settings->bill_psychology_window_hours ?? 24) }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 mt-1">ถือว่ามีบิลค้างใน N ชั่วโมงล่าสุด</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            🔢 Mention บิลได้สูงสุด/session
+                        </label>
+                        <input type="number" name="bill_max_mentions_per_session" min="1" max="10"
+                               value="{{ old('bill_max_mentions_per_session', $settings->bill_max_mentions_per_session ?? 2) }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <p class="text-xs text-gray-500 mt-1">เกินแล้ว Bot ห้ามทวงบิลอีก (กันสแกม)</p>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        💡 ข้อความค่าครู (admin custom — ใช้ default ถ้าเว้น)
+                    </label>
+                    <textarea name="bill_charity_message" rows="3"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              placeholder="ค่าครู 39 บาท แม่หมอเอาไปทำบุญ + ค่าธูปเทียนบูชาพระ + เป็นพลังงานแลกเปลี่ยนตามความเชื่อ — เพื่อให้คำทำนายมีพลังจริง">{{ old('bill_charity_message', $settings->bill_charity_message) }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">AI จะใช้ข้อความนี้เมื่ออธิบายว่า "ทำไมต้องจ่าย" ให้ลูกค้า</p>
+                </div>
+            </div>
+        </div> {{-- End Bill Psychology --}}
+
+        {{-- ===== 🌙 Celtic Premium Chat (2026-05-07 Phase 2) ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                 celticPremiumEnabled: {{ old('celtic_premium_chat_enabled', $settings->celtic_premium_chat_enabled ?? true) ? 'true' : 'false' }},
+                 showPromptOverride: false,
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🌙 Celtic Premium Chat
+                    <span class="text-xs font-normal text-indigo-600 dark:text-indigo-400">(หลังตอบครบ ให้คุยต่อจนหมด window)</span>
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="celtic_premium_chat_enabled" value="0">
+                    <input type="checkbox" name="celtic_premium_chat_enabled" value="1" x-model="celticPremiumEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-indigo-600"></div>
+                </label>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                ลูกค้า Celtic 99฿ คุยต่อกับแม่หมอแบบจริง ๆ ใช้ context ไพ่ + Q&A เดิม จนหมดเวลา QA window (default 30 นาที)
+            </p>
+
+            <div x-show="celticPremiumEnabled" x-cloak x-collapse>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            🎯 Trigger
+                        </label>
+                        <select name="celtic_premium_chat_trigger"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="after_questions_done" {{ ($settings->celtic_premium_chat_trigger ?? 'after_questions_done') === 'after_questions_done' ? 'selected' : '' }}>หลังตอบครบจำนวน max_questions</option>
+                            <option value="always_after_q1" {{ ($settings->celtic_premium_chat_trigger ?? '') === 'always_after_q1' ? 'selected' : '' }}>ตลอดเวลาหลัง Q1</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            ⏰ เตือนเวลาเหลือ (นาที)
+                        </label>
+                        <input type="number" name="celtic_premium_chat_warn_minutes_left" min="1" max="30"
+                               value="{{ old('celtic_premium_chat_warn_minutes_left', $settings->celtic_premium_chat_warn_minutes_left ?? 5) }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
+                            🔢 Max messages (0 = unlimited)
+                        </label>
+                        <input type="number" name="celtic_premium_chat_max_messages" min="0" max="200"
+                               value="{{ old('celtic_premium_chat_max_messages', $settings->celtic_premium_chat_max_messages ?? 30) }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    </div>
+                </div>
+
+                <button type="button" @click="showPromptOverride = !showPromptOverride"
+                        class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline mb-2">
+                    <span x-show="!showPromptOverride">⚙️ Override system prompt (advanced)</span>
+                    <span x-show="showPromptOverride" x-cloak>ซ่อน prompt override</span>
+                </button>
+
+                <div x-show="showPromptOverride" x-cloak x-collapse>
+                    <textarea name="celtic_premium_chat_prompt_override" rows="6"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                              placeholder="เว้นว่าง = ใช้ default prompt&#10;Variables ที่ใช้ได้: {minutes_remaining}, {cards_and_qa}, {msg_count}, {max_msg}">{{ old('celtic_premium_chat_prompt_override', $settings->celtic_premium_chat_prompt_override) }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">⚠️ ถ้าใส่ prompt เอง ต้องระบุ context ไพ่/Q&A ผ่าน <code>{cards_and_qa}</code></p>
+                </div>
+            </div>
+        </div> {{-- End Celtic Premium --}}
+
+        {{-- ===== 🙏 Satisfaction Detector (2026-05-07 Phase 2) ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                 satisfactionEnabled: {{ old('satisfaction_detection_enabled', $settings->satisfaction_detection_enabled ?? true) ? 'true' : 'false' }},
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🙏 Satisfaction Detector
+                    <span class="text-xs font-normal text-pink-600 dark:text-pink-400">(ปิด session อบอุ่นเมื่อลูกค้าพอใจ)</span>
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="satisfaction_detection_enabled" value="0">
+                    <input type="checkbox" name="satisfaction_detection_enabled" value="1" x-model="satisfactionEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-pink-600"></div>
+                </label>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                ตรวจ "ขอบคุณ / พอแล้ว / ดีมาก / บาย" → ปิด session แบบอบอุ่น (ไม่เสนอบริการเพิ่ม)
+            </p>
+
+            <div x-show="satisfactionEnabled" x-cloak x-collapse>
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    💌 ข้อความปิด session (admin custom — เว้นว่าง = ใช้ default)
+                </label>
+                <textarea name="satisfaction_close_message" rows="4"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                          placeholder="🌙 ขอบคุณ{name}ที่ไว้วางใจแม่หมอจันทรานะคะ&#10;&#10;ขอให้ดวงดาวคุ้มครอง พบเจอแต่สิ่งดี ๆ ✨&#10;หากต้องการปรึกษาเพิ่มเติมเมื่อใด แม่หมอพร้อมเสมอค่ะ 🙏">{{ old('satisfaction_close_message', $settings->satisfaction_close_message) }}</textarea>
+                <p class="text-xs text-gray-500 mt-1">Variables: <code>{name}</code> = ชื่อลูกค้า (default 'เจ้าชะตา')</p>
+            </div>
+        </div> {{-- End Satisfaction Detector --}}
+
         {{-- Comment Engagement Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">
