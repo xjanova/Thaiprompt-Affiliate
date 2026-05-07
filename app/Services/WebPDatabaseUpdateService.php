@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\LineAvatar;
 use App\Models\LineRichMenu;
 use App\Models\Setting;
 use App\Models\WithdrawalRequest;
@@ -21,7 +20,6 @@ class WebPDatabaseUpdateService
     {
         $results = [
             'settings' => 0,
-            'line_avatars' => 0,
             'line_rich_menus' => 0,
             'withdrawal_requests' => 0,
             'total_updated' => 0,
@@ -53,11 +51,10 @@ class WebPDatabaseUpdateService
                 $results['settings'] = $settingsUpdated;
             }
 
-            // Update LINE Avatars
-            if (isset($byDirectory['avatars'])) {
-                $avatarsUpdated = $this->updateLineAvatars($byDirectory['avatars']);
-                $results['line_avatars'] = $avatarsUpdated;
-            }
+            // หมายเหตุ: directory 'avatars/' (user/seller profile pictures) ยังถูกแปลงเป็น WebP
+            //   แต่ไม่อัพเดต DB ที่นี่ — model LineAvatar ถูกลบใน commit 3349afca0 (2025-11-23)
+            //   user avatar paths เก็บใน users.profile_picture column แทน
+            //   ถ้าต้องการให้ DB sync หลังแปลง ต้องเพิ่ม updateUserProfilePictures() ใหม่
 
             // Update LINE Rich Menus
             if (isset($byDirectory['rich-menus'])) {
@@ -73,7 +70,6 @@ class WebPDatabaseUpdateService
 
             $results['total_updated'] = array_sum([
                 $results['settings'],
-                $results['line_avatars'],
                 $results['line_rich_menus'],
                 $results['withdrawal_requests'],
             ]);
@@ -135,39 +131,6 @@ class WebPDatabaseUpdateService
 
             } catch (\Exception $e) {
                 Log::error("Failed to update setting for {$oldPath}: ".$e->getMessage());
-            }
-        }
-
-        return $updated;
-    }
-
-    /**
-     * Update LineAvatar table
-     */
-    protected function updateLineAvatars(array $records): int
-    {
-        $updated = 0;
-
-        foreach ($records as $record) {
-            $oldPath = $record['old_path'];
-            $newPath = $record['new_path'];
-
-            try {
-                // Update avatars with file_path
-                $avatars = LineAvatar::where('file_path', $oldPath)
-                    ->where('source_type', 'upload')
-                    ->get();
-
-                foreach ($avatars as $avatar) {
-                    $avatar->update([
-                        'file_path' => $newPath,
-                        'file_url' => '/storage/'.$newPath,
-                    ]);
-                    $updated++;
-                }
-
-            } catch (\Exception $e) {
-                Log::error("Failed to update LINE avatar for {$oldPath}: ".$e->getMessage());
             }
         }
 
@@ -247,13 +210,6 @@ class WebPDatabaseUpdateService
 
                 // Rollback Settings
                 Setting::where('value', $newPath)->update(['value' => $oldPath]);
-
-                // Rollback LINE Avatars
-                LineAvatar::where('file_path', $record['new_path'])
-                    ->update([
-                        'file_path' => $record['old_path'],
-                        'file_url' => $oldPath,
-                    ]);
 
                 // Rollback Rich Menus
                 LineRichMenu::where('image_path', $record['new_path'])
