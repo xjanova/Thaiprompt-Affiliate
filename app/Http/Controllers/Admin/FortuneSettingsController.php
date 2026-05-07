@@ -154,6 +154,11 @@ class FortuneSettingsController extends Controller
             ];
         })->values()->toArray();
 
+        // 🎙️ (2026-05-08) Google Cloud TTS — ตรวจ credentials ที่มีอยู่
+        //    ระบบใช้ Google Translate / Vision / Speech-to-Text อยู่แล้ว →
+        //    key/Service Account เดียวกันใช้ TTS ได้เลย ถ้าเปิด API ใน project
+        $googleTtsDiag = \App\Services\Tts\GoogleCloudTtsProvider::diagnoseCredentials();
+
         return view('admin.fortune.settings.index', [
             'settings' => $settings,
             'bankAccounts' => $bankAccounts,
@@ -161,6 +166,7 @@ class FortuneSettingsController extends Controller
             'supportedBanks' => $supportedBanks,
             'defaultBasicPrompt' => FortuneConversationService::getDefaultBasicPrompt(),
             'defaultDeepPrompt' => FortuneConversationService::getDefaultDeepPrompt(),
+            'googleTtsDiag' => $googleTtsDiag,
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
     }
@@ -297,6 +303,23 @@ class FortuneSettingsController extends Controller
             // 🙏 Satisfaction Detector
             'satisfaction_detection_enabled' => 'boolean',
             'satisfaction_close_message' => 'nullable|string|max:1000',
+            // 🎙️ (2026-05-08) Voice Summary (TTS)
+            'voice_summary_enabled' => 'boolean',
+            'voice_summary_tier_scope' => 'nullable|in:celtic_99_only,paid_all,all',
+            'voice_summary_primary_provider' => 'nullable|in:minimax,openai_tts,google_tts,gtts',
+            'voice_summary_fallback_providers' => 'nullable|array',
+            'voice_summary_fallback_providers.*' => 'in:minimax,openai_tts,google_tts,gtts',
+            'minimax_api_key' => 'nullable|string|max:5000',
+            'minimax_group_id' => 'nullable|string|max:100',
+            'minimax_model' => 'nullable|string|max:50',
+            'minimax_voice_id' => 'nullable|string|max:100',
+            'openai_tts_model' => 'nullable|string|max:50',
+            'openai_tts_voice' => 'nullable|in:alloy,echo,fable,onyx,nova,shimmer',
+            'google_tts_voice' => 'nullable|string|max:100',
+            'google_tts_speaking_rate' => 'nullable|numeric|min:0.25|max:4.0',
+            'voice_summary_max_chars' => 'nullable|integer|min:200|max:5000',
+            'voice_summary_prompt' => 'nullable|string|max:5000',
+            'voice_summary_intro_message' => 'nullable|string|max:500',
         ]);
 
         // 🌟 (2026-05-07) แปลง textarea → array สำหรับ keywords/topics
@@ -343,6 +366,8 @@ class FortuneSettingsController extends Controller
             'bill_psychology_enabled',
             'celtic_premium_chat_enabled',
             'satisfaction_detection_enabled',
+            // 🎙️ (2026-05-08) Voice Summary
+            'voice_summary_enabled',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {
@@ -353,6 +378,12 @@ class FortuneSettingsController extends Controller
         // จัดการ fortune_bank_account_ids (empty array → null)
         if (empty($validated['fortune_bank_account_ids'])) {
             $validated['fortune_bank_account_ids'] = null;
+        }
+
+        // 🎙️ (2026-05-08) Voice fallback providers (empty array → null)
+        if (array_key_exists('voice_summary_fallback_providers', $validated)
+            && empty($validated['voice_summary_fallback_providers'])) {
+            $validated['voice_summary_fallback_providers'] = null;
         }
 
         // อัพโหลด QR Code ถ้ามี

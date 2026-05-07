@@ -513,6 +513,127 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🎙️ (2026-05-08) ส่ง audio attachment ไป Facebook Messenger
+     *
+     * FB Audio Attachment API:
+     *   - attachment.type = 'audio'
+     *   - payload.url ต้องเป็น HTTPS + .mp3/.m4a (max 25MB)
+     *   - is_reusable = true → cache attachment_id ใช้ซ้ำได้
+     *   - รองรับทั้ง RESPONSE (24hr window) และ MESSAGE_TAG (POST_PURCHASE_UPDATE)
+     *
+     * Reference: https://developers.facebook.com/docs/messenger-platform/send-messages#audio
+     *
+     * @param  string  $recipientId  Facebook PSID
+     * @param  string  $audioUrl  HTTPS URL ของ mp3 file
+     * @param  array  $options  ['comment_id' => ?, 'message_tag' => 'POST_PURCHASE_UPDATE'|null]
+     */
+    public function sendAudio(string $recipientId, string $audioUrl, array $options = []): bool
+    {
+        $commentId = $options['comment_id'] ?? null;
+        $messageTag = $options['message_tag'] ?? null;
+
+        // ลองผ่าน Private Replies (comment_id) ก่อนถ้ามี
+        if (! empty($commentId)) {
+            try {
+                $prPayload = [
+                    'recipient' => ['comment_id' => $commentId],
+                    'message' => [
+                        'attachment' => [
+                            'type' => 'audio',
+                            'payload' => [
+                                'url' => $audioUrl,
+                                'is_reusable' => true,
+                            ],
+                        ],
+                    ],
+                    'access_token' => $this->pageAccessToken,
+                ];
+
+                $prResponse = Http::timeout(30)->post($this->graphUrl('/me/messages'), $prPayload);
+                if ($prResponse->successful()) {
+                    Log::info('✅ ส่ง audio ผ่าน Private Reply สำเร็จ', [
+                        'comment_id' => $commentId,
+                    ]);
+
+                    return true;
+                }
+                Log::info('sendAudio: Private Reply fail → fallback /me/messages', [
+                    'comment_id' => $commentId,
+                ]);
+            } catch (Exception $e) {
+                Log::warning('sendAudio: Private Reply exception', ['error' => $e->getMessage()]);
+            }
+        }
+
+        // ลอง RESPONSE → fallback MESSAGE_TAG (POST_PURCHASE_UPDATE)
+        $messagingTypes = $messageTag ? ['MESSAGE_TAG'] : ['RESPONSE', 'MESSAGE_TAG'];
+
+        foreach ($messagingTypes as $msgType) {
+            $payload = [
+                'recipient' => ['id' => $recipientId],
+                'message' => [
+                    'attachment' => [
+                        'type' => 'audio',
+                        'payload' => [
+                            'url' => $audioUrl,
+                            'is_reusable' => true,
+                        ],
+                    ],
+                ],
+                'messaging_type' => $msgType,
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            if ($msgType === 'MESSAGE_TAG') {
+                $payload['tag'] = $messageTag ?: 'POST_PURCHASE_UPDATE';
+            }
+
+            try {
+                $response = Http::timeout(30)->post($this->graphUrl('/me/messages'), $payload);
+
+                if ($response->successful()) {
+                    Log::info('✅ ส่ง audio สำเร็จ', [
+                        'recipient' => $recipientId,
+                        'audio_url' => $audioUrl,
+                        'messaging_type' => $msgType,
+                    ]);
+
+                    return true;
+                }
+
+                $errBody = $response->json();
+                $errSubcode = $errBody['error']['error_subcode'] ?? 0;
+                $errMsg = $errBody['error']['message'] ?? $response->body();
+
+                Log::warning('sendAudio '.$msgType.' fail', [
+                    'recipient' => $recipientId,
+                    'http_status' => $response->status(),
+                    'error_subcode' => $errSubcode,
+                    'error_message' => $errMsg,
+                ]);
+
+                // RESPONSE fail ด้วย 24hr expired → ไป MESSAGE_TAG
+                if ($msgType === 'RESPONSE' && in_array($errSubcode, [1545041, 2018278, 2018065])) {
+                    continue;
+                }
+
+                // permission error → หยุด
+                $errCode = $errBody['error']['code'] ?? 0;
+                if (in_array($errCode, [190, 10, 200])) {
+                    return false;
+                }
+            } catch (Exception $e) {
+                Log::warning('sendAudio exception: '.$e->getMessage(), [
+                    'recipient' => $recipientId,
+                    'messaging_type' => $msgType,
+                ]);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * ส่ง typing indicator (แสดงจุดสามจุดว่ากำลังพิมพ์)
      *
      * @param  string  $recipientId  Facebook User ID

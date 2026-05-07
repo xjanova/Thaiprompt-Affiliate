@@ -47,6 +47,9 @@ class AiApiKey extends Model
 
     /**
      * Providers ที่รองรับ
+     *
+     * 🎙️ (2026-05-08) เพิ่ม minimax — ใช้สำหรับ TTS (text-to-speech)
+     *    purpose='tts' จะ filter เฉพาะ key ที่ไว้ใช้สังเคราะห์เสียง
      */
     public const PROVIDERS = [
         'grok' => 'Grok (xAI)',
@@ -59,6 +62,7 @@ class AiApiKey extends Model
         'deepseek' => 'DeepSeek',
         'typhoon' => 'Typhoon (SCB 10X)',
         'xiaomi' => 'Xiaomi MiMo',
+        'minimax' => 'MiniMax (TTS / Audio)',
     ];
 
     /**
@@ -75,6 +79,9 @@ class AiApiKey extends Model
         'deepseek' => 'https://api.deepseek.com/v1',
         'typhoon' => 'https://api.opentyphoon.ai/v1',
         'xiaomi' => 'https://api.xiaomimimo.com/v1',
+        // 🎙️ (2026-05-08) MiniMax v2 endpoint — `.io` not `.chat`
+        //   ก่อนหน้า api.minimax.chat = v1 (legacy) — ใช้ v2 ที่ api.minimax.io
+        'minimax' => 'https://api.minimax.io/v1',
     ];
 
     /**
@@ -103,14 +110,30 @@ class AiApiKey extends Model
             'mixtral-8x7b-32768',
         ],
         'openai' => [
+            // 🆕 (2026-05-08) GPT-5.x family — current generation (May 2026)
+            //   ⚠️ "preview" suffix = ยังไม่ stable — ใช้แล้วระวังเปลี่ยน
+            'gpt-5.5-pro',                    // ⭐ ฉลาดสุด — reasoning + agentic
+            'gpt-5.5',                        // ⭐ flagship multimodal
+            'gpt-5.5-mini',                   // ⭐ ถูก + เร็ว
+            'gpt-5.4-pro',                    // ก่อนหน้า 5.5 (เผื่อ admin มี key เก่า)
+            'gpt-5.4',
+            'gpt-5.4-mini',
+            'gpt-5',                          // legacy stable
+            'gpt-5-mini',
+            // GPT-4 family — stable (ใช้ได้ตลอด)
             'gpt-4o',
             'gpt-4o-mini',
             'gpt-4-turbo',
             'gpt-4',
             'gpt-3.5-turbo',
+            // o-series reasoning models
             'o1-preview',
             'o1-mini',
             'o3-mini',
+            // 🎙️ TTS models — เลือกได้ถ้า key purpose='tts'
+            'gpt-4o-mini-tts',
+            'tts-1',
+            'tts-1-hd',
         ],
         'gemini' => [
             // 🆕 (2026-05-06) Gemini 3.x — current generation (May 2026)
@@ -179,6 +202,21 @@ class AiApiKey extends Model
             'mimo-v2-omni',
             'mimo-v2-flash',
         ],
+        // 🎙️ (2026-05-08) MiniMax TTS — text-to-audio
+        //   ใช้กับ purpose='tts' — สังเคราะห์เสียงสรุปคำทำนาย Celtic 99฿
+        //   📚 https://platform.minimax.io/docs/api-reference/speech-t2a-http
+        //   v2 endpoint = https://api.minimax.io/v1/t2a_v2 (ไม่ต้อง group_id ใน URL แล้ว)
+        //   models เรียงจากใหม่→เก่า — ใหม่กว่า = quality ดีกว่า + ราคาถูกกว่า ตามทั่วไป
+        'minimax' => [
+            'speech-2.8-hd',          // ⭐ ใหม่สุด — HD quality (current generation)
+            'speech-2.8-turbo',       // ⭐ ใหม่สุด — turbo (เร็ว+ถูก)
+            'speech-2.6-hd',          // gen ก่อน 2.8
+            'speech-2.6-turbo',
+            'speech-02-hd',           // older HD
+            'speech-02-turbo',        // older turbo
+            'speech-01-hd',           // legacy
+            'speech-01-turbo',        // legacy
+        ],
     ];
 
     /**
@@ -201,6 +239,10 @@ class AiApiKey extends Model
         'free_card' => '🎁 เฉพาะทำนายฟรี (1 ใบ หลัง DM)',
         'chat' => 'เฉพาะแชทสนทนา (chat)',
         'sensitive' => '🌟 เฉพาะบริบทละเอียดอ่อน (Pro model — Gemini Pro/GPT-5+)',
+        // 🎙️ (2026-05-08) Voice synthesis — Celtic 99฿ summary audio
+        //    STRICT scope (เหมือน 'sensitive') — ไม่ fallback ไป any
+        //    เหตุผล: TTS API คนละ schema — ใช้ key ผิดทางจะ fail แน่ๆ
+        'tts' => '🎙️ เฉพาะสังเคราะห์เสียง (TTS — MiniMax/OpenAI TTS)',
     ];
 
     /**
@@ -498,6 +540,13 @@ class AiApiKey extends Model
         // เหตุผล: Pro model แพง 5-15x — ไม่ใช้ key อื่นแทน
         if ($purpose === 'sensitive') {
             return $query->where('purpose', 'sensitive');
+        }
+
+        // 🎙️ (2026-05-08) tts = STRICT scope (ไม่ fallback)
+        //    เหตุผล: TTS API คนละ schema (request/response format) — ใช้ key chat/prediction
+        //    มาทำ TTS จะ fail ทั้งหมด. caller ต้อง handle null + fallback ไป provider ฟรี
+        if ($purpose === 'tts') {
+            return $query->where('purpose', 'tts');
         }
 
         // free_card เป็น subset ของ prediction → fallback ให้ prediction key ทำได้

@@ -1000,6 +1000,291 @@
             </div>
         </div> {{-- End Celtic Premium --}}
 
+        {{-- ===== 🎙️ Voice Summary (TTS) — 2026-05-08 ===== --}}
+        @php
+            $voiceFallbacks = old('voice_summary_fallback_providers', $settings->voice_summary_fallback_providers ?? []);
+            if (!is_array($voiceFallbacks)) { $voiceFallbacks = []; }
+        @endphp
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                 voiceEnabled: {{ old('voice_summary_enabled', $settings->voice_summary_enabled ?? false) ? 'true' : 'false' }},
+                 primaryProvider: '{{ old('voice_summary_primary_provider', $settings->voice_summary_primary_provider ?? 'minimax') }}',
+                 showAdvanced: false,
+             }">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🎙️ เสียงสรุปคำทำนาย (TTS)
+                    <span class="text-xs font-normal text-purple-600 dark:text-purple-400">(VIP perk — Celtic 99฿ เท่านั้น)</span>
+                </h3>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="voice_summary_enabled" value="0">
+                    <input type="checkbox" name="voice_summary_enabled" value="1" x-model="voiceEnabled" class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                เปิดใช้ ระบบจะสังเคราะห์เสียงสรุปคำทำนายเป็นไฟล์ mp3 ส่งให้ลูกค้าฟัง (เป็นโบนัสหลัง Grand Finale)
+                <br>
+                <strong>Provider chain:</strong> Primary → Fallback 1 → Fallback 2... (ลำดับล้มเหลวจะข้ามไปตัวถัดไป)
+            </p>
+
+            <div x-show="voiceEnabled" x-cloak x-collapse>
+                {{-- Tier scope --}}
+                <div class="mb-4">
+                    <label class="block text-sm text-gray-700 dark:text-gray-300 mb-2">🎯 Scope (ใช้กับใคร)</label>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        @foreach([
+                            'celtic_99_only' => ['🌙 เฉพาะ Celtic 99฿', 'แนะนำ — VIP perk'],
+                            'paid_all' => ['💎 ทุก paid reading', 'รวม Deep 39฿'],
+                            'all' => ['🌐 ทุก reading', 'รวมฟรี (ไม่แนะนำ — ค่า TTS เปลือง)'],
+                        ] as $val => $info)
+                            <label class="flex items-start p-3 border rounded-lg cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20"
+                                   :class="'{{ $val }}' === '{{ old('voice_summary_tier_scope', $settings->voice_summary_tier_scope ?? 'celtic_99_only') }}' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20' : 'border-gray-300 dark:border-gray-600'">
+                                <input type="radio" name="voice_summary_tier_scope" value="{{ $val }}"
+                                       {{ ($settings->voice_summary_tier_scope ?? 'celtic_99_only') === $val ? 'checked' : '' }}
+                                       class="mt-1 mr-3">
+                                <div>
+                                    <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ $info[0] }}</div>
+                                    <div class="text-xs text-gray-500 dark:text-gray-400">{{ $info[1] }}</div>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                {{-- Primary provider --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">⭐ Primary Provider</label>
+                        <select name="voice_summary_primary_provider" x-model="primaryProvider"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="minimax">MiniMax (paid, premium HD voice)</option>
+                            <option value="openai_tts">OpenAI TTS (paid, ผ่าน API key pool)</option>
+                            <option value="google_tts">Google Cloud TTS (free 1M chars/เดือน)</option>
+                            <option value="gtts">gTTS (Google Translate, ฟรี — ไม่ต้องตั้ง key)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">ตัวที่ใช้ก่อน — fail แล้วค่อย fallback</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm text-gray-700 dark:text-gray-300 mb-1">🔁 Fallback Providers (ลำดับ)</label>
+                        <div class="space-y-1">
+                            @foreach(['google_tts' => 'Google Cloud TTS (free)', 'gtts' => 'gTTS (free)', 'openai_tts' => 'OpenAI TTS', 'minimax' => 'MiniMax'] as $val => $label)
+                                <label class="flex items-center text-sm">
+                                    <input type="checkbox" name="voice_summary_fallback_providers[]" value="{{ $val }}"
+                                           {{ in_array($val, $voiceFallbacks) ? 'checked' : '' }}
+                                           class="mr-2 rounded">
+                                    <span class="text-gray-700 dark:text-gray-300">{{ $label }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">เว้นทั้งหมด = ใช้ chain default ตาม primary</p>
+                    </div>
+                </div>
+
+                {{-- MiniMax config --}}
+                <div x-show="primaryProvider === 'minimax' || {{ in_array('minimax', $voiceFallbacks) ? 'true' : 'false' }}" x-cloak
+                     class="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🎙️ MiniMax Config</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔑 MiniMax API Key (JWT)</label>
+                            <input type="password" name="minimax_api_key"
+                                   value="{{ old('minimax_api_key', $settings->minimax_api_key) }}"
+                                   placeholder="เว้นว่าง = ดึงจาก ai_api_keys pool (provider=minimax, purpose=tts)"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">📦 Group ID (จำเป็น)</label>
+                            <input type="text" name="minimax_group_id"
+                                   value="{{ old('minimax_group_id', $settings->minimax_group_id) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🎯 Model</label>
+                            <select name="minimax_model"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                @php $currentMm = $settings->minimax_model ?? 'speech-2.8-hd'; @endphp
+                                <optgroup label="🌟 Latest (2026)">
+                                    <option value="speech-2.8-hd" {{ $currentMm === 'speech-2.8-hd' ? 'selected' : '' }}>speech-2.8-hd (HD ใหม่สุด ⭐)</option>
+                                    <option value="speech-2.8-turbo" {{ $currentMm === 'speech-2.8-turbo' ? 'selected' : '' }}>speech-2.8-turbo (turbo ใหม่สุด)</option>
+                                    <option value="speech-2.6-hd" {{ $currentMm === 'speech-2.6-hd' ? 'selected' : '' }}>speech-2.6-hd</option>
+                                    <option value="speech-2.6-turbo" {{ $currentMm === 'speech-2.6-turbo' ? 'selected' : '' }}>speech-2.6-turbo</option>
+                                </optgroup>
+                                <optgroup label="Standard">
+                                    <option value="speech-02-hd" {{ $currentMm === 'speech-02-hd' ? 'selected' : '' }}>speech-02-hd</option>
+                                    <option value="speech-02-turbo" {{ $currentMm === 'speech-02-turbo' ? 'selected' : '' }}>speech-02-turbo</option>
+                                </optgroup>
+                                <optgroup label="Legacy">
+                                    <option value="speech-01-hd" {{ $currentMm === 'speech-01-hd' ? 'selected' : '' }}>speech-01-hd</option>
+                                    <option value="speech-01-turbo" {{ $currentMm === 'speech-01-turbo' ? 'selected' : '' }}>speech-01-turbo</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🎤 Voice ID</label>
+                            <input type="text" name="minimax_voice_id"
+                                   value="{{ old('minimax_voice_id', $settings->minimax_voice_id ?? 'Thai_warmFemaleHost') }}"
+                                   placeholder="Thai_warmFemaleHost / Thai_femaleSerene / female-tianmei"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                            <p class="text-xs text-gray-500 mt-1">
+                                ⚠️ Endpoint: <code>https://api.minimax.io/v1/t2a_v2</code> — group_id ใส่ก็ได้ ไม่ใส่ก็ได้ใน v2
+                                · ดูรายชื่อ voice ที่ <a href="https://platform.minimax.io/docs/faq/system-voice-id" target="_blank" class="text-purple-600 hover:underline">MiniMax Voice List</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- OpenAI TTS config --}}
+                <div x-show="primaryProvider === 'openai_tts' || {{ in_array('openai_tts', $voiceFallbacks) ? 'true' : 'false' }}" x-cloak
+                     class="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🎙️ OpenAI TTS Config</h4>
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">ใช้ key จาก ai_api_keys pool (provider=openai, purpose=tts หรือ any)</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🎯 Model</label>
+                            <select name="openai_tts_model"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                <option value="gpt-4o-mini-tts" {{ ($settings->openai_tts_model ?? 'gpt-4o-mini-tts') === 'gpt-4o-mini-tts' ? 'selected' : '' }}>gpt-4o-mini-tts (ใหม่+ถูก)</option>
+                                <option value="tts-1" {{ ($settings->openai_tts_model ?? '') === 'tts-1' ? 'selected' : '' }}>tts-1 (standard)</option>
+                                <option value="tts-1-hd" {{ ($settings->openai_tts_model ?? '') === 'tts-1-hd' ? 'selected' : '' }}>tts-1-hd (HD)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🎤 Voice</label>
+                            <select name="openai_tts_voice"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                @foreach(['shimmer', 'nova', 'alloy', 'echo', 'fable', 'onyx'] as $voice)
+                                    <option value="{{ $voice }}" {{ ($settings->openai_tts_voice ?? 'shimmer') === $voice ? 'selected' : '' }}>{{ $voice }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Google TTS config --}}
+                <div x-show="primaryProvider === 'google_tts' || {{ in_array('google_tts', $voiceFallbacks) ? 'true' : 'false' }}" x-cloak
+                     class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🎙️ Google Cloud TTS Config (free tier)</h4>
+
+                    {{-- 🆕 (2026-05-08) Credentials diagnostic — Google ใช้ key/credentials เดียวกันได้กับ Translate/Vision/Speech-to-Text --}}
+                    @php
+                        $gDiag = $googleTtsDiag ?? \App\Services\Tts\GoogleCloudTtsProvider::diagnoseCredentials();
+                        $hasAnyKey = $gDiag['resolved_key_source'] !== null;
+                        $hasServiceAccount = ! empty($gDiag['service_account_path']);
+                    @endphp
+
+                    <div class="mb-3 p-3 rounded-lg border {{ $hasAnyKey ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-300 dark:border-emerald-800' : 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-800' }}">
+                        <div class="flex items-start gap-2 mb-2">
+                            <span class="text-lg">{{ $hasAnyKey ? '✅' : '⚠️' }}</span>
+                            <div class="text-sm">
+                                <div class="font-semibold text-gray-900 dark:text-white">
+                                    {{ $hasAnyKey ? "ตรวจเจอ key — ใช้ได้: <code>{$gDiag['resolved_key_source']}</code>" : 'ยังไม่พบ Google API key ใน .env' }}
+                                </div>
+                                <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                    💡 <strong>Google Cloud TTS / Translate / Vision / Speech-to-Text ใช้ key/credentials เดียวกันได้</strong> —
+                                    ขอเปิด <code>Cloud Text-to-Speech API</code> ใน project เดียวกัน
+                                    (<a href="https://console.cloud.google.com/apis/library/texttospeech.googleapis.com" target="_blank" class="text-blue-600 hover:underline">เปิด API ที่นี่</a>)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="mt-2 space-y-1 text-xs">
+                            <div class="font-medium text-gray-700 dark:text-gray-300 mb-1">📋 รายการ key ที่ระบบตรวจเจอ:</div>
+                            @foreach($gDiag['keys_found'] as $envName => $found)
+                                <div class="flex items-center gap-2 pl-2">
+                                    <span class="{{ $found ? 'text-green-600' : 'text-gray-400' }}">{{ $found ? '✅' : '⬜' }}</span>
+                                    <code class="text-gray-700 dark:text-gray-300">{{ $envName }}</code>
+                                    @if($found && $envName === $gDiag['resolved_key_source'])
+                                        <span class="text-xs px-2 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 rounded font-semibold">USING</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                            <div class="flex items-center gap-2 pl-2 pt-1 border-t border-gray-200 dark:border-gray-700">
+                                <span class="{{ $hasServiceAccount ? 'text-green-600' : 'text-gray-400' }}">{{ $hasServiceAccount ? '✅' : '⬜' }}</span>
+                                <code class="text-gray-700 dark:text-gray-300">GOOGLE_APPLICATION_CREDENTIALS</code>
+                                <span class="text-xs text-gray-500">(Service Account JSON — ที่ Speech-to-Text ใช้อยู่)</span>
+                            </div>
+                            @if($gDiag['project_id'])
+                                <div class="flex items-center gap-2 pl-2 pt-1">
+                                    <span class="text-blue-600">📦</span>
+                                    <span class="text-gray-700 dark:text-gray-300">Project ID:</span>
+                                    <code class="bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded">{{ $gDiag['project_id'] }}</code>
+                                </div>
+                            @endif
+                        </div>
+
+                        @unless($hasAnyKey)
+                            <div class="mt-3 p-2 bg-white dark:bg-gray-800 rounded text-xs text-gray-700 dark:text-gray-300">
+                                <strong>วิธีตั้งค่า:</strong> เพิ่มใน <code>.env</code>:
+                                <pre class="mt-1 bg-gray-100 dark:bg-gray-900 p-2 rounded overflow-x-auto">GOOGLE_TTS_API_KEY=YOUR_KEY_HERE
+# หรือใช้ key ของ Translate ที่มีอยู่ก็ได้:
+# GOOGLE_TRANSLATE_API_KEY=...</pre>
+                            </div>
+                        @endunless
+                    </div>
+
+                    <p class="text-xs text-gray-600 dark:text-gray-400 mb-3">
+                        🎁 <strong>Free tier:</strong> 1M chars/เดือน (WaveNet+Neural2), 4M chars/เดือน (Standard)
+                    </p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🎤 Voice</label>
+                            <select name="google_tts_voice"
+                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                                @foreach([
+                                    'th-TH-Neural2-C' => 'th-TH-Neural2-C (female, premium)',
+                                    'th-TH-Neural2-A' => 'th-TH-Neural2-A (female)',
+                                    'th-TH-Standard-A' => 'th-TH-Standard-A (female, free tier)',
+                                    'th-TH-Wavenet-C' => 'th-TH-Wavenet-C (female, WaveNet)',
+                                ] as $val => $label)
+                                    <option value="{{ $val }}" {{ ($settings->google_tts_voice ?? 'th-TH-Neural2-C') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🐢 Speaking Rate (0.25-4.0, 1.0=ปกติ)</label>
+                            <input type="number" name="google_tts_speaking_rate" step="0.05" min="0.25" max="4.0"
+                                   value="{{ old('google_tts_speaking_rate', $settings->google_tts_speaking_rate ?? 0.95) }}"
+                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Common settings --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">📏 Max chars (cost cap)</label>
+                        <input type="number" name="voice_summary_max_chars" min="200" max="5000"
+                               value="{{ old('voice_summary_max_chars', $settings->voice_summary_max_chars ?? 2000) }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                        <p class="text-xs text-gray-500 mt-1">2000 chars ≈ 1.5-2 นาที (แนะนำ)</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">💬 ข้อความก่อนส่ง audio</label>
+                        <input type="text" name="voice_summary_intro_message" maxlength="500"
+                               value="{{ old('voice_summary_intro_message', $settings->voice_summary_intro_message ?? '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨') }}"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm">
+                    </div>
+                </div>
+
+                <button type="button" @click="showAdvanced = !showAdvanced"
+                        class="text-sm text-purple-600 dark:text-purple-400 hover:underline mb-2">
+                    <span x-show="!showAdvanced">⚙️ Override AI summary prompt (advanced)</span>
+                    <span x-show="showAdvanced" x-cloak>ซ่อน prompt override</span>
+                </button>
+
+                <div x-show="showAdvanced" x-cloak x-collapse>
+                    <textarea name="voice_summary_prompt" rows="6"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                              placeholder="เว้นว่าง = ใช้ default prompt&#10;Variables: {name}, {source}, {max_chars}">{{ old('voice_summary_prompt', $settings->voice_summary_prompt) }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">⚠️ ต้องสั่ง AI ตอบเป็น plain text ไม่มี markdown</p>
+                </div>
+            </div>
+        </div> {{-- End Voice Summary --}}
+
         {{-- ===== 🙏 Satisfaction Detector (2026-05-07 Phase 2) ===== --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
              x-data="{

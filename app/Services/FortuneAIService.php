@@ -3759,4 +3759,136 @@ PROMPT;
             purpose: 'free_card',
         );
     }
+
+    // ============================================================
+    // 🎙️ (2026-05-08) Voice Summary — สรุปคำทำนายเป็นข้อความเสียง
+    // ============================================================
+
+    /**
+     * สรุปคำทำนาย Celtic 99฿ เป็นข้อความสำหรับสังเคราะห์เสียง (TTS)
+     *
+     * เน้น:
+     *   - ภาษาพูด (เหมือนแม่หมอเล่าจริง)
+     *   - ไม่มี markdown / emoji / bullet
+     *   - ไม่ยาวเกิน $maxChars (ค่า default 2000 = ~ 1.5 นาทีเมื่ออ่าน)
+     *   - ไม่อ้างถึง "ข้อความ/รูป/แชท" — ราวกับฟังเทปเสียง
+     *
+     * @param  string  $sourceText  ข้อความต้นฉบับ (deep_response หรือ grand finale)
+     * @param  int  $maxChars  จำกัด char output (default 2000)
+     */
+    public function generateVoiceSummary(FortuneReading $reading, string $sourceText, int $maxChars = 2000): string
+    {
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+        $customPrompt = $this->settings->voice_summary_prompt;
+
+        if (! empty($customPrompt)) {
+            // Admin override — replace placeholders
+            $prompt = str_replace(
+                ['{name}', '{source}', '{max_chars}'],
+                [$name, $sourceText, (string) $maxChars],
+                $customPrompt
+            );
+        } else {
+            $prompt = $this->buildDefaultVoiceSummaryPrompt($name, $sourceText, $maxChars);
+        }
+
+        try {
+            // ใช้ generateWithRetryAndFallback แบบ chat (max_tokens เล็กกว่า — ประหยัด)
+            $result = $this->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'basic',  // basic = max_tokens เล็ก ประหยัดเงิน
+                birthDate: null,
+                userContext: 'voice_summary:'.$reading->id,
+                purpose: 'prediction',  // ใช้ prediction key (key คุณภาพดี)
+            );
+
+            $summary = trim($result['response'] ?? '');
+
+            // ลบ markdown/emoji หลงเหลือ (ในกรณี AI ติดมา)
+            $summary = $this->stripFormattingForSpeech($summary);
+
+            // เกินขีดจำกัด → ตัดที่ขอบประโยค
+            if (mb_strlen($summary) > $maxChars) {
+                $summary = $this->truncateAtSentence($summary, $maxChars);
+            }
+
+            return $summary;
+        } catch (\Throwable $e) {
+            Log::warning('FortuneAIService: generateVoiceSummary fail', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * Default prompt สำหรับ voice summary (ใช้ถ้า admin ไม่ override)
+     */
+    protected function buildDefaultVoiceSummaryPrompt(string $name, string $source, int $maxChars): string
+    {
+        return "คุณคือแม่หมอจันทรา หมอดูไพ่ยิปซีอาวุโส 30 ปี กำลังอัดเสียงสรุปคำทำนายให้ลูกค้าฟัง\n\n"
+            ."ลูกค้าชื่อ: {$name}\n\n"
+            ."คำทำนายต้นฉบับ:\n"
+            .'"""'."\n"
+            .$source."\n"
+            .'"""'."\n\n"
+            ."สรุปเป็นภาษาพูด (เหมือนกำลังพูดผ่านโทรศัพท์) ตามกฎ:\n"
+            ."1. ไม่เกิน {$maxChars} ตัวอักษร (ประมาณ 1.5-2 นาทีเมื่ออ่าน)\n"
+            ."2. โทนแม่หมอใจดี — อบอุ่น มีพลัง ไม่ตึงเครียด\n"
+            ."3. ห้าม markdown ห้าม emoji ห้าม bullet ห้าม **bold**\n"
+            ."4. เปิดด้วย: \"สวัสดีคุณ{$name}ค่ะ แม่หมอจันทราจะสรุปคำทำนายให้ฟังนะคะ\"\n"
+            ."5. เนื้อหาแบ่ง 3 ส่วน:\n"
+            ."   - สรุปสถานการณ์ปัจจุบันจากไพ่ (4-5 ประโยค)\n"
+            ."   - ทางออก/สิ่งที่ควรทำ (3-4 ประโยค รูปธรรม)\n"
+            ."   - คำเตือน + ฟันธงปิด (2-3 ประโยค)\n"
+            ."6. ปิดด้วย: \"ขอให้คุณ{$name}โชคดี เจอแต่สิ่งดีๆ นะคะ\"\n"
+            ."7. ห้ามอ้าง \"ในข้อความ\" / \"ในรูป\" / \"ในแชท\" — ฟังเสียงอย่างเดียว\n"
+            ."8. ห้ามอ่านชื่อไพ่เป็นภาษาอังกฤษ — ใช้ภาษาไทยล้วน\n"
+            ."9. แทรกคำหยุด \"นะคะ\" / \"ค่ะ\" ตามธรรมชาติ — ให้รู้สึกเหมือนคนพูดจริง\n\n"
+            .'เริ่มเลย (พิมพ์เป็นข้อความล้วน ไม่ต้อง intro):';
+    }
+
+    /**
+     * ลบ markdown/emoji/decorations ออกจาก text เพื่อให้ TTS อ่านลื่น
+     */
+    protected function stripFormattingForSpeech(string $text): string
+    {
+        $clean = preg_replace('/\*\*(.+?)\*\*/u', '$1', $text);
+        $clean = preg_replace('/\*(.+?)\*/u', '$1', $clean);
+        $clean = preg_replace('/__(.+?)__/u', '$1', $clean);
+        $clean = preg_replace('/`(.+?)`/u', '$1', $clean);
+        $clean = preg_replace('/[─━═┃│┄┅┆┇┈┉┊┋]+/u', '', $clean);
+        $clean = preg_replace('/^\s*[-*•]+\s*/mu', '', $clean);
+        // ลบ emoji block (Misc Symbols/Emoticons/etc.)
+        $clean = preg_replace('/[\x{1F000}-\x{1FFFF}\x{2600}-\x{27BF}\x{2300}-\x{23FF}]/u', '', $clean);
+
+        return trim(preg_replace('/\s+/u', ' ', $clean));
+    }
+
+    /**
+     * ตัด text ที่ขอบประโยค (ไม่ตัดกลางคำ)
+     */
+    protected function truncateAtSentence(string $text, int $maxChars): string
+    {
+        if (mb_strlen($text) <= $maxChars) {
+            return $text;
+        }
+
+        $slice = mb_substr($text, 0, $maxChars);
+        $breakpoints = ['ค่ะ ', 'นะคะ ', 'นะ ', 'ครับ ', '. ', '? ', '! '];
+
+        foreach ($breakpoints as $bp) {
+            $pos = mb_strrpos($slice, $bp);
+            if ($pos !== false && $pos > $maxChars * 0.6) {
+                return trim(mb_substr($slice, 0, $pos + mb_strlen($bp)));
+            }
+        }
+
+        return trim($slice).'...';
+    }
 }

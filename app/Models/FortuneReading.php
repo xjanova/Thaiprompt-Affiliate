@@ -190,7 +190,7 @@ class FortuneReading extends Model
      * เช็คว่า user มี reading ที่ active อยู่หรือไม่ (cached 30s ลด DB hit)
      *
      * @param  string  $platform  'facebook' | 'line'
-     * @param  string  $userId    Facebook page-scoped ID หรือ LINE user ID
+     * @param  string  $userId  Facebook page-scoped ID หรือ LINE user ID
      */
     public static function hasActiveReading(string $platform, string $userId): bool
     {
@@ -295,6 +295,13 @@ class FortuneReading extends Model
         'celtic_summary_image_path',
         'celtic_questions_used',
         'celtic_first_answered_at',
+        // 🎙️ Voice Summary (TTS) — 2026-05-08
+        'voice_audio_token',
+        'voice_audio_path',
+        'voice_audio_duration_ms',
+        'voice_audio_provider',
+        'voice_audio_chars',
+        'voice_audio_generated_at',
     ];
 
     /**
@@ -324,6 +331,10 @@ class FortuneReading extends Model
         // 🔮 Celtic Cross
         'celtic_questions_used' => 'integer',
         'celtic_first_answered_at' => 'datetime',
+        // 🎙️ Voice Summary (TTS) — 2026-05-08
+        'voice_audio_duration_ms' => 'integer',
+        'voice_audio_chars' => 'integer',
+        'voice_audio_generated_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -478,9 +489,9 @@ class FortuneReading extends Model
      *   - นับว่าใช้สิทธิ์เมื่อ free_card reading มี responded_at != null
      *     (หมายถึง AI ตอบสำเร็จแล้ว) — ถ้าจั่วแล้ว AI fail ก่อนตอบ → ยังไม่นับ ลองใหม่ได้
      *
-     * @param  string  $platform        'facebook' หรือ 'line'
+     * @param  string  $platform  'facebook' หรือ 'line'
      * @param  string  $platformUserId  ID ของผู้ใช้ใน platform นั้น
-     * @return bool  true = ใช้แล้ว / false = ยังเป็น first-timer
+     * @return bool true = ใช้แล้ว / false = ยังเป็น first-timer
      */
     public static function hasUsedFreeCard(string $platform, string $platformUserId): bool
     {
@@ -528,10 +539,6 @@ class FortuneReading extends Model
      * 🎁 ตรวจสอบว่าควรเสนอ "ทำนายฟรี" ปุ่มให้ลูกค้าหรือไม่
      *
      * เงื่อนไข: settings เปิด + ลูกค้ายังไม่เคยใช้สิทธิ์ฟรี
-     *
-     * @param  string  $platform
-     * @param  string  $platformUserId
-     * @return bool
      */
     public static function shouldOfferFreeCard(string $platform, string $platformUserId): bool
     {
@@ -583,7 +590,7 @@ class FortuneReading extends Model
      *   - bill_reference != null (เคยสร้างบิลจริง — ไม่ใช่ placeholder)
      *   - status = pending_payment (active) OR completed (expired by cron)
      *
-     * @param  string  $platform        'facebook' หรือ 'line'
+     * @param  string  $platform  'facebook' หรือ 'line'
      * @param  string  $platformUserId
      * @return self|null
      */
@@ -633,7 +640,7 @@ class FortuneReading extends Model
      *   5. เก็บ bill_reference เดิม (ลูกค้าจะได้รู้ว่าเป็นบิลเก่า)
      *   6. reset reminder flags ทั้งหมด (จะส่งทวงใหม่ใน cycle ถัดไป)
      *
-     * @return self|null  reading หลัง revive / null ถ้า reach limit
+     * @return self|null reading หลัง revive / null ถ้า reach limit
      */
     public function reviveBillForRepay(): ?self
     {
@@ -708,6 +715,7 @@ class FortuneReading extends Model
                 'reading_id' => $this->id,
                 'error' => $e->getMessage(),
             ]);
+
             return null;
         }
     }
@@ -719,8 +727,6 @@ class FortuneReading extends Model
      *   - ส่ง re-engagement ถ้า last engage > 24 ชม. (FB window reset แล้ว)
      *   - หรือยังไม่เคยส่งเลย
      *   - กันส่งซ้ำใน window เดียว
-     *
-     * @return bool
      */
     public function shouldSendReengagement(): bool
     {
@@ -784,6 +790,7 @@ class FortuneReading extends Model
     {
         // ปัจจุบัน: ใช้สิทธิ์ฟรีหรือยัง? (per platform หา auto)
         $platform = (preg_match('/^U[0-9a-f]{32}$/i', $facebookUserId)) ? 'line' : 'facebook';
+
         return self::hasUsedFreeCard($platform, $facebookUserId);
     }
 
@@ -1074,7 +1081,7 @@ class FortuneReading extends Model
      * ⚠️ Best-effort: ถ้า platform ส่งไม่สำเร็จ (FB 24hr window หมด) → mark ส่งแล้วอยู่ดี
      *    เพื่อกันวนส่ง
      *
-     * @return int  จำนวน reminder ที่ส่งสำเร็จ
+     * @return int จำนวน reminder ที่ส่งสำเร็จ
      */
     public static function sendExpiryReminders(): int
     {
@@ -1121,12 +1128,12 @@ class FortuneReading extends Model
         // 🇱🇦 ลูกค้าลาว — ใช้ closing pitch ลาวเดียว
         if (\App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO) {
             return "⏰ ບິນເບິ່ງດວງເຫຼືອອີກ {$remainingMinutes} ນາທີຈະໝົດອາຍຸ\n\n"
-                . "🪙 {$price} ບາດ — ທຽບເທົ່າຄ່າກາເຟ 1 ຈອກ\n"
-                . "ແຕ່ໄດ້ຄຳທຳນາຍສະເພາະຕົວຈາກ\n"
-                . "   • ດາວເຈົ້າຊະນະຂອງເຈົ້າຊາຕາ\n"
-                . "   • ໄພ່ທີ່ສຸ່ມຈາກພະລັງຈິດຂອງເຈົ້າຊາຕາເອງ\n\n"
-                . "ເໝືອນຈັບໄພ່ເອງ ເພາະຈິດໝັ້ນແນ່ກໍ່ສື່ເຖິງດາວແລ້ວ ✨\n"
-                . "ຖ້າພ້ອມ → ໂອນໄດ້ເລີຍ";
+                ."🪙 {$price} ບາດ — ທຽບເທົ່າຄ່າກາເຟ 1 ຈອກ\n"
+                ."ແຕ່ໄດ້ຄຳທຳນາຍສະເພາະຕົວຈາກ\n"
+                ."   • ດາວເຈົ້າຊະນະຂອງເຈົ້າຊາຕາ\n"
+                ."   • ໄພ່ທີ່ສຸ່ມຈາກພະລັງຈິດຂອງເຈົ້າຊາຕາເອງ\n\n"
+                ."ເໝືອນຈັບໄພ່ເອງ ເພາະຈິດໝັ້ນແນ່ກໍ່ສື່ເຖິງດາວແລ້ວ ✨\n"
+                .'ຖ້າພ້ອມ → ໂອນໄດ້ເລີຍ';
         }
 
         // 🇹🇭 ลูกค้าไทย — variant ตาม reading_id (รักษาพฤติกรรมเดิม)
@@ -1136,7 +1143,7 @@ class FortuneReading extends Model
                 ."แต่หมอวิเคราะห์จาก **ดาวเจ้าชนะของเจ้าชะตาเอง**\n"
                 ."ไพ่ที่เปิดก็มาจากพลังจิตของเจ้าชะตา\n"
                 ."ไม่ต่างจากจับไพ่เอง — จิตตั้งมั่น ดาวก็ส่งสัญญาณมาแล้ว ✨\n\n"
-                ."ถ้าพร้อม → โอนมาได้เลย 🙏",
+                .'ถ้าพร้อม → โอนมาได้เลย 🙏',
 
             "💫 คำทำนายของหมอ ไม่ใช่คำตอบทั่วไปที่ใครก็ได้\n\n"
                 ."วิเคราะห์จาก **ดาวเจ้าชนะของเจ้าชะตาคนเดียว**\n"
@@ -1158,7 +1165,7 @@ class FortuneReading extends Model
                 ."   • ดาวเจ้าชนะของเจ้าชะตา\n"
                 ."   • ไพ่ที่สุ่มจากพลังจิตของเจ้าชะตาเอง\n\n"
                 ."เหมือนจับไพ่เอง เพราะจิตตั้งมั่นก็สื่อถึงดาวแล้ว ✨\n"
-                ."ถ้าพร้อม → โอนได้เลย",
+                .'ถ้าพร้อม → โอนได้เลย',
         ];
 
         $idx = abs(crc32((string) $reading->id)) % count($variants);
@@ -1182,7 +1189,7 @@ class FortuneReading extends Model
      * ⚠️ ต่างจาก expireAllOldConversations(): ตัวนี้จัดการ **บิล** (UPA + FCM)
      *    ส่วน expireAllOldConversations() จัดการ **conversation status** เฉย ๆ
      *
-     * @return int  จำนวนบิลที่ถูกยกเลิก
+     * @return int จำนวนบิลที่ถูกยกเลิก
      */
     public static function cancelExpiredPendingBills(): int
     {
@@ -1303,7 +1310,6 @@ class FortuneReading extends Model
      *
      * โครงสร้าง: [Header แจ้งยกเลิก + เลขบิล + เหตุผล] + [ปรัชญา 20+ variants]
      *
-     * @param  self  $reading
      * @param  string  $reason  'auto_expired' (cron 30 นาที) | 'user_cancelled' (ลูกค้ากดยกเลิกเอง)
      */
     public static function buildCancelWakeupMessage(self $reading, string $reason = 'auto_expired'): string
@@ -1315,18 +1321,18 @@ class FortuneReading extends Model
         if ($reason === 'user_cancelled') {
             // ลูกค้ากดยกเลิกเอง — ใช้โทน "ขอบคุณที่แจ้ง" + เตือนสติเบา ๆ
             $header = "✋ *รับทราบ — ยกเลิกบิลดูดวงตามคำขอแล้วค่ะ*\n"
-                . "═══════════════════════\n"
-                . "📋 เลขบิล: {$billRef}\n"
-                . "═══════════════════════\n\n"
-                . "💭 *ก่อนจากกัน แม่หมอขอฝากข้อคิดสักนิด...*\n\n";
+                ."═══════════════════════\n"
+                ."📋 เลขบิล: {$billRef}\n"
+                ."═══════════════════════\n\n"
+                ."💭 *ก่อนจากกัน แม่หมอขอฝากข้อคิดสักนิด...*\n\n";
         } else {
             // auto_expired (default) / auto_expired_grace — โทน "ระบบยกเลิกให้แล้ว"
             $header = "🚫 *บิลดูดวงของเจ้าชะตาถูกยกเลิกอัตโนมัติแล้ว*\n"
-                . "═══════════════════════\n"
-                . "📋 เลขบิล: {$billRef}\n"
-                . "⏱️ เหตุผล: ไม่ได้รับการชำระเงินภายใน {$timeoutMin} นาที\n"
-                . "═══════════════════════\n\n"
-                . "💭 *ก่อนปิดท้าย แม่หมอขอฝากข้อคิดสักนิด...*\n\n";
+                ."═══════════════════════\n"
+                ."📋 เลขบิล: {$billRef}\n"
+                ."⏱️ เหตุผล: ไม่ได้รับการชำระเงินภายใน {$timeoutMin} นาที\n"
+                ."═══════════════════════\n\n"
+                ."💭 *ก่อนปิดท้าย แม่หมอขอฝากข้อคิดสักนิด...*\n\n";
         }
 
         // ราคาดึงจาก settings (admin ตั้งได้) — fallback 39 ถ้าไม่ตั้ง
@@ -1382,7 +1388,7 @@ class FortuneReading extends Model
             "📜 *โซเครติสว่า: \"รู้จักตนเอง คือจุดเริ่มต้นของปัญญา\"*\n\n"
                 ."การรู้จักดวงตัวเอง = รู้จักจุดแข็ง จุดอ่อน จังหวะชีวิต\n"
                 ."ราคาเพียง {$price} บาท — ถูกกว่าหนังสือเล่มหนึ่ง 📚\n\n"
-                ."🔮 ที่นี่วิเคราะห์จากดาวเจ้าชนะของเจ้าชะตาคนเดียว — ไม่ใช่คำกลางๆ",
+                .'🔮 ที่นี่วิเคราะห์จากดาวเจ้าชนะของเจ้าชะตาคนเดียว — ไม่ใช่คำกลางๆ',
 
             // 7. กระเป๋าเงิน
             "📜 *เงินในกระเป๋าหายไปเฉยๆ ทุกเดือนกี่ {$price} บาท?*\n\n"
@@ -1402,7 +1408,7 @@ class FortuneReading extends Model
             "📜 *Warren Buffett ว่า: \"การลงทุนที่ดีที่สุดคือลงทุนในตัวเอง\"*\n\n"
                 ."{$price} บาทเรียนรู้ดวงตัวเอง = การลงทุนเล็กที่สุดในชีวิต\n"
                 ."แต่คนผัดวันประกันพรุ่ง — ลังเลแม้แค่นี้ 🕰️\n\n"
-                ."🔮 พรุ่งนี้ที่ดีกว่า เริ่มจากการตัดสินใจวันนี้",
+                .'🔮 พรุ่งนี้ที่ดีกว่า เริ่มจากการตัดสินใจวันนี้',
 
             // 10. ดาวยิปซีจริง
             "📜 *ที่นี่ไม่ใช่หมอดูที่ใดก็ตาม*\n\n"
@@ -1529,7 +1535,7 @@ class FortuneReading extends Model
         $idx = abs(crc32((string) $reading->id)) % count($wisdomMessages);
 
         // Header (ยกเลิกอัตโนมัติ + เลขบิล + เหตุผล) ถูก compose ที่ต้น method แล้ว
-        return $header . $wisdomMessages[$idx];
+        return $header.$wisdomMessages[$idx];
     }
 
     /**
@@ -2124,8 +2130,6 @@ class FortuneReading extends Model
 
     /**
      * ความสัมพันธ์กับแอดมินที่เทคโอเวอร์
-     *
-     * @return BelongsTo
      */
     public function takeoverAdmin(): BelongsTo
     {
@@ -2235,11 +2239,6 @@ class FortuneReading extends Model
      *
      * @param  int  $position  1-10
      * @param  int  $cardId  TarotCard ID
-     * @param  string  $cardNameTh
-     * @param  string  $cardNameEn
-     * @param  bool  $isReversed
-     * @param  string  $meaning
-     * @param  string|null  $imageUrl
      */
     public function addCelticCard(
         int $position,

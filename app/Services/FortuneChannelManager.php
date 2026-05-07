@@ -854,6 +854,8 @@ class FortuneChannelManager
 
                 // celtic_session_ended → ส่งภาพ Celtic Cross spread (ที่ระลึก) + closing message
                 // 🖼️ (2026-05-03) ภาพ composite ส่งตอนจบ ไม่ใช่ตอนเปิดครบ 10 ใบ
+                // 🎙️ (2026-05-08) Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
+                //                 ตรงนี้แค่ส่ง image+closing — ไม่ block UI
                 'celtic_session_ended' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     if (! empty($result['celtic_summary_image_url'])) {
                         try {
@@ -1828,6 +1830,20 @@ class FortuneChannelManager
                     ['label' => '🙏 ถามต่อ', 'text' => 'ถามต่อ'],
                     ['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้'],
                 ]),
+
+                // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
+                //                 Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
+                'celtic_session_ended' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+                    }
+
+                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                })(),
 
                 // Celtic actions ที่เป็น text-only
                 // celtic_resume_qa → resume เข้า AWAITING_QUESTION (ลูกค้าพิมพ์คำถามเอง — ไม่ใส่ปุ่ม)

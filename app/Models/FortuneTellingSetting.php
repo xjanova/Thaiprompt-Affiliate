@@ -226,6 +226,22 @@ class FortuneTellingSetting extends Model
         'monthly_free_claim_secret',
         'monthly_free_claim_success_message',
         'monthly_free_claim_already_message',
+        // 🎙️ (2026-05-08) Voice Summary (TTS) — Celtic 99฿ VIP perk
+        'voice_summary_enabled',
+        'voice_summary_tier_scope',
+        'voice_summary_primary_provider',
+        'voice_summary_fallback_providers',
+        'minimax_api_key',
+        'minimax_group_id',
+        'minimax_model',
+        'minimax_voice_id',
+        'openai_tts_model',
+        'openai_tts_voice',
+        'google_tts_voice',
+        'google_tts_speaking_rate',
+        'voice_summary_max_chars',
+        'voice_summary_prompt',
+        'voice_summary_intro_message',
     ];
 
     /**
@@ -315,6 +331,11 @@ class FortuneTellingSetting extends Model
         // 🌟 Group Invite + Monthly Free Claim (2026-05-04)
         'fortune_group_invite_enabled' => 'boolean',
         'monthly_free_claim_enabled' => 'boolean',
+        // 🎙️ (2026-05-08) Voice Summary
+        'voice_summary_enabled' => 'boolean',
+        'voice_summary_fallback_providers' => 'array',
+        'voice_summary_max_chars' => 'integer',
+        'google_tts_speaking_rate' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -389,6 +410,19 @@ class FortuneTellingSetting extends Model
         'celtic_cross_proactive_enabled' => true,
         // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
         'enable_free_card_reading' => true,
+        // 🎙️ (2026-05-08) Voice Summary — ปิดเป็น default (admin เปิด + ตั้ง MiniMax key ก่อน)
+        //   tier_scope='celtic_99_only' = เฉพาะลูกค้าจ่าย 99฿ ตามที่ user request
+        'voice_summary_enabled' => false,
+        'voice_summary_tier_scope' => 'celtic_99_only',
+        'voice_summary_primary_provider' => 'minimax',
+        'minimax_model' => 'speech-2.8-hd',  // 🆕 latest gen (2026-05-08)
+        'minimax_voice_id' => 'Thai_warmFemaleHost',
+        'openai_tts_model' => 'gpt-4o-mini-tts',
+        'openai_tts_voice' => 'shimmer',
+        'google_tts_voice' => 'th-TH-Neural2-C',
+        'google_tts_speaking_rate' => 0.95,
+        'voice_summary_max_chars' => 2000,
+        'voice_summary_intro_message' => '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨',
         // 🌟 Group Invite + Monthly Free Claim — ปิดเป็น default (admin เปิด + ใส่ URL ก่อน)
         'fortune_group_invite_enabled' => false,
         'monthly_free_claim_enabled' => false,
@@ -1740,5 +1774,118 @@ PROMPT;
             'net_profit' => $netProfit,
             'profit_percentage' => $price > 0 ? round(($netProfit / $price) * 100, 1) : 0,
         ];
+    }
+
+    // ===== 🎙️ (2026-05-08) Voice Summary (TTS) =====
+
+    /**
+     * เปิดส่งเสียงสรุปสำหรับ reading นี้หรือไม่
+     *
+     * Logic:
+     *   - ต้องเปิด voice_summary_enabled
+     *   - ต้องตรง tier_scope:
+     *     'celtic_99_only' → เฉพาะ Celtic 99฿ (ตามที่ user request)
+     *     'paid_all'       → ทุก paid reading (Deep 39 + Celtic 99)
+     *     'all'            → ทุก reading (รวมฟรี — ไม่แนะนำ)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading
+     */
+    public function shouldGenerateVoiceSummary($reading): bool
+    {
+        if (! $this->voice_summary_enabled) {
+            return false;
+        }
+
+        if (! $reading) {
+            return false;
+        }
+
+        $scope = $this->voice_summary_tier_scope ?: 'celtic_99_only';
+
+        return match ($scope) {
+            'celtic_99_only' => $reading->reading_type === \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS,
+            'paid_all' => (bool) $reading->is_paid,
+            'all' => true,
+            default => $reading->reading_type === \App\Models\FortuneReading::READING_TYPE_CELTIC_CROSS,
+        };
+    }
+
+    /**
+     * ดึง provider chain (primary + fallback) สำหรับ TTS
+     *
+     * @return array<int, string> เช่น ['minimax', 'google_tts', 'gtts']
+     */
+    public function getVoiceProviderChain(): array
+    {
+        $primary = $this->voice_summary_primary_provider ?: 'minimax';
+        $fallbacks = $this->voice_summary_fallback_providers;
+
+        // default fallback chain ถ้า admin ไม่ตั้ง
+        if (! is_array($fallbacks) || empty($fallbacks)) {
+            $fallbacks = match ($primary) {
+                'minimax' => ['google_tts', 'gtts'],
+                'openai_tts' => ['google_tts', 'gtts'],
+                'google_tts' => ['gtts'],
+                'gtts' => [],
+                default => ['google_tts', 'gtts'],
+            };
+        }
+
+        // primary ขึ้นต้นเสมอ + dedupe
+        return array_values(array_unique(array_merge([$primary], $fallbacks)));
+    }
+
+    /**
+     * ดึง MiniMax API key — fallback chain:
+     *   1. minimax_api_key (เฉพาะตั้งใน fortune settings)
+     *   2. ai_api_keys pool (provider=minimax, purpose=tts)
+     */
+    public function getMinimaxApiKey(): ?string
+    {
+        if (! empty($this->minimax_api_key)) {
+            return $this->minimax_api_key;
+        }
+
+        try {
+            $poolKey = AiApiKey::forProvider('minimax')
+                ->forPurpose('tts')
+                ->where('is_active', true)
+                ->whereNull('disabled_until')
+                ->orderByDesc('priority')
+                ->first();
+            if ($poolKey) {
+                return $poolKey->api_key;
+            }
+        } catch (\Throwable $e) {
+            // ai_api_keys table อาจ enum ยังไม่ migrate — ข้าม
+        }
+
+        return null;
+    }
+
+    /**
+     * ดึง MiniMax group_id (จำเป็นสำหรับ T2A v2 endpoint)
+     */
+    public function getMinimaxGroupId(): ?string
+    {
+        if (! empty($this->minimax_group_id)) {
+            return $this->minimax_group_id;
+        }
+
+        // อาจเก็บใน metadata ของ pool key
+        try {
+            $poolKey = AiApiKey::forProvider('minimax')
+                ->forPurpose('tts')
+                ->where('is_active', true)
+                ->orderByDesc('priority')
+                ->first();
+            if ($poolKey && is_array($poolKey->metadata)) {
+                return $poolKey->metadata['group_id'] ?? null;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        return null;
     }
 }

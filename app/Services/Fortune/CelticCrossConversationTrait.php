@@ -2,6 +2,7 @@
 
 namespace App\Services\Fortune;
 
+use App\Jobs\ProcessVoiceSummaryJob;
 use App\Models\FortuneReading;
 use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
@@ -1436,6 +1437,51 @@ trait CelticCrossConversationTrait
             ]);
         }
 
+        // 🎙️ (2026-05-08) Dispatch voice summary ใน background — ไม่ block closing message
+        //    ทำไมต้อง async:
+        //      AI summary 5-15s + MiniMax synth 3-10s + chain fallback +5-15s = อาจรวม 30s+
+        //      ลูกค้าจ่าย 99฿ — รอนานหลังกด "พอแค่นี้" ทำให้ UX แย่
+        //    แทนที่จะ generate sync ที่นี่ → dispatch job, job จะ push audio ทีหลัง
+        $voiceWillSend = false;
+        try {
+            if ($this->settings->shouldGenerateVoiceSummary($reading)) {
+                // ใช้ source ที่ดีที่สุดที่มี — เก็บไว้ใน reading state ให้ job อ่าน
+                $voiceSource = $grandFinale
+                    ?: ($aiMessage ?: $reading->fresh()->deep_response);
+
+                if (! empty($voiceSource) && mb_strlen(trim($voiceSource)) >= 50) {
+                    // เก็บ source text ลง state เผื่อ deep_response ไม่ครอบคลุม
+                    $reading->setConversationState('voice_summary_source_text', mb_substr($voiceSource, 0, 5000));
+                    $reading->setConversationState('voice_summary_status', 'queued');
+                    $reading->setConversationState('voice_summary_queued_at', now()->toIso8601String());
+
+                    // Dispatch async — UI ส่ง closing+image ก่อน, voice push 5-15s หลัง
+                    ProcessVoiceSummaryJob::dispatchSmart(
+                        $reading->id,
+                        $reading->platform ?: 'facebook',
+                        $reading->platform_user_id ?: $reading->facebook_user_id ?: ''
+                    );
+                    $voiceWillSend = true;
+
+                    \Log::info('🎙️ Celtic: dispatched voice summary job', [
+                        'reading_id' => $reading->id,
+                        'source_len' => mb_strlen($voiceSource),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // dispatch fail = ไม่กระทบ closing message
+            \Log::warning('Celtic: voice dispatch exception (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // ถ้าจะส่งเสียงทีหลัง — เพิ่ม hint ใน closing message ให้ลูกค้ารอ
+        if ($voiceWillSend) {
+            $closingMessage .= "\n\n🎙️ _แม่หมอกำลังอัดเสียงสรุปให้ฟังภายใน 1 นาที — รอสักครู่นะคะ_ ✨";
+        }
+
         return [
             'action' => 'celtic_session_ended',
             'message' => $closingMessage,
@@ -1443,6 +1489,9 @@ trait CelticCrossConversationTrait
             'end_reason' => $reason,
             'celtic_summary_image_url' => $composeUrl,
             'has_grand_finale' => ! empty($grandFinale),
+            // 🎙️ (2026-05-08) ตอนนี้ voice ส่งผ่าน async job ไม่ใช่ใน return อีก
+            //    เก็บ flag ไว้เผื่อ admin debug ต้อง trigger inline (เช่น playground)
+            'voice_will_send_async' => $voiceWillSend,
         ];
     }
 

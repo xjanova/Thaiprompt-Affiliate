@@ -110,6 +110,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 $result['quota'] = $quotaData['value'] ?? ($quotaData['type'] === 'none' ? 999999 : 0);
             } else {
                 $result['error'] = 'ดึง quota ไม่สำเร็จ: '.$quotaResponse->status().' '.$quotaResponse->body();
+
                 return $result;
             }
 
@@ -138,8 +139,8 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * ทดสอบส่ง push message ไปหา user (สำหรับ debug)
      *
-     * @param string $userId LINE user ID
-     * @param string $message ข้อความทดสอบ
+     * @param  string  $userId  LINE user ID
+     * @param  string  $message  ข้อความทดสอบ
      * @return array{success: bool, status: int|null, body: string|null, error: string|null}
      */
     public function testPushMessage(string $userId, string $message = '🔔 ทดสอบ push notification'): array
@@ -204,10 +205,9 @@ class LineFortuneService implements MessagingPlatformInterface
     /**
      * ส่งข้อความแบบ priority (ข้าม Gatekeeper) — สำหรับแจ้งเตือนสำคัญหลังชำระเงิน
      *
-     * @param string $recipientId LINE user ID
-     * @param string $message ข้อความ
-     * @param array $options quick_replies, etc.
-     * @return bool
+     * @param  string  $recipientId  LINE user ID
+     * @param  string  $message  ข้อความ
+     * @param  array  $options  quick_replies, etc.
      */
     public function sendMessagePriority(string $recipientId, string $message, array $options = []): bool
     {
@@ -282,6 +282,33 @@ class LineFortuneService implements MessagingPlatformInterface
     public function sendQuickReplies(string $recipientId, string $message, array $quickReplies): bool
     {
         return $this->sendMessage($recipientId, $message, ['quick_replies' => $quickReplies]);
+    }
+
+    /**
+     * 🎙️ (2026-05-08) ส่ง audio message ไป LINE
+     *
+     * LINE Audio Message API:
+     *   - originalContentUrl: ต้องเป็น HTTPS + .m4a/.mp3 (LINE จะ transcode เอง แต่แนะนำ m4a/mp3)
+     *   - duration: ต้องระบุเป็น ms (ถ้าไม่รู้ ใส่ 60000 = 1 นาที — LINE ใช้แค่แสดง progress bar)
+     *   - max file size: 200MB
+     *
+     * @param  string  $recipientId  LINE userId
+     * @param  string  $audioUrl  HTTPS URL ของ mp3 file (public)
+     * @param  int  $durationMs  ระยะเวลาประมาณการ (ms)
+     */
+    public function sendAudio(string $recipientId, string $audioUrl, int $durationMs = 60000): bool
+    {
+        $audioUrl = $this->ensureHttps($audioUrl);
+
+        $messages = [
+            [
+                'type' => 'audio',
+                'originalContentUrl' => $audioUrl,
+                'duration' => max(1000, min($durationMs, 600000)),  // 1s - 10 min
+            ],
+        ];
+
+        return $this->pushMessage($recipientId, $messages);
     }
 
     /**
@@ -598,11 +625,11 @@ class LineFortuneService implements MessagingPlatformInterface
             }
 
             // ถ้าเพิ่มย่อหน้านี้แล้วยาวเกิน → ปิด chunk เริ่มใหม่
-            if (mb_strlen($currentChunk) > 0 && mb_strlen($currentChunk . "\n\n" . $para) > $maxCharsPerBubble) {
+            if (mb_strlen($currentChunk) > 0 && mb_strlen($currentChunk."\n\n".$para) > $maxCharsPerBubble) {
                 $chunks[] = trim($currentChunk);
                 $currentChunk = $para;
             } else {
-                $currentChunk .= ($currentChunk ? "\n\n" : '') . $para;
+                $currentChunk .= ($currentChunk ? "\n\n" : '').$para;
             }
         }
         if (! empty(trim($currentChunk))) {
@@ -1046,7 +1073,6 @@ class LineFortuneService implements MessagingPlatformInterface
      * @return array Flex Message content
      */
     /**
-     * @param  string  $userName
      * @param  string|null  $lineUserId  LINE user ID — ถ้าระบุ จะตรวจ hasUsedFreeCard ซ่อนปุ่ม/การ์ดฟรีถ้าใช้แล้ว
      */
     public function buildWelcomeFlexMessage(string $userName = '', ?string $lineUserId = null): array
@@ -1507,13 +1533,13 @@ class LineFortuneService implements MessagingPlatformInterface
         }
 
         // Carousel ใหญ่เกิน → ส่งทีละ bubble แยก
-        Log::info("LINE sendDeepReadingFlexSafe: carousel ใหญ่เกิน → ส่งทีละ bubble (".count($bubbles).' bubbles)', [
+        Log::info('LINE sendDeepReadingFlexSafe: carousel ใหญ่เกิน → ส่งทีละ bubble ('.count($bubbles).' bubbles)', [
             'user_id' => $userId, 'carousel_size' => strlen($carouselJson ?? ''),
         ]);
 
         $anySent = false;
         foreach ($bubbles as $idx => $bubble) {
-            $partAlt = $altText." (ส่วนที่ ".($idx + 1).')';
+            $partAlt = $altText.' (ส่วนที่ '.($idx + 1).')';
             $sent = $this->sendRichMessagePriority($userId, [
                 'alt_text' => $partAlt,
                 'contents' => $bubble,
@@ -1531,7 +1557,7 @@ class LineFortuneService implements MessagingPlatformInterface
         }
 
         // Flex ทุกวิธีล้มเหลว → fallback ส่ง text ธรรมดา (ตัดไม่เกิน 5000)
-        Log::warning("LINE sendDeepReadingFlexSafe: Flex ทุกวิธีล้มเหลว → fallback text", [
+        Log::warning('LINE sendDeepReadingFlexSafe: Flex ทุกวิธีล้มเหลว → fallback text', [
             'user_id' => $userId, 'answer_len' => $answerLen,
         ]);
         $textFallback = "🔮 คำทำนายข้อที่ {$questionNum}/{$totalQuestions}\n❓ {$question}\n\n{$answer}";
@@ -1544,7 +1570,6 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * @param  string  $recipientId  LINE user ID
      * @param  array  $richContent  ['alt_text' => ..., 'contents' => ...]
-     * @return bool
      */
     public function sendRichMessagePriority(string $recipientId, array $richContent): bool
     {
@@ -1609,6 +1634,7 @@ class LineFortuneService implements MessagingPlatformInterface
                     }
                     $current .= ($current !== '' ? "\n" : '').$line;
                 }
+
                 continue;
             }
 
@@ -1841,7 +1867,7 @@ class LineFortuneService implements MessagingPlatformInterface
         // ข้อความแนะนำ
         $bodyContents[] = [
             'type' => 'text',
-            'text' => "เลือกหมวดที่สนใจ หรือพิมพ์คำถามเองได้เลย 👇",
+            'text' => 'เลือกหมวดที่สนใจ หรือพิมพ์คำถามเองได้เลย 👇',
             'wrap' => true,
             'size' => 'sm',
             'color' => '#666666',
@@ -2384,7 +2410,7 @@ class LineFortuneService implements MessagingPlatformInterface
         $brandName = $this->settings->getFortuneBrandName();
         $headerText = $freeEnabled ? 'สิทธิ์ทำนายฟรีถูกใช้แล้ว' : "ดูดวงโดย{$brandName}";
         $subText = $freeEnabled
-            ? "ทำนายฟรี 1 ใบ/ท่าน (ใช้แล้ว)"
+            ? 'ทำนายฟรี 1 ใบ/ท่าน (ใช้แล้ว)'
             : "ค่าครู {$priceDisplay} บาท/ครั้ง";
 
         $bodyContents = [
@@ -2427,6 +2453,7 @@ class LineFortuneService implements MessagingPlatformInterface
                 'action' => ['type' => 'message', 'label' => "💎 ดูดวง ค่าครู {$priceDisplay} บาท", 'text' => 'ดูดวง'],
             ];
         }
+
         return [
             'type' => 'bubble', 'size' => 'mega',
             'styles' => ['header' => ['backgroundColor' => '#6B46C1']],
@@ -3155,8 +3182,8 @@ class LineFortuneService implements MessagingPlatformInterface
      *
      * ✅ สีเขียว — แยกจาก processing (สีฟ้า) เพื่อให้ลูกค้าเห็นชัดว่า "จ่ายเงินผ่านแล้ว"
      *
-     * @param string $billRef เลขที่บิล
-     * @param string $userName ชื่อผู้ใช้
+     * @param  string  $billRef  เลขที่บิล
+     * @param  string  $userName  ชื่อผู้ใช้
      * @return array Flex Message bubble
      */
     public function buildPaymentConfirmedFlexMessage(string $billRef, string $userName = 'คุณ'): array
@@ -3215,8 +3242,8 @@ class LineFortuneService implements MessagingPlatformInterface
      * ✅ ใช้ Flex ที่สะดุดตา (สีม่วง+ทอง) แทน text ธรรมดา เพื่อให้ลูกค้าเห็นชัดเจน
      * มีปุ่ม "อ่านคำทำนาย" กดได้ทันที (เหมือน Facebook Button Template)
      *
-     * @param string $userName ชื่อผู้ใช้
-     * @param string|null $billRef เลขที่บิล
+     * @param  string  $userName  ชื่อผู้ใช้
+     * @param  string|null  $billRef  เลขที่บิล
      * @return array Flex Message bubble
      */
     public function buildFortuneReadyFlexMessage(string $userName = 'คุณ', ?string $billRef = null): array
@@ -4145,7 +4172,7 @@ class LineFortuneService implements MessagingPlatformInterface
      * สร้าง Rich Menu บน LINE Platform
      *
      * @param  array  $data  ข้อมูล Rich Menu (size, selected, name, chatBarText, areas)
-     * @return string|null  Rich Menu ID หรือ null ถ้าไม่สำเร็จ
+     * @return string|null Rich Menu ID หรือ null ถ้าไม่สำเร็จ
      */
     public function createRichMenu(array $data): ?string
     {
