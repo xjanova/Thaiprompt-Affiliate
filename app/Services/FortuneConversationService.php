@@ -4942,9 +4942,14 @@ class FortuneConversationService
             }
         }
 
+        // 🩹 (2026-05-07 review L4) — ถ้ามี AI prefix (Bill Psychology) → ข้าม "กรุณาโอน" template
+        //   เพราะ AI พูด "ไม่กดดัน" แล้ว ตามด้วย "กรุณาโอน" จะขัดแย้งกัน
+        //   เก็บแค่ข้อมูล payment details (ยอด/บัญชี/QR) ไว้ลูกค้าใช้
         $message = $aiPrefix;
-        $message .= "🔮 หมอจันทรารอคำทำนายละเอียดให้อยู่\n\n";
-        $message .= "กรุณาโอนเงินเพื่อรับคำทำนาย 🙏\n\n";
+        if (empty($aiPrefix)) {
+            $message .= "🔮 หมอจันทรารอคำทำนายละเอียดให้อยู่\n\n";
+            $message .= "กรุณาโอนเงินเพื่อรับคำทำนาย 🙏\n\n";
+        }
         $message .= "═══════════════════════\n";
         $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
         $message .= "🔖 เลขที่บิล: {$billRef}\n";
@@ -4955,14 +4960,22 @@ class FortuneConversationService
         // แสดงบัญชีธนาคารทุกครั้ง
         $message .= $this->getBankAccountsListMessage();
 
-        $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
-        $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะตัดบิลและส่งคำทำนายให้ทันที ✨\n";
-        $message .= "💡 ต้องการเช็คว่าระบบตัดบิลแล้วหรือยัง — กดปุ่ม *\"เช็คสถานะ\"* ด้านล่าง\n\n";
-        if ($remainingMinutes <= 10) {
-            $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุ\n\n";
+        // 🩹 (2026-05-07 review L4) — ถ้ามี AI prefix → ข้อความ "กรุณาโอนยอด/รีบโอน" จะขัดกับ AI tone
+        //   เก็บแค่ข้อความสำคัญ (ทศนิยมต้องตรง + เช็คสถานะ + ยกเลิก)
+        if (empty($aiPrefix)) {
+            $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
+            $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
+            $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะตัดบิลและส่งคำทำนายให้ทันที ✨\n";
+            $message .= "💡 ต้องการเช็คว่าระบบตัดบิลแล้วหรือยัง — กดปุ่ม *\"เช็คสถานะ\"* ด้านล่าง\n\n";
+            if ($remainingMinutes <= 10) {
+                $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุ\n\n";
+            }
+            $message .= 'หรือกดปุ่ม *"ยกเลิก"* หากต้องการยกเลิก';
+        } else {
+            // มี AI prefix — เก็บแค่ guidance สั้น ๆ
+            $message .= "💡 *เศษทศนิยมต้องตรงเป๊ะ* (ระบบใช้จับคู่บิล)\n";
+            $message .= 'กดปุ่ม *"เช็คสถานะ"* เมื่อโอนแล้ว · *"ยกเลิก"* เพื่อไม่ทำต่อ';
         }
-        $message .= 'หรือกดปุ่ม *"ยกเลิก"* หากต้องการยกเลิก';
 
         // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน
         $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id);
@@ -8368,9 +8381,18 @@ class FortuneConversationService
             $satisfactionDetector = new \App\Services\Fortune\FortuneSatisfactionDetector($this->settings);
             $satisfaction = $satisfactionDetector->detect($messageText);
 
-            // 🙏 ถ้า wants_to_end ชัดเจน + ไม่อยู่ใน flow พิเศษ → ปิดด้วย warm close ทันที (ประหยัด AI call)
-            //   ตรวจจาก confidence >= 50 หรือมี goodbye signal → เลี่ยง AI ทำให้ลูกค้ารู้สึก "เอาแต่ขาย"
-            if ($satisfaction['wants_to_end'] && $satisfaction['confidence'] >= 50) {
+            // 🌙 (2026-05-07 Phase 2 — review L3 fix) Celtic Premium Chat ตรวจ "ก่อน" Satisfaction
+            //   เหตุผล: ลูกค้า 99฿ อาจพิมพ์ "ขอบคุณ ทำนายเรื่องงานต่อ" → ไม่ควรตัด session
+            //   ถ้า user อยู่ใน Celtic Premium → ให้ AI ตัดสินใจปิด session เอง (ผ่าน prompt)
+            $celticPremiumDetector = new \App\Services\Fortune\FortuneCelticPremiumDetector($this->settings);
+            $celticContext = $celticPremiumDetector->detect($platform, $userId);
+
+            // 🙏 ถ้า wants_to_end ชัดเจน + ไม่อยู่ใน Celtic Premium → ปิดด้วย warm close ทันที
+            //   (ประหยัด AI call + ลูกค้ารู้สึก "ไม่ขาย")
+            //   ใน Celtic Premium → ปล่อย AI ตอบเอง (prompt มี instruction ปิดอบอุ่นเมื่อพอใจ)
+            if ($celticContext === null
+                && $satisfaction['wants_to_end']
+                && $satisfaction['confidence'] >= 55) {
                 $closeMsg = $satisfactionDetector->getCloseMessage($userProfile['name'] ?? null);
                 $this->saveConversationMessage($userId, 'user', $messageText);
                 $this->saveConversationMessage($userId, 'assistant', $closeMsg);
@@ -8387,11 +8409,6 @@ class FortuneConversationService
                     'reading' => null,
                 ];
             }
-
-            // 🌙 (2026-05-07 Phase 2) Celtic Premium Chat — ถ้าลูกค้ามี Celtic active + ผ่านเงื่อนไข trigger
-            //   → ตอบด้วย Pro model + แม่หมอจันทรา persona + context ไพ่/Q&A
-            $celticPremiumDetector = new \App\Services\Fortune\FortuneCelticPremiumDetector($this->settings);
-            $celticContext = $celticPremiumDetector->detect($platform, $userId);
 
             if ($celticContext !== null) {
                 try {
@@ -12979,9 +12996,11 @@ PROMPT;
             $defaults['detection'] = $detection;
 
             // 🚧 จัดการ off-topic strikes
+            // 🩹 (2026-05-07 review L1) — strikes ใช้กับ context='chat' เท่านั้น
+            //   ไม่นับใน paid_prediction / celtic_turn / pending_bill (ลูกค้าจ่ายแล้วถามได้อิสระ)
             $tracker = new \App\Services\Fortune\FortuneOffTopicTracker($this->settings);
 
-            if ($detection['is_offtopic']) {
+            if ($detection['is_offtopic'] && $context === 'chat') {
                 $strikes = $tracker->incrementStrike($platform, $userId);
 
                 if ($strikes >= ($this->settings->sensitive_offtopic_strikes ?? 3)) {
@@ -13003,7 +13022,7 @@ PROMPT;
 
                     // 'handoff' — Phase 2 (TODO: ส่งให้แอดมินดูแล)
                 }
-            } else {
+            } elseif ($context === 'chat' && ! $detection['is_offtopic']) {
                 // ถามตรงประเด็นแล้ว → reset strikes
                 if ($tracker->getStrikes($platform, $userId) > 0) {
                     $tracker->resetStrikes($platform, $userId);
@@ -13061,7 +13080,12 @@ PROMPT;
      * @param  array  $extra  ['used_pro_model', 'pro_provider', 'pro_model', 'tokens_used', 'cost_thb', 'budget_blocked', 'offtopic_blocked']
      */
     /**
-     * 💳 (2026-05-07 Phase 2) ลอง Bill Psychology — ใช้ใน handlePendingPayment
+     * 💳 (2026-05-07 Phase 2) ลอง Bill Psychology — ใช้ใน handlePendingPayment / handleCelticPendingPayment
+     *
+     * 🩹 (2026-05-07 review L5+L6+C3) — fixes:
+     *   - L5: save conversation history (user + assistant turns)
+     *   - L6: increment mention counter ทุก successful Pro call (ไม่อาศัย regex)
+     *   - C3: platform fallback — derive จาก userId pattern ถ้า reading->platform null
      *
      * @return string|null ข้อความ AI หรือ null ถ้าไม่มี Pro key / fail / disabled
      */
@@ -13074,6 +13098,11 @@ PROMPT;
     ): ?string {
         if (! ($this->settings->bill_psychology_enabled ?? true)) {
             return null;
+        }
+
+        // 🩹 C3 fix — ถ้า platform เป็น default/empty ลอง derive จาก userId pattern
+        if (empty($platform) || $platform === 'unknown') {
+            $platform = preg_match('/^U[0-9a-f]{32}$/i', $platformUserId) ? 'line' : 'facebook';
         }
 
         $billDetector = new \App\Services\Fortune\FortuneBillContextDetector($this->settings);
@@ -13136,8 +13165,10 @@ PROMPT;
                 return null;
             }
 
-            // ถ้ายังไม่เกิน cap + AI mention บิล → increment
-            if (! $reachedCap && preg_match('/(บิล|ค่าครู|โอน|ชำระ|จ่าย|ค่าทำนาย)/u', $responseText)) {
+            // 🩹 L6 fix — ถ้ายังไม่เกิน cap → increment ทุก successful Pro call
+            //   เดิม: regex match บน response → พลาดเคส "ตามยอด/QR/{$amount} บาท"
+            //   ใหม่: ทุก Pro call ที่ Bill Psychology trigger = mention 1 ครั้ง (Bill prompt มีบริบทบิลทั้งหมด)
+            if (! $reachedCap) {
                 $billDetector->incrementMention($platform, $platformUserId);
             }
 
@@ -13147,6 +13178,16 @@ PROMPT;
                 $billResult['model'] ?? ''
             );
             $budget->recordUse($platform, $platformUserId, $costThb);
+
+            // 🩹 L5 fix — save conversation history เพื่อให้ AI จำ context ได้ในเทิร์นถัดไป
+            try {
+                $this->saveConversationMessage($platformUserId, 'user', $messageText);
+                $this->saveConversationMessage($platformUserId, 'assistant', $responseText);
+            } catch (\Throwable $saveErr) {
+                Log::warning('Fortune: บันทึก conversation history ใน tryBillPsychologyResponse ล้มเหลว', [
+                    'error' => $saveErr->getMessage(),
+                ]);
+            }
 
             $this->logSensitiveEvent($platform, $platformUserId, 'chat', $messageText, [
                 'is_sensitive' => true,

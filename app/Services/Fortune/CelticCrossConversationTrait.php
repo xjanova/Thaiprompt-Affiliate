@@ -580,12 +580,59 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // ยังไม่จ่าย — ตอบเตือนเรื่องจ่ายเงิน
+        // 🩹 (2026-05-07 review C1) Bill Psychology สำหรับ Celtic pending bills
+        //   หาก Pro key + bill_psychology_enabled → คุยกับลูกค้าแบบจิตวิทยา
+        //   ไม่งั้น fallback เป็น message เดิม
+        $aiPrefix = '';
+        if (method_exists($this, 'looksLikeMetaOrChitchat')
+            && method_exists($this, 'tryBillPsychologyResponse')
+            && $this->looksLikeMetaOrChitchat($messageText)) {
+            try {
+                $platform = $reading->platform ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '') ? 'line' : 'facebook');
+                $platformUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+
+                if (! empty($platformUserId)) {
+                    // คำนวณ remainingMinutes สำหรับ Celtic (UPA expires_at)
+                    $upa = $reading->uniquePaymentAmount;
+                    $remainingMinutes = $upa && $upa->expires_at
+                        ? max(0, (int) now()->diffInMinutes($upa->expires_at, false))
+                        : 30;
+
+                    $billProResponse = $this->tryBillPsychologyResponse(
+                        $platform,
+                        $platformUserId,
+                        $messageText,
+                        $reading,
+                        $remainingMinutes
+                    );
+
+                    if (! empty($billProResponse)) {
+                        $aiPrefix = $billProResponse."\n\n";
+                    }
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Celtic: Bill Psychology in handleCelticPendingPayment ล้มเหลว', [
+                    'error' => $e->getMessage(),
+                    'reading_id' => $reading->id,
+                ]);
+            }
+        }
+
+        // ยังไม่จ่าย — ตอบเตือนเรื่องจ่ายเงิน (พร้อม AI prefix ถ้ามี)
+        $message = $aiPrefix;
+        if (empty($aiPrefix)) {
+            $message .= "💸 รอเจ้าชะตาโอนค่าครู {$payAmount} บาทตาม QR ที่ส่งให้นะคะ\n\n"
+                ."📌 หลังโอนเสร็จ หมอจะรู้อัตโนมัติแล้วเปิดไพ่ให้\n"
+                ."📌 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการต่อ";
+        } else {
+            // มี AI prefix แล้ว — เก็บแค่ payment summary สั้น ๆ
+            $message .= "💸 *ค่าครู: {$payAmount} บาท* (ทศนิยมต้องตรง)\n"
+                .'📌 พิมพ์ "เช็คสถานะ" เมื่อโอนแล้ว · "ยกเลิก" เพื่อไม่ทำต่อ';
+        }
+
         return [
             'action' => 'celtic_awaiting_payment',
-            'message' => "💸 รอเจ้าชะตาโอนค่าครู {$payAmount} บาทตาม QR ที่ส่งให้นะคะ\n\n"
-                ."📌 หลังโอนเสร็จ หมอจะรู้อัตโนมัติแล้วเปิดไพ่ให้\n"
-                ."📌 พิมพ์ 'ยกเลิก' ถ้าไม่ต้องการต่อ",
+            'message' => $message,
             'reading' => $reading,
         ];
     }

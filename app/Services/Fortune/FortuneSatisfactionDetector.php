@@ -63,6 +63,11 @@ class FortuneSatisfactionDetector
     /**
      * ตรวจ message
      *
+     * 🩹 (2026-05-07 review L2) — strengthened detection:
+     *   - skip ถ้ามี '?' หรือ '?' (ลูกค้ายังถามอยู่)
+     *   - skip ถ้ามี follow-up verb ("ทำนาย/ต่อ/อีก/ขอ")
+     *   - 'พอ' standalone keyword: ต้องเป็นคำเดี่ยว/ต้นประโยค ไม่ใช่ substring ของ "พอใจ/เพียงพอ"
+     *
      * @return array{
      *     is_satisfied: bool,
      *     wants_to_end: bool,
@@ -83,11 +88,27 @@ class FortuneSatisfactionDetector
             return $defaults;
         }
 
-        $msgLower = mb_strtolower(trim($message));
+        $trimmed = trim($message);
+        $msgLower = mb_strtolower($trimmed);
 
         // ข้อความสั้นมากเกินไปก็อาจจะ trigger ผิด — ต้องมีอย่างน้อย 2 ตัว
         if (mb_strlen($msgLower) < 2) {
             return $defaults;
+        }
+
+        // 🛡️ Skip ถ้ามี question mark — ลูกค้ายังถามอยู่ ไม่ใช่ปิดบทสนทนา
+        if (str_contains($trimmed, '?') || str_contains($trimmed, '?')) {
+            return $defaults;
+        }
+
+        // 🛡️ Skip ถ้ามี follow-up verb — บ่งว่ายังคุยต่อ
+        $followUpPatterns = ['ทำนายต่อ', 'ทำนายอีก', 'ดูต่อ', 'ดูอีก', 'ถามต่อ', 'ถามอีก',
+            'ขอเพิ่ม', 'ขอต่อ', 'อีกครั้ง', 'อีกที', 'ต่อหน่อย', 'ต่อเลย',
+            'ດູຕໍ່', 'ຖາມຕໍ່', 'ອີກ'];
+        foreach ($followUpPatterns as $fp) {
+            if (mb_stripos($msgLower, $fp) !== false) {
+                return $defaults;
+            }
         }
 
         $signals = [];
@@ -95,7 +116,18 @@ class FortuneSatisfactionDetector
 
         foreach (self::PATTERNS as $category => $words) {
             foreach ($words as $word) {
-                if (mb_stripos($msgLower, mb_strtolower($word)) !== false) {
+                $wordLower = mb_strtolower($word);
+
+                // 🛡️ "พอ" standalone — ต้องเป็นคำเดี่ยวหรือต้นประโยค
+                //   เพราะ "พอใจ", "เพียงพอ", "ไม่พอใจ" ไม่ใช่ closure signal
+                if ($wordLower === 'พอ' || $wordLower === 'ພໍ') {
+                    // ต้องเป็นคำเดี่ยวเท่านั้น (เช่น "พอแล้ว", "พอ", "พอครับ")
+                    if (! preg_match('/(^|\s)(พอ|ພໍ)($|\s)/u', $msgLower)) {
+                        continue;
+                    }
+                }
+
+                if (mb_stripos($msgLower, $wordLower) !== false) {
                     $signals[] = $category.':'.$word;
                     $score += match ($category) {
                         'goodbye' => 50,    // strongest
@@ -108,17 +140,20 @@ class FortuneSatisfactionDetector
             }
         }
 
-        // ข้อความสั้น (≤ 20 ตัว) + มี signal → confidence สูงขึ้น
-        if (! empty($signals) && mb_strlen($message) <= 20) {
+        // ข้อความสั้น (≤ 15 ตัว) + มี signal → confidence สูงขึ้น
+        // (ลด threshold จาก 20 เพื่อ stricter — "ขอบคุณค่ะ" 9 chars OK, "ดีมาก ทำนายต่อ" 14 chars no)
+        if (! empty($signals) && mb_strlen($trimmed) <= 15) {
             $score += 20;
         }
 
         $confidence = min(100, $score);
         $isSatisfied = $confidence >= 35;
-        $wantsToEnd = $confidence >= 50 || in_array(true, array_map(
-            fn ($s) => str_starts_with($s, 'goodbye:'),
-            $signals
-        ), true);
+
+        // 🩹 wants_to_end ต้องชัดเจนกว่าเดิม:
+        //   - มี goodbye signal (ลาก่อน/บาย/จบ) — ชัดสุด
+        //   - หรือ confidence >= 55 + ข้อความสั้น (≤ 20 ตัว)
+        $hasGoodbye = ! empty(array_filter($signals, fn ($s) => str_starts_with($s, 'goodbye:')));
+        $wantsToEnd = $hasGoodbye || ($confidence >= 55 && mb_strlen($trimmed) <= 20);
 
         return [
             'is_satisfied' => $isSatisfied,
@@ -130,12 +165,32 @@ class FortuneSatisfactionDetector
 
     /**
      * ดึงข้อความปิด session (default หรือ admin custom)
+     *
+     * 🩹 (2026-05-07 review U4) — locale-aware (Thai/Lao)
      */
     public function getCloseMessage(?string $customerName = null): string
     {
         $custom = trim($this->settings->satisfaction_close_message ?? '');
         if (! empty($custom)) {
             return str_replace('{name}', $customerName ?? 'เจ้าชะตา', $custom);
+        }
+
+        // ตรวจ locale ปัจจุบัน
+        $locale = 'th';
+        try {
+            if (class_exists(\App\Services\FortuneLocaleService::class)) {
+                $locale = \App\Services\FortuneLocaleService::current() ?: 'th';
+            }
+        } catch (\Throwable $e) {
+            // fallback Thai
+        }
+
+        if ($locale === 'lo') {
+            $name = $customerName ?: 'ເຈົ້າຊາຕາ';
+
+            return "🌙 ຂອບໃຈ{$name}ທີ່ໄວ້ວາງໃຈແມ່ໝໍຈັນທຣານະ\n\n"
+                ."ຂໍໃຫ້ດວງດາວຄຸ້ມຄອງ ພົບເຈິແຕ່ສິ່ງດີໆ ✨\n"
+                .'ຫາກຕ້ອງການປຶກສາເພີ່ມເຕີມເມື່ອໃດ ແມ່ໝໍພ້ອມສະເໝີ 🙏';
         }
 
         $name = $customerName ?: 'เจ้าชะตา';

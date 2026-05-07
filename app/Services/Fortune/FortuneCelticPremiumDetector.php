@@ -47,9 +47,11 @@ class FortuneCelticPremiumDetector
         }
 
         // ดึง active Celtic reading ของ user
+        // 🩹 (2026-05-07 review L8) — exclude COMPLETED/cancelled sessions
         $query = FortuneReading::where('reading_type', 'celtic_cross')
             ->where('is_paid', true)
             ->whereNotNull('celtic_first_answered_at')
+            ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
             ->orderByDesc('celtic_first_answered_at');
 
         if ($platform === 'facebook') {
@@ -129,37 +131,53 @@ class FortuneCelticPremiumDetector
     /**
      * Build context string สำหรับ AI prompt
      * รวม: cards + previous Q&A
+     *
+     * 🩹 (2026-05-07 review L9) — wrap in try/catch ป้องกัน malformed JSON crash
      */
     public function buildContextForAI(FortuneReading $reading): string
     {
         $parts = [];
 
-        // 10 ใบไพ่
-        $cards = $reading->getCelticCards();
-        if (! empty($cards)) {
-            $cardLines = [];
-            foreach ($cards as $idx => $card) {
-                $position = $card['position_label'] ?? 'ใบที่ '.($idx + 1);
-                $name = $card['name'] ?? $card['card_name'] ?? '';
-                $reversed = ($card['reversed'] ?? false) ? ' (กลับหัว)' : '';
-                $cardLines[] = "  • {$position}: {$name}{$reversed}";
+        // 10 ใบไพ่ (try/catch — กัน malformed JSON ของ celtic_cards column)
+        try {
+            $cards = $reading->getCelticCards();
+            if (! empty($cards)) {
+                $cardLines = [];
+                foreach ($cards as $idx => $card) {
+                    $position = $card['position_label'] ?? 'ใบที่ '.($idx + 1);
+                    $name = $card['name'] ?? $card['card_name'] ?? '';
+                    $reversed = ($card['reversed'] ?? false) ? ' (กลับหัว)' : '';
+                    $cardLines[] = "  • {$position}: {$name}{$reversed}";
+                }
+                $parts[] = "🃏 ไพ่ที่เปิดไป 10 ใบ:\n".implode("\n", $cardLines);
             }
-            $parts[] = "🃏 ไพ่ที่เปิดไป 10 ใบ:\n".implode("\n", $cardLines);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Celtic Premium: getCelticCards ล้มเหลว', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         // Q&A history
-        $questions = $reading->celticQuestions ?? null;
-        if ($questions === null && method_exists($reading, 'celticQuestions')) {
-            $questions = $reading->celticQuestions()->orderBy('sequence')->get();
-        }
-        if ($questions && $questions->count() > 0) {
-            $qaLines = [];
-            foreach ($questions as $q) {
-                $qText = mb_substr($q->question ?? '', 0, 150);
-                $aText = mb_substr($q->response ?? '', 0, 300);
-                $qaLines[] = "  Q{$q->sequence}: {$qText}\n  A: {$aText}";
+        try {
+            $questions = $reading->celticQuestions ?? null;
+            if ($questions === null && method_exists($reading, 'celticQuestions')) {
+                $questions = $reading->celticQuestions()->orderBy('sequence')->get();
             }
-            $parts[] = "📜 คำถาม-คำตอบที่ผ่านมา:\n".implode("\n\n", $qaLines);
+            if ($questions && $questions->count() > 0) {
+                $qaLines = [];
+                foreach ($questions as $q) {
+                    $qText = mb_substr($q->question ?? '', 0, 150);
+                    $aText = mb_substr($q->response ?? '', 0, 300);
+                    $qaLines[] = "  Q{$q->sequence}: {$qText}\n  A: {$aText}";
+                }
+                $parts[] = "📜 คำถาม-คำตอบที่ผ่านมา:\n".implode("\n\n", $qaLines);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Celtic Premium: load Q&A history ล้มเหลว', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return implode("\n\n", $parts);
