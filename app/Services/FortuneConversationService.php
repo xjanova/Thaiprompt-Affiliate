@@ -613,6 +613,29 @@ class FortuneConversationService
                 return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
             }
 
+            // 🎯 (2026-05-08) Smart skip — ข้ามข้อความที่ไม่จำเป็นต้องตอบ (ประหยัด token)
+            //   user feedback: "ส่งอะไรที่ไม่เกี่ยวเลยก็ไม่ตอบ เสียโทเค็น"
+            //
+            //   skip ในเคส:
+            //     - sticker / emoji-only (≤3 chars + ไม่มีตัวอักษรไทย/eng)
+            //     - คำตอบรับสั้น "ครับ/ค่ะ/อืม/ok" — ไม่มี active reading
+            //     - duplicate ข้อความ (Cache เช็ค < 3s)
+            //
+            //   ❗ ยกเว้น: ลูกค้ามี active reading หรือมีบิลค้าง → ตอบทุกข้อความ
+            $skipReason = $this->shouldSkipReply($facebookUserId, $messageText);
+            if ($skipReason !== null) {
+                Log::info('Fortune: Smart skip — '.$skipReason, [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return [
+                    'action' => 'smart_skip',
+                    'message' => null,
+                    'reading' => null,
+                ];
+            }
+
             // 🛡️ (2026-05-05) VIP Bypass — ลูกค้าจ่ายเงินแล้วต้องไม่ถูก spam guard ดัก
             //   เคสที่ทำให้บล็อก: ลูกค้าจ่าย Celtic 99฿ → รัวข้อความ "ตอบสิ ทำไมไม่ตอบ"
             //   → silent_mode trigger → บอทเงียบ → ลูกค้าด่ากระจาย
@@ -6863,6 +6886,96 @@ class FortuneConversationService
      *
      * Cache 30s — ไม่ query DB ทุก message
      */
+    /**
+     * 🎯 (2026-05-08) Smart skip — ตัดสินใจว่าควร skip ข้อความนี้ไหม (ประหยัด token + ลด clutter)
+     *
+     * user feedback: "ส่งอะไรที่ไม่เกี่ยวเลยก็ไม่ตอบ เสียโทเค็น" + "ตาลาย"
+     *
+     * Skip เมื่อ:
+     *   - sticker / emoji-only (ข้อความสั้น + ไม่มีตัวอักษร)
+     *   - duplicate (ข้อความเดียวกัน < 3s ก่อนหน้า)
+     *   - คำตอบรับเปล่า ๆ ("ครับ"/"ค่ะ"/"อืม") — ไม่มี active reading
+     *
+     * ❗ ยกเว้น (ไม่ skip):
+     *   - active reading (ทุกข้อความสำคัญ)
+     *   - มีบิลค้าง
+     *   - คำที่มี fortune intent ("ดูดวง", "ทำนาย", "39", "99", ฯลฯ)
+     *   - คำที่มี buying intent ("เท่าไหร่", "ราคา", "จ่าย", "โอน")
+     *
+     * @return string|null reason ถ้า skip, null ถ้าตอบได้
+     */
+    protected function shouldSkipReply(string $userId, string $messageText): ?string
+    {
+        $trimmed = trim($messageText);
+        if ($trimmed === '') {
+            return 'empty';
+        }
+
+        // ❗ ยกเว้น 1: active reading → ตอบทุกข้อความ (sticker/short ก็ตอบ — ลูกค้าอยู่ใน flow)
+        $platform = $this->currentPlatform ?? 'facebook';
+        try {
+            if (FortuneReading::hasActiveReading($platform, $userId)) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            // ถ้า query fail → ตอบไว้ก่อน (safer)
+            return null;
+        }
+
+        // ❗ ยกเว้น 2: บิลค้าง → ตอบเสมอ
+        if ($this->hasPaidActiveReading($userId)) {
+            return null;
+        }
+
+        // ❗ ยกเว้น 3: fortune/buying intent → ตอบเร็ว ไม่ skip
+        $lowerText = mb_strtolower($trimmed);
+        $intentKeywords = [
+            // fortune intent
+            'ดูดวง', 'ทำนาย', 'หมอดู', 'ดวง', 'ไพ่', 'celtic', 'พื้นฐาน', 'เชิงลึก', 'ละเอียด',
+            // buying intent
+            'เท่าไหร่', 'ราคา', 'จ่าย', 'โอน', 'ค่าครู', 'เสียเงิน', 'qr', 'พร้อมเพย์', 'promptpay',
+            // tier numbers
+            '39', '99',
+            // Lao
+            'ເບິ່ງດວງ', 'ທຳນາຍ', 'ໝໍ', 'ໄພ່', 'ເທົ່າໃດ', 'ລາຄາ', 'ຈ່າຍ', 'ໂອນ',
+        ];
+        foreach ($intentKeywords as $kw) {
+            if (mb_stripos($lowerText, $kw) !== false) {
+                return null; // มี intent → ตอบ
+            }
+        }
+
+        // 🚫 Skip 1: duplicate (พิมพ์ซ้ำใน 3s)
+        $hashKey = "fortune:last_msg:{$userId}";
+        $lastHash = Cache::get($hashKey);
+        $currentHash = hash('sha256', $lowerText);
+        if ($lastHash === $currentHash) {
+            return 'duplicate';
+        }
+        Cache::put($hashKey, $currentHash, 3);
+
+        // 🚫 Skip 2: sticker / emoji-only (ไม่มีตัวอักษร Thai/Lao/English อย่างน้อย 2 ตัว)
+        //   ใช้ regex หาว่ามีตัวอักษร "จริง" ไหม
+        $textChars = preg_replace('/[^a-zA-Zก-๙ະ-ໝ]/u', '', $trimmed);
+        if (mb_strlen($textChars) < 2) {
+            return 'sticker_or_emoji_only';
+        }
+
+        // 🚫 Skip 3: คำตอบรับเปล่า ๆ — ไม่มี context ก็ไม่ต้องตอบ
+        $emptyResponses = [
+            'ครับ', 'ค่ะ', 'คะ', 'จ้า', 'อืม', 'อืมๆ', 'อืม ๆ',
+            'ok', 'oke', 'okay', 'โอเค', 'โอ้เค',
+            'ใช่', 'ไม่ใช่', 'ได้', 'ไม่ได้',  // standalone — มี active reading จะไม่มาถึงนี่
+            'haha', 'หะหะ', 'ฮ่า', 'ฮ่าๆ', 'ฮ่า ๆ',
+            'wow', 'ว้าว', 'อ๋อ', 'อ้าว', 'เห็น',
+        ];
+        if (in_array($lowerText, $emptyResponses, true)) {
+            return 'empty_response';
+        }
+
+        return null; // ตอบได้
+    }
+
     protected function hasPaidActiveReading(string $userId): bool
     {
         $key = "fortune:has_paid_active:{$userId}";

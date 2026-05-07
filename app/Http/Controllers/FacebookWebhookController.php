@@ -2190,37 +2190,17 @@ class FacebookWebhookController extends Controller
             // ปิด typing indicator
             $this->facebookService->sendTypingIndicator($senderId, false);
 
-            // ✅ ส่ง Rich Welcome Template พร้อม Quick Replies
-            $richService = new FacebookRichMessageService($this->settings);
-            // 🩹 (2026-05-04) pass senderId เพื่อตรวจ hasUsedFreeCard → ซ่อนปุ่ม/ข้อความฟรีถ้าใช้แล้ว
-            $welcomeTemplate = $richService->buildWelcomeTemplate($userName, $senderId);
-            $welcomeQuickReplies = $richService->getQuickRepliesForAction('help');
-
-            if ($welcomeTemplate && ! empty($welcomeTemplate['elements'])) {
-                // ส่ง Generic Template + Quick Replies
-                $this->facebookService->sendTemplateWithQuickReplies(
-                    $senderId,
-                    [
-                        'template_type' => 'generic',
-                        'elements' => $welcomeTemplate['elements'],
-                    ],
-                    $welcomeQuickReplies
-                );
-            } else {
-                // Fallback: ส่งข้อความต้อนรับธรรมดา + Quick Replies
-                // 🎯 Phase E — เอาปุ่ม "เช็คสิทธิ์" + "วิธีใช้งาน" ออก (ซ้ำซ้อนกับ AI chat)
-                $welcomeMessage = $this->buildWelcomeMessage($userName);
-                // 🎁 (2026-05-04) ลบปุ่ม "ดูดวงฟรี" ออก — ฟรีให้เฉพาะตอบกลับ DM react/comment
-                $quickReplies = [];
-                if ($this->settings->isDeepReadingEnabled()) {
-                    $quickReplies[] = ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_DEEP'];
-                }
-                $this->facebookService->sendQuickReplies($senderId, $welcomeMessage, $quickReplies);
-            }
-
-            // 🌟 (2026-05-04) ชวนเข้ากลุ่ม — เฉพาะคนที่ยังไม่ดูดวง (ใหม่)
-            //   gated โดย settings.fortune_group_invite_enabled + Cache cooldown 7d
-            $this->maybeInviteToGroup($senderId, 'get_started');
+            // 🎯 (2026-05-08) UX cleanup — banner image อย่างเดียว ไม่ส่ง welcome rich card
+            //   user feedback: "กล่องชักชวนมันเยอะไปตาลาย เอาแค่รูป อย่างเดียวก่อน"
+            //   เดิม: banner image + welcome rich card + 3 ปุ่ม + quick replies (ตาลาย)
+            //   ใหม่: banner image อย่างเดียว — รอลูกค้าทักมา → AI chat ตอบเป็นกันเอง
+            //   ❗ ลบ buildWelcomeTemplate / sendTemplateWithQuickReplies ออก
+            //   ❗ ลบ buildWelcomeMessage / sendQuickReplies ออก
+            //   ❗ ลบ maybeInviteToGroup (group invite ก็เป็นกล่องชวน — เน้นให้สะอาด)
+            //
+            // ✅ FB 24hr messaging window เปิดอยู่แล้วจาก banner image (เป็น message เหมือนกัน)
+            // ✅ ลูกค้าพิมพ์ทักมา → processConversationalMessage → AI chat (Groq) ตอบเป็นกันเอง
+            //    + เนียนชวนดูดวง (ผ่าน chat_system_prompt) เมื่อบริบทเหมาะ
 
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [
