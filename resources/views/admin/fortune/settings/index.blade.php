@@ -1285,6 +1285,197 @@
             </div>
         </div> {{-- End Voice Summary --}}
 
+        {{-- ===== 🎼 Voice Library (2026-05-08) — ตั้งค่า/ทดสอบ/อิมพอตเสียง ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="voiceLibrary()"
+             x-init="init()">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🎼 Voice Library
+                    <span class="text-xs font-normal text-purple-600 dark:text-purple-400">(ตั้งค่า · ทดสอบ · อิมพอตโค๊ดเสียง)</span>
+                </h3>
+                <div class="flex gap-2">
+                    <button type="button" @click="seedThai()" :disabled="busy"
+                            class="px-3 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded-lg transition">
+                        🌱 Seed Thai voices
+                    </button>
+                    <button type="button" @click="showImport = !showImport"
+                            class="px-3 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition">
+                        <span x-show="!showImport">📥 Import bulk</span>
+                        <span x-show="showImport" x-cloak>ซ่อน</span>
+                    </button>
+                    <button type="button" @click="showAdd = !showAdd"
+                            class="px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <span x-show="!showAdd">➕ เพิ่มเสียง</span>
+                        <span x-show="showAdd" x-cloak>ซ่อน</span>
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                บันทึก voice combinations ที่ใช้บ่อย ๆ — กด <strong>Apply</strong> เพื่อตั้งเป็นเสียงปัจจุบัน, กด <strong>Test</strong> เพื่อฟังตัวอย่าง
+            </p>
+
+            {{-- Add new preset --}}
+            <div x-show="showAdd" x-cloak x-collapse
+                 class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <h4 class="font-semibold mb-3 text-gray-900 dark:text-white">➕ เพิ่ม Voice Preset</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">ชื่อ</label>
+                        <input type="text" x-model="newPreset.name" placeholder="เช่น แม่หมอใจดี"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">Provider</label>
+                        <select x-model="newPreset.provider"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                            <option value="minimax">MiniMax</option>
+                            <option value="openai_tts">OpenAI TTS</option>
+                            <option value="google_tts">Google Cloud TTS</option>
+                            <option value="gtts">gTTS</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">Voice ID</label>
+                        <input type="text" x-model="newPreset.voice_id" placeholder="Thai_warmFemaleHost / shimmer / th-TH-Neural2-C"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">Model (optional)</label>
+                        <input type="text" x-model="newPreset.model" placeholder="speech-2.8-hd / gpt-4o-mini-tts"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                </div>
+                <button type="button" @click="addPreset()" :disabled="busy"
+                        class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg text-sm">
+                    บันทึก
+                </button>
+            </div>
+
+            {{-- Bulk import --}}
+            <div x-show="showImport" x-cloak x-collapse
+                 class="mb-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                <h4 class="font-semibold mb-3 text-gray-900 dark:text-white">📥 Import bulk โค๊ดเสียง</h4>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">Provider ของชุดที่อิมพอต</label>
+                        <select x-model="importProvider"
+                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                            <option value="minimax">MiniMax</option>
+                            <option value="openai_tts">OpenAI TTS</option>
+                            <option value="google_tts">Google Cloud TTS</option>
+                            <option value="gtts">gTTS</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" x-model="importReplace" class="mr-2 rounded">
+                            <span class="text-gray-700 dark:text-gray-300">⚠️ ลบของเดิม provider นี้ก่อน import</span>
+                        </label>
+                    </div>
+                </div>
+
+                <textarea x-model="importRaw" rows="8"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-xs"
+                          placeholder="Format 1 — pipe-delimited (1 บรรทัด/voice):
+voice_id|name|model
+Thai_warmFemaleHost|แม่หมอใจดี|speech-2.8-hd
+Thai_femaleSerene|เสียงสงบ
+female-tianmei|เสียงหวาน
+
+Format 2 — JSON array:
+[{&quot;name&quot;:&quot;แม่หมอ&quot;,&quot;voice_id&quot;:&quot;Thai_warmFemaleHost&quot;,&quot;model&quot;:&quot;speech-2.8-hd&quot;}]
+
+# บรรทัดที่ขึ้นต้นด้วย # หรือ // จะถูกข้าม"></textarea>
+
+                <button type="button" @click="importBulk()" :disabled="busy || !importRaw.trim()"
+                        class="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg text-sm">
+                    🚀 อิมพอตเลย
+                </button>
+                <p class="text-xs text-gray-500 mt-2">
+                    💡 ดูรายชื่อ voice MiniMax ที่ <a href="https://platform.minimax.io/docs/faq/system-voice-id" target="_blank" class="text-purple-600 hover:underline">platform.minimax.io/docs/faq/system-voice-id</a>
+                </p>
+            </div>
+
+            {{-- Preset list --}}
+            <div class="overflow-x-auto">
+                <template x-if="presets.length === 0 && !loading">
+                    <div class="text-center py-12 text-gray-500 dark:text-gray-400">
+                        <div class="text-4xl mb-2">🎙️</div>
+                        <p>ยังไม่มี voice preset — กด "Seed Thai voices" เพื่อเพิ่มชุดเริ่มต้น หรือ "Import bulk"</p>
+                    </div>
+                </template>
+                <template x-if="loading">
+                    <div class="text-center py-8 text-gray-500">⏳ กำลังโหลด...</div>
+                </template>
+                <table x-show="presets.length > 0" x-cloak class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 dark:border-gray-700">
+                            <th class="text-left py-2 px-3">ชื่อ</th>
+                            <th class="text-left py-2 px-3">Provider</th>
+                            <th class="text-left py-2 px-3 font-mono text-xs">Voice ID / Model</th>
+                            <th class="text-center py-2 px-3">ฟัง</th>
+                            <th class="text-right py-2 px-3">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="preset in presets" :key="preset.id">
+                            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                                <td class="py-2 px-3">
+                                    <div class="flex items-center gap-2">
+                                        <span x-show="preset.is_default" class="text-xs px-2 py-0.5 bg-emerald-200 dark:bg-emerald-800 text-emerald-900 dark:text-emerald-100 rounded font-semibold">USING</span>
+                                        <span x-text="preset.name" class="font-medium"></span>
+                                    </div>
+                                </td>
+                                <td class="py-2 px-3">
+                                    <span class="text-xs px-2 py-0.5 rounded"
+                                          :class="{
+                                            'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-200': preset.provider === 'minimax',
+                                            'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200': preset.provider === 'openai_tts',
+                                            'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200': preset.provider === 'google_tts',
+                                            'bg-gray-100 dark:bg-gray-900/40 text-gray-800 dark:text-gray-200': preset.provider === 'gtts',
+                                          }"
+                                          x-text="preset.provider"></span>
+                                </td>
+                                <td class="py-2 px-3 font-mono text-xs">
+                                    <div x-text="preset.voice_id"></div>
+                                    <div x-show="preset.model" x-text="preset.model" class="text-gray-500"></div>
+                                </td>
+                                <td class="py-2 px-3 text-center">
+                                    <template x-if="preset.sample_audio_url">
+                                        <audio :src="preset.sample_audio_url" controls class="h-8"></audio>
+                                    </template>
+                                    <template x-if="!preset.sample_audio_url">
+                                        <span class="text-gray-400 text-xs">—</span>
+                                    </template>
+                                </td>
+                                <td class="py-2 px-3 text-right whitespace-nowrap">
+                                    <button type="button" @click="testPreset(preset.id)" :disabled="busy"
+                                            class="px-2 py-1 text-xs bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded">
+                                        🎙️ Test
+                                    </button>
+                                    <button type="button" @click="applyPreset(preset.id)" :disabled="busy || preset.is_default"
+                                            class="px-2 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded">
+                                        ✓ Apply
+                                    </button>
+                                    <button type="button" @click="deletePreset(preset.id, preset.name)" :disabled="busy"
+                                            class="px-2 py-1 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded">
+                                        🗑
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+
+            <div x-show="message" x-cloak x-transition class="mt-4 p-3 rounded-lg text-sm"
+                 :class="messageOk ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200' : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200'"
+                 x-text="message"></div>
+        </div> {{-- End Voice Library --}}
+
         {{-- ===== 🙏 Satisfaction Detector (2026-05-07 Phase 2) ===== --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
              x-data="{
@@ -2831,6 +3022,167 @@
 
 @push('scripts')
 <script>
+// 🎼 (2026-05-08) Voice Library Alpine component
+function voiceLibrary() {
+    const baseUrl = '{{ route("admin.fortune.voice-presets.index") }}';
+    const csrf = '{{ csrf_token() }}';
+
+    async function jsonFetch(url, opts = {}) {
+        const res = await fetch(url, {
+            ...opts,
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrf,
+                ...(opts.headers || {}),
+            },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            throw new Error(data.error || data.message || ('HTTP ' + res.status));
+        }
+        return data;
+    }
+
+    return {
+        presets: [],
+        loading: false,
+        busy: false,
+        showAdd: false,
+        showImport: false,
+        message: '',
+        messageOk: true,
+        newPreset: { name: '', provider: 'minimax', voice_id: '', model: '' },
+        importProvider: 'minimax',
+        importRaw: '',
+        importReplace: false,
+
+        async init() {
+            await this.refresh();
+        },
+
+        flash(msg, ok = true) {
+            this.message = msg;
+            this.messageOk = ok;
+            setTimeout(() => { this.message = ''; }, 5000);
+        },
+
+        async refresh() {
+            this.loading = true;
+            try {
+                const data = await jsonFetch(baseUrl);
+                this.presets = data.data || [];
+            } catch (e) {
+                this.flash('โหลดรายการเสียงล้มเหลว: ' + e.message, false);
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        async addPreset() {
+            if (!this.newPreset.name || !this.newPreset.voice_id) {
+                this.flash('กรอกชื่อ + voice_id ให้ครบ', false);
+                return;
+            }
+            this.busy = true;
+            try {
+                await jsonFetch(baseUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(this.newPreset),
+                });
+                this.flash('เพิ่มสำเร็จ');
+                this.newPreset = { name: '', provider: 'minimax', voice_id: '', model: '' };
+                this.showAdd = false;
+                await this.refresh();
+            } catch (e) {
+                this.flash('เพิ่มไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async deletePreset(id, name) {
+            if (!confirm('ลบ "' + name + '" ใช่ไหม?')) return;
+            this.busy = true;
+            try {
+                await jsonFetch(baseUrl + '/' + id, { method: 'DELETE' });
+                this.flash('ลบแล้ว');
+                await this.refresh();
+            } catch (e) {
+                this.flash('ลบไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async applyPreset(id) {
+            this.busy = true;
+            try {
+                const r = await jsonFetch(baseUrl + '/' + id + '/apply', { method: 'POST' });
+                this.flash(r.message || 'ตั้งเป็นเสียงปัจจุบันแล้ว');
+                await this.refresh();
+            } catch (e) {
+                this.flash('Apply ไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async testPreset(id) {
+            this.busy = true;
+            this.flash('🎙️ กำลังสร้าง sample (อาจใช้เวลา 10-30 วิ)...');
+            try {
+                const r = await jsonFetch(baseUrl + '/' + id + '/test', { method: 'POST' });
+                this.flash('✅ สร้าง sample สำเร็จ — กดเล่นได้เลย');
+                await this.refresh();
+            } catch (e) {
+                this.flash('Test ไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async importBulk() {
+            if (!this.importRaw.trim()) return;
+            if (this.importReplace && !confirm('จะลบเสียง provider ' + this.importProvider + ' เดิมทั้งหมดก่อน import — แน่ใจ?')) {
+                return;
+            }
+            this.busy = true;
+            try {
+                const r = await jsonFetch(baseUrl + '/import', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        provider: this.importProvider,
+                        raw: this.importRaw,
+                        replace: this.importReplace,
+                    }),
+                });
+                this.flash(r.message || ('สำเร็จ ' + r.created + ' รายการ'));
+                this.importRaw = '';
+                this.showImport = false;
+                await this.refresh();
+            } catch (e) {
+                this.flash('Import ไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async seedThai() {
+            this.busy = true;
+            try {
+                const r = await jsonFetch(baseUrl + '/seed-thai', { method: 'POST' });
+                this.flash(r.message || 'Seed สำเร็จ');
+                await this.refresh();
+            } catch (e) {
+                this.flash('Seed ไม่สำเร็จ: ' + e.message, false);
+            } finally {
+                this.busy = false;
+            }
+        },
+    };
+}
+
 function aiDiagnostic() {
     return {
         loading: false,

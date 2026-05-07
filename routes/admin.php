@@ -79,6 +79,7 @@ use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortuneUsersController;
+use App\Http\Controllers\Admin\FortuneVoicePresetController;
 use App\Http\Controllers\Admin\ForumAdminController;
 use App\Http\Controllers\Admin\FreshMarketController;
 use App\Http\Controllers\Admin\GameController;
@@ -4001,6 +4002,18 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/settings/bank-accounts', [FortuneSettingsController::class, 'storeBankAccount'])->name('settings.bank-accounts.store');
     Route::put('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'updateBankAccount'])->name('settings.bank-accounts.update');
     Route::delete('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'deleteBankAccount'])->name('settings.bank-accounts.delete');
+
+    // 🎙️ (2026-05-08) Voice Presets — Library, Import, Test, Apply
+    Route::prefix('voice-presets')->name('voice-presets.')->group(function () {
+        Route::get('/', [FortuneVoicePresetController::class, 'index'])->name('index');
+        Route::post('/', [FortuneVoicePresetController::class, 'store'])->name('store');
+        Route::put('/{preset}', [FortuneVoicePresetController::class, 'update'])->name('update');
+        Route::delete('/{preset}', [FortuneVoicePresetController::class, 'destroy'])->name('destroy');
+        Route::post('/{preset}/apply', [FortuneVoicePresetController::class, 'apply'])->name('apply');
+        Route::post('/{preset}/test', [FortuneVoicePresetController::class, 'test'])->name('test');
+        Route::post('/import', [FortuneVoicePresetController::class, 'import'])->name('import');
+        Route::post('/seed-thai', [FortuneVoicePresetController::class, 'seedThai'])->name('seed-thai');
+    });
 
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');
