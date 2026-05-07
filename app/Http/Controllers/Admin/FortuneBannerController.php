@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\FortuneBanner;
 use App\Models\FortuneTellingSetting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -61,29 +61,31 @@ class FortuneBannerController extends Controller
 
         $file = $request->file('image');
 
-        // สร้าง path
-        $bannerDir = public_path('images/fortune/banners');
-        if (! File::exists($bannerDir)) {
-            File::makeDirectory($bannerDir, 0755, true);
-        }
+        // 🆕 (2026-05-07) เก็บที่ storage/app/public/fortune/banners/ — รอด deploy.sh git clean
+        //   เดิม: public_path('images/fortune/banners') → ถูก git clean -fdx ลบทุก deploy
+        //   ใหม่: Laravel Storage convention → deploy.sh excludes 'storage/app/public/*'
+        $filename = 'banner-'.Str::random(8).'-'.time().'.jpg';
+        $storagePath = 'fortune/banners/'.$filename;
 
-        // สร้างชื่อไฟล์ unique
-        $filename = 'banner-' . Str::random(8) . '-' . time() . '.jpg';
-        $fullPath = $bannerDir . DIRECTORY_SEPARATOR . $filename;
-
-        // Resize + compress ให้ถึง max 1280 wide, JPEG quality 85
-        $info = $this->resizeAndSaveJpeg($file->getRealPath(), $fullPath, 1280, 85);
+        // Resize → temp file → ย้ายเข้า Storage::disk('public')
+        $tmpPath = tempnam(sys_get_temp_dir(), 'fbanner_').'.jpg';
+        $info = $this->resizeAndSaveJpeg($file->getRealPath(), $tmpPath, 1280, 85);
 
         if (! $info) {
+            @unlink($tmpPath);
+
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'ไม่สามารถประมวลผลรูปได้ กรุณาลองรูปอื่น');
         }
 
+        Storage::disk('public')->put($storagePath, file_get_contents($tmpPath));
+        @unlink($tmpPath);
+
         $banner = FortuneBanner::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
-            'image_path' => 'images/fortune/banners/' . $filename,
+            'image_path' => $storagePath,
             'width' => $info['width'],
             'height' => $info['height'],
             'file_size' => $info['size'],
@@ -109,7 +111,7 @@ class FortuneBannerController extends Controller
     {
         return view('admin.fortune.banners.edit', [
             'banner' => $banner,
-            'pageTitle' => 'แก้ไขแบนเนอร์: ' . $banner->name,
+            'pageTitle' => 'แก้ไขแบนเนอร์: '.$banner->name,
         ]);
     }
 
@@ -136,23 +138,25 @@ class FortuneBannerController extends Controller
         // ถ้าอัพรูปใหม่ → resize + แทนที่ไฟล์เดิม
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $bannerDir = public_path('images/fortune/banners');
-            $filename = 'banner-' . Str::random(8) . '-' . time() . '.jpg';
-            $fullPath = $bannerDir . DIRECTORY_SEPARATOR . $filename;
+            $filename = 'banner-'.Str::random(8).'-'.time().'.jpg';
+            $storagePath = 'fortune/banners/'.$filename;
 
-            $info = $this->resizeAndSaveJpeg($file->getRealPath(), $fullPath, 1280, 85);
+            $tmpPath = tempnam(sys_get_temp_dir(), 'fbanner_').'.jpg';
+            $info = $this->resizeAndSaveJpeg($file->getRealPath(), $tmpPath, 1280, 85);
 
             if ($info) {
-                // ลบไฟล์เก่า (ถ้าอยู่ในโฟลเดอร์เรา — กัน path traversal)
-                $oldPath = public_path($banner->image_path);
-                if (File::exists($oldPath) && str_starts_with(realpath($oldPath), realpath($bannerDir))) {
-                    @File::delete($oldPath);
-                }
+                Storage::disk('public')->put($storagePath, file_get_contents($tmpPath));
+                @unlink($tmpPath);
 
-                $updateData['image_path'] = 'images/fortune/banners/' . $filename;
+                // ลบไฟล์เก่า — รองรับทั้ง legacy public_path และ new storage path
+                $this->deleteOldBannerFile($banner->image_path);
+
+                $updateData['image_path'] = $storagePath;
                 $updateData['width'] = $info['width'];
                 $updateData['height'] = $info['height'];
                 $updateData['file_size'] = $info['size'];
+            } else {
+                @unlink($tmpPath);
             }
         }
 
@@ -227,6 +231,33 @@ class FortuneBannerController extends Controller
 
         return redirect()->route('admin.fortune.banners.index')
             ->with('success', '✅ บันทึกการตั้งค่าสำเร็จ');
+    }
+
+    /**
+     * ลบไฟล์ banner เก่า — รองรับทั้ง legacy (`images/...` ที่ public_path) และ new (`fortune/...` ที่ Storage::disk('public'))
+     *
+     * เก่า legacy: 'images/fortune/banners/banner-X.jpg' → public_path
+     * ใหม่ storage: 'fortune/banners/banner-X.jpg' → Storage::disk('public')
+     */
+    protected function deleteOldBannerFile(?string $oldPath): void
+    {
+        if (empty($oldPath)) {
+            return;
+        }
+
+        // Legacy: เคยเก็บที่ public_path('images/fortune/banners/...')
+        if (str_starts_with($oldPath, 'images/')) {
+            $legacyFull = public_path($oldPath);
+            $legacyDir = public_path('images/fortune/banners');
+            if (file_exists($legacyFull) && str_starts_with((string) realpath($legacyFull), (string) realpath($legacyDir))) {
+                @unlink($legacyFull);
+            }
+
+            return;
+        }
+
+        // New: storage/app/public/fortune/banners/...
+        Storage::disk('public')->delete($oldPath);
     }
 
     /**
