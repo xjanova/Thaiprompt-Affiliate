@@ -38,11 +38,21 @@ class FortuneCelticPremiumDetector
     /**
      * ตรวจว่า user อยู่ใน Celtic Premium window ไหม
      *
+     * 🩹 (2026-05-07 review M3) — cache "ไม่มี active Celtic" ผล 30s
+     *   ลูกค้าส่วนใหญ่ไม่มี active Celtic → ทุก chat turn ไม่ต้อง query DB
+     *   เคสที่มี → ไม่ cache (จะ stale เพราะ window/cards เปลี่ยน)
+     *
      * @return array|null null ถ้าไม่เข้าเงื่อนไข / array context ถ้าเข้า
      */
     public function detect(string $platform, string $platformUserId): ?array
     {
         if (! ($this->settings->celtic_premium_chat_enabled ?? true)) {
+            return null;
+        }
+
+        // 🩹 M3 cache: skip query ถ้าเพิ่งเช็คไปและไม่มี active
+        $negCacheKey = "fortune:celtic_premium_no_active:{$platform}:{$platformUserId}";
+        if (Cache::get($negCacheKey)) {
             return null;
         }
 
@@ -62,6 +72,9 @@ class FortuneCelticPremiumDetector
 
         $reading = $query->first();
         if (! $reading) {
+            // 🩹 M3 cache negative result 30s — ลูกค้าส่วนใหญ่ไม่มี active Celtic
+            Cache::put($negCacheKey, true, 30);
+
             return null;
         }
 
@@ -69,6 +82,9 @@ class FortuneCelticPremiumDetector
         $windowMin = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($windowMin);
         if (now()->greaterThan($deadline)) {
+            // window หมด → cache negative สั้น ๆ (60s) เพื่อไม่ query ซ้ำ
+            Cache::put($negCacheKey, true, 60);
+
             return null; // หมดเวลาแล้ว
         }
 
@@ -85,9 +101,9 @@ class FortuneCelticPremiumDetector
         }
         // 'always_after_q1' = ผ่านเงื่อนไข celtic_first_answered_at not null อยู่แล้ว
 
-        // เช็ค message cap
+        // เช็ค message cap (อ่านจาก reading instance ตรง — ไม่ต้อง re-query)
         $maxMessages = (int) ($this->settings->celtic_premium_chat_max_messages ?? 30);
-        $msgCount = $this->getMessageCount($reading->id);
+        $msgCount = (int) $reading->getConversationState('celtic_premium_msg_count', 0);
         if ($maxMessages > 0 && $msgCount >= $maxMessages) {
             return null; // เกิน cap
         }
@@ -109,23 +125,36 @@ class FortuneCelticPremiumDetector
 
     /**
      * เพิ่ม message count + return ค่าใหม่
+     *
+     * 🩹 (2026-05-07 review L7) — persist ใน FortuneReading conversation_state
+     *   เดิม: Cache only → cache:clear/Redis flush รีเซ็ต cap → bypass ได้
+     *   ใหม่: DB ใน conversation_state JSON — ถาวรตลอด session
      */
     public function incrementMessageCount(int $readingId): int
     {
-        $key = "fortune:celtic_premium_msg:{$readingId}";
-        $current = (int) Cache::get($key, 0);
+        $reading = FortuneReading::find($readingId);
+        if (! $reading) {
+            return 0;
+        }
+
+        $current = (int) $reading->getConversationState('celtic_premium_msg_count', 0);
         $next = $current + 1;
-        Cache::put($key, $next, 3600); // 1 hour TTL — ครอบคลุม window
+        $reading->setConversationState('celtic_premium_msg_count', $next);
 
         return $next;
     }
 
     /**
-     * ดึง message count
+     * ดึง message count (อ่านจาก DB conversation_state)
      */
     public function getMessageCount(int $readingId): int
     {
-        return (int) Cache::get("fortune:celtic_premium_msg:{$readingId}", 0);
+        $reading = FortuneReading::find($readingId);
+        if (! $reading) {
+            return 0;
+        }
+
+        return (int) $reading->getConversationState('celtic_premium_msg_count', 0);
     }
 
     /**

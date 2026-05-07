@@ -171,6 +171,7 @@ class FortuneTellingSetting extends Model
         'bill_charity_message',
         'bill_max_mentions_per_session',
         'bill_psychology_window_hours',
+        'bill_alternative_payment_methods',
         // 🌙 Celtic Premium Chat (2026-05-07 Phase 2)
         'celtic_premium_chat_enabled',
         'celtic_premium_chat_trigger',

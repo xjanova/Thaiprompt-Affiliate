@@ -287,6 +287,7 @@ class FortuneSettingsController extends Controller
             'bill_charity_message' => 'nullable|string|max:2000',
             'bill_max_mentions_per_session' => 'nullable|integer|min:1|max:10',
             'bill_psychology_window_hours' => 'nullable|integer|min:1|max:168',
+            'bill_alternative_payment_methods' => 'nullable|string|max:3000',
             // 🌙 Celtic Premium Chat
             'celtic_premium_chat_enabled' => 'boolean',
             'celtic_premium_chat_trigger' => 'nullable|in:after_questions_done,always_after_q1',

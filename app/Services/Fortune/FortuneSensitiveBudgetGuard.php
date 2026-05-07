@@ -26,10 +26,24 @@ class FortuneSensitiveBudgetGuard
     }
 
     /**
+     * 🩹 (2026-05-07 review M4) — atomic increments + satang-based THB storage
+     *
+     * เก็บ THB เป็น satang (THB × 100) ใน Cache::increment เพื่อ atomic
+     * (Cache::put + Cache::get มี race condition ใน webhook concurrent)
+     */
+    protected function userCountKey(string $platform, string $platformUserId, string $today): string
+    {
+        return "fortune:sensitive:user:{$platform}:{$platformUserId}:{$today}";
+    }
+
+    protected function totalSatangKey(string $today): string
+    {
+        return "fortune:sensitive:total_satang:{$today}";
+    }
+
+    /**
      * เช็คว่า user/ระบบ ยังใช้ Pro model ได้ไหม
      *
-     * @param  string  $platform  'facebook' / 'line'
-     * @param  string  $platformUserId  PSID / LINE userId
      * @return array ['allowed' => bool, 'reason' => string|null, 'user_count' => int, 'daily_thb' => float]
      */
     public function canUse(string $platform, string $platformUserId): array
@@ -39,8 +53,7 @@ class FortuneSensitiveBudgetGuard
         $maxTotalThb = (float) ($this->settings->sensitive_max_total_daily_thb ?? 200.00);
 
         // 1. Per-user count
-        $userKey = "fortune:sensitive:user:{$platform}:{$platformUserId}:{$today}";
-        $userCount = (int) Cache::get($userKey, 0);
+        $userCount = (int) Cache::get($this->userCountKey($platform, $platformUserId, $today), 0);
 
         if ($userCount >= $maxPerUser) {
             return [
@@ -51,9 +64,9 @@ class FortuneSensitiveBudgetGuard
             ];
         }
 
-        // 2. Total daily THB
-        $totalKey = "fortune:sensitive:total_thb:{$today}";
-        $dailyThb = (float) Cache::get($totalKey, 0);
+        // 2. Total daily THB (อ่านจาก satang counter)
+        $totalSatang = (int) Cache::get($this->totalSatangKey($today), 0);
+        $dailyThb = $totalSatang / 100;
 
         if ($dailyThb >= $maxTotalThb) {
             return [
@@ -73,10 +86,8 @@ class FortuneSensitiveBudgetGuard
     }
 
     /**
-     * บันทึกการใช้ Pro model — เพิ่ม counter
+     * บันทึกการใช้ Pro model — atomic increment counter
      *
-     * @param  string  $platform  'facebook' / 'line'
-     * @param  string  $platformUserId  PSID / LINE userId
      * @param  float  $costThb  ประมาณการต้นทุน (THB) จาก tokens
      */
     public function recordUse(string $platform, string $platformUserId, float $costThb = 0): void
@@ -84,38 +95,37 @@ class FortuneSensitiveBudgetGuard
         $today = now()->toDateString();
         $secondsUntilMidnight = max(60, now()->endOfDay()->diffInSeconds(now()));
 
-        // Increment user count
-        $userKey = "fortune:sensitive:user:{$platform}:{$platformUserId}:{$today}";
-        $userCount = (int) Cache::get($userKey, 0);
-        Cache::put($userKey, $userCount + 1, $secondsUntilMidnight);
+        // 🩹 atomic per-user count
+        $userKey = $this->userCountKey($platform, $platformUserId, $today);
+        Cache::add($userKey, 0, $secondsUntilMidnight);
+        $newUserCount = Cache::increment($userKey, 1);
 
-        // Increment total THB
+        // 🩹 atomic total satang (THB × 100)
         if ($costThb > 0) {
-            $totalKey = "fortune:sensitive:total_thb:{$today}";
-            $current = (float) Cache::get($totalKey, 0);
-            Cache::put($totalKey, $current + $costThb, $secondsUntilMidnight);
+            $satang = (int) round($costThb * 100);
+            $totalKey = $this->totalSatangKey($today);
+            Cache::add($totalKey, 0, $secondsUntilMidnight);
+            Cache::increment($totalKey, $satang);
         }
 
-        Log::debug('Sensitive budget recordUse', [
+        Log::debug('Sensitive budget recordUse (atomic)', [
             'platform' => $platform,
             'platform_user_id' => $platformUserId,
-            'user_count' => $userCount + 1,
+            'user_count' => $newUserCount,
             'cost_thb' => $costThb,
         ]);
     }
 
     /**
      * ดึงสถิติของวันนี้ (สำหรับ admin dashboard)
-     *
-     * @return array ['daily_thb' => float, 'max_thb' => float]
      */
     public function getDailyStats(): array
     {
         $today = now()->toDateString();
-        $totalKey = "fortune:sensitive:total_thb:{$today}";
+        $totalSatang = (int) Cache::get($this->totalSatangKey($today), 0);
 
         return [
-            'daily_thb' => (float) Cache::get($totalKey, 0),
+            'daily_thb' => $totalSatang / 100,
             'max_thb' => (float) ($this->settings->sensitive_max_total_daily_thb ?? 200.00),
         ];
     }

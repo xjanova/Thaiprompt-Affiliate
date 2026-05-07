@@ -119,6 +119,11 @@ class FortuneSensitivityDetector
             $result['confidence'] = max($result['confidence'], $classifier['confidence'] ?? 50);
             $result['detection_used'] = $heuristic['confidence'] > 0 ? 'hybrid' : 'classifier';
         } catch (Exception $e) {
+            // 🛑 (review L11) — ทุก exception จาก classifier (HTTP/timeout/network) → record fail
+            //   ที่ไม่ใช่ "circuit open" message (ไม่งั้นจะเลื่อน TTL ตลอด)
+            if (! str_contains($e->getMessage(), 'circuit breaker open')) {
+                $this->recordClassifierFailure();
+            }
             Log::warning('FortuneSensitivityDetector: classifier ล้มเหลว — ใช้ heuristic อย่างเดียว', [
                 'error' => $e->getMessage(),
                 'message_len' => mb_strlen($message),
@@ -228,9 +233,51 @@ class FortuneSensitivityDetector
     }
 
     /**
+     * 🛑 (2026-05-07 review L11) Circuit breaker constants
+     */
+    protected const CIRCUIT_BREAKER_KEY = 'fortune:classifier:fails';
+
+    protected const CIRCUIT_BREAKER_THRESHOLD = 3;     // fails ใน window → trip
+
+    protected const CIRCUIT_BREAKER_WINDOW_SEC = 60;   // นับ fails ใน window นี้
+
+    protected const CIRCUIT_BREAKER_OPEN_SEC = 300;    // 5 นาที skip classifier
+
+    /**
+     * 🛑 เช็คว่า circuit breaker เปิดอยู่ (skip classifier)
+     */
+    protected function isCircuitOpen(): bool
+    {
+        return (bool) Cache::get(self::CIRCUIT_BREAKER_KEY.':open', false);
+    }
+
+    /**
+     * 🛑 บันทึก classifier failure — ถ้าเกิน threshold ใน window → trip circuit
+     */
+    protected function recordClassifierFailure(): void
+    {
+        $key = self::CIRCUIT_BREAKER_KEY.':count';
+        Cache::add($key, 0, self::CIRCUIT_BREAKER_WINDOW_SEC);
+        $count = Cache::increment($key, 1);
+
+        if ($count >= self::CIRCUIT_BREAKER_THRESHOLD) {
+            Cache::put(self::CIRCUIT_BREAKER_KEY.':open', true, self::CIRCUIT_BREAKER_OPEN_SEC);
+            Log::warning('Fortune Classifier: circuit breaker OPEN (skip ใน '.(self::CIRCUIT_BREAKER_OPEN_SEC / 60).' นาที)', [
+                'fails_in_window' => $count,
+            ]);
+            // reset counter หลัง trip
+            Cache::forget($key);
+        }
+    }
+
+    /**
      * 🤖 Groq classifier — รวม mood + complexity + offtopic ใน 1 call
      *
      * ใช้ llama-3.1-8b-instant (default) — ฟรี เร็ว ~100ms
+     *
+     * 🛑 (2026-05-07 review L11) — circuit breaker:
+     *   ถ้า classifier fail >= 3 ครั้งใน 60s → skip ทันทีในรอบถัดไป (5 นาที)
+     *   ป้องกัน Groq outage ทำให้ chat แต่ละ message รอนาน
      *
      * @return array ['is_sensitive', 'is_offtopic', 'mood_level', 'complexity', 'confidence', 'reason']
      *
@@ -238,6 +285,11 @@ class FortuneSensitivityDetector
      */
     protected function runClassifier(string $message, array $context = []): array
     {
+        // 🛑 Circuit breaker check
+        if ($this->isCircuitOpen()) {
+            throw new Exception('Classifier circuit breaker open — skip');
+        }
+
         // Cache classifier result 5 นาที (dedupe เคสคนพิมพ์ซ้ำ)
         $hash = hash('sha256', mb_strtolower(trim($message)));
         $cacheKey = "fortune:sensitive:classifier:{$hash}";
@@ -298,6 +350,7 @@ PROMPT;
             ->post($endpoint, $payload);
 
         if (! $response->successful()) {
+            $this->recordClassifierFailure();
             throw new Exception("Classifier HTTP {$response->status()}: ".$response->body());
         }
 

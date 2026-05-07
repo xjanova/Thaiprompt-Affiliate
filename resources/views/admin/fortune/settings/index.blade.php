@@ -908,7 +908,7 @@
                     </div>
                 </div>
 
-                <div>
+                <div class="mb-4">
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                         💡 ข้อความค่าครู (admin custom — ใช้ default ถ้าเว้น)
                     </label>
@@ -916,6 +916,19 @@
                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                               placeholder="ค่าครู 39 บาท แม่หมอเอาไปทำบุญ + ค่าธูปเทียนบูชาพระ + เป็นพลังงานแลกเปลี่ยนตามความเชื่อ — เพื่อให้คำทำนายมีพลังจริง">{{ old('bill_charity_message', $settings->bill_charity_message) }}</textarea>
                     <p class="text-xs text-gray-500 mt-1">AI จะใช้ข้อความนี้เมื่ออธิบายว่า "ทำไมต้องจ่าย" ให้ลูกค้า</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                        💱 ทางเลือกชำระเงิน (สำหรับลูกค้าต่างประเทศ — ใช้ default ถ้าเว้น)
+                    </label>
+                    <textarea name="bill_alternative_payment_methods" rows="4"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              placeholder="เช่น:&#10;- TrueMoney Wallet (เบอร์ XXX-XXX-XXXX)&#10;- หาก promptpay ต่างประเทศไม่ได้ ทักแอดมินช่วยเปิดบัญชี Wise/Revolut&#10;- รับโอนจากธนาคารลาว/กัมพูชา (BCEL/ABA)">{{ old('bill_alternative_payment_methods', $settings->bill_alternative_payment_methods) }}</textarea>
+                    <p class="text-xs text-gray-500 mt-1">
+                        ⚠️ AI จะ <strong>ใช้แค่ข้อมูลในนี้</strong> เวลาแนะนำวิธีโอนทางเลือก —
+                        ถ้าเว้นว่าง AI จะบอกว่า "จะตรวจสอบกับแอดมินให้" (ปลอดภัยที่สุด)
+                    </p>
                 </div>
             </div>
         </div> {{-- End Bill Psychology --}}
