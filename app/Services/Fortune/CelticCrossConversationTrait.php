@@ -805,11 +805,11 @@ trait CelticCrossConversationTrait
             ->where('celtic_questions_used', 0)
             ->where('paid_at', '>=', now()->subHours(24))
             ->whereIn('conversation_status', [
-            FortuneReading::STATUS_CELTIC_PICKING,
-            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-            FortuneReading::STATUS_CELTIC_GENERATING,
-            FortuneReading::STATUS_CELTIC_QA_PROMPT,
-        ])
+                FortuneReading::STATUS_CELTIC_PICKING,
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+                FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            ])
             ->latest('paid_at')
             ->first();
     }
