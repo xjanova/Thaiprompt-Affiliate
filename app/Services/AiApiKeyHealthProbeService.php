@@ -215,20 +215,16 @@ class AiApiKeyHealthProbeService
                 return;
             }
 
-            $message = sprintf(
-                "🟢 AI Key Auto-Recovered\n\n"
-                . "ID: %d\n"
-                . "Name: %s\n"
-                . "Provider: %s\n"
-                . "Recovered after %d probe attempts\n\n"
-                . "Key กลับมาใช้งานปกติแล้ว ระบบ enable ให้อัตโนมัติ",
-                $key->id,
-                $key->name,
-                $key->provider,
-                ($key->recheck_failure_count ?? 0)
-            );
-
-            $alertService->alertSystemError('ai_key_recovered', $message);
+            // 🛡️ (2026-05-07 review) alertSystemError signature: (string $error, array $context = [])
+            //   เดิม: pass string เป็น 2nd arg → TypeError → catch swallow → admin ไม่ได้รับแจ้ง
+            //   ใหม่: pass array ตามถูก signature
+            $alertService->alertSystemError('🟢 AI Key Auto-Recovered', [
+                'key_id' => $key->id,
+                'name' => $key->name,
+                'provider' => $key->provider,
+                'recovered_after_attempts' => $key->recheck_failure_count ?? 0,
+                'note' => 'Key กลับมาใช้งานปกติแล้ว ระบบ enable ให้อัตโนมัติ',
+            ]);
         } catch (\Throwable $e) {
             // best-effort — ไม่ throw
             Log::debug('Notify admin of recovery failed: ' . $e->getMessage());
