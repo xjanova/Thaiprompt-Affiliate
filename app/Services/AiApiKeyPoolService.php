@@ -191,7 +191,7 @@ class AiApiKeyPoolService
         }
 
         // ดึง index ปัจจุบันจาก cache (per-purpose เพื่อกัน purpose ต่างกันแย่ง index เดียวกัน)
-        $cacheKey = self::CACHE_PREFIX."rr_index_{$provider}_" . ($purpose ?? 'any');
+        $cacheKey = self::CACHE_PREFIX."rr_index_{$provider}_".($purpose ?? 'any');
         $currentIndex = Cache::get($cacheKey, 0);
 
         // วน index
@@ -385,7 +385,6 @@ class AiApiKeyPoolService
      *
      * @param  string  $provider  ชื่อ provider
      * @param  string|null  $purpose  filter ตาม purpose ('prediction'/'chat'/'free_card')
-     * @return AiApiKey|null
      */
     public function acquireKey(string $provider, ?string $purpose = null): ?AiApiKey
     {

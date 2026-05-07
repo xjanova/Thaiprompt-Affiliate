@@ -1219,7 +1219,7 @@ trait CelticCrossConversationTrait
 
             return [
                 'action' => 'celtic_ai_failed',
-                'message' => '⚠️ ' . ($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
+                'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
                 'reading' => $reading,
             ];
         }
@@ -1244,18 +1244,18 @@ trait CelticCrossConversationTrait
             $remainingQs = max(0, $maxQuestions - $sequence);
             $qHint = "❓ ถามเฉพาะเรื่องได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
         } else {
-            $qHint = "❓ ถามเฉพาะเรื่องได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
+            $qHint = '❓ ถามเฉพาะเรื่องได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)';
         }
 
         $followupOffer = "\n\n──────────────────────\n"
-            . $timeHint . "\n"
-            . $qHint . "\n"
-            . "💬 ถ้าอยากให้แม่หมอเจาะลึกเรื่องไหน — พิมพ์คำถามมาเลย\n"
-            . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ ✨";
+            .$timeHint."\n"
+            .$qHint."\n"
+            ."💬 ถ้าอยากให้แม่หมอเจาะลึกเรื่องไหน — พิมพ์คำถามมาเลย\n"
+            ."🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ ✨";
 
         return [
             'action' => 'celtic_question_answered',
-            'message' => $result['response'] . $followupOffer,
+            'message' => $result['response'].$followupOffer,
             'reading' => $reading,
             'celtic_sequence' => $sequence,
         ];

@@ -38,7 +38,6 @@ class AiApiKeyHealthProbeService
     /**
      * 🩺 Probe key — ส่ง minimal API call เพื่อตรวจว่ายังใช้ได้
      *
-     * @param  AiApiKey  $key
      * @return bool true = key ยังใช้ได้ / false = ยัง fail
      */
     public function probe(AiApiKey $key): bool
@@ -227,7 +226,7 @@ class AiApiKeyHealthProbeService
             ]);
         } catch (\Throwable $e) {
             // best-effort — ไม่ throw
-            Log::debug('Notify admin of recovery failed: ' . $e->getMessage());
+            Log::debug('Notify admin of recovery failed: '.$e->getMessage());
         }
     }
 }

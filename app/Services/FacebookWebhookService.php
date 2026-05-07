@@ -313,7 +313,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         // 🔒 (2026-05-07) Per-user 551-cache — skip user ที่รู้แล้วว่ารับ DM ไม่ได้วันนี้
         //   ลด log spam + ลด API calls ที่ fail แน่ๆ
         //   ยกเว้นกรณีมี comment_id → Private Replies bypass 24hr window ได้
-        $unreachableKey = "fb_user_unreachable:{$recipientId}:" . now()->format('Y-m-d');
+        $unreachableKey = "fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d');
         if (! $skipUnreachableCache && empty($commentId) && \Illuminate\Support\Facades\Cache::has($unreachableKey)) {
             Log::info('sendImage: skip — user marked unreachable today (no comment_id)', [
                 'recipient' => $recipientId,
@@ -496,7 +496,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return false;
         } catch (Exception $e) {
-            Log::warning('Private Reply image exception: ' . $e->getMessage(), [
+            Log::warning('Private Reply image exception: '.$e->getMessage(), [
                 'comment_id' => $commentId,
             ]);
 

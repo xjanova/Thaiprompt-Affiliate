@@ -157,10 +157,10 @@ class FortuneBannerDiagnose extends Command
             // 🆕 (2026-05-07) Per-user 551 unreachable cache — ลด log spam + skip API calls ที่ fail แน่
             $unreachableKey = "fb_user_unreachable:{$userId}:{$today}";
             if (Cache::has($unreachableKey)) {
-                $this->warn("🚫 user marked unreachable today (24hr window expired) — image จะถูก skip");
+                $this->warn('🚫 user marked unreachable today (24hr window expired) — image จะถูก skip');
                 $this->line("   ล้าง: php artisan fortune:banner-diagnose --clear-cooldown={$userId}");
             } else {
-                $this->line("🟢 user reachable status: OK (ยังไม่เคย fail วันนี้)");
+                $this->line('🟢 user reachable status: OK (ยังไม่เคย fail วันนี้)');
             }
             $this->newLine();
 

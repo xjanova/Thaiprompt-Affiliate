@@ -90,7 +90,7 @@ class AiKeysRecheckCritical extends Command
                     $stillBad++;
                 }
             } catch (\Throwable $e) {
-                $this->error('    ❌ Probe exception: ' . $e->getMessage());
+                $this->error('    ❌ Probe exception: '.$e->getMessage());
                 $stillBad++;
             }
         }

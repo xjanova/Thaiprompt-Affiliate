@@ -294,7 +294,7 @@ class AiApiKeyController extends Controller
                 'recovered' => $recovered,
                 'message' => $recovered
                     ? '🟢 Key recover สำเร็จ! กลับมาใช้งานได้แล้ว'
-                    : '⏳ Key ยังใช้ไม่ได้ — schedule recheck ครั้งถัดไป ' . ($fresh->next_recheck_at?->diffForHumans() ?? 'ไม่ทราบ'),
+                    : '⏳ Key ยังใช้ไม่ได้ — schedule recheck ครั้งถัดไป '.($fresh->next_recheck_at?->diffForHumans() ?? 'ไม่ทราบ'),
                 'data' => [
                     'id' => $fresh->id,
                     'is_critical' => $fresh->is_critical,
@@ -308,7 +308,7 @@ class AiApiKeyController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Probe exception: ' . $e->getMessage(),
+                'message' => 'Probe exception: '.$e->getMessage(),
             ], 500);
         }
     }

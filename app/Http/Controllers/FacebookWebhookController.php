@@ -2168,7 +2168,7 @@ class FacebookWebhookController extends Controller
 
             // 🔓 (2026-05-07 review fix) GET_STARTED = user just clicked = 24hr window OPEN
             //   เคลียร์ per-user 551 unreachable cache เพื่อกัน leak จาก reaction/comment-time
-            $unreachableKey = "fb_user_unreachable:{$senderId}:" . now()->format('Y-m-d');
+            $unreachableKey = "fb_user_unreachable:{$senderId}:".now()->format('Y-m-d');
             \Illuminate\Support\Facades\Cache::forget($unreachableKey);
 
             // 🖼️ (2026-05-06) ส่ง banner welcome ก่อน (ครั้งแรกที่กด GET_STARTED ก็ควรเห็น)
@@ -2338,7 +2338,7 @@ class FacebookWebhookController extends Controller
             //   เหตุผล: ถ้า user ทักเพจ → 24hr window เปิดใหม่ → ส่ง DM/banner ได้แน่นอน
             //   เดิม: cache ที่ตั้งจาก reaction/comment-time 551 จะ leak มา block welcome banner
             //   ใหม่: ทุกครั้งที่ webhook รับ message → clear cache (proves user reachable)
-            $unreachableKey = "fb_user_unreachable:{$senderId}:" . now()->format('Y-m-d');
+            $unreachableKey = "fb_user_unreachable:{$senderId}:".now()->format('Y-m-d');
             \Illuminate\Support\Facades\Cache::forget($unreachableKey);
 
             // ตรวจสอบว่า channelManager พร้อมใช้งาน (fallback ไป conversationService ถ้าไม่มี)
