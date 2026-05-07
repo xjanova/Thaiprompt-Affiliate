@@ -1226,14 +1226,52 @@ class FortuneConversationService
 
                     // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                     if ($this->isCancelRequest($messageText)) {
+                        // 🩹 (2026-05-08 audit fix UX-6) — paid Celtic picking/QA "ยกเลิก" → admin alert
+                        //   ลูกค้าจ่าย 99฿ + กำลังเปิดไพ่/ถามอยู่ → "ยกเลิก" → silently exit ไม่ได้
+                        //   ต้อง alert admin + ส่งข้อความขอบคุณ + แนะให้คุยกับ admin
+                        $paidCelticStatuses = [
+                            FortuneReading::STATUS_CELTIC_PICKING,
+                            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                            FortuneReading::STATUS_CELTIC_GENERATING,
+                            FortuneReading::STATUS_CELTIC_QA_PROMPT,
+                        ];
+                        if ($activeReading->is_paid
+                            && in_array($activeReading->conversation_status, $paidCelticStatuses, true)) {
+                            // alert admin (best-effort)
+                            try {
+                                if (class_exists(\App\Services\LineAlertService::class)) {
+                                    app(\App\Services\LineAlertService::class)->alertSystemError(
+                                        '🚨 Paid Celtic 99 customer cancelled',
+                                        "Reading #{$activeReading->id} — paid + cancelled mid-flow ({$activeReading->conversation_status}). User may want refund or admin care.",
+                                        ['reading_id' => $activeReading->id, 'user_id' => $facebookUserId, 'amount_paid' => $activeReading->amount_paid]
+                                    );
+                                }
+                            } catch (\Throwable $e) {
+                                Log::warning('Fortune: paid Celtic cancel alert failed', ['error' => $e->getMessage()]);
+                            }
+
+                            Log::warning('Fortune: paid Celtic customer cancelled mid-flow — admin notified', [
+                                'reading_id' => $activeReading->id,
+                                'status' => $activeReading->conversation_status,
+                                'amount_paid' => $activeReading->amount_paid,
+                                'facebook_user_id' => $facebookUserId,
+                            ]);
+
+                            // ไม่ปิด session — รอ admin จัดการ
+                            return [
+                                'action' => 'paid_celtic_cancel_admin_alert',
+                                'message' => "🙏 รับทราบค่ะ\n\n"
+                                    ."เจ้าชะตาจ่ายค่าครูแล้ว — แม่หมอจะแจ้งแอดมินเข้ามาดูแลให้นะคะ\n"
+                                    .'กรุณารอแอดมินติดต่อกลับสักครู่ ✨',
+                                'reading' => $activeReading,
+                            ];
+                        }
+
                         $this->closeAllActiveConversations($facebookUserId);
 
                         return [
                             'action' => 'cancelled',
-                            'message' => \App\Services\FortuneLocaleService::lo(
-                                "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
-                                "ຍົກເລີກແລ້ວ ຫາກຕ້ອງການເບິ່ງດວງໃໝ່ ພິມ 'ເບິ່ງດວງ' ໄດ້ເລີຍ 🔮"
-                            ),
+                            'message' => "ยกเลิกแล้ว หากต้องการดูดวงใหม่ พิมพ์ 'ดูดวง' ได้เลย 🔮",
                             'reading' => $activeReading,
                         ];
                     }
@@ -2661,8 +2699,18 @@ class FortuneConversationService
     protected function closeAllActiveConversations(string $facebookUserId): int
     {
         // ✅ ยกเลิกบิล (UniquePaymentAmount) ของ reading ที่ pending_payment ก่อน
-        $pendingReadings = FortuneReading::where('facebook_user_id', $facebookUserId)
-            ->where('conversation_status', FortuneReading::STATUS_PENDING_PAYMENT)
+        // 🩹 (2026-05-08 audit fix CRIT-1) — รวม Celtic pending payment ด้วย
+        //   เดิม: filter เฉพาะ STATUS_PENDING_PAYMENT → Celtic 99 cancel ไม่ cancel UPA
+        //   ใหม่: รวม STATUS_CELTIC_PENDING_PAYMENT → SMS app เห็น cancel จริง
+        $pendingReadings = FortuneReading::where(function ($q) use ($facebookUserId) {
+            $q->where('facebook_user_id', $facebookUserId)
+                ->orWhere('line_user_id', $facebookUserId)
+                ->orWhere('platform_user_id', $facebookUserId);
+        })
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            ])
             ->where('is_paid', false)
             ->whereNotNull('unique_payment_amount_id')
             ->with('uniquePaymentAmount')
@@ -2689,7 +2737,13 @@ class FortuneConversationService
         }
 
         // ปิดทุก conversation ที่ค้างอยู่
-        $closed = FortuneReading::where('facebook_user_id', $facebookUserId)
+        // 🩹 (2026-05-08 audit) — เพิ่ม STATUS_TIER_CHOICE / STATUS_CELTIC_PENDING_PAYMENT
+        //   ที่เคยตกหล่น เพื่อ status update ครอบคลุมทุก state ก่อน paid
+        $closed = FortuneReading::where(function ($q) use ($facebookUserId) {
+            $q->where('facebook_user_id', $facebookUserId)
+                ->orWhere('line_user_id', $facebookUserId)
+                ->orWhere('platform_user_id', $facebookUserId);
+        })
             ->whereIn('conversation_status', [
                 FortuneReading::STATUS_AWAITING_CONFIRMATION,
                 FortuneReading::STATUS_BASIC_DONE,
@@ -2697,6 +2751,8 @@ class FortuneConversationService
                 FortuneReading::STATUS_COLLECTING_QUESTIONS,
                 FortuneReading::STATUS_COLLECTING_TAROT,
                 FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_TIER_CHOICE,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
                 FortuneReading::STATUS_NEW,
             ])
             ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -3591,8 +3647,17 @@ class FortuneConversationService
         // 🛑 (2026-05-06) Pay-Later removed — ไม่ต้องล้าง legacy flag (ไม่กระทบ flow)
 
         // ตรวจสอบว่าต้องการยกเลิกหรือไม่
+        // 🩹 (2026-05-08 audit fix CRIT-1) — route ผ่าน closeAllActiveConversations
+        //   เพื่อให้ UPA cancel + FCM push + wisdom DM ทำงาน
+        //   เดิม: update status ตรงๆ → SMS app ยังเห็นบิลค้าง → user เห็น "บิลกลับมา"
         if ($this->isCancelRequest($messageText)) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
+            if (! empty($userId)) {
+                $this->closeAllActiveConversations($userId);
+            } else {
+                // fallback ถ้า userId หาย — update status ตรงๆ
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            }
 
             return [
                 'action' => 'cancelled',
@@ -4971,9 +5036,34 @@ class FortuneConversationService
 
         if (! $uniqueAmount || $uniqueAmount->expires_at < now()) {
             // บิลหมดอายุ → ปิด conversation กลับไปแชทปกติ
+            // 🩹 (2026-05-08 audit fix CRIT-2) — cancel UPA + FCM push ทันที ไม่รอ cron
+            //   เดิม: status=COMPLETED แต่ UPA ยัง 'reserved' → SMS app เห็นบิลค้างจนกว่า cron 5 นาทีจะรัน
+            //   ใหม่: cancel UPA + FCM cancelled push → SMS app sync ทันที
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            Log::info('Fortune: บิลดูดวงละเอียดหมดอายุ กลับเป็นแชทปกติ', [
+            try {
+                if ($uniqueAmount && $uniqueAmount->status === 'reserved') {
+                    $uniqueAmount->cancel();
+                }
+                $reading->setConversationState('cancellation_reason', 'auto_expired');
+                $reading->setConversationState('cancelled_at', now()->toIso8601String());
+            } catch (\Throwable $e) {
+                Log::warning('Fortune: cancel UPA on expiry failed (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            try {
+                app(FcmNotificationService::class)->notifyFortuneReadingCancelled($reading);
+            } catch (\Throwable $e) {
+                Log::warning('Fortune: FCM cancelled push on expiry failed (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            Log::info('Fortune: บิลดูดวงหมดอายุ → cancel UPA + FCM แล้ว', [
                 'reading_id' => $reading->id,
                 'facebook_user_id' => $reading->facebook_user_id,
             ]);
@@ -6188,56 +6278,15 @@ class FortuneConversationService
      */
     protected function buildWelcomeGuideMessage(): string
     {
-        $deepEnabled = $this->settings->isDeepReadingEnabled();
-        $freeEnabled = $this->settings->isFreeReadingEnabled();
-        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
-
-        // 🆕 (2026-04-29) ถ้าเปิดทั้ง Celtic + Deep → แนะนำ 2 แพคเกจ tier
-        //    ไม่ใช้ดูดวงฟรีเป็น dummy entry อีก เพราะลูกค้าต้องเลือกแพคเกจเสมอ
-        if ($deepEnabled && $celticEnabled) {
-            $deepPrice = (int) $this->getDeepReadingPrice();
-            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
-            $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
-            $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
-
-            return "🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙\n\n"
-                ."อยากให้หมอเปิดทางดวงให้ไหมคะ?\n"
-                ."เลือกแพคเกจที่ใช่สำหรับเจ้าชะตา 👇\n\n"
-                ."🔹 *แพคเกจพื้นฐาน — {$deepPrice} บาท*\n"
-                ."    📅 ดูจากวันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
-                ."🔮 *แพคเกจเต็มสำรับ — {$celticPrice} บาท*\n"
-                ."    🃏 Celtic Cross 10 ใบ + ถามได้ {$qLimitText}\n\n"
-                .'👇 กดปุ่ม *"🔮 ดูดวง"* ด้านล่างเพื่อดูรายละเอียดแพคเกจ ✨';
-        }
-
-        if ($deepEnabled && $freeEnabled) {
-            $price = (int) $this->getDeepReadingPrice();
-
-            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
-                ."อยากให้หมอดูดวงให้ไหมคะ?\n"
-                ."   • 🔮 ดูดวงฟรี  — ถามเรื่องที่อยากรู้\n"
-                ."   • 💎 ดูดวง — ค่าครู {$price} บาท วิเคราะห์จากวันเกิด\n\n"
-                .'👇 กดปุ่มด้านล่างเพื่อเริ่ม';
-        }
-
-        if ($deepEnabled) {
-            $price = (int) $this->getDeepReadingPrice();
-            $qCount = self::REQUIRED_QUESTIONS;
-
-            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
-                ."💎 อยากให้หมอดูดวงให้ไหม? ({$qCount} คำถาม {$price} บาท)\n"
-                ."   • โฟกัสคำถามเดียว — แม่นยำกว่ากระจาย\n"
-                ."   • วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n\n"
-                .'👇 กดปุ่ม "🔮 ดูดวง" ด้านล่างเพื่อเริ่ม';
-        }
-
-        if ($freeEnabled) {
-            return "🔮 สวัสดีค่ะ หมอจันทรายินดีต้อนรับ\n\n"
-                ."ถ้าอยากดูดวง 👇 กดปุ่ม \"🔮 ดูดวง\" ด้านล่าง\n"
-                .'หรือพิมพ์คำถามมาคุยกับหมอจันทราก็ได้';
-        }
-
-        return "🔮 สวัสดีค่ะ\n\nช่วงนี้บริการดูดวงปิดชั่วคราว\nถ้าอยากพูดคุยอะไร ทักมาได้เลยนะคะ 🙏";
+        // 🩹 (2026-05-08 audit fix) — เปลี่ยนเป็น short friendly greeting
+        //   user feedback: "ทำไมฉันไม่เห็นเอไอคุยมีแต่กล่องข้อความ"
+        //   เดิม: sales pitch wall ยาวๆ + bullet list บริการ — ตาลาย
+        //   ใหม่: greeting สั้น 1-2 ประโยค → quick reply 2 ปุ่มทำงานต่อ
+        //
+        //   Fallback นี้ฉีดออกตอน AI Chat ไม่ทำงาน (key หาย / disabled / throttle)
+        //   ลดความรกแม้ AI fail ก็ไม่ทำให้ลูกค้ารู้สึกถูกขาย
+        return "🌙 สวัสดีค่ะ\n\n"
+            .'พิมพ์เรื่องที่อยากให้แม่หมอช่วยดูได้เลยนะคะ ✨';
     }
 
     /**
@@ -7828,9 +7877,15 @@ class FortuneConversationService
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
 
-        // 🇱🇦 Lao keywords (additive — Lao chars ไม่ชน Thai chars จึงไม่ false-match)
+        // 🩹 (2026-05-08 audit fix L8) — ป้องกัน "ฉันไม่อยากยกเลิกหรอก" ตีความผิด
+        //   Cancel command ปกติสั้น — "ยกเลิก", "ยกเลิกค่ะ", "cancel"
+        //   ถ้าข้อความยาว + มี negation ก่อน "ยกเลิก" → ไม่ใช่ cancel
+        if (mb_strlen($normalized) > 30 && preg_match('/(ไม่อยาก|ไม่ต้องการ|ไม่จะ|อย่า)/u', $normalized)) {
+            return false;
+        }
+
         // คำสั่งยกเลิกชัดเจน → ใช้ str_contains (ข้อความยาวก็ match)
-        $strongKeywords = ['ยกเลิก', 'cancel', 'stop', 'ຍົກເລີກ', 'ເລີ່ມໃໝ່'];
+        $strongKeywords = ['ยกเลิก', 'cancel', 'stop'];
         foreach ($strongKeywords as $keyword) {
             if (str_contains($normalized, $keyword) || str_contains($noSpace, $keyword)) {
                 return true;
@@ -13375,10 +13430,11 @@ PROMPT;
                 return null;
             }
 
-            // 🩹 L6 fix — ถ้ายังไม่เกิน cap → increment ทุก successful Pro call
+            // 🩹 L6 fix — ถ้ายังไม่เกิน cap → increment เมื่อ AI mention บิลจริง (regex)
             //   เดิม: regex match บน response → พลาดเคส "ตามยอด/QR/{$amount} บาท"
-            //   ใหม่: ทุก Pro call ที่ Bill Psychology trigger = mention 1 ครั้ง (Bill prompt มีบริบทบิลทั้งหมด)
-            if (! $reachedCap) {
+            //   ใหม่ (review L7): consistent กับ tryAIChatResponse — regex check
+            //   ครอบคลุมคำพ้อง "บิล/ค่าครู/โอน/ชำระ/จ่าย/ค่าทำนาย/ตามยอด/QR/พร้อมเพย์/promptpay"
+            if (! $reachedCap && preg_match('/(บิล|ค่าครู|โอน|ชำระ|จ่าย|ค่าทำนาย|ตามยอด|qr|พร้อมเพย์|promptpay)/iu', $responseText)) {
                 $billDetector->incrementMention($platform, $platformUserId);
             }
 

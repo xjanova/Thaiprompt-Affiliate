@@ -545,8 +545,15 @@ trait CelticCrossConversationTrait
     protected function handleCelticPendingPayment(FortuneReading $reading, string $messageText): array
     {
         // 🔓 ยกเลิก
+        // 🩹 (2026-05-08 audit fix CRIT-1b) — route ผ่าน closeAllActiveConversations
+        //   เพื่อ cancel UPA Celtic + FCM push + wisdom DM ครบ
         if ($this->matchesExactKeyword($messageText, ['ยกเลิก', 'cancel', 'stop', 'ไม่จ่าย'])) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
+            if (! empty($userId) && method_exists($this, 'closeAllActiveConversations')) {
+                $this->closeAllActiveConversations($userId);
+            } else {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+            }
 
             return [
                 'action' => 'celtic_cancelled',
