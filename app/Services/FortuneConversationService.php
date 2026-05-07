@@ -576,6 +576,43 @@ class FortuneConversationService
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
         try {
+            // 🩹 (2026-05-08) Single-click tier fix — ลูกค้ากดปุ่ม 39/99 → skip tier menu
+            //
+            // 1) FB postback path: handler set Cache "fortune:force_tier:{userId}" = 'deep'/'celtic'
+            //    → processMessage pull ที่ top → enter tier flow ตรง
+            //
+            // 2) LINE quick reply path: text = "39" / "99" — no postback payload available
+            //    → ตรวจ exact match + ไม่มี active reading → derive forceTier
+            //
+            // กัน sticky: Cache::pull = consume once
+            $forceTier = Cache::pull("fortune:force_tier:{$facebookUserId}");
+
+            // LINE-fallback: plain "39" / "99" text + ไม่มี active reading → infer
+            if ($forceTier === null) {
+                $trimmed = trim($messageText);
+                if (in_array($trimmed, ['39', '99'], true)) {
+                    // เช็คเร็วว่าไม่มี active reading (ไม่งั้นปล่อยให้ continueConversation จัดการ)
+                    $platform = $this->currentPlatform ?? 'facebook';
+                    $hasActive = FortuneReading::hasActiveReading($platform, $facebookUserId);
+
+                    if (! $hasActive) {
+                        $forceTier = $trimmed === '99' ? 'celtic' : 'deep';
+                    }
+                }
+            }
+
+            if (in_array($forceTier, ['deep', 'celtic'], true)) {
+                Log::info('Fortune: Single-click tier bypass', [
+                    'facebook_user_id' => $facebookUserId,
+                    'force_tier' => $forceTier,
+                    'source' => $messageText === '39' || $messageText === '99' ? 'line_text' : 'fb_postback',
+                ]);
+                // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
+                $this->closeAllActiveConversations($facebookUserId);
+
+                return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
+            }
+
             // 🛡️ (2026-05-05) VIP Bypass — ลูกค้าจ่ายเงินแล้วต้องไม่ถูก spam guard ดัก
             //   เคสที่ทำให้บล็อก: ลูกค้าจ่าย Celtic 99฿ → รัวข้อความ "ตอบสิ ทำไมไม่ตอบ"
             //   → silent_mode trigger → บอทเงียบ → ลูกค้าด่ากระจาย
@@ -3658,6 +3695,19 @@ class FortuneConversationService
     }
 
     /**
+     * 🆕 (2026-05-08) ลูกค้ากดปุ่ม "39 บาท" / "99 บาท" → ข้าม tier menu
+     *
+     * เดิม: ลูกค้ากดปุ่ม TIER_DEEP_39 → "ดูดวง 39 บาท" → tier menu (ต้องกด 2 ครั้ง)
+     * ใหม่: กดปุ่มเดียว → ตรงเข้า flow ของ tier นั้น
+     *
+     * @param  string  $tier  'deep' (39฿) หรือ 'celtic' (99฿)
+     */
+    public function startDeepReadingFlowDirect(string $userId, ?array $userProfile = null, string $tier = 'deep'): array
+    {
+        return $this->startDeepReadingFlow($userId, $userProfile, $tier);
+    }
+
+    /**
      * 🎁 (2026-05-04) Auto Free Card trigger สำหรับ first-reply หลัง DM react/comment
      *
      * Use case: ลูกค้ากด react/comment โพสต์ → ระบบส่ง DM "เน้นฟรี ไม่เน้นขาย" →
@@ -3726,7 +3776,7 @@ class FortuneConversationService
      * ใช้เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" โดยไม่มี active reading (เช่น หลังจาก ai_limit)
      * ข้าม canMakeAICall() เพราะเป็นบริการเสียเงิน ไม่ใช่บริการฟรี
      */
-    protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null): array
+    protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null): array
     {
         try {
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
@@ -3768,11 +3818,16 @@ class FortuneConversationService
 
             // 🆕 (2026-04-29) Tier choice mode — ถ้า Celtic เปิด → ตั้ง state TIER_CHOICE
             //    user feedback: Discovery Chat ไม่เวิร์ค → ใช้ tier menu (39฿ vs 99฿) ตรงไป
-            $useTierChoice = (bool) ($this->settings->enable_celtic_cross ?? false);
+            //
+            // 🩹 (2026-05-08) $forceTier='deep'/'celtic' → ข้าม tier menu (single-click fix)
+            //   ลูกค้ากดปุ่ม "39 บาท" / "99 บาท" → เข้า flow ตรง ไม่ผ่าน menu ซ้ำ
+            $useTierChoice = $forceTier === null
+                && (bool) ($this->settings->enable_celtic_cross ?? false);
 
             // 🧠 (2026-04-28) Discovery Chat Mode — fallback ถ้าไม่ใช้ tier menu
             //    Default false หลัง user feedback ว่าไม่เวิร์ค
             $useDiscoveryChat = ! $useTierChoice
+                && $forceTier === null
                 && (bool) ($this->settings->enable_discovery_chat ?? false);
 
             // 🛡️ Pre-check: ถ้าไม่มี Chat AI API key → ใช้ rigid flow ทันที (กัน user ค้าง)
@@ -3786,6 +3841,7 @@ class FortuneConversationService
             $initialStatus = match (true) {
                 $useTierChoice => FortuneReading::STATUS_TIER_CHOICE,
                 $useDiscoveryChat => FortuneReading::STATUS_DISCOVERY_CHAT,
+                // 🩹 forceTier='celtic' → ตั้ง CELTIC_PENDING_PAYMENT เลย (handled below)
                 default => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
             };
 
@@ -3808,7 +3864,14 @@ class FortuneConversationService
                 'facebook_user_id' => $facebookUserId,
                 'reading_id' => $reading->id,
                 'discovery_chat_mode' => $useDiscoveryChat,
+                'force_tier' => $forceTier,
             ]);
+
+            // 🩹 (2026-05-08) forceTier='celtic' → ข้าม tier menu, เข้า Celtic flow ทันที
+            if ($forceTier === 'celtic' && ($this->settings->enable_celtic_cross ?? false)) {
+                return $this->startCelticCrossFlow($reading);
+            }
+            // 🩹 forceTier='deep' → reading เป็น COLLECTING_BIRTHDATE อยู่แล้ว → fall through ไป return ด้านล่าง
 
             // 🆕 Tier Choice: ส่ง menu ให้ลูกค้าเลือก 39฿ vs 99฿ Celtic
             if ($useTierChoice) {

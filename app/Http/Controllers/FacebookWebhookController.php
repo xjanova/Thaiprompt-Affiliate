@@ -2968,11 +2968,17 @@ class FacebookWebhookController extends Controller
             // ผู้สูงอายุงง → ทั้ง 2 ปุ่มเข้า deep flow ตรงๆ (→ tier menu 39 vs 99)
             'MENU_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
             'MENU_DEEP_FORTUNE' => $this->processConversationalMessage($senderId, 'ดูดวง'),
-            // 🆕 (2026-05-03) Default Quick Reply — เลือก tier ตรงๆ จากทุก DM
-            //   ส่ง keyword ที่รวม "ดูดวง" + tier hint → state machine route ผ่าน
-            //   awaiting_confirmation → tier_choice → keyword "39"/"99" จับได้ใน trait
-            'TIER_DEEP_39' => $this->processConversationalMessage($senderId, 'ดูดวง 39 บาท'),
-            'TIER_CELTIC_99' => $this->processConversationalMessage($senderId, 'ดูดวง celtic 99 บาท'),
+            // 🩹 (2026-05-08) Single-click fix — ลูกค้ากด 39 / 99 → เข้า flow ตรงไม่ผ่าน tier menu
+            //   เดิม: TIER_DEEP_39 → "ดูดวง 39 บาท" → startDeepReadingFlow → tier menu (ต้องกด 2 ครั้ง)
+            //   ใหม่: ตั้ง Cache flag forceTier → processMessage จะเช็คที่ top แล้ว skip tier menu
+            'TIER_DEEP_39' => (function () use ($senderId) {
+                Cache::put("fortune:force_tier:{$senderId}", 'deep', 30);
+                $this->processConversationalMessage($senderId, 'ดูดวง');
+            })(),
+            'TIER_CELTIC_99' => (function () use ($senderId) {
+                Cache::put("fortune:force_tier:{$senderId}", 'celtic', 30);
+                $this->processConversationalMessage($senderId, 'ดูดวง');
+            })(),
             // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
             //   ⚠️ legacy — ระบบฟรีแบบเก่า, ค่อยๆ หายไป
             'FORTUNE_FREE' => $this->handleFortuneFreePicker($senderId),
