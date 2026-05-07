@@ -56,10 +56,23 @@ class FortuneBanner extends Model
 
     /**
      * URL เต็มของแบนเนอร์ (HTTPS public URL ที่ FB/LINE เข้าถึงได้)
+     *
+     * Legacy: 'images/fortune/banners/banner-X.jpg' → /images/fortune/banners/banner-X.jpg
+     *   (เก่า — เก็บที่ public_path() ถูก deploy.sh git clean -fdx ลบ จึงมักจะ 404)
+     *
+     * New: 'fortune/banners/banner-X.jpg' → /storage/fortune/banners/banner-X.jpg
+     *   (ใหม่ — เก็บที่ storage/app/public/ ผ่าน Laravel Storage convention,
+     *    deploy.sh excludes 'storage/app/public/*' → ปลอดภัยทุก deploy)
      */
     public function getImageUrlAttribute(): string
     {
-        return asset($this->image_path);
+        $path = (string) $this->image_path;
+
+        if (str_starts_with($path, 'images/')) {
+            return asset($path);
+        }
+
+        return asset('storage/'.ltrim($path, '/'));
     }
 
     /**
