@@ -6,6 +6,9 @@ use App\Contracts\MessagingPlatformInterface;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
+use App\Models\PaymentBankAccount;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -177,16 +180,16 @@ class FortuneChannelManager
 
         if ($hasActive) {
             // ใช้ locale ที่ stored ไว้แล้วเท่านั้น — ห้าม detect จาก text
-            $locale = \App\Services\FortuneLocaleService::getStored($platform, $userId) ?? 'th';
+            $locale = FortuneLocaleService::getStored($platform, $userId) ?? 'th';
         } else {
-            $locale = \App\Services\FortuneLocaleService::resolveForMessage(
+            $locale = FortuneLocaleService::resolveForMessage(
                 $platform,
                 $userId,
                 $messageText,
                 $profileName,
             );
         }
-        \App\Services\FortuneLocaleService::setCurrent($locale);
+        FortuneLocaleService::setCurrent($locale);
 
         // ใช้ conversation service ประมวลผล
         $result = $this->conversationService->processMessage($userId, $messageText, $userProfile);
@@ -242,12 +245,12 @@ class FortuneChannelManager
                 return;
             }
 
-            $commissionService = app(\App\Services\FortuneCommissionService::class);
+            $commissionService = app(FortuneCommissionService::class);
             $note = $commissionService->buildPendingChatNotification($dbUserId);
 
             if ($note) {
                 $original = $result['message'] ?? '';
-                $result['message'] = $note . ($original !== '' ? "\n\n─────\n\n" . $original : '');
+                $result['message'] = $note.($original !== '' ? "\n\n─────\n\n".$original : '');
                 $result['has_commission_notification'] = true;
             }
         } catch (\Throwable $e) {
@@ -275,7 +278,7 @@ class FortuneChannelManager
         }
 
         // 2. หาจาก User table
-        $userQuery = \App\Models\User::query();
+        $userQuery = User::query();
         if ($platform === 'line') {
             $userQuery->where('line_user_id', $platformUserId);
         } else {
@@ -305,13 +308,13 @@ class FortuneChannelManager
      *   1. FortuneUserCredit ของ user คนนี้
      *   2. FortuneReading เก่าๆ ของ user เดียวกันที่มีชื่อจริง
      *
-     * @return string|null  null = หาไม่เจอ — caller ใช้ fallback อื่น
+     * @return string|null null = หาไม่เจอ — caller ใช้ fallback อื่น
      */
     protected function resolveUserName(string $platform, string $userId): ?string
     {
         // 1. FortuneUserCredit
         try {
-            $credit = \App\Models\FortuneUserCredit::findByUser($userId, $platform);
+            $credit = FortuneUserCredit::findByUser($userId, $platform);
             if ($credit && $this->isHumanLikeName($credit->facebook_user_name)) {
                 return $credit->facebook_user_name;
             }
@@ -511,8 +514,7 @@ class FortuneChannelManager
                 'collecting_birthdate' => $this->sendFacebookBirthdateResponse($fbService, $richService, $userId, $result),
 
                 // เลือกคำถาม → Quick Replies (+ ส่งรูปไพ่ยิปซีก่อนถ้ามี)
-                'collecting_questions', 'need_more_questions', 'retry_question'
-                    => $this->sendFacebookQuestionWithTarotImage($fbService, $richService, $userId, $message, $action, $result),
+                'collecting_questions', 'need_more_questions', 'retry_question' => $this->sendFacebookQuestionWithTarotImage($fbService, $richService, $userId, $message, $action, $result),
 
                 // เช็คสิทธิ์ → Check Remaining Template
                 'check_remaining' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
@@ -557,8 +559,7 @@ class FortuneChannelManager
                 'share_link' => $this->sendFacebookShareResponse($fbService, $richService, $userId, $result),
 
                 // สายงาน/รายได้ → ส่ง text + Button Template (ปุ่มกดลิงก์)
-                'downline_info', 'earnings_info'
-                    => $this->sendFacebookButtonLinkResponse($fbService, $userId, $message, $result),
+                'downline_info', 'earnings_info' => $this->sendFacebookButtonLinkResponse($fbService, $userId, $message, $result),
 
                 // AI detect intent ดูดวงเชิงลึก → ส่งข้อความ AI + redirect เข้า deep reading flow
                 'ai_redirect_deep_reading' => $this->sendFacebookDeepReadingRedirect($fbService, $richService, $userId, $result),
@@ -576,8 +577,7 @@ class FortuneChannelManager
                 'restart_from_birthdate',
                 'error',
                 'ai_ask_save_question',
-                'send_chart', 'deep_reading_result', 'reading_ready'
-                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
+                'send_chart', 'deep_reading_result', 'reading_ready' => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
 
                 // 🔔 คำทำนายพร้อม → ส่ง Button Template พร้อมปุ่ม "อ่านคำทำนาย" โดดเด่น
                 'fortune_ready_notification' => $this->sendFacebookFortuneReadyNotification($fbService, $userId, $message, $result),
@@ -635,19 +635,19 @@ class FortuneChannelManager
                     // 🌐 localize labels — ลูกค้าลาวเห็น Quick Reply เป็นลาว
                     if ($offerFree) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo('🎁 ทำนายฟรี (1 ใบ)', '🎁 ທຳນາຍຟຣີ (1 ໃບ)'),
+                            'title' => FortuneLocaleService::lo('🎁 ทำนายฟรี (1 ใบ)', '🎁 ທຳນາຍຟຣີ (1 ໃບ)'),
                             'payload' => 'FREE_CARD_START'];
                     }
                     $buttons[] = ['content_type' => 'text',
-                        'title' => \App\Services\FortuneLocaleService::lo('🔹 ดูดวง 39 บาท', '🔹 ເບິ່ງດວງ 39 ບາດ'),
+                        'title' => FortuneLocaleService::lo('🔹 ดูดวง 39 บาท', '🔹 ເບິ່ງດວງ 39 ບາດ'),
                         'payload' => 'TIER_DEEP_39'];
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo('👑 VIP ไพ่ 10 ใบ 99฿', '👑 VIP ໄພ່ 10 ໃບ 99฿'),
+                            'title' => FortuneLocaleService::lo('👑 VIP ไพ่ 10 ใบ 99฿', '👑 VIP ໄພ່ 10 ໃບ 99฿'),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
-                        'title' => \App\Services\FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
+                        'title' => FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
                         'payload' => 'CANCEL_FORTUNE'];
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
@@ -667,22 +667,22 @@ class FortuneChannelManager
 
                     // 2. ส่งข้อความทำนาย + Quick Reply ตัวเลือก (🌐 localize labels)
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
-                    $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
-                    $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                    $deepPrice = (int) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+                    $celticPrice = (int) app(CelticCrossService::class)->getPrice();
 
                     $buttons = [
                         ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
+                            'title' => FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
                             'payload' => 'TIER_DEEP_39'],
                     ];
                     if ($celticEnabled) {
                         // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
-                            'title' => \App\Services\FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ ໄພ່ 10 ໃບ"),
+                            'title' => FortuneLocaleService::lo("👑 VIP {$celticPrice}฿ ไพ่ 10 ใบ", "👑 VIP {$celticPrice}฿ ໄພ່ 10 ໃບ"),
                             'payload' => 'TIER_CELTIC_99'];
                     }
                     $buttons[] = ['content_type' => 'text',
-                        'title' => \App\Services\FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
+                        'title' => FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
                         'payload' => 'FREE_CARD_DECLINE'];
 
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
@@ -692,8 +692,7 @@ class FortuneChannelManager
                 'free_card_declined' => $fbService->sendMessage($userId, $message, $extra),
 
                 // 🎁 (2026-05-03) free flow chitchat / ไพ่จั่วไม่สำเร็จ / AI fail — ส่งข้อความ + Quick Reply เลือก tier
-                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
-                    => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
+                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed' => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
 
                 // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ก่อน + ข้อความ
                 'view_reading_free' => (function () use ($fbService, $userId, $message, $result, $extra) {
@@ -704,13 +703,13 @@ class FortuneChannelManager
                         } catch (\Throwable $e) {
                         }
                     }
+
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
                 // 🔒 (2026-05-03) Pay-First Gate responses — บิลค้าง resend QR / revive
                 //    ใช้ template เดียวกับ pending_payment / celtic_pending_payment (มี QR + ปุ่ม)
-                'payment_lock_pending', 'payment_lock_revived'
-                    => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+                'payment_lock_pending', 'payment_lock_revived' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
                 // 💎 (2026-05-03) Request-Before-Pay — confirmation prompt + 2 buttons
                 'delivery_confirm_prompt' => $fbService->sendQuickReplies($userId, $message, [
@@ -748,14 +747,14 @@ class FortuneChannelManager
                         } catch (\Throwable $e) {
                         }
                     }
+
                     return $fbService->sendMessage($userId, $message);
                 })(),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // pending_payment ของ Celtic → ใช้ template เดียวกับ Deep (ส่ง QR + button)
                 // celtic_pending_payment_reuse → resume guard เจอบิลเก่า → ใช้ template เดียวกัน (2026-05-04)
-                'celtic_pending_payment', 'celtic_pending_payment_reuse'
-                    => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
+                'celtic_pending_payment', 'celtic_pending_payment_reuse' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
                 // celtic_card_picked → ส่งรูปไพ่ + ข้อความ + ปุ่ม "เปิดไพ่" สำหรับใบถัดไป
                 // ✏️ (2026-05-03) เปลี่ยน label ให้คนแก่เข้าใจชัดเจน + เพิ่มปุ่มสับใหม่
@@ -864,8 +863,7 @@ class FortuneChannelManager
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
-                'celtic_resume_qa'
-                    => $fbService->sendMessage($userId, $message, $extra),
+                'celtic_resume_qa' => $fbService->sendMessage($userId, $message, $extra),
 
                 // อื่นๆ → ส่ง text ธรรมดา
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
@@ -1624,23 +1622,23 @@ class FortuneChannelManager
                     // 🌐 localize Quick Reply labels
                     if ($offerFree) {
                         $quickReplies[] = [
-                            'label' => \App\Services\FortuneLocaleService::lo('🎁 ทำนายฟรี', '🎁 ທຳນາຍຟຣີ'),
-                            'text' => \App\Services\FortuneLocaleService::lo('ทำนายฟรี', 'ທຳນາຍຟຣີ'),
+                            'label' => FortuneLocaleService::lo('🎁 ทำนายฟรี', '🎁 ທຳນາຍຟຣີ'),
+                            'text' => FortuneLocaleService::lo('ทำนายฟรี', 'ທຳນາຍຟຣີ'),
                         ];
                     }
                     $quickReplies[] = [
-                        'label' => \App\Services\FortuneLocaleService::lo('🔹 39฿ พื้นฐาน', '🔹 39฿ ພື້ນຖານ'),
+                        'label' => FortuneLocaleService::lo('🔹 39฿ พื้นฐาน', '🔹 39฿ ພື້ນຖານ'),
                         'text' => '39',
                     ];
                     if ($celticEnabled) {
                         $quickReplies[] = [
-                            'label' => \App\Services\FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
+                            'label' => FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
                             'text' => '99',
                         ];
                     }
                     $quickReplies[] = [
-                        'label' => \App\Services\FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
-                        'text' => \App\Services\FortuneLocaleService::lo('ยกเลิก', 'ຍົກເລີກ'),
+                        'label' => FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
+                        'text' => FortuneLocaleService::lo('ยกเลิก', 'ຍົກເລີກ'),
                     ];
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
@@ -1656,13 +1654,13 @@ class FortuneChannelManager
                     }
 
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
-                    $deepPrice = (int) (\App\Models\FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
-                    $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                    $deepPrice = (int) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
+                    $celticPrice = (int) app(CelticCrossService::class)->getPrice();
 
                     // 🌐 localize Quick Reply labels
                     $quickReplies = [
                         [
-                            'label' => \App\Services\FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
+                            'label' => FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
                             'text' => '39',
                         ],
                     ];
@@ -1673,8 +1671,8 @@ class FortuneChannelManager
                         ];
                     }
                     $quickReplies[] = [
-                        'label' => \App\Services\FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
-                        'text' => \App\Services\FortuneLocaleService::lo('ไม่สนใจ', 'ບໍ່ສົນໃຈ'),
+                        'label' => FortuneLocaleService::lo('🌙 ไม่สนใจ', '🌙 ບໍ່ສົນໃຈ'),
+                        'text' => FortuneLocaleService::lo('ไม่สนใจ', 'ບໍ່ສົນໃຈ'),
                     ];
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
@@ -1684,8 +1682,7 @@ class FortuneChannelManager
                 'free_card_declined' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🎁 (2026-05-03) free flow chitchat / fail — text + tier menu QR
-                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'free_card_chitchat', 'free_card_draw_failed', 'free_card_ai_failed' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🎁 (2026-05-03) ดูคำทำนายฟรีย้อนหลัง — ส่งภาพไพ่ก่อน + ข้อความ
                 'view_reading_free' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
@@ -1695,51 +1692,43 @@ class FortuneChannelManager
                         } catch (\Throwable $e) {
                         }
                     }
+
                     return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                 })(),
 
                 // 🔧 (2026-05-03) bills รอชำระ — text only (LINE)
-                'view_reading_celtic_pending', 'view_reading_deep_pending'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'view_reading_celtic_pending', 'view_reading_deep_pending' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 🔒 (2026-05-03) Pay-First Gate responses — บิลค้าง resend QR / revive (LINE)
-                'payment_lock_pending', 'payment_lock_revived'
-                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+                'payment_lock_pending', 'payment_lock_revived' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // 🔒 (2026-05-03) reach revive limit — admin only (text-only)
-                'payment_lock_admin'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'payment_lock_admin' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 💎 (2026-05-03) Request-Before-Pay confirmation (LINE Quick Reply)
-                'delivery_confirm_prompt', 'delivery_confirm_invalid'
-                    => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                        ['label' => '✅ รับคำทำนาย', 'text' => 'รับคำทำนาย'],
-                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                    ]),
+                'delivery_confirm_prompt', 'delivery_confirm_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ รับคำทำนาย', 'text' => 'รับคำทำนาย'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
 
                 // 🆕 (2026-05-04) Pay-later reconfirm (LINE Quick Reply)
-                'pay_later_reconfirm', 'pay_later_reconfirm_invalid'
-                    => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                        ['label' => '✅ ใช่ เริ่มเลย', 'text' => 'ใช่'],
-                        ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                    ]),
+                'pay_later_reconfirm', 'pay_later_reconfirm_invalid' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ใช่ เริ่มเลย', 'text' => 'ใช่'],
+                    ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+                ]),
 
                 // 🆕 (2026-05-04) Pay-later declined — text only
-                'pay_later_declined'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'pay_later_declined' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 💎 ยกเลิกการรับคำทำนาย — text only
-                'delivery_cancelled'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'delivery_cancelled' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // 💎 deliver_with_qr — ใช้ payment template (LINE)
-                'deliver_with_qr'
-                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+                'deliver_with_qr' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // 🔮 Celtic Cross actions (2026-04-29)
                 // celtic_pending_payment_reuse → resume guard เจอบิลเก่า (2026-05-04)
-                'celtic_pending_payment', 'celtic_pending_payment_reuse'
-                    => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+                'celtic_pending_payment', 'celtic_pending_payment_reuse' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
 
                 // celtic_card_picked → ส่งรูปไพ่ + ปุ่ม "เปิดไพ่ใบที่ N"
                 // 🩹 (2026-05-05) Refactor — combine image+text ใน reply call เดียว
@@ -1836,8 +1825,7 @@ class FortuneChannelManager
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
-                'celtic_resume_qa'
-                    => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'celtic_resume_qa' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
@@ -2012,19 +2000,19 @@ class FortuneChannelManager
         $showPromptpay = $this->settings->shouldShowPromptpay();
 
         // ดึงบัญชีธนาคารตามโหมด
-        $accounts = \App\Models\PaymentBankAccount::active()
+        $accounts = PaymentBankAccount::active()
             ->smsCheckerEnabled()
             ->ordered()
             ->get();
 
         if ($accounts->isEmpty()) {
-            $accounts = \App\Models\PaymentBankAccount::active()
+            $accounts = PaymentBankAccount::active()
                 ->ordered()
                 ->get();
         }
 
         // จัดรูปแบบตาม payment_display_mode
-        $bankAccounts = $accounts->map(function ($a) use ($displayMode, $showBank, $showPromptpay) {
+        $bankAccounts = $accounts->map(function ($a) use ($displayMode) {
             $info = ['account_name' => $a->account_name];
 
             if ($displayMode === 'promptpay_only') {
@@ -2261,6 +2249,7 @@ class FortuneChannelManager
         $cleanMessages = function (array $messages): array {
             return array_map(function ($msg) {
                 unset($msg['_meta']);
+
                 return $msg;
             }, $messages);
         };
@@ -2390,12 +2379,12 @@ class FortuneChannelManager
 
                     return [
                         'message' => "🔔 บิลรอชำระอยู่นะคะ คุณ{$name}\n\n"
-                            . "📋 เลขบิล: {$billRef}\n"
-                            . "💰 ยอด: ฿{$payAmount}\n"
-                            . "⏳ เหลือเวลา {$remainingMin} นาที\n\n"
-                            . "👉 พิมพ์ \"เช็คสถานะ\" ดูว่าระบบตัดบิลแล้วหรือยัง\n"
-                            . "👉 พิมพ์ \"โอนแล้ว\" ถ้าเพิ่งโอน\n"
-                            . "👉 พิมพ์ \"ยกเลิก\" ถ้าต้องการยกเลิก",
+                            ."📋 เลขบิล: {$billRef}\n"
+                            ."💰 ยอด: ฿{$payAmount}\n"
+                            ."⏳ เหลือเวลา {$remainingMin} นาที\n\n"
+                            ."👉 พิมพ์ \"เช็คสถานะ\" ดูว่าระบบตัดบิลแล้วหรือยัง\n"
+                            ."👉 พิมพ์ \"โอนแล้ว\" ถ้าเพิ่งโอน\n"
+                            .'👉 พิมพ์ "ยกเลิก" ถ้าต้องการยกเลิก',
                         'quick_replies' => [
                             ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_PAYMENT_STATUS'],
                             ['content_type' => 'text', 'title' => '✅ โอนแล้ว', 'payload' => 'REPORT_PAYMENT'],
@@ -2418,10 +2407,10 @@ class FortuneChannelManager
 
                 return [
                     'message' => "🌙 คุณ{$name} แม่หมอกำลังพยากรณ์ดวงดาวให้อยู่ค่ะ\n\n"
-                        . "📋 เลขบิล: {$billRef}\n"
-                        . "⏳ รอมาแล้ว {$waitedMin} นาที (ปกติใช้ 1-3 นาที)\n\n"
-                        . "✨ จะแจ้งทันทีเมื่อคำทำนายพร้อม\n"
-                        . "💡 ห้ามสร้างบิลใหม่นะคะ — กันจ่ายซ้ำ",
+                        ."📋 เลขบิล: {$billRef}\n"
+                        ."⏳ รอมาแล้ว {$waitedMin} นาที (ปกติใช้ 1-3 นาที)\n\n"
+                        ."✨ จะแจ้งทันทีเมื่อคำทำนายพร้อม\n"
+                        .'💡 ห้ามสร้างบิลใหม่นะคะ — กันจ่ายซ้ำ',
                     'quick_replies' => [
                         ['content_type' => 'text', 'title' => '🔍 เช็คสถานะ', 'payload' => 'CHECK_PAYMENT_STATUS'],
                     ],
@@ -2433,10 +2422,10 @@ class FortuneChannelManager
                 && ($reading->paid_at && $reading->paid_at >= now()->subHours(24))) {
                 return [
                     'message' => "🙏 ขอบคุณคุณ{$name} ที่ใช้บริการแม่หมอจันทรา\n\n"
-                        . "📋 เลขบิลล่าสุด: {$billRef}\n"
-                        . "🌟 คำทำนายเชิงลึกของเจ้าชะตาพร้อมแล้ว\n\n"
-                        . "👉 พิมพ์ *\"อ่านคำทำนาย\"* เพื่อดูคำทำนายอีกครั้ง\n"
-                        . "👉 พิมพ์ *\"บิลของฉัน\"* เพื่อดูประวัติบิลย้อนหลัง",
+                        ."📋 เลขบิลล่าสุด: {$billRef}\n"
+                        ."🌟 คำทำนายเชิงลึกของเจ้าชะตาพร้อมแล้ว\n\n"
+                        ."👉 พิมพ์ *\"อ่านคำทำนาย\"* เพื่อดูคำทำนายอีกครั้ง\n"
+                        .'👉 พิมพ์ *"บิลของฉัน"* เพื่อดูประวัติบิลย้อนหลัง',
                     'quick_replies' => [
                         ['content_type' => 'text', 'title' => '🌟 อ่านคำทำนาย', 'payload' => 'READ_LAST_READING'],
                         ['content_type' => 'text', 'title' => '📚 บิลของฉัน', 'payload' => 'MY_BILLS'],
@@ -2459,7 +2448,7 @@ class FortuneChannelManager
 
                 if ($reading->conversation_status === FortuneReading::STATUS_CELTIC_PICKING) {
                     $hint = $picked === 0
-                        ? "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบที่ 1\"* เพื่อเริ่ม"
+                        ? '👉 กดปุ่ม *"🃏 เปิดไพ่ใบที่ 1"* เพื่อเริ่ม'
                         : "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* (ใบที่ {$next})";
                     $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
                     $quickReplies = [
@@ -2468,15 +2457,15 @@ class FortuneChannelManager
                         ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
                     ];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
-                    $hint = "👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้";
+                    $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้';
                     $quickReplies = [
                         ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
                     ];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
-                    $hint = "🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨";
+                    $hint = '🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨';
                     $quickReplies = [];
                 } else { // CELTIC_QA_PROMPT
-                    $hint = "👉 ถามต่อ หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบรอบ";
+                    $hint = '👉 ถามต่อ หรือพิมพ์ *"พอแค่นี้"* เพื่อจบรอบ';
                     $quickReplies = [
                         ['content_type' => 'text', 'title' => '💬 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
                         ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
@@ -2485,9 +2474,9 @@ class FortuneChannelManager
 
                 return [
                     'message' => "🔮 คุณ{$name} กำลังอยู่ในรอบ Celtic Cross นะคะ\n\n"
-                        . "📋 เลขบิล: {$billRef}\n"
-                        . "🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
-                        . $hint,
+                        ."📋 เลขบิล: {$billRef}\n"
+                        ."🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
+                        .$hint,
                     'quick_replies' => $quickReplies,
                 ];
             }
@@ -2514,7 +2503,7 @@ class FortuneChannelManager
         $userName = $reading?->facebook_user_name ?? $result['user_name'] ?? 'คุณ';
         $questionNumber = $result['question_number'] ?? 1;
         // ดึงจำนวนคำถามจาก constant — ปัจจุบัน 1 ข้อ (admin ตั้งใน FortuneConversationService::REQUIRED_QUESTIONS)
-        $totalQuestions = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
+        $totalQuestions = FortuneConversationService::REQUIRED_QUESTIONS;
 
         // ตรวจหาคำถามก่อนหน้า (ถ้าเป็นข้อ 2+)
         $previousQuestion = null;
@@ -2580,7 +2569,7 @@ class FortuneChannelManager
 
         $flex = $lineService->buildQuestionTopicFlexMessage($userName, $remaining, $isUnlimited);
 
-        return $lineService->sendFlexWithReplyFallback($userId, $flex, "🔮 อยากถามเรื่องอะไรคะ?", $replyToken);
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, '🔮 อยากถามเรื่องอะไรคะ?', $replyToken);
     }
 
     /**
@@ -2771,7 +2760,7 @@ class FortuneChannelManager
             $replyToken = null; // ✅ token อาจถูกใช้แล้ว ห้ามใช้ซ้ำ
         }
 
-        return $lineService->sendFlexWithReplyFallback($userId, $flex, "💰 ยอดชำระ ฿".number_format($amount, 2), $replyToken);
+        return $lineService->sendFlexWithReplyFallback($userId, $flex, '💰 ยอดชำระ ฿'.number_format($amount, 2), $replyToken);
     }
 
     /**
@@ -2838,7 +2827,7 @@ class FortuneChannelManager
 
         // ถ้าไม่มี reading object → ลองดึง bill ref จาก message หรือ result
         if (! $reading && ! empty($result['facebook_user_id'])) {
-            $reading = \App\Models\FortuneReading::where('facebook_user_id', $result['facebook_user_id'])
+            $reading = FortuneReading::where('facebook_user_id', $result['facebook_user_id'])
                 ->where('is_paid', true)
                 ->latest()
                 ->first();
@@ -2969,7 +2958,7 @@ class FortuneChannelManager
                         }
                         if (! $bubbleSent) {
                             $sent = false;
-                            Log::warning("LINE view_reading_deep: ส่ง bubble ที่ ".($idx + 1)." ไม่สำเร็จ", [
+                            Log::warning('LINE view_reading_deep: ส่ง bubble ที่ '.($idx + 1).' ไม่สำเร็จ', [
                                 'reading_id' => $reading->id ?? null,
                             ]);
                         }
@@ -3401,6 +3390,7 @@ class FortuneChannelManager
                             $replyToken
                         );
                     }
+
                     // fallback เป็น text ถ้าไม่มี flex json
                     return $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
 
@@ -3412,6 +3402,7 @@ class FortuneChannelManager
                             'quick_replies' => $quickReplyOptions,
                         ]);
                     }
+
                     // fallback เป็น text ถ้าไม่มี quick reply
                     return $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken);
 
@@ -3425,6 +3416,7 @@ class FortuneChannelManager
                 'response_type' => $responseType,
                 'keyword_name' => $result['keyword_name'] ?? 'unknown',
             ]);
+
             // fallback เป็น text ธรรมดา
             return $lineService->sendMessageWithReplyFallback($userId, $message ?: '🔮 มีอะไรให้ช่วยค่ะ?', $replyToken);
         }
@@ -3797,9 +3789,9 @@ class FortuneChannelManager
             : '🙏 ขอบคุณที่ไว้วางใจหมอจันทรา';
 
         $text = "{$thankYouLine}\n\n"
-            . "✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
-            . "📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
-            . "📢 ถ้าคำทำนายถูกใจ — ชวนเพื่อนมาดูดวง ได้ **ส่วนแบ่งการตลาด** เข้า Wallet ทันที!";
+            ."✨ ขอให้โชคดี สุขภาพแข็งแรง การงานการเงินเจริญรุ่งเรือง สมหวังทุกประการ\n\n"
+            ."📖 อยากอ่านคำทำนายอีกรอบ → พิมพ์ \"อ่านคำทำนายล่าสุด\"\n\n"
+            .'📢 ถ้าคำทำนายถูกใจ — ชวนเพื่อนมาดูดวง ได้ **ส่วนแบ่งการตลาด** เข้า Wallet ทันที!';
 
         return $fbService->sendButtonTemplate($userId, [
             'template_type' => 'button',
@@ -4021,11 +4013,11 @@ class FortuneChannelManager
      *
      * @param  string|null  $message  ข้อความเดิม
      * @param  string  $action  action key เพื่อตัดสินใจว่าจะ apply หรือข้าม
-     * @return string|null  ข้อความที่ใส่ warning แล้ว
+     * @return string|null ข้อความที่ใส่ warning แล้ว
      */
     protected function maybeApplyPaymentWarning(?string $message, string $action): ?string
     {
-        $warning = \App\Services\FortuneConversationService::$pendingPaymentWarning;
+        $warning = FortuneConversationService::$pendingPaymentWarning;
         if (empty($warning) || empty($message)) {
             return $message;
         }
@@ -4050,8 +4042,8 @@ class FortuneChannelManager
         }
 
         // ✅ Apply + clear (ป้องกัน leak ไป next request ในเดียวกัน worker)
-        \App\Services\FortuneConversationService::$pendingPaymentWarning = null;
+        FortuneConversationService::$pendingPaymentWarning = null;
 
-        return $warning . $message;
+        return $warning.$message;
     }
 }

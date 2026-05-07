@@ -6,9 +6,13 @@ use App\Contracts\MessagingPlatformInterface;
 use App\Models\FortuneReading;
 use App\Models\FortuneResponseTemplate;
 use App\Models\FortuneTellingSetting;
+use App\Models\FortuneUserCredit;
+use Carbon\Carbon;
 use Exception;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\URL;
 
 /**
  * Facebook Webhook Service
@@ -71,12 +75,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function getDefaultQuickReplies(): array
     {
-        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+        $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
         $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
         $celticPrice = 99;
         try {
-            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            $celticPrice = (int) app(CelticCrossService::class)->getPrice();
         } catch (\Throwable $e) {
             // ใช้ default 99
         }
@@ -173,7 +177,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         //   เช็ค ACTIVE_READING_STATUSES (cached 30s กัน DB hammer)
                         $hasActive = false;
                         try {
-                            $hasActive = \App\Models\FortuneReading::hasActiveReading('facebook', $recipientId);
+                            $hasActive = FortuneReading::hasActiveReading('facebook', $recipientId);
                         } catch (\Throwable $e) {
                             // ถ้าเช็คไม่ได้ — ใช้ default behaviour (แสดง QR)
                         }
@@ -301,8 +305,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * @param  string  $imageUrl  URL ของรูปภาพ (ต้องเป็น HTTPS public URL)
      * @param  string|null  $previewUrl  ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
      * @param  array  $options  options เพิ่มเติม:
-     *   - comment_id: string|null  ใช้ Private Replies endpoint (bypass 24hr/551)
-     *   - skip_unreachable_cache: bool  ข้าม per-user 551 cache (สำหรับ test command)
+     *                          - comment_id: string|null  ใช้ Private Replies endpoint (bypass 24hr/551)
+     *                          - skip_unreachable_cache: bool  ข้าม per-user 551 cache (สำหรับ test command)
      * @return bool สำเร็จหรือไม่
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
@@ -314,10 +318,11 @@ class FacebookWebhookService implements MessagingPlatformInterface
         //   ลด log spam + ลด API calls ที่ fail แน่ๆ
         //   ยกเว้นกรณีมี comment_id → Private Replies bypass 24hr window ได้
         $unreachableKey = "fb_user_unreachable:{$recipientId}:".now()->format('Y-m-d');
-        if (! $skipUnreachableCache && empty($commentId) && \Illuminate\Support\Facades\Cache::has($unreachableKey)) {
+        if (! $skipUnreachableCache && empty($commentId) && Cache::has($unreachableKey)) {
             Log::info('sendImage: skip — user marked unreachable today (no comment_id)', [
                 'recipient' => $recipientId,
             ]);
+
             return false;
         }
 
@@ -329,6 +334,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 if (! empty($previewUrl)) {
                     $this->sendMessage($recipientId, $previewUrl);
                 }
+
                 return true;
             }
             // ถ้า Private Replies fail → fallback ไป /me/messages ปกติ (อาจ work ถ้า user อยู่ใน 24hr window)
@@ -388,7 +394,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $lastSubcode = $errSubcode;
                 $lastErrMsg = $errMsg;
 
-                Log::warning('ส่งรูปภาพ ' . $msgType . ' fail', [
+                Log::warning('ส่งรูปภาพ '.$msgType.' fail', [
                     'recipient' => $recipientId,
                     'http_status' => $response->status(),
                     'error_subcode' => $errSubcode,
@@ -409,6 +415,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'recipient' => $recipientId,
                         'error_code' => $errCode,
                     ]);
+
                     return false;
                 }
 
@@ -422,7 +429,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     break; // ไป cache mark unreachable ข้างล่าง
                 }
             } catch (Exception $e) {
-                Log::error('ส่งรูปภาพ ' . $msgType . ' exception: ' . $e->getMessage(), [
+                Log::error('ส่งรูปภาพ '.$msgType.' exception: '.$e->getMessage(), [
                     'recipient' => $recipientId,
                 ]);
                 if ($msgType === 'MESSAGE_TAG') {
@@ -436,7 +443,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         //   cache กัน log spam + กัน API calls สิ้นเปลือง
         if (in_array($lastSubcode, [1545041, 2018278, 2018065])) {
             $secondsUntilMidnight = max(60, now()->endOfDay()->diffInSeconds(now(), absolute: true));
-            \Illuminate\Support\Facades\Cache::put($unreachableKey, true, $secondsUntilMidnight);
+            Cache::put($unreachableKey, true, $secondsUntilMidnight);
             Log::info('sendImage: mark user unreachable today', [
                 'recipient' => $recipientId,
                 'subcode' => $lastSubcode,
@@ -482,6 +489,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                     'comment_id' => $commentId,
                     'image_url' => $imageUrl,
                 ]);
+
                 return true;
             }
 
@@ -714,7 +722,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * - User รู้สึกว่าเพจ active + ใส่ใจ
      * - ลูกค้าจะ react กลับมาเยอะขึ้น (ส่งสัญญาณดีให้ FB)
      *
-     * @param  string  $commentId
      * @param  string  $type  LIKE | LOVE | HAHA | WOW | SAD | ANGRY (default: LOVE ❤️)
      */
     public function reactToComment(string $commentId, string $type = 'LOVE'): bool
@@ -736,7 +743,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $msg = $e->getMessage();
             // 100/3 = comment ไม่พบหรือถูกลบ
             // 403 = token ขาด pages_manage_engagement
-            Log::warning('React comment ล้มเหลว: ' . mb_substr($msg, 0, 200), [
+            Log::warning('React comment ล้มเหลว: '.mb_substr($msg, 0, 200), [
                 'comment_id' => $commentId,
                 'type' => $type,
             ]);
@@ -844,7 +851,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         //   FB profile name ไม่เปลี่ยนบ่อย — 24hr TTL พอ
         //   ถ้า cache hit → return ทันที (ไม่ทำ HTTP call)
         $cacheKey = "fb:user_profile:{$facebookUserId}";
-        $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        $cached = Cache::get($cacheKey);
         if (is_array($cached) && ! empty($cached['name'])) {
             return $cached;
         }
@@ -875,10 +882,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ถ้าได้ birthday มา → คำนวณอายุ
             if (! empty($profile['birthday'])) {
                 try {
-                    $birthDate = \Carbon\Carbon::parse($profile['birthday']);
+                    $birthDate = Carbon::parse($profile['birthday']);
                     $profile['age'] = $birthDate->age;
                     $profile['birth_date_formatted'] = $birthDate->format('Y-m-d');
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     // birthday format อาจเป็นแค่ MM/DD
                 }
             }
@@ -894,7 +901,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             // 💾 cache profile 24hr (เฉพาะตอนได้ name) — กัน HTTP roundtrip ทุก message
             if (! empty($profile['name'])) {
-                \Illuminate\Support\Facades\Cache::put($cacheKey, $profile, now()->addHours(24));
+                Cache::put($cacheKey, $profile, now()->addHours(24));
             }
 
             return $profile;
@@ -1499,7 +1506,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * คำนวณราศีจากวันเกิด
      *
-     * @param  \Carbon\Carbon  $date
+     * @param  Carbon  $date
      * @return string ชื่อราศี
      */
     protected function getZodiacFromDate($date): string
@@ -1627,7 +1634,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'data' => $response->json(),
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Messenger Profile setup error: '.$e->getMessage());
 
             return [
@@ -1662,7 +1669,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             [
                 'type' => 'web_url',
                 'title' => '📝 สมัครสมาชิก',
-                'url' => $appUrl . '/auth/facebook',
+                'url' => $appUrl.'/auth/facebook',
             ],
             // 2️⃣ ดูดวงละเอียด → postback เริ่ม flow
             [
@@ -1704,12 +1711,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $basicId = $this->settings->line_bot_basic_id ?? null;
         if (! empty($basicId)) {
             if (! str_starts_with($basicId, '@')) {
-                $basicId = '@' . $basicId;
+                $basicId = '@'.$basicId;
             }
             $aboutSubmenu[] = [
                 'type' => 'web_url',
                 'title' => '💚 เพิ่มเพื่อน LINE',
-                'url' => 'https://line.me/R/ti/p/' . $basicId,
+                'url' => 'https://line.me/R/ti/p/'.$basicId,
             ];
         }
 
@@ -1718,7 +1725,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
             [
                 'type' => 'web_url',
                 'title' => '📝 สมัครสมาชิก',
-                'url' => $appUrl . '/auth/facebook',
+                'url' => $appUrl.'/auth/facebook',
                 'webview_height_ratio' => 'full',
             ],
 
@@ -1804,7 +1811,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'message' => 'ลบไม่สำเร็จ: '.($response->json('error.message') ?? 'Unknown error'),
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
@@ -1844,7 +1851,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'message' => 'ดึงข้อมูลไม่สำเร็จ: '.($response->json('error.message') ?? 'Unknown error'),
             ];
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return [
                 'success' => false,
                 'message' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
@@ -1862,9 +1869,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ใช้สำหรับ: upsell, payment, check remaining, welcome
      * ข้อจำกัด Facebook: text สูงสุด 640 chars, สูงสุด 3 ปุ่ม
      *
-     * @param string $recipientId Facebook User ID
-     * @param array $templatePayload payload จาก FacebookRichMessageService
-     * @param array $options ตัวเลือกเพิ่มเติม (messaging_type, from_admin)
+     * @param  string  $recipientId  Facebook User ID
+     * @param  array  $templatePayload  payload จาก FacebookRichMessageService
+     * @param  array  $options  ตัวเลือกเพิ่มเติม (messaging_type, from_admin)
      * @return bool สำเร็จหรือไม่
      */
     /**
@@ -1877,12 +1884,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * - non-blocking — ถ้า fail ไม่กระทบ flow หลัก
      *
      * @param  string  $recipientId  Facebook PSID
-     * @return bool  true = ส่งสำเร็จ + mark prompted, false = gated/failed
+     * @return bool true = ส่งสำเร็จ + mark prompted, false = gated/failed
      */
     public function sendFollowPagePromptToUser(string $recipientId): bool
     {
         try {
-            $credit = \App\Models\FortuneUserCredit::getOrCreate($recipientId, 'facebook');
+            $credit = FortuneUserCredit::getOrCreate($recipientId, 'facebook');
             // 🔄 (2026-05-02) เปลี่ยนจาก shouldPromptFollow() (7-day cooldown)
             //    → shouldPromptFollowToday() (daily cooldown — ครั้งแรกของวันเท่านั้น)
             //    user request: "ในการทักแชทครั้งแรกของวันนั้น ถ้ายังไม่ติดตาม ให้ปรากฏ"
@@ -1908,25 +1915,25 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // 🔒 (2026-05-05 review) Signed URLs — ป้องกัน enumeration spam
             //   ใครๆ จะเรียก /fortune/track/fb-follow/{any_psid} ตรงไม่ได้ (signed middleware reject)
             //   URL จะมี ?signature=... + ?expires=... append อัตโนมัติ
-            $trackFollowUrl = \Illuminate\Support\Facades\URL::signedRoute(
+            $trackFollowUrl = URL::signedRoute(
                 'fortune.track.fb-follow',
                 ['psid' => $recipientId],
                 now()->addDays(30)  // ลิงก์ใช้ได้ 30 วัน — กัน user ที่เก็บ DM ไว้เปิดทีหลัง
             );
-            $trackGroupUrl = \Illuminate\Support\Facades\URL::signedRoute(
+            $trackGroupUrl = URL::signedRoute(
                 'fortune.track.fb-group',
                 ['psid' => $recipientId],
                 now()->addDays(30)
             );
 
             $message = "🌙 *เจ้าชะตา รับสิทธิ์พิเศษจากแม่หมอ* ✨\n\n"
-                . "👁️ *ติดตามเพจ* — รับดวงประจำวันฟรี (ตี 1 - 7 โมงเช้า)\n\n"
-                . "👥 *เข้ากลุ่มแม่หมอจันทรา* — สิทธิ์พิเศษ:\n"
-                . "🎁 ฟรีดวงไพ่เพิ่ม 1 ครั้ง/เดือน (รีเซ็ตสิทธิ์)\n"
-                . "💬 ปรึกษาแม่หมอ + พูดคุยกับสมาชิกในกลุ่ม\n"
-                . "🃏 อัพเดต tarot tip + เคล็ดโหราศาสตร์\n"
-                . "🌟 เป็นกลุ่มสายมูทำดวง บอกบุญถึงกัน\n\n"
-                . "👇 กดเลือกได้เลยค่ะ";
+                ."👁️ *ติดตามเพจ* — รับดวงประจำวันฟรี (ตี 1 - 7 โมงเช้า)\n\n"
+                ."👥 *เข้ากลุ่มแม่หมอจันทรา* — สิทธิ์พิเศษ:\n"
+                ."🎁 ฟรีดวงไพ่เพิ่ม 1 ครั้ง/เดือน (รีเซ็ตสิทธิ์)\n"
+                ."💬 ปรึกษาแม่หมอ + พูดคุยกับสมาชิกในกลุ่ม\n"
+                ."🃏 อัพเดต tarot tip + เคล็ดโหราศาสตร์\n"
+                ."🌟 เป็นกลุ่มสายมูทำดวง บอกบุญถึงกัน\n\n"
+                .'👇 กดเลือกได้เลยค่ะ';
 
             $payload = [
                 'attachment' => [
@@ -1949,7 +1956,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return (bool) $sent;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::debug('sendFollowPagePromptToUser failed (non-blocking)', [
+            Log::debug('sendFollowPagePromptToUser failed (non-blocking)', [
                 'user_id' => $recipientId,
                 'error' => $e->getMessage(),
             ]);
@@ -1966,7 +1973,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * - non-blocking — ถ้า fail ไม่กระทบ flow หลัก
      *
      * @param  string  $recipientId  Facebook PSID
-     * @return bool  true = ส่งสำเร็จ + mark cooldown, false = gated/failed
+     * @return bool true = ส่งสำเร็จ + mark cooldown, false = gated/failed
      */
     public function sendGroupInvitePrompt(string $recipientId): bool
     {
@@ -1983,18 +1990,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             // Cooldown 7 วัน/user — กันส่งซ้ำซ้อนกับ DM อื่นๆ
             $cacheKey = "fb:group_invite_sent:{$recipientId}";
-            if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            if (Cache::has($cacheKey)) {
                 return false;
             }
 
             $message = trim($this->settings->fortune_group_invite_message ?? '');
             if (empty($message)) {
                 $message = "🌟 อยากดูดวงฟรีทุกเดือนกับแม่หมอจันทรา?\n\n"
-                    . "เข้ากลุ่มสมาชิกของเรา จะได้:\n"
-                    . "🎁 สิทธิ์ดูไพ่ฟรี 1 ใบทุกเดือน\n"
-                    . "🔮 สุ่มดูดวงส่วนตัวกับแม่หมอ\n"
-                    . "✨ ความรู้ดีๆ + กิจกรรมพิเศษ\n\n"
-                    . "👇 กดเข้ากลุ่มเลย";
+                    ."เข้ากลุ่มสมาชิกของเรา จะได้:\n"
+                    ."🎁 สิทธิ์ดูไพ่ฟรี 1 ใบทุกเดือน\n"
+                    ."🔮 สุ่มดูดวงส่วนตัวกับแม่หมอ\n"
+                    ."✨ ความรู้ดีๆ + กิจกรรมพิเศษ\n\n"
+                    .'👇 กดเข้ากลุ่มเลย';
             }
 
             $payload = [
@@ -2017,12 +2024,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $sent = $this->sendButtonTemplate($recipientId, $payload);
             if ($sent) {
                 // mark cooldown 7 วัน
-                \Illuminate\Support\Facades\Cache::put($cacheKey, now()->toIso8601String(), now()->addDays(7));
+                Cache::put($cacheKey, now()->toIso8601String(), now()->addDays(7));
             }
 
             return (bool) $sent;
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::debug('sendGroupInvitePrompt failed (non-blocking)', [
+            Log::debug('sendGroupInvitePrompt failed (non-blocking)', [
                 'user_id' => $recipientId,
                 'error' => $e->getMessage(),
             ]);
@@ -2099,7 +2106,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return false;
         } catch (Exception $e) {
-            Log::error('Facebook Button Template exception: ' . $e->getMessage());
+            Log::error('Facebook Button Template exception: '.$e->getMessage());
 
             return false;
         }
@@ -2111,9 +2118,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
      * ใช้สำหรับ: affiliate share, reading result
      * ข้อจำกัด Facebook: สูงสุด 10 cards, title 80 chars, subtitle 80 chars
      *
-     * @param string $recipientId Facebook User ID
-     * @param array $elements Generic Template elements
-     * @param array $options ตัวเลือกเพิ่มเติม
+     * @param  string  $recipientId  Facebook User ID
+     * @param  array  $elements  Generic Template elements
+     * @param  array  $options  ตัวเลือกเพิ่มเติม
      * @return bool สำเร็จหรือไม่
      */
     public function sendGenericTemplate(string $recipientId, array $elements, array $options = []): bool
@@ -2131,7 +2138,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return $this->sendButtonTemplate($recipientId, $payload, $options);
         } catch (Exception $e) {
-            Log::error('Facebook Generic Template exception: ' . $e->getMessage());
+            Log::error('Facebook Generic Template exception: '.$e->getMessage());
 
             return false;
         }
@@ -2140,9 +2147,9 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ส่งข้อความพร้อม Quick Replies และ Button Template ในครั้งเดียว
      *
-     * @param string $recipientId Facebook User ID
-     * @param array $templatePayload payload จาก FacebookRichMessageService
-     * @param array $quickReplies Quick Replies array
+     * @param  string  $recipientId  Facebook User ID
+     * @param  array  $templatePayload  payload จาก FacebookRichMessageService
+     * @param  array  $quickReplies  Quick Replies array
      * @return bool สำเร็จหรือไม่
      */
     public function sendTemplateWithQuickReplies(string $recipientId, array $templatePayload, array $quickReplies): bool
@@ -2159,7 +2166,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return $sent;
         } catch (Exception $e) {
-            Log::error('Facebook Template+QuickReplies exception: ' . $e->getMessage());
+            Log::error('Facebook Template+QuickReplies exception: '.$e->getMessage());
 
             return false;
         }

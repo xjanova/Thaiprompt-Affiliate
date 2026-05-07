@@ -62,6 +62,7 @@ class AiKeysRecheckCritical extends Command
 
         if ($keys->isEmpty()) {
             $this->info('🩺 ไม่มี critical keys ที่ถึงเวลา recheck — ทุกอย่างปกติ');
+
             return self::SUCCESS;
         }
 

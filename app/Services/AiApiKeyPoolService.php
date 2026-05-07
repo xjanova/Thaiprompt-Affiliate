@@ -174,6 +174,7 @@ class AiApiKeyPoolService
         if ($purpose !== null) {
             $query->forPurpose($purpose);
         }
+
         return $query;
     }
 

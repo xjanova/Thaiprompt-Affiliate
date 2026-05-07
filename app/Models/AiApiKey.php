@@ -350,7 +350,7 @@ class AiApiKey extends Model
      *     - Cache TTL 60s — ค่าใน cache รีเซ็ตเองทุกนาที (DB column ไม่)
      *     - หลัง recordUsage ล่าสุด เกิน 60s แต่ DB ยังเก็บค่าเดิม → DB stale
      *
-     * @return int  RPM ปัจจุบัน (real-time)
+     * @return int RPM ปัจจุบัน (real-time)
      */
     public function getCurrentRpmAttribute(): int
     {
@@ -619,10 +619,10 @@ class AiApiKey extends Model
      *   - error อื่น → exponential backoff 5/15/30 min
      *   - error_check_attempts >= 3 → mark critical, ไม่ใช้อัตโนมัติ รอ admin
      *
-     * @param  string  $errorMessage   ข้อความ error
-     * @param  string|null  $model     model ที่ใช้ตอน error (สำหรับ log)
-     * @param  bool  $isRateLimit      true ถ้าเป็น 429 หรือ rate limit
-     * @param  int|null  $retryAfter   retry_after seconds (จาก response header)
+     * @param  string  $errorMessage  ข้อความ error
+     * @param  string|null  $model  model ที่ใช้ตอน error (สำหรับ log)
+     * @param  bool  $isRateLimit  true ถ้าเป็น 429 หรือ rate limit
+     * @param  int|null  $retryAfter  retry_after seconds (จาก response header)
      */
     public function recordSmartError(
         string $errorMessage,
@@ -647,7 +647,7 @@ class AiApiKey extends Model
             $this->usageLogs()->create([
                 'model' => $model,
                 'is_success' => false,
-                'error_message' => '[CONCURRENT] ' . $errorMessage,
+                'error_message' => '[CONCURRENT] '.$errorMessage,
             ]);
 
             return;

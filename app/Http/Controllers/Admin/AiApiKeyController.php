@@ -6,7 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\AiApiKey;
 use App\Models\AiApiKeySetting;
 use App\Models\AiApiKeyUsageLog;
+use App\Services\AiApiKeyHealthProbeService;
 use App\Services\AiApiKeyPoolService;
+use GuzzleHttp\Client;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -97,14 +100,14 @@ class AiApiKeyController extends Controller
 
         try {
             $key = $this->poolService->addKey($validated);
-        } catch (\Illuminate\Database\QueryException $sqlErr) {
+        } catch (QueryException $sqlErr) {
             // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มี free_card
             if (($validated['purpose'] ?? null) === 'free_card'
                 && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
                 return response()->json([
                     'success' => false,
                     'message' => '❌ Migration ยังไม่รัน — โปรดรัน `php artisan migrate` แล้วลองใหม่ '
-                        . '(เพิ่ม free_card ใน enum purpose)',
+                        .'(เพิ่ม free_card ใน enum purpose)',
                 ], 422);
             }
             throw $sqlErr;
@@ -163,14 +166,14 @@ class AiApiKeyController extends Controller
 
         try {
             $key = $this->poolService->updateKey($id, $validated);
-        } catch (\Illuminate\Database\QueryException $sqlErr) {
+        } catch (QueryException $sqlErr) {
             // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มี free_card
             if (($validated['purpose'] ?? null) === 'free_card'
                 && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
                 return response()->json([
                     'success' => false,
                     'message' => '❌ Migration ยังไม่รัน — โปรดรัน `php artisan migrate` แล้วลองใหม่ '
-                        . '(เพิ่ม free_card ใน enum purpose)',
+                        .'(เพิ่ม free_card ใน enum purpose)',
                 ], 422);
             }
             throw $sqlErr;
@@ -274,7 +277,7 @@ class AiApiKeyController extends Controller
      *     (จะ unban อัตโนมัติถ้า probe ผ่าน + log auto_recovered_at)
      *   - คืนผลลัพธ์ + state ใหม่
      */
-    public function recheckNow(int $id, \App\Services\AiApiKeyHealthProbeService $probeService): JsonResponse
+    public function recheckNow(int $id, AiApiKeyHealthProbeService $probeService): JsonResponse
     {
         $key = AiApiKey::findOrFail($id);
 
@@ -456,7 +459,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGrokApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client;
+        $client = new Client;
         $response = $client->get('https://api.x.ai/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -472,7 +475,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGroqApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client;
+        $client = new Client;
         $response = $client->get('https://api.groq.com/openai/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -488,7 +491,7 @@ class AiApiKeyController extends Controller
      */
     protected function testOpenAiApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client;
+        $client = new Client;
         $response = $client->get('https://api.openai.com/v1/models', [
             'headers' => [
                 'Authorization' => "Bearer {$apiKey}",
@@ -504,7 +507,7 @@ class AiApiKeyController extends Controller
      */
     protected function testGeminiApi(string $apiKey): array
     {
-        $client = new \GuzzleHttp\Client;
+        $client = new Client;
         $response = $client->get("https://generativelanguage.googleapis.com/v1/models?key={$apiKey}", [
             'timeout' => 10,
         ]);

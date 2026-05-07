@@ -49,6 +49,7 @@ class AiApiKeyHealthProbeService
                 'key_id' => $key->id,
                 'provider' => $key->provider,
             ]);
+
             return false;
         }
 
@@ -66,6 +67,7 @@ class AiApiKeyHealthProbeService
                     'provider' => $key->provider,
                     'status' => $status,
                 ]);
+
                 return true;
             }
 
@@ -75,6 +77,7 @@ class AiApiKeyHealthProbeService
                     'key_id' => $key->id,
                     'provider' => $key->provider,
                 ]);
+
                 return true;
             }
 
@@ -84,6 +87,7 @@ class AiApiKeyHealthProbeService
                 'status' => $status,
                 'body' => mb_substr($response->body(), 0, 200),
             ]);
+
             return false;
         } catch (Exception $e) {
             Log::warning('AI Health Probe: exception ระหว่าง probe', [
@@ -91,6 +95,7 @@ class AiApiKeyHealthProbeService
                 'provider' => $key->provider,
                 'error' => $e->getMessage(),
             ]);
+
             return false;
         }
     }
@@ -204,7 +209,7 @@ class AiApiKeyHealthProbeService
     {
         try {
             // 🛡️ ใช้ FQCN ชัดเจน — ไม่พึ่ง use statement
-            $alertClass = \App\Services\LineAlertService::class;
+            $alertClass = LineAlertService::class;
             if (! class_exists($alertClass)) {
                 return;
             }
