@@ -4072,6 +4072,20 @@ class FortuneConversationService
      */
     protected function handleBirthdateInput(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
     {
+        // 🩹 (2026-05-08) ตัด markdown emphasis ก่อนทุก check ใน flow นี้
+        //   เคสจริง: ลูกค้าพิมพ์ "*7/12/2519*" → ก่อนหน้านี้ผ่านแต่ AI fallback ตีความผิด
+        $messageText = trim(preg_replace('/[\*_~`]+/', ' ', $messageText) ?? $messageText);
+        $messageText = trim(preg_replace('/\s+/', ' ', $messageText) ?? $messageText);
+
+        Log::debug('Fortune handleBirthdateInput: เริ่มประมวลผลวันเกิด', [
+            'reading_id' => $reading->id,
+            'status' => $reading->conversation_status,
+            'attempts' => $reading->getConversationState('birthdate_attempts', 0),
+            'awaiting_confirm' => $reading->getConversationState('awaiting_birthdate_confirmation', false),
+            'step_mode' => $reading->getConversationState('birthdate_step_mode', false),
+            'text_preview' => mb_substr($messageText, 0, 50),
+        ]);
+
         // 🔓 Escape hatch — ถ้ายูสเซ่อร์อยากเริ่มใหม่/ยกเลิก/คุยกับคน
         // 🧹 ใช้ matchesExactKeyword (normalize ก่อน compare) เพื่อรองรับ
         //    "ยกเลิก ค่ะ", "ยกเลิก.", "YKLK " ฯลฯ — ก่อนหน้านี้พลาดเพราะ exact match
@@ -9128,6 +9142,13 @@ class FortuneConversationService
     protected function parseBirthDate(string $text): ?string
     {
         $text = trim($text);
+
+        // 🩹 (2026-05-08) ตัด markdown emphasis (asterisks, underscores) ที่ผู้ใช้นิยมใส่
+        //    เคสจริง: ลูกค้าพิมพ์ "*7/12/2519*" หรือ "_7/12/2519_" — Markdown bold/italic
+        //    Regex หลักจับ digits + separator ได้ แต่ AI fallback อาจตีความผิด
+        //    Strip ก่อน parse → robust ต่อทุก case
+        $text = preg_replace('/[\*_~`]+/', ' ', $text);
+        $text = trim(preg_replace('/\s+/', ' ', $text));
 
         // 🔢 แปลงเลขไทย (๐-๙) + เลขลาว (໐-໙) เป็นเลขอารบิก ก่อน parse
         $thaiDigits = ['๐', '๑', '๒', '๓', '๔', '๕', '๖', '๗', '๘', '๙'];
