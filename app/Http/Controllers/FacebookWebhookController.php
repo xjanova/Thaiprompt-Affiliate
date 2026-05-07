@@ -2194,13 +2194,17 @@ class FacebookWebhookController extends Controller
             //   user feedback: "กล่องชักชวนมันเยอะไปตาลาย เอาแค่รูป อย่างเดียวก่อน"
             //   เดิม: banner image + welcome rich card + 3 ปุ่ม + quick replies (ตาลาย)
             //   ใหม่: banner image อย่างเดียว — รอลูกค้าทักมา → AI chat ตอบเป็นกันเอง
-            //   ❗ ลบ buildWelcomeTemplate / sendTemplateWithQuickReplies ออก
-            //   ❗ ลบ buildWelcomeMessage / sendQuickReplies ออก
-            //   ❗ ลบ maybeInviteToGroup (group invite ก็เป็นกล่องชวน — เน้นให้สะอาด)
+            //   ❗ ลบ buildWelcomeTemplate / sendTemplateWithQuickReplies
+            //   ❗ ลบ buildWelcomeMessage / sendQuickReplies
             //
             // ✅ FB 24hr messaging window เปิดอยู่แล้วจาก banner image (เป็น message เหมือนกัน)
-            // ✅ ลูกค้าพิมพ์ทักมา → processConversationalMessage → AI chat (Groq) ตอบเป็นกันเอง
+            // ✅ ลูกค้าพิมพ์ทักมา → processConversationalMessage → AI chat ตอบเป็นกันเอง
             //    + เนียนชวนดูดวง (ผ่าน chat_system_prompt) เมื่อบริบทเหมาะ
+
+            // 🩹 (2026-05-08 review L5 fix) — Group invite ยัง gate ด้วย admin toggle
+            //   ถ้า fortune_group_invite_enabled = true → ส่งคำเชิญตามเดิม (ไม่งั้น admin toggle ตาย)
+            //   ถ้าอยากปิด → admin toggle off ใน /admin/fortune/settings
+            $this->maybeInviteToGroup($senderId, 'get_started');
 
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [

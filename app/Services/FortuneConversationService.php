@@ -6922,6 +6922,21 @@ class FortuneConversationService
             return null;
         }
 
+        // ❗ ยกเว้น 1b: FREE_PREDICTED ที่ active ใน 15 นาที (review U1 fix)
+        //   ลูกค้าเพิ่งได้ทำนายฟรี → "ขอบคุณ"/"อืม" → ตอบเพื่อ upsell ตอนนี้ที่ใจอ่อน
+        try {
+            $platformCol = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
+            $hasFreePredicted = FortuneReading::where($platformCol, $userId)
+                ->where('conversation_status', FortuneReading::STATUS_FREE_PREDICTED)
+                ->where('updated_at', '>=', now()->subMinutes(15))
+                ->exists();
+            if ($hasFreePredicted) {
+                return null;
+            }
+        } catch (\Throwable $e) {
+            // non-critical — proceed
+        }
+
         // ❗ ยกเว้น 2: บิลค้าง → ตอบเสมอ
         if ($this->hasPaidActiveReading($userId)) {
             return null;
@@ -6954,20 +6969,27 @@ class FortuneConversationService
         }
         Cache::put($hashKey, $currentHash, 3);
 
-        // 🚫 Skip 2: sticker / emoji-only (ไม่มีตัวอักษร Thai/Lao/English อย่างน้อย 2 ตัว)
-        //   ใช้ regex หาว่ามีตัวอักษร "จริง" ไหม
-        $textChars = preg_replace('/[^a-zA-Zก-๙ະ-ໝ]/u', '', $trimmed);
+        // 🚫 Skip 2: sticker / emoji-only
+        //   🩹 (review C2 fix) — Lao consonants U+0E81-0EAE + vowels U+0EB0-0EDD ครบ
+        //      เดิม `ະ-ໝ` (U+0EB0-0EDD) เก็บแค่สระ Lao → ตัวอักษร Lao consonants ถูก strip
+        //      → "ສະບາຍດີ" → ลูกค้าลาวโดน skip ผิด
+        //   ใช้ Thai range U+0E01-0E5B + Lao range U+0E80-0EFF
+        $textChars = preg_replace('/[^a-zA-Z\x{0E01}-\x{0E5B}\x{0E80}-\x{0EFF}]/u', '', $trimmed);
         if (mb_strlen($textChars) < 2) {
             return 'sticker_or_emoji_only';
         }
 
         // 🚫 Skip 3: คำตอบรับเปล่า ๆ — ไม่มี context ก็ไม่ต้องตอบ
+        // 🩹 (review U2/U3) — เอา 'ใช่/ไม่ใช่/ได้/ไม่ได้/เห็น' ออก
+        //   "ใช่/ไม่ใช่" — AI อาจถาม "อยากให้ดูดวงไหม?" → ลูกค้าตอบ → ห้าม skip
+        //   "เห็น" — content word ("เห็นไหม", "เห็นด้วย") → ห้าม skip
         $emptyResponses = [
             'ครับ', 'ค่ะ', 'คะ', 'จ้า', 'อืม', 'อืมๆ', 'อืม ๆ',
             'ok', 'oke', 'okay', 'โอเค', 'โอ้เค',
-            'ใช่', 'ไม่ใช่', 'ได้', 'ไม่ได้',  // standalone — มี active reading จะไม่มาถึงนี่
             'haha', 'หะหะ', 'ฮ่า', 'ฮ่าๆ', 'ฮ่า ๆ',
-            'wow', 'ว้าว', 'อ๋อ', 'อ้าว', 'เห็น',
+            'wow', 'ว้าว', 'อ๋อ', 'อ้าว',
+            // Lao
+            'ໂອເຄ', 'ບໍ່ເປັນຫຍັງ', 'ຄັນ', 'ຄະ', 'ຈ້າ',
         ];
         if (in_array($lowerText, $emptyResponses, true)) {
             return 'empty_response';

@@ -234,7 +234,7 @@ class FortuneChannelManager
     protected function prependPendingCommissionNotification(array &$result, string $platform, string $userId): void
     {
         $action = $result['action'] ?? '';
-        if (in_array($action, ['skipped_takeover', 'dedup_skip'], true)) {
+        if (in_array($action, ['skipped_takeover', 'dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning'], true)) {
             return;
         }
 
@@ -382,8 +382,18 @@ class FortuneChannelManager
         $action = $result['action'] ?? 'unknown';
         $message = $result['message'] ?? '';
 
-        // ✅ dedup_skip: ข้อความซ้ำ → ข้ามเงียบๆ ไม่ต้องส่งอะไร
-        if ($action === 'dedup_skip') {
+        // ✅ Silent skip actions — ข้ามเงียบๆ ไม่ส่งข้อความตอบใดๆ
+        // 🩹 (2026-05-08) เพิ่ม smart_skip / silent_skip / silent_warning
+        //   เดิม fall through ไป default ทำให้ส่ง "ระบบกำลังดำเนินการ 🙏" — ตรงข้ามกับ intent
+        if (in_array($action, ['dedup_skip', 'smart_skip', 'silent_skip', 'silent_warning'], true)) {
+            // silent_warning อาจมี message ที่ต้องส่ง 1 ครั้ง — แยก case
+            if ($action === 'silent_warning' && ! empty($message)) {
+                $platformService = $this->getPlatform($platform);
+                if ($platformService instanceof FacebookWebhookService) {
+                    $platformService->sendMessage($userId, $message);
+                }
+            }
+
             return true;
         }
 

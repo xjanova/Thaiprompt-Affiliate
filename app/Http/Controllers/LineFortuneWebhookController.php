@@ -149,6 +149,7 @@ class LineFortuneWebhookController extends Controller
                 'message_type' => $messageType,
                 'text_preview' => mb_substr($messageText, 0, 50),
             ]);
+
             return;
         }
 
@@ -424,19 +425,37 @@ class LineFortuneWebhookController extends Controller
         // เพื่อนจะส่ง "ref_{token}" มาทาง message event → จับคู่ 100%
         // ========================================
 
-        // ส่ง Welcome Message พร้อมชื่อ
-        // 🩹 (2026-05-04) pass userId เพื่อตรวจ hasUsedFreeCard → ซ่อนการ์ดฟรีถ้าใช้แล้ว
-        $welcomeFlex = $this->lineService->buildWelcomeFlexMessage($userName, $userId);
+        // 🎯 (2026-05-08 review L6) UX cleanup — banner image อย่างเดียว ไม่ส่ง welcome flex
+        //   user feedback: "กล่องชักชวนมันเยอะไปตาลาย เอาแค่รูป อย่างเดียวก่อน"
+        //   เดิม: welcome flex รวยภาพ + คำบรรยาย + 3 ปุ่ม
+        //   ใหม่: ส่ง banner image ผ่าน FortuneBannerService (ถ้ามี toggle) ไม่ก็เงียบ
+        //   ลูกค้าพิมพ์ทักมา → AI chat ตอบเป็นกันเอง
+        try {
+            $bannerService = app(\App\Services\FortuneBannerService::class);
+            $sent = $bannerService->sendBannerOnce(
+                $userId,
+                fn ($url) => $this->lineService->sendImageMessage($userId, $url, $url),
+                'welcome',
+                24
+            );
 
-        $this->lineService->replyMessage($replyToken, [
-            [
-                'type' => 'flex',
-                'altText' => $userName
-                    ? "ยินดีต้อนรับค่ะ คุณ{$userName} 🔮"
-                    : 'ทางเพจยินดีต้อนรับค่ะ 🔮',
-                'contents' => $welcomeFlex,
-            ],
-        ]);
+            // ถ้า banner ปิดอยู่หรือไม่มี — ส่ง greeting สั้น ๆ แทน (ไม่มี flex card)
+            if (! $sent) {
+                $greet = $userName ? "🌙 ยินดีต้อนรับ คุณ{$userName} ค่ะ" : '🌙 ยินดีต้อนรับค่ะ';
+                $this->lineService->replyMessage($replyToken, [
+                    ['type' => 'text', 'text' => $greet],
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('LINE Welcome: banner ส่งไม่ได้ — ใช้ text fallback', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            $greet = $userName ? "🌙 ยินดีต้อนรับ คุณ{$userName} ค่ะ" : '🌙 ยินดีต้อนรับค่ะ';
+            $this->lineService->replyMessage($replyToken, [
+                ['type' => 'text', 'text' => $greet],
+            ]);
+        }
     }
 
     /**
@@ -530,7 +549,7 @@ class LineFortuneWebhookController extends Controller
 
             if ($replyToken) {
                 $this->lineService->replyMessage($replyToken, [
-                    ['type' => 'text', 'text' => "🎉 ยินดีต้อนรับค่ะ".($userName ? " คุณ{$userName}" : '')."\n\nคุณ{$referrerName} เชิญคุณมาดูดวงค่ะ\n\n🔮 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยนะคะ ✨"],
+                    ['type' => 'text', 'text' => '🎉 ยินดีต้อนรับค่ะ'.($userName ? " คุณ{$userName}" : '')."\n\nคุณ{$referrerName} เชิญคุณมาดูดวงค่ะ\n\n🔮 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยนะคะ ✨"],
                 ]);
             }
 
@@ -543,7 +562,7 @@ class LineFortuneWebhookController extends Controller
 
             if ($replyToken) {
                 $this->lineService->replyMessage($replyToken, [
-                    ['type' => 'text', 'text' => "🔮 พิมพ์ \"ดูดวง\" เพื่อเริ่มดูดวงได้เลยค่ะ ✨"],
+                    ['type' => 'text', 'text' => '🔮 พิมพ์ "ดูดวง" เพื่อเริ่มดูดวงได้เลยค่ะ ✨'],
                 ]);
             }
         }
@@ -925,7 +944,8 @@ class LineFortuneWebhookController extends Controller
             $userProfile = null;
             try {
                 $userProfile = $this->lineService->getUserProfile($userId);
-            } catch (\Exception $profileErr) { /* ignore */ }
+            } catch (\Exception $profileErr) { /* ignore */
+            }
             $userProfile = $userProfile ?: ['id' => $userId, 'name' => null];
 
             $this->channelManager->processMessage(
@@ -1275,11 +1295,11 @@ class LineFortuneWebhookController extends Controller
             if ($activeReading && in_array($activeReading->conversation_status, FortuneReading::PENDING_PAYMENT_STATUSES, true)) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "🌙 ขอบคุณค่ะที่ส่งสลิปมาให้แม่หมอ\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
-                    . "🔔 *กรุณาพิมพ์ \"โอนแล้ว\" หรือ \"แจ้งชำระเงิน\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"
-                    . "ระบบจะตรวจสอบและตัดบิลภายใน 1-3 นาทีค่ะ ✨\n\n"
-                    . "🪐 ระหว่างรอ ใจเย็นๆ นะคะ — ดาวเจ้าชนะของเจ้าชะตากำลังเรียงตัว";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."💡 ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ — ไม่ต้องส่งสลิปให้แอดมินดูค่ะ\n\n"
+                    ."🔔 *กรุณาพิมพ์ \"โอนแล้ว\" หรือ \"แจ้งชำระเงิน\"* เพื่อให้ระบบเช็คเร็วขึ้น\n"
+                    ."ระบบจะตรวจสอบและตัดบิลภายใน 1-3 นาทีค่ะ ✨\n\n"
+                    .'🪐 ระหว่างรอ ใจเย็นๆ นะคะ — ดาวเจ้าชนะของเจ้าชะตากำลังเรียงตัว';
 
                 $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
@@ -1300,10 +1320,10 @@ class LineFortuneWebhookController extends Controller
                     || ($activeReading->is_paid && empty($activeReading->deep_response)))) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "✅ ระบบรับเงินไปเรียบร้อยแล้วค่ะ\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
-                    . "ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
-                    . "💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."🌙 *แม่หมอกำลังคำนวณดวงดาวให้เจ้าชะตาอยู่*\n"
+                    ."ใช้เวลาประมาณ 1-3 นาที — รอสักครู่ คำทำนายจะส่งไปให้ทันทีเมื่อเสร็จ ✨\n\n"
+                    .'💡 ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)';
 
                 $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
@@ -1323,11 +1343,11 @@ class LineFortuneWebhookController extends Controller
                 && $activeReading->is_paid) {
                 $billRef = $activeReading->bill_reference ?? '-';
                 $message = "💖 ขอบคุณค่ะ — ได้รับรูปแล้ว\n\n"
-                    . "📋 บิลของเจ้าชะตา: {$billRef}\n\n"
-                    . "🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
-                    . "💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
-                    . "    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
-                    . "💜 หากต้องการดูใหม่ พิมพ์ *\"ดูดวง\"* ได้ตลอดเลยค่ะ ✨";
+                    ."📋 บิลของเจ้าชะตา: {$billRef}\n\n"
+                    ."🌟 *การดูดวง Celtic Cross ของเจ้าชะตาเสร็จไปแล้ว*\n\n"
+                    ."💡 หากต้องการอ่านคำทำนาย/คำถามที่ถามไปอีกครั้ง:\n"
+                    ."    → พิมพ์ *\"ดูคำทำนายล่าสุด\"*\n\n"
+                    .'💜 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ ✨';
 
                 $this->lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
 
@@ -1341,8 +1361,8 @@ class LineFortuneWebhookController extends Controller
 
             // ⚪ ไม่มี active → guidance generic
             $genericMessage = "📸 ได้รับรูปภาพแล้วค่ะ\n\n"
-                . "💡 ถ้าเป็นสลิปการโอน — ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ ไม่ต้องส่งสลิปให้แอดมินค่ะ\n\n"
-                . "🔮 ถ้าต้องการเริ่มดูดวง พิมพ์ 'ดูดวง' หรือคำถามที่อยากรู้มาได้เลย ✨";
+                ."💡 ถ้าเป็นสลิปการโอน — ระบบใช้ SMS Banking ตรวจสอบอัตโนมัติ ไม่ต้องส่งสลิปให้แอดมินค่ะ\n\n"
+                ."🔮 ถ้าต้องการเริ่มดูดวง พิมพ์ 'ดูดวง' หรือคำถามที่อยากรู้มาได้เลย ✨";
 
             $this->lineService->sendMessageWithReplyFallback($userId, $genericMessage, $replyToken);
         } catch (\Throwable $e) {
@@ -1371,8 +1391,6 @@ class LineFortuneWebhookController extends Controller
      *
      * เมื่อ strike >= 5 ภายใน 1 ชม. → silence (return true เสมอจนกว่าจะ expire)
      *
-     * @param  string  $userId
-     * @param  string  $text
      * @param  string|null  $messageType  text|image|sticker|video|audio|file|location|...
      */
     protected function isUserSpamming(string $userId, string $text, ?string $messageType): bool
@@ -1432,6 +1450,7 @@ class LineFortuneWebhookController extends Controller
                 'message_type' => $messageType,
                 'last_text' => mb_substr($text, 0, 80),
             ]);
+
             return true;
         }
 

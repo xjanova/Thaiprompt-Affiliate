@@ -378,6 +378,8 @@ class FortuneAIService
 
         // เลือก system message: ใช้ custom ถ้ามี, ไม่งั้นใช้ default + inject ข้อมูลจริง
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
+        // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
+        $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
 
         // สร้าง prompt สั้นๆ สำหรับ chat
         $userName = $userProfile['name'] ?? '';
@@ -782,6 +784,8 @@ PROMPT;
 
         // เลือก system message
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
+        // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
+        $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
 
         // สร้าง prompt พร้อมชื่อผู้ใช้
         $userName = $userProfile['name'] ?? '';
@@ -1298,6 +1302,8 @@ PROMPT;
         // Step 2: วน loop keys จาก Smart Pool (เรียงตาม load score + user jitter)
         $customPrompt = $this->settings->getChatSystemPrompt();
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
+        // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
+        $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
 
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;
@@ -1528,6 +1534,29 @@ PROMPT;
      * ทำให้ AI รู้จักราคา, จำนวนฟรี, ค่าคอมมิชชั่น ตามที่ตั้งค่าจริง
      * ไม่ hardcode ตัวเลข — แปรผันตาม admin settings
      */
+    /**
+     * 🎯 (2026-05-08 review L3 fix) Append UX friendly directive to system message
+     *
+     * เรียกหลัง ternary "customPrompt || buildChatSystemMessage" เพื่อ apply กับทั้ง 2 path
+     * - admin ตั้ง custom prompt → ก็ได้ directive
+     * - default prompt → ก็ได้ directive
+     *
+     * 🩹 (review L4) — match existing template "2-4 ประโยค" (ไม่ใช่ 1-2)
+     *   เพื่อไม่ให้ AI งงเพราะ conflict ระหว่าง template + directive
+     */
+    public function appendUxFriendlyDirective(string $systemMessage): string
+    {
+        return $systemMessage."\n\n[🎯 UX directive (2026-05-08) — overrides hard-sell tone]\n"
+            ."ลูกค้าใหม่ที่ยังไม่ได้ระบุว่าจะดูดวง → **ห้ามขายตรง ๆ ในประโยคแรก**\n"
+            ."- ทักทายเป็นกันเอง สั้น 2-3 ประโยค (เหมือนเพื่อนคุย ไม่ใช่ sales)\n"
+            ."- ถามไถ่/รับฟัง — ลูกค้าอยากคุยเรื่องอะไร? เป็นยังไงบ้าง?\n"
+            ."- หลัง rapport build แล้ว 1-2 turns → เนียนชวนดูดวงผ่าน [OFFER_FORTUNE] tag\n"
+            ."- **ห้ามทักด้วย bullet list บริการ/ราคา** ในรอบแรก\n"
+            ."- ถ้าลูกค้าทักด้วย sticker/emoji เปล่า → ตอบสั้น 1 ประโยค ไม่บรรยายบริการ\n"
+            ."- ตอบกระชับ — ลูกค้ารำคาญถ้า bot พูดเยอะเกินไป\n"
+            .'- ⚠️ tag ที่ต้องใส่ตามเดิม: [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ห้ามลบ ห้ามแปล (downstream parser ใช้)';
+    }
+
     protected function buildChatSystemMessage(): string
     {
         // 🆕 (2026-05-03 audit fix #6) ระบบฟรีเปลี่ยนเป็น 1 ใบ/platform/ตลอดชีวิต
@@ -1580,19 +1609,8 @@ PROMPT;
             $message .= "\n\n[สำคัญ] บริการดูดวงฟรีถูกปิดชั่วคราว — ห้ามพูดถึงฟรีเลย ถ้าลูกค้าถามเรื่องราคา ให้ตอบว่าเป็น 'ค่าครู' ทุกครั้ง ไม่ใช่ 'ค่าบริการ'";
         }
 
-        // 🎯 (2026-05-08) Friendly-first directive — UX user feedback
-        //   "อยากให้ ai เริ่มชวนคุยเป็นกันเอง เลยก่อนเนียนชวนดูดวง"
-        //   "หาวิธีจัดการให้ดีไม่น่ารำคาญไม่รก จนคนหนีหมด"
-        //
-        //   Override hard-sell tone — เน้น rapport ก่อน
-        $message .= "\n\n[🎯 UX directive (2026-05-08) — สำคัญ overrides hard-sell rules]\n"
-            ."ลูกค้าใหม่ที่ยังไม่ได้ระบุว่าจะดูดวง → **ห้ามขายตรง ๆ ในประโยคแรก**\n"
-            ."- ทักทายเป็นกันเอง สั้น 1-2 ประโยค (เหมือนเพื่อนคุย ไม่ใช่ sales)\n"
-            ."- ถามไถ่/รับฟัง — ลูกค้าอยากคุยเรื่องอะไร? เป็นยังไงบ้าง?\n"
-            ."- หลัง rapport build แล้ว 1-2 turns → เนียนชวนดูดวง: \"ถ้าอยากให้แม่หมอช่วยดู ลองพิมพ์ ดูดวง ได้นะคะ\" หรือใช้ [OFFER_FORTUNE] tag\n"
-            ."- **ห้ามทักด้วย bullet list บริการ/ราคา** ในรอบแรก — ทำให้ลูกค้ารู้สึกถูกขาย\n"
-            ."- ถ้าลูกค้าทักด้วย sticker/emoji เปล่า → ตอบสั้น 1 ประโยค ไม่ขยายความ ไม่ต้องบรรยายบริการ\n"
-            .'- ตอบกระชับ — ลูกค้ารำคาญถ้า bot พูดเยอะเกินไป';
+        // 🎯 UX directive ย้ายไป appendUxFriendlyDirective() (review L3 fix)
+        //   เพื่อให้ใช้ได้แม้ admin ตั้ง custom chat_system_prompt
 
         // 🇱🇦 (2026-05-03) Locale directive — บังคับ AI ตอบภาษาลาวเมื่อลูกค้าใช้ลาว
         //   เคสเดิม: prompt ฮาร์ดโค้ด "ตอบภาษาไทย" → AI ก็ตอบไทย ไม่ mirror
