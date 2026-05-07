@@ -6943,6 +6943,7 @@ class FortuneConversationService
         }
 
         // ❗ ยกเว้น 3: fortune/buying intent → ตอบเร็ว ไม่ skip
+        // 🩹 (2026-05-08) Lao removed per user — Thai + English เท่านั้น
         $lowerText = mb_strtolower($trimmed);
         $intentKeywords = [
             // fortune intent
@@ -6951,8 +6952,6 @@ class FortuneConversationService
             'เท่าไหร่', 'ราคา', 'จ่าย', 'โอน', 'ค่าครู', 'เสียเงิน', 'qr', 'พร้อมเพย์', 'promptpay',
             // tier numbers
             '39', '99',
-            // Lao
-            'ເບິ່ງດວງ', 'ທຳນາຍ', 'ໝໍ', 'ໄພ່', 'ເທົ່າໃດ', 'ລາຄາ', 'ຈ່າຍ', 'ໂອນ',
         ];
         foreach ($intentKeywords as $kw) {
             if (mb_stripos($lowerText, $kw) !== false) {
@@ -6969,27 +6968,19 @@ class FortuneConversationService
         }
         Cache::put($hashKey, $currentHash, 3);
 
-        // 🚫 Skip 2: sticker / emoji-only
-        //   🩹 (review C2 fix) — Lao consonants U+0E81-0EAE + vowels U+0EB0-0EDD ครบ
-        //      เดิม `ະ-ໝ` (U+0EB0-0EDD) เก็บแค่สระ Lao → ตัวอักษร Lao consonants ถูก strip
-        //      → "ສະບາຍດີ" → ลูกค้าลาวโดน skip ผิด
-        //   ใช้ Thai range U+0E01-0E5B + Lao range U+0E80-0EFF
-        $textChars = preg_replace('/[^a-zA-Z\x{0E01}-\x{0E5B}\x{0E80}-\x{0EFF}]/u', '', $trimmed);
+        // 🚫 Skip 2: sticker / emoji-only — Thai + English อย่างน้อย 2 ตัว
+        //   🩹 (2026-05-08) Lao removed per user — Thai range U+0E01-0E5B เท่านั้น
+        $textChars = preg_replace('/[^a-zA-Z\x{0E01}-\x{0E5B}]/u', '', $trimmed);
         if (mb_strlen($textChars) < 2) {
             return 'sticker_or_emoji_only';
         }
 
         // 🚫 Skip 3: คำตอบรับเปล่า ๆ — ไม่มี context ก็ไม่ต้องตอบ
-        // 🩹 (review U2/U3) — เอา 'ใช่/ไม่ใช่/ได้/ไม่ได้/เห็น' ออก
-        //   "ใช่/ไม่ใช่" — AI อาจถาม "อยากให้ดูดวงไหม?" → ลูกค้าตอบ → ห้าม skip
-        //   "เห็น" — content word ("เห็นไหม", "เห็นด้วย") → ห้าม skip
         $emptyResponses = [
             'ครับ', 'ค่ะ', 'คะ', 'จ้า', 'อืม', 'อืมๆ', 'อืม ๆ',
             'ok', 'oke', 'okay', 'โอเค', 'โอ้เค',
             'haha', 'หะหะ', 'ฮ่า', 'ฮ่าๆ', 'ฮ่า ๆ',
             'wow', 'ว้าว', 'อ๋อ', 'อ้าว',
-            // Lao
-            'ໂອເຄ', 'ບໍ່ເປັນຫຍັງ', 'ຄັນ', 'ຄະ', 'ຈ້າ',
         ];
         if (in_array($lowerText, $emptyResponses, true)) {
             return 'empty_response';
