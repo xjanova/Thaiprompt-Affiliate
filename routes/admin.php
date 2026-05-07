@@ -4144,6 +4144,9 @@ Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
     // 🔴 (2026-05-01) Clear critical state — admin ตรวจสอบแล้วและยืนยันให้ key กลับมาใช้
     Route::post('/{id}/clear-critical', [AiApiKeyController::class, 'clearCritical'])->name('clear-critical');
 
+    // 🩺 (2026-05-07) Manual recheck — admin ลอง probe ทันที (ข้าม backoff)
+    Route::post('/{id}/recheck-now', [AiApiKeyController::class, 'recheckNow'])->name('recheck-now');
+
     // Logs for specific key
     Route::get('/{id}/logs', [AiApiKeyController::class, 'logs'])->name('key.logs');
 });

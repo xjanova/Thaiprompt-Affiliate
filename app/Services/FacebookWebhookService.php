@@ -293,17 +293,57 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * ส่งรูปภาพผ่าน Messenger API
      *
+     * 🆕 (2026-05-07) รองรับ Private Replies endpoint สำหรับ comment engagement
+     *   ถ้า $options['comment_id'] ระบุไว้ → ลอง /me/messages + recipient.comment_id ก่อน
+     *   bypass 24hr window + แก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน"
+     *
      * @param  string  $recipientId  Facebook User ID
      * @param  string  $imageUrl  URL ของรูปภาพ (ต้องเป็น HTTPS public URL)
-     * @param  string|null  $caption  ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
+     * @param  string|null  $previewUrl  ข้อความกำกับรูป (ส่งแยก message ถ้ามี)
+     * @param  array  $options  options เพิ่มเติม:
+     *   - comment_id: string|null  ใช้ Private Replies endpoint (bypass 24hr/551)
+     *   - skip_unreachable_cache: bool  ข้าม per-user 551 cache (สำหรับ test command)
      * @return bool สำเร็จหรือไม่
      */
-    public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool
+    public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null, array $options = []): bool
     {
+        $commentId = $options['comment_id'] ?? null;
+        $skipUnreachableCache = $options['skip_unreachable_cache'] ?? false;
+
+        // 🔒 (2026-05-07) Per-user 551-cache — skip user ที่รู้แล้วว่ารับ DM ไม่ได้วันนี้
+        //   ลด log spam + ลด API calls ที่ fail แน่ๆ
+        //   ยกเว้นกรณีมี comment_id → Private Replies bypass 24hr window ได้
+        $unreachableKey = "fb_user_unreachable:{$recipientId}:" . now()->format('Y-m-d');
+        if (! $skipUnreachableCache && empty($commentId) && \Illuminate\Support\Facades\Cache::has($unreachableKey)) {
+            Log::info('sendImage: skip — user marked unreachable today (no comment_id)', [
+                'recipient' => $recipientId,
+            ]);
+            return false;
+        }
+
+        // 🎯 (2026-05-07) ถ้ามี comment_id → ลอง Private Replies endpoint ก่อน
+        //   รองรับ 7 วันหลังคอมเม้นต์ + bypass error 551 สำหรับ user ที่ไม่เคยทักเพจ
+        if (! empty($commentId)) {
+            $sentViaPR = $this->sendPrivateReplyImage($commentId, $imageUrl);
+            if ($sentViaPR) {
+                if (! empty($previewUrl)) {
+                    $this->sendMessage($recipientId, $previewUrl);
+                }
+                return true;
+            }
+            // ถ้า Private Replies fail → fallback ไป /me/messages ปกติ (อาจ work ถ้า user อยู่ใน 24hr window)
+            Log::info('sendImage: Private Replies fail → fallback /me/messages', [
+                'recipient' => $recipientId,
+                'comment_id' => $commentId,
+            ]);
+        }
+
         // 🩹 (2026-05-07) Auto-fallback ถ้า RESPONSE fail (error 551 / 24hr window expired)
         //   เคสจริง: banner welcome push หลังลูกค้าเก่าทักอีกครั้ง — บางครั้ง 24hr window ปิดแล้ว
         //   FB error_subcode 1545041 → RESPONSE rejected → ต้อง MESSAGE_TAG=POST_PURCHASE_UPDATE
         $messagingTypes = ['RESPONSE', 'MESSAGE_TAG'];
+        $lastSubcode = 0;
+        $lastErrMsg = '';
 
         foreach ($messagingTypes as $msgType) {
             $payload = [
@@ -345,6 +385,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $errBody = $response->json();
                 $errSubcode = $errBody['error']['error_subcode'] ?? 0;
                 $errMsg = $errBody['error']['message'] ?? $response->body();
+                $lastSubcode = $errSubcode;
+                $lastErrMsg = $errMsg;
 
                 Log::warning('ส่งรูปภาพ ' . $msgType . ' fail', [
                     'recipient' => $recipientId,
@@ -377,19 +419,89 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         'image_url' => $imageUrl,
                         'last_error' => $errMsg,
                     ]);
-                    return false;
+                    break; // ไป cache mark unreachable ข้างล่าง
                 }
             } catch (Exception $e) {
                 Log::error('ส่งรูปภาพ ' . $msgType . ' exception: ' . $e->getMessage(), [
                     'recipient' => $recipientId,
                 ]);
                 if ($msgType === 'MESSAGE_TAG') {
-                    return false;
+                    break;
                 }
             }
         }
 
+        // 🔒 (2026-05-07) Mark user unreachable วันนี้ ถ้าเป็น 24hr-window error
+        //   1545041 / 2018278 / 2018065 = user ไม่อยู่ใน 24hr window — ส่งภาพไม่ได้แน่ๆ จนกว่าจะทักก่อน
+        //   cache กัน log spam + กัน API calls สิ้นเปลือง
+        if (in_array($lastSubcode, [1545041, 2018278, 2018065])) {
+            $secondsUntilMidnight = max(60, now()->endOfDay()->diffInSeconds(now(), absolute: true));
+            \Illuminate\Support\Facades\Cache::put($unreachableKey, true, $secondsUntilMidnight);
+            Log::info('sendImage: mark user unreachable today', [
+                'recipient' => $recipientId,
+                'subcode' => $lastSubcode,
+                'ttl_seconds' => $secondsUntilMidnight,
+            ]);
+        }
+
         return false;
+    }
+
+    /**
+     * ส่งภาพผ่าน Private Replies endpoint
+     *
+     * 🆕 (2026-05-07) แก้ปัญหา banner ส่งไม่ได้ผ่าน comment engagement
+     *   เดิม: sendImage ใช้ /me/messages + recipient.id → fail 551 ถ้า user ไม่เคยทักเพจ
+     *   ใหม่: ใช้ /me/messages + recipient.comment_id → bypass 24hr + รองรับ 7 วันหลังคอมเม้นต์
+     *
+     * @param  string  $commentId  Comment ID ที่จะตอบ
+     * @param  string  $imageUrl  URL ของรูปภาพ
+     */
+    public function sendPrivateReplyImage(string $commentId, string $imageUrl): bool
+    {
+        try {
+            $payload = [
+                'recipient' => ['comment_id' => $commentId],
+                'message' => [
+                    'attachment' => [
+                        'type' => 'image',
+                        'payload' => [
+                            'url' => $imageUrl,
+                            'is_reusable' => true,
+                        ],
+                    ],
+                ],
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            $response = Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), $payload);
+
+            if ($response->successful()) {
+                Log::info('✅ ส่งภาพผ่าน Private Reply สำเร็จ', [
+                    'comment_id' => $commentId,
+                    'image_url' => $imageUrl,
+                ]);
+                return true;
+            }
+
+            $err = $response->json();
+            Log::warning('Private Reply image ล้ม', [
+                'comment_id' => $commentId,
+                'http_status' => $response->status(),
+                'error_code' => $err['error']['code'] ?? null,
+                'error_subcode' => $err['error']['error_subcode'] ?? null,
+                'error_message' => $err['error']['message'] ?? $response->body(),
+            ]);
+
+            return false;
+        } catch (Exception $e) {
+            Log::warning('Private Reply image exception: ' . $e->getMessage(), [
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
     }
 
     /**

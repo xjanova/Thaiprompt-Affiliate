@@ -805,10 +805,11 @@ class FortuneChannelManager
                         }
                     }
 
-                    // ใช้ quick_replies จาก trait ถ้ามี — ไม่งั้น default "เริ่มถามคำถาม"
+                    // ใช้ quick_replies จาก trait ถ้ามี — ไม่งั้น default "ทำนายดวงเดี๋ยวนี้"
+                    // 🔮 (2026-05-07) เปลี่ยนปุ่ม + payload เพื่อทำนายพื้นฐานทันทีหลังเปิดไพ่ครบ 10 ใบ
                     $qrs = ! empty($result['quick_replies'])
                         ? $result['quick_replies']
-                        : [['content_type' => 'text', 'title' => '💬 เริ่มถามคำถาม', 'payload' => 'CELTIC_START_Q']];
+                        : [['content_type' => 'text', 'title' => '🔮 ทำนายดวงเดี๋ยวนี้', 'payload' => 'CELTIC_PREDICT_NOW']];
 
                     return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
                 })(),
@@ -1816,8 +1817,9 @@ class FortuneChannelManager
                         }
                     }
 
+                    // 🔮 (2026-05-07) ปุ่มทำนายพื้นฐานทันที — ไม่ต้องรอลูกค้าพิมพ์คำถาม
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                        ['label' => '💬 เริ่มถามคำถาม', 'text' => 'เริ่มถามคำถาม'],
+                        ['label' => '🔮 ทำนายดวงเดี๋ยวนี้', 'text' => 'ทำนายดวงเดี๋ยวนี้'],
                     ]);
                 })(),
 

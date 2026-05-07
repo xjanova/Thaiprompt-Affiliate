@@ -1027,14 +1027,15 @@ trait CelticCrossConversationTrait
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
             // celtic_summary_image_url removed — เลื่อนไป endCelticSession
-            // 🆕 (2026-05-06) เพิ่ม Quick Reply ปุ่ม "เริ่มถามคำถาม"
-            //    ลูกค้าหลังเปิดไพ่ครบ มักงงไม่รู้ต้องทำอะไรต่อ
-            //    ปุ่มนี้เป็น UX cue — กดแล้ว bot ส่ง prompt ตัวอย่างคำถามซ้ำ
+            // 🔮 (2026-05-07) ปุ่ม "ทำนายดวงเดี๋ยวนี้" — กดแล้วทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
+            //    เดิม: "เริ่มถามคำถาม" — แค่ส่ง prompt hint ลูกค้ายังต้องพิมพ์คำถามเอง (สับสน)
+            //    ใหม่: กดแล้ว AI ทำนายพื้นฐานทุกด้าน (รัก/งาน/เงิน/สุขภาพ) จากไพ่ทันที
+            //    ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (handleCelticAwaitingQuestion handle ตามเดิม)
             'quick_replies' => [
                 [
                     'content_type' => 'text',
-                    'title' => '💬 เริ่มถามคำถาม',
-                    'payload' => 'CELTIC_START_Q',
+                    'title' => '🔮 ทำนายดวงเดี๋ยวนี้',
+                    'payload' => 'CELTIC_PREDICT_NOW',
                 ],
             ],
         ];
@@ -1053,24 +1054,20 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
-        // 💬 (2026-05-06) ลูกค้ากดปุ่ม "เริ่มถามคำถาม" — แค่ส่ง prompt hint ใหม่ ไม่ใช่คำถามจริง
-        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
-            $remainingMin = $reading->getCelticQaRemainingMinutes();
-            $timeHint = $remainingMin !== null && $remainingMin > 0
-                ? "⏳ ถามได้อีก {$remainingMin} นาที"
-                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+        // 🔮 (2026-05-07) ลูกค้ากดปุ่ม/พิมพ์ "ทำนายดวงเดี๋ยวนี้" — ทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
+        //   เดิม: "เริ่มถามคำถาม" — ส่ง prompt hint ให้ลูกค้าพิมพ์คำถามเอง (UX สับสน)
+        //   ใหม่: กดแล้ว AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
+        //   ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (path เดิมยังทำงาน)
+        if ($this->matchesExactKeyword($messageText, [
+            'ทำนายดวงเดี๋ยวนี้', 'ทำนายเดี๋ยวนี้', 'ทำนายดวง', 'ทำนายพื้นฐาน', 'ทำนายเลย',
+            'ทำนายให้หมด', 'ทำนายทุกเรื่อง',
+        ])) {
+            return $this->handleCelticPredictAll($reading);
+        }
 
-            return [
-                'action' => 'celtic_start_question_hint',
-                'message' => "💬 *เริ่มถามคำถามได้เลย*\n\n"
-                    . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ เช่น:\n\n"
-                    . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                    . "   • *\"งานในเดือนหน้า\"*\n"
-                    . "   • *\"ควรย้ายงานไหม\"*\n\n"
-                    . $timeHint . "\n"
-                    . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ",
-                'reading' => $reading,
-            ];
+        // 💬 backward-compat — รองรับลูกค้าเก่าที่จำปุ่ม "เริ่มถามคำถาม" ได้ → redirect ไปทำนายเดี๋ยวนี้
+        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
+            return $this->handleCelticPredictAll($reading);
         }
 
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม
@@ -1176,6 +1173,85 @@ trait CelticCrossConversationTrait
             . $timeHint . "\n"
             . $qHint . "\n"
             . "💬 พิมพ์คำถามถัดไปได้เลย — หรือพิมพ์ *\"พอแค่นี้\"* เพื่อจบสนทนา ✨";
+
+        return [
+            'action' => 'celtic_question_answered',
+            'message' => $result['response'] . $followupOffer,
+            'reading' => $reading,
+            'celtic_sequence' => $sequence,
+        ];
+    }
+
+    /**
+     * 🔮 (2026-05-07) ทำนายดวงพื้นฐานทุกเรื่องจากไพ่ทั้ง 10 ใบทันที — ไม่ต้องรอคำถาม
+     *
+     * เรียกจาก:
+     *   - ปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" (postback CELTIC_PREDICT_NOW)
+     *   - keyword "ทำนายดวงเดี๋ยวนี้" / "ทำนายเลย"
+     *
+     * Flow:
+     *   1. เช็คเงื่อนไขแบบเดียวกับ handleCelticAwaitingQuestion (time/max)
+     *   2. ใช้ sentinel "__PREDICT_ALL__" เป็น question → CelticCrossService รู้ว่าใช้ buildPredictAllPrompt
+     *   3. AI ทำนายพื้นฐานทุกเรื่อง (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่
+     *   4. ตอนเก็บลง DB → sanitize sentinel → "ทำนายพื้นฐานจากไพ่ทั้ง 10 ใบ"
+     */
+    protected function handleCelticPredictAll(FortuneReading $reading): array
+    {
+        // เช็ค time window
+        if (! $reading->canAskMoreCeltic()) {
+            return $this->endCelticSession($reading, 'time_expired');
+        }
+
+        // เช็ค max questions
+        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        if ($maxQuestions > 0 && $reading->celtic_questions_used >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached');
+        }
+
+        // ส่งให้ AI Pool — ใช้ sentinel ให้ service รู้ว่าทำนายพื้นฐาน
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
+
+        $service = app(CelticCrossService::class);
+        $result = $service->askQuestion($reading, '__PREDICT_ALL__');
+
+        if (! $result['success']) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            return [
+                'action' => 'celtic_ai_failed',
+                'message' => '⚠️ ' . ($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
+                'reading' => $reading,
+            ];
+        }
+
+        $reading->refresh();
+        $sequence = $result['sequence'];
+
+        // ถ้าครบ max → จบ + Grand Finale
+        if ($maxQuestions > 0 && $sequence >= $maxQuestions) {
+            return $this->endCelticSession($reading, 'max_questions_reached', $result['response']);
+        }
+
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+        $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $timeHint = $remainingMin !== null
+            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+            : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+        if ($maxQuestions > 0) {
+            $remainingQs = max(0, $maxQuestions - $sequence);
+            $qHint = "❓ ถามเฉพาะเรื่องได้อีก *{$remainingQs}* จาก {$maxQuestions} คำถาม";
+        } else {
+            $qHint = "❓ ถามเฉพาะเรื่องได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)";
+        }
+
+        $followupOffer = "\n\n──────────────────────\n"
+            . $timeHint . "\n"
+            . $qHint . "\n"
+            . "💬 ถ้าอยากให้แม่หมอเจาะลึกเรื่องไหน — พิมพ์คำถามมาเลย\n"
+            . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ ✨";
 
         return [
             'action' => 'celtic_question_answered',

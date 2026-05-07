@@ -949,9 +949,10 @@ class FacebookWebhookController extends Controller
         $quickReplies = [];
 
         // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
+        // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
         if ($this->bannerService) {
             $this->bannerService->sendBannerThenWait(
-                fn ($url) => $this->facebookService->sendImage($fromId, $url),
+                fn ($url) => $this->facebookService->sendImage($fromId, $url, null, ['comment_id' => $commentId]),
                 'comment'
             );
         }
@@ -1803,9 +1804,12 @@ class FacebookWebhookController extends Controller
             'LANG_TH' => $this->handleLanguagePick($senderId, 'th'),
             'LANG_LO' => $this->handleLanguagePick($senderId, 'lo'),
 
-            // 💬 (2026-05-06) Celtic — ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
-            //   ส่ง prompt ตัวอย่างคำถามให้ user (ไม่เปลี่ยน state — แค่ UX hint)
-            'CELTIC_START_Q' => $this->handleCelticStartQuestion($senderId),
+            // 🔮 (2026-05-07) Celtic — ปุ่ม "ทำนายดวงเดี๋ยวนี้" หลังเปิดไพ่ครบ 10 ใบ
+            //   ส่งให้ AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
+            'CELTIC_PREDICT_NOW' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
+
+            // 💬 backward-compat — ลูกค้าเก่าที่ Quick Reply เก่ายังอยู่ในแชท
+            'CELTIC_START_Q' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
 
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),
@@ -1830,51 +1834,6 @@ class FacebookWebhookController extends Controller
             );
         } catch (\Throwable $e) {
             Log::warning('handleLanguagePicker error', [
-                'sender_id' => $senderId,
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
-
-    /**
-     * 💬 (2026-05-06) ปุ่ม "เริ่มถามคำถาม" หลังเปิดไพ่ครบ 10 ใบ
-     *
-     * แค่ส่ง prompt ตัวอย่างคำถาม — ไม่เปลี่ยน state
-     * (state ตอนนี้เป็น CELTIC_AWAITING_QUESTION อยู่แล้ว)
-     */
-    protected function handleCelticStartQuestion(string $senderId): void
-    {
-        try {
-            $reading = FortuneReading::where('facebook_user_id', $senderId)
-                ->whereIn('conversation_status', FortuneReading::CELTIC_ACTIVE_STATUSES)
-                ->latest()
-                ->first();
-
-            // ถ้าไม่มี Celtic active → fallback เข้า conversational flow ปกติ
-            if (! $reading) {
-                $this->processConversationalMessage($senderId, 'ดูดวง');
-                return;
-            }
-
-            $remainingMin = method_exists($reading, 'getCelticQaRemainingMinutes')
-                ? $reading->getCelticQaRemainingMinutes()
-                : null;
-            $timeHint = $remainingMin !== null && $remainingMin > 0
-                ? "⏳ ถามได้อีก {$remainingMin} นาที"
-                : '⏳ ถามได้ภายใน 30 นาทีนับจากคำทำนายแรก';
-
-            $message = "💬 *เริ่มถามคำถามได้เลย*\n\n"
-                . "พิมพ์คำถามที่อยากรู้มาเลยค่ะ — เช่น:\n\n"
-                . "   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                . "   • *\"งานในเดือนหน้า\"*\n"
-                . "   • *\"ควรย้ายงานไหม\"*\n"
-                . "   • *\"การเงินครึ่งปีหลัง\"*\n\n"
-                . $timeHint . "\n"
-                . "🔚 หรือพิมพ์ *\"พอแค่นี้\"* เมื่อพอใจ";
-
-            $this->facebookService->sendMessage($senderId, $message, ['no_default_qr' => true]);
-        } catch (\Throwable $e) {
-            Log::warning('handleCelticStartQuestion error', [
                 'sender_id' => $senderId,
                 'error' => $e->getMessage(),
             ]);

@@ -265,6 +265,55 @@ class AiApiKeyController extends Controller
     }
 
     /**
+     * 🩺 (2026-05-07) Manual recheck — admin ลอง probe ทันที (ข้าม backoff)
+     *
+     * ใช้เมื่อ admin ต้องการ force-probe critical key (เช่น เห็นว่า provider กลับมา)
+     * Logic:
+     *   - ถ้า key ไม่ใช่ critical → return 400 (ไม่จำเป็น)
+     *   - probe ผ่าน AiApiKeyHealthProbeService::recheckCritical
+     *     (จะ unban อัตโนมัติถ้า probe ผ่าน + log auto_recovered_at)
+     *   - คืนผลลัพธ์ + state ใหม่
+     */
+    public function recheckNow(int $id, \App\Services\AiApiKeyHealthProbeService $probeService): JsonResponse
+    {
+        $key = AiApiKey::findOrFail($id);
+
+        if (! $key->is_critical) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Key นี้ไม่ได้อยู่ใน critical state — ไม่จำเป็นต้อง recheck',
+            ], 400);
+        }
+
+        try {
+            $recovered = $probeService->recheckCritical($key);
+            $fresh = $key->fresh();
+
+            return response()->json([
+                'success' => true,
+                'recovered' => $recovered,
+                'message' => $recovered
+                    ? '🟢 Key recover สำเร็จ! กลับมาใช้งานได้แล้ว'
+                    : '⏳ Key ยังใช้ไม่ได้ — schedule recheck ครั้งถัดไป ' . ($fresh->next_recheck_at?->diffForHumans() ?? 'ไม่ทราบ'),
+                'data' => [
+                    'id' => $fresh->id,
+                    'is_critical' => $fresh->is_critical,
+                    'is_active' => $fresh->is_active,
+                    'recheck_failure_count' => $fresh->recheck_failure_count,
+                    'next_recheck_at' => $fresh->next_recheck_at?->toDateTimeString(),
+                    'last_recheck_at' => $fresh->last_recheck_at?->toDateTimeString(),
+                    'auto_recovered_at' => $fresh->auto_recovered_at?->toDateTimeString(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Probe exception: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * อัพเดท settings ของ provider
      */
     public function updateSettings(Request $request, string $provider): JsonResponse

@@ -153,6 +153,17 @@ class FortuneBannerDiagnose extends Command
                 $this->line('  '.str_pad($ch, 9).': '.$status);
             }
             $this->newLine();
+
+            // 🆕 (2026-05-07) Per-user 551 unreachable cache — ลด log spam + skip API calls ที่ fail แน่
+            $unreachableKey = "fb_user_unreachable:{$userId}:{$today}";
+            if (Cache::has($unreachableKey)) {
+                $this->warn("🚫 user marked unreachable today (24hr window expired) — image จะถูก skip");
+                $this->line("   ล้าง: php artisan fortune:banner-diagnose --clear-cooldown={$userId}");
+            } else {
+                $this->line("🟢 user reachable status: OK (ยังไม่เคย fail วันนี้)");
+            }
+            $this->newLine();
+
             $this->line('💡 ล้าง cooldown: php artisan fortune:banner-diagnose --clear-cooldown='.$userId);
             $this->newLine();
         }
@@ -192,6 +203,7 @@ class FortuneBannerDiagnose extends Command
                 $prefix = config('cache.prefix') . ':';
                 $patterns = [
                     $prefix . 'fortune_banner_sent:*',
+                    $prefix . 'fb_user_unreachable:*',  // 🆕 (2026-05-07) per-user 551 cache
                 ];
                 $deleted = 0;
                 foreach ($patterns as $p) {
@@ -260,7 +272,10 @@ class FortuneBannerDiagnose extends Command
         $this->line('📤 ส่งภาพไป Facebook Messenger...');
 
         try {
-            $sent = $fbService->sendImage($userId, $banner->image_url);
+            // 🆕 (2026-05-07) skip_unreachable_cache=true → admin debug ต้องส่งแม้ user เคย fail วันนี้
+            $sent = $fbService->sendImage($userId, $banner->image_url, null, [
+                'skip_unreachable_cache' => true,
+            ]);
             if ($sent) {
                 $banner->recordSend();
                 $this->info('  ✅ ส่งสำเร็จ! ลูกค้าควรเห็นภาพในแชท');
@@ -301,6 +316,20 @@ class FortuneBannerDiagnose extends Command
                 }
             }
         }
+
+        // 🆕 (2026-05-07) ล้าง per-user 551 unreachable cache ด้วย
+        $unreachableKeys = [
+            "fb_user_unreachable:{$userId}:{$today}",
+            "fb_user_unreachable:{$userId}:{$yesterday}",
+        ];
+        foreach ($unreachableKeys as $key) {
+            if (Cache::has($key)) {
+                Cache::forget($key);
+                $cleared++;
+                $this->line("  ✅ ล้าง {$key} (551-cache)");
+            }
+        }
+
         $this->newLine();
         $this->info("ล้าง cooldown {$cleared} รายการ สำหรับ user {$userId}");
 

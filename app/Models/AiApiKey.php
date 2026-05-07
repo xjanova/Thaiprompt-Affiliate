@@ -241,6 +241,11 @@ class AiApiKey extends Model
         'metadata',
         'notes',
         'tokens_reset_date',
+        // 🩺 (2026-05-07) Auto-recheck banned keys
+        'last_recheck_at',
+        'recheck_failure_count',
+        'next_recheck_at',
+        'auto_recovered_at',
     ];
 
     /**
@@ -270,6 +275,11 @@ class AiApiKey extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        // 🩺 (2026-05-07) Auto-recheck banned keys
+        'last_recheck_at' => 'datetime',
+        'recheck_failure_count' => 'integer',
+        'next_recheck_at' => 'datetime',
+        'auto_recovered_at' => 'datetime',
     ];
 
     /**

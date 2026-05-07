@@ -39,33 +39,64 @@ class AiApiKeyPoolService
     /**
      * ดึง API Key ที่พร้อมใช้งานสำหรับ provider
      *
+     * 🆕 (2026-05-07) รองรับ $purpose filter — เลือกเฉพาะ key ที่ตรง purpose
+     *   เดิม: $purpose ไม่มี → ทุก rotation mode return key ทั่วไป (ละเลย purpose enum)
+     *   ใหม่: $purpose='prediction'/'chat'/'free_card' → filter ผ่าน scopeForPurpose
+     *         hierarchy: free_card → free_card+prediction+any+null
+     *                    prediction → prediction+any+null
+     *                    chat → chat+any+null
+     *
      * @param  string  $provider  ชื่อ provider (grok, openai, etc.)
+     * @param  string|null  $purpose  'prediction' | 'chat' | 'free_card' | null (= any)
      */
-    public function getKey(string $provider): ?AiApiKey
+    public function getKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
         $settings = AiApiKeySetting::forProvider($provider);
         $mode = $settings->rotation_mode;
 
         $key = match ($mode) {
-            'round_robin' => $this->getRoundRobinKey($provider),
-            'least_used' => $this->getLeastUsedKey($provider),
-            'priority' => $this->getPriorityKey($provider),
-            'random' => $this->getRandomKey($provider),
-            'failover' => $this->getFailoverKey($provider),
-            'smart' => $this->getSmartKey($provider),
-            default => $this->getRoundRobinKey($provider),
+            'round_robin' => $this->getRoundRobinKey($provider, $purpose),
+            'least_used' => $this->getLeastUsedKey($provider, $purpose),
+            'priority' => $this->getPriorityKey($provider, $purpose),
+            'random' => $this->getRandomKey($provider, $purpose),
+            'failover' => $this->getFailoverKey($provider, $purpose),
+            'smart' => $this->getSmartKey($provider, $purpose),
+            default => $this->getRoundRobinKey($provider, $purpose),
         };
+
+        // 🆕 (2026-05-07) ถ้าระบุ $purpose แต่ไม่เจอ key → fallback หา key ใดๆ ที่ available
+        //   เหตุผล: ระบบต้องไม่หยุดถ้า admin ลืมตั้ง purpose key
+        //   แต่ log warning เพื่อให้ admin รู้ว่าควรเพิ่ม dedicated key
+        if (! $key && $purpose !== null) {
+            Log::warning('AI API Key Pool: ไม่มี key ตรง purpose → fallback ใช้ key ทั่วไป', [
+                'provider' => $provider,
+                'purpose' => $purpose,
+                'mode' => $mode,
+            ]);
+            $key = match ($mode) {
+                'round_robin' => $this->getRoundRobinKey($provider, null),
+                'least_used' => $this->getLeastUsedKey($provider, null),
+                'priority' => $this->getPriorityKey($provider, null),
+                'random' => $this->getRandomKey($provider, null),
+                'failover' => $this->getFailoverKey($provider, null),
+                'smart' => $this->getSmartKey($provider, null),
+                default => $this->getRoundRobinKey($provider, null),
+            };
+        }
 
         if ($key) {
             Log::debug('AI API Key Pool: เลือก key', [
                 'provider' => $provider,
                 'mode' => $mode,
+                'purpose' => $purpose,
                 'key_id' => $key->id,
                 'key_name' => $key->name,
+                'key_purpose' => $key->purpose,
             ]);
         } else {
             Log::warning('AI API Key Pool: ไม่พบ key ที่พร้อมใช้งาน', [
                 'provider' => $provider,
+                'purpose' => $purpose,
                 'mode' => $mode,
             ]);
         }
@@ -75,10 +106,12 @@ class AiApiKeyPoolService
 
     /**
      * ดึง API Key string สำหรับ provider
+     *
+     * @param  string|null  $purpose  filter ตาม purpose ของ key
      */
-    public function getApiKey(string $provider): ?string
+    public function getApiKey(string $provider, ?string $purpose = null): ?string
     {
-        $key = $this->getKey($provider);
+        $key = $this->getKey($provider, $purpose);
 
         return $key?->api_key;
     }
@@ -132,12 +165,24 @@ class AiApiKeyPoolService
     // ============================================================
 
     /**
+     * 🆕 (2026-05-07) Helper — สร้าง base query: forProvider + available + (optional) forPurpose
+     *   ใช้เป็น single source of truth สำหรับ rotation methods ทุกตัว
+     */
+    protected function baseQuery(string $provider, ?string $purpose = null)
+    {
+        $query = AiApiKey::forProvider($provider)->available();
+        if ($purpose !== null) {
+            $query->forPurpose($purpose);
+        }
+        return $query;
+    }
+
+    /**
      * Round Robin: วนตามลำดับ
      */
-    protected function getRoundRobinKey(string $provider): ?AiApiKey
+    protected function getRoundRobinKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $keys = AiApiKey::forProvider($provider)
-            ->available()
+        $keys = $this->baseQuery($provider, $purpose)
             ->orderBy('id')
             ->get();
 
@@ -145,8 +190,8 @@ class AiApiKeyPoolService
             return null;
         }
 
-        // ดึง index ปัจจุบันจาก cache
-        $cacheKey = self::CACHE_PREFIX."rr_index_{$provider}";
+        // ดึง index ปัจจุบันจาก cache (per-purpose เพื่อกัน purpose ต่างกันแย่ง index เดียวกัน)
+        $cacheKey = self::CACHE_PREFIX."rr_index_{$provider}_" . ($purpose ?? 'any');
         $currentIndex = Cache::get($cacheKey, 0);
 
         // วน index
@@ -164,10 +209,9 @@ class AiApiKeyPoolService
     /**
      * Least Used: ใช้ key ที่ใช้น้อยสุดก่อน
      */
-    protected function getLeastUsedKey(string $provider): ?AiApiKey
+    protected function getLeastUsedKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $key = AiApiKey::forProvider($provider)
-            ->available()
+        $key = $this->baseQuery($provider, $purpose)
             ->orderBy('tokens_used_today')
             ->first();
 
@@ -181,10 +225,9 @@ class AiApiKeyPoolService
     /**
      * Priority: ตาม priority สูง → ต่ำ
      */
-    protected function getPriorityKey(string $provider): ?AiApiKey
+    protected function getPriorityKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $key = AiApiKey::forProvider($provider)
-            ->available()
+        $key = $this->baseQuery($provider, $purpose)
             ->orderByDesc('priority')
             ->first();
 
@@ -198,10 +241,9 @@ class AiApiKeyPoolService
     /**
      * Random: สุ่มเลือก
      */
-    protected function getRandomKey(string $provider): ?AiApiKey
+    protected function getRandomKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $key = AiApiKey::forProvider($provider)
-            ->available()
+        $key = $this->baseQuery($provider, $purpose)
             ->inRandomOrder()
             ->first();
 
@@ -215,11 +257,10 @@ class AiApiKeyPoolService
     /**
      * Failover: ใช้ตัวหลัก (priority สูงสุด), สำรองเมื่อ error
      */
-    protected function getFailoverKey(string $provider): ?AiApiKey
+    protected function getFailoverKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
         // พยายามใช้ key ที่ priority สูงสุดก่อน
-        $key = AiApiKey::forProvider($provider)
-            ->available()
+        $key = $this->baseQuery($provider, $purpose)
             ->orderByDesc('priority')
             ->first();
 
@@ -233,18 +274,22 @@ class AiApiKeyPoolService
     /**
      * ⭐ Smart Load Balancing: เลือก key ที่ภาระน้อยสุด
      *
+     * 🆕 (2026-05-07) เพิ่ม purpose-aware scoring:
+     *   - exact purpose match → score boost (ลด score เพื่อชนะ tie-break)
+     *   - any/null purpose → no boost (ใช้ได้แต่ไม่พิเศษ)
+     *
      * คำนวณ load score ต่อ key:
      * - in_flight × 100  (key กำลังถูกใช้ = หลีกเลี่ยง)
      * - rpm × 10          (ใช้บ่อย/นาที = กระจายออก)
      * - errors × 50       (error เยอะ = หลีกเลี่ยง)
+     * - priority × -5     (priority สูง = ดีกว่า)
+     * - purpose_match → -1000 (ตรง purpose = preferred)
      *
      * เลือก key score ต่ำสุด → ถ้าเท่ากัน เลือกตัวที่ไม่ได้ใช้นานสุด
      */
-    protected function getSmartKey(string $provider): ?AiApiKey
+    protected function getSmartKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $keys = AiApiKey::forProvider($provider)
-            ->available()
-            ->get();
+        $keys = $this->baseQuery($provider, $purpose)->get();
 
         if ($keys->isEmpty()) {
             return null;
@@ -273,7 +318,7 @@ class AiApiKeyPoolService
         $bestLastUsed = now(); // ใหม่สุด = ไม่ดี
 
         foreach ($eligibleKeys as $key) {
-            $score = $this->getKeyLoadScore($provider, $key);
+            $score = $this->getKeyLoadScore($provider, $key, $purpose);
 
             // เลือก score ต่ำสุด, ถ้าเท่ากัน → เลือกตัวที่ไม่ได้ใช้นานสุด
             if ($score < $bestScore
@@ -290,6 +335,8 @@ class AiApiKeyPoolService
             Log::debug('AI Pool Smart: เลือก key', [
                 'key_id' => $bestKey->id,
                 'key_name' => $bestKey->name,
+                'key_purpose' => $bestKey->purpose,
+                'requested_purpose' => $purpose,
                 'score' => $bestScore,
                 'inflight' => $this->getKeyInflight($provider, $bestKey->id),
                 'rpm' => $this->getKeyRpm($provider, $bestKey->id),
@@ -301,14 +348,26 @@ class AiApiKeyPoolService
 
     /**
      * คำนวณ load score ของ key (ยิ่งต่ำยิ่งดี)
+     *
+     * 🆕 (2026-05-07) เพิ่ม purpose-match boost + priority weight
+     *   exact match purpose → -1000 (preferred ชัดเจน)
+     *   priority > 0 → -priority*5 (high priority ดีกว่า)
      */
-    protected function getKeyLoadScore(string $provider, AiApiKey $key): int
+    protected function getKeyLoadScore(string $provider, AiApiKey $key, ?string $requestedPurpose = null): int
     {
         $inflight = $this->getKeyInflight($provider, $key->id);
         $rpm = $this->getKeyRpm($provider, $key->id);
         $errors = $key->consecutive_errors ?? 0;
+        $priority = max(0, (int) ($key->priority ?? 0));
 
-        return ($inflight * 100) + ($rpm * 10) + ($errors * 50);
+        $score = ($inflight * 100) + ($rpm * 10) + ($errors * 50) - ($priority * 5);
+
+        // 🎯 Purpose match boost — exact match ชนะ
+        if ($requestedPurpose !== null && $key->purpose === $requestedPurpose) {
+            $score -= 1000;
+        }
+
+        return $score;
     }
 
     // ============================================================
@@ -322,12 +381,15 @@ class AiApiKeyPoolService
      * ❷ Increment in-flight counter (atomic)
      * ❸ คืน key — caller ต้องเรียก releaseKey() เมื่อเสร็จ!
      *
+     * 🆕 (2026-05-07) รองรับ $purpose param — ใช้ filter ก่อนเลือก key
+     *
      * @param  string  $provider  ชื่อ provider
+     * @param  string|null  $purpose  filter ตาม purpose ('prediction'/'chat'/'free_card')
      * @return AiApiKey|null
      */
-    public function acquireKey(string $provider): ?AiApiKey
+    public function acquireKey(string $provider, ?string $purpose = null): ?AiApiKey
     {
-        $key = $this->getKey($provider);
+        $key = $this->getKey($provider, $purpose);
 
         if ($key) {
             // ✅ Increment in-flight counter (TTL 30s ป้องกัน leaked)
@@ -501,6 +563,11 @@ class AiApiKeyPoolService
                 'last_error' => $key->last_error,
                 'last_error_at' => $key->last_error_at?->diffForHumans(),
                 'disabled_until' => $key->disabled_until?->diffForHumans(),
+                // 🩺 (2026-05-07) Auto-recheck status
+                'last_recheck_at' => $key->last_recheck_at?->diffForHumans(),
+                'recheck_failure_count' => $key->recheck_failure_count ?? 0,
+                'next_recheck_at' => $key->next_recheck_at?->diffForHumans(),
+                'auto_recovered_at' => $key->auto_recovered_at?->diffForHumans(),
                 // ⭐ Smart Load Balancing stats (real-time)
                 'inflight' => $this->getKeyInflight($provider, $key->id),
                 'rpm' => $this->getKeyRpm($provider, $key->id),

@@ -480,6 +480,20 @@ class Kernel extends ConsoleKernel
             ->onFailure(function () {
                 \Log::error('[Debt Collection] Batch failed');
             });
+
+        // ========================================
+        // 🩺 (2026-05-07) AI API Key Auto-Recheck Banned Keys
+        // ========================================
+        // Schedule: hourly — probe critical keys ที่ถึงเวลา recheck (exponential backoff)
+        //   1h → 4h → 12h → 24h → 72h(cap) ตามจำนวน failure
+        // ถ้า probe success → unban อัตโนมัติ + แจ้ง admin ผ่าน LineAlertService
+        $schedule->command('ai:recheck-critical --limit=20')
+            ->hourly()
+            ->withoutOverlapping(15)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[AI Recheck] critical key recheck failed');
+            });
     }
 
     /**

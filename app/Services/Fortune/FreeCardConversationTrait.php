@@ -337,7 +337,9 @@ trait FreeCardConversationTrait
             $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
             $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
-            $aiService = new FortuneAIService($this->settings);
+            // 🆕 (2026-05-07) Free Card → request 'free_card' purpose ตอน acquire key
+            //   admin ตั้ง key purpose='free_card' = สงวนเฉพาะทำนายฟรี (ไม่ปนกับ paid prediction)
+            $aiService = new FortuneAIService($this->settings, 'free_card');
             $result = $aiService->generateFreeCardReading(
                 card: $card,
                 userName: $name,

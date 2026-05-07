@@ -89,7 +89,7 @@ class ProcessFortuneTelling implements ShouldQueue
      *
      * @throws Exception
      */
-    public function handle(FortuneAIService $aiService, FacebookWebhookService $facebookService): void
+    public function handle(FacebookWebhookService $facebookService): void
     {
         $startTime = microtime(true);
         $fromId = $this->data['facebook_user_id'] ?? null;
@@ -102,6 +102,11 @@ class ProcessFortuneTelling implements ShouldQueue
                 'reading_type' => $isDeep ? 'deep' : 'basic',
                 'attempt' => $this->attempts(),
             ]);
+
+            // 🆕 (2026-05-07) สร้าง AI service พร้อม purpose ที่ตรง — pool จะเลือก key ที่ตรงประเภท
+            //   เดิม: DI inject $aiService โดยไม่รู้ purpose → ได้ key ทั่วไป
+            //   ใหม่: deep = 'prediction' (paid), basic = 'free_card' (free)
+            $aiService = new FortuneAIService(null, $isDeep ? 'prediction' : 'free_card');
 
             // ส่ง typing indicator ขณะ AI กำลังประมวลผล (Messenger only)
             if (! $isComment && $fromId) {

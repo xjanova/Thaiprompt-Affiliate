@@ -39,9 +39,25 @@ class FortuneAIService
      */
     protected ?string $currentBaseUrl = null;
 
-    public function __construct(?FortuneTellingSetting $settings = null)
+    /**
+     * 🆕 (2026-05-07) เก็บ default purpose ที่ caller ระบุตอน construct
+     *   ใช้เมื่อ method ภายในต้อง re-acquire key (เช่น generateChatResponse, generateFortuneTelling)
+     *   ทำให้เลือก key ตรง purpose แม้จะ acquire ตอน constructor (ก่อนรู้ context)
+     */
+    protected ?string $defaultPurpose = null;
+
+    /**
+     * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
+     *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
+     *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
+     *   Back-compat: ถ้าไม่ระบุ → null (= any) เหมือนเดิม
+     *
+     * @param  string|null  $purpose  'prediction'/'chat'/'free_card' (default: null = any)
+     */
+    public function __construct(?FortuneTellingSetting $settings = null, ?string $purpose = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+        $this->defaultPurpose = $purpose;
 
         // ใช้ methods ใหม่ที่รองรับ global AI settings
         $this->provider = $this->settings->getActualAIProvider();
@@ -50,10 +66,12 @@ class FortuneAIService
         // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
         try {
             $this->poolService = new AiApiKeyPoolService;
-            $this->currentKey = $this->poolService->acquireKey($this->provider);
+            // 🆕 (2026-05-07) pass purpose ให้ pool — เลือก key ตรงประเภท
+            $this->currentKey = $this->poolService->acquireKey($this->provider, $purpose);
         } catch (\Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
                 'error' => $e->getMessage(),
+                'purpose' => $purpose,
             ]);
             $this->poolService = null;
             $this->currentKey = null;
@@ -63,14 +81,17 @@ class FortuneAIService
             $this->apiKey = $this->currentKey->api_key;
             Log::debug('FortuneAIService: ใช้ API Key จาก Pool', [
                 'provider' => $this->provider,
+                'purpose' => $purpose,
                 'key_id' => $this->currentKey->id,
                 'key_name' => $this->currentKey->name,
+                'key_purpose' => $this->currentKey->purpose,
             ]);
         } else {
             // Fallback ไปใช้ key จาก settings
             $this->apiKey = $this->settings->getActualAIApiKey();
             Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
                 'provider' => $this->provider,
+                'purpose' => $purpose,
             ]);
         }
     }
