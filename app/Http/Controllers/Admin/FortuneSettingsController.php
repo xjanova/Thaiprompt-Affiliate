@@ -266,7 +266,37 @@ class FortuneSettingsController extends Controller
             'monthly_free_claim_secret' => 'nullable|string|max:128',
             'monthly_free_claim_success_message' => 'nullable|string|max:1000',
             'monthly_free_claim_already_message' => 'nullable|string|max:1000',
+            // 🌟 (2026-05-07) Sensitive AI Mode — สลับ Pro model อัตโนมัติเมื่อบริบทละเอียดอ่อน
+            'sensitive_ai_mode' => 'nullable|in:off,paid_only,all',
+            'sensitive_detection_mode' => 'nullable|in:heuristic,hybrid,hybrid_with_brain',
+            'sensitive_provider' => 'nullable|in:gemini,openai,anthropic,openrouter,grok,groq,qwen,deepseek,typhoon,xiaomi',
+            'sensitive_model' => 'nullable|string|max:100',
+            'sensitive_classifier_provider' => 'nullable|in:gemini,openai,groq',
+            'sensitive_classifier_model' => 'nullable|string|max:100',
+            'sensitive_keywords_text' => 'nullable|string|max:5000',  // textarea — 1 keyword/line
+            'sensitive_topics_text' => 'nullable|string|max:5000',     // textarea — 1 topic/line
+            'sensitive_max_per_user_daily' => 'nullable|integer|min:0|max:100',
+            'sensitive_max_total_daily_thb' => 'nullable|numeric|min:0|max:10000',
+            'sensitive_max_tokens_per_call' => 'nullable|integer|min:200|max:8000',
+            'sensitive_offtopic_strikes' => 'nullable|integer|min:1|max:20',
+            'sensitive_offtopic_action' => 'nullable|in:revert,block,handoff',
+            'sensitive_offtopic_block_message' => 'nullable|string|max:1000',
+            'sensitive_log_enabled' => 'boolean',
         ]);
+
+        // 🌟 (2026-05-07) แปลง textarea → array สำหรับ keywords/topics
+        if (array_key_exists('sensitive_keywords_text', $validated)) {
+            $raw = (string) $validated['sensitive_keywords_text'];
+            $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n|,/', $raw)));
+            $validated['sensitive_keywords'] = ! empty($lines) ? array_values($lines) : null;
+            unset($validated['sensitive_keywords_text']);
+        }
+        if (array_key_exists('sensitive_topics_text', $validated)) {
+            $raw = (string) $validated['sensitive_topics_text'];
+            $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n|,/', $raw)));
+            $validated['sensitive_topics'] = ! empty($lines) ? array_values($lines) : null;
+            unset($validated['sensitive_topics_text']);
+        }
 
         // แปลง customer_handoff_keywords จาก textarea → array
         if (isset($validated['customer_handoff_keywords'])) {
@@ -292,6 +322,8 @@ class FortuneSettingsController extends Controller
             // 🌟 (2026-05-04) Group Invite + Monthly Claim
             'fortune_group_invite_enabled',
             'monthly_free_claim_enabled',
+            // 🌟 (2026-05-07) Sensitive AI Mode
+            'sensitive_log_enabled',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {
@@ -376,7 +408,7 @@ class FortuneSettingsController extends Controller
             // คืน JSON เสมอ ไม่ให้ return HTML error page
             return response()->json([
                 'success' => false,
-                'message' => 'เกิดข้อผิดพลาดในการคำนวณ: ' . $e->getMessage(),
+                'message' => 'เกิดข้อผิดพลาดในการคำนวณ: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -729,7 +761,7 @@ class FortuneSettingsController extends Controller
             $poolKeys = AiApiKey::where('is_active', true)
                 ->where(function ($q) {
                     $q->whereNull('disabled_until')
-                      ->orWhere('disabled_until', '<', now());
+                        ->orWhere('disabled_until', '<', now());
                 })
                 ->orderBy('priority', 'desc')
                 ->get();
@@ -764,9 +796,9 @@ class FortuneSettingsController extends Controller
                 $purpose = $poolKey->purpose ?? 'any';
                 $purposeBadge = match ($purpose) {
                     'prediction' => ' 🎯[prediction]',
-                    'chat'       => ' 💬[chat]',
-                    'free_card'  => ' 🎁[free_card]',
-                    default      => '',
+                    'chat' => ' 💬[chat]',
+                    'free_card' => ' 🎁[free_card]',
+                    default => '',
                 };
 
                 $providers[] = [
@@ -860,7 +892,7 @@ class FortuneSettingsController extends Controller
                         ->where('is_active', true)
                         ->where(function ($q) {
                             $q->whereNull('disabled_until')
-                              ->orWhere('disabled_until', '<', now());
+                                ->orWhere('disabled_until', '<', now());
                         })
                         ->orderBy('priority', 'desc')
                         ->first();

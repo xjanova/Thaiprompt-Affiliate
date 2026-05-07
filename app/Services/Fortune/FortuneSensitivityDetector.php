@@ -1,0 +1,367 @@
+<?php
+
+namespace App\Services\Fortune;
+
+use App\Models\FortuneTellingSetting;
+use Exception;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * 🌟 FortuneSensitivityDetector (2026-05-07)
+ *
+ * ตรวจจับว่าข้อความของลูกค้าเข้าข่าย "บริบทละเอียดอ่อน" หรือไม่
+ *
+ * Detection modes:
+ *   - 'heuristic'    → regex/keyword เท่านั้น (เร็ว ฟรี deterministic)
+ *   - 'hybrid'       → heuristic + Groq classifier (default)
+ *   - 'hybrid_with_brain' → +ObsidianX history lookup (Phase 3)
+ *
+ * Outputs:
+ *   - is_sensitive: ควรใช้ Pro model
+ *   - is_offtopic: ถามนอกเรื่องดูดวง (สำหรับ strike counter)
+ *   - mood_level: 1-5 (5=ก้าวร้าวสุด)
+ *   - complexity: 1-5 (5=ซับซ้อนสุด)
+ *   - reasons: array ของ trigger ที่จับได้
+ *   - detection_used: 'heuristic' / 'classifier' / 'hybrid'
+ *
+ * Hybrid logic:
+ *   - heuristic confidence ≥ 80 → mark sensitive (skip classifier — เซฟ token)
+ *   - heuristic confidence == 0 + ข้อความสั้น → mark not-sensitive (skip)
+ *   - else → call Groq classifier (1 call เพิ่ม ~50-150ms)
+ */
+class FortuneSensitivityDetector
+{
+    /**
+     * Cache key สำหรับ classifier result (dedupe ข้อความเหมือนกัน 5 นาที)
+     */
+    protected const CLASSIFIER_CACHE_TTL = 300;
+
+    /**
+     * Threshold สำหรับ heuristic confidence — เกินนี้ skip classifier
+     */
+    protected const HEURISTIC_HIGH_CONFIDENCE = 80;
+
+    /**
+     * ความยาวข้อความสั้นที่ skip classifier ถ้า heuristic ไม่จับ
+     */
+    protected const SHORT_MESSAGE_LEN = 25;
+
+    public function __construct(
+        protected ?FortuneTellingSetting $settings = null
+    ) {
+        $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+    }
+
+    /**
+     * ตรวจจับว่าข้อความเข้าข่าย sensitive หรือ off-topic
+     *
+     * @param  string  $message  ข้อความจากผู้ใช้
+     * @param  array  $context  ['user_id' => ..., 'history' => [...], 'has_active_paid_reading' => bool, 'channel_context' => 'chat'/'paid_prediction'/'celtic']
+     * @return array detection result
+     */
+    public function detect(string $message, array $context = []): array
+    {
+        $mode = $this->settings->sensitive_detection_mode ?? 'hybrid';
+
+        // Default result
+        $result = [
+            'is_sensitive' => false,
+            'is_offtopic' => false,
+            'confidence' => 0,
+            'mood_level' => 1,
+            'complexity' => 1,
+            'reasons' => [],
+            'detection_used' => 'heuristic',
+        ];
+
+        // Step 1: Heuristic — เร็ว, deterministic
+        $heuristic = $this->runHeuristic($message, $context);
+        $result = array_merge($result, $heuristic);
+
+        // ถ้าเป็น heuristic-only mode → จบ
+        if ($mode === 'heuristic') {
+            return $result;
+        }
+
+        // Step 2: Hybrid logic — ตัดสินใจว่าจะเรียก classifier ไหม
+
+        // High confidence → skip classifier (ประหยัด token)
+        if ($heuristic['confidence'] >= self::HEURISTIC_HIGH_CONFIDENCE) {
+            $result['detection_used'] = 'heuristic';
+
+            return $result;
+        }
+
+        // ข้อความสั้นและ heuristic ไม่จับเลย → skip
+        if ($heuristic['confidence'] === 0 && mb_strlen($message) < self::SHORT_MESSAGE_LEN) {
+            $result['detection_used'] = 'heuristic';
+
+            return $result;
+        }
+
+        // Borderline → call classifier
+        try {
+            $classifier = $this->runClassifier($message, $context);
+
+            // Merge: ถ้า classifier เห็นว่า sensitive → เปิดธง
+            if ($classifier['is_sensitive']) {
+                $result['is_sensitive'] = true;
+                $result['reasons'][] = 'classifier:'.($classifier['reason'] ?? 'detected');
+            }
+            if ($classifier['is_offtopic']) {
+                $result['is_offtopic'] = true;
+                $result['reasons'][] = 'classifier:offtopic';
+            }
+            $result['mood_level'] = max($result['mood_level'], $classifier['mood_level'] ?? 1);
+            $result['complexity'] = max($result['complexity'], $classifier['complexity'] ?? 1);
+            $result['confidence'] = max($result['confidence'], $classifier['confidence'] ?? 50);
+            $result['detection_used'] = $heuristic['confidence'] > 0 ? 'hybrid' : 'classifier';
+        } catch (Exception $e) {
+            Log::warning('FortuneSensitivityDetector: classifier ล้มเหลว — ใช้ heuristic อย่างเดียว', [
+                'error' => $e->getMessage(),
+                'message_len' => mb_strlen($message),
+            ]);
+        }
+
+        return $result;
+    }
+
+    /**
+     * 🔍 Heuristic detection — regex/keyword
+     *
+     * @return array ['is_sensitive', 'is_offtopic', 'confidence' => 0-100, 'mood_level', 'complexity', 'reasons']
+     */
+    protected function runHeuristic(string $message, array $context = []): array
+    {
+        $msgLower = mb_strtolower(trim($message));
+        $reasons = [];
+        $confidenceScore = 0;
+        $moodLevel = 1;
+        $complexity = 1;
+        $isOfftopic = false;
+
+        // 1. คำหยาบ / ก้าวร้าว — น้ำหนัก 50
+        $keywords = $this->settings->getSensitiveKeywords();
+        foreach ($keywords as $kw) {
+            if (mb_stripos($msgLower, mb_strtolower($kw)) !== false) {
+                $reasons[] = "keyword:{$kw}";
+                $confidenceScore += 50;
+                $moodLevel = max($moodLevel, 4);
+                break; // 1 keyword พอ
+            }
+        }
+
+        // 2. หัวข้อหนัก (ตาย/ป่วย/หย่า) — น้ำหนัก 40
+        $topics = $this->settings->getSensitiveTopics();
+        foreach ($topics as $topic) {
+            if (mb_stripos($msgLower, mb_strtolower($topic)) !== false) {
+                $reasons[] = "topic:{$topic}";
+                $confidenceScore += 40;
+                $complexity = max($complexity, 4);
+                break;
+            }
+        }
+
+        // 3. ข้อความยาว + คำถามหลายข้อ (≥150 chars + ≥2 ?) — น้ำหนัก 25
+        $msgLen = mb_strlen($message);
+        $questionCount = substr_count($message, '?') + substr_count($message, '?');
+        if ($msgLen >= 150 && $questionCount >= 2) {
+            $reasons[] = 'long_complex';
+            $confidenceScore += 25;
+            $complexity = max($complexity, 4);
+        }
+
+        // 4. คำถามซ้ำใน history (3+ คำถามที่ tone เดียวกัน) — น้ำหนัก 20
+        $history = $context['history'] ?? [];
+        if (! empty($history)) {
+            $userMessages = array_filter($history, fn ($m) => ($m['role'] ?? '') === 'user');
+            if (count($userMessages) >= 3) {
+                // ดู turn ล่าสุด 3 turns — ถ้ามีคำหยาบหรือคำถามที่ tone ลบ → repeat angry
+                $recentNegative = 0;
+                $recentMessages = array_slice(array_values($userMessages), -3);
+                foreach ($recentMessages as $m) {
+                    $content = mb_strtolower($m['content'] ?? '');
+                    foreach ($keywords as $kw) {
+                        if (mb_stripos($content, mb_strtolower($kw)) !== false) {
+                            $recentNegative++;
+                            break;
+                        }
+                    }
+                }
+                if ($recentNegative >= 2) {
+                    $reasons[] = 'repeated_negative';
+                    $confidenceScore += 20;
+                    $moodLevel = max($moodLevel, 4);
+                }
+            }
+        }
+
+        // 5. Off-topic detection (ใช้ heuristic อย่างหยาบ — classifier จะแม่นกว่า)
+        // ถ้าไม่มีคำที่เกี่ยวกับดูดวงเลย + ไม่มี trigger ของ sensitive
+        $fortuneKeywords = ['ดวง', 'ทำนาย', 'ไพ่', 'หมอ', 'ราศี', 'ฤกษ์', 'เลข', 'ฝัน', 'ความรัก', 'การงาน', 'การเงิน', 'สุขภาพ', 'อนาคต', 'จันทรา'];
+        $hasFortuneKeyword = false;
+        foreach ($fortuneKeywords as $fk) {
+            if (mb_stripos($msgLower, $fk) !== false) {
+                $hasFortuneKeyword = true;
+                break;
+            }
+        }
+
+        // ข้อความยาวเกิน 30 ตัว + ไม่มีคำดูดวง + ไม่มี trigger → อาจ off-topic
+        if (! $hasFortuneKeyword && $msgLen > 30 && empty($reasons)) {
+            $isOfftopic = true; // tentative — classifier จะตัดสินสุดท้าย
+            $reasons[] = 'maybe_offtopic';
+        }
+
+        $confidenceScore = min(100, $confidenceScore);
+
+        return [
+            'is_sensitive' => $confidenceScore >= 50,
+            'is_offtopic' => $isOfftopic,
+            'confidence' => $confidenceScore,
+            'mood_level' => $moodLevel,
+            'complexity' => $complexity,
+            'reasons' => $reasons,
+        ];
+    }
+
+    /**
+     * 🤖 Groq classifier — รวม mood + complexity + offtopic ใน 1 call
+     *
+     * ใช้ llama-3.1-8b-instant (default) — ฟรี เร็ว ~100ms
+     *
+     * @return array ['is_sensitive', 'is_offtopic', 'mood_level', 'complexity', 'confidence', 'reason']
+     *
+     * @throws Exception
+     */
+    protected function runClassifier(string $message, array $context = []): array
+    {
+        // Cache classifier result 5 นาที (dedupe เคสคนพิมพ์ซ้ำ)
+        $hash = hash('sha256', mb_strtolower(trim($message)));
+        $cacheKey = "fortune:sensitive:classifier:{$hash}";
+
+        if ($cached = Cache::get($cacheKey)) {
+            return $cached;
+        }
+
+        $provider = $this->settings->sensitive_classifier_provider ?? 'groq';
+        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.1-8b-instant';
+        $apiKey = $this->getClassifierApiKey($provider);
+
+        if (empty($apiKey)) {
+            throw new Exception("Classifier API key หายไปสำหรับ provider={$provider}");
+        }
+
+        $endpoint = match ($provider) {
+            'groq' => 'https://api.groq.com/openai/v1/chat/completions',
+            'openai' => 'https://api.openai.com/v1/chat/completions',
+            default => throw new Exception("Provider {$provider} ไม่รองรับ classifier"),
+        };
+
+        $systemPrompt = <<<'PROMPT'
+You are a classifier analyzing customer messages to a Thai fortune-telling bot.
+
+Output strict JSON only — no prose.
+
+Schema:
+{
+  "mood_level": 1-5,        // 1=calm, 5=hostile/abusive
+  "complexity": 1-5,        // 1=simple, 5=very complex
+  "is_offtopic": true|false, // true if NOT about fortune/horoscope/tarot
+  "reason": "<2-5 word tag, lowercase, snake_case>"
+}
+
+Rules:
+- Profanity/abuse → mood_level >= 4
+- Multi-question / contradiction / sensitive topics (death, divorce, illness) → complexity >= 4
+- Greetings, small talk, gratitude → is_offtopic=false (still on-topic for fortune chat)
+- Asking about products, weather, math, coding → is_offtopic=true
+- Lao language → analyze same way
+PROMPT;
+
+        $payload = [
+            'model' => $model,
+            'temperature' => 0.0,
+            'max_tokens' => 150,
+            'response_format' => ['type' => 'json_object'],
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                ['role' => 'user', 'content' => "Classify: \"{$message}\""],
+            ],
+        ];
+
+        $response = Http::withToken($apiKey)
+            ->timeout(5) // budget tight — ห้ามเกิน 5s
+            ->retry(1, 200)
+            ->post($endpoint, $payload);
+
+        if (! $response->successful()) {
+            throw new Exception("Classifier HTTP {$response->status()}: ".$response->body());
+        }
+
+        $body = $response->json();
+        $raw = $body['choices'][0]['message']['content'] ?? '';
+        $decoded = json_decode($raw, true);
+
+        if (! is_array($decoded)) {
+            throw new Exception('Classifier ตอบไม่ใช่ JSON: '.mb_substr($raw, 0, 200));
+        }
+
+        $mood = (int) max(1, min(5, $decoded['mood_level'] ?? 1));
+        $complexity = (int) max(1, min(5, $decoded['complexity'] ?? 1));
+        $isOfftopic = (bool) ($decoded['is_offtopic'] ?? false);
+        $reason = (string) ($decoded['reason'] ?? 'classifier');
+
+        // Sensitive ถ้า mood>=4 หรือ complexity>=4
+        $isSensitive = $mood >= 4 || $complexity >= 4;
+
+        // Confidence — เอา max(mood, complexity) * 20 = 0-100
+        $confidence = max($mood, $complexity) * 20;
+
+        $result = [
+            'is_sensitive' => $isSensitive,
+            'is_offtopic' => $isOfftopic,
+            'mood_level' => $mood,
+            'complexity' => $complexity,
+            'confidence' => $confidence,
+            'reason' => $reason,
+        ];
+
+        Cache::put($cacheKey, $result, self::CLASSIFIER_CACHE_TTL);
+
+        return $result;
+    }
+
+    /**
+     * ดึง API key สำหรับ classifier
+     *
+     * Priority:
+     *   1. AiApiKey pool (purpose='chat' หรือ 'any') — มี rotation/quota
+     *   2. settings->chat_ai_api_key (ถ้าเป็น Groq อยู่แล้ว)
+     */
+    protected function getClassifierApiKey(string $provider): ?string
+    {
+        // ลอง pool ก่อน
+        try {
+            $pool = new \App\Services\AiApiKeyPoolService;
+            $key = $pool->acquireKey($provider, 'chat');
+            if ($key) {
+                // คืน key ทันที (ไม่ hold inflight) เพื่อไม่ block prediction
+                $pool->releaseKey($provider, $key->id);
+
+                return $key->api_key;
+            }
+        } catch (Exception $e) {
+            // pool ใช้ไม่ได้ — fallback
+        }
+
+        // Fallback: settings chat_ai_api_key (ถ้าเป็น provider เดียวกัน)
+        if (($this->settings->chat_ai_provider ?? null) === $provider) {
+            return $this->settings->getChatAIApiKey();
+        }
+
+        return null;
+    }
+}

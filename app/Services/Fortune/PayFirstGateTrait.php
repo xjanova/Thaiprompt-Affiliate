@@ -4,7 +4,6 @@ namespace App\Services\Fortune;
 
 use App\Models\FortuneReading;
 use App\Services\FortuneLocaleService;
-use Illuminate\Support\Facades\Log;
 
 /**
  * 🔔 Trait: Pay-First *Warning* Gate (2026-05-03 v2 — refactored from BLOCK to WARN)
@@ -30,7 +29,7 @@ trait PayFirstGateTrait
     /**
      * 🔔 Gate check — เรียกจาก processMessage หลัง dedup/lock
      *
-     * @return string|null  warning text (ใส่ก่อน final response) / null ถ้าไม่มีบิลค้าง
+     * @return string|null warning text (ใส่ก่อน final response) / null ถ้าไม่มีบิลค้าง
      */
     protected function payFirstGate(string $platform, string $platformUserId, string $messageText, ?array $userProfile = null): ?string
     {
@@ -58,6 +57,7 @@ trait PayFirstGateTrait
                 return true;
             }
         }
+
         return false;
     }
 
@@ -96,11 +96,11 @@ trait PayFirstGateTrait
             // บิล expired แล้ว — แจ้งให้ลูกค้ารู้ว่าบิลเก่าหมดอายุ ถ้าจะจ่ายต้องสร้างบิลใหม่
             $warning = FortuneLocaleService::lo(
                 "⚠️ *เจ้าชะตามีบิลเก่าหมดอายุยังไม่จ่าย*\n"
-                    . "📋 บิล: {$billRef} ({$packageLabel}) — ค่าครู {$payAmount} บาท (หมดอายุแล้ว)\n"
-                    . "💡 ถ้าอยากจ่ายบิลเดิม ทักแอดมินช่วยเปิดให้ — ไม่งั้นสร้างบิลใหม่ได้ตามปกติ\n\n",
+                    ."📋 บิล: {$billRef} ({$packageLabel}) — ค่าครู {$payAmount} บาท (หมดอายุแล้ว)\n"
+                    ."💡 ถ้าอยากจ่ายบิลเดิม ทักแอดมินช่วยเปิดให้ — ไม่งั้นสร้างบิลใหม่ได้ตามปกติ\n\n",
                 "⚠️ *ເຈົ້າຊາຕາມີບິນເກົ່າໝົດອາຍຸຍັງບໍ່ຈ່າຍ*\n"
-                    . "📋 ບິນ: {$billRef} ({$packageLabel}) — ຄ່າຄູ {$payAmount} ບາດ (ໝົດອາຍຸແລ້ວ)\n"
-                    . "💡 ຖ້າຢາກຈ່າຍບິນເດີມ ທັກແອັດມິນຊ່ວຍເປີດໃຫ້ — ບໍ່ດັ່ງນັ້ນສ້າງບິນໃໝ່ໄດ້ຕາມປົກກະຕິ\n\n"
+                    ."📋 ບິນ: {$billRef} ({$packageLabel}) — ຄ່າຄູ {$payAmount} ບາດ (ໝົດອາຍຸແລ້ວ)\n"
+                    ."💡 ຖ້າຢາກຈ່າຍບິນເດີມ ທັກແອັດມິນຊ່ວຍເປີດໃຫ້ — ບໍ່ດັ່ງນັ້ນສ້າງບິນໃໝ່ໄດ້ຕາມປົກກະຕິ\n\n"
             );
         } else {
             // บิล active — ย้ำว่าทศนิยมต้องตรง
@@ -109,16 +109,16 @@ trait PayFirstGateTrait
 
             $warning = FortuneLocaleService::lo(
                 "⚠️ *เจ้าชะตายังมีบิลค้างยังไม่จ่ายอยู่นะ*\n"
-                    . "📋 บิล: {$billRef} ({$packageLabel})\n"
-                    . "💸 *ค่าครู: {$payAmount} บาท* (เหลืออีก {$remainingMinutes} นาที)\n"
-                    . "🔔 *เศษทศนิยมต้องตรงเป๊ะ!* — โอนผิดยอด = บิลค้างถาวร ต้องทักแอดมินช่วย\n\n",
+                    ."📋 บิล: {$billRef} ({$packageLabel})\n"
+                    ."💸 *ค่าครู: {$payAmount} บาท* (เหลืออีก {$remainingMinutes} นาที)\n"
+                    ."🔔 *เศษทศนิยมต้องตรงเป๊ะ!* — โอนผิดยอด = บิลค้างถาวร ต้องทักแอดมินช่วย\n\n",
                 "⚠️ *ເຈົ້າຊາຕາຍັງມີບິນຄ້າງຍັງບໍ່ຈ່າຍຢູ່ເດີ*\n"
-                    . "📋 ບິນ: {$billRef} ({$packageLabel})\n"
-                    . "💸 *ຄ່າຄູ: {$payAmount} ບາດ* (ເຫຼືອອີກ {$remainingMinutes} ນາທີ)\n"
-                    . "🔔 *ເສດທົດສະນິຍົມຕ້ອງຕົງເປັະ!* — ໂອນຜິດຍອດ = ບິນຄ້າງຖາວອນ ຕ້ອງທັກແອັດມິນຊ່ວຍ\n\n"
+                    ."📋 ບິນ: {$billRef} ({$packageLabel})\n"
+                    ."💸 *ຄ່າຄູ: {$payAmount} ບາດ* (ເຫຼືອອີກ {$remainingMinutes} ນາທີ)\n"
+                    ."🔔 *ເສດທົດສະນິຍົມຕ້ອງຕົງເປັະ!* — ໂອນຜິດຍອດ = ບິນຄ້າງຖາວອນ ຕ້ອງທັກແອັດມິນຊ່ວຍ\n\n"
             );
         }
 
-        return $reengagement . $warning;
+        return $reengagement.$warning;
     }
 }

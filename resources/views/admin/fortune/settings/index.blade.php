@@ -621,6 +621,250 @@
             </div>
         </div> {{-- End of AI Chat card --}}
 
+        {{-- ===== 🌟 Sensitive AI Mode (2026-05-07) ===== --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{
+                 sensitiveMode: '{{ old('sensitive_ai_mode', $settings->sensitive_ai_mode ?? 'paid_only') }}',
+                 detectionMode: '{{ old('sensitive_detection_mode', $settings->sensitive_detection_mode ?? 'hybrid') }}',
+                 offtopicAction: '{{ old('sensitive_offtopic_action', $settings->sensitive_offtopic_action ?? 'revert') }}',
+             }">
+
+            {{-- Header + ปุ่ม collapse คำอธิบาย --}}
+            <div class="flex items-center justify-between mb-4" x-data="{ showHelp: false }">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🌟 Sensitive AI Mode
+                    <span class="text-xs font-normal text-purple-600 dark:text-purple-400">(จิตวิทยาขั้นสูง — สลับ Pro model อัตโนมัติ)</span>
+                </h3>
+                <button type="button" @click="showHelp = !showHelp"
+                        class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                    <span x-show="!showHelp">ℹ️ ดูคำอธิบาย</span>
+                    <span x-show="showHelp" x-cloak>ปิดคำอธิบาย</span>
+                </button>
+            </div>
+
+            <div x-show="showHelp" x-cloak x-collapse
+                 class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4 mb-4">
+                <p class="text-sm text-purple-900 dark:text-purple-200 mb-2 font-semibold">
+                    🧠 ระบบนี้ทำอะไร?
+                </p>
+                <ul class="text-xs text-purple-800 dark:text-purple-300 space-y-1 list-disc list-inside">
+                    <li>เมื่อบอทเจอลูกค้า <strong>อารมณ์รุนแรง</strong> / คำหยาบ / หัวข้อหนัก (ตาย/ป่วย/หย่า) → สลับใช้ <strong>Pro model</strong> (Gemini Pro / GPT-5+)</li>
+                    <li>เมื่อบริบทเย็นลง → กลับใช้ default model อัตโนมัติ (ไม่ sticky)</li>
+                    <li>ใช้ <strong>จิตวิทยาขั้นสูง</strong> — ต้อนแต่ไม่ด่า, ไม้แข็งแต่สุภาพ</li>
+                    <li>ตรวจจับ <strong>off-topic</strong> (ถามนอกเรื่องดูดวง) → strike นับ → action ตามที่ตั้ง</li>
+                    <li>มี <strong>budget cap</strong> — กัน abuse / กัน spend เกิน</li>
+                </ul>
+                <p class="text-xs text-purple-700 dark:text-purple-300 mt-3">
+                    ⚠️ ก่อนเปิดใช้งาน: เพิ่ม API Key ของ Pro model
+                    (เช่น Gemini Pro) ใน <a href="{{ route('admin.ai-api-keys.index') ?? '#' }}" class="underline font-semibold">AI API Keys</a>
+                    แล้วตั้ง <strong>purpose = sensitive</strong>
+                </p>
+            </div>
+
+            {{-- Mode toggle (off / paid_only / all) --}}
+            <div class="mb-5">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                    🎚️ ขอบเขตการใช้งาน
+                </label>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
+                           :class="sensitiveMode === 'off' ? 'border-gray-400 bg-gray-50 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
+                        <input type="radio" name="sensitive_ai_mode" value="off" x-model="sensitiveMode" class="mt-1 mr-3">
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-white">🔒 ปิด</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">ไม่ใช้ Pro model เลย</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
+                           :class="sensitiveMode === 'paid_only' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
+                        <input type="radio" name="sensitive_ai_mode" value="paid_only" x-model="sensitiveMode" class="mt-1 mr-3">
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-white">💎 เฉพาะทำนายเสียเงิน <span class="text-xs text-purple-600">(แนะนำ)</span></div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Deep 39฿ + Celtic 99฿ เท่านั้น (chat ฟรียังใช้ Groq)</div>
+                        </div>
+                    </label>
+                    <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
+                           :class="sensitiveMode === 'all' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
+                        <input type="radio" name="sensitive_ai_mode" value="all" x-model="sensitiveMode" class="mt-1 mr-3">
+                        <div>
+                            <div class="font-semibold text-gray-900 dark:text-white">🌐 ทั่วทั้งบอท</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">รวมแชทธรรมดาด้วย ⚠️ ระวัง budget</div>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            {{-- ส่วน config (ซ่อนเมื่อ off) --}}
+            <div x-show="sensitiveMode !== 'off'" x-cloak x-collapse>
+
+                {{-- Detection mode --}}
+                <div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            🔍 โหมดตรวจจับ
+                        </label>
+                        <select name="sensitive_detection_mode" x-model="detectionMode"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            <option value="heuristic">🚀 Heuristic (regex เท่านั้น — เร็ว ฟรี)</option>
+                            <option value="hybrid">⭐ Hybrid (regex + Groq classifier — แนะนำ)</option>
+                            <option value="hybrid_with_brain">🧠 Hybrid + ObsidianX (Phase 3 — ยังไม่เปิดใช้)</option>
+                        </select>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-show="detectionMode === 'hybrid'">
+                            Groq llama-8b ฟรี — เพิ่ม latency ~100ms / message
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            🤖 Classifier Provider/Model
+                        </label>
+                        <div class="flex gap-2">
+                            <select name="sensitive_classifier_provider"
+                                    class="w-1/3 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="groq" {{ ($settings->sensitive_classifier_provider ?? 'groq') === 'groq' ? 'selected' : '' }}>Groq</option>
+                                <option value="openai" {{ ($settings->sensitive_classifier_provider ?? '') === 'openai' ? 'selected' : '' }}>OpenAI</option>
+                                <option value="gemini" {{ ($settings->sensitive_classifier_provider ?? '') === 'gemini' ? 'selected' : '' }}>Gemini</option>
+                            </select>
+                            <input type="text" name="sensitive_classifier_model"
+                                   value="{{ old('sensitive_classifier_model', $settings->sensitive_classifier_model ?? 'llama-3.1-8b-instant') }}"
+                                   class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                   placeholder="llama-3.1-8b-instant">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Pro Provider/Model --}}
+                <div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            🧠 Pro Model Provider
+                        </label>
+                        <select name="sensitive_provider"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                            @foreach(['gemini' => 'Gemini', 'openai' => 'OpenAI (GPT-5/4o)', 'anthropic' => 'Anthropic Claude', 'openrouter' => 'OpenRouter', 'grok' => 'Grok'] as $val => $label)
+                                <option value="{{ $val }}" {{ ($settings->sensitive_provider ?? 'gemini') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            ✨ Pro Model
+                        </label>
+                        <input type="text" name="sensitive_model"
+                               value="{{ old('sensitive_model', $settings->sensitive_model ?? 'gemini-3.1-pro-preview') }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                               placeholder="gemini-3.1-pro-preview">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            แนะนำ: <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">gemini-3.1-pro-preview</code>,
+                            <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">gpt-4o</code>,
+                            <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">claude-opus-4-7</code>
+                        </p>
+                    </div>
+                </div>
+
+                {{-- Budget Cap --}}
+                <div class="mb-5 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg">
+                    <h4 class="text-sm font-semibold text-amber-900 dark:text-amber-200 mb-3">
+                        💰 Budget Cap (กัน abuse / spend bleed)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-amber-800 dark:text-amber-300 mb-1">
+                                ครั้ง/user/วัน
+                            </label>
+                            <input type="number" name="sensitive_max_per_user_daily" min="0" max="100"
+                                   value="{{ old('sensitive_max_per_user_daily', $settings->sensitive_max_per_user_daily ?? 5) }}"
+                                   class="w-full px-3 py-2 border border-amber-300 dark:border-amber-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-amber-800 dark:text-amber-300 mb-1">
+                                THB/วัน รวมทั้งระบบ
+                            </label>
+                            <input type="number" name="sensitive_max_total_daily_thb" min="0" max="10000" step="0.01"
+                                   value="{{ old('sensitive_max_total_daily_thb', $settings->sensitive_max_total_daily_thb ?? 200) }}"
+                                   class="w-full px-3 py-2 border border-amber-300 dark:border-amber-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-amber-800 dark:text-amber-300 mb-1">
+                                Tokens/call สูงสุด
+                            </label>
+                            <input type="number" name="sensitive_max_tokens_per_call" min="200" max="8000"
+                                   value="{{ old('sensitive_max_tokens_per_call', $settings->sensitive_max_tokens_per_call ?? 2000) }}"
+                                   class="w-full px-3 py-2 border border-amber-300 dark:border-amber-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Off-topic guard --}}
+                <div class="mb-5 p-4 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-700 rounded-lg">
+                    <h4 class="text-sm font-semibold text-rose-900 dark:text-rose-200 mb-3">
+                        🚧 Off-topic Guard (กันถามนอกเรื่องเวิ่นเว้อ)
+                    </h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                        <div>
+                            <label class="block text-xs text-rose-800 dark:text-rose-300 mb-1">
+                                จำนวน strike ก่อนตัดสินใจ
+                            </label>
+                            <input type="number" name="sensitive_offtopic_strikes" min="1" max="20"
+                                   value="{{ old('sensitive_offtopic_strikes', $settings->sensitive_offtopic_strikes ?? 3) }}"
+                                   class="w-full px-3 py-2 border border-rose-300 dark:border-rose-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-rose-800 dark:text-rose-300 mb-1">
+                                Action เมื่อเกิน strike
+                            </label>
+                            <select name="sensitive_offtopic_action" x-model="offtopicAction"
+                                    class="w-full px-3 py-2 border border-rose-300 dark:border-rose-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                                <option value="revert">🔄 Revert (กลับใช้ default model)</option>
+                                <option value="block">🛑 Block (ตัดบทสนทนา ส่งข้อความเตือน)</option>
+                                <option value="handoff">👤 Handoff (ส่งให้แอดมินดูแล — Phase 2)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div x-show="offtopicAction === 'block'" x-cloak>
+                        <label class="block text-xs text-rose-800 dark:text-rose-300 mb-1">
+                            ข้อความเมื่อ block
+                        </label>
+                        <textarea name="sensitive_offtopic_block_message" rows="2"
+                                  class="w-full px-3 py-2 border border-rose-300 dark:border-rose-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                                  placeholder="ขออภัยค่ะ 🙏 แม่หมอจันทรารับเฉพาะคำถามเรื่องดูดวงเท่านั้นนะคะ&#10;&#10;หากต้องการดูดวง พิมพ์ &quot;ดูดวง&quot; ได้เลยค่ะ ✨">{{ old('sensitive_offtopic_block_message', $settings->sensitive_offtopic_block_message) }}</textarea>
+                    </div>
+                </div>
+
+                {{-- Custom keywords / topics --}}
+                <div class="mb-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            🔤 Sensitive Keywords (1 บรรทัด/คำ — เว้นว่าง = ใช้ default)
+                        </label>
+                        <textarea name="sensitive_keywords_text" rows="6"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                                  placeholder="มึง&#10;กู&#10;เหี้ย&#10;ระยำ&#10;...">{{ old('sensitive_keywords_text', is_array($settings->sensitive_keywords ?? null) ? implode("\n", $settings->sensitive_keywords) : '') }}</textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                            🎯 Sensitive Topics (1 บรรทัด/หัวข้อ — เว้นว่าง = ใช้ default)
+                        </label>
+                        <textarea name="sensitive_topics_text" rows="6"
+                                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                                  placeholder="ฆ่าตัวตาย&#10;มะเร็ง&#10;หย่า&#10;ป่วยหนัก&#10;...">{{ old('sensitive_topics_text', is_array($settings->sensitive_topics ?? null) ? implode("\n", $settings->sensitive_topics) : '') }}</textarea>
+                    </div>
+                </div>
+
+                {{-- Logging toggle --}}
+                <div class="flex items-center gap-2 mt-4">
+                    <input type="hidden" name="sensitive_log_enabled" value="0">
+                    <input type="checkbox" name="sensitive_log_enabled" id="sensitive_log_enabled" value="1"
+                           {{ old('sensitive_log_enabled', $settings->sensitive_log_enabled ?? true) ? 'checked' : '' }}
+                           class="w-4 h-4 text-purple-600 rounded">
+                    <label for="sensitive_log_enabled" class="text-sm text-gray-700 dark:text-gray-300">
+                        📊 บันทึกทุก trigger ลงตาราง <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded text-xs">fortune_sensitive_events</code>
+                        (วิเคราะห์ pattern + cost tracking)
+                    </label>
+                </div>
+
+            </div> {{-- End config (hidden when off) --}}
+        </div> {{-- End Sensitive AI Mode card --}}
+
         {{-- Comment Engagement Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <div class="flex items-center justify-between mb-4">

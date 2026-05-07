@@ -827,6 +827,166 @@ PROMPT;
     }
 
     /**
+     * 🌟 (2026-05-07) Sensitive Chat Response — ใช้ Pro model (Gemini Pro/GPT-5+)
+     *
+     * เรียกเมื่อ FortuneSensitivityDetector ตรวจพบบริบทละเอียดอ่อน:
+     *   - ลูกค้าอารมณ์ร้าย / คำหยาบ
+     *   - หัวข้อหนัก (ตาย/ป่วย/หย่า/ฆ่าตัวตาย)
+     *   - คำถามซับซ้อน multi-turn
+     *
+     * Flow:
+     *   1. Acquire key ที่ purpose='sensitive' (STRICT — no fallback)
+     *   2. ถ้าไม่มี key → return null → caller fallback ไป chat ปกติ
+     *   3. ใช้ key + sensitive system prompt (จิตวิทยาขั้นสูง)
+     *   4. Record usage ลง pool key + return result
+     *
+     * @param  string  $messageText  ข้อความจากผู้ใช้
+     * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
+     * @param  array  $history  conversation history
+     * @return array|null ผลลัพธ์ ['response', 'provider', 'model', 'tokens_used'] หรือ null ถ้าไม่มี sensitive key
+     *
+     * @throws Exception เมื่อ AI call ล้มเหลว (caller จัดการ fallback)
+     */
+    public function generateSensitiveChatResponse(
+        string $messageText,
+        ?array $userProfile = null,
+        array $history = []
+    ): ?array {
+        // อ่าน sensitive provider/model จาก settings
+        $sensitiveProvider = $this->settings->sensitive_provider ?? 'gemini';
+        $sensitiveModel = $this->settings->sensitive_model ?? 'gemini-3.1-pro-preview';
+        $maxTokens = (int) ($this->settings->sensitive_max_tokens_per_call ?? 2000);
+
+        // Acquire sensitive key (STRICT scope — ดึงเฉพาะ purpose='sensitive')
+        $poolService = new \App\Services\AiApiKeyPoolService;
+        $sensitiveKey = $poolService->acquireKey($sensitiveProvider, 'sensitive');
+
+        if (! $sensitiveKey) {
+            Log::info('FortuneAIService: ไม่มี sensitive key — caller ต้อง fallback ไป chat ปกติ', [
+                'provider' => $sensitiveProvider,
+            ]);
+
+            return null;
+        }
+
+        try {
+            $apiKey = $sensitiveKey->api_key;
+            $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
+            $systemMessage = $this->buildSensitiveChatSystemMessage();
+
+            $userName = $userProfile['name'] ?? '';
+            $prompt = $messageText;
+            if (! empty($userName) && $userName !== 'คุณ') {
+                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
+            }
+
+            $config = [
+                'temperature' => 0.7, // ต่ำกว่า chat ปกติ (0.8) — ตอบมีสติมากขึ้น
+                'max_tokens' => $maxTokens,
+            ];
+
+            $startTime = microtime(true);
+
+            $result = match ($sensitiveProvider) {
+                'gemini' => empty($history)
+                    ? $this->callChatGemini($prompt, $systemMessage, $apiKey, $resolvedModel, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemMessage, $apiKey, $resolvedModel, $config, $history),
+                default => empty($history)
+                    ? $this->callChatOpenAICompatible($prompt, $systemMessage, $apiKey, $resolvedModel, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+            };
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+            $tokensUsed = (int) ($result['tokens_used'] ?? 0);
+
+            // Record usage ลง pool key
+            $sensitiveKey->recordUsage(
+                (int) ($result['input_tokens'] ?? 0),
+                (int) ($result['output_tokens'] ?? 0),
+                $resolvedModel,
+                $responseTime,
+                'sensitive_chat'
+            );
+
+            Log::info('FortuneAIService: Sensitive chat สำเร็จ', [
+                'provider' => $sensitiveProvider,
+                'model' => $resolvedModel,
+                'response_time_ms' => $responseTime,
+                'tokens' => $tokensUsed,
+                'key_id' => $sensitiveKey->id,
+            ]);
+
+            return $result;
+        } catch (Exception $e) {
+            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
+
+            Log::warning('FortuneAIService: Sensitive chat ล้มเหลว — caller ต้อง fallback', [
+                'provider' => $sensitiveProvider,
+                'model' => $sensitiveModel,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw $e;
+        } finally {
+            $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+        }
+    }
+
+    /**
+     * 🌟 (2026-05-07) System message สำหรับ Sensitive Mode
+     *
+     * จิตวิทยาขั้นสูง — ต้อนแต่ไม่ด่า, ไม้แข็งแต่สุภาพ
+     *
+     * หลักการ (research-based):
+     *   - Validate emotion first → ลด aggression ก่อนตอบ
+     *   - "I-statement" แทนการกล่าวหา
+     *   - คำถามนำกลับ — เปลี่ยนพลังลบเป็นการพูดคุย
+     *   - ตั้งขอบเขตชัด แต่ใช้คำสุภาพ
+     *   - หลีกเลี่ยง trigger words ที่ทำให้ลูกค้ารู้สึกถูกตัดสิน
+     */
+    protected function buildSensitiveChatSystemMessage(): string
+    {
+        $brand = $this->settings->fortune_brand_name ?? 'แม่หมอจันทรา';
+
+        return <<<PROMPT
+คุณคือ{$brand} — ผู้เชี่ยวชาญด้านจิตวิทยาและการสื่อสารกับลูกค้าที่อารมณ์รุนแรง/บริบทละเอียดอ่อน
+
+🎯 หลักการตอบ (เรียงตามความสำคัญ):
+
+1. **ฟังให้เข้าใจก่อน** (Validate first)
+   - รับรู้อารมณ์ของลูกค้า: "เข้าใจค่ะ ที่รู้สึกแบบนี้"
+   - ห้ามโต้แย้งทันที ห้ามตัดสิน
+
+2. **น้ำเสียงนุ่มแต่หนักแน่น**
+   - ใช้ "ค่ะ/ครับ" เสมอ
+   - ไม่อ่อนข้อกับการล่วงละเมิด แต่ไม่ด่าตอบ
+   - ใช้ "I-statement": "แม่หมอรู้สึกว่า..." แทน "คุณ..."
+
+3. **ตั้งขอบเขตชัด แต่สุภาพ**
+   - บอกชัดว่า "บริการนี้ทำได้/ไม่ได้" โดยไม่ใช้คำว่า "ไม่" ตรง ๆ
+   - ตัวอย่าง: "บริการนี้เน้นเรื่องดูดวงค่ะ" แทน "ไม่ตอบเรื่องอื่น"
+
+4. **คำถามนำกลับ**
+   - เปลี่ยนพลังลบเป็นการพูดคุย: "อยากให้แม่หมอช่วยดูเรื่องอะไรเป็นพิเศษคะ?"
+   - ดึงกลับเข้าเรื่องดูดวงโดยไม่บังคับ
+
+5. **กรณีหัวข้อหนัก** (ตาย/ฆ่าตัวตาย/ป่วยร้าย/abuse)
+   - **ห้ามทำนายเรื่องตาย/อายุสั้น** เด็ดขาด
+   - แนะนำให้ปรึกษาผู้เชี่ยวชาญ (จิตแพทย์/หมอ/สายด่วน 1323)
+   - ดูดวงเป็นแนวทางใจ ไม่ใช่คำตัดสิน
+
+🚫 ห้าม:
+- ตอบกระแทก ขุ่นเคือง หรือตัดสินลูกค้า
+- สัญญาผลทำนายเกินจริง
+- ทำนายเรื่องตาย ความตาย หรืออายุสั้น
+- ใช้คำแสดงอารมณ์ลบ (น่าเบื่อ, ไร้สาระ, ฯลฯ)
+- ตอบนอกเรื่องดูดวง
+
+✅ ตอบสั้น 2-4 ประโยค กระชับและตรงประเด็น
+PROMPT;
+    }
+
+    /**
      * 🎯 Phase D — Chat response + fallback ผ่าน AI Pool (Gemini, Groq, Grok, ฯลฯ)
      *
      * Flow:

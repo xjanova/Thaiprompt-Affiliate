@@ -160,7 +160,38 @@ class CelticCrossService
 
             // 🆕 (2026-05-07) Celtic 99฿ = paid prediction → request 'prediction' purpose
             //   ระบบจะเลือก key ที่ admin ตั้ง purpose='prediction' เป็นอันดับแรก
-            $aiService = new FortuneAIService($this->settings, 'prediction');
+            //
+            // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามลูกค้าก่อน generate
+            //   ถ้าเข้าข่ายละเอียดอ่อน (อารมณ์ร้าย/หัวข้อหนัก/ซับซ้อน)
+            //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
+            //   เลื่อนใช้แค่ใน Q2+ (followup) เพราะ Q1 + __PREDICT_ALL__ ไม่มีคำถามเฉพาะ
+            $celticPurpose = 'prediction';
+            $celticDecision = null;
+            if (! $isPredictAll && ! empty($userQuestion)) {
+                $celticPlatform = $reading->platform ?? 'facebook';
+                $celticUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+
+                $convService = new FortuneConversationService($this->settings);
+                $celticDecision = $convService->resolveSensitiveDecision(
+                    (string) $userQuestion,
+                    (string) $celticUserId,
+                    $celticPlatform,
+                    'celtic',
+                    [],
+                    []
+                );
+                if ($celticDecision['use_pro']) {
+                    $celticPurpose = 'sensitive';
+                    Log::info('Celtic: คำถาม sequence='.$sequence.' เข้าข่ายละเอียดอ่อน → ใช้ Pro model', [
+                        'reading_id' => $reading->id,
+                        'reasons' => $celticDecision['detection']['reasons'] ?? [],
+                        'mood' => $celticDecision['detection']['mood_level'] ?? null,
+                        'complexity' => $celticDecision['detection']['complexity'] ?? null,
+                    ]);
+                }
+            }
+
+            $aiService = new FortuneAIService($this->settings, $celticPurpose);
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
@@ -169,7 +200,7 @@ class CelticCrossService
                 readingType: 'deep',                // ใช้ config deep — AI ต้องตอบยาว
                 birthDate: null,                    // 🌙 ไม่ใช้วันเกิด — แม่หมอใช้พลังจักรวาลล้วงลึกผ่านไพ่
                 userContext: "celtic_cross:{$reading->id}:q{$sequence}",
-                purpose: 'prediction',              // 🆕 (2026-05-07) ส่ง purpose ลึกถึง pool selection
+                purpose: $celticPurpose,            // 🆕 (2026-05-07) prediction or sensitive
             );
 
             $response = trim($result['response'] ?? '');
@@ -177,6 +208,32 @@ class CelticCrossService
             $aiProvider = $result['provider'] ?? null;
             $aiModel = $result['model'] ?? null;
             $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            // 🌟 (2026-05-07) Sensitive Mode — log + budget tracking ถ้าใช้ Pro
+            if ($celticPurpose === 'sensitive' && $celticDecision !== null) {
+                $celticPlatform = $reading->platform ?? 'facebook';
+                $celticUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+                $celticCostThb = \App\Services\Fortune\FortuneSensitiveBudgetGuard::estimateCostThb(
+                    $tokensUsed,
+                    $aiModel ?? ''
+                );
+                app(\App\Services\Fortune\FortuneSensitiveBudgetGuard::class)
+                    ->recordUse($celticPlatform, (string) $celticUserId, $celticCostThb);
+                (new FortuneConversationService($this->settings))->logSensitiveEvent(
+                    $celticPlatform,
+                    (string) $celticUserId,
+                    'celtic_turn',
+                    (string) $userQuestion,
+                    $celticDecision['detection'],
+                    [
+                        'used_pro_model' => true,
+                        'pro_provider' => $aiProvider,
+                        'pro_model' => $aiModel,
+                        'tokens_used' => $tokensUsed,
+                        'cost_thb' => $celticCostThb,
+                    ]
+                );
+            }
 
             if ($response === '' || mb_strlen($response) < 100) {
                 throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร)');

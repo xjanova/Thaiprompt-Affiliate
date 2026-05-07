@@ -150,6 +150,22 @@ class FortuneTellingSetting extends Model
         'chat_ai_model',
         'chat_ai_api_key',
         'chat_system_prompt',
+        // 🌟 Sensitive AI Mode (2026-05-07) — สลับ Pro model อัตโนมัติเมื่อบริบทละเอียดอ่อน
+        'sensitive_ai_mode',
+        'sensitive_detection_mode',
+        'sensitive_provider',
+        'sensitive_model',
+        'sensitive_classifier_provider',
+        'sensitive_classifier_model',
+        'sensitive_keywords',
+        'sensitive_topics',
+        'sensitive_max_per_user_daily',
+        'sensitive_max_total_daily_thb',
+        'sensitive_max_tokens_per_call',
+        'sensitive_offtopic_strikes',
+        'sensitive_offtopic_action',
+        'sensitive_offtopic_block_message',
+        'sensitive_log_enabled',
         // ระบบดูดวงสาธารณะ (Horoscope Public)
         'horoscope_public_enabled',
         'horoscope_free_daily_limit',
@@ -237,6 +253,14 @@ class FortuneTellingSetting extends Model
         'fortune_central_user_id' => 'integer',
         'fortune_central_fallback_enabled' => 'boolean',
         'enable_ai_chat' => 'boolean',
+        // 🌟 Sensitive AI Mode (2026-05-07)
+        'sensitive_keywords' => 'array',
+        'sensitive_topics' => 'array',
+        'sensitive_max_per_user_daily' => 'integer',
+        'sensitive_max_total_daily_thb' => 'decimal:2',
+        'sensitive_max_tokens_per_call' => 'integer',
+        'sensitive_offtopic_strikes' => 'integer',
+        'sensitive_log_enabled' => 'boolean',
         // ระบบดูดวงสาธารณะ
         'horoscope_public_enabled' => 'boolean',
         'horoscope_free_daily_limit' => 'integer',
@@ -343,6 +367,19 @@ class FortuneTellingSetting extends Model
         // 🌟 Group Invite + Monthly Free Claim — ปิดเป็น default (admin เปิด + ใส่ URL ก่อน)
         'fortune_group_invite_enabled' => false,
         'monthly_free_claim_enabled' => false,
+        // 🌟 Sensitive AI Mode (2026-05-07) — ปิดเป็น default (ต้องตั้ง Pro key ก่อนเปิด)
+        'sensitive_ai_mode' => 'paid_only',  // off / paid_only / all
+        'sensitive_detection_mode' => 'hybrid',
+        'sensitive_provider' => 'gemini',
+        'sensitive_model' => 'gemini-3.1-pro-preview',
+        'sensitive_classifier_provider' => 'groq',
+        'sensitive_classifier_model' => 'llama-3.1-8b-instant',
+        'sensitive_max_per_user_daily' => 5,
+        'sensitive_max_total_daily_thb' => 200.00,
+        'sensitive_max_tokens_per_call' => 2000,
+        'sensitive_offtopic_strikes' => 3,
+        'sensitive_offtopic_action' => 'revert',  // revert / block / handoff
+        'sensitive_log_enabled' => true,
     ];
 
     /**
@@ -468,6 +505,94 @@ class FortuneTellingSetting extends Model
     public function isServiceEnabled(): bool
     {
         return $this->is_enabled === true;
+    }
+
+    // ============================================================
+    // 🌟 Sensitive AI Mode helpers (2026-05-07)
+    // ============================================================
+
+    /**
+     * ตรวจว่า Sensitive AI Mode เปิดใน context นี้หรือไม่
+     *
+     * @param  string  $context  'chat' / 'paid_prediction' / 'celtic'
+     */
+    public function isSensitiveModeActiveFor(string $context): bool
+    {
+        $mode = $this->sensitive_ai_mode ?? 'paid_only';
+
+        if ($mode === 'off') {
+            return false;
+        }
+
+        // 'all' = ใช้ทุก context
+        if ($mode === 'all') {
+            return true;
+        }
+
+        // 'paid_only' = เฉพาะ paid prediction + celtic (ไม่ใช้ใน chat ฟรี)
+        if ($mode === 'paid_only') {
+            return in_array($context, ['paid_prediction', 'celtic'], true);
+        }
+
+        return false;
+    }
+
+    /**
+     * ดึง keyword list สำหรับ heuristic detection
+     *
+     * Priority: admin custom (sensitive_keywords) > default
+     *
+     * @return array<int, string>
+     */
+    public function getSensitiveKeywords(): array
+    {
+        $custom = $this->sensitive_keywords;
+        if (is_array($custom) && ! empty($custom)) {
+            return $custom;
+        }
+
+        // Default keyword list — admin override ได้ทาง JSON column
+        return [
+            // คำหยาบ/ก้าวร้าว (Thai)
+            'มึง', 'กู', 'อีเหี้ย', 'เหี้ย', 'ระยำ', 'ชั่ว', 'ห่วย',
+            'แม่ง', 'พ่อง', 'สัส', 'ควย', 'เย็ด', 'กาก',
+            // อารมณ์ลบรุนแรง
+            'รำคาญ', 'โกรธ', 'หงุดหงิด', 'ไม่พอใจ', 'น่าเบื่อ',
+            'งี่เง่า', 'โง่', 'เซ็ง', 'หมดศรัทธา',
+            // ทดสอบบอท / ดูถูกบริการ
+            'ตอบดี ๆ', 'ไม่ฉลาด', 'ตอบไม่ตรง', 'ไม่แม่น', 'หลอกลวง',
+            'มดเท็จ', 'โกหก', 'ไร้สาระ',
+            // Lao (รุนแรง)
+            'ບັກຫ່າ', 'ບັກສ່າ', 'ໂງ່',
+        ];
+    }
+
+    /**
+     * ดึง topic list สำหรับ heuristic detection (หัวข้อหนัก)
+     *
+     * @return array<int, string>
+     */
+    public function getSensitiveTopics(): array
+    {
+        $custom = $this->sensitive_topics;
+        if (is_array($custom) && ! empty($custom)) {
+            return $custom;
+        }
+
+        // Default sensitive topics
+        return [
+            // ความตาย / สุขภาพร้ายแรง
+            'ฆ่าตัวตาย', 'ฆ่าตัว', 'อยากตาย', 'จะตาย', 'ตายดีกว่า',
+            'มะเร็ง', 'ป่วยหนัก', 'ป่วยมาก', 'โรคร้าย', 'ผ่าตัด',
+            // ความรุนแรง / abuse
+            'ถูกทำร้าย', 'ข่มขืน', 'ทำร้าย', 'ทุบตี',
+            // ครอบครัวล้มสลาย
+            'หย่า', 'แยกทาง', 'ทิ้ง', 'นอกใจ', 'ชู้',
+            // การเงินขั้นวิกฤต
+            'หนี้สิน', 'ล้มละลาย', 'หนี้ท่วม', 'ไม่มีเงิน',
+            // Lao
+            'ຕາຍ', 'ປ່ວຍຫນັກ', 'ຫຍ່າ',
+        ];
     }
 
     /**
@@ -906,31 +1031,31 @@ EOT;
                 "สวัสดีค่ะคุณ {name} 🌙\n\n"
                     ."ขอบคุณที่คอมเม้นต์ให้เพจเรานะคะ ✨\n\n"
                     ."🎁 หมอจันทราอยากเปิดทำนาย *ฟรี 1 ใบ* ให้คุณค่ะ\n"
-                    ."ทักทายมาสักคำ — แม่หมอจะอ่านพลังให้ทันทีนะคะ 🔮",
+                    .'ทักทายมาสักคำ — แม่หมอจะอ่านพลังให้ทันทีนะคะ 🔮',
 
                 // v2: cosmic + free
                 "สวัสดีค่ะคุณ {name} ✨\n\n"
                     ."ดวงดาวบอกว่า เราเชื่อมถึงกันได้พอดี 🌌\n\n"
                     ."🃏 หมอเปิดดูดวงไพ่ยิปซี *ฟรี* รออยู่นะคะ\n"
-                    ."ตอบกลับมาคุยกัน — แม่หมอเปิดไพ่ให้เลยค่ะ 🌙",
+                    .'ตอบกลับมาคุยกัน — แม่หมอเปิดไพ่ให้เลยค่ะ 🌙',
 
                 // v3: gentle no-pressure
                 "สวัสดีค่ะคุณ {name} 💫\n\n"
                     ."ขอบคุณที่ติดตามเพจค่ะ\n"
                     ."🎁 หมอจันทรามี *ทำนายฟรี 1 ใบ* ให้\n"
-                    ."ทักมาตอบกลับ — เปิดไพ่ทันที ไม่ต้องกรอกอะไรค่ะ 🙏",
+                    .'ทักมาตอบกลับ — เปิดไพ่ทันที ไม่ต้องกรอกอะไรค่ะ 🙏',
 
                 // v4: warm + curiosity hook
                 "🌙 สวัสดีค่ะคุณ {name}\n\n"
                     ."บางทีดวงบอกอะไรเราที่เราไม่ทันสังเกต\n"
                     ."🔮 ลองให้แม่หมอเปิดไพ่ทำนาย *ฟรี* ให้สักใบไหมคะ\n\n"
-                    ."ทักทายมาเลย — แม่หมอจะอ่านให้ทันทีค่ะ ✨",
+                    .'ทักทายมาเลย — แม่หมอจะอ่านให้ทันทีค่ะ ✨',
 
                 // v5: no-hedge but free
                 "สวัสดีค่ะคุณ {name} 🪄\n\n"
                     ."หมอจันทราไม่กั๊ก — เปิดไพ่ทำนาย *ฟรี*\n"
                     ."ตอบตรงไปตรงมา ทั้งเรื่องดีและสิ่งต้องระวัง\n\n"
-                    ."ตอบกลับมา — แม่หมอเปิดไพ่ให้เลยค่ะ 🙏",
+                    .'ตอบกลับมา — แม่หมอเปิดไพ่ให้เลยค่ะ 🙏',
             ];
         } else {
             // ระบบฟรีปิด — ชวนทักธรรมดา ไม่ใส่ราคา ไม่ขาย
@@ -1089,7 +1214,7 @@ PROMPT;
     /**
      * คำนวณคอมมิชชั่น Level 1 (สายตรง) จากราคาดูดวง
      *
-     * @param float $readingPrice ราคาดูดวง
+     * @param  float  $readingPrice  ราคาดูดวง
      * @return float จำนวนเงินที่ได้
      */
     public function getFortuneLevel1Amount(float $readingPrice): float
@@ -1107,7 +1232,7 @@ PROMPT;
     /**
      * คำนวณคอมมิชชั่น Level 2 (ชั้นหลาน) จากราคาดูดวง
      *
-     * @param float $readingPrice ราคาดูดวง
+     * @param  float  $readingPrice  ราคาดูดวง
      * @return float จำนวนเงินที่ได้
      */
     public function getFortuneLevel2Amount(float $readingPrice): float
@@ -1383,8 +1508,6 @@ PROMPT;
      * - unilevel_percentages = เปอร์เซ็นต์แต่ละชั้น (string เช่น "5,3,2,1,1")
      *
      * Method นี้แปลง unilevel_percentages → [{level: 1, percentage: 5}, {level: 2, percentage: 3}, ...]
-     *
-     * @return array
      */
     public static function resolveUnilevelLevels(): array
     {
@@ -1443,7 +1566,7 @@ PROMPT;
     /**
      * แปลง flat array ของ percentages เป็น level config array
      *
-     * @param array $percentages เช่น [5, 3, 2, 1, 1]
+     * @param  array  $percentages  เช่น [5, 3, 2, 1, 1]
      * @return array เช่น [{level: 1, percentage: 5}, {level: 2, percentage: 3}, ...]
      */
     protected static function buildLevelsFromArray(array $percentages): array

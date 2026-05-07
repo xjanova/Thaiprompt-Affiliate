@@ -189,12 +189,18 @@ class AiApiKey extends Model
      * chat       = เฉพาะ chat conversation (กัน prediction ดูดหมด)
      * free_card  = (2026-05-05) เฉพาะทำนายฟรีหลัง DM react/comment
      *              เจาะจงกว่า 'prediction' — priority สูงกว่าตอนเลือก key
+     * sensitive  = 🌟 (2026-05-07) เฉพาะบริบทละเอียดอ่อน (Pro model only)
+     *              ใช้เมื่อลูกค้าอารมณ์ร้าย / คำหยาบ / คำถามซับซ้อน /
+     *              หัวข้อหนัก (ตาย/ป่วย/หย่า/ฆ่าตัวตาย)
+     *              ⚠️ STRICT scope — ไม่ fallback ไป any/prediction
+     *              เพราะ Pro model แพง 5-15 เท่าของ default
      */
     public const PURPOSES = [
         'any' => 'ใช้ได้ทุกอย่าง (default)',
         'prediction' => 'เฉพาะคำทำนาย (paid deep reading)',
         'free_card' => '🎁 เฉพาะทำนายฟรี (1 ใบ หลัง DM)',
         'chat' => 'เฉพาะแชทสนทนา (chat)',
+        'sensitive' => '🌟 เฉพาะบริบทละเอียดอ่อน (Pro model — Gemini Pro/GPT-5+)',
     ];
 
     /**
@@ -467,20 +473,33 @@ class AiApiKey extends Model
     /**
      * 🎯 (2026-05-02) Scope: filter ตาม purpose (hierarchical)
      *
-     * @param  string  $purpose  'prediction' / 'chat' / 'free_card'
+     * @param  string  $purpose  'prediction' / 'chat' / 'free_card' / 'sensitive'
      *
      * Hierarchy (เจาะจงสูง → ทั่วไป):
+     *   - 'sensitive'  → 🌟 STRICT: match ['sensitive'] เท่านั้น
+     *                    ❌ ไม่ fallback ไป any/prediction (Pro model only)
+     *                    เหตุผล: Pro model แพง 5-15 เท่า — ไม่ควร burn budget
+     *                    เมื่อ admin ไม่ได้ตั้งค่า key sensitive ไว้
+     *                    Caller ต้องเช็ค null + fallback เอง
      *   - 'free_card'  → match ['free_card', 'prediction', 'any', null]
      *                    เพราะ free_card เป็น subset ของ prediction
      *                    (key prediction ใช้ทำนายฟรีได้ ถ้าไม่มี free_card key)
      *   - 'prediction' → match ['prediction', 'any', null]
-     *                    (ไม่ใช้ free_card key — สงวนไว้เฉพาะฟรี)
+     *                    (ไม่ใช้ free_card / sensitive key — สงวนไว้เฉพาะของมัน)
      *   - 'chat'       → match ['chat', 'any', null]
+     *                    (ไม่ใช้ sensitive key — Pro แพง สงวน)
      *
      * 🩹 (2026-05-05) Update — รองรับ free_card hierarchy
+     * 🌟 (2026-05-07) Update — รองรับ sensitive (strict, no fallback)
      */
     public function scopeForPurpose($query, string $purpose)
     {
+        // 🌟 sensitive = STRICT scope (ไม่ fallback)
+        // เหตุผล: Pro model แพง 5-15x — ไม่ใช้ key อื่นแทน
+        if ($purpose === 'sensitive') {
+            return $query->where('purpose', 'sensitive');
+        }
+
         // free_card เป็น subset ของ prediction → fallback ให้ prediction key ทำได้
         if ($purpose === 'free_card') {
             return $query->where(function ($q) {
@@ -489,7 +508,7 @@ class AiApiKey extends Model
             });
         }
 
-        // prediction = ห้าม free_card key (สงวนไว้เฉพาะฟรี)
+        // prediction = ห้าม free_card / sensitive key (สงวนไว้เฉพาะของมัน)
         if ($purpose === 'prediction') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
@@ -497,7 +516,7 @@ class AiApiKey extends Model
             });
         }
 
-        // chat / อื่นๆ = match purpose ตรง + any/null
+        // chat / อื่นๆ = match purpose ตรง + any/null (ไม่ใช้ sensitive)
         return $query->where(function ($q) use ($purpose) {
             $q->whereNull('purpose')
                 ->orWhere('purpose', 'any')
