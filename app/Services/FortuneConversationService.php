@@ -1712,7 +1712,7 @@ class FortuneConversationService
                 // ✅ ใหม่: ตอบเป็นมิตร + แนะนำให้กดปุ่ม (ไม่สร้าง FortuneReading)
                 // 🎯 Phase D — ใช้ action 'welcome_guide_button' เพื่อให้ controller ส่ง quick reply
                 //    ชี้ไปที่ปุ่ม 💎 ดูดวงละเอียด ชัดเจน — รองรับกรณี AI ทั้ง chat+pool ล้มเหลวหมด
-                return $this->makeWelcomeGuideResponseWithCooldown($facebookUserId);
+                return $this->makeWelcomeGuideResponseWithCooldown($facebookUserId, $messageText);
 
             } finally {
                 // ปล่อย mutex lock เสมอ ไม่ว่า return หรือ exception
@@ -6634,7 +6634,7 @@ class FortuneConversationService
      * Side effect: ทุกครั้งที่เข้าฟังก์ชันนี้ = AI fail/no match → log เพื่อนับ failure rate
      *   admin ดู alert ได้ที่ /admin/dashboard (ถ้า rate สูง ต้องเติม API key)
      */
-    protected function makeWelcomeGuideResponseWithCooldown(string $facebookUserId): array
+    protected function makeWelcomeGuideResponseWithCooldown(string $facebookUserId, string $messageText = ''): array
     {
         // นับ failure rate (Cache counter ต่อชั่วโมง) — ใช้ติดตามสุขภาพ AI Chat
         try {
@@ -6668,6 +6668,34 @@ class FortuneConversationService
         // Cooldown 30 นาที per user — atomic via Cache::add (return true ถ้า key ยังไม่มี)
         $cooldownKey = "fortune:welcome_guide_sent:{$facebookUserId}";
         if (! Cache::add($cooldownKey, true, 1800)) {
+            // 🩹 (2026-05-09 audit fix W4) Substantive message bypass — ลูกค้าพิมพ์ข้อความยาว
+            //   อยู่ระหว่าง AI outage จะได้ไม่เจอความเงียบ 30 นาที. fallback cooldown 5 นาที
+            //   ป้องกัน spam แต่ยอมตอบเมื่อ message > greeting
+            //   เคสที่ trigger: "หนูเครียดเรื่องงาน" / "ปีนี้จะรวยไหม" — ไม่ใช่ "สวัสดี"
+            $cleaned = trim($messageText);
+            $charLen = mb_strlen($cleaned);
+            $wordCount = $cleaned ? count(preg_split('/\s+/u', $cleaned)) : 0;
+            $isSubstantive = $charLen >= 15 || $wordCount >= 3;
+
+            if ($isSubstantive) {
+                $fallbackKey = "fortune:welcome_guide_fallback:{$facebookUserId}";
+                if (Cache::add($fallbackKey, true, 300)) {
+                    Log::info('Fortune: welcome_guide cooldown — substantive message → emit short fallback', [
+                        'user_id' => $facebookUserId,
+                        'char_len' => $charLen,
+                        'word_count' => $wordCount,
+                    ]);
+
+                    return [
+                        'action' => 'welcome_guide_button',
+                        'message' => "🙏 ขอโทษนะคะ ระบบกำลังปรับปรุงชั่วคราว\n\n"
+                            ."แม่หมอจะกลับมาตอบเจ้าชะตาให้เร็วที่สุดค่ะ ✨",
+                        'reading' => null,
+                        'show_quick_replies' => true,
+                    ];
+                }
+            }
+
             // ภายใน cooldown → silent skip — ไม่ตอบ "สวัสดี" ซ้ำ ไม่กลบแชท
             Log::info('Fortune: welcome_guide cooldown active → silent skip', [
                 'user_id' => $facebookUserId,
@@ -8077,12 +8105,16 @@ class FortuneConversationService
         $normalized = $this->normalizeUserInput($text);
         $noSpace = str_replace(' ', '', $normalized);
 
+        // 🩹 (2026-05-09 audit fix P4) ลบ "ตรวจสอบ" bare ออก — generic เกินไป
+        //   เคสเดิม: "อยากให้แม่หมอตรวจสอบดวงให้หน่อย" → trigger isPaymentClaim → AI ตอบ
+        //            "ระบบยังไม่พบเงินโอน" → ลูกค้างง
+        //   Fix: เก็บเฉพาะ variant ที่ specific ("ตรวจสอบยอด/บิล/การชำระ")
         $claimKeywords = [
             // โอน/จ่ายแล้ว
             'โอนแล้ว', 'จ่ายแล้ว', 'ชำระแล้ว', 'จ่ายเงินแล้ว', 'โอนเงินแล้ว',
             'จ่ายเรียบร้อย', 'โอนเรียบร้อย', 'ชำระเรียบร้อย',
             // เช็คสถานะ
-            'เช็คสถานะ', 'เช็คบิล', 'เช็คยอด', 'ตรวจสอบ', 'ตรวจสอบยอด',
+            'เช็คสถานะ', 'เช็คบิล', 'เช็คยอด', 'ตรวจสอบยอด', 'ตรวจสอบบิล', 'ตรวจสอบการชำระ',
             'ตัดบิลหรือยัง', 'ตัดบิลหรือไม่', 'ระบบรับเงินหรือยัง', 'รับเงินหรือยัง',
             // English / payload
             'paid', 'transferred', 'check_payment', 'payment_check',
