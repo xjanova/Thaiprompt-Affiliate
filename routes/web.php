@@ -348,7 +348,9 @@ Route::prefix('mobile-login')->name('mobile-login.')->group(function () {
     Route::post('/login', [\App\Http\Controllers\MobileLoginController::class, 'login'])->name('login');
 
     // อนุมัติให้แอพเข้าถึง (ต้อง auth แล้ว)
-    Route::post('/authorize', [\App\Http\Controllers\MobileLoginController::class, 'authorize'])
+    // 🩹 (2026-05-08) action: authorize → authorizeApp (PHP signature clash with Controller::authorize)
+    //   URL คงเดิม /authorize เพื่อ backward-compat กับ mobile app ที่ deploy แล้ว
+    Route::post('/authorize', [\App\Http\Controllers\MobileLoginController::class, 'authorizeApp'])
         ->middleware('auth')
         ->name('authorize');
 

@@ -120,13 +120,17 @@ class MobileLoginController extends Controller
         $request->session()->regenerate();
 
         // Authorize app
-        return $this->authorize($request);
+        return $this->authorizeApp($request);
     }
 
     /**
      * อนุมัติให้แอพเข้าถึง (หลัง login หรือถ้า login อยู่แล้ว)
+     *
+     * 🩹 (2026-05-08) เปลี่ยนชื่อ authorize() → authorizeApp()
+     *   เหตุผล: PHP Fatal Error — signature ขัดกับ Controller::authorize($ability, $arguments)
+     *   ที่ inherit มาจาก AuthorizesRequests trait → autoload fail → 500 ทุก route
      */
-    public function authorize(Request $request): View|RedirectResponse
+    public function authorizeApp(Request $request): View|RedirectResponse
     {
         $request->validate([
             'token' => 'required|string',
