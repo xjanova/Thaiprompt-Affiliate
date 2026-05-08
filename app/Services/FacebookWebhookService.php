@@ -981,11 +981,32 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ดึงข้อมูลพื้นฐาน + ลอง fields เพิ่มเติม (gender, birthday, locale)
             // หมายเหตุ: gender/birthday/locale อาจไม่ได้รับจาก PSID เนื่องจาก Facebook API restrictions
             // แต่ใส่ไว้เผื่อ App ได้รับ permission แล้ว
+            //
+            // 🩹 (2026-05-08) Try minimal fields first — ลด FB privacy 400 error
+            //   FB Graph 2018+ privacy: full fields list อาจ trigger 400 ถ้า App ไม่มี advanced perms
+            //   ลำดับ: name+first_name+last_name (สำคัญสุด) → fallback ถ้ายัง fail
             $response = Http::timeout(15)
                 ->get($this->graphUrl("/{$facebookUserId}"), [
-                    'fields' => 'id,name,first_name,last_name,profile_pic,gender,birthday,locale,timezone',
+                    'fields' => 'id,name,first_name,last_name,profile_pic',
                     'access_token' => $this->pageAccessToken,
-                ])->throw();
+                ]);
+
+            // 🩹 ถ้า 400 — ลอง minimal fields (id+first_name+last_name อย่างเดียว)
+            if (! $response->successful() && $response->status() === 400) {
+                Log::info('FB getUserProfile: HTTP 400 — retry with minimal fields', [
+                    'user_id' => $facebookUserId,
+                    'first_attempt_body' => mb_substr($response->body(), 0, 300),
+                ]);
+                $response = Http::timeout(15)
+                    ->get($this->graphUrl("/{$facebookUserId}"), [
+                        'fields' => 'first_name,last_name',
+                        'access_token' => $this->pageAccessToken,
+                    ]);
+            }
+
+            if (! $response->successful()) {
+                throw new Exception('FB Graph HTTP '.$response->status().': '.mb_substr($response->body(), 0, 300));
+            }
 
             $profile = $response->json();
 
@@ -1027,8 +1048,14 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
             return $profile;
         } catch (Exception $e) {
-            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้: '.$e->getMessage(), [
+            // 🩹 (2026-05-08) เพิ่ม error body + token snippet ใน log — debug FB privacy/token issues
+            //    เคสที่พบ: HTTP 400 ทุก call → เคส page token expired หรือ permission revoked
+            Log::warning('ไม่สามารถดึงโปรไฟล์ผู้ใช้ได้', [
                 'user_id' => $facebookUserId,
+                'error' => $e->getMessage(),
+                'token_first_8' => mb_substr($this->pageAccessToken ?? '', 0, 8),
+                'token_len' => strlen($this->pageAccessToken ?? ''),
+                'hint' => 'ถ้าทุก request 400 → page token หมดอายุ — ตรวจ admin/fortune/channels',
             ]);
 
             return null;
