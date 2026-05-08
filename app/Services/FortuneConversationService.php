@@ -2713,9 +2713,11 @@ class FortuneConversationService
         // 🩹 (2026-05-08 audit fix CRIT-1) — รวม Celtic pending payment ด้วย
         //   เดิม: filter เฉพาะ STATUS_PENDING_PAYMENT → Celtic 99 cancel ไม่ cancel UPA
         //   ใหม่: รวม STATUS_CELTIC_PENDING_PAYMENT → SMS app เห็น cancel จริง
+        // 🩹 (2026-05-08 hotfix) ลบ orWhere('line_user_id', ...) — fortune_readings ไม่มี column นี้
+        //   universal field = platform_user_id (มีค่า LINE userId ตอน platform='line')
+        //   เคสที่พังจริง: ลูกค้า FB ส่ง message → SQLSTATE[42S22] → bot return error
         $pendingReadings = FortuneReading::where(function ($q) use ($facebookUserId) {
             $q->where('facebook_user_id', $facebookUserId)
-                ->orWhere('line_user_id', $facebookUserId)
                 ->orWhere('platform_user_id', $facebookUserId);
         })
             ->whereIn('conversation_status', [
@@ -2750,9 +2752,9 @@ class FortuneConversationService
         // ปิดทุก conversation ที่ค้างอยู่
         // 🩹 (2026-05-08 audit) — เพิ่ม STATUS_TIER_CHOICE / STATUS_CELTIC_PENDING_PAYMENT
         //   ที่เคยตกหล่น เพื่อ status update ครอบคลุมทุก state ก่อน paid
+        // 🩹 (2026-05-08 hotfix) ลบ orWhere('line_user_id', ...) — fortune_readings ไม่มี column นี้
         $closed = FortuneReading::where(function ($q) use ($facebookUserId) {
             $q->where('facebook_user_id', $facebookUserId)
-                ->orWhere('line_user_id', $facebookUserId)
                 ->orWhere('platform_user_id', $facebookUserId);
         })
             ->whereIn('conversation_status', [
@@ -6985,7 +6987,8 @@ class FortuneConversationService
         // ❗ ยกเว้น 1b: FREE_PREDICTED ที่ active ใน 15 นาที (review U1 fix)
         //   ลูกค้าเพิ่งได้ทำนายฟรี → "ขอบคุณ"/"อืม" → ตอบเพื่อ upsell ตอนนี้ที่ใจอ่อน
         try {
-            $platformCol = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
+            // 🩹 (2026-05-08 hotfix) line ใช้ platform_user_id (fortune_readings ไม่มี column line_user_id)
+            $platformCol = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
             $hasFreePredicted = FortuneReading::where($platformCol, $userId)
                 ->where('conversation_status', FortuneReading::STATUS_FREE_PREDICTED)
                 ->where('updated_at', '>=', now()->subMinutes(15))
