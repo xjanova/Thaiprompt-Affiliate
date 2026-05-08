@@ -13,9 +13,12 @@ class EmbeddingService
 
     private AiModel $model;
 
-    private string $endpoint;
+    // 🩹 (2026-05-08) ทำให้เป็น nullable + default ''
+    //   เหตุผล: api_endpoint/api_key ใน DB อาจเป็น null → assign ตรงๆ TypeError
+    //   → service boot fail ตอน route:list → autoload crash → LINE webhook 500
+    private string $endpoint = '';
 
-    private string $apiKey;
+    private string $apiKey = '';
 
     public function __construct(?AiProvider $provider = null)
     {
@@ -31,8 +34,9 @@ class EmbeddingService
         }
 
         $this->provider = $provider;
-        $this->endpoint = $provider->api_endpoint;
-        $this->apiKey = $provider->api_key;
+        // 🩹 fallback empty string ถ้า DB ค่าว่าง — caller ต้องเช็คก่อนใช้
+        $this->endpoint = (string) ($provider->api_endpoint ?? '');
+        $this->apiKey = (string) ($provider->api_key ?? '');
 
         // Get embedding model
         $this->model = AiModel::where('provider_id', $provider->id)
