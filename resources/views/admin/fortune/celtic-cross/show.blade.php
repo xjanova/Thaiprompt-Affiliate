@@ -38,6 +38,54 @@
                     </button>
                 </form>
             @else
+                {{-- 🚀 (2026-05-08) Force Approve — โอนยอดไม่ตรง → admin มาร์คจ่าย + push เริ่มเปิดไพ่ --}}
+                <div x-data="{ open: false, amount: '{{ $reading->amount_paid ?? 99 }}' }" class="inline-block">
+                    <button @click="open = true" type="button"
+                            class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg text-sm font-semibold">
+                        🚀 Force Approve (โอนไม่ตรงยอด)
+                    </button>
+
+                    {{-- Modal --}}
+                    <div x-show="open" x-cloak
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="open = false">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                🚀 Force Approve บิล {{ $reading->bill_reference ?? '#' . $reading->id }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                ใช้กรณีลูกค้าโอนยอดไม่ตรง (เช่น 99 แทน 99.37) → SMS app จับคู่ไม่ได้<br>
+                                ระบบจะ <strong>มาร์คบิลจ่ายแล้ว</strong> + <strong>ส่งให้ลูกค้าเริ่มเปิดไพ่ทันที</strong>
+                            </p>
+
+                            <form action="{{ route('admin.fortune.celtic-cross.force-approve', $reading) }}" method="POST">
+                                @csrf
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    จำนวนเงินที่ลูกค้าโอนจริง (บาท)
+                                </label>
+                                <input type="number" name="actual_amount" x-model="amount"
+                                       step="0.01" min="0.01" max="9999" required
+                                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ยอดบิลที่ตั้งไว้: ฿{{ number_format($reading->amount_paid ?? 99, 2) }}
+                                </p>
+
+                                <div class="flex gap-2 mt-5">
+                                    <button @click="open = false" type="button"
+                                            class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600">
+                                        ยกเลิก
+                                    </button>
+                                    <button type="submit"
+                                            onclick="return confirm('ยืนยัน? ระบบจะมาร์คบิลจ่ายแล้ว + ส่งให้ลูกค้าเริ่มเปิดไพ่ — ย้อนกลับไม่ได้');"
+                                            class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold">
+                                        🚀 ยืนยัน Force Approve
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- 🗑️ (2026-05-04) Admin cancel — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย --}}
                 @if((int) ($reading->celtic_questions_used ?? 0) === 0)
                     <form action="{{ route('admin.fortune.celtic-cross.cancel', $reading) }}" method="POST"

@@ -10,6 +10,7 @@ use App\Models\UniquePaymentAmount;
 use App\Services\CelticCrossService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
+use App\Services\SmsPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -327,6 +328,89 @@ class FortuneCelticCrossController extends Controller
             ]);
 
             return back()->with('error', "❌ ยกเลิกล้มเหลว: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * 🚀 (2026-05-08) Force Approve — admin มาร์คบิลเป็นจ่ายแล้ว + push เริ่มเปิดไพ่
+     *
+     * Use case: ลูกค้าโอนยอดไม่ตรง (เช่น 99.00 แทน 99.37) → SMS app จับคู่ไม่ได้
+     *           แอดมินยืนยันว่าเงินเข้าจริง → กดปุ่มนี้แทนการเปิด SMS app มือถือ
+     *
+     * Action:
+     *   1. confirmPayment(null) → is_paid=true, paid_at=now, conversation_status=STATUS_PAID,
+     *      mark UPA as 'used' (ปลด unique amount slot)
+     *   2. SmsPaymentService::handleCelticPaymentMatched(null notification)
+     *      → onCelticPaymentConfirmed → CELTIC_PICKING + push prompt ใบ 1
+     *
+     * Safety:
+     *   - ห้ามถ้า is_paid=true อยู่แล้ว (ใช้ปุ่ม Reset แทน)
+     *   - ห้ามถ้าไม่ใช่ Celtic reading
+     *   - ห้ามถ้าไม่มี user_id
+     */
+    public function forceApprove(Request $request, FortuneReading $reading)
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            abort(404);
+        }
+
+        if ($reading->is_paid) {
+            return back()->with('error', '❌ Reading นี้จ่ายแล้ว — ใช้ปุ่ม "Reset" แทน');
+        }
+
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            return back()->with('error', '❌ Reading นี้ไม่มี user_id — push ไปไม่ได้');
+        }
+
+        // จำนวนเงินที่ลูกค้าโอนจริง (admin กรอก) — default = ยอดบิลที่ตั้งไว้
+        $actualAmount = (float) $request->input('actual_amount', $reading->amount_paid ?? 99.00);
+        if ($actualAmount <= 0) {
+            return back()->with('error', '❌ จำนวนเงินไม่ถูกต้อง');
+        }
+
+        $platform = $reading->platform
+            ?: (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+        try {
+            // 1. มาร์คบิลเป็นจ่ายแล้ว (notification = null = admin force)
+            $reading->confirmPayment(null);
+            $reading = $reading->fresh();
+
+            // 2. ส่ง flow Celtic เริ่มเปิดไพ่ใบ 1 (SMS notification = null)
+            $dispatched = app(SmsPaymentService::class)->handleCelticPaymentMatched(
+                $reading,
+                null,
+                $platform,
+                (string) $userId,
+                $actualAmount
+            );
+
+            Log::info('Celtic admin force approve (web)', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'admin_id' => auth()->id(),
+                'platform' => $platform,
+                'actual_amount' => $actualAmount,
+                'expected_amount' => $reading->amount_paid,
+                'dispatched' => $dispatched,
+            ]);
+
+            $msg = "✅ Force Approve สำเร็จ — บิล {$reading->bill_reference} มาร์คจ่ายแล้ว";
+            if ($dispatched) {
+                $msg .= ' + ส่งให้ลูกค้าเริ่มเปิดไพ่';
+            } else {
+                $msg .= ' (push ไปลูกค้าไม่สำเร็จ — ลูกค้าจะได้ตอนทักกลับ)';
+            }
+
+            return back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            Log::error('Celtic admin force approve failed (web)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', "❌ Force Approve ล้มเหลว: {$e->getMessage()}");
         }
     }
 
