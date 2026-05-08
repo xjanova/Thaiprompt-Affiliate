@@ -1388,15 +1388,28 @@ class FortuneConversationService
                         ];
                     }
 
-                    // ✅ FIX: ตรวจสอบคำขอดูดวงละเอียดก่อน — ทุกสถานะ (ยกเว้น PAID)
+                    // ✅ FIX: ตรวจสอบคำขอดูดวงละเอียดก่อน — ทุกสถานะ (ยกเว้น PAID + Celtic mid-flow)
                     // ป้องกันกรณีคลิกปุ่ม "ดูดวงละเอียด" ขณะอยู่ระหว่าง collecting_questions/tarot
                     // → ข้อความ "ดูดวงละเอียด" จะถูกเข้าใจผิดเป็นคำถาม/trigger สุ่มไพ่
                     // ❌ เดิม: ข้อความถูกส่งไป continueConversation → ค้าง/ผิด flow
                     // ✅ ใหม่: ปิด conversation เก่า + เริ่ม deep reading flow ใหม่ทันที
+                    //
+                    // 🩹 (2026-05-09 audit fix P1) เพิ่ม Celtic mid-flow statuses ใน exclusion list
+                    //    เคสเดิม: ลูกค้าจ่าย 99฿ + อยู่ใน CELTIC_PICKING/AWAITING_QUESTION/GENERATING/QA_PROMPT
+                    //            → พิมพ์ "ดูดวงความรัก" → close all + start new deep flow
+                    //            → orphan paid Celtic (whereIn ไม่ครอบ Celtic statuses → status ค้าง,
+                    //              แต่เริ่ม reading ใหม่ทับซ้อน)
+                    //    Fix: ให้ Celtic state handler จัดการ ("looksLikeFortuneRestartRequest" ใน
+                    //         CelticCrossConversationTrait แจ้งว่าอยู่ใน Celtic flow อยู่แล้ว)
                     if ($this->isExplicitDeepReadingRequest($messageText)
                         && ! in_array($activeReading->conversation_status, [
                             FortuneReading::STATUS_PAID,
                             FortuneReading::STATUS_COLLECTING_BIRTHDATE,  // กำลังเก็บวันเกิดอยู่แล้ว (deep reading flow)
+                            // Celtic paid mid-flow — ห้าม close ทับ (audit P1 2026-05-09)
+                            FortuneReading::STATUS_CELTIC_PICKING,
+                            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                            FortuneReading::STATUS_CELTIC_GENERATING,
+                            FortuneReading::STATUS_CELTIC_QA_PROMPT,
                         ])) {
                         Log::info('Fortune processMessage: คำขอดูดวงละเอียดขณะมี active conversation → ปิดเก่า + เริ่ม deep reading ใหม่', [
                             'facebook_user_id' => $facebookUserId,

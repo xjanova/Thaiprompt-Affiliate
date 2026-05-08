@@ -1526,6 +1526,15 @@ trait CelticCrossConversationTrait
                 ."💬 ถ้าเจ้าชะตามีอะไรอยากถามเพิ่มเติมจากบทสรุป — พิมพ์มาได้เลยค่ะ\n"
                 ."   แม่หมอจะอ่านพลังงานจากไพ่ทั้ง 10 ใบให้ละเอียดยิ่งขึ้น\n\n"
                 .'🔚 หรือถ้าพอใจแล้วพิมพ์ *"พอแค่นี้"* / *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้';
+        } elseif (in_array($reason, ['customer_said_done', 'time_expired', 'idle'], true)
+            && method_exists($this, 'clearProSessionFlags')) {
+            // 🩹 (2026-05-09 audit fix CC2) Clear Pro Session flag เมื่อ customer ลาจริง
+            //    เคสเดิม: customer_said_done → status=COMPLETED แต่ pro_session_active=true ค้าง
+            //    → 30 นาทีถัดมา upstream Pro gate intercept "ดูดวง" → AI ตอบจาก context เก่า
+            //    → ลูกค้าเริ่ม flow ใหม่ไม่ได้จนกว่า window จะหมดเอง
+            //    Fix: clear flag explicit เมื่อ reason = customer/time/idle (ไม่ clear ใน
+            //         max_questions_reached/ai_signal เพราะ linger hint ใช้งานได้อยู่)
+            $this->clearProSessionFlags($reading);
         }
 
         return [
