@@ -12620,15 +12620,34 @@ PROMPT;
     // ============================================================
 
     /**
-     * Window สำหรับ post-reading discussion (ชั่วโมง)
-     * หลังจากนี้ → ลูกค้าต้องเปิดบิลใหม่ถ้าอยากคุยต่อ
+     * Window สำหรับ post-reading discussion (Deep 39฿)
+     *
+     * 🩹 (2026-05-08) per user — ลด 48 ชั่วโมง → 10 นาที
+     *   เหตุผล: เดิม 48h = ลูกค้ากลับมาทักหลายชั่วโมง บอทคุยตอบฟรี → cost สูง
+     *   ใหม่: ลูกค้าจ่าย 39฿ ได้คุยกับ Pro AI 10 นาทีต่อเนื่อง — เกินแล้วต้องดูดวงใหม่
+     *
+     * ⚠️ ใช้คู่กับ POST_READING_DISCUSSION_MINUTES (เก็บ const เดิมไว้รองรับ legacy reads)
      */
-    public const POST_READING_DISCUSSION_HOURS = 48;
+    public const POST_READING_DISCUSSION_HOURS = 48;  // legacy — โค้ดบางจุดยังอ่าน
+
+    /**
+     * 🆕 (2026-05-08) Deep 39฿ premium chat window — 10 นาที
+     */
+    public const POST_READING_DEEP_MINUTES = 10;
+
+    /**
+     * 🆕 (2026-05-08) Celtic 99฿ premium chat window — 30 นาที
+     *   (ตรงกับ celtic_cross_qa_window_minutes default ที่ admin ตั้ง)
+     */
+    public const POST_READING_CELTIC_MINUTES = 30;
 
     /**
      * จำนวน follow-up turns สูงสุด (กัน abuse)
+     *
+     * 🩹 (2026-05-08) เพิ่มจาก 8 → 30 — user spec "จนกว่าจะได้คำตอบ"
+     *   ใน 10/30 นาที AI ตอบกี่ครั้งก็ได้จนหมดเวลา
      */
-    public const POST_READING_MAX_TURNS = 8;
+    public const POST_READING_MAX_TURNS = 30;
 
     /**
      * ค้นหา deep reading ที่เพิ่งเสร็จและยังอยู่ใน discussion window
@@ -12637,12 +12656,17 @@ PROMPT;
      */
     protected function findRecentCompletedDeepReading(string $userId): ?FortuneReading
     {
-        return FortuneReading::where('facebook_user_id', $userId)
+        // 🩹 (2026-05-08) Window 10 นาที (เดิม 48 ชั่วโมง) — user spec
+        //   ลูกค้าจ่าย 39฿ → คุยต่อ 10 นาทีกับ Pro AI — เกินต้องดูดวงใหม่
+        return FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
             ->where('reading_type', 'deep')
             ->where('is_paid', true)
             ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
             ->whereNotNull('deep_response')
-            ->where('responded_at', '>=', now()->subHours(self::POST_READING_DISCUSSION_HOURS))
+            ->where('responded_at', '>=', now()->subMinutes(self::POST_READING_DEEP_MINUTES))
             ->orderBy('responded_at', 'desc')
             ->first();
     }
@@ -12880,12 +12904,14 @@ PROMPT;
             // เพิ่ม user message ปัจจุบัน
             $historyMessages[] = ['role' => 'user', 'content' => $messageText];
 
+            // 🩹 (2026-05-08) Window 10 นาที — บอก AI ใน prompt
+            $windowMin = self::POST_READING_DEEP_MINUTES;
             $systemMessage = "คุณคือ *แม่หมอจันทรา* (ผู้หญิงวัย 40+) — หมอดูที่อ่อนโยน เป็นมิตร พูดไทยเท่านั้น
 แทนตัวเองด้วย *แม่หมอ/หมอจันทรา* + ลงท้าย *ค่ะ/นะคะ* — ห้าม: ครับ/ผม | หนู/เรา | ดิฉัน
 
 [บริบท]
-ลูกค้าชื่อ {$name} เพิ่งจ่ายเงินดูดวงเชิงลึกและได้รับคำทำนายจากแม่หมอแล้ว
-ตอนนี้เขากลับมาคุยต่อเพื่อขยายความ/ถามคำถามเสริม*ในขอบเขตเรื่องเดิม* (ฟรี ภายใน 48 ชม.)
+ลูกค้าชื่อ {$name} เพิ่งจ่ายเงินดูดวงเชิงลึก ({$windowMin} นาทีที่แล้ว) และได้รับคำทำนายจากแม่หมอแล้ว
+ตอนนี้เขากลับมาคุยต่อเพื่อขยายความ/ถามคำถามเสริม*ในขอบเขตเรื่องเดิม* (ฟรี ภายใน {$windowMin} นาที)
 
 [ข้อมูลที่ใช้ทำนายไปแล้ว]
 - วันเกิด: {$birthDateThai}
@@ -12899,18 +12925,44 @@ PROMPT;
 3. ขยายความ วิเคราะห์เพิ่ม ยืนยัน หรือเชื่อมประเด็นจากคำทำนายเดิม
 4. *ห้ามทำนายเรื่องใหม่ที่ต้องเปิดไพ่/ดูดวงใหม่* — ถ้าจำเป็นบอก \"เรื่องนี้ต้องเปิดไพ่ใหม่ค่ะ\"
 5. *ตอบเต็มที่ 200-400 คำ* — ละเอียด ฟันธง ภาษาธรรมชาติ อย่าคลุมเครือ
-6. ห้ามขอวันเกิด/ข้อมูลใหม่ที่มีอยู่แล้ว";
+6. ห้ามขอวันเกิด/ข้อมูลใหม่ที่มีอยู่แล้ว
+7. ห้ามชวนติดตามเพจ/เข้ากลุ่ม/ขายเพิ่ม — โฟกัสตอบคำถามอย่างเดียว";
 
-            if (empty($this->settings->getChatAIApiKey())) {
-                return null; // ไม่มี API key → fallback ไป default flow
+            // 🌟 (2026-05-08) Pro mode — ลูกค้าจ่าย 39฿ → ใช้ Pro AI (sensitive key) ตอบ
+            //   ลอง generateProResponse ก่อน → fallback chat AI ปกติถ้า Pro ไม่มี key
+            try {
+                $proResult = $aiService->generateSensitiveChatResponse(
+                    $messageText,
+                    $userProfile,
+                    $historyMessages
+                );
+                if ($proResult !== null && ! empty($proResult['response'])) {
+                    $result = $proResult;
+                } else {
+                    // ไม่มี sensitive key → fallback chat ปกติ
+                    if (empty($this->settings->getChatAIApiKey())) {
+                        return null;
+                    }
+                    $result = $aiService->chatWithCustomSystemPromptHistory(
+                        $systemMessage,
+                        $historyMessages,
+                        ['temperature' => 0.7, 'max_tokens' => 1200]
+                    );
+                }
+            } catch (\Throwable $proErr) {
+                Log::info('Post-reading: Pro AI fail → fallback chat', [
+                    'reading_id' => $reading->id,
+                    'error' => $proErr->getMessage(),
+                ]);
+                if (empty($this->settings->getChatAIApiKey())) {
+                    return null;
+                }
+                $result = $aiService->chatWithCustomSystemPromptHistory(
+                    $systemMessage,
+                    $historyMessages,
+                    ['temperature' => 0.7, 'max_tokens' => 1200]
+                );
             }
-
-            // 🆕 ใช้ chatWithCustomSystemPromptHistory เพื่อส่ง history เข้า AI
-            $result = $aiService->chatWithCustomSystemPromptHistory(
-                $systemMessage,
-                $historyMessages,
-                ['temperature' => 0.7, 'max_tokens' => 1200] // ↑ จาก 500 — ตอบเต็มที่
-            );
 
             $response = trim($result['response'] ?? '');
             if (empty($response)) {

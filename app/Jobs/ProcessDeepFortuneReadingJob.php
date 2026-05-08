@@ -15,7 +15,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -97,8 +96,6 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
      * - Queue worker อาจไม่ได้รันหรือไม่ได้ listen ที่ fortune-deep queue
      * - proc_open() สร้าง process อิสระที่ไม่ติด web server timeout
      * - ไม่ต้องพึ่ง supervisor หรือ queue worker daemon
-     *
-     * @return void
      */
     public static function dispatchSmart(int $readingId, ?int $notificationId, string $platform, string $userId): void
     {
@@ -198,7 +195,7 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
     {
         $artisan = \base_path('artisan');
         $php = self::findPhpBinary();
-        $notifArg = $notificationId ? ' --notification-id=' . \escapeshellarg((string) $notificationId) : '';
+        $notifArg = $notificationId ? ' --notification-id='.\escapeshellarg((string) $notificationId) : '';
 
         // สร้าง command
         $cmd = \sprintf(
@@ -411,8 +408,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         try {
                             $lineService = new \App\Services\LineFortuneService($settings);
                             $readyMessage = "🔮✨ คุณ{$name}คะ คำทำนายพร้อมแล้วค่ะ!\n\n"
-                                . "อ่านเลยไหมคะ? 💎\n\n"
-                                . "💡 กด 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
+                                ."อ่านเลยไหมคะ? 💎\n\n"
+                                ."💡 กด 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
 
                             Log::info('ProcessDeepFortuneReadingJob: LINE — push Flex แจ้งเตือนสั้นๆ (1 quota)', [
                                 'reading_id' => $this->readingId,
@@ -471,8 +468,8 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                         try {
                             // ประกอบข้อความคำทำนายเต็ม (รูปแบบเดียวกับ FCS:779-784)
                             $readingMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
-                            $readingMessage .= '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n";
-                            $readingMessage .= '📅 วันที่: ' . $reading->created_at->format('d/m/Y H:i') . "\n";
+                            $readingMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                            $readingMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
                             $readingMessage .= "═══════════════════════\n\n";
                             $readingMessage .= $reading->deep_response;
 
@@ -513,9 +510,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                                 $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
                                 $reading->setConversationState('delivered_by_push', true);
 
-                                // 🆕 (2026-04-28) ส่ง follow-up DM แจ้งว่าคุยต่อได้
-                                // ใน 48 ชม. ลูกค้าถามต่อเรื่องเดิมได้ฟรี (ระบบ post-reading discussion)
-                                $this->sendPostReadingFollowUp($channelManager, $reading, $name);
+                                // 🚫 (2026-05-08) per user — ห้ามส่ง invite text "คุยต่อ 48 ชม"
+                                //    ระบบ premium chat ทำงานเงียบๆ — ลูกค้าทักภายใน 10 นาที AI ตอบ Pro mode
+                                //    เดิม: $this->sendPostReadingFollowUp($channelManager, $reading, $name);
                             } else {
                                 Log::warning('ProcessDeepFortuneReadingJob: Facebook push fail (transient) — ไม่ lock retry, จะ fallback ตอน user ทักกลับ', [
                                     'reading_id' => $this->readingId,
@@ -634,7 +631,7 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                     'user_id' => $this->userId,
                     'error' => mb_substr($exception->getMessage(), 0, 200),
                     'attempts' => $this->attempts(),
-                    'admin_action' => "ไปที่ /admin/fortune/billing แล้วกด retry หรือทำคำทำนายเอง — ลูกค้าได้ failure notification แล้ว",
+                    'admin_action' => 'ไปที่ /admin/fortune/billing แล้วกด retry หรือทำคำทำนายเอง — ลูกค้าได้ failure notification แล้ว',
                 ]
             );
         } catch (\Throwable $alertErr) {
@@ -692,9 +689,9 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
         }
 
         $message = "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว\n\n"
-            . "คำทำนายของคุณยังไม่เสร็จสมบูรณ์ ทีมงานได้รับแจ้งแล้วและจะดูแลให้โดยเร็วที่สุด\n\n"
-            . "💬 กดปุ่ม 'คุยกับแม่หมอ' เพื่อให้ทีมงานช่วยโดยตรง\n"
-            . "🔮 ทีมงานจะส่งคำทำนายให้คุณแน่นอน — ขอเวลาสักครู่ค่ะ";
+            ."คำทำนายของคุณยังไม่เสร็จสมบูรณ์ ทีมงานได้รับแจ้งแล้วและจะดูแลให้โดยเร็วที่สุด\n\n"
+            ."💬 กดปุ่ม 'คุยกับแม่หมอ' เพื่อให้ทีมงานช่วยโดยตรง\n"
+            .'🔮 ทีมงานจะส่งคำทำนายให้คุณแน่นอน — ขอเวลาสักครู่ค่ะ';
 
         // ตรวจ platform ที่รู้จัก (กันกรณี queue payload พัง)
         if (! in_array($this->platform, ['line', 'facebook'], true)) {
@@ -802,11 +799,11 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             $maxTurns = FortuneConversationService::POST_READING_MAX_TURNS;
 
             $followUpMessage = "💬 *อ่านแล้วมีอะไรอยากถามเพิ่ม?*\n\n"
-                . "เจ้าชะตา{$name} สามารถ **คุยต่อเรื่องนี้กับแม่หมอจันทราได้ฟรี** ภายใน {$hours} ชั่วโมง\n\n"
-                . "🃏 ใช้ไพ่+ดวงดาวชุดเดิมที่เปิดไว้แล้ว\n"
-                . "💭 ถามขยายความ หรือเรื่องที่สงสัยจากคำทำนาย ได้สูงสุด {$maxTurns} ครั้ง\n\n"
-                . "_(ถ้าเป็นเรื่องใหม่/หมวดอื่น แม่หมอจะแจ้งให้เปิดไพ่ใหม่ค่ะ)_\n\n"
-                . "พิมพ์คำถามมาได้เลย ✨";
+                ."เจ้าชะตา{$name} สามารถ **คุยต่อเรื่องนี้กับแม่หมอจันทราได้ฟรี** ภายใน {$hours} ชั่วโมง\n\n"
+                ."🃏 ใช้ไพ่+ดวงดาวชุดเดิมที่เปิดไว้แล้ว\n"
+                ."💭 ถามขยายความ หรือเรื่องที่สงสัยจากคำทำนาย ได้สูงสุด {$maxTurns} ครั้ง\n\n"
+                ."_(ถ้าเป็นเรื่องใหม่/หมวดอื่น แม่หมอจะแจ้งให้เปิดไพ่ใหม่ค่ะ)_\n\n"
+                .'พิมพ์คำถามมาได้เลย ✨';
 
             $channelManager->sendResponse($this->platform, $this->userId, [
                 'action' => 'post_reading_invite',

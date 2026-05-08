@@ -2009,6 +2009,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function sendFollowPagePromptToUser(string $recipientId): bool
     {
+        // 🚫 (2026-05-08) Hard-disable per user feedback "เอาออกไปก่อน ไม่ต้องปรากฎ"
+        //    follow-page prompt + group invite รบกวน UX → ลบทิ้งทั้งสอง
+        //    ถ้าจะเปิดอนาคต → comment line ต่อไป
+        return false;
         try {
             $credit = FortuneUserCredit::getOrCreate($recipientId, 'facebook');
             // 🔄 (2026-05-02) เปลี่ยนจาก shouldPromptFollow() (7-day cooldown)
