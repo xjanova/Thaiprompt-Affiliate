@@ -63,19 +63,44 @@ class AuthController extends Controller
 
     /**
      * Get authenticated user
+     *
+     * The juntraweb / จันทรา.online site reads `line_user_id` and
+     * `facebook_user_id` from this payload to gate its AI chat — see
+     * App\Http\Controllers\ChatController in juntraweb. We expose them
+     * explicitly so juntra never has to scan FortuneReadings to figure
+     * out the FB-link state.
      */
     public function me(Request $request)
     {
         $user = $request->user();
         $walletAddress = $user->wallet?->wallet_address;
 
+        // Surface the most-recent fortune_reading PSID as the canonical
+        // facebook_user_id for SSO purposes — this is the FB id that the
+        // user has actually used to talk to the bot. No PSID = never came
+        // via FB → juntra will treat them as "not FB-linked".
+        $fbPsid = \App\Models\FortuneReading::query()
+            ->where('user_id', $user->id)
+            ->whereNotNull('facebook_user_id')
+            ->orderByDesc('created_at')
+            ->value('facebook_user_id');
+
+        $signupVia = $user->line_user_id ? 'line'
+                   : ($fbPsid ? 'facebook'
+                   : ($user->email ? 'email' : null));
+
         return response()->json([
             'success' => true,
             'data' => array_merge($user->toArray(), [
                 'wallet_address' => $walletAddress,
-                'referralCode' => $user->referral_code,
-                'referralLink' => url('/register?ref='.$user->referral_code),
+                'referralCode'   => $user->referral_code,
+                'referralLink'   => url('/register?ref='.$user->referral_code),
                 'is_super_admin' => $user->is_super_admin ?? false,
+
+                // SSO-link state for juntra (and any other federated client)
+                'line_user_id'     => $user->line_user_id,
+                'facebook_user_id' => $fbPsid,
+                'signup_via'       => $signupVia,
             ]),
         ]);
     }
