@@ -684,6 +684,53 @@ class SmsPaymentService
             'user_id' => $userId,
         ]);
 
+        // 🩹 (2026-05-09 audit fix P3) Cache::lock + idempotency flag
+        //    เคสเดิม: 2 SMS notifications สำหรับ payment เดียว (เช่น K Bank ฝาก/รับ push 2 ครั้ง)
+        //    → ทั้งคู่ผ่าน matched_transaction_id IS NULL check (คนละ notification row)
+        //    → confirmPayment idempotent (paid_at คงที่) แต่ side effects (push msg + FCM +
+        //      dispatch Job) ยิงซ้ำ → ลูกค้าเห็น "ระบบตัดบิลเรียบร้อย" 2 ครั้ง
+        //    Fix: lock เฉพาะ reading.id + ตั้ง flag sms_match_processed → idempotent ทุก path
+        $lock = \Illuminate\Support\Facades\Cache::lock("sms-fortune-match:{$reading->id}", 30);
+
+        if (! $lock->get()) {
+            Log::info('🔒 SMS Payment: lock held by another notification — dedup skip', [
+                'notification_id' => $notification->id,
+                'reading_id' => $reading->id,
+            ]);
+
+            // Mark this notification as matched (เพื่อ SMS app แสดง status ถูก) แต่ไม่ทำงานซ้ำ
+            $notification->update([
+                'status' => 'matched',
+                'matched_transaction_id' => $reading->id,
+            ]);
+
+            return true;
+        }
+
+        try {
+            $reading->refresh();
+            if ($reading->getConversationState('sms_match_processed', false)) {
+                Log::info('🔒 SMS Payment: side effects already fired by previous notification — dedup skip', [
+                    'notification_id' => $notification->id,
+                    'reading_id' => $reading->id,
+                    'previous_processed_at' => $reading->getConversationState('sms_match_processed_at'),
+                ]);
+
+                $notification->update([
+                    'status' => 'matched',
+                    'matched_transaction_id' => $reading->id,
+                ]);
+
+                return true;
+            }
+
+            // ✨ Mark processed helper — เรียกก่อน return true ทุก path กัน duplicate ที่
+            //    มาทีหลัง (lock acquired แล้วเห็น flag → skip)
+            $markProcessed = function () use ($reading) {
+                $reading->setConversationState('sms_match_processed', true);
+                $reading->setConversationState('sms_match_processed_at', now()->toIso8601String());
+            };
+
         // ✅ ยืนยันการชำระเงินทันที (ก่อน dispatch job)
         // เพื่อให้ response กลับไปแอพ SMS Checker แสดงสถานะ "auto_approved" ทันที
         // ไม่ใช่ค้างที่ "pending_review" จนกว่า job จะรัน confirmPayment()
@@ -707,7 +754,10 @@ class SmsPaymentService
 
         // 🔮 Celtic Cross fork — push "ตัดบิลแล้ว + เปิดไพ่ใบ 1/10" ทันที (ไม่ต้องรอ AI generate)
         if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
-            return $this->handleCelticPaymentMatched($reading, $notification, $platform, $userId, $amount);
+            $celticResult = $this->handleCelticPaymentMatched($reading, $notification, $platform, $userId, $amount);
+            $markProcessed();
+
+            return $celticResult;
         }
 
         // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
@@ -827,6 +877,8 @@ class SmsPaymentService
                 ]);
             }
 
+            $markProcessed();
+
             return true;
 
         } catch (\Exception $e) {
@@ -869,6 +921,8 @@ class SmsPaymentService
                     'action' => $result['action'] ?? 'unknown',
                 ]);
 
+                $markProcessed();
+
                 return true;
 
             } catch (\Exception $syncErr) {
@@ -891,8 +945,15 @@ class SmsPaymentService
                     'reading_id' => $reading->id,
                 ]);
 
+                $markProcessed();
+
                 return true; // return true เพราะ matched แล้ว (เงินโอนมาจริง) แค่ dispatch ล้มเหลว
             }
+        }
+        } finally {
+            // 🔓 (2026-05-09 audit fix P3) Release lock — auto release ผ่าน TTL 30s ก็ได้
+            //    แต่ explicit release ดีกว่า กัน lock contention โดยไม่จำเป็น
+            $lock->release();
         }
     }
 
