@@ -49,9 +49,17 @@ class FortuneBillContextDetector
         $cutoff = now()->subHours($windowHours);
 
         // ดึง reading ที่ pending payment ใน window
+        // 🩹 (2026-05-09 audit fix A6) Filter UPA expired/cancelled — AI ห้ามแนะให้ลูกค้า
+        //    จ่ายบิลที่ matcher ไม่รับแล้ว (status≠reserved หรือ expires_at <= now)
+        //    เคสเดิม: bill_psychology_window=24h ครอบคลุม UPA expired (default ~60 นาที)
+        //            → AI urge "โอน 39.47 บาทตามบิล" → ลูกค้าโอน → SMS matcher ปฏิเสธ → ติด support
         $query = FortuneReading::whereIn('conversation_status', FortuneReading::PENDING_PAYMENT_STATUSES)
             ->where('is_paid', false)
             ->where('updated_at', '>=', $cutoff)
+            ->whereHas('uniquePaymentAmount', function ($q) {
+                $q->where('status', 'reserved')
+                    ->where('expires_at', '>', now());
+            })
             ->with('uniquePaymentAmount')
             ->orderByDesc('updated_at');
 
