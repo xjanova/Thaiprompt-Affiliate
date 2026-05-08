@@ -13,6 +13,15 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
+        // 🩹 (2026-05-08) wildcard ครอบทุก webhook —
+        //   เคสจริง: webhook/line/fortune โดน CSRF เช็ค → 500 → LINE ส่งดูดวงไม่ได้
+        //   custom $except นี้ override bootstrap/app.php validateCsrfTokens()
+        //   ที่มี 'webhook/*' อยู่แล้ว → ต้องใส่ wildcard ที่ระดับนี้ด้วย
+        'webhook/*',
+        '/webhook/*',
+        'api/webhook/*',
+        '/api/webhook/*',
+        // เก็บ exact paths ไว้สำรอง (Str::is จับทั้งคู่ก็ไม่เสียอะไร)
         'webhook/line',
         'webhook/paysolutions',
         'webhook/promptpay',
