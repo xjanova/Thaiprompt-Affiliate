@@ -1367,6 +1367,12 @@ class FortuneConversationService
                             return $this->handleKeywordMatchResponse($matchedKeyword);
                         }
 
+                        // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที (ก่อน AI chat)
+                        //   ถ้าให้ AI ตอบ — AI อาจไม่บอกราคาชัด หรือพยายามชวนแชทโดยไม่บอก
+                        if ($this->looksLikePricingQuestion($messageText)) {
+                            return $this->presentPricingMenu();
+                        }
+
                         // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง (ไม่ใช้โควต้าฟรี)
                         // ต้องให้ AI Chat จัดการก่อน เพราะ containsFortuneKeyword จับคำกว้างเกิน
                         // (เช่น "งาน", "เงิน", "แฟน") ทำให้ข้อความทั่วไปถูก trigger fortune flow
@@ -1535,6 +1541,11 @@ class FortuneConversationService
                     ]);
 
                     return $this->handleKeywordMatchResponse($matchedKeyword);
+                }
+
+                // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที
+                if ($this->looksLikePricingQuestion($messageText)) {
+                    return $this->presentPricingMenu();
                 }
 
                 // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
@@ -8077,6 +8088,103 @@ class FortuneConversationService
             'action' => 'international_payment_info',
             'message' => $message,
             'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 💰 (2026-05-08) ตรวจจับว่าลูกค้าถามเรื่อง "ราคา/อัตราค่าดูดวง" โดยเฉพาะ
+     *
+     * แยกออกจาก looksLikeMetaOrChitchat เพราะถ้าถามราคา —
+     * ต้องส่ง pricing menu (กล่องผลิตภัณฑ์) ไม่ใช่ AI chat ทั่วไป
+     *
+     * Patterns ครอบคลุม:
+     *   - "ราคา/ราคาเท่าไร/ราคาเท่าไหร่"
+     *   - "เท่าไหร่/เท่าไร/กี่บาท"
+     *   - "ค่าครู/ค่าใช้จ่าย/ค่าบริการ/ค่าดูดวง"
+     *   - "อัตรา/แพคเกจ/แพ็คเกจ/แพ็กเกจ"
+     *   - "คิดเงิน/คิดเท่าไร"
+     *   - 🇱🇦 Lao: ລາຄາ/ກີບ/ບາດ
+     */
+    public function looksLikePricingQuestion(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        $pricingPatterns = [
+            'ราคา', 'ราคาเท่าไร', 'ราคาเท่าไหร่', 'ราคากี่',
+            'เท่าไร', 'เท่าไหร่', 'กี่บาท', 'กี่ตังค์',
+            'ค่าครู', 'ค่าใช้จ่าย', 'ค่าบริการ', 'ค่าดู', 'ค่าดูดวง', 'ค่าทำนาย',
+            'อัตรา', 'แพคเกจ', 'แพ็คเกจ', 'แพ็กเกจ', 'package',
+            'คิดเงิน', 'คิดเท่าไร', 'คิดเท่าไหร่', 'จ่ายเท่าไร', 'จ่ายเท่าไหร่',
+            'มีกี่แบบ', 'กี่แพ็ค', 'กี่แบบ', 'ราคากี่บาท',
+            'how much', 'price', 'cost',
+            // 🇱🇦 Lao
+            'ລາຄາ', 'ເທົ່າໃດ', 'ກີບ', 'ບາດ', 'ຄ່າຄູ',
+        ];
+
+        foreach ($pricingPatterns as $pattern) {
+            if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 💰 (2026-05-08) สร้าง pricing menu — กล่องผลิตภัณฑ์ค่าดูดวง
+     *
+     * ส่งเมื่อลูกค้าถาม "ราคา/อัตราค่าดูดวง" โดยตรง
+     * รวม Deep 39฿ + Celtic 99฿ + ฟรี (ถ้าเปิด) + กดปุ่มเข้า flow ได้ทันที
+     */
+    public function presentPricingMenu(): array
+    {
+        $deepPrice = (int) $this->getDeepReadingPrice();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $celticPrice = $celticEnabled ? (int) (app(\App\Services\CelticCrossService::class)->getPrice()) : 0;
+        $freeEnabled = (bool) ($this->settings->enable_free_card_reading ?? false);
+
+        $msg = "💎 *อัตราค่าดูดวงกับแม่หมอจันทรา* 💎\n\n";
+        $msg .= "━━━━━━━━━━━━━━━━━\n";
+
+        // 39฿ — Deep
+        $msg .= "🔹 *แพ็คเกจ {$deepPrice} บาท* — ดูดวงเชิงลึก\n";
+        $msg .= "   • วิเคราะห์วันเดือนปีเกิด + ดวงดาว\n";
+        $msg .= "   • สุ่มไพ่ยิปซี 1 ใบ + ทำนายเชิงลึก\n";
+        $msg .= "   • ตอบ 2 คำถามที่เจ้าชะตาสงสัย\n\n";
+
+        // 99฿ — Celtic
+        if ($celticEnabled) {
+            $msg .= "━━━━━━━━━━━━━━━━━\n";
+            $msg .= "💎 *แพ็คเกจ {$celticPrice} บาท* — ไพ่ Celtic Cross 10 ใบ ⭐ พรีเมียม\n";
+            $msg .= "   • เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n";
+            $msg .= "   • คุยต่อกับแม่หมอตามจริง (~30 นาที)\n";
+            $msg .= "   • ทำนายลึกซึ้ง — แม่นยำที่สุด\n";
+            $msg .= "   • อัดเสียงสรุปคำทำนายให้ฟัง 🎙️\n\n";
+        }
+
+        // ฟรี
+        if ($freeEnabled) {
+            $msg .= "━━━━━━━━━━━━━━━━━\n";
+            $msg .= "🎁 *ทำนายฟรี* (1 ใบ ครั้งแรก/ท่าน)\n";
+            $msg .= "   • สุ่มไพ่ยิปซี 1 ใบ — ลองสัมผัสพลังก่อน\n\n";
+        }
+
+        $msg .= "━━━━━━━━━━━━━━━━━\n";
+        $msg .= '👇 กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨';
+
+        return [
+            'action' => 'pricing_menu',
+            'message' => $msg,
+            'reading' => null,
+            'pricing' => [
+                'deep_price' => $deepPrice,
+                'celtic_price' => $celticPrice,
+                'celtic_enabled' => $celticEnabled,
+                'free_enabled' => $freeEnabled,
+            ],
         ];
     }
 

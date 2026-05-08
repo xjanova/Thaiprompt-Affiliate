@@ -151,10 +151,11 @@ class FortuneSatisfactionDetector
             }
         }
 
-        // ข้อความสั้น (≤ 15 ตัว) + มี signal → confidence สูงขึ้น
-        // (ลด threshold จาก 20 เพื่อ stricter — "ขอบคุณค่ะ" 9 chars OK, "ดีมาก ทำนายต่อ" 14 chars no)
-        if (! empty($signals) && mb_strlen($trimmed) <= 15) {
-            $score += 20;
+        // ข้อความสั้น (≤ 10 ตัว) + มี signal → confidence สูงขึ้น
+        // 🩹 (2026-05-08) — เข้มขึ้น user "AI ไม่ค่อยคุยเลย" — เดิม 15 chars จับ "ขอบคุณค่ะ" เป็น close
+        //    เปลี่ยนเป็น 10 chars + cap +15 — ให้ short message ที่ไม่ใช่ goodbye แท้ ๆ ผ่านไปคุย AI
+        if (! empty($signals) && mb_strlen($trimmed) <= 10) {
+            $score += 15;
         }
 
         $confidence = min(100, $score);
@@ -162,9 +163,10 @@ class FortuneSatisfactionDetector
 
         // 🩹 wants_to_end ต้องชัดเจนกว่าเดิม:
         //   - มี goodbye signal (ลาก่อน/บาย/จบ) — ชัดสุด
-        //   - หรือ confidence >= 55 + ข้อความสั้น (≤ 20 ตัว)
+        //   - หรือ confidence >= 70 + ข้อความสั้น (≤ 12 ตัว) — เข้มขึ้น user feedback (2026-05-08)
+        //     เดิม >= 55 + 20 chars → "ขอบคุณค่ะ" / "ดีมาก" ติด wants_to_end → AI ไม่คุยเลย
         $hasGoodbye = ! empty(array_filter($signals, fn ($s) => str_starts_with($s, 'goodbye:')));
-        $wantsToEnd = $hasGoodbye || ($confidence >= 55 && mb_strlen($trimmed) <= 20);
+        $wantsToEnd = $hasGoodbye || ($confidence >= 70 && mb_strlen($trimmed) <= 12);
 
         return [
             'is_satisfied' => $isSatisfied,

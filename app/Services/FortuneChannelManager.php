@@ -663,6 +663,31 @@ class FortuneChannelManager
                     return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
                 })(),
 
+                // 💰 (2026-05-08) Pricing menu — ส่งกล่องราคา + ปุ่มเริ่มดูดวงทันที
+                //   trigger เมื่อลูกค้าถาม "ราคา/อัตรา/กี่บาท" (ไม่ต้องอยู่ใน fortune flow)
+                'pricing_menu' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $pricing = $result['pricing'] ?? [];
+                    $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
+                    $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
+
+                    $buttons = [];
+                    if ($freeEnabled) {
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => '🎁 ทำนายฟรี',
+                            'payload' => 'FREE_CARD_START'];
+                    }
+                    $buttons[] = ['content_type' => 'text',
+                        'title' => '🔹 เริ่ม 39 บาท',
+                        'payload' => 'TIER_DEEP_39'];
+                    if ($celticEnabled) {
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => '👑 VIP 99 บาท',
+                            'payload' => 'TIER_CELTIC_99'];
+                    }
+
+                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                })(),
+
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // 1. ส่งภาพไพ่ก่อน (ถ้ามี)
@@ -1652,6 +1677,24 @@ class FortuneChannelManager
                         'label' => FortuneLocaleService::lo('❌ ยกเลิก', '❌ ຍົກເລີກ'),
                         'text' => FortuneLocaleService::lo('ยกเลิก', 'ຍົກເລີກ'),
                     ];
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                })(),
+
+                // 💰 (2026-05-08) Pricing menu (LINE) — ส่งกล่องราคา + ปุ่มเริ่มดูดวง
+                'pricing_menu' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $pricing = $result['pricing'] ?? [];
+                    $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
+                    $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
+
+                    $quickReplies = [];
+                    if ($freeEnabled) {
+                        $quickReplies[] = ['label' => '🎁 ทำนายฟรี', 'text' => 'ทำนายฟรี'];
+                    }
+                    $quickReplies[] = ['label' => '🔹 เริ่ม 39 บาท', 'text' => 'ดูดวง'];
+                    if ($celticEnabled) {
+                        $quickReplies[] = ['label' => '👑 VIP 99 บาท', 'text' => '99'];
+                    }
 
                     return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
                 })(),

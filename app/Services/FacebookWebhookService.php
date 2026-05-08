@@ -2099,6 +2099,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
     public function sendGroupInvitePrompt(string $recipientId): bool
     {
         try {
+            // 🚫 (2026-05-08) Hard-disable per user feedback "ส่งทำไม ไม่มีประโยชน์"
+            //   เก็บฟังก์ชันไว้ — ถ้าอยากเปิดอนาคต comment line ต่อไป + เปิด toggle
+            return false;
+
             // ตรวจ toggle + URL
             if (! ($this->settings->fortune_group_invite_enabled ?? false)) {
                 return false;

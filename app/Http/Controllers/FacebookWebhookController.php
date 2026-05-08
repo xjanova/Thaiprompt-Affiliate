@@ -2201,10 +2201,10 @@ class FacebookWebhookController extends Controller
             // ✅ ลูกค้าพิมพ์ทักมา → processConversationalMessage → AI chat ตอบเป็นกันเอง
             //    + เนียนชวนดูดวง (ผ่าน chat_system_prompt) เมื่อบริบทเหมาะ
 
-            // 🩹 (2026-05-08 review L5 fix) — Group invite ยัง gate ด้วย admin toggle
-            //   ถ้า fortune_group_invite_enabled = true → ส่งคำเชิญตามเดิม (ไม่งั้น admin toggle ตาย)
-            //   ถ้าอยากปิด → admin toggle off ใน /admin/fortune/settings
-            $this->maybeInviteToGroup($senderId, 'get_started');
+            // 🚫 (2026-05-08) Group invite ลบออกจาก get_started — user feedback "ส่งทำไม ไม่มีประโยชน์"
+            //   กล่อง group invite รบกวน UX ใหม่ที่ทักมาครั้งแรก → ลบทิ้ง
+            //   ถ้าจะใช้อนาคต — uncomment + ตั้ง fortune_group_invite_enabled=true
+            // $this->maybeInviteToGroup($senderId, 'get_started');
 
         } catch (\Exception $e) {
             Log::error('Get Started Error: '.$e->getMessage(), [
