@@ -608,6 +608,24 @@ class FortuneConversationService
                     'force_tier' => $forceTier,
                     'source' => $messageText === '39' || $messageText === '99' ? 'line_text' : 'fb_postback',
                 ]);
+
+                // 🛡️ (2026-05-08 v3) Rapid-click bill spam guard
+                //   ลูกค้าใจร้อนกดปุ่ม 39/99 รัวๆ → เดิม: closeAll + create new ทุกครั้ง
+                //   → orphan UPA + ลูกค้าโอนเข้าบิลที่ระบบ cancel แล้ว
+                //   ใหม่: ถ้ามี pending bill ของ tier เดียวกัน + UPA ยังไม่หมดอายุ → re-show เดิม
+                //         (กัน duplicate creation ภายใน UPA TTL 30 นาที)
+                $existingPending = $this->findActivePendingBillForTier($facebookUserId, $forceTier);
+                if ($existingPending !== null) {
+                    Log::info('Fortune: Rapid tier click — reuse existing pending bill', [
+                        'facebook_user_id' => $facebookUserId,
+                        'reading_id' => $existingPending->id,
+                        'bill_ref' => $existingPending->bill_reference,
+                        'tier' => $forceTier,
+                    ]);
+
+                    return $this->resendPendingBill($existingPending);
+                }
+
                 // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
                 $this->closeAllActiveConversations($facebookUserId);
 
@@ -2708,6 +2726,118 @@ class FortuneConversationService
             'action' => 'view_reading_basic',
             'message' => $message,
             'reading' => $latestReading,
+        ];
+    }
+
+    /**
+     * 🛡️ (2026-05-08 v3) หา pending bill ของ tier เดียวกันที่ UPA ยังไม่หมดอายุ
+     *
+     * ใช้ใน rapid-click guard — ลูกค้าใจร้อนกดปุ่ม 39/99 รัวๆ
+     * ถ้าเจอ → re-show บิลเดิม ไม่สร้างใหม่ (กัน orphan UPA)
+     *
+     * @param  string  $tier  'deep' | 'celtic'
+     */
+    protected function findActivePendingBillForTier(string $userId, string $tier): ?FortuneReading
+    {
+        $statusList = $tier === 'celtic'
+            ? [FortuneReading::STATUS_CELTIC_PENDING_PAYMENT]
+            : [FortuneReading::STATUS_PENDING_PAYMENT];
+
+        return FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->whereIn('conversation_status', $statusList)
+            ->where('is_paid', false)
+            ->whereNotNull('unique_payment_amount_id')
+            ->whereHas('uniquePaymentAmount', function ($q) {
+                $q->where('expires_at', '>', now())
+                    ->where('status', 'reserved');
+            })
+            ->with('uniquePaymentAmount')
+            ->orderBy('created_at', 'desc')
+            ->first();
+    }
+
+    /**
+     * 🛡️ (2026-05-08 v3) ส่ง pending bill เดิมซ้ำ (rapid-click guard)
+     *
+     * ใช้ UPA + bill_reference เดิม → re-gen QR แล้ว return action สำหรับส่งลูกค้า
+     * ลูกค้าจะเห็นบิลเดิม (ไม่ใช่บิลใหม่) ไม่ต้องโอนใหม่
+     */
+    protected function resendPendingBill(FortuneReading $reading): array
+    {
+        $upa = $reading->uniquePaymentAmount;
+        if (! $upa) {
+            // ไม่ควรเกิด — fall back เป็น error
+            return [
+                'action' => 'error',
+                'message' => "🙏 ขออภัยค่ะ ระบบขัดข้อง กรุณาพิมพ์ 'ดูดวง' อีกครั้ง",
+                'reading' => $reading,
+            ];
+        }
+
+        $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+
+        // Re-generate dynamic QR จาก UPA เดิม
+        $qrImageUrl = null;
+        try {
+            $qrImageUrl = $this->generatePromptPayQrImage((float) $upa->unique_amount, $reading->id);
+        } catch (\Throwable $qrErr) {
+            Log::warning('Fortune resend bill: QR re-gen fail (fallback to static)', [
+                'reading_id' => $reading->id,
+                'error' => $qrErr->getMessage(),
+            ]);
+        }
+        if (! $qrImageUrl) {
+            $qrImageUrl = $this->getPaymentQrImageUrl();
+        }
+
+        $payAmount = number_format((float) $upa->unique_amount, 2);
+        $remainingMin = max(0, (int) now()->diffInMinutes($upa->expires_at, false));
+        $billRef = $reading->bill_reference ?? '-';
+        $name = $reading->facebook_user_name ?? 'คุณ';
+
+        if ($isCeltic) {
+            $message = "⏳ *เจ้าชะตามีบิลค้างชำระอยู่แล้วนะคะ คุณ{$name}*\n\n"
+                ."📋 บิล: {$billRef}\n"
+                ."🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross 99฿*\n"
+                ."💰 ยอดที่ต้องโอน: ฿{$payAmount}\n"
+                ."⏰ บิลหมดอายุใน {$remainingMin} นาที\n\n"
+                ."──────────────────────\n"
+                ."💚 *ใช้บิลเดิมได้เลย ไม่ต้องสร้างใหม่ค่ะ*\n"
+                ."กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย เพื่อเปิดไพ่ยิปซี 10 ใบทันที\n\n"
+                ."🙏 ถ้าจะยกเลิกบิลนี้ → พิมพ์ 'ยกเลิก'";
+
+            return [
+                'action' => 'celtic_pending_payment_reuse',
+                'message' => $message,
+                'reading' => $reading,
+                'celtic_price' => $payAmount,
+                'celtic_bill_reference' => $billRef,
+                'unique_payment_amount' => $upa,
+                'payment_qr_url' => $qrImageUrl,
+                'show_qr' => true,
+            ];
+        }
+
+        // Deep 39
+        $message = "⏳ *เจ้าชะตามีบิลค้างชำระอยู่แล้วนะคะ คุณ{$name}*\n\n"
+            ."📋 บิล: {$billRef}\n"
+            ."🔹 *ดูดวงเชิงลึก 39฿*\n"
+            ."💰 ยอดที่ต้องโอน: ฿{$payAmount}\n"
+            ."⏰ บิลหมดอายุใน {$remainingMin} นาที\n\n"
+            ."──────────────────────\n"
+            ."💚 *ใช้บิลเดิมได้เลย ไม่ต้องสร้างใหม่ค่ะ*\n"
+            ."ให้โอนตามยอดให้ตรงนะคะ เพื่อรับคำทำนายอัตโนมัติ\n\n"
+            ."🙏 ถ้าจะยกเลิกบิลนี้ → พิมพ์ 'ยกเลิก'";
+
+        return [
+            'action' => 'pending_payment',
+            'message' => $message,
+            'reading' => $reading,
+            'payment_qr_url' => $qrImageUrl,
+            'chart_image_url' => $reading->reading_image_url,
         ];
     }
 
