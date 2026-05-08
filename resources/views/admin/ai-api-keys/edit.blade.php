@@ -133,14 +133,17 @@
                 </label>
                 <select x-model="form.purpose"
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    <option value="any">ใช้ได้ทุกอย่าง (default)</option>
-                    <option value="prediction">เฉพาะคำทำนาย — paid deep reading (Deep 39 / Celtic 99)</option>
-                    <option value="free_card">🎁 เฉพาะทำนายฟรี — 1 ใบ หลัง DM react/comment</option>
-                    <option value="chat">เฉพาะแชทสนทนา — chat</option>
+                    {{-- 🎯 (2026-05-08) ใช้ AiApiKey::PURPOSES const — ครอบคลุม any/prediction/free_card/chat/sensitive/tts
+                         เดิม hardcode 4 options ขาด sensitive (Sensitive AI Mode) + tts (TTS providers) --}}
+                    @foreach(\App\Models\AiApiKey::PURPOSES as $val => $label)
+                        <option value="{{ $val }}">{{ $label }}</option>
+                    @endforeach
                 </select>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     💡 <strong>free_card</strong> ถูกเลือก<u>ก่อน</u> prediction/any (boost +1000) — สงวน paid keys ไว้สำหรับลูกค้าจ่ายเงิน<br>
                     💎 <strong>prediction</strong> ใช้กับลูกค้าที่จ่ายแล้ว (Deep 39 / Celtic 99) — กัน free/chat ดูดโควต้า<br>
+                    🌟 <strong>sensitive</strong> = STRICT — Pro model สำหรับ Sensitive AI / Bill Psychology / Celtic Premium (ไม่ fallback ไป any)<br>
+                    🎙️ <strong>tts</strong> = STRICT — เฉพาะสังเคราะห์เสียง (MiniMax / OpenAI TTS)<br>
                     🔼 <strong>Priority</strong> สูง = เลือกก่อนใน purpose เดียวกัน (100 = สูงสุด)
                 </p>
             </div>
