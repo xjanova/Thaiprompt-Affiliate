@@ -956,27 +956,71 @@
         </div> {{-- End Sensitive AI Mode card --}}
 
         {{-- ===== 💳 Bill Psychology (2026-05-07 Phase 2) ===== --}}
+        @php
+            $billHasSensitiveKey = ! empty($sensitiveKeys ?? []);
+        @endphp
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
-             x-data="{
-                 billEnabled: {{ old('bill_psychology_enabled', $settings->bill_psychology_enabled ?? true) ? 'true' : 'false' }},
-             }">
+             x-data="proFeatureTester('bill', {{ $billHasSensitiveKey ? 'true' : 'false' }})">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     💳 Bill Psychology
                     <span class="text-xs font-normal text-emerald-600 dark:text-emerald-400">(แม่หมอใจดีคุยให้ลูกค้ายอมโอน)</span>
                 </h3>
-                <label class="relative inline-flex items-center cursor-pointer">
+                <label class="relative inline-flex items-center cursor-pointer"
+                       :class="!hasKey ? 'opacity-60 pointer-events-none' : ''">
                     <input type="hidden" name="bill_psychology_enabled" value="0">
-                    <input type="checkbox" name="bill_psychology_enabled" value="1" x-model="billEnabled" class="sr-only peer">
+                    <input type="checkbox" name="bill_psychology_enabled" value="1"
+                           x-model="featureEnabled" :disabled="!hasKey"
+                           {{ old('bill_psychology_enabled', $settings->bill_psychology_enabled ?? true) ? 'checked' : '' }}
+                           class="sr-only peer">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-emerald-300 dark:peer-focus:ring-emerald-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-emerald-600"></div>
                 </label>
             </div>
 
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                ⚠️ ใช้ Pro model (sensitive key) — เปิด Sensitive AI Mode + เพิ่ม sensitive key ก่อน
-            </p>
+            {{-- 🌟 (2026-05-08) Notice: ใช้ key ร่วมกับ Sensitive AI Mode --}}
+            <div class="mb-4 p-3 rounded-lg border text-sm flex items-start gap-2"
+                 :class="hasKey ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700' : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'">
+                <span class="text-lg" x-text="hasKey ? '🔗' : '⛔'"></span>
+                <div class="flex-1">
+                    <div class="font-semibold" :class="hasKey ? 'text-purple-900 dark:text-purple-200' : 'text-red-900 dark:text-red-200'">
+                        <span x-show="hasKey" x-cloak>ใช้ key เดียวกับ Sensitive AI Mode (purpose='sensitive')</span>
+                        <span x-show="!hasKey" x-cloak>เปิดไม่ได้ — ไม่มี key purpose='sensitive' ใน Account Pool</span>
+                    </div>
+                    <p class="text-xs mt-1" :class="hasKey ? 'text-purple-700 dark:text-purple-300' : 'text-red-800 dark:text-red-300'">
+                        Bill Psychology + Celtic Premium + Sensitive AI ทั้ง 3 ใช้ Pro model ร่วมกัน
+                        — เปลี่ยน key ที่ <strong>Sensitive AI Mode</strong> section ด้านบน → มีผลกับทุก feature
+                    </p>
+                </div>
+                <button type="button" @click="testFeature()" :disabled="!hasKey || testing"
+                        x-show="hasKey" x-cloak
+                        class="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white rounded font-semibold whitespace-nowrap">
+                    <span x-show="!testing">🧪 ทดสอบ Bill</span>
+                    <span x-show="testing" x-cloak>⏳</span>
+                </button>
+            </div>
 
-            <div x-show="billEnabled" x-cloak x-collapse>
+            {{-- Test result --}}
+            <div x-show="testResult" x-cloak x-transition class="mb-4 p-3 rounded-lg text-sm"
+                 :class="testResult && testResult.success ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100' : 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-100'">
+                <template x-if="testResult && testResult.success">
+                    <div>
+                        <div class="font-semibold mb-1">✅ Bill Psychology ใช้งานได้! (latency: <span x-text="testResult.response_time_ms"></span>ms · tokens: <span x-text="testResult.tokens_used"></span>)</div>
+                        <div class="text-xs mb-2 opacity-80">
+                            ใช้ key: <code x-text="(testResult.key_info && testResult.key_info.key_name) || '(pool)'"></code>
+                            · <span x-text="testResult.key_info?.provider"></span> / <span x-text="testResult.key_info?.model"></span>
+                        </div>
+                        <div class="bg-white/50 dark:bg-black/20 p-2 rounded text-xs whitespace-pre-wrap" x-text="testResult.response"></div>
+                    </div>
+                </template>
+                <template x-if="testResult && !testResult.success">
+                    <div>
+                        <div class="font-semibold">❌ ทดสอบไม่ผ่าน</div>
+                        <div class="text-xs mt-1" x-text="testResult.error"></div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="featureEnabled" x-cloak x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
@@ -1024,28 +1068,71 @@
         </div> {{-- End Bill Psychology --}}
 
         {{-- ===== 🌙 Celtic Premium Chat (2026-05-07 Phase 2) ===== --}}
+        @php
+            $celticHasSensitiveKey = ! empty($sensitiveKeys ?? []);
+        @endphp
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
-             x-data="{
-                 celticPremiumEnabled: {{ old('celtic_premium_chat_enabled', $settings->celtic_premium_chat_enabled ?? true) ? 'true' : 'false' }},
+             x-data="proFeatureTester('celtic', {{ $celticHasSensitiveKey ? 'true' : 'false' }}, {
                  showPromptOverride: false,
-             }">
+                 initialEnabled: {{ old('celtic_premium_chat_enabled', $settings->celtic_premium_chat_enabled ?? true) ? 'true' : 'false' }},
+             })">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     🌙 Celtic Premium Chat
                     <span class="text-xs font-normal text-indigo-600 dark:text-indigo-400">(หลังตอบครบ ให้คุยต่อจนหมด window)</span>
                 </h3>
-                <label class="relative inline-flex items-center cursor-pointer">
+                <label class="relative inline-flex items-center cursor-pointer"
+                       :class="!hasKey ? 'opacity-60 pointer-events-none' : ''">
                     <input type="hidden" name="celtic_premium_chat_enabled" value="0">
-                    <input type="checkbox" name="celtic_premium_chat_enabled" value="1" x-model="celticPremiumEnabled" class="sr-only peer">
+                    <input type="checkbox" name="celtic_premium_chat_enabled" value="1"
+                           x-model="featureEnabled" :disabled="!hasKey" class="sr-only peer">
                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-indigo-600"></div>
                 </label>
             </div>
 
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                ลูกค้า Celtic 99฿ คุยต่อกับแม่หมอแบบจริง ๆ ใช้ context ไพ่ + Q&A เดิม จนหมดเวลา QA window (default 30 นาที)
-            </p>
+            {{-- 🌟 (2026-05-08) Notice: ใช้ key ร่วมกับ Sensitive AI Mode --}}
+            <div class="mb-4 p-3 rounded-lg border text-sm flex items-start gap-2"
+                 :class="hasKey ? 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700' : 'bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-700'">
+                <span class="text-lg" x-text="hasKey ? '🔗' : '⛔'"></span>
+                <div class="flex-1">
+                    <div class="font-semibold" :class="hasKey ? 'text-purple-900 dark:text-purple-200' : 'text-red-900 dark:text-red-200'">
+                        <span x-show="hasKey" x-cloak>ใช้ key เดียวกับ Sensitive AI Mode (purpose='sensitive')</span>
+                        <span x-show="!hasKey" x-cloak>เปิดไม่ได้ — ไม่มี key purpose='sensitive' ใน Account Pool</span>
+                    </div>
+                    <p class="text-xs mt-1" :class="hasKey ? 'text-purple-700 dark:text-purple-300' : 'text-red-800 dark:text-red-300'">
+                        ลูกค้า Celtic 99฿ คุยต่อกับแม่หมอ — ใช้ context ไพ่ 10 ใบ + Q&A เดิม จนหมด QA window (~30 นาที)
+                    </p>
+                </div>
+                <button type="button" @click="testFeature()" :disabled="!hasKey || testing"
+                        x-show="hasKey" x-cloak
+                        class="px-3 py-1.5 text-xs bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white rounded font-semibold whitespace-nowrap">
+                    <span x-show="!testing">🧪 ทดสอบ Celtic</span>
+                    <span x-show="testing" x-cloak>⏳</span>
+                </button>
+            </div>
 
-            <div x-show="celticPremiumEnabled" x-cloak x-collapse>
+            {{-- Test result --}}
+            <div x-show="testResult" x-cloak x-transition class="mb-4 p-3 rounded-lg text-sm"
+                 :class="testResult && testResult.success ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100' : 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-100'">
+                <template x-if="testResult && testResult.success">
+                    <div>
+                        <div class="font-semibold mb-1">✅ Celtic Premium ใช้งานได้! (latency: <span x-text="testResult.response_time_ms"></span>ms · tokens: <span x-text="testResult.tokens_used"></span>)</div>
+                        <div class="text-xs mb-2 opacity-80">
+                            ใช้ key: <code x-text="(testResult.key_info && testResult.key_info.key_name) || '(pool)'"></code>
+                            · <span x-text="testResult.key_info?.provider"></span> / <span x-text="testResult.key_info?.model"></span>
+                        </div>
+                        <div class="bg-white/50 dark:bg-black/20 p-2 rounded text-xs whitespace-pre-wrap" x-text="testResult.response"></div>
+                    </div>
+                </template>
+                <template x-if="testResult && !testResult.success">
+                    <div>
+                        <div class="font-semibold">❌ ทดสอบไม่ผ่าน</div>
+                        <div class="text-xs mt-1" x-text="testResult.error"></div>
+                    </div>
+                </template>
+            </div>
+
+            <div x-show="featureEnabled" x-cloak x-collapse>
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
                         <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">
@@ -3112,6 +3199,63 @@ Format 2 — JSON array:
 
 @push('scripts')
 <script>
+// 🌟 (2026-05-08) Pro Feature Tester (Bill Psychology + Celtic Premium)
+//   ทุก Phase 2 features ใช้ key ร่วมกับ Sensitive AI Mode (purpose='sensitive')
+//   component นี้ shared — รับ scenario param เพื่อ test endpoint ที่ตรง
+function proFeatureTester(scenario, hasKey, options) {
+    const csrf = '{{ csrf_token() }}';
+    const testUrl = '{{ route("admin.fortune.playground.test-sensitive") }}';
+
+    const opts = options || {};
+    const sampleMessages = {
+        bill: 'ราคา 39 บาท แพงเกินไปครับ ลดได้ไหม กลัวโดนหลอกด้วย',
+        celtic: 'ขอบคุณค่ะแม่หมอ คำตอบช่วยได้มาก แต่อยากถามต่ออีกนิด เรื่องไพ่ใบที่ 7 แม่หมอเห็นอะไรเพิ่ม',
+        sensitive: 'ฉันเครียดมากเลยค่ะ ผัวมีกิ๊ก จะหย่าดีไหม',
+    };
+
+    const initialEnabled = opts.initialEnabled === undefined ? true : !!opts.initialEnabled;
+
+    return {
+        scenario: scenario,
+        hasKey: !!hasKey,
+        featureEnabled: initialEnabled,
+        testing: false,
+        testResult: null,
+        showPromptOverride: opts.showPromptOverride || false,
+
+        async testFeature() {
+            const defaultMsg = sampleMessages[this.scenario] || sampleMessages.sensitive;
+            const message = prompt(`ใส่ข้อความทดสอบ scenario "${this.scenario}":`, defaultMsg);
+            if (!message || message.trim().length < 5) {
+                this.testResult = { success: false, error: 'ข้อความต้องมีอย่างน้อย 5 ตัวอักษร' };
+                return;
+            }
+
+            this.testing = true;
+            this.testResult = null;
+            try {
+                const res = await fetch(testUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({
+                        message,
+                        scenario: this.scenario,
+                    }),
+                });
+                this.testResult = await res.json();
+            } catch (e) {
+                this.testResult = { success: false, error: e.message };
+            } finally {
+                this.testing = false;
+            }
+        },
+    };
+}
+
 // 🌟 (2026-05-08) Sensitive AI Panel — dropdown + test button
 function sensitiveAiPanel(sensitiveKeys, hasSensitiveKey, lockedKeyId) {
     const csrf = '{{ csrf_token() }}';

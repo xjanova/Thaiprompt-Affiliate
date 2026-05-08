@@ -556,11 +556,17 @@ class FortuneSettingsController extends Controller
         $validated = $request->validate([
             'message' => 'required|string|min:5|max:1000',
             'pool_key_id' => 'nullable|integer|exists:ai_api_keys,id',
+            // 🌟 (2026-05-08) ขยาย: รองรับ scenario type — ทดสอบ system prompt ที่ตรงกับ feature
+            //    sensitive = generic sensitive chat (default)
+            //    bill      = Bill Psychology (ลูกค้าไม่กล้าโอน)
+            //    celtic    = Celtic Premium chat (post-Q&A discussion)
+            'scenario' => 'nullable|in:sensitive,bill,celtic',
         ]);
 
         $settings = FortuneTellingSetting::getSettings();
         $message = $validated['message'];
         $forceKeyId = $validated['pool_key_id'] ?? null;
+        $scenario = $validated['scenario'] ?? 'sensitive';
 
         try {
             // ถ้า admin ส่ง pool_key_id มาทดสอบ — temporary lock ใน-memory
@@ -583,9 +589,40 @@ class FortuneSettingsController extends Controller
                 $startTime = microtime(true);
                 $aiService = new FortuneAIService($settings);
 
-                $result = $aiService->generateSensitiveChatResponse($message, [
-                    'name' => 'ทดสอบ',
-                ], []);
+                // เรียก method ตาม scenario — ทุกอันใช้ key purpose='sensitive' ร่วมกัน
+                $userProfile = ['name' => 'ทดสอบ'];
+                $result = match ($scenario) {
+                    'bill' => $aiService->generateBillPsychologyResponse(
+                        $message,
+                        $userProfile,
+                        [],
+                        // mock bill context — ลูกค้าค้างจ่าย Deep 39 มา 30 นาที
+                        [
+                            'package' => 'ดูดวงเชิงลึก 39 บาท',
+                            'amount' => 39,
+                            'hours_since' => 0,
+                            'minutes_since' => 30,
+                            'mention_count' => 1,
+                            'max_mentions' => 2,
+                        ],
+                        false,  // aggressiveCounter
+                        false   // reachedMentionCap
+                    ),
+                    'celtic' => $aiService->generateCelticPremiumResponse(
+                        $message,
+                        $userProfile,
+                        [],
+                        // mock celtic context
+                        [
+                            'minutes_remaining' => 25,
+                            'message_count' => 3,
+                            'max_messages' => 30,
+                        ],
+                        // mock context text — ไพ่ + Q&A เดิม
+                        "ไพ่ที่เปิดได้: 1.The Star (ตั้งตรง)  2.The Lovers (กลับหัว) ... (10 ใบ)\n\nคำถาม Q1: เรื่องความรัก → ตอบ: ...\nคำถาม Q2: เรื่องการงาน → ตอบ: ..."
+                    ),
+                    default => $aiService->generateSensitiveChatResponse($message, $userProfile, []),
+                };
 
                 $elapsedMs = (int) round((microtime(true) - $startTime) * 1000);
 
@@ -613,6 +650,7 @@ class FortuneSettingsController extends Controller
 
                 return response()->json([
                     'success' => true,
+                    'scenario' => $scenario,
                     'response' => $result['response'] ?? '',
                     'tokens_used' => (int) ($result['tokens_used'] ?? 0),
                     'response_time_ms' => $elapsedMs,
@@ -625,6 +663,7 @@ class FortuneSettingsController extends Controller
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('FortuneSettings: testSensitive exception', [
                 'error' => $e->getMessage(),
+                'scenario' => $scenario,
             ]);
 
             return response()->json([

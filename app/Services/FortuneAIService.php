@@ -1004,16 +1004,26 @@ PROMPT;
         $sensitiveModel = $this->settings->sensitive_model ?? 'gemini-3.1-pro-preview';
         $maxTokens = (int) ($this->settings->sensitive_max_tokens_per_call ?? 2000);
 
+        // 🌟 (2026-05-08) Bill Psychology + Celtic Premium ใช้ locked key เดียวกับ Sensitive AI
+        //    Phase 2 features ทั้งหมดแชร์ purpose='sensitive' key — admin lock 1 ตัว → uniform behavior
+        //    ลอง locked key ก่อน → fallback pool acquireKey
         $poolService = new \App\Services\AiApiKeyPoolService;
-        $sensitiveKey = $poolService->acquireKey($sensitiveProvider, 'sensitive');
+        $lockedKey = $this->settings->getSensitivePoolKey();
+        $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
 
         if (! $sensitiveKey) {
             Log::info("FortuneAIService: ไม่มี sensitive key ({$requestType}) — caller fallback", [
                 'provider' => $sensitiveProvider,
                 'request_type' => $requestType,
+                'tried_locked_key_id' => $this->settings->sensitive_ai_pool_key_id,
             ]);
 
             return null;
+        }
+
+        // ถ้าใช้ locked key — sync provider ตาม key จริง (กัน mismatch ถ้า admin ตั้งคนละ provider)
+        if ($lockedKey) {
+            $sensitiveProvider = $lockedKey->provider;
         }
 
         try {
@@ -1070,7 +1080,10 @@ PROMPT;
 
             throw $e;
         } finally {
-            $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+            // ปล่อย key เฉพาะ acquired จาก pool — locked key ไม่ release
+            if (! $lockedKey) {
+                $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+            }
         }
     }
 
