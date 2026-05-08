@@ -1485,6 +1485,13 @@ class FortuneConversationService
                             return $this->presentPricingMenu();
                         }
 
+                        // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง (ก่อน AI chat)
+                        //   เคส: ลูกค้าเสร็จ basic แล้ว AI บอกให้พิมพ์ "ดูดวงความรัก/การงาน"
+                        //         → ต้องไป tier menu เลย ไม่ต้องผ่าน AI chat อีก (กัน AI fail แทรก)
+                        if ($this->isGenericFortuneRequest($messageText)) {
+                            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                        }
+
                         // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง (ไม่ใช้โควต้าฟรี)
                         // ต้องให้ AI Chat จัดการก่อน เพราะ containsFortuneKeyword จับคำกว้างเกิน
                         // (เช่น "งาน", "เงิน", "แฟน") ทำให้ข้อความทั่วไปถูก trigger fortune flow
@@ -1547,6 +1554,23 @@ class FortuneConversationService
                 //    ใหม่: ตรวจ explicit deep keyword ก่อน → respect customer intent
                 // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
                 if ($this->isExplicitDeepReadingRequest($messageText)) {
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                }
+
+                // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง
+                //   เคส: AI บอกลูกค้าว่า "พิมพ์ ดูดวงความรัก / ดูดวงการงาน" → ลูกค้าพิมพ์ตาม
+                //         แต่ keyword เหล่านี้ไม่ match isExplicitDeepReadingRequest (ต้องการ "เชิงลึก/ละเอียด")
+                //         → fall through ไป AI chat → ถ้า AI fail → welcome_guide แทน tier menu
+                //   Fix: isGenericFortuneRequest match "ดูดวง<หัวข้อใดๆ>" + "ทำนาย" + "หมอดู"
+                //         → startDeepReadingFlow → presentTierChoice (ถ้า Celtic เปิด)
+                //                                  หรือเก็บวันเกิดตรง (ถ้า Celtic ปิด)
+                //   ไม่กระทบ "ดูดวงเชิงลึก" ที่ trigger ก่อนหน้านี้แล้ว — มาที่นี่ = generic ทั่วไป
+                if ($this->isGenericFortuneRequest($messageText)) {
+                    Log::info('Fortune: generic fortune request → tier menu (skip AI)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 50),
+                    ]);
+
                     return $this->startDeepReadingFlow($facebookUserId, $userProfile);
                 }
 
