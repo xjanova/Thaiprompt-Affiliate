@@ -140,6 +140,33 @@ class FortuneAIService
     protected const DEEP_TOTAL_BUDGET_SEC = 90;
 
     /**
+     * 🐢 Gemini Pro models (เช่น gemini-3.1-pro-preview, gemini-2.5-pro) ใช้ reasoning หนัก
+     * ตอบช้ากว่า Flash มาก (30-90s) → ขยาย timeout เฉพาะ Pro เพื่อกัน cURL error 28
+     *
+     * Flash models ยังคงใช้ default timeout เดิม (failover เร็ว)
+     */
+    protected const GEMINI_PRO_TIMEOUT = 90;
+
+    /**
+     * คำนวณ HTTP timeout สำหรับ Gemini ตามชื่อ model
+     *
+     * @param  int  $defaultTimeout  timeout ปกติ (วินาที) ใช้กับ Flash
+     * @param  string|null  $model  ชื่อ model (default: $this->model)
+     * @return int timeout (วินาที) — 90 ถ้า Pro, default ถ้าไม่ใช่
+     */
+    protected function geminiTimeoutFor(int $defaultTimeout, ?string $model = null): int
+    {
+        $checkModel = $model ?? $this->model ?? '';
+
+        // match `-pro` ที่อยู่ระหว่าง dash หรือลงท้าย — กัน false-positive จาก `-prod`
+        if (preg_match('/-pro(?:-|$)/', $checkModel)) {
+            return self::GEMINI_PRO_TIMEOUT;
+        }
+
+        return $defaultTimeout;
+    }
+
+    /**
      * กำหนด maxTokens และ temperature ตาม reading type
      *
      * (2026-05-02 v3) user feedback: "ตอนนี้สั้นเกินไป" — bump เพิ่มอีกครั้ง
@@ -1489,7 +1516,7 @@ PROMPT;
             $genConfigChat1['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
+        $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -1709,7 +1736,7 @@ PROMPT;
             $genConfigChat2['thinkingConfig'] = ['thinkingBudget' => 0];
         }
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)->post($url, [
+        $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, [
             'system_instruction' => [
                 'parts' => [['text' => $systemMessage]],
             ],
@@ -2868,7 +2895,7 @@ PROMPT;
                 $generationConfig['thinkingConfig'] = ['thinkingBudget' => 0];
             }
 
-            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)->post($url, [
+            $response = Http::timeout($this->geminiTimeoutFor(self::DEEP_PROVIDER_TIMEOUT))->post($url, [
                 'system_instruction' => [
                     'parts' => [['text' => self::SYSTEM_MESSAGE]],
                 ],
