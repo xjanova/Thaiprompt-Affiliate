@@ -543,7 +543,10 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                 'deep_response_length' => mb_strlen($reading->deep_response ?? ''),
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // 🩹 (2026-05-09) catch \Throwable แทน \Exception — PHP 8 TypeError/Error
+            //                 ไม่ extends \Exception → จะ leak ผ่าน gen_processing clear ใน failed()
+            //                 ก่อนหน้า: TypeError = silent skip 5 นาที, customer งง
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             Log::error('❌ ProcessDeepFortuneReadingJob: ล้มเหลว', [

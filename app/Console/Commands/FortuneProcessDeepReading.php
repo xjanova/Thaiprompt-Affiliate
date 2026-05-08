@@ -259,7 +259,9 @@ class FortuneProcessDeepReading extends Command
 
             return self::SUCCESS;
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
+            // 🩹 (2026-05-09) catch \Throwable แทน \Exception — กัน TypeError/Error leak ผ่าน
+            //                 status update + recovery (PHP 8 type errors extends Throwable ไม่ใช่ Exception)
             $duration = round((microtime(true) - $startTime) * 1000, 2);
 
             $this->error("❌ ล้มเหลว: {$e->getMessage()} ({$duration}ms)");
@@ -270,28 +272,37 @@ class FortuneProcessDeepReading extends Command
                 'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
-            // ✅ เปลี่ยนสถานะเป็น completed เพื่อไม่ให้บิลค้างที่ paid ตลอดไป
-            // fortune:check-pending จะ retry ให้อีกครั้ง (ถ้า deep_response ยังว่าง)
+            // 🚨 (2026-05-09) Recovery: alert admin + push failure notification + clear gen_processing
+            //   ก่อนหน้า: catch นี้แค่ update STATUS_COMPLETED เท่านั้น (ลูกค้าเงียบ 5 นาที, ไม่มี admin alert)
+            //   ปัญหา: dispatchSmart() ใช้ fastcgi_finish_request + Artisan::call → Job::failed() ไม่ run →
+            //          C5 fix (2026-05-03 #2) ทั้งชุดอยู่ใน Job::failed ที่ไม่ถูกเรียกบน production
+            //   Fix: เรียก FortuneAiFailureRecovery service (idempotent ผ่าน ai_failed_alert flag)
             try {
-                $reading = FortuneReading::find($readingId);
-                if ($reading && $reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
-                    $reading->update([
-                        'conversation_status' => FortuneReading::STATUS_COMPLETED,
-                    ]);
-                    Log::info('fortune:process-deep: เปลี่ยนสถานะเป็น completed หลังล้มเหลว', [
+                app(\App\Services\Fortune\FortuneAiFailureRecovery::class)
+                    ->handle($readingId, $platform, $userId, $e, 1);
+
+                Log::info('fortune:process-deep: recovery ทำงานเรียบร้อย', [
+                    'reading_id' => $readingId,
+                ]);
+            } catch (\Throwable $recoveryErr) {
+                // ถ้า recovery service ล้ม → ยังต้อง mark COMPLETED กันบิลค้าง (fallback)
+                Log::error('fortune:process-deep: recovery service ล้ม — fallback mark completed', [
+                    'reading_id' => $readingId,
+                    'recovery_error' => $recoveryErr->getMessage(),
+                ]);
+
+                try {
+                    $reading = FortuneReading::find($readingId);
+                    if ($reading && $reading->conversation_status !== FortuneReading::STATUS_COMPLETED) {
+                        $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                    }
+                } catch (\Throwable $statusErr) {
+                    Log::error('fortune:process-deep: fallback status update ล้ม', [
                         'reading_id' => $readingId,
+                        'error' => $statusErr->getMessage(),
                     ]);
                 }
-            } catch (\Exception $statusErr) {
-                Log::error('fortune:process-deep: เปลี่ยนสถานะไม่สำเร็จ', [
-                    'reading_id' => $readingId,
-                    'error' => $statusErr->getMessage(),
-                ]);
             }
-
-            // ❌ ไม่ส่ง error message ให้ลูกค้า — ลูกค้าได้รับ "รอสักครู่" ไปแล้ว
-            // fortune:check-pending จะ retry ให้อัตโนมัติทุก 1 นาที
-            // ถ้ารอนานเกิน 10 นาที → check-pending จะส่ง "คนใช้งานมาก" แทน
 
             return self::FAILURE;
         }
