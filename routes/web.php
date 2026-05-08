@@ -1243,6 +1243,11 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
+            // 🩹 (2026-05-08 v2) เพิ่ม parent CsrfToken — Laravel 11 auto-register ผ่าน
+            //    bootstrap/app.php → validateCsrfTokens() ทำให้ class นี้รันแยกจาก subclass
+            //    parent เรียก addCookieToResponse() ผ่าน tap() ทุก request แม้อยู่ใน $except
+            //    → access session token → throw RuntimeException → 500
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\TrackVendorStoreVisit::class,
             \App\Http\Middleware\TrackRequestMetrics::class,
@@ -1259,6 +1264,7 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\TrackVendorStoreVisit::class,
             \App\Http\Middleware\TrackRequestMetrics::class,
