@@ -200,7 +200,11 @@ class FortuneReading extends Model
             $cacheKey,
             now()->addSeconds(30),
             function () use ($platform, $userId) {
-                $column = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
+                // 🩹 (2026-05-08) fortune_readings ไม่มี column 'line_user_id' —
+                //   universal field สำหรับ LINE = 'platform_user_id'
+                //   เคสจริง: ลูกค้าเลือก 39/99 → query นี้ throw SQLSTATE[42S22]
+                //   → bot ตอบ error → ดูดวงไม่ต่อ
+                $column = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
 
                 return self::where($column, $userId)
                     ->whereIn('conversation_status', self::ACTIVE_READING_STATUSES)

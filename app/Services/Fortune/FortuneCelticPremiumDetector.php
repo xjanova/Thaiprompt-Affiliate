@@ -64,10 +64,12 @@ class FortuneCelticPremiumDetector
             ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
             ->orderByDesc('celtic_first_answered_at');
 
+        // 🩹 (2026-05-08) fortune_readings ใช้ platform_user_id สำหรับ LINE
+        //   ไม่มี column 'line_user_id' — query เก่า throw SQLSTATE[42S22]
         if ($platform === 'facebook') {
             $query->where('facebook_user_id', $platformUserId);
         } else {
-            $query->where('line_user_id', $platformUserId);
+            $query->where('platform_user_id', $platformUserId);
         }
 
         $reading = $query->first();
