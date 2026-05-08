@@ -1229,6 +1229,12 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
 
     // LINE Fortune Webhook (สำหรับระบบดูดวงผ่าน LINE Official Account)
     // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook (เร็วขึ้น ~30-50ms)
+    //
+    // 🩹 (2026-05-08) เพิ่ม VerifyCsrfToken เข้า list — แก้ "Session store not set"
+    //   เคสจริง: parent VerifyCsrfToken::handle() เรียก addCookieToResponse()
+    //   → access $request->session()->token() แม้ route จะอยู่ใน $except
+    //   → เมื่อ StartSession ถูกตัด → session ไม่มี → RuntimeException → 500
+    //   ลูกค้า LINE ดูดวงไม่ได้ทั้ง 39/99 เพราะ webhook 500 ทุก request
     Route::post('/line/fortune', [LineFortuneWebhookController::class, 'handle'])
         ->name('line.fortune')
         ->withoutMiddleware([
@@ -1236,6 +1242,7 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
             \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
             \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\TrackVendorStoreVisit::class,
             \App\Http\Middleware\TrackRequestMetrics::class,
