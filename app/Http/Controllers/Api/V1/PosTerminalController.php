@@ -671,8 +671,13 @@ class PosTerminalController extends Controller
      * ใช้สำหรับ:
      * - ตรวจสอบว่า sync ได้หรือไม่
      * - ตรวจสอบว่า API Key ถูกบล็อกหรือไม่
+     *
+     * 🩹 (2026-05-08) เปลี่ยนชื่อจาก validate() → validateTerminal()
+     *   เหตุผล: PHP Fatal Error — signature ขัดกับ Controller::validate()
+     *   parent ที่มี (Request, array $rules, ...) → autoload fail → 500 ทุก route
+     *   ที่ resolve fresh (รวม LINE webhook fortune)
      */
-    public function validate(Request $request): JsonResponse
+    public function validateTerminal(Request $request): JsonResponse
     {
         try {
             // ดึงข้อมูลจาก headers

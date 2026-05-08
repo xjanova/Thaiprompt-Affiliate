@@ -1566,7 +1566,9 @@ Route::prefix('pos')->name('api.pos.')->group(function () {
         ->name('verify');
 
     // ตรวจสอบสถานะ POS และ API Key (ต้องมี headers)
-    Route::get('/validate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'validate'])
+    // 🩹 (2026-05-08) action: validate → validateTerminal (PHP signature clash with Controller::validate)
+    //   URL คงเดิม /validate เพื่อ backward-compat กับ POS app ที่ deploy แล้ว
+    Route::get('/validate', [\App\Http\Controllers\Api\V1\PosTerminalController::class, 'validateTerminal'])
         ->name('validate');
 
     // ตรวจสอบสถานะเป็นระยะ (สำหรับแจ้งเตือนเมื่อถูกบล็อก)
