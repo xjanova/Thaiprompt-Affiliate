@@ -1637,4 +1637,15 @@ Route::prefix('v1')->middleware('auth:sanctum')->name('api.juntra.')->group(func
         Route::post('/initiate',   [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'initiate'])->name('initiate');
         Route::get('/{id}/status', [\App\Http\Controllers\Api\Juntra\PaymentController::class, 'status'])->name('status');
     });
+
+    // ─── Admin/full-tree MLM read API (consumed by จันทรา.online website) ──
+    // Reads ONLY fortune_commissions (no marketplace/NFC/TPIX) and walks
+    // mlm_members.unilevel_path for the full downline, not just direct
+    // invitees. Admin role may pass ?user_id= to view any user's tree.
+    Route::prefix('mlm')->name('mlm.')->group(function () {
+        Route::get('/tree',        [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'tree'])->name('tree');
+        Route::get('/commissions', [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'commissions'])->name('commissions');
+        Route::get('/stats',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'stats'])->name('stats');
+        Route::get('/users',       [\App\Http\Controllers\Api\V1\JuntraMlmApiController::class, 'users'])->name('users');
+    });
 });

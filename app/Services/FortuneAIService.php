@@ -974,6 +974,41 @@ PROMPT;
     }
 
     /**
+     * 🌟 (2026-05-08) Deep 39฿ Premium Post-Reading Response
+     *
+     * ใช้สำหรับลูกค้าที่จ่าย 39฿ + ได้คำทำนายแล้ว → ทักภายใน 10 นาที
+     * Caller ส่ง custom system prompt ที่มี context (ดวงดาววันเกิด + ไพ่ที่ทำนายไป)
+     *
+     * 🩹 Why public + custom prompt:
+     *   - generateSensitiveChatResponse ใช้ buildSensitiveChatSystemMessage() (default sensitive prompt)
+     *     → override context ของ post-reading → AI ไม่เห็นไพ่/ดาว
+     *   - method นี้ allow caller ส่ง custom system prompt ที่ตรงกับ context
+     *
+     * Pro AI ใช้ key purpose='sensitive' (Pro model — Gemini Pro / GPT-5+)
+     * ผ่าน generateProResponse internal — locked key หรือ pool acquireKey
+     *
+     * @param  string  $messageText  ข้อความใหม่จากลูกค้า
+     * @param  array|null  $userProfile  profile ลูกค้า (name, etc.)
+     * @param  array  $history  conversation history (Q+A เดิม)
+     * @param  string  $customSystemPrompt  system prompt ที่มี context ครบ (deep_response + birth_date + tarot)
+     * @return array|null result หรือ null ถ้าไม่มี sensitive key พร้อมใช้
+     */
+    public function generatePostReadingDeepResponse(
+        string $messageText,
+        ?array $userProfile,
+        array $history,
+        string $customSystemPrompt
+    ): ?array {
+        return $this->generateProResponse(
+            $messageText,
+            $userProfile,
+            $history,
+            $customSystemPrompt,
+            'post_reading_deep'
+        );
+    }
+
+    /**
      * 🌙 (2026-05-07 Phase 2) Celtic Premium Chat Response
      */
     public function generateCelticPremiumResponse(
