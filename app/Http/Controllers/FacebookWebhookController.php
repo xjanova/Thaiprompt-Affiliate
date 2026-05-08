@@ -1824,9 +1824,19 @@ class FacebookWebhookController extends Controller
 
     /**
      * 🌐 ส่ง Quick Reply ให้เลือกภาษา (เรียกจาก Ice Breaker LANG_PICKER)
+     *
+     * 🚫 (2026-05-09) Lao support permanently disabled (FortuneLocaleService::ENABLED=false)
+     *    → short-circuit ไปที่ Thai ทันที ไม่ต้องโชว์ตัวเลือก. กัน customer คลิก 🇱🇦 แล้วเจอ
+     *      response ภาษาลาว (ผ่าน LANG_LO postback) ตามด้วยข้อความไทยทั้งหมด → ลูกค้างง.
      */
     protected function handleLanguagePicker(string $senderId): void
     {
+        if (! FortuneLocaleService::ENABLED) {
+            $this->handleLanguagePick($senderId, 'th');
+
+            return;
+        }
+
         try {
             $this->facebookService->sendMessage(
                 $senderId,
@@ -1883,9 +1893,22 @@ class FacebookWebhookController extends Controller
 
     /**
      * 🌐 บันทึกภาษาที่ user เลือก (manual override) + ส่งข้อความยืนยัน
+     *
+     * 🚫 (2026-05-09) ถ้า kill switch FortuneLocaleService::ENABLED=false → coerce เป็น 'th' เสมอ
+     *    เคสเก่าที่ปุ่ม LANG_LO ยังค้างใน chat history (Ice Breaker) ลูกค้าคลิกได้ → ไม่ปล่อยให้
+     *    เขียน 'lo' ลง DB + ตอบลาว 1 ครั้ง แล้ว response ถัดไปเป็นไทยทั้งหมด (force_thai_only).
      */
     protected function handleLanguagePick(string $senderId, string $locale): void
     {
+        // 🚫 Coerce เป็น 'th' ถ้า Lao ถูกปิดถาวร
+        if (! FortuneLocaleService::ENABLED && $locale !== 'th') {
+            Log::info('handleLanguagePick: coerce locale → th (Lao disabled)', [
+                'sender_id' => $senderId,
+                'requested_locale' => $locale,
+            ]);
+            $locale = 'th';
+        }
+
         try {
             FortuneLocaleService::set(
                 'facebook',

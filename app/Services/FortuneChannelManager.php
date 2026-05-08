@@ -492,6 +492,11 @@ class FortuneChannelManager
         //    ยกเว้น actions ที่เกี่ยวกับ payment โดยตรง (ไม่ต้องเตือนซ้ำ)
         $message = $this->maybeApplyPaymentWarning($message, $action);
 
+        // 🩹 (2026-05-09) Strip markdown asterisks/underscores — FB plain text ไม่ render
+        //    *เน้น* / _italic_ จะโชว์ raw → ดูไม่เป็นมืออาชีพ (โดยเฉพาะ gen_processing_announce
+        //    หลังลูกค้าจ่ายเงิน + 8 จุดอื่นที่มี markdown ใน FortuneConversationService)
+        $message = $this->stripMessengerMarkdown($message);
+
         Log::info('Facebook sendFacebookResponse: เริ่มจัดการ action', [
             'action' => $action,
             'user_id' => $userId,
@@ -1449,6 +1454,11 @@ class FortuneChannelManager
 
         // 🔔 (2026-05-03 v2) Apply payment warning prefix (LINE)
         $message = $this->maybeApplyPaymentWarning($message, $action);
+
+        // 🩹 (2026-05-09) Strip markdown asterisks/underscores — LINE plain text ไม่ render
+        //    เคสเดียวกับ FB — *เน้น* / _italic_ โชว์ raw, strip ที่ layer นี้
+        $message = $this->stripMessengerMarkdown($message);
+
         $result['message'] = $message;
 
         Log::info('LINE sendLineResponse: เริ่มจัดการ action', [
@@ -4131,5 +4141,36 @@ class FortuneChannelManager
         FortuneConversationService::$pendingPaymentWarning = null;
 
         return $warning.$message;
+    }
+
+    /**
+     * 🩹 (2026-05-09) Strip markdown asterisks/underscores จาก plain text message
+     *
+     * FB Messenger / LINE plain text ไม่ render markdown → *text* และ _text_ จะโชว์
+     * เป็น literal asterisks / underscores ดูไม่เป็นมืออาชีพ
+     *
+     * แก้ที่ layer ส่งข้อความแทนที่จะไล่แก้ source 8+ จุด — minimize blast radius
+     * + กัน regression ในอนาคต (ถ้า dev ใส่ markdown ใหม่ใน FCS ก็จะถูก strip อัตโนมัติ)
+     *
+     * @param  string|null  $message  ข้อความดิบที่อาจมี markdown
+     * @return string|null ข้อความสะอาดที่พร้อมส่งให้ลูกค้า
+     */
+    protected function stripMessengerMarkdown(?string $message): ?string
+    {
+        if (empty($message)) {
+            return $message;
+        }
+
+        // *bold* → bold
+        // - non-greedy เพื่อกัน "*foo* and *bar*" รวมกัน
+        // - [^*\n] กัน double asterisk + ห้ามข้ามบรรทัด (กัน multi-line bold ที่ไม่ตั้งใจ)
+        $message = preg_replace('/\*([^*\n]+?)\*/u', '$1', $message);
+
+        // _italic_ → italic
+        // - lookbehind/lookahead กัน snake_case identifier (e.g. user_id, snake_case)
+        // - \p{L}\p{N}_ ครอบคลุม Thai/Latin/digit + underscore เอง
+        $message = preg_replace('/(?<![\p{L}\p{N}_])_([^_\n]+?)_(?![\p{L}\p{N}_])/u', '$1', $message);
+
+        return $message;
     }
 }
