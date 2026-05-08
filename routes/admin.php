@@ -8,8 +8,10 @@ use App\Http\Controllers\Admin\Accounting\FlowAccountController;
 use App\Http\Controllers\Admin\Accounting\InvoiceController;
 use App\Http\Controllers\Admin\Accounting\ProductController;
 use App\Http\Controllers\Admin\Accounting\ReportController;
-use App\Http\Controllers\Admin\AdvancedAnalyticsController;
-use App\Http\Controllers\Admin\AdvancedNLPController;
+// 🩹 (2026-05-08) ลบ — class ไม่มีใน codebase ทำให้ artisan route:list crash
+//   ส่งผลให้ webhook line/fortune 500 (Laravel boot fail) → LINE ดูดวงไม่ได้
+// use App\Http\Controllers\Admin\AdvancedAnalyticsController;
+// use App\Http\Controllers\Admin\AdvancedNLPController;
 use App\Http\Controllers\Admin\AiApiKeyController;
 use App\Http\Controllers\Admin\AiBotController;
 use App\Http\Controllers\Admin\AiContentWriterController;
@@ -1060,24 +1062,27 @@ Route::prefix('line-bot')->name('line-bot.')->group(function () {
             Route::get('/api/export-report', [NLPAnalysisController::class, 'exportReport'])->name('export-report');
         });
 
-        // Advanced NLP System (Context, Conversation History, Semantic Matching - Phase 2.5)
-        Route::prefix('advanced-nlp')->name('advanced-nlp.')->group(function () {
-            Route::get('/conversations', [AdvancedNLPController::class, 'conversations'])->name('conversations');
-            Route::get('/api/conversation-analytics/{userId}', [AdvancedNLPController::class, 'conversationAnalytics'])->name('conversation-analytics');
-            Route::get('/api/similar-messages', [AdvancedNLPController::class, 'similarMessages'])->name('similar-messages');
-        });
-
-        // Advanced Analytics System (Prediction, Anomaly Detection, Forecasting - Phase 3)
-        Route::prefix('advanced-analytics')->name('advanced-analytics.')->group(function () {
-            Route::get('/', [AdvancedAnalyticsController::class, 'dashboard'])->name('dashboard');
-            Route::get('/predictions', [AdvancedAnalyticsController::class, 'predictions'])->name('predictions');
-            Route::get('/anomalies', [AdvancedAnalyticsController::class, 'anomalies'])->name('anomalies');
-            Route::get('/forecasts', [AdvancedAnalyticsController::class, 'forecasts'])->name('forecasts');
-            Route::get('/insights', [AdvancedAnalyticsController::class, 'insights'])->name('insights');
-            Route::get('/api/forecast-data', [AdvancedAnalyticsController::class, 'forecastData'])->name('forecast-data');
-            Route::get('/api/anomaly-data', [AdvancedAnalyticsController::class, 'anomalyData'])->name('anomaly-data');
-            Route::get('/api/prediction-data', [AdvancedAnalyticsController::class, 'predictionData'])->name('prediction-data');
-        });
+        // 🩹 (2026-05-08) Advanced NLP + Advanced Analytics — ลบทั้งบล็อก
+        //   เหตุผล: AdvancedNLPController + AdvancedAnalyticsController ไม่มีใน codebase
+        //   ทำให้ route:list throw "Class does not exist" → autoload fail → LINE webhook 500
+        // === START ลบทิ้ง ===
+        // Route::prefix('advanced-nlp')->name('advanced-nlp.')->group(function () {
+        //     Route::get('/conversations', [AdvancedNLPController::class, 'conversations'])->name('conversations');
+        //     Route::get('/api/conversation-analytics/{userId}', [AdvancedNLPController::class, 'conversationAnalytics'])->name('conversation-analytics');
+        //     Route::get('/api/similar-messages', [AdvancedNLPController::class, 'similarMessages'])->name('similar-messages');
+        // });
+        //
+        // Route::prefix('advanced-analytics')->name('advanced-analytics.')->group(function () {
+        //     Route::get('/', [AdvancedAnalyticsController::class, 'dashboard'])->name('dashboard');
+        //     Route::get('/predictions', [AdvancedAnalyticsController::class, 'predictions'])->name('predictions');
+        //     Route::get('/anomalies', [AdvancedAnalyticsController::class, 'anomalies'])->name('anomalies');
+        //     Route::get('/forecasts', [AdvancedAnalyticsController::class, 'forecasts'])->name('forecasts');
+        //     Route::get('/insights', [AdvancedAnalyticsController::class, 'insights'])->name('insights');
+        //     Route::get('/api/forecast-data', [AdvancedAnalyticsController::class, 'forecastData'])->name('forecast-data');
+        //     Route::get('/api/anomaly-data', [AdvancedAnalyticsController::class, 'anomalyData'])->name('anomaly-data');
+        //     Route::get('/api/prediction-data', [AdvancedAnalyticsController::class, 'predictionData'])->name('prediction-data');
+        // });
+        // === END ลบทิ้ง ===
     });
 });
 
