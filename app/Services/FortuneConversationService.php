@@ -1675,12 +1675,7 @@ class FortuneConversationService
                 // ✅ ใหม่: ตอบเป็นมิตร + แนะนำให้กดปุ่ม (ไม่สร้าง FortuneReading)
                 // 🎯 Phase D — ใช้ action 'welcome_guide_button' เพื่อให้ controller ส่ง quick reply
                 //    ชี้ไปที่ปุ่ม 💎 ดูดวงละเอียด ชัดเจน — รองรับกรณี AI ทั้ง chat+pool ล้มเหลวหมด
-                return [
-                    'action' => 'welcome_guide_button',
-                    'message' => $this->buildWelcomeGuideMessage(),
-                    'reading' => null,
-                    'show_quick_replies' => true,
-                ];
+                return $this->makeWelcomeGuideResponseWithCooldown($facebookUserId);
 
             } finally {
                 // ปล่อย mutex lock เสมอ ไม่ว่า return หรือ exception
@@ -6589,6 +6584,72 @@ class FortuneConversationService
         //   ลดความรกแม้ AI fail ก็ไม่ทำให้ลูกค้ารู้สึกถูกขาย
         return "🌙 สวัสดีค่ะ\n\n"
             .'พิมพ์เรื่องที่อยากให้แม่หมอช่วยดูได้เลยนะคะ ✨';
+    }
+
+    /**
+     * 🌙 (2026-05-09) Welcome guide cooldown — กัน "สวัสดี" spam ตอน AI fail
+     *
+     * เคสที่ trigger: AI Chat (Groq + Pool fallback) fail ทุก attempt — quota 429
+     *   เดิม: ทุก message ที่ตอบไม่ได้ → ฉีด "🌙 สวัสดีค่ะ" → ลูกค้าได้รับ "สวัสดี" รัวๆ
+     *   ใหม่: ครั้งแรกใน 30 นาที → ฉีด greeting + log fail event
+     *         ครั้งที่ 2+ ภายใน cooldown → silent_skip (ไม่ตอบ — ไม่กลบแชท)
+     *
+     * Side effect: ทุกครั้งที่เข้าฟังก์ชันนี้ = AI fail/no match → log เพื่อนับ failure rate
+     *   admin ดู alert ได้ที่ /admin/dashboard (ถ้า rate สูง ต้องเติม API key)
+     */
+    protected function makeWelcomeGuideResponseWithCooldown(string $facebookUserId): array
+    {
+        // นับ failure rate (Cache counter ต่อชั่วโมง) — ใช้ติดตามสุขภาพ AI Chat
+        try {
+            $hourBucket = now()->format('Y-m-d-H');
+            $failKey = "fortune:ai_chat_fail:{$hourBucket}";
+            Cache::increment($failKey);
+            Cache::add($failKey.':first_at', now()->toIso8601String(), 3700);
+            // เก็บไว้ 1 ชม. + buffer (cron/admin อ่านได้)
+            $current = (int) Cache::get($failKey, 0);
+
+            // 🚨 Alert admin ถ้า rate สูงผิดปกติ (>30 fails/hour) — push LINE 1 ครั้งต่อ hour
+            if ($current === 30 || $current === 100 || $current === 300) {
+                try {
+                    app(\App\Services\LineAlertService::class)->alertSystemError(
+                        "🚨 Fortune AI Chat fail rate สูง — {$current} fails ใน {$hourBucket}",
+                        [
+                            'fail_count' => $current,
+                            'hour_bucket' => $hourBucket,
+                            'admin_action' => 'ตรวจ /admin/ai-api-keys + เพิ่ม Groq/Gemini key ใหม่ที่ quota เหลือ',
+                            'likely_cause' => 'API quota exceeded (HTTP 429) ทุก key ใน pool',
+                        ]
+                    );
+                } catch (\Throwable $alertErr) {
+                    // ignore alert fail — ไม่ block flow
+                }
+            }
+        } catch (\Throwable $counterErr) {
+            // ignore — counter is best-effort
+        }
+
+        // Cooldown 30 นาที per user — atomic via Cache::add (return true ถ้า key ยังไม่มี)
+        $cooldownKey = "fortune:welcome_guide_sent:{$facebookUserId}";
+        if (! Cache::add($cooldownKey, true, 1800)) {
+            // ภายใน cooldown → silent skip — ไม่ตอบ "สวัสดี" ซ้ำ ไม่กลบแชท
+            Log::info('Fortune: welcome_guide cooldown active → silent skip', [
+                'user_id' => $facebookUserId,
+            ]);
+
+            return [
+                'action' => 'silent_skip',
+                'message' => null,
+                'reading' => null,
+            ];
+        }
+
+        // ครั้งแรกใน 30 นาที → ส่ง greeting ปกติ
+        return [
+            'action' => 'welcome_guide_button',
+            'message' => $this->buildWelcomeGuideMessage(),
+            'reading' => null,
+            'show_quick_replies' => true,
+        ];
     }
 
     /**
