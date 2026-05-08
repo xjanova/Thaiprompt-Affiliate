@@ -690,9 +690,23 @@ class SmsPaymentService
         //    → confirmPayment idempotent (paid_at คงที่) แต่ side effects (push msg + FCM +
         //      dispatch Job) ยิงซ้ำ → ลูกค้าเห็น "ระบบตัดบิลเรียบร้อย" 2 ครั้ง
         //    Fix: lock เฉพาะ reading.id + ตั้ง flag sms_match_processed → idempotent ทุก path
-        $lock = \Illuminate\Support\Facades\Cache::lock("sms-fortune-match:{$reading->id}", 30);
+        // 🩹 (self-review H1) wrap Cache::lock ใน try/catch — กัน Redis outage block payment
+        $lock = null;
+        $lockAcquired = false;
+        try {
+            $lock = \Illuminate\Support\Facades\Cache::lock("sms-fortune-match:{$reading->id}", 30);
+            $lockAcquired = $lock->get();
+        } catch (\Throwable $cacheErr) {
+            Log::warning('🔒 SMS Payment: Cache::lock failed — proceeding WITHOUT dedup (cache outage)', [
+                'reading_id' => $reading->id,
+                'notification_id' => $notification->id,
+                'error' => $cacheErr->getMessage(),
+            ]);
+            // Continue without lock — better than blocking payment matching
+        }
 
-        if (! $lock->get()) {
+        // Lock created แต่ไม่ได้ → ถูกถือโดย notification อื่น (concurrent) → dedup skip
+        if ($lock !== null && ! $lockAcquired) {
             Log::info('🔒 SMS Payment: lock held by another notification — dedup skip', [
                 'notification_id' => $notification->id,
                 'reading_id' => $reading->id,
@@ -953,7 +967,14 @@ class SmsPaymentService
         } finally {
             // 🔓 (2026-05-09 audit fix P3) Release lock — auto release ผ่าน TTL 30s ก็ได้
             //    แต่ explicit release ดีกว่า กัน lock contention โดยไม่จำเป็น
-            $lock->release();
+            // 🩹 (self-review H1) เช็ค $lockAcquired ก่อน release — กัน lock null (cache outage)
+            if ($lockAcquired && $lock !== null) {
+                try {
+                    $lock->release();
+                } catch (\Throwable $releaseErr) {
+                    // ignore — non-blocking
+                }
+            }
         }
     }
 

@@ -229,9 +229,14 @@ class FortuneAiFailureRecovery
                 $lineService->sendRichMessage($userId, $richContent);
             } else {
                 // Facebook — text + POST_PURCHASE_UPDATE tag (ข้าม 24hr policy)
+                // 🩹 (self-review H3) ต้องมี force_tag=true เพื่อ FB sendMessage บังคับ
+                //    messaging_type=MESSAGE_TAG ทันที (ไม่ลอง RESPONSE first ที่ fail past 24h)
+                //    เคสจริง: Job retry หลายชั่วโมง → ลูกค้าออกจาก 24h window → ต้อง MESSAGE_TAG
                 $fbService = new FacebookWebhookService($settings);
                 $fbService->sendMessage($userId, $message, [
                     'message_tag' => 'POST_PURCHASE_UPDATE',
+                    'force_tag' => true,
+                    'from_admin' => true,
                 ]);
             }
 
