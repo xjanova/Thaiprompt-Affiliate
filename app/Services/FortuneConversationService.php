@@ -578,6 +578,39 @@ class FortuneConversationService
     {
         try {
             // ═══════════════════════════════════════════════════════════════
+            // 🤝 (2026-05-08 v3) Admin Handover Hard Guard
+            // ═══════════════════════════════════════════════════════════════
+            // ถ้า admin reply via Business Suite/Page Inbox → FB ส่ง echo event
+            //   → handleEchoMessage trigger takeover ผ่าน FortuneTakeoverService
+            //   → admin_takeover_until + Cache flag fortune_admin_active:* set
+            //
+            // Guard นี้: ถ้า takeover active → bot เงียบทุกอย่าง — ห้ามตอบ ห้ามแทรก
+            //   ครอบคลุม: Pro Session / Quiet Period / forceTier / ทุก flow
+            //   admin พิมพ์ "/ai" → handleEchoMessage detect resume command → clear flag
+            try {
+                $takeoverPlatform = $this->currentPlatform ?? 'facebook';
+                if (app(\App\Services\FortuneTakeoverService::class)
+                    ->isActiveByPlatform($takeoverPlatform, $facebookUserId)) {
+                    Log::info('Fortune: admin handover active — silent skip', [
+                        'platform' => $takeoverPlatform,
+                        'user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return [
+                        'action' => 'silent_skip',
+                        'message' => null,
+                        'reading' => null,
+                    ];
+                }
+            } catch (\Throwable $takeoverErr) {
+                // Takeover check fail → ไม่ block flow ปกติ (fail open)
+                Log::debug('Fortune: takeover check fail (non-blocking)', [
+                    'error' => $takeoverErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🌙 (2026-05-08 v3) Quiet Period — กันรัวข้อความระหว่าง AI gen
             // ═══════════════════════════════════════════════════════════════
             // ลูกค้าโอนเงินแล้วใจร้อน → รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย"

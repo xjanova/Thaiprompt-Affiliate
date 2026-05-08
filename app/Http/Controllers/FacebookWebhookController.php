@@ -1166,9 +1166,10 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // ถ้าระบบ Admin Handover ถูกปิด → ข้ามไม่ต้องทำอะไร
-        // ⚠️ Default เป็น false เพื่อป้องกันบอทถูกบล็อกโดยไม่ตั้งใจ
-        if (! ($this->settings->admin_handover_enabled ?? false)) {
+        // 🤝 (2026-05-08 v3) ระบบ Admin Handover — default = ON (auto)
+        //   user spec: "อยากได้แบบ ออโต้ไปเลย" — admin reply via Business Suite → bot pause auto
+        //   admin ปิด toggle ที่ /admin/fortune/settings ได้ถ้าไม่อยากใช้
+        if (! ($this->settings->admin_handover_enabled ?? true)) {
             return;
         }
 
@@ -1178,7 +1179,9 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // หา reading ล่าสุดของ user นี้ (เฉพาะที่ยัง active อยู่)
+        // 🤝 (2026-05-08 v3) หา reading ล่าสุดของ user นี้ — รวม COMPLETED ที่อยู่ใน Pro Session ด้วย
+        //   เดิม: filter COMPLETED ออก → admin reply ระหว่าง Pro Session = ไม่ trigger takeover
+        //   ใหม่: ดู reading ล่าสุดใน 7 วัน (รวม COMPLETED) → admin reply ตอนไหนก็ trigger ได้
         $reading = FortuneReading::where(function ($q) use ($recipientId) {
             $q->where('facebook_user_id', $recipientId)
                 ->orWhere(function ($sub) use ($recipientId) {
@@ -1186,9 +1189,7 @@ class FacebookWebhookController extends Controller
                         ->where('platform_user_id', $recipientId);
                 });
         })
-            ->whereNotIn('conversation_status', [
-                FortuneReading::STATUS_COMPLETED,
-            ])
+            ->where('created_at', '>=', now()->subDays(7))
             ->latest()
             ->first();
 

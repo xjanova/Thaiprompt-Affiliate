@@ -1463,19 +1463,22 @@ PROMPT;
      */
     public function isTakeoverEnabled(): bool
     {
-        return (bool) ($this->admin_handover_enabled ?? false);
+        // 🤝 (2026-05-08 v3) Default = true — auto admin handover
+        //   ลูกค้า spec: "อยากได้แบบ ออโต้ไปเลย" — admin reply via Business Suite → bot pause auto
+        //   admin ปิด toggle ที่ /admin/fortune/settings ได้ถ้าไม่อยากใช้
+        return (bool) ($this->admin_handover_enabled ?? true);
     }
 
     /**
      * ดึงระยะเวลา default ของการเทคโอเวอร์ (นาที)
      *
-     * Default 1 นาที (2026-04-27): เมื่อแอดมินพิมพ์ตอบลูกค้า → AI หยุด 1 นาที
-     * พอให้แอดมินตอบเสร็จไม่โดน AI แทรก แต่ไม่นานเกินไปจน AI กลับมาช้า
-     * แอดมินสามารถต่อเวลาผ่านปุ่มในแอดมินพาเนล ถ้าต้องการคุยนานกว่านี้
+     * 🤝 (2026-05-08 v3) Default 15 นาที — เผื่อ admin คุยกับลูกค้าได้พอ
+     *   เดิม 1 นาที สั้นเกิน admin ตอบไม่ทันก่อน bot กลับมาแทรก
+     *   admin ตั้งค่าเองได้ที่ /admin/fortune/settings
      */
     public function getTakeoverDefaultMinutes(): int
     {
-        return max(1, (int) ($this->admin_handover_timeout ?? 1));
+        return max(1, (int) ($this->admin_handover_timeout ?? 15));
     }
 
     /**
