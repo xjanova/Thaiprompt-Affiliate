@@ -577,6 +577,47 @@ class FortuneConversationService
     public function processMessage(string $facebookUserId, string $messageText, ?array $userProfile = null): array
     {
         try {
+            // ═══════════════════════════════════════════════════════════════
+            // 🌙 (2026-05-08 v3) Quiet Period — กันรัวข้อความระหว่าง AI gen
+            // ═══════════════════════════════════════════════════════════════
+            // ลูกค้าโอนเงินแล้วใจร้อน → รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย"
+            // bot ตอบทุกข้อความ → คำทำนายที่กำลัง stream ถูก spam messages กลบหายในแชท
+            //
+            // Flag set: SmsPaymentService::matchOrderByAmount หลัง confirmPayment
+            // Flag clear: processPaymentConfirmed return success (predictions ส่งหมดแล้ว)
+            // Behavior:
+            //   - ครั้งแรกใน flag period → ส่ง "หมอกำลังร่ายมนตร์" 1 ครั้ง (cooldown 60s)
+            //   - ครั้งที่ 2+ ภายใน cooldown → silent skip (ไม่ตอบ → ไม่กลบคำทำนาย)
+            if (Cache::has("fortune:gen_processing:{$facebookUserId}")) {
+                // ตอบ "หมอกำลังเตรียม" 1 ครั้งต่อ 60 วิ — Cache::add atomic, return false ถ้ามี
+                $announceKey = "fortune:gen_announce:{$facebookUserId}";
+                if (Cache::add($announceKey, true, 60)) {
+                    Log::info('Fortune: Quiet Period — announce + silence subsequent', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return [
+                        'action' => 'gen_processing_announce',
+                        'message' => "🔮 *แม่หมอกำลังร่ายมนตร์ส่งดวงให้เจ้าชะตา* ✨\n\n"
+                            ."รอประมาณ 1-2 นาทีนะคะ — แม่หมอกำลังเชื่อมพลังจักรวาลกับดวงดาวของคุณ\n\n"
+                            .'_(ระหว่างนี้แม่หมอจะเงียบสักครู่เพื่อสมาธิจดจ่อ — กรุณาอย่าพิมพ์มา หมอจะส่งคำทำนายให้อัตโนมัติเมื่อพร้อม)_',
+                        'reading' => null,
+                    ];
+                }
+
+                // ภายใน cooldown — silent skip
+                Log::info('Fortune: Quiet Period — silent skip (announce cooldown active)', [
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return [
+                    'action' => 'silent_skip',
+                    'message' => null,
+                    'reading' => null,
+                ];
+            }
+
             // 🩹 (2026-05-08) Single-click tier fix — ลูกค้ากดปุ่ม 39/99 → skip tier menu
             //
             // 1) FB postback path: handler set Cache "fortune:force_tier:{userId}" = 'deep'/'celtic'
@@ -6257,6 +6298,21 @@ class FortuneConversationService
             $finalMessage = $streaming
                 ? null
                 : $fullResponse."\n\n".$thankYouMessage.($openingMsgText !== '' ? "\n\n".$openingMsgText : '');
+
+            // 🌙 (2026-05-08 v3) Quiet Period — clear gen_processing flag
+            //   หลังส่งคำทำนายเสร็จ → ลูกค้าไม่ต้อง silent skip อีก
+            //   processMessage จะ route ผ่าน Pro Session guard ตามปกติ
+            try {
+                $clearUserId = $userId ?? $reading->platform_user_id ?? $reading->facebook_user_id ?? null;
+                if (! empty($clearUserId)) {
+                    \Illuminate\Support\Facades\Cache::forget("fortune:gen_processing:{$clearUserId}");
+                    \Illuminate\Support\Facades\Cache::forget("fortune:gen_announce:{$clearUserId}");
+                }
+            } catch (\Throwable $cacheErr) {
+                Log::debug('Fortune: clear gen_processing flag ล้มเหลว (non-blocking)', [
+                    'error' => $cacheErr->getMessage(),
+                ]);
+            }
 
             return [
                 'action' => 'completed',

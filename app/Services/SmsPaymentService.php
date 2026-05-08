@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
-use App\Services\FortuneChannelManager;
 use App\Models\PaymentTransaction;
 use App\Models\SmsCheckerDevice;
 use App\Models\SmsPaymentNotification;
@@ -617,6 +616,7 @@ class SmsPaymentService
                 'matched_transaction_id' => $notification->matched_transaction_id,
                 'matched_status' => $notification->status,
             ]);
+
             return false;
         }
 
@@ -731,7 +731,7 @@ class SmsPaymentService
                 ."🃏 เรียงไพ่ยิปซีตามพลังจิตที่เลือก\n"
                 ."🔮 รวบรวมพลังจักรวาลเข้าสู่คำทำนาย\n\n"
                 ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n"
-                ."จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏";
+                .'จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏';
 
             $pushSent = $channelManager->sendResponse($platform, $userId, [
                 'action' => 'payment_confirmed_wait',
@@ -775,6 +775,24 @@ class SmsPaymentService
 
             Log::info('SMS Payment: คำทำนายพร้อมแล้ว → ตั้ง flag reading_ready_for_reply', [
                 'reading_id' => $reading->id,
+            ]);
+        }
+
+        // 🌙 (2026-05-08 v3) Quiet Period — กันลูกค้ารัวข้อความระหว่าง AI gen
+        //   ลูกค้าโอนเงินแล้วใจร้อน รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย" หลายข้อความ
+        //   bot ตอบทุกข้อความ → คำทำนายที่กำลัง gen ถูก spam messages เลื่อนหายในแชท
+        //   Fix: set flag → processMessage silent skip + announce 1 ครั้งต่อ 60 วิ
+        //   Clear flag: ตอน processPaymentConfirmed return success (predictions ส่งหมดแล้ว)
+        try {
+            \Illuminate\Support\Facades\Cache::put(
+                "fortune:gen_processing:{$userId}",
+                ['reading_id' => $reading->id, 'started_at' => now()->toIso8601String()],
+                now()->addMinutes(5)
+            );
+        } catch (\Throwable $cacheErr) {
+            // Cache fail = ไม่ block flow ของ payment matching
+            Log::debug('SMS Payment: gen_processing flag set fail (non-blocking)', [
+                'error' => $cacheErr->getMessage(),
             ]);
         }
 
@@ -986,13 +1004,13 @@ class SmsPaymentService
             $payAmountStr = number_format($amount, 2);
 
             $billConfirmHeader = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
-                . "🔖 เลขที่บิล: {$billRef}\n"
-                . "💰 ค่าครูที่ได้รับ: ฿{$payAmountStr}\n\n"
-                . "═══════════════════════\n"
-                . "🔮 *Celtic Cross Tarot — เริ่มเลย!*\n"
-                . "═══════════════════════\n\n";
+                ."🔖 เลขที่บิล: {$billRef}\n"
+                ."💰 ค่าครูที่ได้รับ: ฿{$payAmountStr}\n\n"
+                ."═══════════════════════\n"
+                ."🔮 *Celtic Cross Tarot — เริ่มเลย!*\n"
+                ."═══════════════════════\n\n";
 
-            $celticResponse['message'] = $billConfirmHeader . ($celticResponse['message'] ?? '');
+            $celticResponse['message'] = $billConfirmHeader.($celticResponse['message'] ?? '');
 
             // 3. Push ผ่าน channel manager (ใช้ POST_PURCHASE_UPDATE tag)
             $channelManager = new FortuneChannelManager($settings);
