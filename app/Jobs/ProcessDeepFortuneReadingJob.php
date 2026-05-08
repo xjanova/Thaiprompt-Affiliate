@@ -575,6 +575,18 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             'attempts' => $this->attempts(),
         ]);
 
+        // 🌙 (2026-05-08 v3 audit fix) Clear Quiet Period flag — ลูกค้าจะได้ตอบบอทได้
+        //   ไม่งั้น flag ค้าง 5 นาที + ลูกค้าพิมพ์อะไรก็โดน silent skip / "หมอกำลังร่ายมนตร์"
+        //   หลัง failure notification ส่งให้แล้ว ลูกค้าควรพิมพ์ติดต่อแอดมินได้
+        try {
+            if (! empty($this->userId)) {
+                \Illuminate\Support\Facades\Cache::forget("fortune:gen_processing:{$this->userId}");
+                \Illuminate\Support\Facades\Cache::forget("fortune:gen_announce:{$this->userId}");
+            }
+        } catch (\Throwable $cacheErr) {
+            // ignore — non-blocking
+        }
+
         // เปลี่ยนสถานะเป็น completed เพื่อไม่ให้บิลค้างที่ paid
         // แอดมินยัง retry ได้เพราะ retryFortune() เช็คแค่ is_paid + มีคำถาม
         try {

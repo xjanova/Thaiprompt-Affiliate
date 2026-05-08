@@ -6368,6 +6368,20 @@ class FortuneConversationService
                 'trace' => substr($e->getTraceAsString(), 0, 500),
             ]);
 
+            // 🌙 (2026-05-08 v3 audit fix) Clear gen_processing flag ก่อน throw
+            //   ลูกค้าจะไม่ติดอยู่ใน "หมอกำลังร่ายมนตร์" 5 นาทีเต็มเมื่อ AI fail
+            //   Job จะ retry — ถ้า retry สำเร็จ flag ถูกสร้างใหม่ใน SmsPaymentService
+            //   ถ้า retry หมด → Job::failed() handle (ก็มี clear flag ที่นั่นด้วย)
+            try {
+                $clearUserId = $userId ?? $reading->platform_user_id ?? $reading->facebook_user_id ?? null;
+                if (! empty($clearUserId)) {
+                    \Illuminate\Support\Facades\Cache::forget("fortune:gen_processing:{$clearUserId}");
+                    \Illuminate\Support\Facades\Cache::forget("fortune:gen_announce:{$clearUserId}");
+                }
+            } catch (\Throwable $cacheErr) {
+                // ignore — non-blocking
+            }
+
             // ไม่เปลี่ยนสถานะเป็น completed ทันที — throw ให้ Job retry ก่อน
             // ถ้า retry หมด → Job::failed() จะแจ้ง user
             throw $e;

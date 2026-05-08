@@ -859,7 +859,9 @@ class FortuneSettingsController extends Controller
         ];
 
         // 7. ตรวจสอบ Admin Handover
-        $handoverEnabled = $settings->admin_handover_enabled ?? false;
+        // 🤝 (2026-05-08 v3) Default true — ตรงกับ runtime FortuneTellingSetting::isTakeoverEnabled
+        //   เดิม false ทำให้ diagnostics ขึ้น "ปิด" แต่บอท pause จริงตอน admin reply
+        $handoverEnabled = $settings->admin_handover_enabled ?? true;
         $handoverTimeout = $settings->admin_handover_timeout ?? 15;
         $checks['admin_handover'] = [
             'label' => 'Admin Handover',
