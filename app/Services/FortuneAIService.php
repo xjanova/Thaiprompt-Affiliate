@@ -861,16 +861,25 @@ PROMPT;
         $sensitiveModel = $this->settings->sensitive_model ?? 'gemini-3.1-pro-preview';
         $maxTokens = (int) ($this->settings->sensitive_max_tokens_per_call ?? 2000);
 
-        // Acquire sensitive key (STRICT scope — ดึงเฉพาะ purpose='sensitive')
+        // 🌟 (2026-05-08) ลอง locked key ก่อน → fallback pool rotation
+        //   admin lock specific key ไว้ → ใช้ key นั้นเสมอ (predictable cost + behavior)
+        //   ถ้าไม่ได้ lock หรือ locked key หาย → ใช้ pool acquireKey ปกติ
         $poolService = new \App\Services\AiApiKeyPoolService;
-        $sensitiveKey = $poolService->acquireKey($sensitiveProvider, 'sensitive');
+        $lockedKey = $this->settings->getSensitivePoolKey();
+        $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
 
         if (! $sensitiveKey) {
             Log::info('FortuneAIService: ไม่มี sensitive key — caller ต้อง fallback ไป chat ปกติ', [
                 'provider' => $sensitiveProvider,
+                'tried_locked_key_id' => $this->settings->sensitive_ai_pool_key_id,
             ]);
 
             return null;
+        }
+
+        // ถ้าใช้ locked key — sync provider ตาม key (กรณี admin เลือก key คนละ provider กับ sensitive_provider)
+        if ($lockedKey) {
+            $sensitiveProvider = $lockedKey->provider;
         }
 
         try {
@@ -932,7 +941,10 @@ PROMPT;
 
             throw $e;
         } finally {
-            $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+            // ปล่อย key เฉพาะกรณี acquire จาก pool — locked key ไม่ต้อง release
+            if (! $lockedKey) {
+                $poolService->releaseKey($sensitiveProvider, $sensitiveKey->id);
+            }
         }
     }
 

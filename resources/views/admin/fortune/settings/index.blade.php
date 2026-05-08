@@ -622,12 +622,13 @@
         </div> {{-- End of AI Chat card --}}
 
         {{-- ===== 🌟 Sensitive AI Mode (2026-05-07) ===== --}}
+        @php
+            $sKeys = $sensitiveKeys ?? [];
+            $hasSensitiveKey = count($sKeys) > 0;
+            $lockedKeyId = old('sensitive_ai_pool_key_id', $settings->sensitive_ai_pool_key_id);
+        @endphp
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
-             x-data="{
-                 sensitiveMode: '{{ old('sensitive_ai_mode', $settings->sensitive_ai_mode ?? 'paid_only') }}',
-                 detectionMode: '{{ old('sensitive_detection_mode', $settings->sensitive_detection_mode ?? 'hybrid') }}',
-                 offtopicAction: '{{ old('sensitive_offtopic_action', $settings->sensitive_offtopic_action ?? 'revert') }}',
-             }">
+             x-data="sensitiveAiPanel(@js($sKeys), @js($hasSensitiveKey), @js($lockedKeyId))">
 
             {{-- Header + ปุ่ม collapse คำอธิบาย --}}
             <div class="flex items-center justify-between mb-4" x-data="{ showHelp: false }">
@@ -661,12 +662,36 @@
                 </p>
             </div>
 
+            {{-- 🌟 (2026-05-08) Block toggle ถ้าไม่มี key — แสดง warning + link เพิ่ม key --}}
+            @unless($hasSensitiveKey)
+                <div class="mb-5 p-4 bg-red-50 dark:bg-red-900/20 border-2 border-red-300 dark:border-red-700 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">⛔</span>
+                        <div class="flex-1">
+                            <h4 class="font-bold text-red-900 dark:text-red-200">ยังไม่มี key purpose='sensitive' ใน Account Pool</h4>
+                            <p class="text-sm text-red-800 dark:text-red-300 mt-1">
+                                Sensitive AI Mode <strong>เปิดไม่ได้</strong> จนกว่าจะเพิ่ม API key ของ Pro model
+                                แล้วตั้ง <code class="bg-red-100 dark:bg-red-800/50 px-2 py-0.5 rounded">purpose = sensitive</code>
+                            </p>
+                            <a href="{{ route('admin.ai-api-keys.index') ?? '#' }}"
+                               target="_blank"
+                               class="inline-block mt-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg">
+                                🔑 ไปเพิ่ม key ที่ Account Pool
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endunless
+
             {{-- Mode toggle (off / paid_only / all) --}}
             <div class="mb-5">
                 <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                     🎚️ ขอบเขตการใช้งาน
+                    @if(! $hasSensitiveKey)
+                        <span class="text-xs text-red-600 ml-2">(disabled — ไม่มี key)</span>
+                    @endif
                 </label>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3" :class="!hasSensitiveKey ? 'opacity-60 pointer-events-none' : ''">
                     <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
                            :class="sensitiveMode === 'off' ? 'border-gray-400 bg-gray-50 dark:bg-gray-700' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
                         <input type="radio" name="sensitive_ai_mode" value="off" x-model="sensitiveMode" class="mt-1 mr-3">
@@ -677,7 +702,8 @@
                     </label>
                     <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
                            :class="sensitiveMode === 'paid_only' ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
-                        <input type="radio" name="sensitive_ai_mode" value="paid_only" x-model="sensitiveMode" class="mt-1 mr-3">
+                        <input type="radio" name="sensitive_ai_mode" value="paid_only" x-model="sensitiveMode"
+                               :disabled="!hasSensitiveKey" class="mt-1 mr-3">
                         <div>
                             <div class="font-semibold text-gray-900 dark:text-white">💎 เฉพาะทำนายเสียเงิน <span class="text-xs text-purple-600">(แนะนำ)</span></div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Deep 39฿ + Celtic 99฿ เท่านั้น (chat ฟรียังใช้ Groq)</div>
@@ -685,7 +711,8 @@
                     </label>
                     <label class="flex items-start p-3 rounded-lg border-2 cursor-pointer transition"
                            :class="sensitiveMode === 'all' ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/30' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'">
-                        <input type="radio" name="sensitive_ai_mode" value="all" x-model="sensitiveMode" class="mt-1 mr-3">
+                        <input type="radio" name="sensitive_ai_mode" value="all" x-model="sensitiveMode"
+                               :disabled="!hasSensitiveKey" class="mt-1 mr-3">
                         <div>
                             <div class="font-semibold text-gray-900 dark:text-white">🌐 ทั่วทั้งบอท</div>
                             <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">รวมแชทธรรมดาด้วย ⚠️ ระวัง budget</div>
@@ -693,6 +720,69 @@
                     </label>
                 </div>
             </div>
+
+            {{-- 🌟 (2026-05-08) Lock specific key dropdown + test button --}}
+            @if($hasSensitiveKey)
+            <div x-show="sensitiveMode !== 'off'" x-cloak class="mb-5 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg">
+                <label class="block text-sm font-semibold text-purple-900 dark:text-purple-200 mb-2">
+                    🔑 เลือก Key (จาก Account Pool)
+                </label>
+                <p class="text-xs text-purple-700 dark:text-purple-300 mb-3">
+                    Lock key ตัวเดียวเพื่อ predictable cost — หรือเว้นเป็น "Pool rotation (auto)" ให้ระบบสุ่มเลือก
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <select name="sensitive_ai_pool_key_id" x-model="lockedKeyId"
+                            class="md:col-span-2 px-4 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                        <option value="">🔄 Pool rotation (auto — ใช้ key ใดก็ได้ที่ purpose=sensitive)</option>
+                        @foreach($sKeys as $k)
+                            <option value="{{ $k['id'] }}" {{ $lockedKeyId == $k['id'] ? 'selected' : '' }}>
+                                🔒 {{ $k['name'] }} ({{ $k['provider'] }} / {{ $k['model'] ?? '?' }})
+                                @if($k['is_critical']) ⚠️CRITICAL @endif
+                                @if($k['is_disabled']) ⏰DISABLED @endif
+                            </option>
+                        @endforeach
+                    </select>
+                    <button type="button" @click="testKey()" :disabled="testing"
+                            class="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg text-sm font-semibold">
+                        <span x-show="!testing">🧪 ทดสอบเสียงนี้</span>
+                        <span x-show="testing" x-cloak>⏳ กำลังทดสอบ...</span>
+                    </button>
+                </div>
+
+                {{-- Selected key details --}}
+                <template x-if="selectedKey()">
+                    <div class="mt-3 p-3 bg-white dark:bg-gray-800 rounded border border-purple-200 dark:border-purple-700 text-xs">
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+                            <div><span class="text-gray-500">Provider:</span> <span class="font-mono" x-text="selectedKey().provider"></span></div>
+                            <div><span class="text-gray-500">Model:</span> <span class="font-mono" x-text="selectedKey().model || '?'"></span></div>
+                            <div><span class="text-gray-500">Tokens today:</span> <span class="font-mono" x-text="selectedKey().tokens_used_today.toLocaleString()"></span></div>
+                            <div><span class="text-gray-500">Errors:</span> <span class="font-mono" x-text="selectedKey().consecutive_errors"></span></div>
+                        </div>
+                    </div>
+                </template>
+
+                {{-- Test result --}}
+                <div x-show="testResult" x-cloak x-transition class="mt-3 p-3 rounded-lg text-sm"
+                     :class="testResult && testResult.success ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-900 dark:text-emerald-100' : 'bg-red-100 dark:bg-red-900/40 text-red-900 dark:text-red-100'">
+                    <template x-if="testResult && testResult.success">
+                        <div>
+                            <div class="font-semibold mb-1">✅ ใช้งานได้! (latency: <span x-text="testResult.response_time_ms"></span>ms, tokens: <span x-text="testResult.tokens_used"></span>)</div>
+                            <div class="text-xs mb-2 opacity-80">
+                                ใช้ key: <code x-text="(testResult.key_info && testResult.key_info.key_name) || '(pool)'"></code>
+                                · <span x-text="testResult.key_info?.provider || '?'"></span> / <span x-text="testResult.key_info?.model || '?'"></span>
+                            </div>
+                            <div class="bg-white/50 dark:bg-black/20 p-2 rounded text-xs whitespace-pre-wrap" x-text="testResult.response"></div>
+                        </div>
+                    </template>
+                    <template x-if="testResult && !testResult.success">
+                        <div>
+                            <div class="font-semibold">❌ ทดสอบไม่ผ่าน</div>
+                            <div class="text-xs mt-1" x-text="testResult.error"></div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            @endif
 
             {{-- ส่วน config (ซ่อนเมื่อ off) --}}
             <div x-show="sensitiveMode !== 'off'" x-cloak x-collapse>
@@ -3022,6 +3112,62 @@ Format 2 — JSON array:
 
 @push('scripts')
 <script>
+// 🌟 (2026-05-08) Sensitive AI Panel — dropdown + test button
+function sensitiveAiPanel(sensitiveKeys, hasSensitiveKey, lockedKeyId) {
+    const csrf = '{{ csrf_token() }}';
+    const testUrl = '{{ route("admin.fortune.playground.test-sensitive") }}';
+
+    return {
+        sensitiveMode: '{{ old('sensitive_ai_mode', $settings->sensitive_ai_mode ?? 'paid_only') }}',
+        detectionMode: '{{ old('sensitive_detection_mode', $settings->sensitive_detection_mode ?? 'hybrid') }}',
+        offtopicAction: '{{ old('sensitive_offtopic_action', $settings->sensitive_offtopic_action ?? 'revert') }}',
+        sensitiveKeys: sensitiveKeys || [],
+        hasSensitiveKey: hasSensitiveKey || false,
+        lockedKeyId: lockedKeyId ? String(lockedKeyId) : '',
+        testing: false,
+        testResult: null,
+
+        selectedKey() {
+            if (!this.lockedKeyId) return null;
+            return this.sensitiveKeys.find(k => String(k.id) === String(this.lockedKeyId)) || null;
+        },
+
+        async testKey() {
+            const message = prompt(
+                'ใส่ข้อความทดสอบ (เช่น "ฉันเหนื่อยจะตายแล้ว ผัวมีกิ๊ก")',
+                'ฉันเครียดมากเลยค่ะ ผัวมีกิ๊ก จะหย่าดีไหม'
+            );
+            if (!message || message.trim().length < 5) {
+                this.testResult = { success: false, error: 'ข้อความต้องมีอย่างน้อย 5 ตัวอักษร' };
+                return;
+            }
+
+            this.testing = true;
+            this.testResult = null;
+            try {
+                const payload = { message };
+                if (this.lockedKeyId) {
+                    payload.pool_key_id = parseInt(this.lockedKeyId, 10);
+                }
+                const res = await fetch(testUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify(payload),
+                });
+                this.testResult = await res.json();
+            } catch (e) {
+                this.testResult = { success: false, error: e.message };
+            } finally {
+                this.testing = false;
+            }
+        },
+    };
+}
+
 // 🎼 (2026-05-08) Voice Library Alpine component
 function voiceLibrary() {
     const baseUrl = '{{ route("admin.fortune.voice-presets.index") }}';

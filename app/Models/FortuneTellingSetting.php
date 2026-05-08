@@ -242,6 +242,8 @@ class FortuneTellingSetting extends Model
         'voice_summary_max_chars',
         'voice_summary_prompt',
         'voice_summary_intro_message',
+        // 🌟 (2026-05-08) Sensitive AI lock specific pool key
+        'sensitive_ai_pool_key_id',
     ];
 
     /**
@@ -1861,6 +1863,76 @@ PROMPT;
         }
 
         return null;
+    }
+
+    // ===== 🌟 (2026-05-08) Sensitive AI Mode pool key helpers =====
+
+    /**
+     * ดึง specific pool key ที่ admin lock ไว้สำหรับ Sensitive AI
+     *
+     * คืน null ถ้า:
+     *   - admin ไม่ได้ตั้ง sensitive_ai_pool_key_id
+     *   - key ถูกลบไปแล้ว
+     *   - key ถูก disable / critical
+     *
+     * Caller (FortuneAIService::generateSensitiveChatResponse) ตรวจ null →
+     * fallback ไป pool acquireKey เดิม
+     */
+    public function getSensitivePoolKey(): ?AiApiKey
+    {
+        $keyId = $this->sensitive_ai_pool_key_id;
+        if (empty($keyId)) {
+            return null;
+        }
+
+        $key = AiApiKey::where('id', $keyId)
+            ->where('is_active', true)
+            ->where(function ($q) {
+                $q->whereNull('is_critical')->orWhere('is_critical', false);
+            })
+            ->first();
+
+        return $key;
+    }
+
+    /**
+     * เช็คว่ามี key purpose='sensitive' พร้อมใช้งานหรือไม่
+     *
+     * Block toggle Sensitive AI Mode ถ้า return false →
+     * admin ต้องไปเพิ่ม key ใน pool ก่อน
+     */
+    public function hasAvailableSensitiveKey(): bool
+    {
+        try {
+            return AiApiKey::forProvider($this->sensitive_provider ?? 'gemini')
+                ->forPurpose('sensitive')
+                ->where('is_active', true)
+                ->where(function ($q) {
+                    $q->whereNull('is_critical')->orWhere('is_critical', false);
+                })
+                ->exists();
+        } catch (\Throwable $e) {
+            // ai_api_keys table อาจ enum ยังไม่ migrate
+            return false;
+        }
+    }
+
+    /**
+     * ดึงรายการ keys purpose='sensitive' ทั้งหมด (สำหรับ admin dropdown)
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, AiApiKey>
+     */
+    public function getAvailableSensitiveKeys()
+    {
+        try {
+            return AiApiKey::forPurpose('sensitive')
+                ->where('is_active', true)
+                ->orderBy('provider')
+                ->orderByDesc('priority')
+                ->get();
+        } catch (\Throwable $e) {
+            return collect();
+        }
     }
 
     /**

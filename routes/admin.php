@@ -4020,6 +4020,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/playground/chat', [FortuneSettingsController::class, 'playgroundChat'])->name('playground.chat');
     // 🧪 (2026-05-02) ทดสอบสร้างคำทำนายเชิงลึกด้วย prompt จริง (เพื่อเลือก provider/priority)
     Route::post('/playground/test-deep', [FortuneSettingsController::class, 'testDeepPrediction'])->name('playground.test-deep');
+    // 🌟 (2026-05-08) ทดสอบ Sensitive AI Mode — verify locked key + provider จริง
+    Route::post('/playground/test-sensitive', [FortuneSettingsController::class, 'testSensitive'])->name('playground.test-sensitive');
 
     // ช่องทางรับข้อความ (Facebook, LINE, etc.)
     Route::get('/channels', [FortuneChannelController::class, 'index'])->name('channels.index');

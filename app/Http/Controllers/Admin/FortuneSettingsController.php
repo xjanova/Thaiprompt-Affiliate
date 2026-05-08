@@ -159,6 +159,25 @@ class FortuneSettingsController extends Controller
         //    key/Service Account เดียวกันใช้ TTS ได้เลย ถ้าเปิด API ใน project
         $googleTtsDiag = \App\Services\Tts\GoogleCloudTtsProvider::diagnoseCredentials();
 
+        // 🌟 (2026-05-08) ดึง keys purpose='sensitive' ทั้งหมดสำหรับ admin dropdown
+        //    + flag ว่ามี key พร้อมใช้หรือไม่ (block toggle ถ้าไม่มี)
+        $sensitiveKeys = $settings->getAvailableSensitiveKeys()
+            ->map(function ($k) {
+                return [
+                    'id' => $k->id,
+                    'name' => $k->name,
+                    'provider' => $k->provider,
+                    'model' => $k->resolveModel(),
+                    'is_critical' => (bool) ($k->is_critical ?? false),
+                    'is_disabled' => $k->disabled_until && $k->disabled_until > now(),
+                    'masked_key' => $k->masked_key,
+                    'tokens_used_today' => (int) $k->tokens_used_today,
+                    'consecutive_errors' => (int) ($k->consecutive_errors ?? 0),
+                ];
+            })
+            ->values()
+            ->toArray();
+
         return view('admin.fortune.settings.index', [
             'settings' => $settings,
             'bankAccounts' => $bankAccounts,
@@ -167,6 +186,7 @@ class FortuneSettingsController extends Controller
             'defaultBasicPrompt' => FortuneConversationService::getDefaultBasicPrompt(),
             'defaultDeepPrompt' => FortuneConversationService::getDefaultDeepPrompt(),
             'googleTtsDiag' => $googleTtsDiag,
+            'sensitiveKeys' => $sensitiveKeys,
             'pageTitle' => 'ตั้งค่าระบบดูดวง',
         ]);
     }
@@ -277,6 +297,8 @@ class FortuneSettingsController extends Controller
             'sensitive_detection_mode' => 'nullable|in:heuristic,hybrid,hybrid_with_brain',
             'sensitive_provider' => 'nullable|in:gemini,openai,anthropic,openrouter,grok,groq,qwen,deepseek,typhoon,xiaomi',
             'sensitive_model' => 'nullable|string|max:100',
+            // 🌟 (2026-05-08) Lock specific pool key — ต้องมี key purpose='sensitive' จริงเท่านั้น
+            'sensitive_ai_pool_key_id' => 'nullable|integer|exists:ai_api_keys,id',
             'sensitive_classifier_provider' => 'nullable|in:gemini,openai,groq',
             'sensitive_classifier_model' => 'nullable|string|max:100',
             'sensitive_keywords_text' => 'nullable|string|max:5000',  // textarea — 1 keyword/line
@@ -386,6 +408,48 @@ class FortuneSettingsController extends Controller
             $validated['voice_summary_fallback_providers'] = null;
         }
 
+        // 🌟 (2026-05-08) Sensitive AI Mode — Block enable ถ้าไม่มี key purpose='sensitive'
+        //    ป้องกัน admin เปิดโหมดแล้วลูกค้า hit แต่ไม่มี key → fallback ไป chat ปกติ
+        //    เปลี่ยนแปลงเล็กน้อย: ถ้า set sensitive_ai_pool_key_id → ใช้ key นั้นเลย (ไม่ตรวจ pool)
+        $requestedMode = $validated['sensitive_ai_mode'] ?? 'off';
+        if ($requestedMode !== 'off') {
+            $hasLockedKey = ! empty($validated['sensitive_ai_pool_key_id']);
+            $hasPoolKey = false;
+
+            if (! $hasLockedKey) {
+                try {
+                    $hasPoolKey = \App\Models\AiApiKey::forProvider($validated['sensitive_provider'] ?? 'gemini')
+                        ->forPurpose('sensitive')
+                        ->where('is_active', true)
+                        ->exists();
+                } catch (\Throwable $e) {
+                    $hasPoolKey = false;
+                }
+            }
+
+            if (! $hasLockedKey && ! $hasPoolKey) {
+                // Force off — แจ้งใน flash message
+                $validated['sensitive_ai_mode'] = 'off';
+                session()->flash(
+                    'warning',
+                    '⚠️ Sensitive AI Mode ถูกบังคับปิด — ยังไม่มี key purpose=\'sensitive\' ใน account pool '
+                    .'(เพิ่ม key ที่ /admin/ai-api-keys → set purpose=sensitive ก่อน)'
+                );
+            }
+        }
+
+        // ถ้า lock specific key — verify ว่า purpose='sensitive' จริง (ป้องกัน admin เลือกผิด)
+        if (! empty($validated['sensitive_ai_pool_key_id'])) {
+            $lockedKey = \App\Models\AiApiKey::find($validated['sensitive_ai_pool_key_id']);
+            if (! $lockedKey || $lockedKey->purpose !== 'sensitive') {
+                session()->flash(
+                    'warning',
+                    '⚠️ Key ที่เลือกไม่ใช่ purpose=\'sensitive\' — reset เป็น pool rotation'
+                );
+                $validated['sensitive_ai_pool_key_id'] = null;
+            }
+        }
+
         // อัพโหลด QR Code ถ้ามี
         if ($request->hasFile('payment_qr_image')) {
             // ลบรูปเก่า
@@ -474,6 +538,100 @@ class FortuneSettingsController extends Controller
         $result = $aiService->testConnection();
 
         return response()->json($result);
+    }
+
+    /**
+     * 🌟 (2026-05-08) ทดสอบ Sensitive AI Mode — ใช้ key ที่ admin lock จริง
+     *
+     * เรียกจาก Playground ปุ่ม "ทดสอบ Sensitive AI"
+     * - ใช้ key ที่ admin set ใน sensitive_ai_pool_key_id (หรือ pool acquireKey)
+     * - ส่ง message ของ scenario sensitive ที่ admin พิมพ์
+     * - return response + provider/model/key ที่ใช้จริง + tokens + latency
+     *
+     * ใช้สำหรับ verify ว่า key purpose='sensitive' ใช้งานได้จริง
+     * ก่อน enable Sensitive AI Mode บน production
+     */
+    public function testSensitive(Request $request)
+    {
+        $validated = $request->validate([
+            'message' => 'required|string|min:5|max:1000',
+            'pool_key_id' => 'nullable|integer|exists:ai_api_keys,id',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+        $message = $validated['message'];
+        $forceKeyId = $validated['pool_key_id'] ?? null;
+
+        try {
+            // ถ้า admin ส่ง pool_key_id มาทดสอบ — temporary lock ใน-memory
+            $originalLockedId = $settings->sensitive_ai_pool_key_id;
+            if ($forceKeyId) {
+                $forceKey = AiApiKey::where('id', $forceKeyId)
+                    ->where('purpose', 'sensitive')
+                    ->where('is_active', true)
+                    ->first();
+                if (! $forceKey) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Key ที่เลือกไม่ใช่ purpose=\'sensitive\' หรือไม่ active',
+                    ], 422);
+                }
+                $settings->sensitive_ai_pool_key_id = $forceKeyId;
+            }
+
+            try {
+                $startTime = microtime(true);
+                $aiService = new FortuneAIService($settings);
+
+                $result = $aiService->generateSensitiveChatResponse($message, [
+                    'name' => 'ทดสอบ',
+                ], []);
+
+                $elapsedMs = (int) round((microtime(true) - $startTime) * 1000);
+
+                if ($result === null) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'ไม่มี key purpose=\'sensitive\' ที่พร้อมใช้งาน — ต้อง add ใน /admin/ai-api-keys + set purpose=sensitive',
+                    ], 422);
+                }
+
+                // ดึงข้อมูล key ที่ถูกใช้จริง (locked หรือ pool)
+                $usedKey = $settings->getSensitivePoolKey();
+                $keyInfo = $usedKey ? [
+                    'key_id' => $usedKey->id,
+                    'key_name' => $usedKey->name,
+                    'provider' => $usedKey->provider,
+                    'model' => $usedKey->resolveModel(),
+                    'source' => 'locked',
+                ] : [
+                    'key_id' => null,
+                    'provider' => $settings->sensitive_provider ?? 'gemini',
+                    'model' => $settings->sensitive_model ?? '?',
+                    'source' => 'pool_rotation',
+                ];
+
+                return response()->json([
+                    'success' => true,
+                    'response' => $result['response'] ?? '',
+                    'tokens_used' => (int) ($result['tokens_used'] ?? 0),
+                    'response_time_ms' => $elapsedMs,
+                    'key_info' => $keyInfo,
+                ]);
+            } finally {
+                // Restore original locked id (ไม่ persist override)
+                $settings->sensitive_ai_pool_key_id = $originalLockedId;
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('FortuneSettings: testSensitive exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**
