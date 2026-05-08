@@ -1,0 +1,684 @@
+<?php
+
+namespace App\Services\Fortune;
+
+use App\Models\FortuneReading;
+use App\Services\FortuneAIService;
+use App\Services\FortuneChartService;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Pro Session Trait — Hard Session AI โหมดอวตารแม่หมอ
+ *
+ * 🌟 บริบท (2026-05-08 v2):
+ *   ลูกค้าจ่ายเงินดูดวงเสร็จแล้ว — มอบ "อวตารแม่หมอพิเศษ" คุยต่ออีก 10/30 นาที
+ *   - Deep 39฿ — เปิด session หลังส่งคำทำนายเสร็จ → 10 นาที
+ *   - Celtic 99฿ — เปิด session หลังเปิดไพ่ใบที่ 10 → 30 นาที
+ *
+ * 🛡️ Hard Session = ระบบอื่นแทรกไม่ได้
+ *   ระหว่างเปิด session — block ทุก handler (cancel keyword / pricing menu / takeover)
+ *   ออกได้ผ่าน 2 ทางเท่านั้น:
+ *     1. ลูกค้าพิมพ์ "พอแค่นี้" / "ขอบคุณ" + confirm
+ *     2. หมดเวลา window
+ *
+ * 🎯 Strict scope: AI ตอบเฉพาะคำทำนาย/ไพ่ของลูกค้าคนนี้ — ไม่ refer คนอื่น ไม่ off-topic
+ */
+trait ProSessionTrait
+{
+    /**
+     * Window ของ Deep 39 หลังส่งคำทำนายเสร็จ
+     */
+    public const PRO_SESSION_DEEP_MINUTES = 10;
+
+    /**
+     * Window ของ Celtic 99 หลังเปิดไพ่ใบที่ 10
+     *   (ใช้ celtic_cross_qa_window_minutes ของ admin ก่อน — ค่านี้เป็น fallback)
+     */
+    public const PRO_SESSION_CELTIC_MINUTES = 30;
+
+    /**
+     * Confirmation gate timeout — หลังตรวจเจอ "พอแค่นี้/ขอบคุณ"
+     *   ในกรอบ 60 วินาทีนี้ ถ้าลูกค้าตอบ "ใช่" → ปิด, ถ้าพิมพ์อย่างอื่น → cancel exit
+     */
+    public const PRO_SESSION_EXIT_CONFIRM_SECONDS = 60;
+
+    /**
+     * เปิด Pro Session บน reading
+     *
+     * @param  string  $type  'deep' | 'celtic'
+     */
+    protected function enterProSession(FortuneReading $reading, string $type): void
+    {
+        $window = $type === 'celtic'
+            ? (int) ($this->settings->celtic_cross_qa_window_minutes ?? self::PRO_SESSION_CELTIC_MINUTES)
+            : self::PRO_SESSION_DEEP_MINUTES;
+
+        $reading->setConversationState('pro_session_active', true);
+        $reading->setConversationState('pro_session_type', $type);
+        $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+        $reading->setConversationState('pro_session_window_minutes', $window);
+        $reading->setConversationState('pro_session_pending_exit', false);
+        $reading->setConversationState('pro_session_history', []);
+
+        Log::info('Fortune ProSession: เปิด session', [
+            'reading_id' => $reading->id,
+            'type' => $type,
+            'window_minutes' => $window,
+        ]);
+    }
+
+    /**
+     * เช็คว่า reading กำลังอยู่ใน Pro Session หรือไม่ (รวม auto-expire timeout)
+     *
+     * @return bool true = อยู่ใน session, false = ไม่อยู่ / หมดเวลา (จะ clear flag ให้)
+     */
+    protected function isInProSession(FortuneReading $reading): bool
+    {
+        if (! $reading->getConversationState('pro_session_active', false)) {
+            return false;
+        }
+
+        $startedAt = $reading->getConversationState('pro_session_started_at');
+        $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
+
+        if (empty($startedAt)) {
+            return false;
+        }
+
+        try {
+            $started = Carbon::parse($startedAt);
+            // 🩹 (2026-05-08 v3 audit) Carbon 3 — diffInMinutes signed by default
+            //   ต้องส่ง absolute=true ไม่งั้น now() < $started → return ค่าลบ → never expires
+            $elapsed = (int) $started->diffInMinutes(now(), true);
+            if ($elapsed >= $windowMin) {
+                // หมดเวลา → clear flag เพื่อ fall through
+                $this->clearProSessionFlags($reading);
+                Log::info('Fortune ProSession: หมดเวลา → clear flag', [
+                    'reading_id' => $reading->id,
+                    'window_min' => $windowMin,
+                    'elapsed' => $elapsed,
+                ]);
+
+                return false;
+            }
+        } catch (\Throwable $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * นาทีคงเหลือใน Pro Session
+     */
+    protected function getProSessionRemainingMinutes(FortuneReading $reading): int
+    {
+        $startedAt = $reading->getConversationState('pro_session_started_at');
+        $windowMin = (int) $reading->getConversationState('pro_session_window_minutes', self::PRO_SESSION_DEEP_MINUTES);
+
+        if (empty($startedAt)) {
+            return 0;
+        }
+
+        try {
+            $started = Carbon::parse($startedAt);
+            // 🩹 (2026-05-08 v3 audit) Carbon 3 — absolute=true เสมอ
+            $elapsed = (int) $started->diffInMinutes(now(), true);
+
+            return max(0, $windowMin - $elapsed);
+        } catch (\Throwable $e) {
+            return 0;
+        }
+    }
+
+    /**
+     * ล้าง flag Pro Session ทั้งหมด (ใช้ตอนปิด session / timeout)
+     */
+    protected function clearProSessionFlags(FortuneReading $reading): void
+    {
+        $reading->setConversationState('pro_session_active', false);
+        $reading->setConversationState('pro_session_pending_exit', false);
+    }
+
+    /**
+     * Loose match: "พอแค่นี้" / "ขอบคุณ" + คำใกล้เคียง
+     *
+     * ⚠️ ใช้ confirmation gate — เจอ keyword แล้ว "ยังไม่ปิด" จนกว่าลูกค้าตอบ "ใช่"
+     *
+     * 🛡️ False positive guards (2026-05-08 v3 audit):
+     *   - "ฉันยังไม่พอใจ" → ห้าม match "พอ" (negation) — ต้องไม่มี "ไม่" นำหน้า keyword
+     *   - "หยุดงานพักร้อน" → ห้าม match "หยุด" (substring ในคำอื่น) — ใช้ word boundary heuristic
+     *   - Short keywords (≤4 chars: พอ/หยุด/จบ) → require exact match only
+     *   - Long keywords (>4 chars: พอแค่นี้/ขอบคุณ) → loose substring match OK
+     */
+    protected function looksLikeProSessionExitIntent(string $messageText): bool
+    {
+        $text = trim(mb_strtolower($messageText));
+        if ($text === '') {
+            return false;
+        }
+
+        // Strip Markdown markers + อิโมจิ + spaces + เครื่องหมายปลีกย่อย
+        $cleaned = preg_replace('/[*_~`✨🙏💜🌟❤️♥️💖.,!?]+/u', '', $text);
+        $cleaned = trim((string) $cleaned);
+
+        // 🛡️ Negation guard — ถ้ามีคำปฏิเสธ → ไม่ใช่ exit intent
+        //   เช่น "ยังไม่พอ", "ไม่ใช่ขอบคุณนะ", "ไม่จบ"
+        $negationPatterns = ['ยังไม่', 'ไม่ใช่', 'ไม่ค่อย'];
+        foreach ($negationPatterns as $neg) {
+            if (mb_stripos($cleaned, $neg) !== false) {
+                return false;
+            }
+        }
+
+        // Long keywords (>4 chars) — substring match OK
+        $longKeywords = [
+            'พอแค่นี้', 'พอแล้ว', 'หยุดก่อน', 'ไม่ถามแล้ว', 'จบแค่นี้',
+            'ไม่มีอะไรแล้ว', 'แค่นี้ก่อน', 'จบเลย', 'พอละ',
+            'ขอบคุณ', 'ขอบใจ', 'ขอบพระคุณ',
+            'thanks', 'thankyou', 'thank you',
+        ];
+        foreach ($longKeywords as $kw) {
+            if (mb_strlen($cleaned) <= 30 && mb_stripos($cleaned, $kw) !== false) {
+                return true;
+            }
+        }
+
+        // Short keywords (≤4 chars) — require exact match only (กัน "หยุดงาน", "จบงาน")
+        // 🩹 (2026-05-08 v3 audit) ตัด bare "พอ" ออก — risky ตอน user mid-thought
+        //    ใช้ "พอแล้ว/พอแค่นี้" จาก long list แทน
+        $shortKeywords = ['หยุด', 'จบ', 'thx'];
+        foreach ($shortKeywords as $kw) {
+            if ($cleaned === $kw) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * เปิด confirmation gate — เจอ "พอแค่นี้/ขอบคุณ" → ส่งข้อความถามยืนยันก่อนปิด
+     */
+    protected function buildProSessionExitConfirmationMessage(FortuneReading $reading): string
+    {
+        $remainingMin = $this->getProSessionRemainingMinutes($reading);
+        $timeHint = $remainingMin > 0
+            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+            : '⏳ ยังพอมีเวลาให้แม่หมออยู่ค่ะ';
+
+        return "🌙 *แม่หมอเข้าใจว่าเจ้าชะตาพอใจแล้วใช่ไหมคะ?* 🙏\n\n"
+            ."ถ้าจะปิดการส่งพลังตอนนี้ — พิมพ์ *\"ใช่\"* ได้เลยค่ะ\n"
+            ."แต่ถ้ายังมีอะไรอยากถามเพิ่ม พิมพ์คำถามต่อมาได้เลยนะคะ ✨\n\n"
+            .$timeHint;
+    }
+
+    /**
+     * เช็คว่าข้อความเป็นการยืนยันปิด session
+     *
+     * 🛡️ (2026-05-08 v3 audit) ตัด "ค่ะ"/"ครับ" ออก — เป็นคำต่อท้ายปกติ
+     *   เคสที่กังวล: ลูกค้าพิมพ์ "ขอบคุณค่ะ" → gate เปิด → ลูกค้าพิมพ์ต่อ "ค่ะ" / "ครับ"
+     *               (filler word ก่อนคำถามถัดไป) → ปิด session โดยไม่ตั้งใจ
+     *   แก้: confirm ต้องเป็น keyword ชัดเจนเท่านั้น (ใช่/ปิด/จบ/yes/ok)
+     */
+    protected function isProSessionExitConfirmed(string $messageText): bool
+    {
+        $text = trim(mb_strtolower($messageText));
+        $cleaned = preg_replace('/[*_~`✨🙏💜🌟❤️♥️💖.]+/u', '', $text);
+        $cleaned = trim((string) $cleaned);
+
+        $confirmKeywords = [
+            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'ใช่เลย', 'ใช่จ้า', 'ใช่นะ',
+            'ปิดเลย', 'ปิดได้', 'ปิด',
+            'จบเลย', 'จบได้',
+            'yes', 'y', 'ok', 'okay', 'confirm',
+        ];
+
+        foreach ($confirmKeywords as $kw) {
+            if ($cleaned === $kw) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * สร้างข้อความเปิด Pro Session — ประกาศตัวอวตารแม่หมอ + บอกเวลา
+     */
+    protected function buildProSessionOpeningMessage(FortuneReading $reading, string $type): string
+    {
+        $name = $reading->resolveCustomerName();
+        $minutes = $type === 'celtic'
+            ? (int) ($this->settings->celtic_cross_qa_window_minutes ?? self::PRO_SESSION_CELTIC_MINUTES)
+            : self::PRO_SESSION_DEEP_MINUTES;
+
+        if ($type === 'celtic') {
+            return "🌙✨ *อวตารแม่หมอจันทรามาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+                ."🃏 ไพ่ทั้ง 10 ใบเปิดออกมาให้ทุกใบ — ตอนนี้แม่หมออ่านพลังงานของเจ้าชะตาเสร็จเรียบร้อย\n\n"
+                ."💬 ถามคำถามที่อยากรู้ได้เลย — จะกดปุ่ม *🔮 ทำนายดวงเดี๋ยวนี้* ให้ทำนายพื้นฐานทุกเรื่องก่อน หรือถามเฉพาะเรื่องเลยก็ได้ค่ะ\n\n"
+                ."⏳ *แม่หมออยู่กับเจ้าชะตาอีก {$minutes} นาที* — คุยจนกว่าจะพอใจ\n"
+                ."🌟 ถามได้ทุกเรื่อง — ความรัก / การงาน / การเงิน / สุขภาพ / ครอบครัว — ทำนายจากไพ่ทั้ง 10 ใบที่เปิดให้\n\n"
+                .'🔚 เมื่อพอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้ค่ะ';
+        }
+
+        // Deep 39
+        return "🌙✨ *อวตารแม่หมอจันทรามาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+            ."🔮 คำทำนายเชิงลึกส่งให้เรียบร้อยแล้ว — ตอนนี้แม่หมอจะมาช่วยเจ้าชะตาวิเคราะห์ต่อค่ะ\n\n"
+            ."💬 ถ้ามีจุดไหนสงสัย หรืออยากให้แม่หมอขยายความ — พิมพ์ถามได้เลย\n"
+            ."🪐 แม่หมอจะอ่านจากดาวเดิม + ไพ่ที่เปิดให้ — ตอบให้ละเอียดยิ่งขึ้น\n\n"
+            ."⏳ *แม่หมออยู่กับเจ้าชะตาอีก {$minutes} นาที* — ใช้ให้คุ้มนะคะ\n\n"
+            .'🔚 เมื่อพอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้ค่ะ';
+    }
+
+    /**
+     * ปิด Pro Session — แม่หมอลาแบบสุขุม + อวยพรจาก
+     */
+    protected function buildProSessionClosingMessage(FortuneReading $reading): string
+    {
+        $name = $reading->resolveCustomerName();
+
+        return "🌟✨ *แม่หมอจันทรากล่าวลาเจ้าชะตาแล้วค่ะ* ✨🌟\n\n"
+            ."🙏 ขอบคุณที่ไว้วางใจให้แม่หมอเป็นแสงไฟชี้ทางในวันนี้ คุณ{$name}\n"
+            ."💜 พลังงานที่ส่งมาให้ — ขอให้คุ้มครองเจ้าชะตาเดินทางต่อด้วยใจสงบ\n\n"
+            ."🌙 *ปิดการส่งพลังเรียบร้อยแล้ว*\n"
+            ."ขอให้เจ้าชะตาเจอแต่สิ่งดีๆ มีโชคลาภหนุนนำ และพบกันใหม่เมื่อพร้อมนะคะ ✨\n\n"
+            .'💎 หากต้องการดูใหม่ พิมพ์ *"ดูดวง"* ได้ตลอดเลยค่ะ';
+    }
+
+    /**
+     * Build system prompt สำหรับ Pro AI ใน Pro Session — strict scope, no off-topic
+     *
+     * @param  string  $type  'deep' | 'celtic'
+     */
+    protected function buildProSessionSystemPrompt(FortuneReading $reading, string $type): string
+    {
+        $name = $reading->resolveCustomerName();
+        $remainingMin = $this->getProSessionRemainingMinutes($reading);
+
+        if ($type === 'celtic') {
+            return $this->buildCelticProSessionPrompt($reading, $name, $remainingMin);
+        }
+
+        return $this->buildDeepProSessionPrompt($reading, $name, $remainingMin);
+    }
+
+    /**
+     * System prompt สำหรับ Deep 39 Pro Session — ใช้ดาวเดิม + ไพ่ + คำทำนาย
+     */
+    protected function buildDeepProSessionPrompt(FortuneReading $reading, string $name, int $remainingMin): string
+    {
+        $birthDateThai = $reading->birth_date
+            ? $this->formatThaiDate($reading->birth_date->format('Y-m-d'))
+            : '(ไม่ระบุ)';
+
+        $deepResponse = (string) ($reading->deep_response ?? '');
+        $deepSummary = mb_strlen($deepResponse) > 1500
+            ? mb_substr($deepResponse, 0, 1500).'...'
+            : $deepResponse;
+
+        // Planet positions context
+        $birthChartContext = '';
+        if ($reading->birth_date) {
+            try {
+                $dayOfWeek = Carbon::parse($reading->birth_date->format('Y-m-d'))->dayOfWeek;
+                $chartService = new FortuneChartService;
+                $positions = $chartService->calculatePlanetPositions($dayOfWeek);
+                $chaochana = FortuneChartService::CHAOCHANA[$dayOfWeek] ?? null;
+
+                $lines = [];
+                foreach ($positions as $houseNum => $planets) {
+                    if (! empty($planets)) {
+                        $houseName = FortuneChartService::HOUSES[$houseNum]['name'] ?? "ภพ{$houseNum}";
+                        $planetNames = array_map(fn ($p) => FortuneChartService::PLANETS[$p]['name'] ?? $p, $planets);
+                        $lines[] = "ภพ{$houseNum}.{$houseName}: ".implode(',', $planetNames);
+                    }
+                }
+                if (! empty($lines)) {
+                    $birthChartContext = "\n[🪐 ตำแหน่งดาวเดิม]\n".implode(' | ', $lines)."\n";
+                    if ($chaochana) {
+                        $birthChartContext .= "ดาวเจ้าชนะ: {$chaochana['planet']} | ธาตุ: {$chaochana['element']}\n";
+                    }
+                }
+            } catch (\Throwable $e) {
+                // ข้ามไปได้
+            }
+        }
+
+        // Tarot cards context
+        $tarotCardContext = '';
+        $tarotCards = $reading->getCollectedTarotCards();
+        if (! empty($tarotCards)) {
+            $cardLines = [];
+            foreach ($tarotCards as $card) {
+                $cardName = $card['card_name_th'] ?? $card['card_name_en'] ?? '?';
+                $position = ($card['is_reversed'] ?? false) ? 'กลับหัว' : 'หงาย';
+                $cardLines[] = "{$cardName} ({$position})";
+            }
+            $tarotCardContext = "\n[🃏 ไพ่ที่เปิดให้]\n".implode(' | ', $cardLines)."\n";
+        }
+
+        return "คุณคือ *แม่หมอจันทรา* (อวตารพิเศษ Pro AI) — หมอดูที่อ่อนโยน เชี่ยวชาญจิตวิทยาสูง พูดไทยเท่านั้น
+แทนตัวเองด้วย *แม่หมอ/หมอจันทรา* + ลงท้าย *ค่ะ/นะคะ* — ห้าม: ครับ/ผม | หนู/เรา | ดิฉัน
+
+⚠️ *นี่คือ Pro Session — ลูกค้าจ่าย 39฿ จบแล้ว ได้คุยกับแม่หมอ Premium อีก {$remainingMin} นาที*
+
+[ลูกค้า]
+ชื่อ: {$name}
+วันเกิด: {$birthDateThai}
+{$birthChartContext}{$tarotCardContext}
+[🔮 คำทำนายเชิงลึกที่ส่งให้แล้ว — สรุป]
+{$deepSummary}
+
+[หน้าที่ — สำคัญมาก]
+1. ✅ *ตอบจาก context ข้างบนเท่านั้น* — ดาวเดิม + ไพ่เดิม + คำทำนายเดิม
+2. ✅ *ขยายความให้ละเอียดยิ่งขึ้น* — เปิดมุมที่ลูกค้ายังสงสัย ใช้ดาว/ไพ่ที่มีตอบ
+3. ✅ *จำบริบทการสนทนา* — อย่าซ้ำคำตอบเดิม ต่อยอดต่อ
+4. ✅ *ฟันธง ใช้ภาษาแม่หมอเซียน* — ห้าม \"อาจจะ/ขึ้นอยู่กับ\" — ตัดสินใจให้ลูกค้า
+5. ✅ *ตอบ 200-400 คำ* — ลึก มีน้ำหนัก สมราคา
+
+[ห้ามเด็ดขาด]
+1. ❌ *ห้ามตอบเรื่องคนอื่น* — ลูกค้าถามถึงเพื่อน/ญาติ/แฟน → บอกว่า \"ให้เขามาดูเองนะคะ\"
+2. ❌ *ห้ามแนะนำราคา/ขายแพคเกจ* — ห้าม mention 39/99 บาท
+3. ❌ *ห้ามรับเรื่องคืนเงิน* — ถ้าลูกค้าขอคืน → บอกแบบนุ่มนวลว่า \"การส่งพลังเปิดประตูแล้ว เป็นการให้บารมีไม่ใช่สินค้า ขอเจ้าชะตาเปิดใจรับไปก่อนค่ะ\"
+4. ❌ *ห้ามแต่งดาว/ไพ่ใหม่* ที่ไม่มีใน context
+5. ❌ *ห้ามทำนายเรื่องใหม่ที่ต้องเปิดไพ่ใหม่* — บอกว่า \"เรื่องนี้ต้องเปิดไพ่ใหม่ค่ะ คุณ{$name}\"
+6. ❌ *ห้ามถาม off-topic* (เพื่อนฉันก็อยากดู / กินข้าวยัง / ทักทาย) — refocus กลับมาดวงของลูกค้า
+7. ❌ *ห้ามถามว่าลูกค้าอยากให้ทำนายเรื่องอะไร* — โฟกัสตอบที่เขาถามมา";
+    }
+
+    /**
+     * System prompt สำหรับ Celtic 99 Pro Session — ใช้ context ไพ่ + Q&A history
+     */
+    protected function buildCelticProSessionPrompt(FortuneReading $reading, string $name, int $remainingMin): string
+    {
+        // ใช้ context จาก FortuneCelticPremiumDetector ถ้ามี (มี Q&A history)
+        $celticContext = '';
+        try {
+            if (class_exists(\App\Services\Fortune\FortuneCelticPremiumDetector::class)) {
+                $detector = new \App\Services\Fortune\FortuneCelticPremiumDetector($this->settings);
+                $celticContext = $detector->buildContextForAI($reading);
+            }
+        } catch (\Throwable $e) {
+            // skip
+        }
+
+        // Tarot cards context (fallback ถ้า detector ไม่ได้)
+        if (empty($celticContext)) {
+            $tarotCards = $reading->getCollectedTarotCards();
+            if (! empty($tarotCards)) {
+                $cardLines = [];
+                foreach ($tarotCards as $idx => $card) {
+                    $cardName = $card['card_name_th'] ?? $card['card_name_en'] ?? '?';
+                    $position = ($card['is_reversed'] ?? false) ? 'กลับหัว' : 'หงาย';
+                    $cardLines[] = '#'.($idx + 1).": {$cardName} ({$position})";
+                }
+                $celticContext = "[🃏 ไพ่ Celtic Cross 10 ใบ]\n".implode("\n", $cardLines)."\n";
+            }
+        }
+
+        return "คุณคือ *แม่หมอจันทรา* (อวตารพิเศษ Pro AI สาย Celtic Cross) — หมอดูระดับเซียน เชี่ยวชาญไพ่ยิปซีและจิตวิทยาสูง พูดไทยเท่านั้น
+แทนตัวเองด้วย *แม่หมอ/หมอจันทรา* + ลงท้าย *ค่ะ/นะคะ* — ห้าม: ครับ/ผม | หนู/เรา | ดิฉัน
+
+⚠️ *นี่คือ Celtic Pro Session — ลูกค้าจ่าย 99฿ ดูดวงไพ่ครบ 10 ใบ ได้คุยกับแม่หมออีก {$remainingMin} นาที*
+
+[ลูกค้า] ชื่อ: {$name}
+
+{$celticContext}
+
+[หน้าที่ — สำคัญมาก]
+1. ✅ *ตอบจากไพ่ทั้ง 10 ใบ* + Q&A ที่ผ่านมา — ห้ามแต่งไพ่ใหม่
+2. ✅ *จำบริบทการสนทนา* — ต่อยอดจากคำถามเดิม ไม่ตอบซ้ำ
+3. ✅ *ฟันธง* — ห้าม \"อาจจะ/ขึ้นอยู่กับ\" — ใช้ภาษาแม่หมอเซียน
+4. ✅ *ตอบ 250-450 คำ* — ลึก สมราคา 99฿
+5. ✅ *แม่หมอวัย 40+ น้ำเสียงอบอุ่น เชี่ยวชาญจิตวิทยา* — ใช้คำว่า \"เจ้าชะตา\" บ้างเพื่อสร้างบรรยากาศ
+
+[ห้ามเด็ดขาด]
+1. ❌ *ห้ามตอบเรื่องคนอื่น* — ลูกค้าถามถึงเพื่อน/ญาติ → บอกว่า \"ให้เขามาดูเองนะคะ\"
+2. ❌ *ห้ามแนะนำราคา/ขายแพคเกจ* — ไม่ mention ราคา
+3. ❌ *ห้ามรับเรื่องคืนเงิน* — ถ้าลูกค้าขอคืน → บอกแบบนุ่มนวลว่า \"การเปิดไพ่ครบสำรับแล้ว แม่หมอส่งพลังให้ครบ การให้บารมีไม่ใช่สินค้าค่ะ ขอเจ้าชะตาเปิดใจรับไปก่อน\"
+4. ❌ *ห้ามแต่งไพ่ใหม่* — ตอบจากไพ่ที่เปิดให้เท่านั้น
+5. ❌ *ห้ามถาม off-topic* (เพื่อน / ทักทาย / กินข้าวยัง) — refocus กลับมาดวงของลูกค้า
+6. ❌ *ห้ามชวนดูดวงอีกแพคเกจ* — แม่หมออยู่ใน session ของลูกค้าคนนี้";
+    }
+
+    /**
+     * AI ตอบใน Pro Session — ใช้ Pro key (sensitive purpose) + custom system prompt
+     */
+    protected function generateProSessionAnswer(FortuneReading $reading, string $messageText, ?array $userProfile): ?array
+    {
+        try {
+            $aiService = new FortuneAIService($this->settings);
+            $type = (string) $reading->getConversationState('pro_session_type', 'deep');
+            $systemPrompt = $this->buildProSessionSystemPrompt($reading, $type);
+
+            // Build history
+            $history = $reading->getConversationState('pro_session_history', []) ?: [];
+            $historyMessages = [];
+            $recentHistory = array_slice($history, -12); // last 6 turns
+            foreach ($recentHistory as $turn) {
+                $historyMessages[] = [
+                    'role' => $turn['role'] ?? 'user',
+                    'content' => mb_substr((string) ($turn['content'] ?? ''), 0, 400),
+                ];
+            }
+            $historyMessages[] = ['role' => 'user', 'content' => $messageText];
+
+            // Pro AI fallback chain — sensitive key → chat AI fallback
+            $result = null;
+            try {
+                if (method_exists($aiService, 'generatePostReadingDeepResponse')) {
+                    $result = $aiService->generatePostReadingDeepResponse(
+                        $messageText,
+                        $userProfile,
+                        $historyMessages,
+                        $systemPrompt
+                    );
+                }
+
+                if (empty($result['response'] ?? null) && method_exists($aiService, 'chatWithCustomSystemPromptHistory')) {
+                    if (! empty($this->settings->getChatAIApiKey())) {
+                        $result = $aiService->chatWithCustomSystemPromptHistory(
+                            $systemPrompt,
+                            $historyMessages,
+                            ['temperature' => 0.7, 'max_tokens' => 1200]
+                        );
+                    }
+                }
+            } catch (\Throwable $proErr) {
+                Log::info('Fortune ProSession: Pro AI fail → fallback chat', [
+                    'reading_id' => $reading->id,
+                    'error' => $proErr->getMessage(),
+                ]);
+                if (method_exists($aiService, 'chatWithCustomSystemPromptHistory')
+                    && ! empty($this->settings->getChatAIApiKey())) {
+                    $result = $aiService->chatWithCustomSystemPromptHistory(
+                        $systemPrompt,
+                        $historyMessages,
+                        ['temperature' => 0.7, 'max_tokens' => 1200]
+                    );
+                }
+            }
+
+            $response = trim((string) ($result['response'] ?? ''));
+            if ($response === '') {
+                return null;
+            }
+
+            // บันทึก Q+A → state (เก็บ 16 turns ล่าสุด)
+            $history[] = ['role' => 'user', 'content' => mb_substr($messageText, 0, 400)];
+            $history[] = ['role' => 'assistant', 'content' => mb_substr($response, 0, 400)];
+            $reading->setConversationState('pro_session_history', array_slice($history, -16));
+
+            // Footer แจ้งเวลาคงเหลือ
+            $remainingMin = $this->getProSessionRemainingMinutes($reading);
+            $footer = '';
+            if ($remainingMin > 0 && $remainingMin <= 3) {
+                $footer = "\n\n_(⏳ เหลือเวลาอีก {$remainingMin} นาที — เมื่อพอใจพิมพ์ \"ขอบคุณ\" ได้เลยค่ะ)_";
+            }
+
+            return [
+                'action' => 'pro_session_answer',
+                'message' => $response.$footer,
+                'reading' => $reading,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Fortune ProSession: AI generate ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🚪 Main router — ตัดสินใจว่าจะตอบยังไงใน Pro Session
+     *
+     * Flow:
+     *   1. ตรวจ exit confirmation pending? → ถ้าใช่ ตรวจคำตอบ "ใช่/ไม่"
+     *   2. ตรวจ exit intent (พอแค่นี้/ขอบคุณ) — เปิด confirmation gate
+     *   3. Smart route by conversation_status:
+     *      - CELTIC_AWAITING_QUESTION → delegate ไป handleCelticAwaitingQuestion (3Q flow เดิม)
+     *      - CELTIC_GENERATING → busy message (กัน race)
+     *      - อื่นๆ (รวม COMPLETED) → AI Pro ตอบจาก context
+     *
+     * @return array result พร้อมส่งกลับ — ห้าม return null (block flow อื่น)
+     */
+    protected function handleProSession(FortuneReading $reading, string $messageText, ?array $userProfile = null): array
+    {
+        // 🛡️ (2026-05-08 v3 audit) Refresh ก่อนอ่าน state — กัน race ระหว่าง concurrent messages
+        try {
+            $reading->refresh();
+        } catch (\Throwable $e) {
+            // ถ้า refresh fail (DB issue) — ใช้ state เดิม ไม่ block flow
+        }
+
+        // 1. ถ้า pending exit อยู่ — ตรวจคำตอบ
+        $pendingExit = (bool) $reading->getConversationState('pro_session_pending_exit', false);
+        if ($pendingExit) {
+            $pendingAt = $reading->getConversationState('pro_session_pending_exit_at');
+            $pendingValid = false;
+            if (! empty($pendingAt)) {
+                try {
+                    // 🩹 (2026-05-08 v3 audit) Carbon 3 — absolute=true เสมอ
+                    $pendingAtC = Carbon::parse($pendingAt);
+                    $secondsAgo = (int) $pendingAtC->diffInSeconds(now(), true);
+                    $pendingValid = $secondsAgo <= self::PRO_SESSION_EXIT_CONFIRM_SECONDS;
+                } catch (\Throwable $e) {
+                    $pendingValid = false;
+                }
+            }
+
+            if ($pendingValid && $this->isProSessionExitConfirmed($messageText)) {
+                // ✅ Confirmed → ปิด session
+                $closingMessage = $this->buildProSessionClosingMessage($reading);
+                $this->clearProSessionFlags($reading);
+
+                // ถ้ายังอยู่ใน Celtic state — เคลียร์ status ให้เป็น COMPLETED ด้วย
+                if (in_array($reading->conversation_status, [
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_QA_PROMPT,
+                ], true)) {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                }
+
+                Log::info('Fortune ProSession: ปิด session — confirmed', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return [
+                    'action' => 'pro_session_closed',
+                    'message' => $closingMessage,
+                    'reading' => $reading,
+                ];
+            }
+
+            // ลูกค้าตอบอย่างอื่น → cancel exit gate, treat as normal question
+            $reading->setConversationState('pro_session_pending_exit', false);
+        }
+
+        // 2. ตรวจ exit intent ใหม่ — Pro Session catches BEFORE celtic handler's own keyword check
+        if ($this->looksLikeProSessionExitIntent($messageText)) {
+            $reading->setConversationState('pro_session_pending_exit', true);
+            $reading->setConversationState('pro_session_pending_exit_at', now()->toIso8601String());
+
+            return [
+                'action' => 'pro_session_exit_confirm',
+                'message' => $this->buildProSessionExitConfirmationMessage($reading),
+                'reading' => $reading,
+            ];
+        }
+
+        // 3. Smart route — เคารพ Celtic 3Q flow ที่มีอยู่
+        $status = (string) $reading->conversation_status;
+
+        // 3a. Celtic AWAITING_QUESTION → ใช้ handler เดิม (3Q flow + Predict-All button)
+        //     ⚠️ Pro Session gate catches "พอแค่นี้/ขอบคุณ" ก่อน — ดังนั้น keyword ใน handler นั้นไม่เคย fire
+        if ($status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION
+            && method_exists($this, 'handleCelticAwaitingQuestion')) {
+            return $this->handleCelticAwaitingQuestion($reading, $messageText);
+        }
+
+        // 3b. Celtic GENERATING → AI กำลังประมวลผลคำถามก่อนหน้า → busy
+        if ($status === FortuneReading::STATUS_CELTIC_GENERATING) {
+            return [
+                'action' => 'pro_session_celtic_generating',
+                'message' => "🌙 แม่หมอกำลังอ่านพลังงานคำถามก่อนหน้านะคะ\n"
+                    .'รอสักครู่ — แล้วถามต่อได้เลยค่ะ ✨',
+                'reading' => $reading,
+            ];
+        }
+
+        // 3c. Default — AI Pro ตอบจาก context (Deep 39 หรือ Celtic หลัง 3Q จบ)
+        $aiResult = $this->generateProSessionAnswer($reading, $messageText, $userProfile);
+        if ($aiResult !== null) {
+            return $aiResult;
+        }
+
+        // 4. AI fail → ส่งข้อความ fallback แบบ in-character (ห้าม null)
+        $name = $reading->resolveCustomerName();
+
+        return [
+            'action' => 'pro_session_ai_fail',
+            'message' => "🌙 ขอเวลาแม่หมอตั้งจิตสักครู่นะคะ คุณ{$name} 🙏\n"
+                .'พลังงานปั่นป่วนเล็กน้อย — ลองส่งคำถามอีกครั้งได้ไหมคะ ✨',
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * หา reading ที่มี Pro Session active สำหรับ user
+     *
+     * Filter:
+     *   - is_paid=true
+     *   - paid_at ในช่วง 90 นาทีล่าสุด — กว้างพอครอบคลุม Celtic worst case
+     *     (paid → pick 10 cards 5-10 min → 30 min QA window → 30 min Pro linger = ~70 min)
+     *   - then in-memory: isInProSession() = check conversation_state flag + window expiry
+     *
+     * 🩹 ใช้ paid_at filter แค่เพื่อจำกัด query — ตรรกะจริงอยู่ที่ pro_session_started_at
+     *    (Celtic เริ่ม session ที่ pick-card-10 — อาจห่างจาก paid_at ~5-10 min)
+     */
+    protected function findActiveProSessionReading(string $userId): ?FortuneReading
+    {
+        // ดึง 3 readings ล่าสุดที่ paid ภายใน 90 นาที — เผื่อมีหลาย reading (rare)
+        $candidates = FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->where('paid_at', '>=', now()->subMinutes(90))
+            ->orderBy('paid_at', 'desc')
+            ->limit(3)
+            ->get();
+
+        foreach ($candidates as $candidate) {
+            if ($this->isInProSession($candidate)) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+}

@@ -34,6 +34,7 @@ class FortuneConversationService
     use \App\Services\Fortune\CelticCrossConversationTrait;
     use \App\Services\Fortune\FreeCardConversationTrait;
     use \App\Services\Fortune\PayFirstGateTrait;
+    use \App\Services\Fortune\ProSessionTrait;
 
     /**
      * 🔔 Per-request warning prefix — set by payFirstGate, applied by FortuneChannelManager
@@ -772,6 +773,25 @@ class FortuneConversationService
             try {
 
                 // ═══════════════════════════════════════════════════════════
+                // 🌙 Pro Session Hard Guard (2026-05-08 v3)
+                // ═══════════════════════════════════════════════════════════
+                // ถ้าลูกค้าอยู่ใน Pro Session (อวตารแม่หมอ Premium) — block ทุก handler
+                //   - Deep 39 → 10 นาทีหลังส่งคำทำนาย
+                //   - Celtic 99 → 30 นาทีหลังเปิดไพ่ใบที่ 10
+                // ออกได้ผ่าน 2 ทาง: "พอแค่นี้/ขอบคุณ"+confirm หรือหมดเวลา (auto fall through)
+                //
+                // ⚠️ ต้องอยู่ก่อน DM tracking + unsent reading check + ทุก handler
+                //    เพื่อให้ระบบอื่นๆ ห้ามแทรกระหว่าง session
+                //
+                // 🚫 ยกเว้น marker internal — ผ่านได้
+                if ($messageText !== '__DEEP_WITH_CACHED_BIRTHDATE__') {
+                    $proReading = $this->findActiveProSessionReading($facebookUserId);
+                    if ($proReading !== null) {
+                        return $this->handleProSession($proReading, $messageText, $userProfile);
+                    }
+                }
+
+                // ═══════════════════════════════════════════════════════════
                 // 🎯 Phase C — internal marker: ลูกค้ากดปุ่ม "ดูดวงเชิงลึก" หลังพิมพ์วันเกิด
                 // ═══════════════════════════════════════════════════════════
                 // controller ส่ง marker '__DEEP_WITH_CACHED_BIRTHDATE__' มา → ให้ใช้วันเกิด
@@ -1412,24 +1432,14 @@ class FortuneConversationService
                     return $this->continueConversation($activeReading, $messageText, $userProfile);
                 }
 
-                // 🆕 (2026-04-28) Post-reading discussion mode
-                // ลูกค้าจ่ายไปแล้ว+ได้คำทำนาย → ภายใน window อนุญาตคุยต่อกับ AI ฟรี
-                // โดยใช้ context จาก deep_response/birth_chart/cards เดิม
-                // ❗ ต้องไม่ trigger ถ้าเป็นคำขอดูดวงใหม่ (จะข้ามไปด้านล่างปกติ)
-                if (! $this->isExplicitDeepReadingRequest($messageText)
-                    && ! $this->parseStandaloneBirthdate($messageText)) {
-                    $recentReading = $this->findRecentCompletedDeepReading($facebookUserId);
-                    if ($recentReading) {
-                        $discussionResult = $this->handlePostReadingDiscussion(
-                            $recentReading,
-                            $messageText,
-                            $userProfile
-                        );
-                        if ($discussionResult) {
-                            return $discussionResult;
-                        }
-                    }
-                }
+                // 🚫 (2026-05-08 v3) DISABLED — Post-reading discussion mode (legacy)
+                // เคยอนุญาต AI Chat ฟรี 10 นาทีหลังคำทำนาย แต่ implicit (ไม่มี opening/closing)
+                // ตอนนี้แทนที่ด้วย Pro Session Hard Guard ที่ top ของ try block (เห็นด้านบน)
+                //   - Pro Session ทำงานเหมือนเดิม + opening msg + exit confirmation gate + AI Pro
+                //   - ออกจาก Pro Session แล้ว = หมดเวลา → fall through ไป Groq chat ปกติ
+                //
+                // เก็บ findRecentCompletedDeepReading + handlePostReadingDiscussion ไว้เป็น
+                //   internal helpers สำหรับ unit tests / admin tools — แต่ไม่เรียกใน main flow แล้ว
 
                 // 🎁 (2026-05-03) ตรวจสอบว่าลูกค้าขอ "ทำนายฟรี" — explicit keyword หรือกดปุ่ม FREE_CARD_START
                 //    มาก่อน isExplicitDeepReadingRequest เพื่อจับ keyword ฟรีให้ถูก
@@ -6075,15 +6085,61 @@ class FortuneConversationService
                 }
             }
 
+            // ============================================================
+            // 🌙 (2026-05-08 v3) Pro Session — เปิด Hard Session อวตารแม่หมอ
+            // ============================================================
+            // ลูกค้าจ่าย 39฿ + ได้คำทำนายเรียบร้อย → มอบ Premium Chat 10 นาที
+            //   - ใช้ Pro AI (sensitive key) ตอบจาก context: ดวงดาว + ไพ่ + คำทำนาย
+            //   - ระบบอื่นๆ block ทั้งหมดระหว่าง session
+            //   - ออก: "พอแค่นี้/ขอบคุณ"+confirm หรือหมดเวลา 10 นาที
+            $proSessionStarted = false;
+            $openingMsgText = '';
+            try {
+                $reading->refresh();
+                $this->enterProSession($reading, 'deep');
+                $proSessionStarted = true;
+                $openingMsgText = $this->buildProSessionOpeningMessage($reading, 'deep');
+
+                // ส่ง opening message ของอวตารแม่หมอ ผ่าน streaming (ถ้า streaming mode)
+                if ($streaming) {
+                    try {
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => 'pro_session_opening',
+                            'message' => $openingMsgText,
+                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                    } catch (\Throwable $openErr) {
+                        Log::warning('Fortune ProSession: ส่ง opening msg ไม่สำเร็จ (non-blocking)', [
+                            'reading_id' => $reading->id,
+                            'error' => $openErr->getMessage(),
+                        ]);
+                    }
+                }
+            } catch (\Throwable $proErr) {
+                // เปิด Pro Session ล้มเหลว = ไม่ block flow ส่งคำทำนาย
+                Log::warning('Fortune ProSession: enter ล้มเหลว (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $proErr->getMessage(),
+                ]);
+            }
+
+            // 🩹 Non-streaming mode — append opening msg ลงใน message field
+            //   เพื่อให้ caller (admin retry / sync flow) ส่งให้ลูกค้าเห็น opening msg
+            $finalMessage = $streaming
+                ? null
+                : $fullResponse."\n\n".$thankYouMessage.($openingMsgText !== '' ? "\n\n".$openingMsgText : '');
+
             return [
                 'action' => 'completed',
-                'message' => $streaming ? null : $fullResponse."\n\n".$thankYouMessage,
+                'message' => $finalMessage,
                 'deep_readings' => $deepReadings,
                 'thank_you' => $thankYouMessage,
                 'reading' => $reading,
                 'chart_image_url' => $chartImageUrl,
                 'streaming' => $streaming,
                 'streaming_sent_count' => $streamingSentCount,
+                // 🌙 ปิด Reading Complete Template (ปุ่ม "เพิ่ม LINE / เชิญเพื่อน")
+                //    ระหว่าง Pro Session — กัน UI distraction
+                'suppress_complete_template' => $proSessionStarted,
             ];
 
         } catch (\Exception $e) {
@@ -6446,6 +6502,7 @@ class FortuneConversationService
 
         $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
         $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
+        $message .= "💚 *ให้โอนตามยอดให้ตรงนะคะ เพื่อรับคำทำนายอัตโนมัติ*\n";
         $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันที ✨\n";
         $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้\n\n";
         $message .= "📌 บิลจะหมดอายุอัตโนมัติใน {$remainingMinutes} นาทีค่ะ";

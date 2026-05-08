@@ -1123,6 +1123,13 @@ class FortuneChannelManager
             usleep(500000); // 0.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
         }
 
+        // 🌙 (2026-05-08 v3) ถ้าเปิด Pro Session ไป suppress Reading Complete Template
+        //    เพื่อไม่ให้ปุ่ม "เพิ่ม LINE / เชิญเพื่อน" รบกวน Pro Session opening msg
+        //    Pro Session takes over UX จนกว่าจะหมดเวลาหรือลูกค้าจบ session
+        if (! empty($result['suppress_complete_template'] ?? false)) {
+            return true;
+        }
+
         // ส่ง Reading Complete Template + LINE invite + affiliate
         $completeTemplate = $richService->buildReadingCompleteTemplate();
 
@@ -2236,8 +2243,14 @@ class FortuneChannelManager
         // ถ้าไม่มี deep_readings (format เก่า หรือ streaming thank you) → ส่ง Thank You Flex
         if (empty($deepReadings)) {
             $message = $result['message'] ?? '';
+
+            // 🌙 (2026-05-08 v3) ถ้าเปิด Pro Session — skip Thank You Flex
+            //    Pro Session opening msg ส่งผ่าน streaming แล้ว ไม่ต้อง Flex แทรก
+            $suppressTemplate = ! empty($result['suppress_complete_template'] ?? false);
+
             // ตรวจว่าเป็นข้อความขอบคุณ
-            if (mb_strpos($message, 'ขอบคุณ') !== false || mb_strpos($message, 'ขอให้โชคดี') !== false) {
+            if (! $suppressTemplate
+                && (mb_strpos($message, 'ขอบคุณ') !== false || mb_strpos($message, 'ขอให้โชคดี') !== false)) {
                 $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
 
                 return $lineService->sendFlexWithReplyFallback(
@@ -2303,12 +2316,16 @@ class FortuneChannelManager
         }
 
         // 3. Thank You Flex ปิดท้าย
-        $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
-        $allMessages[] = [
-            'type' => 'flex',
-            'altText' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
-            'contents' => $thankYouFlex,
-        ];
+        // 🌙 (2026-05-08 v3) ถ้าเปิด Pro Session — skip Thank You Flex
+        //    เพราะ Pro Session opening msg ส่งแล้ว Thank You Flex จะรบกวน UX
+        if (empty($result['suppress_complete_template'] ?? false)) {
+            $thankYouFlex = $lineService->buildThankYouFlexMessage($userName);
+            $allMessages[] = [
+                'type' => 'flex',
+                'altText' => '🙏 ขอบคุณที่ไว้วางใจค่ะ',
+                'contents' => $thankYouFlex,
+            ];
+        }
 
         // ✅ ใช้ replyToken ส่ง batch 5 ข้อความแรก (ฟรี!)
         $replyBatch = array_slice($allMessages, 0, 5);

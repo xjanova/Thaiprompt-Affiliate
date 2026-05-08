@@ -515,8 +515,10 @@ trait CelticCrossConversationTrait
                     ."──────────────────────\n"
                     ."💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
                     ."(ต้องโอนทศนิยมตรงเป๊ะ ระบบใช้ทศนิยมจับคู่บิลเจ้าชะตา)\n\n"
-                    ."👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n"
-                    .'หลังโอนเสร็จ หมอจะให้เจ้าชะตาเปิดไพ่ทันที',
+                    ."👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n\n"
+                    ."💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย*\n"
+                    ."เพื่อเปิดไพ่ยิปซี 10 ใบ ทีละใบ เมื่อครบแล้วจึงเริ่มถาม\n"
+                    ."ถามได้ทุกเรื่อง {$qLimitText}ค่ะ ✨",
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
                 'celtic_base_price' => $basePrice,
@@ -1057,6 +1059,10 @@ trait CelticCrossConversationTrait
 
     /**
      * State Transition: เลือกครบ 10 ใบ → สร้างภาพ composite → ถาม Q1
+     *
+     * 🌙 (2026-05-08 v3) Pro Session — เปิด Hard Session อวตารแม่หมอ Premium ทันที
+     *   AI Pro (sensitive key) เข้ามาดูแลเจ้าชะตาตลอด 30 นาทีนับจากนี้
+     *   ระบบอื่นๆ block ทั้งหมด — ออกได้ผ่าน "พอแค่นี้/ขอบคุณ"+confirm หรือหมดเวลา
      */
     protected function onCelticAllCardsPicked(FortuneReading $reading, string $lastCardMessage, ?string $lastCardImage = null): array
     {
@@ -1067,16 +1073,30 @@ trait CelticCrossConversationTrait
         // ขยับ state เข้า awaiting question
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
+        // 🌙 (2026-05-08 v3) เปิด Pro Session — อวตารแม่หมอเข้ามารับช่วง 30 นาที
+        try {
+            $this->enterProSession($reading, 'celtic');
+        } catch (\Throwable $proErr) {
+            \Log::warning('Celtic ProSession: enter ล้มเหลว (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $proErr->getMessage(),
+            ]);
+        }
+
         $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
+        $name = $reading->resolveCustomerName();
         $followupText = "\n\n──────────────────────\n"
-            ."🌟 *เปิดไพ่ครบ 10 ใบแล้ว!*\n\n"
-            ."🌌 ตอนนี้แม่หมอกำลังเชื่อมพลังจักรวาลกับไพ่ทั้ง 10 ใบของเจ้าชะตา\n"
-            ."💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้\n\n"
-            ."❓ ถามได้ *{$qLimitText}* (ภายใน {$qaWindow} นาที)\n"
-            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบทำนาย เป็นที่ระลึก ✨\n"
-            .'🔚 พิมพ์ *"พอแค่นี้"* เมื่อพอใจ';
+            ."🌙✨ *อวตารแม่หมอจันทรามาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+            ."🃏 *เปิดไพ่ครบ 10 ใบแล้ว!*\n"
+            ."🌌 ตอนนี้แม่หมออ่านพลังงานเสร็จ พร้อมตอบเจ้าชะตาแล้ว\n\n"
+            ."💬 จะกดปุ่ม *🔮 ทำนายดวงเดี๋ยวนี้* ให้ทำนายพื้นฐานทุกเรื่องก่อน\n"
+            ."   หรือพิมพ์คำถามที่อยากรู้เลยก็ได้ค่ะ\n\n"
+            ."❓ ถามเฉพาะเรื่องได้ *{$qLimitText}*\n"
+            ."⏳ *แม่หมออยู่กับเจ้าชะตาอีก {$qaWindow} นาที* — ใช้ให้คุ้มนะคะ\n"
+            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบเป็นที่ระลึก ✨\n\n"
+            .'🔚 เมื่อพอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้';
 
         return [
             'action' => 'celtic_all_picked',
@@ -1336,6 +1356,18 @@ trait CelticCrossConversationTrait
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
+        // 🌙 (2026-05-08 v3) Pro Session linger detection
+        //   ถ้า Pro Session ยังเปิดอยู่ → "ลาแบบหลอก" — ส่ง summary แต่ AI ยังอยู่ต่อ
+        //   user spec: "แม้จะมีการสรุปเหมือนจากลา แล้ว แต่ไม่ได้ลาจริง"
+        //   ทำงานสำหรับ reason: max_questions_reached / time_expired / idle / ai_signal
+        //   ⚠️ customer_said_done = ไม่เคยมาจาก Pro Session active แล้ว (Pro gate catches first)
+        $proSessionActive = method_exists($this, 'isInProSession')
+            ? $this->isInProSession($reading)
+            : false;
+        $proSessionRemaining = ($proSessionActive && method_exists($this, 'getProSessionRemainingMinutes'))
+            ? $this->getProSessionRemainingMinutes($reading)
+            : 0;
+
         $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
 
@@ -1480,6 +1512,20 @@ trait CelticCrossConversationTrait
         // ถ้าจะส่งเสียงทีหลัง — เพิ่ม hint ใน closing message ให้ลูกค้ารอ
         if ($voiceWillSend) {
             $closingMessage .= "\n\n🎙️ _แม่หมอกำลังอัดเสียงสรุปให้ฟังภายใน 1 นาที — รอสักครู่นะคะ_ ✨";
+        }
+
+        // 🌙 (2026-05-08 v3) Pro Session linger hint
+        //   ถ้า Pro Session ยังมีเวลาเหลือ → "ลาแบบหลอก" — สรุปจบแต่บอกว่ายังอยู่ต่อ
+        //   user spec: "แม้จะมีการสรุปเหมือนจากลา แล้ว แต่ไม่ได้ลาจริง เอไอ อวาต้าแม่หมอ
+        //              ก็ยังอยู่และ ถามเพิ่มว่าจะถามอะไรไหม"
+        //   เกิดเมื่อ: max_questions_reached (3Q ครบ) แต่ window 30 นาทียังเหลือ
+        if ($proSessionActive && $proSessionRemaining > 0
+            && in_array($reason, ['max_questions_reached', 'ai_signal'], true)) {
+            $closingMessage .= "\n\n──────────────────────\n"
+                ."🌙 *แต่แม่หมอยังไม่ลานะคะ — ยังเปิดประตูพลังให้อีก {$proSessionRemaining} นาที* ✨\n\n"
+                ."💬 ถ้าเจ้าชะตามีอะไรอยากถามเพิ่มเติมจากบทสรุป — พิมพ์มาได้เลยค่ะ\n"
+                ."   แม่หมอจะอ่านพลังงานจากไพ่ทั้ง 10 ใบให้ละเอียดยิ่งขึ้น\n\n"
+                .'🔚 หรือถ้าพอใจแล้วพิมพ์ *"พอแค่นี้"* / *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้';
         }
 
         return [
