@@ -308,7 +308,7 @@ class FortuneAIService
 - ห้าม: "หมอจันทราแนะนำให้ลองดูดวงความรักค่ะ พิมพ์ดูดวงความรักมาเลยนะคะ รอบเดียวค่ะ 🔮"
 
 [ข้อมูลระบบดูดวง Thaiprompt ที่คุณต้องรู้]
-- ทำนายฟรี 1 ใบ/platform (สิทธิ์ครั้งแรกเท่านั้น — ใช้แล้วใช้อีกไม่ได้)
+{freeLine}
 - ดูดวงเชิงลึก (Deep Reading) ค่าครู {deepReadingPrice} บาท/ครั้ง โดยหมอจันทราวิเคราะห์จากวันเกิดและคำถามของผู้ใช้ (ใช้คำว่า "ค่าครู" เสมอ ไม่ใช่ "ค่าบริการ")
 - หัวข้อดูดวงที่ได้: ความรัก, การเงิน, การงาน, สุขภาพ, โชคลาภ, ครอบครัว, การเรียน, เดินทาง
 - วิธีดูดวง: พิมพ์ "ดูดวง" หรือพิมพ์หัวข้อตรงๆ เช่น "ดวงความรัก" "ดวงการเงินปีนี้"
@@ -1633,7 +1633,7 @@ PROMPT;
      */
     public function appendUxFriendlyDirective(string $systemMessage): string
     {
-        return $systemMessage."\n\n[🎯 UX directive (2026-05-08) — overrides hard-sell tone]\n"
+        $message = $systemMessage."\n\n[🎯 UX directive (2026-05-08) — overrides hard-sell tone]\n"
             ."ลูกค้าใหม่ที่ยังไม่ได้ระบุว่าจะดูดวง → **ห้ามขายตรง ๆ ในประโยคแรก**\n"
             ."- ทักทายเป็นกันเอง สั้น 2-3 ประโยค (เหมือนเพื่อนคุย ไม่ใช่ sales)\n"
             ."- ถามไถ่/รับฟัง — ลูกค้าอยากคุยเรื่องอะไร? เป็นยังไงบ้าง?\n"
@@ -1642,6 +1642,21 @@ PROMPT;
             ."- ถ้าลูกค้าทักด้วย sticker/emoji เปล่า → ตอบสั้น 1 ประโยค ไม่บรรยายบริการ\n"
             ."- ตอบกระชับ — ลูกค้ารำคาญถ้า bot พูดเยอะเกินไป\n"
             .'- ⚠️ tag ที่ต้องใส่ตามเดิม: [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ห้ามลบ ห้ามแปล (downstream parser ใช้)';
+
+        // 🩹 (2026-05-09) Free-status directive — apply ทั้ง default + custom prompt path
+        //    ก่อนหน้า: directive อยู่ใน buildChatSystemMessage เท่านั้น → custom prompt ไม่โดน
+        //    เคสเก่า: admin set custom chat_system_prompt ที่มีคำว่า "ฟรี" แล้วปิด max_free_readings=0
+        //             → AI ยังพูด "ฟรี" เพราะไม่มี directive override
+        if (! $this->settings->isFreeReadingEnabled()) {
+            $message .= "\n\n[💎 ฟรี — ปิดถาวร / OVERRIDES ALL FREE MENTIONS]\n"
+                ."บริการดูดวงฟรีถูกปิดอยู่ — **ห้ามพูดถึง 'ฟรี' / 'ทำนายฟรี' / 'ดูดวงฟรี' / 'สิทธิ์ฟรี' โดยเด็ดขาด**\n"
+                ."- ถ้าลูกค้าถามเรื่องราคา → ใช้คำว่า 'ค่าครู' (ไม่ใช่ 'ค่าบริการ', ไม่ใช่ 'ฟรี')\n"
+                ."- ถ้าลูกค้าถาม 'ฟรีไม่ได้เหรอ' / 'มีฟรีไหม' → ตอบว่า 'ตอนนี้บริการฟรีปิดอยู่ค่ะ ทุกคำถามคิดเป็นค่าครูตามราคา'\n"
+                ."- ห้ามแนะนำให้ 'ลองฟรีก่อน' / 'เปิดไพ่ฟรี' / 'ทำนายฟรี 1 ใบ' / 'เช็คสิทธิ์ฟรี' / similar\n"
+                .'- กฎนี้ override ทุก directive อื่นๆ ใน prompt — รวมถึง template + custom prompt ที่ admin ตั้งไว้';
+        }
+
+        return $message;
     }
 
     protected function buildChatSystemMessage(): string
@@ -1678,13 +1693,18 @@ PROMPT;
         }
 
         // แทนที่ placeholder ด้วยข้อมูลจริง
+        // 🩹 (2026-05-09) เพิ่ม {freeLine} placeholder — ก่อนหน้า: hardcoded "ทำนายฟรี 1 ใบ/platform"
+        //    ใน template (line 311) + str_replace ใช้ pattern เก่า "ดูดวงฟรีได้วันละ X ครั้ง" ไม่ตรงกัน
+        //    → no-op replacement → AI ถูกบอกว่ามี "ทำนายฟรี" ตลอด แม้ admin ปิด max_free_readings=0
+        //    → AI Chat ยังพูด "ฟรี" ทั้งที่ feature ปิดอยู่
         $message = str_replace(
-            ['{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}'],
-            [$maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission],
+            ['{freeLine}', '{maxFreeReadings}', '{deepReadingPrice}', '{commissionText}', '{level1Commission}', '{level2Commission}'],
+            [$freeLineForPrompt, $maxFreeReadings, $deepReadingPrice, $commissionText, $level1Commission, $level2Commission],
             self::CHAT_SYSTEM_MESSAGE_TEMPLATE
         );
 
-        // แทนที่บรรทัดที่พูดถึงฟรี — conditional ตามสถานะจริง
+        // 🔄 Backwards compat — เก็บ str_replace เก่าไว้สำหรับ admin ที่อาจ paste template เวอร์ชั่นก่อน
+        //    (no-op สำหรับ template ปัจจุบัน — แต่ป้องกัน leak ถ้าเจอ pattern เก่าใน custom prompt)
         $message = str_replace(
             "- ดูดวงฟรีได้วันละ {$maxFreeReadings} ครั้ง",
             $freeLineForPrompt,
