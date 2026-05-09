@@ -1,0 +1,644 @@
+<?php
+
+namespace App\Services\Fortune;
+
+use App\Models\FortuneReading;
+use App\Models\FortuneTellingSetting;
+use Exception;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * 💳 Fortune Stripe Service (2026-05-09)
+ *
+ * จัดการ Stripe Checkout Session สำหรับลูกค้าต่างประเทศที่ไม่มี QR Thai
+ *
+ * Flow:
+ *   1. createCheckoutSession($reading) — POST /v1/checkout/sessions
+ *      → return checkout URL ส่งให้ลูกค้า + บันทึก stripe_session_id
+ *   2. ลูกค้ากดลิงก์ → จ่ายบัตร → Stripe webhook ยิงกลับ
+ *   3. handleWebhookEvent($event) — verify signature + match session_id → trigger reading
+ *   4. pollPendingSessions() — fallback กรณี webhook ตก (รัน every 5 min)
+ *
+ * Pricing:
+ *   - Deep 39฿  → 39 + 15 service fee = 54 THB (5400 satang)
+ *   - Celtic 99฿ → 99 + 15 service fee = 114 THB (11400 satang)
+ *
+ * ใช้ existing Stripe products (เตรียมไว้ใน Stripe dashboard แล้ว):
+ *   - prod_UU1wXx9DI4s2gq — ดูดวงแม่หมอจันทราแบบธรรมดา 39 บาท (Deep)
+ *   - prod_UU1zVarkNVzkpp — ดูดวงไพ่10ใบ 99 บาท (Celtic)
+ *
+ * 🔒 Security:
+ *   - Webhook signature verify HMAC-SHA256 (timing-safe compare)
+ *   - Idempotent webhook handler (ตรวจ stripe_payment_intent_id ซ้ำ)
+ *   - First-write-wins guard (กัน double-trigger ถ้า QR Thai จ่ายทันด้วย)
+ */
+class FortuneStripeService
+{
+    protected ?FortuneTellingSetting $settings = null;
+
+    public function __construct(?FortuneTellingSetting $settings = null)
+    {
+        $this->settings = $settings ?? FortuneTellingSetting::query()->first();
+    }
+
+    /**
+     * เปิดใช้งาน Stripe หรือเปล่า
+     */
+    public function isEnabled(): bool
+    {
+        if (! $this->settings) {
+            return false;
+        }
+        if (! $this->settings->enable_stripe_payment) {
+            return false;
+        }
+        // ต้องมี secret key + webhook secret
+        if (empty($this->settings->stripe_secret_key) || empty($this->settings->stripe_webhook_secret)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * คำนวณยอดรวม (รวมค่าบริการ) สำหรับ reading
+     *
+     * Deep   = deep_reading_price + stripe_service_fee
+     * Celtic = celtic_cross_price + stripe_service_fee
+     *
+     * @return array{base: float, fee: float, total: float, currency: string}
+     */
+    public function calculateAmounts(FortuneReading $reading): array
+    {
+        $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+        $base = $isCeltic
+            ? (float) ($this->settings->celtic_cross_price ?? 99.00)
+            : (float) ($this->settings->deep_reading_price ?? 39.00);
+        $fee = (float) ($this->settings->stripe_service_fee ?? 15.00);
+
+        return [
+            'base' => $base,
+            'fee' => $fee,
+            'total' => $base + $fee,
+            'currency' => 'thb',
+        ];
+    }
+
+    /**
+     * สร้าง Stripe Checkout Session ใหม่ + อัพเดท reading
+     *
+     * @return array{success: bool, url?: string, session_id?: string, error?: string, amounts?: array}
+     */
+    public function createCheckoutSession(FortuneReading $reading): array
+    {
+        if (! $this->isEnabled()) {
+            return [
+                'success' => false,
+                'error' => 'Stripe payment ไม่ได้เปิดใช้งาน',
+            ];
+        }
+
+        try {
+            $amounts = $this->calculateAmounts($reading);
+            $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+
+            // Stripe ขั้นต่ำ checkout session expiry = 30 นาที (1800 วินาที)
+            $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
+            $expiresAt = time() + ($expiryMinutes * 60);
+
+            $packageName = $isCeltic
+                ? 'ดูดวงไพ่ 10 ใบ Celtic Cross'
+                : 'ดูดวงแม่หมอจันทรา (เชิงลึก)';
+
+            // 🛒 Line items — แยกเป็น 2 รายการเพื่อ transparency
+            //   1. ราคาแพ็กเกจ (39 / 99)
+            //   2. ค่าบริการบัตรต่างประเทศ (+15)
+            // Stripe ใช้ minor units (THB satang) — 5400 = 54 บาท
+            $payload = [
+                'mode' => 'payment',
+                'payment_method_types[0]' => 'card',
+                'line_items[0][price_data][currency]' => $amounts['currency'],
+                'line_items[0][price_data][product_data][name]' => $packageName,
+                'line_items[0][price_data][unit_amount]' => (int) round($amounts['base'] * 100),
+                'line_items[0][quantity]' => 1,
+                'line_items[1][price_data][currency]' => $amounts['currency'],
+                'line_items[1][price_data][product_data][name]' => 'ค่าบริการบัตรต่างประเทศ',
+                'line_items[1][price_data][unit_amount]' => (int) round($amounts['fee'] * 100),
+                'line_items[1][quantity]' => 1,
+                'metadata[fortune_reading_id]' => (string) $reading->id,
+                'metadata[reading_type]' => $reading->reading_type,
+                'metadata[platform]' => $reading->platform ?? 'facebook',
+                'metadata[bill_reference]' => $reading->bill_reference ?? '',
+                'expires_at' => $expiresAt,
+                'success_url' => route('fortune.stripe.success', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
+                'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]),
+                'locale' => 'auto', // Stripe ตรวจ browser locale อัตโนมัติ (รองรับลาว/EN/TH)
+            ];
+
+            // เลือก existing Stripe Product ID ถ้ามี (อ้างอิงไปใน Stripe dashboard)
+            $productId = $isCeltic
+                ? $this->settings->stripe_product_celtic_id
+                : $this->settings->stripe_product_deep_id;
+            if ($productId) {
+                $payload['metadata[stripe_product_id]'] = $productId;
+            }
+
+            $response = Http::withBasicAuth($this->settings->stripe_secret_key, '')
+                ->asForm()
+                ->timeout(30)
+                ->post('https://api.stripe.com/v1/checkout/sessions', $payload);
+
+            if ($response->failed()) {
+                $error = $response->json();
+                $msg = $error['error']['message'] ?? 'Stripe API error';
+                Log::error('FortuneStripeService: createCheckoutSession failed', [
+                    'reading_id' => $reading->id,
+                    'http_status' => $response->status(),
+                    'error' => $msg,
+                ]);
+
+                return [
+                    'success' => false,
+                    'error' => $msg,
+                ];
+            }
+
+            $session = $response->json();
+            $sessionId = $session['id'] ?? null;
+            $checkoutUrl = $session['url'] ?? null;
+
+            if (! $sessionId || ! $checkoutUrl) {
+                return [
+                    'success' => false,
+                    'error' => 'Stripe ไม่ส่ง session_id/url กลับมา',
+                ];
+            }
+
+            // 💾 บันทึกข้อมูล Stripe ลง reading
+            $reading->update([
+                'payment_method' => FortuneReading::PAYMENT_METHOD_STRIPE,
+                'service_fee' => $amounts['fee'],
+                'amount_paid' => $amounts['total'], // 54 / 114 THB exact (no random satang)
+                'stripe_session_id' => $sessionId,
+            ]);
+
+            Log::info('FortuneStripeService: created checkout session', [
+                'reading_id' => $reading->id,
+                'session_id' => $sessionId,
+                'total' => $amounts['total'],
+                'expires_at' => date('c', $expiresAt),
+            ]);
+
+            return [
+                'success' => true,
+                'url' => $checkoutUrl,
+                'session_id' => $sessionId,
+                'amounts' => $amounts,
+                'expires_at' => $expiresAt,
+            ];
+        } catch (Exception $e) {
+            Log::error('FortuneStripeService: createCheckoutSession exception', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * ตรวจสอบ Stripe webhook signature (HMAC-SHA256)
+     *
+     * @see https://stripe.com/docs/webhooks/signatures
+     */
+    public function verifyWebhookSignature(string $payload, string $signatureHeader, int $tolerance = 300): bool
+    {
+        $secret = $this->settings->stripe_webhook_secret ?? null;
+        if (empty($secret)) {
+            Log::warning('FortuneStripeService: webhook_secret ไม่ได้ตั้งค่า — reject');
+            return false;
+        }
+
+        if (empty($signatureHeader)) {
+            return false;
+        }
+
+        $timestamp = null;
+        $signatures = [];
+        foreach (explode(',', $signatureHeader) as $element) {
+            $parts = explode('=', $element, 2);
+            if (count($parts) !== 2) {
+                continue;
+            }
+            if ($parts[0] === 't') {
+                $timestamp = $parts[1];
+            } elseif ($parts[0] === 'v1') {
+                $signatures[] = $parts[1];
+            }
+        }
+
+        if (! $timestamp || empty($signatures)) {
+            return false;
+        }
+
+        // 🕒 Timestamp tolerance (default 5 min) — กัน replay
+        if (abs(time() - (int) $timestamp) > $tolerance) {
+            Log::warning('FortuneStripeService: webhook timestamp เก่าเกินไป', [
+                'diff_seconds' => abs(time() - (int) $timestamp),
+            ]);
+            return false;
+        }
+
+        $signedPayload = "{$timestamp}.{$payload}";
+        $expected = hash_hmac('sha256', $signedPayload, $secret);
+
+        // 🔐 timing-safe compare ทุก signature ที่ส่งมา (Stripe อาจหมุน secret = ส่ง 2 ตัว)
+        foreach ($signatures as $sig) {
+            if (hash_equals($expected, $sig)) {
+                return true;
+            }
+        }
+
+        Log::warning('FortuneStripeService: webhook signature ไม่ตรง');
+
+        return false;
+    }
+
+    /**
+     * จัดการ event จาก Stripe webhook
+     *
+     * รองรับ event types:
+     *   - checkout.session.completed — ลูกค้าจ่ายเสร็จ → trigger reading flow
+     *   - checkout.session.expired — session หมดอายุ → revert state
+     *   - charge.refunded — admin refund → mark reading
+     *
+     * @return array{handled: bool, reading_id?: int, action?: string, error?: string}
+     */
+    public function handleWebhookEvent(array $event): array
+    {
+        $type = $event['type'] ?? '';
+        $object = $event['data']['object'] ?? [];
+
+        switch ($type) {
+            case 'checkout.session.completed':
+                return $this->onSessionCompleted($object);
+
+            case 'checkout.session.expired':
+                return $this->onSessionExpired($object);
+
+            case 'charge.refunded':
+                return $this->onChargeRefunded($object);
+
+            default:
+                // Event อื่นๆ (เช่น payment_intent.created) ไม่ต้องทำอะไร
+                return [
+                    'handled' => false,
+                    'action' => 'ignored',
+                ];
+        }
+    }
+
+    /**
+     * Session completed — ลูกค้าจ่ายเสร็จ
+     *
+     * - ตรวจ session_id match กับ reading
+     * - ถ้า reading อยู่ status แล้ว (จ่ายผ่าน QR ก่อน) → ignore (first-write-wins)
+     * - บันทึก payment_intent_id + paid_at
+     * - return reading_id ให้ caller (controller) trigger flow
+     */
+    protected function onSessionCompleted(array $session): array
+    {
+        $sessionId = $session['id'] ?? null;
+        $paymentIntentId = $session['payment_intent'] ?? null;
+        $readingIdMeta = $session['metadata']['fortune_reading_id'] ?? null;
+
+        if (! $sessionId || ! $paymentIntentId) {
+            return [
+                'handled' => false,
+                'error' => 'session.id หรือ payment_intent ไม่มี',
+            ];
+        }
+
+        // หา reading จาก session_id (primary key) หรือ metadata (fallback)
+        $reading = FortuneReading::where('stripe_session_id', $sessionId)->first();
+        if (! $reading && $readingIdMeta) {
+            $reading = FortuneReading::find((int) $readingIdMeta);
+        }
+
+        if (! $reading) {
+            Log::warning('FortuneStripeService: ไม่พบ reading ตรงกับ session', [
+                'session_id' => $sessionId,
+                'metadata_reading_id' => $readingIdMeta,
+            ]);
+
+            return [
+                'handled' => false,
+                'error' => 'reading not found',
+            ];
+        }
+
+        // 🛡️ Idempotency — ถ้าจ่ายแล้ว/มี payment_intent_id อยู่แล้ว → ignore
+        if ($reading->is_paid || $reading->stripe_payment_intent_id) {
+            Log::info('FortuneStripeService: reading จ่ายไปแล้ว — skip duplicate webhook', [
+                'reading_id' => $reading->id,
+                'stripe_session_id' => $sessionId,
+            ]);
+
+            return [
+                'handled' => true,
+                'reading_id' => $reading->id,
+                'action' => 'already_paid',
+            ];
+        }
+
+        // ✅ Mark as paid
+        $reading->update([
+            'stripe_payment_intent_id' => $paymentIntentId,
+            'stripe_paid_at' => now(),
+            'is_paid' => true,
+            'paid_at' => now(),
+        ]);
+
+        Log::info('FortuneStripeService: Stripe payment confirmed', [
+            'reading_id' => $reading->id,
+            'session_id' => $sessionId,
+            'payment_intent_id' => $paymentIntentId,
+            'amount_paid' => $reading->amount_paid,
+        ]);
+
+        return [
+            'handled' => true,
+            'reading_id' => $reading->id,
+            'action' => 'paid',
+        ];
+    }
+
+    /**
+     * Session expired — ลูกค้าไม่จ่ายภายใน 30 นาที
+     *
+     * - ถ้า reading ยัง pending_stripe_payment → revert ไป awaiting_payment_method
+     * - ถ้า reading จ่ายไปแล้ว (race condition) → ignore
+     */
+    protected function onSessionExpired(array $session): array
+    {
+        $sessionId = $session['id'] ?? null;
+        if (! $sessionId) {
+            return ['handled' => false, 'error' => 'no session_id'];
+        }
+
+        $reading = FortuneReading::where('stripe_session_id', $sessionId)->first();
+        if (! $reading) {
+            return ['handled' => false, 'error' => 'reading not found'];
+        }
+
+        // ถ้าจ่ายไปแล้ว — ignore (race condition: paid + expired ในเวลาใกล้กัน)
+        if ($reading->is_paid) {
+            return [
+                'handled' => true,
+                'reading_id' => $reading->id,
+                'action' => 'already_paid',
+            ];
+        }
+
+        // ถ้ายัง pending → mark expired (caller อาจเลือก revert ไป awaiting_payment_method)
+        if ($reading->conversation_status === FortuneReading::STATUS_PENDING_STRIPE_PAYMENT) {
+            $reading->update([
+                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            ]);
+        }
+
+        Log::info('FortuneStripeService: Stripe session expired', [
+            'reading_id' => $reading->id,
+            'session_id' => $sessionId,
+        ]);
+
+        return [
+            'handled' => true,
+            'reading_id' => $reading->id,
+            'action' => 'expired',
+        ];
+    }
+
+    /**
+     * Charge refunded — admin refund บิลใน Stripe
+     *
+     * - แค่ log ไว้ — ไม่ต้องเปลี่ยน reading status (admin จัดการเองในหน้า admin)
+     */
+    protected function onChargeRefunded(array $charge): array
+    {
+        $paymentIntentId = $charge['payment_intent'] ?? null;
+        if (! $paymentIntentId) {
+            return ['handled' => false];
+        }
+
+        $reading = FortuneReading::where('stripe_payment_intent_id', $paymentIntentId)->first();
+        if (! $reading) {
+            return ['handled' => false, 'error' => 'reading not found'];
+        }
+
+        Log::info('FortuneStripeService: charge refunded', [
+            'reading_id' => $reading->id,
+            'payment_intent_id' => $paymentIntentId,
+            'refunded' => $charge['amount_refunded'] ?? 0,
+        ]);
+
+        return [
+            'handled' => true,
+            'reading_id' => $reading->id,
+            'action' => 'refunded',
+        ];
+    }
+
+    /**
+     * Polling fallback — fetch session ที่ pending แล้ว check status จาก Stripe API
+     *
+     * ใช้ใน fortune:stripe-poll command (รัน every 5 min)
+     * กรณี webhook ตก / network error / firewall block
+     *
+     * @return array{processed: int, paid: int, expired: int}
+     */
+    public function pollPendingSessions(int $maxAge = 7200): array
+    {
+        $stats = ['processed' => 0, 'paid' => 0, 'expired' => 0];
+
+        if (! $this->isEnabled()) {
+            return $stats;
+        }
+
+        $pending = FortuneReading::query()
+            ->where('payment_method', FortuneReading::PAYMENT_METHOD_STRIPE)
+            ->where('conversation_status', FortuneReading::STATUS_PENDING_STRIPE_PAYMENT)
+            ->whereNotNull('stripe_session_id')
+            ->where('updated_at', '>=', now()->subSeconds($maxAge))
+            ->limit(50)
+            ->get();
+
+        foreach ($pending as $reading) {
+            $stats['processed']++;
+            $sessionStatus = $this->retrieveSession($reading->stripe_session_id);
+            if (! $sessionStatus) {
+                continue;
+            }
+
+            $status = $sessionStatus['payment_status'] ?? '';
+            $sessionState = $sessionStatus['status'] ?? '';
+
+            if ($status === 'paid' && ! $reading->is_paid) {
+                // Manually trigger session.completed handler
+                $result = $this->onSessionCompleted($sessionStatus);
+                if (($result['action'] ?? '') === 'paid') {
+                    $stats['paid']++;
+                }
+            } elseif ($sessionState === 'expired' && ! $reading->is_paid) {
+                $this->onSessionExpired($sessionStatus);
+                $stats['expired']++;
+            }
+        }
+
+        return $stats;
+    }
+
+    /**
+     * ดึงข้อมูล Stripe Checkout Session
+     *
+     * @return array|null Stripe session payload หรือ null ถ้า fail
+     */
+    public function retrieveSession(string $sessionId): ?array
+    {
+        if (! $this->isEnabled()) {
+            return null;
+        }
+
+        try {
+            $response = Http::withBasicAuth($this->settings->stripe_secret_key, '')
+                ->timeout(20)
+                ->get("https://api.stripe.com/v1/checkout/sessions/{$sessionId}");
+
+            if ($response->failed()) {
+                return null;
+            }
+
+            return $response->json();
+        } catch (Exception $e) {
+            Log::warning('FortuneStripeService: retrieveSession failed', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Expire Checkout Session ที่ยังไม่จ่าย (admin action)
+     */
+    public function expireSession(string $sessionId): bool
+    {
+        if (! $this->isEnabled()) {
+            return false;
+        }
+
+        try {
+            $response = Http::withBasicAuth($this->settings->stripe_secret_key, '')
+                ->asForm()
+                ->timeout(20)
+                ->post("https://api.stripe.com/v1/checkout/sessions/{$sessionId}/expire");
+
+            return $response->successful();
+        } catch (Exception $e) {
+            Log::error('FortuneStripeService: expireSession failed', [
+                'session_id' => $sessionId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Refund payment (admin action)
+     *
+     * @param  float|null  $amount  null = full refund, ระบุ = partial
+     */
+    public function refundPayment(string $paymentIntentId, ?float $amount = null, ?string $reason = null): array
+    {
+        if (! $this->isEnabled()) {
+            return ['success' => false, 'error' => 'Stripe ไม่เปิดใช้'];
+        }
+
+        try {
+            $payload = ['payment_intent' => $paymentIntentId];
+            if ($amount !== null) {
+                $payload['amount'] = (int) round($amount * 100); // satang
+            }
+            if ($reason) {
+                $payload['metadata[admin_reason]'] = mb_substr($reason, 0, 500);
+            }
+
+            $response = Http::withBasicAuth($this->settings->stripe_secret_key, '')
+                ->asForm()
+                ->timeout(30)
+                ->post('https://api.stripe.com/v1/refunds', $payload);
+
+            if ($response->failed()) {
+                $error = $response->json();
+                return [
+                    'success' => false,
+                    'error' => $error['error']['message'] ?? 'Stripe refund failed',
+                ];
+            }
+
+            $refund = $response->json();
+
+            return [
+                'success' => true,
+                'refund_id' => $refund['id'] ?? null,
+                'amount' => ($refund['amount'] ?? 0) / 100,
+                'status' => $refund['status'] ?? null,
+            ];
+        } catch (Exception $e) {
+            return ['success' => false, 'error' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * Build URL ลิงก์ไป Stripe Dashboard ของ payment_intent นั้น
+     *
+     * Live: https://dashboard.stripe.com/{acct_xxx}/payments/{pi_xxx}
+     * Test: https://dashboard.stripe.com/{acct_xxx}/test/payments/{pi_xxx}
+     */
+    public function buildDashboardUrl(string $paymentIntentId): string
+    {
+        $acct = $this->settings->stripe_account_id ?? '';
+        $isTest = (bool) ($this->settings->stripe_test_mode ?? true);
+
+        $base = $acct
+            ? "https://dashboard.stripe.com/{$acct}"
+            : 'https://dashboard.stripe.com';
+
+        $modePath = $isTest ? '/test' : '';
+
+        return "{$base}{$modePath}/payments/{$paymentIntentId}";
+    }
+
+    /**
+     * Build URL ไป Checkout Session
+     */
+    public function buildSessionDashboardUrl(string $sessionId): string
+    {
+        $acct = $this->settings->stripe_account_id ?? '';
+        $isTest = (bool) ($this->settings->stripe_test_mode ?? true);
+
+        $base = $acct
+            ? "https://dashboard.stripe.com/{$acct}"
+            : 'https://dashboard.stripe.com';
+
+        $modePath = $isTest ? '/test' : '';
+
+        return "{$base}{$modePath}/checkout/sessions/{$sessionId}";
+    }
+}
