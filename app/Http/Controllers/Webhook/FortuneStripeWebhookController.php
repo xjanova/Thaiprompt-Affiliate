@@ -143,11 +143,23 @@ class FortuneStripeWebhookController extends Controller
      */
     protected function triggerDeepFlow(FortuneReading $reading): void
     {
+        // 🐛 (self-review fix) Job constructor signature = (int $readingId, ?int $notificationId, string $platform, string $userId)
+        //    เดิม dispatch($reading->id, null) — missing 2 args → ArgumentCountError ตอนรัน
+        //    ใหม่: ใช้ canonical dispatchSmart() เหมือน SmsPaymentService:868 ส่ง args ครบ
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->facebook_user_id ?? $reading->platform_user_id ?? '';
+
         try {
-            \App\Jobs\ProcessDeepFortuneReadingJob::dispatch($reading->id, /* notification: */ null);
+            \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                $reading->id,
+                /* notificationId: */ null,
+                $platform,
+                $userId
+            );
 
             Log::info('FortuneStripeWebhook: dispatched ProcessDeepFortuneReadingJob', [
                 'reading_id' => $reading->id,
+                'platform' => $platform,
             ]);
         } catch (\Throwable $e) {
             Log::error('FortuneStripeWebhook: dispatch deep job failed — fallback sync', [

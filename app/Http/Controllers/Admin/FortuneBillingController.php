@@ -605,7 +605,10 @@ class FortuneBillingController extends Controller
                             (float) $reading->amount_paid
                         );
                     } else {
-                        ProcessDeepFortuneReadingJob::dispatch($reading->id, null);
+                        // 🐛 (self-review fix) ใช้ dispatchSmart() ส่ง args ครบ 4 ตัว
+                        $platform = $reading->platform ?? 'facebook';
+                        $userId = $reading->facebook_user_id ?? $reading->platform_user_id ?? '';
+                        ProcessDeepFortuneReadingJob::dispatchSmart($reading->id, null, $platform, $userId);
                     }
                 } catch (\Throwable $e) {
                     Log::error('FortuneBilling: Stripe resync trigger failed', [

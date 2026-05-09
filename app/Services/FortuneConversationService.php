@@ -3070,6 +3070,9 @@ class FortuneConversationService
                 FortuneReading::STATUS_PENDING_PAYMENT,
                 FortuneReading::STATUS_TIER_CHOICE,
                 FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                // 🐛 (2026-05-09 self-review) เพิ่ม Stripe states ที่ตกหล่น — user กด "ยกเลิก" ตอนรอจ่าย Stripe ต้องปิด reading ด้วย
+                FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+                FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                 FortuneReading::STATUS_NEW,
             ])
             ->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -5415,6 +5418,26 @@ class FortuneConversationService
         }
 
         if ($isQrChoice) {
+            // 🐛 (2026-05-09 self-review) Double-payment guard
+            //    ถ้าเคยสร้าง Stripe session แล้ว user สลับมา QR Thai → expire session ที่ค้าง
+            //    ป้องกัน user กลับไปจ่าย Stripe หลังจ่าย QR Thai เสร็จแล้ว (จ่ายซ้ำ)
+            if ($reading->stripe_session_id && ! $reading->is_paid) {
+                try {
+                    $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+                    $service->expireSession($reading->stripe_session_id);
+                    Log::info('Fortune: Stripe session expired (user switched to QR Thai)', [
+                        'reading_id' => $reading->id,
+                        'session_id' => $reading->stripe_session_id,
+                    ]);
+                } catch (\Throwable $e) {
+                    // expire fail = ไม่ block flow — ลูกค้าอาจจ่ายซ้ำ admin refund ได้
+                    Log::warning('Fortune: expire Stripe session failed (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // ไป QR Thai flow เดิม — branch ตาม reading_type
             if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
                 // Celtic 99฿ — call startCelticCrossFlow ที่ skip stripe gate (ไม่ถามซ้ำ)
@@ -5513,10 +5536,10 @@ class FortuneConversationService
         if (str_contains($clean, 'ยกเลิก') || str_contains($clean, 'cancel')
             || str_contains($clean, 'qr') || str_contains($clean, 'pay_method_qr_thai')
             || str_contains($clean, 'ไทย')) {
-            return $this->handlePaymentMethodSelection(
-                tap($reading)->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]),
-                'PAY_METHOD_QR_THAI'
-            );
+            // 🐛 (self-review) tap() คืน original instance — DB อัพเดทแล้วแต่ $reading
+            //    ใน memory ยังมี stale conversation_status. ใช้ refresh() หลัง update เพื่อ sync
+            $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]);
+            return $this->handlePaymentMethodSelection($reading->fresh(), 'PAY_METHOD_QR_THAI');
         }
 
         // Default: reminder ลิงก์ Stripe
@@ -5525,9 +5548,31 @@ class FortuneConversationService
             $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
             $session = $service->retrieveSession($reading->stripe_session_id);
             $sessionUrl = $session['url'] ?? null;
+            $sessionStatus = $session['status'] ?? '';
+            $paymentStatus = $session['payment_status'] ?? '';
+
+            // 🐛 (self-review) ถ้า paid อยู่แล้วแต่ webhook delayed → trigger flow เลย
+            //    เคสจริง: webhook ตก → polling จะ catch ใน 5 min แต่ user พิมพ์มาก่อน
+            //    → เห็น "รอจ่าย" ทั้งที่จ่ายแล้ว = สับสน
+            if ($paymentStatus === 'paid' && ! $reading->is_paid) {
+                Log::info('Fortune: Stripe paid detected via mid-flow check (webhook delayed)', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                // Trigger via webhook handler (ใช้ logic เดียวกัน)
+                $event = ['type' => 'checkout.session.completed', 'data' => ['object' => $session]];
+                $service->handleWebhookEvent($event);
+                $reading->refresh();
+
+                return [
+                    'action' => 'processing',
+                    'message' => "✅ ชำระเงินสำเร็จแล้วค่ะ\n\n🔮 กำลังจัดทำคำทำนาย โปรดรอสักครู่ ✨",
+                    'reading' => $reading,
+                ];
+            }
 
             // 🛡️ ถ้า session expired → revert ไป awaiting_payment_method
-            if (! empty($session) && ($session['status'] ?? '') === 'expired') {
+            if ($sessionStatus === 'expired') {
                 $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]);
 
                 return $this->askPaymentMethod($reading, "⏰ ลิงก์ชำระเงินหมดอายุแล้ว กรุณาเลือกวิธีใหม่ค่ะ\n\n");

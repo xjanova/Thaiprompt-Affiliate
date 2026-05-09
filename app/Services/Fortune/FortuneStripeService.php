@@ -103,8 +103,10 @@ class FortuneStripeService
             $amounts = $this->calculateAmounts($reading);
             $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
 
-            // Stripe ขั้นต่ำ checkout session expiry = 30 นาที (1800 วินาที)
-            $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
+            // 🐛 (self-review fix) Stripe ต้องการ expires_at > now+30min STRICT (clock drift)
+            //    ถ้า expiryMinutes = 30 exact → เผลอ 1ms ช้า → Stripe API reject
+            //    Min 31 min = ปลอดภัยกับ clock drift / network latency
+            $expiryMinutes = max(31, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
             $expiresAt = time() + ($expiryMinutes * 60);
 
             $packageName = $isCeltic
