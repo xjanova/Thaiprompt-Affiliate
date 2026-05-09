@@ -79,3 +79,32 @@ Schedule::command('fortune:mystic:publish')
             return false;
         }
     });
+
+// ════════════════════════════════════════════════════════════════
+// 🤖 Bot Automation — รัน automation ที่ถึงเวลาตาม next_execution_at
+// ════════════════════════════════════════════════════════════════
+// ปัญหาก่อนแก้: command `bot:process-automations` มีอยู่แต่ไม่ถูกลงทะเบียน
+// scheduler เลย ทำให้ "โพสเดี๋ยวนี้" (manual) ใช้ได้ แต่ auto-post ไม่ยิง
+//
+// ทุกนาที — เช็ค BotAutomation::dueForExecution() (active + next_execution_at <= now)
+//   แล้วเรียก executeAutomation() ผ่าน BotAutomationService
+//
+// withoutOverlapping(5) — กัน overlap 5 นาที (เผื่อ AI gen content ช้า)
+// onOneServer() — กัน multi-server รันซ้ำ
+Schedule::command('bot:process-automations')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('bot-process-automations')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
+// 📤 Bot Scheduled Posts — โพสที่ admin ตั้งเวลาเฉพาะเจาะจงไว้
+// ════════════════════════════════════════════════════════════════
+// ทุกนาที — เช็ค BotScheduledPost::dueForPublishing() แล้ว dispatch
+//   PublishScheduledPostJob ทีละโพส (ผ่าน queue)
+Schedule::job(new \App\Jobs\BotAutomation\ProcessScheduledPostsJob)
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('bot-scheduled-posts-publish');
