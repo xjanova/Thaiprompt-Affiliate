@@ -23,6 +23,16 @@ Schedule::command('fortune:celtic-recover --auto --minutes=5')
     ->name('celtic-auto-recovery')
     ->runInBackground();
 
+// 💳 (2026-05-09) Stripe webhook fallback — poll session ที่ pending recover ถ้า webhook ตก
+//   Stripe webhook ตก/firewall block → บิลจ่ายแล้วลูกค้าไม่ได้คำทำนาย
+//   poll Checkout Session API เอง → ถ้า paid → trigger flow
+Schedule::command('fortune:stripe-poll --max-age=7200')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-stripe-poll')
+    ->runInBackground();
+
 // ════════════════════════════════════════════════════════════════
 // 🔮 Daily Horoscope Auto-Post — โพสดวงประจำวัน 7 วันเกิด (ระบบเดิม)
 // ════════════════════════════════════════════════════════════════

@@ -1254,6 +1254,24 @@ Route::prefix('webhook')->name('webhook.')->group(function () {
             \App\Http\Middleware\TrackPageView::class,
         ]);
 
+    // 💳 (2026-05-09) Stripe Checkout webhook — Fortune chat payment
+    //   ⚠️ ห้ามมี middleware ที่อ่าน body / parse JSON ก่อน controller (ทำให้ signature verify fail)
+    //   $except ใน VerifyCsrfToken (webhook/* wildcard) ครอบ /webhook/fortune-stripe แล้ว
+    Route::post('/fortune-stripe', [\App\Http\Controllers\Webhook\FortuneStripeWebhookController::class, 'handle'])
+        ->name('fortune.stripe.webhook')
+        ->withoutMiddleware([
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+            \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\TrackVendorStoreVisit::class,
+            \App\Http\Middleware\TrackRequestMetrics::class,
+            \App\Http\Middleware\TrackPageView::class,
+        ]);
+
     // LINE Fresh Market Webhook (ตลาดสดไทยพร๊อม - LINE OA แยกจากดูดวง)
     // ⚡ withoutMiddleware: ลบ middleware ที่ไม่จำเป็นสำหรับ webhook
     Route::post('/line/taladsod', [\App\Http\Controllers\FreshMarketWebhookController::class, 'handle'])
@@ -1286,6 +1304,15 @@ Route::get('/fortune/invite/{token}', [FortuneReferralController::class, 'landin
 // 🎁 (2026-05-04) แคมเปญรับสิทธิ์ดูฟรีรายเดือน — ลิงก์ในโพสต์กลุ่ม Facebook
 Route::get('/fortune/monthly-claim', [\App\Http\Controllers\Frontend\FortuneMonthlyClaimController::class, 'show'])
     ->name('fortune.monthly-claim');
+
+// 💳 (2026-05-09) Stripe Checkout success / cancel pages — ลูกค้า redirect กลับมาที่นี่หลังจ่าย
+Route::get('/fortune/stripe/success/{reading}', [\App\Http\Controllers\Webhook\FortuneStripeWebhookController::class, 'success'])
+    ->name('fortune.stripe.success')
+    ->where('reading', '[0-9]+');
+
+Route::get('/fortune/stripe/cancel/{reading}', [\App\Http\Controllers\Webhook\FortuneStripeWebhookController::class, 'cancel'])
+    ->name('fortune.stripe.cancel')
+    ->where('reading', '[0-9]+');
 
 // 🌟 (2026-05-05) Tracking redirects — บันทึก click + redirect ไป FB page/group
 //   ใช้ใน button template ที่ส่งใน Messenger DM (ปุ่ม web_url ไม่ส่ง postback กลับ)
