@@ -751,6 +751,37 @@ class FortuneChannelManager
                 //    ใช้ template เดียวกับ pending_payment / celtic_pending_payment (มี QR + ปุ่ม)
                 'payment_lock_pending', 'payment_lock_revived' => $this->sendFacebookPaymentResponse($fbService, $richService, $userId, $result),
 
+                // 💳 (2026-05-09) Stripe payment method selection — 2 ปุ่ม QR Thai vs Stripe
+                'awaiting_payment_method' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $qrs = [];
+                    foreach (($result['quick_replies'] ?? []) as $qr) {
+                        $qrs[] = [
+                            'content_type' => 'text',
+                            'title' => $qr['label'] ?? $qr['text'] ?? '',
+                            'payload' => $qr['payload'] ?? $qr['text'] ?? '',
+                        ];
+                    }
+                    if (empty($qrs)) {
+                        $qrs = [
+                            ['content_type' => 'text', 'title' => '💚 QR ไทย', 'payload' => 'PAY_METHOD_QR_THAI'],
+                            ['content_type' => 'text', 'title' => '💳 บัตร ตปท.', 'payload' => 'PAY_METHOD_STRIPE'],
+                        ];
+                    }
+
+                    return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
+                })(),
+
+                // 💳 (2026-05-09) Stripe checkout session created — ส่งลิงก์ + Quick Reply กลับไป QR Thai
+                'pending_stripe_payment', 'pending_stripe_payment_reminder' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // FB Quick Reply ไม่ render URL — จึงใช้ text Quick Reply แทน + ลิงก์อยู่ใน body
+                    $qrs = [
+                        ['content_type' => 'text', 'title' => '💳 จ่ายต่อ', 'payload' => 'STRIPE_RESUME'],
+                        ['content_type' => 'text', 'title' => '↩️ ใช้ QR Thai', 'payload' => 'PAY_METHOD_QR_THAI'],
+                    ];
+
+                    return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
+                })(),
+
                 // 💎 (2026-05-03) Request-Before-Pay — confirmation prompt + 2 buttons
                 'delivery_confirm_prompt' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '✅ รับคำทำนาย', 'payload' => 'DELIVERY_CONFIRM_YES'],
@@ -1789,6 +1820,21 @@ class FortuneChannelManager
 
                 // 🔒 (2026-05-03) Pay-First Gate responses — บิลค้าง resend QR / revive (LINE)
                 'payment_lock_pending', 'payment_lock_revived' => $this->sendLinePaymentResponse($lineService, $userId, $result, $replyToken),
+
+                // 💳 (2026-05-09) Stripe payment method selection (LINE Quick Reply)
+                'awaiting_payment_method' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, array_map(
+                    fn ($qr) => ['label' => $qr['label'] ?? $qr['text'] ?? '', 'text' => $qr['text'] ?? $qr['payload'] ?? ''],
+                    $result['quick_replies'] ?? [
+                        ['label' => '💚 QR ไทย', 'text' => 'PAY_METHOD_QR_THAI'],
+                        ['label' => '💳 บัตร ตปท.', 'text' => 'PAY_METHOD_STRIPE'],
+                    ]
+                )),
+
+                // 💳 (2026-05-09) Stripe Checkout link sent / reminder (LINE) — ลิงก์อยู่ใน text body
+                'pending_stripe_payment', 'pending_stripe_payment_reminder' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '💳 จ่ายต่อ', 'text' => 'STRIPE_RESUME'],
+                    ['label' => '↩️ ใช้ QR Thai', 'text' => 'PAY_METHOD_QR_THAI'],
+                ]),
 
                 // 🔒 (2026-05-03) reach revive limit — admin only (text-only)
                 'payment_lock_admin' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),

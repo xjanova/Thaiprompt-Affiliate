@@ -4010,6 +4010,9 @@ class FortuneConversationService
             // 🌊 (2026-05-05) AWAITING_DELIVERY_CONFIRM ลบทิ้ง — Pay-Later kill switch
             FortuneReading::STATUS_DISCOVERY_CHAT => $this->handleDiscoveryChat($reading, $messageText, $userProfile),
             FortuneReading::STATUS_DISCOVERY_CONFIRM => $this->handleDiscoveryConfirm($reading, $messageText, $userProfile),
+            // 💳 (2026-05-09) Stripe payment method selection
+            FortuneReading::STATUS_AWAITING_PAYMENT_METHOD => $this->handlePaymentMethodSelection($reading, $messageText),
+            FortuneReading::STATUS_PENDING_STRIPE_PAYMENT => $this->handlePendingStripePayment($reading, $messageText),
             FortuneReading::STATUS_PENDING_PAYMENT => $this->handlePendingPayment($reading, $messageText),
             // PAID: AI กำลังประมวลผลคำทำนายอยู่ → แจ้งให้รอ
             FortuneReading::STATUS_PAID => [
@@ -5296,12 +5299,251 @@ class FortuneConversationService
             'tarot_cards' => $reading->getCollectedTarotCards(),
         ]);
 
+        // 💳 (2026-05-09) Stripe payment method selection
+        //    ถ้า admin เปิด enable_stripe_payment + lookup ครบ → ถามเลือกวิธีชำระก่อนสร้างบิล
+        //    ปิด = ตกไป QR Thai เดิม (backward compat)
+        if ($this->isStripePaymentAvailable()) {
+            // เก็บคำถามไว้ก่อน (ยังไม่สร้างบิล) — รอลูกค้าเลือกวิธีชำระ
+            $reading->update([
+                'questions' => $collectedQuestions,
+                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            ]);
+
+            return $this->askPaymentMethod($reading, $prefixMessage);
+        }
+
         $billResult = $this->createPaymentBill($reading, $collectedQuestions);
         if (! empty($prefixMessage)) {
             $billResult['message'] = $prefixMessage.$billResult['message'];
         }
 
         return $billResult;
+    }
+
+    /**
+     * 💳 (2026-05-09) ตรวจว่า Stripe payment พร้อมใช้งานไหม
+     *
+     * เกณฑ์:
+     *   - admin เปิด enable_stripe_payment
+     *   - มี secret_key + webhook_secret ตั้งใน admin
+     */
+    protected function isStripePaymentAvailable(): bool
+    {
+        if (! $this->settings) {
+            return false;
+        }
+
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+
+        return $service->isEnabled();
+    }
+
+    /**
+     * 💳 (2026-05-09) ถามลูกค้าให้เลือกวิธีชำระเงิน
+     *
+     * แสดง 2 ปุ่ม:
+     *   - 💚 QR Code ไทย — ราคาเดิม (39 / 99 บาท + random satang)
+     *   - 💳 บัตรต่างประเทศ — ราคาแพ็กเกจ + 15 บาท ค่าบริการ Stripe
+     *
+     * @param  string  $prefixMessage  ข้อความนำหน้าจาก afterTarotCardDrawn (รวมข้อความไพ่ใบล่าสุด)
+     */
+    protected function askPaymentMethod(FortuneReading $reading, string $prefixMessage = ''): array
+    {
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        $amounts = $service->calculateAmounts($reading);
+
+        $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+        $packageLabel = $isCeltic ? 'ดูดวงไพ่ยิปซี 10 ใบ' : 'ดูดวงเชิงลึก';
+        $basePrice = (int) $amounts['base'];
+        $totalStripe = (int) $amounts['total'];
+
+        $message = $prefixMessage
+            ."🔮 ครบทุกขั้นตอนแล้วค่ะ คุณ\n"
+            ."📦 แพ็กเกจ: {$packageLabel}\n\n"
+            ."💰 กรุณาเลือกวิธีชำระเงิน:\n\n"
+            ."💚 QR Code ไทย — {$basePrice} บาท\n"
+            ."   (PromptPay, K+, SCB, Krungsri, ทุกธนาคารไทย)\n\n"
+            ."💳 บัตรต่างประเทศ — {$totalStripe} บาท ({$basePrice} + ค่าบริการ {$amounts['fee']})\n"
+            ."   (Visa, Mastercard, AmEx, Apple Pay — สำหรับลูกค้าต่างประเทศ)\n\n"
+            ."👇 กดเลือกด้านล่างได้เลย";
+
+        return [
+            'action' => 'awaiting_payment_method',
+            'message' => $message,
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['label' => "💚 QR ไทย {$basePrice}฿", 'text' => 'PAY_METHOD_QR_THAI', 'payload' => 'PAY_METHOD_QR_THAI'],
+                ['label' => "💳 บัตร ตปท. {$totalStripe}฿", 'text' => 'PAY_METHOD_STRIPE', 'payload' => 'PAY_METHOD_STRIPE'],
+            ],
+        ];
+    }
+
+    /**
+     * 💳 (2026-05-09) handler — รับการตอบของลูกค้าหลัง askPaymentMethod
+     *
+     * ตรวจ payload หรือ keyword:
+     *   - PAY_METHOD_QR_THAI / "qr ไทย" / "ไทย" → ไป QR flow (createPaymentBill)
+     *   - PAY_METHOD_STRIPE / "บัตร" / "stripe" / "ต่างประเทศ" → ไป Stripe flow
+     *   - อื่นๆ → ส่งปุ่มซ้ำ + AI hint
+     */
+    protected function handlePaymentMethodSelection(FortuneReading $reading, string $messageText): array
+    {
+        $clean = mb_strtolower(trim($messageText));
+
+        // ตรวจ payload หรือ keyword Stripe (priority สูงกว่า QR)
+        $isStripeChoice = str_contains($clean, 'pay_method_stripe')
+            || str_contains($clean, 'stripe')
+            || str_contains($clean, 'บัตร')
+            || str_contains($clean, 'ต่างประเทศ')
+            || str_contains($clean, 'เครดิต')
+            || str_contains($clean, 'visa')
+            || str_contains($clean, 'master')
+            || str_contains($clean, 'card');
+
+        $isQrChoice = ! $isStripeChoice && (
+            str_contains($clean, 'pay_method_qr_thai')
+            || str_contains($clean, 'qr')
+            || str_contains($clean, 'ไทย')
+            || str_contains($clean, 'พร้อมเพย์')
+            || str_contains($clean, 'promptpay')
+            || str_contains($clean, 'โอน')
+        );
+
+        if ($isStripeChoice) {
+            return $this->startStripePaymentFlow($reading);
+        }
+
+        if ($isQrChoice) {
+            // ไป QR Thai flow เดิม — branch ตาม reading_type
+            if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                // Celtic 99฿ — call startCelticCrossFlow ที่ skip stripe gate (ไม่ถามซ้ำ)
+                return $this->startCelticCrossFlow($reading, skipStripeGate: true);
+            }
+
+            // Deep 39฿ — สร้างบิล UPA ปกติ
+            $questions = $reading->getCollectedQuestions();
+
+            return $this->createPaymentBill($reading, $questions);
+        }
+
+        // ไม่ตรง — แนะนำให้กดปุ่ม + ส่งปุ่มซ้ำ
+        return $this->askPaymentMethod($reading, "🤔 ไม่เข้าใจคำตอบค่ะ\n\n");
+    }
+
+    /**
+     * 💳 (2026-05-09) Stripe payment flow — สร้าง Checkout Session ส่งลิงก์
+     *
+     * 1. call FortuneStripeService::createCheckoutSession
+     * 2. ถ้าสำเร็จ → set status PENDING_STRIPE_PAYMENT + ส่งลิงก์ + กล่องอธิบาย
+     * 3. ถ้าล้มเหลว → fallback แจ้งใช้ QR Thai
+     */
+    protected function startStripePaymentFlow(FortuneReading $reading): array
+    {
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        $result = $service->createCheckoutSession($reading);
+
+        if (! ($result['success'] ?? false)) {
+            Log::warning('Fortune: Stripe checkout creation failed — fallback ไป QR Thai', [
+                'reading_id' => $reading->id,
+                'error' => $result['error'] ?? 'unknown',
+            ]);
+
+            // Fallback: แจ้ง user + สร้าง QR Thai bill ให้แทน
+            $questions = $reading->getCollectedQuestions();
+            $billResult = $this->createPaymentBill($reading, $questions);
+            $billResult['message'] = "⚠️ ระบบบัตรเครดิตขัดข้องชั่วคราว ใช้ QR Thai แทนได้ค่ะ\n\n".$billResult['message'];
+
+            return $billResult;
+        }
+
+        // ✅ สำเร็จ — ส่งลิงก์ + กล่องอธิบาย
+        $reading->update([
+            'conversation_status' => FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+        ]);
+
+        $amounts = $result['amounts'];
+        $totalThb = (int) $amounts['total'];
+        $baseThb = (int) $amounts['base'];
+        $feeThb = (int) $amounts['fee'];
+        $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
+
+        $message = "💳 ชำระด้วยบัตรเครดิต/เดบิตสากล\n\n"
+            ."✅ รองรับ: USA, ลาว, สิงคโปร์ และทั่วโลก\n"
+            ."✅ บัตร: Visa, Mastercard, AmEx, JCB\n"
+            ."✅ Apple Pay, Google Pay\n"
+            ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
+            ."💰 ยอดรวม: {$totalThb} บาท ({$baseThb} + ค่าบริการ {$feeThb})\n"
+            ."💱 ธนาคารของคุณจะแปลงเป็นสกุลเงินท้องถิ่นอัตโนมัติ\n"
+            ."⏰ ลิงก์มีอายุ {$expiryMinutes} นาที\n\n"
+            ."👇 กดลิงก์ด้านล่างเพื่อชำระเงิน:\n"
+            .$result['url'];
+
+        return [
+            'action' => 'pending_stripe_payment',
+            'message' => $message,
+            'reading' => $reading,
+            'stripe_checkout_url' => $result['url'],
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['label' => '💳 จ่ายเลย', 'text' => 'STRIPE_OPEN_CHECKOUT', 'payload' => 'STRIPE_OPEN_CHECKOUT', 'url' => $result['url']],
+                ['label' => '↩️ กลับ เลือก QR Thai', 'text' => 'PAY_METHOD_QR_THAI', 'payload' => 'PAY_METHOD_QR_THAI'],
+            ],
+        ];
+    }
+
+    /**
+     * 💳 (2026-05-09) handler — รอลูกค้าจ่าย Stripe
+     *
+     * ลูกค้าทักมาระหว่างรอจ่าย → reminder ลิงก์ + ปุ่มเลือกวิธีอื่น
+     * ถ้าลูกค้าพิมพ์ "ยกเลิก" → revert ไป AWAITING_PAYMENT_METHOD
+     * ถ้าลูกค้าพิมพ์ "qr" / "บัตร" → revert ไป handlePaymentMethodSelection
+     */
+    protected function handlePendingStripePayment(FortuneReading $reading, string $messageText): array
+    {
+        $clean = mb_strtolower(trim($messageText));
+
+        // ลูกค้าขอกลับไปเลือกวิธีอื่น
+        if (str_contains($clean, 'ยกเลิก') || str_contains($clean, 'cancel')
+            || str_contains($clean, 'qr') || str_contains($clean, 'pay_method_qr_thai')
+            || str_contains($clean, 'ไทย')) {
+            return $this->handlePaymentMethodSelection(
+                tap($reading)->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]),
+                'PAY_METHOD_QR_THAI'
+            );
+        }
+
+        // Default: reminder ลิงก์ Stripe
+        $sessionUrl = null;
+        if ($reading->stripe_session_id) {
+            $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+            $session = $service->retrieveSession($reading->stripe_session_id);
+            $sessionUrl = $session['url'] ?? null;
+
+            // 🛡️ ถ้า session expired → revert ไป awaiting_payment_method
+            if (! empty($session) && ($session['status'] ?? '') === 'expired') {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]);
+
+                return $this->askPaymentMethod($reading, "⏰ ลิงก์ชำระเงินหมดอายุแล้ว กรุณาเลือกวิธีใหม่ค่ะ\n\n");
+            }
+        }
+
+        $message = "⏳ ระบบกำลังรอการชำระเงินผ่านบัตรเครดิต\n\n";
+        if ($sessionUrl) {
+            $message .= "👇 กดลิงก์เดิมเพื่อจ่ายต่อ:\n{$sessionUrl}\n\n";
+        }
+        $message .= "หรือกด 'กลับ' เพื่อเลือก QR Code ไทยแทน";
+
+        return [
+            'action' => 'pending_stripe_payment_reminder',
+            'message' => $message,
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['label' => '💳 จ่ายต่อ', 'text' => 'STRIPE_RESUME', 'payload' => 'STRIPE_RESUME', 'url' => $sessionUrl],
+                ['label' => '↩️ ใช้ QR Thai', 'text' => 'PAY_METHOD_QR_THAI', 'payload' => 'PAY_METHOD_QR_THAI'],
+            ],
+        ];
     }
 
     // 🛑 (2026-05-06) Pay-Later (Request-Before-Pay) — ลบทิ้งทั้งระบบ

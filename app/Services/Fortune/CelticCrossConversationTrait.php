@@ -357,8 +357,32 @@ trait CelticCrossConversationTrait
      * 3. setCelticPendingPayment(UPA) → reading.unique_payment_amount_id + amount_paid + status
      * 4. Post-commit verify — ถ้า inconsistency → cleanup UPA + แจ้งลูกค้าให้ลองใหม่ (ห้ามส่ง QR)
      */
-    protected function startCelticCrossFlow(FortuneReading $reading): array
+    protected function startCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
     {
+        // 💳 (2026-05-09) Stripe payment method gate — ถ้า admin เปิด Stripe → ถามวิธีชำระก่อน
+        //   $skipStripeGate=true → ลูกค้าเลือก QR Thai แล้ว → ลงสร้างบิล UPA ตรงเลย
+        if (! $skipStripeGate && $this->isStripePaymentAvailable()) {
+            // ตรวจ resume / dedup ก่อน (ถ้ามี Celtic ค้าง → ไม่ต้องถามวิธีชำระใหม่)
+            $resumable = $this->findResumableCelticReading($reading);
+            if ($resumable && $resumable->id !== $reading->id) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                return $this->buildCelticResumeResponse($resumable, false);
+            }
+            $pending = $this->findPendingCelticBill($reading);
+            if ($pending && $pending->id !== $reading->id) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+                return $this->buildCelticPendingPaymentReuseResponse($pending);
+            }
+
+            // เปลี่ยน reading_type=celtic_cross + status=AWAITING_PAYMENT_METHOD
+            $reading->update([
+                'reading_type' => FortuneReading::READING_TYPE_CELTIC_CROSS,
+                'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            ]);
+
+            return $this->askPaymentMethod($reading);
+        }
+
         // เช็ค toggle
         if (! $this->settings->enable_celtic_cross) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
