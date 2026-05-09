@@ -611,6 +611,45 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 📚 (2026-05-09) View-History Early Route
+            // ═══════════════════════════════════════════════════════════════
+            // ลูกค้าพิมพ์ "อ่านคำทำนายล่าสุด" / "ดูคำทำนาย" / "บิลของฉัน" ฯลฯ
+            // ต้องได้คำทำนายเก่าทันที — ไม่ว่าจะอยู่ใน Pro Session, Quiet Period,
+            // processing window หรือ guard อื่น
+            //
+            // เคสจริง: ลูกค้าจ่ายเสร็จ → เข้า Pro Session → พิมพ์ "อ่านคำทำนายล่าสุด"
+            //   → ถูก guard ดัก → AI Pro Chat ตอบมั่ว → ลูกค้าไม่ได้คำทำนาย
+            // Fix: route ไป handleViewLastReading / handleMyBills โดยตรง
+            //
+            // ✅ ผ่าน admin-takeover guard ก่อนแล้ว (admin handover ยัง win)
+            if ($this->isMyBillsRequest($messageText)) {
+                Log::info('Fortune: ลูกค้าขอประวัติบิล (early route — bypass guards)', [
+                    'facebook_user_id' => $facebookUserId,
+                    'text_preview' => mb_substr($messageText, 0, 30),
+                ]);
+
+                return $this->handleMyBills($facebookUserId);
+            }
+
+            if ($this->isViewLastReadingRequest($messageText)) {
+                // 🩹 ยกเว้น "อ่านคำทำนาย" / "อ่านเลย" เปล่าๆ — อาจเป็นปุ่ม quick reply
+                //   หลัง notification "คำทำนายพร้อมแล้ว" — ปล่อย unsentReading block
+                //   จัดการ (จะส่ง reading ปัจจุบันที่เพิ่งจ่าย ไม่ใช่ของเก่า)
+                $isShortAck = in_array(trim(mb_strtolower($messageText)), [
+                    'อ่านคำทำนาย', 'อ่านเลย', 'อ่านผล', 'ขออ่าน',
+                ], true);
+
+                if (! $isShortAck) {
+                    Log::info('Fortune: ลูกค้าขอดูคำทำนายล่าสุด (early route — bypass guards)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return $this->handleViewLastReading($facebookUserId);
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🌙 (2026-05-08 v3) Quiet Period — กันรัวข้อความระหว่าง AI gen
             // ═══════════════════════════════════════════════════════════════
             // ลูกค้าโอนเงินแล้วใจร้อน → รัวพิมพ์ "ทำนายให้แล้ว?" / "เร็วหน่อย"
@@ -872,14 +911,33 @@ class FortuneConversationService
                 //   - Celtic 99 → 30 นาทีหลังเปิดไพ่ใบที่ 10
                 // ออกได้ผ่าน 2 ทาง: "พอแค่นี้/ขอบคุณ"+confirm หรือหมดเวลา (auto fall through)
                 //
-                // ⚠️ ต้องอยู่ก่อน DM tracking + unsent reading check + ทุก handler
+                // ⚠️ ต้องอยู่ก่อน DM tracking + ทุก handler
                 //    เพื่อให้ระบบอื่นๆ ห้ามแทรกระหว่าง session
+                //
+                // 🩹 (2026-05-09) Bypass guard ถ้าคำทำนายยังไม่ได้ส่งให้ลูกค้า
+                //    เคสจริง: LINE flow — Job push เฉพาะ "คำทำนายพร้อมแล้ว" Flex (1 quota)
+                //      ส่วนคำทำนายเต็มต้องรอส่งฟรีผ่าน replyMessage ตอน user ตอบกลับ
+                //      แต่ processPaymentConfirmed enterProSession ทันทีหลัง gen เสร็จ
+                //      → ลูกค้ากด "อ่านคำทำนาย" → guard ดักก่อน → handleProSession
+                //      → AI Pro Chat ตอบมั่ว / fail → คำทำนายไม่เคยถูกส่ง = เงียบ
+                //    Fix: ถ้า reading_sent_directly=false → ปล่อยผ่านไปยัง unsentReading
+                //         delivery block (line ~970) ส่งคำทำนายเต็มก่อน
+                //         (FB flow: push เต็มทันที → reading_sent_directly=true → guard ทำงานปกติ)
                 //
                 // 🚫 ยกเว้น marker internal — ผ่านได้
                 if ($messageText !== '__DEEP_WITH_CACHED_BIRTHDATE__') {
                     $proReading = $this->findActiveProSessionReading($facebookUserId);
                     if ($proReading !== null) {
-                        return $this->handleProSession($proReading, $messageText, $userProfile);
+                        $deliveredToUser = (bool) $proReading->getConversationState('reading_sent_directly', false);
+                        if ($deliveredToUser) {
+                            return $this->handleProSession($proReading, $messageText, $userProfile);
+                        }
+
+                        Log::info('Fortune ProSession: bypass guard — คำทำนายยังไม่ส่งให้ลูกค้า', [
+                            'reading_id' => $proReading->id,
+                            'facebook_user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
                     }
                 }
 
