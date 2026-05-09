@@ -5542,6 +5542,20 @@ class FortuneConversationService
             return $this->handlePaymentMethodSelection($reading->fresh(), 'PAY_METHOD_QR_THAI');
         }
 
+        // 🐛 (audit-2 fix #7) ถ้า session_id null (race / DB inconsistency) → revert state
+        //    เคสจริง: createCheckoutSession DB write delayed + webhook ของ session ก่อนหน้า
+        //    arrived ก่อน save → reading อยู่ STATUS_PENDING_STRIPE_PAYMENT แต่ session_id=null
+        //    เดิม: fall to default reminder ที่ไม่มีลิงก์ → user สับสน
+        //    ใหม่: revert ไป AWAITING_PAYMENT_METHOD ให้เลือกใหม่
+        if (empty($reading->stripe_session_id)) {
+            Log::warning('Fortune: PENDING_STRIPE_PAYMENT แต่ไม่มี session_id — revert ให้เลือกใหม่', [
+                'reading_id' => $reading->id,
+            ]);
+            $reading->update(['conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD]);
+
+            return $this->askPaymentMethod($reading, "🔮 ระบบเตรียมไม่ทัน กรุณาเลือกวิธีชำระอีกครั้งค่ะ\n\n");
+        }
+
         // Default: reminder ลิงก์ Stripe
         $sessionUrl = null;
         if ($reading->stripe_session_id) {

@@ -230,19 +230,38 @@ class FortuneStripeWebhookController extends Controller
     /**
      * ❌ Cancel page — ลูกค้ากดยกเลิก / ปิด tab
      *
-     * URL: GET /fortune/stripe/cancel/{reading}
+     * URL: GET /fortune/stripe/cancel/{reading}?session_id=cs_xxx
+     *
+     * 🐛 (audit-2 fix #3) Privilege escalation guard
+     *   เดิม: route ไม่มี auth → user คนอื่นเปิด /fortune/stripe/cancel/9999
+     *         → revert state ของ reading คนอื่น → ทำลาย flow
+     *   ใหม่: ตรวจ ?session_id query param ตรงกับ $reading->stripe_session_id
+     *         ถ้าไม่ตรง → แสดงหน้า cancel เฉยๆ ไม่ revert state
+     *
+     *   Stripe ส่ง {CHECKOUT_SESSION_ID} ใน cancel_url อัตโนมัติ — เป็น authentic source
      */
     public function cancel(Request $request, int $reading): \Illuminate\Contracts\View\View
     {
         $readingModel = FortuneReading::find($reading);
+        $providedSession = (string) $request->query('session_id', '');
 
-        // ถ้ายังไม่ได้จ่าย → revert state ไป AWAITING_PAYMENT_METHOD
-        if ($readingModel
+        // 🛡️ Revert state เฉพาะถ้า session_id ตรงกัน (proof of authenticity)
+        $sessionMatches = $readingModel
+            && $providedSession !== ''
+            && $readingModel->stripe_session_id !== null
+            && hash_equals((string) $readingModel->stripe_session_id, $providedSession);
+
+        if ($sessionMatches
             && ! $readingModel->is_paid
             && $readingModel->conversation_status === FortuneReading::STATUS_PENDING_STRIPE_PAYMENT
         ) {
             $readingModel->update([
                 'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+            ]);
+        } elseif ($readingModel && ! $sessionMatches) {
+            Log::warning('FortuneStripe cancel: session_id mismatch — skip revert', [
+                'reading_id' => $reading,
+                'has_provided' => $providedSession !== '',
             ]);
         }
 

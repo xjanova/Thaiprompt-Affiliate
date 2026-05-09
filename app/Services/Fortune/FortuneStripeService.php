@@ -103,6 +103,26 @@ class FortuneStripeService
             $amounts = $this->calculateAmounts($reading);
             $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
 
+            // 🐛 (audit-2 fix #6) ถ้ามี session เก่าค้าง — expire ก่อนสร้างใหม่
+            //    ป้องกัน user มี 2 sessions พร้อมกัน → จ่ายหลาย session → admin งง
+            //    เคสจริง: user spam ปุ่ม "💳 บัตร ตปท." → createCheckoutSession ถูกเรียกซ้ำ
+            //    DB เก็บ session_id ตัวล่าสุด → session ตัวแรกค้างใน Stripe (ลูกค้ายังจ่ายได้)
+            if (! empty($reading->stripe_session_id) && ! $reading->is_paid) {
+                try {
+                    $this->expireSession($reading->stripe_session_id);
+                    Log::info('FortuneStripeService: expired old session before creating new', [
+                        'reading_id' => $reading->id,
+                        'old_session_id' => $reading->stripe_session_id,
+                    ]);
+                } catch (\Throwable $e) {
+                    // expire fail = ไม่ block flow (อาจ session expire ตามอายุอยู่แล้ว)
+                    Log::debug('FortuneStripeService: expire old session failed (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // 🐛 (self-review fix) Stripe ต้องการ expires_at > now+30min STRICT (clock drift)
             //    ถ้า expiryMinutes = 30 exact → เผลอ 1ms ช้า → Stripe API reject
             //    Min 31 min = ปลอดภัยกับ clock drift / network latency
@@ -134,7 +154,8 @@ class FortuneStripeService
                 'metadata[bill_reference]' => $reading->bill_reference ?? '',
                 'expires_at' => $expiresAt,
                 'success_url' => route('fortune.stripe.success', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
-                'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]),
+                // 🐛 (audit-2 fix #3) ส่ง session_id ใน cancel_url ด้วย — controller ใช้ verify ก่อน revert state
+                'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'locale' => 'auto', // Stripe ตรวจ browser locale อัตโนมัติ (รองรับลาว/EN/TH)
             ];
 
@@ -289,6 +310,16 @@ class FortuneStripeService
             case 'checkout.session.completed':
                 return $this->onSessionCompleted($object);
 
+            // 🐛 (audit-2 fix #2) Async payments (bank transfer ที่ Stripe รองรับ)
+            //    ส่ง completed (unpaid) → รอจริง → async_payment_succeeded (paid)
+            //    ใช้ handler เดียวกับ session.completed — แต่ payment_status='paid' แล้ว
+            case 'checkout.session.async_payment_succeeded':
+                return $this->onSessionCompleted($object);
+
+            case 'checkout.session.async_payment_failed':
+                // ลูกค้าจ่ายไม่สำเร็จ — revert state ให้เลือกใหม่
+                return $this->onSessionExpired($object);
+
             case 'checkout.session.expired':
                 return $this->onSessionExpired($object);
 
@@ -317,11 +348,29 @@ class FortuneStripeService
         $sessionId = $session['id'] ?? null;
         $paymentIntentId = $session['payment_intent'] ?? null;
         $readingIdMeta = $session['metadata']['fortune_reading_id'] ?? null;
+        // 🐛 (audit-2 fix #2) ตรวจ payment_status ก่อน — async methods (bank transfer)
+        //    ส่ง 'checkout.session.completed' ตอน status=unpaid (รอ async)
+        //    แล้วส่ง 'checkout.session.async_payment_succeeded' หลัง paid
+        //    ถ้าไม่ check → mark paid ทั้งที่ยังไม่จ่าย → ลูกค้าได้คำทำนายฟรี
+        $paymentStatus = $session['payment_status'] ?? '';
 
         if (! $sessionId || ! $paymentIntentId) {
             return [
                 'handled' => false,
                 'error' => 'session.id หรือ payment_intent ไม่มี',
+            ];
+        }
+
+        if ($paymentStatus !== 'paid') {
+            // ยังไม่จ่ายจริง — รอ async_payment_succeeded
+            Log::info('FortuneStripeService: session.completed but payment_status not paid — awaiting async', [
+                'session_id' => $sessionId,
+                'payment_status' => $paymentStatus,
+            ]);
+
+            return [
+                'handled' => true,
+                'action' => 'awaiting_async_payment',
             ];
         }
 
@@ -343,11 +392,25 @@ class FortuneStripeService
             ];
         }
 
-        // 🛡️ Idempotency — ถ้าจ่ายแล้ว/มี payment_intent_id อยู่แล้ว → ignore
-        if ($reading->is_paid || $reading->stripe_payment_intent_id) {
-            Log::info('FortuneStripeService: reading จ่ายไปแล้ว — skip duplicate webhook', [
+        // 🛡️ (audit-2 fix #1) Atomic compare-and-swap — กัน webhook ซ้ำ trigger reading 2x
+        //    เคสจริง: Stripe retry — 2 webhooks มาพร้อมกัน
+        //    เดิม: read $is_paid=false → check pass → 2 workers concurrent update + dispatch ซ้ำ
+        //    ใหม่: WHERE is_paid=false update — DB-level atomic, first-write-wins
+        $rowsAffected = FortuneReading::where('id', $reading->id)
+            ->where('is_paid', false)
+            ->whereNull('stripe_payment_intent_id')
+            ->update([
+                'stripe_payment_intent_id' => $paymentIntentId,
+                'stripe_paid_at' => now(),
+                'is_paid' => true,
+                'paid_at' => now(),
+            ]);
+
+        if ($rowsAffected === 0) {
+            // อีก worker เพิ่ง mark paid → skip duplicate
+            Log::info('FortuneStripeService: lost race for paid update — skip duplicate trigger', [
                 'reading_id' => $reading->id,
-                'stripe_session_id' => $sessionId,
+                'session_id' => $sessionId,
             ]);
 
             return [
@@ -356,14 +419,6 @@ class FortuneStripeService
                 'action' => 'already_paid',
             ];
         }
-
-        // ✅ Mark as paid
-        $reading->update([
-            'stripe_payment_intent_id' => $paymentIntentId,
-            'stripe_paid_at' => now(),
-            'is_paid' => true,
-            'paid_at' => now(),
-        ]);
 
         Log::info('FortuneStripeService: Stripe payment confirmed', [
             'reading_id' => $reading->id,
@@ -616,7 +671,7 @@ class FortuneStripeService
     public function buildDashboardUrl(string $paymentIntentId): string
     {
         $acct = $this->settings->stripe_account_id ?? '';
-        $isTest = (bool) ($this->settings->stripe_test_mode ?? true);
+        $isTest = $this->isTestMode();
 
         $base = $acct
             ? "https://dashboard.stripe.com/{$acct}"
@@ -633,7 +688,7 @@ class FortuneStripeService
     public function buildSessionDashboardUrl(string $sessionId): string
     {
         $acct = $this->settings->stripe_account_id ?? '';
-        $isTest = (bool) ($this->settings->stripe_test_mode ?? true);
+        $isTest = $this->isTestMode();
 
         $base = $acct
             ? "https://dashboard.stripe.com/{$acct}"
@@ -642,5 +697,30 @@ class FortuneStripeService
         $modePath = $isTest ? '/test' : '';
 
         return "{$base}{$modePath}/checkout/sessions/{$sessionId}";
+    }
+
+    /**
+     * 🐛 (audit-2 fix #5) Auto-detect test/live mode from key prefix
+     *
+     * เคสที่พังจริง: admin ใส่ sk_live_xxx แต่เผลอเปิด stripe_test_mode toggle=true
+     *   → API call สำเร็จ (live key ทำงานได้) → เงินจริงโดน charge
+     *   → buildDashboardUrl ใช้ /test/ → admin หาบิลไม่เจอ
+     * Fix: ตรวจ key prefix เป็น source of truth (override toggle)
+     *   - sk_test_... → test mode
+     *   - sk_live_... → live mode
+     *   - empty → fallback ไป toggle
+     */
+    public function isTestMode(): bool
+    {
+        $key = $this->settings->stripe_secret_key ?? '';
+        if (str_starts_with($key, 'sk_test_')) {
+            return true;
+        }
+        if (str_starts_with($key, 'sk_live_')) {
+            return false;
+        }
+
+        // Empty / unknown — fallback ไป toggle
+        return (bool) ($this->settings->stripe_test_mode ?? true);
     }
 }
