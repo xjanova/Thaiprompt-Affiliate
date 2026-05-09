@@ -1405,7 +1405,12 @@ PROMPT;
 
         // 🎯 Phase H — ส่ง userContext เพื่อให้ key ordering กระจายตาม user
         // 🎯 (2026-05-02) ระบุ purpose='chat' → กรอง keys ที่ไม่ใช่ purpose=chat/any ออก
-        $allKeys = $this->getAllAvailableKeys($userContext, 'chat');
+        // 🐛 (2026-05-10) ส่ง preferredProvider=chat_ai_provider — กัน pool fallback ไป Gemini
+        //    เคสที่พังจริง: chat_ai_provider=groq fail → pool ใช้ ai_provider (gemini) เป็น primary
+        //    → Gemini key รับช่วง ทุก chat ไป Gemini หมด ทั้งที่ admin ตั้ง groq
+        //    Fix: pool primary = chat_ai_provider → groq pool keys มาก่อน Gemini
+        $chatProvider = $this->settings->getChatAIProvider();
+        $allKeys = $this->getAllAvailableKeys($userContext, 'chat', $chatProvider);
 
         if (empty($allKeys)) {
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
@@ -2267,25 +2272,34 @@ PROMPT;
      *
      * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId)
      */
-    protected function getAllAvailableKeys(?string $userContext = null, string $purpose = 'prediction'): array
+    protected function getAllAvailableKeys(?string $userContext = null, string $purpose = 'prediction', ?string $preferredProvider = null): array
     {
+        // 🐛 (2026-05-10) Bug fix — pool fallback ใช้ chat_ai_provider เมื่อ purpose='chat'
+        //   เคสที่พังจริง (production log 2026-05-09):
+        //     - chat_ai_provider='groq', chat_ai_model='gpt-oss-20b' (Groq ไม่ host รุ่นนี้ → 404)
+        //     - Step 1 fail → fallback to pool
+        //     - Pool ใช้ $this->provider = 'gemini' (prediction) → Gemini มาก่อน Groq
+        //     - ผลลัพธ์: chat แชทไป Gemini ทุกครั้ง groq pool key ถูกข้าม
+        //   วิธีแก้: caller ส่ง preferredProvider (chat caller ส่ง chat_ai_provider)
+        //   default = $this->provider (backward compat สำหรับ prediction)
+        $effectiveProvider = $preferredProvider ?: $this->provider;
+
         // 🎯 (2026-05-02) Self-healing: ลอง normal filter ก่อน
         //   ถ้า primary provider ไม่มี key เลย (ทุกตัวติด cooldown/rpm/inflight)
         //   → reset cache สำหรับ primary provider's keys + retry
         //   → กัน Gemini ค้าง → fallback Groq → rate limit → ทำนายไม่ได้
-        $keys = $this->collectAvailableKeys($userContext, $purpose, false);
+        $keys = $this->collectAvailableKeys($userContext, $purpose, false, $effectiveProvider);
 
-        $primaryProvider = $this->provider;
-        $hasPrimaryKey = ! empty(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $primaryProvider));
+        $hasPrimaryKey = ! empty(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $effectiveProvider));
 
-        if (! $hasPrimaryKey && ! empty($primaryProvider)) {
+        if (! $hasPrimaryKey && ! empty($effectiveProvider)) {
             // 🛡️ Self-heal: primary provider ถูก filter ออกหมด → clear cache + retry
             Log::warning('FortuneAI: Self-healing — primary provider ถูก filter ออก, clear cache + retry', [
-                'primary_provider' => $primaryProvider,
+                'primary_provider' => $effectiveProvider,
                 'purpose' => $purpose,
             ]);
-            $this->clearProviderCacheState($primaryProvider);
-            $keys = $this->collectAvailableKeys($userContext, $purpose, true);  // ignore_cooldown=true
+            $this->clearProviderCacheState($effectiveProvider);
+            $keys = $this->collectAvailableKeys($userContext, $purpose, true, $effectiveProvider);  // ignore_cooldown=true
         }
 
         // 🎯 (2026-05-02) Strict provider mode — สำหรับ prediction
@@ -2293,11 +2307,11 @@ PROMPT;
         //   ถ้า prediction_strict_provider=true → กรอง keys เฉพาะ primary provider
         //   ถ้า primary fail → ไม่ fallback ไป provider อื่น (admin จะรู้ทันที)
         if ($purpose === 'prediction'
-            && ! empty($primaryProvider)
+            && ! empty($effectiveProvider)
             && (bool) ($this->settings->prediction_strict_provider ?? false)) {
-            $keys = array_values(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $primaryProvider));
+            $keys = array_values(array_filter($keys, fn ($k) => ($k['provider'] ?? null) === $effectiveProvider));
             Log::info('FortuneAI: Strict provider mode — กรอง keys เฉพาะ primary', [
-                'primary_provider' => $primaryProvider,
+                'primary_provider' => $effectiveProvider,
                 'keys_count_after_filter' => count($keys),
             ]);
         }
@@ -2330,11 +2344,12 @@ PROMPT;
     /**
      * 🆕 (2026-05-02) Extract: collect keys with filters (separated for self-healing retry)
      */
-    protected function collectAvailableKeys(?string $userContext, string $purpose, bool $ignoreCooldown = false): array
+    protected function collectAvailableKeys(?string $userContext, string $purpose, bool $ignoreCooldown = false, ?string $preferredProvider = null): array
     {
         $keys = [];
         $addedApiKeys = [];
-        $primaryProvider = $this->provider;
+        // 🐛 (2026-05-10) ใช้ preferredProvider ถ้าให้มา (chat path) — fallback ไป $this->provider
+        $primaryProvider = $preferredProvider ?: $this->provider;
         // 🎯 (2026-05-02) Filter keys ตาม purpose ที่ caller ระบุ
         //   prediction = generateWithRetryAndFallback, generateFortuneTelling
         //   chat       = generateChatResponse*, playgroundChat
