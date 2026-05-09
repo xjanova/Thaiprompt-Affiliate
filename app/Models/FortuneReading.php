@@ -106,6 +106,20 @@ class FortuneReading extends Model
 
     public const STATUS_CELTIC_QA_PROMPT = 'celtic_qa_prompt'; // หลังตอบ Q เสร็จ ถามว่าจะถามต่อไหม
 
+    // ───────────────────────────────────────────────────────────
+    // 💳 Stripe Payment Method (2026-05-09) — บัตรต่างประเทศ
+    // ───────────────────────────────────────────────────────────
+    /** รอลูกค้าเลือกวิธีชำระ — QR Thai vs Stripe (บัตรต่างประเทศ) */
+    public const STATUS_AWAITING_PAYMENT_METHOD = 'awaiting_payment_method';
+
+    /** Stripe Checkout Session สร้างแล้ว รอลูกค้ากดลิงก์จ่ายผ่านบัตร */
+    public const STATUS_PENDING_STRIPE_PAYMENT = 'pending_stripe_payment';
+
+    /** วิธีชำระเงิน */
+    public const PAYMENT_METHOD_QR_THAI = 'qr_thai';
+
+    public const PAYMENT_METHOD_STRIPE = 'stripe';
+
     public const READING_TYPE_BASIC = 'basic';
 
     public const READING_TYPE_DEEP = 'deep';
@@ -306,6 +320,12 @@ class FortuneReading extends Model
         'voice_audio_provider',
         'voice_audio_chars',
         'voice_audio_generated_at',
+        // 💳 Stripe Checkout — 2026-05-09
+        'payment_method',
+        'service_fee',
+        'stripe_session_id',
+        'stripe_payment_intent_id',
+        'stripe_paid_at',
     ];
 
     /**
@@ -339,6 +359,9 @@ class FortuneReading extends Model
         'voice_audio_duration_ms' => 'integer',
         'voice_audio_chars' => 'integer',
         'voice_audio_generated_at' => 'datetime',
+        // 💳 Stripe Checkout — 2026-05-09
+        'service_fee' => 'decimal:2',
+        'stripe_paid_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

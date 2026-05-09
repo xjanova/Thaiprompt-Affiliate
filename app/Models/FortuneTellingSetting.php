@@ -244,6 +244,17 @@ class FortuneTellingSetting extends Model
         'voice_summary_intro_message',
         // 🌟 (2026-05-08) Sensitive AI lock specific pool key
         'sensitive_ai_pool_key_id',
+        // 💳 (2026-05-09) Stripe Checkout — บัตรต่างประเทศ
+        'enable_stripe_payment',
+        'stripe_service_fee',
+        'stripe_session_expiry_minutes',
+        'stripe_account_id',
+        'stripe_test_mode',
+        'stripe_secret_key',
+        'stripe_publishable_key',
+        'stripe_webhook_secret',
+        'stripe_product_deep_id',
+        'stripe_product_celtic_id',
     ];
 
     /**
@@ -338,6 +349,13 @@ class FortuneTellingSetting extends Model
         'voice_summary_fallback_providers' => 'array',
         'voice_summary_max_chars' => 'integer',
         'google_tts_speaking_rate' => 'decimal:2',
+        // 💳 (2026-05-09) Stripe Checkout
+        'enable_stripe_payment' => 'boolean',
+        'stripe_service_fee' => 'decimal:2',
+        'stripe_session_expiry_minutes' => 'integer',
+        'stripe_test_mode' => 'boolean',
+        'stripe_secret_key' => 'encrypted',
+        'stripe_webhook_secret' => 'encrypted',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -452,6 +470,14 @@ class FortuneTellingSetting extends Model
         'celtic_premium_chat_max_messages' => 30,
         // 🙏 Satisfaction Detector defaults
         'satisfaction_detection_enabled' => true,
+        // 💳 (2026-05-09) Stripe Checkout — ค่าเริ่มต้น (admin เปิด + ใส่ key ก่อนใช้)
+        'enable_stripe_payment' => false,
+        'stripe_service_fee' => 15.00,
+        'stripe_session_expiry_minutes' => 30,
+        'stripe_test_mode' => true,
+        'stripe_account_id' => 'acct_1K7aDRD3aYAdvmlU',
+        'stripe_product_deep_id' => 'prod_UU1wXx9DI4s2gq',
+        'stripe_product_celtic_id' => 'prod_UU1zVarkNVzkpp',
     ];
 
     /**
