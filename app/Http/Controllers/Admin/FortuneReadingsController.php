@@ -248,24 +248,29 @@ class FortuneReadingsController extends Controller
 
         // ถ้ามี deep_response อยู่แล้ว → clear + ตั้ง status=PAID เพื่อให้ banner "AI กำลังสร้าง..." แสดง
         // (Artisan command จะข้ามถ้ามี deep_response + status=completed)
+        //
+        // 🩹 (2026-05-09) Clear delivery flags ใน conversation_state ด้วย — single update
+        //    ProcessDeepFortuneReadingJob:401 เช็ค (!reading_sent_directly && !reading_notification_sent)
+        //    ถ้า run ก่อนหน้าเคย push แล้ว → flags=true → push ใหม่จะถูกข้าม
+        //    → admin เห็นคำทำนายใน DB แต่ลูกค้าไม่ได้รับ → ต้องกด "ส่งใหม่" เอง
+        $existingState = is_array($reading->conversation_state) ? $reading->conversation_state : [];
+        $clearedState = array_merge($existingState, [
+            'reading_sent_directly' => false,
+            'reading_notification_sent' => false,
+            'reading_notification_attempted' => false,
+            'reading_notification_retry_count' => 0,
+            'reading_ready_sent' => false,
+            'reading_ready_for_reply' => false,
+            'delivered_by_push' => false,
+            'delivered_by_reply_message' => false,
+        ]);
+
         $reading->update([
             'deep_response' => null,
             'ai_response' => null,
             'conversation_status' => FortuneReading::STATUS_PAID,
+            'conversation_state' => $clearedState,
         ]);
-
-        // 🩹 (2026-05-09) Clear delivery flags — ไม่งั้น Job ที่ retry จะข้าม push
-        //    ProcessDeepFortuneReadingJob:401 เช็ค (!reading_sent_directly && !reading_notification_sent)
-        //    ถ้า run ก่อนหน้าเคย push แล้ว → flags=true → push ใหม่จะถูกข้าม
-        //    → admin เห็นคำทำนายใน DB แต่ลูกค้าไม่ได้รับ → ต้องกด "ส่งใหม่" เอง
-        $reading->setConversationState('reading_sent_directly', false);
-        $reading->setConversationState('reading_notification_sent', false);
-        $reading->setConversationState('reading_notification_attempted', false);
-        $reading->setConversationState('reading_notification_retry_count', 0);
-        $reading->setConversationState('reading_ready_sent', false);
-        $reading->setConversationState('reading_ready_for_reply', false);
-        $reading->setConversationState('delivered_by_push', false);
-        $reading->setConversationState('delivered_by_reply_message', false);
 
         Log::info('Admin: Manual retry deep reading queued', [
             'reading_id' => $reading->id,
