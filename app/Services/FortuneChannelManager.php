@@ -907,6 +907,22 @@ class FortuneChannelManager
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
                 'celtic_resume_qa' => $fbService->sendMessage($userId, $message, $extra),
 
+                // 📚 (2026-05-09) ประวัติบิล — ส่งข้อความ list + Quick Reply ปุ่มเลือกบิล
+                //   handleMyBills คืน quick_replies = [['title','text','payload']] (FB format)
+                'my_bills_list' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $quickReplies = $result['quick_replies'] ?? [];
+                    if (empty($quickReplies)) {
+                        return $fbService->sendMessage($userId, $message, $extra);
+                    }
+
+                    return $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
+                })(),
+
+                // ประวัติบิลว่าง — ส่งข้อความ + ปุ่ม "ดูดวง"
+                'my_bills_empty' => $fbService->sendQuickReplies($userId, $message, [
+                    ['title' => '🔮 ดูดวงเลย', 'payload' => 'ดูดวง'],
+                ], $extra),
+
                 // อื่นๆ → ส่ง text ธรรมดา
                 default => $fbService->sendMessage($userId, $message ?: 'ระบบกำลังดำเนินการ 🙏', $extra),
             };
@@ -1912,6 +1928,28 @@ class FortuneChannelManager
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
                 'celtic_resume_qa' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 📚 (2026-05-09) ประวัติบิล — ส่งข้อความ list + Quick Reply ปุ่มเลือกบิล
+                //   handleMyBills คืน quick_replies = [['title','text','payload']] (FB format)
+                //   convert title → label สำหรับ LINE Quick Reply
+                'my_bills_list' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    $rawReplies = $result['quick_replies'] ?? [];
+                    if (empty($rawReplies)) {
+                        return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                    }
+
+                    $lineReplies = array_map(fn ($r) => [
+                        'label' => mb_substr($r['title'] ?? $r['label'] ?? '', 0, 20),
+                        'text' => $r['text'] ?? $r['payload'] ?? '',
+                    ], array_slice($rawReplies, 0, 13));
+
+                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $lineReplies);
+                })(),
+
+                // ประวัติบิลว่าง — ส่งข้อความ + Quick Reply "ดูดวง"
+                'my_bills_empty' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔮 ดูดวงเลย', 'text' => 'ดูดวง'],
+                ]),
 
                 // อื่นๆ → Flex ข้อผิดพลาด (fallback สวยกว่า text ธรรมดา)
                 default => $this->sendLineFallbackResponse($lineService, $userId, $message, $replyToken),
