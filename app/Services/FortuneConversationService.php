@@ -5427,8 +5427,14 @@ class FortuneConversationService
             return $this->createPaymentBill($reading, $questions);
         }
 
-        // ไม่ตรง — แนะนำให้กดปุ่ม + ส่งปุ่มซ้ำ
-        return $this->askPaymentMethod($reading, "🤔 ไม่เข้าใจคำตอบค่ะ\n\n");
+        // 🧠 ไม่ตรง — ลูกค้าอาจพิมพ์ chitchat / meta question (เช่น "ราคาเท่าไร" / "อยู่ลาว")
+        //    ให้ AI ตอบ + ส่งปุ่มซ้ำ
+        $stepHint = "💫 ขอเจ้าชะตาเลือกวิธีชำระเงินก่อนนะคะ:\n"
+            ."💚 พิมพ์ 'qr ไทย' หรือกดปุ่ม\n"
+            ."💳 พิมพ์ 'บัตร' สำหรับลูกค้าต่างประเทศ";
+        $aiMessage = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'awaiting_payment_method');
+
+        return $this->askPaymentMethod($reading, $aiMessage."\n\n");
     }
 
     /**
@@ -9035,6 +9041,9 @@ class FortuneConversationService
                     'tarot_intention' => 'ผู้ใช้กำลังอยู่ขั้น "ตั้งจิตเลือกไพ่" — ต้องพิมพ์ "พร้อม" หรือ "เปิดไพ่" เพื่อเปิดไพ่ยิปซี',
                     'tarot_draw' => 'ผู้ใช้กำลังอยู่ขั้น "เปิดไพ่ยิปซี" — กดปุ่มเปิดไพ่หรือพิมพ์ "เปิด"',
                     'pending_payment' => 'ผู้ใช้มีบิลรอชำระอยู่ — ต้องโอนเงินตามยอดในบิล หรือพิมพ์ "ยกเลิก"',
+                    // 💳 (2026-05-09) Stripe payment states
+                    'awaiting_payment_method' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกวิธีชำระเงิน" — มี 2 ปุ่ม: "QR ไทย" หรือ "บัตร ตปท." (Visa/Mastercard +15 บาท) — แนะให้กดปุ่มหรือพิมพ์ "qr ไทย" / "บัตร"',
+                    'pending_stripe_payment' => 'ผู้ใช้กำลังรอจ่ายผ่านบัตรเครดิต Stripe — ระบบส่งลิงก์ checkout ให้แล้ว — แนะให้กดลิงก์ หรือพิมพ์ "qr ไทย" เพื่อกลับมาเลือก QR Thai',
                 ];
                 $contextHint = $contextMap[$flowContext] ?? '';
             }
