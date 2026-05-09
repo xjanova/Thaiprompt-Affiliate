@@ -480,4 +480,142 @@ class FortuneBillingController extends Controller
 
         return $result;
     }
+
+    /**
+     * 💳 (2026-05-09) Refund Stripe payment
+     *
+     * Admin action — confirm dialog + reason field required
+     * Body: amount (optional, null = full refund), reason (required)
+     */
+    public function stripeRefund(Request $request, FortuneReading $reading)
+    {
+        $validated = $request->validate([
+            'amount' => 'nullable|numeric|min:0.01',
+            'reason' => 'required|string|max:500',
+        ]);
+
+        if ($reading->payment_method !== FortuneReading::PAYMENT_METHOD_STRIPE) {
+            return back()->withErrors(['error' => 'บิลนี้ไม่ได้ชำระผ่าน Stripe']);
+        }
+
+        if (empty($reading->stripe_payment_intent_id)) {
+            return back()->withErrors(['error' => 'ไม่พบ Stripe payment_intent_id']);
+        }
+
+        $service = new \App\Services\Fortune\FortuneStripeService();
+        $result = $service->refundPayment(
+            $reading->stripe_payment_intent_id,
+            $validated['amount'] ?? null,
+            $validated['reason']
+        );
+
+        if (! ($result['success'] ?? false)) {
+            return back()->withErrors(['error' => 'Refund ล้มเหลว: '.($result['error'] ?? 'unknown')]);
+        }
+
+        Log::info('FortuneBilling: Stripe refund processed by admin', [
+            'reading_id' => $reading->id,
+            'admin_id' => auth()->id(),
+            'refund_id' => $result['refund_id'] ?? null,
+            'amount' => $result['amount'] ?? null,
+            'reason' => $validated['reason'],
+        ]);
+
+        return back()->with('success', "Refund สำเร็จ: {$result['amount']} บาท (refund_id: {$result['refund_id']})");
+    }
+
+    /**
+     * 💳 (2026-05-09) Expire Stripe Checkout Session ที่ยังไม่จ่าย
+     *
+     * Use case: ลูกค้ายังไม่จ่าย แต่ admin อยากยกเลิกบิลก่อนที่ลูกค้าจะจ่าย
+     */
+    public function stripeExpire(FortuneReading $reading)
+    {
+        if ($reading->payment_method !== FortuneReading::PAYMENT_METHOD_STRIPE) {
+            return back()->withErrors(['error' => 'บิลนี้ไม่ได้ใช้ Stripe']);
+        }
+
+        if ($reading->is_paid) {
+            return back()->withErrors(['error' => 'บิลจ่ายแล้ว — ใช้ refund แทน']);
+        }
+
+        if (empty($reading->stripe_session_id)) {
+            return back()->withErrors(['error' => 'ไม่พบ Stripe session_id']);
+        }
+
+        $service = new \App\Services\Fortune\FortuneStripeService();
+        $ok = $service->expireSession($reading->stripe_session_id);
+
+        if (! $ok) {
+            return back()->withErrors(['error' => 'Expire session ล้มเหลว']);
+        }
+
+        // Revert state
+        $reading->update([
+            'conversation_status' => FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+        ]);
+
+        Log::info('FortuneBilling: Stripe session expired by admin', [
+            'reading_id' => $reading->id,
+            'admin_id' => auth()->id(),
+        ]);
+
+        return back()->with('success', 'Expire session สำเร็จ');
+    }
+
+    /**
+     * 💳 (2026-05-09) Resync จาก Stripe API
+     *
+     * Use case: webhook ตก / ลูกค้าจ่ายแล้วแต่ระบบยังไม่ update
+     * → ดึง session status จาก Stripe ตรง → trigger flow ถ้า paid
+     */
+    public function stripeResync(FortuneReading $reading)
+    {
+        if ($reading->payment_method !== FortuneReading::PAYMENT_METHOD_STRIPE) {
+            return back()->withErrors(['error' => 'บิลนี้ไม่ได้ใช้ Stripe']);
+        }
+
+        if (empty($reading->stripe_session_id)) {
+            return back()->withErrors(['error' => 'ไม่พบ Stripe session_id']);
+        }
+
+        $service = new \App\Services\Fortune\FortuneStripeService();
+        $session = $service->retrieveSession($reading->stripe_session_id);
+
+        if (! $session) {
+            return back()->withErrors(['error' => 'ดึง session จาก Stripe ไม่ได้']);
+        }
+
+        // ถ้า paid + ยังไม่ trigger → trigger เลย
+        $paymentStatus = $session['payment_status'] ?? '';
+        if ($paymentStatus === 'paid' && ! $reading->is_paid) {
+            $event = ['type' => 'checkout.session.completed', 'data' => ['object' => $session]];
+            $result = $service->handleWebhookEvent($event);
+
+            if (($result['action'] ?? '') === 'paid') {
+                // Trigger fortune flow
+                try {
+                    if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                        $smsService = app(\App\Services\SmsPaymentService::class);
+                        $smsService->handleCelticPaymentMatched(
+                            $reading->fresh(),
+                            null,
+                            $reading->platform ?? 'facebook',
+                            $reading->facebook_user_id ?? '',
+                            (float) $reading->amount_paid
+                        );
+                    } else {
+                        ProcessDeepFortuneReadingJob::dispatch($reading->id, null);
+                    }
+                } catch (\Throwable $e) {
+                    Log::error('FortuneBilling: Stripe resync trigger failed', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        return back()->with('success', "Resync สำเร็จ — payment_status: {$paymentStatus}, session_status: ".($session['status'] ?? 'unknown'));
+    }
 }

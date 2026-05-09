@@ -237,7 +237,25 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                                @if($bill->sms_notification_id)
+                                @if($bill->payment_method === 'stripe')
+                                    {{-- 💳 Stripe payment --}}
+                                    <span class="text-purple-600 dark:text-purple-400 font-semibold">💳 Stripe</span>
+                                    @if($bill->stripe_payment_intent_id)
+                                        @php
+                                            $stripeService = new \App\Services\Fortune\FortuneStripeService();
+                                            $dashboardUrl = $stripeService->buildDashboardUrl($bill->stripe_payment_intent_id);
+                                        @endphp
+                                        <a href="{{ $dashboardUrl }}" target="_blank" rel="noopener"
+                                           class="block text-xs text-purple-500 hover:underline mt-1"
+                                           title="ดูใน Stripe Dashboard">
+                                            🔗 {{ \Illuminate\Support\Str::limit($bill->stripe_payment_intent_id, 18) }}
+                                        </a>
+                                    @elseif($bill->stripe_session_id)
+                                        <div class="text-xs text-gray-500" title="{{ $bill->stripe_session_id }}">
+                                            session: {{ \Illuminate\Support\Str::limit($bill->stripe_session_id, 14) }}
+                                        </div>
+                                    @endif
+                                @elseif($bill->sms_notification_id)
                                     <span class="text-blue-600 dark:text-blue-400">📱 SMS</span>
                                     @if($bill->sender_bank)
                                         <div class="text-xs">{{ $bill->sender_bank }}</div>
@@ -280,6 +298,41 @@
                                                 ยกเลิก
                                             </button>
                                         </form>
+                                    @endif
+
+                                    {{-- 💳 (2026-05-09) Stripe-specific actions --}}
+                                    @if($bill->payment_method === 'stripe')
+                                        @if($bill->is_paid && $bill->stripe_payment_intent_id)
+                                            {{-- Refund — confirm dialog + reason field --}}
+                                            <button onclick="showStripeRefund({{ $bill->id }}, {{ $bill->amount_paid }})"
+                                                    class="text-pink-600 hover:text-pink-900 dark:text-pink-400 dark:hover:text-pink-300"
+                                                    title="คืนเงินผ่าน Stripe">
+                                                💸 Refund
+                                            </button>
+                                        @endif
+                                        @if(!$bill->is_paid && $bill->stripe_session_id)
+                                            {{-- Expire pending session --}}
+                                            <form action="{{ route('admin.fortune.billing.stripe-expire', $bill) }}" method="POST" class="inline"
+                                                  @submit="if(!confirm('ยืนยัน expire session นี้? ลูกค้าจะจ่ายไม่ได้แล้ว')) { $event.preventDefault(); return; } submitting = true;">
+                                                @csrf
+                                                <button type="submit" :disabled="submitting"
+                                                        class="text-orange-600 hover:text-orange-900 dark:text-orange-400 dark:hover:text-orange-300 disabled:opacity-50">
+                                                    ⏱️ Expire
+                                                </button>
+                                            </form>
+                                        @endif
+                                        @if($bill->stripe_session_id)
+                                            {{-- Resync จาก Stripe API (กรณี webhook ตก) --}}
+                                            <form action="{{ route('admin.fortune.billing.stripe-resync', $bill) }}" method="POST" class="inline"
+                                                  @submit="submitting = true;">
+                                                @csrf
+                                                <button type="submit" :disabled="submitting"
+                                                        class="text-cyan-600 hover:text-cyan-900 dark:text-cyan-400 dark:hover:text-cyan-300 disabled:opacity-50"
+                                                        title="ดึง status จาก Stripe API ใหม่ (กรณี webhook ตก)">
+                                                    🔄 Resync
+                                                </button>
+                                            </form>
+                                        @endif
                                     @endif
                                 </div>
                             </td>
@@ -353,6 +406,50 @@
     </div>
 </div>
 
+{{-- 💳 (2026-05-09) Stripe Refund Modal --}}
+<div id="stripeRefundModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-md mx-4"
+         x-data="{ submitting: false, fullRefund: true }">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">💸 Refund Stripe Payment</h3>
+        <p class="text-sm text-red-600 dark:text-red-400 mb-4">
+            ⚠️ การ refund ไม่สามารถยกเลิกได้ กรุณาตรวจสอบให้แน่ใจก่อนทำรายการ
+        </p>
+        <form id="stripeRefundForm" method="POST"
+              @submit="if(!confirm('ยืนยันการ refund? ไม่สามารถ undo ได้')) { $event.preventDefault(); return; } submitting = true;">
+            @csrf
+            <div class="mb-4">
+                <label class="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                    <input type="checkbox" x-model="fullRefund" class="rounded">
+                    Refund เต็มจำนวน
+                </label>
+            </div>
+            <div class="mb-4" x-show="!fullRefund">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">จำนวนเงิน (บาท)</label>
+                <input type="number" name="amount" id="refundAmount" step="0.01" min="0.01"
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                <p class="text-xs text-gray-500 mt-1">เว้นว่างไว้ = refund เต็ม</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เหตุผล <span class="text-red-500">*</span></label>
+                <textarea name="reason" required rows="3" maxlength="500"
+                          placeholder="เช่น ลูกค้าขอเงินคืน เนื่องจาก..."
+                          class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"></textarea>
+            </div>
+            <div class="flex gap-3">
+                <button type="submit" :disabled="submitting"
+                        class="flex-1 px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:bg-pink-400 text-white rounded-lg transition">
+                    <template x-if="!submitting"><span>💸 Refund</span></template>
+                    <template x-if="submitting"><span>กำลังดำเนินการ...</span></template>
+                </button>
+                <button type="button" @click="if(!submitting) closeStripeRefund()" :disabled="submitting"
+                        class="flex-1 px-4 py-2 bg-gray-500 hover:bg-gray-600 disabled:opacity-50 text-white rounded-lg transition">
+                    ยกเลิก
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -413,6 +510,21 @@
     function closeManualConfirm() {
         document.getElementById('manualConfirmModal').classList.add('hidden');
         document.getElementById('manualConfirmModal').classList.remove('flex');
+    }
+
+    // 💳 (2026-05-09) Stripe Refund Modal
+    function showStripeRefund(billId, amount) {
+        document.getElementById('stripeRefundForm').action = '/admin/fortune/billing/' + billId + '/stripe-refund';
+        document.getElementById('refundAmount').value = amount;
+        const modal = document.getElementById('stripeRefundModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function closeStripeRefund() {
+        const modal = document.getElementById('stripeRefundModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
 </script>
 @endpush

@@ -4116,6 +4116,11 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/retry-fortune', [FortuneBillingController::class, 'retryFortune'])->name('retry-fortune');
         Route::get('/export-revenue', [FortuneBillingController::class, 'exportRevenue'])->name('export-revenue');
         Route::get('/stats', [FortuneBillingController::class, 'statsApi'])->name('stats');
+
+        // 💳 (2026-05-09) Stripe payment management
+        Route::post('/{reading}/stripe-refund', [FortuneBillingController::class, 'stripeRefund'])->name('stripe-refund');
+        Route::post('/{reading}/stripe-expire', [FortuneBillingController::class, 'stripeExpire'])->name('stripe-expire');
+        Route::post('/{reading}/stripe-resync', [FortuneBillingController::class, 'stripeResync'])->name('stripe-resync');
     });
 
     // คอมมิชชั่นดูดวง (Fortune Commission Management)

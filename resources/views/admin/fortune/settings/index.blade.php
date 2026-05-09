@@ -3183,6 +3183,141 @@ Format 2 — JSON array:
             </div>
         </div>
 
+        {{-- 💳 (2026-05-09) Stripe Payment Settings — บัตรต่างประเทศ --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{ enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }} }">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        💳 ระบบชำระผ่านบัตรเครดิต (Stripe)
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        ลูกค้าต่างประเทศจ่ายผ่าน Visa/Mastercard/AmEx ได้ — มีค่าบริการ +15 บาท
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="checkbox" name="enable_stripe_payment" value="1"
+                           x-model="enableStripe"
+                           {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'checked' : '' }}
+                           class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                </label>
+            </div>
+
+            <div x-show="enableStripe" x-cloak class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            💰 ค่าบริการ (บาท)
+                        </label>
+                        <input type="number" name="stripe_service_fee" min="0" step="0.01"
+                               value="{{ old('stripe_service_fee', $settings->stripe_service_fee ?? 15) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">บวกเพิ่มจากราคาแพ็กเกจ (Stripe หัก ~3.65%+11฿/transaction)</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ⏰ อายุลิงก์ (นาที)
+                        </label>
+                        <input type="number" name="stripe_session_expiry_minutes" min="30" max="1440"
+                               value="{{ old('stripe_session_expiry_minutes', $settings->stripe_session_expiry_minutes ?? 30) }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Stripe ขั้นต่ำ 30 นาที</p>
+                    </div>
+
+                    <div class="flex items-end">
+                        <label class="flex items-center pb-2">
+                            <input type="checkbox" name="stripe_test_mode" value="1"
+                                   {{ old('stripe_test_mode', $settings->stripe_test_mode ?? true) ? 'checked' : '' }}
+                                   class="w-4 h-4 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                🧪 Test Mode
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🔑 Secret Key <span class="text-red-500">*</span>
+                        </label>
+                        <input type="password" name="stripe_secret_key"
+                               value="{{ old('stripe_secret_key', $settings->stripe_secret_key ?? '') }}"
+                               placeholder="sk_live_xxx หรือ sk_test_xxx"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">เก็บ encrypted ใน DB</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🌐 Publishable Key
+                        </label>
+                        <input type="text" name="stripe_publishable_key"
+                               value="{{ old('stripe_publishable_key', $settings->stripe_publishable_key ?? '') }}"
+                               placeholder="pk_live_xxx หรือ pk_test_xxx"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        🔒 Webhook Secret <span class="text-red-500">*</span>
+                    </label>
+                    <input type="password" name="stripe_webhook_secret"
+                           value="{{ old('stripe_webhook_secret', $settings->stripe_webhook_secret ?? '') }}"
+                           placeholder="whsec_xxx"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        URL webhook: <code class="bg-gray-100 dark:bg-gray-700 px-1 rounded">{{ url('/webhook/fortune-stripe') }}</code>
+                    </p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🏢 Account ID
+                        </label>
+                        <input type="text" name="stripe_account_id"
+                               value="{{ old('stripe_account_id', $settings->stripe_account_id ?? '') }}"
+                               placeholder="acct_1K7aDRD3aYAdvmlU"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">สำหรับสร้างลิงก์ admin</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            📦 Deep Product ID (39฿)
+                        </label>
+                        <input type="text" name="stripe_product_deep_id"
+                               value="{{ old('stripe_product_deep_id', $settings->stripe_product_deep_id ?? 'prod_UU1wXx9DI4s2gq') }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            🔮 Celtic Product ID (99฿)
+                        </label>
+                        <input type="text" name="stripe_product_celtic_id"
+                               value="{{ old('stripe_product_celtic_id', $settings->stripe_product_celtic_id ?? 'prod_UU1zVarkNVzkpp') }}"
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 font-mono text-xs">
+                    </div>
+                </div>
+
+                <div class="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-2">📋 Setup Checklist</h4>
+                    <ol class="text-xs text-gray-600 dark:text-gray-400 space-y-1 list-decimal list-inside">
+                        <li>ไป <a href="https://dashboard.stripe.com/apikeys" target="_blank" class="text-purple-600 hover:underline">Stripe Dashboard → API keys</a> → คัดลอก Secret Key + Publishable Key</li>
+                        <li>ไป Webhooks → Add endpoint → URL: <code class="bg-white dark:bg-gray-700 px-1 rounded text-xs">{{ url('/webhook/fortune-stripe') }}</code></li>
+                        <li>เลือก events: <code class="text-xs">checkout.session.completed</code>, <code class="text-xs">checkout.session.expired</code>, <code class="text-xs">charge.refunded</code></li>
+                        <li>คัดลอก Signing Secret (whsec_xxx) มาใส่ Webhook Secret</li>
+                        <li>เปิด toggle ด้านบน + บันทึก → ระบบจะถามวิธีชำระลูกค้าทุกบิลใหม่</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
         {{-- Submit Button --}}
         <div class="flex justify-end gap-3">
             <a href="{{ route('admin.fortune.readings.index') }}"

@@ -342,6 +342,17 @@ class FortuneSettingsController extends Controller
             'voice_summary_max_chars' => 'nullable|integer|min:200|max:5000',
             'voice_summary_prompt' => 'nullable|string|max:5000',
             'voice_summary_intro_message' => 'nullable|string|max:500',
+            // 💳 (2026-05-09) Stripe payment settings
+            'enable_stripe_payment' => 'boolean',
+            'stripe_service_fee' => 'nullable|numeric|min:0|max:1000',
+            'stripe_session_expiry_minutes' => 'nullable|integer|min:30|max:1440',
+            'stripe_test_mode' => 'boolean',
+            'stripe_account_id' => 'nullable|string|max:64',
+            'stripe_secret_key' => 'nullable|string|max:255',
+            'stripe_publishable_key' => 'nullable|string|max:255',
+            'stripe_webhook_secret' => 'nullable|string|max:255',
+            'stripe_product_deep_id' => 'nullable|string|max:64',
+            'stripe_product_celtic_id' => 'nullable|string|max:64',
         ]);
 
         // 🌟 (2026-05-07) แปลง textarea → array สำหรับ keywords/topics
@@ -390,10 +401,24 @@ class FortuneSettingsController extends Controller
             'satisfaction_detection_enabled',
             // 🎙️ (2026-05-08) Voice Summary
             'voice_summary_enabled',
+            // 💳 (2026-05-09) Stripe payment
+            'enable_stripe_payment',
+            'stripe_test_mode',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {
                 $validated[$field] = false;
+            }
+        }
+
+        // 💳 (2026-05-09) Stripe secrets — ถ้า admin เคลียร์ field (เว้นว่าง) ห้ามเขียน null ทับ
+        //   เคส: admin โหลดหน้า settings → ฟิลด์ password ว่าง (security: ไม่แสดง secret กลับ)
+        //         → submit form → field=null → ทับ secret เดิม → key หาย
+        //   วิธี: ถ้า request->stripe_secret_key หรือ webhook_secret เป็น empty string → unset ออก
+        //         → DB row ไม่ update field นั้น (เก็บค่าเดิม)
+        foreach (['stripe_secret_key', 'stripe_webhook_secret'] as $secretField) {
+            if (array_key_exists($secretField, $validated) && $validated[$secretField] === '') {
+                unset($validated[$secretField]);
             }
         }
 
