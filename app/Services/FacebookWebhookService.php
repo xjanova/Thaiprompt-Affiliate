@@ -1112,7 +1112,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     public function listCommentsForPost(string $postId, int $limit = 200): array
     {
+        $this->lastFetchError = null;
         if (empty($this->pageAccessToken)) {
+            $this->lastFetchError = 'ไม่พบ pageAccessToken';
+
             return [];
         }
 
@@ -1121,7 +1124,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
         $params = [
             'access_token' => $this->pageAccessToken,
             'fields' => 'id,message,from,is_hidden,created_time',
-            'filter' => 'stream', // include nested replies
+            // ❌ filter=stream เคยทำให้ comments หายในบางเคส — ใช้ default (toplevel)
             'limit' => 50,
         ];
 
@@ -1129,10 +1132,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
             while (count($comments) < $limit && $url) {
                 $resp = Http::timeout(20)->get($url, $params);
                 if (! $resp->successful()) {
+                    $errorMsg = $resp->json('error.message') ?? 'HTTP '.$resp->status();
+                    $errorCode = $resp->json('error.code');
+                    $this->lastFetchError = "comments {$postId} → HTTP {$resp->status()} | code={$errorCode} | {$errorMsg}";
                     Log::warning('listCommentsForPost ล้มเหลว', [
                         'post_id' => $postId,
                         'status' => $resp->status(),
-                        'error' => $resp->json('error.message'),
+                        'error' => $resp->json('error'),
                     ]);
                     break;
                 }
@@ -1147,6 +1153,7 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $params = [];
             }
         } catch (Exception $e) {
+            $this->lastFetchError = 'Exception: '.$e->getMessage();
             Log::warning('listCommentsForPost exception: '.$e->getMessage(), [
                 'post_id' => $postId,
             ]);

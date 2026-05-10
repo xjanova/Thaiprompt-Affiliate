@@ -137,12 +137,19 @@ class FortuneScanOldComments extends Command
             'already_hidden' => 0,
         ];
 
+        $firstError = null;
+        $emptyPostCount = 0;
         foreach ($posts as $post) {
             $stats['posts_scanned']++;
             $postId = $post['id'];
             $comments = $service->listCommentsForPost($postId, $perPostLimit);
 
             if (empty($comments)) {
+                if ($service->lastFetchError && $firstError === null) {
+                    $firstError = $service->lastFetchError;
+                }
+                $emptyPostCount++;
+
                 continue;
             }
 
@@ -191,6 +198,17 @@ class FortuneScanOldComments extends Command
                     $this->error("  ❌ FAIL {$commentId} — {$preview}");
                 }
             }
+        }
+
+        // ⚠️ ถ้าทุกโพสคอม=0 ทั้งที่ user รู้ว่ามีคอม → น่าจะ token/scope problem
+        if ($stats['comments_total'] === 0 && $stats['posts_scanned'] > 0 && $firstError) {
+            $this->newLine();
+            $this->error('🚨 ดึง comments ไม่ได้สักโพส — Graph API error:');
+            $this->line('   '.$firstError);
+            $this->newLine();
+            $this->line('💡 แนวโน้ม: Page Token ขาด scope pages_read_engagement');
+            $this->line('   วิธีแก้: regenerate token ผ่าน /admin → Fortune → Settings → Facebook OAuth');
+            $this->line('   หรือใช้ Graph Explorer: https://developers.facebook.com/tools/explorer/');
         }
 
         $this->newLine();
