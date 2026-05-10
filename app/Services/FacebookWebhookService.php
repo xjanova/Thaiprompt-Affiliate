@@ -1012,6 +1012,106 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 📜 ดึงโพสของเพจย้อนหลัง (สำหรับ scan คอมเก่า)
+     *
+     * @param  int  $sinceTimestamp  unix timestamp ตั้งแต่เมื่อไหร่
+     * @param  int  $limit  จำนวนโพสสูงสุด (default 100)
+     * @return array<array{id:string, created_time:string}>
+     */
+    public function listRecentPosts(int $sinceTimestamp, int $limit = 100): array
+    {
+        $pageId = $this->settings->facebook_page_id ?? null;
+        if (empty($pageId) || empty($this->pageAccessToken)) {
+            return [];
+        }
+
+        $posts = [];
+        $url = $this->graphUrl("/{$pageId}/posts");
+        $params = [
+            'access_token' => $this->pageAccessToken,
+            'fields' => 'id,created_time',
+            'since' => $sinceTimestamp,
+            'limit' => 25,
+        ];
+
+        try {
+            while (count($posts) < $limit && $url) {
+                $resp = Http::timeout(20)->get($url, $params);
+                if (! $resp->successful()) {
+                    Log::warning('listRecentPosts ล้มเหลว', [
+                        'status' => $resp->status(),
+                        'error' => $resp->json('error.message'),
+                    ]);
+                    break;
+                }
+                $data = $resp->json('data', []);
+                foreach ($data as $row) {
+                    $posts[] = $row;
+                    if (count($posts) >= $limit) {
+                        break;
+                    }
+                }
+                $url = $resp->json('paging.next');
+                $params = []; // pagination URL มี params ในตัวแล้ว
+            }
+        } catch (Exception $e) {
+            Log::warning('listRecentPosts exception: '.$e->getMessage());
+        }
+
+        return $posts;
+    }
+
+    /**
+     * 💬 ดึงคอมเม้นต์ทั้งหมดของโพสหนึ่ง (paginated)
+     *
+     * @return array<array{id:string, message:string, from?:array}>
+     */
+    public function listCommentsForPost(string $postId, int $limit = 200): array
+    {
+        if (empty($this->pageAccessToken)) {
+            return [];
+        }
+
+        $comments = [];
+        $url = $this->graphUrl("/{$postId}/comments");
+        $params = [
+            'access_token' => $this->pageAccessToken,
+            'fields' => 'id,message,from,is_hidden,created_time',
+            'filter' => 'stream', // include nested replies
+            'limit' => 50,
+        ];
+
+        try {
+            while (count($comments) < $limit && $url) {
+                $resp = Http::timeout(20)->get($url, $params);
+                if (! $resp->successful()) {
+                    Log::warning('listCommentsForPost ล้มเหลว', [
+                        'post_id' => $postId,
+                        'status' => $resp->status(),
+                        'error' => $resp->json('error.message'),
+                    ]);
+                    break;
+                }
+                $data = $resp->json('data', []);
+                foreach ($data as $row) {
+                    $comments[] = $row;
+                    if (count($comments) >= $limit) {
+                        break;
+                    }
+                }
+                $url = $resp->json('paging.next');
+                $params = [];
+            }
+        } catch (Exception $e) {
+            Log::warning('listCommentsForPost exception: '.$e->getMessage(), [
+                'post_id' => $postId,
+            ]);
+        }
+
+        return $comments;
+    }
+
+    /**
      * ส่งข้อความ Private Reply ตอบคอมเม้นต์ (ไป DM/Messenger)
      *
      * ใช้ endpoint POST /{comment-id}/private_replies ซึ่ง:
