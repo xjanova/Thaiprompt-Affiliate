@@ -353,7 +353,20 @@ class FortuneSettingsController extends Controller
             'stripe_webhook_secret' => 'nullable|string|max:255',
             'stripe_product_deep_id' => 'nullable|string|max:64',
             'stripe_product_celtic_id' => 'nullable|string|max:64',
+            // 🛡️ (2026-05-10) Link Moderation
+            'auto_hide_link_comments' => 'boolean',
+            'link_comment_action' => 'nullable|in:hide,delete',
+            'link_whitelist_domains_text' => 'nullable|string|max:5000',
+            'link_moderation_log_only' => 'boolean',
         ]);
+
+        // 🛡️ แปลง textarea → array สำหรับ link_whitelist_domains
+        if (array_key_exists('link_whitelist_domains_text', $validated)) {
+            $raw = (string) $validated['link_whitelist_domains_text'];
+            $lines = array_filter(array_map('trim', preg_split('/\r\n|\r|\n|,/', $raw)));
+            $validated['link_whitelist_domains'] = ! empty($lines) ? array_values($lines) : null;
+            unset($validated['link_whitelist_domains_text']);
+        }
 
         // 🌟 (2026-05-07) แปลง textarea → array สำหรับ keywords/topics
         if (array_key_exists('sensitive_keywords_text', $validated)) {
@@ -404,6 +417,9 @@ class FortuneSettingsController extends Controller
             // 💳 (2026-05-09) Stripe payment
             'enable_stripe_payment',
             'stripe_test_mode',
+            // 🛡️ (2026-05-10) Link Moderation
+            'auto_hide_link_comments',
+            'link_moderation_log_only',
         ];
         foreach ($checkboxFields as $field) {
             if (! $request->has($field)) {

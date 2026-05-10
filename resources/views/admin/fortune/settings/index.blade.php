@@ -3183,6 +3183,79 @@ Format 2 — JSON array:
             </div>
         </div>
 
+        {{-- 🛡️ (2026-05-10) Link Moderation — ซ่อน/ลบคอมเม้นต์ที่มีลิงค์สแปม --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             x-data="{ enableLinkMod: {{ old('auto_hide_link_comments', $settings->auto_hide_link_comments ?? false) ? 'true' : 'false' }} }">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        🛡️ ระบบกรองคอมเม้นต์สแปม (Auto-Hide Links)
+                    </h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอกอัตโนมัติ — ใช้ Page Token ที่มี <code class="text-xs bg-gray-100 dark:bg-gray-700 px-1 rounded">pages_manage_engagement</code>
+                    </p>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer">
+                    <input type="hidden" name="auto_hide_link_comments" value="0">
+                    <input type="checkbox" name="auto_hide_link_comments" value="1"
+                           x-model="enableLinkMod"
+                           {{ old('auto_hide_link_comments', $settings->auto_hide_link_comments ?? false) ? 'checked' : '' }}
+                           class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-red-300 dark:peer-focus:ring-red-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-red-600"></div>
+                </label>
+            </div>
+
+            <div x-show="enableLinkMod" x-cloak class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ⚙️ การกระทำ
+                        </label>
+                        <select name="link_comment_action"
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500">
+                            <option value="hide" {{ old('link_comment_action', $settings->link_comment_action ?? 'hide') === 'hide' ? 'selected' : '' }}>
+                                🙈 ซ่อน (แนะนำ — ผู้คอมยังเห็นเอง คนอื่นไม่เห็น)
+                            </option>
+                            <option value="delete" {{ old('link_comment_action', $settings->link_comment_action ?? 'hide') === 'delete' ? 'selected' : '' }}>
+                                🗑️ ลบถาวร (ผู้คอมเห็นว่าโดนลบ — อาจกลับมาแก้แค้น)
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end">
+                        <label class="flex items-center pb-2">
+                            <input type="hidden" name="link_moderation_log_only" value="0">
+                            <input type="checkbox" name="link_moderation_log_only" value="1"
+                                   {{ old('link_moderation_log_only', $settings->link_moderation_log_only ?? false) ? 'checked' : '' }}
+                                   class="w-4 h-4 text-yellow-600 bg-gray-100 border-gray-300 rounded focus:ring-yellow-500">
+                            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                                🧪 Dry-run (log อย่างเดียว ไม่ทำจริง)
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        ✅ Whitelist Domains (ลิงค์ที่อนุญาต — บรรทัดละ 1 โดเมน)
+                    </label>
+                    <textarea name="link_whitelist_domains_text"
+                              rows="4"
+                              placeholder="thaiprompt.online&#10;main.thaiprompt.online&#10;m.me&#10;lin.ee"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm font-mono focus:ring-2 focus:ring-red-500">{{ old('link_whitelist_domains_text', is_array($settings->link_whitelist_domains ?? null) ? implode("\n", $settings->link_whitelist_domains) : '') }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                        💡 โดเมนเริ่มต้น (thaiprompt.online, m.me, lin.ee, line.me, facebook.com) จะถูกเพิ่มอัตโนมัติเสมอ — ไม่ต้องใส่ซ้ำ
+                    </p>
+                </div>
+
+                <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
+                    <p class="text-xs text-yellow-800 dark:text-yellow-300">
+                        ⚠️ <strong>คำแนะนำ:</strong> เปิด Dry-run ก่อนสัก 1-2 วัน → ดู log ว่าจับถูกไหม → ค่อยปิด Dry-run ให้ทำงานจริง
+                    </p>
+                </div>
+            </div>
+        </div>
+
         {{-- 💳 (2026-05-09) Stripe Payment Settings — บัตรต่างประเทศ --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
              x-data="{ enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }} }">

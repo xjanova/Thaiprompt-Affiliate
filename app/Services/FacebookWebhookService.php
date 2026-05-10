@@ -874,6 +874,144 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🙈 ซ่อนคอมเม้นต์ (ผู้คอมยังเห็นเอง คนอื่นไม่เห็น)
+     *
+     * ใช้ Graph API: POST /{comment-id} body is_hidden=true
+     * ต้องการ scope: pages_manage_engagement
+     *
+     * แนะนำใช้แทน deleteComment เพราะ:
+     * - ผู้คอมไม่รู้ตัวว่าโดนซ่อน → ไม่กลับมาแก้แค้น
+     * - กลับคืนได้ (set is_hidden=false)
+     * - ไม่กระทบ FB algorithm signal เหมือน delete
+     */
+    public function hideComment(string $commentId): bool
+    {
+        try {
+            Http::timeout(15)
+                ->post($this->graphUrl("/{$commentId}"), [
+                    'is_hidden' => 'true',
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            Log::info('🙈 ซ่อนคอมเม้นต์สำเร็จ', ['comment_id' => $commentId]);
+
+            return true;
+        } catch (Exception $e) {
+            $msg = $e->getMessage();
+            $is403 = str_contains($msg, '403');
+            Log::error('ซ่อนคอมเม้นต์ไม่สำเร็จ: '.mb_substr($msg, 0, 200), [
+                'comment_id' => $commentId,
+                'hint' => $is403
+                    ? '⚠️ HTTP 403 → Page Token ขาด pages_manage_engagement scope'
+                    : null,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🗑️ ลบคอมเม้นต์ (ลบถาวร — irreversible)
+     *
+     * ใช้ Graph API: DELETE /{comment-id}
+     * ต้องการ scope: pages_manage_engagement
+     *
+     * ⚠️ ใช้เฉพาะกรณีจำเป็น (สแปมหนักๆ ที่ใส่หาก) — ปกติแนะนำ hideComment กว่า
+     */
+    public function deleteComment(string $commentId): bool
+    {
+        try {
+            Http::timeout(15)
+                ->delete($this->graphUrl("/{$commentId}"), [
+                    'access_token' => $this->pageAccessToken,
+                ])->throw();
+
+            Log::info('🗑️ ลบคอมเม้นต์สำเร็จ', ['comment_id' => $commentId]);
+
+            return true;
+        } catch (Exception $e) {
+            $msg = $e->getMessage();
+            $is403 = str_contains($msg, '403');
+            Log::error('ลบคอมเม้นต์ไม่สำเร็จ: '.mb_substr($msg, 0, 200), [
+                'comment_id' => $commentId,
+                'hint' => $is403
+                    ? '⚠️ HTTP 403 → Page Token ขาด pages_manage_engagement scope'
+                    : null,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🔍 ตรวจว่าข้อความมีลิงค์ภายนอก (ที่ไม่อยู่ใน whitelist) หรือไม่
+     *
+     * จับรูปแบบทั่วไป:
+     * - URL: http://, https://, www.xxx
+     * - Shorteners: bit.ly, t.me, t.co, lin.ee/<id>, m.me/<id>
+     * - Lazy domain: xxx.com, xxx.net, xxx.io (ที่ไม่มี protocol)
+     * - Dot-evasion: "thaiprompt dot online" → ก็จับ
+     *
+     * @param  array<string>  $whitelistDomains  โดเมนที่อนุญาต (ไม่ตรวจ scheme)
+     * @return bool true = พบลิงค์ที่ไม่ใช่ whitelist
+     */
+    public function containsExternalLink(string $message, array $whitelistDomains = []): bool
+    {
+        $normalized = mb_strtolower($message);
+
+        // Normalize "dot" / "จุด" evasion → "."
+        $normalized = preg_replace('/\s+(dot|จุด)\s+/u', '.', $normalized);
+
+        // Pattern: protocol/www/shortener/TLD
+        $pattern = '/(https?:\/\/|www\.|[a-z0-9-]+\.(com|net|io|me|co|xyz|info|biz|org|shop|store|app|tk|ml|ga|cf)(\/|\b))/i';
+
+        if (! preg_match_all($pattern, $normalized, $matches)) {
+            return false;
+        }
+
+        // ทุก match → strip ออกมาเป็น domain เพียงๆ → เช็ค whitelist
+        foreach ($matches[0] as $hit) {
+            $domain = $this->extractDomain($hit);
+            if (empty($domain)) {
+                continue;
+            }
+
+            $isWhitelisted = false;
+            foreach ($whitelistDomains as $allowed) {
+                $allowed = mb_strtolower(trim($allowed));
+                if (empty($allowed)) {
+                    continue;
+                }
+                // exact หรือ subdomain match
+                if ($domain === $allowed || str_ends_with($domain, '.'.$allowed)) {
+                    $isWhitelisted = true;
+                    break;
+                }
+            }
+
+            if (! $isWhitelisted) {
+                return true; // พบลิงค์ที่ไม่ใช่ whitelist
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Helper: แยก domain จากชิ้น match (best-effort)
+     */
+    protected function extractDomain(string $hit): string
+    {
+        $hit = mb_strtolower(trim($hit));
+        $hit = preg_replace('#^https?://#', '', $hit);
+        $hit = preg_replace('#^www\.#', '', $hit);
+        // ตัด path ทิ้ง
+        $hit = explode('/', $hit, 2)[0];
+
+        return rtrim($hit, '.');
+    }
+
+    /**
      * ส่งข้อความ Private Reply ตอบคอมเม้นต์ (ไป DM/Messenger)
      *
      * ใช้ endpoint POST /{comment-id}/private_replies ซึ่ง:

@@ -5220,13 +5220,47 @@ class FortuneConversationService
             ];
         }
 
+        // 🔒 (2026-05-10) Race condition guard — กัน user พิมพ์รัวหลายข้อความ
+        //   webhook FB/LINE deliver พร้อมกันได้ → 2 process เข้า try block ก่อน DB commit
+        //   → สุ่มไพ่หลายใบ. Mutex 30s ผ่าน cache lock — ถ้าจับไม่ได้ = process อื่นกำลังทำ
+        $drawLock = Cache::lock("fortune_tarot_draw_{$reading->id}", 30);
+        if (! $drawLock->get()) {
+            Log::info('Fortune: handleTarotCardDraw มี process อื่นกำลังสุ่มไพ่ ข้าม', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return [
+                'action' => 'awaiting_tarot_draw',
+                'message' => '⏳ หมอกำลังเปิดไพ่ให้คะ รอแป๊บนึงนะ',
+                'reading' => $reading,
+                'silent' => true,
+            ];
+        }
+
         try {
+            $reading->refresh(); // ⬅ refresh จาก DB เผื่อ process อื่นเพิ่งเขียนเสร็จ
+
             $collectedQuestions = $reading->getCollectedQuestions();
             $questionCount = count($collectedQuestions);
             $currentIndex = $questionCount - 1; // 0-based index ของคำถามล่าสุด
 
-            // สุ่มไพ่ยิปซี 1 ใบ (ไม่ซ้ำกับที่เคยได้)
+            // 🛑 (2026-05-10) Idempotent guard — ถ้ามีไพ่สำหรับ question_index นี้แล้ว
+            //   ห้ามสุ่มเพิ่ม! ใช้ไพ่เดิมแล้วเดินหน้า afterTarotCardDrawn
+            //   ป้องกัน: user พิมพ์ "พร้อม" / "เปิด" / "ดู" หลายครั้ง → ไพ่งอกไม่หยุด
             $existingCards = $reading->getCollectedTarotCards();
+            $alreadyDrawnForThisQuestion = collect($existingCards)
+                ->contains(fn ($c) => ($c['question_index'] ?? -1) === $currentIndex);
+
+            if ($alreadyDrawnForThisQuestion) {
+                Log::info('Fortune: ไพ่สำหรับคำถามนี้มีแล้ว — ข้ามการสุ่ม (idempotent)', [
+                    'reading_id' => $reading->id,
+                    'question_index' => $currentIndex,
+                    'card_count' => count($existingCards),
+                ]);
+
+                return $this->afterTarotCardDrawn($reading, $collectedQuestions, $questionCount);
+            }
+
             $usedCardIds = array_column($existingCards, 'card_id');
 
             $card = \App\Models\TarotCard::active()
@@ -5285,6 +5319,9 @@ class FortuneConversationService
             $collectedQuestions = $reading->getCollectedQuestions();
 
             return $this->afterTarotCardDrawn($reading, $collectedQuestions, count($collectedQuestions));
+        } finally {
+            // 🔓 release lock เสมอ ไม่ว่า return path ไหน
+            $drawLock->release();
         }
     }
 

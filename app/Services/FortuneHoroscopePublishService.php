@@ -161,7 +161,7 @@ class FortuneHoroscopePublishService
 
         // ถ้ามีรูป ใช้ /photos endpoint (รูปแรก + caption)
         if (! empty($imageUrls)) {
-            $endpoint = "https://graph.facebook.com/v18.0/{$pageId}/photos";
+            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/photos";
             $response = Http::timeout(60)->post($endpoint, [
                 'url' => $imageUrls[0],
                 'caption' => $post->post_content,
@@ -169,7 +169,7 @@ class FortuneHoroscopePublishService
             ]);
         } else {
             // ไม่มีรูป ใช้ /feed endpoint
-            $endpoint = "https://graph.facebook.com/v18.0/{$pageId}/feed";
+            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/feed";
             $response = Http::timeout(60)->post($endpoint, [
                 'message' => $post->post_content,
                 'access_token' => $pageToken,

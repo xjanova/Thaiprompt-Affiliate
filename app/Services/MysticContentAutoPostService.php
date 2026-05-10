@@ -473,14 +473,14 @@ class MysticContentAutoPostService
         $caption = $post->caption ?: 'คอนเทนต์สายมูประจำวัน';
 
         if (! empty($post->image_url)) {
-            $endpoint = "https://graph.facebook.com/v18.0/{$pageId}/photos";
+            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/photos";
             $response = Http::timeout(60)->post($endpoint, [
                 'url' => $post->image_url,
                 'caption' => $caption,
                 'access_token' => $pageToken,
             ]);
         } else {
-            $endpoint = "https://graph.facebook.com/v18.0/{$pageId}/feed";
+            $endpoint = "https://graph.facebook.com/v21.0/{$pageId}/feed";
             $response = Http::timeout(60)->post($endpoint, [
                 'message' => $caption,
                 'access_token' => $pageToken,
@@ -520,7 +520,7 @@ class MysticContentAutoPostService
             }
 
             $response = Http::timeout(30)->delete(
-                "https://graph.facebook.com/v18.0/{$fbPostId}",
+                "https://graph.facebook.com/v21.0/{$fbPostId}",
                 ['access_token' => $pageToken]
             );
 

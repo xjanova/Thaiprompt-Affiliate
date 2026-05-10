@@ -197,7 +197,7 @@ class BotPlatformController extends Controller
 
         try {
             $client = new \GuzzleHttp\Client;
-            $response = $client->post('https://graph.facebook.com/v18.0/oauth/access_token', [
+            $response = $client->post('https://graph.facebook.com/v21.0/oauth/access_token', [
                 'form_params' => [
                     'grant_type' => 'fb_exchange_token',
                     'client_id' => config('services.facebook.client_id'),

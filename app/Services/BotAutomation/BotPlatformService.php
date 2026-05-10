@@ -82,7 +82,7 @@ class BotPlatformService
     protected function publishToFacebook(BotScheduledPost $post, BotPlatformConnection $connection): array
     {
         try {
-            $endpoint = "https://graph.facebook.com/v18.0/{$connection->account_id}/feed";
+            $endpoint = "https://graph.facebook.com/v21.0/{$connection->account_id}/feed";
 
             $data = [
                 'message' => $post->content,
@@ -92,7 +92,7 @@ class BotPlatformService
             // Add media if present
             if (! empty($post->media_urls)) {
                 // For multiple photos, use different endpoint
-                $endpoint = "https://graph.facebook.com/v18.0/{$connection->account_id}/photos";
+                $endpoint = "https://graph.facebook.com/v21.0/{$connection->account_id}/photos";
                 $data['url'] = $post->media_urls[0];
                 $data['caption'] = $post->content;
             }
@@ -132,7 +132,7 @@ class BotPlatformService
             $igUserId = $connection->account_id;
 
             // Step 1: Create media container
-            $createEndpoint = "https://graph.facebook.com/v18.0/{$igUserId}/media";
+            $createEndpoint = "https://graph.facebook.com/v21.0/{$igUserId}/media";
             $createData = [
                 'caption' => $post->content,
                 'access_token' => $connection->access_token,
@@ -160,7 +160,7 @@ class BotPlatformService
             $containerId = $createResponse->json()['id'];
 
             // Step 2: Publish media
-            $publishEndpoint = "https://graph.facebook.com/v18.0/{$igUserId}/media_publish";
+            $publishEndpoint = "https://graph.facebook.com/v21.0/{$igUserId}/media_publish";
             $publishData = [
                 'creation_id' => $containerId,
                 'access_token' => $connection->access_token,
@@ -334,7 +334,7 @@ class BotPlatformService
      */
     protected function fetchFacebookAnalytics(BotScheduledPost $post, BotPlatformConnection $connection): array
     {
-        $endpoint = "https://graph.facebook.com/v18.0/{$post->platform_post_id}";
+        $endpoint = "https://graph.facebook.com/v21.0/{$post->platform_post_id}";
         $response = Http::get($endpoint, [
             'fields' => 'likes.summary(true),comments.summary(true),shares',
             'access_token' => $connection->access_token,
@@ -358,7 +358,7 @@ class BotPlatformService
      */
     protected function fetchInstagramAnalytics(BotScheduledPost $post, BotPlatformConnection $connection): array
     {
-        $endpoint = "https://graph.facebook.com/v18.0/{$post->platform_post_id}/insights";
+        $endpoint = "https://graph.facebook.com/v21.0/{$post->platform_post_id}/insights";
         $response = Http::get($endpoint, [
             'metric' => 'engagement,impressions,reach',
             'access_token' => $connection->access_token,

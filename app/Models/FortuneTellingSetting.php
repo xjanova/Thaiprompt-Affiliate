@@ -255,6 +255,11 @@ class FortuneTellingSetting extends Model
         'stripe_webhook_secret',
         'stripe_product_deep_id',
         'stripe_product_celtic_id',
+        // 🛡️ (2026-05-10) Link Moderation — ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอก
+        'auto_hide_link_comments',
+        'link_comment_action',
+        'link_whitelist_domains',
+        'link_moderation_log_only',
     ];
 
     /**
@@ -356,6 +361,10 @@ class FortuneTellingSetting extends Model
         'stripe_test_mode' => 'boolean',
         'stripe_secret_key' => 'encrypted',
         'stripe_webhook_secret' => 'encrypted',
+        // 🛡️ (2026-05-10) Link Moderation
+        'auto_hide_link_comments' => 'boolean',
+        'link_whitelist_domains' => 'array',
+        'link_moderation_log_only' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

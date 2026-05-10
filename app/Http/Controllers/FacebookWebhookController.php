@@ -655,6 +655,17 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🛡️ Link Spam Moderation — ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอก
+        //    — ตรวจก่อน auto-like + engagement → ถ้าซ่อน/ลบสำเร็จก็จบ flow
+        //    — ข้ามถ้าคอมจากเพจเอง
+        if (! empty($commentId)
+            && ($this->settings->auto_hide_link_comments ?? false)
+            && $fromId !== ($this->settings->facebook_page_id ?? null)) {
+            if ($this->moderateLinkComment($commentId, $message)) {
+                return; // ซ่อน/ลบแล้ว → ไม่ต้องทำ engagement ต่อ
+            }
+        }
+
         // 👍 Auto-like ทุกคอมเม้นต์ที่มาจาก user (ไม่ใช่จากเพจเอง)
         //    — ครั้งเดียวต่อ comment_id (cache 24 ชม.)
         //    — best-effort: ถ้าล้มยังไป flow ต่อได้
@@ -718,6 +729,52 @@ class FacebookWebhookController extends Controller
 
             $this->processFortuneTelling($comment, $questions, true, false, null, $birthDate);
         }
+    }
+
+    /**
+     * 🛡️ ตรวจ + ซ่อน/ลบคอมเม้นต์ที่มีลิงค์ภายนอก
+     *
+     * Returns true ถ้าทำการ moderate แล้ว (caller ควรหยุด flow)
+     * Returns false ถ้าไม่มีลิงค์ หรือ log_only mode
+     */
+    protected function moderateLinkComment(string $commentId, string $message): bool
+    {
+        if (empty(trim($message))) {
+            return false;
+        }
+
+        $whitelist = $this->settings->link_whitelist_domains ?? [];
+        if (! is_array($whitelist)) {
+            $whitelist = [];
+        }
+
+        // เพิ่ม default whitelist ของระบบเสมอ (กันแอดมินลืมตั้ง)
+        $defaults = ['thaiprompt.online', 'main.thaiprompt.online', 'm.me', 'lin.ee', 'line.me', 'facebook.com', 'fb.com'];
+        $whitelist = array_unique(array_merge($whitelist, $defaults));
+
+        if (! $this->facebookService->containsExternalLink($message, $whitelist)) {
+            return false;
+        }
+
+        $action = $this->settings->link_comment_action ?? 'hide';
+        $logOnly = (bool) ($this->settings->link_moderation_log_only ?? false);
+
+        Log::warning('🛡️ Link spam detected ในคอมเม้นต์', [
+            'comment_id' => $commentId,
+            'action' => $action,
+            'log_only' => $logOnly,
+            'message_preview' => mb_substr($message, 0, 200),
+        ]);
+
+        if ($logOnly) {
+            return false; // dry-run — ไม่ทำจริง ปล่อย flow ต่อ
+        }
+
+        if ($action === 'delete') {
+            return $this->facebookService->deleteComment($commentId);
+        }
+
+        return $this->facebookService->hideComment($commentId);
     }
 
     /**

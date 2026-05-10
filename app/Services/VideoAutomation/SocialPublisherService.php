@@ -192,7 +192,7 @@ class SocialPublisherService
             $accessToken = $platform->decrypted_access_token;
 
             // Step 1: เริ่ม upload session
-            $response = Http::post("https://graph.facebook.com/v18.0/{$pageId}/videos", [
+            $response = Http::post("https://graph.facebook.com/v21.0/{$pageId}/videos", [
                 'access_token' => $accessToken,
                 'upload_phase' => 'start',
                 'file_size' => filesize($videoPath),
@@ -214,7 +214,7 @@ class SocialPublisherService
                 $chunk = fread($fileHandle, 10 * 1024 * 1024); // 10 MB
 
                 $response = Http::attach('video_file_chunk', $chunk, 'video.mp4')
-                    ->post("https://graph.facebook.com/v18.0/{$pageId}/videos", [
+                    ->post("https://graph.facebook.com/v21.0/{$pageId}/videos", [
                         'access_token' => $accessToken,
                         'upload_phase' => 'transfer',
                         'upload_session_id' => $uploadSessionId,
@@ -228,7 +228,7 @@ class SocialPublisherService
             fclose($fileHandle);
 
             // Step 3: เสร็จสิ้น upload
-            $response = Http::post("https://graph.facebook.com/v18.0/{$pageId}/videos", [
+            $response = Http::post("https://graph.facebook.com/v21.0/{$pageId}/videos", [
                 'access_token' => $accessToken,
                 'upload_phase' => 'finish',
                 'upload_session_id' => $uploadSessionId,
@@ -283,7 +283,7 @@ class SocialPublisherService
 
             // Instagram Graph API - Reels Upload
             // Step 1: สร้าง container
-            $response = Http::post("https://graph.facebook.com/v18.0/{$igUserId}/media", [
+            $response = Http::post("https://graph.facebook.com/v21.0/{$igUserId}/media", [
                 'access_token' => $accessToken,
                 'media_type' => 'REELS',
                 'video_url' => $videoUrl,
@@ -305,7 +305,7 @@ class SocialPublisherService
                 sleep(5);
                 $attempt++;
 
-                $statusResponse = Http::get("https://graph.facebook.com/v18.0/{$containerId}", [
+                $statusResponse = Http::get("https://graph.facebook.com/v21.0/{$containerId}", [
                     'access_token' => $accessToken,
                     'fields' => 'status_code',
                 ]);
@@ -320,7 +320,7 @@ class SocialPublisherService
             }
 
             // Step 3: Publish
-            $publishResponse = Http::post("https://graph.facebook.com/v18.0/{$igUserId}/media_publish", [
+            $publishResponse = Http::post("https://graph.facebook.com/v21.0/{$igUserId}/media_publish", [
                 'access_token' => $accessToken,
                 'creation_id' => $containerId,
             ]);
