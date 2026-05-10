@@ -240,7 +240,7 @@ RESPONSE,
 RESPONSE,
             'category' => 'faq',
             'priority' => 72,
-            'is_active' => true,
+            'is_active' => false, // 🛑 (2026-05-10) ปิดชั่วคราว — user ขอเอากล่องนี้ออกก่อน
         ]);
 
         $this->command->info('✅ Custom Keywords สร้างสำเร็จ! (6 keywords)');
