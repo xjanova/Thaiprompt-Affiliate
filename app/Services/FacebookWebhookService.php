@@ -1042,8 +1042,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
      */
     protected function fetchPagedFeed(string $relPath, int $sinceTimestamp, int $limit): array
     {
+        $this->lastFetchError = null; // reset
         $pageId = $this->settings->facebook_page_id ?? null;
-        if (empty($pageId) || empty($this->pageAccessToken)) {
+        if (empty($pageId)) {
+            $this->lastFetchError = 'ไม่พบ facebook_page_id ใน FortuneTellingSetting';
+
+            return [];
+        }
+        if (empty($this->pageAccessToken)) {
+            $this->lastFetchError = 'ไม่พบ facebook_page_token ใน FortuneTellingSetting';
+
             return [];
         }
 
@@ -1060,9 +1068,14 @@ class FacebookWebhookService implements MessagingPlatformInterface
             while (count($items) < $limit && $url) {
                 $resp = Http::timeout(20)->get($url, $params);
                 if (! $resp->successful()) {
+                    $errorMsg = $resp->json('error.message') ?? 'HTTP '.$resp->status();
+                    $errorCode = $resp->json('error.code');
+                    $errorType = $resp->json('error.type');
+                    $this->lastFetchError = "Graph API {$relPath} → HTTP {$resp->status()} | code={$errorCode} | type={$errorType} | {$errorMsg}";
                     Log::warning("fetchPagedFeed ล้มเหลว ({$relPath})", [
                         'status' => $resp->status(),
-                        'error' => $resp->json('error.message'),
+                        'error' => $resp->json('error'),
+                        'page_id' => $pageId,
                     ]);
                     break;
                 }
@@ -1077,11 +1090,15 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $params = []; // pagination URL มี params ในตัวแล้ว
             }
         } catch (Exception $e) {
+            $this->lastFetchError = 'Exception: '.$e->getMessage();
             Log::warning("fetchPagedFeed exception ({$relPath}): ".$e->getMessage());
         }
 
         return $items;
     }
+
+    /** Last error message from fetchPagedFeed — for command-level diagnostics */
+    public ?string $lastFetchError = null;
 
     /**
      * 💬 ดึงคอมเม้นต์ทั้งหมดของโพสหนึ่ง (paginated)

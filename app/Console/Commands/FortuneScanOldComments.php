@@ -108,7 +108,19 @@ class FortuneScanOldComments extends Command
         $posts = array_values($merged);
 
         if (empty($posts)) {
-            $this->warn('ไม่พบโพส/Reels ในช่วงเวลานี้ (หรือ token ขาด pages_read_engagement)');
+            $this->warn('ไม่พบโพส/Reels ในช่วงเวลานี้');
+            if ($service->lastFetchError) {
+                $this->newLine();
+                $this->error('🚨 Graph API error:');
+                $this->line('   '.$service->lastFetchError);
+                $this->newLine();
+                $this->line('💡 เช็คเพิ่มเติม:');
+                $this->line('   • Page Access Token หมดอายุ → ต่ออายุที่ Admin → Fortune → Settings');
+                $this->line('   • Token ไม่มี scope pages_read_engagement → re-grant ที่ Facebook Login');
+                $this->line('   • Page ID ผิด → ตรวจ FortuneTellingSetting.facebook_page_id');
+            } else {
+                $this->line('💡 เพจอาจไม่มีโพส/Reels ในช่วงเวลานี้ ลองขยาย --days');
+            }
 
             return self::SUCCESS;
         }
