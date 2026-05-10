@@ -696,21 +696,41 @@ class FortuneConversationService
             //    → processMessage pull ที่ top → enter tier flow ตรง
             //
             // 2) LINE quick reply path: text = "39" / "99" — no postback payload available
-            //    → ตรวจ exact match + ไม่มี active reading → derive forceTier
+            //    → ตรวจ exact match → derive forceTier
             //
             // กัน sticky: Cache::pull = consume once
             $forceTier = Cache::pull("fortune:force_tier:{$facebookUserId}");
 
-            // LINE-fallback: plain "39" / "99" text + ไม่มี active reading → infer
+            // 🐛 (2026-05-10) Bug fix — "พิมพ์ 39/99 บอทสับสน บางครั้ง"
+            //   ROOT CAUSE: เดิมเช็ค `if (! $hasActive)` → ถ้ามี active reading (เช่น TIER_CHOICE,
+            //   COLLECTING_BIRTHDATE, COLLECTING_QUESTIONS) → ไม่ trigger tier-direct
+            //   → fall through ไป continueConversation → state machine route ผิด:
+            //     - TIER_CHOICE: match() ไม่มี case → default → ส่ง help message (ลูกค้างง)
+            //     - COLLECTING_BIRTHDATE: parse "39" เป็นวันเกิด → fail
+            //     - COLLECTING_QUESTIONS: บันทึก "39" เป็นคำถาม
+            //
+            //   FIX: trigger tier-direct เสมอ — ยกเว้นกรณี user มี **paid active reading**
+            //         (จ่ายแล้วและกำลัง flow ทำนาย — ห้ามแซง)
             if ($forceTier === null) {
                 $trimmed = trim($messageText);
                 if (in_array($trimmed, ['39', '99'], true)) {
-                    // เช็คเร็วว่าไม่มี active reading (ไม่งั้นปล่อยให้ continueConversation จัดการ)
                     $platform = $this->currentPlatform ?? 'facebook';
-                    $hasActive = FortuneReading::hasActiveReading($platform, $facebookUserId);
+                    $column = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
 
-                    if (! $hasActive) {
+                    // เช็คเฉพาะ paid + active — ลูกค้าจ่ายแล้วกำลังรอ AI / กำลังเลือกไพ่ Celtic
+                    // → respect (ไม่ override flow ที่จ่ายเงินแล้ว)
+                    $hasPaidActive = FortuneReading::where($column, $facebookUserId)
+                        ->where('is_paid', true)
+                        ->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                        ->exists();
+
+                    if (! $hasPaidActive) {
                         $forceTier = $trimmed === '99' ? 'celtic' : 'deep';
+                    } else {
+                        Log::info('Fortune: ข้าม tier-direct — ลูกค้ามี paid active reading', [
+                            'facebook_user_id' => $facebookUserId,
+                            'tier_request' => $trimmed,
+                        ]);
                     }
                 }
             }
@@ -4067,21 +4087,17 @@ class FortuneConversationService
 
             // ⚠️ เปลี่ยน reading_type เป็น 'deep' + สร้าง bill_reference
             // เพราะ reading เดิมเป็น basic → ต้องแปลงให้เป็น deep reading
-            // boot creating event ไม่ fire ตอน update ดังนั้นต้องสร้าง bill_reference เอง
+            // 💰 (2026-05-10 v3) Pay-First — ไม่ส่งไป COLLECTING_BIRTHDATE legacy
+            //   เพราะ user สั่งย้ายการชำระเงินไปก่อน — flow basic→deep upsell ก็ควรตามนั้น
             $updateData = [
                 'reading_type' => 'deep',
-                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
             ];
             if (empty($reading->bill_reference)) {
                 $updateData['bill_reference'] = FortuneReading::generateBillReference();
             }
             $reading->update($updateData);
 
-            return [
-                'action' => 'collecting_birthdate',
-                'message' => $this->getBirthdateRequestMessage(),
-                'reading' => $reading,
-            ];
+            return $this->createPaymentBill($reading, [], payFirst: true);
         }
 
         // ไม่ต้องการ → จบ conversation
@@ -4321,11 +4337,20 @@ class FortuneConversationService
                 ];
             }
 
-            return [
-                'action' => 'collecting_birthdate',
-                'message' => $this->getBirthdateRequestMessage(),
-                'reading' => $reading,
-            ];
+            // 💰 (2026-05-10 v2) Default → Pay-First Deep 39
+            //   เดิม: default branch ส่งเข้า COLLECTING_BIRTHDATE legacy → ลูกค้าใส่วันเกิด/คำถาม
+            //         → เปิดไพ่ → afterTarotCardDrawn → fall through สร้างบิล (pay-after)
+            //   user รายงาน "เปิดไพ่ 39 แล้วไม่ยอมไปขั้นชำระเงิน" — เพราะ pay-first ไม่ทำงาน
+            //   ในทุก entry point (เช่น keyword "ดูดวง"/"ดูดวงเชิงลึก"/"ทำนาย" + celtic ปิด)
+            //
+            //   FIX: เมื่อไม่ใช่ tier_choice / discovery / forceTier='celtic' → ใช้ pay-first เลย
+            //         ทุก deep flow start = pay-first (ตามที่ user สั่งย้าย payment ก่อนถามวันเกิด)
+            Log::info('Fortune: เริ่ม Deep 39 Pay-First flow (default fallback)', [
+                'reading_id' => $reading->id,
+                'facebook_user_id' => $facebookUserId,
+            ]);
+
+            return $this->createPaymentBill($reading, [], payFirst: true);
         } catch (\Exception $e) {
             Log::error('Fortune: เกิดข้อผิดพลาดในการเริ่ม deep reading flow', [
                 'facebook_user_id' => $facebookUserId,

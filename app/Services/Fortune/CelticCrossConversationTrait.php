@@ -83,22 +83,18 @@ trait CelticCrossConversationTrait
 
         // 🔒 (2026-05-03) ถ้า admin ปิด Celtic — ปกติข้าม tier menu ไปดูดวง 39฿ ตรงๆ
         //    แต่ถ้า offerFree = true → ต้องโชว์ menu (มีปุ่ม [ฟรี] [39]) ก่อน
+        // 💰 (2026-05-10 v3) Pay-First — ปิด legacy COLLECTING_BIRTHDATE
+        //    เดิม: เก็บวันเกิด → คำถาม → เปิดไพ่ → afterTarotCardDrawn fall through สร้างบิล
+        //    ใหม่: สร้างบิลทันที → จ่าย → เก็บข้อมูล (เลียนแบบ pay-first ที่ user สั่งย้าย)
         if (! $this->settings->enable_celtic_cross && ! $offerFree) {
-            $deepPriceInt = (int) $this->getDeepReadingPrice();
             $reading->update([
                 'reading_type' => FortuneReading::READING_TYPE_DEEP,
-                'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
             ]);
             if (empty($reading->bill_reference)) {
                 $reading->update(['bill_reference' => FortuneReading::generateBillReference()]);
             }
 
-            return [
-                'action' => 'collecting_birthdate',
-                'message' => "✨ เริ่มดูดวง *{$deepPriceInt} บาท* 🔹\n\n"
-                    .$this->getBirthdateRequestMessage(),
-                'reading' => $reading,
-            ];
+            return $this->createPaymentBill($reading, [], payFirst: true);
         }
 
         $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
@@ -314,23 +310,19 @@ trait CelticCrossConversationTrait
         ];
         foreach ($deepKeywords as $kw) {
             if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                // เริ่ม flow Basic Deep — ใช้โครงสร้างเดียวกับ handleAfterBasic เดิม
+                // 💰 (2026-05-10 v3) Pay-First — ปิด legacy COLLECTING_BIRTHDATE
+                //   เดิม comment บอก "ทุกคนเข้า pay-first" แต่ logic ส่งไป COLLECTING_BIRTHDATE legacy
+                //   จริง — ลูกค้าเก็บวันเกิด/คำถาม/เปิดไพ่ จนเสร็จ → เปิดไพ่ไม่ไปขั้นชำระเงิน
+                //   ใหม่: เลือก 39 → สร้างบิลทันที → ลูกค้าจ่าย → ค่อยขอวันเกิด
                 $updateData = [
                     'reading_type' => FortuneReading::READING_TYPE_DEEP,
-                    'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
                 ];
                 if (empty($reading->bill_reference)) {
                     $updateData['bill_reference'] = FortuneReading::generateBillReference();
                 }
                 $reading->update($updateData);
 
-                // 🛑 (2026-05-06) Pay-Later removed — ทุกคนเข้า pay-first ตรงๆ
-                return [
-                    'action' => 'collecting_birthdate',
-                    'message' => "✨ เลือกแพคเกจ *ดูดวงพื้นฐาน {$deepPriceInt} บาท* แล้วค่ะ 🔹\n\n"
-                        .$this->getBirthdateRequestMessage(),
-                    'reading' => $reading,
-                ];
+                return $this->createPaymentBill($reading, [], payFirst: true);
             }
         }
 
