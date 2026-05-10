@@ -1014,19 +1014,41 @@ class FacebookWebhookService implements MessagingPlatformInterface
     /**
      * 📜 ดึงโพสของเพจย้อนหลัง (สำหรับ scan คอมเก่า)
      *
+     * ใช้ /{page}/published_posts (ครอบคลุมกว่า /posts) — รวม Reels ใน Graph v17+
+     *
      * @param  int  $sinceTimestamp  unix timestamp ตั้งแต่เมื่อไหร่
      * @param  int  $limit  จำนวนโพสสูงสุด (default 100)
      * @return array<array{id:string, created_time:string}>
      */
     public function listRecentPosts(int $sinceTimestamp, int $limit = 100): array
     {
+        return $this->fetchPagedFeed("/published_posts", $sinceTimestamp, $limit);
+    }
+
+    /**
+     * 🎬 ดึง Reels ของเพจย้อนหลัง (สแปมในคลิปไวรัลมักเยอะ)
+     *
+     * Graph API endpoint /{page}/video_reels — แยกจาก /published_posts บางครั้ง
+     *
+     * @return array<array{id:string, created_time:string}>
+     */
+    public function listRecentReels(int $sinceTimestamp, int $limit = 100): array
+    {
+        return $this->fetchPagedFeed('/video_reels', $sinceTimestamp, $limit);
+    }
+
+    /**
+     * Helper: paginate Graph API feed-style endpoint
+     */
+    protected function fetchPagedFeed(string $relPath, int $sinceTimestamp, int $limit): array
+    {
         $pageId = $this->settings->facebook_page_id ?? null;
         if (empty($pageId) || empty($this->pageAccessToken)) {
             return [];
         }
 
-        $posts = [];
-        $url = $this->graphUrl("/{$pageId}/posts");
+        $items = [];
+        $url = $this->graphUrl("/{$pageId}{$relPath}");
         $params = [
             'access_token' => $this->pageAccessToken,
             'fields' => 'id,created_time',
@@ -1035,10 +1057,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
         ];
 
         try {
-            while (count($posts) < $limit && $url) {
+            while (count($items) < $limit && $url) {
                 $resp = Http::timeout(20)->get($url, $params);
                 if (! $resp->successful()) {
-                    Log::warning('listRecentPosts ล้มเหลว', [
+                    Log::warning("fetchPagedFeed ล้มเหลว ({$relPath})", [
                         'status' => $resp->status(),
                         'error' => $resp->json('error.message'),
                     ]);
@@ -1046,8 +1068,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 }
                 $data = $resp->json('data', []);
                 foreach ($data as $row) {
-                    $posts[] = $row;
-                    if (count($posts) >= $limit) {
+                    $items[] = $row;
+                    if (count($items) >= $limit) {
                         break;
                     }
                 }
@@ -1055,10 +1077,10 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 $params = []; // pagination URL มี params ในตัวแล้ว
             }
         } catch (Exception $e) {
-            Log::warning('listRecentPosts exception: '.$e->getMessage());
+            Log::warning("fetchPagedFeed exception ({$relPath}): ".$e->getMessage());
         }
 
-        return $posts;
+        return $items;
     }
 
     /**

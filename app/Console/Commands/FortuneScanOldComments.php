@@ -27,10 +27,12 @@ class FortuneScanOldComments extends Command
     protected $signature = 'fortune:scan-old-comments
                             {--days=30 : ย้อนหลังกี่วัน}
                             {--posts=100 : จำนวนโพสสูงสุดที่จะ scan}
-                            {--per-post=200 : คอมเม้นต์ต่อโพสสูงสุด}
+                            {--reels=100 : จำนวน Reels สูงสุดที่จะ scan (สแปมเยอะใน Reels ดัง)}
+                            {--per-post=500 : คอมเม้นต์ต่อโพส/Reel สูงสุด}
+                            {--skip-reels : ข้าม Reels (scan เฉพาะโพสปกติ)}
                             {--execute : ลงมือซ่อน/ลบจริง (default: dry-run)}';
 
-    protected $description = 'สแกนคอมเม้นต์ Facebook ย้อนหลัง — หาลิงค์สแปมและซ่อน/ลบตาม settings';
+    protected $description = 'สแกนคอมเม้นต์ Facebook ย้อนหลัง (โพส + Reels) — หาลิงค์สแปมและซ่อน/ลบ';
 
     public function handle(FacebookWebhookService $service): int
     {
@@ -49,7 +51,9 @@ class FortuneScanOldComments extends Command
 
         $days = (int) $this->option('days');
         $postsLimit = (int) $this->option('posts');
+        $reelsLimit = (int) $this->option('reels');
         $perPostLimit = (int) $this->option('per-post');
+        $skipReels = (bool) $this->option('skip-reels');
         $execute = (bool) $this->option('execute');
 
         $action = $settings->link_comment_action ?? 'hide';
@@ -62,19 +66,32 @@ class FortuneScanOldComments extends Command
         $sinceTs = now()->subDays($days)->timestamp;
         $pageId = $settings->facebook_page_id;
 
-        $this->info("🛡️ Scan คอมเม้นต์เก่า — ย้อน {$days} วัน, สูงสุด {$postsLimit} โพส");
+        $reelsTarget = $skipReels ? 0 : $reelsLimit;
+        $this->info("🛡️ Scan คอมเม้นต์เก่า — ย้อน {$days} วัน, สูงสุด {$postsLimit} โพส + {$reelsTarget} Reels");
         $this->line("   Action: {$action} | Mode: ".($execute ? '⚠️  EXECUTE (ลงมือจริง)' : '🧪 DRY-RUN (ไม่ทำจริง)'));
         $this->line('   Whitelist: '.implode(', ', $whitelist));
         $this->newLine();
 
         $posts = $service->listRecentPosts($sinceTs, $postsLimit);
+        $reels = $skipReels ? [] : $service->listRecentReels($sinceTs, $reelsLimit);
+
+        // Merge + dedupe ตาม id (Reels บางอันอาจซ้อนใน /published_posts)
+        $merged = [];
+        foreach (array_merge($posts, $reels) as $row) {
+            $id = $row['id'] ?? null;
+            if ($id && ! isset($merged[$id])) {
+                $merged[$id] = $row;
+            }
+        }
+        $posts = array_values($merged);
+
         if (empty($posts)) {
-            $this->warn('ไม่พบโพสในช่วงเวลานี้ (หรือ token ขาด pages_read_engagement)');
+            $this->warn('ไม่พบโพส/Reels ในช่วงเวลานี้ (หรือ token ขาด pages_read_engagement)');
 
             return self::SUCCESS;
         }
 
-        $this->info('📜 พบ '.count($posts).' โพส — เริ่มสแกน...');
+        $this->info('📜 พบ '.count($posts).' โพส/Reels (รวม unique) — เริ่มสแกน...');
         $this->newLine();
 
         $stats = [
