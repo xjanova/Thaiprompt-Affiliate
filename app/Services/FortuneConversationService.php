@@ -4276,7 +4276,19 @@ class FortuneConversationService
             if ($forceTier === 'celtic' && ($this->settings->enable_celtic_cross ?? false)) {
                 return $this->startCelticCrossFlow($reading);
             }
-            // 🩹 forceTier='deep' → reading เป็น COLLECTING_BIRTHDATE อยู่แล้ว → fall through ไป return ด้านล่าง
+
+            // 💰 (2026-05-10) forceTier='deep' → Pay-First flow
+            //   เลียนแบบ Celtic 99 — สร้างบิลทันที ไม่ต้องเก็บข้อมูลก่อน
+            //   หลังลูกค้าจ่ายเงิน → ระบบขอ birthdate → คำถาม → เปิดไพ่ → ทำนาย
+            //   เหตุผล: ลูกค้าทำจนเสร็จแล้วไม่จ่าย → เสียเวลาแม่หมอ
+            if ($forceTier === 'deep') {
+                Log::info('Fortune: เริ่ม Deep 39 Pay-First flow', [
+                    'reading_id' => $reading->id,
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return $this->createPaymentBill($reading, [], payFirst: true);
+            }
 
             // 🆕 Tier Choice: ส่ง menu ให้ลูกค้าเลือก 39฿ vs 99฿ Celtic
             if ($useTierChoice) {
@@ -5289,8 +5301,76 @@ class FortuneConversationService
             ];
         }
 
-        // 🛑 (2026-05-06) Pay-Later removed — ทุกคนเข้า pay-first สร้างบิลตรงๆ
-        Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล (pay-first)', [
+        // 💰 (2026-05-10) Pay-First flow — ลูกค้าจ่ายไปแล้วตั้งแต่กดปุ่ม "39"
+        //   ถึงตอนนี้มีข้อมูลครบ (birthdate + question + tarot) → trigger AI ทำนายตรงเลย
+        //   ไม่ต้องสร้างบิลใหม่ (เงินจ่ายแล้ว)
+        $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
+        $isPaid = (bool) $reading->is_paid;
+
+        if ($payFirstMode && $isPaid) {
+            Log::info('Fortune: Pay-First — ครบข้อมูลแล้ว dispatch ProcessDeepFortuneReadingJob', [
+                'reading_id' => $reading->id,
+                'questions' => $collectedQuestions,
+                'tarot_cards_count' => count($reading->getCollectedTarotCards()),
+            ]);
+
+            // เก็บคำถามลง reading + เปลี่ยน status → PAID (Job จะ pickup)
+            $reading->update([
+                'questions' => $collectedQuestions,
+                'conversation_status' => FortuneReading::STATUS_PAID,
+            ]);
+
+            // 🌟 สร้าง Birth Chart ตอนนี้ (ก่อน Job) — มีวันเกิดแล้ว + ลูกค้ารอเห็นภาพดาว
+            //   pay-first ข้าม chart ตอน createPaymentBill (ไม่มีวันเกิด)
+            //   มาสร้างที่นี่แทน — ส่งคู่กับคำทำนายทีเดียว
+            if (empty($reading->reading_image_url) && $reading->birth_date) {
+                try {
+                    $birthDateStr = $reading->birth_date->format('Y-m-d');
+                    $chartName = $reading->facebook_user_name ?? 'คุณ';
+                    $chartGender = ($reading->user_profile['gender'] ?? null);
+                    $chartUrl = $this->chartService->generateBirthChart($birthDateStr, $chartName, $chartGender);
+                    if ($chartUrl) {
+                        $reading->update(['reading_image_url' => $chartUrl]);
+                    }
+                } catch (\Throwable $chartErr) {
+                    Log::warning('Fortune: Pay-First chart gen ล้มเหลว (non-blocking)', [
+                        'reading_id' => $reading->id,
+                        'error' => $chartErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // Dispatch Job — Smart variant (sync ถ้า worker ไม่ active, async ถ้าใช่)
+            try {
+                \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                    $reading->id,
+                    null, // ไม่ผูก SMS notification (จ่ายตั้งแต่ก่อน)
+                    $reading->platform ?? $this->currentPlatform ?? 'facebook',
+                    $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id
+                );
+            } catch (\Throwable $jobErr) {
+                Log::error('Fortune: Pay-First dispatch ProcessDeepFortuneReadingJob ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $jobErr->getMessage(),
+                ]);
+                // ลูกค้าจ่ายแล้ว — return processing message ไว้ก่อน, retry job ภายหลังได้
+            }
+
+            return [
+                'action' => 'processing',
+                'message' => $prefixMessage
+                    ."═══════════════════════\n"
+                    ."🌙 *แม่หมอจันทรากำลังทำนายให้*\n"
+                    ."═══════════════════════\n\n"
+                    ."✨ ลงพลังเรียงไพ่ + คำนวณดวงดาว\n"
+                    ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n\n"
+                    .'จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏',
+                'reading' => $reading,
+            ];
+        }
+
+        // 🛑 (2026-05-06) Pay-Later removed — flow เก่า (ไม่ใช่ pay-first) สร้างบิลตรงๆ
+        Log::info('Fortune: ครบคำถาม + ไพ่ยิปซี กำลังสร้างบิล (legacy pay-after)', [
             'reading_id' => $reading->id,
             'questions' => $collectedQuestions,
             'tarot_cards' => $reading->getCollectedTarotCards(),
@@ -5403,6 +5483,13 @@ class FortuneConversationService
             return $this->handlePaymentClaim($reading, $uniqueAmount);
         }
 
+        // 🪄 (2026-05-10) Pay-First — ถ้าลูกค้าถามเชิง "ทำไมต้องจ่ายก่อน?"
+        //   ตอบด้วยคำคมเชิงปรัชญา ไม่ดราม่า ไม่ขายตรง
+        //   ใช้ rotating quotes (random) ให้ดู fresh ทุกครั้ง
+        if ($this->isPayFirstObjection($messageText)) {
+            return $this->buildPayFirstObjectionReply($reading, $uniqueAmount);
+        }
+
         // บิลยังไม่หมดอายุ → ไม่ว่าจะพิมพ์อะไรมา แสดงยอด+บัญชีธนาคาร+เวลาเหลือ
         $payAmount = number_format($uniqueAmount->unique_amount, 2);
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
@@ -5502,8 +5589,13 @@ class FortuneConversationService
 
     /**
      * สร้างบิลรอชำระเงิน
+     *
+     * @param  bool  $payFirst  💰 (2026-05-10) Pay-First mode — สำหรับ Deep 39 flow ใหม่
+     *   - true  = สร้างบิลทันทีก่อนถามวันเกิด/คำถาม (ลูกค้าจ่ายก่อน → ค่อยให้ข้อมูล)
+     *   - false = flow เดิม (รวบรวม birthdate + question + tarot ครบแล้วค่อยสร้างบิล)
+     *   pay-first จะ skip Birth Chart preview (ไม่มีวันเกิด) + ใช้ข้อความ pitch แบบใหม่
      */
-    protected function createPaymentBill(FortuneReading $reading, array $questions): array
+    protected function createPaymentBill(FortuneReading $reading, array $questions, bool $payFirst = false): array
     {
         try {
             // ⚠️ CRITICAL SAFETY — ห้ามส่ง QR code / bill_reference ออกไปจนกว่าจะ verify
@@ -5533,6 +5625,11 @@ class FortuneConversationService
                     'questions' => $questions,
                 ]);
                 $reading->setPendingPayment($uniqueAmount);
+
+                // 💰 (2026-05-10) ตั้ง flag pay_first_mode ให้ระบบรู้ว่าต้องเก็บข้อมูลหลังชำระ
+                if ($payFirst) {
+                    $reading->setConversationState('pay_first_mode', true);
+                }
 
                 return ['upa' => $uniqueAmount, 'reading' => $reading];
             });
@@ -5589,6 +5686,43 @@ class FortuneConversationService
             // ⏱️ ติดตามเวลา — LINE replyToken หมดอายุ ~30s จึงต้องตอบให้ทัน
             $billStartTime = microtime(true);
             $maxBillTime = 12.0; // วินาที — เหลือเวลาให้ ChannelManager ส่ง response
+
+            // 💰 (2026-05-10) Pay-First mode — ไม่มีวันเกิด ยังสร้าง chart ไม่ได้
+            //   chart จะ generate ในขั้นทำนาย (หลังเก็บวันเกิดได้แล้ว)
+            //   เลียนแบบ Celtic 99 flow ที่ไม่มี preview chart ก่อนชำระเงิน
+            if ($payFirst) {
+                $chartImageUrl = null;
+
+                // ใช้ pitch message แบบ pay-first (ไม่มีสรุปคำถาม + คำคม "ของที่ปิดหุ้ม")
+                $message = $this->getPayFirstPaymentMessage($reading, $uniqueAmount);
+
+                // ส่ง FCM ให้ SMS app เห็นบิลทันที
+                try {
+                    app(\App\Services\FcmNotificationService::class)->notifyNewFortuneReading($reading);
+                } catch (\Exception $fcmErr) {
+                    Log::warning('Fortune: FCM push (pay-first) ล้มเหลว', [
+                        'reading_id' => $reading->id,
+                        'error' => $fcmErr->getMessage(),
+                    ]);
+                }
+
+                // QR — pay-first flow มีเวลาพอ ไม่กังวล replyToken expire (push ใหม่ได้)
+                $qrImageUrl = $this->generatePromptPayQrImage((float) $uniqueAmount->unique_amount, $reading->id)
+                    ?: $this->getPaymentQrImageUrl();
+
+                Log::info('Fortune Conversation: สร้างบิล Pay-First (Deep 39)', [
+                    'reading_id' => $reading->id,
+                    'unique_amount' => $uniqueAmount->unique_amount,
+                ]);
+
+                return [
+                    'action' => 'pending_payment',
+                    'message' => $message,
+                    'reading' => $reading,
+                    'payment_qr_url' => $qrImageUrl,
+                    'show_qr' => true,
+                ];
+            }
 
             // สร้าง Birth Chart ส่งให้ผู้ใช้เห็นก่อนชำระเงิน (เป็น preview)
             // ✅ ข้ามถ้าใช้เวลาเกิน → ส่งบิลก่อน ส่ง chart ทีหลังได้
@@ -6877,6 +7011,137 @@ class FortuneConversationService
                "คุณ{$name} ต้องการถามเรื่องอะไรบ้างคะ?\n\n".
                "📝 คำถามข้อที่ 1 จาก {$count} — เลือกหมวดหรือพิมพ์เองได้เลย 👇".
                $detailHint;
+    }
+
+    /**
+     * 🪄 (2026-05-10) จับ intent "ทำไมต้องจ่ายก่อน?" / "ขอดูก่อนได้ไหม?"
+     *
+     * ใช้ pattern matching แบบเบา ไม่ต้องเรียก AI
+     * trigger เฉพาะระหว่าง PENDING_PAYMENT (ก่อนชำระ) — pay-first context
+     */
+    protected function isPayFirstObjection(string $text): bool
+    {
+        $normalized = mb_strtolower(trim($text));
+
+        // ลบคำลงท้ายสุภาพ
+        $normalized = preg_replace('/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ|หรอ|เหรอ)\s*$/u', '', $normalized) ?? $normalized;
+
+        // pattern หลัก — "ทำไม + ต้อง + จ่าย/โอน/เสียเงิน + ก่อน"
+        $patterns = [
+            '/ทำไม.*ต้อง.*(จ่าย|โอน|เสียเงิน)/u',
+            '/ต้อง.*(จ่าย|โอน).*ก่อน/u',
+            '/(จ่าย|โอน).*ก่อน.*(เหรอ|หรอ|หรือ|เลย|จริง)/u',
+            '/ขอ.*(ดู|ลอง).*(ก่อน|ฟรี)/u',
+            '/(ฟรี|ลองก่อน|ขอดู).*ไม่ได้.*(เหรอ|หรอ|หรือ)/u',
+            '/(แม่น|จริง).*ไหม.*(ค่อย|ก่อน)/u',
+            '/ทำไม.*(เก็บ|คิด)เงิน/u',
+            '/ทำไม.*ไม่ฟรี/u',
+            '/(ดู|ทำนาย).*ก่อน.*(แล้ว)?(ค่อย).*(จ่าย|โอน)/u',
+        ];
+
+        foreach ($patterns as $regex) {
+            if (preg_match($regex, $normalized)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🪄 (2026-05-10) สร้าง reply เชิงปรัชญาเมื่อลูกค้าถาม "ทำไมต้องจ่ายก่อน?"
+     *
+     * Rotating quotes (random) — เลี่ยงตอบซ้ำเดิม
+     * ปิดท้ายด้วยยอด + เลขบิล + ปุ่ม PromptPay
+     */
+    protected function buildPayFirstObjectionReply(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): array
+    {
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+        $amount = number_format($uniqueAmount->unique_amount, 2);
+        $billRef = $reading->bill_reference;
+        $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
+
+        // คำคมหมุนเวียน — เลือกแบบสุ่ม (ทุกข้อความเฉียบ + ไม่ฮาร์ดเซล)
+        $quotes = [
+            "🌙 *ของที่ปิดหุ้ม ก็ต้องออกแรงแกะมันก่อนค่ะ*\n"
+                ."ดวงก็เหมือนกัน — ถ้าอยากเห็นข้างใน ก็ต้องลงแรงเล็กๆ ก่อน",
+
+            "🌙 *เจ้าชะตาขอน้ำจากบ่อ — ก็ต้องเอาถังลงไปตักก่อนค่ะ*\n"
+                ."ค่าครู 39 บาท คือถังที่จะตักดวงดาวขึ้นมาให้ดู",
+
+            "🌙 *ดวงดาวไม่เปิดประตูให้คนที่แค่ผ่านมาดูค่ะ*\n"
+                ."การโอนคือสัญญาณว่าเจ้าชะตาตั้งใจจริง — ฟ้าจะเปิดให้",
+
+            "🌙 *ทุกอย่างในชีวิตมีต้นทุน — ความสงสัยก็เช่นกันค่ะ*\n"
+                ."39 บาทแลก 'คำตอบที่ค้างคาใจ' ถือว่าเบาที่สุดแล้ว",
+
+            "🌙 *แม่หมอนั่งเรียงไพ่ ลงพลัง คำนวณดวงดาว — ใช้เวลา ใช้ใจ*\n"
+                ."ถ้าให้ดูฟรี เจ้าชะตาเองก็จะไม่เชื่อสิ่งที่ได้ยินค่ะ",
+
+            "🌙 *ของฟรีไม่ใช่ของจริง — ของจริงต้องลงทุน*\n"
+                ."ทุกที่ที่ดูฟรี = ทำนายแบบสำเร็จรูป ไม่ใช่ดวงเฉพาะของเจ้าชะตา",
+        ];
+
+        $quote = $quotes[array_rand($quotes)];
+
+        $message = "💫 คุณ{$name} ค่ะ\n\n"
+            ."═══════════════════════\n"
+            .$quote."\n"
+            ."═══════════════════════\n\n"
+            ."🔖 *เลขที่บิล:* {$billRef}\n"
+            ."💰 *ยอดชำระ:* ฿{$amount}\n"
+            ."⏰ *เหลือเวลา:* {$remainingMinutes} นาที\n\n"
+            ."✨ *หลังโอนเงิน — แม่หมอจะถามวันเกิด เปิดไพ่ ทำนายให้ครบทุกประเด็นค่ะ*\n\n"
+            ."💡 ถ้าไม่สะดวกตอนนี้ พิมพ์ 'ยกเลิก' ได้นะคะ ไม่มีบังคับ 🙏";
+
+        return [
+            'action' => 'pending_payment',
+            'message' => $message,
+            'reading' => $reading,
+        ];
+    }
+
+    /**
+     * 💰 (2026-05-10) ข้อความบิล Pay-First สำหรับ Deep 39
+     *
+     * Pay-First flow: ลูกค้าจ่ายเงินก่อน — ค่อยถามวันเกิด/คำถาม/เปิดไพ่
+     * ใช้คำคม "ของที่ปิดหุ้มต้องออกแรงแกะมันก่อน" เพื่อสื่อปรัชญาแบบนุ่มนวล
+     */
+    protected function getPayFirstPaymentMessage(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): string
+    {
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+        $amount = number_format($uniqueAmount->unique_amount, 2);
+        $expiresAt = $uniqueAmount->expires_at->format('H:i');
+        $billRef = $reading->bill_reference;
+        $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
+
+        $message = "🌙 *แม่หมอจันทรายินดีเปิดดวงให้ คุณ{$name}*\n\n"
+            ."═══════════════════════\n"
+            ."🔮 *ดูดวงเชิงลึก 39฿*\n"
+            ."═══════════════════════\n\n"
+            ."✨ *ก่อนเปิดประตูดวง — ขอค่าครูก่อนนะคะ*\n"
+            ."ของที่ปิดหุ้ม ก็ต้องออกแรงแกะมันก่อน\n"
+            ."ดวงดาวจะเปิดให้ ก็ต่อเมื่อเจ้าชะตาตั้งใจจริง 🙏\n\n"
+            ."──────────────────────\n"
+            ."🔖 *เลขที่บิล:* {$billRef}\n"
+            ."💰 *ยอดชำระ:* ฿{$amount}\n"
+            ."⏰ *หมดอายุ:* {$expiresAt} น. (อีก {$remainingMinutes} นาที)\n"
+            ."──────────────────────\n\n";
+
+        // เพิ่มบัญชีธนาคาร / PromptPay
+        $message .= $this->getBankAccountsListMessage();
+
+        $message .= "\n⚠️ *กรุณาโอนยอด ฿{$amount} (ตรงทศนิยม)*\n"
+            ."ระบบจะตรวจสอบอัตโนมัติด้วยทศนิยมที่ต่างกัน\n\n"
+            ."🪄 *หลังโอนแล้ว แม่หมอจะ:*\n"
+            ."  1️⃣ ขอวันเดือนปีเกิด\n"
+            ."  2️⃣ ฟังคำถามที่ค้างคาใจ\n"
+            ."  3️⃣ เปิดไพ่ยิปซีให้ทีละใบ\n"
+            ."  4️⃣ ส่งคำทำนายเชิงลึกพร้อมภาพดวง\n\n"
+            ."💡 หากโอนแล้วระบบยังไม่ตอบ พิมพ์ 'โอนแล้ว' ได้เลยค่ะ\n"
+            ."📌 บิลนี้หมดอายุใน {$remainingMinutes} นาที — ระบบจะคืนสิทธิ์เมื่อโอนสำเร็จ ✨";
+
+        return $message;
     }
 
     /**

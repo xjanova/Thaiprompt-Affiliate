@@ -774,6 +774,18 @@ class SmsPaymentService
             return $celticResult;
         }
 
+        // 💰 (2026-05-10) Deep 39 Pay-First fork — จ่ายก่อนเก็บข้อมูล
+        //   ตรวจ flag pay_first_mode + ยังไม่มี birth_date → ขอวันเกิดต่อ ไม่ dispatch Job
+        //   เลียนแบบ Celtic 99 — flow เก่าใช้ status=PAID + dispatchJob ทันที (ไม่ work เพราะไม่มีข้อมูล)
+        $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
+        $hasNoBirthdate = empty($reading->birth_date);
+        if ($payFirstMode && $hasNoBirthdate) {
+            $payFirstResult = $this->handleDeepPayFirstPaymentMatched($reading, $notification, $platform, $userId, $amount);
+            $markProcessed();
+
+            return $payFirstResult;
+        }
+
         // ✅ Push แจ้งผู้ใช้ทันทีว่า "ชำระเงินเรียบร้อย กำลังวิเคราะห์ดวง"
         // ใช้ message_tag: POST_PURCHASE_UPDATE เพื่อ push นอก messaging window ได้
         $reading->setConversationState('wait_message_sent', true);
@@ -1136,6 +1148,100 @@ class SmsPaymentService
 
             // confirmPayment() ถูกเรียกไปแล้ว — เงินอยู่ใน DB เรียบร้อย
             // ลูกค้าจะได้ message ตอนทักกลับ (handleCelticPendingPayment refresh เจอ is_paid)
+            return true;
+        }
+    }
+
+    /**
+     * 💰 (2026-05-10) Deep 39 Pay-First — handle payment ก่อนข้อมูลครบ
+     *
+     * Pay-First flow: ลูกค้ากด "39" → สร้างบิลทันที → จ่ายเงิน → flow นี้ทำงาน
+     *   1. confirmPayment() ถูกเรียกไปแล้วใน parent (is_paid=true, status=PAID)
+     *   2. เปลี่ยน status → COLLECTING_BIRTHDATE (กลับเข้า flow เก็บข้อมูล)
+     *   3. Push "ขอบคุณค่ะ ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE
+     *   4. ❌ ไม่ dispatch ProcessDeepFortuneReadingJob (ยังไม่มี data ให้ทำนาย)
+     *   5. ลูกค้าใส่วันเกิด → continueConversation รู้ status → handleBirthdateInput
+     */
+    public function handleDeepPayFirstPaymentMatched(
+        FortuneReading $reading,
+        ?SmsPaymentNotification $notification,
+        string $platform,
+        string $userId,
+        float $amount
+    ): bool {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+
+            // 1. เปลี่ยน status → COLLECTING_BIRTHDATE (จาก PAID → กลับเข้า flow เก็บข้อมูล)
+            //    ✅ confirmPayment() เรียกไปแล้ว → is_paid=true เก็บไว้
+            //    ⚠️ override status PAID เพราะระบบยังไม่ได้ทำนาย — ต้องเก็บข้อมูลก่อน
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE]);
+
+            // 2. ปรับข้อความขอบคุณ + ขอวันเกิด
+            $userName = $reading->facebook_user_name ?? 'เจ้าชะตา';
+            $billRef = $reading->bill_reference ?? '-';
+            $payAmountStr = number_format($amount, 2);
+
+            $thanksMessage = "✅ ระบบตัดบิลเรียบร้อยแล้วค่ะ คุณ{$userName}\n\n"
+                ."🔖 เลขที่บิล: {$billRef}\n"
+                ."💰 ค่าครู: ฿{$payAmountStr}\n\n"
+                ."═══════════════════════\n"
+                ."🌙 *แม่หมอจันทรากำลังเปิดประตูดวงให้*\n"
+                ."═══════════════════════\n\n"
+                ."🪄 ตอนนี้ขั้นตอนแรกของการเปิดดวง —\n"
+                ."ขอ*วันเดือนปีเกิด*ของเจ้าชะตาก่อนนะคะ ✨\n\n"
+                ."📝 *ตัวอย่าง:* 15 มีนาคม 2538\n"
+                ."   หรือ 15/3/2538 / 15-3-2538\n\n"
+                ."💡 หากจำไม่ได้แม่นยำ — ใส่ปีก่อน เดือน ก็พอค่ะ\n"
+                .'(ค่าครูที่จ่ายแล้วจะรอเก็บไว้ตลอด ไม่หมดอายุนะคะ 🙏)';
+
+            // 3. Push ผ่าน channel manager (POST_PURCHASE_UPDATE — push ได้นอก 24hr window)
+            $channelManager = new FortuneChannelManager($settings);
+            $pushSent = $channelManager->sendResponse($platform, $userId, [
+                'action' => 'collecting_birthdate',
+                'message' => $thanksMessage,
+                'reading' => $reading,
+            ], [
+                'from_admin' => true,
+                'message_tag' => 'POST_PURCHASE_UPDATE',
+            ]);
+
+            // 4. Clear gen_processing flag (ไม่ใช้ใน pay-first — ลูกค้ายังไม่ได้รอ AI)
+            \Illuminate\Support\Facades\Cache::forget("fortune:gen_processing:{$userId}");
+
+            // 5. Mark notification matched
+            if ($notification) {
+                $notification->update([
+                    'status' => 'matched',
+                    'matched_transaction_id' => $reading->id,
+                ]);
+
+                try {
+                    app(FcmNotificationService::class)->notifyFortuneReadingMatched($reading, $notification);
+                } catch (\Exception $fcmErr) {
+                    Log::warning('SMS Payment (Pay-First): FCM push ล้มเหลว (ไม่ critical)', [
+                        'error' => $fcmErr->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('SMS Payment (Pay-First Deep 39): ตัดบิล + ขอวันเกิดต่อ สำเร็จ', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'sent' => $pushSent,
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::critical('SMS Payment (Pay-First Deep 39): handleDeepPayFirstPaymentMatched ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
+            ]);
+
+            // confirmPayment() เรียกไปแล้ว → เงินอยู่ใน DB
+            // ลูกค้าจะได้ message ตอนทักกลับมา (handlePendingPayment เห็น is_paid=true → fall through)
             return true;
         }
     }
