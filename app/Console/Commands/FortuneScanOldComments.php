@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -25,10 +26,12 @@ use Illuminate\Support\Facades\Log;
 class FortuneScanOldComments extends Command
 {
     protected $signature = 'fortune:scan-old-comments
-                            {--days=30 : ย้อนหลังกี่วัน}
+                            {--days=30 : ย้อนหลังกี่วัน (override โดย --since-last)}
                             {--posts=100 : จำนวนโพสสูงสุดที่จะ scan}
                             {--reels=100 : จำนวน Reels สูงสุดที่จะ scan (สแปมเยอะใน Reels ดัง)}
-                            {--per-post=500 : คอมเม้นต์ต่อโพส/Reel สูงสุด}
+                            {--per-post=500 : คอมเม้นต์ต่อโพส/Reel สูงสุด (override โดย --all)}
+                            {--all : สแกนทุกคอมเม้นต์ ไม่จำกัด (per-post=unlimited) — สำหรับโพสไวรัลคอมหมื่นๆ}
+                            {--since-last : สแกนเฉพาะที่ใหม่กว่าครั้งก่อน (incremental — ใช้กับ schedule)}
                             {--skip-reels : ข้าม Reels (scan เฉพาะโพสปกติ)}
                             {--execute : ลงมือซ่อน/ลบจริง (default: dry-run)}';
 
@@ -52,9 +55,25 @@ class FortuneScanOldComments extends Command
         $days = (int) $this->option('days');
         $postsLimit = (int) $this->option('posts');
         $reelsLimit = (int) $this->option('reels');
-        $perPostLimit = (int) $this->option('per-post');
+        $perPostLimit = $this->option('all') ? PHP_INT_MAX : (int) $this->option('per-post');
         $skipReels = (bool) $this->option('skip-reels');
         $execute = (bool) $this->option('execute');
+        $sinceLast = (bool) $this->option('since-last');
+
+        // 📌 Incremental mode — ใช้ timestamp ครั้งก่อน + กันเริ่มต้นตั้งแต่ epoch
+        $cacheKey = 'fortune_link_scan_last_ts';
+        if ($sinceLast) {
+            $lastTs = (int) Cache::get($cacheKey, 0);
+            if ($lastTs > 0) {
+                // ถอย 10 นาทีกัน edge case (คอมที่ post ตอน scan ครั้งก่อนกำลังจะเสร็จ)
+                $sinceTs = max($lastTs - 600, now()->subDays($days)->timestamp);
+            } else {
+                // ยังไม่เคยรัน → ใช้ --days ปกติ
+                $sinceTs = now()->subDays($days)->timestamp;
+            }
+        } else {
+            $sinceTs = now()->subDays($days)->timestamp;
+        }
 
         $action = $settings->link_comment_action ?? 'hide';
         $whitelist = is_array($settings->link_whitelist_domains ?? null)
@@ -63,11 +82,14 @@ class FortuneScanOldComments extends Command
         $defaults = ['thaiprompt.online', 'main.thaiprompt.online', 'm.me', 'lin.ee', 'line.me', 'facebook.com', 'fb.com'];
         $whitelist = array_unique(array_merge($whitelist, $defaults));
 
-        $sinceTs = now()->subDays($days)->timestamp;
         $pageId = $settings->facebook_page_id;
+        $sinceLabel = $sinceLast
+            ? 'incremental (ตั้งแต่ '.date('Y-m-d H:i', $sinceTs).')'
+            : "{$days} วันย้อนหลัง";
 
         $reelsTarget = $skipReels ? 0 : $reelsLimit;
-        $this->info("🛡️ Scan คอมเม้นต์เก่า — ย้อน {$days} วัน, สูงสุด {$postsLimit} โพส + {$reelsTarget} Reels");
+        $perPostLabel = $perPostLimit === PHP_INT_MAX ? 'unlimited' : (string) $perPostLimit;
+        $this->info("🛡️ Scan คอมเม้นต์เก่า — {$sinceLabel}, สูงสุด {$postsLimit} โพส + {$reelsTarget} Reels (per-post: {$perPostLabel})");
         $this->line("   Action: {$action} | Mode: ".($execute ? '⚠️  EXECUTE (ลงมือจริง)' : '🧪 DRY-RUN (ไม่ทำจริง)'));
         $this->line('   Whitelist: '.implode(', ', $whitelist));
         $this->newLine();
@@ -177,7 +199,13 @@ class FortuneScanOldComments extends Command
             'days' => $days,
             'execute' => $execute,
             'action' => $action,
+            'since_last' => $sinceLast,
         ]);
+
+        // 💾 บันทึก timestamp สำหรับ incremental ครั้งถัดไป (เฉพาะเมื่อ execute หรือ since-last)
+        if ($execute || $sinceLast) {
+            Cache::put($cacheKey, now()->timestamp, now()->addYear());
+        }
 
         if (! $execute && $stats['spam_found'] > 0) {
             $this->newLine();

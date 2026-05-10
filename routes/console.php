@@ -33,6 +33,25 @@ Schedule::command('fortune:stripe-poll --max-age=7200')
     ->name('fortune-stripe-poll')
     ->runInBackground();
 
+// 🛡️ (2026-05-10) Auto-scan คอมเม้นต์สแปม (link spam moderation)
+//   รันทุกชั่วโมง — incremental (เฉพาะคอมใหม่ตั้งแต่ scan ล่าสุด)
+//   ครอบคลุม: posts + Reels, per-post=unlimited (รองรับโพสไวรัลคอมหมื่นๆ)
+//   only when admin เปิด auto_hide_link_comments
+Schedule::command('fortune:scan-old-comments --since-last --execute --all --posts=200 --reels=200')
+    ->hourly()
+    ->withoutOverlapping(55)
+    ->onOneServer()
+    ->name('fortune-link-scan-hourly')
+    ->runInBackground()
+    ->when(function () {
+        try {
+            return (bool) \App\Models\FortuneTellingSetting::query()
+                ->value('auto_hide_link_comments');
+        } catch (\Throwable $e) {
+            return false;
+        }
+    });
+
 // ════════════════════════════════════════════════════════════════
 // 🔮 Daily Horoscope Auto-Post — โพสดวงประจำวัน 7 วันเกิด (ระบบเดิม)
 // ════════════════════════════════════════════════════════════════
