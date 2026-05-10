@@ -45,7 +45,12 @@ class FacebookWebhookService implements MessagingPlatformInterface
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
-        $this->settings = $settings ?? FortuneTellingSetting::getSettings();
+        // 🐛 (2026-05-10) Laravel auto-DI inject empty model instance — ไม่ใช่ null
+        //   ทำให้ ?? fallback ไม่ทำงาน → settings ทั้งหมดเป็น null
+        //   แก้: เช็ค $settings->exists (true เมื่อ load จาก DB) ก่อน fallback
+        $this->settings = ($settings && $settings->exists)
+            ? $settings
+            : FortuneTellingSetting::getSettings();
         $this->pageAccessToken = $this->settings->facebook_page_token;
     }
 
