@@ -775,11 +775,18 @@ class SmsPaymentService
         }
 
         // 💰 (2026-05-10) Deep 39 Pay-First fork — จ่ายก่อนเก็บข้อมูล
-        //   ตรวจ flag pay_first_mode + ยังไม่มี birth_date → ขอวันเกิดต่อ ไม่ dispatch Job
-        //   เลียนแบบ Celtic 99 — flow เก่าใช้ status=PAID + dispatchJob ทันที (ไม่ work เพราะไม่มีข้อมูล)
-        $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
+        //   เดิม: ตรวจ flag pay_first_mode + ไม่มี birth_date → ขอวันเกิดต่อ
+        //   ปัญหา (2026-05-13 user report): บิลที่สร้างก่อน $payFirst fix → flag ไม่ถูก set
+        //     → fall through → dispatch AI Job → AI gen โดยไม่มีวันเกิด → fail → ส่ง error
+        //     "😔 ขออภัยค่ะ ระบบ AI ขัดข้องชั่วคราว..." ให้ลูกค้า
+        //   ใหม่: ตรวจ data presence แทน flag — ถ้า Deep + จ่ายแล้วแต่ไม่มี birth_date → ขอวันเกิด
+        //         (ครอบคลุมทั้งบิลใหม่ที่มี flag + บิลเก่าที่ไม่มี flag)
+        $isDeepReading = $reading->reading_type === FortuneReading::READING_TYPE_DEEP;
         $hasNoBirthdate = empty($reading->birth_date);
-        if ($payFirstMode && $hasNoBirthdate) {
+        if ($isDeepReading && $hasNoBirthdate) {
+            // ตั้ง flag ให้บิลนี้รู้ว่า pay-first (สำหรับ flow ต่อเนื่อง — Job retry, scheduler ฯลฯ)
+            $reading->setConversationState('pay_first_mode', true);
+
             $payFirstResult = $this->handleDeepPayFirstPaymentMatched($reading, $notification, $platform, $userId, $amount);
             $markProcessed();
 
