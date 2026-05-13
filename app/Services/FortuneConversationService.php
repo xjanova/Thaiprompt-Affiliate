@@ -1017,14 +1017,22 @@ class FortuneConversationService
                     ]);
                 }
 
-                // 🎯 Phase E — ตรวจว่าลูกค้ามีคำทำนายเชิงลึกพร้อมอ่านแล้วหรือยัง (24 ชม. ล่าสุด)
-                //   ถ้ามี → เวลา AI chat จะได้แนะนำว่า "อ่านคำทำนายล่าสุด" แทนการ pitch ขายซ้ำ
+                // 🎯 Phase E — ตรวจว่าลูกค้ามีคำทำนายที่จ่ายแล้วใน 24 ชม. ล่าสุด
+                //   ถ้ามี → เวลา AI chat จะได้รู้บริบท + เนียนชวนต่อ (ไม่ pretend ทำนายอยู่)
+                // 🌙 (2026-05-14) ขยายให้ครอบ Celtic 99 ด้วย — ไม่ใช่แค่ Deep 39
                 $hasFreshPaidDeep = false;
                 try {
                     $hasFreshPaidDeep = FortuneReading::where('facebook_user_id', $facebookUserId)
                         ->where('is_paid', true)
-                        ->whereNotNull('deep_response')
-                        ->where('deep_response', '!=', '')
+                        ->where(function ($q) {
+                            // Deep: มี deep_response + Celtic: มี celtic_questions_used > 0
+                            $q->where(function ($q2) {
+                                $q2->whereNotNull('deep_response')->where('deep_response', '!=', '');
+                            })->orWhere(function ($q2) {
+                                $q2->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                                    ->where('celtic_questions_used', '>', 0);
+                            });
+                        })
                         ->where('paid_at', '>=', now()->subHours(24))
                         ->exists();
                 } catch (\Throwable $readingCheckErr) {
