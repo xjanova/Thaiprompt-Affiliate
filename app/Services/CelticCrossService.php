@@ -304,6 +304,13 @@ class CelticCrossService
                 'response_time_ms' => $responseTimeMs,
             ]);
 
+            // 🌙 (2026-05-14) Bridge Celtic chat → LineBotConversation
+            //   user spec: "หมด 30 นาที กลับไปแชทปกติ (groq) ต้องเห็น Celtic chat ย้อนได้"
+            //   → บันทึก user message + assistant response ลง LineBotConversation
+            //     เพื่อให้ post-Celtic Groq chat ดึง history ได้ผ่าน getConversationHistoryForAI
+            $this->bridgeToConversationLog($reading, 'user', $userQuestion);
+            $this->bridgeToConversationLog($reading, 'assistant', $response);
+
             return [
                 'success' => true,
                 'response' => $response,
@@ -505,7 +512,9 @@ class CelticCrossService
             ."เริ่มทักทายเลย:";
 
         try {
-            $aiService = new FortuneAIService($this->settings, 'prediction_celtic');
+            // 🌙 (2026-05-14) Celtic 99฿ — user spec: "ใช้ openai เป็นหลัก"
+            //   preferredProvider='openai' → Pool ลอง openai key ก่อน fallback any-provider
+            $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,
@@ -531,6 +540,11 @@ class CelticCrossService
                 'provider' => $result['provider'] ?? null,
                 'model' => $result['model'] ?? null,
             ]);
+
+            // 🌙 (2026-05-14) Bridge → LineBotConversation
+            //   AI opening เป็น "assistant" turn แรกของ Celtic session
+            //   → post-Celtic Groq chat จะเห็น context นี้เป็นจุดเริ่ม
+            $this->bridgeToConversationLog($reading, 'assistant', $response);
 
             return ['success' => true, 'response' => $response];
         } catch (\Throwable $e) {
@@ -748,6 +762,51 @@ class CelticCrossService
             ."🎯 *เป้าหมายสุดท้าย*: ทำให้ลูกค้ารู้สึก \"โดน\" + เข้าใจสถานการณ์ + เห็นทางเลือกชัดขึ้น\n\n"
 
             .'เริ่มทำนายทันทีจากข้อมูลที่ได้รับ:';
+    }
+
+    /**
+     * 🌙 (2026-05-14) Bridge Celtic message → LineBotConversation log
+     *
+     * user spec: หลัง Celtic 30 นาที → กลับ chat ปกติ (Groq) — ต้องเห็น Celtic history ย้อน
+     * เดิม: Celtic Q&A เก็บใน fortune_celtic_questions table (Celtic-specific schema)
+     *       chat ปกติอ่านจาก line_bot_conversations / line_bot_messages (ไม่เห็น Celtic)
+     * ใหม่: double-write — บันทึกทั้งสองที่ → Groq ดึง history ได้ผ่าน
+     *       getConversationHistoryForAI() เหมือนแชทปกติ
+     *
+     * Non-blocking: catch ทุก error — ไม่ให้กระทบ Celtic flow หลัก
+     *
+     * @param  FortuneReading  $reading  Celtic reading (ใช้ดึง user_id + platform)
+     * @param  string  $role  'user' หรือ 'assistant'
+     * @param  string  $message  ข้อความ
+     */
+    protected function bridgeToConversationLog(FortuneReading $reading, string $role, string $message): void
+    {
+        try {
+            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? null;
+            if (! $userId) {
+                return; // ไม่มี user ID → ไม่บันทึก
+            }
+
+            $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
+
+            $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
+                $userId,
+                $platform,
+                1440 // 24hr — sync กับ FortuneConversationService memory window
+            );
+
+            $conversation->addMessage($role, mb_substr($message, 0, 2000), [
+                'source' => 'celtic_cross',
+                'reading_id' => $reading->id,
+            ]);
+        } catch (\Throwable $e) {
+            // Non-blocking — ไม่ให้กระทบ Celtic flow
+            Log::warning('CelticCross: bridge to conversation log fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'role' => $role,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

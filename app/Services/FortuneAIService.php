@@ -54,10 +54,19 @@ class FortuneAIService
      *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
      *   Back-compat: ถ้าไม่ระบุ → null (= any) เหมือนเดิม
      *
-     * @param  string|null  $purpose  'prediction'/'chat'/'free_card' (default: null = any)
+     * 🌙 (2026-05-14) เพิ่ม $preferredProvider — caller บังคับ provider ที่ต้องการได้
+     *   user spec Celtic 99: "ใช้ openai เป็นหลัก"
+     *   - ระบุ → ลอง acquireKey(provider, purpose) ก่อน
+     *   - ถ้าไม่มี key พร้อมใช้ → fallback acquireKeyAnyProvider(purpose) ตามเดิม
+     *
+     * @param  string|null  $purpose  'prediction_celtic'/'chat'/'free_card' (default: null = any)
+     * @param  string|null  $preferredProvider  'openai'/'gemini'/'groq' ฯลฯ (default: null = ไม่ระบุ)
      */
-    public function __construct(?FortuneTellingSetting $settings = null, ?string $purpose = null)
-    {
+    public function __construct(
+        ?FortuneTellingSetting $settings = null,
+        ?string $purpose = null,
+        ?string $preferredProvider = null
+    ) {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
         $this->defaultPurpose = $purpose;
 
@@ -78,15 +87,32 @@ class FortuneAIService
         //   - Playground override ผ่าน overrideForPlayground() ทำงานปกติ
         try {
             $this->poolService = new AiApiKeyPoolService;
-            // 🆕 (2026-05-07) pass purpose ให้ pool — เลือก key ตรงประเภท
-            // 🎯 (2026-05-13) acquireKeyAnyProvider — Pool เป็นคนเลือก provider เอง
-            //    เลือก key ที่ priority สูง + load น้อย จากทั้ง Pool (ทุก provider)
-            //    admin จัด Pool ที่เดียว ไม่ต้องตั้งซ้ำใน fortune settings
-            $this->currentKey = $this->poolService->acquireKeyAnyProvider($purpose);
+
+            // 🌙 (2026-05-14) Provider preference — ลอง provider-specific ก่อน fallback
+            //   user spec: Celtic 99฿ "ใช้ openai เป็นหลัก"
+            //   - ระบุ provider → ลอง acquireKey(provider, purpose) ก่อน
+            //   - ถ้าไม่มี key พร้อมใช้ → fallback acquireKeyAnyProvider(purpose) ตามเดิม
+            if ($preferredProvider !== null) {
+                $this->currentKey = $this->poolService->acquireKey($preferredProvider, $purpose);
+                if ($this->currentKey === null) {
+                    Log::info('FortuneAIService: preferred provider ไม่มี key พร้อมใช้ → fallback any-provider', [
+                        'preferred_provider' => $preferredProvider,
+                        'purpose' => $purpose,
+                    ]);
+                    $this->currentKey = $this->poolService->acquireKeyAnyProvider($purpose);
+                }
+            } else {
+                // 🆕 (2026-05-07) pass purpose ให้ pool — เลือก key ตรงประเภท
+                // 🎯 (2026-05-13) acquireKeyAnyProvider — Pool เป็นคนเลือก provider เอง
+                //    เลือก key ที่ priority สูง + load น้อย จากทั้ง Pool (ทุก provider)
+                //    admin จัด Pool ที่เดียว ไม่ต้องตั้งซ้ำใน fortune settings
+                $this->currentKey = $this->poolService->acquireKeyAnyProvider($purpose);
+            }
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
                 'error' => $e->getMessage(),
                 'purpose' => $purpose,
+                'preferred_provider' => $preferredProvider,
             ]);
             $this->poolService = null;
             $this->currentKey = null;
@@ -1104,7 +1130,9 @@ PROMPT;
     ): ?array {
         $systemPrompt = $this->buildCelticPremiumSystemMessage($celticContext, $celticContextText);
 
-        return $this->generateProResponse($messageText, $userProfile, $history, $systemPrompt, 'celtic_premium');
+        // 🌙 (2026-05-14) user spec: Celtic 99฿ "ใช้ openai เป็นหลัก"
+        //   pass preferredProvider='openai' ลง generateProResponse → Pool ลอง openai ก่อน
+        return $this->generateProResponse($messageText, $userProfile, $history, $systemPrompt, 'celtic_premium', 'openai');
     }
 
     /**
@@ -1117,18 +1145,30 @@ PROMPT;
         ?array $userProfile,
         array $history,
         string $systemPrompt,
-        string $requestType
+        string $requestType,
+        ?string $preferredProvider = null
     ): ?array {
-        $sensitiveProvider = $this->settings->sensitive_provider ?? 'gemini';
+        // 🌙 (2026-05-14) preferredProvider override สำหรับ Celtic 99฿
+        //   - Celtic Premium → 'openai' (user spec: "ใช้ openai เป็นหลัก")
+        //   - Sensitive/Bill Psychology → null → fall back sensitive_provider setting
+        $sensitiveProvider = $preferredProvider
+            ?? $this->settings->sensitive_provider
+            ?? 'gemini';
         $sensitiveModel = $this->settings->sensitive_model ?? 'gemini-3.1-pro-preview';
         $maxTokens = (int) ($this->settings->sensitive_max_tokens_per_call ?? 2000);
 
         // 🌟 (2026-05-08) Bill Psychology + Celtic Premium ใช้ locked key เดียวกับ Sensitive AI
         //    Phase 2 features ทั้งหมดแชร์ purpose='sensitive' key — admin lock 1 ตัว → uniform behavior
         //    ลอง locked key ก่อน → fallback pool acquireKey
+        //    🌙 (2026-05-14) ถ้า preferred provider → ลอง provider-specific ก่อน
         $poolService = new \App\Services\AiApiKeyPoolService;
-        $lockedKey = $this->settings->getSensitivePoolKey();
+        $lockedKey = $preferredProvider === null ? $this->settings->getSensitivePoolKey() : null;
         $sensitiveKey = $lockedKey ?: $poolService->acquireKey($sensitiveProvider, 'sensitive');
+        if (! $sensitiveKey && $preferredProvider !== null) {
+            // ถ้า preferred provider ไม่มี sensitive key → fallback locked key หรือ any provider
+            $sensitiveKey = $this->settings->getSensitivePoolKey()
+                ?: $poolService->acquireKeyAnyProvider('sensitive');
+        }
 
         if (! $sensitiveKey) {
             Log::info("FortuneAIService: ไม่มี sensitive key ({$requestType}) — caller fallback", [
