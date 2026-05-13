@@ -875,14 +875,15 @@ class FortuneChannelManager
                         }
                     }
 
-                    // 🛑 (2026-05-14) ลบปุ่ม "ทำนายเดี๋ยวนี้" — flow ใหม่ AI initiate ทักทายเอง
-                    //   user spec: "เมื่อเปิดไพ่ครบ ให้ AI ถามเลย ให้เริ่มถาม"
-                    //   default quick reply: "พอแค่นี้" (escape) แทน predict-now
-                    $qrs = ! empty($result['quick_replies'])
-                        ? $result['quick_replies']
-                        : [['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE']];
+                    // 🛑 (2026-05-14 v2) ลบ "พอแค่นี้" ออกจาก opening — AI ทักเองแล้ว user
+                    //   user spec: "เอาปุ่ม พอแค่นี้ออกด้วย" หลังเปิดไพ่เสร็จ
+                    //   → ส่ง plain message (AI ใน opening greeting ก็เชิญถามอยู่แล้ว)
+                    //   ถ้า trait ส่ง quick_replies มาเฉพาะ → ก็ใช้ตามนั้น (custom case)
+                    if (! empty($result['quick_replies'])) {
+                        return $fbService->sendQuickReplies($userId, $message, $result['quick_replies'], $extra);
+                    }
 
-                    return $fbService->sendQuickReplies($userId, $message, $qrs, $extra);
+                    return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
                 // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
@@ -1988,10 +1989,8 @@ class FortuneChannelManager
                         }
                     }
 
-                    // 🛑 (2026-05-14) ลบปุ่ม "ทำนายเดี๋ยวนี้" — flow ใหม่ AI initiate ทักทายเอง
-                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                        ['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้'],
-                    ]);
+                    // 🛑 (2026-05-14 v2) ลบ "พอแค่นี้" ออกจาก opening — AI ทักเองแล้ว
+                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                 })(),
 
                 // celtic_question_answered → ปุ่ม "ถามต่อ" / "พอแค่นี้"
