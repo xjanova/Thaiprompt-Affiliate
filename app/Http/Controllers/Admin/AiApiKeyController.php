@@ -115,13 +115,39 @@ class AiApiKeyController extends Controller
             throw $sqlErr;
         }
 
+        // 🛡️ (2026-05-13) Auto-test ทันทีหลัง add — key จะ "ลงสนาม" ก็ต่อเมื่อเทสผ่าน
+        //   user spec: "ทุกคีย์ต้องเทสผ่านมาแล้วจึงจะนำมาลงสนาม"
+        //   พฤติกรรม:
+        //     - test pass → set last_test_passed_at = now() → key ใช้ได้ทันที
+        //     - test fail → set last_test_failed_at → key ถูก skip ใน available()
+        //                   admin ต้องแก้ key + คลิก "ทดสอบ" ใหม่
+        $testResult = ['passed' => false, 'message' => null];
+        try {
+            $result = $this->testApiKey($key);
+            $key->update([
+                'last_test_passed_at' => now(),
+                'last_test_message' => 'OK ('.($result['response_time_ms'] ?? '-').'ms) — auto-test',
+            ]);
+            $testResult = ['passed' => true, 'response_time_ms' => $result['response_time_ms'] ?? null];
+        } catch (\Throwable $testErr) {
+            $key->update([
+                'last_test_failed_at' => now(),
+                'last_test_message' => mb_substr('Auto-test failed: '.$testErr->getMessage(), 0, 500),
+            ]);
+            $testResult = ['passed' => false, 'message' => $testErr->getMessage()];
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'เพิ่ม API Key สำเร็จ',
+            'message' => $testResult['passed']
+                ? '✅ เพิ่ม API Key สำเร็จ + เทสผ่าน — key พร้อมใช้ใน Pool'
+                : '⚠️ เพิ่ม API Key สำเร็จ แต่เทสไม่ผ่าน — key จะไม่ถูกเลือก จนกว่าจะแก้ + ทดสอบใหม่ ('.($testResult['message'] ?? 'unknown error').')',
             'data' => [
                 'id' => $key->id,
                 'name' => $key->name,
                 'provider' => $key->provider,
+                'test_passed' => $testResult['passed'],
+                'test_message' => $testResult['message'] ?? null,
             ],
         ]);
     }
@@ -162,7 +188,8 @@ class AiApiKeyController extends Controller
         ]);
 
         // ลบ api_key ถ้าว่าง (ไม่เปลี่ยน)
-        if (empty($validated['api_key'])) {
+        $apiKeyChanged = ! empty($validated['api_key']);
+        if (! $apiKeyChanged) {
             unset($validated['api_key']);
         }
 
@@ -183,9 +210,34 @@ class AiApiKeyController extends Controller
             throw $sqlErr;
         }
 
+        // 🛡️ (2026-05-13) Re-test เมื่อ api_key เปลี่ยน (กัน key ใหม่ broken)
+        //   ถ้าแก้แค่ name/priority/purpose/limit → ไม่ต้อง re-test (เร็วกว่า)
+        $testResult = null;
+        if ($apiKeyChanged) {
+            try {
+                $result = $this->testApiKey($key);
+                $key->update([
+                    'last_test_passed_at' => now(),
+                    'last_test_failed_at' => null,
+                    'last_test_message' => 'OK ('.($result['response_time_ms'] ?? '-').'ms) — auto-test after update',
+                ]);
+                $testResult = ['passed' => true];
+            } catch (\Throwable $testErr) {
+                $key->update([
+                    'last_test_failed_at' => now(),
+                    'last_test_message' => mb_substr('Auto-test (update) failed: '.$testErr->getMessage(), 0, 500),
+                ]);
+                $testResult = ['passed' => false, 'message' => $testErr->getMessage()];
+            }
+        }
+
         return response()->json([
             'success' => true,
-            'message' => 'อัพเดท API Key สำเร็จ',
+            'message' => $apiKeyChanged
+                ? ($testResult['passed']
+                    ? '✅ อัพเดท + เทสผ่าน — key พร้อมใช้'
+                    : '⚠️ อัพเดทแล้ว แต่ key ใหม่เทสไม่ผ่าน ('.($testResult['message'] ?? 'unknown').') — กรุณาแก้แล้วทดสอบ')
+                : 'อัพเดท API Key สำเร็จ',
             'data' => [
                 'id' => $key->id,
                 'name' => $key->name,
@@ -565,6 +617,10 @@ class AiApiKeyController extends Controller
 
     /**
      * ทดสอบ API Key
+     *
+     * 🛡️ (2026-05-13) บันทึก timestamp ลง DB ตามผลลัพธ์
+     *   - pass → set last_test_passed_at = now() → scopeAvailable() จะเลือก key นี้ได้
+     *   - fail → set last_test_failed_at + last_test_message (debug)
      */
     public function test(int $id): JsonResponse
     {
@@ -574,15 +630,31 @@ class AiApiKeyController extends Controller
             // ทดสอบตาม provider
             $result = $this->testApiKey($key);
 
+            // ✅ บันทึก pass — key จะถูก "ลงสนาม" ใน scopeAvailable
+            $key->update([
+                'last_test_passed_at' => now(),
+                'last_test_message' => 'OK ('.($result['response_time_ms'] ?? '-').'ms)',
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'API Key ใช้งานได้ปกติ',
+                'message' => '✅ API Key ใช้งานได้ปกติ — key พร้อมใช้ใน Pool',
                 'data' => $result,
             ]);
         } catch (\Exception $e) {
+            // ❌ บันทึก fail — key จะถูก skip ใน scopeAvailable
+            try {
+                $key->update([
+                    'last_test_failed_at' => now(),
+                    'last_test_message' => mb_substr($e->getMessage(), 0, 500),
+                ]);
+            } catch (\Throwable $logErr) {
+                // ignore — เก็บใน response ก็พอ
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'API Key ไม่สามารถใช้งานได้: '.$e->getMessage(),
+                'message' => '❌ API Key ไม่สามารถใช้งานได้: '.$e->getMessage(),
             ], 400);
         }
     }

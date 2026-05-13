@@ -286,6 +286,9 @@ class AiApiKey extends Model
         'consecutive_errors',
         'error_check_attempts',   // 🩺 (2026-05-01) จำนวนครั้ง re-check หลัง disabled
         'last_health_check_at',   // 🩺 (2026-05-01) เวลา health check ล่าสุด
+        'last_test_passed_at',    // 🛡️ (2026-05-13) เทส connectivity ผ่านล่าสุด — gate ใน scopeAvailable
+        'last_test_failed_at',    // 🛡️ (2026-05-13) เทส fail ล่าสุด (track for re-test)
+        'last_test_message',      // 🛡️ (2026-05-13) ข้อความ test ล่าสุด (success/error)
         'last_error',
         'last_error_at',
         'disabled_until',
@@ -320,6 +323,8 @@ class AiApiKey extends Model
         'last_used_at' => 'datetime',
         'last_error_at' => 'datetime',
         'last_health_check_at' => 'datetime',
+        'last_test_passed_at' => 'datetime',     // 🛡️ (2026-05-13)
+        'last_test_failed_at' => 'datetime',     // 🛡️ (2026-05-13)
         'disabled_until' => 'datetime',
         'metadata' => 'array',
         'tokens_reset_date' => 'date',
@@ -512,7 +517,13 @@ class AiApiKey extends Model
             ->where(function ($q) {
                 $q->whereNull('disabled_until')
                     ->orWhere('disabled_until', '<=', now());
-            });
+            })
+            // 🛡️ (2026-05-13) Health gate — ต้องเทสผ่านมาแล้ว
+            //   user spec: "ทุกคีย์ต้องเทสผ่านมาแล้วจึงจะนำมาลงสนาม"
+            //   filter: last_test_passed_at IS NOT NULL
+            //   ⚠️ ถ้า migration ยังไม่รัน → column ไม่มี → ใช้ try/catch ใน caller
+            //      หรือ admin คลิก "ทดสอบ" ใน UI ก่อนใช้
+            ->whereNotNull('last_test_passed_at');
     }
 
     /**

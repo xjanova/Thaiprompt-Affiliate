@@ -407,26 +407,34 @@ class AiApiKeyPoolService
     /**
      * 🎯 (2026-05-13) Acquire key ข้าม provider — Pool เป็นคนเลือก provider เอง
      *
-     * 🔄 (2026-05-13 v2) Respect rotation_mode ของ provider per-tier
+     * 🔄 (2026-05-13 v3) Cross-provider tier — ไม่แบ่ง provider ใน tier เดียวกัน
      *
-     * Logic ใหม่ — 2-axis:
-     *   AXIS 1: priority tier (DESC) — admin ตั้ง priority สูงกว่า = tier ก่อน
-     *   AXIS 2: ภายใน tier เดียวกัน + provider เดียวกัน → ใช้ rotation_mode
-     *           (round_robin / least_used / smart / random / etc. ตาม AiApiKeySetting)
+     * User spec:
+     *   "จุดประสงค์เดียวกัน → ดู priority (ไม่สน provider)
+     *    ถ้าเท่ากัน → ใช้ rotation mode
+     *    ทุก key ต้องเทสผ่านมาแล้วจึงจะนำมาลงสนาม"
+     *
+     * Logic — 2-axis:
+     *   AXIS 1: priority tier (DESC) — admin ตั้ง priority สูง = ใช้ก่อน
+     *   AXIS 2: ภายใน tier เดียวกัน → ใช้ rotation_mode "global"
+     *           (จาก config('ai.cross_provider_rotation_mode', 'smart'))
+     *           เลือกจาก key ทุก provider ใน tier นั้นพร้อมกัน
+     *
+     * Health gate:
+     *   - available() scope filter `last_test_passed_at IS NOT NULL`
+     *     → admin ต้อง test key สำเร็จก่อน ระบบจึงจะเลือก key นั้น
      *
      * ตัวอย่าง:
      *   Pool:
-     *     - openai_A: priority=100, mode(openai)=smart
-     *     - openai_B: priority=100
-     *     - gemini_X: priority=100, mode(gemini)=round_robin
-     *     - gemini_Y: priority=100
-     *     - groq_Q:   priority=50
+     *     - openai_A: priority=100, tested=true
+     *     - openai_B: priority=100, tested=false ← ถูก skip!
+     *     - gemini_X: priority=100, tested=true
+     *     - gemini_Y: priority=100, tested=true
+     *     - groq_Q:   priority=50,  tested=true
      *
-     *   Tier 100: openai_A/B + gemini_X/Y
-     *     → ลอง openai ก่อน (alphabetical): smart mode เลือก A หรือ B ตาม load
-     *     → fail/cooldown → ลอง gemini: round_robin rotate X/Y
-     *   Tier 50: groq_Q (single key)
-     *     → fallback ถ้า tier 100 หมดสิทธิ์
+     *   Tier 100: [openai_A, gemini_X, gemini_Y] (B ถูก skip)
+     *     → smart mode pick: ใช้ key load น้อยสุด (cross-provider!)
+     *   Tier 50: groq_Q (fallback)
      *
      * @param  string|null  $purpose  filter (prediction_deep / chat / sensitive / etc.)
      * @return AiApiKey|null
@@ -434,6 +442,7 @@ class AiApiKeyPoolService
     public function acquireKeyAnyProvider(?string $purpose = null): ?AiApiKey
     {
         // 1. Query keys + purpose filter + priority DESC
+        //    available() scope = is_active + not critical + not disabled + last_test_passed_at IS NOT NULL
         $query = AiApiKey::available()->orderByDesc('priority');
         if ($purpose !== null && $purpose !== '') {
             $query->forPurpose($purpose);
@@ -447,59 +456,70 @@ class AiApiKeyPoolService
         // 2. Group keys by priority tier (DESC — สูงสุดก่อน)
         $tiers = $allKeys->groupBy('priority')->sortKeysDesc();
 
+        // 3. Global rotation mode สำหรับ cross-provider tier
+        //    user spec: "ไม่สน provider" → ใช้ mode เดียวเลือกจาก keys ทุก provider ใน tier
+        //    Default = 'smart' (least-load) — ตั้ง override ได้ใน config('ai.cross_provider_rotation_mode')
+        $globalMode = (string) (config('ai.cross_provider_rotation_mode')
+            ?? AiApiKeySetting::forProvider('*')->rotation_mode
+            ?? 'smart');
+
         foreach ($tiers as $tierPriority => $tierKeys) {
-            // 3. List providers ใน tier นี้ (sort name สำหรับ stable order)
-            $providers = $tierKeys->pluck('provider')->unique()->values()->all();
-            sort($providers);
+            // 4. กรอง runtime guards ก่อนเลือก (cooldown / inflight / rpm)
+            //    → ได้ "eligible pool" สำหรับ tier นี้
+            $eligible = $tierKeys->filter(function ($key) {
+                $provider = $key->provider;
 
-            foreach ($providers as $provider) {
-                // 4. ใช้ rotation_mode ของ provider เลือก key ใน tier+provider นี้
-                $settings = AiApiKeySetting::forProvider($provider);
-                $mode = $settings->rotation_mode ?? 'smart';
-
-                $providerTierKeys = $tierKeys->where('provider', $provider)->values();
-                $key = $this->selectKeyByMode($providerTierKeys, $mode);
-
-                if (! $key) {
-                    continue;
-                }
-
-                // 5. เช็ค runtime guards (cooldown / inflight / rpm)
                 if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
-                    continue;
+                    return false;
                 }
 
                 $inflight = $this->getKeyInflight($provider, $key->id);
                 if ($inflight >= 10) {
-                    continue;
+                    return false;
                 }
 
                 $rpm = $this->getKeyRpm($provider, $key->id);
                 $rpmLimit = $key->rate_limit_per_minute ?? 60;
                 if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
-                    continue;
+                    return false;
                 }
 
-                // ✅ ผ่านทุกเช็ค — acquire
-                $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
-                if (Cache::has($inflightKey)) {
-                    Cache::increment($inflightKey);
-                } else {
-                    Cache::put($inflightKey, 1, 30);
-                }
+                return true;
+            })->values();
 
-                Log::debug('Pool: acquireKeyAnyProvider — picked', [
-                    'tier_priority' => $tierPriority,
-                    'provider' => $provider,
-                    'rotation_mode' => $mode,
-                    'key_id' => $key->id,
-                    'key_name' => $key->name,
-                    'purpose_requested' => $purpose,
-                    'key_purpose' => $key->purpose,
-                ]);
-
-                return $key;
+            if ($eligible->isEmpty()) {
+                continue; // tier นี้หมดสิทธิ์ — ลง tier ถัดไป
             }
+
+            // 5. เลือก key จาก eligible pool ตาม global rotation mode
+            //    ✅ ใช้ key cache pointer แบบ cross-provider (group by tier priority)
+            $key = $this->selectKeyByMode($eligible, $globalMode, "tier_{$tierPriority}_cross");
+
+            if (! $key) {
+                continue;
+            }
+
+            // 6. Acquire — increment in-flight
+            $provider = $key->provider;
+            $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
+            if (Cache::has($inflightKey)) {
+                Cache::increment($inflightKey);
+            } else {
+                Cache::put($inflightKey, 1, 30);
+            }
+
+            Log::debug('Pool: acquireKeyAnyProvider — picked', [
+                'tier_priority' => $tierPriority,
+                'tier_size' => $eligible->count(),
+                'rotation_mode' => $globalMode,
+                'provider' => $provider,
+                'key_id' => $key->id,
+                'key_name' => $key->name,
+                'purpose_requested' => $purpose,
+                'key_purpose' => $key->purpose,
+            ]);
+
+            return $key;
         }
 
         return null;
@@ -508,13 +528,14 @@ class AiApiKeyPoolService
     /**
      * 🎯 (2026-05-13) Select key ใน collection ตาม rotation mode
      *
-     * Helper ของ acquireKeyAnyProvider — เลือก key ใน tier+provider เดียวกัน
-     * ตาม mode ที่ admin ตั้งใน AiApiKeySetting
+     * Helper ของ acquireKeyAnyProvider — เลือก key ตาม mode
      *
-     * @param  \Illuminate\Support\Collection<int,AiApiKey>  $keys  keys ใน tier+provider เดียวกัน
+     * @param  \Illuminate\Support\Collection<int,AiApiKey>  $keys  keys eligible
      * @param  string  $mode  rotation mode (round_robin/least_used/smart/etc.)
+     * @param  string  $scopeKey  unique scope สำหรับ rotation pointer
+     *                            (เช่น "tier_100_cross" หรือ "openai_p100")
      */
-    protected function selectKeyByMode(\Illuminate\Support\Collection $keys, string $mode): ?AiApiKey
+    protected function selectKeyByMode(\Illuminate\Support\Collection $keys, string $mode, string $scopeKey = 'default'): ?AiApiKey
     {
         if ($keys->isEmpty()) {
             return null;
@@ -524,9 +545,9 @@ class AiApiKeyPoolService
         }
 
         return match ($mode) {
-            'round_robin' => $this->pickRoundRobinFromCollection($keys),
+            'round_robin' => $this->pickRoundRobinFromCollection($keys, $scopeKey),
             'least_used' => $keys->sortBy('tokens_used_today')->first(),
-            'priority' => $keys->sortByDesc('priority')->first(),  // ใน tier เดียวกัน → ใช้ id ASC แทน
+            'priority' => $keys->sortBy('id')->first(),  // ใน tier เดียวกัน → ใช้ id ASC (stable)
             'random' => $keys->random(),
             'failover' => $keys->sortBy('id')->first(),  // ใช้ตัวแรก, สำรองเมื่อ fail
             'smart' => $this->pickSmartFromCollection($keys),
@@ -535,16 +556,19 @@ class AiApiKeyPoolService
     }
 
     /**
-     * Round-robin rotation pointer ภายใน tier+provider เดียวกัน
+     * Round-robin rotation pointer — ใช้ scopeKey เป็น cache namespace
+     *
+     * ตัวอย่าง scopeKey:
+     *   - "tier_100_cross"  → cross-provider rotation ใน tier priority=100
+     *   - "openai_p100"     → rotation เฉพาะ openai+priority=100 (legacy path)
      */
-    protected function pickRoundRobinFromCollection(\Illuminate\Support\Collection $keys): ?AiApiKey
+    protected function pickRoundRobinFromCollection(\Illuminate\Support\Collection $keys, string $scopeKey = 'default'): ?AiApiKey
     {
         if ($keys->isEmpty()) {
             return null;
         }
 
-        $first = $keys->first();
-        $cacheKey = "pool:rr_pointer:{$first->provider}:p{$first->priority}";
+        $cacheKey = "pool:rr_pointer:{$scopeKey}";
         $idx = (int) Cache::get($cacheKey, 0);
         $sorted = $keys->sortBy('id')->values();
         $count = $sorted->count();
