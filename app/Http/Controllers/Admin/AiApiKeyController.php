@@ -401,6 +401,169 @@ class AiApiKeyController extends Controller
     }
 
     /**
+     * 🆕 (2026-05-13) แดชบอร์ดการใช้ AI ทั้งหมด — กราฟเส้นย้อนหลังตามคีย์
+     *
+     * Features:
+     *   - กราฟเส้นแสดง token usage ต่อวัน (filter ตามคีย์)
+     *   - Date range picker (default 7 วัน)
+     *   - Multi-select key filter
+     *   - Summary cards: total tokens, total requests, failed rate
+     */
+    public function usageDashboard(): View
+    {
+        $allKeys = AiApiKey::orderBy('provider')->orderBy('name')->get(['id', 'provider', 'name', 'model', 'purpose']);
+
+        return view('admin.ai-api-keys.usage-dashboard', [
+            'allKeys' => $allKeys,
+            'providers' => AiApiKey::PROVIDERS,
+            'pageTitle' => 'AI Usage Dashboard',
+        ]);
+    }
+
+    /**
+     * 🆕 (2026-05-13) JSON endpoint สำหรับ Chart.js
+     *
+     * Query params:
+     *   - start: Y-m-d (default 7 วันก่อน)
+     *   - end: Y-m-d (default วันนี้)
+     *   - key_ids[]: array of key IDs (optional, default = all)
+     *
+     * Response:
+     *   - labels: ['2026-05-07', '2026-05-08', ...]
+     *   - datasets: [{label: 'gemini/thai111', data: [1234, 5678, ...]}, ...]
+     *   - summary: {total_tokens, total_requests, failed_count, success_rate}
+     *   - keys_breakdown: [{key_id, name, total_tokens, requests, failed}, ...]
+     */
+    public function usageDashboardData(Request $request): JsonResponse
+    {
+        $start = $request->input('start')
+            ? \Carbon\Carbon::parse($request->input('start'))->startOfDay()
+            : now()->subDays(6)->startOfDay();
+        $end = $request->input('end')
+            ? \Carbon\Carbon::parse($request->input('end'))->endOfDay()
+            : now()->endOfDay();
+        $keyIds = $request->input('key_ids', []);
+        if (! is_array($keyIds)) {
+            $keyIds = explode(',', (string) $keyIds);
+        }
+        $keyIds = array_filter(array_map('intval', $keyIds));
+
+        // ดึง keys ที่จะ plot
+        $keysQuery = AiApiKey::query();
+        if (! empty($keyIds)) {
+            $keysQuery->whereIn('id', $keyIds);
+        }
+        $keys = $keysQuery->get(['id', 'provider', 'name', 'model']);
+
+        // สร้าง labels (รายวัน)
+        $labels = [];
+        $cursor = $start->copy();
+        while ($cursor <= $end) {
+            $labels[] = $cursor->format('Y-m-d');
+            $cursor->addDay();
+        }
+
+        // ดึง usage logs aggregate ต่อวันต่อ key
+        $logsQuery = AiApiKeyUsageLog::query()
+            ->selectRaw('ai_api_key_id, DATE(created_at) as day, SUM(total_tokens) as tokens, COUNT(*) as requests, SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END) as failed')
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('ai_api_key_id', 'day');
+
+        if (! empty($keyIds)) {
+            $logsQuery->whereIn('ai_api_key_id', $keyIds);
+        }
+
+        $logs = $logsQuery->get();
+
+        // index จาก [key_id][day] → tokens
+        $byKey = [];
+        foreach ($logs as $log) {
+            $byKey[$log->ai_api_key_id][$log->day] = (int) $log->tokens;
+        }
+
+        // สร้าง datasets สำหรับ Chart.js
+        $colors = ['#6366f1', '#ec4899', '#10b981', '#f59e0b', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#84cc16', '#3b82f6'];
+        $datasets = [];
+        $i = 0;
+        foreach ($keys as $key) {
+            $data = [];
+            foreach ($labels as $label) {
+                $data[] = $byKey[$key->id][$label] ?? 0;
+            }
+            $datasets[] = [
+                'label' => "{$key->provider}/{$key->name}".($key->model ? " ({$key->model})" : ''),
+                'data' => $data,
+                'borderColor' => $colors[$i % count($colors)],
+                'backgroundColor' => $colors[$i % count($colors)].'33',
+                'tension' => 0.3,
+                'fill' => false,
+            ];
+            $i++;
+        }
+
+        // Summary + breakdown
+        $totalQuery = AiApiKeyUsageLog::query()
+            ->whereBetween('created_at', [$start, $end]);
+        if (! empty($keyIds)) {
+            $totalQuery->whereIn('ai_api_key_id', $keyIds);
+        }
+        $totalTokens = (int) $totalQuery->sum('total_tokens');
+        $totalRequests = (int) $totalQuery->count();
+        $failedCount = (int) (clone $totalQuery)->where('is_success', false)->count();
+        $successRate = $totalRequests > 0 ? round((($totalRequests - $failedCount) / $totalRequests) * 100, 1) : 100;
+
+        // Breakdown per key
+        $breakdownQuery = AiApiKeyUsageLog::query()
+            ->selectRaw('ai_api_key_id, SUM(total_tokens) as tokens, SUM(input_tokens) as input_tokens, SUM(output_tokens) as output_tokens, COUNT(*) as requests, SUM(CASE WHEN is_success = 0 THEN 1 ELSE 0 END) as failed')
+            ->whereBetween('created_at', [$start, $end])
+            ->groupBy('ai_api_key_id')
+            ->orderByDesc('tokens');
+        if (! empty($keyIds)) {
+            $breakdownQuery->whereIn('ai_api_key_id', $keyIds);
+        }
+        $breakdownRaw = $breakdownQuery->get();
+        $keysIndex = AiApiKey::whereIn('id', $breakdownRaw->pluck('ai_api_key_id'))
+            ->get(['id', 'provider', 'name', 'model', 'purpose'])
+            ->keyBy('id');
+
+        $breakdown = $breakdownRaw->map(function ($row) use ($keysIndex) {
+            $key = $keysIndex->get($row->ai_api_key_id);
+
+            return [
+                'key_id' => $row->ai_api_key_id,
+                'name' => $key ? "{$key->provider}/{$key->name}" : "Key #{$row->ai_api_key_id}",
+                'model' => $key->model ?? '-',
+                'purpose' => $key->purpose ?? 'any',
+                'total_tokens' => (int) $row->tokens,
+                'input_tokens' => (int) $row->input_tokens,
+                'output_tokens' => (int) $row->output_tokens,
+                'requests' => (int) $row->requests,
+                'failed' => (int) $row->failed,
+            ];
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'chart' => [
+                'labels' => $labels,
+                'datasets' => $datasets,
+            ],
+            'summary' => [
+                'total_tokens' => $totalTokens,
+                'total_requests' => $totalRequests,
+                'failed_count' => $failedCount,
+                'success_rate' => $successRate,
+                'date_range' => [
+                    'start' => $start->format('Y-m-d'),
+                    'end' => $end->format('Y-m-d'),
+                    'days' => count($labels),
+                ],
+            ],
+            'breakdown' => $breakdown,
+        ]);
+    }
+
+    /**
      * ทดสอบ API Key
      */
     public function test(int $id): JsonResponse

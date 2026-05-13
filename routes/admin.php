@@ -4271,6 +4271,9 @@ Route::prefix('ai-api-keys')->name('ai-api-keys.')->group(function () {
     Route::get('/', [AiApiKeyController::class, 'index'])->name('index');
     Route::get('/stats', [AiApiKeyController::class, 'stats'])->name('stats');
     Route::get('/logs', [AiApiKeyController::class, 'logs'])->name('logs');
+    // 🆕 (2026-05-13) AI Usage Dashboard — กราฟเส้น token usage ย้อนหลัง
+    Route::get('/usage-dashboard', [AiApiKeyController::class, 'usageDashboard'])->name('usage-dashboard');
+    Route::get('/usage-dashboard/data', [AiApiKeyController::class, 'usageDashboardData'])->name('usage-dashboard.data');
 
     // Provider specific
     Route::get('/provider/{provider}', [AiApiKeyController::class, 'provider'])->name('provider');
