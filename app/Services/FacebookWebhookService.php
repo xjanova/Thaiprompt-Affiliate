@@ -687,6 +687,30 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 ];
             }, array_slice($quickReplies, 0, 13)); // Facebook จำกัด 13 quick replies
 
+            // 🚨 (2026-05-14) Bug fix — message + quick_replies > 2000 chars → FB reject 400
+            //   user report: "AI เหมือนจะตอบแต่เงียบ"
+            //   เคสจริง reading 2537: message_length=2874 + quick_replies → HTTP 400 → ข้อความไม่ถึงลูกค้า
+            //   Fix: ถ้ายาว → split + ส่ง body ผ่าน sendMessage (มี chunking) + last chunk แนบ quick_replies
+            //   Threshold: 1800 chars (เผื่อ JSON overhead + quick_replies metadata ~150 chars)
+            if (mb_strlen($message) > 1800) {
+                $allChunks = $this->splitLongMessage($message);
+                $lastChunk = array_pop($allChunks);
+
+                // ส่ง chunks 1..N-1 เป็น plain message (sendMessage มี chunking + retry เอง)
+                foreach ($allChunks as $chunk) {
+                    $this->sendMessage($recipientId, $chunk, [
+                        'messaging_type' => $options['messaging_type'] ?? 'RESPONSE',
+                        'message_tag' => $options['message_tag'] ?? null,
+                        'no_default_qr' => true,
+                        'from_admin' => $options['from_admin'] ?? false,
+                    ]);
+                    usleep(300000); // 0.3s gap between chunks
+                }
+
+                // แทนที่ message ด้วย last chunk + ส่งต่อด้านล่าง (จะมี quick_replies แนบ)
+                $message = $lastChunk;
+            }
+
             $messagingType = $options['messaging_type'] ?? 'RESPONSE';
             $messageTag = $options['message_tag'] ?? null;
             $fromCommentEngagement = $options['from_comment_engagement'] ?? false;
