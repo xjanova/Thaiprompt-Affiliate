@@ -2566,9 +2566,7 @@ class FortuneConversationService
         $name = $reading->facebook_user_name ?? 'คุณ';
         $billRef = $reading->bill_reference ?? '-';
         $picked = $reading->getCelticPickedCount();
-        $qUsed = (int) $reading->celtic_questions_used;
-        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
-        $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
 
         // ยังเปิดไพ่ไม่ครบ — แนะนำให้ต่อ
         if ($picked < 10) {
@@ -2583,8 +2581,8 @@ class FortuneConversationService
             ];
         }
 
-        // ดึง Q&A ทั้งหมด
-        $qas = $reading->celticQuestions()->get();
+        // ดึง Q&A ทั้งหมด (เรียงตามเวลา = sequence)
+        $qas = $reading->celticQuestions()->orderBy('sequence')->get();
 
         if ($qas->isEmpty()) {
             return [
@@ -2592,61 +2590,76 @@ class FortuneConversationService
                 'message' => "🔮 *Celtic Cross ของคุณ{$name}*\n"
                     ."📋 บิล: {$billRef}\n"
                     ."═══════════════════════\n\n"
-                    ."✅ เปิดไพ่ครบ 10 ใบแล้ว — แต่ยังไม่ได้ถามคำถาม\n\n"
-                    ."💬 พิมพ์คำถามแรกที่อยากรู้มาได้เลยค่ะ\n"
-                    ."❓ ถามได้ {$qLimitText}",
+                    ."✅ เปิดไพ่ครบ 10 ใบแล้ว — แต่ยังไม่ได้คุยกับแม่หมอ\n\n"
+                    ."💬 พิมพ์คำถาม/เล่าเรื่องที่อยากรู้มาได้เลย\n"
+                    ."⏳ คุยจุใจ {$qaWindow} นาทีนับจากคำทำนายแรก",
                 'reading' => $reading,
             ];
         }
 
         $isOngoing = $reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION;
-        $remaining = max(0, $maxQ - $qUsed);
 
-        // 📜 สร้าง list view
-        $message = "🔮 *Celtic Cross ของคุณ{$name}*\n"
+        // 💬 (2026-05-14) Chat-style conversation log — User ↔ แม่หมอจันทรา สลับกัน
+        //   user spec: "บันทึกเป็นบทสนทนายาวๆ ไปเลย เมื่อผู้ใช้อยากเรียกดูย้อนหลัง"
+        //   "ลบนับข้อ" → ไม่มี Q1/Q2/Q3, ไม่มี quick replies postback "ดูคำตอบ Q[N]"
+        //   แสดงสลับ User: <คำถาม> / แม่หมอจันทรา: <คำตอบ> ตามลำดับเวลา
+        $header = "🔮 *บทสนทนากับแม่หมอจันทรา*\n"
+            ."👤 คุณ{$name}\n"
             ."📋 บิล: {$billRef}\n"
             .'📅 '.$reading->created_at->format('d/m/Y H:i')."\n"
-            ."═══════════════════════\n\n"
-            ."📜 *รายการคำถามที่ถามไป {$qas->count()} ข้อ:*\n\n";
+            ."═══════════════════════\n\n";
+
+        // ส่งบทสนทนาเป็นข้อความหลายชุด (FB จำกัดประมาณ 2000 chars/message)
+        // ⚙️ สร้าง message ชุดแรก (header + บทสนทนาเริ่มต้น)
+        // ⚙️ ส่วนเกิน → ใส่ celtic_conversation_log_overflow ให้ ChannelManager ส่งต่อเพิ่มอีกข้อความ
+        $charsLimit = 1800;
+        $segments = [];
+        $current = $header;
+        $sanitizeQ = static function (string $q): string {
+            // sanitize sentinel "__PREDICT_ALL__" ให้เป็นชื่ออ่านได้
+            if (trim($q) === '__PREDICT_ALL__') {
+                return 'ทำนายดวงพื้นฐานจากไพ่ทั้ง 10 ใบ';
+            }
+
+            return $q;
+        };
 
         foreach ($qas as $qa) {
-            $shortQ = mb_substr($qa->question, 0, 60);
-            if (mb_strlen($qa->question) > 60) {
-                $shortQ .= '...';
+            $userTime = optional($qa->created_at)->format('H:i') ?? '';
+            $botTime = optional($qa->answered_at)->format('H:i') ?? '';
+
+            $userTurn = '👤 *คุณ'.$name.'*'.($userTime ? " ({$userTime})" : '').":\n"
+                .$sanitizeQ((string) $qa->question)."\n\n";
+            $botTurn = '🌙 *แม่หมอจันทรา*'.($botTime ? " ({$botTime})" : '').":\n"
+                .trim((string) ($qa->response ?? '— ไม่มีคำตอบ —'))."\n\n";
+            $turn = $userTurn.$botTurn.str_repeat('─', 14)."\n\n";
+
+            // ถ้ารวม turn ใหม่จะเกิน limit → push current เก็บ + เริ่ม segment ใหม่
+            if (mb_strlen($current.$turn) > $charsLimit && $current !== $header && $current !== '') {
+                $segments[] = $current;
+                $current = $turn;
+            } else {
+                $current .= $turn;
             }
-            $message .= "{$qa->sequence}️⃣ *Q{$qa->sequence}:* {$shortQ}\n\n";
         }
 
-        $message .= "──────────────────────\n";
-        $message .= "👉 *กดปุ่มด้านล่างเพื่อดูคำตอบเต็มของแต่ละคำถาม*\n\n";
+        // ปิดท้าย — footer ไป segment สุดท้าย
+        $footer = $isOngoing
+            ? "💬 *คุยต่อได้* — พิมพ์อะไรมาก็ได้\n"
+                .'หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา ✨'
+            : '✅ *จบสนทนาแล้ว* — อ่านเป็นที่ระลึกได้นะคะ 🙏';
 
-        // 0 = ไม่จำกัด → แสดงเฉพาะถ้า ongoing
-        $canAskMore = $isOngoing && ($maxQ <= 0 || $remaining > 0);
-        if ($canAskMore) {
-            $message .= $maxQ > 0
-                ? "💬 หรือถามต่อ — เหลืออีก *{$remaining}* คำถาม"
-                : '💬 หรือถามต่อได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)';
+        if (mb_strlen($current.$footer) > $charsLimit && $current !== $header) {
+            $segments[] = $current;
+            $current = $footer;
         } else {
-            $message .= '✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏';
+            $current .= $footer;
         }
 
-        // 🎯 Build Quick Replies — Q1, Q2, ... (max 13, FB limit)
-        $quickReplies = [];
-        foreach ($qas->take(11) as $qa) {
-            $shortLabel = '📜 Q'.$qa->sequence.': '.mb_substr($qa->question, 0, 12);
-            $quickReplies[] = [
-                'content_type' => 'text',
-                'title' => mb_substr($shortLabel, 0, 20),
-                'payload' => 'CELTIC_VIEW_Q'.$qa->sequence,
-            ];
-        }
-        if ($canAskMore) {
-            $quickReplies[] = [
-                'content_type' => 'text',
-                'title' => '✨ พอแค่นี้',
-                'payload' => 'CELTIC_DONE',
-            ];
-        }
+        $segments[] = $current;
+
+        $firstMessage = array_shift($segments);
+        $overflowMessages = $segments; // อาจว่าง — ChannelManager ส่งเพิ่มถ้ามี
 
         // 🖼️ (2026-05-03) แนบภาพไพ่ Celtic Cross spread — ที่ระลึก
         $compositeUrl = null;
@@ -2661,11 +2674,12 @@ class FortuneConversationService
         }
 
         return [
-            'action' => 'celtic_review_list',
-            'message' => $message,
+            'action' => 'celtic_review_log',
+            'message' => $firstMessage,
             'reading' => $reading,
-            'celtic_review_quick_replies' => $quickReplies,
+            'celtic_conversation_overflow' => $overflowMessages,
             'celtic_summary_image_url' => $compositeUrl,
+            'celtic_can_ask_more' => $isOngoing,
         ];
     }
 

@@ -891,9 +891,8 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
                 ], $extra),
 
-                // 📜 (2026-05-03) Celtic Q&A review — list + detail พร้อมปุ่มเลือกคำถาม + ภาพไพ่ที่ระลึก
-                'celtic_review_list', 'celtic_review_detail', 'celtic_review_not_found' => (function () use ($fbService, $userId, $message, $result, $extra) {
-                    // 🖼️ ส่งภาพไพ่ก่อน (ถ้ามี)
+                // 📜 (2026-05-03) Celtic Q&A review — legacy quick-reply list (Q1/Q2)
+                'celtic_review_detail', 'celtic_review_not_found' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     if (! empty($result['celtic_summary_image_url'])) {
                         try {
                             $fbService->sendImage($userId, $result['celtic_summary_image_url']);
@@ -909,6 +908,52 @@ class FortuneChannelManager
                         $result['celtic_review_quick_replies'] ?? [
                             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
                         ],
+                        $extra
+                    );
+                })(),
+
+                // 💬 (2026-05-14) Celtic chat-style conversation log
+                //   user spec: "บันทึกเป็นบทสนทนายาวๆ" — ลบ Q1/Q2/Q3 + quick reply เลือกคำถาม
+                //   แสดงสลับ User ↔ แม่หมอจันทรา ตามลำดับเวลา
+                //   ถ้ายาว → ส่งหลายข้อความ (overflow) — FB จำกัด ~2000 char/message
+                'celtic_review_log' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 🖼️ ส่งภาพไพ่ก่อน (ที่ระลึก)
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $fbService->sendImage($userId, $result['celtic_summary_image_url']);
+                            usleep(500000);
+                        } catch (\Throwable $e) {
+                            // ignore image fail
+                        }
+                    }
+
+                    // ส่ง message แรก (header + บทสนทนาช่วงต้น)
+                    $fbService->sendMessage($userId, $message);
+
+                    // ส่ง overflow messages (ถ้ามี)
+                    foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {
+                        usleep(500000);
+                        $fbService->sendMessage($userId, $segment);
+                    }
+
+                    // ส่ง quick reply ปิดท้าย — ตามสถานะ session
+                    $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
+                    $quickReplies = $canAskMore
+                        ? [
+                            ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                        ]
+                        : [
+                            ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'MENU_FORTUNE'],
+                        ];
+
+                    usleep(500000);
+
+                    return $fbService->sendQuickReplies(
+                        $userId,
+                        $canAskMore
+                            ? '💬 คุยต่อได้เลยค่ะ — หรือกดปุ่มจบสนทนา 🙏'
+                            : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨',
+                        $quickReplies,
                         $extra
                     );
                 })(),
@@ -1965,6 +2010,43 @@ class FortuneChannelManager
                     }
 
                     return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                })(),
+
+                // 💬 (2026-05-14) Celtic chat-style conversation log — LINE
+                //   ส่งภาพไพ่ + บทสนทนา (อาจหลายข้อความ) + quick reply
+                'celtic_review_log' => (function () use ($lineService, $userId, $message, $result, $replyToken) {
+                    if (! empty($result['celtic_summary_image_url'])) {
+                        try {
+                            $lineService->sendImage($userId, $result['celtic_summary_image_url']);
+                        } catch (\Throwable $e) {
+                            // ignore
+                        }
+                    }
+
+                    $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+
+                    foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {
+                        try {
+                            $lineService->sendMessage($userId, $segment);
+                        } catch (\Throwable $e) {
+                            // ignore segment fail
+                        }
+                    }
+
+                    $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
+                    $replies = $canAskMore
+                        ? [['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้']]
+                        : [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
+
+                    return $this->sendLineMessageWithQuickReply(
+                        $lineService,
+                        $userId,
+                        $canAskMore
+                            ? '💬 คุยต่อได้เลย — หรือกดปุ่มจบสนทนา 🙏'
+                            : '🙏 ขอบคุณที่ใช้บริการแม่หมอจันทรานะคะ ✨',
+                        null,
+                        $replies
+                    );
                 })(),
 
                 // Celtic actions ที่เป็น text-only
