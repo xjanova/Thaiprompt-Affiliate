@@ -1071,7 +1071,39 @@ class FortuneReading extends Model
         // ปิด conversation ที่หมดเวลาอัตโนมัติ
         self::expireOldConversations($facebookUserId);
 
-        return self::activeConversation($facebookUserId)->first();
+        $active = self::activeConversation($facebookUserId)->first();
+
+        // 🌙 (2026-05-14) Ignore stale PENDING bills — user spec:
+        //   "ไม่สนใจบิลที่ไม่ได้จ่าย และสนใจแค่บิลล่าสุด"
+        //
+        //   เคสจริง: ลูกค้ากด 39/99 → สร้างบิล PENDING → ไม่จ่าย → ทักมาใหม่ภายหลัง
+        //   ระหว่างนั้นก็จ่ายอีกบิล (อาจก่อนหน้า) + ทำนายเสร็จ
+        //   findActiveConversation ก่อนหน้า: คืน PENDING bill เก่าที่ยังไม่ expire (30 min)
+        //   → bot ส่งบิลเก่า "รอโอนนะคะ" → ลูกค้างง "บิลอันไหน?"
+        //
+        //   Fix: ถ้า active เป็น PENDING + มี reading ใหม่กว่าที่ COMPLETED + is_paid → ignore PENDING
+        if ($active !== null && in_array($active->conversation_status, self::PENDING_PAYMENT_STATUSES, true)) {
+            $newerCompletedPaid = self::where('facebook_user_id', $facebookUserId)
+                ->where('id', '>', $active->id)
+                ->where('is_paid', true)
+                ->where('conversation_status', self::STATUS_COMPLETED)
+                ->exists();
+
+            if ($newerCompletedPaid) {
+                // mark stale PENDING as completed — กัน findActiveConversation คืนมาอีก
+                //   ใช้ COMPLETED แทน EXPIRED (ไม่มี const) — bills ไม่ active แล้ว
+                try {
+                    $active->update(['conversation_status' => self::STATUS_COMPLETED]);
+                } catch (\Throwable $e) {
+                    // ignore — ไม่ block flow หลัก
+                }
+
+                // หา active reading ใหม่ (ที่ไม่ใช่ stale PENDING) — ถ้ามี
+                return self::activeConversation($facebookUserId)->first();
+            }
+        }
+
+        return $active;
     }
 
     /**
