@@ -607,6 +607,32 @@ class FortuneTellingSetting extends Model
     }
 
     /**
+     * 🛡️ (2026-05-14) ดึง max questions สำหรับ Celtic Cross 99฿ flow
+     *
+     * Centralized accessor — ก่อนหน้านี้ default ในโค้ดไม่ consistent (5/3/0)
+     * → ทุกที่ใช้ค่าเดียวกันผ่าน method นี้
+     *
+     * Default: 0 = ไม่จำกัด (free chat ภายในเวลา) — ตรงกับ user spec
+     *   "คุยกับแม่หมอจันทรา จนจุใจ 30 นาที"
+     *
+     * @return int  ≥ 0 (0 = unlimited)
+     */
+    public function getCelticMaxQuestions(): int
+    {
+        return max(0, (int) ($this->celtic_cross_max_questions ?? 0));
+    }
+
+    /**
+     * ดึง QA window (นาที) — เวลาที่ลูกค้าคุยกับแม่หมอได้หลังคำทำนายแรก
+     *
+     * Default: 30 นาที
+     */
+    public function getCelticQaWindowMinutes(): int
+    {
+        return max(1, (int) ($this->celtic_cross_qa_window_minutes ?? 30));
+    }
+
+    /**
      * ตรวจสอบว่าบริการเปิดใช้งานหรือไม่
      */
     public function isServiceEnabled(): bool

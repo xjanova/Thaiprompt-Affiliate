@@ -916,11 +916,13 @@ class FortuneChannelManager
                 //   user spec: "บันทึกเป็นบทสนทนายาวๆ" — ลบ Q1/Q2/Q3 + quick reply เลือกคำถาม
                 //   แสดงสลับ User ↔ แม่หมอจันทรา ตามลำดับเวลา
                 //   ถ้ายาว → ส่งหลายข้อความ (overflow) — FB จำกัด ~2000 char/message
+                //   🛡️ U1 fix (2026-05-14): propagate $extra ทุก sendImage/sendMessage
+                //      กัน silent fail ถ้า flow นี้ถูกเรียกนอก 24h window (scheduled/admin retry)
                 'celtic_review_log' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // 🖼️ ส่งภาพไพ่ก่อน (ที่ระลึก)
                     if (! empty($result['celtic_summary_image_url'])) {
                         try {
-                            $fbService->sendImage($userId, $result['celtic_summary_image_url']);
+                            $fbService->sendImage($userId, $result['celtic_summary_image_url'], null, $extra);
                             usleep(500000);
                         } catch (\Throwable $e) {
                             // ignore image fail
@@ -928,12 +930,12 @@ class FortuneChannelManager
                     }
 
                     // ส่ง message แรก (header + บทสนทนาช่วงต้น)
-                    $fbService->sendMessage($userId, $message);
+                    $fbService->sendMessage($userId, $message, $extra);
 
                     // ส่ง overflow messages (ถ้ามี)
                     foreach ((array) ($result['celtic_conversation_overflow'] ?? []) as $segment) {
                         usleep(500000);
-                        $fbService->sendMessage($userId, $segment);
+                        $fbService->sendMessage($userId, $segment, $extra);
                     }
 
                     // ส่ง quick reply ปิดท้าย — ตามสถานะ session

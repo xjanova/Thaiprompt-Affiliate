@@ -91,8 +91,12 @@ class FortuneCelticPremiumDetector
         }
 
         // เช็ค trigger condition
+        // 🛡️ (2026-05-14 M4) ใช้ centralized accessor — ถ้า admin ไม่ set จะ return 0 (free chat)
+        //   ใน free chat mode (max=0): 'after_questions_done' จะไม่ trigger Premium
+        //   → ต้องใช้ trigger='always_after_q1' ถ้าอยากให้ Premium kick in หลัง Q1
+        //   admin ที่ explicit set max ยังคงทำงานตามที่ตั้ง (ไม่เปลี่ยน behavior)
         $trigger = $this->settings->celtic_premium_chat_trigger ?? 'after_questions_done';
-        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $maxQuestions = $this->settings->getCelticMaxQuestions();
         $questionsUsed = (int) ($reading->celtic_questions_used ?? 0);
 
         if ($trigger === 'after_questions_done') {

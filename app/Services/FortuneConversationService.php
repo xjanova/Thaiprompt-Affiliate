@@ -2624,6 +2624,32 @@ class FortuneConversationService
             return $q;
         };
 
+        // 🛡️ (2026-05-14 L2 fix) ถ้า single turn > limit → split โดย paragraph break (\n\n)
+        //   เคส predict-all (~2000-3000 chars) อาจทำให้ first segment ยาวเกินไป
+        //   FB จะ auto-split แต่ break ผิดที่ — UX แตก (กลางประโยค)
+        $splitOversizedTurn = static function (string $turn, int $limit): array {
+            if (mb_strlen($turn) <= $limit) {
+                return [$turn];
+            }
+            $chunks = [];
+            $paragraphs = preg_split('/\n\n+/u', $turn) ?: [$turn];
+            $buf = '';
+            foreach ($paragraphs as $para) {
+                $piece = $para."\n\n";
+                if (mb_strlen($buf.$piece) > $limit && $buf !== '') {
+                    $chunks[] = rtrim($buf);
+                    $buf = $piece;
+                } else {
+                    $buf .= $piece;
+                }
+            }
+            if (trim($buf) !== '') {
+                $chunks[] = rtrim($buf);
+            }
+
+            return $chunks;
+        };
+
         foreach ($qas as $qa) {
             $userTime = optional($qa->created_at)->format('H:i') ?? '';
             $botTime = optional($qa->answered_at)->format('H:i') ?? '';
@@ -2634,12 +2660,17 @@ class FortuneConversationService
                 .trim((string) ($qa->response ?? '— ไม่มีคำตอบ —'))."\n\n";
             $turn = $userTurn.$botTurn.str_repeat('─', 14)."\n\n";
 
-            // ถ้ารวม turn ใหม่จะเกิน limit → push current เก็บ + เริ่ม segment ใหม่
-            if (mb_strlen($current.$turn) > $charsLimit && $current !== $header && $current !== '') {
-                $segments[] = $current;
-                $current = $turn;
-            } else {
-                $current .= $turn;
+            // ถ้า turn เดียวยาวกว่า limit → แยกเป็นหลาย chunks
+            $turnChunks = $splitOversizedTurn($turn, $charsLimit);
+
+            foreach ($turnChunks as $chunk) {
+                // ถ้ารวมกับ current จะเกิน → push current ก่อน
+                if (mb_strlen($current.$chunk) > $charsLimit && $current !== '') {
+                    $segments[] = $current;
+                    $current = $chunk;
+                } else {
+                    $current .= $chunk;
+                }
             }
         }
 
@@ -9921,9 +9952,8 @@ class FortuneConversationService
             ]);
 
             // ✅ ดึง conversation history สำหรับ AI (ความจำ 10 ข้อความ — 24 ชม.)
-            //   detect platform ก่อน เพื่อ key conversation ถูก (FB vs LINE)
-            $platformDetected = $this->currentPlatform
-                ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            //   detect platform จาก user ID pattern (FB PSID = digits / LINE = U + 32 hex)
+            $platformDetected = $this->detectPlatformFromUserId($userId);
             $history = $this->getConversationHistoryForAI($userId, $platformDetected);
 
             // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
@@ -9938,7 +9968,25 @@ class FortuneConversationService
             if ($userTurnCount >= 2) {
                 $contextParts[] = "TURN {$userTurnCount}";
             }
-            if (! empty($dmContext['is_returning_24h']) && ! empty($dmContext['hours_since_last_dm'])) {
+
+            // 🌙 (2026-05-14) Returning customer memory — ถ้า history ขาด (เกิน 24 ชม.)
+            //   - มี paid reading → "RETURNING_CUSTOMER reading_type=... past_topics=..."
+            //     → AI ทักทาย "หมอจำได้ ครั้งก่อนเจ้าชะตาเคยถามเรื่อง..."
+            //   - ไม่มี paid reading → "NO_HISTORY_NO_PAID_READING"
+            //     → AI ตอบ "หมอเจอลูกค้ามีทุกข์หลายท่าน คงจำทุกคนไม่หมด"
+            //   user spec: "อย่างน้อยใน 24 ชม ควรจำเรื่องที่คุยกับยูสเซ่อร์ได้" + recall paid reading
+            $returningContext = $this->buildReturningCustomerContext($userId, $platformDetected, count($history));
+
+            // 🛡️ (2026-05-14 L4 fix) Mutual exclusion — กัน tag ขัดแย้งกัน
+            //   เคส: ลูกค้ากลับมาใน 24h DM (RETURNING_24H) แต่ chat history ขาด (NO_HISTORY...)
+            //   AI จะสับสน — "เคยคุย 24h" vs "หมอจำไม่หมด"
+            //   Rule: NO_HISTORY_NO_PAID_READING dominates — ลูกค้าใหม่/ไม่ได้จ่าย ใช้ honest line
+            //         (RETURNING_24H = ระดับ DM ส่วน NO_HISTORY = ระดับ memory + payment record)
+            $suppressReturning24h = ($returningContext === 'NO_HISTORY_NO_PAID_READING');
+
+            if (! $suppressReturning24h
+                && ! empty($dmContext['is_returning_24h'])
+                && ! empty($dmContext['hours_since_last_dm'])) {
                 $hoursAgo = (int) $dmContext['hours_since_last_dm'];
                 $dmCount = (int) ($dmContext['prior_dm_count'] ?? 0);
                 $contextParts[] = "RETURNING_24H hours_ago={$hoursAgo} dm_count={$dmCount}";
@@ -9950,13 +9998,6 @@ class FortuneConversationService
                 $contextParts[] = 'HAS_FRESH_DEEP_READING';
             }
 
-            // 🌙 (2026-05-14) Returning customer memory — ถ้า history ขาด (เกิน 24 ชม.)
-            //   - มี paid reading → "RETURNING_CUSTOMER reading_type=... past_topics=..."
-            //     → AI ทักทาย "หมอจำได้ ครั้งก่อนเจ้าชะตาเคยถามเรื่อง..."
-            //   - ไม่มี paid reading → "NO_HISTORY_NO_PAID_READING"
-            //     → AI ตอบ "หมอเจอลูกค้ามีทุกข์หลายท่าน คงจำทุกคนไม่หมด"
-            //   user spec: "อย่างน้อยใน 24 ชม ควรจำเรื่องที่คุยกับยูสเซ่อร์ได้" + recall paid reading
-            $returningContext = $this->buildReturningCustomerContext($userId, $platformDetected, count($history));
             if ($returningContext !== null) {
                 $contextParts[] = $returningContext;
             }
@@ -10367,9 +10408,11 @@ class FortuneConversationService
      * @param  string  $platform  ชื่อ platform (auto-detect จาก context)
      * @return array [['role' => 'user'|'assistant', 'content' => '...'], ...]
      */
-    protected function getConversationHistoryForAI(string $userId, string $platform = 'facebook'): array
+    protected function getConversationHistoryForAI(string $userId, ?string $platform = null): array
     {
         try {
+            $platform ??= $this->detectPlatformFromUserId($userId);
+
             $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
                 $userId,
                 $platform,
@@ -10385,6 +10428,20 @@ class FortuneConversationService
 
             return [];
         }
+    }
+
+    /**
+     * 🛡️ (2026-05-14) Detect platform จาก user ID format
+     *
+     * FB PSID: digit-only string (e.g., "26165964502999706")
+     * LINE user ID: 'U' + 32 hex chars (e.g., "Uxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+     *
+     * ใช้แทน $this->currentPlatform default ('line') ที่อาจไม่ตรงกับ user ID จริง
+     * → กัน FB users ติด LINE bucket / LINE users ติด FB bucket
+     */
+    protected function detectPlatformFromUserId(string $userId): string
+    {
+        return preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook';
     }
 
     /**
@@ -10439,6 +10496,18 @@ class FortuneConversationService
 
             // ดึงคำถามที่เคยถาม
             $topics = [];
+            // 🛡️ (2026-05-14) Sanitize — ลบ char ที่ทำลายโครง tag (quote/bracket/newline)
+            $sanitizeTopic = static function (string $q): string {
+                $q = trim($q);
+                if ($q === '' || $q === '__PREDICT_ALL__') {
+                    return '';
+                }
+                // remove quotes, brackets, newlines → กัน AI prompt corrupt
+                $q = str_replace(['"', "'", '[', ']', "\n", "\r", "\t"], ['', '', '', '', ' ', ' ', ' '], $q);
+
+                return mb_substr(trim($q), 0, 80);
+            };
+
             if ($latestPaid->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
                 $celticQs = $latestPaid->celticQuestions()
                     ->whereNotNull('answered_at')
@@ -10447,18 +10516,21 @@ class FortuneConversationService
                     ->pluck('question')
                     ->toArray();
                 foreach ($celticQs as $q) {
-                    if (trim($q) === '__PREDICT_ALL__') {
-                        continue;
+                    $clean = $sanitizeTopic((string) $q);
+                    if ($clean !== '') {
+                        $topics[] = $clean;
                     }
-                    $topics[] = mb_substr($q, 0, 80);
                 }
             } else {
-                // deep reading — ดึง questions field (JSON)
+                // deep reading — ดึง questions field (JSON cast — FortuneReading model)
                 $deepQs = $latestPaid->questions ?? [];
                 if (is_array($deepQs)) {
                     foreach (array_slice($deepQs, 0, 3) as $q) {
-                        if (is_string($q) && trim($q) !== '') {
-                            $topics[] = mb_substr($q, 0, 80);
+                        if (is_string($q)) {
+                            $clean = $sanitizeTopic($q);
+                            if ($clean !== '') {
+                                $topics[] = $clean;
+                            }
                         }
                     }
                 }
@@ -10491,13 +10563,19 @@ class FortuneConversationService
         string $userId,
         string $role,
         string $message,
-        string $platform = 'facebook'
+        ?string $platform = null
     ): void {
         try {
+            // 🛡️ (2026-05-14) Auto-detect platform จาก user ID format
+            //   เดิม: default='facebook' + ไม่มี caller ส่ง platform → LINE users
+            //         write→facebook bucket, read→line bucket → memory mismatch
+            //   ใหม่: null → detect จาก user ID pattern (consistent กับ read path)
+            $platform ??= $this->detectPlatformFromUserId($userId);
+
             $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
                 $userId,
                 $platform,
-                30
+                1440 // 🌙 (2026-05-14) timeout 24 ชั่วโมง — sync กับ read path
             );
 
             $conversation->addMessage($role, mb_substr($message, 0, 2000));

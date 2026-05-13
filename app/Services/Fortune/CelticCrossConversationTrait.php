@@ -1212,10 +1212,6 @@ trait CelticCrossConversationTrait
 
         // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
         //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
-        // 🐛 (2026-05-14) ก่อนหน้านี้ลืม define $maxQuestions → PHP throw
-        //   "Undefined variable $maxQuestions" หลัง AI ตอบสำเร็จ → status ค้าง GENERATING
-        //   Fix: อ่านจาก settings (0 = unlimited, default)
-        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 0);
 
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
