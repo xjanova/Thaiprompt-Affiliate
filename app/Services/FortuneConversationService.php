@@ -3907,9 +3907,26 @@ class FortuneConversationService
                 'response_length' => mb_strlen($aiResult['response']),
             ]);
 
-            // 🎯 (2026-05-13) ลบ chart image generation — user spec: ตอนทำนายต้องไม่มีรูป/ข้อมูลแทรก
-            //   เดิม: generate Birth Chart / Quick Chart → ส่งก่อนคำทำนาย
-            //   ใหม่: เก็บคำทำนายเป็นโฟกัสเดียว ไม่มีรูปแทรก
+            // ✅ สร้าง Birth Chart / Quick Chart ส่งก่อนคำทำนาย
+            //   (2026-05-13 clarification: chart = ส่วนของการทำนาย ต้องส่ง — ไม่ใช่ "ข้อมูลอื่นแทรก")
+            $chartImageUrl = null;
+            try {
+                $birthDate = $reading->birth_date?->format('Y-m-d');
+                if ($birthDate) {
+                    $chartImageUrl = $this->chartService->generateBirthChart($birthDate, $name, $userProfile['gender'] ?? null);
+                } else {
+                    $chartImageUrl = $this->chartService->generateQuickChart($name);
+                }
+                if ($chartImageUrl) {
+                    $reading->update(['reading_image_url' => $chartImageUrl]);
+                }
+            } catch (\Throwable $chartErr) {
+                Log::error('Fortune: Chart generation failed (basic reading)', [
+                    'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
+                    'reading_id' => $reading->id ?? null,
+                ]);
+            }
 
             // สร้างข้อความเชิญชวนดูดวงละเอียด
             $upsellMessage = $this->getUpsellMessage($name);
@@ -3923,6 +3940,7 @@ class FortuneConversationService
                 'message' => $aiResult['response']."\n\n".$remainingMessage."\n\n".$upsellMessage,
                 'reading' => $reading,
                 'show_quick_replies' => true,
+                'chart_image_url' => $chartImageUrl,
             ];
 
         } catch (\Exception $e) {
@@ -6284,10 +6302,49 @@ class FortuneConversationService
             $name = $reading->facebook_user_name ?? 'คุณ';
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
-            // 🎯 (2026-05-13) ลบ Birth Chart / Quick Chart generation + streaming
-            //   user spec: "ตอนทำนาย ต้องไม่ส่งรูป หรือ ข้อมูลอื่นเข้าไปแทรก ต้องอยู่กับการทำนายเท่านั้น"
-            //   เดิม: generate chart → ส่ง image ก่อน AI ทำนาย → แทรกระหว่างคำทำนาย
-            //   ใหม่: เก็บโฟกัสที่คำทำนายอย่างเดียว — ไม่มี chart image แทรกใน Deep flow
+            // สร้าง Birth Chart ใหม่จากวันเกิดจริง (ส่งก่อนคำทำนาย)
+            // ถ้าไม่มีวันเกิด → ใช้ Quick Chart แทน (เพื่อให้มีภาพส่งเสมอ)
+            // (2026-05-13 clarification: chart = ส่วนของการทำนาย ต้องส่ง — ไม่ใช่ "ข้อมูลอื่นแทรก")
+            $chartImageUrl = null;
+            try {
+                if ($birthDate) {
+                    $chartImageUrl = $this->chartService->generateBirthChart(
+                        $birthDate, $name, $userProfile['gender'] ?? null
+                    );
+                } else {
+                    // ไม่มีวันเกิด → สร้าง Quick Chart เป็น fallback
+                    $chartImageUrl = $this->chartService->generateQuickChart($name);
+                }
+
+                if ($chartImageUrl) {
+                    $reading->update(['reading_image_url' => $chartImageUrl]);
+                }
+            } catch (\Throwable $chartErr) {
+                Log::error('Fortune Deep: Failed to generate chart image', [
+                    'error' => $chartErr->getMessage(),
+                    'error_class' => get_class($chartErr),
+                    'has_birth_date' => ! empty($birthDate),
+                    'reading_id' => $reading->id ?? null,
+                    'gd_loaded' => extension_loaded('gd'),
+                ]);
+            }
+
+            // [Streaming] ส่ง Birth Chart ทันทีถ้ามี
+            if ($streaming && $chartImageUrl) {
+                try {
+                    $platformService = $channelManager->getPlatform($platform);
+                    if ($platformService) {
+                        $platformService->sendImage($userId, $chartImageUrl);
+                        usleep(500000); // 0.5s — ลดจาก 1.5s (ห้ามต่ำกว่า 0.5s เพราะ LINE 429)
+                    }
+                } catch (\Exception $imgErr) {
+                    Log::warning('Fortune Deep Streaming: ส่ง chart image ไม่สำเร็จ', [
+                        'error' => $imgErr->getMessage(),
+                        'chart_url' => $chartImageUrl,
+                        'platform' => $platform,
+                    ]);
+                }
+            }
 
             // ทำนายทีละคำถาม
             $deepReadings = [];
