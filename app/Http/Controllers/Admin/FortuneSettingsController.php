@@ -1056,6 +1056,7 @@ class FortuneSettingsController extends Controller
                 ->orderBy('priority', 'desc')
                 ->get();
 
+            // 🆕 (2026-05-13) เพิ่ม openai/anthropic/xiaomi — user report "playground ทดสอบคีย์ไม่ได้"
             $defaultModels = [
                 'gemini' => 'gemini-2.5-flash',
                 'groq' => 'llama-3.3-70b-versatile',
@@ -1064,6 +1065,9 @@ class FortuneSettingsController extends Controller
                 'openrouter' => 'anthropic/claude-3-haiku',
                 'deepseek' => 'deepseek-chat',
                 'typhoon' => 'typhoon-v2-70b-instruct',
+                'openai' => 'gpt-4o-mini',
+                'anthropic' => 'claude-haiku-4-5',
+                'xiaomi' => 'mimo-v2.5-pro',
             ];
 
             foreach ($poolKeys as $poolKey) {

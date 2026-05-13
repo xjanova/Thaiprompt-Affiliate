@@ -3773,13 +3773,22 @@ PROMPT;
             return $this->playgroundGemini($chatMessages, $config);
         }
 
+        // 🆕 (2026-05-13) Anthropic ใช้ format ต่าง — system แยก, content[0].text
+        if ($this->provider === 'anthropic') {
+            return $this->playgroundAnthropic($chatMessages, $config);
+        }
+
         // สำหรับ provider ที่ใช้ OpenAI-compatible API
+        // 🆕 (2026-05-13) เพิ่ม openai/qwen/xiaomi — user report "playground ทดสอบคีย์ไม่ได้"
         $url = match ($this->provider) {
             'groq' => 'https://api.groq.com/openai/v1/chat/completions',
             'grok' => 'https://api.x.ai/v1/chat/completions',
             'openrouter' => 'https://openrouter.ai/api/v1/chat/completions',
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
+            'openai' => 'https://api.openai.com/v1/chat/completions',
+            'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'xiaomi' => rtrim($this->currentBaseUrl ?: (AiApiKey::DEFAULT_BASE_URLS['xiaomi'] ?? 'https://api.xiaomimimo.com/v1'), '/').'/chat/completions',
             default => throw new Exception("Provider '{$this->provider}' ไม่รองรับ Playground"),
         };
 
@@ -3804,6 +3813,68 @@ PROMPT;
             'response' => $data['choices'][0]['message']['content'] ?? '',
             'tokens_used' => $data['usage']['total_tokens'] ?? 0,
             'provider' => $this->provider,
+            'model' => $this->model,
+            'response_time_ms' => $responseTime,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) Playground สำหรับ Anthropic Claude
+     *
+     * Format ต่างจาก OpenAI:
+     *   - Header: x-api-key (ไม่ใช่ Bearer)
+     *   - system แยกจาก messages (top-level)
+     *   - response: data.content[0].text
+     */
+    protected function playgroundAnthropic(array $chatMessages, array $config): array
+    {
+        $startTime = microtime(true);
+
+        // แยก system message + user/assistant messages
+        $systemMessage = '';
+        $messages = [];
+        foreach ($chatMessages as $msg) {
+            $role = $msg['role'] ?? 'user';
+            if ($role === 'system') {
+                $systemMessage = $msg['content'] ?? '';
+
+                continue;
+            }
+            if (in_array($role, ['user', 'assistant'], true)) {
+                $messages[] = [
+                    'role' => $role,
+                    'content' => $msg['content'] ?? '',
+                ];
+            }
+        }
+
+        $baseUrl = $this->currentBaseUrl ?: (AiApiKey::DEFAULT_BASE_URLS['anthropic'] ?? 'https://api.anthropic.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/messages';
+
+        $response = Http::timeout(90)
+            ->withHeaders([
+                'x-api-key' => $this->apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])
+            ->post($endpoint, [
+                'model' => $this->model,
+                'max_tokens' => $config['max_tokens'] ?? 2048,
+                'system' => $systemMessage,
+                'messages' => $messages,
+                'temperature' => $config['temperature'] ?? 0.75,
+            ])->throw();
+
+        $data = $response->json();
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $data['content'][0]['text'] ?? '',
+            'tokens_used' => $inputTokens + $outputTokens,
+            'provider' => 'anthropic',
             'model' => $this->model,
             'response_time_ms' => $responseTime,
         ];
