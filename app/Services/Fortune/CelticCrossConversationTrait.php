@@ -1082,11 +1082,7 @@ trait CelticCrossConversationTrait
      */
     protected function onCelticAllCardsPicked(FortuneReading $reading, string $lastCardMessage, ?string $lastCardImage = null): array
     {
-        // 🖼️ (2026-05-03) ไม่ส่งภาพ composite ตอนนี้ — เก็บไว้โชว์ตอนจบ session
-        //    เดิม: ส่งภาพหลังเปิดครบ 10 ใบ → ลูกค้าเห็นก่อนถาม Q1
-        //    ใหม่: รวบเป็น "ที่ระลึก" ตอน endCelticSession (ดูดีกว่า)
-
-        // ขยับ state เข้า awaiting question
+        // ขยับ state เข้า chat session (reuse CELTIC_AWAITING_QUESTION naming for backward compat)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         // 🌙 (2026-05-08 v3) เปิด Pro Session — อวตารแม่หมอเข้ามารับช่วง 30 นาที
@@ -1099,19 +1095,22 @@ trait CelticCrossConversationTrait
             ]);
         }
 
-        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        // 🆕 (2026-05-13) เปลี่ยน flow — ไม่มี Q1/Q2/Q3 + ไม่มีปุ่ม "ทำนายดวงเดี๋ยวนี้"
+        //   user spec: "ไม่ต้องมีการทำนาย แต่ให้หมอเริ่มบริบทชวนคุยกับลูกค้าได้เลย"
+        //   → AI ส่งข้อความเปิดบทสนทนา + ลูกค้าคุยเรื่อยๆ (free chat 30 นาที)
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
-        $qLimitText = $maxQ <= 0 ? 'ไม่จำกัด' : "{$maxQ} คำถาม";
         $name = $reading->resolveCustomerName();
         $followupText = "\n\n──────────────────────\n"
-            ."🌙✨ *อวตารแม่หมอจันทรามาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
-            ."🃏 *เปิดไพ่ครบ 10 ใบแล้ว!*\n"
-            ."🌌 ตอนนี้แม่หมออ่านพลังงานเสร็จ พร้อมตอบเจ้าชะตาแล้ว\n\n"
-            ."💬 จะกดปุ่ม *🔮 ทำนายดวงเดี๋ยวนี้* ให้ทำนายพื้นฐานทุกเรื่องก่อน\n"
-            ."   หรือพิมพ์คำถามที่อยากรู้เลยก็ได้ค่ะ\n\n"
-            ."❓ ถามเฉพาะเรื่องได้ *{$qLimitText}*\n"
-            ."⏳ *แม่หมออยู่กับเจ้าชะตาอีก {$qaWindow} นาที* — ใช้ให้คุ้มนะคะ\n"
-            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบเป็นที่ระลึก ✨\n\n"
+            ."🌙✨ *แม่หมอจันทราพร้อมแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+            ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว\n"
+            ."🌌 แม่หมอเห็นพลังงานที่หล่อหลอมเส้นทางของเจ้าชะตาผ่านไพ่เหล่านี้\n\n"
+            ."💬 *เล่าให้แม่หมอฟังได้เลยค่ะ —*\n"
+            ."    • ตอนนี้มีเรื่องอะไรค้างคาใจ?\n"
+            ."    • อยากให้แม่หมอช่วยมองเรื่องไหนเป็นพิเศษ?\n"
+            ."    • หรือถ้ายังไม่รู้จะเริ่มจากตรงไหน — เล่าสถานการณ์ของเจ้าชะตามาได้เลย ✨\n\n"
+            ."🌟 *แม่หมอคุยกับเจ้าชะตาไปด้วยกัน ไม่รีบเร่ง — เหมือนนั่งคุยกันสบายๆ*\n\n"
+            ."⏳ คุยกับแม่หมอได้อีก *{$qaWindow} นาที*\n"
+            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบเป็นที่ระลึก\n"
             .'🔚 เมื่อพอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้';
 
         return [
@@ -1119,18 +1118,8 @@ trait CelticCrossConversationTrait
             'message' => $lastCardMessage.$followupText,
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
-            // celtic_summary_image_url removed — เลื่อนไป endCelticSession
-            // 🔮 (2026-05-07) ปุ่ม "ทำนายดวงเดี๋ยวนี้" — กดแล้วทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
-            //    เดิม: "เริ่มถามคำถาม" — แค่ส่ง prompt hint ลูกค้ายังต้องพิมพ์คำถามเอง (สับสน)
-            //    ใหม่: กดแล้ว AI ทำนายพื้นฐานทุกด้าน (รัก/งาน/เงิน/สุขภาพ) จากไพ่ทันที
-            //    ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (handleCelticAwaitingQuestion handle ตามเดิม)
-            'quick_replies' => [
-                [
-                    'content_type' => 'text',
-                    'title' => '🔮 ทำนายดวงเดี๋ยวนี้',
-                    'payload' => 'CELTIC_PREDICT_NOW',
-                ],
-            ],
+            // 🛑 (2026-05-13) ลบปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" — flow ใหม่ไม่มี predict-all
+            //   ลูกค้าเล่าเรื่อง / ถาม / เงียบ → AI ตอบแบบ chat ทุกเคส
         ];
     }
 
@@ -1147,66 +1136,37 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
-        // 🔮 (2026-05-07) ลูกค้ากดปุ่ม/พิมพ์ "ทำนายดวงเดี๋ยวนี้" — ทำนายพื้นฐานทุกเรื่องจากไพ่ทันที
-        //   เดิม: "เริ่มถามคำถาม" — ส่ง prompt hint ให้ลูกค้าพิมพ์คำถามเอง (UX สับสน)
-        //   ใหม่: กดแล้ว AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
-        //   ลูกค้าจะพิมพ์คำถามเฉพาะต่อก็ได้ (path เดิมยังทำงาน)
-        if ($this->matchesExactKeyword($messageText, [
-            'ทำนายดวงเดี๋ยวนี้', 'ทำนายเดี๋ยวนี้', 'ทำนายดวง', 'ทำนายพื้นฐาน', 'ทำนายเลย',
-            'ทำนายให้หมด', 'ทำนายทุกเรื่อง',
-        ])) {
-            return $this->handleCelticPredictAll($reading);
-        }
+        // 🆕 (2026-05-13) Free Chat mode — ลบ Q1/Q2/Q3 + ลบ predict-now button
+        //   user spec: "ไม่ต้องมีการทำนาย ให้หมอเริ่มบริบทชวนคุย"
+        //   ทุก message ของลูกค้า (สั้น/ยาว, เล่าเรื่อง/ถามคำถาม) → AI ตอบแบบ chat
+        //   ไม่มี short-message reject, ไม่มี max_questions enforce, ไม่มี predict-now keyword
 
-        // 💬 backward-compat — รองรับลูกค้าเก่าที่จำปุ่ม "เริ่มถามคำถาม" ได้ → redirect ไปทำนายเดี๋ยวนี้
-        if ($this->matchesExactKeyword($messageText, ['เริ่มถามคำถาม', 'เริ่ม', 'พร้อมถาม', 'ขอถาม'])) {
-            return $this->handleCelticPredictAll($reading);
-        }
-
-        // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ไม่ส่งให้ AI ตีความเป็นคำถาม
-        // ตอบ contextual ว่าเจ้าชะตาอยู่ในรอบดูดวงอยู่แล้ว ให้พิมพ์คำถามจริง
+        // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ตอบ contextual ว่ายังอยู่ในรอบ
         if ($this->looksLikeFortuneRestartRequest($messageText)) {
             $remainingMin = $reading->getCelticQaRemainingMinutes();
             $timeHint = $remainingMin !== null && $remainingMin > 0
                 ? "⏳ คุยกับแม่หมอได้อีก {$remainingMin} นาที"
-                : '⏳ คุยกับแม่หมอได้ภายใน 30 นาทีนับจากคำทำนายแรก';
+                : '⏳ คุยกับแม่หมอได้ภายใน 30 นาทีนับจากเปิดไพ่';
 
             return [
                 'action' => 'celtic_already_in_session',
-                'message' => "🌙 เจ้าชะตาอยู่ในรอบดูดวงไพ่ยิปซีกับแม่หมออยู่แล้วนะคะ\n\n"
-                    ."💬 พิมพ์คำถามเฉพาะที่อยากรู้มาได้เลย เช่น:\n"
-                    ."   • *\"ความรักช่วงนี้เป็นไง\"*\n"
-                    ."   • *\"งานในเดือนหน้า\"*\n"
-                    ."   • *\"ควรย้ายงานไหม\"*\n\n"
+                'message' => "🌙 เจ้าชะตาอยู่ในรอบคุยกับแม่หมออยู่แล้วนะคะ\n\n"
+                    ."💬 เล่าเรื่องที่ค้างคาใจมาได้เลย — แม่หมอพร้อมรับฟัง\n\n"
                     .$timeHint."\n"
                     .'❌ หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา',
                 'reading' => $reading,
             ];
         }
 
-        // ❌ คำถามสั้นเกินไป — ขอใหม่
-        if (mb_strlen($question) < 5) {
-            return [
-                'action' => 'celtic_question_too_short',
-                'message' => "✍️ คำถามสั้นเกินไป\n"
-                    .'กรุณาพิมพ์คำถามที่ต้องการให้หมอทำนาย เช่น "ปีนี้ความรักจะเป็นอย่างไร" หรือ "ควรลาออกไหม"',
-                'reading' => $reading,
-            ];
-        }
-
-        // เช็ค time window (นับจาก Q1 ตอบเสร็จ)
+        // เช็ค time window (นับจาก first message)
         if (! $reading->canAskMoreCeltic()) {
             return $this->endCelticSession($reading, 'time_expired');
         }
 
-        // 🔢 (2026-05-03) เช็คจำนวนคำถาม — admin ตั้งใน celtic_cross_max_questions
-        //   0 = ไม่จำกัด (skip enforcement), N>0 = max N คำถาม
-        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 5);
-        if ($maxQuestions > 0 && $reading->celtic_questions_used >= $maxQuestions) {
-            return $this->endCelticSession($reading, 'max_questions_reached');
-        }
+        // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
+        //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
 
-        // ส่งให้ AI Pool
+        // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
 
         $service = app(CelticCrossService::class);

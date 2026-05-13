@@ -148,14 +148,13 @@ class CelticCrossService
         try {
             $startTime = microtime(true);
 
-            // เลือก prompt template
-            //   Q1 + sentinel = predict-all prompt (ทำนายพื้นฐานทุกเรื่อง)
-            //   Q1 + คำถามจริง = main prompt (ตอบคำถามเฉพาะ)
-            //   Q2+ = followup prompt
-            if ($sequence === 1 && $isPredictAll) {
+            // 🆕 (2026-05-13) Free Chat mode — ทุก sequence ใช้ chat-style prompt
+            //   user spec: "ไม่ต้องมีการทำนาย ให้หมอเริ่มบริบทชวนคุย" — คุยเรื่อยๆ ไม่ใช่ Q1/Q2/Q3
+            //   เดิม: sequence 1 = main prediction (1500-2500 chars structured), 2+ = followup chat
+            //   ใหม่: ทุก sequence = followup chat (500-900 chars conversational)
+            //   - sentinel __PREDICT_ALL__ ยังคงไว้สำหรับ backward compat (call manually)
+            if ($isPredictAll) {
                 $prompt = $this->buildPredictAllPrompt($reading, $cards);
-            } elseif ($sequence === 1) {
-                $prompt = $this->buildMainPrompt($reading, $userQuestion, $cards);
             } else {
                 $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
             }
@@ -242,19 +241,17 @@ class CelticCrossService
             }
 
             // 🛡️ (2026-05-13) Truncation guard — log warning ถ้าตอบสั้นกว่าคาด
-            //   Q1 spec: 1500-2500 chars + กล่อง "🎯 ฟันธง" ปิดท้าย (บังคับ)
-            //   ถ้า response 100-1500 chars หรือไม่มี "ฟันธง" → อาจถูกตัดจาก max_tokens
-            //   ไม่ throw — ยังส่งให้ลูกค้า แต่ log ไว้ admin ตรวจ + ดู provider/model
+            //   Chat mode: 500-900 chars (free chat)
+            //   Predict-all: 2000-3000 chars (admin trigger)
+            //   ถ้า response < 200 chars → อาจถูกตัด (chat AI hallucinated short)
             $responseLen = mb_strlen($response);
-            $hasFundthong = str_contains($response, '🎯 ฟันธง')
-                || str_contains($response, 'ฟันธง:')
-                || str_contains($response, '🎯 สรุปฟันธง');
-            if ($responseLen < 1500 || ! $hasFundthong) {
-                Log::warning('CelticCross: response อาจถูก truncate / ฟันธงตกหล่น', [
+            $minExpected = $isPredictAll ? 1500 : 200;
+            if ($responseLen < $minExpected) {
+                Log::warning('CelticCross: response อาจถูก truncate / สั้นเกินคาด', [
                     'reading_id' => $reading->id,
                     'sequence' => $sequence,
                     'response_len' => $responseLen,
-                    'has_fundthong' => $hasFundthong,
+                    'min_expected' => $minExpected,
                     'tokens_used' => $tokensUsed,
                     'provider' => $aiProvider,
                     'model' => $aiModel,
