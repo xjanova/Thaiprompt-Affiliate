@@ -87,14 +87,18 @@ foreach (range(1, 7) as $dayOfBirth) {
 // ════════════════════════════════════════════════════════════════
 // 🌙 Mystic Content Auto-Post — โพสคอนเทนต์สายมู/แก้เคล็ด/สิ่งลี้ลับ
 // ════════════════════════════════════════════════════════════════
-// รันทุกชั่วโมง 00 นาที — command auto-detect ว่าตรง slot ไหน
+// 🩹 (2026-05-13) เปลี่ยนจาก hourlyAt(0) → everyFiveMinutes
+//   user report: "ยังตั้งเวลาโพสไม่ได้" — เพราะ slot ที่ไม่ใช่ HH:00 (เช่น 08:30)
+//   ไม่ trigger เพราะ scheduler รันแค่นาที :00
+//   ใหม่: รันทุก 5 นาที — command auto-detect ว่าตรง slot ใน window 5 นาทีไหม
+//
 // admin ตั้ง slot ใน fortune_telling_settings.mystic_content_schedule
-//   เช่น ["08:00", "20:00"] = โพสตอน 8 โมงเช้าและ 2 ทุ่ม
+//   เช่น ["08:00", "08:30", "20:15"] = โพสตามเวลาที่ตั้งจริง (รองรับ HH:MM)
 //
 // Toggle: fortune_telling_settings.mystic_content_enabled
 //   command จะเช็ค toggle ภายในเองอีกชั้น
 Schedule::command('fortune:mystic:publish')
-    ->hourlyAt(0)
+    ->everyFiveMinutes()
     ->timezone('Asia/Bangkok')
     ->withoutOverlapping(20)
     ->onOneServer()

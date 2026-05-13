@@ -63,54 +63,89 @@ class FortuneMysticPublish extends Command
             return $this->publishOne($service, $slot, $date, $force);
         }
 
-        // โหมด auto-detect — เช็คชั่วโมงปัจจุบันว่าตรง slot ไหน
-        $currentHour = (int) $date->format('H');
-        if (! in_array($currentHour, $configuredSlots, true)) {
-            $this->info("⏭  ชั่วโมง {$currentHour}:00 ไม่ตรง slot ใดๆ ที่ตั้งไว้ (slots: "
-                . implode(', ', $configuredSlots) . ')');
+        // 🩹 (2026-05-13) Auto-detect — match HH:MM ใน window 5 นาที (รองรับ slot ที่นาทีอื่น)
+        //   user report: "ตั้งเวลาโพสไม่ได้" — slot 08:30 ไม่ trigger เพราะ command เช็คแค่ hour
+        //   ใหม่: scheduler รัน everyFiveMinutes → match slot ใน window 5 นาที (ปัดลง)
+        //   เช่น now=08:32 → slot 08:30 match (32 - 30 = 2 นาที < 5) → publish slot=8
+        $currentTimeMin = (int) $date->format('H') * 60 + (int) $date->format('i');
+        $matchedSlot = null;
+        $slotConfigs = $this->getConfiguredSlotsWithMinutes($settings);
+        foreach ($slotConfigs as $slot) {
+            $slotTimeMin = $slot['hour'] * 60 + $slot['minute'];
+            $diff = $currentTimeMin - $slotTimeMin;
+            if ($diff >= 0 && $diff < 5) {
+                $matchedSlot = $slot;
+                break;
+            }
+        }
+
+        if ($matchedSlot === null) {
+            $slotsStr = implode(', ', array_map(fn ($s) => sprintf('%02d:%02d', $s['hour'], $s['minute']), $slotConfigs));
+            $this->info("⏭  เวลา {$date->format('H:i')} ไม่ตรง slot ใดๆ (slots: {$slotsStr})");
 
             return self::SUCCESS;
         }
 
-        return $this->publishOne($service, $currentHour, $date, $force);
+        return $this->publishOne($service, $matchedSlot['hour'], $date, $force);
     }
 
     /**
      * อ่าน schedule slots จาก settings
      *
-     * @return array<int>  เช่น [8, 20]
+     * @return array<int>  เช่น [8, 20] — return เฉพาะ hour (backward compat)
      */
     protected function getConfiguredSlots(FortuneTellingSetting $settings): array
     {
+        $withMinutes = $this->getConfiguredSlotsWithMinutes($settings);
+
+        return array_values(array_unique(array_map(fn ($s) => $s['hour'], $withMinutes)));
+    }
+
+    /**
+     * 🆕 (2026-05-13) อ่าน schedule slots พร้อม minute — รองรับ HH:MM format
+     *
+     * @return array<array{hour:int,minute:int}>  เช่น [['hour'=>8,'minute'=>0], ['hour'=>8,'minute'=>30]]
+     */
+    protected function getConfiguredSlotsWithMinutes(FortuneTellingSetting $settings): array
+    {
         $raw = $settings->mystic_content_schedule;
 
-        // อาจเป็น array (cast เปิด) หรือ JSON string (cast ไม่เปิด)
         if (is_string($raw)) {
             $decoded = json_decode($raw, true);
             $raw = is_array($decoded) ? $decoded : [];
         }
 
         if (! is_array($raw) || empty($raw)) {
-            return [8, 20]; // default
+            return [['hour' => 8, 'minute' => 0], ['hour' => 20, 'minute' => 0]]; // default
         }
 
         $slots = [];
         foreach ($raw as $time) {
-            // รับได้ทั้ง "08:00" และ 8
-            if (is_string($time) && preg_match('/^(\d{1,2})(?::\d{2})?$/', trim($time), $m)) {
+            $hour = 0;
+            $minute = 0;
+            if (is_string($time) && preg_match('/^(\d{1,2})(?::(\d{2}))?$/', trim($time), $m)) {
                 $hour = (int) $m[1];
+                $minute = isset($m[2]) ? (int) $m[2] : 0;
             } elseif (is_int($time)) {
                 $hour = $time;
+                $minute = 0;
             } else {
                 continue;
             }
 
-            if ($hour >= 0 && $hour <= 23) {
-                $slots[] = $hour;
+            if ($hour >= 0 && $hour <= 23 && $minute >= 0 && $minute <= 59) {
+                $slots[] = ['hour' => $hour, 'minute' => $minute];
             }
         }
 
-        return array_values(array_unique($slots));
+        // dedupe
+        $unique = [];
+        foreach ($slots as $s) {
+            $key = sprintf('%02d:%02d', $s['hour'], $s['minute']);
+            $unique[$key] = $s;
+        }
+
+        return array_values($unique);
     }
 
     protected function publishOne(
