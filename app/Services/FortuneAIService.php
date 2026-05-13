@@ -144,8 +144,12 @@ class FortuneAIService
      * ตอบช้ากว่า Flash มาก (30-90s) → ขยาย timeout เฉพาะ Pro เพื่อกัน cURL error 28
      *
      * Flash models ยังคงใช้ default timeout เดิม (failover เร็ว)
+     *
+     * (2026-05-13 v2) ลด 90→60s — user report timeout จริง (cURL error 28 at 90001ms)
+     *   เหตุผล: ลูกค้ารอ 1.5 นาทีต่อ provider × หลาย provider = 5+ นาที = หลุดไปแล้ว
+     *   60s ยังพอให้ Pro generate Q1 Celtic ได้ — ถ้าเกินก็ fallback ไป Flash/อื่น
      */
-    protected const GEMINI_PRO_TIMEOUT = 90;
+    protected const GEMINI_PRO_TIMEOUT = 60;
 
     /**
      * คำนวณ HTTP timeout สำหรับ Gemini ตามชื่อ model
