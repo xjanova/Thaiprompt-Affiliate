@@ -765,101 +765,136 @@ class FortuneTellingSetting extends Model
 
     /**
      * ดึง AI Provider ที่ใช้งานจริง
+     *
+     * 🎯 (2026-05-13) Pool-first architecture
+     *   ลำดับ:
+     *   1. Pool — หา key แรกใน Pool (priority สูง) → return provider ของ key นั้น
+     *   2. Legacy field — $this->ai_provider (ถ้า admin เคยตั้งไว้)
+     *   3. Global settings — เช็ค gemini/claude/openai key ใน AiContentSetting (เดิม)
+     *   4. Default fallback — 'gemini'
      */
     public function getActualAIProvider(): string
     {
-        if ($this->use_global_ai_settings) {
-            // ใช้ global settings - เช็คว่ามี provider ไหนพร้อมใช้งาน
-            $geminiKey = AiContentSetting::getValue('gemini_api_key');
-            if (! empty($geminiKey)) {
-                return 'gemini';
-            }
+        // 1. Pool-first — หา key ที่ active + priority สูง
+        try {
+            $poolKey = AiApiKey::where('is_active', true)
+                ->whereNull('disabled_until')
+                ->orderByDesc('priority')
+                ->first();
 
-            $claudeKey = AiContentSetting::getValue('claude_api_key');
-            if (! empty($claudeKey)) {
-                return 'openrouter'; // ใช้ OpenRouter เรียก Claude
+            if ($poolKey) {
+                return $poolKey->provider;
             }
-
-            $openaiKey = AiContentSetting::getValue('openai_api_key');
-            if (! empty($openaiKey)) {
-                return 'openrouter'; // ใช้ OpenRouter เรียก OpenAI
-            }
-
-            // ตรวจสอบ API Key Pool - ถ้ามี key ที่พร้อมใช้งาน
-            $poolProviders = ['gemini', 'groq', 'deepseek', 'typhoon', 'grok', 'openrouter'];
-            foreach ($poolProviders as $provider) {
-                $poolKey = AiApiKey::where('provider', $provider)
-                    ->where('is_active', true)
-                    ->whereNull('disabled_until')
-                    ->first();
-                if ($poolKey) {
-                    return $provider;
-                }
-            }
-
-            return 'gemini'; // default fallback
+        } catch (\Throwable $e) {
+            // Pool DB outage → fallback ไป legacy
         }
 
-        return $this->ai_provider;
+        // 2. Legacy custom field
+        if (! empty($this->ai_provider)) {
+            return $this->ai_provider;
+        }
+
+        // 3. Global settings (เดิม) — ตรวจ key ใน AiContentSetting
+        $geminiKey = AiContentSetting::getValue('gemini_api_key');
+        if (! empty($geminiKey)) {
+            return 'gemini';
+        }
+
+        $claudeKey = AiContentSetting::getValue('claude_api_key');
+        if (! empty($claudeKey)) {
+            return 'openrouter';
+        }
+
+        $openaiKey = AiContentSetting::getValue('openai_api_key');
+        if (! empty($openaiKey)) {
+            return 'openrouter';
+        }
+
+        // 4. Default fallback
+        return 'gemini';
     }
 
     /**
      * ดึง AI Model ที่ใช้งานจริง
+     *
+     * 🎯 (2026-05-13) Pool-first — model มาจาก Pool key (ถ้ามี)
      */
     public function getActualAIModel(): string
     {
-        if ($this->use_global_ai_settings) {
-            $provider = $this->getActualAIProvider();
+        // 1. Pool-first — model ของ key แรก
+        try {
+            $poolKey = AiApiKey::where('is_active', true)
+                ->whereNull('disabled_until')
+                ->orderByDesc('priority')
+                ->first();
 
-            return match ($provider) {
-                'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
-                'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
-                'groq' => 'llama-3.3-70b-versatile',
-                'deepseek' => 'deepseek-chat',
-                'typhoon' => 'typhoon-v2-70b-instruct',
-                'grok' => 'grok-2-latest',
-                default => 'gemini-2.5-flash',
-            };
+            if ($poolKey) {
+                $resolved = $poolKey->resolveModel();
+                if (! empty($resolved)) {
+                    return $resolved;
+                }
+            }
+        } catch (\Throwable $e) {
+            // fallback ไป legacy
         }
 
-        return $this->ai_model;
+        // 2. Legacy custom field
+        if (! empty($this->ai_model)) {
+            return $this->ai_model;
+        }
+
+        // 3. Global / default ตาม provider
+        $provider = $this->getActualAIProvider();
+
+        return match ($provider) {
+            'gemini' => AiContentSetting::getValue('gemini_model', 'gemini-2.5-flash'),
+            'openrouter' => AiContentSetting::getValue('claude_model', 'anthropic/claude-3-sonnet'),
+            'groq' => 'llama-3.3-70b-versatile',
+            'deepseek' => 'deepseek-chat',
+            'typhoon' => 'typhoon-v2-70b-instruct',
+            'grok' => 'grok-2-latest',
+            'openai' => 'gpt-4o',
+            'anthropic' => 'claude-sonnet-4-5',
+            default => 'gemini-2.5-flash',
+        };
     }
 
     /**
      * ดึง AI API Key ที่ใช้งานจริง
+     *
+     * 🎯 (2026-05-13) Pool-first — key มาจาก Pool (ถ้ามี)
      */
     public function getActualAIApiKey(): ?string
     {
-        if ($this->use_global_ai_settings) {
-            $provider = $this->getActualAIProvider();
-
-            // ลองดึงจาก Global Settings ก่อน
-            $key = match ($provider) {
-                'gemini' => AiContentSetting::getValue('gemini_api_key'),
-                'openrouter' => AiContentSetting::getValue('claude_api_key')
-                    ?? AiContentSetting::getValue('openai_api_key'),
-                default => null,
-            };
-
-            if (! empty($key)) {
-                return $key;
-            }
-
-            // ถ้าไม่มี Global Key ให้ดึงจาก API Key Pool
-            $poolKey = AiApiKey::where('provider', $provider)
-                ->where('is_active', true)
+        // 1. Pool-first
+        try {
+            $poolKey = AiApiKey::where('is_active', true)
                 ->whereNull('disabled_until')
-                ->orderBy('priority', 'desc')
+                ->orderByDesc('priority')
                 ->first();
 
             if ($poolKey) {
                 return $poolKey->api_key;
             }
-
-            return null;
+        } catch (\Throwable $e) {
+            // fallback
         }
 
-        return $this->ai_api_key;
+        // 2. Legacy custom field
+        if (! empty($this->ai_api_key)) {
+            return $this->ai_api_key;
+        }
+
+        // 3. Global settings (เดิม)
+        $provider = $this->getActualAIProvider();
+        $key = match ($provider) {
+            'gemini' => AiContentSetting::getValue('gemini_api_key'),
+            'openrouter' => AiContentSetting::getValue('claude_api_key')
+                ?? AiContentSetting::getValue('openai_api_key'),
+            default => null,
+        };
+
+        return $key;
     }
 
     /**

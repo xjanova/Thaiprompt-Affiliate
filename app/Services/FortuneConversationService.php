@@ -6382,7 +6382,12 @@ class FortuneConversationService
                 // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามก่อน generate
                 //   ถ้าเข้าข่ายละเอียดอ่อน (ตาย/ป่วย/หย่า/ฆ่าตัวตาย/อารมณ์รุนแรง)
                 //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
-                $deepPurpose = 'prediction';
+                // 🎯 (2026-05-13) Default = 'prediction_deep' (เจาะจง Deep 39฿)
+                //   scope `forPurpose('prediction_deep')` fallback chain:
+                //     prediction_deep → prediction → any → null
+                //   → ถ้า admin มาร์ค key 'prediction_deep' จะใช้ก่อน,
+                //     ไม่งั้น fallback ไป 'prediction' หรือ 'any' (backward compat)
+                $deepPurpose = 'prediction_deep';
                 $deepPlatform = $platform ?? ($this->currentPlatform ?? 'facebook');
                 $deepUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
                 $deepDecision = $this->resolveSensitiveDecision(

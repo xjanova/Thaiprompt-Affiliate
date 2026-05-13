@@ -159,14 +159,16 @@ class CelticCrossService
                 $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
             }
 
-            // 🆕 (2026-05-07) Celtic 99฿ = paid prediction → request 'prediction' purpose
-            //   ระบบจะเลือก key ที่ admin ตั้ง purpose='prediction' เป็นอันดับแรก
+            // 🎯 (2026-05-13) Celtic 99฿ = paid prediction → request 'prediction_celtic' purpose
+            //   ระบบจะเลือก key ที่ admin ตั้ง purpose='prediction_celtic' ก่อน
+            //   fallback chain: prediction_celtic → prediction → any → null
+            //   → ลูกค้า Celtic จ่ายแพง (99฿) — admin มาร์ค key คุณภาพสูงเฉพาะแพคนี้ได้
             //
             // 🌟 (2026-05-07) Sensitive AI Mode — สแกนคำถามลูกค้าก่อน generate
             //   ถ้าเข้าข่ายละเอียดอ่อน (อารมณ์ร้าย/หัวข้อหนัก/ซับซ้อน)
             //   → ใช้ purpose='sensitive' เลือก Pro key (Gemini Pro/GPT-5+)
             //   เลื่อนใช้แค่ใน Q2+ (followup) เพราะ Q1 + __PREDICT_ALL__ ไม่มีคำถามเฉพาะ
-            $celticPurpose = 'prediction';
+            $celticPurpose = 'prediction_celtic';
             $celticDecision = null;
             if (! $isPredictAll && ! empty($userQuestion)) {
                 $celticPlatform = $reading->platform ?? 'facebook';

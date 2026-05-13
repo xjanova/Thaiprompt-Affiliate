@@ -204,9 +204,12 @@ class FortuneSettingsController extends Controller
             'facebook_page_token' => 'nullable|string',
             'facebook_verify_token' => 'nullable|string|max:100',
             // การตั้งค่า AI
-            'ai_provider' => 'required|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon',
+            // 🎯 (2026-05-13) Pool-first architecture — UI ในหน้านี้ไม่มี ai_provider/ai_model field
+            //   ขณะที่ DB column ยังอยู่ (legacy backward compat สำหรับบิลเก่า)
+            //   → เปลี่ยน required → nullable เพื่อให้ submit form ใหม่ (ไม่มี field) ผ่าน validation
+            'ai_provider' => 'nullable|in:gemini,groq,grok,qwen,openrouter,deepseek,typhoon,openai,anthropic',
             'ai_api_key' => 'nullable|string',
-            'ai_model' => 'required|string|max:100',
+            'ai_model' => 'nullable|string|max:100',
             'prediction_strict_provider' => 'boolean',  // 🎯 (2026-05-02) strict mode
             'basic_prompt_template' => 'nullable|string',
             'deep_prompt_template' => 'nullable|string',

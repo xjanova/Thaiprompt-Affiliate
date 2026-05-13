@@ -405,6 +405,69 @@ class AiApiKeyPoolService
     }
 
     /**
+     * 🎯 (2026-05-13) Acquire key ข้าม provider — Pool เป็นคนเลือก provider เอง
+     *
+     * เพื่ออะไร:
+     *   - FortuneAIService constructor ไม่ต้องตัดสินใจ provider ล่วงหน้า
+     *   - admin จัด Pool ที่เดียว — key ใน Pool คือ source of truth
+     *   - ระบบเลือก key ที่ priority สูง + load น้อย จากทั้ง Pool (ทุก provider)
+     *
+     * Logic:
+     *   1. Query keys ทั้งหมด (filter by purpose + available)
+     *   2. Sort by priority DESC → ใช้ key ที่ admin ตั้ง priority สูงก่อน
+     *   3. Skip key ที่ติด cooldown / inflight cap / rpm cap
+     *   4. Acquire key แรกที่ผ่าน — increment in-flight
+     *
+     * @param  string|null  $purpose  filter (prediction_deep / prediction_celtic / chat / etc.)
+     *                                 null = หา key ใดก็ได้ (any/null/all)
+     * @return AiApiKey|null  null ถ้าไม่มี key พร้อมใช้
+     */
+    public function acquireKeyAnyProvider(?string $purpose = null): ?AiApiKey
+    {
+        $query = AiApiKey::available()->orderByDesc('priority')->orderBy('tokens_used_today');
+
+        if ($purpose !== null && $purpose !== '') {
+            $query->forPurpose($purpose);
+        }
+
+        $candidates = $query->get();
+
+        foreach ($candidates as $key) {
+            $provider = $key->provider;
+
+            // ⛔ Skip key ที่ติด per-key cooldown (เพิ่งโดน 429)
+            if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
+                continue;
+            }
+
+            // ⛔ Skip key ที่ in-flight เต็ม
+            $inflight = $this->getKeyInflight($provider, $key->id);
+            if ($inflight >= 10) {  // PER_KEY_INFLIGHT_CAP (เหมือน FortuneAIService)
+                continue;
+            }
+
+            // ⛔ Skip key ที่ RPM เต็ม
+            $rpm = $this->getKeyRpm($provider, $key->id);
+            $rpmLimit = $key->rate_limit_per_minute ?? 60;
+            if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
+                continue;
+            }
+
+            // ✅ ผ่านทุกเช็ค — acquire
+            $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
+            if (Cache::has($inflightKey)) {
+                Cache::increment($inflightKey);
+            } else {
+                Cache::put($inflightKey, 1, 30);
+            }
+
+            return $key;
+        }
+
+        return null;
+    }
+
+    /**
      * คืน key กลับ pool (ลด in-flight + บันทึก rpm)
      *
      * เรียกเมื่อ AI call เสร็จ (สำเร็จหรือล้มเหลว) — ควรอยู่ใน finally block

@@ -121,10 +121,14 @@
                     @endforeach
                 </select>
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    💡 <strong>free_card</strong> ถูกเลือก<u>ก่อน</u> prediction/any (boost +1000) — สงวน paid keys ไว้สำหรับลูกค้าจ่ายเงิน<br>
-                    💎 <strong>prediction</strong> ใช้กับลูกค้าที่จ่ายแล้ว (Deep 39 / Celtic 99) — กัน free/chat ดูดโควต้า<br>
-                    🌟 <strong>sensitive</strong> = STRICT — Pro model สำหรับ Sensitive AI / Bill Psychology / Celtic Premium (ไม่ fallback ไป any)<br>
-                    🎙️ <strong>tts</strong> = STRICT — เฉพาะสังเคราะห์เสียง (MiniMax / OpenAI TTS)<br>
+                    📋 <strong>Hierarchy การเลือก key</strong> (เจาะจง → ทั่วไป):<br>
+                    💎 <strong>prediction_celtic</strong> → Celtic 99฿ ก่อน, fallback → prediction → any<br>
+                    🌟 <strong>prediction_deep</strong> → Deep 39฿ ก่อน, fallback → prediction → any<br>
+                    🔮 <strong>prediction</strong> = legacy — ใช้ทั้ง Deep + Celtic (ถ้าไม่อยากแยก)<br>
+                    🎁 <strong>free_card</strong> → ทำนายฟรี (boost +1000 — สงวน paid keys)<br>
+                    💬 <strong>chat</strong> → แชทสนทนา — ไม่กระทบ pool ทำนาย<br>
+                    🌟 <strong>sensitive</strong> = STRICT — Pro Session (Bill / Celtic Premium) ไม่ fallback<br>
+                    🎙️ <strong>tts</strong> = STRICT — เฉพาะสังเคราะห์เสียง<br>
                     🔼 <strong>Priority</strong> สูง = เลือกก่อนใน purpose เดียวกัน (100 = สูงสุด)
                 </p>
             </div>

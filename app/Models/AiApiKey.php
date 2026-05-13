@@ -234,15 +234,18 @@ class AiApiKey extends Model
      *              เพราะ Pro model แพง 5-15 เท่าของ default
      */
     public const PURPOSES = [
-        'any' => 'ใช้ได้ทุกอย่าง (default)',
-        'prediction' => 'เฉพาะคำทำนาย (paid deep reading)',
-        'free_card' => '🎁 เฉพาะทำนายฟรี (1 ใบ หลัง DM)',
-        'chat' => 'เฉพาะแชทสนทนา (chat)',
-        'sensitive' => '🌟 เฉพาะบริบทละเอียดอ่อน (Pro model — Gemini Pro/GPT-5+)',
+        'any' => '⚙️ ใช้ได้ทุกอย่าง (default — แชท/ทำนาย/ฟรีการ์ด ใช้ได้)',
+        'chat' => '💬 แชทสนทนา (คุยกับลูกค้าทั่วไป)',
+        'prediction' => '🔮 ทำนายทั่วไป (ใช้ทั้ง Deep 39 + Celtic 99 ถ้าไม่แยก)',
+        // 🎯 (2026-05-13) แยกตามแพคเกจ — admin มาร์คได้ละเอียด
+        'prediction_deep' => '🌟 ทำนาย Deep 39฿ เฉพาะ (เน้น speed)',
+        'prediction_celtic' => '💎 ทำนาย Celtic 99฿ เฉพาะ (เน้นคุณภาพ — ลูกค้าจ่ายแพง)',
+        'free_card' => '🎁 ทำนายฟรี 1 ใบ (หลัง DM — สงวน paid keys)',
+        'sensitive' => '🌟 STRICT — Pro Session (Sensitive AI / Bill / Celtic Premium)',
         // 🎙️ (2026-05-08) Voice synthesis — Celtic 99฿ summary audio
         //    STRICT scope (เหมือน 'sensitive') — ไม่ fallback ไป any
         //    เหตุผล: TTS API คนละ schema — ใช้ key ผิดทางจะ fail แน่ๆ
-        'tts' => '🎙️ เฉพาะสังเคราะห์เสียง (TTS — MiniMax/OpenAI TTS)',
+        'tts' => '🎙️ STRICT — TTS (สังเคราะห์เสียง MiniMax/OpenAI)',
     ];
 
     /**
@@ -518,21 +521,26 @@ class AiApiKey extends Model
      * @param  string  $purpose  'prediction' / 'chat' / 'free_card' / 'sensitive'
      *
      * Hierarchy (เจาะจงสูง → ทั่วไป):
-     *   - 'sensitive'  → 🌟 STRICT: match ['sensitive'] เท่านั้น
-     *                    ❌ ไม่ fallback ไป any/prediction (Pro model only)
-     *                    เหตุผล: Pro model แพง 5-15 เท่า — ไม่ควร burn budget
-     *                    เมื่อ admin ไม่ได้ตั้งค่า key sensitive ไว้
-     *                    Caller ต้องเช็ค null + fallback เอง
-     *   - 'free_card'  → match ['free_card', 'prediction', 'any', null]
-     *                    เพราะ free_card เป็น subset ของ prediction
-     *                    (key prediction ใช้ทำนายฟรีได้ ถ้าไม่มี free_card key)
-     *   - 'prediction' → match ['prediction', 'any', null]
-     *                    (ไม่ใช้ free_card / sensitive key — สงวนไว้เฉพาะของมัน)
-     *   - 'chat'       → match ['chat', 'any', null]
-     *                    (ไม่ใช้ sensitive key — Pro แพง สงวน)
+     *   - 'sensitive'         → 🌟 STRICT: match ['sensitive'] เท่านั้น
+     *                           ❌ ไม่ fallback ไป any/prediction (Pro model only)
+     *                           เหตุผล: Pro model แพง 5-15 เท่า — ไม่ควร burn budget
+     *                           เมื่อ admin ไม่ได้ตั้งค่า key sensitive ไว้
+     *                           Caller ต้องเช็ค null + fallback เอง
+     *   - 'tts'               → STRICT: match ['tts'] (API schema คนละแบบ)
+     *   - 'prediction_deep'   → 🆕 match [prediction_deep, prediction, any, null]
+     *                           (Deep 39฿ — ถ้ามาร์คเจาะจงใช้, ไม่งั้น fallback prediction)
+     *   - 'prediction_celtic' → 🆕 match [prediction_celtic, prediction, any, null]
+     *                           (Celtic 99฿ — ลูกค้าจ่ายแพง ใช้ key คุณภาพดีได้)
+     *   - 'free_card'         → match [free_card, prediction, any, null]
+     *                           เพราะ free_card เป็น subset ของ prediction
+     *   - 'prediction'        → match [prediction, any, null]
+     *                           (legacy — ใช้ทั้ง Deep + Celtic ถ้าไม่แยก)
+     *   - 'chat'              → match [chat, any, null]
+     *                           (ไม่ใช้ sensitive key — Pro แพง สงวน)
      *
      * 🩹 (2026-05-05) Update — รองรับ free_card hierarchy
      * 🌟 (2026-05-07) Update — รองรับ sensitive (strict, no fallback)
+     * 🎯 (2026-05-13) Update — แยก prediction_deep + prediction_celtic
      */
     public function scopeForPurpose($query, string $purpose)
     {
@@ -549,6 +557,25 @@ class AiApiKey extends Model
             return $query->where('purpose', 'tts');
         }
 
+        // 🎯 (2026-05-13) prediction_deep — Deep 39฿ เจาะจง
+        //   Fallback chain: prediction_deep → prediction → any → null
+        //   admin มาร์คเจาะจง 'prediction_deep' = ใช้ key นี้ก่อน,
+        //   ไม่งั้นใช้ key 'prediction' หรือ 'any'
+        if ($purpose === 'prediction_deep') {
+            return $query->where(function ($q) {
+                $q->whereNull('purpose')
+                    ->orWhereIn('purpose', ['any', 'prediction', 'prediction_deep']);
+            });
+        }
+
+        // 🎯 (2026-05-13) prediction_celtic — Celtic 99฿ เจาะจง (ลูกค้าจ่ายแพง คุณภาพสูง)
+        if ($purpose === 'prediction_celtic') {
+            return $query->where(function ($q) {
+                $q->whereNull('purpose')
+                    ->orWhereIn('purpose', ['any', 'prediction', 'prediction_celtic']);
+            });
+        }
+
         // free_card เป็น subset ของ prediction → fallback ให้ prediction key ทำได้
         if ($purpose === 'free_card') {
             return $query->where(function ($q) {
@@ -557,7 +584,9 @@ class AiApiKey extends Model
             });
         }
 
-        // prediction = ห้าม free_card / sensitive key (สงวนไว้เฉพาะของมัน)
+        // prediction = ห้าม free_card / sensitive / deep / celtic key (สงวนไว้เฉพาะของมัน)
+        //   หมายเหตุ: prediction_deep / prediction_celtic ก็ไม่ใช้
+        //   เพราะ admin ตั้งใจให้ key พวกนั้นเจาะจงแพคเกจ
         if ($purpose === 'prediction') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')

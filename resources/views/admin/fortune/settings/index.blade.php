@@ -415,165 +415,106 @@
             </div>
         </div>
 
-        {{-- AI Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai" x-data="{ useGlobal: {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'true' : 'false' }} }">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">
-                    🤖 การตั้งค่า AI Provider
-                </h3>
-                <button type="button" @click="testAI()"
-                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition">
-                    🧪 ทดสอบการเชื่อมต่อ
-                </button>
-            </div>
-
-            {{-- Toggle: Use Global AI Settings --}}
-            <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                <div class="flex items-center justify-between">
-                    <div class="flex-1">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox"
-                                   name="use_global_ai_settings"
-                                   value="1"
-                                   x-model="useGlobal"
-                                   {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'checked' : '' }}
-                                   class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <span class="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                                🔗 ใช้การตั้งค่า AI จากระบบหลัก
-                            </span>
-                        </label>
-                        <p class="mt-1 ml-8 text-xs text-gray-600 dark:text-gray-400">
-                            เมื่อเปิดใช้งาน ระบบจะใช้ Gemini/Claude API Key จากการตั้งค่าระบบหลัก (ไม่ต้องตั้งค่าซ้ำ)
-                        </p>
-                    </div>
-                    <div x-show="useGlobal" class="ml-4">
-                        <span class="px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-semibold rounded-full">
-                            ✓ ใช้ค่าจากระบบหลัก
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            {{-- แสดงเมื่อใช้ Global Settings --}}
-            <div x-show="useGlobal" x-cloak class="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <div class="flex items-start gap-3">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-info-circle text-blue-500 text-lg"></i>
-                    </div>
-                    <div>
-                        <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">
-                            กำลังใช้การตั้งค่า AI จากระบบหลัก
-                        </h4>
-                        <p class="text-xs text-gray-600 dark:text-gray-400 mb-2">
-                            ระบบจะอ่าน API Key จากการตั้งค่าระบบหลัก (AiContentSetting) โดยอัตโนมัติ
-                        </p>
-                        <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                            <div>• หากมี <strong>Gemini API Key</strong> จะใช้ Gemini (แนะนำ - ฟรี)</div>
-                            <div>• หากมี <strong>Claude API Key</strong> จะใช้ Claude (via OpenRouter)</div>
-                            <div>• หากมี <strong>OpenAI API Key</strong> จะใช้ GPT (via OpenRouter)</div>
-                            <div>• หากมี Key ใน <strong>API Key Pool</strong> จะใช้ Key จาก Pool — วนครบทุก key อัตโนมัติ</div>
+        {{-- 🎯 (2026-05-13) AI Provider Info Card — Pool-first architecture
+             เดิม: section นี้มี toggle/dropdown/key field ที่ "งง" — user ตั้ง openai แต่ระบบใช้ gemini
+                  เพราะ logic เก่าตรวจ use_global_ai_settings → vote จาก global key (Gemini ก่อน)
+             ใหม่: ไม่ต้องตั้ง provider/model/key ในหน้านี้ — Pool เป็น single source of truth
+                  จัดที่ /admin/ai-api-keys แห่งเดียว: เพิ่ม/ลบ key พร้อม purpose
+                  ระบบเลือก key ตาม purpose (prediction_deep / prediction_celtic / chat / sensitive)
+                  และเลือก provider เองจาก Pool — admin ไม่ต้องตั้งซ้ำ --}}
+        <div class="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 border-2 border-indigo-200 dark:border-indigo-700 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai">
+            <div class="flex items-start justify-between gap-4 flex-wrap">
+                <div class="flex-1 min-w-0">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2 flex items-center gap-2">
+                        🤖 AI Provider — ควบคุมจาก Pool
+                    </h3>
+                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
+                        ระบบ Fortune ใช้ <strong>AI API Key Pool</strong> เป็นแหล่งเดียวในการเลือก provider/model/key —
+                        ไม่ต้องตั้งค่าซ้ำในหน้านี้.
+                        Pool เลือก key ที่ <strong>priority สูง + load น้อย</strong> โดยอัตโนมัติ
+                        ตาม <strong>purpose</strong> ที่ admin มาร์คไว้:
+                    </p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs mb-3">
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-indigo-700 dark:text-indigo-300">💬 chat</div>
+                            <div class="text-gray-600 dark:text-gray-400">แชทกับลูกค้า (สนทนาทั่วไป)</div>
                         </div>
-                        <div class="mt-3 flex flex-wrap gap-2">
-                            <a href="{{ route('admin.ai-api-keys.index') }}"
-                               class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg transition shadow-sm"
-                               target="_blank">
-                                🔑 จัดการ AI API Key Pool
-                                <svg class="ml-1.5 w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
-                            </a>
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-blue-700 dark:text-blue-300">🌟 prediction_deep</div>
+                            <div class="text-gray-600 dark:text-gray-400">ทำนาย Deep 39฿ (เน้น speed)</div>
                         </div>
-                        <p class="mt-2 text-xs text-amber-600 dark:text-amber-400">
-                            💡 แนะนำเพิ่ม key หลายตัวใน Pool — ระบบจะวนใช้ครบทุก key ก่อน fail
-                        </p>
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-purple-700 dark:text-purple-300">💎 prediction_celtic</div>
+                            <div class="text-gray-600 dark:text-gray-400">ทำนาย Celtic 99฿ (เน้นคุณภาพ)</div>
+                        </div>
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-rose-700 dark:text-rose-300">🌟 sensitive</div>
+                            <div class="text-gray-600 dark:text-gray-400">Pro Session (Bill + Celtic Premium)</div>
+                        </div>
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-emerald-700 dark:text-emerald-300">🎁 free_card</div>
+                            <div class="text-gray-600 dark:text-gray-400">ทำนายฟรี 1 ใบ (หลัง DM)</div>
+                        </div>
+                        <div class="bg-white/60 dark:bg-gray-800/40 rounded-lg px-3 py-2 border border-gray-200 dark:border-gray-700">
+                            <div class="font-semibold text-gray-700 dark:text-gray-300">⚙️ any</div>
+                            <div class="text-gray-600 dark:text-gray-400">ใช้ได้ทุก purpose (default fallback)</div>
+                        </div>
                     </div>
+                    <p class="text-xs text-amber-700 dark:text-amber-300 mb-3 leading-relaxed">
+                        💡 <strong>Fallback hierarchy</strong>: ถ้า admin มาร์ค key 'prediction_celtic' → จะใช้ก่อน,
+                        ถ้าไม่มี → ใช้ 'prediction' → ใช้ 'any' → fallback ไป legacy settings
+                        (เพื่อกันบิลเก่า)
+                    </p>
                 </div>
-            </div>
-
-            {{-- แสดงเมื่อใช้ Custom Settings --}}
-            <div x-show="!useGlobal" x-cloak class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        AI Provider
-                    </label>
-                    <select name="ai_provider" 
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                        <option value="gemini" {{ $settings->ai_provider === 'gemini' ? 'selected' : '' }}>Gemini (Google) - แนะนำ ฟรี</option>
-                        <option value="typhoon" {{ $settings->ai_provider === 'typhoon' ? 'selected' : '' }}>Typhoon (SCB 10X) - ภาษาไทยดีสุด ฟรี</option>
-                        <option value="groq" {{ $settings->ai_provider === 'groq' ? 'selected' : '' }}>Groq - เร็วที่สุด ฟรี</option>
-                        <option value="deepseek" {{ $settings->ai_provider === 'deepseek' ? 'selected' : '' }}>DeepSeek - ราคาถูก มี credits ฟรี</option>
-                        <option value="grok" {{ $settings->ai_provider === 'grok' ? 'selected' : '' }}>Grok (xAI) - ฟันธง</option>
-                        <option value="qwen" {{ $settings->ai_provider === 'qwen' ? 'selected' : '' }}>Qwen (Alibaba)</option>
-                        <option value="openrouter" {{ $settings->ai_provider === 'openrouter' ? 'selected' : '' }}>OpenRouter - รวมหลาย AI</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        Model
-                    </label>
-                    <input type="text" name="ai_model" 
-                           value="{{ old('ai_model', $settings->ai_model) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                           placeholder="gemini-2.0-flash-exp">
-                </div>
-
-                <div class="md:col-span-2">
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        API Key
-                    </label>
-                    <input type="password" name="ai_api_key"
-                           value="{{ old('ai_api_key', $settings->ai_api_key) }}"
-                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-                           placeholder="AIz...">
-                </div>
-
-                {{-- 🎯 (2026-05-02) Strict provider mode — เลือกใช้ provider เดียว ไม่ fallback --}}
-                <div class="md:col-span-2">
-                    <label class="flex items-start gap-3 p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-2 border-purple-300 dark:border-purple-700 rounded-xl cursor-pointer hover:bg-purple-100 dark:hover:bg-purple-900/30 transition">
-                        <input type="hidden" name="prediction_strict_provider" value="0">
-                        <input type="checkbox" name="prediction_strict_provider" value="1"
-                               {{ old('prediction_strict_provider', $settings->prediction_strict_provider ?? false) ? 'checked' : '' }}
-                               class="mt-1 w-5 h-5 rounded text-purple-600 focus:ring-purple-500 focus:ring-2">
-                        <div class="flex-1">
-                            <p class="font-bold text-purple-900 dark:text-purple-100 mb-1">
-                                🎯 ใช้เฉพาะ provider ที่เลือก (ไม่ fallback ไป provider อื่น)
-                            </p>
-                            <p class="text-xs text-purple-700 dark:text-purple-300 leading-relaxed">
-                                <b>เปิด</b> = ใช้แค่ <code class="bg-white/50 dark:bg-gray-800/50 px-1 rounded">{{ $settings->ai_provider ?? 'gemini' }}</code> เท่านั้น —
-                                ถ้า fail (quota หมด/error) → ระบบจะแจ้ง error ทันที ไม่ใช้ provider อื่น<br>
-                                <b>ปิด</b> (default) = ลอง primary ก่อน, ถ้า fail → fallback ไป provider อื่นใน pool อัตโนมัติ
-                            </p>
-                            <p class="text-xs text-purple-600 dark:text-purple-400 mt-2">
-                                💡 เลือกเปิดถ้าต้องการคุณภาพคำทำนายคงที่จาก provider เดียว (เช่น Gemini เท่านั้น)
-                                — เผื่อ provider อื่นให้ผลลัพธ์ต่างกันมาก
-                            </p>
-                        </div>
-                    </label>
-                </div>
-            </div> {{-- End of custom settings grid --}}
-
-            {{-- ลิงก์ตั้งค่าที่เกี่ยวข้อง --}}
-            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-3">🔗 ตั้งค่าที่เกี่ยวข้อง</h4>
-                <div class="flex flex-wrap gap-2">
-                    @if(Route::has('admin.ai-api-keys.index'))
+                <div class="flex flex-col gap-2">
                     <a href="{{ route('admin.ai-api-keys.index') }}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 text-xs font-medium rounded-full hover:bg-blue-200 dark:hover:bg-blue-900/50 transition">
-                        🔑 จัดการ API Key Pool
+                       class="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white text-sm font-bold rounded-lg shadow-md transition whitespace-nowrap">
+                        🔑 จัดการ Pool
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
                     </a>
-                    @endif
-                    @if(Route::has('admin.ai-content-writer.settings'))
-                    <a href="{{ route('admin.ai-content-writer.settings') }}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-xs font-medium rounded-full hover:bg-green-200 dark:hover:bg-green-900/50 transition">
-                        🤖 ตั้งค่า AI หลัก (Global)
-                    </a>
-                    @endif
+                    @if(Route::has('admin.fortune.playground'))
                     <a href="{{ route('admin.fortune.playground') }}"
-                       class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 text-xs font-medium rounded-full hover:bg-purple-200 dark:hover:bg-purple-900/50 transition">
-                        🎮 ทดสอบ AI Playground
+                       class="inline-flex items-center gap-2 px-5 py-2 bg-purple-100 hover:bg-purple-200 dark:bg-purple-900/30 dark:hover:bg-purple-900/50 text-purple-800 dark:text-purple-300 text-xs font-semibold rounded-lg transition whitespace-nowrap">
+                        🎮 ทดสอบ Playground
                     </a>
+                    @endif
+                    @if(Route::has('admin.ai-api-keys.usage-dashboard'))
+                    <a href="{{ route('admin.ai-api-keys.usage-dashboard') }}"
+                       class="inline-flex items-center gap-2 px-5 py-2 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/30 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 text-xs font-semibold rounded-lg transition whitespace-nowrap">
+                        📊 ดู Usage Dashboard
+                    </a>
+                    @endif
                 </div>
             </div>
-        </div> {{-- End of AI Settings card --}}
+
+            {{-- 🎯 Strict provider mode — เก็บไว้สำหรับ admin ที่ต้องการ lock provider
+                 logic: ถ้าเปิด → ระบบใช้ provider ของ Pool first key เท่านั้น ไม่ fallback ไป provider อื่น
+                 (กัน Pool คนละ provider ผสม → คำทำนายต่าง provider ต่าง tone) --}}
+            <div class="mt-4 pt-4 border-t border-indigo-200 dark:border-indigo-700">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="hidden" name="prediction_strict_provider" value="0">
+                    <input type="checkbox" name="prediction_strict_provider" value="1"
+                           {{ old('prediction_strict_provider', $settings->prediction_strict_provider ?? false) ? 'checked' : '' }}
+                           class="mt-1 w-5 h-5 rounded text-purple-600 focus:ring-purple-500 focus:ring-2">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900 dark:text-white text-sm">
+                            🎯 Lock Provider — ใช้แค่ provider ของ key แรกใน Pool (ไม่ fallback ไป provider อื่น)
+                        </p>
+                        <p class="text-xs text-gray-600 dark:text-gray-400 mt-1 leading-relaxed">
+                            <b>เปิด</b> = ถ้า Pool first key เป็น OpenAI → ใช้แค่ OpenAI keys, fail แล้ว fail ไม่สลับไป Gemini/Groq.<br>
+                            <b>ปิด (default)</b> = fallback ทุก provider ใน Pool — ลูกค้าได้คำทำนายแน่นอน แม้ provider แรกพัง
+                        </p>
+                    </div>
+                </label>
+            </div>
+
+            {{-- ✅ Hidden — backward compat: เก็บค่าเดิมใน DB ไว้
+                 use_global_ai_settings=false (ใช้ค่าจาก Pool, ไม่ vote global)
+                 ai_provider/ai_model/ai_api_key — เก็บค่าเดิมไว้ใน DB ถ้ามี (legacy fallback) --}}
+            <input type="hidden" name="use_global_ai_settings" value="0">
+        </div>
+
+        {{-- (2026-05-13) Legacy AI Settings card — ถูกแทนด้วย Pool-first info card ด้านบน --}}
 
         {{-- AI Chat ทั่วไป (สนทนาอัจฉริยะ) --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai"

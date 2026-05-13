@@ -61,15 +61,28 @@ class FortuneAIService
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
         $this->defaultPurpose = $purpose;
 
-        // ใช้ methods ใหม่ที่รองรับ global AI settings
-        $this->provider = $this->settings->getActualAIProvider();
-        $this->model = $this->settings->getActualAIModel();
-
-        // ลองใช้ API Key จาก Pool ก่อน (ครอบด้วย try-catch เผื่อตาราง pool ยังไม่มี)
+        // 🎯 (2026-05-13) Pool-first architecture
+        //   เดิม: $this->provider = $settings->getActualAIProvider() → อ่านจาก ai_provider field
+        //         → ถ้า admin ลืม set field → fall back ไป Gemini (default)
+        //         → admin งง: "ตั้ง openai ใน UI แต่ระบบใช้ Gemini"
+        //   ใหม่: Pool เป็น single source of truth
+        //         1. ลองหา key จาก Pool (filter by purpose)
+        //         2. ถ้าเจอ → ใช้ provider/model/key ของ Pool key นั้น
+        //         3. ถ้าไม่เจอ → fallback ไป $settings->ai_provider (legacy)
+        //         → admin แค่จัดการ Pool ที่เดียว ไม่ต้องตั้งซ้ำ
+        //
+        //   Backward compat:
+        //   - Pool ว่าง → ใช้ ai_provider/ai_api_key/ai_model จาก settings (เดิม)
+        //   - Pool มี key → provider/model มาจาก Pool key (ไม่อ่าน settings)
+        //   - Sensitive flow ยังคงใช้ logic ของตัวเอง (ดู method generateSensitive*)
+        //   - Playground override ผ่าน overrideForPlayground() ทำงานปกติ
         try {
             $this->poolService = new AiApiKeyPoolService;
             // 🆕 (2026-05-07) pass purpose ให้ pool — เลือก key ตรงประเภท
-            $this->currentKey = $this->poolService->acquireKey($this->provider, $purpose);
+            // 🎯 (2026-05-13) acquireKeyAnyProvider — Pool เป็นคนเลือก provider เอง
+            //    เลือก key ที่ priority สูง + load น้อย จากทั้ง Pool (ทุก provider)
+            //    admin จัด Pool ที่เดียว ไม่ต้องตั้งซ้ำใน fortune settings
+            $this->currentKey = $this->poolService->acquireKeyAnyProvider($purpose);
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Pool service ใช้ไม่ได้ ข้ามไป', [
                 'error' => $e->getMessage(),
@@ -80,20 +93,30 @@ class FortuneAIService
         }
 
         if ($this->currentKey) {
+            // ✅ Pool-first — ใช้ provider/model/key ของ Pool key
+            $this->provider = $this->currentKey->provider;
+            $this->model = $this->currentKey->resolveModel()
+                ?? $this->getDefaultModelForProvider($this->currentKey->provider);
             $this->apiKey = $this->currentKey->api_key;
-            Log::debug('FortuneAIService: ใช้ API Key จาก Pool', [
+            Log::debug('FortuneAIService: ใช้ API Key จาก Pool (Pool-first)', [
                 'provider' => $this->provider,
+                'model' => $this->model,
                 'purpose' => $purpose,
                 'key_id' => $this->currentKey->id,
                 'key_name' => $this->currentKey->name,
                 'key_purpose' => $this->currentKey->purpose,
             ]);
         } else {
-            // Fallback ไปใช้ key จาก settings
+            // 🛡️ Fallback — ไม่มี key ใน Pool → ใช้ settings เก่า (backward compat)
+            $this->provider = $this->settings->getActualAIProvider();
+            $this->model = $this->settings->getActualAIModel();
             $this->apiKey = $this->settings->getActualAIApiKey();
-            Log::debug('FortuneAIService: ใช้ API Key จาก Settings (ไม่พบใน Pool)', [
+            Log::warning('FortuneAIService: Pool ว่าง — fallback ไป legacy settings', [
                 'provider' => $this->provider,
+                'model' => $this->model,
                 'purpose' => $purpose,
+                'has_legacy_key' => ! empty($this->apiKey),
+                'hint' => 'แนะนำให้ admin เพิ่ม key ใน Pool (/admin/ai-api-keys)',
             ]);
         }
     }
