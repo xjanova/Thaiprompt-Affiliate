@@ -5425,15 +5425,15 @@ class FortuneConversationService
                 // ลูกค้าจ่ายแล้ว — return processing message ไว้ก่อน, retry job ภายหลังได้
             }
 
+            // 🎯 (2026-05-13) Pay-First UX — ตัดข้อความ "จะส่งคำทำนาย 1-3 นาที"
+            //   user spec: "เก็บขั้นไพ่ไว้ แต่ตัดข้อความ 'จะส่งคำทำนาย' — รวมส่งไพ่+คำทำนาย 1 รอบ"
+            //   เดิม: ส่ง tarot image + "🌙 หมอกำลังทำนาย... 1-3 นาที..." → ลูกค้ารอ → คำทำนายมา
+            //   ใหม่: ส่ง tarot image + ชื่อไพ่ (prefixMessage) เท่านั้น
+            //         AI Job ส่งคำทำนายตามมาเป็นชุดต่อเนื่อง (typing indicator + reading)
+            //   prefixMessage มาจาก handleTarotCardDraw แล้ว: "🃏✨ ได้ไพ่ X (หงาย)\n📖 ความหมาย: ..."
             return [
                 'action' => 'processing',
-                'message' => $prefixMessage
-                    ."═══════════════════════\n"
-                    ."🌙 *แม่หมอจันทรากำลังทำนายให้*\n"
-                    ."═══════════════════════\n\n"
-                    ."✨ ลงพลังเรียงไพ่ + คำนวณดวงดาว\n"
-                    ."⏳ ใช้เวลา 1-3 นาที — ขอให้เจ้าชะตารอสักครู่\n\n"
-                    .'จะส่งคำทำนายให้ทันทีเมื่อพร้อมนะคะ 🙏',
+                'message' => trim($prefixMessage),
                 'reading' => $reading,
             ];
         }
