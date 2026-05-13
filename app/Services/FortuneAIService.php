@@ -1468,22 +1468,36 @@ PROMPT;
             return (int) ((microtime(true) - $startTime) * 1000);
         };
 
-        // Step 1: ลอง chat AI หลัก
-        try {
-            if (! empty($history)) {
-                return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
+        // 🚀 (2026-05-14) Pool-direct mode — skip Step 1 ถ้า chat_ai_api_key ว่าง
+        //   user spec: "ทำไงได้มั่ง skip เลยได้ไหม ใช้ pool เลย"
+        //   ก่อนหน้า: chat_ai_api_key ว่าง → Step 1 throw → fallback Pool (เสีย latency 1-2s/turn)
+        //   ตอนนี้: ถ้า direct key ว่าง → skip ไป Pool loop ทันที (เร็วขึ้น ~1-2s)
+        //   ยังเก็บ Step 1 ถ้า admin set direct key (backward compat — direct path เร็วกว่า single call)
+        $directApiKey = $this->settings->getChatAIApiKey();
+        $hasDirectKey = ! empty($directApiKey);
+
+        if ($hasDirectKey) {
+            // Step 1: ลอง chat AI หลัก (admin set direct key)
+            try {
+                if (! empty($history)) {
+                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
+                }
+
+                return $this->generateChatResponse($messageText, $userProfile);
+            } catch (Exception $primaryErr) {
+                Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
+                    'primary_error' => mb_substr($primaryErr->getMessage(), 0, 150),
+                    'elapsed_ms' => $elapsedMs(),
+                ]);
             }
 
-            return $this->generateChatResponse($messageText, $userProfile);
-        } catch (Exception $primaryErr) {
-            Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
-                'primary_error' => mb_substr($primaryErr->getMessage(), 0, 150),
-                'elapsed_ms' => $elapsedMs(),
+            if ($elapsedMs() >= $totalTimeoutMs) {
+                throw new Exception("AI Chat primary timeout ({$elapsedMs()}ms) — ไม่มีเวลาลอง pool fallback");
+            }
+        } else {
+            Log::debug('FortuneAIService: chat_ai_api_key ว่าง — skip Step 1 ไป Pool direct', [
+                'chat_provider' => $this->settings->getChatAIProvider(),
             ]);
-        }
-
-        if ($elapsedMs() >= $totalTimeoutMs) {
-            throw new Exception("AI Chat primary timeout ({$elapsedMs()}ms) — ไม่มีเวลาลอง pool fallback");
         }
 
         // Step 2: วน loop keys จาก Smart Pool (เรียงตาม load score + user jitter)
