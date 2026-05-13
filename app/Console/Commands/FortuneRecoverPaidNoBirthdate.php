@@ -47,10 +47,13 @@ class FortuneRecoverPaidNoBirthdate extends Command
 
         $this->info('🛟 หา Deep readings ที่จ่ายแล้วแต่ค้าง (ไม่มีวันเกิด)...');
 
+        // 🛟 (2026-05-13 v2) ตัด whereNull('deep_response') ออก
+        //   เคสจริง Entony (#2474): status=completed + อาจมี error text ใน deep_response
+        //   เงื่อนไขจริงๆ = "จ่ายแล้ว + ไม่มีวันเกิด" → ค้างแน่นอน (Pay-First ต้องมี birth_date)
+        //   ไม่ว่า deep_response จะเป็น NULL หรือ error text → reset แล้วขอวันเกิดใหม่
         $query = FortuneReading::where('reading_type', 'deep')
             ->where('is_paid', true)
             ->whereNull('birth_date')
-            ->whereNull('deep_response')
             ->where('paid_at', '>=', now()->subHours($hours));
 
         if ($specificId) {
@@ -103,9 +106,10 @@ class FortuneRecoverPaidNoBirthdate extends Command
                     continue;
                 }
 
-                // 1. Reset state — กลับเข้า flow ขอวันเกิด
+                // 1. Reset state — กลับเข้า flow ขอวันเกิด + clear error text
                 $reading->update([
                     'conversation_status' => FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                    'deep_response' => null, // clear error text ถ้ามี
                 ]);
                 $reading->setConversationState('pay_first_mode', true);
                 $reading->setConversationState('reading_notification_sent', false);
