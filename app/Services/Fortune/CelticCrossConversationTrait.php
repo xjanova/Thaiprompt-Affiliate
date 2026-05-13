@@ -47,14 +47,66 @@ trait CelticCrossConversationTrait
             FortuneReading::STATUS_CELTIC_PICKING => $this->handleCelticPicking($reading, $messageText),
             FortuneReading::STATUS_CELTIC_AWAITING_QUESTION => $this->handleCelticAwaitingQuestion($reading, $messageText),
             FortuneReading::STATUS_CELTIC_QA_PROMPT => $this->handleCelticQaPrompt($reading, $messageText),
-            FortuneReading::STATUS_CELTIC_GENERATING => [
-                'action' => 'celtic_processing',
-                'message' => "🔮 หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่...\n"
-                    .'กรุณารอสักครู่ (~30-60 วินาที) ✨',
-                'reading' => $reading,
-            ],
+            FortuneReading::STATUS_CELTIC_GENERATING => $this->handleCelticGenerating($reading),
             default => null, // ไม่ใช่ Celtic state → ให้ caller จัดการต่อ
         };
+    }
+
+    /**
+     * 🛡️ (2026-05-14) Handle CELTIC_GENERATING state with stuck-recovery
+     *
+     * Bug ที่แก้: เดิม return "หมอกำลังพิจารณา..." ตายตัว ถ้า AI call ค้าง
+     * (PHP-FPM kill กลางทาง, OpenAI timeout >FPM limit, fatal error)
+     * → status STUCK ที่ GENERATING ตลอดไป → ลูกค้าถามอะไรก็ตอบแบบเดิม
+     *
+     * วิธีกู้: เช็ค updated_at ของ reading
+     * - ถ้า > STUCK_THRESHOLD_SEC (120s) → revert เป็น AWAITING_QUESTION
+     *   + แจ้งลูกค้าให้พิมพ์คำถามใหม่
+     * - ถ้ายังไม่เกิน → reply "กำลังพิจารณา" ตามเดิม
+     *
+     * Threshold 120s = OPENAI_RESPONSES_TIMEOUT — ถ้าเกินแน่นอนว่า process ตาย
+     */
+    protected function handleCelticGenerating(FortuneReading $reading): array
+    {
+        $stuckThresholdSec = 120;
+        $generatingForSec = $reading->updated_at
+            ? abs(now()->diffInSeconds($reading->updated_at, false))
+            : 0;
+
+        // ค้างเกิน threshold → ถือว่า process ตายแล้ว → revert state เพื่อให้ถามใหม่ได้
+        if ($generatingForSec >= $stuckThresholdSec) {
+            \Log::warning('Celtic: GENERATING state stuck — auto-recovering to AWAITING_QUESTION', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'stuck_for_sec' => $generatingForSec,
+                'threshold_sec' => $stuckThresholdSec,
+                'platform' => $reading->platform,
+            ]);
+
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $timeHint = $remainingMin !== null && $remainingMin > 0
+                ? "⏳ เหลือเวลาคุยอีก {$remainingMin} นาที"
+                : '⏳ ยังคุยกับแม่หมอได้ในช่วงเวลาที่กำหนด';
+
+            return [
+                'action' => 'celtic_stuck_recovered',
+                'message' => "🌙 ขออภัยค่ะ เมื่อกี้แม่หมอเชื่อมจิตช้าไปนิด ✨\n\n"
+                    ."💬 รบกวนเจ้าชะตาพิมพ์คำถามมาใหม่อีกครั้งนะคะ\n"
+                    .'แม่หมอพร้อมรับฟังเสมอ 🙏'."\n\n"
+                    .$timeHint,
+                'reading' => $reading,
+            ];
+        }
+
+        // ยังไม่ stuck → reply ตามเดิม
+        return [
+            'action' => 'celtic_processing',
+            'message' => "🔮 หมอกำลังพิจารณาไพ่ทั้ง 10 ใบให้เจ้าชะตาอยู่...\n"
+                .'กรุณารอสักครู่ (~30-60 วินาที) ✨',
+            'reading' => $reading,
+        ];
     }
 
     /**
@@ -1165,6 +1217,10 @@ trait CelticCrossConversationTrait
 
         // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
         //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
+        // 🐛 (2026-05-14) ก่อนหน้านี้ลืม define $maxQuestions → PHP throw
+        //   "Undefined variable $maxQuestions" หลัง AI ตอบสำเร็จ → status ค้าง GENERATING
+        //   Fix: อ่านจาก settings (0 = unlimited, default)
+        $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 0);
 
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
