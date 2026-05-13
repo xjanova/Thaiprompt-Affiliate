@@ -407,64 +407,179 @@ class AiApiKeyPoolService
     /**
      * 🎯 (2026-05-13) Acquire key ข้าม provider — Pool เป็นคนเลือก provider เอง
      *
-     * เพื่ออะไร:
-     *   - FortuneAIService constructor ไม่ต้องตัดสินใจ provider ล่วงหน้า
-     *   - admin จัด Pool ที่เดียว — key ใน Pool คือ source of truth
-     *   - ระบบเลือก key ที่ priority สูง + load น้อย จากทั้ง Pool (ทุก provider)
+     * 🔄 (2026-05-13 v2) Respect rotation_mode ของ provider per-tier
      *
-     * Logic:
-     *   1. Query keys ทั้งหมด (filter by purpose + available)
-     *   2. Sort by priority DESC → ใช้ key ที่ admin ตั้ง priority สูงก่อน
-     *   3. Skip key ที่ติด cooldown / inflight cap / rpm cap
-     *   4. Acquire key แรกที่ผ่าน — increment in-flight
+     * Logic ใหม่ — 2-axis:
+     *   AXIS 1: priority tier (DESC) — admin ตั้ง priority สูงกว่า = tier ก่อน
+     *   AXIS 2: ภายใน tier เดียวกัน + provider เดียวกัน → ใช้ rotation_mode
+     *           (round_robin / least_used / smart / random / etc. ตาม AiApiKeySetting)
      *
-     * @param  string|null  $purpose  filter (prediction_deep / prediction_celtic / chat / etc.)
-     *                                 null = หา key ใดก็ได้ (any/null/all)
-     * @return AiApiKey|null  null ถ้าไม่มี key พร้อมใช้
+     * ตัวอย่าง:
+     *   Pool:
+     *     - openai_A: priority=100, mode(openai)=smart
+     *     - openai_B: priority=100
+     *     - gemini_X: priority=100, mode(gemini)=round_robin
+     *     - gemini_Y: priority=100
+     *     - groq_Q:   priority=50
+     *
+     *   Tier 100: openai_A/B + gemini_X/Y
+     *     → ลอง openai ก่อน (alphabetical): smart mode เลือก A หรือ B ตาม load
+     *     → fail/cooldown → ลอง gemini: round_robin rotate X/Y
+     *   Tier 50: groq_Q (single key)
+     *     → fallback ถ้า tier 100 หมดสิทธิ์
+     *
+     * @param  string|null  $purpose  filter (prediction_deep / chat / sensitive / etc.)
+     * @return AiApiKey|null
      */
     public function acquireKeyAnyProvider(?string $purpose = null): ?AiApiKey
     {
-        $query = AiApiKey::available()->orderByDesc('priority')->orderBy('tokens_used_today');
-
+        // 1. Query keys + purpose filter + priority DESC
+        $query = AiApiKey::available()->orderByDesc('priority');
         if ($purpose !== null && $purpose !== '') {
             $query->forPurpose($purpose);
         }
 
-        $candidates = $query->get();
+        $allKeys = $query->get();
+        if ($allKeys->isEmpty()) {
+            return null;
+        }
 
-        foreach ($candidates as $key) {
-            $provider = $key->provider;
+        // 2. Group keys by priority tier (DESC — สูงสุดก่อน)
+        $tiers = $allKeys->groupBy('priority')->sortKeysDesc();
 
-            // ⛔ Skip key ที่ติด per-key cooldown (เพิ่งโดน 429)
-            if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
-                continue;
+        foreach ($tiers as $tierPriority => $tierKeys) {
+            // 3. List providers ใน tier นี้ (sort name สำหรับ stable order)
+            $providers = $tierKeys->pluck('provider')->unique()->values()->all();
+            sort($providers);
+
+            foreach ($providers as $provider) {
+                // 4. ใช้ rotation_mode ของ provider เลือก key ใน tier+provider นี้
+                $settings = AiApiKeySetting::forProvider($provider);
+                $mode = $settings->rotation_mode ?? 'smart';
+
+                $providerTierKeys = $tierKeys->where('provider', $provider)->values();
+                $key = $this->selectKeyByMode($providerTierKeys, $mode);
+
+                if (! $key) {
+                    continue;
+                }
+
+                // 5. เช็ค runtime guards (cooldown / inflight / rpm)
+                if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
+                    continue;
+                }
+
+                $inflight = $this->getKeyInflight($provider, $key->id);
+                if ($inflight >= 10) {
+                    continue;
+                }
+
+                $rpm = $this->getKeyRpm($provider, $key->id);
+                $rpmLimit = $key->rate_limit_per_minute ?? 60;
+                if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
+                    continue;
+                }
+
+                // ✅ ผ่านทุกเช็ค — acquire
+                $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
+                if (Cache::has($inflightKey)) {
+                    Cache::increment($inflightKey);
+                } else {
+                    Cache::put($inflightKey, 1, 30);
+                }
+
+                Log::debug('Pool: acquireKeyAnyProvider — picked', [
+                    'tier_priority' => $tierPriority,
+                    'provider' => $provider,
+                    'rotation_mode' => $mode,
+                    'key_id' => $key->id,
+                    'key_name' => $key->name,
+                    'purpose_requested' => $purpose,
+                    'key_purpose' => $key->purpose,
+                ]);
+
+                return $key;
             }
-
-            // ⛔ Skip key ที่ in-flight เต็ม
-            $inflight = $this->getKeyInflight($provider, $key->id);
-            if ($inflight >= 10) {  // PER_KEY_INFLIGHT_CAP (เหมือน FortuneAIService)
-                continue;
-            }
-
-            // ⛔ Skip key ที่ RPM เต็ม
-            $rpm = $this->getKeyRpm($provider, $key->id);
-            $rpmLimit = $key->rate_limit_per_minute ?? 60;
-            if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
-                continue;
-            }
-
-            // ✅ ผ่านทุกเช็ค — acquire
-            $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
-            if (Cache::has($inflightKey)) {
-                Cache::increment($inflightKey);
-            } else {
-                Cache::put($inflightKey, 1, 30);
-            }
-
-            return $key;
         }
 
         return null;
+    }
+
+    /**
+     * 🎯 (2026-05-13) Select key ใน collection ตาม rotation mode
+     *
+     * Helper ของ acquireKeyAnyProvider — เลือก key ใน tier+provider เดียวกัน
+     * ตาม mode ที่ admin ตั้งใน AiApiKeySetting
+     *
+     * @param  \Illuminate\Support\Collection<int,AiApiKey>  $keys  keys ใน tier+provider เดียวกัน
+     * @param  string  $mode  rotation mode (round_robin/least_used/smart/etc.)
+     */
+    protected function selectKeyByMode(\Illuminate\Support\Collection $keys, string $mode): ?AiApiKey
+    {
+        if ($keys->isEmpty()) {
+            return null;
+        }
+        if ($keys->count() === 1) {
+            return $keys->first();
+        }
+
+        return match ($mode) {
+            'round_robin' => $this->pickRoundRobinFromCollection($keys),
+            'least_used' => $keys->sortBy('tokens_used_today')->first(),
+            'priority' => $keys->sortByDesc('priority')->first(),  // ใน tier เดียวกัน → ใช้ id ASC แทน
+            'random' => $keys->random(),
+            'failover' => $keys->sortBy('id')->first(),  // ใช้ตัวแรก, สำรองเมื่อ fail
+            'smart' => $this->pickSmartFromCollection($keys),
+            default => $keys->sortBy('tokens_used_today')->first(),  // default = least_used
+        };
+    }
+
+    /**
+     * Round-robin rotation pointer ภายใน tier+provider เดียวกัน
+     */
+    protected function pickRoundRobinFromCollection(\Illuminate\Support\Collection $keys): ?AiApiKey
+    {
+        if ($keys->isEmpty()) {
+            return null;
+        }
+
+        $first = $keys->first();
+        $cacheKey = "pool:rr_pointer:{$first->provider}:p{$first->priority}";
+        $idx = (int) Cache::get($cacheKey, 0);
+        $sorted = $keys->sortBy('id')->values();
+        $count = $sorted->count();
+        $key = $sorted[$idx % $count];
+        // Advance pointer (TTL 5 นาที — กัน lost rotation เมื่อ idle)
+        Cache::put($cacheKey, ($idx + 1) % $count, 300);
+
+        return $key;
+    }
+
+    /**
+     * Smart selection — least errors + least tokens used + least in-flight
+     */
+    protected function pickSmartFromCollection(\Illuminate\Support\Collection $keys): ?AiApiKey
+    {
+        if ($keys->isEmpty()) {
+            return null;
+        }
+
+        // Score แต่ละ key — สูง = ดีกว่า
+        $best = null;
+        $bestScore = -PHP_INT_MAX;
+        foreach ($keys as $key) {
+            $errors = (int) ($key->consecutive_errors ?? 0);
+            $tokensUsed = (int) ($key->tokens_used_today ?? 0);
+            $inflight = $this->getKeyInflight($key->provider, $key->id);
+            // ยิ่ง errors/tokens/inflight น้อย → score สูง
+            $score = -($errors * 1000 + intdiv($tokensUsed, 100) + $inflight * 10);
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $best = $key;
+            }
+        }
+
+        return $best;
     }
 
     /**
