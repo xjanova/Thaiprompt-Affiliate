@@ -23,6 +23,27 @@ Schedule::command('fortune:celtic-recover --auto --minutes=5')
     ->name('celtic-auto-recovery')
     ->runInBackground();
 
+// ════════════════════════════════════════════════════════════════
+// 🚨 (2026-05-13) Deep 39฿ Pay-First Auto-Recovery
+// ════════════════════════════════════════════════════════════════
+// เคสที่กัน: ลูกค้าจ่าย 39฿ แล้วระบบไม่ขอวันเดือนปีเกิดต่อ
+// สาเหตุ: handleDeepPayFirstPaymentMatched ส่ง push "ขอวันเกิด" ครั้งแรก
+//         แต่ Facebook push fail silent (24hr window expired / rate limit / transient)
+//         status=collecting_birthdate ใน DB แต่ลูกค้าไม่เห็นข้อความ
+//
+// เคสจริง: #2499 (Saksit, FTU-260513-F2933) จ่าย 39.66฿ → status ถูกต้อง
+//         แต่ลูกค้าไม่เห็น message → admin ต้อง manual recover
+//
+// สแกนทุก 5 นาที — paid + collecting_birthdate + paid_at > 3 นาที (เผื่อ initial push)
+// → re-push "ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE
+// → dedup: ถ้า birthdate_resent_at < 30 นาที → skip (รอลูกค้าตอบ)
+Schedule::command('fortune:recover-paid-no-birthdate --auto --hours=2 --min-age-minutes=3')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('deep-pay-first-auto-recovery')
+    ->runInBackground();
+
 // 💳 (2026-05-09) Stripe webhook fallback — poll session ที่ pending recover ถ้า webhook ตก
 //   Stripe webhook ตก/firewall block → บิลจ่ายแล้วลูกค้าไม่ได้คำทำนาย
 //   poll Checkout Session API เอง → ถ้า paid → trigger flow

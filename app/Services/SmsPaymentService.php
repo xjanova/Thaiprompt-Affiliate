@@ -1223,15 +1223,65 @@ class SmsPaymentService
                 .'(ค่าครูที่จ่ายแล้วจะรอเก็บไว้ตลอด ไม่หมดอายุนะคะ 🙏)';
 
             // 3. Push ผ่าน channel manager (POST_PURCHASE_UPDATE — push ได้นอก 24hr window)
+            // 🛡️ (2026-05-13) Retry 3 ครั้ง — เคสจริง #2499 push fail silent ครั้งแรก
+            //   ลูกค้าจ่าย → status=collecting_birthdate ถูก แต่ไม่เห็น message
+            //   FB transient error / rate limit → retry แก้ได้
+            //   Backoff: 0s → 2s → 5s (ไม่นานเกิน — รวม ~7s)
             $channelManager = new FortuneChannelManager($settings);
-            $pushSent = $channelManager->sendResponse($platform, $userId, [
-                'action' => 'collecting_birthdate',
-                'message' => $thanksMessage,
-                'reading' => $reading,
-            ], [
-                'from_admin' => true,
-                'message_tag' => 'POST_PURCHASE_UPDATE',
-            ]);
+            $pushSent = false;
+            $maxAttempts = 3;
+            $backoffSec = [0, 2, 5];
+
+            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+                if ($attempt > 1) {
+                    sleep($backoffSec[$attempt - 1] ?? 5);
+                }
+
+                try {
+                    $pushSent = $channelManager->sendResponse($platform, $userId, [
+                        'action' => 'collecting_birthdate',
+                        'message' => $thanksMessage,
+                        'reading' => $reading,
+                    ], [
+                        'from_admin' => true,
+                        'message_tag' => 'POST_PURCHASE_UPDATE',
+                    ]);
+
+                    if ($pushSent) {
+                        if ($attempt > 1) {
+                            Log::info('SMS Payment (Pay-First): push สำเร็จหลัง retry', [
+                                'reading_id' => $reading->id,
+                                'attempt' => $attempt,
+                            ]);
+                        }
+                        break; // success — exit retry loop
+                    }
+
+                    Log::warning('SMS Payment (Pay-First): push คืน false — ลอง retry', [
+                        'reading_id' => $reading->id,
+                        'attempt' => $attempt,
+                        'max_attempts' => $maxAttempts,
+                    ]);
+                } catch (\Throwable $pushErr) {
+                    Log::warning('SMS Payment (Pay-First): push throw exception — ลอง retry', [
+                        'reading_id' => $reading->id,
+                        'attempt' => $attempt,
+                        'error' => $pushErr->getMessage(),
+                    ]);
+                }
+            }
+
+            if (! $pushSent) {
+                // ทุก attempt fail — scheduler `deep-pay-first-auto-recovery` จะ retry อีกใน 5 นาที
+                Log::error('SMS Payment (Pay-First): push fail ทุก attempt — scheduler จะ retry', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'attempts' => $maxAttempts,
+                ]);
+            } else {
+                // mark resent_at เพื่อ scheduler dedup
+                $reading->setConversationState('birthdate_resent_at', now()->toIso8601String());
+            }
 
             // 4. Clear gen_processing flag (ไม่ใช้ใน pay-first — ลูกค้ายังไม่ได้รอ AI)
             \Illuminate\Support\Facades\Cache::forget("fortune:gen_processing:{$userId}");

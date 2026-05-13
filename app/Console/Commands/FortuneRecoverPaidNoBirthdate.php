@@ -37,7 +37,9 @@ class FortuneRecoverPaidNoBirthdate extends Command
                             {--id= : process เฉพาะ reading ID (admin manual)}
                             {--bill= : process เฉพาะ bill_reference (เช่น FTU-260513-F2933)}
                             {--hours=48 : ค้น reading ย้อนหลังกี่ชั่วโมง (default 48)}
-                            {--force : บังคับ recover แม้มี birth_date แล้ว (เคส edge case ที่บิลค้างหลังเก็บวันเกิด)}';
+                            {--force : บังคับ recover แม้มี birth_date แล้ว (เคส edge case ที่บิลค้างหลังเก็บวันเกิด)}
+                            {--auto : โหมด scheduler — silent + ใช้ min-age threshold + กัน flood (recover เฉพาะ status=collecting_birthdate ที่เก่ากว่า 3 นาที)}
+                            {--min-age-minutes=3 : ใช้กับ --auto — recover เฉพาะ reading ที่ paid_at เก่ากว่ากี่นาที (เผื่อ initial push)}';
 
     protected $description = 'Recover ลูกค้า Deep 39฿ ที่จ่ายแล้วแต่ flow Pay-First ไม่ทำงาน — push "ขอวันเกิด" ใหม่';
 
@@ -48,8 +50,12 @@ class FortuneRecoverPaidNoBirthdate extends Command
         $specificBill = $this->option('bill');
         $hours = (int) $this->option('hours');
         $force = (bool) $this->option('force');
+        $isAuto = (bool) $this->option('auto');
+        $minAgeMinutes = max(1, (int) $this->option('min-age-minutes'));
 
-        $this->info('🛟 หา Deep readings ที่จ่ายแล้วแต่ค้าง (ไม่มีวันเกิด)...');
+        if (! $isAuto) {
+            $this->info('🛟 หา Deep readings ที่จ่ายแล้วแต่ค้าง (ไม่มีวันเกิด)...');
+        }
 
         // 🛟 (2026-05-13 v2) ตัด whereNull('deep_response') ออก
         //   เคสจริง Entony (#2474): status=completed + อาจมี error text ใน deep_response
@@ -63,8 +69,17 @@ class FortuneRecoverPaidNoBirthdate extends Command
             $query->whereNull('birth_date');
         }
 
-        // ถ้ามี --id หรือ --bill = ไม่กรองเวลา (admin บังคับ recover เฉพาะตัว)
-        if (! $specificId && ! $specificBill) {
+        // 🤖 (2026-05-13) --auto mode — strict filter เพื่อกัน flood + กัน race
+        //   1. status = collecting_birthdate (Pay-First flow แล้ว แต่ลูกค้าไม่ตอบ)
+        //   2. paid_at เก่ากว่า min-age-minutes (เผื่อ initial push ใน flow ปกติ)
+        //   3. กัน duplicate push: เช็คว่า resent_at ไม่ใช่ในช่วง 30 นาทีล่าสุด
+        //      (ใช้ conversation_state['birthdate_resent_at'])
+        if ($isAuto) {
+            $query->where('conversation_status', FortuneReading::STATUS_COLLECTING_BIRTHDATE)
+                ->where('paid_at', '<=', now()->subMinutes($minAgeMinutes))
+                ->where('paid_at', '>=', now()->subHours($hours));
+        } elseif (! $specificId && ! $specificBill) {
+            // manual mode (no --id/--bill) — ใช้ --hours window
             $query->where('paid_at', '>=', now()->subHours($hours));
         }
 
@@ -79,23 +94,27 @@ class FortuneRecoverPaidNoBirthdate extends Command
         $stuck = $query->orderBy('paid_at', 'desc')->get();
 
         if ($stuck->isEmpty()) {
-            $this->info('✅ ไม่พบ reading ที่ต้อง recover');
+            if (! $isAuto) {
+                $this->info('✅ ไม่พบ reading ที่ต้อง recover');
+            }
 
             return 0;
         }
 
-        $this->info("🔍 พบ {$stuck->count()} reading ที่ค้าง:");
-        $this->table(
-            ['ID', 'User', 'Platform', 'จ่าย', 'จ่ายเมื่อ', 'Status'],
-            $stuck->map(fn ($r) => [
-                $r->id,
-                $r->facebook_user_name ?? '-',
-                $r->platform ?? '?',
-                number_format($r->amount_paid, 2),
-                $r->paid_at?->diffForHumans() ?? '?',
-                $r->conversation_status,
-            ])->toArray()
-        );
+        if (! $isAuto) {
+            $this->info("🔍 พบ {$stuck->count()} reading ที่ค้าง:");
+            $this->table(
+                ['ID', 'User', 'Platform', 'จ่าย', 'จ่ายเมื่อ', 'Status'],
+                $stuck->map(fn ($r) => [
+                    $r->id,
+                    $r->facebook_user_name ?? '-',
+                    $r->platform ?? '?',
+                    number_format($r->amount_paid, 2),
+                    $r->paid_at?->diffForHumans() ?? '?',
+                    $r->conversation_status,
+                ])->toArray()
+            );
+        }
 
         if ($isDry) {
             $this->warn('Dry run — ไม่ได้ recover จริง');
@@ -108,6 +127,7 @@ class FortuneRecoverPaidNoBirthdate extends Command
 
         $recovered = 0;
         $failed = 0;
+        $skipped = 0;
 
         foreach ($stuck as $reading) {
             try {
@@ -116,10 +136,31 @@ class FortuneRecoverPaidNoBirthdate extends Command
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
 
                 if (empty($userId)) {
-                    $this->warn("  ⚠️ #{$reading->id} skip — ไม่มี user_id");
+                    if (! $isAuto) {
+                        $this->warn("  ⚠️ #{$reading->id} skip — ไม่มี user_id");
+                    }
                     $failed++;
 
                     continue;
+                }
+
+                // 🛡️ (2026-05-13) Auto mode — dedup: กัน flood ส่ง push ซ้ำๆ
+                //   ถ้า resent_at อยู่ใน 30 นาทีล่าสุด → skip (รอลูกค้าตอบ)
+                //   manual mode (--id/--bill/--force) ข้าม check นี้ — admin บังคับ resend ได้เสมอ
+                if ($isAuto && ! $specificId && ! $specificBill && ! $force) {
+                    $lastResent = $reading->getConversationState('birthdate_resent_at');
+                    if ($lastResent) {
+                        try {
+                            $resentAt = \Carbon\Carbon::parse($lastResent);
+                            if ($resentAt->gt(now()->subMinutes(30))) {
+                                $skipped++;
+
+                                continue; // เพิ่งส่ง push ไปแล้ว — รอลูกค้าตอบ
+                            }
+                        } catch (\Throwable $e) {
+                            // parse fail = ไม่มี dedup, ส่งต่อ
+                        }
+                    }
                 }
 
                 // 1. Reset state — กลับเข้า flow ขอวันเกิด + clear error text
@@ -161,19 +202,28 @@ class FortuneRecoverPaidNoBirthdate extends Command
                 ]);
 
                 if ($pushSent) {
-                    $this->info("  ✅ #{$reading->id} recover + push 'ขอวันเกิด' สำเร็จ ({$platform})");
+                    // 🛡️ Mark resent_at ทันที (กัน duplicate ใน scheduler รอบถัดไป)
+                    $reading->setConversationState('birthdate_resent_at', now()->toIso8601String());
+                    if (! $isAuto) {
+                        $this->info("  ✅ #{$reading->id} recover + push 'ขอวันเกิด' สำเร็จ ({$platform})");
+                    }
                     $recovered++;
                     Log::info('Fortune Recover: push "ขอวันเกิด" สำเร็จ', [
                         'reading_id' => $reading->id,
                         'platform' => $platform,
                         'user_name' => $userName,
+                        'mode' => $isAuto ? 'auto' : 'manual',
                     ]);
                 } else {
-                    $this->warn("  ⚠️ #{$reading->id} reset state แล้ว แต่ push ล้มเหลว (ลูกค้าทักกลับจะเข้า flow ใหม่)");
+                    if (! $isAuto) {
+                        $this->warn("  ⚠️ #{$reading->id} reset state แล้ว แต่ push ล้มเหลว (ลูกค้าทักกลับจะเข้า flow ใหม่)");
+                    }
                     $recovered++; // ยังนับ recover เพราะ state reset แล้ว
                 }
             } catch (\Throwable $e) {
-                $this->error("  ❌ #{$reading->id} exception: {$e->getMessage()}");
+                if (! $isAuto) {
+                    $this->error("  ❌ #{$reading->id} exception: {$e->getMessage()}");
+                }
                 $failed++;
                 Log::error('Fortune Recover: exception', [
                     'reading_id' => $reading->id,
@@ -182,8 +232,18 @@ class FortuneRecoverPaidNoBirthdate extends Command
             }
         }
 
-        $this->newLine();
-        $this->info("📊 สรุป: recover {$recovered} | failed {$failed}");
+        // 📊 Summary — silent ถ้า auto + ไม่มีอะไร recover (กัน log noise ทุก 5 นาที)
+        if (! $isAuto) {
+            $this->newLine();
+            $this->info("📊 สรุป: recover {$recovered} | failed {$failed} | skipped {$skipped}");
+        } elseif ($recovered > 0 || $failed > 0) {
+            // auto mode — log เฉพาะที่มี action จริง
+            Log::info('Fortune Auto-Recover: completed', [
+                'recovered' => $recovered,
+                'failed' => $failed,
+                'skipped_recent' => $skipped,
+            ]);
+        }
 
         return $failed > 0 ? 1 : 0;
     }
