@@ -454,7 +454,12 @@ class AiApiKeyPoolService
         }
 
         // 2. Group keys by priority tier (DESC — สูงสุดก่อน)
-        $tiers = $allKeys->groupBy('priority')->sortKeysDesc();
+        //    🛡️ (2026-05-13 v2) Cast priority เป็น int — กัน sortKeysDesc lexical sort
+        //    เคสที่อาจพัง: priority=9, 50, 100 → string sort: "9","50","100" DESC = "9","50","100" ❌
+        //    หลัง cast: 100,50,9 ✅
+        $tiers = $allKeys
+            ->groupBy(fn ($k) => (int) $k->priority)
+            ->sortKeysDesc(SORT_NUMERIC);
 
         // 3. Global rotation mode สำหรับ cross-provider tier
         //    user spec: "ไม่สน provider" → ใช้ mode เดียวเลือกจาก keys ทุก provider ใน tier
@@ -499,13 +504,32 @@ class AiApiKeyPoolService
                 continue;
             }
 
-            // 6. Acquire — increment in-flight
+            // 6. Acquire — increment in-flight (atomic)
+            //    🛡️ (2026-05-13 v2) ใช้ Cache::lock กัน race condition ระหว่าง concurrent acquires
+            //    เคสที่กัน: 2 requests พร้อมกัน → both read inflight=0 → both put(1) → counter = 1 (ผิด ควร 2)
+            //    Redis cache → Cache::increment atomic ปลอดภัย
+            //    File/Database cache → ต้อง lock เพื่อ atomicity
             $provider = $key->provider;
             $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
-            if (Cache::has($inflightKey)) {
-                Cache::increment($inflightKey);
-            } else {
-                Cache::put($inflightKey, 1, 30);
+            $lockKey = "{$inflightKey}:lock";
+            $lock = Cache::lock($lockKey, 5);
+            try {
+                if ($lock->block(2)) {  // wait max 2s for lock
+                    if (Cache::has($inflightKey)) {
+                        Cache::increment($inflightKey);
+                    } else {
+                        Cache::put($inflightKey, 1, 30);
+                    }
+                } else {
+                    // lock fail — fallback non-atomic (likely ok ภายใต้ low contention)
+                    if (Cache::has($inflightKey)) {
+                        Cache::increment($inflightKey);
+                    } else {
+                        Cache::put($inflightKey, 1, 30);
+                    }
+                }
+            } finally {
+                optional($lock)->release();
             }
 
             Log::debug('Pool: acquireKeyAnyProvider — picked', [

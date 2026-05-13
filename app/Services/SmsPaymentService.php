@@ -1223,64 +1223,56 @@ class SmsPaymentService
                 .'(ค่าครูที่จ่ายแล้วจะรอเก็บไว้ตลอด ไม่หมดอายุนะคะ 🙏)';
 
             // 3. Push ผ่าน channel manager (POST_PURCHASE_UPDATE — push ได้นอก 24hr window)
-            // 🛡️ (2026-05-13) Retry 3 ครั้ง — เคสจริง #2499 push fail silent ครั้งแรก
-            //   ลูกค้าจ่าย → status=collecting_birthdate ถูก แต่ไม่เห็น message
-            //   FB transient error / rate limit → retry แก้ได้
-            //   Backoff: 0s → 2s → 5s (ไม่นานเกิน — รวม ~7s)
+            // 🛡️ (2026-05-13 v3) Async retry — กัน webhook block
+            //   เดิม (v2): sleep + retry 3 ครั้ง inline = block PHP-FPM 7 วินาที
+            //              → SMS webhook timeout 10s ลูกค้ารอนาน
+            //   ใหม่ (v3): ลอง inline 1 ครั้ง → fail → dispatch RetryPayFirstPushJob (async)
+            //              webhook return ทันที, job retry backoff 10s/30s ใน background
             $channelManager = new FortuneChannelManager($settings);
             $pushSent = false;
-            $maxAttempts = 3;
-            $backoffSec = [0, 2, 5];
 
-            for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
-                if ($attempt > 1) {
-                    sleep($backoffSec[$attempt - 1] ?? 5);
-                }
-
-                try {
-                    $pushSent = $channelManager->sendResponse($platform, $userId, [
-                        'action' => 'collecting_birthdate',
-                        'message' => $thanksMessage,
-                        'reading' => $reading,
-                    ], [
-                        'from_admin' => true,
-                        'message_tag' => 'POST_PURCHASE_UPDATE',
-                    ]);
-
-                    if ($pushSent) {
-                        if ($attempt > 1) {
-                            Log::info('SMS Payment (Pay-First): push สำเร็จหลัง retry', [
-                                'reading_id' => $reading->id,
-                                'attempt' => $attempt,
-                            ]);
-                        }
-                        break; // success — exit retry loop
-                    }
-
-                    Log::warning('SMS Payment (Pay-First): push คืน false — ลอง retry', [
-                        'reading_id' => $reading->id,
-                        'attempt' => $attempt,
-                        'max_attempts' => $maxAttempts,
-                    ]);
-                } catch (\Throwable $pushErr) {
-                    Log::warning('SMS Payment (Pay-First): push throw exception — ลอง retry', [
-                        'reading_id' => $reading->id,
-                        'attempt' => $attempt,
-                        'error' => $pushErr->getMessage(),
-                    ]);
-                }
+            try {
+                $pushSent = $channelManager->sendResponse($platform, $userId, [
+                    'action' => 'collecting_birthdate',
+                    'message' => $thanksMessage,
+                    'reading' => $reading,
+                ], [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+            } catch (\Throwable $pushErr) {
+                Log::warning('SMS Payment (Pay-First): push inline fail — จะ dispatch async job', [
+                    'reading_id' => $reading->id,
+                    'error' => $pushErr->getMessage(),
+                ]);
             }
 
-            if (! $pushSent) {
-                // ทุก attempt fail — scheduler `deep-pay-first-auto-recovery` จะ retry อีกใน 5 นาที
-                Log::error('SMS Payment (Pay-First): push fail ทุก attempt — scheduler จะ retry', [
-                    'reading_id' => $reading->id,
-                    'platform' => $platform,
-                    'attempts' => $maxAttempts,
-                ]);
-            } else {
+            if ($pushSent) {
                 // mark resent_at เพื่อ scheduler dedup
                 $reading->setConversationState('birthdate_resent_at', now()->toIso8601String());
+            } else {
+                // ❌ Inline push fail → dispatch async retry job (ไม่ block webhook)
+                //    Job retry 3 ครั้ง backoff 10s/30s (รวม 40s)
+                //    ถ้าครบ retry ยัง fail → scheduler `deep-pay-first-auto-recovery` รับช่วง
+                try {
+                    \App\Jobs\RetryPayFirstPushJob::dispatch(
+                        $reading->id,
+                        $platform,
+                        $userId,
+                        $thanksMessage,
+                    )->delay(now()->addSeconds(5)); // 5s grace ก่อน first retry
+
+                    Log::warning('SMS Payment (Pay-First): inline push fail — dispatched async retry job', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                    ]);
+                } catch (\Throwable $dispatchErr) {
+                    // ถ้า queue ใช้ไม่ได้ (no jobs table / sync driver) → scheduler รับช่วง
+                    Log::error('SMS Payment (Pay-First): dispatch retry job fail — scheduler จะ retry', [
+                        'reading_id' => $reading->id,
+                        'error' => $dispatchErr->getMessage(),
+                    ]);
+                }
             }
 
             // 4. Clear gen_processing flag (ไม่ใช้ใน pay-first — ลูกค้ายังไม่ได้รอ AI)

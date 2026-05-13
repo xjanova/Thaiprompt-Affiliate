@@ -775,10 +775,12 @@ class FortuneTellingSetting extends Model
      */
     public function getActualAIProvider(): string
     {
-        // 1. Pool-first — หา key ที่ active + priority สูง
+        // 1. Pool-first — หา key ที่ available() + priority สูง
+        //    🛡️ (2026-05-13 v2) ใช้ available() scope เพื่อ consistency กับ acquireKeyAnyProvider
+        //    → กรอง: is_active + not critical + not disabled + last_test_passed_at IS NOT NULL
+        //    เดิมใช้ where(is_active,true)+whereNull(disabled_until) → คืน untested key
         try {
-            $poolKey = AiApiKey::where('is_active', true)
-                ->whereNull('disabled_until')
+            $poolKey = AiApiKey::available()
                 ->orderByDesc('priority')
                 ->first();
 
@@ -786,7 +788,7 @@ class FortuneTellingSetting extends Model
                 return $poolKey->provider;
             }
         } catch (\Throwable $e) {
-            // Pool DB outage → fallback ไป legacy
+            // Pool DB outage / column ยังไม่ migrate → fallback ไป legacy
         }
 
         // 2. Legacy custom field
@@ -821,10 +823,9 @@ class FortuneTellingSetting extends Model
      */
     public function getActualAIModel(): string
     {
-        // 1. Pool-first — model ของ key แรก
+        // 1. Pool-first — model ของ key แรก (ใช้ available() scope)
         try {
-            $poolKey = AiApiKey::where('is_active', true)
-                ->whereNull('disabled_until')
+            $poolKey = AiApiKey::available()
                 ->orderByDesc('priority')
                 ->first();
 
@@ -866,10 +867,9 @@ class FortuneTellingSetting extends Model
      */
     public function getActualAIApiKey(): ?string
     {
-        // 1. Pool-first
+        // 1. Pool-first (ใช้ available() scope — เลือกเฉพาะ key ที่เทสผ่าน)
         try {
-            $poolKey = AiApiKey::where('is_active', true)
-                ->whereNull('disabled_until')
+            $poolKey = AiApiKey::available()
                 ->orderByDesc('priority')
                 ->first();
 
