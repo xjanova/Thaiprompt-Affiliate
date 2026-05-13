@@ -12484,6 +12484,81 @@ PROMPT;
     // ============================================================
 
     /**
+     * 🆕 (2026-05-13) Auto-register + distribute commission สำหรับ flow ที่ไม่ผ่าน processPaymentConfirmed
+     *
+     * เดิม: logic อยู่ inline ใน processPaymentConfirmed (FCS:6803-6857) → ทำเฉพาะ Deep 39฿
+     *       Celtic 99฿ แตก fork ใน SmsPaymentService:769-775 ก่อนถึงตรงนี้
+     *       → ลูกค้า Celtic ทุกบิล user_id=NULL → ไม่มีคอมมิชชั่น (ปัญหา 2026-05-13)
+     *
+     * Public wrapper เพื่อให้ Celtic flow / Pay-First flow / future flows เรียกได้
+     * ครอบคลุม:
+     *   1. autoRegisterFromFortune — สร้าง User + MlmMember + Wallet + set reading.user_id
+     *   2. distributeFortuneCommissions — Level 1/2 ตาม amount_paid
+     *
+     * ทุกอย่างใน try/catch — ห้าม error กระทบ flow ปกติ
+     *
+     * @param  FortuneReading  $reading  บันทึกการดูดวงที่ชำระเงินแล้ว
+     * @param  string|null  $platform  'line' | 'facebook' (auto-detect ถ้า null)
+     * @param  string|null  $userId  Platform user ID (fallback ไป reading->platform_user_id)
+     */
+    public function processAffiliateAndCommissions(
+        FortuneReading $reading,
+        ?string $platform = null,
+        ?string $userId = null,
+        ?FortuneChannelManager $channelManager = null
+    ): void {
+        $affiliatePlatform = $platform ?? $reading->platform ?? null;
+        $affiliateUserId = $userId ?? $reading->platform_user_id ?? $reading->facebook_user_id ?? null;
+
+        if (! $affiliateUserId) {
+            Log::debug('Fortune Affiliate: ไม่มี platform_user_id → ข้าม auto-register + commission', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return;
+        }
+
+        // 1. Auto-register user (สร้าง User + MlmMember + Wallet + set reading.user_id)
+        try {
+            $affiliateService = app(FortuneAffiliateService::class);
+
+            $lineServiceInstance = null;
+            if ($affiliatePlatform === 'line') {
+                if ($channelManager) {
+                    $lineServiceInstance = $channelManager->getPlatform('line');
+                    $lineServiceInstance = $lineServiceInstance instanceof LineFortuneService ? $lineServiceInstance : null;
+                }
+                if (! $lineServiceInstance) {
+                    try {
+                        $lineServiceInstance = app(LineFortuneService::class);
+                    } catch (\Exception $lineErr) {
+                        Log::debug('Fortune Affiliate: สร้าง LineFortuneService ไม่ได้ — ข้าม Flex', [
+                            'error' => $lineErr->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            $affiliateService->autoRegisterFromFortune(
+                $reading,
+                $affiliateUserId,
+                $lineServiceInstance,
+                $affiliatePlatform
+            );
+        } catch (\Exception $affErr) {
+            Log::warning('Fortune Affiliate: ลงทะเบียนอัตโนมัติล้มเหลว (ไม่กระทบ flow)', [
+                'reading_id' => $reading->id,
+                'platform' => $affiliatePlatform,
+                'user_id' => $affiliateUserId,
+                'error' => $affErr->getMessage(),
+            ]);
+        }
+
+        // 2. Distribute commission (refresh เพื่อรับ user_id ที่อาจเพิ่งถูก set)
+        $this->distributeFortuneCommissions($reading);
+    }
+
+    /**
      * แบ่งคอมมิชชั่น MLM หลังชำระค่าดูดวงสำเร็จ
      *
      * รองรับ 2 โหมด:

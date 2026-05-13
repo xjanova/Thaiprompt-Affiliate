@@ -239,6 +239,27 @@ class CelticCrossService
                 throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร)');
             }
 
+            // 🛡️ (2026-05-13) Truncation guard — log warning ถ้าตอบสั้นกว่าคาด
+            //   Q1 spec: 1500-2500 chars + กล่อง "🎯 ฟันธง" ปิดท้าย (บังคับ)
+            //   ถ้า response 100-1500 chars หรือไม่มี "ฟันธง" → อาจถูกตัดจาก max_tokens
+            //   ไม่ throw — ยังส่งให้ลูกค้า แต่ log ไว้ admin ตรวจ + ดู provider/model
+            $responseLen = mb_strlen($response);
+            $hasFundthong = str_contains($response, '🎯 ฟันธง')
+                || str_contains($response, 'ฟันธง:')
+                || str_contains($response, '🎯 สรุปฟันธง');
+            if ($responseLen < 1500 || ! $hasFundthong) {
+                Log::warning('CelticCross: response อาจถูก truncate / ฟันธงตกหล่น', [
+                    'reading_id' => $reading->id,
+                    'sequence' => $sequence,
+                    'response_len' => $responseLen,
+                    'has_fundthong' => $hasFundthong,
+                    'tokens_used' => $tokensUsed,
+                    'provider' => $aiProvider,
+                    'model' => $aiModel,
+                    'is_predict_all' => $isPredictAll,
+                ]);
+            }
+
             // 🔚 แยก signal [END_SESSION] ออกจาก response (token ที่ AI ใส่เมื่อพร้อมจบ)
             // Detect ทุกแบบ: [END_SESSION] / [end_session] / [END SESSION] / [จบ]
             $wantsEnd = false;

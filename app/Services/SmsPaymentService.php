@@ -1137,6 +1137,26 @@ class SmsPaymentService
                 }
             }
 
+            // 6. 🆕 (2026-05-13) Auto-register + commission distribution
+            //    เดิม: Celtic แตก fork ใน parent (line 769-775) → ข้าม processPaymentConfirmed
+            //    → ไม่มี user_id assign → commission ไม่ทำงาน (ลูกค้า Celtic 99฿ ทุกบิล user_id=NULL)
+            //    Fix: เรียก processAffiliateAndCommissions (logic เดียวกับ Deep 39฿) — ทุกอย่างใน try/catch
+            try {
+                $conversationService->processAffiliateAndCommissions(
+                    $reading,
+                    $platform,
+                    $userId,
+                    $channelManager
+                );
+            } catch (\Throwable $affErr) {
+                // ห้าม error กระทบการ push first card (ที่สำเร็จไปแล้ว)
+                Log::warning('SMS Payment (Celtic): auto-register + commission ล้มเหลว (ไม่ critical)', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                    'error' => $affErr->getMessage(),
+                ]);
+            }
+
             return true;
         } catch (\Throwable $e) {
             Log::critical('SMS Payment (Celtic): handleCelticPaymentMatched ล้มเหลว', [

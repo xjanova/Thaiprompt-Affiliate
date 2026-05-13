@@ -172,13 +172,19 @@ class FortuneAIService
      * (2026-05-02 v3) user feedback: "ตอนนี้สั้นเกินไป" — bump เพิ่มอีกครั้ง
      *   เดิม 3000 → 4096 (รองรับคำทำนาย Q1 600-900 คำ ตามที่ user ขอ)
      *
+     * (2026-05-13 v4) user report: "Q1 99฿ ตอบไม่ครบ" — กล่องสรุปฟันธงท้ายตกหล่น
+     *   Root cause: Celtic Q1 prompt มี 6 ย่อหน้า + กล่องสรุป 5 ด้าน (predict-all)
+     *     → AI generate มากกว่า 4096 → ตัดท้าย ก่อนถึงกล่องสรุป
+     *   Fix: 4096 → 6000 (buffer ~50%)
+     *
      *   Math:
      *   - prompt input: ~2200-2700 tokens (trim ลง ใน prompt template ใหม่)
-     *   - max_tokens output: 4096 → total ~6500-7000
-     *   - Groq llama-3.3-70b free TPM cap: 6000/min → อาจ 413
-     *     → ถ้า 413 ระบบ fallback ไป OpenRouter/Gemini อัตโนมัติ (มี key pool รองรับ)
+     *   - max_tokens output: 6000 → total ~8500-9000
+     *   - Groq llama-3.3-70b free TPM cap: 6000/min → 413 ถี่ขึ้น
+     *     → fallback ไป OpenRouter/Gemini อัตโนมัติ (Gemini 2.5 Flash output cap 8192)
+     *   - Gemini 2.5 Flash: cap 8192 output → 6000 อยู่ในขอบเขต
      *
-     *   Thai: 1 token ≈ 0.5-1 char → 4096 tokens ≈ 2000-4000 chars (≈ 700-1300 คำ)
+     *   Thai: 1 token ≈ 0.5-1 char → 6000 tokens ≈ 3000-6000 chars (≈ 1000-2000 คำ)
      */
     protected const READING_CONFIG = [
         'basic' => [
@@ -186,7 +192,7 @@ class FortuneAIService
             'temperature' => 0.75,
         ],
         'deep' => [
-            'max_tokens' => 4096,   // ↑ จาก 3000 — user "สั้นเกินไป"
+            'max_tokens' => 6000,   // ↑ จาก 4096 — user "Q1 ตอบไม่ครบ" 2026-05-13
             'temperature' => 0.8,
         ],
     ];
@@ -425,6 +431,7 @@ class FortuneAIService
         try {
             $result = match ($chatProvider) {
                 'gemini' => $this->callChatGemini($prompt, $systemMessage, $chatApiKey, $chatModel, $config),
+                'anthropic' => $this->callChatAnthropic($prompt, $systemMessage, $chatApiKey, $chatModel, $config),
                 default => $this->callChatOpenAICompatible($prompt, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
             };
 
@@ -476,6 +483,7 @@ class FortuneAIService
 
         return match ($chatProvider) {
             'gemini' => $this->callChatGemini($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
+            'anthropic' => $this->callChatAnthropic($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
             default => $this->callChatOpenAICompatible($userMessage, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
         };
     }
@@ -685,6 +693,7 @@ PROMPT;
 
         return match ($chatProvider) {
             'gemini' => $this->callChatGemini($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
+            'anthropic' => $this->callChatAnthropic($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
             default => $this->callChatOpenAICompatible($userInput, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
         };
     }
@@ -831,6 +840,7 @@ PROMPT;
         try {
             $result = match ($chatProvider) {
                 'gemini' => $this->callChatGeminiWithHistory($prompt, $systemMessage, $chatApiKey, $chatModel, $config, $history),
+                'anthropic' => $this->callChatAnthropicWithHistory($prompt, $systemMessage, $chatApiKey, $chatModel, $config, $history),
                 default => $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config, $history),
             };
 
@@ -931,6 +941,9 @@ PROMPT;
                 'gemini' => empty($history)
                     ? $this->callChatGemini($prompt, $systemMessage, $apiKey, $resolvedModel, $config)
                     : $this->callChatGeminiWithHistory($prompt, $systemMessage, $apiKey, $resolvedModel, $config, $history),
+                'anthropic' => empty($history)
+                    ? $this->callChatAnthropic($prompt, $systemMessage, $apiKey, $resolvedModel, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemMessage, $apiKey, $resolvedModel, $config, $history),
                 default => empty($history)
                     ? $this->callChatOpenAICompatible($prompt, $systemMessage, $apiKey, $resolvedModel, $sensitiveProvider, $config)
                     : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
@@ -1109,6 +1122,9 @@ PROMPT;
                 'gemini' => empty($history)
                     ? $this->callChatGemini($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
                     : $this->callChatGeminiWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                'anthropic' => empty($history)
+                    ? $this->callChatAnthropic($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
                 default => empty($history)
                     ? $this->callChatOpenAICompatible($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config)
                     : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
@@ -1446,6 +1462,9 @@ PROMPT;
                     'gemini' => empty($history)
                         ? $this->callChatGemini($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
                         : $this->callChatGeminiWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
+                    'anthropic' => empty($history)
+                        ? $this->callChatAnthropic($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
+                        : $this->callChatAnthropicWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
                     default => empty($history)
                         ? $this->callChatOpenAICompatible($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config)
                         : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config, $history),
@@ -1571,6 +1590,7 @@ PROMPT;
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
             'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
 
@@ -1839,6 +1859,7 @@ PROMPT;
             'deepseek' => 'https://api.deepseek.com/chat/completions',
             'typhoon' => 'https://api.opentyphoon.ai/v1/chat/completions',
             'qwen' => 'https://router.huggingface.co/v1/chat/completions',
+            'openai' => 'https://api.openai.com/v1/chat/completions',
             default => throw new Exception("Chat provider '{$provider}' ไม่รองรับ"),
         };
 
@@ -1870,6 +1891,126 @@ PROMPT;
             'response' => $text,
             'tokens_used' => $data['usage']['total_tokens'] ?? 0,
             'provider' => $provider,
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) Anthropic Claude Chat API (Messages)
+     *
+     * Anthropic ไม่ OpenAI-compatible — ต้องเรียกแยก
+     *   - system แยกจาก messages (string ระดับ top-level)
+     *   - messages = user/assistant เท่านั้น (ไม่มี role='system')
+     *   - response: data.content[0].text
+     *   - tokens: usage.input_tokens + usage.output_tokens
+     */
+    protected function callChatAnthropic(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        array $config
+    ): array {
+        $baseUrl = AiApiKey::DEFAULT_BASE_URLS['anthropic'] ?? 'https://api.anthropic.com/v1';
+        $endpoint = rtrim($baseUrl, '/').'/messages';
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])
+            ->post($endpoint, [
+                'model' => $model,
+                'max_tokens' => $config['max_tokens'] ?? 512,
+                'system' => $systemMessage,
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'temperature' => $config['temperature'] ?? 0.8,
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['content'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Chat anthropic: ไม่ได้รับคำตอบ (empty response)');
+        }
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'anthropic',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) Anthropic Claude Chat API พร้อม conversation history
+     *
+     * รวม history (10 ข้อความล่าสุด) + user message ปัจจุบัน
+     * Anthropic ต้องสลับ user/assistant ห้ามมี role='system' ใน messages
+     */
+    protected function callChatAnthropicWithHistory(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        array $config,
+        array $history
+    ): array {
+        $baseUrl = AiApiKey::DEFAULT_BASE_URLS['anthropic'] ?? 'https://api.anthropic.com/v1';
+        $endpoint = rtrim($baseUrl, '/').'/messages';
+
+        // สร้าง messages: history (filter เฉพาะ user/assistant) → user message ปัจจุบัน
+        $messages = [];
+        $recentHistory = array_slice($history, -10);
+        foreach ($recentHistory as $msg) {
+            $role = $msg['role'] ?? '';
+            if (in_array($role, ['user', 'assistant'], true)) {
+                $messages[] = [
+                    'role' => $role,
+                    'content' => $msg['content'] ?? '',
+                ];
+            }
+        }
+        $messages[] = ['role' => 'user', 'content' => $prompt];
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+                'content-type' => 'application/json',
+            ])
+            ->post($endpoint, [
+                'model' => $model,
+                'max_tokens' => $config['max_tokens'] ?? 512,
+                'system' => $systemMessage,
+                'messages' => $messages,
+                'temperature' => $config['temperature'] ?? 0.8,
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['content'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Chat anthropic (history): ไม่ได้รับคำตอบ');
+        }
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'anthropic',
             'model' => $model,
         ];
     }
@@ -1915,6 +2056,9 @@ PROMPT;
                 'openrouter' => $this->callOpenRouter($prompt, $config),
                 'deepseek' => $this->callDeepSeek($prompt, $config),
                 'typhoon' => $this->callTyphoon($prompt, $config),
+                'xiaomi' => $this->callXiaomi($prompt, $config),
+                'openai' => $this->callOpenAi($prompt, $config),
+                'anthropic' => $this->callAnthropic($prompt, $config),
                 default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
             };
 
@@ -2149,6 +2293,8 @@ PROMPT;
                 'deepseek' => $this->callDeepSeek($prompt, $config),
                 'typhoon' => $this->callTyphoon($prompt, $config),
                 'xiaomi' => $this->callXiaomi($prompt, $config),    // 🆕 (2026-05-01) Xiaomi MiMo
+                'openai' => $this->callOpenAi($prompt, $config),    // 🆕 (2026-05-13) OpenAI
+                'anthropic' => $this->callAnthropic($prompt, $config), // 🆕 (2026-05-13) Anthropic
                 default => throw new Exception("Provider '{$provider}' ไม่รองรับ"),
             };
         } finally {
@@ -3126,6 +3272,112 @@ PROMPT;
         }
     }
 
+    /**
+     * 🆕 (2026-05-13) OpenAI API (Chat Completions)
+     *
+     * Endpoint: https://api.openai.com/v1/chat/completions
+     * Models: gpt-4o, gpt-4o-mini, gpt-5, gpt-5.5-pro ฯลฯ
+     * API Key format: sk-xxxxx
+     *
+     * รองรับ per-key base_url override (เผื่อ enterprise/proxy endpoint)
+     */
+    protected function callOpenAi(string $prompt, array $config = []): array
+    {
+        $baseUrl = $this->currentBaseUrl
+            ?: (AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/chat/completions';
+
+        try {
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
+                ->withToken($this->apiKey)
+                ->post($endpoint, [
+                    'model' => $this->model,
+                    'messages' => [
+                        ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                ])->throw();
+
+            $data = $response->json();
+
+            return [
+                'response' => $data['choices'][0]['message']['content'] ?? '',
+                'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+                'provider' => 'openai',
+                'model' => $this->model,
+            ];
+        } catch (Exception $e) {
+            Log::error('OpenAI API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+                'endpoint' => $endpoint,
+            ]);
+            throw new Exception("OpenAI API Error: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-13) Anthropic Claude API (Messages)
+     *
+     * Endpoint: https://api.anthropic.com/v1/messages
+     * Models: claude-opus-4-7, claude-sonnet-4-6, claude-haiku-4-5 ฯลฯ
+     * API Key format: sk-ant-xxxxx
+     *
+     * Format ต่างจาก OpenAI:
+     *   - Header: x-api-key + anthropic-version (ไม่ใช่ Bearer)
+     *   - system แยกจาก messages (ไม่ใช่ role='system')
+     *   - response: data.content[0].text (ไม่ใช่ choices[0].message.content)
+     *   - tokens: usage.input_tokens + usage.output_tokens (ไม่ใช่ total_tokens)
+     */
+    protected function callAnthropic(string $prompt, array $config = []): array
+    {
+        $baseUrl = $this->currentBaseUrl
+            ?: (AiApiKey::DEFAULT_BASE_URLS['anthropic'] ?? 'https://api.anthropic.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/messages';
+
+        try {
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
+                ->withHeaders([
+                    'x-api-key' => $this->apiKey,
+                    'anthropic-version' => '2023-06-01',
+                    'content-type' => 'application/json',
+                ])
+                ->post($endpoint, [
+                    'model' => $this->model,
+                    'max_tokens' => $config['max_tokens'] ?? 2048,
+                    'system' => self::SYSTEM_MESSAGE,
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'temperature' => $config['temperature'] ?? 0.7,
+                ])->throw();
+
+            $data = $response->json();
+
+            $text = $data['content'][0]['text'] ?? '';
+            $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+            $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+            return [
+                'response' => $text,
+                'tokens_used' => $inputTokens + $outputTokens,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+                'provider' => 'anthropic',
+                'model' => $this->model,
+            ];
+        } catch (Exception $e) {
+            Log::error('Anthropic API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+                'endpoint' => $endpoint,
+            ]);
+            throw new Exception("Anthropic API Error: {$e->getMessage()}");
+        }
+    }
+
     protected function callOpenRouter(string $prompt, array $config = []): array
     {
         try {
@@ -3220,6 +3472,9 @@ PROMPT;
             'openrouter' => $this->callOpenRouter($prompt, $config),
             'deepseek' => $this->callDeepSeek($prompt, $config),
             'typhoon' => $this->callTyphoon($prompt, $config),
+            'xiaomi' => $this->callXiaomi($prompt, $config),
+            'openai' => $this->callOpenAi($prompt, $config),
+            'anthropic' => $this->callAnthropic($prompt, $config),
             default => throw new Exception("AI Provider '{$this->provider}' ไม่รองรับ"),
         };
 
