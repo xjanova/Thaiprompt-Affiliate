@@ -35,7 +35,9 @@ class FortuneRecoverPaidNoBirthdate extends Command
     protected $signature = 'fortune:recover-paid-no-birthdate
                             {--dry : Dry run — แสดง list ที่จะ recover แต่ไม่ push}
                             {--id= : process เฉพาะ reading ID (admin manual)}
-                            {--hours=48 : ค้น reading ย้อนหลังกี่ชั่วโมง (default 48)}';
+                            {--bill= : process เฉพาะ bill_reference (เช่น FTU-260513-F2933)}
+                            {--hours=48 : ค้น reading ย้อนหลังกี่ชั่วโมง (default 48)}
+                            {--force : บังคับ recover แม้มี birth_date แล้ว (เคส edge case ที่บิลค้างหลังเก็บวันเกิด)}';
 
     protected $description = 'Recover ลูกค้า Deep 39฿ ที่จ่ายแล้วแต่ flow Pay-First ไม่ทำงาน — push "ขอวันเกิด" ใหม่';
 
@@ -43,7 +45,9 @@ class FortuneRecoverPaidNoBirthdate extends Command
     {
         $isDry = $this->option('dry');
         $specificId = $this->option('id');
+        $specificBill = $this->option('bill');
         $hours = (int) $this->option('hours');
+        $force = (bool) $this->option('force');
 
         $this->info('🛟 หา Deep readings ที่จ่ายแล้วแต่ค้าง (ไม่มีวันเกิด)...');
 
@@ -52,12 +56,24 @@ class FortuneRecoverPaidNoBirthdate extends Command
         //   เงื่อนไขจริงๆ = "จ่ายแล้ว + ไม่มีวันเกิด" → ค้างแน่นอน (Pay-First ต้องมี birth_date)
         //   ไม่ว่า deep_response จะเป็น NULL หรือ error text → reset แล้วขอวันเกิดใหม่
         $query = FortuneReading::where('reading_type', 'deep')
-            ->where('is_paid', true)
-            ->whereNull('birth_date')
-            ->where('paid_at', '>=', now()->subHours($hours));
+            ->where('is_paid', true);
+
+        // --force = ไม่กรอง birth_date (recover แม้มีวันเกิดแล้ว)
+        if (! $force) {
+            $query->whereNull('birth_date');
+        }
+
+        // ถ้ามี --id หรือ --bill = ไม่กรองเวลา (admin บังคับ recover เฉพาะตัว)
+        if (! $specificId && ! $specificBill) {
+            $query->where('paid_at', '>=', now()->subHours($hours));
+        }
 
         if ($specificId) {
             $query->where('id', (int) $specificId);
+        }
+
+        if ($specificBill) {
+            $query->where('bill_reference', trim($specificBill));
         }
 
         $stuck = $query->orderBy('paid_at', 'desc')->get();
