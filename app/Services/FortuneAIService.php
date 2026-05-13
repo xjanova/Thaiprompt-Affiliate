@@ -1587,6 +1587,11 @@ PROMPT;
         array $config,
         array $history
     ): array {
+        // 🎯 (2026-05-13) Auto-route: OpenAI GPT-5+/o-series → Responses API
+        if ($provider === 'openai' && $this->isOpenAiResponsesModel($model)) {
+            return $this->callChatOpenAiResponsesWithHistory($prompt, $systemMessage, $apiKey, $model, $config, $history);
+        }
+
         $url = match ($provider) {
             'groq' => 'https://api.groq.com/openai/v1/chat/completions',
             'grok' => 'https://api.x.ai/v1/chat/completions',
@@ -1882,6 +1887,11 @@ PROMPT;
      */
     protected function callChatOpenAICompatible(string $prompt, string $systemMessage, string $apiKey, string $model, string $provider, array $config): array
     {
+        // 🎯 (2026-05-13) Auto-route: OpenAI GPT-5+/o-series → Responses API
+        if ($provider === 'openai' && $this->isOpenAiResponsesModel($model)) {
+            return $this->callChatOpenAiResponses($prompt, $systemMessage, $apiKey, $model, $config);
+        }
+
         $url = match ($provider) {
             'groq' => 'https://api.groq.com/openai/v1/chat/completions',
             'grok' => 'https://api.x.ai/v1/chat/completions',
@@ -1921,6 +1931,110 @@ PROMPT;
             'response' => $text,
             'tokens_used' => $data['usage']['total_tokens'] ?? 0,
             'provider' => $provider,
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) OpenAI Chat ผ่าน Responses API — GPT-5+/o-series (single message)
+     */
+    protected function callChatOpenAiResponses(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        array $config
+    ): array {
+        $baseUrl = AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1';
+        $endpoint = rtrim($baseUrl, '/').'/responses';
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withToken($apiKey)
+            ->post($endpoint, [
+                'model' => $model,
+                'input' => $prompt,
+                'instructions' => $systemMessage,
+                'max_output_tokens' => $config['max_tokens'] ?? 512,
+                'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
+            ])->throw();
+
+        $data = $response->json();
+        $text = $this->extractOpenAiResponsesText($data);
+
+        if (empty($text)) {
+            throw new Exception('Chat openai (responses): ไม่ได้รับคำตอบ');
+        }
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'openai',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) OpenAI Chat ผ่าน Responses API พร้อม history
+     *
+     * Responses API รองรับ input เป็น message array — ใช้ format เดียวกับ Chat Completions
+     * แต่ส่งเป็น "input" ไม่ใช่ "messages" + ใช้ "instructions" สำหรับ system
+     */
+    protected function callChatOpenAiResponsesWithHistory(
+        string $prompt,
+        string $systemMessage,
+        string $apiKey,
+        string $model,
+        array $config,
+        array $history
+    ): array {
+        $baseUrl = AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1';
+        $endpoint = rtrim($baseUrl, '/').'/responses';
+
+        // สร้าง input array: history (10 ล่าสุด) → user message ปัจจุบัน
+        $inputMessages = [];
+        $recentHistory = array_slice($history, -10);
+        foreach ($recentHistory as $msg) {
+            $role = $msg['role'] ?? 'user';
+            if (in_array($role, ['user', 'assistant'], true)) {
+                $inputMessages[] = [
+                    'role' => $role,
+                    'content' => $msg['content'] ?? '',
+                ];
+            }
+        }
+        $inputMessages[] = ['role' => 'user', 'content' => $prompt];
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withToken($apiKey)
+            ->post($endpoint, [
+                'model' => $model,
+                'input' => $inputMessages,
+                'instructions' => $systemMessage,
+                'max_output_tokens' => $config['max_tokens'] ?? 512,
+                'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
+            ])->throw();
+
+        $data = $response->json();
+        $text = $this->extractOpenAiResponsesText($data);
+
+        if (empty($text)) {
+            throw new Exception('Chat openai (responses+history): ไม่ได้รับคำตอบ');
+        }
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'openai',
             'model' => $model,
         ];
     }
@@ -3303,16 +3417,126 @@ PROMPT;
     }
 
     /**
-     * 🆕 (2026-05-13) OpenAI API (Chat Completions)
+     * 🆕 (2026-05-13) Detect OpenAI model ที่ต้องใช้ Responses API (ใหม่)
      *
-     * Endpoint: https://api.openai.com/v1/chat/completions
-     * Models: gpt-4o, gpt-4o-mini, gpt-5, gpt-5.5-pro ฯลฯ
-     * API Key format: sk-xxxxx
+     * Responses API (/v1/responses) เหมาะกับ:
+     *   - GPT-5.x family (gpt-5, gpt-5.5, gpt-5.5-pro, gpt-5.5-mini, gpt-5.4, gpt-5.4-mini)
+     *   - o-series reasoning (o1, o1-preview, o1-mini, o3, o3-mini, o4)
+     *
+     * Legacy /v1/chat/completions ยังใช้ได้สำหรับ:
+     *   - gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-4, gpt-3.5-turbo
+     */
+    protected function isOpenAiResponsesModel(string $model): bool
+    {
+        return (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+    }
+
+    /**
+     * 🆕 (2026-05-13) OpenAI Responses API — สำหรับรุ่นใหม่ (GPT-5+, o-series)
+     *
+     * Endpoint: https://api.openai.com/v1/responses
+     * Request:
+     *   - model: ชื่อรุ่น
+     *   - input: prompt (string หรือ message array)
+     *   - instructions: system prompt (top-level)
+     *   - max_output_tokens: limit output
+     *   - reasoning.effort: 'low'/'medium'/'high' — ระดับ reasoning
+     *
+     * Response:
+     *   - output_text (convenience field) หรือ
+     *   - output[0].content[0].text
+     *   - usage.input_tokens + usage.output_tokens
+     */
+    protected function callOpenAiResponses(string $prompt, array $config = []): array
+    {
+        $baseUrl = $this->currentBaseUrl
+            ?: (AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/responses';
+
+        try {
+            $payload = [
+                'model' => $this->model,
+                'input' => $prompt,
+                'instructions' => self::SYSTEM_MESSAGE,
+                'max_output_tokens' => $config['max_tokens'] ?? 2048,
+                'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
+            ];
+
+            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
+                ->withToken($this->apiKey)
+                ->post($endpoint, $payload)
+                ->throw();
+
+            $data = $response->json();
+            $text = $this->extractOpenAiResponsesText($data);
+            $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+            $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+            return [
+                'response' => $text,
+                'tokens_used' => $inputTokens + $outputTokens,
+                'input_tokens' => $inputTokens,
+                'output_tokens' => $outputTokens,
+                'provider' => 'openai',
+                'model' => $this->model,
+            ];
+        } catch (Exception $e) {
+            Log::error('OpenAI Responses API Error', [
+                'error' => $e->getMessage(),
+                'model' => $this->model,
+                'endpoint' => $endpoint,
+            ]);
+            throw new Exception("OpenAI Responses API Error: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-13) Extract text จาก Responses API response
+     *   ลำดับ: output_text → output[i].content[j].text
+     */
+    protected function extractOpenAiResponsesText(array $data): string
+    {
+        if (! empty($data['output_text']) && is_string($data['output_text'])) {
+            return $data['output_text'];
+        }
+
+        $output = $data['output'] ?? [];
+        if (! is_array($output)) {
+            return '';
+        }
+
+        foreach ($output as $item) {
+            $contents = $item['content'] ?? [];
+            if (! is_array($contents)) {
+                continue;
+            }
+            foreach ($contents as $content) {
+                if (! empty($content['text']) && is_string($content['text'])) {
+                    return $content['text'];
+                }
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * 🆕 (2026-05-13) OpenAI API (Chat Completions — legacy + auto-route ไป Responses)
+     *
+     * Endpoint legacy: /v1/chat/completions (gpt-4o, gpt-3.5-turbo)
+     * Endpoint ใหม่: /v1/responses (auto-route ถ้า model = gpt-5+/o-series)
      *
      * รองรับ per-key base_url override (เผื่อ enterprise/proxy endpoint)
      */
     protected function callOpenAi(string $prompt, array $config = []): array
     {
+        // 🎯 (2026-05-13) Auto-route ตาม model
+        //   GPT-5+/o-series → Responses API (/v1/responses)
+        //   GPT-4o/3.5 → legacy /v1/chat/completions
+        if ($this->isOpenAiResponsesModel($this->model)) {
+            return $this->callOpenAiResponses($prompt, $config);
+        }
+
         $baseUrl = $this->currentBaseUrl
             ?: (AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1');
         $endpoint = rtrim($baseUrl, '/').'/chat/completions';
@@ -3804,6 +4028,11 @@ PROMPT;
             return $this->playgroundAnthropic($chatMessages, $config);
         }
 
+        // 🎯 (2026-05-13) OpenAI GPT-5+/o-series → Responses API
+        if ($this->provider === 'openai' && $this->isOpenAiResponsesModel($this->model)) {
+            return $this->playgroundOpenAiResponses($chatMessages, $config);
+        }
+
         // สำหรับ provider ที่ใช้ OpenAI-compatible API
         // 🆕 (2026-05-13) เพิ่ม openai/qwen/xiaomi — user report "playground ทดสอบคีย์ไม่ได้"
         $url = match ($this->provider) {
@@ -3839,6 +4068,69 @@ PROMPT;
             'response' => $data['choices'][0]['message']['content'] ?? '',
             'tokens_used' => $data['usage']['total_tokens'] ?? 0,
             'provider' => $this->provider,
+            'model' => $this->model,
+            'response_time_ms' => $responseTime,
+        ];
+    }
+
+    /**
+     * 🆕 (2026-05-13) Playground สำหรับ OpenAI Responses API (GPT-5+/o-series)
+     *
+     * Endpoint: /v1/responses
+     * Input: message array — Responses API รองรับ format นี้ตรง
+     * Instructions: ใช้แทน system message
+     */
+    protected function playgroundOpenAiResponses(array $chatMessages, array $config): array
+    {
+        $startTime = microtime(true);
+
+        // แยก system → instructions, รวม user/assistant → input array
+        $systemMessage = '';
+        $inputMessages = [];
+        foreach ($chatMessages as $msg) {
+            $role = $msg['role'] ?? 'user';
+            if ($role === 'system') {
+                $systemMessage = $msg['content'] ?? '';
+
+                continue;
+            }
+            if (in_array($role, ['user', 'assistant'], true)) {
+                $inputMessages[] = [
+                    'role' => $role,
+                    'content' => $msg['content'] ?? '',
+                ];
+            }
+        }
+
+        $baseUrl = $this->currentBaseUrl ?: (AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1');
+        $endpoint = rtrim($baseUrl, '/').'/responses';
+
+        $payload = [
+            'model' => $this->model,
+            'input' => $inputMessages,
+            'max_output_tokens' => $config['max_tokens'] ?? 2048,
+            'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
+        ];
+        if (! empty($systemMessage)) {
+            $payload['instructions'] = $systemMessage;
+        }
+
+        $response = Http::timeout(90)
+            ->withToken($this->apiKey)
+            ->post($endpoint, $payload)
+            ->throw();
+
+        $data = $response->json();
+        $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+        $text = $this->extractOpenAiResponsesText($data);
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'provider' => 'openai',
             'model' => $this->model,
             'response_time_ms' => $responseTime,
         ];
