@@ -7597,27 +7597,32 @@ class FortuneConversationService
 
         foreach ($accounts as $account) {
             if ($displayMode === 'promptpay_only') {
-                // แสดงเฉพาะพร้อมเพย์ (ไม่แสดงเลขบัญชี — เลี่ยง FB ตรวจจับ)
+                // 🛡️ (2026-05-13) ลบ promptpay_id raw จาก text
+                //   user report: "เฟชบุ๊คมันสร้าง qrcode มาเองซึ่งมันใช้ไม่ได้"
+                //   Root cause: FB detect promptpay number 10 หลัก → render auto-QR overlay
+                //                ที่ format ผิด → ลูกค้าสแกนแล้วโอนไม่ได้
+                //   Fix: ไม่แสดงเลขเบอร์ — ใช้ QR image ที่ระบบสร้าง (ส่งคู่กับข้อความ)
                 if ($account->hasPromptpay()) {
-                    $message .= "📱 {$account->bank_name}\n";
-                    $message .= "   พร้อมเพย์: {$account->promptpay_id}\n";
+                    $message .= "📌 {$account->bank_name}\n";
                     $message .= "   ชื่อ: {$account->account_name}\n";
+                    $message .= "   📲 สแกน QR Code ในภาพด้านล่าง\n";
                     $message .= "\n";
                 }
             } elseif ($displayMode === 'bank_only') {
-                // แสดงเฉพาะเลขบัญชี (ไม่แสดงพร้อมเพย์)
+                // แสดงเฉพาะเลขบัญชี (เลขบัญชี ≠ PromptPay format → FB ไม่ trigger)
                 $message .= "📌 {$account->bank_name}\n";
                 $message .= "   เลขบัญชี: {$account->account_number}\n";
                 $message .= "   ชื่อ: {$account->account_name}\n";
                 $message .= "\n";
             } else {
-                // แสดงทั้งสองอย่าง (default)
+                // both mode: เลขบัญชี OK, แต่ promptpay_id ลบออก (FB trigger)
                 $message .= "📌 {$account->bank_name}\n";
                 $message .= "   เลขบัญชี: {$account->account_number}\n";
                 $message .= "   ชื่อ: {$account->account_name}\n";
 
                 if ($account->hasPromptpay()) {
-                    $message .= "   พร้อมเพย์: {$account->promptpay_id}\n";
+                    // 🛡️ (2026-05-13) ไม่แสดง promptpay_id — ป้องกัน FB auto-QR
+                    $message .= "   📲 พร้อมเพย์: สแกน QR ในภาพด้านล่าง\n";
                 }
 
                 $message .= "\n";
