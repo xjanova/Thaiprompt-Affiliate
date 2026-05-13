@@ -3,7 +3,7 @@
 @section('title', 'ตั้งค่าระบบดูดวง Facebook')
 
 @section('content')
-<div class="container mx-auto px-4 py-8" x-data="fortuneSettings()">
+<div class="container mx-auto px-4 py-8" x-data="fortuneSettings()" x-init="initTabs()">
     {{-- Header --}}
     <div class="mb-8">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
@@ -162,12 +162,50 @@
         </div>
     </div>
 
+    {{-- 🆕 (2026-05-13) Tab Navigation — จัดกลุ่มที่เชื่อมโยงกันให้อยู่ tab เดียวกัน --}}
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg mb-6 sticky top-0 z-20 backdrop-blur-md bg-opacity-95 dark:bg-opacity-95">
+        <div class="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-700">
+            <button type="button" @click="switchTab('ai')"
+                    :class="activeTab === 'ai' ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                🤖 <span>AI Models</span>
+            </button>
+            <button type="button" @click="switchTab('service')"
+                    :class="activeTab === 'service' ? 'bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                🔮 <span>Fortune Service</span>
+            </button>
+            <button type="button" @click="switchTab('engagement')"
+                    :class="activeTab === 'engagement' ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                💬 <span>Engagement</span>
+            </button>
+            <button type="button" @click="switchTab('tts')"
+                    :class="activeTab === 'tts' ? 'bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                🎙️ <span>TTS / Voice</span>
+            </button>
+            <button type="button" @click="switchTab('platform')"
+                    :class="activeTab === 'platform' ? 'bg-gradient-to-r from-rose-500 to-red-600 text-white shadow' : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600'"
+                    class="px-4 py-2 rounded-lg font-medium text-sm transition flex items-center gap-2">
+                ⚙️ <span>Platform & Payment</span>
+            </button>
+        </div>
+        <div class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-900/30">
+            <span x-show="activeTab === 'ai'">🤖 <strong>AI Models</strong> — AI Provider · AI Chat · Sensitive AI · Bill Psychology · Celtic Premium · ตรวจเช็คระบบ AI</span>
+            <span x-show="activeTab === 'service'">🔮 <strong>Fortune Service</strong> — คำทำนาย Freemium · สมัครสมาชิก · เทมเพลตคำทำนาย · Affiliate · พื้นฐาน</span>
+            <span x-show="activeTab === 'engagement'">💬 <strong>Engagement</strong> — ตอบคอมเม้นต์ · Satisfaction · เชิญกลุ่ม FB · กรองสแปม</span>
+            <span x-show="activeTab === 'tts'">🎙️ <strong>TTS / Voice</strong> — เสียงสรุปคำทำนาย · Voice Library</span>
+            <span x-show="activeTab === 'platform'">⚙️ <strong>Platform & Payment</strong> — Facebook setup · Stripe · สถานะระบบ</span>
+        </div>
+    </div>
+
     <form action="{{ route('admin.fortune.settings.update') }}" method="POST" enctype="multipart/form-data">
         @csrf
         @method('PUT')
 
         {{-- Status Card --}}
-        <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white">
+        <div class="bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg p-6 mb-6 text-white" data-fortune-tab="platform">
             <div class="flex items-center justify-between">
                 <div>
                     <h3 class="text-xl font-bold mb-2">สถานะระบบ</h3>
@@ -189,7 +227,7 @@
         </div>
 
         {{-- 🔍 AI Diagnostic Panel --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="aiDiagnostic()">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="aiDiagnostic()" data-fortune-tab="ai">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     🔍 ตรวจเช็คระบบ AI
@@ -314,7 +352,7 @@
         </div>
 
         {{-- Facebook Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="platform">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 📘 การตั้งค่า Facebook
             </h3>
@@ -378,7 +416,7 @@
         </div>
 
         {{-- AI Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ useGlobal: {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'true' : 'false' }} }">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai" x-data="{ useGlobal: {{ old('use_global_ai_settings', $settings->use_global_ai_settings ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     🤖 การตั้งค่า AI Provider
@@ -538,7 +576,7 @@
         </div> {{-- End of AI Settings card --}}
 
         {{-- AI Chat ทั่วไป (สนทนาอัจฉริยะ) --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai"
              x-data="{ enableAiChat: {{ old('enable_ai_chat', $settings->enable_ai_chat ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
@@ -627,7 +665,7 @@
             $hasSensitiveKey = count($sKeys) > 0;
             $lockedKeyId = old('sensitive_ai_pool_key_id', $settings->sensitive_ai_pool_key_id);
         @endphp
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai"
              x-data="sensitiveAiPanel(@js($sKeys), @js($hasSensitiveKey), @js($lockedKeyId))">
 
             {{-- Header + ปุ่ม collapse คำอธิบาย --}}
@@ -959,7 +997,7 @@
         @php
             $billHasSensitiveKey = ! empty($sensitiveKeys ?? []);
         @endphp
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai"
              x-data="proFeatureTester('bill', {{ $billHasSensitiveKey ? 'true' : 'false' }})">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -1071,7 +1109,7 @@
         @php
             $celticHasSensitiveKey = ! empty($sensitiveKeys ?? []);
         @endphp
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="ai"
              x-data="proFeatureTester('celtic', {{ $celticHasSensitiveKey ? 'true' : 'false' }}, {
                  showPromptOverride: false,
                  initialEnabled: {{ old('celtic_premium_chat_enabled', $settings->celtic_premium_chat_enabled ?? true) ? 'true' : 'false' }},
@@ -1187,7 +1225,7 @@
                  voiceEnabled: {{ old('voice_summary_enabled', $settings->voice_summary_enabled ?? false) ? 'true' : 'false' }},
                  primaryProvider: '{{ old('voice_summary_primary_provider', $settings->voice_summary_primary_provider ?? 'minimax') }}',
                  showAdvanced: false,
-             }">
+             }" data-fortune-tab="tts">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
                     🎙️ เสียงสรุปคำทำนาย (TTS)
@@ -1463,7 +1501,7 @@
         </div> {{-- End Voice Summary --}}
 
         {{-- ===== 🎼 Voice Library (2026-05-08) — ตั้งค่า/ทดสอบ/อิมพอตเสียง ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="tts"
              x-data="voiceLibrary()"
              x-init="init()">
             <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -1654,7 +1692,7 @@ Format 2 — JSON array:
         </div> {{-- End Voice Library --}}
 
         {{-- ===== 🙏 Satisfaction Detector (2026-05-07 Phase 2) ===== --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement"
              x-data="{
                  satisfactionEnabled: {{ old('satisfaction_detection_enabled', $settings->satisfaction_detection_enabled ?? true) ? 'true' : 'false' }},
              }">
@@ -1686,7 +1724,7 @@ Format 2 — JSON array:
         </div> {{-- End Satisfaction Detector --}}
 
         {{-- Comment Engagement Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     🗨️ ระบบตอบคอมเม้นต์อัตโนมัติ
@@ -1772,7 +1810,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- Usage Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 ⚙️ การตั้งค่าการใช้งานพื้นฐาน
             </h3>
@@ -2258,7 +2296,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- 🌟 (2026-05-04) Group Invite + Monthly Free Claim --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-2 border-purple-200 dark:border-purple-700">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-2 border-purple-200 dark:border-purple-700" data-fortune-tab="engagement">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 🌟 ระบบเชิญเข้ากลุ่ม Facebook + แคมเปญดูฟรีรายเดือน
             </h3>
@@ -2393,7 +2431,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- Freemium: Deep Reading Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ enableDeep: {{ old('enable_deep_reading', $settings->enable_deep_reading ?? true) ? 'true' : 'false' }} }">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service" x-data="{ enableDeep: {{ old('enable_deep_reading', $settings->enable_deep_reading ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     🌟 คำทำนายเชิงลึก (Freemium)
@@ -2464,7 +2502,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- Subscription Settings --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" x-data="{ enableSub: {{ old('subscription_enabled', $settings->subscription_enabled ?? true) ? 'true' : 'false' }} }">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service" x-data="{ enableSub: {{ old('subscription_enabled', $settings->subscription_enabled ?? true) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">
                     💎 ระบบสมัครสมาชิก
@@ -2538,7 +2576,7 @@ Format 2 — JSON array:
                     this.$refs.deepPrompt.value = this.deepDefault;
                 }
             }
-        }" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
+        }" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="service">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">
                 📝 เทมเพลตคำทำนาย (AI Prompt)
             </h3>
@@ -2697,7 +2735,7 @@ Format 2 — JSON array:
                         this.previewLoading = false;
                     }
                 }
-             }">
+             }" data-fortune-tab="service">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
                 💰 ตั้งค่าระบบ Affiliate สำหรับดูดวง
             </h3>
@@ -3068,7 +3106,7 @@ Format 2 — JSON array:
         {{-- ========================================= --}}
         {{-- 🎯 Admin Takeover (เทคโอเวอร์) --}}
         {{-- ========================================= --}}
-        <div id="takeover" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-l-4 border-purple-500">
+        <div id="takeover" class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6 border-l-4 border-purple-500" data-fortune-tab="engagement">
             <div class="flex items-center justify-between flex-wrap gap-3 mb-5">
                 <div>
                     <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
@@ -3184,7 +3222,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- 🛡️ (2026-05-10) Link Moderation — ซ่อน/ลบคอมเม้นต์ที่มีลิงค์สแปม --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement"
              x-data="{ enableLinkMod: {{ old('auto_hide_link_comments', $settings->auto_hide_link_comments ?? false) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -3257,7 +3295,7 @@ Format 2 — JSON array:
         </div>
 
         {{-- 💳 (2026-05-09) Stripe Payment Settings — บัตรต่างประเทศ --}}
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="platform"
              x-data="{ enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <div>
@@ -3753,8 +3791,30 @@ function aiDiagnostic() {
 
 function fortuneSettings() {
     return {
+        // 🆕 (2026-05-13) Tab state — ใช้ filter sections ตาม group
+        //   sections ที่มี data-fortune-tab attribute → show/hide ตาม activeTab
+        //   default: 'ai' (กลุ่มหลัก — AI Provider/Chat/Sensitive/Bill/Celtic)
+        activeTab: localStorage.getItem('fortune_settings_tab') || 'ai',
         commentEngagementEnabled: {{ $settings->comment_engagement_enabled ? 'true' : 'false' }},
         commentEngagementMode: '{{ old('comment_engagement_mode', $settings->comment_engagement_mode ?? 'ai') }}',
+        switchTab(tab) {
+            this.activeTab = tab;
+            localStorage.setItem('fortune_settings_tab', tab);
+            this.applyTabFilter();
+            // scroll up to show tab content from top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+        applyTabFilter() {
+            const active = this.activeTab;
+            document.querySelectorAll('[data-fortune-tab]').forEach(el => {
+                const tabs = (el.getAttribute('data-fortune-tab') || '').split(',').map(s => s.trim());
+                el.style.display = tabs.includes(active) ? '' : 'none';
+            });
+        },
+        initTabs() {
+            // apply filter ทันทีหลัง Alpine init
+            this.$nextTick(() => this.applyTabFilter());
+        },
         async testAI() {
             const btn = event.target.closest('button');
             const originalText = btn.innerHTML;
