@@ -98,9 +98,11 @@ class CelticCrossService
                 'error' => $e->getMessage(),
             ]);
 
+            // 🛡️ (2026-05-13) Sanitize — ห้าม leak technical error ลงในแชท
+            //   user report: "มีการโชว์โค๊ดบางส่วน และ error ออก แชท บัคร้ายแรง"
             return [
                 'success' => false,
-                'message' => 'สุ่มไพ่ไม่สำเร็จ: '.$e->getMessage(),
+                'message' => '🃏 ขออภัยค่ะ แม่หมอสุ่มไพ่ไม่สำเร็จในรอบนี้ — ลองพิมพ์ "พร้อม" อีกครั้งนะคะ ✨',
             ];
         }
     }
@@ -336,10 +338,15 @@ class CelticCrossService
                 // ignore — ไม่ critical
             }
 
+            // 🛡️ (2026-05-13) Sanitize — ห้าม leak technical error (cURL/Gemini quota/Provider name) ลงในแชท
+            //   user report: "AI ระบบขัดข้องชั่วคราว ... cURL error 28: Operation timed out ... gemini/sen ..."
+            //   นี่ leak ชื่อ provider + ชื่อ key + URL ของ Gemini API → bug ร้ายแรง
+            //   แทนด้วย user-friendly message — รายละเอียดยังคงใน Log::error ด้านบน
             return [
                 'success' => false,
-                'message' => 'AI ระบบขัดข้องชั่วคราว '.$e->getMessage()
-                    ."\n\nกรุณาลองใหม่อีกครั้ง — ถ้ายังไม่ได้ ติดต่อแอดมิน",
+                'message' => "🌙 ขออภัยค่ะ แม่หมอติดขัดเล็กน้อยในการเชื่อมจิตกับจักรวาลตอนนี้ ✨\n\n"
+                    ."⏳ รบกวนเจ้าชะตารอสักครู่แล้วลองพิมพ์คำถามใหม่อีกครั้งนะคะ\n"
+                    ."📌 ถ้ายังไม่ได้ พิมพ์ \"ขอคุยกับคน\" เพื่อให้แอดมินช่วย 🙏",
             ];
         }
     }

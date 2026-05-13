@@ -5957,7 +5957,7 @@ class FortuneConversationService
             //
             // วิธีแก้: wrap UPA generate + reading update ใน DB::transaction()
             //         แล้ว fresh query verify หลัง commit ว่าทุกอย่างอยู่จริง
-            $billData = \DB::transaction(function () use ($reading, $questions) {
+            $billData = \DB::transaction(function () use ($reading, $questions, $payFirst) {
                 $basePrice = $this->getDeepReadingPrice();
                 // 🛑 (2026-05-06) Pay-Later removed — ทุกบิล UPA 30 นาที (pay-first only)
                 $expiryMinutes = FortuneReading::PAYMENT_TIMEOUT_MINUTES; // 30
@@ -5979,6 +5979,9 @@ class FortuneConversationService
                 $reading->setPendingPayment($uniqueAmount);
 
                 // 💰 (2026-05-10) ตั้ง flag pay_first_mode ให้ระบบรู้ว่าต้องเก็บข้อมูลหลังชำระ
+                // 🐛 (2026-05-13) Bug fix: $payFirst undefined ใน closure → ลูกค้า Deep 39 Pay-First สร้างบิลไม่ได้
+                //   user report: "แพคเกจ 39 บาท ลูกค้าเลือกแล้วใช้งานไม่ได้ มันบอกกำลังจัดเตรียมอย่างเดียวเลย"
+                //   root cause: closure use clause ขาด $payFirst → throw error → fall back หา "ระบบกำลังเตรียม"
                 if ($payFirst) {
                     $reading->setConversationState('pay_first_mode', true);
                 }
