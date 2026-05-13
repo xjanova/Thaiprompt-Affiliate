@@ -110,6 +110,38 @@ trait CelticCrossConversationTrait
     }
 
     /**
+     * 🌙 (2026-05-14) ส่ง pre-reply ทันทีก่อน AI call (Celtic Q&A)
+     *
+     * user report: "AI เหมือนจะตอบแต่เงียบ"
+     * เคสจริง: AI ใช้เวลา 30-60+ วินาที — ลูกค้าไม่เห็นว่า bot ยอมรับคำถาม
+     * Fix: push intermediate ack message ทันที — ลูกค้าเห็นว่า bot กำลังคิด
+     *
+     * Non-blocking: ส่งผ่าน push API + catch ทุก error (ไม่ให้กระทบ AI flow)
+     */
+    protected function sendCelticThinkingAck(FortuneReading $reading): void
+    {
+        $ackMessage = "🌙 *แม่หมอกำลังเชื่อมจิตกับไพ่ของเจ้าชะตา...*\n"
+            ."ขอเวลา 1-2 นาที ✨\n\n"
+            ."(อย่าเพิ่งพิมพ์ซ้ำนะคะ — แม่หมอกำลังตั้งสมาธิ 🙏)";
+
+        if (! empty($reading->facebook_user_id)) {
+            try {
+                $fbService = app(\App\Services\FacebookWebhookService::class);
+                $fbService->sendMessage($reading->facebook_user_id, $ackMessage);
+            } catch (\Throwable $e) {
+                \Log::debug('Celtic ack: FB send fail', ['error' => $e->getMessage()]);
+            }
+        } elseif (! empty($reading->line_user_id)) {
+            try {
+                $lineService = app(\App\Services\LineFortuneService::class);
+                $lineService->sendMessage($reading->line_user_id, $ackMessage);
+            } catch (\Throwable $e) {
+                \Log::debug('Celtic ack: LINE send fail', ['error' => $e->getMessage()]);
+            }
+        }
+    }
+
+    /**
      * Present tier choice menu — ส่งให้ลูกค้าเลือกระหว่าง 39฿ Basic Deep หรือ 99฿ Celtic Cross
      *
      * 🎯 จุดประสงค์: เป็นประตูทางเข้า "ดูดวง" ทั้งหมดในระบบ
@@ -1228,6 +1260,20 @@ trait CelticCrossConversationTrait
 
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
+
+        // 🌙 (2026-05-14) Pre-reply "กำลังคิด" — ส่ง push message ทันทีก่อน AI call
+        //   user report: "AI เหมือนจะตอบแต่เงียบ"
+        //   เคสจริง: AI ใช้เวลา 30-60+ วินาที (OpenAI) → ลูกค้ารอนาน ไม่เห็น feedback
+        //   ปัญหา: webhook return 200 OK ทันที แต่ลูกค้าไม่เห็นข้อความ "กำลังคิด"
+        //   Fix: push intermediate ack ทันที — ลูกค้าเห็นว่า bot ยอมรับคำถามแล้ว
+        try {
+            $this->sendCelticThinkingAck($reading);
+        } catch (\Throwable $ackErr) {
+            \Log::debug('Celtic: send thinking ack fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $ackErr->getMessage(),
+            ]);
+        }
 
         $service = app(CelticCrossService::class);
         $result = $service->askQuestion($reading, $question);
