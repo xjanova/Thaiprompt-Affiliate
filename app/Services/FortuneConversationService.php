@@ -7636,15 +7636,19 @@ class FortuneConversationService
                     $message .= "\n";
                 }
             } elseif ($displayMode === 'bank_only') {
-                // แสดงเฉพาะเลขบัญชี (เลขบัญชี ≠ PromptPay format → FB ไม่ trigger)
+                // 🛡️ (2026-05-14) ใส่ dash ใน account_number — กัน FB auto-QR
+                //   user report ต่อ 2026-05-13: เลขบัญชีหลายธนาคาร (KBank, ออมสิน)
+                //   ขึ้นต้นด้วย 0 + 10 หลัก → FB ตรวจจับเป็นเบอร์โทร PromptPay
+                //   → render auto-QR overlay (format ผิด สแกนไม่ได้)
+                //   Fix: ใส่ dash → break digit-sequence pattern, ลูกค้ายัง copy ได้
                 $message .= "📌 {$account->bank_name}\n";
-                $message .= "   เลขบัญชี: {$account->account_number}\n";
+                $message .= '   เลขบัญชี: '.$this->formatAccountNumberForFb($account->account_number)."\n";
                 $message .= "   ชื่อ: {$account->account_name}\n";
                 $message .= "\n";
             } else {
-                // both mode: เลขบัญชี OK, แต่ promptpay_id ลบออก (FB trigger)
+                // both mode: ใส่ dash ใน account_number (กัน FB auto-QR) + promptpay_id ลบออก
                 $message .= "📌 {$account->bank_name}\n";
-                $message .= "   เลขบัญชี: {$account->account_number}\n";
+                $message .= '   เลขบัญชี: '.$this->formatAccountNumberForFb($account->account_number)."\n";
                 $message .= "   ชื่อ: {$account->account_name}\n";
 
                 if ($account->hasPromptpay()) {
@@ -7657,6 +7661,49 @@ class FortuneConversationService
         }
 
         return $message;
+    }
+
+    /**
+     * 🛡️ (2026-05-14) Format เลขบัญชีให้ใส่ dash — กัน Facebook auto-QR overlay
+     *
+     * Facebook Messenger ตรวจจับลำดับตัวเลข 10-13 หลัก (ขึ้นต้น 0) ใน text
+     * → คิดว่าเป็น PromptPay phone → render auto-QR overlay เอง (format ผิด)
+     *
+     * วิธีกัน: ใส่ dash คั่นกลุ่ม → break digit-sequence pattern
+     * → ลูกค้ายัง copy เลขไป paste ลง mobile banking ได้ปกติ (banking apps ตัด dash ออกเอง)
+     *
+     * รูปแบบ Thai bank account standard:
+     * - 10 หลัก: XXX-X-XXXXX-X (3-1-5-1)
+     * - 11 หลัก: XXX-XX-XXXXX-X (3-2-5-1)
+     * - 12 หลัก: XXX-X-XX-XXXXX-X (3-1-2-5-1)
+     * - อื่นๆ: chunk 3-3-3...
+     *
+     * @param  string|null  $accountNumber  เลขบัญชี (อาจมี dash อยู่แล้วก็ได้)
+     * @return string เลขบัญชีที่มี dash คั่น
+     */
+    protected function formatAccountNumberForFb(?string $accountNumber): string
+    {
+        if ($accountNumber === null || $accountNumber === '') {
+            return '';
+        }
+
+        // ดึงเฉพาะตัวเลข (กรณี input มี dash/space อยู่แล้ว → normalize ก่อน format ใหม่)
+        $digits = preg_replace('/\D+/', '', $accountNumber);
+
+        if ($digits === '' || $digits === null) {
+            return $accountNumber;
+        }
+
+        $len = strlen($digits);
+
+        // ใช้ format มาตรฐานของธนาคารไทย
+        return match (true) {
+            $len === 10 => substr($digits, 0, 3).'-'.substr($digits, 3, 1).'-'.substr($digits, 4, 5).'-'.substr($digits, 9, 1),
+            $len === 11 => substr($digits, 0, 3).'-'.substr($digits, 3, 2).'-'.substr($digits, 5, 5).'-'.substr($digits, 10, 1),
+            $len === 12 => substr($digits, 0, 3).'-'.substr($digits, 3, 1).'-'.substr($digits, 4, 2).'-'.substr($digits, 6, 5).'-'.substr($digits, 11, 1),
+            // fallback: chunk 3 ตัว
+            default => trim(chunk_split($digits, 3, '-'), '-'),
+        };
     }
 
     /**
