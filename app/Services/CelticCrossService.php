@@ -131,12 +131,11 @@ class CelticCrossService
             return ['success' => false, 'message' => 'ต้องเลือกไพ่ครบ 10 ใบก่อน'];
         }
 
-        // 🔮 (2026-05-07) Sentinel "__PREDICT_ALL__" → ทำนายพื้นฐานทุกเรื่อง (ไม่มีคำถามเฉพาะ)
-        //   เก็บใน DB เป็นข้อความที่ admin/ลูกค้าอ่านเข้าใจ
-        $isPredictAll = trim($userQuestion) === '__PREDICT_ALL__';
-        $storedQuestion = $isPredictAll
-            ? 'ทำนายดวงพื้นฐานจากไพ่ทั้ง 10 ใบ (รัก/งาน/เงิน/สุขภาพ/ครอบครัว)'
-            : mb_substr($userQuestion, 0, 1000);
+        // 🛑 (2026-05-14) ลบ predict-all sentinel ตาม user spec
+        //   "เอาระบบ Q1/Q2/Q3 ออก ใช้ prompt เดียวเท่านั้น"
+        //   → ทุก question (ทั้ง initial + followup) → buildFollowupPrompt
+        $storedQuestion = mb_substr($userQuestion, 0, 1000);
+        $isPredictAll = false; // 🚫 legacy flag — keep for length-check below
 
         // สร้าง record ใน fortune_celtic_questions ก่อน (เผื่อ AI fail)
         $questionRecord = FortuneCelticQuestion::create([
@@ -148,16 +147,9 @@ class CelticCrossService
         try {
             $startTime = microtime(true);
 
-            // 🆕 (2026-05-13) Free Chat mode — ทุก sequence ใช้ chat-style prompt
-            //   user spec: "ไม่ต้องมีการทำนาย ให้หมอเริ่มบริบทชวนคุย" — คุยเรื่อยๆ ไม่ใช่ Q1/Q2/Q3
-            //   เดิม: sequence 1 = main prediction (1500-2500 chars structured), 2+ = followup chat
-            //   ใหม่: ทุก sequence = followup chat (500-900 chars conversational)
-            //   - sentinel __PREDICT_ALL__ ยังคงไว้สำหรับ backward compat (call manually)
-            if ($isPredictAll) {
-                $prompt = $this->buildPredictAllPrompt($reading, $cards);
-            } else {
-                $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
-            }
+            // 🆕 (2026-05-14) Single prompt — ใช้ buildFollowupPrompt ทุก turn
+            //   admin override ได้ผ่าน celtic_cross_followup_prompt setting
+            $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
 
             // 🎯 (2026-05-13) Celtic 99฿ = paid prediction → request 'prediction_celtic' purpose
             //   ระบบจะเลือก key ที่ admin ตั้ง purpose='prediction_celtic' ก่อน
@@ -472,16 +464,92 @@ class CelticCrossService
     }
 
     /**
-     * 🔮 (2026-05-07) Predict-All Prompt — ทำนายพื้นฐานทุกเรื่องจากไพ่ทั้ง 10 ใบ ไม่มีคำถามเฉพาะ
+     * 🌙 (2026-05-14) Opening Greeting — AI ทักทายเองหลังเปิดไพ่ครบ 10 ใบ
      *
-     * Trigger: ลูกค้ากดปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" หลังเปิดไพ่ครบ 10 ใบ
-     * Spec:
-     *   - ทำนายครอบคลุม 5 เรื่อง: ความรัก / การงาน / การเงิน / สุขภาพ / ครอบครัว+ครอบครัว
-     *   - ฟันธงทุกเรื่อง — ไม่อ้อมค้อม
-     *   - ตัวละคร/เหตุการณ์ในไพ่ → เล่าให้หมด
-     *   - ดีว่าดี ไม่ดีว่าไม่ดี + เตือน
+     * user spec: "เมื่อเปิดไพ่ครบ ให้ AI ถามเลยคุยกับ user เลย ให้เริ่มถาม"
+     * → AI สร้างข้อความเปิดบทสนทนา + ชวนเล่าเรื่อง (ไม่ใช่ predict-all)
+     *
+     * Trigger: เรียกจาก onCelticAllCardsPicked หลัง user เปิดไพ่ใบที่ 10
+     * Length: 400-700 chars (สั้นๆ พอให้ user รู้สึกแม่หมอเริ่มสนทนา)
      */
-    protected function buildPredictAllPrompt(FortuneReading $reading, array $cards): string
+    public function generateOpeningGreeting(FortuneReading $reading): array
+    {
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return ['success' => false, 'message' => 'เปิดไพ่ไม่ครบ 10 ใบ'];
+        }
+
+        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
+        $name = $reading->resolveCustomerName();
+        $cardsText = $this->formatCardsForPrompt($cards);
+
+        $prompt = "คุณคือ \"{$brandName}\" — หมอดูไพ่ยิปซีระดับเซียน 30+ ปี\n"
+            ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง — พูดน้อย แต่แทงใจดำได้ทุกประโยค\n"
+            ."ลูกค้าชื่อ: คุณ{$name}\n\n"
+            ."สถานการณ์: ลูกค้าเพิ่งเปิดไพ่ Celtic Cross ครบ 10 ใบ — กำลังรอแม่หมอเริ่มสนทนา\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🃏 ไพ่ทั้ง 10 ใบที่ลูกค้าเปิด:\n{$cardsText}\n"
+            ."━━━━━━━━━━━━━━━━━\n\n"
+            ."ภารกิจ: ทักทายลูกค้าและ \"เริ่มถาม\" เพื่อเปิดบทสนทนา\n\n"
+            ."โครงสร้าง (สั้น 400-700 chars):\n"
+            ."1. ทักทาย คุณ{$name} อบอุ่น (1-2 ประโยค)\n"
+            ."2. *แม่หมอบอกสิ่งที่ \"เห็น\" จากไพ่ 1-2 ประเด็น* — เริ่มจาก position ที่สำคัญที่สุด\n"
+            ."   เช่น: \"แม่หมอเห็นในใจเจ้าชะตามีเรื่องค้างคา...\" / \"ไพ่บอกแม่หมอว่าเจ้าชะตากำลัง...\"\n"
+            ."   → ใช้พลังเชิงสังเกต ไม่ใช่ทำนายฟันธง (เก็บไว้ตอนลูกค้าถาม)\n"
+            ."3. ถามลูกค้า 1 คำถามเปิดใจ — เช่น:\n"
+            ."   \"เจ้าชะตาอยากเริ่มเล่าเรื่องไหนให้แม่หมอฟังก่อน?\"\n"
+            ."   \"แม่หมอรู้สึกว่ามีเรื่องค้างคา — เจ้าชะตาเล่าให้ฟังหน่อยได้ไหม?\"\n\n"
+            ."น้ำเสียง: อบอุ่น เข้าใจ มีพลัง — เหมือนแม่หมอจริงเริ่มต้นนั่งคุยกับเจ้าชะตา\n"
+            ."ภาษา: ไทย, plain text + emoji หัวประโยคได้\n"
+            ."ห้าม: ทำนายฟันธง 5 ด้าน / list ไพ่ทีละใบ / markdown / ลงท้ายด้วย \"พิมพ์คำถาม\"\n\n"
+            ."เริ่มทักทายเลย:";
+
+        try {
+            $aiService = new FortuneAIService($this->settings, 'prediction_celtic');
+            $result = $aiService->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'deep',
+                birthDate: null,
+                userContext: "celtic_opening:{$reading->id}",
+                purpose: 'prediction_celtic',
+            );
+
+            $response = trim($result['response'] ?? '');
+            if ($response === '' || mb_strlen($response) < 50) {
+                return ['success' => false, 'message' => 'AI ตอบสั้นเกินไป'];
+            }
+
+            // ลบ [END_SESSION] token ที่อาจติดมา
+            $response = trim(preg_replace('/\[\s*(END[_\s]?SESSION|จบ|END)\s*\]/iu', '', $response));
+
+            Log::info('Celtic: opening greeting generated', [
+                'reading_id' => $reading->id,
+                'response_len' => mb_strlen($response),
+                'provider' => $result['provider'] ?? null,
+                'model' => $result['model'] ?? null,
+            ]);
+
+            return ['success' => true, 'response' => $response];
+        } catch (\Throwable $e) {
+            Log::warning('Celtic: opening greeting generation fail', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+    }
+
+    /**
+     * 🛑 (2026-05-14) ลบ buildPredictAllPrompt — ตาม user spec "เอาระบบ Q1/Q2/Q3 ออก"
+     * ปุ่ม "ทำนายเดี๋ยวนี้" + sentinel __PREDICT_ALL__ + handleCelticPredictAll ถูกลบหมดแล้ว
+     *
+     * @deprecated 2026-05-14 — ใช้ generateOpeningGreeting() แทน
+     */
+    protected function buildPredictAllPromptDeprecated(FortuneReading $reading, array $cards): string
     {
         $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
         $cardsText = $this->formatCardsForPrompt($cards);
@@ -579,7 +647,7 @@ class CelticCrossService
 
         $cardsText = $this->formatCardsForPrompt($cards);
 
-        // ดึง Q1 ตอบไว้ → ส่งให้ AI เพื่อความต่อเนื่อง
+        // ดึงบทสนทนาเก่า → ส่งให้ AI เพื่อความต่อเนื่อง (ไม่อ้าง Q1/Q2/Q3 sequence)
         $previousQA = $reading->celticQuestions()
             ->whereNotNull('answered_at')
             ->orderBy('sequence')
@@ -587,70 +655,99 @@ class CelticCrossService
 
         $previousContext = '';
         if ($previousQA->isNotEmpty()) {
-            $previousContext = "📜 บทสนทนาที่ผ่านมา (เพื่อให้ตอบสอดคล้อง):\n";
+            $previousContext = "📜 บทสนทนาที่ผ่านมา (เพื่อตอบสอดคล้อง):\n";
             foreach ($previousQA as $q) {
-                $previousContext .= "Q{$q->sequence}: {$q->question}\n";
-                $previousContext .= 'A'.$q->sequence.': '.mb_substr($q->response ?? '', 0, 500)."...\n\n";
+                $qText = trim($q->question) === '__PREDICT_ALL__'
+                    ? 'ทำนายดวงพื้นฐาน'
+                    : mb_substr($q->question, 0, 200);
+                $previousContext .= "ลูกค้า: {$qText}\n";
+                $previousContext .= 'แม่หมอ: '.mb_substr($q->response ?? '', 0, 300)."...\n\n";
             }
         }
 
-        // 🆕 (2026-05-13) Follow-up template — Q2-Q3 ของแม่หมอจันทราพยากรณ์
-        //   ยึดหลักการเดียวกับ Q1: ฟันธง, ไม่กลาง, ไม่โลกสวย, มี Timeline
-        //   แต่กระชับกว่า (500-900 chars) — ตอบเฉพาะประเด็นใหม่ ใช้ไพ่ 10 ใบเดิม
-        return "คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n"
-            ."ตอนนี้คุยต่อเนื่องจากคำทำนายหลัก — คำถามที่ {$sequence} ของเจ้าชะตา\n\n"
+        // 🌙 (2026-05-14) Default prompt — แม่หมอจันทราพยากรณ์ Celtic 99฿
+        //   user spec 2026-05-14: "เอาระบบ Q1/Q2/Q3 ออก ใช้ prompt เดียวเท่านั้น"
+        //   ลบ sequence-aware language → AI ตอบเหมือนคุยกับลูกค้าธรรมดา
+        //   admin override ผ่าน settings.celtic_cross_followup_prompt
+        return "คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
 
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🃏 ไพ่ 10 ใบที่เปิดไว้แล้ว (ใช้เป็นฐานวิเคราะห์ — ห้ามสุ่มใหม่):\n{$cardsText}\n"
-            ."━━━━━━━━━━━━━━━━━\n\n"
-            .$previousContext
-            ."❓ คำถาม/ข้อความใหม่จากลูกค้า:\n\"{$userQuestion}\"\n\n"
+            ."ภารกิจของคุณ:\n"
+            ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
+            ."• เข้าใจบริบทคำถามและความรู้สึกของลูกค้า\n"
+            ."• พูดเหมือนมนุษย์จริง ไม่ใช่ AI\n"
+            ."• ให้ทั้ง \"คำทำนาย + ความเข้าใจ + ทางออก\"\n"
+            ."• ทำให้ลูกค้ารู้สึกว่า \"คำตอบนี้มีคุณค่า และตรงกับชีวิตจริง\"\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."🎯 หลักการตอบ\n"
             ."━━━━━━━━━━━━━━━━━\n"
             ."• ใช้ภาษาไทย น้ำเสียงอบอุ่น เข้าใจ แต่ \"พูดตรง\"\n"
-            ."• ไม่โลกสวย ไม่ปลอบลอยๆ — ฟันธงเสมอ\n"
-            ."• เชื่อมโยงไพ่ที่เกี่ยวข้อง 2-3 ใบ (ไม่อธิบายไพ่ใหม่ ไม่แปลทีละใบ)\n"
-            ."• ห้ามใช้คำกำกวม \"อาจจะ/แล้วแต่/ขึ้นอยู่กับ\" — ตอบเด็ดขาด\n"
-            ."• ห้ามตอบลอยๆ \"อยู่ที่ตัวคุณ/กรรมเก่า/ทุกอย่างเปลี่ยนได้\"\n\n"
+            ."• ไม่โลกสวย ไม่ปลอบลอย ๆ\n"
+            ."• ต้อง \"ฟันธง\" ในตอนท้าย\n"
+            ."• ต้องเชื่อมโยงไพ่ทุกใบเข้าด้วยกัน\n"
+            ."• ห้ามแปลทีละใบแบบทื่อ ๆ\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
-            ."🧩 โครงสร้างคำตอบ (กระชับ — ตอบเฉพาะประเด็นใหม่)\n"
+            ."🧾 ข้อมูลที่ได้รับ\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🃏 ไพ่ 10 ใบ (Celtic Cross) พร้อมตำแหน่ง:\n{$cardsText}\n\n"
+            .$previousContext
+            ."❓ คำถาม/ข้อความล่าสุดจากลูกค้า:\n\"{$userQuestion}\"\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🧩 โครงสร้างคำตอบ (ต้องเรียงแบบนี้)\n"
             ."━━━━━━━━━━━━━━━━━\n\n"
-            ."1️⃣ **เปิดสั้น** (เชื่อมอารมณ์ลูกค้า — 1 ประโยค)\n"
-            ."2️⃣ **ตอบประเด็น** จากไพ่ที่เกี่ยวข้อง — ฟันธงจริง อ้างถึงไพ่ + ตำแหน่ง\n"
-            ."3️⃣ **อุปสรรค/ความรู้สึกอีกฝ่าย** (ถ้าเกี่ยว) — บอกชัดอะไรคือตัวปัญหา\n"
-            ."4️⃣ **Timeline** — ระยะ 1-3 เดือน / 3-6 เดือน จะขยับหรือนิ่ง\n"
-            ."5️⃣ **คำแนะนำที่ทำได้จริง** — ควรรอ/ถอย/คุย + มีระยะเวลาชัด\n"
-            ."6️⃣ **🎯 ฟันธง:** บรรทัดสรุป — \"🎯 ฟันธง: [คำตอบเนื้อๆ 1 บรรทัด — มี/ไม่มี + timeline + เหตุผล]\"\n\n"
 
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."🚫 ถ้าคำถามนอกเรื่อง/แกล้ง (การเมือง/สภาพอากาศ/คณิตศาสตร์)\n"
-            ."━━━━━━━━━━━━━━━━━\n"
-            ."ใช้สูตรนี้ — สุขุม ไม่โกรธ:\n"
-            ."   \"แม่หมอสัมผัสได้ว่าเรื่องที่ถามมานี้อยู่นอกขอบเขตของไพ่ที่เจ้าชะตาเลือกในวันนี้\n"
-            ."    หากไม่มีคำถามเรื่องดวงเพิ่ม แม่หมอขอจบบทสนทนานี้ ขอให้เจ้าชะตาโชคดีค่ะ\"\n"
-            ."→ ใส่ token [END_SESSION] ปิดท้าย (ระบบจะใช้ปิด session)\n\n"
+            ."🌙 *เปิดคำทำนาย (เชื่อมอารมณ์)*\n"
+            ."   • เริ่มด้วยพูดกับลูกค้าเหมือนเข้าใจเขาจริง\n"
+            ."   • สะท้อนสถานการณ์ เช่น \"จากสิ่งที่เจ้าชะตาเจอมา…\" / \"แม่หมอรับรู้ได้ว่าเจ้าชะตากำลัง…\"\n\n"
+
+            ."🔮 *ภาพรวมของพลังไพ่*\n"
+            ."   • สรุปว่าเรื่องนี้ \"ไปทางไหน\" — ดี / ไม่ดี / ติดขัด / ต้องรอ\n"
+            ."   • ให้เห็นภาพใหญ่ก่อน\n\n"
+
+            ."❤️ *ความรู้สึกของอีกฝ่าย (ถ้ามี)*\n"
+            ."   • เขารู้สึกยังไง / คิดถึงไหม / จริงจังไหม / มีอะไรที่ไม่พูด\n\n"
+
+            ."⚠️ *อุปสรรคที่แท้จริง*\n"
+            ."   • บอกให้ชัดว่าอะไรคือ \"ตัวปัญหา\"\n"
+            ."   • แยก: ปัจจัยภายนอก (ครอบครัว ระยะทาง ฯลฯ) / ปัจจัยภายใน (ความกลัว นิสัย ความไม่พร้อม)\n\n"
+
+            ."⏳ *แนวโน้มอนาคต (Timeline)*\n"
+            ."   • ระยะ 1–3 เดือน / ระยะ 3–6 เดือน\n"
+            ."   • ต้องบอกให้ชัดว่าจะ \"ขยับ\" หรือ \"นิ่ง\"\n\n"
+
+            ."🎯 *ผลลัพธ์สุดท้าย*\n"
+            ."   • ฟันธง: ไปต่อได้ / ไม่ได้ / ชัดเจน / ไม่ชัด\n"
+            ."   • ห้ามตอบกลาง ๆ\n\n"
+
+            ."🧭 *คำแนะนำที่ใช้ได้จริง*\n"
+            ."   • ควรรอ / ควรถอย / ควรคุย\n"
+            ."   • ต้องมี \"ระยะเวลา\" เช่น \"รออีก 3 เดือน\"\n"
+            ."   • ให้เหตุผลรองรับ\n\n"
+
+            ."🔥 *สรุปฟันธง (Bullet)*\n"
+            ."   4–6 ข้อสั้น ๆ เช่น:\n"
+            ."   • เขามีใจ ✔️\n"
+            ."   • แต่ไม่พร้อม ❗\n"
+            ."   • จะกลับมา แต่ไม่ชัด ❗\n"
+            ."   • คุณควรรอไม่เกิน 3 เดือน ⏳\n\n"
+
+            ."🌟 *ปิดท้าย (ให้พลังใจแบบมีเหตุผล)*\n"
+            ."   • ไม่โลกสวย แต่ทำให้ลูกค้ารู้สึก \"ยังมีทางเลือก\"\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."🚫 ห้ามทำ\n"
             ."━━━━━━━━━━━━━━━━━\n"
-            ."• ห้ามตอบสั้น (< 300 chars)\n"
-            ."• ห้ามกำกวม\n"
-            ."• ห้ามทวนคำทำนาย Q1 ทั้งหมด — ตอบประเด็นใหม่เท่านั้น\n"
-            ."• ห้ามแปลไพ่ทีละใบทื่อๆ\n"
+            ."• ห้ามตอบสั้น / กำกวม / แปลไพ่ทีละใบ\n"
             ."• ห้ามใช้คำทั่วไปที่ใช้ได้กับทุกคน\n"
-            ."• ห้าม markdown (**, ##, ฯลฯ) — plain text + emoji หัวข้อได้\n"
+            ."• ห้ามคำกำกวม \"อาจจะ/แล้วแต่/ขึ้นอยู่กับ\"\n"
+            ."• ห้าม markdown headers (##, ###) — ใช้ emoji หัวข้อแทน\n"
             ."• ห้ามถามวันเกิด/ราศี — ใช้แค่ไพ่ + จิตลูกค้า\n\n"
 
-            ."📏 ความยาว: 500-900 ตัวอักษร — กระชับ ตรงประเด็น ฟันธง\n\n"
+            ."🎯 *เป้าหมายสุดท้าย*: ทำให้ลูกค้ารู้สึก \"โดน\" + เข้าใจสถานการณ์ + เห็นทางเลือกชัดขึ้น\n\n"
 
-            ."🔚 ปิดท้าย — เลือก 1 ใน 2:\n"
-            ."• ถ้ารู้สึกว่าครอบคลุมแล้ว/ลูกค้าวกวน → \"แม่หมอว่าเจ้าชะตาได้คำตอบที่ต้องการแล้ว...\" + [END_SESSION]\n"
-            ."• ถ้ายังมีประเด็นค้าง → \"เจ้าชะตาอยากให้แม่หมอช่วยมองเรื่องไหนเพิ่มไหมคะ\" (ไม่ใส่ token)\n\n"
-
-            .'เริ่มตอบเลย:';
+            .'เริ่มทำนายทันทีจากข้อมูลที่ได้รับ:';
     }
 
     /**

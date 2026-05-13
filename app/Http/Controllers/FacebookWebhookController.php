@@ -1867,12 +1867,10 @@ class FacebookWebhookController extends Controller
             'LANG_TH' => $this->handleLanguagePick($senderId, 'th'),
             'LANG_LO' => $this->handleLanguagePick($senderId, 'lo'),
 
-            // 🔮 (2026-05-07) Celtic — ปุ่ม "ทำนายดวงเดี๋ยวนี้" หลังเปิดไพ่ครบ 10 ใบ
-            //   ส่งให้ AI ทำนายดวงพื้นฐาน (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่ทั้ง 10 ใบทันที
-            'CELTIC_PREDICT_NOW' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
-
-            // 💬 backward-compat — ลูกค้าเก่าที่ Quick Reply เก่ายังอยู่ในแชท
-            'CELTIC_START_Q' => $this->processConversationalMessage($senderId, 'ทำนายดวงเดี๋ยวนี้'),
+            // 🛑 (2026-05-14) ลบ CELTIC_PREDICT_NOW + CELTIC_START_Q — flow ใหม่ไม่มี predict-now
+            //   ลูกค้าเก่าที่ยังกดปุ่มเก่า → route ไปยัง help text ที่ persistent menu จัดการ
+            //   (ถ้ามีบิล active กลับเข้า flow เดิมผ่าน processConversationalMessage)
+            'CELTIC_PREDICT_NOW', 'CELTIC_START_Q' => $this->processConversationalMessage($senderId, 'เล่าเรื่องที่ค้างคาใจหน่อยค่ะ'),
 
             // ส่งไปจัดการตาม Quick Reply (backward compatibility)
             default => $this->handleQuickReply($senderId, $payload),

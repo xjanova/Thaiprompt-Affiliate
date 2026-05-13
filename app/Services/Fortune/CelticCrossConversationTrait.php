@@ -1129,7 +1129,7 @@ trait CelticCrossConversationTrait
      */
     protected function onCelticAllCardsPicked(FortuneReading $reading, string $lastCardMessage, ?string $lastCardImage = null): array
     {
-        // ขยับ state เข้า chat session (reuse CELTIC_AWAITING_QUESTION naming for backward compat)
+        // ขยับ state เข้า chat session
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         // 🌙 (2026-05-08 v3) เปิด Pro Session — อวตารแม่หมอเข้ามารับช่วง 30 นาที
@@ -1142,31 +1142,44 @@ trait CelticCrossConversationTrait
             ]);
         }
 
-        // 🆕 (2026-05-13) เปลี่ยน flow — ไม่มี Q1/Q2/Q3 + ไม่มีปุ่ม "ทำนายดวงเดี๋ยวนี้"
-        //   user spec: "ไม่ต้องมีการทำนาย แต่ให้หมอเริ่มบริบทชวนคุยกับลูกค้าได้เลย"
-        //   → AI ส่งข้อความเปิดบทสนทนา + ลูกค้าคุยเรื่อยๆ (free chat 30 นาที)
+        // 🆕 (2026-05-14) AI initiates conversation
+        //   user spec: "เมื่อเปิดไพ่ครบ ให้ AI ถามเลยคุยกับ user เลย ให้เริ่มถาม"
+        //   เดิม: ส่ง static text "เล่าให้แม่หมอฟัง" + รอ user พิมพ์ก่อน
+        //   ใหม่: call AI ด้วย sentinel "__OPENING_GREETING__" → AI ทักทาย+ชวนเล่าเรื่อง
+        //         + เซ็ต celtic_first_answered_at เพื่อ start QA window
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $name = $reading->resolveCustomerName();
-        $followupText = "\n\n──────────────────────\n"
-            ."🌙✨ *แม่หมอจันทราพร้อมแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
-            ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว\n"
-            ."🌌 แม่หมอเห็นพลังงานที่หล่อหลอมเส้นทางของเจ้าชะตาผ่านไพ่เหล่านี้\n\n"
-            ."💬 *เล่าให้แม่หมอฟังได้เลยค่ะ —*\n"
-            ."    • ตอนนี้มีเรื่องอะไรค้างคาใจ?\n"
-            ."    • อยากให้แม่หมอช่วยมองเรื่องไหนเป็นพิเศษ?\n"
-            ."    • หรือถ้ายังไม่รู้จะเริ่มจากตรงไหน — เล่าสถานการณ์ของเจ้าชะตามาได้เลย ✨\n\n"
-            ."🌟 *แม่หมอคุยกับเจ้าชะตาไปด้วยกัน ไม่รีบเร่ง — เหมือนนั่งคุยกันสบายๆ*\n\n"
-            ."⏳ คุยกับแม่หมอได้อีก *{$qaWindow} นาที*\n"
-            ."🖼️ ภาพไพ่จัดเรียงสวยๆ — แม่หมอจะส่งให้ตอนจบเป็นที่ระลึก\n"
-            .'🔚 เมื่อพอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดการส่งพลังให้';
+
+        $service = app(CelticCrossService::class);
+        $openingResult = $service->generateOpeningGreeting($reading);
+
+        $openingText = $openingResult['success']
+            ? trim($openingResult['response'])
+            // fallback ถ้า AI fail — แม่หมอทักทายแบบ static (กัน UX แตก)
+            : "🌙✨ *แม่หมอจันทราพร้อมแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+                ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว — แม่หมอเห็นพลังงานที่ห่อหุ้มเจ้าชะตาอยู่\n\n"
+                ."💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?";
+
+        // start QA window — markCelticAnswered จะตั้ง celtic_first_answered_at + sequence=1
+        try {
+            $reading->markCelticAnswered(1);
+        } catch (\Throwable $e) {
+            \Log::warning('Celtic: markCelticAnswered after opening greeting fail', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        $footer = "\n\n──────────────────────\n"
+            ."⏳ คุยกับแม่หมอได้ *{$qaWindow} นาที* นับจากนี้\n"
+            ."🖼️ ภาพไพ่จัดเรียง — แม่หมอจะส่งตอนจบเป็นที่ระลึก\n"
+            .'🔚 พิมพ์ *"พอแค่นี้"* / *"ขอบคุณ"* เมื่อพอใจ ✨';
 
         return [
             'action' => 'celtic_all_picked',
-            'message' => $lastCardMessage.$followupText,
+            'message' => $lastCardMessage."\n\n──────────────────────\n\n".$openingText.$footer,
             'reading' => $reading,
             'tarot_image_url' => $lastCardImage,
-            // 🛑 (2026-05-13) ลบปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" — flow ใหม่ไม่มี predict-all
-            //   ลูกค้าเล่าเรื่อง / ถาม / เงียบ → AI ตอบแบบ chat ทุกเคส
         ];
     }
 
@@ -1269,62 +1282,11 @@ trait CelticCrossConversationTrait
         ];
     }
 
-    /**
-     * 🔮 (2026-05-07) ทำนายดวงพื้นฐานทุกเรื่องจากไพ่ทั้ง 10 ใบทันที — ไม่ต้องรอคำถาม
-     *
-     * เรียกจาก:
-     *   - ปุ่ม "🔮 ทำนายดวงเดี๋ยวนี้" (postback CELTIC_PREDICT_NOW)
-     *   - keyword "ทำนายดวงเดี๋ยวนี้" / "ทำนายเลย"
-     *
-     * Flow:
-     *   1. เช็คเงื่อนไขแบบเดียวกับ handleCelticAwaitingQuestion (time/max)
-     *   2. ใช้ sentinel "__PREDICT_ALL__" เป็น question → CelticCrossService รู้ว่าใช้ buildPredictAllPrompt
-     *   3. AI ทำนายพื้นฐานทุกเรื่อง (รัก/งาน/เงิน/สุขภาพ/ครอบครัว) จากไพ่
-     *   4. ตอนเก็บลง DB → sanitize sentinel → "ทำนายพื้นฐานจากไพ่ทั้ง 10 ใบ"
-     */
-    protected function handleCelticPredictAll(FortuneReading $reading): array
-    {
-        // เช็ค time window (only — 2026-05-14 ลบ max_questions enforce)
-        if (! $reading->canAskMoreCeltic()) {
-            return $this->endCelticSession($reading, 'time_expired');
-        }
-
-        // ส่งให้ AI Pool — ใช้ sentinel ให้ service รู้ว่าทำนายพื้นฐาน
-        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
-
-        $service = app(CelticCrossService::class);
-        $result = $service->askQuestion($reading, '__PREDICT_ALL__');
-
-        if (! $result['success']) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-
-            return [
-                'action' => 'celtic_ai_failed',
-                'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
-                'reading' => $reading,
-            ];
-        }
-
-        $reading->refresh();
-        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-
-        $remainingMin = $reading->getCelticQaRemainingMinutes();
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
-        $timeHint = $remainingMin !== null
-            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
-            : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
-
-        $followupOffer = "\n\n──────────────────────\n"
-            .$timeHint."\n"
-            ."💬 ถ้าอยากให้แม่หมอเจาะลึกเรื่องไหน — พิมพ์มาเลย\n"
-            .'🔚 หรือพิมพ์ *"พอแค่นี้"* เมื่อพอใจ ✨';
-
-        return [
-            'action' => 'celtic_question_answered',
-            'message' => $result['response'].$followupOffer,
-            'reading' => $reading,
-        ];
-    }
+    // 🛑 (2026-05-14) handleCelticPredictAll + buildPredictAllPrompt + CELTIC_PREDICT_NOW
+    //   ทั้งระบบ predict-now ถูกลบออกตาม user spec —
+    //   "เอาระบบ q1 2 3 ออก, เอาปุ่มทำนายเดี๋ยวนี้ออก, เมื่อเปิดไพ่ครบให้ AI ถามเลย"
+    //   AI initiates หลังเปิดไพ่ครบ ผ่าน generateOpeningGreeting()
+    //   ทุกข้อความถัดไป → buildFollowupPrompt (prompt เดียวกัน ไม่สน sequence)
 
     /**
      * จบ Celtic session อย่างสุขุม → reset state ให้กลับเข้า normal loop ของระบบ
