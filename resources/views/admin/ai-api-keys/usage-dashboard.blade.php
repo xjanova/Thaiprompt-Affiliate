@@ -2,11 +2,6 @@
 
 @section('title', $pageTitle)
 
-@push('head')
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-@endpush
-
 @section('content')
 <div x-data="aiUsageDashboard()" x-init="init()" class="space-y-6">
     {{-- Header --}}
@@ -172,6 +167,8 @@
 </div>
 
 @push('scripts')
+{{-- Chart.js CDN — ต้องโหลดก่อน inline script ที่ใช้ window.Chart --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 function aiUsageDashboard() {
     return {
