@@ -160,7 +160,13 @@ class FortuneAIService
 
     protected const CHAT_PROVIDER_TIMEOUT = 15;
 
-    protected const DEEP_TOTAL_BUDGET_SEC = 90;
+    /**
+     * 🐢 (2026-05-13) Total budget — Deep prediction loop จะหยุดหลังเกินเวลานี้
+     *   เดิม 90s — ไม่พอสำหรับ OpenAI Responses (Pro reasoning) ที่ใช้ 60-120s
+     *   ใหม่ 150s — รองรับ Responses 1 attempt (120s) + fallback ไป Flash (30s)
+     *   ลูกค้ารอสูงสุด 2.5 นาที (ยอมรับได้สำหรับคำทำนายคุณภาพ)
+     */
+    protected const DEEP_TOTAL_BUDGET_SEC = 150;
 
     /**
      * 🐢 Gemini Pro models (เช่น gemini-3.1-pro-preview, gemini-2.5-pro) ใช้ reasoning หนัก
@@ -173,6 +179,17 @@ class FortuneAIService
      *   60s ยังพอให้ Pro generate Q1 Celtic ได้ — ถ้าเกินก็ fallback ไป Flash/อื่น
      */
     protected const GEMINI_PRO_TIMEOUT = 60;
+
+    /**
+     * 🐢 OpenAI Responses API (GPT-5+, o-series) — reasoning models
+     * ตอบช้ามาก (30-120s) เพราะใช้ reasoning ก่อน gen output
+     *
+     * (2026-05-13 v2) user report: "cURL error 28: timeout after 60001ms"
+     *   เดิม 60s — ยังไม่พอสำหรับ reasoning หนัก
+     *   ใหม่ 120s — รองรับ reasoning Q1 Celtic ที่ใช้เวลาเต็มที่
+     *   ถ้าเกิน 120s ก็ fallback ไป Gemini Flash (เร็วกว่า) ภายใน TOTAL_BUDGET
+     */
+    protected const OPENAI_RESPONSES_TIMEOUT = 120;
 
     /**
      * คำนวณ HTTP timeout สำหรับ Gemini ตามชื่อ model
@@ -1971,8 +1988,9 @@ PROMPT;
         $baseUrl = AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1';
         $endpoint = rtrim($baseUrl, '/').'/responses';
 
-        // 🐢 (2026-05-13) Reasoning models ใช้เวลาประมวลผลก่อนตอบ — ขยาย timeout
-        $response = Http::timeout(self::GEMINI_PRO_TIMEOUT)
+        // 🐢 (2026-05-13 v2) Reasoning models ใช้เวลานาน — ใช้ OPENAI_RESPONSES_TIMEOUT (120s)
+        //   เดิม GEMINI_PRO_TIMEOUT (60s) ไม่พอ user report timeout 60001ms
+        $response = Http::timeout(self::OPENAI_RESPONSES_TIMEOUT)
             ->withToken($apiKey)
             ->post($endpoint, [
                 'model' => $model,
@@ -2033,7 +2051,9 @@ PROMPT;
         }
         $inputMessages[] = ['role' => 'user', 'content' => $prompt];
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        // 🐢 (2026-05-13 v2) Reasoning models — ใช้ OPENAI_RESPONSES_TIMEOUT (120s)
+        //   เดิม CHAT_PROVIDER_TIMEOUT (15s) สั้นเกินไป สำหรับ reasoning models
+        $response = Http::timeout(self::OPENAI_RESPONSES_TIMEOUT)
             ->withToken($apiKey)
             ->post($endpoint, [
                 'model' => $model,
@@ -3486,10 +3506,10 @@ PROMPT;
                 'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
             ];
 
-            // 🐢 (2026-05-13) Reasoning models ใช้เวลา 30-120s → ใช้ Pro timeout (90s)
-            //   user report: "cURL error 28: timeout after 30001ms" — 30s ไม่พอ
+            // 🐢 (2026-05-13 v2) Reasoning models ใช้เวลา 30-120s → OPENAI_RESPONSES_TIMEOUT (120s)
+            //   user report: "cURL error 28: timeout after 60001ms" — 60s ก็ยังไม่พอ
             //   GPT-5+/o-series reasoning จริงจัง → เวลา reasoning + output ใช้นาน
-            $response = Http::timeout(self::GEMINI_PRO_TIMEOUT)
+            $response = Http::timeout(self::OPENAI_RESPONSES_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post($endpoint, $payload)
                 ->throw();
