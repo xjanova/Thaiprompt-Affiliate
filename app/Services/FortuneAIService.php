@@ -1948,7 +1948,8 @@ PROMPT;
         $baseUrl = AiApiKey::DEFAULT_BASE_URLS['openai'] ?? 'https://api.openai.com/v1';
         $endpoint = rtrim($baseUrl, '/').'/responses';
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+        // 🐢 (2026-05-13) Reasoning models ใช้เวลาประมวลผลก่อนตอบ — ขยาย timeout
+        $response = Http::timeout(self::GEMINI_PRO_TIMEOUT)
             ->withToken($apiKey)
             ->post($endpoint, [
                 'model' => $model,
@@ -3462,7 +3463,10 @@ PROMPT;
                 'reasoning' => ['effort' => $config['reasoning_effort'] ?? 'low'],
             ];
 
-            $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
+            // 🐢 (2026-05-13) Reasoning models ใช้เวลา 30-120s → ใช้ Pro timeout (90s)
+            //   user report: "cURL error 28: timeout after 30001ms" — 30s ไม่พอ
+            //   GPT-5+/o-series reasoning จริงจัง → เวลา reasoning + output ใช้นาน
+            $response = Http::timeout(self::GEMINI_PRO_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post($endpoint, $payload)
                 ->throw();
