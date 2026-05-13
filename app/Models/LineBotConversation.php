@@ -98,13 +98,21 @@ class LineBotConversation extends Model
 
     /**
      * Get conversation history for AI
+     *
+     * 🐛 (2026-05-14) Bug fix: เดิม ORDER BY ASC + LIMIT 10
+     *   → ดึง 10 ข้อความ "แรก" ของ conversation (ไม่ใช่ล่าสุด!)
+     *   → AI ไม่เห็น context ที่ลูกค้าเพิ่งคุย (recent messages หาย)
+     *   ใหม่: ดึง N ข้อความ "ล่าสุด" แล้ว reverse กลับเป็น chronological order
+     *   → AI ได้บริบทล่าสุด + เรียงตามเวลา
      */
     public function getHistoryForAI(int $limit = 10): array
     {
         return $this->messages()
-            ->orderBy('created_at', 'asc')
+            ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get()
+            ->reverse()
+            ->values()
             ->map(function ($msg) {
                 return [
                     'role' => $msg->role,
@@ -157,7 +165,7 @@ class LineBotConversation extends Model
     public static function findOrCreateForPlatform(
         string $platformUserId,
         string $platform = 'line',
-        int $timeoutMinutes = 30
+        int $timeoutMinutes = 1440 // 🌙 (2026-05-14) default 24hr — แม่หมอจำคุยกับลูกค้าได้ทั้งวัน
     ): self {
         // ปิด conversation ที่หมดอายุก่อน (ไม่มีข้อความ > timeout)
         static::where('line_user_id', $platformUserId)

@@ -9920,8 +9920,11 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 30),
             ]);
 
-            // ✅ ดึง conversation history สำหรับ AI (ความจำ 10 ข้อความ)
-            $history = $this->getConversationHistoryForAI($userId);
+            // ✅ ดึง conversation history สำหรับ AI (ความจำ 10 ข้อความ — 24 ชม.)
+            //   detect platform ก่อน เพื่อ key conversation ถูก (FB vs LINE)
+            $platformDetected = $this->currentPlatform
+                ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+            $history = $this->getConversationHistoryForAI($userId, $platformDetected);
 
             // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
             // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
@@ -9945,6 +9948,17 @@ class FortuneConversationService
             //   AI ต้องแนะนำให้ "อ่านคำทำนายล่าสุด" (เพราะลูกค้าจ่ายไปแล้ว)
             if (! empty($dmContext['has_fresh_paid_deep'])) {
                 $contextParts[] = 'HAS_FRESH_DEEP_READING';
+            }
+
+            // 🌙 (2026-05-14) Returning customer memory — ถ้า history ขาด (เกิน 24 ชม.)
+            //   - มี paid reading → "RETURNING_CUSTOMER reading_type=... past_topics=..."
+            //     → AI ทักทาย "หมอจำได้ ครั้งก่อนเจ้าชะตาเคยถามเรื่อง..."
+            //   - ไม่มี paid reading → "NO_HISTORY_NO_PAID_READING"
+            //     → AI ตอบ "หมอเจอลูกค้ามีทุกข์หลายท่าน คงจำทุกคนไม่หมด"
+            //   user spec: "อย่างน้อยใน 24 ชม ควรจำเรื่องที่คุยกับยูสเซ่อร์ได้" + recall paid reading
+            $returningContext = $this->buildReturningCustomerContext($userId, $platformDetected, count($history));
+            if ($returningContext !== null) {
+                $contextParts[] = $returningContext;
             }
 
             $messageForAI = $messageText;
@@ -10359,7 +10373,7 @@ class FortuneConversationService
             $conversation = \App\Models\LineBotConversation::findOrCreateForPlatform(
                 $userId,
                 $platform,
-                30 // timeout 30 นาที
+                1440 // 🌙 (2026-05-14) timeout 24 ชั่วโมง — แม่หมอจำคุยทั้งวัน
             );
 
             return $conversation->getHistoryForAI(10);
@@ -10370,6 +10384,98 @@ class FortuneConversationService
             ]);
 
             return [];
+        }
+    }
+
+    /**
+     * 🌙 (2026-05-14) สร้าง context สำหรับลูกค้าที่กลับมาคุยหลังเกิน 24 ชั่วโมง
+     *
+     * Flow:
+     * 1. ถ้ามี conversation active ภายใน 24 ชม. + history > 0 → return null (ใช้ history โดยตรง)
+     * 2. ถ้า history ขาด/เกิน 24 ชม. → ค้น latest paid reading (deep หรือ celtic_cross)
+     * 3. ถ้ามี paid reading ภายใน 30 วัน → return context tag ให้ AI ทักทาย "จำได้"
+     * 4. ถ้าไม่มี paid reading → return tag "หมอเจอลูกค้าหลายคน คงจำไม่ได้"
+     *
+     * @param  string  $userId  Platform user ID
+     * @param  string  $platform  'facebook' หรือ 'line'
+     * @param  int  $hasHistory  จำนวน history messages ที่ดึงมาได้
+     * @return string|null context tag (null = ไม่ต้อง inject)
+     */
+    protected function buildReturningCustomerContext(string $userId, string $platform, int $hasHistory): ?string
+    {
+        // มี history สดในเซสชั่นปัจจุบัน → ไม่ต้อง inject (AI ใช้ history โดยตรง)
+        if ($hasHistory > 0) {
+            return null;
+        }
+
+        try {
+            // ค้น latest paid reading (deep หรือ celtic_cross) — ภายใน 30 วัน
+            $userIdColumn = $platform === 'line' ? 'line_user_id' : 'facebook_user_id';
+
+            $latestPaid = FortuneReading::where($userIdColumn, $userId)
+                ->where('is_paid', true)
+                ->whereIn('reading_type', [
+                    FortuneReading::READING_TYPE_DEEP,
+                    FortuneReading::READING_TYPE_CELTIC_CROSS,
+                ])
+                ->where('created_at', '>', now()->subDays(30))
+                ->orderByDesc('created_at')
+                ->first();
+
+            if (! $latestPaid) {
+                // ไม่มี paid reading → AI ตอบ "หมอจำลูกค้าทุกคนไม่ได้"
+                return 'NO_HISTORY_NO_PAID_READING';
+            }
+
+            // มี paid reading — รวบรวมประเด็นที่เคยถาม
+            $daysAgo = (int) $latestPaid->created_at->diffInDays(now());
+            $timeAgo = $daysAgo === 0
+                ? 'วันนี้เอง'
+                : ($daysAgo === 1 ? 'เมื่อวาน' : "เมื่อ {$daysAgo} วันก่อน");
+
+            $typeLabel = $latestPaid->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS
+                ? 'Celtic Cross 10 ใบ'
+                : 'ดูดวงเชิงลึก 1 ใบ';
+
+            // ดึงคำถามที่เคยถาม
+            $topics = [];
+            if ($latestPaid->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                $celticQs = $latestPaid->celticQuestions()
+                    ->whereNotNull('answered_at')
+                    ->orderBy('sequence')
+                    ->limit(3)
+                    ->pluck('question')
+                    ->toArray();
+                foreach ($celticQs as $q) {
+                    if (trim($q) === '__PREDICT_ALL__') {
+                        continue;
+                    }
+                    $topics[] = mb_substr($q, 0, 80);
+                }
+            } else {
+                // deep reading — ดึง questions field (JSON)
+                $deepQs = $latestPaid->questions ?? [];
+                if (is_array($deepQs)) {
+                    foreach (array_slice($deepQs, 0, 3) as $q) {
+                        if (is_string($q) && trim($q) !== '') {
+                            $topics[] = mb_substr($q, 0, 80);
+                        }
+                    }
+                }
+            }
+
+            $topicsText = empty($topics)
+                ? '(ไม่มีบันทึกคำถามเฉพาะ)'
+                : implode(' / ', $topics);
+
+            return "RETURNING_CUSTOMER reading_type=\"{$typeLabel}\" days_ago={$daysAgo} time_ago=\"{$timeAgo}\" past_topics=\"{$topicsText}\"";
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: buildReturningCustomerContext ล้มเหลว', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 
