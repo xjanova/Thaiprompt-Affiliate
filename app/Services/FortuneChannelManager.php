@@ -704,6 +704,23 @@ class FortuneChannelManager
                     return $sent;
                 })(),
 
+                // 💳 (2026-05-14) Payment info — ส่งเลขบัญชี + QR (เมื่อลูกค้าพิมพ์ "ขอเลขบัญชี" / "พร้อมเพย์")
+                'payment_info' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    // 1. ส่ง QR ก่อน (ถ้ามี) — ลูกค้าจะได้สแกนเลย
+                    $qrUrl = $result['payment_qr_url'] ?? null;
+                    if ($qrUrl) {
+                        try {
+                            $fbService->sendImage($userId, $qrUrl);
+                            usleep(500000); // 0.5s กัน LINE 429 + ให้ภาพ render ก่อน
+                        } catch (\Throwable $e) {
+                            Log::warning('Facebook: ส่ง payment QR ไม่สำเร็จ', ['err' => $e->getMessage()]);
+                        }
+                    }
+
+                    // 2. ส่งข้อความเลขบัญชี
+                    return $fbService->sendMessage($userId, $message, $extra);
+                })(),
+
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
                 'free_card_drawn' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     // 1. ส่งภาพไพ่ก่อน (ถ้ามี)
@@ -1831,6 +1848,20 @@ class FortuneChannelManager
                     }
 
                     return $sent;
+                })(),
+
+                // 💳 (2026-05-14) Payment info (LINE) — ส่งเลขบัญชี + QR
+                'payment_info' => (function () use ($lineService, $userId, $message, $result) {
+                    $qrUrl = $result['payment_qr_url'] ?? null;
+                    if ($qrUrl) {
+                        try {
+                            $lineService->sendImage($userId, $qrUrl);
+                        } catch (\Throwable $e) {
+                            Log::warning('LINE: ส่ง payment QR ไม่สำเร็จ', ['err' => $e->getMessage()]);
+                        }
+                    }
+
+                    return $lineService->sendMessage($userId, $message);
                 })(),
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]

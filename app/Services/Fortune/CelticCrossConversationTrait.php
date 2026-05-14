@@ -644,6 +644,13 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticPendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 💳 (2026-05-14) ลูกค้ารอจ่าย Celtic แต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
+        if (method_exists($this, 'maybePresentPaymentInfo')) {
+            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                return $paymentInfo;
+            }
+        }
+
         // 🔓 ยกเลิก
         // 🩹 (2026-05-08 audit fix CRIT-1b) — route ผ่าน closeAllActiveConversations
         //   เพื่อ cancel UPA Celtic + FCM push + wisdom DM ครบ

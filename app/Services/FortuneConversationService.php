@@ -1578,6 +1578,11 @@ class FortuneConversationService
                             return $this->handleKeywordMatchResponse($matchedKeyword);
                         }
 
+                        // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
+                        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                            return $paymentInfo;
+                        }
+
                         // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที (ก่อน AI chat)
                         //   ถ้าให้ AI ตอบ — AI อาจไม่บอกราคาชัด หรือพยายามชวนแชทโดยไม่บอก
                         if ($this->looksLikePricingQuestion($messageText)) {
@@ -1766,6 +1771,11 @@ class FortuneConversationService
                     ]);
 
                     return $this->handleKeywordMatchResponse($matchedKeyword);
+                }
+
+                // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
+                if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                    return $paymentInfo;
                 }
 
                 // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที
@@ -5966,6 +5976,11 @@ class FortuneConversationService
      */
     protected function handlePendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 💳 (2026-05-14) ลูกค้ารอจ่ายแต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+            return $paymentInfo;
+        }
+
         // ตรวจสอบยอดเงินว่าหมดอายุหรือยัง
         $uniqueAmount = $reading->uniquePaymentAmount;
 
@@ -9272,7 +9287,9 @@ class FortuneConversationService
 
         // คำสั้นที่อาจกำกวม → ใช้ exact match เท่านั้น
         // เพื่อไม่ให้ "ไม่เอาดูดวงละเอียด" → ยกเลิกทั้ง session
-        $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด', 'ບໍ່ເອົາ', 'ບໍ່ດູ', 'ຢຸດ'];
+        // 💳 (2026-05-14) เพิ่ม ไม่จ่าย/ไม่จ่ายแล้ว/ไม่เอาแล้ว — ตอบ bill reminder
+        $exactKeywords = ['ไม่เอา', 'เลิก', 'หยุด', 'ບໍ່ເອົາ', 'ບໍ່ດູ', 'ຢຸດ',
+            'ไม่จ่าย', 'ไม่จ่ายแล้ว', 'ไม่เอาแล้ว', 'ไม่เอาละ', 'ไม่จ่ายละ'];
         foreach ($exactKeywords as $keyword) {
             if ($normalized === $keyword || $noSpace === $keyword) {
                 return true;
@@ -9282,12 +9299,7 @@ class FortuneConversationService
         return false;
     }
 
-    /**
-     * ตรวจสอบว่าต้องการดูบัญชีธนาคารหรือไม่
-     *
-     * ใช้ exact match สำหรับคำสั้น เพื่อไม่ให้ trigger ผิด
-     * เช่น "เงินโอนจากงาน" หรือ "ดวงบัญชีการเงิน" ไม่ควร match
-     */
+    // 💳 (2026-05-14) detect ดูบัญชี — ดู looksLikePaymentInfoRequest() ที่ method ด้านบน
 
     // =====================================================================
     // Database Keyword Matching (Auto-Reply อัจฉริยะ)
@@ -9472,6 +9484,44 @@ class FortuneConversationService
      *   - "คิดเงิน/คิดเท่าไร"
      *   - 🇱🇦 Lao: ລາຄາ/ກີບ/ບາດ
      */
+    /**
+     * 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR — ตรวจ keyword
+     *
+     * Match: "ขอเลขบัญชี", "เลขบัญชี", "พร้อมเพย์", "qr code", "ขอ qr"
+     * เคสที่เจอ: ลูกค้าเก่าโอน slip หาย / สแกน QR ไม่ได้ / ต้องการบัญชีไว้โอนเอง
+     */
+    public function looksLikePaymentInfoRequest(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        $patterns = [
+            // เลขบัญชี
+            'เลขบัญชี', 'เลขบช', 'เลขบ/ช', 'เลข บช',
+            'ขอเลขบัญชี', 'ขอบัญชี', 'บัญชีอะไร', 'บัญชีไหน', 'บัญชีกสิกร', 'บัญชีไทยพาณิชย์',
+            // PromptPay
+            'พร้อมเพย์', 'พร้อมเพย', 'promptpay', 'prompt pay', 'prompt-pay',
+            // QR
+            'qr code', 'qrcode', ' qr', 'qr ', 'คิวอาร์', 'ขอคิว', 'คิว อาร์',
+            // โอนเงิน
+            'เลขโอน', 'เลขที่โอน', 'หมายเลขโอน',
+            'โอนยังไง', 'โอนที่ไหน', 'โอนเข้าบัญชี', 'โอนเข้าไหน',
+            'ขอเลขโอน', 'ขอช่องทางโอน', 'ขอช่องทางจ่าย',
+            // English
+            'bank account', 'account number',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function looksLikePricingQuestion(string $message): bool
     {
         $text = mb_strtolower(trim($message));
@@ -9553,6 +9603,81 @@ class FortuneConversationService
                 'free_enabled' => $freeEnabled,
             ],
         ];
+    }
+
+    /**
+     * 💳 (2026-05-14) ส่งเลขบัญชี + QR — กล่องช่องทางชำระเงิน
+     *
+     * ใช้เมื่อลูกค้าพิมพ์ "ขอเลขบัญชี" / "พร้อมเพย์" / "qr"
+     * ดึงจาก PaymentBankAccount (active เท่านั้น) + QR จาก setting
+     */
+    public function presentPaymentInfo(): array
+    {
+        $accounts = $this->settings->getFortuneBankAccounts();
+        $qrUrl = $this->getPaymentQrImageUrl();
+        $showBank = $this->settings->shouldShowBankAccount();
+
+        $msg = "💳 *ช่องทางชำระเงิน — แม่หมอจันทรา* 💳\n\n";
+
+        if ($accounts->isEmpty() && ! $qrUrl) {
+            // 🛡️ Edge case: admin ยังไม่ตั้งค่าบัญชี/QR
+            $msg .= "ขออภัยค่ะ ขณะนี้ระบบยังไม่มีบัญชีรับเงินที่ตั้งค่าไว้\n";
+            $msg .= "กรุณาทักทีมงานนะคะ 🙏";
+
+            return [
+                'action' => 'payment_info',
+                'message' => $msg,
+                'payment_qr_url' => null,
+                'reading' => null,
+            ];
+        }
+
+        if ($showBank && $accounts->isNotEmpty()) {
+            $msg .= "━━━━━━━━━━━━━━━━━\n";
+            foreach ($accounts as $acc) {
+                $msg .= "🏦 *{$acc->bank_name}*\n";
+                $msg .= "   📋 เลขที่: {$acc->account_number}\n";
+                $msg .= "   👤 ชื่อ: {$acc->account_name}\n";
+                if (! empty($acc->branch)) {
+                    $msg .= "   📍 สาขา: {$acc->branch}\n";
+                }
+                if (! empty($acc->promptpay_id)) {
+                    $msg .= "   📱 PromptPay: {$acc->promptpay_id}\n";
+                }
+                $msg .= "\n";
+            }
+            $msg .= "━━━━━━━━━━━━━━━━━\n";
+        }
+
+        if ($qrUrl) {
+            $msg .= "📸 *สแกน QR ด้านบนเพื่อจ่ายเร็ว ๆ ได้เลยค่ะ*\n\n";
+        }
+
+        $msg .= "🙏 หลังโอนแล้ว ระบบจะตรวจสอบให้อัตโนมัติค่ะ\n";
+        $msg .= "💡 *โอนตามยอดให้ตรงเป๊ะ ๆ นะคะ* (ทศนิยมด้วย)\n";
+        $msg .= "✨ ถ้ามีปัญหา ทักได้เลยค่ะ แม่หมอช่วยดูให้";
+
+        return [
+            'action' => 'payment_info',
+            'message' => $msg,
+            'payment_qr_url' => $qrUrl,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * 💳 (2026-05-14) Helper — ตรวจ + ส่งเลขบัญชี ถ้าลูกค้าขอ
+     *
+     * ใช้ใน processMessage + handlePendingPayment + handleCelticPendingPayment
+     * Return null = ไม่ใช่คำขอ → caller ทำงานต่อ
+     */
+    public function maybePresentPaymentInfo(string $messageText): ?array
+    {
+        if ($this->looksLikePaymentInfoRequest($messageText)) {
+            return $this->presentPaymentInfo();
+        }
+
+        return null;
     }
 
     protected function looksLikeMetaOrChitchat(string $message): bool

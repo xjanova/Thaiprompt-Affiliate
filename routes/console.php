@@ -24,6 +24,21 @@ Schedule::command('fortune:celtic-recover --auto --minutes=5')
     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
+// 💸 (2026-05-14) Bill Reminder — ทวงลูกค้าที่สร้างบิลแล้วยังไม่โอน
+// ════════════════════════════════════════════════════════════════
+// สแกนทุก 5 นาที — pending payment อายุ 20-60 นาที ไม่เคยทวง
+// → dispatch SendBillReminderJob (AI generate ตาม persona + fallback hardcoded)
+// → mark bill_reminder_sent_at — ส่งครั้งเดียวพอ
+//
+// Dedup safe: command + job ต่างเช็ค bill_reminder_sent_at
+Schedule::command('fortune:bill-reminder')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-bill-reminder')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
 // 🚨 (2026-05-13) Deep 39฿ Pay-First Auto-Recovery
 // ════════════════════════════════════════════════════════════════
 // เคสที่กัน: ลูกค้าจ่าย 39฿ แล้วระบบไม่ขอวันเดือนปีเกิดต่อ
