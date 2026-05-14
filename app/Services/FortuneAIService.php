@@ -522,7 +522,7 @@ class FortuneAIService
                 'tokens' => $result['tokens_used'] ?? 0,
             ]);
 
-            return $result;
+            return $this->sanitizeChatResult($result);
 
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat response ล้มเหลว', [
@@ -532,6 +532,43 @@ class FortuneAIService
             ]);
             throw $e;
         }
+    }
+
+    /**
+     * 🧹 (2026-05-15) Strip internal context tags ที่ AI อาจ echo กลับมาในคำตอบ
+     *
+     * ระบบใส่ tag เหล่านี้นำหน้า user message เพื่อให้ AI รู้ context:
+     *   - [TURN N] = จำนวนรอบที่คุย
+     *   - [RETURNING_24H hours_ago=X dm_count=Y]
+     *   - [RETURNING_CUSTOMER reading_type=... past_topics=...]
+     *   - [HAS_FRESH_DEEP_READING]
+     *   - [NO_HISTORY_NO_PAID_READING]
+     *   - [DM_COUNT N]
+     *   - [END_SESSION] (legacy Celtic)
+     *
+     * AI ควรอ่าน tag เป็น metadata แล้วใช้ตัดสินใจตอบ — ห้าม echo กลับ
+     * แต่บางครั้ง AI สับสนแล้วใส่ tag เหล่านี้ในคำตอบ → ลูกค้าเห็น "[TURN 3]" โผล่ขึ้นมา
+     *
+     * Tag intended ที่ AI ใส่เอง (parser caller จัดการ): [OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE]
+     * → strip แค่ context tag ของ "input" — ไม่แตะ output tag
+     */
+    protected function sanitizeChatResult(array $result): array
+    {
+        $response = $result['response'] ?? null;
+        if (! is_string($response) || $response === '') {
+            return $result;
+        }
+
+        $pattern = '/\[(?:TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)\b[^\]]*\]/u';
+        $cleaned = preg_replace($pattern, '', $response);
+
+        if ($cleaned !== null && $cleaned !== $response) {
+            // เก็บ whitespace ที่อาจค้างหลัง strip — ลบช่องว่างซ้ำ + trim
+            $cleaned = trim(preg_replace('/[ \t]{2,}/', ' ', $cleaned));
+            $result['response'] = $cleaned;
+        }
+
+        return $result;
     }
 
     /**
@@ -568,11 +605,13 @@ class FortuneAIService
 
         $config = array_merge(['temperature' => 0.7, 'max_tokens' => 600], $config);
 
-        return match ($chatProvider) {
+        $rawResult = match ($chatProvider) {
             'gemini' => $this->callChatGemini($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
             'anthropic' => $this->callChatAnthropic($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
             default => $this->callChatOpenAICompatible($userMessage, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
         };
+
+        return $this->sanitizeChatResult($rawResult);
     }
 
     /**
@@ -778,11 +817,13 @@ PROMPT;
         // ใช้ context เต็ม + ส่ง user message ล่าสุดเป็น input
         $userInput = empty($combinedContext) ? $lastUserMessage : "ประวัติการสนทนา:\n{$combinedContext}\n\nตอบ JSON สำหรับข้อความล่าสุดของลูกค้า:";
 
-        return match ($chatProvider) {
+        $rawResult = match ($chatProvider) {
             'gemini' => $this->callChatGemini($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
             'anthropic' => $this->callChatAnthropic($userInput, $systemMessage, $chatApiKey, $chatModel, $config),
             default => $this->callChatOpenAICompatible($userInput, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
         };
+
+        return $this->sanitizeChatResult($rawResult);
     }
 
     /**
@@ -946,7 +987,7 @@ PROMPT;
                 'tokens' => $result['tokens_used'] ?? 0,
             ]);
 
-            return $result;
+            return $this->sanitizeChatResult($result);
 
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat with history ล้มเหลว ลอง fallback ไม่มี history', [
@@ -1061,7 +1102,7 @@ PROMPT;
                 'key_id' => $sensitiveKey->id,
             ]);
 
-            return $result;
+            return $this->sanitizeChatResult($result);
         } catch (Exception $e) {
             $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
 
@@ -1253,7 +1294,7 @@ PROMPT;
                 'tokens' => $result['tokens_used'] ?? 0,
             ]);
 
-            return $result;
+            return $this->sanitizeChatResult($result);
         } catch (Exception $e) {
             $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
 
@@ -1607,7 +1648,7 @@ PROMPT;
                     'elapsed_ms' => $elapsedMs(),
                 ]);
 
-                return $result;
+                return $this->sanitizeChatResult($result);
             } catch (Exception $poolErr) {
                 // ❌ Fail — release + อาจ set cooldown ถ้า 429
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false, $poolErr->getMessage());

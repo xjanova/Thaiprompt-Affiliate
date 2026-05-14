@@ -10695,7 +10695,22 @@ class FortuneConversationService
                 1440 // 🌙 (2026-05-14) timeout 24 ชั่วโมง — แม่หมอจำคุยทั้งวัน
             );
 
-            return $conversation->getHistoryForAI(10);
+            $history = $conversation->getHistoryForAI(10);
+
+            // 🧹 (2026-05-15) Strip context tag ที่อาจค้างใน history เก่า
+            //   เคส: ก่อน fix sanitizer มี AI echo "[TURN 3]" ลง assistant message → save ลง DB
+            //   ถ้าไม่ strip ตอนดึง → turn ถัดไป AI เห็น tag ใน history → echo อีก loop ไม่จบ
+            $pattern = '/\[(?:TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)\b[^\]]*\]/u';
+            foreach ($history as $i => $msg) {
+                if (! empty($msg['content']) && is_string($msg['content'])) {
+                    $cleaned = preg_replace($pattern, '', $msg['content']);
+                    if ($cleaned !== null && $cleaned !== $msg['content']) {
+                        $history[$i]['content'] = trim(preg_replace('/[ \t]{2,}/', ' ', $cleaned));
+                    }
+                }
+            }
+
+            return $history;
         } catch (\Exception $e) {
             Log::warning('Fortune: ดึง conversation history ไม่ได้', [
                 'user_id' => $userId,
