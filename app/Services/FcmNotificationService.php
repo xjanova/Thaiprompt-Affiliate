@@ -430,6 +430,76 @@ class FcmNotificationService
     }
 
     /**
+     * 🚨 (2026-05-14) ส่ง push แจ้ง admin เมื่อ AI ทำนายค้างเกิน 1 นาที
+     *
+     * เคสที่ trigger: AI Pool ใช้เวลานานผิดปกติ (timeout/network/provider down)
+     *   - ลูกค้าจ่ายเงินแล้ว → AI ค้าง → admin ไม่รู้
+     *   - ก่อนหน้านี้: alert เฉพาะ Job::failed() (รอ retry หมด ~5 นาที = ช้าเกินไป)
+     *   - Now: alert ที่ 60s real-time → admin reaction time เร็วขึ้น
+     *
+     * Push เป็น **visible notification** (ไม่ใช่ data-only) เพราะต้องการให้
+     * admin เห็นเด้งทันทีไม่ต้องเปิดแอพ (เหมือน notifyOrphanFortunePayment)
+     *
+     * ใช้แทน LineAlertService::alertSystemError() เพื่อประหยัด LINE push quota
+     *   - LINE push: 1 push × จำนวน admin = กิน quota เร็ว
+     *   - FCM push: free unlimited → คุ้มกว่ามาก
+     *   - Caller ควร fallback LINE alert ถ้า FCM returns false (no tokens)
+     */
+    public function notifyAiStuck(FortuneReading $reading, string $aiPurpose): bool
+    {
+        $tokens = $this->getTargetTokens(null);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens available for AI stuck alert');
+
+            return false;
+        }
+
+        $offsetId = $reading->id + 10000000;
+        $billRef = $reading->bill_reference ?? ('FTU-'.$reading->id);
+        $customerName = $reading->facebook_user_name
+            ?? $reading->line_user_name
+            ?? 'ลูกค้าดูดวง';
+
+        $purposeLabel = match ($aiPurpose) {
+            'deep' => 'ดูดวง 39฿',
+            'celtic-opening' => 'Celtic เปิดบทสนทนา',
+            'celtic-question' => 'Celtic ตอบคำถาม',
+            'chat' => 'แชท AI',
+            default => $aiPurpose,
+        };
+
+        $data = [
+            'type' => 'ai_stuck_alert',
+            'order_id' => (string) $offsetId,
+            'reading_id' => (string) $reading->id,
+            'order_number' => $billRef,
+            'ai_purpose' => $aiPurpose,
+            'platform' => $reading->facebook_user_id ? 'facebook' : 'line',
+            'customer_name' => $customerName,
+            'requires_admin_review' => 'true',
+            'server_url' => config('app.url'),
+        ];
+
+        $notificationPayload = [
+            'title' => '⏰ AI ค้างเกิน 1 นาที — ตรวจสอบด่วน',
+            'body' => sprintf(
+                '%s | บิล %s | ลูกค้า %s',
+                $purposeLabel,
+                $billRef,
+                $customerName
+            ),
+        ];
+
+        Log::warning('FCM: Sending ai_stuck_alert', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $billRef,
+            'ai_purpose' => $aiPurpose,
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, $notificationPayload);
+    }
+
+    /**
      * Notify device that settings changed (e.g. approval_mode from admin panel)
      * Device will trigger sync to pull updated settings
      */
