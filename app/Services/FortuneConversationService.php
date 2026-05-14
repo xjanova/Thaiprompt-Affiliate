@@ -4658,15 +4658,60 @@ class FortuneConversationService
             ];
         }
 
-        // Parse สำเร็จ → 🎯 (2026-05-01) ทวน + ขอยืนยัน (กันคนแก่พิมพ์ผิด)
-        //                ⚠️ ยังไม่ commit เข้า birth_date ของ reading — รอ confirm
+        // 🌙 (2026-05-14) ลบ confirmation step — commit ทันที + ไปขอคำถามต่อ
+        //   user spec: "ลดขั้นตอนในการยืนยัน คือไม่ต้องยืนยันอีกมันทำให้ลูกค้างง"
+        //   เคสเดิม: parse OK → set awaiting_birthdate_confirmation=true → รอ "ใช่/ไม่ใช่"
+        //   ใหม่: parse OK → commit + ไปขอคำถามทันที (ลูกค้าไม่งง)
         $reading->setConversationState('birthdate_attempts', 0);
         $reading->setConversationState('birthdate_step_mode', false);
         $reading->setConversationState('birthdate_partial', []);
-        $reading->setConversationState('awaiting_birthdate_confirmation', true);
-        $reading->setConversationState('pending_birthdate', $birthDate);
+        $reading->setConversationState('awaiting_birthdate_confirmation', false);
+        $reading->setConversationState('pending_birthdate', null);
 
-        return $this->buildBirthdateConfirmationPrompt($reading, $birthDate);
+        $reading->update([
+            'birth_date' => $birthDate,
+            'conversation_status' => FortuneReading::STATUS_COLLECTING_QUESTIONS,
+        ]);
+
+        return $this->askForQuestionWithCategoryButtons($reading, $birthDate);
+    }
+
+    /**
+     * 🌙 (2026-05-14) ขอคำถามจากลูกค้า — พร้อม category buttons fallback
+     *
+     * user spec: "หากลูกค้ามั่วกรอกอะไรไม่รู้... ให้ AI บอกให้ลูกค้าพิมพ์คำถาม
+     *             หรือให้กดหมวดที่อยากดูเลย เพราะมีปุ่มอยู่"
+     *
+     * แสดง:
+     * - ทวนวันเกิด (ลูกค้าได้ verify เอง เห็นกับตา ไม่ต้องตอบ)
+     * - ขอคำถาม + 5 category buttons (รัก/งาน/เงิน/สุขภาพ/ครอบครัว)
+     */
+    protected function askForQuestionWithCategoryButtons(FortuneReading $reading, string $birthDate): array
+    {
+        $formatted = $this->formatThaiDate($birthDate);
+
+        $message = "📅 *รับวันเกิดแล้ว: {$formatted}* ✨\n"
+            ."───────────────────────\n\n"
+            ."❓ *ตอนนี้อยากถามเรื่องอะไรคะ?*\n\n"
+            ."พิมพ์คำถามที่ค้างคาใจ เช่น:\n"
+            ."  • ดวงความรักปีนี้\n"
+            ."  • งานปัจจุบันจะมั่นคงไหม\n"
+            ."  • การเงินช่วงนี้\n\n"
+            .'💡 หรือกดหมวดที่อยากดูด้านล่าง 👇';
+
+        return [
+            'action' => 'collecting_questions',
+            'message' => $message,
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '💕 ความรัก', 'text' => 'ดูดวงความรัก'],
+                ['title' => '💼 การงาน', 'text' => 'ดูดวงการงาน'],
+                ['title' => '💰 การเงิน', 'text' => 'ดูดวงการเงิน'],
+                ['title' => '🌿 สุขภาพ', 'text' => 'ดูดวงสุขภาพ'],
+                ['title' => '👨‍👩‍👧 ครอบครัว', 'text' => 'ดูดวงครอบครัว'],
+            ],
+        ];
     }
 
     /**
@@ -5073,8 +5118,37 @@ class FortuneConversationService
 
             // (awaiting_question_confirmation check moved to top of method — see above)
 
-            // เก็บข้อความทั้งหมดเป็น 1 คำถาม (ไม่ split เหมือนเดิม)
+            // 🌙 (2026-05-14) Smart question validator
+            //   user spec: "หากลูกค้ามั่วกรอกอะไรไม่รู้... ให้ AI บอกพิมพ์คำถาม หรือกดหมวด"
             $question = trim($messageText);
+
+            if (! $this->looksLikeFortuneQuestion($question)) {
+                Log::info('Fortune: handleQuestionInput → ไม่ใช่คำถาม → re-prompt + category buttons', [
+                    'reading_id' => $reading->id,
+                    'text_preview' => mb_substr($messageText, 0, 40),
+                ]);
+
+                return [
+                    'action' => 'awaiting_question',
+                    'message' => "🌙 *แม่หมอรอคำถามดูดวงอยู่ค่ะ*\n\n"
+                        ."ลองพิมพ์เรื่องที่อยากรู้มา เช่น:\n"
+                        ."  • ดวงความรักปีนี้จะเป็นยังไง\n"
+                        ."  • งานจะมั่นคงไหม\n"
+                        ."  • การเงินช่วงนี้\n\n"
+                        .'💡 หรือกดหมวดด้านล่าง 👇',
+                    'reading' => $reading,
+                    'show_quick_replies' => true,
+                    'quick_replies' => [
+                        ['title' => '💕 ความรัก', 'text' => 'ดูดวงความรัก'],
+                        ['title' => '💼 การงาน', 'text' => 'ดูดวงการงาน'],
+                        ['title' => '💰 การเงิน', 'text' => 'ดูดวงการเงิน'],
+                        ['title' => '🌿 สุขภาพ', 'text' => 'ดูดวงสุขภาพ'],
+                        ['title' => '👨‍👩‍👧 ครอบครัว', 'text' => 'ดูดวงครอบครัว'],
+                    ],
+                ];
+            }
+
+            // เก็บคำถาม (ผ่าน validator)
             if (! empty($question)) {
                 $reading->addQuestion($question);
             }
@@ -5082,47 +5156,20 @@ class FortuneConversationService
             $collectedQuestions = $reading->getCollectedQuestions();
             $questionCount = count($collectedQuestions);
 
-            $latestQuestion = end($collectedQuestions) ?: $question;
-
-            // 🩹 (2026-05-04) Pay-Later → skip confirm step → ตรงเข้า tarot (UX simplification)
-            //    User report: ลูกค้าใส่คำถาม Pay-Later → ค้างที่ confirm prompt (ไม่ตอบ "ใช่")
-            // 🛑 (2026-05-06) Pay-Later removed — ทุกคนใช้ pay-first confirm step
-
-            Log::info('Fortune: handleQuestionInput → ขอ confirm คำถามก่อนเปิดไพ่+สร้างบิล', [
+            // 🌙 (2026-05-14) ลบ confirmation step — ไปจับไพ่เลย
+            //   user spec: "ตรงรับคำถามก็เช่นกัน... ไม่ต้องย้ำว่าใช่คำถามไหม ให้ไปจับไพ่เลย"
+            Log::info('Fortune: handleQuestionInput → คำถามผ่าน validator → ไปจับไพ่ทันที', [
                 'reading_id' => $reading->id,
                 'question_count' => $questionCount,
-                'required' => self::REQUIRED_QUESTIONS,
                 'text_preview' => mb_substr($messageText, 0, 40),
             ]);
 
-            // 🔒 Confirmation step (ก่อนเปิดไพ่ + สร้างบิล) — pay-first flow เท่านั้น
-            //    เหตุผล: ลูกค้ามักพิมพ์คำถามผิด/พิมพ์ผ่าน — ถ้าสร้างบิลทันที
-            //    จะต้องยกเลิก + เริ่มใหม่ (สับสน + เสียเวลา)
-            //    ใช้ flag ใน conversation_state — ค้าง status ที่ COLLECTING_QUESTIONS
-            $reading->setConversationState('awaiting_question_confirmation', true);
-            $reading->setConversationState('confirmed_question_at', null);
+            // ลบ confirmation flags เก่า (เผื่อมีจาก flow เก่า)
+            $reading->setConversationState('awaiting_question_confirmation', false);
+            $reading->setConversationState('confirmed_question_at', now()->toIso8601String());
 
-            return [
-                'action' => 'awaiting_question_confirmation',
-                'message' => "✅ รับคำถามแล้วค่ะ\n\n"
-                    ."═══════════════════════\n"
-                    ."❓ *คำถามของเจ้าชะตา:*\n"
-                    ."\"{$latestQuestion}\"\n"
-                    ."═══════════════════════\n\n"
-                    ."🔍 *ขอยืนยันคำถามอีกครั้ง*\n"
-                    ."ใช่คำถามที่เจ้าชะตาต้องการถามจริงไหม?\n\n"
-                    ."👉 ถ้า *ใช่* → กดปุ่ม *\"✅ ใช่\"* (จะเปิดไพ่ + สร้างบิลค่าครู)\n"
-                    ."👉 ถ้า *ไม่ตรง* → กดปุ่ม *\"❌ ไม่ตรงคำถาม\"* (เริ่มดูดวงใหม่)\n\n"
-                    .'💡 ตรวจให้ชัวร์ก่อนนะคะ — แต่ละคำถามแม่หมอจะลงพลังเรียงไพ่ใหม่ทั้งหมด',
-                'reading' => $reading,
-                'question_number' => $questionCount,
-                'show_quick_replies' => true,
-                'quick_replies' => [
-                    ['title' => '✅ ใช่ ถูกต้อง', 'text' => 'ใช่'],
-                    ['title' => '❌ ไม่ตรงคำถาม', 'text' => 'ไม่ตรงคำถาม'],
-                ],
-            ];
-
+            // ไป afterQuestionsCollected → จัดการจับไพ่ + dispatch AI
+            return $this->afterQuestionsCollected($reading, $collectedQuestions, $questionCount);
         } catch (\Exception $e) {
             Log::error('Fortune: handleQuestionInput ล้มเหลว', [
                 'reading_id' => $reading->id,
@@ -5137,14 +5184,82 @@ class FortuneConversationService
     }
 
     /**
+     * 🌙 (2026-05-14) ตรวจว่าข้อความเป็น "คำถามดูดวง" จริงไหม
+     *
+     * user spec: "หากลูกค้ามั่วกรอกอะไรไม่รู้... ให้ AI บอกพิมพ์คำถาม"
+     *
+     * เกณฑ์:
+     * - ยาวพอสมควร (≥ 5 chars หลัง trim)
+     * - มี Thai/English letters (ไม่ใช่ symbols/digits ล้วน)
+     * - ไม่ใช่ confirmation junk ("ใช่", "ok", "yes", ฯลฯ)
+     * - ไม่ใช่ greeting พื้นๆ ("สวัสดี", "ทดสอบ")
+     */
+    protected function looksLikeFortuneQuestion(string $text): bool
+    {
+        $text = trim($text);
+
+        // สั้นเกินไป
+        if (mb_strlen($text) < 5) {
+            return false;
+        }
+
+        // ไม่มี Thai/English letter เลย (digits/symbols ล้วน)
+        if (! preg_match('/[\p{Thai}a-zA-Z]/u', $text)) {
+            return false;
+        }
+
+        // confirmation junk / greeting / test
+        $junkPatterns = [
+            '/^(ใช่|ไม่ใช่|ไม่ตรง|ยืนยัน|ok|okay|โอเค|ถูกต้อง|yes|y|no|n)\s*$/iu',
+            '/^(สวัสดี|hello|hi|test|ทดสอบ|hey)\s*$/iu',
+            '/^(ดู|ดูดวง|ทำนาย|ขอ)\s*$/iu', // คำสั่งล้วน ไม่ใช่คำถาม
+        ];
+        foreach ($junkPatterns as $pat) {
+            if (preg_match($pat, $text)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 🌙 (2026-05-14) หลังเก็บคำถามครบ → ตั้งจิต + ไปจับไพ่
+     *
+     * user spec: "ไม่ต้องย้ำว่าใช่คำถามไหม ให้ไปจับไพ่เลย"
+     * เรียกจาก handleQuestionInput หลัง validator ผ่าน
+     */
+    protected function afterQuestionsCollected(FortuneReading $reading, array $questions, int $questionCount): array
+    {
+        // ไปเข้า COLLECTING_TAROT (ตั้งจิตเลือกไพ่)
+        $reading->update(['conversation_status' => FortuneReading::STATUS_COLLECTING_TAROT]);
+        $reading->setConversationState('tarot_intention_prompted_at', now()->toIso8601String());
+
+        return [
+            'action' => 'awaiting_tarot_intention',
+            'message' => "✨ รับคำถามแล้ว\n\n"
+                ."═══════════════════════\n"
+                ."🧘 *ตั้งจิตก่อนเปิดไพ่*\n"
+                ."═══════════════════════\n\n"
+                ."หลับตา หายใจลึกๆ 3 ครั้ง\n"
+                ."นึกถึงคำถามของเจ้าชะตาให้ชัดเจนในใจ\n\n"
+                ."🃏 ไพ่ที่ออก = ไพ่ที่จิตเจ้าชะตาเลือกเอง\n"
+                ."ไม่ต่างจากการจับไพ่จริง — พลังจิตนำทางไพ่ที่ตรงกับชะตา ✨\n\n"
+                ."เมื่อพร้อม → พิมพ์ *\"พร้อม\"* หรือ *\"เปิดไพ่\"*\n"
+                .'หรือกดปุ่มด้านล่าง 👇',
+            'reading' => $reading,
+            'show_quick_replies' => true,
+            'quick_replies' => [
+                ['title' => '🃏 พร้อมเปิดไพ่', 'text' => 'พร้อม'],
+            ],
+        ];
+    }
+
+    /**
      * 🔒 จัดการ confirmation step — ลูกค้ายืนยันคำถามก่อนเปิดไพ่ + สร้างบิล
      *
-     * รับมาจาก handleQuestionInput เมื่อ flag awaiting_question_confirmation = true
-     *
-     * Outcomes:
-     *   - "ใช่" / "ยืนยัน" / "ok" / "ดำเนินการ" → unset flag → เข้า COLLECTING_TAROT
-     *   - "ไม่" / "ยกเลิก" / "เริ่มใหม่" / "ผิด" → ลบคำถามล่าสุด + ปิด conversation
-     *   - อื่น ๆ (พิมพ์มาผิด) → ส่ง confirmation message ซ้ำ
+     * 🛑 (2026-05-14) DEPRECATED — flow ใหม่ไม่มี confirm step
+     *    คงไว้สำหรับ stale conversations ก่อน deploy (จะ fall through ไป "ใช่" → COLLECTING_TAROT)
      */
     protected function handleQuestionConfirmation(FortuneReading $reading, string $messageText): array
     {

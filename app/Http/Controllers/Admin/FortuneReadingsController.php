@@ -158,6 +158,10 @@ class FortuneReadingsController extends Controller
             'amount_paid' => 'nullable|numeric|min:0|max:999999',
             'paid_at' => 'nullable|date',
             'admin_note' => 'nullable|string|max:500',
+            // 🌙 (2026-05-14) Admin manual edit fields
+            'birth_date' => 'nullable|date',
+            'questions_input' => 'nullable|string|max:5000',
+            'pick_tarot_random' => 'nullable|boolean',
         ]);
 
         // เก็บ snapshot ก่อนแก้ — ใส่ใน conversation_state เพื่อ audit
@@ -168,6 +172,9 @@ class FortuneReadingsController extends Controller
             'conversation_status' => $reading->conversation_status,
             'amount_paid' => $reading->amount_paid,
             'paid_at' => $reading->paid_at?->toIso8601String(),
+            'birth_date' => $reading->birth_date?->toDateString(),
+            'questions_count' => is_array($reading->questions) ? count($reading->questions) : 0,
+            'tarot_count' => count($reading->getCollectedTarotCards()),
         ];
 
         // ถ้าเปลี่ยน is_paid เป็น true แต่ paid_at ว่าง → ใส่ now()
@@ -180,9 +187,51 @@ class FortuneReadingsController extends Controller
         }
 
         $adminNote = $validated['admin_note'] ?? null;
-        unset($validated['admin_note']);
+        $questionsInput = $validated['questions_input'] ?? null;
+        $pickTarotRandom = (bool) ($validated['pick_tarot_random'] ?? false);
+        unset($validated['admin_note'], $validated['questions_input'], $validated['pick_tarot_random']);
+
+        // 🌙 (2026-05-14) แปลง questions_input (textarea) → questions array
+        //   หนึ่งคำถามต่อบรรทัด
+        if ($questionsInput !== null) {
+            $lines = preg_split('/\r\n|\r|\n/', trim($questionsInput));
+            $questions = array_values(array_filter(array_map('trim', $lines), fn ($q) => $q !== ''));
+            $validated['questions'] = $questions;
+        }
 
         $reading->update($validated);
+
+        // 🃏 (2026-05-14) ถ้า admin ขอจับไพ่ random + ยังไม่มีไพ่ → จับให้
+        if ($pickTarotRandom && count($reading->getCollectedTarotCards()) === 0) {
+            try {
+                $card = \App\Models\TarotCard::where('is_active', true)
+                    ->inRandomOrder()
+                    ->first();
+
+                if ($card) {
+                    $isReversed = (bool) random_int(0, 1);
+                    $reading->addTarotCard(
+                        questionIndex: 0,
+                        cardId: $card->id,
+                        cardNameTh: $card->getName('th'),
+                        cardNameEn: $card->getName('en'),
+                        isReversed: $isReversed,
+                        meaning: $card->getMeaning($isReversed, 'th'),
+                        imageUrl: $card->image_url,
+                    );
+                    Log::info('Admin: pick random tarot card สำเร็จ', [
+                        'reading_id' => $reading->id,
+                        'card_id' => $card->id,
+                        'is_reversed' => $isReversed,
+                    ]);
+                }
+            } catch (\Throwable $e) {
+                Log::warning('Admin: pick random tarot card ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         // Audit log ลง conversation_state
         $audits = $reading->getConversationState('admin_edits', []);

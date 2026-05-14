@@ -108,6 +108,88 @@
             </div>
         </div>
 
+        {{-- 🌙 (2026-05-14) Customer Data — admin แก้แทนลูกค้าได้ทุก field --}}
+        <div class="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-xl shadow-lg p-6 mb-6">
+            <h3 class="text-xl font-bold text-amber-900 dark:text-amber-200 mb-1">📋 ข้อมูลลูกค้า (Admin Edit)</h3>
+            <p class="text-sm text-amber-700 dark:text-amber-300 mb-4">
+                💡 ใช้กรณีลูกค้ากรอกผิด/ค้าง — admin แก้แทนได้ทั้ง วันเกิด คำถาม และจับไพ่
+            </p>
+
+            <div class="space-y-4">
+                {{-- Birth Date --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        📅 วันเกิด (ค.ศ.)
+                    </label>
+                    <input type="date"
+                           name="birth_date"
+                           value="{{ old('birth_date', $reading->birth_date?->format('Y-m-d')) }}"
+                           class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        ปัจจุบัน: {{ $reading->birth_date ? $reading->birth_date->format('d M Y (ค.ศ.)') : '❌ ยังไม่กรอก' }}
+                    </p>
+                </div>
+
+                {{-- Questions --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        ❓ คำถาม (1 บรรทัด/1 คำถาม)
+                    </label>
+                    @php
+                        $currentQuestions = is_array($reading->questions) ? $reading->questions : [];
+                        $questionsText = implode("\n", $currentQuestions);
+                    @endphp
+                    <textarea name="questions_input"
+                              rows="5"
+                              placeholder="ดวงความรักปีนี้จะเป็นยังไง&#10;งานจะมั่นคงไหม&#10;การเงินช่วงนี้"
+                              class="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white text-sm">{{ old('questions_input', $questionsText) }}</textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        ปัจจุบัน: {{ count($currentQuestions) }} คำถาม
+                    </p>
+                </div>
+
+                {{-- Tarot Cards --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        🃏 ไพ่ที่จับ
+                    </label>
+                    @php
+                        $tarotCards = $reading->getCollectedTarotCards();
+                    @endphp
+                    @if(count($tarotCards) > 0)
+                        <div class="space-y-1 mb-2">
+                            @foreach($tarotCards as $idx => $card)
+                                <p class="text-sm text-gray-700 dark:text-gray-300">
+                                    🃏 #{{ $idx + 1 }} {{ $card['card_name_th'] ?? '?' }} ({{ $card['card_name_en'] ?? '?' }})
+                                    @if(! empty($card['is_reversed'])) <span class="text-orange-600">(กลับหัว)</span> @endif
+                                </p>
+                            @endforeach
+                        </div>
+                    @else
+                        <p class="text-sm text-red-600 dark:text-red-400 mb-2">❌ ยังไม่ได้จับไพ่</p>
+                        <label class="inline-flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox"
+                                   name="pick_tarot_random"
+                                   value="1"
+                                   class="rounded">
+                            <span class="text-sm text-gray-700 dark:text-gray-300">
+                                🎲 จับไพ่ random ให้ตอน save (admin manual pick)
+                            </span>
+                        </label>
+                    @endif
+                </div>
+            </div>
+
+            @if($reading->is_paid && empty($reading->deep_response))
+                <div class="mt-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700">
+                    <p class="text-sm text-blue-800 dark:text-blue-200">
+                        💡 <strong>หลังบันทึกข้อมูลครบ</strong> (วันเกิด + คำถาม + ไพ่)
+                        → กลับไปหน้า show แล้วกดปุ่ม <strong>"🔄 สร้างคำทำนายเชิงลึก"</strong> เพื่อ trigger AI
+                    </p>
+                </div>
+            @endif
+        </div>
+
         {{-- Predictions --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🔮 คำทำนาย</h3>
