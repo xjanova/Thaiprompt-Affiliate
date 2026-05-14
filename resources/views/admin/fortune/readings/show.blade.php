@@ -279,8 +279,31 @@
              (FB 24hr window expired / sendResponse fail) → admin ต้องส่งซ้ำได้ --}}
         @if($reading->reading_type === 'deep' && ($reading->is_paid || ! empty($reading->deep_response) || $reading->conversation_status === 'paid'))
             <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                {{-- ⚠️ Warning: ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ --}}
-                @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response))
+                {{-- 🛟 (2026-05-14) Pay-First incomplete data — ลูกค้าจ่ายแต่ยังไม่กรอกข้อมูล --}}
+                @if($reading->is_paid && empty($reading->birth_date))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 border border-amber-300 dark:border-amber-700">
+                        <div class="flex items-start gap-2">
+                            <span class="text-amber-500 text-lg">🛟</span>
+                            <div class="flex-1">
+                                <p class="text-amber-800 dark:text-amber-200 font-medium">รอข้อมูลจากลูกค้า — ยังสร้างคำทำนายไม่ได้</p>
+                                <p class="text-amber-600 dark:text-amber-400 text-sm mt-1">
+                                    ลูกค้า<strong>จ่าย{{ number_format($reading->amount_paid ?? 39, 0) }}฿แล้ว</strong> (Pay-First Deep) แต่ยังไม่กรอก
+                                    <strong>วันเดือนปีเกิด</strong> → AI ทำนายไม่ได้
+                                </p>
+                                <ul class="text-amber-600 dark:text-amber-400 text-xs mt-2 ml-4 list-disc">
+                                    <li>วันเกิด: {{ $reading->birth_date ? $reading->birth_date->format('d/m/Y') : '❌ ยังไม่กรอก' }}</li>
+                                    <li>คำถาม: {{ is_array($reading->questions) && count($reading->questions) > 0 ? count($reading->questions).' คำถาม' : '❌ ยังไม่ถาม' }}</li>
+                                </ul>
+                                <p class="text-amber-700 dark:text-amber-300 text-sm mt-2">
+                                    💡 ใช้ปุ่ม <strong>"🛟 ส่งขอวันเกิดใหม่"</strong> ด้านล่างเพื่อ push message ให้ลูกค้ากรอกข้อมูล
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- ⚠️ Warning: ชำระเงินแล้วแต่ AI สร้างคำทำนายไม่สำเร็จ (มีวันเกิดแล้ว แต่ deep_response ว่าง) --}}
+                @if($reading->is_paid && $reading->conversation_status === 'completed' && empty($reading->deep_response) && ! empty($reading->birth_date))
                     <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700">
                         <div class="flex items-start gap-2">
                             <span class="text-red-500 text-lg">⚠️</span>
@@ -296,12 +319,22 @@
                 {{-- Flash Messages --}}
                 @if(session('success'))
                     <div class="mb-3 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
-                        {{ session('success') }}
+                        {!! nl2br(e(session('success'))) !!}
                     </div>
                 @endif
                 @if(session('error'))
                     <div class="mb-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
-                        {{ session('error') }}
+                        {!! nl2br(e(session('error'))) !!}
+                    </div>
+                @endif
+                @if(session('warning'))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 text-sm">
+                        {!! nl2br(e(session('warning'))) !!}
+                    </div>
+                @endif
+                @if(session('info'))
+                    <div class="mb-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 text-sm">
+                        {!! nl2br(e(session('info'))) !!}
                     </div>
                 @endif
 
@@ -401,25 +434,50 @@
 
                 <div class="flex flex-wrap gap-3" x-data="{ submitting: false }">
                     @if(empty($reading->deep_response))
-                        {{-- ไม่มีคำทำนาย → ปุ่มสร้างใหม่ (เด่น) --}}
-                        <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
-                              method="POST"
-                              @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
-                            @csrf
-                            <button type="submit"
-                                    :disabled="submitting"
-                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg shadow transition">
-                                <template x-if="!submitting">
-                                    <span>🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า</span>
-                                </template>
-                                <template x-if="submitting">
-                                    <span class="flex items-center gap-2">
-                                        <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
-                                        กำลังส่งคำสั่ง...
-                                    </span>
-                                </template>
-                            </button>
-                        </form>
+                        {{-- 🛟 (2026-05-14) ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด → ใช้ recover แทน retry --}}
+                        @if($reading->is_paid && empty($reading->birth_date))
+                            <form action="{{ route('admin.fortune.readings.recover-pay-first', $reading) }}"
+                                  method="POST"
+                                  @submit="if(!confirm('ส่งข้อความ \'ขอวันเกิด\' ให้ลูกค้าใหม่หรือไม่?\n\nระบบจะ push message ผ่าน POST_PURCHASE_UPDATE — ลูกค้าจะได้รับใน Messenger/LINE')) { $event.preventDefault(); return; } submitting = true;">
+                                @csrf
+                                <button type="submit"
+                                        :disabled="submitting"
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white text-sm font-medium rounded-lg shadow transition">
+                                    <template x-if="!submitting">
+                                        <span>🛟 ส่งขอวันเกิดใหม่</span>
+                                    </template>
+                                    <template x-if="submitting">
+                                        <span class="flex items-center gap-2">
+                                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                            กำลังส่งคำสั่ง...
+                                        </span>
+                                    </template>
+                                </button>
+                            </form>
+                            <p class="text-amber-700 dark:text-amber-300 text-xs ml-2 self-center">
+                                💡 ยังสร้างคำทำนายไม่ได้ — รอลูกค้ากรอกวันเกิดก่อน
+                            </p>
+                        @else
+                            {{-- มีข้อมูลครบ → ปุ่มสร้างใหม่ (เด่น) --}}
+                            <form action="{{ route('admin.fortune.readings.retry-deep', $reading) }}"
+                                  method="POST"
+                                  @submit="if(!confirm('ต้องการสร้างคำทำนายเชิงลึกและส่งให้ลูกค้าหรือไม่?\n\nระบบจะสร้างคำทำนายใหม่โดย AI และส่งให้ลูกค้าอัตโนมัติ (ใช้เวลา 30-60 วินาที)')) { $event.preventDefault(); return; } submitting = true;">
+                                @csrf
+                                <button type="submit"
+                                        :disabled="submitting"
+                                        class="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white text-sm font-medium rounded-lg shadow transition">
+                                    <template x-if="!submitting">
+                                        <span>🔄 สร้างคำทำนายเชิงลึก + ส่งให้ลูกค้า</span>
+                                    </template>
+                                    <template x-if="submitting">
+                                        <span class="flex items-center gap-2">
+                                            <span class="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></span>
+                                            กำลังส่งคำสั่ง...
+                                        </span>
+                                    </template>
+                                </button>
+                            </form>
+                        @endif
                     @else
                         {{-- มีคำทำนายแล้ว → ปุ่มส่งซ้ำ + ปุ่มสร้างใหม่ --}}
                         <form action="{{ route('admin.fortune.readings.resend-deep', $reading) }}"

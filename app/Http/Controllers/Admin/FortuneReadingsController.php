@@ -246,6 +246,19 @@ class FortuneReadingsController extends Controller
             return redirect()->back()->with('error', 'ไม่พบ user ID สำหรับส่งข้อความ');
         }
 
+        // 🚨 (2026-05-14) ตรวจสอบข้อมูลครบก่อน trigger AI
+        //   user spec: "ข้อมูลลูกค้ายังไม่มีจะสร้างไม่ได้ พวก ไพ่ วันเดือนปีเกิด"
+        //   เคส Pay-First Deep 39: ลูกค้าจ่ายแล้ว แต่ยังไม่กรอกวันเกิด → AI gen ไม่ได้
+        //   ก่อนหน้านี้: เช็คแค่ is_paid → dispatch Job → AI fail → status COMPLETED มี error
+        //   ใหม่: ถ้า birth_date NULL → bounce กลับให้ admin ใช้ปุ่ม "ส่งขอวันเกิดใหม่" แทน
+        if (empty($reading->birth_date)) {
+            return redirect()->back()->with(
+                'warning',
+                '⚠️ ลูกค้ายังไม่กรอกวันเกิด — สร้างคำทำนายไม่ได้\n'.
+                'กรุณากดปุ่ม "🛟 ส่งขอวันเกิดใหม่" เพื่อ push message ให้ลูกค้ากรอกข้อมูล'
+            );
+        }
+
         // ถ้ามี deep_response อยู่แล้ว → clear + ตั้ง status=PAID เพื่อให้ banner "AI กำลังสร้าง..." แสดง
         // (Artisan command จะข้ามถ้ามี deep_response + status=completed)
         //
@@ -371,6 +384,61 @@ class FortuneReadingsController extends Controller
             ]);
 
             return redirect()->back()->with('error', 'ส่งไม่สำเร็จ: '.$e->getMessage());
+        }
+    }
+
+    /**
+     * 🛟 (2026-05-14) ส่งขอวันเกิดใหม่ — Pay-First Deep 39 recovery
+     *
+     * เคส: ลูกค้าจ่าย Deep 39 แล้ว แต่ยังไม่กรอกวันเกิด (status=COLLECTING_BIRTHDATE หรือ COMPLETED orphan)
+     * → admin กดปุ่มนี้ → reset state + push "ขอวันเกิด" ใหม่ผ่าน POST_PURCHASE_UPDATE
+     *
+     * ผ่าน artisan: php artisan fortune:recover-paid-no-birthdate --id={$reading->id} --force
+     */
+    public function recoverPayFirstReading(FortuneReading $reading)
+    {
+        if (! $reading->is_paid || $reading->reading_type !== 'deep') {
+            return redirect()->back()->with('error', 'ไม่สามารถดำเนินการได้: ต้องเป็น Deep reading ที่ชำระเงินแล้ว');
+        }
+
+        try {
+            // ใช้ Artisan call เพื่อ reuse logic จาก FortuneRecoverPaidNoBirthdate command
+            \Illuminate\Support\Facades\Artisan::call('fortune:recover-paid-no-birthdate', [
+                '--id' => $reading->id,
+                '--force' => true,
+            ]);
+
+            $output = \Illuminate\Support\Facades\Artisan::output();
+
+            Log::info('Admin: Recover Pay-First reading', [
+                'reading_id' => $reading->id,
+                'admin' => auth()->user()?->name,
+                'output_preview' => mb_substr($output, 0, 300),
+            ]);
+
+            // ตรวจ output ว่า push สำเร็จไหม
+            if (str_contains($output, 'recover + push')) {
+                return redirect()
+                    ->route('admin.fortune.readings.show', $reading)
+                    ->with('success', '🛟 ส่งข้อความ "ขอวันเกิด" ให้ลูกค้าแล้ว — รอลูกค้าตอบ');
+            }
+
+            if (str_contains($output, 'push ล้มเหลว')) {
+                return redirect()
+                    ->route('admin.fortune.readings.show', $reading)
+                    ->with('warning', '⚠️ Reset state แล้ว แต่ push ล้มเหลว (อาจเกิน FB 24h window) — ลูกค้าทักกลับจะเข้า flow ใหม่');
+            }
+
+            return redirect()
+                ->route('admin.fortune.readings.show', $reading)
+                ->with('info', 'รัน recover คำสั่งแล้ว — ตรวจสอบ log สำหรับรายละเอียด');
+        } catch (\Throwable $e) {
+            Log::error('Admin: Recover Pay-First reading ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()->with('error', 'Recover ล้มเหลว: '.$e->getMessage());
         }
     }
 

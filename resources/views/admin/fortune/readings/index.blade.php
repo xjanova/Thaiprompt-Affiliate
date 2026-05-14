@@ -293,8 +293,21 @@
                                         🆓 ฟรี
                                     </span>
                                 @endif
-                                {{-- Conversation status badge --}}
-                                @if($reading->conversation_status && $reading->conversation_status !== 'completed')
+                                {{-- 🛟 (2026-05-14) Pay-First incomplete — ลูกค้าจ่ายแล้วแต่ไม่กรอกข้อมูล --}}
+                                @if($reading->is_paid && $reading->reading_type === 'deep' && empty($reading->birth_date) && empty($reading->deep_response))
+                                    <div class="mt-1">
+                                        <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" title="ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด">
+                                            🛟 รอวันเกิด
+                                        </span>
+                                    </div>
+                                @elseif($reading->is_paid && empty($reading->deep_response) && $reading->reading_type === 'deep')
+                                    <div class="mt-1">
+                                        <span class="px-2 py-0.5 text-xs rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300" title="จ่ายแล้ว — ยังไม่ส่งคำทำนาย">
+                                            ⏳ ยังไม่ส่งคำทำนาย
+                                        </span>
+                                    </div>
+                                @elseif($reading->conversation_status && $reading->conversation_status !== 'completed')
+                                    {{-- Conversation status badge (เคสอื่นๆ) --}}
                                     <div class="mt-1">
                                         <span class="px-2 py-0.5 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">
                                             {{ $reading->conversation_status }}

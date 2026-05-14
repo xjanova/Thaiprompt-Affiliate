@@ -4055,6 +4055,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::delete('/readings/{reading}', [FortuneReadingsController::class, 'destroy'])->name('readings.destroy');
     Route::post('/readings/{reading}/retry-deep', [FortuneReadingsController::class, 'retryDeepReading'])->name('readings.retry-deep');
     Route::post('/readings/{reading}/resend-deep', [FortuneReadingsController::class, 'resendDeepReading'])->name('readings.resend-deep');
+    Route::post('/readings/{reading}/recover-pay-first', [FortuneReadingsController::class, 'recoverPayFirstReading'])->name('readings.recover-pay-first');
 
     // 🖼️ แบนเนอร์ DM
     Route::prefix('banners')->name('banners.')->group(function () {
