@@ -103,9 +103,25 @@ class FortuneProcessDeepReading extends Command
                 // → บันทึกลง DB เท่านั้น → เมื่อลูกค้าส่งข้อความมา จะส่งผ่าน replyMessage (ฟรี!)
                 // ✅ ส่ง platform + userId เพื่อให้ affiliate auto-register ทำงาน
                 // channelManager = null → ไม่ push เนื้อหาคำทำนาย (streaming = false)
-                $result = $conversationService->processPaymentConfirmed(
-                    $reading, $notification, null, $platform, $userId
+
+                // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
+                //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
+                //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
+                \App\Services\Fortune\FortuneAiPingDispatcher::start(
+                    $readingId,
+                    $platform,
+                    $userId,
+                    'deep'
                 );
+
+                try {
+                    $result = $conversationService->processPaymentConfirmed(
+                        $reading, $notification, null, $platform, $userId
+                    );
+                } finally {
+                    // ปิด AI session — pings ที่ยังไม่ run จะ skip
+                    \App\Services\Fortune\FortuneAiPingDispatcher::complete($readingId);
+                }
 
                 $duration = round((microtime(true) - $startTime) * 1000, 2);
 
