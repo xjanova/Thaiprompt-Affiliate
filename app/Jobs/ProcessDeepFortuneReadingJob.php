@@ -355,28 +355,13 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
             //    ถ้า AI gen เสร็จแล้ว (deep_response มี) แต่ยัง deliver ไม่สำเร็จ → ข้าม regenerate
             //    ป้องกัน double AI cost + potential prompt drift จากการ generate ซ้ำ
             if (! $skipAiRegenerate) {
-                // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
-                //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
-                //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
-                \App\Services\Fortune\FortuneAiPingDispatcher::start(
-                    $this->readingId,
+                $result = $conversationService->processPaymentConfirmed(
+                    $reading,
+                    $notification,
+                    null, // channelManager = null → streaming ปิด
                     $this->platform,
-                    $this->userId,
-                    'deep'
+                    $this->userId
                 );
-
-                try {
-                    $result = $conversationService->processPaymentConfirmed(
-                        $reading,
-                        $notification,
-                        null, // channelManager = null → streaming ปิด
-                        $this->platform,
-                        $this->userId
-                    );
-                } finally {
-                    // ปิด AI session — pings ที่ยังไม่ run จะ skip
-                    \App\Services\Fortune\FortuneAiPingDispatcher::complete($this->readingId);
-                }
             } else {
                 Log::info('💎 Pay-Later recovery: skip AI regenerate — AI gen done previously, delivering only', [
                     'reading_id' => $this->readingId,

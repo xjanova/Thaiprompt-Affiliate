@@ -1182,29 +1182,8 @@ trait CelticCrossConversationTrait
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $name = $reading->resolveCustomerName();
 
-        // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
-        //   เปิด AI session ก่อน call AI — pings วิ่ง async ใน queue worker
-        //   ถ้า AI เสร็จก่อน 10s → ping ทั้งหมด skip (cache cleared)
-        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-        $userId = $reading->facebook_user_id ?: $reading->line_user_id;
-        if ($userId) {
-            \App\Services\Fortune\FortuneAiPingDispatcher::start(
-                $reading->id,
-                $platform,
-                $userId,
-                'celtic-opening'
-            );
-        }
-
         $service = app(CelticCrossService::class);
-        try {
-            $openingResult = $service->generateOpeningGreeting($reading);
-        } finally {
-            // ปิด AI session — pings ที่ยังไม่ run จะ skip
-            if ($userId) {
-                \App\Services\Fortune\FortuneAiPingDispatcher::complete($reading->id);
-            }
-        }
+        $openingResult = $service->generateOpeningGreeting($reading);
 
         $openingText = $openingResult['success']
             ? trim($openingResult['response'])
@@ -1296,28 +1275,8 @@ trait CelticCrossConversationTrait
             ]);
         }
 
-        // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
-        //   ต่อจาก thinking ack ทันที — pings วิ่ง async ใน queue worker
-        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-        $userId = $reading->facebook_user_id ?: $reading->line_user_id;
-        if ($userId) {
-            \App\Services\Fortune\FortuneAiPingDispatcher::start(
-                $reading->id,
-                $platform,
-                $userId,
-                'celtic-question'
-            );
-        }
-
         $service = app(CelticCrossService::class);
-        try {
-            $result = $service->askQuestion($reading, $question);
-        } finally {
-            // ปิด AI session — pings ที่ยังไม่ run จะ skip
-            if ($userId) {
-                \App\Services\Fortune\FortuneAiPingDispatcher::complete($reading->id);
-            }
-        }
+        $result = $service->askQuestion($reading, $question);
 
         if (! $result['success']) {
             // กลับเข้า awaiting state ให้ลองใหม่
