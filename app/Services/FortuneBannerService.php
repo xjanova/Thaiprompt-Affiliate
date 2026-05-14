@@ -100,7 +100,7 @@ class FortuneBannerService
      * @param  int  $cooldownHours  legacy param (ignored — ใช้ calendar day แทน)
      * @return bool
      */
-    public function sendBannerOnce(string $userId, callable $sendFn, string $channel, int $cooldownHours = 24): bool
+    public function sendBannerOnce(string $userId, callable $sendFn, string $channel, int $cooldownHours = 24, ?string $platform = null): bool
     {
         // 📅 cache key รวมวันที่ — auto-rotate ทุกเที่ยงคืน
         //   timezone = Asia/Bangkok (config('app.timezone') ก็ได้)
@@ -118,11 +118,29 @@ class FortuneBannerService
             return false;
         }
 
+        // 👤 (2026-05-14) Skip ลูกค้าเก่า — banner เฉพาะ first-ever interaction
+        //   user spec: "ส่งแค่ลูกค้าใหม่จริงๆ" — ลูกค้าเก่าทักเข้ามาแล้วได้รูปทุกวัน annoying
+        if ($platform && $this->isReturningCustomer($platform, $userId)) {
+            Log::info('FortuneBanner: skip — returning customer (เก่า)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'channel' => $channel,
+            ]);
+
+            // Mark daily cache เพื่อกัน check ซ้ำในวันเดียวกัน
+            $secondsUntilMidnight = max(60, now()->endOfDay()->diffInSeconds(now(), absolute: true));
+            \Illuminate\Support\Facades\Cache::put($cacheKey, true, $secondsUntilMidnight);
+
+            return false;
+        }
+
         // 🔍 (2026-05-07) Log entry ที่บอกว่าจะลองส่ง — debug ทุกขั้น
         Log::info('FortuneBanner: เข้า sendBannerOnce — กำลังลองส่ง', [
             'user_id' => $userId,
             'channel' => $channel,
             'date' => $today,
+            'platform' => $platform,
+            'is_new_customer' => $platform !== null,
         ]);
 
         $sent = $this->sendBannerThenWait($sendFn, $channel);
@@ -137,14 +155,78 @@ class FortuneBannerService
     }
 
     /**
+     * 👤 (2026-05-14) ตรวจว่า user เป็น "ลูกค้าเก่า" หรือไม่
+     *
+     * Returns true ถ้า user เคยมี interaction ในระบบ (ใน 3 sources):
+     *   1. LineBotConversation — มี chat history
+     *   2. FortuneCustomerPersona — มี persona record
+     *   3. FortuneReading — มี reading ใดๆ
+     *
+     * ใช้ตัดสินใจว่าจะส่ง banner หรือไม่ — ส่งเฉพาะลูกค้าใหม่จริงๆ
+     *
+     * Cache: ไม่ cache เพราะ result อาจ flip ได้ตามเวลา (user เพิ่งทักครั้งแรก)
+     *   sendBannerOnce มี daily cache อยู่แล้ว — ป้องกัน DB hit ซ้ำต่อ user/day
+     */
+    public function isReturningCustomer(string $platform, string $userId): bool
+    {
+        try {
+            // 1️⃣ Check LineBotConversation — primary source ของ chat history
+            $hasConversation = \App\Models\LineBotConversation::where('platform', $platform)
+                ->where('user_id', $userId)
+                ->exists();
+            if ($hasConversation) {
+                return true;
+            }
+
+            // 2️⃣ Check FortuneCustomerPersona — มี persona record = เคยคุย
+            if (class_exists(\App\Models\FortuneCustomerPersona::class)) {
+                $hasPersona = \App\Models\FortuneCustomerPersona::where('platform', $platform)
+                    ->where('platform_user_id', $userId)
+                    ->exists();
+                if ($hasPersona) {
+                    return true;
+                }
+            }
+
+            // 3️⃣ Check FortuneReading — มี reading ใดๆ = ลูกค้าเก่า
+            $platformField = $platform === 'facebook' ? 'facebook_user_id' : 'line_user_id';
+            $hasReading = \App\Models\FortuneReading::where($platformField, $userId)->exists();
+
+            return $hasReading;
+        } catch (\Throwable $e) {
+            // ถ้า check ล้ม → fail-safe = treat as NEW customer (ส่ง banner)
+            //   เพราะ user spec ต้องการ banner สำหรับใหม่ — false-positive (เก่าได้ banner) ดีกว่า false-negative (ใหม่ไม่ได้ banner)
+            Log::warning('FortuneBanner: isReturningCustomer check failed (fail-safe = NEW)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
+
+    /**
      * ส่งแบนเนอร์พร้อมหน่วงเวลาให้ image มาก่อน text
      *
      * @param  callable  $sendFn  function($imageUrl): bool — function ที่ส่งภาพจริง (FB/LINE)
      * @param  string  $channel  'reaction' | 'comment' | 'welcome'
+     * @param  string|null  $platform  'facebook'|'line' — ถ้าระบุ → check isReturningCustomer skip ลูกค้าเก่า
+     * @param  string|null  $userId    user ID สำหรับ check
      * @return bool true ถ้าส่งภาพสำเร็จ (เพื่อ caller ตัดสินใจว่ารอ delay หรือไม่)
      */
-    public function sendBannerThenWait(callable $sendFn, string $channel): bool
+    public function sendBannerThenWait(callable $sendFn, string $channel, ?string $platform = null, ?string $userId = null): bool
     {
+        // 👤 (2026-05-14) Skip ลูกค้าเก่า ถ้าระบุ platform+userId
+        //   user spec: "ส่งแค่ลูกค้าใหม่จริงๆ" — backward compat: ไม่ระบุ = ไม่ check
+        if ($platform && $userId && $this->isReturningCustomer($platform, $userId)) {
+            Log::info('FortuneBanner: skip — returning customer (sendBannerThenWait)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'channel' => $channel,
+            ]);
+            return false;
+        }
+
         $banner = $this->pickForChannel($channel);
 
         if (! $banner) {

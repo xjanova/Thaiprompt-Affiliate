@@ -547,10 +547,13 @@ class FacebookWebhookController extends Controller
             $quickReplies = [];
 
             // 🖼️ ส่งแบนเนอร์ก่อน text (ถ้าเปิดใน admin)
+            //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId เพื่อ skip ลูกค้าเก่า
             if ($this->bannerService) {
                 $this->bannerService->sendBannerThenWait(
                     fn ($url) => $this->facebookService->sendImage($reaction->facebook_user_id, $url),
-                    'reaction'
+                    'reaction',
+                    'facebook',
+                    $reaction->facebook_user_id
                 );
             }
 
@@ -1010,10 +1013,13 @@ class FacebookWebhookController extends Controller
 
         // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
         // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
+        // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า
         if ($this->bannerService) {
             $this->bannerService->sendBannerThenWait(
                 fn ($url) => $this->facebookService->sendImage($fromId, $url, null, ['comment_id' => $commentId]),
-                'comment'
+                'comment',
+                'facebook',
+                $fromId
             );
         }
 
@@ -2257,12 +2263,14 @@ class FacebookWebhookController extends Controller
 
             // 🖼️ (2026-05-06) ส่ง banner welcome ก่อน (ครั้งแรกที่กด GET_STARTED ก็ควรเห็น)
             //   เดิม: banner ส่งเฉพาะใน processConversationalMessage → คนที่กด GET_STARTED แล้วไม่ทักต่อ ไม่เคยเห็น
+            //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId
             if ($this->bannerService) {
                 $this->bannerService->sendBannerOnce(
                     $senderId,
                     fn ($url) => $this->facebookService->sendImage($senderId, $url),
                     'welcome',
-                    24
+                    24,
+                    'facebook'
                 );
             }
 
@@ -2447,12 +2455,14 @@ class FacebookWebhookController extends Controller
 
             // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
             // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
+            // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — ลูกค้าเก่าได้ text ตรง (ไม่ส่งรูป)
             if ($this->bannerService) {
                 $this->bannerService->sendBannerOnce(
                     $senderId,
                     fn ($url) => $this->facebookService->sendImage($senderId, $url),
                     'welcome',
-                    24
+                    24,
+                    'facebook'
                 );
             }
 

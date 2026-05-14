@@ -294,11 +294,13 @@ class LineFortuneWebhookController extends Controller
 
             // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
             // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
+            // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — ลูกค้าเก่าได้ text ตรง (ไม่ส่งรูป)
             $this->bannerService->sendBannerOnce(
                 $userId,
                 fn ($url) => $this->lineService->sendImage($userId, $url),
                 'welcome',
-                24
+                24,
+                'line'
             );
 
             // ประมวลผลข้อความผ่าน Channel Manager

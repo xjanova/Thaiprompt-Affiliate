@@ -194,11 +194,14 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
             // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
+            // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า (ลด mass spam unreachable)
             try {
                 $bannerService = new FortuneBannerService($settings);
                 $bannerService->sendBannerThenWait(
                     fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
-                    'comment'
+                    'comment',
+                    'facebook',
+                    $userId
                 );
             } catch (Throwable $bannerErr) {
                 Log::debug('Comment Engagement: banner send failed (non-blocking): '.$bannerErr->getMessage());
