@@ -690,7 +690,18 @@ class FortuneChannelManager
                             'payload' => 'TIER_CELTIC_99'];
                     }
 
-                    return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    $sent = $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+
+                    // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
+                    // Delay 4s ให้กล่องราคาขึ้นก่อน — graceful degradation ถ้า queue ไม่รัน
+                    try {
+                        \App\Jobs\SendPricingFollowUpJob::dispatch('facebook', $userId, $pricing)
+                            ->delay(now()->addSeconds(4));
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Pricing followup dispatch fail', ['err' => $e->getMessage()]);
+                    }
+
+                    return $sent;
                 })(),
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + ข้อความทำนาย + Quick Reply [39][99][ไม่สนใจ]
@@ -1809,7 +1820,17 @@ class FortuneChannelManager
                         $quickReplies[] = ['label' => '👑 VIP 99 บาท', 'text' => '99'];
                     }
 
-                    return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                    $sent = $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+
+                    // 🙏 (2026-05-14) AI follow-up — แม่หมออธิบาย "ค่าครู" แบบสนทนา ปรับ tone ตาม persona
+                    try {
+                        \App\Jobs\SendPricingFollowUpJob::dispatch('line', $userId, $pricing)
+                            ->delay(now()->addSeconds(4));
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Pricing followup dispatch fail (LINE)', ['err' => $e->getMessage()]);
+                    }
+
+                    return $sent;
                 })(),
 
                 // 🎁 (2026-05-03) ทำนายฟรี — ส่งภาพไพ่ + คำทำนาย + Quick Reply [39][99][ไม่สนใจ]
