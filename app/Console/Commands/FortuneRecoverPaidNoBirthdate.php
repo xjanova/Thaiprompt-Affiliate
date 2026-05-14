@@ -70,12 +70,21 @@ class FortuneRecoverPaidNoBirthdate extends Command
         }
 
         // 🤖 (2026-05-13) --auto mode — strict filter เพื่อกัน flood + กัน race
-        //   1. status = collecting_birthdate (Pay-First flow แล้ว แต่ลูกค้าไม่ตอบ)
+        //   1. status = collecting_birthdate หรือ completed (orphan จาก expire เก่า)
         //   2. paid_at เก่ากว่า min-age-minutes (เผื่อ initial push ใน flow ปกติ)
         //   3. กัน duplicate push: เช็คว่า resent_at ไม่ใช่ในช่วง 30 นาทีล่าสุด
         //      (ใช้ conversation_state['birthdate_resent_at'])
+        // 🚨 (2026-05-14) เพิ่ม STATUS_COMPLETED ใน whitelist
+        //   เคสจริง #2545: ลูกค้าจ่าย Deep 39 → status=COLLECTING_BIRTHDATE
+        //                  → 30 min ผ่าน → expire mark COMPLETED → recovery skip
+        //                  → ลูกค้าค้าง ไม่ได้ทำนาย
+        //   Fix expireOldConversationsQuery ใส่ is_paid=false guard แล้ว (commit prev)
+        //        — แต่ orphan ที่ COMPLETED ไปแล้วต้อง recover ผ่านที่นี่ด้วย
         if ($isAuto) {
-            $query->where('conversation_status', FortuneReading::STATUS_COLLECTING_BIRTHDATE)
+            $query->whereIn('conversation_status', [
+                FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                FortuneReading::STATUS_COMPLETED, // 🛡️ orphan ที่ expire ก่อน fix
+            ])
                 ->where('paid_at', '<=', now()->subMinutes($minAgeMinutes))
                 ->where('paid_at', '>=', now()->subHours($hours));
         } elseif (! $specificId && ! $specificBill) {

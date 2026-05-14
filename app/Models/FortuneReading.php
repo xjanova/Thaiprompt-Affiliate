@@ -1605,6 +1605,14 @@ class FortuneReading extends Model
     protected static function expireOldConversationsQuery($baseQuery): int
     {
         // ปิด conversation ทั่วไป + pending_payment (Deep + Celtic) ที่ค้างเกิน 30 นาที
+        // 🚨 (2026-05-14) CRITICAL FIX: เพิ่ม is_paid=false guard
+        //   user report: "บิล 39 บาท โอนแล้ว ไม่ยอมเริ่มกระบวนการทำนาย"
+        //   Root cause: COLLECTING_BIRTHDATE หลัง Pay-First Deep (ลูกค้าจ่ายแล้ว — รอวันเกิด)
+        //               → 30 min ผ่าน → expire → mark COMPLETED
+        //               → auto-recovery filter status=COLLECTING_BIRTHDATE → skip
+        //               → ลูกค้าเสียเงิน ไม่ได้ทำนาย
+        //   Fix: ห้าม expire reading ที่ลูกค้าจ่ายเงินไปแล้ว (is_paid=true)
+        //        — ปล่อยให้ auto-recovery scheduler ผลักดัน flow ต่อ
         $expired = (clone $baseQuery)
             ->whereIn('conversation_status', [
                 self::STATUS_AWAITING_CONFIRMATION,
@@ -1619,6 +1627,7 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_PENDING_PAYMENT, // 🔮 Celtic ก็ expire 30 นาที (UPA หมดอายุพอดี)
             ])
             ->where('updated_at', '<', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES))
+            ->where('is_paid', false) // 🛡️ paid bills ห้าม expire — ปล่อย auto-recovery รับช่วง
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
         // ปิด PAID ที่ค้างเกิน timeout (AI processing ล้มเหลว/timeout)

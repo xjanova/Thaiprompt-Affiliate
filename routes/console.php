@@ -37,7 +37,10 @@ Schedule::command('fortune:celtic-recover --auto --minutes=5')
 // สแกนทุก 5 นาที — paid + collecting_birthdate + paid_at > 3 นาที (เผื่อ initial push)
 // → re-push "ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE
 // → dedup: ถ้า birthdate_resent_at < 30 นาที → skip (รอลูกค้าตอบ)
-Schedule::command('fortune:recover-paid-no-birthdate --auto --hours=2 --min-age-minutes=3')
+// 🚨 (2026-05-14) เพิ่ม --hours=24 (เดิม 2) — กัน orphan ค้างนานกว่า 2 ชม.
+//   เคส #2545: ลูกค้าจ่าย → expire 30 min ก่อน fix → orphan COMPLETED 8 ชม.
+//   ต้อง window กว้างขึ้น recover ได้
+Schedule::command('fortune:recover-paid-no-birthdate --auto --hours=24 --min-age-minutes=3')
     ->everyFiveMinutes()
     ->withoutOverlapping(10)
     ->onOneServer()
