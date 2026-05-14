@@ -484,6 +484,14 @@ class FortuneAIService
         // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
         $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
 
+        // 👤 (2026-05-14 v2) Persona context (system-level — ไม่ใช่ user message)
+        //   user ส่งมาผ่าน userProfile['_persona_context'] → append เป็น system directive
+        //   เดิม: prepend ใน messageText → AI อาจ confuse format
+        //   ใหม่: ใส่ใน system message → AI เห็นเป็น context directive ชัดเจน
+        if (! empty($userProfile['_persona_context'])) {
+            $systemMessage .= "\n\n".$userProfile['_persona_context'];
+        }
+
         // สร้าง prompt สั้นๆ สำหรับ chat
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;
@@ -539,11 +547,20 @@ class FortuneAIService
      *
      * @throws Exception
      */
-    public function chatWithCustomSystemPrompt(string $systemMessage, string $userMessage, array $config = []): array
-    {
-        $chatProvider = $this->settings->getChatAIProvider();
-        $chatModel = $this->settings->getChatAIModel();
-        $chatApiKey = $this->settings->getChatAIApiKey();
+    public function chatWithCustomSystemPrompt(
+        string $systemMessage,
+        string $userMessage,
+        array $config = [],
+        ?string $providerOverride = null,
+        ?string $modelOverride = null,
+        ?string $apiKeyOverride = null
+    ): array {
+        // 🔑 (2026-05-14 v2 review) Accept optional override (provider/model/key)
+        //   เคสที่ใช้: extraction job ที่ต้องใช้ Pool key (admin direct key ว่าง)
+        //   ถ้า override ระบุ → ใช้แทน settings; ถ้าไม่ระบุ → fall back settings เดิม
+        $chatProvider = $providerOverride ?? $this->settings->getChatAIProvider();
+        $chatModel = $modelOverride ?? $this->settings->getChatAIModel();
+        $chatApiKey = $apiKeyOverride ?? $this->settings->getChatAIApiKey();
 
         if (empty($chatApiKey)) {
             throw new Exception("ไม่พบ API Key สำหรับ Chat AI ({$chatProvider})");
@@ -892,6 +909,11 @@ PROMPT;
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
         // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
         $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
+
+        // 👤 (2026-05-14 v2) Persona context (system-level) — same as generateChatResponse
+        if (! empty($userProfile['_persona_context'])) {
+            $systemMessage .= "\n\n".$userProfile['_persona_context'];
+        }
 
         // สร้าง prompt พร้อมชื่อผู้ใช้
         $userName = $userProfile['name'] ?? '';
@@ -1505,6 +1527,11 @@ PROMPT;
         $systemMessage = ! empty($customPrompt) ? $customPrompt : $this->buildChatSystemMessage();
         // 🎯 (2026-05-08 review L3) UX directive applies to BOTH custom + default prompt
         $systemMessage = $this->appendUxFriendlyDirective($systemMessage);
+
+        // 👤 (2026-05-14 v2) Persona context (system-level) — same as generateChatResponse
+        if (! empty($userProfile['_persona_context'])) {
+            $systemMessage .= "\n\n".$userProfile['_persona_context'];
+        }
 
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;

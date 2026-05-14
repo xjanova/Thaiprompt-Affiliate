@@ -10083,8 +10083,19 @@ class FortuneConversationService
             //   user spec: "จำบุคลิกลูกค้าเพื่อนำมาคุยในครั้งต่อๆ ไปในแต่ละวัน"
             //   - getCached() — cached 24hr → quick lookup
             //   - dispatchExtraction() — throttled 30 min/user, sync driver skip
+            //
+            // 🎯 (2026-05-14 v2 review) Inject ผ่าน userProfile['_persona_context']
+            //   เดิม: prepend ใน messageForAI (multi-line) → AI อาจ confuse format
+            //   ใหม่: ใส่ใน userProfile → FortuneAIService::generateChatResponse จะ append เป็น
+            //         system directive ที่ถูกต้อง (เห็นเป็น role:system ไม่ใช่ user msg)
             $personaService = app(\App\Services\Fortune\CustomerPersonaService::class);
             $personaInjectBlock = $personaService->buildInjectBlock($platformDetected, $userId);
+            if (! empty($personaInjectBlock)) {
+                if (! is_array($userProfile)) {
+                    $userProfile = ['name' => 'คุณ'];
+                }
+                $userProfile['_persona_context'] = $personaInjectBlock;
+            }
             $personaService->dispatchExtraction(
                 $platformDetected,
                 $userId,
@@ -10143,12 +10154,9 @@ class FortuneConversationService
                 $messageForAI = '['.implode('] [', $contextParts)."] {$messageText}";
             }
 
-            // 👤 (2026-05-14) Prepend persona context block (system-level directive)
-            //   ใช้ปรับ tone — pattern เดียวกับ [TURN N] [RETURNING_CUSTOMER ...]
-            //   อ่านโดย AI เพื่อปรับน้ำเสียงเข้ากับลูกค้า (ห้ามอ้างตรงๆ ในคำตอบ)
-            if (! empty($personaInjectBlock)) {
-                $messageForAI = $personaInjectBlock."\n\n".$messageForAI;
-            }
+            // 👤 (2026-05-14 v2 review) Persona block ย้ายไป userProfile['_persona_context']
+            //   เดิม: prepend ใน messageForAI (user msg) → AI ตีความเป็น user input
+            //   ใหม่: ส่งผ่าน userProfile → append ใน system message ที่ FortuneAIService
 
             // 🌟 (2026-05-07) Sensitive AI Mode — ตรวจจับบริบทละเอียดอ่อนแล้วสลับ Pro model
             // ใช้เมื่อ admin ตั้ง sensitive_ai_mode = 'all' (ทั่วบอท)

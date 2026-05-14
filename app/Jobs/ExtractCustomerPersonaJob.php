@@ -19,15 +19,21 @@ use Illuminate\Support\Facades\Log;
  * วิเคราะห์ข้อความลูกค้า → JSON persona → merge เข้า DB
  *
  * Strategy:
- *  1. ขอ AI Pool key (chat purpose) จาก FortuneTellingSetting
- *  2. Build extraction prompt — schema-strict JSON output
- *  3. Parse JSON → merge เข้า persona record
- *  4. Invalidate cache → AI inject ใหม่จะเห็น update
+ *  1. แยก system message (task definition + schema) + user message (data to analyze)
+ *  2. ใช้ chatWithCustomSystemPrompt — raw provider call, ไม่ append chat directive
+ *  3. ลอง direct chat key ก่อน — ถ้าว่าง fallback ไป Pool (acquireKeyAnyProvider 'chat')
+ *  4. Parse JSON → merge เข้า persona record (additive)
+ *  5. Invalidate cache → AI inject ใหม่จะเห็น update
  *
  * Cost control:
  *  - Throttle ใน Service::dispatchExtraction() (30 นาที/user)
- *  - ใช้ generateChatResponse() ของ FortuneAIService ที่มี Pool acquire อยู่แล้ว
+ *  - Temperature 0.3 — output structured JSON
  *  - Failure ไม่ทำให้ chat flow แตก (non-blocking)
+ *
+ * Review v2 (2026-05-14):
+ *  - เปลี่ยนจาก generateChatResponse → chatWithCustomSystemPrompt (กัน chat directive pollute output)
+ *  - เพิ่ม Pool fallback ผ่าน override params ใน chatWithCustomSystemPrompt
+ *  - System+User message แยกชัดเจน + few-shot examples ใน system
  */
 class ExtractCustomerPersonaJob implements ShouldQueue
 {
@@ -60,23 +66,40 @@ class ExtractCustomerPersonaJob implements ShouldQueue
             $this->displayName
         );
 
-        // 📝 Build extraction prompt
+        // 📝 Build extraction prompt — แยก system + user แทน
+        //   เดิม: ใช้ generateChatResponse — โดน chat directive ทั้งชุด → AI ตอบ chat-style
+        //   ใหม่: ใช้ chatWithCustomSystemPrompt — system msg ตรงๆ ไม่มี directive
         $existingContext = $this->buildExistingContext($persona);
-        $extractionPrompt = $this->buildExtractionPrompt($existingContext, $this->messageText);
+        [$systemMessage, $userMessage] = $this->buildExtractionMessages($existingContext, $this->messageText);
 
-        // 🤖 Call AI (ใช้ generateChatResponse — มี Pool acquire + provider router อยู่แล้ว)
+        // 🤖 Call AI — ลอง direct chat key ก่อน, fallback ไป Pool ถ้า empty
         try {
             $settings = FortuneTellingSetting::getSettings();
             $aiService = new FortuneAIService($settings);
 
-            // Override system message ด้วย extraction prompt — ส่ง messageText เป็น user message
-            //   generateChatResponse จะ append directives เยอะ → เราต้องใช้ inline approach
-            //   เรียก raw ผ่าน method ที่ accept system override
-            //   ง่ายสุด: send extraction prompt as "userProfile.persona_extraction" hint + message = full prompt
-            $result = $aiService->generateChatResponse(
-                $extractionPrompt,
-                ['name' => $this->displayName ?? '', 'persona_extraction_mode' => true]
-            );
+            $directKey = $settings->getChatAIApiKey();
+            if (! empty($directKey)) {
+                // Path 1: direct chat key
+                $result = $aiService->chatWithCustomSystemPrompt(
+                    $systemMessage,
+                    $userMessage,
+                    [
+                        'temperature' => 0.3, // ต่ำ — ต้องการ output structured
+                        'max_tokens' => 600,
+                    ]
+                );
+            } else {
+                // Path 2: Pool-direct mode (direct key ว่าง) — acquire chat purpose key + call raw
+                $result = $this->callViaPool($aiService, $settings, $systemMessage, $userMessage);
+                if ($result === null) {
+                    Log::debug('ExtractCustomerPersonaJob: ไม่มี chat key (direct/Pool) — skip', [
+                        'platform' => $this->platform,
+                        'user_id' => $this->userId,
+                    ]);
+
+                    return;
+                }
+            }
 
             $responseText = $result['response'] ?? '';
 
@@ -135,6 +158,51 @@ class ExtractCustomerPersonaJob implements ShouldQueue
     }
 
     /**
+     * 🏊 Path 2: Pool-direct mode — acquire chat purpose key + call raw provider
+     *
+     * ใช้เมื่อ admin ไม่ตั้ง direct chat_ai_api_key (Pool-direct setup)
+     * Pool service จัดการ provider routing + load balancing ให้
+     *
+     * @return array|null  ['response' => string] หรือ null ถ้าไม่มี key
+     */
+    private function callViaPool(
+        FortuneAIService $aiService,
+        FortuneTellingSetting $settings,
+        string $systemMessage,
+        string $userMessage
+    ): ?array {
+        try {
+            $poolService = app(\App\Services\AiApiKeyPoolService::class);
+            $key = $poolService->acquireKeyAnyProvider('chat');
+
+            if (! $key) {
+                return null;
+            }
+
+            // ใช้ override params ของ chatWithCustomSystemPrompt — ส่ง Pool key/provider/model
+            //   เดิม: overrideForPlayground modifies $this->provider (DEEP path) ไม่ส่งผลกับ chat
+            //   ใหม่: pass อย่าง explicit ผ่าน params → chat path เห็น Pool key ตรงๆ
+            return $aiService->chatWithCustomSystemPrompt(
+                $systemMessage,
+                $userMessage,
+                [
+                    'temperature' => 0.3,
+                    'max_tokens' => 600,
+                ],
+                $key->provider,
+                $key->model,
+                $key->api_key
+            );
+        } catch (\Throwable $e) {
+            Log::warning('ExtractCustomerPersonaJob: Pool fallback ล้มเหลว', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
      * 📋 สร้าง context ของ persona ปัจจุบัน เพื่อให้ AI ไม่ extract ซ้ำของเดิม
      */
     private function buildExistingContext(FortuneCustomerPersona $persona): string
@@ -167,35 +235,32 @@ class ExtractCustomerPersonaJob implements ShouldQueue
     }
 
     /**
-     * 🎯 สร้าง prompt สำหรับ extraction
+     * 🎯 สร้าง [system_message, user_message] tuple สำหรับ extraction
      *
-     * ให้ AI ตอบ JSON เท่านั้น — ห้ามมีคำอธิบาย
+     * Pattern: แยก system (task definition + schema) ออกจาก user (data to analyze)
+     *   - System: บทบาท + schema + กฎ JSON only
+     *   - User: existing context + new message
+     *
+     * @return array [string $systemMessage, string $userMessage]
      */
-    private function buildExtractionPrompt(string $existingContext, string $messageText): string
+    private function buildExtractionMessages(string $existingContext, string $messageText): array
     {
-        return <<<PROMPT
-[👤 PERSONA EXTRACTION TASK — ห้ามตอบเหมือนแชทปกติ]
+        $systemMessage = <<<'SYSTEM'
+You are a Customer Persona Extraction system. Your ONLY job is to analyze customer messages and output structured JSON.
 
-หน้าที่: วิเคราะห์ข้อความของลูกค้า → extract เป็น JSON
+🚫 STRICT RULES:
+1. Output JSON ONLY — no explanations, no markdown code blocks, no greetings
+2. Do NOT respond conversationally — you are a data extraction service, not a chat bot
+3. If unsure about a field → use "unknown" or empty array []
+4. Do NOT invent information not present in the message
+5. Reply in Thai for content arrays (traits/likes/dislikes/themes) but use English enum values
 
-ข้อมูลที่รู้แล้ว (ห้ามใส่ซ้ำ):
-{$existingContext}
-
-ข้อความของลูกค้าที่ต้องวิเคราะห์:
-"{$messageText}"
-
-ภารกิจของคุณ:
-1. อ่านข้อความ → สังเกตบุคลิก, ความชอบ, ไม่ชอบ, demographics, สไตล์การคุย
-2. **ตอบ JSON เท่านั้น** — ห้ามมีคำอธิบาย, ห้ามมี markdown code block, ห้าม "ผมเข้าใจแล้ว"
-3. ถ้าไม่แน่ใจ → ใส่ "unknown" หรือ array ว่าง [] — ห้ามเดามั่ว
-
-Schema ที่ต้องตอบ (JSON เท่านั้น):
-```
+📋 JSON Schema (output EXACTLY this structure):
 {
-  "traits": ["..."],
-  "likes": ["..."],
-  "dislikes": ["..."],
-  "conversation_themes": ["..."],
+  "traits": ["บุคลิก1", "บุคลิก2"],
+  "likes": ["สิ่งที่ชอบ1"],
+  "dislikes": ["สิ่งที่ไม่ชอบ1"],
+  "conversation_themes": ["หัวข้อที่คุย1"],
   "demographics": {
     "age_range": "18-25"|"26-35"|"36-45"|"46-55"|"56+"|"unknown",
     "gender_hint": "male"|"female"|"non_binary"|"unknown",
@@ -208,12 +273,26 @@ Schema ที่ต้องตอบ (JSON เท่านั้น):
     "formality": "informal"|"polite"|"formal",
     "emoji_usage": "high"|"medium"|"low"|"none"
   },
-  "topic_tags": ["love", "work-stress", "family", ...]
+  "topic_tags": ["english-tag-1", "english-tag-2"]
 }
-```
 
-⚠️ **เน้นย้ำ — ตอบ JSON ดิบเท่านั้น ห้ามมีอะไรอย่างอื่น**:
-PROMPT;
+🎯 EXAMPLES:
+Input: "เพิ่งเลิกกับแฟน เครียดมาก ทำงานบริษัทแต่อยากออก อายุ 28"
+Output:
+{"traits":["เครียด","ลังเล"],"likes":[],"dislikes":["บริษัท"],"conversation_themes":["ความรัก","งาน"],"demographics":{"age_range":"26-35","gender_hint":"unknown","job_hint":"employee","location_hint":"unknown"},"communication_style":{"tone":"emotional","pace":"medium","formality":"informal","emoji_usage":"none"},"topic_tags":["love","work-stress","career-change"]}
+
+Input: "ดีค่ะ หมอ ❤️❤️ ขอดูดวงด่วน"
+Output:
+{"traits":["รีบ","อบอุ่น"],"likes":[],"dislikes":[],"conversation_themes":[],"demographics":{"age_range":"unknown","gender_hint":"female","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"warm","pace":"fast","formality":"polite","emoji_usage":"high"},"topic_tags":[]}
+
+OUTPUT JSON NOW. NOTHING ELSE.
+SYSTEM;
+
+        $userMessage = "Existing persona data (DO NOT repeat in output):\n{$existingContext}\n\n"
+            ."New customer message to analyze:\n\"{$messageText}\"\n\n"
+            .'Output JSON:';
+
+        return [$systemMessage, $userMessage];
     }
 
     /**
