@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneReading;
+use App\Services\FcmNotificationService;
 use App\Services\LineAlertService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,6 +20,11 @@ use Illuminate\Support\Facades\Log;
  *   - ProcessDeepFortuneReadingJob มี alertAdminAfterAiFailure() ที่ยิงตอน "fail ถาวร"
  *   - แต่ "ยังไม่ fail" (ยังอยู่ในระหว่าง retry / sync ค้าง) admin ไม่ได้รู้
  *   - Job นี้แจ้ง admin เมื่อเวลา 60s ผ่านไป แต่ AI session ยังไม่ปิด
+ *
+ * 📲 Channel Strategy (FCM-first → LINE fallback):
+ *   1. FCM push ไป SMS Payment admin app — ฟรีไม่จำกัด, real-time
+ *   2. ถ้า FCM ไม่ได้ (no tokens / disabled) → fallback LINE OA push (เสีย quota)
+ *   3. ประหยัด LINE quota ~90% (admin หลักใช้ SMS Payment app อยู่แล้ว)
  *
  * Throttle: cache key per reading — กัน spam (max 1 alert / 5 นาที / reading)
  *
@@ -70,36 +76,64 @@ class FortuneAiStuckAlertJob implements ShouldQueue
             return;
         }
 
-        // แจ้ง admin ผ่าน LineAlertService
+        // 📲 Step 1: FCM push ไป SMS Payment admin app (ฟรีไม่จำกัด)
+        //    Return true ถ้ามี token + ส่งสำเร็จ → ไม่ต้อง LINE fallback
+        //    Return false ถ้าไม่มี token / FCM disabled → fallback LINE
+        $fcmSent = false;
         try {
-            $alertService = app(LineAlertService::class);
-            $alertService->alertSystemError(
-                '⏰ AI ทำงานเกิน 1 นาที — ตรวจสอบด่วน',
-                [
+            $fcmSent = app(FcmNotificationService::class)
+                ->notifyAiStuck($reading, $this->aiPurpose);
+        } catch (\Throwable $fcmErr) {
+            Log::warning('FortuneAiStuckAlertJob: FCM ล้มเหลว — fallback LINE', [
+                'reading_id' => $reading->id,
+                'error' => $fcmErr->getMessage(),
+            ]);
+            $fcmSent = false;
+        }
+
+        // 📲 Step 2: ถ้า FCM ไม่ได้ → fallback LINE OA push (เสีย quota)
+        //    เคสที่ตก fallback: admin ยังไม่ลง app / ปิด FCM / token expired
+        if (! $fcmSent) {
+            try {
+                $alertService = app(LineAlertService::class);
+                $alertService->alertSystemError(
+                    '⏰ AI ทำงานเกิน 1 นาที — ตรวจสอบด่วน',
+                    [
+                        'reading_id' => $reading->id,
+                        'bill_ref' => $reading->bill_reference ?? '-',
+                        'customer' => $reading->facebook_user_name ?? $reading->line_user_name ?? '-',
+                        'platform' => $this->platform,
+                        'ai_purpose' => $this->aiPurpose,
+                        'reading_status' => $reading->conversation_status ?? '-',
+                        'reading_type' => $reading->reading_type ?? '-',
+                        'admin_action' => "ไปที่ /admin/fortune/readings/{$reading->id} — ถ้า AI ค้าง ให้กด retry",
+                    ]
+                );
+
+                Log::warning('FortuneAiStuckAlertJob: LINE fallback แจ้ง admin', [
                     'reading_id' => $reading->id,
-                    'bill_ref' => $reading->bill_reference ?? '-',
-                    'customer' => $reading->facebook_user_name ?? $reading->line_user_name ?? '-',
-                    'platform' => $this->platform,
-                    'ai_purpose' => $this->aiPurpose,
-                    'reading_status' => $reading->conversation_status ?? '-',
-                    'reading_type' => $reading->reading_type ?? '-',
-                    'admin_action' => "ไปที่ /admin/fortune/readings/{$reading->id} — ถ้า AI ค้าง ให้กด retry",
-                ]
-            );
-
-            // ตั้ง flag ใน reading — UI จะแสดง badge "🚨 AI ค้าง" ได้
-            $reading->setConversationState('ai_stuck_alert_at', now()->toIso8601String());
-            $reading->setConversationState('ai_stuck_alert_purpose', $this->aiPurpose);
-
-            Log::warning('FortuneAiStuckAlertJob: แจ้ง admin สำเร็จ', [
+                    'purpose' => $this->aiPurpose,
+                ]);
+            } catch (\Throwable $lineErr) {
+                Log::error('FortuneAiStuckAlertJob: ทั้ง FCM และ LINE ล้มเหลว', [
+                    'reading_id' => $reading->id,
+                    'error' => $lineErr->getMessage(),
+                ]);
+            }
+        } else {
+            Log::warning('FortuneAiStuckAlertJob: FCM แจ้ง admin สำเร็จ (ประหยัด LINE quota)', [
                 'reading_id' => $reading->id,
                 'purpose' => $this->aiPurpose,
             ]);
-        } catch (\Throwable $e) {
-            Log::error('FortuneAiStuckAlertJob: แจ้ง admin ล้มเหลว', [
-                'reading_id' => $reading->id,
-                'error' => $e->getMessage(),
-            ]);
+        }
+
+        // ตั้ง flag ใน reading — UI จะแสดง badge "🚨 AI ค้าง" ได้
+        try {
+            $reading->setConversationState('ai_stuck_alert_at', now()->toIso8601String());
+            $reading->setConversationState('ai_stuck_alert_purpose', $this->aiPurpose);
+            $reading->setConversationState('ai_stuck_alert_channel', $fcmSent ? 'fcm' : 'line');
+        } catch (\Throwable $stateErr) {
+            // ignore — non-blocking
         }
     }
 
