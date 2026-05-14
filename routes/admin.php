@@ -80,6 +80,7 @@ use App\Http\Controllers\Admin\FortuneSavedQuestionsController;
 use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
+use App\Http\Controllers\Admin\FortunePersonasController;
 use App\Http\Controllers\Admin\FortuneUsersController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
 use App\Http\Controllers\Admin\ForumAdminController;
@@ -4098,6 +4099,13 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/quick-add-credits', [FortuneUsersController::class, 'quickAddCredits'])->name('quick-add-credits');
         // 🔒 (2026-05-04) Reset pay-later eligibility — admin override
         Route::post('/{platform}/{userId}/reset-pay-later', [FortuneUsersController::class, 'resetPayLaterEligibility'])->name('reset-pay-later');
+    });
+
+    // 👤 (2026-05-14) บุคลิกลูกค้า (Persona Memory) — RPG Character Sheet
+    Route::prefix('personas')->name('personas.')->group(function () {
+        Route::get('/', [FortunePersonasController::class, 'index'])->name('index');
+        Route::get('/{id}', [FortunePersonasController::class, 'show'])->whereNumber('id')->name('show');
+        Route::get('/{id}/export', [FortunePersonasController::class, 'exportMarkdown'])->whereNumber('id')->name('export');
     });
 
     // เทมเพลตตอบกลับ

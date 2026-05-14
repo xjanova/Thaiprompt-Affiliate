@@ -212,6 +212,302 @@ class FortuneCustomerPersona extends Model
     }
 
     /**
+     * 🎮 (2026-05-14) Gamification — Level จาก observation_count
+     *
+     * Lv 1: 1-2 obs / Lv 2: 3-5 / Lv 3: 6-9 / Lv 5: 10-19
+     * Lv 7: 20-34 / Lv 10: 35-69 / Lv 15: 70-149 / Lv 20: 150-299
+     * Lv 25: 300-599 / Lv 30: 600+
+     */
+    public function getLevel(): int
+    {
+        $count = (int) ($this->observation_count ?? 0);
+        if ($count <= 0) {
+            return 0;
+        }
+
+        // Log-scaled: lv ≈ 5 * log2(count + 1)
+        $level = (int) floor(5 * log($count + 1, 2));
+
+        return max(1, min(30, $level));
+    }
+
+    /**
+     * 🎯 XP progress to next level (0-100)
+     */
+    public function getXpProgress(): int
+    {
+        $count = (int) ($this->observation_count ?? 0);
+        $currentLevel = $this->getLevel();
+
+        if ($currentLevel >= 30) {
+            return 100;
+        }
+
+        // Inverse of getLevel: 2^(lv/5) - 1
+        $currentThreshold = (int) ceil(pow(2, $currentLevel / 5) - 1);
+        $nextThreshold = (int) ceil(pow(2, ($currentLevel + 1) / 5) - 1);
+
+        $span = max(1, $nextThreshold - $currentThreshold);
+        $progress = (int) round((($count - $currentThreshold) / $span) * 100);
+
+        return max(0, min(100, $progress));
+    }
+
+    /**
+     * 💎 Rarity tier — common / rare / epic / legendary
+     *
+     * Combines observation_count + data completeness
+     */
+    public function getRarity(): string
+    {
+        $count = (int) ($this->observation_count ?? 0);
+        $completeness = $this->getDataCompleteness();
+
+        $score = $count + ($completeness * 0.5);
+
+        return match (true) {
+            $score >= 80 => 'legendary',
+            $score >= 40 => 'epic',
+            $score >= 15 => 'rare',
+            default => 'common',
+        };
+    }
+
+    /**
+     * 🎨 Rarity display config (label, color, gradient, glow, icon)
+     */
+    public function getRarityConfig(): array
+    {
+        return match ($this->getRarity()) {
+            'legendary' => [
+                'label' => 'ตำนาน',
+                'label_en' => 'Legendary',
+                'icon' => '👑',
+                'border' => 'border-amber-400 dark:border-amber-500',
+                'gradient' => 'from-amber-400 via-yellow-500 to-orange-500',
+                'text' => 'text-amber-700 dark:text-amber-300',
+                'bg_soft' => 'bg-amber-50 dark:bg-amber-900/30',
+                'glow' => 'shadow-[0_0_20px_rgba(251,191,36,0.5)] dark:shadow-[0_0_30px_rgba(251,191,36,0.4)]',
+                'ring' => 'ring-2 ring-amber-400',
+            ],
+            'epic' => [
+                'label' => 'มหากาฬ',
+                'label_en' => 'Epic',
+                'icon' => '💜',
+                'border' => 'border-purple-400 dark:border-purple-500',
+                'gradient' => 'from-purple-500 via-fuchsia-500 to-pink-500',
+                'text' => 'text-purple-700 dark:text-purple-300',
+                'bg_soft' => 'bg-purple-50 dark:bg-purple-900/30',
+                'glow' => 'shadow-[0_0_18px_rgba(168,85,247,0.45)] dark:shadow-[0_0_25px_rgba(168,85,247,0.35)]',
+                'ring' => 'ring-2 ring-purple-400',
+            ],
+            'rare' => [
+                'label' => 'หายาก',
+                'label_en' => 'Rare',
+                'icon' => '💎',
+                'border' => 'border-sky-400 dark:border-sky-500',
+                'gradient' => 'from-sky-500 via-blue-500 to-indigo-500',
+                'text' => 'text-sky-700 dark:text-sky-300',
+                'bg_soft' => 'bg-sky-50 dark:bg-sky-900/30',
+                'glow' => 'shadow-[0_0_15px_rgba(56,189,248,0.4)] dark:shadow-[0_0_20px_rgba(56,189,248,0.3)]',
+                'ring' => 'ring-2 ring-sky-400',
+            ],
+            default => [
+                'label' => 'ทั่วไป',
+                'label_en' => 'Common',
+                'icon' => '🌿',
+                'border' => 'border-slate-300 dark:border-slate-600',
+                'gradient' => 'from-slate-400 via-gray-500 to-zinc-500',
+                'text' => 'text-slate-600 dark:text-slate-400',
+                'bg_soft' => 'bg-slate-50 dark:bg-slate-800/50',
+                'glow' => 'shadow-md',
+                'ring' => 'ring-1 ring-slate-300 dark:ring-slate-600',
+            ],
+        };
+    }
+
+    /**
+     * 📊 Data completeness — % ของ field ที่มีข้อมูล (0-100)
+     */
+    public function getDataCompleteness(): int
+    {
+        $score = 0;
+        $max = 8;
+
+        $score += ! empty($this->display_name) ? 1 : 0;
+        $score += ! empty($this->demographics) && count(array_filter($this->demographics, fn ($v) => $v && $v !== 'unknown')) > 0 ? 1 : 0;
+        $score += ! empty($this->traits) ? 1 : 0;
+        $score += ! empty($this->likes) ? 1 : 0;
+        $score += ! empty($this->dislikes) ? 1 : 0;
+        $score += ! empty($this->conversation_themes) ? 1 : 0;
+        $score += ! empty($this->communication_style) ? 1 : 0;
+        $score += ! empty($this->topic_tags) ? 1 : 0;
+
+        return (int) round(($score / $max) * 100);
+    }
+
+    /**
+     * 📡 Radar chart stats (6 axes, 0-100)
+     *
+     * Map communication_style + traits/conversation_themes counts → numeric scores
+     */
+    public function getRadarStats(): array
+    {
+        $style = $this->communication_style ?? [];
+
+        // Formality: formal → 100, casual → 30, mixed → 60
+        $formality = match (strtolower($style['formality'] ?? '')) {
+            'formal', 'high' => 90,
+            'semi-formal', 'semi_formal', 'medium' => 65,
+            'casual', 'low' => 30,
+            default => 50,
+        };
+
+        // Tone warmth
+        $tone = match (strtolower($style['tone'] ?? '')) {
+            'warm', 'friendly', 'caring' => 90,
+            'positive', 'cheerful' => 75,
+            'neutral' => 50,
+            'reserved', 'serious' => 35,
+            'cold', 'distant' => 20,
+            default => 55,
+        };
+
+        // Emoji usage
+        $emoji = match (strtolower($style['emoji_usage'] ?? '')) {
+            'high', 'heavy' => 90,
+            'medium', 'moderate' => 60,
+            'low', 'rare' => 30,
+            'none', 'never' => 10,
+            default => 45,
+        };
+
+        // Verbosity — derive from message length hint or conversation themes count
+        $verbosity = match (strtolower($style['verbosity'] ?? '')) {
+            'verbose', 'long', 'high' => 85,
+            'medium', 'moderate' => 55,
+            'concise', 'short', 'low' => 25,
+            default => min(80, 30 + count($this->conversation_themes ?? []) * 6),
+        };
+
+        // Politeness
+        $politeness = match (strtolower($style['politeness'] ?? '')) {
+            'very_polite', 'high' => 90,
+            'polite', 'medium' => 65,
+            'casual', 'low' => 35,
+            'rude' => 15,
+            default => 60,
+        };
+
+        // Engagement — derive from observation_count + likes count
+        $obsCount = (int) ($this->observation_count ?? 0);
+        $likesCount = count($this->likes ?? []);
+        $engagement = min(100, 20 + ($obsCount * 2) + ($likesCount * 5));
+
+        return [
+            ['axis' => 'ทางการ', 'value' => $formality],
+            ['axis' => 'อบอุ่น', 'value' => $tone],
+            ['axis' => 'อีโมจิ', 'value' => $emoji],
+            ['axis' => 'ช่างคุย', 'value' => $verbosity],
+            ['axis' => 'สุภาพ', 'value' => $politeness],
+            ['axis' => 'มีส่วนร่วม', 'value' => $engagement],
+        ];
+    }
+
+    /**
+     * 📊 Stat bars — count vs cap (30) for each list field
+     */
+    public function getStatBars(): array
+    {
+        $cap = 30;
+
+        return [
+            'traits' => [
+                'label' => '🎭 บุคลิก',
+                'count' => count($this->traits ?? []),
+                'cap' => $cap,
+                'color' => 'from-rose-500 to-pink-500',
+                'percent' => min(100, (int) round((count($this->traits ?? []) / $cap) * 100)),
+            ],
+            'likes' => [
+                'label' => '❤️ สิ่งที่ชอบ',
+                'count' => count($this->likes ?? []),
+                'cap' => $cap,
+                'color' => 'from-emerald-500 to-green-500',
+                'percent' => min(100, (int) round((count($this->likes ?? []) / $cap) * 100)),
+            ],
+            'dislikes' => [
+                'label' => '❌ สิ่งที่ไม่ชอบ',
+                'count' => count($this->dislikes ?? []),
+                'cap' => $cap,
+                'color' => 'from-red-500 to-orange-500',
+                'percent' => min(100, (int) round((count($this->dislikes ?? []) / $cap) * 100)),
+            ],
+            'themes' => [
+                'label' => '💬 หัวข้อที่คุย',
+                'count' => count($this->conversation_themes ?? []),
+                'cap' => $cap,
+                'color' => 'from-sky-500 to-blue-500',
+                'percent' => min(100, (int) round((count($this->conversation_themes ?? []) / $cap) * 100)),
+            ],
+        ];
+    }
+
+    /**
+     * 🏷️ Topic tags as array (parsed)
+     */
+    public function getTopicTagsArrayAttribute(): array
+    {
+        if (empty($this->topic_tags)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $this->topic_tags))));
+    }
+
+    /**
+     * 🎨 Platform display config
+     */
+    public function getPlatformConfig(): array
+    {
+        return match ($this->platform) {
+            'line' => [
+                'icon' => '🟢',
+                'label' => 'LINE',
+                'color' => 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+            ],
+            'facebook' => [
+                'icon' => '📘',
+                'label' => 'Facebook',
+                'color' => 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+            ],
+            default => [
+                'icon' => '🌐',
+                'label' => ucfirst($this->platform ?? 'unknown'),
+                'color' => 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            ],
+        };
+    }
+
+    /**
+     * 🎴 Initials สำหรับ avatar (2 chars)
+     */
+    public function getInitialsAttribute(): string
+    {
+        $name = trim($this->display_name ?? '');
+        if (empty($name)) {
+            return '👤';
+        }
+
+        $parts = preg_split('/\s+/', $name);
+        if (count($parts) >= 2) {
+            return mb_substr($parts[0], 0, 1) . mb_substr($parts[1], 0, 1);
+        }
+
+        return mb_substr($name, 0, 2);
+    }
+
+    /**
      * 📝 Export เป็น Markdown (ObsidianX-ready)
      *
      * Format: YAML frontmatter + sections

@@ -743,6 +743,7 @@ return [
                 ['label' => '🖼️ แบนเนอร์ DM', 'route' => 'admin.fortune.banners.index', 'description' => 'อัพโหลด/จัดการแบนเนอร์ที่ส่งให้ลูกค้าใน DM (reaction/comment/welcome)'],
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
+                ['label' => '🎴 บุคลิกลูกค้า (RPG)', 'route' => 'admin.fortune.personas.index', 'description' => 'ระบบจดจำบุคลิกลูกค้า — RPG card, radar chart, level, rarity tier'],
                 ['label' => '🎁 เครดิตฟรีรายคน', 'route' => 'admin.fortune.credits.index', 'description' => 'เพิ่ม/รีเซ็ตเครดิตดูฟรีเป็นรายคน'],
                 ['label' => '📣 การตลาดอัตโนมัติ', 'route' => 'admin.fortune.marketing.index', 'description' => 'AI สร้างข้อความ + ตั้งเวลาส่งอัตโนมัติ'],
                 ['label' => '🌟 ดวงรายวันอัตโนมัติ', 'route' => 'admin.fortune.horoscope.index', 'description' => 'AI สร้างดวง 7 วันเกิด + โพส FB/LINE อัตโนมัติ'],
