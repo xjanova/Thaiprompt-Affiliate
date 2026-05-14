@@ -10079,6 +10079,19 @@ class FortuneConversationService
             $platformDetected = $this->detectPlatformFromUserId($userId);
             $history = $this->getConversationHistoryForAI($userId, $platformDetected);
 
+            // 👤 (2026-05-14) Customer Persona — load persona ระยะยาว + dispatch extraction (async)
+            //   user spec: "จำบุคลิกลูกค้าเพื่อนำมาคุยในครั้งต่อๆ ไปในแต่ละวัน"
+            //   - getCached() — cached 24hr → quick lookup
+            //   - dispatchExtraction() — throttled 30 min/user, sync driver skip
+            $personaService = app(\App\Services\Fortune\CustomerPersonaService::class);
+            $personaInjectBlock = $personaService->buildInjectBlock($platformDetected, $userId);
+            $personaService->dispatchExtraction(
+                $platformDetected,
+                $userId,
+                $messageText,
+                $userProfile['name'] ?? null
+            );
+
             // 🔢 นับ rapport turns — จำนวนครั้งที่ user พูด
             // เพื่อให้ AI รู้ว่าคุยมากี่รอบแล้ว (≥2 → เสนอดูดวง)
             $userTurnCount = collect($history)->where('role', 'user')->count() + 1; // +1 = ข้อความปัจจุบัน
@@ -10128,6 +10141,13 @@ class FortuneConversationService
             $messageForAI = $messageText;
             if (! empty($contextParts)) {
                 $messageForAI = '['.implode('] [', $contextParts)."] {$messageText}";
+            }
+
+            // 👤 (2026-05-14) Prepend persona context block (system-level directive)
+            //   ใช้ปรับ tone — pattern เดียวกับ [TURN N] [RETURNING_CUSTOMER ...]
+            //   อ่านโดย AI เพื่อปรับน้ำเสียงเข้ากับลูกค้า (ห้ามอ้างตรงๆ ในคำตอบ)
+            if (! empty($personaInjectBlock)) {
+                $messageForAI = $personaInjectBlock."\n\n".$messageForAI;
             }
 
             // 🌟 (2026-05-07) Sensitive AI Mode — ตรวจจับบริบทละเอียดอ่อนแล้วสลับ Pro model
