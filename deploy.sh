@@ -66,7 +66,11 @@ if [ ! -d vendor ] || [ ! -f vendor/autoload.php ] || [ "$NEW_HASH" != "$OLD_HAS
     echo "$NEW_HASH" > "$LOCK_HASH_FILE"
     ok "composer install เสร็จ"
 else
-    info "[2/7] ข้าม composer install (lock ไม่เปลี่ยน)"
+    # ⚠️ ข้าม composer install — แต่ยังต้อง dump-autoload เผื่อมี class ใหม่
+    # ใน app/ ที่ commit เข้ามา (composer.lock ไม่เปลี่ยน → autoload map เก่า → ClassNotFound 500)
+    info "[2/7] dump-autoload (มี class ใหม่ใน app/?)"
+    composer dump-autoload -o --no-dev --no-interaction 2>&1 | tail -3
+    ok "dump-autoload เสร็จ"
 fi
 
 # ───────────────────────────────────────────────
