@@ -1479,9 +1479,11 @@ class FortuneConversationService
                         //   user spec: "กดยกเลิก สอบถามยูสเซ่อร์ก่อนว่าติดปัญหาอะไร"
                         //   เฉพาะ pending_payment + celtic_pending_payment เท่านั้น
                         //   (สถานะอื่น เช่น collecting_birthdate → ยกเลิกได้เลย ไม่มีบิลเสียหาย)
+                        // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
                         $pendingPaymentStatuses = [
                             FortuneReading::STATUS_PENDING_PAYMENT,
                             FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                            FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
                         ];
                         if (in_array($activeReading->conversation_status, $pendingPaymentStatuses, true)) {
                             $platformKey = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
@@ -4168,9 +4170,11 @@ class FortuneConversationService
         //   เดิม: update status ตรงๆ → SMS app ยังเห็นบิลค้าง → user เห็น "บิลกลับมา"
         // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment — ตรงกับ guard ด้านบน
         if ($this->isCancelRequest($messageText)) {
+            // 39฿ QR / 99฿ Celtic QR / Stripe Checkout (ทุกบิลที่รอจ่าย)
             $pendingPaymentStatuses = [
                 FortuneReading::STATUS_PENDING_PAYMENT,
                 FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
             ];
             if (in_array($status, $pendingPaymentStatuses, true)) {
                 $platformKey = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
