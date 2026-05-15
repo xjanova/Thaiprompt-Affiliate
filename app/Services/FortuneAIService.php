@@ -549,7 +549,12 @@ class FortuneAIService
      * AI ควรอ่าน tag เป็น metadata แล้วใช้ตัดสินใจตอบ — ห้าม echo กลับ
      * แต่บางครั้ง AI สับสนแล้วใส่ tag เหล่านี้ในคำตอบ → ลูกค้าเห็น "[TURN 3]" โผล่ขึ้นมา
      *
-     * Tag intended ที่ AI ใส่เอง (parser caller จัดการ): [OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE]
+     * (2026-05-15 hotfix) เคสจริง: AI หลอน "[TURN 6]" → "[TURNOVER_6]" — \b หลัง TURN
+     *   ไม่จับ "[TURN_6]" หรือ "[TURNOVER_6]" เพราะ "_" เป็น word char (no boundary).
+     *   เปลี่ยนเป็น optional separator group `[_\s][^\]]*` — ครอบ space, underscore,
+     *   และเพิ่ม TURNOVER เป็น alternation
+     *
+     * Tag intended ที่ AI ใส่เอง (parser caller จัดการ): [OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE] / [USE_STRIPE]
      * → strip แค่ context tag ของ "input" — ไม่แตะ output tag
      */
     protected function sanitizeChatResult(array $result): array
@@ -559,7 +564,7 @@ class FortuneAIService
             return $result;
         }
 
-        $pattern = '/\[(?:TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)\b[^\]]*\]/u';
+        $pattern = '/\[(?:TURNOVER|TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)(?:[_\s][^\]]*)?\]/u';
         $cleaned = preg_replace($pattern, '', $response);
 
         if ($cleaned !== null && $cleaned !== $response) {
