@@ -577,6 +577,13 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '❌ ไม่ใช่', 'payload' => 'FUZZY_CONFIRM_NO'],
                 ], $extra),
 
+                // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย
+                'cancel_reason_prompt' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🆘 โอนไม่เป็น', 'payload' => 'CANCEL_HELP_TRANSFER'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแอดมิน', 'payload' => 'CANCEL_HELP_ADMIN'],
+                    ['content_type' => 'text', 'title' => '❌ ยกเลิกจริง', 'payload' => 'CANCEL_CONFIRM_REAL'],
+                ], $extra),
+
                 'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
                 ], $extra),
@@ -1733,6 +1740,16 @@ class FortuneChannelManager
                     ['label' => '✅ ใช่ ของฉัน', 'text' => 'ใช่ ยืนยันการโอน'],
                     ['label' => '❌ ไม่ใช่', 'text' => 'ไม่ใช่ของฉัน'],
                 ]),
+
+                // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย
+                'cancel_reason_prompt' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    $result['quick_reply_options'] ?? [
+                        ['label' => '🆘 โอนไม่เป็น', 'text' => 'ขอเลขบัญชี'],
+                        ['label' => '💬 คุยกับแอดมิน', 'text' => 'คุยกับแม่หมอ'],
+                        ['label' => '❌ ยกเลิกจริง', 'text' => 'ยืนยันยกเลิก'],
+                    ]
+                ),
 
                 'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],

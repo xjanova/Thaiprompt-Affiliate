@@ -1441,6 +1441,34 @@ class FortuneConversationService
 
                     // ✅ ตรวจสอบคำขอยกเลิกก่อน — ทุกสถานะ (ปิดทุก conversation ค้าง)
                     if ($this->isCancelRequest($messageText)) {
+                        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment (กันลูกค้าหาย)
+                        //   user spec: "กดยกเลิก สอบถามยูสเซ่อร์ก่อนว่าติดปัญหาอะไร"
+                        //   เฉพาะ pending_payment + celtic_pending_payment เท่านั้น
+                        //   (สถานะอื่น เช่น collecting_birthdate → ยกเลิกได้เลย ไม่มีบิลเสียหาย)
+                        $pendingPaymentStatuses = [
+                            FortuneReading::STATUS_PENDING_PAYMENT,
+                            FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                        ];
+                        if (in_array($activeReading->conversation_status, $pendingPaymentStatuses, true)) {
+                            $platformKey = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
+                            $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$facebookUserId}";
+                            $hasAsked = Cache::has($cancelCacheKey);
+
+                            // explicit confirm phrases → bypass prompt
+                            $explicitConfirm = $this->matchesExactKeyword($messageText, [
+                                'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
+                                'cancel confirm', 'confirm cancel',
+                            ]);
+
+                            if (! $hasAsked && ! $explicitConfirm) {
+                                // ถามก่อนยกเลิก (1st attempt)
+                                return $this->presentCancelReasonPrompt($activeReading);
+                            }
+
+                            // มี cache flag หรือ explicit confirm → ดำเนินการ cancel ปกติ
+                            Cache::forget($cancelCacheKey);
+                        }
+
                         // 🩹 (2026-05-08 audit fix UX-6) — paid Celtic picking/QA "ยกเลิก" → admin alert
                         //   ลูกค้าจ่าย 99฿ + กำลังเปิดไพ่/ถามอยู่ → "ยกเลิก" → silently exit ไม่ได้
                         //   ต้อง alert admin + ส่งข้อความขอบคุณ + แนะให้คุยกับ admin
@@ -4104,7 +4132,32 @@ class FortuneConversationService
         // 🩹 (2026-05-08 audit fix CRIT-1) — route ผ่าน closeAllActiveConversations
         //   เพื่อให้ UPA cancel + FCM push + wisdom DM ทำงาน
         //   เดิม: update status ตรงๆ → SMS app ยังเห็นบิลค้าง → user เห็น "บิลกลับมา"
+        // 🛑 (2026-05-15) "ถามก่อนยกเลิก" สำหรับ pending_payment — ตรงกับ guard ด้านบน
         if ($this->isCancelRequest($messageText)) {
+            $pendingPaymentStatuses = [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            ];
+            if (in_array($status, $pendingPaymentStatuses, true)) {
+                $platformKey = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
+                $userKey = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
+                $cancelCacheKey = "fortune:cancel_pending:{$platformKey}:{$userKey}";
+                $hasAsked = ! empty($userKey) && Cache::has($cancelCacheKey);
+
+                $explicitConfirm = $this->matchesExactKeyword($messageText, [
+                    'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
+                    'cancel confirm', 'confirm cancel',
+                ]);
+
+                if (! $hasAsked && ! $explicitConfirm) {
+                    return $this->presentCancelReasonPrompt($reading);
+                }
+
+                if (! empty($userKey)) {
+                    Cache::forget($cancelCacheKey);
+                }
+            }
+
             $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
             if (! empty($userId)) {
                 $this->closeAllActiveConversations($userId);
@@ -9782,6 +9835,51 @@ class FortuneConversationService
      * Match: "ขอเลขบัญชี", "เลขบัญชี", "พร้อมเพย์", "qr code", "ขอ qr"
      * เคสที่เจอ: ลูกค้าเก่าโอน slip หาย / สแกน QR ไม่ได้ / ต้องการบัญชีไว้โอนเอง
      */
+    /**
+     * 🛑 (2026-05-15) ถามลูกค้าก่อนยกเลิก — กันบิลค้างเสีย โดยสอบถามปัญหาก่อน
+     *
+     * เคสที่ใช้: ลูกค้าอยู่ pending_payment + กด "ยกเลิก" / พิมพ์ "ยกเลิก"
+     *   เดิม: ตัดบิลทันที → ลูกค้าหาย (อาจติดปัญหาแค่ "โอนไม่เป็น")
+     *   ใหม่: ถาม "ติดปัญหาอะไร?" + Quick Reply 3 ตัวเลือก
+     *     - 🆘 โอนไม่เป็น → presentPaymentInfo
+     *     - 💬 คุยกับแอดมิน → admin handover
+     *     - ❌ ยืนยันยกเลิก → ยกเลิกจริง
+     *
+     * Cache flag: fortune:cancel_pending:{platform}:{userId} TTL 10 min
+     */
+    protected function presentCancelReasonPrompt(FortuneReading $reading): array
+    {
+        $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
+        $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
+
+        if (! empty($userId)) {
+            Cache::put(
+                "fortune:cancel_pending:{$platform}:{$userId}",
+                ['reading_id' => $reading->id, 'asked_at' => now()->toIso8601String()],
+                now()->addMinutes(10)
+            );
+        }
+
+        Log::info('Fortune: ถามลูกค้าก่อนยกเลิกบิล', [
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'user_id' => $userId,
+            'bill_reference' => $reading->bill_reference,
+        ]);
+
+        return [
+            'action' => 'cancel_reason_prompt',
+            'message' => "🙏 *รอสักครู่ค่ะ — เจ้าชะตาติดปัญหาอะไรไหมคะ?*\n\n"
+                ."แม่หมอช่วยได้นะ — เลือกข้อที่ตรงกับเจ้าชะตา 👇",
+            'reading' => $reading,
+            'quick_reply_options' => [
+                ['label' => '🆘 โอนไม่เป็น', 'text' => 'ขอเลขบัญชี'],
+                ['label' => '💬 คุยกับแอดมิน', 'text' => 'คุยกับแม่หมอ'],
+                ['label' => '❌ ยกเลิกจริง', 'text' => 'ยืนยันยกเลิก'],
+            ],
+        ];
+    }
+
     /**
      * 🆘 (2026-05-15) ลูกค้าต้องการความช่วยเหลือเรื่องโอน — "ทำไม่เป็น"/"ใช้ไม่ได้"/"งง"
      *

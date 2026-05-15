@@ -1843,6 +1843,10 @@ class FacebookWebhookController extends Controller
             // ✅ ปุ่มจาก Rich Templates — ดูดวงละเอียด flow
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            // 🛑 (2026-05-15) Cancel-reason prompt postbacks — ลูกค้าตอบ "ติดปัญหาอะไร?"
+            'CANCEL_HELP_TRANSFER' => $this->processConversationalMessage($senderId, 'ขอเลขบัญชี'),
+            'CANCEL_HELP_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
+            'CANCEL_CONFIRM_REAL' => $this->processConversationalMessage($senderId, 'ยืนยันยกเลิก'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             // 📅 (2026-05-01) ทวนวันเกิด — confirm/reject buttons → ส่ง keyword ที่ handler รับได้
@@ -3071,6 +3075,10 @@ class FacebookWebhookController extends Controller
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
+            // 🛑 (2026-05-15) Cancel-reason prompt postbacks — ลูกค้าตอบ "ติดปัญหาอะไร?"
+            'CANCEL_HELP_TRANSFER' => $this->processConversationalMessage($senderId, 'ขอเลขบัญชี'),
+            'CANCEL_HELP_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
+            'CANCEL_CONFIRM_REAL' => $this->processConversationalMessage($senderId, 'ยืนยันยกเลิก'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             // 🛠️ (2026-05-01) CANCEL_FORTUNE จาก tier menu — pre-existing payload ไม่เคยมี handler
