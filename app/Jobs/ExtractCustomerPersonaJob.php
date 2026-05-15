@@ -324,6 +324,22 @@ SYSTEM;
             }
         }
 
+        // (2026-05-15) Filter "unknown" จาก object fields ด้วย — กัน data corruption
+        //   เคสเดิม: รอบ 1 เก็บ {age_range:26-35, gender:female}.
+        //   รอบ 2 AI extract {age_range:unknown, gender:unknown} → array_merge ทับของเดิม
+        //   → persona ลืมข้อมูลที่รู้แล้ว
+        //   แก้: filter unknown ก่อน merge — ถ้า filter หมด → unset key ทั้งหมด (mergeData skip)
+        foreach (['demographics', 'communication_style'] as $key) {
+            if (isset($decoded[$key]) && is_array($decoded[$key])) {
+                $decoded[$key] = array_filter($decoded[$key], function ($v) {
+                    return $v !== null && $v !== '' && strtolower((string) $v) !== 'unknown';
+                });
+                if (empty($decoded[$key])) {
+                    unset($decoded[$key]);
+                }
+            }
+        }
+
         return $decoded;
     }
 

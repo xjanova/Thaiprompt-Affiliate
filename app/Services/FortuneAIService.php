@@ -556,6 +556,11 @@ class FortuneAIService
      *
      * Tag intended ที่ AI ใส่เอง (parser caller จัดการ): [OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE] / [USE_STRIPE]
      * → strip แค่ context tag ของ "input" — ไม่แตะ output tag
+     *
+     * (2026-05-15 audit) เพิ่ม CUSTOMER_PERSONA block — `toAiContextBlock()` ปล่อย header
+     *   `[👤 CUSTOMER_PERSONA — ใช้ปรับ tone เท่านั้น ห้ามอ้างตรงๆ ในคำตอบ]` เป็น system
+     *   directive. AI อาจ echo header นี้กลับมาในคำตอบ (เคสเดียวกับ [TURNOVER_6])
+     *   → strip ด้วย second pattern (emoji optional)
      */
     protected function sanitizeChatResult(array $result): array
     {
@@ -566,6 +571,11 @@ class FortuneAIService
 
         $pattern = '/\[(?:TURNOVER|TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)(?:[_\s][^\]]*)?\]/u';
         $cleaned = preg_replace($pattern, '', $response);
+
+        // (2026-05-15) Strip [👤 CUSTOMER_PERSONA ...] header ถ้า AI หลอน echo
+        //   emoji optional + อนุญาตเนื้อหาภายในยกเว้น ] เพื่อกัน greedy ข้าม line
+        $personaPattern = '/\[(?:👤\s*)?CUSTOMER_PERSONA[^\]]*\]/u';
+        $cleaned = preg_replace($personaPattern, '', $cleaned ?? $response);
 
         if ($cleaned !== null && $cleaned !== $response) {
             // เก็บ whitespace ที่อาจค้างหลัง strip — ลบช่องว่างซ้ำ + trim
