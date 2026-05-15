@@ -1598,20 +1598,54 @@ PROMPT;
             throw new Exception('ไม่มี AI Pool keys สำหรับ chat fallback');
         }
 
+        // 🆕 (2026-05-15) 2-Phase Pool Fallback — Free first, Paid as emergency
+        //   user spec: "ใช้คีย์ฟรีก่อน ถ้าไม่ทันจริงๆ เปลี่ยนคีย์แล้วหลายคีย์ นานเกิน 10s
+        //               ตัดสินใจใช้คีย์เสียเงินแทน ไม่ต้องหมุนในโควต้าฟรี"
+        //
+        // Logic:
+        //   1. แยก keys เป็น free vs paid (โดย pool_key.metadata.tier === 'paid')
+        //   2. Phase 1: free keys — budget 10s OR maxPoolAttempts
+        //   3. Phase 2: paid keys — only เมื่อ Phase 1 fail (paid = emergency, max 2 attempts)
+        $freeKeys = [];
+        $paidKeys = [];
+        foreach ($allKeys as $k) {
+            $tier = '';
+            if (isset($k['pool_key']) && $k['pool_key'] instanceof AiApiKey) {
+                $meta = $k['pool_key']->metadata ?? [];
+                $tier = (string) ($meta['tier'] ?? '');
+            }
+            if ($tier === 'paid') {
+                $paidKeys[] = $k;
+            } else {
+                $freeKeys[] = $k;
+            }
+        }
+
+        Log::debug('FortuneAIService: 2-phase pool fallback split', [
+            'total_keys' => count($allKeys),
+            'free_count' => count($freeKeys),
+            'paid_count' => count($paidKeys),
+        ]);
+
         $errors = [];
         $attempts = 0;
-        foreach ($allKeys as $keyInfo) {
+        $freePhaseBudgetMs = min($totalTimeoutMs, 10000);  // free: 10s ceiling
+        $paidMaxAttempts = 2;
+        $paidAttempts = 0;
+
+        // ─── PHASE 1: Free keys ──────────────────────────────────────────
+        foreach ($freeKeys as $keyInfo) {
             $currentElapsed = $elapsedMs();
-            if ($currentElapsed >= $totalTimeoutMs) {
-                Log::warning('FortuneAIService: Chat pool fallback เกิน budget → หยุด', [
+            if ($currentElapsed >= $freePhaseBudgetMs) {
+                Log::info('FortuneAIService: Phase 1 (free) เกิน 10s → ข้ามไป Phase 2 (paid)', [
                     'elapsed_ms' => $currentElapsed,
-                    'budget_ms' => $totalTimeoutMs,
-                    'attempts_made' => $attempts,
+                    'phase1_budget_ms' => $freePhaseBudgetMs,
+                    'free_attempts_made' => $attempts,
                 ]);
                 break;
             }
             if ($attempts >= $maxPoolAttempts) {
-                Log::info('FortuneAIService: Chat pool fallback ถึง max attempts → หยุด', [
+                Log::info('FortuneAIService: Phase 1 (free) ครบ max attempts → ข้ามไป Phase 2 (paid)', [
                     'attempts_made' => $attempts,
                     'max_attempts' => $maxPoolAttempts,
                 ]);
@@ -1619,50 +1653,96 @@ PROMPT;
             }
 
             $attempts++;
-
-            // 🎯 Phase H — Acquire in-flight slot ก่อนเรียก
             $inflightCache = $this->acquireKeyInflight($keyInfo);
 
             try {
-                $result = match ($keyInfo['provider']) {
-                    'gemini' => empty($history)
-                        ? $this->callChatGemini($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
-                        : $this->callChatGeminiWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
-                    'anthropic' => empty($history)
-                        ? $this->callChatAnthropic($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
-                        : $this->callChatAnthropicWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
-                    default => empty($history)
-                        ? $this->callChatOpenAICompatible($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config)
-                        : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config, $history),
-                };
-
-                // ✅ Success — release + record RPM
+                $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
-                Log::info('FortuneAIService: Pool fallback สำเร็จสำหรับ chat', [
+                Log::info('FortuneAIService: Phase 1 (free) สำเร็จ', [
                     'provider' => $keyInfo['provider'],
-                    'source' => $keyInfo['source'] ?? 'unknown',
                     'name' => $keyInfo['name'] ?? 'unknown',
-                    'score' => $keyInfo['score'] ?? 0,
                     'attempts' => $attempts,
                     'elapsed_ms' => $elapsedMs(),
                 ]);
 
                 return $this->sanitizeChatResult($result);
             } catch (Exception $poolErr) {
-                // ❌ Fail — release + อาจ set cooldown ถ้า 429
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false, $poolErr->getMessage());
-
-                $errors[] = "{$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($poolErr->getMessage(), 0, 100);
+                $errors[] = "FREE {$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($poolErr->getMessage(), 0, 80);
 
                 continue;
             }
         }
 
+        // ─── PHASE 2: Paid keys (emergency fallback) ─────────────────────
+        if (! empty($paidKeys)) {
+            Log::warning('FortuneAIService: Phase 2 — engage PAID keys (free exhausted/slow)', [
+                'free_attempts' => $attempts,
+                'elapsed_before_paid_ms' => $elapsedMs(),
+                'paid_keys_available' => count($paidKeys),
+            ]);
+
+            foreach ($paidKeys as $keyInfo) {
+                if ($paidAttempts >= $paidMaxAttempts) {
+                    break;
+                }
+                if ($elapsedMs() >= $totalTimeoutMs) {
+                    Log::warning('FortuneAIService: Phase 2 (paid) เกิน total budget → หยุด', [
+                        'elapsed_ms' => $elapsedMs(),
+                        'budget_ms' => $totalTimeoutMs,
+                    ]);
+                    break;
+                }
+
+                $paidAttempts++;
+                $inflightCache = $this->acquireKeyInflight($keyInfo);
+
+                try {
+                    $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
+                    $this->releaseKeyInflight($keyInfo, $inflightCache, true);
+
+                    Log::info('FortuneAIService: Phase 2 (PAID) สำเร็จ — emergency fallback', [
+                        'provider' => $keyInfo['provider'],
+                        'name' => $keyInfo['name'] ?? 'unknown',
+                        'free_attempts' => $attempts,
+                        'paid_attempts' => $paidAttempts,
+                        'elapsed_ms' => $elapsedMs(),
+                    ]);
+
+                    return $this->sanitizeChatResult($result);
+                } catch (Exception $paidErr) {
+                    $this->releaseKeyInflight($keyInfo, $inflightCache, false, $paidErr->getMessage());
+                    $errors[] = "PAID {$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($paidErr->getMessage(), 0, 80);
+
+                    continue;
+                }
+            }
+        }
+
         throw new Exception(
-            'AI Chat และ Pool fallback ล้มเหลวหมด (attempts='.$attempts.', elapsed='.$elapsedMs().'ms): '
+            'AI Chat และ Pool fallback ล้มเหลวหมด (free='.$attempts.', paid='.$paidAttempts.', elapsed='.$elapsedMs().'ms): '
             .implode(' | ', array_slice($errors, 0, 3))
         );
+    }
+
+    /**
+     * 🆕 (2026-05-15) Helper: call chat API with a specific pool key
+     * แยกเป็น method เพื่อให้ Phase 1 (free) + Phase 2 (paid) เรียก logic เดียวกัน
+     */
+    protected function callChatWithKey(array $keyInfo, string $prompt, string $systemMessage, array $config, array $history): array
+    {
+        return match ($keyInfo['provider']) {
+            'gemini' => empty($history)
+                ? $this->callChatGemini($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
+                : $this->callChatGeminiWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
+            'anthropic' => empty($history)
+                ? $this->callChatAnthropic($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config)
+                : $this->callChatAnthropicWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $config, $history),
+            default => empty($history)
+                ? $this->callChatOpenAICompatible($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config)
+                : $this->callChatOpenAICompatibleWithHistory($prompt, $systemMessage, $keyInfo['api_key'], $keyInfo['model'], $keyInfo['provider'], $config, $history),
+        };
     }
 
     /**
