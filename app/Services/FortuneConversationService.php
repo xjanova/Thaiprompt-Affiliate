@@ -7448,13 +7448,15 @@ class FortuneConversationService
             // ignore — counter is best-effort
         }
 
-        // Cooldown 30 นาที per user — atomic via Cache::add (return true ถ้า key ยังไม่มี)
+        // 🩹 (2026-05-15) Cooldown ปรับลดลง — ลูกค้าจะไม่รู้สึกถูก ignore นาน
+        //   เดิม: greeting 30 min / substantive 5 min / นอกนั้น silent_skip (เงียบ)
+        //   ใหม่: greeting 10 min / substantive 2 min / นอกนั้น short ack 1 min
+        //         + rotating messages (หลายแบบ) ตามชื่อ user + time bucket
+        //         → ลูกค้าเห็นข้อความไม่ซ้ำ + รู้สึก bot "ฟังอยู่" ตลอด
         $cooldownKey = "fortune:welcome_guide_sent:{$facebookUserId}";
-        if (! Cache::add($cooldownKey, true, 1800)) {
+        if (! Cache::add($cooldownKey, true, 600)) {
             // 🩹 (2026-05-09 audit fix W4) Substantive message bypass — ลูกค้าพิมพ์ข้อความยาว
-            //   อยู่ระหว่าง AI outage จะได้ไม่เจอความเงียบ 30 นาที. fallback cooldown 5 นาที
-            //   ป้องกัน spam แต่ยอมตอบเมื่อ message > greeting
-            //   เคสที่ trigger: "หนูเครียดเรื่องงาน" / "ปีนี้จะรวยไหม" — ไม่ใช่ "สวัสดี"
+            //   อยู่ระหว่าง AI outage จะได้ไม่เจอความเงียบ. fallback cooldown สั้นกว่า
             $cleaned = trim($messageText);
             $charLen = mb_strlen($cleaned);
             $wordCount = $cleaned ? count(preg_split('/\s+/u', $cleaned)) : 0;
@@ -7462,8 +7464,8 @@ class FortuneConversationService
 
             if ($isSubstantive) {
                 $fallbackKey = "fortune:welcome_guide_fallback:{$facebookUserId}";
-                if (Cache::add($fallbackKey, true, 300)) {
-                    Log::info('Fortune: welcome_guide cooldown — substantive message → emit short fallback', [
+                if (Cache::add($fallbackKey, true, 120)) {
+                    Log::info('Fortune: welcome_guide cooldown — substantive message → emit rotating busy message', [
                         'user_id' => $facebookUserId,
                         'char_len' => $charLen,
                         'word_count' => $wordCount,
@@ -7471,16 +7473,32 @@ class FortuneConversationService
 
                     return [
                         'action' => 'welcome_guide_button',
-                        'message' => "🙏 ขอโทษนะคะ ระบบกำลังปรับปรุงชั่วคราว\n\n"
-                            ."แม่หมอจะกลับมาตอบเจ้าชะตาให้เร็วที่สุดค่ะ ✨",
+                        'message' => $this->pickRotatingBusyMessage($facebookUserId),
                         'reading' => null,
                         'show_quick_replies' => true,
                     ];
                 }
             }
 
-            // ภายใน cooldown → silent skip — ไม่ตอบ "สวัสดี" ซ้ำ ไม่กลบแชท
-            Log::info('Fortune: welcome_guide cooldown active → silent skip', [
+            // 🩹 (2026-05-15) แทน silent_skip ด้วย short rotating ack — ลูกค้าจะรู้ว่าบอท "ได้ยิน"
+            //   เดิม: silent_skip ใน cooldown → บอทเงียบ → ลูกค้า งง ทักไปอีกเรื่อยๆ
+            //   ใหม่: short ack หมุนเวียน — cache 60s ต่อ user (กัน spam แต่ตอบทุก 1 นาที)
+            $shortAckKey = "fortune:welcome_guide_short:{$facebookUserId}";
+            if (Cache::add($shortAckKey, true, 60)) {
+                Log::info('Fortune: welcome_guide cooldown — emit short ack', [
+                    'user_id' => $facebookUserId,
+                ]);
+
+                return [
+                    'action' => 'welcome_guide_button',
+                    'message' => $this->pickRotatingShortAck($facebookUserId),
+                    'reading' => null,
+                    'show_quick_replies' => false,
+                ];
+            }
+
+            // อยู่ใน 60s ack cooldown → silent (กัน spam)
+            Log::info('Fortune: welcome_guide short-ack cooldown → silent skip', [
                 'user_id' => $facebookUserId,
             ]);
 
@@ -7491,13 +7509,63 @@ class FortuneConversationService
             ];
         }
 
-        // ครั้งแรกใน 30 นาที → ส่ง greeting ปกติ
+        // ครั้งแรกใน 10 นาที → ส่ง greeting ปกติ
         return [
             'action' => 'welcome_guide_button',
             'message' => $this->buildWelcomeGuideMessage(),
             'reading' => null,
             'show_quick_replies' => true,
         ];
+    }
+
+    /**
+     * 🌙 (2026-05-15) Rotating "busy" messages — ลูกค้าทักเยอะ AI ตอบไม่ทัน
+     *
+     * 7 variants ในเสียงแม่หมอจันทรา — ไม่บอกว่า "ระบบพัง" (ทำให้ลูกค้าตกใจ)
+     * แทนด้วย "ลูกค้าเยอะ" / "พลังจักรวาลหนาแน่น" — โทน warm + on-brand
+     *
+     * Rotate seed: crc32(userId) ^ time_bucket(5min) → ลูกค้าคนเดิมเห็นข้อความใหม่ทุก 5 นาที
+     * ลูกค้าหลายคนเห็นข้อความต่างกันในเวลาเดียวกัน (ป้องกัน batch-feel "ผ่าน script")
+     */
+    protected function pickRotatingBusyMessage(string $userId): string
+    {
+        $variants = [
+            "🌙 ลูกค้าทักแม่หมอมาเยอะมากค่ะ ใจเย็นๆ นะเจ้าชะตา — แม่หมอจะทยอยตอบทีละท่าน 🙏",
+            "✨ ช่วงนี้คนถามดวงเยอะค่ะ แม่หมอกำลังนั่งดูทีละคน — เจ้าชะตารอสักครู่ได้นะคะ 🌙",
+            "🔮 พลังจักรวาลกำลังหนาแน่นค่ะ — มีคนหลายคนทักมาพร้อมกัน แม่หมอจะตอบเจ้าชะตาเร็วที่สุดนะคะ 🙏",
+            "🌸 แม่หมอจันทรากำลังตั้งจิตอ่านไพ่ให้ลูกค้าก่อนหน้าค่ะ — เดี๋ยวจะมาดูดวงให้เจ้าชะตานะคะ ✨",
+            "🌟 ใจเย็นๆ ค่ะเจ้าชะตา — ตอนนี้คิวยาวหน่อย แม่หมอจะส่งคำตอบให้ทันที่สุด 🙏",
+            "🪷 แม่หมอกำลังดูแลลูกค้าอยู่หลายท่านค่ะ — ขออภัยที่ตอบช้า แม่หมอจะทำนายให้เจ้าชะตานะคะ ✨",
+            "🌙 ลูกค้าทักมาพร้อมกันเยอะมากค่ะ แม่หมอกำลังทยอยทำนายให้ทีละท่าน — รอแม่หมอสักครู่นะคะ 🙏",
+        ];
+
+        $bucket = (int) (time() / 300); // 5-min bucket
+        $seed = crc32($userId) ^ $bucket;
+
+        return $variants[$seed % count($variants)];
+    }
+
+    /**
+     * 🌙 (2026-05-15) Rotating short "ack" — ภายใน cooldown แต่ลูกค้าทักซ้ำ
+     *
+     * 6 variants สั้นๆ — แค่ "ได้ยินแล้ว รอสักครู่"
+     * เปลี่ยนทุก 1 นาที + แต่ละ user เห็นข้อความต่างกัน
+     */
+    protected function pickRotatingShortAck(string $userId): string
+    {
+        $variants = [
+            '🙏 รับทราบค่ะ แม่หมอกำลังคิว',
+            '🌙 รอแม่หมอสักครู่นะคะ',
+            '✨ คิวยาวค่ะ ใจเย็นๆ นะเจ้าชะตา',
+            '🪷 รับเรื่องไว้แล้วค่ะ แม่หมอจะตอบนะ',
+            '🌸 ขอเวลาแม่หมอนิดหนึ่งค่ะ',
+            '🔮 แม่หมอเห็นแล้วค่ะ รอสักครู่',
+        ];
+
+        $bucket = (int) (time() / 60); // 1-min bucket
+        $seed = crc32($userId) ^ $bucket;
+
+        return $variants[$seed % count($variants)];
     }
 
     /**
