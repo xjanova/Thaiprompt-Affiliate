@@ -1524,8 +1524,18 @@ class FortuneChannelManager
      */
     protected function getFacebookFallbackQuickReplies(string $action, array $result, bool $offerFortune): array
     {
+        // 🩹 (2026-05-15) Empathy-First Quick Reply Gate — TURN 1-2 ไม่ขึ้นปุ่มดูดวง
+        //   user report: "ลูกค้าพูดยังไม่ได้พูดถึงดูดวง แต่บอทดันปุ่มขายมาทุกข้อความ"
+        //   เดิม: ทุก ai_chat_response แสดงปุ่ม "🔮 ดูดวง" / "💎 ดูดวง" — รู้สึกฮาร์ดเซลตั้งแต่ทักทาย
+        //   ใหม่: TURN < 3 + offer_fortune=false → ไม่ใส่ปุ่ม (AI Empathy-First Protocol)
+        //         TURN ≥ 3 หรือ offer_fortune=true → แสดงปุ่มตามเดิม (rapport built แล้ว)
+        $turnCount = (int) ($result['turn_count'] ?? 0);
+        $earlyEmpathyTurn = ! $offerFortune && $turnCount > 0 && $turnCount < 3;
+
         return match ($action) {
-            'ai_chat_response' => $offerFortune
+            'ai_chat_response' => $earlyEmpathyTurn
+                ? []
+                : ($offerFortune
                 ? [
                     ['content_type' => 'text', 'title' => '🔮 เริ่มดูดวง', 'payload' => 'START_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
@@ -1535,7 +1545,7 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'START_FORTUNE'],
                     ['content_type' => 'text', 'title' => '💎 ดูดวง', 'payload' => 'DEEP_FORTUNE'],
                     // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน
-                ],
+                ]),
 
             // PAID stuck → เช็คสถานะ + คุยกับแม่หมอ
             'processing' => ($result['is_stuck'] ?? false)
@@ -3787,6 +3797,13 @@ class FortuneChannelManager
         if (! $offerFortune && mb_strpos($message, '[OFFER_FORTUNE]') !== false) {
             $offerFortune = true;
             $message = trim(str_replace('[OFFER_FORTUNE]', '', $message));
+        }
+
+        // 🩹 (2026-05-15) Empathy-First Quick Reply Gate — TURN 1-2 ไม่ขึ้นปุ่มดูดวง
+        //   เหตุผลเดียวกับ FB fallback — ลูกค้ายังไม่ได้พูดถึงดูดวง ไม่ควรเห็นปุ่มขาย
+        $turnCount = (int) ($result['turn_count'] ?? 0);
+        if (! $offerFortune && $turnCount > 0 && $turnCount < 3) {
+            return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
         }
 
         return $this->sendLineMessageWithQuickReply(

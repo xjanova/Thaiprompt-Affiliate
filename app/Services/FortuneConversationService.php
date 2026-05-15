@@ -1585,7 +1585,13 @@ class FortuneConversationService
 
                         // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที (ก่อน AI chat)
                         //   ถ้าให้ AI ตอบ — AI อาจไม่บอกราคาชัด หรือพยายามชวนแชทโดยไม่บอก
+                        //   🩹 (2026-05-15) ใช้ 2-tier detection — กัน false positive จาก "เท่าไหร่" generic
                         if ($this->looksLikePricingQuestion($messageText)) {
+                            Log::info('Fortune: pricing menu trigger (basic_done)', [
+                                'user_id' => $facebookUserId,
+                                'text_preview' => mb_substr($messageText, 0, 80),
+                            ]);
+
                             return $this->presentPricingMenu();
                         }
 
@@ -1779,7 +1785,13 @@ class FortuneConversationService
                 }
 
                 // 💰 (2026-05-08) ลูกค้าถามราคา → ส่ง pricing menu ทันที
+                //   🩹 (2026-05-15) ใช้ 2-tier detection — กัน false positive จาก "เท่าไหร่" generic
                 if ($this->looksLikePricingQuestion($messageText)) {
+                    Log::info('Fortune: pricing menu trigger (no active conv)', [
+                        'user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 80),
+                    ]);
+
                     return $this->presentPricingMenu();
                 }
 
@@ -9529,20 +9541,71 @@ class FortuneConversationService
             return false;
         }
 
-        $pricingPatterns = [
-            'ราคา', 'ราคาเท่าไร', 'ราคาเท่าไหร่', 'ราคากี่',
-            'เท่าไร', 'เท่าไหร่', 'กี่บาท', 'กี่ตังค์',
-            'ค่าครู', 'ค่าใช้จ่าย', 'ค่าบริการ', 'ค่าดู', 'ค่าดูดวง', 'ค่าทำนาย',
-            'อัตรา', 'แพคเกจ', 'แพ็คเกจ', 'แพ็กเกจ', 'package',
-            'คิดเงิน', 'คิดเท่าไร', 'คิดเท่าไหร่', 'จ่ายเท่าไร', 'จ่ายเท่าไหร่',
-            'มีกี่แบบ', 'กี่แพ็ค', 'กี่แบบ', 'ราคากี่บาท',
-            'how much', 'price', 'cost',
+        // 🩹 (2026-05-15) 2-tier detection — กัน false positive
+        //   user report: "ลูกค้าตั้งคำถามทั่วไป แต่บอทรีบส่งกล่องราคา"
+        //   เคสที่พังเดิม: "อายุเท่าไหร่", "ลงทุนเท่าไหร่ดี", "ค่าใช้จ่ายเรียนแพง"
+        //   → 'เท่าไหร่' / 'ค่าใช้จ่าย' match กว้างเกิน → trigger pricing menu ผิด
+        //
+        // ✅ Tier 1 (STRONG): คำที่ unambiguous เฉพาะดูดวง → fire ทันที
+        $strongPatterns = [
+            // คำเฉพาะของหมอดู
+            'ค่าครู', 'ค่าดูดวง', 'ค่าทำนาย', 'ค่าหมอดู',
+            'ราคาดูดวง', 'ราคาทำนาย', 'ราคาหมอดู',
+            'อัตราค่าดูดวง', 'อัตราดูดวง', 'อัตราทำนาย',
+            // ดูดวง + ราคา (พิมพ์ติดกัน)
+            'ดูดวงเท่าไร', 'ดูดวงเท่าไหร่', 'ดูดวงกี่บาท', 'ดูดวงกี่ตังค์',
+            'ทำนายเท่าไร', 'ทำนายเท่าไหร่', 'ทำนายกี่บาท',
+            // แพคเกจ + ดูดวง
+            'แพคเกจดูดวง', 'แพ็คเกจดูดวง', 'แพ็กเกจดูดวง',
+            // English specific
+            'fortune price', 'fortune cost', 'reading price',
             // 🇱🇦 Lao
-            'ລາຄາ', 'ເທົ່າໃດ', 'ກີບ', 'ບາດ', 'ຄ່າຄູ',
+            'ຄ່າຄູ', 'ຄ່າເບິ່ງດວງ', 'ຄ່າທຳນາຍ',
         ];
 
-        foreach ($pricingPatterns as $pattern) {
+        foreach ($strongPatterns as $pattern) {
             if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+
+        // ✅ Tier 2 (WEAK): pricing word ทั่วไป — ต้องคู่กับ fortune-service word
+        $genericPricing = [
+            'ราคา', 'ราคาเท่าไร', 'ราคาเท่าไหร่', 'ราคากี่',
+            'เท่าไร', 'เท่าไหร่', 'กี่บาท', 'กี่ตังค์',
+            'คิดเงิน', 'คิดเท่าไร', 'คิดเท่าไหร่', 'จ่ายเท่าไร', 'จ่ายเท่าไหร่',
+            'มีกี่แบบ', 'กี่แพ็ค', 'กี่แบบ',
+            'how much', 'price', 'cost',
+            // 🇱🇦 Lao
+            'ລາຄາ', 'ເທົ່າໃດ',
+        ];
+
+        $hasPricing = false;
+        foreach ($genericPricing as $pattern) {
+            if (str_contains($text, $pattern)) {
+                $hasPricing = true;
+                break;
+            }
+        }
+
+        if (! $hasPricing) {
+            return false;
+        }
+
+        // ต้องมีคำ fortune-service (intent) ในข้อความเดียวกัน
+        // ⚠️ ใช้ลิสต์ "intent" แคบ — ไม่รวมหัวข้อทั่วไป (ความรัก/งาน/เงิน)
+        //    เพราะลูกค้าอาจถาม "ลงทุนเท่าไหร่ดี" = chat ทั่วไป ไม่ใช่ขอราคา
+        $fortuneServiceContext = [
+            'ดูดวง', 'ทำนาย', 'หมอดู', 'แม่หมอ', 'หมอจันทรา',
+            'ไพ่', 'ทาโรต์', 'celtic', 'เซลติก',
+            'แพคเกจ', 'แพ็คเกจ', 'แพ็กเกจ', 'package',
+            'บริการ',
+            // 🇱🇦 Lao
+            'ເບິ່ງດວງ', 'ທຳນາຍ', 'ຫມໍດູ', 'ໄພ່',
+        ];
+
+        foreach ($fortuneServiceContext as $context) {
+            if (str_contains($text, $context)) {
                 return true;
             }
         }
