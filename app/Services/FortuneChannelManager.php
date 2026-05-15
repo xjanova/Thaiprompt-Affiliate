@@ -577,11 +577,22 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '❌ ไม่ใช่', 'payload' => 'FUZZY_CONFIRM_NO'],
                 ], $extra),
 
-                // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย
+                // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย (legacy pattern)
                 'cancel_reason_prompt' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🆘 โอนไม่เป็น', 'payload' => 'CANCEL_HELP_TRANSFER'],
                     ['content_type' => 'text', 'title' => '💬 คุยกับแอดมิน', 'payload' => 'CANCEL_HELP_ADMIN'],
                     ['content_type' => 'text', 'title' => '❌ ยกเลิกจริง', 'payload' => 'CANCEL_CONFIRM_REAL'],
+                ], $extra),
+
+                // 🛑 (2026-05-15 v2) AI-driven cancel dialogue — ไม่ต้องมี Quick Reply (ให้ลูกค้าพิมพ์อิสระ)
+                //   AI ฟัง + decide ตีความเจตนาจริง
+                //   มี escape hatch: "ยืนยันยกเลิก" (พิมพ์เอง)
+                'cancel_dialog_ask', 'cancel_dialog_continue' => $fbService->sendMessage($userId, $message, $extra),
+
+                // 🛑 (2026-05-15 v2) ยกเลิก + กลับเข้า normal chat
+                'cancelled_to_chat' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'START_FORTUNE'],
+                    ['content_type' => 'text', 'title' => '💬 คุยกับแม่หมอ', 'payload' => 'TALK_ADMIN'],
                 ], $extra),
 
                 'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $fbService->sendQuickReplies($userId, $message, [
@@ -1741,13 +1752,25 @@ class FortuneChannelManager
                     ['label' => '❌ ไม่ใช่', 'text' => 'ไม่ใช่ของฉัน'],
                 ]),
 
-                // 🛑 (2026-05-15) ถามก่อนยกเลิก — กันลูกค้าหายเพราะติดปัญหาเล็กน้อย
+                // 🛑 (2026-05-15) ถามก่อนยกเลิก (legacy pattern)
                 'cancel_reason_prompt' => $this->sendLineMessageWithQuickReply(
                     $lineService, $userId, $message, $replyToken,
                     $result['quick_reply_options'] ?? [
                         ['label' => '🆘 โอนไม่เป็น', 'text' => 'ขอเลขบัญชี'],
                         ['label' => '💬 คุยกับแอดมิน', 'text' => 'คุยกับแม่หมอ'],
                         ['label' => '❌ ยกเลิกจริง', 'text' => 'ยืนยันยกเลิก'],
+                    ]
+                ),
+
+                // 🛑 (2026-05-15 v2) AI-driven cancel dialogue — text only, no Quick Reply
+                'cancel_dialog_ask', 'cancel_dialog_continue' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+
+                // 🛑 (2026-05-15 v2) ยกเลิก + กลับเข้า normal chat
+                'cancelled_to_chat' => $this->sendLineMessageWithQuickReply(
+                    $lineService, $userId, $message, $replyToken,
+                    [
+                        ['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง'],
+                        ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                     ]
                 ),
 

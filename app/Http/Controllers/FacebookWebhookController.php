@@ -1847,6 +1847,8 @@ class FacebookWebhookController extends Controller
             'CANCEL_HELP_TRANSFER' => $this->processConversationalMessage($senderId, 'ขอเลขบัญชี'),
             'CANCEL_HELP_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
             'CANCEL_CONFIRM_REAL' => $this->processConversationalMessage($senderId, 'ยืนยันยกเลิก'),
+            // 🛑 (2026-05-15 v2) cancelled_to_chat → ปุ่ม "คุยกับแม่หมอ"
+            'TALK_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             // 📅 (2026-05-01) ทวนวันเกิด — confirm/reject buttons → ส่ง keyword ที่ handler รับได้
@@ -3079,6 +3081,8 @@ class FacebookWebhookController extends Controller
             'CANCEL_HELP_TRANSFER' => $this->processConversationalMessage($senderId, 'ขอเลขบัญชี'),
             'CANCEL_HELP_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
             'CANCEL_CONFIRM_REAL' => $this->processConversationalMessage($senderId, 'ยืนยันยกเลิก'),
+            // 🛑 (2026-05-15 v2) cancelled_to_chat → ปุ่ม "คุยกับแม่หมอ"
+            'TALK_ADMIN' => $this->processConversationalMessage($senderId, 'คุยกับแม่หมอ'),
             'SHOW_BANK_ACCOUNT' => $this->processConversationalMessage($senderId, 'แสดงบัญชี'),
             'CANCEL_DEEP' => $this->processConversationalMessage($senderId, 'ไม่ต้องการ'),
             // 🛠️ (2026-05-01) CANCEL_FORTUNE จาก tier menu — pre-existing payload ไม่เคยมี handler

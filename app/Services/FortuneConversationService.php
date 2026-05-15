@@ -611,6 +611,40 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🛑 (2026-05-15 v2) Cancel Dialogue Early Route — AI-driven
+            // ═══════════════════════════════════════════════════════════════
+            //   ถ้าลูกค้าอยู่ใน cancel dialogue (cache มี) → handle ก่อน flow อื่น
+            //   - ลูกค้าพิมพ์ "ยกเลิก" ซ้ำ → confirm cancel ทันที (ไม่ต้อง AI)
+            //   - ลูกค้าพิมพ์อื่นๆ → ส่งให้ AI ตีความ + decide
+            try {
+                $cancelPlatform = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
+                $cancelDialogKey = "fortune:cancel_dialog:{$cancelPlatform}:{$facebookUserId}";
+                if (Cache::has($cancelDialogKey)) {
+                    // shortcut: ลูกค้าพิมพ์ "ยกเลิก" ซ้ำในระหว่าง dialog → confirm ทันที
+                    if ($this->isCancelRequest($messageText)) {
+                        $dialogState = Cache::get($cancelDialogKey);
+                        Cache::forget($cancelDialogKey);
+                        if (! empty($dialogState['reading_id'])) {
+                            $cancelReading = FortuneReading::find($dialogState['reading_id']);
+                            if ($cancelReading) {
+                                return $this->executeCancelAndReturnToChat($cancelReading, 'repeated_cancel');
+                            }
+                        }
+                    }
+
+                    // ส่งต่อให้ AI dialogue handler
+                    $cancelDialogResult = $this->tryHandleCancelDialogue($cancelPlatform, $facebookUserId, $messageText, $userProfile);
+                    if ($cancelDialogResult !== null) {
+                        return $cancelDialogResult;
+                    }
+                }
+            } catch (\Throwable $cancelDialogErr) {
+                Log::debug('Fortune: cancel dialogue early-route fail (non-blocking)', [
+                    'error' => $cancelDialogErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🔍 (2026-05-15) Fuzzy Payment Confirmation Early Route
             // ═══════════════════════════════════════════════════════════════
             //   ถ้าลูกค้ามี pending fuzzy match (เคยถาม "ใช่ของฉันไหม") + ตอบ ใช่/ไม่ใช่
@@ -1461,8 +1495,8 @@ class FortuneConversationService
                             ]);
 
                             if (! $hasAsked && ! $explicitConfirm) {
-                                // ถามก่อนยกเลิก (1st attempt)
-                                return $this->presentCancelReasonPrompt($activeReading);
+                                // เข้า cancel dialogue (AI-driven)
+                                return $this->enterCancelDialogue($activeReading);
                             }
 
                             // มี cache flag หรือ explicit confirm → ดำเนินการ cancel ปกติ
@@ -4150,7 +4184,7 @@ class FortuneConversationService
                 ]);
 
                 if (! $hasAsked && ! $explicitConfirm) {
-                    return $this->presentCancelReasonPrompt($reading);
+                    return $this->enterCancelDialogue($reading);
                 }
 
                 if (! empty($userKey)) {
@@ -9836,31 +9870,51 @@ class FortuneConversationService
      * เคสที่เจอ: ลูกค้าเก่าโอน slip หาย / สแกน QR ไม่ได้ / ต้องการบัญชีไว้โอนเอง
      */
     /**
-     * 🛑 (2026-05-15) ถามลูกค้าก่อนยกเลิก — กันบิลค้างเสีย โดยสอบถามปัญหาก่อน
+     * 🛑 (2026-05-15 v2) AI-driven Cancel Dialogue — ถามลูกค้าก่อนยกเลิกแบบสนทนาจริง
      *
-     * เคสที่ใช้: ลูกค้าอยู่ pending_payment + กด "ยกเลิก" / พิมพ์ "ยกเลิก"
-     *   เดิม: ตัดบิลทันที → ลูกค้าหาย (อาจติดปัญหาแค่ "โอนไม่เป็น")
-     *   ใหม่: ถาม "ติดปัญหาอะไร?" + Quick Reply 3 ตัวเลือก
-     *     - 🆘 โอนไม่เป็น → presentPaymentInfo
-     *     - 💬 คุยกับแอดมิน → admin handover
-     *     - ❌ ยืนยันยกเลิก → ยกเลิกจริง
+     * user spec:
+     *   "ถามเหตุผล ทำไมยกเลิก แล้วให้เอไอเข้ามาถามคุยเพื่อหาปัญหา ตามจริง ไม่ใช่แพทเทิร์น
+     *    แล้วบอทต้องเข้าใจว่าลูกต้องการให้ช่วยอะไร บอทก็จะพาไปแก้ปัญหา
+     *    แต่ถ้าโน้มน้าวแล้ว ลูกค้าเหมือนจะเริ่มรำคาญจะยกเลิก ให้ได้ ก็ให้ยืนยันแล้วยกเลิก
+     *    ตัดเข้าการสนทนาปกติ"
      *
-     * Cache flag: fortune:cancel_pending:{platform}:{userId} TTL 10 min
+     * Flow:
+     *   1. enterCancelDialogue() — set cache + AI ส่งคำถามเปิด (รอบ 1)
+     *   2. tryHandleCancelDialogue() — early-route ถัดมา → AI ฟัง + decide
+     *   3. AI tags ที่ parse:
+     *      - [HELP_TRANSFER] → presentPaymentInfo
+     *      - [ROUTE_ADMIN]   → AI message + guide ให้พิมพ์ "คุยกับแม่หมอ"
+     *      - [ACCEPT_CANCEL] → executeCancelAndReturnToChat
+     *      - [KEEP_BILL]     → ลูกค้าเปลี่ยนใจ → clear cache + กลับ flow ปกติ
+     *      - (no tag)        → keep asking (max 3 rounds, then force ACCEPT_CANCEL)
+     *   4. Annoyance detection:
+     *      - keyword: "พอแล้ว"/"ปล่อย"/"รำคาญ"/"!!" → force ACCEPT_CANCEL
+     *      - round ≥ 3 → force ACCEPT_CANCEL (ไม่กดดัน)
+     *
+     * Cache: fortune:cancel_dialog:{platform}:{userId} TTL 15 min
      */
-    protected function presentCancelReasonPrompt(FortuneReading $reading): array
+    protected function enterCancelDialogue(FortuneReading $reading): array
     {
         $platform = $reading->platform ?? ($this->currentPlatform ?? 'facebook');
         $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? $reading->platform_user_id ?? '';
 
         if (! empty($userId)) {
             Cache::put(
-                "fortune:cancel_pending:{$platform}:{$userId}",
-                ['reading_id' => $reading->id, 'asked_at' => now()->toIso8601String()],
-                now()->addMinutes(10)
+                "fortune:cancel_dialog:{$platform}:{$userId}",
+                [
+                    'reading_id' => $reading->id,
+                    'rounds' => 1,
+                    'reasons' => [],
+                    'started_at' => now()->toIso8601String(),
+                    'bill_ref' => $reading->bill_reference,
+                ],
+                now()->addMinutes(15)
             );
         }
 
-        Log::info('Fortune: ถามลูกค้าก่อนยกเลิกบิล', [
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+        Log::info('Fortune: เข้า cancel dialogue (AI-driven)', [
             'reading_id' => $reading->id,
             'platform' => $platform,
             'user_id' => $userId,
@@ -9868,15 +9922,298 @@ class FortuneConversationService
         ]);
 
         return [
-            'action' => 'cancel_reason_prompt',
-            'message' => "🙏 *รอสักครู่ค่ะ — เจ้าชะตาติดปัญหาอะไรไหมคะ?*\n\n"
-                ."แม่หมอช่วยได้นะ — เลือกข้อที่ตรงกับเจ้าชะตา 👇",
+            'action' => 'cancel_dialog_ask',
+            'message' => "🙏 รอสักครู่นะคะ คุณ{$name}\n\n"
+                ."ก่อนยกเลิก — แม่หมอขอถามได้ไหมคะ เกิดอะไรขึ้น?\n"
+                ."ลูกค้าหลายคนติดปัญหานิดเดียว แต่แม่หมอช่วยได้นะ ✨\n\n"
+                ."_(พิมพ์ \"ยืนยันยกเลิก\" ถ้าต้องการยกเลิกแน่นอน)_",
             'reading' => $reading,
-            'quick_reply_options' => [
-                ['label' => '🆘 โอนไม่เป็น', 'text' => 'ขอเลขบัญชี'],
-                ['label' => '💬 คุยกับแอดมิน', 'text' => 'คุยกับแม่หมอ'],
-                ['label' => '❌ ยกเลิกจริง', 'text' => 'ยืนยันยกเลิก'],
-            ],
+        ];
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) Handle cancel dialogue — AI listens, parses tags, decides action
+     */
+    protected function tryHandleCancelDialogue(string $platform, string $userId, string $messageText, ?array $userProfile = null): ?array
+    {
+        try {
+            $cacheKey = "fortune:cancel_dialog:{$platform}:{$userId}";
+            $state = Cache::get($cacheKey);
+            if (! $state) {
+                return null;
+            }
+
+            $reading = FortuneReading::find($state['reading_id'] ?? 0);
+            if (! $reading) {
+                Cache::forget($cacheKey);
+
+                return null;
+            }
+
+            // Explicit confirm bypass
+            $isExplicitConfirm = $this->matchesExactKeyword($messageText, [
+                'ยืนยันยกเลิก', 'ยกเลิกจริง', 'ยกเลิกจริงๆ', 'ยกเลิกแน่นอน',
+                'confirm cancel', 'cancel confirm',
+            ]);
+            if ($isExplicitConfirm) {
+                Cache::forget($cacheKey);
+
+                return $this->executeCancelAndReturnToChat($reading, 'explicit_confirm');
+            }
+
+            // Annoyance + max rounds force-accept
+            $isAnnoyed = $this->detectsAnnoyance($messageText);
+            $round = (int) ($state['rounds'] ?? 1);
+            if ($isAnnoyed || $round >= 3) {
+                Log::info('Fortune: cancel dialogue → force accept (annoyed or max rounds)', [
+                    'reading_id' => $reading->id,
+                    'round' => $round,
+                    'annoyed' => $isAnnoyed,
+                ]);
+                Cache::forget($cacheKey);
+
+                return $this->executeCancelAndReturnToChat(
+                    $reading,
+                    $isAnnoyed ? 'annoyed' : 'max_rounds'
+                );
+            }
+
+            // ─── เรียก AI → ตีความเจตนา + ใส่ tag ──────────────────
+            $pastReasons = array_slice($state['reasons'] ?? [], -3);
+            $aiReply = $this->callCancelDialogueAI($reading, $messageText, $pastReasons, $round, $userProfile);
+
+            if (empty($aiReply)) {
+                Log::warning('Fortune: cancel dialogue AI failed → fallback accept', [
+                    'reading_id' => $reading->id,
+                ]);
+                Cache::forget($cacheKey);
+
+                return $this->executeCancelAndReturnToChat($reading, 'ai_failed');
+            }
+
+            $tag = $this->parseCancelDialogueTag($aiReply);
+            $cleanMessage = $this->stripCancelDialogueTags($aiReply);
+
+            $state['reasons'][] = "R{$round}: ".mb_substr($messageText, 0, 80);
+            $state['rounds'] = $round + 1;
+
+            if ($tag === 'HELP_TRANSFER') {
+                Log::info('Fortune: cancel dialogue → HELP_TRANSFER', ['reading_id' => $reading->id]);
+                Cache::forget($cacheKey);
+                $info = $this->presentPaymentInfo();
+                $info['message'] = $cleanMessage."\n\n".($info['message'] ?? '');
+
+                return $info;
+            }
+
+            if ($tag === 'ACCEPT_CANCEL') {
+                Log::info('Fortune: cancel dialogue → ACCEPT_CANCEL', ['reading_id' => $reading->id]);
+                Cache::forget($cacheKey);
+                $cancelResult = $this->executeCancelAndReturnToChat($reading, 'ai_accept');
+                if (! empty($cleanMessage)) {
+                    $cancelResult['message'] = $cleanMessage."\n\n".$cancelResult['message'];
+                }
+
+                return $cancelResult;
+            }
+
+            if ($tag === 'KEEP_BILL') {
+                Log::info('Fortune: cancel dialogue → KEEP_BILL', ['reading_id' => $reading->id]);
+                Cache::forget($cacheKey);
+
+                return [
+                    'action' => 'cancel_dialog_continue',
+                    'message' => $cleanMessage,
+                    'reading' => $reading,
+                ];
+            }
+
+            if ($tag === 'ROUTE_ADMIN') {
+                Log::info('Fortune: cancel dialogue → ROUTE_ADMIN', ['reading_id' => $reading->id]);
+                Cache::forget($cacheKey);
+                $msg = $cleanMessage."\n\n_พิมพ์ \"คุยกับแม่หมอ\" เพื่อแจ้งแอดมิน_";
+
+                return [
+                    'action' => 'cancel_dialog_continue',
+                    'message' => $msg,
+                    'reading' => $reading,
+                ];
+            }
+
+            // No tag → keep dialoguing
+            Cache::put($cacheKey, $state, now()->addMinutes(15));
+
+            return [
+                'action' => 'cancel_dialog_continue',
+                'message' => $cleanMessage,
+                'reading' => $reading,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: tryHandleCancelDialogue failed', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) Detect "ลูกค้ารำคาญ/ยืนยัน" → force accept cancel
+     */
+    protected function detectsAnnoyance(string $text): bool
+    {
+        $normalized = $this->normalizeUserInput($text);
+        if ($normalized === '') {
+            return false;
+        }
+
+        $patterns = [
+            'พอแล้ว', 'พอที', 'ปล่อย', 'อย่ายุ่ง',
+            'บอกแล้วว่า', 'ก็บอกแล้ว', 'บอกไปแล้ว',
+            'หยุด', 'หยุดเถอะ', 'หยุดที',
+            'รำคาญ', 'รำคาญแล้ว',
+            'ก็เลิก', 'ก็ไม่เอา',
+        ];
+        foreach ($patterns as $p) {
+            if (str_contains($normalized, $p)) {
+                return true;
+            }
+        }
+
+        // Multiple exclamation = อารมณ์ร้อน
+        if (substr_count($text, '!') >= 3) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) เรียก AI ใน cancel dialog mode — chatWithCustomSystemPrompt
+     */
+    protected function callCancelDialogueAI(FortuneReading $reading, string $messageText, array $pastReasons, int $round, ?array $userProfile = null): string
+    {
+        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+        $bill = $reading->bill_reference ?? '-';
+        $reasonsText = empty($pastReasons) ? '(เพิ่งเริ่มสนทนา)' : implode("\n", $pastReasons);
+
+        $systemPrompt = <<<PROMPT
+คุณคือ "แม่หมอจันทรา" หมอดูที่ empathy + อบอุ่น
+ลูกค้าชื่อ: {$name}
+บิล: {$bill}
+
+ลูกค้าจะยกเลิกบิล — ตอนนี้รอบที่ {$round}/3 ของการสนทนา
+
+เหตุผลที่ลูกค้าให้มาก่อนหน้า:
+{$reasonsText}
+
+ลูกค้าเพิ่งพิมพ์: "{$messageText}"
+
+ภารกิจ:
+1. ฟังลูกค้าจริงๆ ไม่กดดัน
+2. ถ้าเข้าใจว่าลูกค้าติดปัญหาที่แก้ได้ — ใส่ tag เหมาะสมท้ายข้อความ:
+   - [HELP_TRANSFER] = ลูกค้าโอนไม่เป็น/qr ไม่ขึ้น/ไม่เข้าใจวิธีโอน/พร้อมเพย์ไม่ได้
+   - [ROUTE_ADMIN]   = ลูกค้าต้องการคุยกับแอดมิน/คนจริง
+3. ถ้าลูกค้ายืนยันชัด/ดูรำคาญ/ไม่อยากต่อ — ใส่ [ACCEPT_CANCEL]
+4. ถ้าลูกค้าเหมือนเปลี่ยนใจอยากดูดวงต่อ — ใส่ [KEEP_BILL]
+5. ถ้ายังไม่ชัด — ถาม 1 คำถามอย่างเบาๆ (อย่ายืดเยื้อ ไม่ขายตรง)
+
+กฎ:
+- ตอบ 1-2 ประโยคเท่านั้น (กระชับ)
+- ใส่ tag 1 ตัวท้ายข้อความ (หรือไม่ใส่ถ้าจะถามต่อ)
+- ห้ามอธิบายภาษาอังกฤษ ห้ามอธิบายเทคโนโลยี
+- น้ำเสียงอบอุ่น สุภาพ ไม่กดดัน
+
+ตัวอย่าง:
+ลูกค้า: "โอนไม่เป็น"
+ตอบ: "ไม่ต้องห่วงค่ะเจ้าชะตา แม่หมอช่วยได้นะ — ลองดูข้อมูลโอนนี้เลยนะคะ ✨ [HELP_TRANSFER]"
+
+ลูกค้า: "ไม่อยากแล้ว ยืนยัน"
+ตอบ: "เข้าใจค่ะ ขอบคุณที่บอกแม่หมอ — เก็บบิลให้นะคะ 🙏 [ACCEPT_CANCEL]"
+
+ลูกค้า: "ไม่รู้สิ"
+ตอบ: "ไม่เป็นไรค่ะ บอกแม่หมอได้ — กังวลเรื่องราคา หรือยังไม่ค่อยพร้อมคะ?"
+
+ลูกค้า: "อยากคุยกับคน"
+ตอบ: "ได้เลยค่ะ แม่หมอเรียกแอดมินให้เลย 🙏 [ROUTE_ADMIN]"
+
+ลูกค้า: "เปลี่ยนใจแล้ว อยากดูต่อ"
+ตอบ: "ดีใจที่เจ้าชะตาเปลี่ยนใจค่ะ ✨ บิลยังอยู่ — โอนเมื่อสะดวกนะคะ [KEEP_BILL]"
+PROMPT;
+
+        try {
+            $aiService = new \App\Services\FortuneAIService($this->settings);
+            $result = $aiService->chatWithCustomSystemPrompt(
+                $systemPrompt,
+                $messageText,
+                ['temperature' => 0.6, 'max_tokens' => 200]
+            );
+
+            return trim($result['response'] ?? '');
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: callCancelDialogueAI failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) Parse cancel dialogue tag จาก AI response
+     */
+    protected function parseCancelDialogueTag(string $text): ?string
+    {
+        $tags = ['HELP_TRANSFER', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
+        foreach ($tags as $t) {
+            if (str_contains($text, "[{$t}]")) {
+                return $t;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) Strip tags ออกจาก AI response ก่อนส่งให้ลูกค้า
+     */
+    protected function stripCancelDialogueTags(string $text): string
+    {
+        $tags = ['HELP_TRANSFER', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
+        foreach ($tags as $t) {
+            $text = str_replace("[{$t}]", '', $text);
+        }
+
+        return trim(preg_replace('/\s+/u', ' ', $text));
+    }
+
+    /**
+     * 🛑 (2026-05-15 v2) Execute cancel + ข้อความอบอุ่น + กลับเข้า normal chat
+     */
+    protected function executeCancelAndReturnToChat(FortuneReading $reading, string $reason = 'user_dialog'): array
+    {
+        $userId = $reading->facebook_user_id ?: ($reading->line_user_id ?: $reading->platform_user_id);
+        if (! empty($userId)) {
+            $this->closeAllActiveConversations($userId);
+        } else {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+        }
+
+        Log::info('Fortune: ยกเลิกบิลผ่าน cancel dialogue', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'reason' => $reason,
+        ]);
+
+        return [
+            'action' => 'cancelled_to_chat',
+            'message' => "🙏 ยกเลิกบิลให้แล้วค่ะ\n\n"
+                ."ถ้าเจ้าชะตามีอะไรอยากปรึกษา แม่หมออยู่ตรงนี้นะคะ ✨\n"
+                ."_พิมพ์ \"ดูดวง\" เมื่อพร้อมเริ่มใหม่_",
+            'reading' => $reading,
         ];
     }
 
