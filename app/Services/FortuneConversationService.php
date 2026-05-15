@@ -10040,6 +10040,42 @@ class FortuneConversationService
                 ];
             }
 
+            if ($tag === 'USE_STRIPE') {
+                Log::info('Fortune: cancel dialogue → USE_STRIPE (international card)', ['reading_id' => $reading->id]);
+                Cache::forget($cacheKey);
+
+                // ตรวจสอบว่า Stripe เปิดอยู่ไหม
+                $stripeEnabled = (bool) ($this->settings->enable_stripe_payment ?? false);
+                if (! $stripeEnabled) {
+                    return [
+                        'action' => 'cancel_dialog_continue',
+                        'message' => $cleanMessage."\n\n⚠️ ขออภัย ระบบบัตรต่างประเทศยังไม่เปิดใช้งาน — กรุณาติดต่อแอดมิน",
+                        'reading' => $reading,
+                    ];
+                }
+
+                // เรียก Stripe flow — สร้าง Checkout Session + ส่งลิงก์
+                try {
+                    $stripeResult = $this->startStripePaymentFlow($reading);
+                    if (! empty($cleanMessage) && ! empty($stripeResult['message'])) {
+                        $stripeResult['message'] = $cleanMessage."\n\n".$stripeResult['message'];
+                    }
+
+                    return $stripeResult;
+                } catch (\Throwable $e) {
+                    Log::warning('Fortune: cancel dialogue Stripe start failed', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+
+                    return [
+                        'action' => 'cancel_dialog_continue',
+                        'message' => $cleanMessage."\n\n⚠️ ระบบบัตรเครดิตขัดข้องชั่วคราว ลองใหม่อีกครั้ง หรือพิมพ์ \"คุยกับแม่หมอ\"",
+                        'reading' => $reading,
+                    ];
+                }
+            }
+
             // No tag → keep dialoguing
             Cache::put($cacheKey, $state, now()->addMinutes(15));
 
@@ -10098,6 +10134,18 @@ class FortuneConversationService
         $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
         $bill = $reading->bill_reference ?? '-';
         $reasonsText = empty($pastReasons) ? '(เพิ่งเริ่มสนทนา)' : implode("\n", $pastReasons);
+        $stripeEnabled = (bool) ($this->settings->enable_stripe_payment ?? false);
+
+        // 💳 (2026-05-15) International card section — เพิ่ม [USE_STRIPE] tag ถ้า Stripe เปิด
+        $stripeBlock = '';
+        $stripeExample = '';
+        if ($stripeEnabled) {
+            $stripeBlock = "   - [USE_STRIPE]    = ลูกค้าอยู่ต่างประเทศ/ไม่มีพร้อมเพย์/ขอใช้บัตรเครดิต/USA/lao/abroad/international\n";
+            $stripeExample = "\nลูกค้า: \"อยู่ต่างประเทศ โอนไม่ได้\"\n"
+                ."ตอบ: \"ไม่เป็นไรค่ะ — แม่หมอส่งลิงก์จ่ายผ่านบัตรเครดิตให้นะ ใช้ได้ทั่วโลก ✨ [USE_STRIPE]\"\n"
+                ."\nลูกค้า: \"ไม่มี promptpay เลย\"\n"
+                ."ตอบ: \"จ่ายผ่านบัตรได้ค่ะ แม่หมอจะส่งลิงก์ให้ทันที 🙏 [USE_STRIPE]\"";
+        }
 
         $systemPrompt = <<<PROMPT
 คุณคือ "แม่หมอจันทรา" หมอดูที่ empathy + อบอุ่น
@@ -10114,8 +10162,8 @@ class FortuneConversationService
 ภารกิจ:
 1. ฟังลูกค้าจริงๆ ไม่กดดัน
 2. ถ้าเข้าใจว่าลูกค้าติดปัญหาที่แก้ได้ — ใส่ tag เหมาะสมท้ายข้อความ:
-   - [HELP_TRANSFER] = ลูกค้าโอนไม่เป็น/qr ไม่ขึ้น/ไม่เข้าใจวิธีโอน/พร้อมเพย์ไม่ได้
-   - [ROUTE_ADMIN]   = ลูกค้าต้องการคุยกับแอดมิน/คนจริง
+   - [HELP_TRANSFER] = ลูกค้าโอนไม่เป็น/qr ไม่ขึ้น/ไม่เข้าใจวิธีโอน (ในไทย)
+{$stripeBlock}   - [ROUTE_ADMIN]   = ลูกค้าต้องการคุยกับแอดมิน/คนจริง
 3. ถ้าลูกค้ายืนยันชัด/ดูรำคาญ/ไม่อยากต่อ — ใส่ [ACCEPT_CANCEL]
 4. ถ้าลูกค้าเหมือนเปลี่ยนใจอยากดูดวงต่อ — ใส่ [KEEP_BILL]
 5. ถ้ายังไม่ชัด — ถาม 1 คำถามอย่างเบาๆ (อย่ายืดเยื้อ ไม่ขายตรง)
@@ -10140,7 +10188,7 @@ class FortuneConversationService
 ตอบ: "ได้เลยค่ะ แม่หมอเรียกแอดมินให้เลย 🙏 [ROUTE_ADMIN]"
 
 ลูกค้า: "เปลี่ยนใจแล้ว อยากดูต่อ"
-ตอบ: "ดีใจที่เจ้าชะตาเปลี่ยนใจค่ะ ✨ บิลยังอยู่ — โอนเมื่อสะดวกนะคะ [KEEP_BILL]"
+ตอบ: "ดีใจที่เจ้าชะตาเปลี่ยนใจค่ะ ✨ บิลยังอยู่ — โอนเมื่อสะดวกนะคะ [KEEP_BILL]"{$stripeExample}
 PROMPT;
 
         try {
@@ -10167,7 +10215,7 @@ PROMPT;
      */
     protected function parseCancelDialogueTag(string $text): ?string
     {
-        $tags = ['HELP_TRANSFER', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
+        $tags = ['HELP_TRANSFER', 'USE_STRIPE', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
         foreach ($tags as $t) {
             if (str_contains($text, "[{$t}]")) {
                 return $t;
@@ -10182,7 +10230,7 @@ PROMPT;
      */
     protected function stripCancelDialogueTags(string $text): string
     {
-        $tags = ['HELP_TRANSFER', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
+        $tags = ['HELP_TRANSFER', 'USE_STRIPE', 'ROUTE_ADMIN', 'ACCEPT_CANCEL', 'KEEP_BILL'];
         foreach ($tags as $t) {
             $text = str_replace("[{$t}]", '', $text);
         }
