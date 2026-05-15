@@ -260,6 +260,13 @@ class FortuneTellingSetting extends Model
         'link_comment_action',
         'link_whitelist_domains',
         'link_moderation_log_only',
+        // 🔍 (2026-05-15) Fuzzy Payment Match — auto-approve บิลโอนใกล้เคียง
+        'enable_fuzzy_payment_match',
+        'fuzzy_overpay_max_baht',
+        'fuzzy_underpay_max_baht',
+        'fuzzy_window_minutes',
+        'fuzzy_name_auto_threshold',
+        'fuzzy_admin_alert_above_baht',
     ];
 
     /**
@@ -365,6 +372,13 @@ class FortuneTellingSetting extends Model
         'auto_hide_link_comments' => 'boolean',
         'link_whitelist_domains' => 'array',
         'link_moderation_log_only' => 'boolean',
+        // 🔍 (2026-05-15) Fuzzy Payment Match
+        'enable_fuzzy_payment_match' => 'boolean',
+        'fuzzy_overpay_max_baht' => 'decimal:2',
+        'fuzzy_underpay_max_baht' => 'decimal:2',
+        'fuzzy_window_minutes' => 'integer',
+        'fuzzy_name_auto_threshold' => 'integer',
+        'fuzzy_admin_alert_above_baht' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -487,6 +501,13 @@ class FortuneTellingSetting extends Model
         'stripe_account_id' => 'acct_1K7aDRD3aYAdvmlU',
         'stripe_product_deep_id' => 'prod_UU1wXx9DI4s2gq',
         'stripe_product_celtic_id' => 'prod_UU1zVarkNVzkpp',
+        // 🔍 (2026-05-15) Fuzzy Payment Match — ค่าเริ่มต้น (default OFF — admin เปิดเอง)
+        'enable_fuzzy_payment_match' => false,
+        'fuzzy_overpay_max_baht' => 11.00,
+        'fuzzy_underpay_max_baht' => 1.00,
+        'fuzzy_window_minutes' => 60,
+        'fuzzy_name_auto_threshold' => 70,
+        'fuzzy_admin_alert_above_baht' => 5.00,
     ];
 
     /**

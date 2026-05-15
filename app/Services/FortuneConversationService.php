@@ -611,6 +611,23 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🔍 (2026-05-15) Fuzzy Payment Confirmation Early Route
+            // ═══════════════════════════════════════════════════════════════
+            //   ถ้าลูกค้ามี pending fuzzy match (เคยถาม "ใช่ของฉันไหม") + ตอบ ใช่/ไม่ใช่
+            //   → handle confirmation ก่อนทุก flow อื่น (กัน yes/no ถูก swallowed)
+            try {
+                $fuzzyPlatform = $this->currentPlatform ?? $this->detectPlatformFromUserId($facebookUserId);
+                $fuzzyResult = $this->tryHandleFuzzyConfirmation($fuzzyPlatform, $facebookUserId, $messageText);
+                if ($fuzzyResult !== null) {
+                    return $fuzzyResult;
+                }
+            } catch (\Throwable $fuzzyErr) {
+                Log::debug('Fortune: fuzzy confirmation early-route fail (non-blocking)', [
+                    'error' => $fuzzyErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 📚 (2026-05-09) View-History Early Route
             // ═══════════════════════════════════════════════════════════════
             // ลูกค้าพิมพ์ "อ่านคำทำนายล่าสุด" / "ดูคำทำนาย" / "บิลของฉัน" ฯลฯ
@@ -9183,6 +9200,14 @@ class FortuneConversationService
             ];
         }
 
+        // 🔍 (2026-05-15) Fuzzy Payment Match — ลองเช็ค SMS pending ที่ยอดใกล้เคียง
+        //   เคสจริง: ลูกค้าโอน 40 (แทน 39.48) → SMS เข้าระบบแต่ไม่ match exact amount
+        //   ก่อน fix นี้ → ค้างให้แอดมินตรวจ; ตอนนี้ bot ลองตัดสินเอง
+        $fuzzyResult = $this->tryFuzzyAutoApproveOnClaim($reading, $uniqueAmount);
+        if ($fuzzyResult !== null) {
+            return $fuzzyResult;
+        }
+
         // กรณี 3: ยังไม่ paid + UPA ยัง reserved + ยังไม่หมดอายุ
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $message = "⏳ *ระบบยังไม่พบยอดในบัญชี*\n\n"
@@ -9204,6 +9229,243 @@ class FortuneConversationService
             'message' => $message,
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🔍 (2026-05-15) ลอง fuzzy auto-approve ตอนลูกค้าเช็คสถานะ
+     *
+     * เรียกหลัง case 1+2+4 ไม่เข้า (paid/expired) แต่ก่อน case 3 ปกติ ("ยังไม่พบยอด")
+     *
+     * Decision:
+     *   - AUTO_APPROVE → อนุมัติทันที + เรียก processPaymentConfirmed + ส่งข้อความ confirm
+     *   - ASK_CONFIRMATION → เก็บ pending ใน Cache + ส่งข้อความขอ "ใช่/ไม่ใช่"
+     *   - AMBIGUOUS → push admin LINE OA + ตอบลูกค้าให้รอ
+     *   - NONE / DISABLED → return null → handlePaymentClaim ต่อ flow ปกติ
+     *
+     * @return array|null result array หรือ null = ไม่ผ่าน fuzzy
+     */
+    protected function tryFuzzyAutoApproveOnClaim(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): ?array
+    {
+        try {
+            $matcher = new \App\Services\Fortune\FortunePaymentFuzzyMatcher($this->settings);
+            if (! $matcher->isEnabled()) {
+                return null;
+            }
+
+            $platform = $this->detectPlatformFromUserId($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+            $userId = $platform === 'line'
+                ? ($reading->line_user_id ?? $reading->facebook_user_id)
+                : ($reading->facebook_user_id ?? $reading->line_user_id);
+
+            if (empty($userId)) {
+                return null;
+            }
+
+            $eval = $matcher->evaluate($reading, $uniqueAmount);
+
+            // ─── AUTO_APPROVE ─────────────────────────────────────────
+            if ($eval['decision'] === \App\Services\Fortune\FortunePaymentFuzzyMatcher::DECISION_AUTO_APPROVE) {
+                $sms = $eval['best'];
+                $delta = (float) $eval['delta'];
+                $nameScore = (int) $eval['name_score'];
+
+                $approved = $matcher->approve($reading, $uniqueAmount, $sms, $delta, $nameScore);
+                if (! $approved) {
+                    // Race lost → fallback ปกติ
+                    return null;
+                }
+
+                // แจ้งแอดมินถ้า delta สูงกว่า threshold (audit trail แม้ approve แล้ว)
+                $alertAbove = (float) ($this->settings->fuzzy_admin_alert_above_baht ?? 5.00);
+                if (abs($delta) > $alertAbove) {
+                    $matcher->pushAdminAlert($reading, $uniqueAmount, [
+                        'reason' => "Auto-approved with delta ฿".number_format($delta, 2)." (above alert threshold ฿{$alertAbove})",
+                    ]);
+                }
+
+                // เรียก processPaymentConfirmed — entry point เดียวกับ SMS auto match
+                try {
+                    $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+                    $this->processPaymentConfirmed($reading->fresh(), $sms, $channelManager, $platform, $userId);
+                } catch (\Throwable $e) {
+                    Log::error('Fortune: fuzzy approve processPaymentConfirmed failed', [
+                        'reading_id' => $reading->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                    // ถึงล้ม processPaymentConfirmed ก็ตอบลูกค้าก่อน — bill ถูก mark paid แล้ว
+                }
+
+                return [
+                    'action' => 'fuzzy_auto_approved',
+                    'message' => $matcher->buildApprovedMessage($reading->fresh(), $uniqueAmount, $sms, $delta),
+                    'reading' => $reading->fresh(),
+                ];
+            }
+
+            // ─── ASK_CONFIRMATION ─────────────────────────────────────
+            if ($eval['decision'] === \App\Services\Fortune\FortunePaymentFuzzyMatcher::DECISION_ASK_CONFIRMATION) {
+                $sms = $eval['best'];
+                $delta = (float) $eval['delta'];
+                $nameScore = (int) $eval['name_score'];
+
+                $matcher->storePendingConfirmation($platform, $userId, $reading->id, $sms, $uniqueAmount, $delta, $nameScore);
+
+                return [
+                    'action' => 'fuzzy_ask_confirmation',
+                    'message' => $matcher->buildConfirmationMessage($reading, $uniqueAmount, $sms, $delta, $nameScore),
+                    'reading' => $reading,
+                    'quick_reply_options' => [
+                        ['label' => '✅ ใช่ ของฉัน', 'text' => 'ใช่ ยืนยันการโอน'],
+                        ['label' => '❌ ไม่ใช่', 'text' => 'ไม่ใช่ของฉัน'],
+                    ],
+                ];
+            }
+
+            // ─── AMBIGUOUS ────────────────────────────────────────────
+            if ($eval['decision'] === \App\Services\Fortune\FortunePaymentFuzzyMatcher::DECISION_AMBIGUOUS) {
+                $matcher->pushAdminAlert($reading, $uniqueAmount, [
+                    'candidates' => $eval['candidates'] ?? null,
+                    'reason' => $eval['reason'] ?? 'multiple_candidates',
+                ]);
+
+                return [
+                    'action' => 'fuzzy_admin_alert',
+                    'message' => "🔍 *ระบบเจอยอดเข้าบัญชีหลายรายการ*\n\n"
+                        ."🔖 บิล: {$reading->bill_reference}\n"
+                        ."💰 ยอดที่รอ: ฿".number_format((float) $uniqueAmount->unique_amount, 2)."\n\n"
+                        ."ทีมงานจะตรวจสอบให้ภายใน 5-15 นาทีค่ะ 🙏\n\n"
+                        ."ถ้าเร่งด่วน พิมพ์ 'คุยกับแม่หมอ' เพื่อแจ้งทีมงานโดยตรง",
+                    'reading' => $reading,
+                ];
+            }
+
+            // DECISION_NONE / DECISION_DISABLED → fallback ปกติ
+            return null;
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: tryFuzzyAutoApproveOnClaim failed (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🔁 (2026-05-15) จัดการคำตอบยืนยันจากลูกค้า (ใช่/ไม่ใช่) — Fuzzy match flow
+     *
+     * Cache key: "fortune:fuzzy_pending:{platform}:{userId}" (TTL 10 นาที)
+     *
+     * @return array|null result หรือ null = ไม่มี pending / ไม่ใช่ yes/no
+     */
+    protected function tryHandleFuzzyConfirmation(string $platform, string $userId, string $messageText): ?array
+    {
+        try {
+            $matcher = new \App\Services\Fortune\FortunePaymentFuzzyMatcher($this->settings);
+            $pending = $matcher->getPendingConfirmation($platform, $userId);
+            if (! $pending) {
+                return null;
+            }
+
+            $normalized = $this->normalizeUserInput($messageText);
+            $noSpace = str_replace(' ', '', $normalized);
+
+            $yesKeywords = ['ใช่', 'ใช', 'ครับ', 'ค่ะ', 'yes', 'y', 'confirm', 'ยืนยัน', 'รับ', 'โอน', 'ใช่ของฉัน', 'ใช่ยืนยัน', 'ใช่ยืนยันการโอน'];
+            $noKeywords = ['ไม่ใช่', 'ไม่', 'no', 'n', 'cancel', 'ปฏิเสธ', 'ไม่ใช่ของฉัน', 'ผิด'];
+
+            $isYes = false;
+            $isNo = false;
+            foreach ($yesKeywords as $kw) {
+                $kwNorm = mb_strtolower($kw);
+                if ($normalized === $kwNorm || $noSpace === str_replace(' ', '', $kwNorm) || str_contains($normalized, $kwNorm)) {
+                    $isYes = true;
+                    break;
+                }
+            }
+            foreach ($noKeywords as $kw) {
+                $kwNorm = mb_strtolower($kw);
+                if ($normalized === $kwNorm || $noSpace === str_replace(' ', '', $kwNorm) || str_starts_with($normalized, $kwNorm)) {
+                    $isNo = true;
+                    $isYes = false; // "ไม่ใช่" ต้อง win เพราะมี "ใช่" อยู่
+                    break;
+                }
+            }
+
+            if (! $isYes && ! $isNo) {
+                return null; // ปล่อย flow อื่นจัดการ
+            }
+
+            $reading = FortuneReading::find($pending['reading_id'] ?? 0);
+            $upa = UniquePaymentAmount::find($pending['unique_amount_id'] ?? 0);
+            $sms = \App\Models\SmsPaymentNotification::find($pending['sms_id'] ?? 0);
+
+            if (! $reading || ! $upa || ! $sms) {
+                $matcher->clearPendingConfirmation($platform, $userId);
+
+                return null;
+            }
+
+            if ($isNo) {
+                // ลูกค้าปฏิเสธ → push admin + ตอบลูกค้า
+                $matcher->pushAdminAlert($reading, $upa, [
+                    'reason' => 'customer_rejected_fuzzy_match',
+                ]);
+                $matcher->clearPendingConfirmation($platform, $userId);
+
+                return [
+                    'action' => 'fuzzy_rejected_by_customer',
+                    'message' => "🙏 รับทราบค่ะ — ทีมงานจะตรวจสอบให้\n\n"
+                        ."ถ้าเจ้าชะตาโอนแล้วจริง อาจใช้ชื่อบัญชีอื่น/ยอดต่างกัน\n"
+                        ."แอดมินจะติดต่อกลับภายใน 5-15 นาทีนะคะ 🙏",
+                    'reading' => $reading,
+                ];
+            }
+
+            // isYes — ลูกค้ายืนยัน → approve
+            $approved = $matcher->approve(
+                $reading,
+                $upa,
+                $sms,
+                (float) ($pending['delta'] ?? 0),
+                (int) ($pending['name_score'] ?? 0)
+            );
+
+            $matcher->clearPendingConfirmation($platform, $userId);
+
+            if (! $approved) {
+                return [
+                    'action' => 'fuzzy_approve_race_lost',
+                    'message' => "⚠️ ระบบเพิ่งตัดบิลให้แล้วค่ะ — อาจจะมีคนเช็คซ้ำ\n\n"
+                        ."กรุณาพิมพ์ 'เช็คสถานะ' อีกครั้งเพื่อดูคำทำนายค่ะ 🙏",
+                    'reading' => $reading,
+                ];
+            }
+
+            // Trigger pipeline ปกติ — processPaymentConfirmed
+            try {
+                $channelManager = new \App\Services\FortuneChannelManager($this->settings);
+                $this->processPaymentConfirmed($reading->fresh(), $sms, $channelManager, $platform, $userId);
+            } catch (\Throwable $e) {
+                Log::error('Fortune: fuzzy confirmation processPaymentConfirmed failed', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'action' => 'fuzzy_auto_approved',
+                'message' => $matcher->buildApprovedMessage($reading->fresh(), $upa, $sms, (float) ($pending['delta'] ?? 0)),
+                'reading' => $reading->fresh(),
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: tryHandleFuzzyConfirmation failed (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
     /**

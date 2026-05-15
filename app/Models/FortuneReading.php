@@ -326,6 +326,11 @@ class FortuneReading extends Model
         'stripe_session_id',
         'stripe_payment_intent_id',
         'stripe_paid_at',
+        // 🔍 Fuzzy Payment Match — 2026-05-15
+        'fuzzy_approved_at',
+        'fuzzy_approved_delta',
+        'fuzzy_approved_sms_id',
+        'fuzzy_approved_name_score',
     ];
 
     /**
@@ -362,6 +367,11 @@ class FortuneReading extends Model
         // 💳 Stripe Checkout — 2026-05-09
         'service_fee' => 'decimal:2',
         'stripe_paid_at' => 'datetime',
+        // 🔍 Fuzzy Payment Match — 2026-05-15
+        'fuzzy_approved_at' => 'datetime',
+        'fuzzy_approved_delta' => 'decimal:2',
+        'fuzzy_approved_sms_id' => 'integer',
+        'fuzzy_approved_name_score' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',

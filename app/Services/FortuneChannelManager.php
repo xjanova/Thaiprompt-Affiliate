@@ -567,6 +567,20 @@ class FortuneChannelManager
                     // 🧹 (2026-05-01) ลบปุ่ม "💬 คุยกับแม่หมอ" — ใช้ keyword detection แทน (พิมพ์ "แอดมิน" / "คุยกับแม่หมอ")
                 ], $extra),
 
+                // 🔍 (2026-05-15) Fuzzy Payment Match — auto-approve flow
+                'fuzzy_auto_approved' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔄 เช็คคำทำนาย', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                ], $extra),
+
+                'fuzzy_ask_confirmation' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ ของฉัน', 'payload' => 'FUZZY_CONFIRM_YES'],
+                    ['content_type' => 'text', 'title' => '❌ ไม่ใช่', 'payload' => 'FUZZY_CONFIRM_NO'],
+                ], $extra),
+
+                'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '🔄 เช็คอีกครั้ง', 'payload' => 'CHECK_PAYMENT_STATUS'],
+                ], $extra),
+
                 // เช็คสถานะ → เช็คสิทธิ์
                 'check_status' => $this->sendFacebookCheckRemainingResponse($fbService, $richService, $userId, $result),
 
@@ -1707,6 +1721,21 @@ class FortuneChannelManager
                 ]),
                 'payment_check_expired' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🔮 ดูดวง', 'text' => 'ดูดวง'],
+                    ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
+                ]),
+
+                // 🔍 (2026-05-15) Fuzzy Payment Match — auto-approve flow
+                'fuzzy_auto_approved' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔄 เช็คคำทำนาย', 'text' => 'เช็คสถานะ'],
+                ]),
+
+                'fuzzy_ask_confirmation' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '✅ ใช่ ของฉัน', 'text' => 'ใช่ ยืนยันการโอน'],
+                    ['label' => '❌ ไม่ใช่', 'text' => 'ไม่ใช่ของฉัน'],
+                ]),
+
+                'fuzzy_admin_alert', 'fuzzy_rejected_by_customer', 'fuzzy_approve_race_lost' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                    ['label' => '🔄 เช็คอีกครั้ง', 'text' => 'เช็คสถานะ'],
                     ['label' => '💬 คุยกับแม่หมอ', 'text' => 'คุยกับแม่หมอ'],
                 ]),
 
