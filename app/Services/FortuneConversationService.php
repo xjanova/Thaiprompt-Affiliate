@@ -6139,39 +6139,27 @@ class FortuneConversationService
             }
         }
 
-        // 🩹 (2026-05-07 review L4) — ถ้ามี AI prefix (Bill Psychology) → ข้าม "กรุณาโอน" template
-        //   เพราะ AI พูด "ไม่กดดัน" แล้ว ตามด้วย "กรุณาโอน" จะขัดแย้งกัน
-        //   เก็บแค่ข้อมูล payment details (ยอด/บัญชี/QR) ไว้ลูกค้าใช้
+        // 🩹 (2026-05-15 v2) Ultra-short reminder — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
+        //   เก็บแค่ ยอด / บิล / เวลาเหลือ / บัญชี / hint สั้น
         $message = $aiPrefix;
         if (empty($aiPrefix)) {
-            $message .= "🔮 หมอจันทรารอคำทำนายละเอียดให้อยู่\n\n";
-            $message .= "กรุณาโอนเงินเพื่อรับคำทำนาย 🙏\n\n";
+            $message .= "💎 *รอค่าครู ฿{$payAmount}* (ตรงทศนิยม!)\n";
+            $message .= "🔖 บิล: {$billRef}\n";
+            $message .= "⏰ เหลืออีก {$remainingMinutes} นาที\n\n";
         }
-        $message .= "═══════════════════════\n";
-        $message .= "💰 *ยอดชำระ: ฿{$payAmount}*\n";
-        $message .= "🔖 เลขที่บิล: {$billRef}\n";
-        $message .= "⏰ โอนก่อน: {$expiresAt} น.\n";
-        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
-        $message .= "═══════════════════════\n\n";
 
         // แสดงบัญชีธนาคารทุกครั้ง
         $message .= $this->getBankAccountsListMessage();
 
-        // 🩹 (2026-05-07 review L4) — ถ้ามี AI prefix → ข้อความ "กรุณาโอนยอด/รีบโอน" จะขัดกับ AI tone
-        //   เก็บแค่ข้อความสำคัญ (ทศนิยมต้องตรง + เช็คสถานะ + ยกเลิก)
         if (empty($aiPrefix)) {
-            $message .= "⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$payAmount} (ตรงตามทศนิยม)\n";
-            $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-            $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะตัดบิลและส่งคำทำนายให้ทันที ✨\n";
-            $message .= "💡 ต้องการเช็คว่าระบบตัดบิลแล้วหรือยัง — กดปุ่ม *\"เช็คสถานะ\"* ด้านล่าง\n\n";
             if ($remainingMinutes <= 10) {
-                $message .= "⚡ เหลือเวลาอีก {$remainingMinutes} นาทีนะคะ รีบโอนก่อนบิลหมดอายุ\n\n";
+                $message .= "\n⚡ เหลือ {$remainingMinutes} นาที — รีบโอนนะคะ\n";
             }
-            $message .= 'หรือกดปุ่ม *"ยกเลิก"* หากต้องการยกเลิก';
+            $message .= "\n_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n";
+            $message .= "_ติดปัญหา พิมพ์ \"ช่วยหน่อย\"_";
         } else {
             // มี AI prefix — เก็บแค่ guidance สั้น ๆ
-            $message .= "💡 *เศษทศนิยมต้องตรงเป๊ะ* (ระบบใช้จับคู่บิล)\n";
-            $message .= 'กดปุ่ม *"เช็คสถานะ"* เมื่อโอนแล้ว · *"ยกเลิก"* เพื่อไม่ทำต่อ';
+            $message .= "\n_ทศนิยมต้องตรงเป๊ะ • พิมพ์ \"โอนแล้ว\" หรือ \"ช่วยหน่อย\"_";
         }
 
         // สร้าง Dynamic PromptPay QR Code พร้อมยอดเงิน
@@ -7789,82 +7777,48 @@ class FortuneConversationService
      */
     protected function getPayFirstPaymentMessage(FortuneReading $reading, UniquePaymentAmount $uniqueAmount): string
     {
-        $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
         $amount = number_format($uniqueAmount->unique_amount, 2);
         $billRef = $reading->bill_reference;
         $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
 
-        // 🩹 (2026-05-15) Trim Pay-First message — เดิม 1480 chars ลูกค้าตาลาย เลขบัญชีหาย
-        //   เคสจริง: คุณสุนันทาต้องพิมพ์ "ขอเลขบัญชี" หาเลข + พิมพ์ "ทำไม่เป็น" ขอช่วยเหลือ
-        //   → ระบบ false-cancel
-        //   user spec: "ข้อความอย่าเยอะขณะต้องจ่ายเงิน + ให้เลขบัญชีง่ายๆ"
-        //   ใหม่: ~600 chars action-first, philosophy ย่อสั้น, เพิ่ม help hint
-        $message = "🌙 *แม่หมอจันทรา — ดูดวงเชิงลึก 39฿*\n\n"
-            ."━━━━━━━━━━━━━━━━━━\n"
-            ."💎 *ยอดโอน: ฿{$amount}* (ตรงทศนิยม!)\n"
-            ."🔖 บิล: {$billRef}\n"
-            ."⏰ หมดอายุใน {$remainingMinutes} นาที\n"
-            ."━━━━━━━━━━━━━━━━━━\n\n";
+        // 🩹 (2026-05-15 v2) Ultra-short Pay-First — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
+        //   เดิม 1480 → v1 600 → v2 ~250 chars (เน้น 3 อย่าง: ยอด / บัญชี / QR)
+        //   philosophy ย่อหายเหลือ 0 (ถาม "ทำไมต้องจ่ายก่อน" เพื่ออ่าน)
+        $message = "💎 *ค่าครู ฿{$amount}*\n\n";
 
-        // เลขบัญชี + PromptPay (ลูกค้าผู้สูงอายุเห็นเลขชัด ๆ — ไม่ต้องถาม)
+        // เลขบัญชี + PromptPay
         $message .= $this->getBankAccountsListMessage();
 
-        $message .= "\n📲 *หรือสแกน QR Code ในภาพด้านล่าง* ⬇️\n\n"
-            ."──────────────────────\n"
-            ."💡 *หลังโอน:*\n"
-            ."  ✓ พิมพ์ \"โอนแล้ว\" หรือรอ 1-3 นาที (ระบบตัดบิลอัตโนมัติ)\n"
-            ."  ✓ ติดปัญหา? พิมพ์ *\"ขอเลขบัญชี\"* หรือ *\"ช่วยหน่อย\"*\n"
-            ."──────────────────────\n\n"
-            ."🪔 *ค่าครู:* แม่หมอนำไปไหว้ครู + ไถ่ชีวิตโคกระบือ + บุญธุดงค์ที่วัดท่าซุง ✨\n"
-            ."   _พิมพ์ \"ทำไมต้องจ่ายก่อน\" เพื่ออ่านที่มา_";
+        $message .= "\n📲 *หรือสแกน QR ในภาพ ⬇️*\n\n"
+            ."🔖 บิล: {$billRef}\n"
+            ."⏰ หมดอายุใน {$remainingMinutes} นาที\n\n"
+            ."_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
+            ."_ติดปัญหา พิมพ์ \"ช่วยหน่อย\"_";
 
         return $message;
     }
 
     /**
-     * สร้างข้อความสรุป + บัญชีธนาคาร
+     * สร้างข้อความสรุป + บัญชีธนาคาร (legacy flow — collecting_questions ก่อน pay)
+     *
+     * 🩹 (2026-05-15 v2) Ultra-short — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
      */
     protected function getPaymentSummaryMessage(FortuneReading $reading, array $questions, UniquePaymentAmount $uniqueAmount): string
     {
-        $name = $reading->facebook_user_name ?? 'คุณ';
-        $birthDate = $reading->birth_date ? $this->formatThaiDate($reading->birth_date->format('Y-m-d')) : '';
         $amount = number_format($uniqueAmount->unique_amount, 2);
-        $expiresAt = $uniqueAmount->expires_at->format('H:i');
-
         $billRef = $reading->bill_reference;
+        $remainingMinutes = max(0, (int) now()->diffInMinutes($uniqueAmount->expires_at, false));
 
-        $message = "═══════════════════════\n";
-        $message .= "📋 *สรุปคำถาม*\n";
-        $message .= "═══════════════════════\n\n";
-        $message .= "🔖 เลขที่บิล: {$billRef}\n";
-        $message .= "👤 ชื่อ: {$name}\n";
-        $message .= "🎂 วันเกิด: {$birthDate}\n\n";
-        $message .= "❓ คำถาม:\n";
-
-        foreach ($questions as $i => $q) {
-            $num = $i + 1;
-            $message .= "{$num}. {$q}\n";
-        }
-
-        // คำนวณเวลาที่เหลือ
-        $remainingMinutes = (int) now()->diffInMinutes($uniqueAmount->expires_at, false);
-        $remainingMinutes = max(0, $remainingMinutes);
-
-        $message .= "\n═══════════════════════\n";
-        $message .= "💰 *ยอดชำระ: ฿{$amount}*\n";
-        $message .= "⏰ หมดอายุ: {$expiresAt} น.\n";
-        $message .= "⏳ เหลือเวลาอีก: {$remainingMinutes} นาที\n";
-        $message .= "═══════════════════════\n\n";
+        $message = "💎 *ค่าครู ฿{$amount}*\n";
+        $message .= "🔖 บิล: {$billRef}\n";
+        $message .= "⏰ หมดอายุใน {$remainingMinutes} นาที\n\n";
 
         // เพิ่มบัญชีธนาคาร
         $message .= $this->getBankAccountsListMessage();
 
-        $message .= "\n⚠️ *สำคัญ*: กรุณาโอนยอด ฿{$amount} (ตรงตามทศนิยม)\n";
-        $message .= "เพื่อให้ระบบตรวจสอบอัตโนมัติได้ถูกต้อง\n\n";
-        $message .= "💚 *ให้โอนตามยอดให้ตรงนะคะ เพื่อรับคำทำนายอัตโนมัติ*\n";
-        $message .= "เมื่อโอนแล้วรอสักครู่ ระบบจะส่งคำทำนายให้ทันที ✨\n";
-        $message .= "💡 หากโอนแล้วระบบไม่แจ้งเตือน ให้พิมพ์ว่า 'โอนแล้ว' ระบบจะส่งคำทำนายให้\n\n";
-        $message .= "📌 บิลจะหมดอายุอัตโนมัติใน {$remainingMinutes} นาทีค่ะ";
+        $message .= "\n📲 *หรือสแกน QR ในภาพ ⬇️*\n\n"
+            ."_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
+            ."_ติดปัญหา พิมพ์ \"ช่วยหน่อย\"_";
 
         return $message;
     }
