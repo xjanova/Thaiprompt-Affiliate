@@ -539,6 +539,93 @@ class FortuneCelticCrossController extends Controller
     }
 
     /**
+     * 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX endpoint, sync, return JSON
+     *
+     * Flow:
+     *   1. Admin กดปุ่ม "ทดสอบ" ใน form → JavaScript AJAX POST
+     *   2. Controller validate + call CelticCrossService::askQuestionAsAdmin() sync
+     *   3. Return JSON ที่มี success/response/sequence/pushed/ai_provider/tokens
+     *   4. JavaScript แสดงผลใน UI ทันที (admin เห็น 30-60s + loading + result)
+     *
+     * Per user spec (2026-05-17):
+     *   - ไม่ตัดโควต้าลูกค้า (admin sovereign)
+     *   - บันทึก record + push เหมือนลูกค้าถามเอง
+     *   - ไม่กระทบ flow ปกติ
+     *
+     * @set_time_limit 300 (5 minutes — กัน FPM/PHP timeout)
+     */
+    public function adminAskAi(Request $request, FortuneReading $reading): \Illuminate\Http\JsonResponse
+    {
+        @set_time_limit(300);
+
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reading นี้ไม่ใช่ Celtic Cross',
+            ], 422);
+        }
+
+        $validated = $request->validate([
+            'question' => 'required|string|min:3|max:1000',
+        ]);
+
+        if (! $reading->is_paid) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reading นี้ยังไม่ได้ชำระเงิน',
+            ], 422);
+        }
+
+        if ($reading->getCelticPickedCount() < 10) {
+            return response()->json([
+                'success' => false,
+                'message' => 'ลูกค้ายังเปิดไพ่ไม่ครบ 10 ใบ (มี '.$reading->getCelticPickedCount().' ใบ)',
+            ], 422);
+        }
+
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reading นี้ไม่มี user_id — push ไปไม่ได้',
+            ], 422);
+        }
+
+        $platform = $reading->platform
+            ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+        Log::info('Celtic admin ask AI: เริ่ม (AJAX sync)', [
+            'reading_id' => $reading->id,
+            'admin_id' => auth()->id(),
+            'platform' => $platform,
+            'question_len' => mb_strlen($validated['question']),
+        ]);
+
+        // 📝 บันทึก takeover log
+        try {
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => auth()->id(),
+                'platform' => $platform,
+                'action' => 'message',
+                'reason' => 'admin_ai_assist',
+                'message' => '[ADMIN ASK AI] '.mb_substr($validated['question'], 0, 500),
+            ]);
+        } catch (\Throwable $logErr) {
+            // non-critical
+        }
+
+        // 🤖 เรียก service sync
+        $settings = FortuneTellingSetting::getSettings();
+        $service = new CelticCrossService($settings);
+        $result = $service->askQuestionAsAdmin($reading, $validated['question']);
+
+        $result['platform'] = $platform;
+
+        return response()->json($result);
+    }
+
+    /**
      * 🚨 Emergency Recovery — แสดงหน้าฟอร์มกู้บิลด่วน
      *
      * ใช้กรณีลูกค้าจ่ายแล้วบอทเงียบ — แอดมินใส่เลขบิลเพื่อ re-push prompt ทันที

@@ -362,6 +362,183 @@ class CelticCrossService
     }
 
     /**
+     * 🤖 (2026-05-17 Phase 2) askQuestionAsAdmin — admin ส่งคำถามแทนลูกค้า (sync, return JSON)
+     *
+     * Standalone clone ของ askQuestion — bypass ทุก block + push customer ภายในเอง
+     * เรียกจาก AJAX endpoint sync (ไม่ใช่ background) — admin เห็นผลใน UI ทันที
+     *
+     * Bypass:
+     *   - canAskMoreCeltic check (admin sovereign)
+     *   - time window
+     *   - state transitions (ไม่แตะ STATUS_CELTIC_GENERATING)
+     *
+     * Side effects:
+     *   - บันทึก FortuneCelticQuestion record (sequence = count + 1)
+     *   - ไม่ตัด celtic_questions_used counter
+     *   - สะสม tokens_used เพื่อ track ต้นทุน
+     *   - Bridge → LineBotConversation
+     *   - Push คำตอบให้ลูกค้าผ่าน FortuneChannelManager
+     *
+     * @return array รายละเอียดสำหรับ JSON response
+     */
+    public function askQuestionAsAdmin(FortuneReading $reading, string $userQuestion): array
+    {
+        $startTotal = microtime(true);
+        $userQuestion = trim($userQuestion);
+
+        $result = [
+            'success' => false,
+            'reading_id' => $reading->id,
+            'sequence' => null,
+            'pushed' => false,
+            'ai_provider' => null,
+            'ai_model' => null,
+            'tokens_used' => 0,
+            'response_len' => 0,
+            'response_preview' => null,
+            'response_full' => null,
+            'elapsed_ms' => 0,
+            'message' => null,
+        ];
+
+        if ($userQuestion === '') {
+            $result['message'] = 'กรุณาพิมพ์คำถาม';
+
+            return $result;
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            $result['message'] = 'ต้องเลือกไพ่ครบ 10 ใบก่อน (มี '.count($cards).' ใบ)';
+
+            return $result;
+        }
+
+        // sequence = count records + 1 (chronological)
+        $sequence = FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
+        $result['sequence'] = $sequence;
+
+        $questionRecord = FortuneCelticQuestion::create([
+            'fortune_reading_id' => $reading->id,
+            'sequence' => $sequence,
+            'question' => mb_substr($userQuestion, 0, 1000),
+        ]);
+
+        try {
+            $aiStart = microtime(true);
+            $prompt = $this->buildFollowupPrompt($reading, $userQuestion, $cards, $sequence);
+
+            // 🎯 OpenAI primary + purpose='prediction_celtic'
+            $aiService = new FortuneAIService($this->settings, 'prediction_celtic', 'openai');
+            $aiResult = $aiService->generateWithRetryAndFallback(
+                questions: [$prompt],
+                userProfile: null,
+                userPosts: null,
+                promptTemplate: '{questions}',
+                readingType: 'deep',
+                birthDate: null,
+                userContext: "celtic_cross_admin:{$reading->id}:q{$sequence}",
+                purpose: 'prediction_celtic',
+            );
+
+            $aiElapsedMs = (int) ((microtime(true) - $aiStart) * 1000);
+            $response = trim($aiResult['response'] ?? '');
+            $tokensUsed = (int) ($aiResult['tokens_used'] ?? 0);
+            $aiProvider = $aiResult['provider'] ?? null;
+            $aiModel = $aiResult['model'] ?? null;
+
+            if ($response === '' || mb_strlen($response) < 50) {
+                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' chars)');
+            }
+
+            // Strip [END_SESSION] / [OFF_TOPIC_REPICK] tokens
+            $response = trim(preg_replace('/\[\s*(END[_\s]?SESSION|จบ|END|OFF[_\s.-]?TOPIC[_\s.-]?REPICK)\s*\]/iu', '', $response));
+
+            $questionRecord->update([
+                'response' => $response,
+                'ai_provider' => $aiProvider,
+                'ai_model' => $aiModel,
+                'ai_tokens_used' => $tokensUsed,
+                'ai_response_time_ms' => $aiElapsedMs,
+                'answered_at' => now(),
+            ]);
+
+            $reading->update([
+                'tokens_used' => ($reading->tokens_used ?? 0) + $tokensUsed,
+            ]);
+
+            // Bridge
+            $this->bridgeToConversationLog($reading, 'user', $userQuestion);
+            $this->bridgeToConversationLog($reading, 'assistant', $response);
+
+            // Push ลูกค้า
+            $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+            if (! empty($userId)) {
+                $platform = $reading->platform
+                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+                $remainingMin = $reading->getCelticQaRemainingMinutes();
+                $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+                $timeHint = $remainingMin !== null
+                    ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+                    : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+                $followupOffer = "\n\n──────────────────────\n"
+                    .$timeHint."\n"
+                    .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
+
+                $channelManager = new FortuneChannelManager($this->settings);
+                $result['pushed'] = (bool) $channelManager->sendResponse($platform, (string) $userId, [
+                    'action' => 'celtic_question_answered',
+                    'message' => $response.$followupOffer,
+                    'reading' => $reading,
+                ], [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+            }
+
+            $result['success'] = true;
+            $result['ai_provider'] = $aiProvider;
+            $result['ai_model'] = $aiModel;
+            $result['tokens_used'] = $tokensUsed;
+            $result['response_len'] = mb_strlen($response);
+            $result['response_preview'] = mb_substr($response, 0, 300);
+            $result['response_full'] = $response;
+
+            Log::info('Celtic askQuestionAsAdmin สำเร็จ', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+                'ai_provider' => $aiProvider,
+                'ai_model' => $aiModel,
+                'tokens' => $tokensUsed,
+                'response_len' => mb_strlen($response),
+                'ai_elapsed_ms' => $aiElapsedMs,
+                'pushed' => $result['pushed'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Celtic askQuestionAsAdmin ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+                'error' => $e->getMessage(),
+                'trace' => substr($e->getTraceAsString(), 0, 500),
+            ]);
+
+            try {
+                $questionRecord->delete();
+            } catch (\Throwable $delErr) {
+                // ignore
+            }
+
+            $result['message'] = $e->getMessage();
+        }
+
+        $result['elapsed_ms'] = (int) ((microtime(true) - $startTotal) * 1000);
+
+        return $result;
+    }
+
+    /**
      * สร้าง Main Prompt (Q1) — แม่หมอจันทรา ผู้สื่อพลังจักรวาล อ่านพลังงานไพ่ + จิตเจ้าชะตา
      *
      * บุคลิกแม่หมอจันทรา:

@@ -153,6 +153,162 @@
         </div>
     </div>
 
+    {{-- 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX sync (admin เห็นผลใน UI ทันที) --}}
+    @if($reading->is_paid && $reading->getCelticPickedCount() >= 10)
+        @php
+            $askAiUrl = route('admin.fortune.celtic-cross.ask-ai', $reading);
+            $debugToolsUrl = route('admin.fortune.debug-tools.index');
+            $totalQuestionsAsked = $reading->celticQuestions()->count();
+            $customerCanStillAsk = $reading->canAskMoreCeltic();
+        @endphp
+        <div x-data="adminAskAi()" class="bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl shadow-lg p-6 mb-6 border border-indigo-200 dark:border-indigo-800">
+            <div class="flex items-start justify-between mb-4 flex-wrap gap-2">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        🤖 Admin Ask AI
+                        <span class="text-xs px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded-full font-normal">
+                            sync — เห็นผลใน UI ทันที
+                        </span>
+                    </h2>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                        แอดมินพิมพ์คำถาม → AI ทำนาย (30-60s) → ส่งให้ลูกค้า + แสดงผลในหน้านี้
+                    </p>
+                </div>
+                <div class="text-right text-xs text-gray-600 dark:text-gray-400 space-y-1">
+                    <div>📝 ถามมาแล้ว <strong class="text-indigo-600 dark:text-indigo-400">{{ $totalQuestionsAsked }}</strong> ครั้ง</div>
+                    @if(! $customerCanStillAsk)
+                        <div class="text-amber-600 dark:text-amber-400 font-semibold">⚠️ ลูกค้าใช้ quota หมด/เลยเวลา (admin ใช้ได้)</div>
+                    @endif
+                    <a href="{{ $debugToolsUrl }}" target="_blank" class="text-indigo-600 dark:text-indigo-400 hover:underline">🐛 เปิด Debug Tools →</a>
+                </div>
+            </div>
+
+            <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                📝 คำถามที่จะส่งให้ AI ทำนาย (สูงสุด 1000 ตัวอักษร)
+            </label>
+            <textarea x-model="question"
+                      :disabled="running"
+                      rows="3"
+                      maxlength="1000"
+                      placeholder="เช่น: ความรักของฉันในเดือนนี้จะเป็นอย่างไร?"
+                      class="w-full px-4 py-3 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none disabled:opacity-50 resize-none"></textarea>
+
+            <div class="flex items-center justify-between mt-2">
+                <span class="text-xs text-gray-500 dark:text-gray-400">
+                    <span x-text="question.length">0</span>/1000 ตัวอักษร
+                </span>
+                <button @click="run()" type="button"
+                        :disabled="running || question.trim().length < 3"
+                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg text-sm font-semibold shadow-md hover:shadow-lg transition-all">
+                    <span x-show="!running">🚀 ส่งให้ AI ทำนาย + แจ้งลูกค้า</span>
+                    <span x-show="running" x-cloak>⏳ AI กำลังทำนาย... <span x-text="elapsedDisplay"></span></span>
+                </button>
+            </div>
+
+            <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-3 flex items-start gap-1">
+                <span>✨</span>
+                <span>Admin proxy — <strong>ไม่ตัดโควต้าลูกค้า</strong> + AI ใช้บริบทไพ่ 10 ใบ + sync call (admin รอ 30-60s แต่เห็นผลทันที)</span>
+            </p>
+
+            {{-- Result panel --}}
+            <div x-show="result" x-cloak class="mt-5">
+                <div :class="result?.success ? 'bg-green-50 dark:bg-green-900/20 border-green-300' : 'bg-red-50 dark:bg-red-900/20 border-red-300'"
+                     class="border-l-4 p-4 rounded-r-lg">
+                    <div class="flex items-center justify-between mb-2 flex-wrap gap-2">
+                        <strong class="text-sm">
+                            <span x-show="result?.success">✅ AI ทำนายสำเร็จ</span>
+                            <span x-show="result?.success === false">❌ ล้มเหลว</span>
+                        </strong>
+                        <div class="text-xs text-gray-600 dark:text-gray-400 flex flex-wrap gap-3">
+                            <span x-show="result?.sequence">Q<span x-text="result?.sequence"></span></span>
+                            <span x-show="result?.ai_provider"><span x-text="result?.ai_provider"></span> / <span x-text="result?.ai_model"></span></span>
+                            <span x-show="result?.tokens_used"><span x-text="result?.tokens_used"></span> tokens</span>
+                            <span x-show="result?.elapsed_ms"><span x-text="result?.elapsed_ms"></span>ms</span>
+                            <span :class="result?.pushed ? 'text-green-600' : 'text-red-600'">
+                                <span x-text="result?.pushed ? '📤 push ✓' : '📤 push ✗'"></span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div x-show="result?.message" class="text-sm text-red-700 dark:text-red-300 mb-2">
+                        <strong>Error:</strong> <span x-text="result?.message"></span>
+                    </div>
+
+                    <div x-show="result?.response_full" class="mt-2">
+                        <p class="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">💬 คำตอบที่ส่งให้ลูกค้า:</p>
+                        <pre class="text-xs bg-white dark:bg-gray-900 p-3 rounded whitespace-pre-wrap" x-text="result?.response_full"></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+        function adminAskAi() {
+            return {
+                question: '',
+                running: false,
+                result: null,
+                startedAt: null,
+                elapsedDisplay: '0s',
+                timerInterval: null,
+
+                async run() {
+                    if (this.running || this.question.trim().length < 3) return;
+                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) +
+                                 '\n\n✓ ไม่ตัดโควต้าลูกค้า\n✓ AI สำเร็จ → ส่งให้ลูกค้าทาง LINE/FB อัตโนมัติ\n✓ รอ 30-60 วินาที')) {
+                        return;
+                    }
+
+                    this.running = true;
+                    this.result = null;
+                    this.startedAt = Date.now();
+                    this.elapsedDisplay = '0s';
+                    this.timerInterval = setInterval(() => {
+                        const s = Math.floor((Date.now() - this.startedAt) / 1000);
+                        this.elapsedDisplay = s + 's';
+                    }, 1000);
+
+                    try {
+                        const res = await fetch('{{ $askAiUrl }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                                'Accept': 'application/json',
+                            },
+                            body: JSON.stringify({ question: this.question }),
+                        });
+
+                        if (!res.ok) {
+                            const errBody = await res.json().catch(() => ({ message: 'HTTP ' + res.status }));
+                            this.result = {
+                                success: false,
+                                message: errBody.message || ('HTTP ' + res.status),
+                            };
+                        } else {
+                            this.result = await res.json();
+                            if (this.result.success) {
+                                this.question = '';
+                            }
+                        }
+                    } catch (e) {
+                        this.result = {
+                            success: false,
+                            message: 'Network error: ' + e.message,
+                        };
+                    } finally {
+                        this.running = false;
+                        if (this.timerInterval) {
+                            clearInterval(this.timerInterval);
+                            this.timerInterval = null;
+                        }
+                    }
+                },
+            };
+        }
+        </script>
+    @endif
+
     {{-- Spread Image --}}
     @if($reading->celtic_summary_image_path)
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
