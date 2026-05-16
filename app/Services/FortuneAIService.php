@@ -845,6 +845,275 @@ PROMPT;
     }
 
     /**
+     * 📸 (2026-05-16) chatWithImage — Vision AI (multimodal) สำหรับ Celtic Pro Session
+     *
+     * รับรูปจากลูกค้า (LINE/FB) → ส่งให้ Sensitive AI (Pool key purpose='sensitive')
+     * → AI วิเคราะห์ภาพ + ตอบในบริบทดูดวง
+     *
+     * @param  string  $imageData  image URL (https://...) หรือ base64 data URL (data:image/jpeg;base64,...)
+     * @param  string  $systemPrompt  system message (Celtic context + persona)
+     * @param  string  $userText  ข้อความที่ลูกค้าพิมพ์มากับรูป (อาจว่าง)
+     * @param  array  $config  ['temperature' => 0.7, 'max_tokens' => 800]
+     * @return array|null ['response' => str, 'tokens_used' => int, 'provider' => str, 'model' => str] หรือ null ถ้า fail
+     */
+    public function chatWithImage(
+        string $imageData,
+        string $systemPrompt,
+        string $userText = '',
+        array $config = []
+    ): ?array {
+        // ใช้ sensitive pool key (Pro model — vision-capable)
+        //   Default fallback chain: locked sensitive key → acquire 'sensitive' purpose → null
+        //   Vision-capable providers: openai (gpt-4o / gpt-5*), anthropic (claude vision), gemini (vision)
+        $poolService = new \App\Services\AiApiKeyPoolService;
+        $lockedKey = $this->settings->getSensitivePoolKey();
+        $sensitiveKey = $lockedKey ?: $poolService->acquireKey('openai', 'sensitive');
+
+        // ถ้าไม่มี openai sensitive → ลอง gemini sensitive (Gemini รองรับ vision เช่นกัน)
+        if (! $sensitiveKey) {
+            $sensitiveKey = $poolService->acquireKey('gemini', 'sensitive');
+        }
+
+        if (! $sensitiveKey) {
+            Log::warning('FortuneAIService chatWithImage: ไม่มี sensitive key vision-capable');
+
+            return null;
+        }
+
+        $provider = $lockedKey ? $lockedKey->provider : $sensitiveKey->provider;
+        $model = $sensitiveKey->resolveModel()
+            ?? ($this->settings->sensitive_model ?? 'gpt-4o');
+
+        // 🛡️ Vision capability check — ถ้า model เก่า force fallback
+        //    OpenAI: gpt-4o*, gpt-5*, gpt-4-vision*, gpt-4-turbo (ตั้งแต่ Nov 2023)
+        //    Gemini: gemini-1.5-*, gemini-2.*, gemini-3.*
+        //    Anthropic: claude-3+, claude-haiku-4+
+        if ($provider === 'openai' && ! preg_match('/^(gpt-(4o|5|4-vision|4-turbo))/i', $model)) {
+            // fallback model เป็น gpt-4o-mini (cheapest vision-capable)
+            $model = 'gpt-4o-mini';
+        }
+
+        $config = array_merge(['temperature' => 0.7, 'max_tokens' => 800], $config);
+        $userText = trim($userText) !== ''
+            ? $userText
+            : 'เจ้าชะตาส่งรูปนี้มาให้แม่หมอ — ช่วยวิเคราะห์ในบริบทคำทำนายเซลติกที่เปิดไพ่ไว้';
+
+        try {
+            $startTime = microtime(true);
+
+            $result = match ($provider) {
+                'gemini' => $this->callVisionGemini($imageData, $systemPrompt, $userText, $sensitiveKey->api_key, $model, $config),
+                'anthropic' => $this->callVisionAnthropic($imageData, $systemPrompt, $userText, $sensitiveKey->api_key, $model, $config),
+                default => $this->callVisionOpenAI($imageData, $systemPrompt, $userText, $sensitiveKey->api_key, $model, $config),
+            };
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            $sensitiveKey->recordUsage(
+                (int) ($result['input_tokens'] ?? 0),
+                (int) ($result['output_tokens'] ?? 0),
+                $model,
+                $responseTime,
+                'celtic_vision'
+            );
+
+            Log::info('FortuneAIService chatWithImage สำเร็จ', [
+                'provider' => $provider,
+                'model' => $model,
+                'response_time_ms' => $responseTime,
+                'tokens' => $result['tokens_used'] ?? 0,
+            ]);
+
+            return $this->sanitizeChatResult($result);
+        } catch (\Throwable $e) {
+            if (method_exists($sensitiveKey, 'recordError')) {
+                $sensitiveKey->recordError($e->getMessage(), $model);
+            }
+            Log::warning('FortuneAIService chatWithImage ล้มเหลว', [
+                'provider' => $provider,
+                'model' => $model,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        } finally {
+            if (! $lockedKey && method_exists($poolService, 'releaseKey')) {
+                $poolService->releaseKey($provider, $sensitiveKey->id);
+            }
+        }
+    }
+
+    /**
+     * 📸 OpenAI Vision call — Chat Completions multimodal
+     *
+     * Note: Responses API (GPT-5+) ก็รองรับ multimodal — ใช้ format เดียวกัน
+     *       แต่เริ่มจาก Chat Completions เพราะรองรับ wide model range (gpt-4o, gpt-5)
+     */
+    protected function callVisionOpenAI(string $imageData, string $systemPrompt, string $userText, string $apiKey, string $model, array $config): array
+    {
+        $url = 'https://api.openai.com/v1/chat/completions';
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withToken($apiKey)
+            ->post($url, [
+                'model' => $model,
+                'messages' => [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            ['type' => 'text', 'text' => $userText],
+                            ['type' => 'image_url', 'image_url' => ['url' => $imageData]],
+                        ],
+                    ],
+                ],
+                'temperature' => $config['temperature'] ?? 0.7,
+                'max_tokens' => $config['max_tokens'] ?? 800,
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['choices'][0]['message']['content'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Vision OpenAI: ไม่ได้รับคำตอบ');
+        }
+
+        return [
+            'response' => $text,
+            'tokens_used' => $data['usage']['total_tokens'] ?? 0,
+            'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
+            'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
+            'provider' => 'openai',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 📸 Gemini Vision call — generateContent multimodal
+     *
+     * $imageData format: รับทั้ง URL (https://...) และ base64 data URL (data:image/jpeg;base64,...)
+     * ถ้าเป็น URL → ดาวน์โหลด → base64 ก่อนส่งให้ Gemini (Gemini API ไม่รับ URL ตรงๆ ใน body)
+     */
+    protected function callVisionGemini(string $imageData, string $systemPrompt, string $userText, string $apiKey, string $model, array $config): array
+    {
+        // Parse base64 from data URL
+        $mimeType = 'image/jpeg';
+        $base64 = $imageData;
+        if (preg_match('/^data:([^;]+);base64,(.+)$/', $imageData, $matches)) {
+            $mimeType = $matches[1];
+            $base64 = $matches[2];
+        } elseif (filter_var($imageData, FILTER_VALIDATE_URL)) {
+            // 🩹 W1 fix (2026-05-16): Gemini ไม่รับ URL ใน body → fetch + base64
+            //    เคสจริง: FB CDN URL ถูก pass มา → ต้อง download ก่อน
+            $imgResponse = Http::timeout(20)->get($imageData);
+            if (! $imgResponse->successful()) {
+                throw new Exception('Vision Gemini: fetch image URL fail (HTTP '.$imgResponse->status().')');
+            }
+            $mimeType = $imgResponse->header('Content-Type') ?: 'image/jpeg';
+            $base64 = base64_encode($imgResponse->body());
+        }
+
+        $endpoint = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->post($endpoint, [
+                'systemInstruction' => ['parts' => [['text' => $systemPrompt]]],
+                'contents' => [
+                    [
+                        'role' => 'user',
+                        'parts' => [
+                            ['text' => $userText],
+                            ['inlineData' => ['mimeType' => $mimeType, 'data' => $base64]],
+                        ],
+                    ],
+                ],
+                'generationConfig' => [
+                    'temperature' => $config['temperature'] ?? 0.7,
+                    'maxOutputTokens' => $config['max_tokens'] ?? 800,
+                ],
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Vision Gemini: ไม่ได้รับคำตอบ');
+        }
+
+        $inputTokens = (int) ($data['usageMetadata']['promptTokenCount'] ?? 0);
+        $outputTokens = (int) ($data['usageMetadata']['candidatesTokenCount'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'gemini',
+            'model' => $model,
+        ];
+    }
+
+    /**
+     * 📸 Anthropic Vision call — Claude messages multimodal
+     */
+    protected function callVisionAnthropic(string $imageData, string $systemPrompt, string $userText, string $apiKey, string $model, array $config): array
+    {
+        // Claude ต้องการ base64 + media_type (ไม่รับ URL ตรงๆ ใน body)
+        $mediaType = 'image/jpeg';
+        $base64 = $imageData;
+        if (preg_match('/^data:([^;]+);base64,(.+)$/', $imageData, $matches)) {
+            $mediaType = $matches[1];
+            $base64 = $matches[2];
+        } elseif (filter_var($imageData, FILTER_VALIDATE_URL)) {
+            // Claude ใหม่รองรับ URL ตรงๆ (source.type='url')
+            $useUrl = true;
+        }
+
+        $imageBlock = (isset($useUrl) && $useUrl)
+            ? ['type' => 'image', 'source' => ['type' => 'url', 'url' => $imageData]]
+            : ['type' => 'image', 'source' => ['type' => 'base64', 'media_type' => $mediaType, 'data' => $base64]];
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withHeaders([
+                'x-api-key' => $apiKey,
+                'anthropic-version' => '2023-06-01',
+            ])
+            ->post('https://api.anthropic.com/v1/messages', [
+                'model' => $model,
+                'max_tokens' => $config['max_tokens'] ?? 800,
+                'system' => $systemPrompt,
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            $imageBlock,
+                            ['type' => 'text', 'text' => $userText],
+                        ],
+                    ],
+                ],
+            ])->throw();
+
+        $data = $response->json();
+        $text = $data['content'][0]['text'] ?? '';
+
+        if (empty($text)) {
+            throw new Exception('Vision Anthropic: ไม่ได้รับคำตอบ');
+        }
+
+        $inputTokens = (int) ($data['usage']['input_tokens'] ?? 0);
+        $outputTokens = (int) ($data['usage']['output_tokens'] ?? 0);
+
+        return [
+            'response' => $text,
+            'tokens_used' => $inputTokens + $outputTokens,
+            'input_tokens' => $inputTokens,
+            'output_tokens' => $outputTokens,
+            'provider' => 'anthropic',
+            'model' => $model,
+        ];
+    }
+
+    /**
      * 🎯 (2026-04-28) AI parser สำหรับวันเกิดที่ regex parse ไม่ได้
      *
      * ใช้เป็น fallback หลัง parseBirthDate() ปกติล้มเหลว

@@ -1435,6 +1435,25 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
+            // 📸 (2026-05-16) Celtic Pro Session + image → vision AI วิเคราะห์
+            //    ลูกค้าจ่าย 99 เปิดไพ่ครบ → ส่งรูปมา → ส่งให้ vision AI แทนที่จะตอบ "สลิป"
+            if ($userImageUrl) {
+                $celticVisionReading = FortuneReading::where('facebook_user_id', $senderId)
+                    ->whereIn('conversation_status', [
+                        FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                        FortuneReading::STATUS_CELTIC_GENERATING,
+                    ])
+                    ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                    ->latest()
+                    ->first();
+
+                if ($celticVisionReading && $celticVisionReading->getCelticPickedCount() >= 10) {
+                    $this->handleCelticVisionImage($senderId, $userImageUrl, $messageText, $celticVisionReading);
+
+                    return;
+                }
+            }
+
             // 📸 มี active flow + รูป (อาจเป็นสลิป) → handleSlipImageOnly
             //   จะตอบเฉพาะ PENDING_PAYMENT + PAID (พฤติกรรมเดิม)
             if (empty($messageText) && $userImageUrl && $hasActiveFortune) {
@@ -1512,6 +1531,87 @@ class FacebookWebhookController extends Controller
      * ปัญหาเดิม: ตอบ generic "พิมพ์ดูดวง" — ลูกค้าที่ส่งสลิปกังวลว่าระบบไม่ได้รับ
      * ใหม่: ตรวจ active reading → ตอบตามบริบท + ปุ่ม "แจ้งชำระเงิน"/"เช็คสถานะ"
      */
+    /**
+     * 📸 (2026-05-16) Celtic Pro Session vision flow — รับรูป (URL ตรงจาก FB CDN)
+     *
+     * FB ส่ง public URL มาเลย — ไม่ต้อง download (OpenAI ดึงได้)
+     * Anthropic Claude / Gemini รับ URL ก็ได้
+     */
+    protected function handleCelticVisionImage(
+        string $senderId,
+        string $imageUrl,
+        string $userText,
+        \App\Models\FortuneReading $reading
+    ): void {
+        try {
+            // 1. ส่ง pre-reply "กำลังพิมพ์" ทันที
+            $this->facebookService->sendMessage(
+                $senderId,
+                '🌙 แม่หมอจันทรากำลังดูภาพของเจ้าชะตา... ✨'
+            );
+
+            // 2. ตั้ง state = GENERATING (กัน spam)
+            $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_GENERATING]);
+
+            // 3. Call vision AI (FB URL ส่งให้ OpenAI ตรงๆ ได้)
+            $service = app(\App\Services\CelticCrossService::class);
+            $result = $service->askQuestionWithImage($reading, $imageUrl, $userText);
+
+            // 4. กลับ AWAITING
+            $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            if (! $result['success']) {
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    $result['message'] ?? "🌙 ขออภัยนะคะ — แม่หมอวิเคราะห์รูปไม่สำเร็จ\nพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                );
+
+                return;
+            }
+
+            // 5. ส่งคำตอบ + footer
+            $reading->refresh();
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $qaWindow = (int) (\App\Models\FortuneTellingSetting::getSettings()->celtic_cross_qa_window_minutes ?? 30);
+            $timeHint = $remainingMin !== null
+                ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+                : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+            $message = $result['response']
+                ."\n\n──────────────────────\n"
+                .$timeHint."\n"
+                .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
+
+            $this->facebookService->sendQuickReplies($senderId, $message, [
+                ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+            \Log::info('FB Celtic vision สำเร็จ', [
+                'sender_id' => $senderId,
+                'reading_id' => $reading->id,
+                'image_url' => $imageUrl,
+            ]);
+        } catch (\Throwable $e) {
+            // Reset state
+            try {
+                $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+            } catch (\Throwable $stateErr) {
+                // ignore
+            }
+
+            \Log::error('FB Celtic vision exception', [
+                'sender_id' => $senderId,
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->facebookService->sendMessage(
+                $senderId,
+                "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราวในการดูรูป\nเจ้าชะตาช่วยพิมพ์เล่าแทนได้ไหมคะ? 🙏"
+            );
+        }
+    }
+
     protected function handleSlipImageOnly(string $senderId): void
     {
         try {

@@ -749,6 +749,14 @@ class CelticCrossService
             ."• ห้ามแปลทีละใบแบบทื่อ ๆ\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
+            ."🤔 ถ้าคำถามไม่ชัดเจน/แปลก — ให้ถามคืน *ก่อน* ตอบ (clarify)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• ถ้าคำถามสั้นเกิน 5 คำ + ความหมายกำกวม → ถามคืนสั้นๆ\n"
+            ."  เช่น \"แม่หมออยากถามให้ชัดก่อน — เจ้าชะตาอยากให้ดูเรื่องคนรัก หรือเรื่องงาน หรือเรื่องอื่นคะ?\"\n"
+            ."• ถ้าลูกค้าพิมพ์อะไรแปลกๆ (ตัวเลข/สัญลักษณ์/คำสับสน) → ถามว่า \"แม่หมอเข้าใจไม่ชัด — เจ้าชะตาช่วยเล่าให้แม่หมอฟังหน่อยได้ไหมคะ?\"\n"
+            ."• ถ้าคำถามชัดเจนแล้ว → ตอบตามโครงสร้างปกติ (ไม่ต้องถามซ้ำ)\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
             ."🧾 ข้อมูลที่ได้รับ\n"
             ."━━━━━━━━━━━━━━━━━\n"
             ."🃏 ไพ่ 10 ใบ (Celtic Cross) พร้อมตำแหน่ง:\n{$cardsText}\n\n"
@@ -820,6 +828,168 @@ class CelticCrossService
     }
 
     /**
+     * 📸 (2026-05-16) ตอบคำถามที่ลูกค้าส่งรูปมา — ใช้ Vision AI (sensitive key)
+     *
+     * Flow:
+     *   1. Validate Celtic active state + เปิดไพ่ครบ 10 ใบ
+     *   2. บันทึก image URL ใน fortune_celtic_questions
+     *   3. Call FortuneAIService::chatWithImage() — vision AI วิเคราะห์รูป + ตอบในบริบทไพ่
+     *   4. Update counter + return response
+     *
+     * @param  string  $imageData  image URL (https://...) หรือ base64 data URL
+     * @param  string  $userText  ข้อความที่ลูกค้าพิมพ์มากับรูป (อาจว่าง)
+     * @return array ['success' => bool, 'response' => str, 'sequence' => int, 'message' => str]
+     */
+    public function askQuestionWithImage(FortuneReading $reading, string $imageData, string $userText = ''): array
+    {
+        if (! $reading->canAskMoreCeltic()) {
+            return ['success' => false, 'message' => 'ครบจำนวนคำถามแล้ว หรือเลยเวลา'];
+        }
+
+        $cards = $reading->getCelticCards();
+        if (count($cards) < 10) {
+            return ['success' => false, 'message' => 'ต้องเลือกไพ่ครบ 10 ใบก่อน'];
+        }
+
+        $sequence = $reading->celtic_questions_used + 1;
+        $cardsText = $this->formatCardsForPrompt($cards);
+        $userText = trim($userText);
+
+        // 👤 (2026-05-16) Inject persona — เช่นเดียวกับ askQuestion()
+        $personaBlock = '';
+        try {
+            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            if (! empty($userId)) {
+                $personaBlock = app(\App\Services\Fortune\CustomerPersonaService::class)
+                    ->buildInjectBlock($platform, (string) $userId);
+            }
+        } catch (\Throwable $e) {
+            // skip — ไม่ block flow
+        }
+
+        // System prompt — สั้นๆ ครอบคลุม Celtic context + persona + รับรูป
+        $brandName = $this->settings->fortune_brand_name ?: 'แม่หมอจันทรา';
+        $personaPrefix = $personaBlock !== '' ? $personaBlock."\n\n" : '';
+
+        $systemPrompt = $personaPrefix
+            ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบเปิดไว้แล้ว)\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🃏 ไพ่ Celtic Cross 10 ใบของเจ้าชะตา (ใช้อ้างอิงเท่านั้น)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            .$cardsText."\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."📸 บริบทรูป + คำตอบ\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• เจ้าชะตาส่งรูปมา — วิเคราะห์ภาพในบริบทการดูดวง (ความรัก/การงาน/การเงิน/สุขภาพ)\n"
+            ."• ผูกสิ่งที่เห็นในรูปเข้ากับไพ่ที่เปิดไว้\n"
+            ."• ถ้ารูปไม่ชัดเจน / สงสัยว่ารูปนี้คืออะไร → *ถามเจ้าชะตากลับ* ก่อนตอบ\n"
+            ."  เช่น \"แม่หมอเห็นรูปนี้ — เจ้าชะตาส่งมาเพราะอยากให้แม่หมอดูเรื่องอะไรคะ?\"\n"
+            ."• ขึ้นต้นตอบด้วย \"แม่หมอทำนายดังนี้:\" หรือใกล้เคียง (ห้าม \"ฟันธง\")\n"
+            ."• ตอบกระชับ 200-450 ตัวอักษร — ฟันธง ห้ามคำกำกวม\n"
+            ."• ผสานสายมู + ธรรมะ ไม่ขัดแย้งตัวเอง\n\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🚫 ห้าม\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• ห้ามวิเคราะห์รูปแบบ generic (\"ภาพนี้สวย / แสงดี\") — ต้องเชื่อมกับดวง\n"
+            ."• ห้ามคำหยาบ / เนื้อหา nsfw / ตัดสินรูปลักษณ์รุนแรง\n"
+            ."• ห้ามขายแพคใหม่ / เปลี่ยนเรื่องนอกการทำนาย";
+
+        // Save question record ก่อน — เก็บ image marker ใน question field
+        $imageMarker = '[IMAGE_ATTACHED]'.($userText !== '' ? ' '.$userText : '');
+        $questionRecord = FortuneCelticQuestion::create([
+            'fortune_reading_id' => $reading->id,
+            'sequence' => $sequence,
+            'question' => mb_substr($imageMarker, 0, 1000),
+        ]);
+
+        try {
+            $startTime = microtime(true);
+            $aiService = new FortuneAIService($this->settings);
+            $result = $aiService->chatWithImage(
+                $imageData,
+                $systemPrompt,
+                $userText !== '' ? $userText : 'เจ้าชะตาส่งรูปนี้มา — ช่วยวิเคราะห์ในบริบทไพ่ที่เปิดไว้',
+                ['temperature' => 0.7, 'max_tokens' => 800]
+            );
+
+            if ($result === null || empty($result['response'])) {
+                // Vision fail → fallback: ขอให้พิมพ์อธิบาย
+                $questionRecord->update([
+                    'response' => '⚠️ vision AI ไม่สำเร็จ',
+                    'answered_at' => now(),
+                ]);
+
+                return [
+                    'success' => false,
+                    'message' => "🌙 ขอโทษค่ะ — แม่หมอมองรูปไม่ชัดในตอนนี้\n"
+                        .'เจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังได้ไหมว่ารูปนี้คืออะไร อยากให้ดูเรื่องไหนคะ? 🙏',
+                ];
+            }
+
+            $response = trim($result['response']);
+            $tokensUsed = (int) ($result['tokens_used'] ?? 0);
+            $aiProvider = $result['provider'] ?? null;
+            $aiModel = $result['model'] ?? null;
+            $responseTimeMs = (int) round((microtime(true) - $startTime) * 1000);
+
+            // Update question record
+            $questionRecord->update([
+                'response' => $response,
+                'ai_provider' => $aiProvider,
+                'ai_model' => $aiModel,
+                'ai_tokens_used' => $tokensUsed,
+                'ai_response_time_ms' => $responseTimeMs,
+                'answered_at' => now(),
+            ]);
+
+            $reading->refresh();
+            $reading->markCelticAnswered($sequence);
+
+            // tokens cumulative
+            $reading->update([
+                'tokens_used' => ($reading->tokens_used ?? 0) + $tokensUsed,
+            ]);
+
+            Log::info('Celtic vision question สำเร็จ', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+                'provider' => $aiProvider,
+                'model' => $aiModel,
+                'tokens' => $tokensUsed,
+            ]);
+
+            // Bridge → LineBotConversation
+            $logText = '[ส่งรูป]'.($userText !== '' ? ' '.$userText : '');
+            $this->bridgeToConversationLog($reading, 'user', $logText);
+            $this->bridgeToConversationLog($reading, 'assistant', $response);
+
+            return [
+                'success' => true,
+                'response' => $response,
+                'sequence' => $sequence,
+                'question_record' => $questionRecord,
+            ];
+        } catch (\Throwable $e) {
+            Log::error('Celtic vision question exception', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+                'error' => $e->getMessage(),
+            ]);
+            $questionRecord->update([
+                'response' => '⚠️ exception: '.$e->getMessage(),
+                'answered_at' => now(),
+            ]);
+
+            return [
+                'success' => false,
+                'message' => "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราว\n"
+                    .'เจ้าชะตาช่วยพิมพ์เล่าเป็นข้อความแทนได้ไหมคะ? 🙏',
+            ];
+        }
+    }
+
+    /**
      * 🆕 (2026-05-16 v3) Short followup prompt สำหรับ Q3+
      *
      * user spec 2026-05-16 (rev2):
@@ -875,6 +1045,13 @@ class CelticCrossService
             ."• ตอบ *200-450 ตัวอักษร* — มีน้ำหนัก ไม่ยืดเยื้อ\n"
             ."• ไม่ต้องโครงสร้าง 9 sections — ตอบประเด็นที่ลูกค้าถามตรงๆ\n"
             ."• ลงท้ายสั้น 1-2 ประโยค — สรุปทิศทางให้ลูกค้าเอาไปคิดต่อ\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🤔 ถ้าคำถามไม่ชัด/แปลก — ให้ถามคืนก่อน (clarify)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• คำถามสั้นเกิน 5 คำ + กำกวม → ถามคืน 1 ประโยค\n"
+            ."• ตัวเลข/สัญลักษณ์/คำสับสน → ขอให้ลูกค้าเล่าให้ชัด\n"
+            ."• คำถามชัดแล้ว → ตอบทันที (ไม่ต้องถามซ้ำ)\n\n"
 
             ."━━━━━━━━━━━━━━━━━\n"
             ."🙏 ปรัชญา: สายมู + ธรรมะ ผสานกัน\n"

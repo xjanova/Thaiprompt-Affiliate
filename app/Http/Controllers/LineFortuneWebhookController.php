@@ -140,6 +140,7 @@ class LineFortuneWebhookController extends Controller
         }
 
         $messageText = $event['message']['text'] ?? '';
+        $messageId = $event['message']['id'] ?? '';
 
         // 🚫 (2026-04-28) Spam guard — silence คนป่วน (parity กับ FB)
         // กัน: video/sticker/audio ซ้ำๆ, ข้อความมี URL, ข้อความซ้ำ
@@ -154,10 +155,29 @@ class LineFortuneWebhookController extends Controller
         }
 
         // 📸 รับรูปภาพ — ตรวจบริบท active reading แล้วตอบตามสถานะ
+        //   📸 (2026-05-16) Celtic Pro Session (เปิดไพ่ครบ 10) + image → vision AI วิเคราะห์
         //   PENDING_PAYMENT → assume สลิป → ปลอบ + ขอกด "แจ้งชำระเงิน"
         //   PAID / processing → "แม่หมอกำลังคำนวณ"
         //   ไม่มี active → guidance generic
         if ($messageType === 'image') {
+            // 🃏 Celtic active + เปิดไพ่ครบ 10 → ส่งให้ vision AI
+            $celticVisionReading = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+            })
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                ])
+                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->latest()
+                ->first();
+
+            if ($celticVisionReading && $celticVisionReading->getCelticPickedCount() >= 10) {
+                $this->handleCelticVisionImage($userId, $messageId, $celticVisionReading, $replyToken);
+
+                return;
+            }
+
             $this->handleSlipImageOnly($userId, $replyToken);
 
             return;
@@ -1239,6 +1259,130 @@ class LineFortuneWebhookController extends Controller
      *
      * เคยเป็น generic "รับเฉพาะข้อความ" → ลูกค้าที่ส่งสลิปกังวลว่าระบบไม่รับ
      */
+    /**
+     * 📸 (2026-05-16) Celtic Pro Session vision flow — รับรูป + ส่งให้ Vision AI
+     *
+     * Flow:
+     *   1. Download content จาก LINE API (binary)
+     *   2. Convert เป็น base64 data URL
+     *   3. Call CelticCrossService::askQuestionWithImage()
+     *   4. Reply ผ่าน FortuneChannelManager (action celtic_question_answered)
+     */
+    protected function handleCelticVisionImage(
+        string $userId,
+        string $messageId,
+        \App\Models\FortuneReading $reading,
+        ?string $replyToken
+    ): void {
+        if (empty($messageId)) {
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId,
+                "🌙 ขออภัยนะคะ — แม่หมอรับรูปไม่ได้\nเจ้าชะตาพิมพ์เล่าให้แม่หมอฟังได้ไหมคะ? 🙏",
+                $replyToken
+            );
+
+            return;
+        }
+
+        try {
+            // 1. Download content จาก LINE API
+            //   Fortune Bot ใช้ token แยกจาก main bot — เก็บใน fortune_telling_settings.line_channel_access_token
+            //   (อ้างอิง LineFortuneService:32 — pattern เดียวกัน)
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            $accessToken = $settings->line_channel_access_token
+                ?? config('services.line.channel_token');
+
+            if (empty($accessToken)) {
+                throw new \Exception('LINE Fortune access token ไม่พบ (ตั้งใน fortune_telling_settings)');
+            }
+
+            $response = \Illuminate\Support\Facades\Http::timeout(30)
+                ->withHeaders(['Authorization' => 'Bearer '.$accessToken])
+                ->get("https://api-data.line.me/v2/bot/message/{$messageId}/content");
+
+            if (! $response->successful()) {
+                throw new \Exception('Download LINE image fail: HTTP '.$response->status());
+            }
+
+            $imageBytes = $response->body();
+            $mimeType = $response->header('Content-Type') ?: 'image/jpeg';
+
+            // Size check — กัน DoS (max 10MB)
+            if (strlen($imageBytes) > 10 * 1024 * 1024) {
+                throw new \Exception('Image too large (> 10MB)');
+            }
+
+            $base64DataUrl = 'data:'.$mimeType.';base64,'.base64_encode($imageBytes);
+
+            // 2. ส่ง pre-reply "กำลังพิมพ์" → ลูกค้ารู้ว่ารับรูปแล้ว
+            $this->lineService->sendMessageWithReplyFallback(
+                $userId,
+                '🌙 แม่หมอจันทรากำลังดูภาพของเจ้าชะตา... ✨',
+                $replyToken
+            );
+
+            // 3. ตั้ง state = GENERATING (กัน user spam)
+            $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_GENERATING]);
+
+            // 4. Call vision AI
+            $service = app(\App\Services\CelticCrossService::class);
+            $result = $service->askQuestionWithImage($reading, $base64DataUrl);
+
+            // 5. กลับสู่ AWAITING_QUESTION
+            $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            if (! $result['success']) {
+                $this->lineService->sendMessage(
+                    $userId,
+                    $result['message'] ?? "🌙 ขออภัยนะคะ — แม่หมอวิเคราะห์รูปไม่สำเร็จ\nพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                );
+
+                return;
+            }
+
+            // 6. ส่งคำตอบ + footer (push เพราะ replyToken ใช้ไปแล้ว)
+            $reading->refresh();
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $qaWindow = (int) (\App\Models\FortuneTellingSetting::getSettings()->celtic_cross_qa_window_minutes ?? 30);
+            $timeHint = $remainingMin !== null
+                ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+                : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+            $message = $result['response']
+                ."\n\n──────────────────────\n"
+                .$timeHint."\n"
+                .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
+
+            $this->lineService->sendMessage($userId, $message);
+
+            Log::info('LINE Celtic vision สำเร็จ', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'message_id' => $messageId,
+                'image_bytes' => strlen($imageBytes),
+            ]);
+        } catch (\Throwable $e) {
+            // Reset state กลับ
+            try {
+                $reading->update(['conversation_status' => \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+            } catch (\Throwable $stateErr) {
+                // ignore
+            }
+
+            Log::error('LINE Celtic vision exception', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id ?? null,
+                'message_id' => $messageId,
+                'error' => $e->getMessage(),
+            ]);
+
+            $this->lineService->sendMessage(
+                $userId,
+                "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราวในการดูรูป\nเจ้าชะตาช่วยพิมพ์เล่าแทนได้ไหมคะ? 🙏"
+            );
+        }
+    }
+
     protected function handleSlipImageOnly(string $userId, ?string $replyToken): void
     {
         try {
