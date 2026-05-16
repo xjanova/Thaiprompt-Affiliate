@@ -608,34 +608,39 @@ class FortuneCelticCrossController extends Controller
             'status_before' => $reading->conversation_status,
         ]);
 
-        // 🚀 (2026-05-16) Dispatch background — เลียนแบบ ProcessDeepFortuneReadingJob::dispatchSmart()
-        //   pattern เดียวกับ FortuneReadingsController::regenerateDeepReading (proven in production)
-        //
-        //   ทำไมไม่เรียก service ตรงๆ ใน shutdown:
-        //     - Laravel teardown ปิด DB connection / service container → Eloquent fail
-        //     - FPM kill worker หลัง response → AI 30-60s อาจถูกตัด
-        //   ทำไมใช้ Artisan::call:
-        //     - Laravel bootstrap fresh → DB/cache ใหม่
-        //     - fastcgi_finish_request() flush response ก่อน → admin ไม่รอ
-        //     - set_time_limit(300) extend ให้ AI ตอบทัน
+        // 🚀 (2026-05-16) Dispatch background — ใช้ register_shutdown_function()
+        //   เลียนแบบ pattern จาก FortuneReadingsController::regenerateDeepReading
+        //   เหตุผล: AI ใช้เวลา 30-60s → ถ้า sync → admin request hang → ผู้ใช้เห็น "นิ่งเลย"
+        //   shutdown_function รันหลัง Laravel response ออกไปแล้ว → admin ได้ flash ทันที
         $readingId = $reading->id;
         $question = $validated['question'];
         register_shutdown_function(function () use ($readingId, $question) {
             try {
-                @set_time_limit(300); // 5 minutes สำหรับ AI
+                $reading = FortuneReading::find($readingId);
+                if (! $reading) {
+                    Log::error('Celtic admin ask AI shutdown: reading not found', ['id' => $readingId]);
 
-                if (\function_exists('fastcgi_finish_request')) {
-                    @\fastcgi_finish_request(); // ส่ง response กลับ client ทันที (no-op ถ้าทำไปแล้ว)
+                    return;
                 }
 
-                \Illuminate\Support\Facades\Artisan::call('fortune:celtic-admin-ask', [
-                    'readingId' => $readingId,
-                    'question' => $question,
+                $settings = FortuneTellingSetting::getSettings();
+                $service = new CelticCrossService($settings);
+
+                // 🤖 standalone method — bypass ทุก block + push customer ภายใน
+                $result = $service->askQuestionAsAdmin($reading, $question);
+
+                Log::info('Celtic admin ask AI shutdown: เสร็จ', [
+                    'reading_id' => $readingId,
+                    'success' => $result['success'] ?? false,
+                    'sequence' => $result['sequence'] ?? null,
+                    'pushed' => $result['pushed'] ?? null,
+                    'message' => $result['message'] ?? null,
                 ]);
             } catch (\Throwable $e) {
-                Log::error('Celtic admin ask AI shutdown: dispatch fail', [
+                Log::error('Celtic admin ask AI shutdown: exception', [
                     'reading_id' => $readingId,
                     'error' => $e->getMessage(),
+                    'trace' => substr($e->getTraceAsString(), 0, 500),
                 ]);
             }
         });
