@@ -29,8 +29,11 @@ class LineFortuneService implements MessagingPlatformInterface
     public function __construct(?FortuneTellingSetting $settings = null)
     {
         $this->settings = $settings ?? FortuneTellingSetting::getSettings();
-        $this->channelAccessToken = $this->settings->line_channel_access_token ?? config('services.line.channel_token');
-        $this->channelSecret = $this->settings->line_channel_secret ?? config('services.line.channel_secret');
+        // 🛡️ (2026-05-16) Cast to string + empty fallback — กัน TypeError ถ้า config + setting ทั้งคู่ null
+        //   เคสจริง: tinker / artisan command ที่รัน LineFortuneService ก่อน config load
+        //   → ทั้ง 2 path return null → assign null to typed string property → crash
+        $this->channelAccessToken = (string) ($this->settings->line_channel_access_token ?? config('services.line.channel_token') ?? '');
+        $this->channelSecret = (string) ($this->settings->line_channel_secret ?? config('services.line.channel_secret') ?? '');
     }
 
     /**
