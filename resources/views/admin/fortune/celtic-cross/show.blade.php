@@ -154,11 +154,14 @@
     </div>
 
     {{-- 🤖 (2026-05-16) Admin Ask AI — แอดมินพิมพ์คำถามให้ AI ทำนายแทนลูกค้า + push อัตโนมัติ --}}
-    @if($reading->is_paid && $reading->getCelticPickedCount() >= 10 && $reading->canAskMoreCeltic())
+    {{-- ไม่เช็ค canAskMoreCeltic() — admin sovereign (ใช้ได้แม้ลูกค้าใช้ quota หมด/เลยเวลา) --}}
+    @if($reading->is_paid && $reading->getCelticPickedCount() >= 10)
         @php
             $remainingMin = $reading->getCelticQaRemainingMinutes();
             $questionsUsed = (int) $reading->celtic_questions_used;
-            $questionsLeft = $maxQuestions > 0 ? max(0, $maxQuestions - $questionsUsed) : null;
+            $totalQuestionsAsked = $reading->celticQuestions()->count();
+            $nextSequence = $totalQuestionsAsked + 1;
+            $customerCanStillAsk = $reading->canAskMoreCeltic();
         @endphp
         <div x-data="{
                 question: '',
@@ -171,7 +174,7 @@
                         alert('กรุณาพิมพ์คำถามอย่างน้อย 3 ตัวอักษร');
                         return false;
                     }
-                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) + (this.question.length > 200 ? '...' : '') + '\n\n⚠️ จะนับเป็นคำถามของลูกค้า (sequence Q' + ({{ $questionsUsed + 1 }}) + ') + ส่ง LINE/FB อัตโนมัติทันที')) {
+                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) + (this.question.length > 200 ? '...' : '') + '\n\n✓ ไม่ตัดโควต้าลูกค้า (admin proxy)\n✓ ส่ง LINE/FB อัตโนมัติทันที')) {
                         e.preventDefault();
                         return false;
                     }
@@ -192,13 +195,12 @@
                     </p>
                 </div>
                 <div class="text-right text-xs text-gray-600 dark:text-gray-400 space-y-1">
-                    @if($questionsLeft !== null)
-                        <div>💬 เหลือ <strong class="text-indigo-600 dark:text-indigo-400">{{ $questionsLeft }}</strong> คำถาม</div>
-                    @else
-                        <div>💬 ไม่จำกัดจำนวน</div>
-                    @endif
+                    <div>📝 ถามมาแล้ว <strong class="text-indigo-600 dark:text-indigo-400">{{ $totalQuestionsAsked }}</strong> ครั้ง</div>
                     @if($remainingMin !== null)
-                        <div>⏳ เหลือเวลา <strong class="text-indigo-600 dark:text-indigo-400">{{ $remainingMin }}</strong> นาที</div>
+                        <div>⏳ ลูกค้าเหลือเวลา <strong class="text-indigo-600 dark:text-indigo-400">{{ $remainingMin }}</strong> นาที</div>
+                    @endif
+                    @if(! $customerCanStillAsk)
+                        <div class="text-amber-600 dark:text-amber-400 font-semibold">⚠️ ลูกค้าใช้ quota หมด/เลยเวลา (admin ใช้ได้)</div>
                     @endif
                 </div>
             </div>
@@ -230,9 +232,9 @@
                 </div>
             </form>
 
-            <p class="text-xs text-amber-700 dark:text-amber-400 mt-3 flex items-start gap-1">
-                <span>⚠️</span>
-                <span>คำถามนี้จะถูกนับเป็น Q{{ $questionsUsed + 1 }} ของลูกค้า + AI จะใช้บริบทไพ่ 10 ใบที่เปิดไว้ในการทำนาย — คำตอบส่งทันทีไม่มี preview</span>
+            <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-3 flex items-start gap-1">
+                <span>✨</span>
+                <span>Admin proxy — <strong>ไม่ตัดโควต้าลูกค้า</strong> + AI ใช้บริบทไพ่ 10 ใบในการทำนาย + คำตอบส่งทันที (ไม่มี preview)</span>
             </p>
         </div>
     @endif

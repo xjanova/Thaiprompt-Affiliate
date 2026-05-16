@@ -544,12 +544,12 @@ class FortuneCelticCrossController extends Controller
      * Use case: ลูกค้าเงียบ / ลูกค้าถามผ่านช่องทางอื่น (เช่น โทร) / แอดมินอยากกระตุ้นบทสนทนา
      *           → แอดมินเปิดหน้า Celtic show → กรอกคำถาม → กดส่ง → AI ทำนาย → ส่ง LINE/FB อัตโนมัติ
      *
-     * Per user spec (2026-05-16):
-     *   - นับเหมือนลูกค้าถามเอง (เพิ่ม sequence + ลด quota)
+     * Per user spec (2026-05-16, revised):
+     *   - ไม่ตัดโควต้าของลูกค้า (admin sovereign action) — bypass canAskMoreCeltic + time window
      *   - ส่งให้ลูกค้าอัตโนมัติทันที (ไม่ต้องแสดง preview)
      *
      * Validation:
-     *   - reading ต้องเป็น Celtic + is_paid + เปิดไพ่ครบ 10 ใบ + canAskMoreCeltic()
+     *   - reading ต้องเป็น Celtic + is_paid + เปิดไพ่ครบ 10 ใบ
      *   - question text required (min 3 chars)
      */
     public function adminAskAi(Request $request, FortuneReading $reading)
@@ -574,10 +574,6 @@ class FortuneCelticCrossController extends Controller
             return back()->with('error', '❌ ลูกค้ายังเปิดไพ่ไม่ครบ 10 ใบ — สั่ง AI ทำนายไม่ได้');
         }
 
-        if (! $reading->canAskMoreCeltic()) {
-            return back()->with('error', '❌ ครบจำนวนคำถามแล้ว หรือเลยเวลา session');
-        }
-
         $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
         if (empty($userId)) {
             return back()->with('error', '❌ Reading นี้ไม่มี user_id — push ไปไม่ได้');
@@ -587,8 +583,8 @@ class FortuneCelticCrossController extends Controller
             $settings = FortuneTellingSetting::getSettings();
             $service = new CelticCrossService($settings);
 
-            // 🤖 เรียก AI ตอบคำถาม (ใช้ flow เดียวกับลูกค้าถามเอง)
-            $result = $service->askQuestion($reading, $validated['question']);
+            // 🤖 เรียก AI ตอบคำถาม — countTowardsQuota=false (admin proxy ไม่ตัด quota ลูกค้า + bypass time window)
+            $result = $service->askQuestion($reading, $validated['question'], false);
 
             if (! $result['success']) {
                 return back()->with('error', '❌ AI ตอบไม่สำเร็จ: '.($result['message'] ?? 'ไม่ทราบสาเหตุ'));

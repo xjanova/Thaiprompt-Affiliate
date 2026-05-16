@@ -112,20 +112,26 @@ class CelticCrossService
      * ส่งคำถามให้ AI Pool ทำนาย
      *
      * @param  string  $userQuestion  คำถามที่ลูกค้าพิมพ์
+     * @param  bool  $countTowardsQuota  ถ้า false → bypass quota check + ไม่เพิ่ม counter (สำหรับ admin proxy)
      * @return array ['success' => bool, 'response' => str, 'question_record' => FortuneCelticQuestion, 'message' => str]
      */
-    public function askQuestion(FortuneReading $reading, string $userQuestion): array
+    public function askQuestion(FortuneReading $reading, string $userQuestion, bool $countTowardsQuota = true): array
     {
         $userQuestion = trim($userQuestion);
         if ($userQuestion === '') {
             return ['success' => false, 'message' => 'กรุณาพิมพ์คำถาม'];
         }
 
-        if (! $reading->canAskMoreCeltic()) {
+        // 🤖 (2026-05-16) admin proxy (countTowardsQuota=false) → bypass quota + time window check
+        //   ใช้กรณีแอดมินส่งคำถามแทนลูกค้า (ลูกค้าเงียบ/ถามนอกช่องทาง) — sovereign action
+        if ($countTowardsQuota && ! $reading->canAskMoreCeltic()) {
             return ['success' => false, 'message' => 'ครบจำนวนคำถามแล้ว หรือเลยเวลา 1 ชั่วโมง'];
         }
 
-        $sequence = $reading->celtic_questions_used + 1;
+        // sequence: customer path = counter + 1 (เดิม) / admin path = นับ record จริง + 1 (ไม่กระทบ counter)
+        $sequence = $countTowardsQuota
+            ? $reading->celtic_questions_used + 1
+            : FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
         $cards = $reading->getCelticCards();
 
         if (count($cards) < 10) {
@@ -283,26 +289,33 @@ class CelticCrossService
                 'answered_at' => now(),
             ]);
 
-            // อัพเดต counter ใน reading
-            $reading->refresh();
-            $reading->markCelticAnswered($sequence);
+            // อัพเดต counter ใน reading (เฉพาะ customer path — admin proxy ไม่ตัด quota)
+            if ($countTowardsQuota) {
+                $reading->refresh();
+                $reading->markCelticAnswered($sequence);
 
-            // 🃏 Celtic บันทึกแยกจาก 39฿ deep:
-            //   • Q1 + Q2 + Q3+... → เก็บแยก row ใน fortune_celtic_questions table (มีแล้วด้านบน)
-            //   • ai_response = Q1 (preview สำหรับ admin list view) — generic field, ไม่ทับ deep_response
-            //   • ห้ามแตะ deep_response/basic_response — schema คนละแบบ (39฿ มีวันเกิด, Celtic มี 10 ใบ)
-            //   • reading_type 'celtic_cross' ถูกตั้งจาก setCelticPendingPayment() อยู่แล้ว
-            //   • ภาพ 10 ใบ → celtic_summary_image_path (CelticSpreadImageGenerator สร้างหลังเปิดครบ)
-            if ($sequence === 1) {
-                $reading->update([
-                    'ai_response' => $response,
-                    'ai_provider' => $aiProvider,
-                    'ai_model' => $aiModel,
-                    'tokens_used' => $tokensUsed,
-                    'responded_at' => now(),
-                ]);
+                // 🃏 Celtic บันทึกแยกจาก 39฿ deep:
+                //   • Q1 + Q2 + Q3+... → เก็บแยก row ใน fortune_celtic_questions table (มีแล้วด้านบน)
+                //   • ai_response = Q1 (preview สำหรับ admin list view) — generic field, ไม่ทับ deep_response
+                //   • ห้ามแตะ deep_response/basic_response — schema คนละแบบ (39฿ มีวันเกิด, Celtic มี 10 ใบ)
+                //   • reading_type 'celtic_cross' ถูกตั้งจาก setCelticPendingPayment() อยู่แล้ว
+                //   • ภาพ 10 ใบ → celtic_summary_image_path (CelticSpreadImageGenerator สร้างหลังเปิดครบ)
+                if ($sequence === 1) {
+                    $reading->update([
+                        'ai_response' => $response,
+                        'ai_provider' => $aiProvider,
+                        'ai_model' => $aiModel,
+                        'tokens_used' => $tokensUsed,
+                        'responded_at' => now(),
+                    ]);
+                } else {
+                    // Q2+ → สะสม tokens เผื่อ admin track ต้นทุน
+                    $reading->update([
+                        'tokens_used' => ($reading->tokens_used ?? 0) + $tokensUsed,
+                    ]);
+                }
             } else {
-                // Q2+ → สะสม tokens เผื่อ admin track ต้นทุน
+                // 🤖 admin proxy: สะสม tokens อย่างเดียว เพื่อ track ต้นทุน — ไม่แตะ counter/ai_response
                 $reading->update([
                     'tokens_used' => ($reading->tokens_used ?? 0) + $tokensUsed,
                 ]);
