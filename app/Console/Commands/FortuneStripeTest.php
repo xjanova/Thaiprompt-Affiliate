@@ -229,7 +229,8 @@ class FortuneStripeTest extends Command
         $this->info('───────────────────────');
 
         try {
-            $webhookUrl = url('/fortune/stripe/webhook');
+            // ใช้ route() helper — กัน path drift (ที่ถูกคือ /webhook/fortune-stripe)
+            $webhookUrl = route('fortune.stripe.webhook');
             $this->info('   URL: '.$webhookUrl);
 
             $headResp = Http::timeout(10)->withHeaders([
