@@ -925,16 +925,18 @@ class CelticCrossService
             );
 
             if ($result === null || empty($result['response'])) {
-                // Vision fail → fallback: ขอให้พิมพ์อธิบาย
+                // 🔒 (2026-05-16) Vision fail (ไม่มี OpenAI sensitive key หรือ OpenAI API ล่ม)
+                //   นโยบาย: บังคับ OpenAI only — ไม่ fallback ไป Gemini/Anthropic
+                //   จึงต้องแจ้งลูกค้าตรงๆ ว่าไม่สามารถดูรูปได้ในขณะนี้
                 $questionRecord->update([
-                    'response' => '⚠️ vision AI ไม่สำเร็จ',
+                    'response' => '⚠️ ไม่สามารถดูรูปได้ในขณะนี้ (OpenAI vision unavailable)',
                     'answered_at' => now(),
                 ]);
 
                 return [
                     'success' => false,
-                    'message' => "🌙 ขอโทษค่ะ — แม่หมอมองรูปไม่ชัดในตอนนี้\n"
-                        .'เจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังได้ไหมว่ารูปนี้คืออะไร อยากให้ดูเรื่องไหนคะ? 🙏',
+                    'message' => "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\n"
+                        .'เจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏',
                 ];
             }
 
@@ -994,8 +996,8 @@ class CelticCrossService
 
             return [
                 'success' => false,
-                'message' => "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราว\n"
-                    .'เจ้าชะตาช่วยพิมพ์เล่าเป็นข้อความแทนได้ไหมคะ? 🙏',
+                'message' => "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\n"
+                    .'เจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏',
             ];
         }
     }

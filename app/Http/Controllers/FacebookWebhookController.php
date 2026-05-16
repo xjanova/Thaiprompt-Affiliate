@@ -1535,7 +1535,8 @@ class FacebookWebhookController extends Controller
      * 📸 (2026-05-16) Celtic Pro Session vision flow — รับรูป (URL ตรงจาก FB CDN)
      *
      * FB ส่ง public URL มาเลย — ไม่ต้อง download (OpenAI ดึงได้)
-     * Anthropic Claude / Gemini รับ URL ก็ได้
+     *
+     * 🔒 OpenAI only — ถ้าไม่มี sensitive key vision-capable → แจ้งลูกค้าตรงๆ
      */
     protected function handleCelticVisionImage(
         string $senderId,
@@ -1563,7 +1564,7 @@ class FacebookWebhookController extends Controller
             if (! $result['success']) {
                 $this->facebookService->sendMessage(
                     $senderId,
-                    $result['message'] ?? "🌙 ขออภัยนะคะ — แม่หมอวิเคราะห์รูปไม่สำเร็จ\nพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                    $result['message'] ?? "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
                 );
 
                 return;
@@ -1607,7 +1608,7 @@ class FacebookWebhookController extends Controller
 
             $this->facebookService->sendMessage(
                 $senderId,
-                "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราวในการดูรูป\nเจ้าชะตาช่วยพิมพ์เล่าแทนได้ไหมคะ? 🙏"
+                "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
             );
         }
     }

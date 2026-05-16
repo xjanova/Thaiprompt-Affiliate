@@ -1373,7 +1373,7 @@ class LineFortuneWebhookController extends Controller
             if (! $result['success']) {
                 $this->lineService->sendMessage(
                     $userId,
-                    $result['message'] ?? "🌙 ขออภัยนะคะ — แม่หมอวิเคราะห์รูปไม่สำเร็จ\nพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
+                    $result['message'] ?? "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
                 );
 
                 return;
@@ -1417,7 +1417,7 @@ class LineFortuneWebhookController extends Controller
 
             $this->lineService->sendMessage(
                 $userId,
-                "🌙 ขออภัยนะคะ — แม่หมอติดขัดชั่วคราวในการดูรูป\nเจ้าชะตาช่วยพิมพ์เล่าแทนได้ไหมคะ? 🙏"
+                "🌙 ขออภัยค่ะ — แม่หมอไม่สามารถดูรูปได้ในขณะนี้\nเจ้าชะตาช่วยพิมพ์เล่าให้แม่หมอฟังแทนได้ไหมคะ? 🙏"
             );
         }
     }
