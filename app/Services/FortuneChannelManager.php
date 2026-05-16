@@ -946,10 +946,9 @@ class FortuneChannelManager
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
-                // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "ยุติการทำนาย"
-                // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
+                // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — user spec: ลูกค้าพิมพ์คำถามได้เลย
+                //                  เหลือแค่ปุ่ม "ยุติการทำนาย" เพื่อจบ session
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🙏 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
                     ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                 ], $extra),
 
@@ -2124,10 +2123,8 @@ class FortuneChannelManager
                     return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                 })(),
 
-                // celtic_question_answered → ปุ่ม "ถามต่อ" / "ยุติการทำนาย"
-                // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
+                // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — เหลือแค่ "ยุติการทำนาย"
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '🙏 ถามต่อ', 'text' => 'ถามต่อ'],
                     ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
                 ]),
 
@@ -2860,9 +2857,9 @@ class FortuneChannelManager
                     $hint = '🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨';
                     $quickReplies = [];
                 } else { // CELTIC_QA_PROMPT
-                    $hint = '👉 ถามต่อ หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบรอบ';
+                    // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — พิมพ์คำถามเข้ามาได้เลย
+                    $hint = '👉 พิมพ์คำถามมาได้เลย — หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบรอบ';
                     $quickReplies = [
-                        ['content_type' => 'text', 'title' => '💬 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
                         ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                     ];
                 }

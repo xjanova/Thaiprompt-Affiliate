@@ -254,6 +254,13 @@ class FortuneSettingsController extends Controller
             'fortune_bank_account_ids.*' => 'exists:payment_bank_accounts,id',
             // โหมดแสดงช่องทางชำระเงิน (โอนเงิน / พร้อมเพย์ / ทั้งสองอย่าง)
             'payment_display_mode' => 'nullable|in:both,bank_only,promptpay_only',
+            // 🔍 (2026-05-16) Fuzzy Payment Match — รับโอนยอดไม่ตรง (39.00 แทน 39.37)
+            'enable_fuzzy_payment_match' => 'boolean',
+            'fuzzy_overpay_max_baht' => 'nullable|numeric|min:0|max:500',
+            'fuzzy_underpay_max_baht' => 'nullable|numeric|min:0|max:100',
+            'fuzzy_window_minutes' => 'nullable|integer|min:5|max:1440',
+            'fuzzy_name_auto_threshold' => 'nullable|integer|min:0|max:100',
+            'fuzzy_admin_alert_above_baht' => 'nullable|numeric|min:0|max:1000',
             // Affiliate/MLM Settings สำหรับดูดวง
             'fortune_affiliate_enabled' => 'boolean',
             'fortune_auto_register_enabled' => 'boolean',

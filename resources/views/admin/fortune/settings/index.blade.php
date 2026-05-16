@@ -1862,6 +1862,82 @@ Format 2 — JSON array:
                 </div>
             </div>
 
+            {{-- 🔍 (2026-05-16) Fuzzy Payment Match — รับโอนยอดไม่ตรง --}}
+            <div class="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-700"
+                 x-data="{ enabled: {{ ($settings->enable_fuzzy_payment_match ?? false) ? 'true' : 'false' }} }">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-900 dark:text-white">
+                            🔍 รับโอนยอดไม่ตรง (Fuzzy Payment Match)
+                        </label>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            Auto-approve บิลที่ลูกค้าโอนยอดใกล้เคียง — ลูกค้าโอน 39.00 แทน 39.37 ก็ผ่านได้
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="hidden" name="enable_fuzzy_payment_match" value="0">
+                        <input type="checkbox" name="enable_fuzzy_payment_match" value="1"
+                               x-model="enabled"
+                               class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:ring-2 peer-focus:ring-amber-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                    </label>
+                </div>
+
+                <div x-show="enabled" x-cloak x-transition class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            รับขาดได้ (บาท)
+                        </label>
+                        <input type="number" name="fuzzy_underpay_max_baht" step="0.01" min="0" max="100"
+                               value="{{ $settings->fuzzy_underpay_max_baht ?? 1.00 }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เช่น 1 = ลูกค้าโอนขาดได้ ≤ 1 บาท (39.37 → 39.00)</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            รับเกินได้ (บาท)
+                        </label>
+                        <input type="number" name="fuzzy_overpay_max_baht" step="0.01" min="0" max="500"
+                               value="{{ $settings->fuzzy_overpay_max_baht ?? 11.00 }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">เช่น 11 = ลูกค้าโอนเกินได้ ≤ 11 บาท (99 → 110)</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ช่วงเวลาตรวจ (นาที)
+                        </label>
+                        <input type="number" name="fuzzy_window_minutes" step="1" min="5" max="1440"
+                               value="{{ $settings->fuzzy_window_minutes ?? 60 }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">SMS หลังบิลถูกสร้าง — default 60 นาที</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            ชื่อผู้โอนต้องตรง (%)
+                        </label>
+                        <input type="number" name="fuzzy_name_auto_threshold" step="1" min="0" max="100"
+                               value="{{ $settings->fuzzy_name_auto_threshold ?? 70 }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">% similar กับชื่อ Facebook — default 70%</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            แจ้ง admin ถ้า delta &gt; (บาท)
+                        </label>
+                        <input type="number" name="fuzzy_admin_alert_above_baht" step="0.01" min="0" max="1000"
+                               value="{{ $settings->fuzzy_admin_alert_above_baht ?? 5.00 }}"
+                               class="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">ส่ง LINE OA เตือน admin ถ้าส่วนต่าง &gt; ค่านี้</p>
+                    </div>
+                </div>
+
+                <div x-show="enabled" x-cloak class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-xs text-blue-700 dark:text-blue-300">
+                    💡 <strong>วิธีทำงาน:</strong> เมื่อ SMS เข้าและไม่พบ UPA ตรง ระบบจะค้นบิล pending ในช่วงเวลา {{ $settings->fuzzy_window_minutes ?? 60 }} นาที
+                    → ถ้า delta อยู่ในกรอบ (-{{ $settings->fuzzy_underpay_max_baht ?? 1 }} ถึง +{{ $settings->fuzzy_overpay_max_baht ?? 11 }})
+                    + ชื่อผู้โอนตรงพอ ({{ $settings->fuzzy_name_auto_threshold ?? 70 }}%) → auto-approve
+                </div>
+            </div>
+
             {{-- บัญชีธนาคารสำหรับระบบดูดวง (CRUD) --}}
             <div class="mt-6" x-data="fortuneBankAccounts()">
                 <div class="flex items-center justify-between mb-3">
