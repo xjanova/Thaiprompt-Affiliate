@@ -69,6 +69,7 @@ use App\Http\Controllers\Admin\FortuneCategoriesController;
 use App\Http\Controllers\Admin\FortuneCelticCrossController;
 use App\Http\Controllers\Admin\FortuneChannelController;
 use App\Http\Controllers\Admin\FortuneCommissionController;
+use App\Http\Controllers\Admin\FortuneDebugToolsController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneMysticController;
@@ -4213,6 +4214,15 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         // 🚨 (2026-05-05) Emergency Recovery — กู้บิลด่วน (ใส่เลขบิล / auto-scan)
         Route::get('/emergency-recover', [FortuneCelticCrossController::class, 'emergencyRecover'])->name('emergency-recover');
         Route::post('/emergency-recover', [FortuneCelticCrossController::class, 'emergencyRecoverAction'])->name('emergency-recover.action');
+    });
+
+    // ========================================
+    // 🐛 DEBUG TOOLS — admin self-service debugging (tail log + AI sync test)
+    // ========================================
+    Route::prefix('debug-tools')->name('debug-tools.')->group(function () {
+        Route::get('/', [FortuneDebugToolsController::class, 'index'])->name('index');
+        Route::get('/logs', [FortuneDebugToolsController::class, 'tailLog'])->name('logs');
+        Route::post('/test-ai', [FortuneDebugToolsController::class, 'testAi'])->name('test-ai');
     });
 
     // ========================================
