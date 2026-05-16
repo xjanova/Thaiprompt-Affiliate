@@ -434,6 +434,45 @@ trait CelticCrossConversationTrait
      */
     protected function startCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
     {
+        // 🔒 (2026-05-17) Race-condition lock — กันสร้างบิลซ้อนจากการกดรัวๆ
+        //   user report: "ลูกค้าสร้างบิลรัวๆ ได้"
+        //   atomic Cache::add lock 10s ครอบ resume check + UPA gen + setCelticPendingPayment
+        //   ถ้า lock ไม่ได้ = มี request กำลังสร้างอยู่ → wait + เช็ค pending → reuse
+        $userId = $reading->facebook_user_id ?? $reading->platform_user_id;
+        $lockKey = "fortune:celtic_create_lock:{$userId}";
+        $lockAcquired = ! empty($userId) ? \Illuminate\Support\Facades\Cache::add($lockKey, 1, 10) : true;
+
+        if (! $lockAcquired) {
+            \Log::info('Celtic: bill_create_lock contention — wait + reuse pending', [
+                'facebook_user_id' => $userId,
+                'reading_id' => $reading->id,
+            ]);
+            usleep(600000); // 600ms — รอ request แรก commit
+
+            $pending = $this->findPendingCelticBill($reading);
+            if ($pending && $pending->id !== $reading->id) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                return $this->buildCelticPendingPaymentReuseResponse($pending);
+            }
+            // ถ้า request แรกล้มเหลว → fall through to normal flow (lock จะหมดอายุใน 10s)
+        }
+
+        try {
+            return $this->doStartCelticCrossFlow($reading, $skipStripeGate);
+        } finally {
+            if ($lockAcquired && ! empty($userId)) {
+                \Illuminate\Support\Facades\Cache::forget($lockKey);
+            }
+        }
+    }
+
+    /**
+     * 🤖 (2026-05-17) Inner implementation of startCelticCrossFlow
+     * แยกออกมาเพื่อให้ outer method ห่อ Cache lock ได้ clean
+     */
+    protected function doStartCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
+    {
         // 💳 (2026-05-09) Stripe payment method gate — ถ้า admin เปิด Stripe → ถามวิธีชำระก่อน
         //   $skipStripeGate=true → ลูกค้าเลือก QR Thai แล้ว → ลงสร้างบิล UPA ตรงเลย
         if (! $skipStripeGate && $this->isStripePaymentAvailable()) {

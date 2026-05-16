@@ -793,27 +793,56 @@ class FortuneConversationService
                     'source' => $messageText === '39' || $messageText === '99' ? 'line_text' : 'fb_postback',
                 ]);
 
-                // 🛡️ (2026-05-08 v3) Rapid-click bill spam guard
-                //   ลูกค้าใจร้อนกดปุ่ม 39/99 รัวๆ → เดิม: closeAll + create new ทุกครั้ง
-                //   → orphan UPA + ลูกค้าโอนเข้าบิลที่ระบบ cancel แล้ว
-                //   ใหม่: ถ้ามี pending bill ของ tier เดียวกัน + UPA ยังไม่หมดอายุ → re-show เดิม
-                //         (กัน duplicate creation ภายใน UPA TTL 30 นาที)
-                $existingPending = $this->findActivePendingBillForTier($facebookUserId, $forceTier);
-                if ($existingPending !== null) {
-                    Log::info('Fortune: Rapid tier click — reuse existing pending bill', [
+                // 🔒 (2026-05-17) Race-condition lock — กันสร้างบิลซ้อนจากการกดรัวๆ
+                //   user report: "ลูกค้าสร้างบิลรัวๆ ได้" — race window 0-500ms ระหว่าง
+                //   2 requests ที่ findActivePendingBillForTier เห็น null ทั้งคู่ → สร้างบิล 2 ใบ
+                //   Fix: Cache::add atomic lock 10s — ครอบ guard + create
+                //   ถ้า lock ไม่ได้ = มี request กำลังสร้างอยู่ → wait + ลอง guard อีกครั้ง
+                $lockKey = "fortune:bill_create_lock:{$facebookUserId}:{$forceTier}";
+                $lockAcquired = Cache::add($lockKey, 1, 10);
+
+                if (! $lockAcquired) {
+                    // มี request กำลังสร้างบิลอยู่ — รอ 600ms แล้วลอง reuse
+                    Log::info('Fortune: bill_create_lock contention — wait + reuse', [
                         'facebook_user_id' => $facebookUserId,
-                        'reading_id' => $existingPending->id,
-                        'bill_ref' => $existingPending->bill_reference,
                         'tier' => $forceTier,
                     ]);
+                    usleep(600000); // 600ms
 
-                    return $this->resendPendingBill($existingPending);
+                    $existingPending = $this->findActivePendingBillForTier($facebookUserId, $forceTier);
+                    if ($existingPending !== null) {
+                        return $this->resendPendingBill($existingPending);
+                    }
+                    // race คนแรกล้มเหลว → ปล่อย flow ปกติ (lock จะหมดอายุใน 10s)
                 }
 
-                // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
-                $this->closeAllActiveConversations($facebookUserId);
+                try {
+                    // 🛡️ (2026-05-08 v3) Rapid-click bill spam guard
+                    //   ลูกค้าใจร้อนกดปุ่ม 39/99 รัวๆ → เดิม: closeAll + create new ทุกครั้ง
+                    //   → orphan UPA + ลูกค้าโอนเข้าบิลที่ระบบ cancel แล้ว
+                    //   ใหม่: ถ้ามี pending bill ของ tier เดียวกัน + UPA ยังไม่หมดอายุ → re-show เดิม
+                    //         (กัน duplicate creation ภายใน UPA TTL 30 นาที)
+                    $existingPending = $this->findActivePendingBillForTier($facebookUserId, $forceTier);
+                    if ($existingPending !== null) {
+                        Log::info('Fortune: Rapid tier click — reuse existing pending bill', [
+                            'facebook_user_id' => $facebookUserId,
+                            'reading_id' => $existingPending->id,
+                            'bill_ref' => $existingPending->bill_reference,
+                            'tier' => $forceTier,
+                        ]);
 
-                return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
+                        return $this->resendPendingBill($existingPending);
+                    }
+
+                    // ปิด conversation เก่าก่อนเริ่ม flow ใหม่ (กันค้าง)
+                    $this->closeAllActiveConversations($facebookUserId);
+
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTier);
+                } finally {
+                    if ($lockAcquired) {
+                        Cache::forget($lockKey);
+                    }
+                }
             }
 
             // 🎯 (2026-05-08) Smart skip — ข้ามข้อความที่ไม่จำเป็นต้องตอบ (ประหยัด token)
