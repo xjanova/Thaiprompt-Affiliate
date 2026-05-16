@@ -3667,11 +3667,13 @@ class LineFortuneService implements MessagingPlatformInterface
         // ⚠️ ไม่มี circuit breaker สำหรับ reply — reply ฟรี ไม่นับ quota
         // ต้องลองส่งทุกครั้ง เพราะ timeout ครั้งก่อนไม่ได้หมายความว่าครั้งนี้จะ timeout
         try {
-            // ⚡ connectTimeout 8s (network path อาจช้า)
-            // replyToken หมดอายุ 30s → ยังพอรอ 8s connect + 12s read
+            // ⚡ (2026-05-16) Fail-fast timeout — replyToken หมดอายุ 60s
+            //   เดิม timeout=12s + connect=8s → รอ 12s ก่อน fallback → "ดีเลย์" ชัดเจน
+            //   ใหม่: 5s read + 3s connect → ถ้า LINE API ช้า → fallback push เร็ว
+            //   user feedback: "LINE มันดีเลย์ ไม่เหมือนในเฟชบุ๊ค"
             $response = Http::withToken($this->channelAccessToken)
-                ->timeout(12)
-                ->connectTimeout(8)
+                ->timeout(5)
+                ->connectTimeout(3)
                 ->post(self::API_ENDPOINT.'/message/reply', [
                     'replyToken' => $replyToken,
                     'messages' => $messages,

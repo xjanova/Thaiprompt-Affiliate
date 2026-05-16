@@ -315,13 +315,23 @@ class LineFortuneWebhookController extends Controller
             // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
             // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
             // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — ลูกค้าเก่าได้ text ตรง (ไม่ส่งรูป)
-            $this->bannerService->sendBannerOnce(
-                $userId,
-                fn ($url) => $this->lineService->sendImage($userId, $url),
-                'welcome',
-                24,
-                'line'
-            );
+            //
+            // 🚀 (2026-05-16) Skip banner ระหว่าง active reading (กัน LINE delay)
+            //   เคส: ลูกค้าจ่าย Celtic แล้วพิมพ์ "พร้อม" → bot ต้องเปิดไพ่
+            //   ก่อนหน้า: banner sendImage (push API ~500-800ms) block ก่อน processMessage
+            //   → "พร้อม" ต้องรอ banner check ก่อน → ดีเลย์ชัดเจน
+            //   ใหม่: ถ้ามี active reading (Celtic picking/awaiting Q/etc.) → skip banner เลย
+            //   → critical path เร็วขึ้น 500-800ms
+            $hasActive = \App\Models\FortuneReading::hasActiveReading('line', $userId);
+            if (! $hasActive) {
+                $this->bannerService->sendBannerOnce(
+                    $userId,
+                    fn ($url) => $this->lineService->sendImage($userId, $url),
+                    'welcome',
+                    24,
+                    'line'
+                );
+            }
 
             // ประมวลผลข้อความผ่าน Channel Manager
             $result = $this->channelManager->processMessage(

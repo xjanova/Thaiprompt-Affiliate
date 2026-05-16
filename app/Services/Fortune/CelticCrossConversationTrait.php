@@ -673,6 +673,18 @@ trait CelticCrossConversationTrait
         // เช็คว่าจ่ายแล้วยัง — ถ้าจ่ายแล้ว transition ทันที (ป้องกันลูกค้าค้าง)
         $reading->refresh();
         if ($reading->is_paid) {
+            // 🚀 (2026-05-16) Auto-pick first card ถ้าลูกค้าพิมพ์ "พร้อม" ขณะ state race
+            //   เคส: SMS match → state update CELTIC_PICKING (commit ใน DB)
+            //         แต่ลูกค้าพิมพ์ "พร้อม" ก่อน push prompt ถึงเครื่อง
+            //         → webhook อ่าน state เก่า CELTIC_PENDING_PAYMENT
+            //   ก่อน fix: ส่ง prompt "พร้อม" → ลูกค้าต้องพิมพ์ "พร้อม" ซ้ำ → 2 รอบ
+            //   ใหม่: ถ้าลูกค้าพิมพ์ ready keyword อยู่แล้ว → transition + pick ทันที (1 รอบ)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_PICKING]);
+            if (method_exists($this, 'matchesCelticReadyKeyword')
+                && $this->matchesCelticReadyKeyword($messageText)) {
+                return $this->handleCelticPicking($reading->fresh(), $messageText);
+            }
+
             return $this->onCelticPaymentConfirmed($reading);
         }
 
