@@ -6614,6 +6614,98 @@ class FortuneConversationService
             $name = $reading->facebook_user_name ?? 'คุณ';
             $gender = isset($userProfile['gender']) ? ($userProfile['gender'] === 'male' ? 'ชาย' : 'หญิง') : '';
 
+            // 🚨 (2026-05-16) Pay-First guard — ห้าม gen prediction ถ้ายังไม่มีข้อมูล
+            //
+            //    Root cause user report (2026-05-16): บิล FTU-260516-H1108 (นงนภัส) +
+            //      FTU-260516-P0553 (ศรีเรือน) — ลูกค้าจ่าย 39฿ ผ่าน Pay-First
+            //      → SMS match → dispatchFortuneApprovalFlow → ProcessDeepFortuneReadingJob
+            //      → processPaymentConfirmed → loop foreach $questions ว่าง (Pay-First ยังไม่มี
+            //        birth_date/questions ตอนจ่าย) → $deepReadings=[] → combineDeepReadings('')
+            //        → saveDeepReading('') → deep_response='' + status=COMPLETED
+            //      → ลูกค้าเงียบ ไม่ได้คำทำนาย ไม่มีคำถาม "ขอวันเกิด" — รอนาน 10+ นาที
+            //
+            //    การออกแบบที่ถูกต้อง: Pay-First flow คือ "จ่ายก่อน → ขอข้อมูล → ครบ → gen"
+            //      เส้นทาง dispatch ที่ถูก: `afterTarotCardDrawn` (FCS:5698) ตรวจ pay_first_mode +
+            //      $isPaid + ครบ tarot → ค่อย dispatch Job. แต่ SMS match dispatch Job ทันที
+            //      หลังจ่าย — เกิดก่อนลูกค้ามี chance ใส่วันเกิด
+            //
+            //    Fix: ถ้า pay_first_mode + ขาดข้อมูล → reset status เป็น collecting + delegate ไป
+            //      recover command (push "ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE message tag)
+            //      ป้องกัน gen เปล่า + ป้องกัน save deep_response=''
+            $payFirstMode = (bool) $reading->getConversationState('pay_first_mode', false);
+            $hasBirthdate = ! empty($birthDate);
+            $hasQuestions = ! empty($questions);
+
+            if ($payFirstMode && (! $hasBirthdate || ! $hasQuestions)) {
+                Log::warning('Fortune: Pay-First payment confirmed แต่ยังไม่มีข้อมูลครบ — skip gen, push prompt', [
+                    'reading_id' => $reading->id,
+                    'has_birthdate' => $hasBirthdate,
+                    'has_questions' => $hasQuestions,
+                    'caller_streaming' => $streaming,
+                ]);
+
+                $nextStatus = ! $hasBirthdate
+                    ? FortuneReading::STATUS_COLLECTING_BIRTHDATE
+                    : FortuneReading::STATUS_COLLECTING_QUESTIONS;
+
+                $reading->update(['conversation_status' => $nextStatus]);
+                $reading->setConversationState('pay_first_mode', true);
+                $reading->setConversationState('reading_notification_sent', false);
+                $reading->setConversationState('reading_notification_attempted', false);
+                $reading->setConversationState('ai_failed_alert', false);
+
+                // Background Job context (no channelManager) → delegate to recover command
+                //   ที่จัดการ reset + push "ขอวันเกิด" ผ่าน POST_PURCHASE_UPDATE message tag
+                //   (logic เดียวกัน — ลด duplication + ใช้ flow ที่ tested แล้ว)
+                // Streaming context (มี channelManager) → push ตรงเพื่อ realtime UX
+                if ($streaming && $channelManager) {
+                    $billRef = $reading->bill_reference ?? '-';
+                    $amountStr = number_format((float) ($reading->amount_paid ?? 39), 2);
+                    $prompt = ! $hasBirthdate
+                        ? "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ คุณ{$name} ✨\n\n"
+                            ."🌙 *แม่หมอจันทราเปิดประตูดวงให้แล้ว*\n"
+                            ."🔖 เลขที่บิล: {$billRef}\n\n"
+                            ."🪄 ขอ*วันเดือนปีเกิด*ก่อนนะคะ ✨\n"
+                            ."📝 *ตัวอย่าง:* 15 มีนาคม 2538 / 15/3/2538"
+                        : "🙏 รับชำระเงิน ฿{$amountStr} สำเร็จค่ะ ✨\n\n"
+                            ."📝 ขอ*คำถาม*ที่อยากให้แม่หมอทำนายค่ะ";
+
+                    try {
+                        $channelManager->sendResponse($platform, $userId, [
+                            'action' => $nextStatus,
+                            'message' => $prompt,
+                            'reading' => $reading,
+                        ], [
+                            'from_admin' => true,
+                            'message_tag' => 'POST_PURCHASE_UPDATE',
+                        ]);
+                    } catch (\Throwable $pushErr) {
+                        Log::warning('Fortune: Pay-First guard — push prompt ล้ม (non-blocking)', [
+                            'reading_id' => $reading->id,
+                            'error' => $pushErr->getMessage(),
+                        ]);
+                    }
+                } else {
+                    // Job context — เรียก recover command (มี FB Graph push + retry handling)
+                    try {
+                        \Illuminate\Support\Facades\Artisan::call('fortune:recover-paid-no-birthdate', [
+                            '--id' => $reading->id,
+                        ]);
+                    } catch (\Throwable $cmdErr) {
+                        Log::error('Fortune: Pay-First guard — recover command ล้ม', [
+                            'reading_id' => $reading->id,
+                            'error' => $cmdErr->getMessage(),
+                        ]);
+                    }
+                }
+
+                return [
+                    'action' => 'pay_first_awaiting_data',
+                    'status' => $nextStatus,
+                    'reading' => $reading,
+                ];
+            }
+
             // สร้าง Birth Chart ใหม่จากวันเกิดจริง (ส่งก่อนคำทำนาย)
             // ถ้าไม่มีวันเกิด → ใช้ Quick Chart แทน (เพื่อให้มีภาพส่งเสมอ)
             // (2026-05-13 clarification: chart = ส่วนของการทำนาย ต้องส่ง — ไม่ใช่ "ข้อมูลอื่นแทรก")
