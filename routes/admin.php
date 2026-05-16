@@ -4204,6 +4204,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::get('/readings/{reading}', [FortuneCelticCrossController::class, 'showReading'])->name('show');
         // 🔄 (2026-05-04) Reset reading — admin force ให้ลูกค้าเปิดไพ่ใหม่ (route ขาดหาย ทำให้ show page crash)
         Route::post('/readings/{reading}/reset', [FortuneCelticCrossController::class, 'resetReading'])->name('reset');
+        // 🔄 (2026-05-16) Restore active chat — เปิด Pro Session กลับให้ลูกค้าคุยต่อตามเวลาที่เหลือ
+        Route::post('/readings/{reading}/restore', [FortuneCelticCrossController::class, 'restoreActiveChat'])->name('restore');
         // 🗑️ (2026-05-04) Cancel reading — ลบบิลที่ขัดกัน (pending payment ค้าง) — ปลอดภัยถ้ายังไม่จ่าย
         Route::post('/readings/{reading}/cancel', [FortuneCelticCrossController::class, 'cancelReading'])->name('cancel');
         // 🚀 (2026-05-08) Force Approve — โอนยอดไม่ตรง → admin มาร์คจ่ายแล้ว + push เริ่มเปิดไพ่ (ใช้แทนเปิด SMS app มือถือ)

@@ -3092,7 +3092,7 @@ class FacebookWebhookController extends Controller
             'CELTIC_READY' => $this->processConversationalMessage($senderId, 'พร้อม'),
             'CELTIC_RESET' => $this->processConversationalMessage($senderId, 'สับใหม่'),
             'CELTIC_CONTINUE' => $this->processConversationalMessage($senderId, 'ถามต่อ'),
-            'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'พอแค่นี้'),
+            'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'ยุติการทำนาย'),
 
             // 📜 (2026-05-03) Celtic Q&A review — ดูคำตอบที่ผ่านมา (state ไม่เปลี่ยน)
             'CELTIC_VIEW_LIST' => $this->handleCelticViewList($senderId),

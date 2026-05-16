@@ -415,6 +415,130 @@ class FortuneCelticCrossController extends Controller
     }
 
     /**
+     * 🔄 (2026-05-16) คืนสถานะ "กำลังดูอยู่" — เปิด Pro Session ใหม่ให้ลูกค้าคุยต่อ
+     *
+     * Use case: ลูกค้ากดปุ่ม "🛑 ยุติการทำนาย" + ยืนยัน "ใช่" โดยเข้าใจผิด
+     *   → status=COMPLETED + pro_session_active=false
+     *   → ลูกค้าทักมาขอ admin ให้กลับมาคุยต่อ
+     *
+     * Action:
+     *   1. conversation_status → STATUS_CELTIC_AWAITING_QUESTION (กลับเข้า chat-style)
+     *   2. Pro Session active = true
+     *   3. คงเวลาเดิมถ้ายังเหลือ — ถ้าหมดแล้ว → reset window ใหม่ตาม settings
+     *   4. แจ้งลูกค้า "แอดมินเปิดให้กลับมาคุยต่อแล้ว"
+     *
+     * Safety:
+     *   - ห้ามถ้าไม่ใช่ Celtic reading
+     *   - ห้ามถ้ายังไม่ได้จ่าย (is_paid=false)
+     *   - ห้ามถ้าเปิดไพ่ไม่ครบ 10 ใบ (ยังไม่เคยเข้า chat session)
+     */
+    public function restoreActiveChat(Request $request, FortuneReading $reading)
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            abort(404);
+        }
+
+        if (! $reading->is_paid) {
+            return back()->with('error', '❌ Reading นี้ยังไม่ได้ชำระเงิน — restore ไม่ได้');
+        }
+
+        if ($reading->getCelticPickedCount() < 10) {
+            return back()->with('error', '❌ ลูกค้ายังเปิดไพ่ไม่ครบ 10 ใบ — ใช้ปุ่ม Reset แทน');
+        }
+
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            return back()->with('error', '❌ Reading นี้ไม่มี user_id — push ไปไม่ได้');
+        }
+
+        $notify = (bool) $request->input('notify', true);
+        $settings = FortuneTellingSetting::getSettings();
+        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+
+        try {
+            // คำนวณเวลาที่เหลือจาก session เดิม
+            $startedAtRaw = $reading->getConversationState('pro_session_started_at');
+            $oldWindow = (int) $reading->getConversationState('pro_session_window_minutes', $defaultWindow);
+            $remainingMin = 0;
+
+            if (! empty($startedAtRaw)) {
+                try {
+                    $startedAt = \Carbon\Carbon::parse($startedAtRaw);
+                    $elapsed = (int) $startedAt->diffInMinutes(now(), true);
+                    $remainingMin = max(0, $oldWindow - $elapsed);
+                } catch (\Throwable $e) {
+                    $remainingMin = 0;
+                }
+            }
+
+            // ถ้าเหลือเวลามากกว่า 5 นาที → คงเวลาเดิม (ใช้ started_at เดิม + window เดิม)
+            // ถ้าน้อยกว่า → reset เวลาใหม่ตาม settings (กันลูกค้าได้เวลาน้อยไป)
+            $usedExisting = $remainingMin > 5;
+
+            if (! $usedExisting) {
+                $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+                $reading->setConversationState('pro_session_window_minutes', $defaultWindow);
+                $remainingMin = $defaultWindow;
+            }
+
+            // เปิด Pro Session กลับ
+            $reading->setConversationState('pro_session_active', true);
+            $reading->setConversationState('pro_session_type', 'celtic');
+            $reading->setConversationState('pro_session_pending_exit', false);
+
+            // กลับเข้า chat state
+            $reading->update([
+                'conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            ]);
+            $reading->refresh();
+
+            // แจ้งลูกค้า
+            if ($notify) {
+                $platform = $reading->platform
+                    ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+                $channelManager = new FortuneChannelManager($settings);
+                $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+
+                $channelManager->sendResponse($platform, (string) $userId, [
+                    'action' => 'celtic_restored',
+                    'message' => "🌙✨ *แม่หมอจันทรากลับมาแล้วค่ะ คุณ{$name}* ✨🌙\n\n"
+                        ."🙏 แอดมินเปิดประตูพลังกลับให้แล้ว — เจ้าชะตาคุยต่อกับแม่หมอได้เลย\n\n"
+                        ."⏳ *เหลือเวลาคุยกัน {$remainingMin} นาที*\n\n"
+                        ."💬 พิมพ์คำถามที่ค้างคาใจมาได้เลย — แม่หมอจะอ่านพลังงานจากไพ่ทั้ง 10 ใบให้ค่ะ ✨\n\n"
+                        .'🛑 หรือพิมพ์ *"ยุติการทำนาย"* เมื่อพอใจแล้วนะคะ',
+                    'reading' => $reading,
+                ], [
+                    'from_admin' => true,
+                    'message_tag' => 'POST_PURCHASE_UPDATE',
+                ]);
+            }
+
+            Log::info('Celtic admin restore active chat', [
+                'reading_id' => $reading->id,
+                'admin_id' => auth()->id(),
+                'used_existing_window' => $usedExisting,
+                'remaining_min' => $remainingMin,
+                'notify' => $notify,
+            ]);
+
+            $msg = "✅ คืนสถานะกำลังดู #{$reading->id} สำเร็จ (เหลือ {$remainingMin} นาที)";
+            if ($notify) {
+                $msg .= ' + แจ้งลูกค้าแล้ว';
+            }
+
+            return back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            Log::error('Celtic admin restore active chat failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', "❌ คืนสถานะล้มเหลว: {$e->getMessage()}");
+        }
+    }
+
+    /**
      * 🚨 Emergency Recovery — แสดงหน้าฟอร์มกู้บิลด่วน
      *
      * ใช้กรณีลูกค้าจ่ายแล้วบอทเงียบ — แอดมินใส่เลขบิลเพื่อ re-push prompt ทันที

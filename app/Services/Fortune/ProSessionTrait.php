@@ -174,6 +174,8 @@ trait ProSessionTrait
 
         // Long keywords (>4 chars) — substring match OK
         $longKeywords = [
+            // 🛑 (2026-05-16) ปุ่มใหม่ "ยุติการทำนาย" — แทนที่ "พอแค่นี้" ที่ลูกค้าเข้าใจผิด
+            'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
             'พอแค่นี้', 'พอแล้ว', 'หยุดก่อน', 'ไม่ถามแล้ว', 'จบแค่นี้',
             'ไม่มีอะไรแล้ว', 'แค่นี้ก่อน', 'จบเลย', 'พอละ',
             'ขอบคุณ', 'ขอบใจ', 'ขอบพระคุณ',
@@ -199,11 +201,33 @@ trait ProSessionTrait
     }
 
     /**
-     * เปิด confirmation gate — เจอ "พอแค่นี้/ขอบคุณ" → ส่งข้อความถามยืนยันก่อนปิด
+     * เปิด confirmation gate — เจอ "ยุติการทำนาย/พอแค่นี้/ขอบคุณ" → ส่งข้อความถามยืนยันก่อนปิด
+     *
+     * 🛑 (2026-05-16) แยกข้อความ Celtic 99฿ ออกจาก Deep 39฿
+     *    Celtic — ลูกค้ากดปุ่ม "ยุติการทำนาย" บ่อยเพราะเข้าใจผิด → ต้องเตือนหนัก
+     *    บอกว่าแม่หมอจะไปดูแลคนอื่นต่อ + ถามต่อไม่ได้ + แจ้งเวลาคงเหลือ + ขอความแน่ใจ
      */
     protected function buildProSessionExitConfirmationMessage(FortuneReading $reading): string
     {
         $remainingMin = $this->getProSessionRemainingMinutes($reading);
+        $proType = (string) $reading->getConversationState('pro_session_type', 'deep');
+
+        // 🛑 Celtic 99฿ — ข้อความเตือนหนัก + ขอความแน่ใจอีกที
+        if ($proType === 'celtic') {
+            $timeLine = $remainingMin > 0
+                ? "⏳ *เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที*"
+                : '⏳ ยังพอมีเวลาให้แม่หมออยู่ค่ะ';
+
+            return "🌙 *เจ้าชะตาต้องการยุติการทำนายจริงๆ ใช่ไหมคะ?* 🙏\n\n"
+                ."⚠️ *ถ้าตกลงยุติ* — แม่หมอจะไปดูแลเจ้าชะตาท่านอื่นต่อ\n"
+                ."และเจ้าชะตา *จะถามต่อไม่ได้แล้ว* ทันที (รอบนี้ปิดถาวร)\n\n"
+                .$timeLine."\n\n"
+                ."──────────────────────\n"
+                ."✅ *แน่ใจแล้ว* — พิมพ์ *\"ใช่\"* เพื่อยืนยันยุติ\n"
+                ."💬 *ยังไม่ยุติ* — พิมพ์คำถามต่อมาได้เลย แม่หมอรอฟังอยู่ ✨";
+        }
+
+        // Deep 39฿ — ข้อความเดิม (ไม่กระทบ flow Deep)
         $timeHint = $remainingMin > 0
             ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
             : '⏳ ยังพอมีเวลาให้แม่หมออยู่ค่ะ';
@@ -671,22 +695,24 @@ trait ProSessionTrait
      *
      * Filter:
      *   - is_paid=true
-     *   - paid_at ในช่วง 90 นาทีล่าสุด — กว้างพอครอบคลุม Celtic worst case
-     *     (paid → pick 10 cards 5-10 min → 30 min QA window → 30 min Pro linger = ~70 min)
+     *   - paid_at ในช่วง 24 ชม. ล่าสุด — กว้างพอครอบคลุม admin restore ที่ฟื้นทีหลัง
+     *     เดิม 90 นาที — แต่ admin restoreActiveChat ที่เปิด Pro Session กลับหลังลูกค้าจบไปนานๆ
+     *     จะหา reading ไม่เจอ → routing fall through → ลูกค้าได้คำตอบที่ไม่ตรง
      *   - then in-memory: isInProSession() = check conversation_state flag + window expiry
      *
-     * 🩹 ใช้ paid_at filter แค่เพื่อจำกัด query — ตรรกะจริงอยู่ที่ pro_session_started_at
+     * 🩹 ใช้ paid_at filter แค่เพื่อจำกัด query — ตรรกะจริงอยู่ที่ pro_session_active flag
+     *    limit(3) + isInProSession() กรอง = false positive ไม่มี (reading ที่ไม่มี active flag = ตกออก)
      *    (Celtic เริ่ม session ที่ pick-card-10 — อาจห่างจาก paid_at ~5-10 min)
      */
     protected function findActiveProSessionReading(string $userId): ?FortuneReading
     {
-        // ดึง 3 readings ล่าสุดที่ paid ภายใน 90 นาที — เผื่อมีหลาย reading (rare)
+        // ดึง 3 readings ล่าสุดที่ paid ภายใน 24 ชม. — เผื่อมีหลาย reading + admin restore
         $candidates = FortuneReading::where(function ($q) use ($userId) {
             $q->where('facebook_user_id', $userId)
                 ->orWhere('platform_user_id', $userId);
         })
             ->where('is_paid', true)
-            ->where('paid_at', '>=', now()->subMinutes(90))
+            ->where('paid_at', '>=', now()->subMinutes(1440))
             ->orderBy('paid_at', 'desc')
             ->limit(3)
             ->get();

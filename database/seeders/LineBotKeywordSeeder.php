@@ -33,32 +33,27 @@ class LineBotKeywordSeeder extends Seeder
         $this->command->info('🔑 สร้าง Custom Keywords สำหรับ Hybrid Bot...');
 
         // Keyword 1: FAQ - Refund
+        //
+        // 🚫 (2026-05-16) ปิด keyword นี้ + ลบ "ยกเลิก" จาก trigger_words
+        //    Reason: เราไม่มีนโยบายคืนเงิน (บริการดิจิทัล ส่งคำทำนายทันที)
+        //            + "ยกเลิก" ตรงกับปุ่ม cancel ของ Fortune Celtic flow → กล่อง refund โผล่ผิด
+        //    ถ้าจะ enable ใหม่ ต้องเขียน response_text ให้ตรงกับ T&C จริง (terms-of-service.html:248-250)
         LineBotKeyword::create([
             'keyword' => 'refund',
-            'description' => 'คำตอบเกี่ยวกับการคืนเงิน',
-            'trigger_words' => ['refund', 'คืนเงิน', 'return', 'ยกเลิก', 'เงินคืน'],
+            'description' => 'คำตอบเกี่ยวกับการคืนเงิน (ปิดไว้ — ไม่มีนโยบายคืนเงิน)',
+            'trigger_words' => ['refund', 'คืนเงิน', 'return', 'เงินคืน'],
             'response_type' => 'text',
             'response_text' => <<<'RESPONSE'
 💰 **นโยบายการคืนเงิน**
 
-เราสามารถคืนเงินได้ภายใน **7 วัน** นับจากวันที่ซื้อ
+บริการของเราเป็น *บริการดิจิทัล* ส่งคำทำนายทันทีหลังชำระ
+ทางร้านขอ *งดคืนเงิน* ทุกกรณีค่ะ กรุณาตรวจสอบก่อนชำระ 🙏
 
-📋 **เงื่อนไข:**
-✓ สินค้าอยู่ในสภาพเดิม
-✓ ไม่ได้ใช้งาน
-✓ ยังมีซองแพคเกจเดิม
-
-⏰ **ขั้นตอน:**
-1. ติดต่อเราทางแชทนี้
-2. ส่งรูปสินค้า
-3. เตรียมคืนสินค้า
-4. รับการคืนเงิน (3-5 วันทำการ)
-
-📞 **ติดต่อสนับสนุน**: support@example.com
+📞 หากมีข้อสงสัย กรุณาติดต่อแอดมินค่ะ
 RESPONSE,
             'category' => 'faq',
             'priority' => 80,
-            'is_active' => true,
+            'is_active' => false, // 🚫 (2026-05-16) ปิดไว้ — user ขอ
         ]);
 
         // Keyword 2: FAQ - Shipping

@@ -26,6 +26,20 @@
                 </a>
             @endif
             @if($reading->is_paid)
+                {{-- 🔄 (2026-05-16) Restore active chat — เปิด Pro Session กลับให้ลูกค้าคุยต่อ --}}
+                @if($reading->getCelticPickedCount() >= 10)
+                    <form action="{{ route('admin.fortune.celtic-cross.restore', $reading) }}" method="POST"
+                          onsubmit="return confirm('ยืนยันคืนสถานะ &quot;กำลังดูอยู่&quot; ให้ #{{ $reading->id }}?\n\nลูกค้าจะกลับมาคุยกับแม่หมอต่อได้ตามเวลาที่เหลือ\n(ถ้าหมดเวลาแล้ว ระบบจะ reset window ใหม่)');"
+                          class="inline">
+                        @csrf
+                        <input type="hidden" name="notify" value="1">
+                        <button type="submit"
+                                class="px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 rounded-lg text-sm font-semibold">
+                            🔄 คืนสถานะกำลังดู + แจ้งลูกค้า
+                        </button>
+                    </form>
+                @endif
+
                 {{-- 🔄 (2026-05-03) Admin reset — ใช้เมื่อ flow ไม่สมบูรณ์ --}}
                 <form action="{{ route('admin.fortune.celtic-cross.reset', $reading) }}" method="POST"
                       onsubmit="return confirm('ยืนยัน reset reading #{{ $reading->id }}?\n\nจะล้างไพ่ + Q&A ทั้งหมด แล้วให้ลูกค้าเริ่มเปิดไพ่ใหม่ (ไม่ต้องจ่ายซ้ำ)');"

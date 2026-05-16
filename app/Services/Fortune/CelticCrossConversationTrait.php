@@ -1252,7 +1252,8 @@ trait CelticCrossConversationTrait
         $question = trim($messageText);
 
         // 🔚 ลูกค้าขอจบ → จบสุขุม
-        if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
+        //   "ยุติการทำนาย" = ปุ่มใหม่ 2026-05-16 (แทน "พอแค่นี้" ที่ลูกค้าเข้าใจผิด)
+        if ($this->matchesExactKeyword($messageText, ['ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ', 'พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
@@ -1602,8 +1603,8 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticQaPrompt(FortuneReading $reading, string $messageText): array
     {
-        // "พอแค่นี้" / "จบ" → จบ session อย่างสุขุม
-        if ($this->matchesExactKeyword($messageText, ['พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ'])) {
+        // "ยุติการทำนาย" / "พอแค่นี้" / "จบ" → จบ session อย่างสุขุม
+        if ($this->matchesExactKeyword($messageText, ['ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ', 'พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ'])) {
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 

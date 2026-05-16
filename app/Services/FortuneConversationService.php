@@ -2788,7 +2788,7 @@ class FortuneConversationService
         // ปิดท้าย — footer ไป segment สุดท้าย
         $footer = $isOngoing
             ? "💬 *คุยต่อได้* — พิมพ์อะไรมาก็ได้\n"
-                .'หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา ✨'
+                .'หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบสนทนา ✨'
             : '✅ *จบสนทนาแล้ว* — อ่านเป็นที่ระลึกได้นะคะ 🙏';
 
         if (mb_strlen($current.$footer) > $charsLimit && $current !== $header) {
@@ -2884,7 +2884,7 @@ class FortuneConversationService
             } else {
                 $message .= '💬 ถามต่อได้ *ไม่จำกัด*';
             }
-            $quickReplies[] = ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'];
+            $quickReplies[] = ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'];
         } else {
             $message .= '✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏';
         }
@@ -8733,6 +8733,8 @@ class FortuneConversationService
             // Celtic Cross flow
             'พร้อม', 'พร้อมแล้ว', 'พร้อมค่ะ', 'พร้อมครับ',
             'ถามต่อ', 'พอแค่นี้', 'พอ',
+            // 🛑 (2026-05-16) ปุ่มใหม่ "ยุติการทำนาย" — แทน "พอแค่นี้"
+            'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
             'เปิดไพ่ใบถัดไป', 'เปิดไพ่ใบที่ 1',
             'สับใหม่', 'เริ่มใหม่',
             // Confirmation flow

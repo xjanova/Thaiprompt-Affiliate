@@ -946,11 +946,11 @@ class FortuneChannelManager
                     return $fbService->sendMessage($userId, $message, $extra);
                 })(),
 
-                // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "พอแค่นี้"
+                // celtic_question_answered → ส่งคำทำนาย + ปุ่ม "ถามต่อ" / "ยุติการทำนาย"
                 // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => $fbService->sendQuickReplies($userId, $message, [
                     ['content_type' => 'text', 'title' => '🙏 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
-                    ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                    ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                 ], $extra),
 
                 // 📜 (2026-05-03) Celtic Q&A review — legacy quick-reply list (Q1/Q2)
@@ -1004,7 +1004,7 @@ class FortuneChannelManager
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
                     $quickReplies = $canAskMore
                         ? [
-                            ['content_type' => 'text', 'title' => '✨ พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                            ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                         ]
                         : [
                             ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'MENU_FORTUNE'],
@@ -2124,11 +2124,11 @@ class FortuneChannelManager
                     return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
                 })(),
 
-                // celtic_question_answered → ปุ่ม "ถามต่อ" / "พอแค่นี้"
+                // celtic_question_answered → ปุ่ม "ถามต่อ" / "ยุติการทำนาย"
                 // celtic_qa_prompt_resume → ใช้ปุ่มชุดเดียวกัน (resume จาก QA_PROMPT state)
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🙏 ถามต่อ', 'text' => 'ถามต่อ'],
-                    ['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้'],
+                    ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
                 ]),
 
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
@@ -2168,7 +2168,7 @@ class FortuneChannelManager
 
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
                     $replies = $canAskMore
-                        ? [['label' => '✨ พอแค่นี้', 'text' => 'พอแค่นี้']]
+                        ? [['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย']]
                         : [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
 
                     return $this->sendLineMessageWithQuickReply(
@@ -2854,16 +2854,16 @@ class FortuneChannelManager
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
                     $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้';
                     $quickReplies = [
-                        ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                        ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                     ];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
                     $hint = '🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨';
                     $quickReplies = [];
                 } else { // CELTIC_QA_PROMPT
-                    $hint = '👉 ถามต่อ หรือพิมพ์ *"พอแค่นี้"* เพื่อจบรอบ';
+                    $hint = '👉 ถามต่อ หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบรอบ';
                     $quickReplies = [
                         ['content_type' => 'text', 'title' => '💬 ถามต่อ', 'payload' => 'CELTIC_CONTINUE'],
-                        ['content_type' => 'text', 'title' => '🔚 พอแค่นี้', 'payload' => 'CELTIC_DONE'],
+                        ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                     ];
                 }
 
