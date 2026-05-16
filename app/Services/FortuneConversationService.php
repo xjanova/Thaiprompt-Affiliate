@@ -7967,13 +7967,17 @@ class FortuneConversationService
         // 🩹 (2026-05-15 v2) Ultra-short Pay-First — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
         //   เดิม 1480 → v1 600 → v2 ~250 chars (เน้น 3 อย่าง: ยอด / บัญชี / QR)
         //   philosophy ย่อหายเหลือ 0 (ถาม "ทำไมต้องจ่ายก่อน" เพื่ออ่าน)
+        // 🪄 (2026-05-16) เพิ่ม intro นุ่มนวล — "สแกน QR เลย หรือ โอนบัญชีก็ได้นะคะ"
+        //   user feedback: ให้มี wording บอกชัดว่ามี 2 ทางเลือก ลูกค้าไม่งง
         $message = "💎 *ค่าครู ฿{$amount}*\n\n";
 
-        // เลขบัญชี + PromptPay
+        $message .= "📲 *สแกน QR ในภาพได้เลย ⬇️*\n";
+        $message .= "หรือโอนตามบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
+
+        // เลขบัญชี + PromptPay (ดึงจาก PaymentBankAccount ที่ตั้งไว้ใน fortune_bank_account_ids)
         $message .= $this->getBankAccountsListMessage();
 
-        $message .= "\n📲 *หรือสแกน QR ในภาพ ⬇️*\n\n"
-            ."🔖 บิล: {$billRef}\n"
+        $message .= "🔖 บิล: {$billRef}\n"
             ."⏰ หมดอายุใน {$remainingMinutes} นาที\n\n"
             ."_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
             ."_ติดปัญหา พิมพ์ \"ช่วยหน่อย\"_";
@@ -7985,6 +7989,7 @@ class FortuneConversationService
      * สร้างข้อความสรุป + บัญชีธนาคาร (legacy flow — collecting_questions ก่อน pay)
      *
      * 🩹 (2026-05-15 v2) Ultra-short — user feedback: "บล๊อกแจ้งยอดเยอะไป คนกลัว"
+     * 🪄 (2026-05-16) เพิ่ม intro "สแกนเลย หรือโอนบัญชีก็ได้นะคะ"
      */
     protected function getPaymentSummaryMessage(FortuneReading $reading, array $questions, UniquePaymentAmount $uniqueAmount): string
     {
@@ -7996,11 +8001,13 @@ class FortuneConversationService
         $message .= "🔖 บิล: {$billRef}\n";
         $message .= "⏰ หมดอายุใน {$remainingMinutes} นาที\n\n";
 
+        $message .= "📲 *สแกน QR ในภาพได้เลย ⬇️*\n";
+        $message .= "หรือโอนตามบัญชีด้านล่างก็ได้นะคะ ✨\n\n";
+
         // เพิ่มบัญชีธนาคาร
         $message .= $this->getBankAccountsListMessage();
 
-        $message .= "\n📲 *หรือสแกน QR ในภาพ ⬇️*\n\n"
-            ."_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
+        $message .= "_โอนเสร็จ พิมพ์ \"โอนแล้ว\"_\n"
             ."_ติดปัญหา พิมพ์ \"ช่วยหน่อย\"_";
 
         return $message;
