@@ -187,7 +187,18 @@ class CelticCrossService
                 }
             }
 
-            $aiService = new FortuneAIService($this->settings, $celticPurpose);
+            // 🎯 (2026-05-16) Lock OpenAI as primary for Celtic 99฿ followup
+            //   user spec: "ตั้งให้ใช้ openai เป็นหลัก ถ้ามันไม่ fall จริงๆ ก็ไม่ควรสลับโมเดล"
+            //   ก่อน fix: preferredProvider=null → pool ranking ใช้ load score
+            //             → ลูกค้า 2 คนพร้อมกัน → คนที่ 2 ได้ Gemini (tone drift)
+            //   ใหม่: 'openai' preferred → ตรงกับ generateOpeningGreeting (FCS:518)
+            //         persona "แม่หมอจันทรา" คงเส้นทุกคำถาม
+            //
+            //   ⚠️ Sensitive questions ($celticPurpose='sensitive') → ไม่ล็อค
+            //      เพราะ Pro Key (Gemini Pro/GPT-5+) อาจอยู่ provider อื่น
+            //      → ปล่อย pool เลือก purpose='sensitive' key ที่มี
+            $preferredProvider = ($celticPurpose === 'sensitive') ? null : 'openai';
+            $aiService = new FortuneAIService($this->settings, $celticPurpose, $preferredProvider);
             $result = $aiService->generateWithRetryAndFallback(
                 questions: [$prompt],
                 userProfile: null,                  // 🌙 แม่หมอจันทรา ไม่ดูโปรไฟล์ FB — ใช้พลังไพ่ + จิตเจ้าชะตา
