@@ -302,7 +302,16 @@ class LineFortuneWebhookController extends Controller
 
             // 💰 Affiliate Signal: ถ้าข้อความบ่งบอกว่ามีปัญหาเงิน / อยากรายได้เสริม
             // (และไม่ใช่คำสั่งดูดวง) → ส่ง recruitment pitch แทน
-            if ($this->isAffiliateSignalMessage($messageText)) {
+            //
+            // 🛑 (2026-05-16) Skip affiliate pitch ระหว่าง active reading (LINE-specific bug)
+            //   user report screenshot: ลูกค้า Celtic 99฿ ถามคำถาม "หนี้สินจะได้รับการแก้ไข..."
+            //   → bot ตอบ "รายได้เสริมง่ายๆ ชวนเพื่อนมาดูดวง" ❌ (ไม่ตอบคำถาม)
+            //   root: keyword 'หนี้สิน' / 'รายได้' จับโดย isAffiliateSignalMessage
+            //         → block processMessage → AI ไม่ได้เห็นคำถาม
+            //   ใหม่: ถ้ามี active reading → ข้าม affiliate check ให้ processMessage จัดการต่อ
+            //   FB ไม่มี bug นี้ — เพราะไม่มี affiliate pitch ตรง webhook-level
+            $hasActiveForAffiliate = \App\Models\FortuneReading::hasActiveReading('line', $userId);
+            if (! $hasActiveForAffiliate && $this->isAffiliateSignalMessage($messageText)) {
                 Log::info('💰 LINE: Affiliate signal detected → pitch', [
                     'user_id' => $userId,
                     'message_snippet' => mb_substr($messageText, 0, 60),
