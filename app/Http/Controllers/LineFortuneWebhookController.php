@@ -303,14 +303,35 @@ class LineFortuneWebhookController extends Controller
             // 💰 Affiliate Signal: ถ้าข้อความบ่งบอกว่ามีปัญหาเงิน / อยากรายได้เสริม
             // (และไม่ใช่คำสั่งดูดวง) → ส่ง recruitment pitch แทน
             //
-            // 🛑 (2026-05-16) Skip affiliate pitch ระหว่าง active reading (LINE-specific bug)
+            // 🛑 (2026-05-16) Skip affiliate pitch ถ้าลูกค้าอยู่ใน reading/payment context
             //   user report screenshot: ลูกค้า Celtic 99฿ ถามคำถาม "หนี้สินจะได้รับการแก้ไข..."
             //   → bot ตอบ "รายได้เสริมง่ายๆ ชวนเพื่อนมาดูดวง" ❌ (ไม่ตอบคำถาม)
             //   root: keyword 'หนี้สิน' / 'รายได้' จับโดย isAffiliateSignalMessage
             //         → block processMessage → AI ไม่ได้เห็นคำถาม
-            //   ใหม่: ถ้ามี active reading → ข้าม affiliate check ให้ processMessage จัดการต่อ
-            //   FB ไม่มี bug นี้ — เพราะไม่มี affiliate pitch ตรง webhook-level
+            //
+            //   Skip condition ครอบ:
+            //   1. Active reading (Celtic picking/awaiting/etc + Deep collecting)
+            //   2. Pending delivery (Deep 39฿ paid + completed + ยังไม่ส่งคำทำนาย)
+            //      → ระหว่าง AI gen 30-60s + window ก่อนลูกค้ากด "อ่านคำทำนาย"
+            //      → กัน hijack ระหว่างจ่ายแล้วรอผล
+            //   FB ไม่มี bug นี้ — ไม่มี affiliate pitch ตรง webhook-level
             $hasActiveForAffiliate = \App\Models\FortuneReading::hasActiveReading('line', $userId);
+            if (! $hasActiveForAffiliate) {
+                // เช็คเพิ่ม: paid + awaiting delivery (status PAID หรือ COMPLETED แต่ยังไม่ส่งคำทำนาย)
+                $hasPendingDelivery = \App\Models\FortuneReading::where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)
+                        ->orWhere('facebook_user_id', $userId)
+                        ->orWhere('line_user_id', $userId);
+                })
+                    ->where('is_paid', true)
+                    ->whereIn('conversation_status', [
+                        \App\Models\FortuneReading::STATUS_PAID,
+                        \App\Models\FortuneReading::STATUS_COMPLETED,
+                    ])
+                    ->where('created_at', '>=', now()->subHours(2)) // window 2 ชม. กัน reading เก่า
+                    ->exists();
+                $hasActiveForAffiliate = $hasPendingDelivery;
+            }
             if (! $hasActiveForAffiliate && $this->isAffiliateSignalMessage($messageText)) {
                 Log::info('💰 LINE: Affiliate signal detected → pitch', [
                     'user_id' => $userId,
@@ -325,14 +346,13 @@ class LineFortuneWebhookController extends Controller
             // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
             // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — ลูกค้าเก่าได้ text ตรง (ไม่ส่งรูป)
             //
-            // 🚀 (2026-05-16) Skip banner ระหว่าง active reading (กัน LINE delay)
-            //   เคส: ลูกค้าจ่าย Celtic แล้วพิมพ์ "พร้อม" → bot ต้องเปิดไพ่
-            //   ก่อนหน้า: banner sendImage (push API ~500-800ms) block ก่อน processMessage
-            //   → "พร้อม" ต้องรอ banner check ก่อน → ดีเลย์ชัดเจน
-            //   ใหม่: ถ้ามี active reading (Celtic picking/awaiting Q/etc.) → skip banner เลย
+            // 🚀 (2026-05-16) Skip banner ระหว่าง active reading + pending delivery
+            //   เคส 1: ลูกค้าจ่าย Celtic แล้วพิมพ์ "พร้อม" → bot ต้องเปิดไพ่
+            //   เคส 2: Deep 39฿ paid + AI gen → ลูกค้าพิมพ์ "อ่านคำทำนาย" → ต้องส่งทันที
+            //   ก่อน fix: banner sendImage (push API ~500-800ms) block ก่อน processMessage
+            //   ใหม่: reuse $hasActiveForAffiliate ที่เช็คทั้ง 2 condition แล้ว
             //   → critical path เร็วขึ้น 500-800ms
-            $hasActive = \App\Models\FortuneReading::hasActiveReading('line', $userId);
-            if (! $hasActive) {
+            if (! $hasActiveForAffiliate) {
                 $this->bannerService->sendBannerOnce(
                     $userId,
                     fn ($url) => $this->lineService->sendImage($userId, $url),
