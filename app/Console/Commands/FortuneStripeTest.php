@@ -229,8 +229,21 @@ class FortuneStripeTest extends Command
         $this->info('───────────────────────');
 
         try {
-            // ใช้ route() helper — กัน path drift (ที่ถูกคือ /webhook/fortune-stripe)
-            $webhookUrl = route('fortune.stripe.webhook');
+            // 🐛 (2026-05-16) Route name หลายแบบ — group prefix 'webhook.' ทำให้ name จริง = 'webhook.fortune.stripe.webhook'
+            //    Try 2 name patterns + fallback hardcoded URL
+            $webhookUrl = null;
+            $candidateNames = ['webhook.fortune.stripe.webhook', 'fortune.stripe.webhook'];
+            foreach ($candidateNames as $name) {
+                if (\Illuminate\Support\Facades\Route::has($name)) {
+                    $webhookUrl = route($name);
+                    $this->info('   Route name: '.$name);
+                    break;
+                }
+            }
+            if (! $webhookUrl) {
+                $webhookUrl = url('/webhook/fortune-stripe');
+                $this->warn('   ⚠️  Route name ทั้ง 2 แบบไม่ register — fallback hardcoded URL');
+            }
             $this->info('   URL: '.$webhookUrl);
 
             $headResp = Http::timeout(10)->withHeaders([
