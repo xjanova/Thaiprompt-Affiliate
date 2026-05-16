@@ -2084,23 +2084,55 @@ class FortuneChannelManager
                         if ($lineService->replyMessage($replyToken, $messages)) {
                             return true;
                         }
+                        \Log::warning('LINE Celtic: replyMessage ล้มเหลว → fallback push', [
+                            'user_id' => $userId,
+                            'action' => $result['action'] ?? null,
+                        ]);
                     }
 
-                    // Fallback: sendImage (push) + sendMessage (push) แยกกัน
+                    // 🆘 (2026-05-16) Fallback: sendImage (push) + sendMessage (push) แยกกัน
+                    //   user report: "LINE message lost — ลูกค้าไม่เห็นไพ่ที่เปิดไปแล้ว"
+                    //   ก่อน fix: silent catch — ถ้า push fail ลูกค้าไม่รู้ ระบบไม่ alert
+                    //   ใหม่: log ทุกครั้งที่ fail + return false ถ้า text ก็ส่งไม่ได้
+                    //         → upstream รู้ว่า send fail, customer ต้องพิมพ์ "ไม่เห็น" เพื่อ recover
+                    $imageOk = true;
                     if (! empty($result['tarot_image_url'])) {
                         try {
-                            $lineService->sendImage($userId, $result['tarot_image_url']);
+                            $imageOk = $lineService->sendImage($userId, $result['tarot_image_url']);
+                            if (! $imageOk) {
+                                \Log::warning('LINE Celtic: sendImage (push) ล้มเหลว', [
+                                    'user_id' => $userId,
+                                    'image_url' => $result['tarot_image_url'],
+                                ]);
+                            }
                         } catch (\Throwable $e) {
+                            $imageOk = false;
+                            \Log::warning('LINE Celtic: sendImage exception', [
+                                'user_id' => $userId,
+                                'error' => $e->getMessage(),
+                            ]);
                         }
                     }
 
-                    return $lineService->sendMessage($userId, $message, [
+                    $textOk = $lineService->sendMessage($userId, $message, [
                         'quick_replies' => [
                             ['label' => $nextLabel, 'text' => 'พร้อม'],
                             ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'],
                             ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
                         ],
                     ]);
+
+                    if (! $textOk) {
+                        \Log::critical('LINE Celtic: sendMessage (text) ล้มเหลว — ลูกค้าไม่เห็นไพ่!', [
+                            'user_id' => $userId,
+                            'action' => $result['action'] ?? null,
+                            'image_ok' => $imageOk,
+                            'message_preview' => mb_substr($message, 0, 100),
+                            'hint' => 'ลูกค้าจะพิมพ์ "ไม่เห็น" / "ถึงไหน" → buildCelticStatusRecovery จะกู้',
+                        ]);
+                    }
+
+                    return $textOk;
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite + ขอ Q1 + ปุ่ม "เริ่มถามคำถาม"

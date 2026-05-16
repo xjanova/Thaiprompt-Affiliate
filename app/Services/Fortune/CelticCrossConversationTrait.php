@@ -781,6 +781,16 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticPicking(FortuneReading $reading, string $messageText): array
     {
+        // 🆘 (2026-05-16) Status inquiry — ลูกค้าไม่เห็นไพ่ที่เปิดไปแล้ว (LINE message lost)
+        //   user report: "ลูกค้าพิมพ์ แล้วมีการเปิดไพ่ แต่มันไม่ส่งข้อความกลับมาให้เห็นที่ไลน์
+        //                  ลูกค้างง ว่าถึงไหนแล้ว"
+        //   ก่อน fix: matchesCelticReadyKeyword=false → fall to chitchat reminder
+        //         → ลูกค้าได้แต่ "พิมพ์ พร้อม" — ไม่รู้ตอนนี้เปิดถึงใบไหน
+        //   ใหม่: detect "ไม่เห็น/ภาพไม่ขึ้น/ถึงไหน/ใบที่เท่าไหร่" → resume message + รูปใบล่าสุด
+        if ($this->looksLikeCelticStatusInquiry($messageText)) {
+            return $this->buildCelticStatusRecovery($reading);
+        }
+
         // 🔓 ยกเลิก / เริ่มใหม่ (anti-fraud: ก่อน Q1 ตอบ → restart ฟรี)
         if ($this->matchesExactKeyword($messageText, ['เริ่มใหม่', 'restart', 'reset', 'สับใหม่'])) {
             try {
@@ -1739,6 +1749,106 @@ trait CelticCrossConversationTrait
         }
 
         return false;
+    }
+
+    /**
+     * 🆘 (2026-05-16) ตรวจว่าลูกค้าถาม "ถึงไหนแล้ว / ไม่เห็นภาพ"
+     *
+     * เคสจริง: LINE message lost (replyToken expire + push fail) → ลูกค้าไม่เห็นไพ่
+     *   แม้ระบบเปิดไพ่ใน DB แล้ว → ลูกค้างง ว่าถึงไหนแล้ว
+     *   ก่อน fix: matchesCelticReadyKeyword=false → chitchat reminder loop
+     *   ใหม่: detect status inquiry → ส่ง state + รูปใบล่าสุดให้ดูใหม่
+     */
+    protected function looksLikeCelticStatusInquiry(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if ($clean === '') {
+            return false;
+        }
+
+        // limit ความยาว — กัน false positive จากคำถามจริง
+        if (mb_strlen($clean) > 50) {
+            return false;
+        }
+
+        $patterns = [
+            // ไม่เห็น / ไม่ขึ้น / ไม่มา
+            'ไม่เห็น', 'มองไม่เห็น', 'ไม่ขึ้น', 'ไม่มา', 'ไม่ได้รูป', 'ไม่ได้ภาพ',
+            'ภาพไม่ขึ้น', 'ภาพไม่มา', 'รูปไม่ขึ้น', 'รูปไม่มา', 'ไม่มีภาพ', 'ไม่มีรูป',
+            'ไม่ส่งมา', 'ไม่ตอบ', 'เงียบ', 'หายไป', 'หาย',
+            // ถึงไหน
+            'ถึงไหน', 'อยู่ตรงไหน', 'อยู่ขั้นไหน', 'ขั้นไหน', 'อะไรแล้ว',
+            'กี่ใบแล้ว', 'ใบที่เท่าไหร่', 'เปิดถึงใบไหน', 'ใบไหนแล้ว',
+            // English
+            'where', "don't see", 'not see', 'no image', 'missing',
+        ];
+
+        foreach ($patterns as $kw) {
+            if (str_contains($clean, mb_strtolower($kw))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🆘 (2026-05-16) สร้าง status recovery — ส่ง state ปัจจุบัน + รูปใบล่าสุด
+     *
+     * ใช้คู่กับ looksLikeCelticStatusInquiry — ลูกค้าไม่เห็น message ก่อนหน้า
+     *
+     * Returns:
+     *   - message: บอกว่าเปิดถึงใบที่เท่าไหร่ + คำถามที่อยากถามถัดไป
+     *   - tarot_image_url: รูปใบล่าสุดที่เปิด (ลูกค้าไม่เห็นเพราะ message lost)
+     *   - action: 'celtic_chitchat_reminder' → ChannelManager รู้ว่าต้องส่งทั้ง image + text + QR
+     */
+    protected function buildCelticStatusRecovery(FortuneReading $reading): array
+    {
+        $picked = $reading->getCelticPickedCount();
+        $cards = $reading->getCelticCards();
+        $lastCard = ! empty($cards) ? end($cards) : null;
+        $lastImage = $lastCard['image_url'] ?? null;
+        $lastPositionName = '';
+        $lastCardName = '';
+        if (is_array($lastCard)) {
+            $lastPosition = (int) ($lastCard['position'] ?? 0);
+            $meta = FortuneReading::CELTIC_POSITIONS[$lastPosition] ?? null;
+            $lastPositionName = $meta['name'] ?? '';
+            $lastCardName = $lastCard['card_name_th'] ?? '';
+        }
+
+        $nextPosition = $reading->getNextCelticPosition();
+        $nextPrompt = $this->buildCelticPickPromptText($reading);
+
+        $header = "🌙 ขออภัยค่ะถ้าเจ้าชะตาไม่เห็นข้อความก่อนหน้า — แม่หมอส่งให้ใหม่นะคะ ✨\n\n";
+
+        if ($picked === 0 || $lastImage === null) {
+            // ยังไม่เปิดใบไหนเลย
+            $message = $header
+                ."🃏 ยังไม่ได้เปิดไพ่ใบไหน — เริ่มจากใบที่ 1\n\n"
+                ."──────────────────────\n"
+                .$nextPrompt;
+        } elseif ($nextPosition === null) {
+            // เปิดครบ 10 แล้ว — รอคำถาม
+            $message = $header
+                ."✨ เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมรับฟัง\n"
+                ."💬 พิมพ์คำถามที่อยากรู้มาได้เลยค่ะ";
+        } else {
+            // กลางทาง — บอกใบล่าสุด + ใบถัดไป
+            $message = $header
+                ."🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n";
+            if ($lastCardName && $lastPositionName) {
+                $message .= "📌 ใบล่าสุด — *{$lastCardName}* [{$lastPositionName}]\n";
+            }
+            $message .= "\n──────────────────────\n".$nextPrompt;
+        }
+
+        return [
+            'action' => 'celtic_chitchat_reminder', // reuse — ChannelManager จัด image + QR ให้
+            'message' => $message,
+            'reading' => $reading,
+            'tarot_image_url' => $lastImage,  // ส่งรูปใบล่าสุดให้ลูกค้าดูซ้ำ
+        ];
     }
 
     protected function looksLikeFortuneRestartRequest(string $text): bool
