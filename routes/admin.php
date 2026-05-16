@@ -4210,6 +4210,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/readings/{reading}/cancel', [FortuneCelticCrossController::class, 'cancelReading'])->name('cancel');
         // 🚀 (2026-05-08) Force Approve — โอนยอดไม่ตรง → admin มาร์คจ่ายแล้ว + push เริ่มเปิดไพ่ (ใช้แทนเปิด SMS app มือถือ)
         Route::post('/readings/{reading}/force-approve', [FortuneCelticCrossController::class, 'forceApprove'])->name('force-approve');
+        // 🤖 (2026-05-16) Admin Ask AI — แอดมินพิมพ์คำถามให้ AI ทำนายแทนลูกค้า + push อัตโนมัติ
+        Route::post('/readings/{reading}/ask-ai', [FortuneCelticCrossController::class, 'adminAskAi'])->name('ask-ai');
         // 🚨 (2026-05-05) Emergency Recovery — กู้บิลด่วน (ใส่เลขบิล / auto-scan)
         Route::get('/emergency-recover', [FortuneCelticCrossController::class, 'emergencyRecover'])->name('emergency-recover');
         Route::post('/emergency-recover', [FortuneCelticCrossController::class, 'emergencyRecoverAction'])->name('emergency-recover.action');

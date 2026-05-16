@@ -539,6 +539,132 @@ class FortuneCelticCrossController extends Controller
     }
 
     /**
+     * 🤖 (2026-05-16) Admin Ask AI — แอดมินพิมพ์คำถามเข้าหลังบ้าน → AI สร้างคำทำนาย → ส่งให้ลูกค้า
+     *
+     * Use case: ลูกค้าเงียบ / ลูกค้าถามผ่านช่องทางอื่น (เช่น โทร) / แอดมินอยากกระตุ้นบทสนทนา
+     *           → แอดมินเปิดหน้า Celtic show → กรอกคำถาม → กดส่ง → AI ทำนาย → ส่ง LINE/FB อัตโนมัติ
+     *
+     * Per user spec (2026-05-16):
+     *   - นับเหมือนลูกค้าถามเอง (เพิ่ม sequence + ลด quota)
+     *   - ส่งให้ลูกค้าอัตโนมัติทันที (ไม่ต้องแสดง preview)
+     *
+     * Validation:
+     *   - reading ต้องเป็น Celtic + is_paid + เปิดไพ่ครบ 10 ใบ + canAskMoreCeltic()
+     *   - question text required (min 3 chars)
+     */
+    public function adminAskAi(Request $request, FortuneReading $reading)
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            abort(404);
+        }
+
+        $validated = $request->validate([
+            'question' => 'required|string|min:3|max:1000',
+        ], [
+            'question.required' => 'กรุณาพิมพ์คำถาม',
+            'question.min' => 'คำถามสั้นเกินไป (อย่างน้อย 3 ตัวอักษร)',
+            'question.max' => 'คำถามยาวเกินไป (ไม่เกิน 1000 ตัวอักษร)',
+        ]);
+
+        if (! $reading->is_paid) {
+            return back()->with('error', '❌ Reading นี้ยังไม่ได้ชำระเงิน — ใช้ Force Approve ก่อน');
+        }
+
+        if ($reading->getCelticPickedCount() < 10) {
+            return back()->with('error', '❌ ลูกค้ายังเปิดไพ่ไม่ครบ 10 ใบ — สั่ง AI ทำนายไม่ได้');
+        }
+
+        if (! $reading->canAskMoreCeltic()) {
+            return back()->with('error', '❌ ครบจำนวนคำถามแล้ว หรือเลยเวลา session');
+        }
+
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            return back()->with('error', '❌ Reading นี้ไม่มี user_id — push ไปไม่ได้');
+        }
+
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $service = new CelticCrossService($settings);
+
+            // 🤖 เรียก AI ตอบคำถาม (ใช้ flow เดียวกับลูกค้าถามเอง)
+            $result = $service->askQuestion($reading, $validated['question']);
+
+            if (! $result['success']) {
+                return back()->with('error', '❌ AI ตอบไม่สำเร็จ: '.($result['message'] ?? 'ไม่ทราบสาเหตุ'));
+            }
+
+            // 📤 ส่งคำตอบให้ลูกค้าผ่าน LINE/FB
+            $reading->refresh();
+            $platform = $reading->platform
+                ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
+
+            $remainingMin = $reading->getCelticQaRemainingMinutes();
+            $qaWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+            $timeHint = $remainingMin !== null
+                ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+                : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+
+            $customerMessage = $result['response']
+                ."\n\n──────────────────────\n"
+                .$timeHint."\n"
+                .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
+
+            $channelManager = new FortuneChannelManager($settings);
+            $channelManager->sendResponse($platform, (string) $userId, [
+                'action' => 'celtic_question_answered',
+                'message' => $customerMessage,
+                'reading' => $reading,
+            ], [
+                'from_admin' => true,
+                'message_tag' => 'POST_PURCHASE_UPDATE',
+            ]);
+
+            // 📝 บันทึก takeover log (admin proxy question)
+            try {
+                \App\Models\FortuneTakeoverLog::create([
+                    'fortune_reading_id' => $reading->id,
+                    'user_id' => auth()->id(),
+                    'platform' => $platform,
+                    'action' => 'message',
+                    'reason' => 'admin_ai_assist',
+                    'message' => '[ADMIN ASK AI] '.mb_substr($validated['question'], 0, 500),
+                    'metadata' => [
+                        'sequence' => $result['sequence'] ?? null,
+                        'response_len' => mb_strlen($result['response'] ?? ''),
+                    ],
+                ]);
+            } catch (\Throwable $logErr) {
+                // ignore — main flow สำเร็จแล้ว
+            }
+
+            Log::info('Celtic admin ask AI สำเร็จ', [
+                'reading_id' => $reading->id,
+                'admin_id' => auth()->id(),
+                'sequence' => $result['sequence'] ?? null,
+                'question_preview' => mb_substr($validated['question'], 0, 100),
+                'response_len' => mb_strlen($result['response'] ?? ''),
+                'platform' => $platform,
+            ]);
+
+            $sequence = $result['sequence'] ?? '?';
+
+            return back()->with(
+                'success',
+                "✅ ส่งคำถาม Q{$sequence} ให้ AI ทำนายแล้ว + แจ้งลูกค้าทาง ".strtoupper($platform).' สำเร็จ'
+            );
+        } catch (\Throwable $e) {
+            Log::error('Celtic admin ask AI failed', [
+                'reading_id' => $reading->id,
+                'admin_id' => auth()->id(),
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', "❌ สั่ง AI ทำนายล้มเหลว: {$e->getMessage()}");
+        }
+    }
+
+    /**
      * 🚨 Emergency Recovery — แสดงหน้าฟอร์มกู้บิลด่วน
      *
      * ใช้กรณีลูกค้าจ่ายแล้วบอทเงียบ — แอดมินใส่เลขบิลเพื่อ re-push prompt ทันที
