@@ -1428,6 +1428,21 @@ PROMPT;
         bool $aggressiveCounter = false,
         bool $reachedMentionCap = false
     ): ?array {
+        // 🛡️ (2026-05-16) Honor sensitive_ai_mode=paid_only
+        //    เคสที่เจอ: Bill Psychology ตอบลูกค้าที่ยังไม่จ่าย (status=pending_payment/tier_choice)
+        //    → ใช้ Pro sensitive key (OpenAI gpt-5.5) ทั้งที่ admin ตั้ง paid_only
+        //    → 5+ calls/day หลุดบน unpaid readings = costly leak
+        //    Fix: ถ้า paid_only → return null → caller fallback ไป chat AI ปกติ (Gemini/Groq)
+        //    ถ้า admin ตั้ง sensitive_ai_mode=all → ยังใช้ Pro ตามเดิม
+        if (! $this->settings->isSensitiveModeActiveFor('chat')) {
+            Log::info('FortuneAIService: Bill Psychology skip Pro key (sensitive_ai_mode!=all) — fallback chat AI', [
+                'sensitive_ai_mode' => $this->settings->sensitive_ai_mode ?? 'paid_only',
+                'message_preview' => mb_substr($messageText, 0, 80),
+            ]);
+
+            return null;
+        }
+
         $systemPrompt = $this->buildBillPsychologySystemMessage($billContext, $aggressiveCounter, $reachedMentionCap);
 
         return $this->generateProResponse($messageText, $userProfile, $history, $systemPrompt, 'bill_psychology');
