@@ -3174,6 +3174,19 @@ class FacebookWebhookController extends Controller
             'PAY_LATER_ACK_YES' => $this->processConversationalMessage($senderId, 'ใช่'),
             'PAY_LATER_ACK_NO' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
 
+            // 💳 (2026-05-16) Payment method selection — Stripe gate buttons
+            //   user report: ลูกค้ากด "QR ไทย" ใน Celtic 99฿ menu → AI ตอบหลอน "39 บาท"
+            //   root cause: default case ส่ง "PAY_METHOD_QR_THAI" raw → handlePaymentMethodSelection
+            //              บางเงื่อนไขไม่ match (state race / ไม่ใช่ AWAITING_PAYMENT_METHOD)
+            //              → AI fallback hallucinate
+            //   fix: translate payload → keyword ชัดเจน "qr ไทย" / "บัตร"
+            //        keyword นี้จับได้ทั้ง handlePaymentMethodSelection + maybePresentPaymentInfo
+            //        → routing ปลอดภัยกว่าทุก state
+            'PAY_METHOD_QR_THAI' => $this->processConversationalMessage($senderId, 'qr ไทย'),
+            'PAY_METHOD_STRIPE' => $this->processConversationalMessage($senderId, 'บัตร'),
+            'STRIPE_OPEN_CHECKOUT' => $this->processConversationalMessage($senderId, 'STRIPE_OPEN_CHECKOUT'),
+            'STRIPE_RESUME' => $this->processConversationalMessage($senderId, 'STRIPE_RESUME'),
+
             // ✅ ปุ่มจาก Button Templates
             'REPORT_PAYMENT' => $this->processConversationalMessage($senderId, 'แจ้งชำระเงิน'),
             'CANCEL_PAYMENT' => $this->processConversationalMessage($senderId, 'ยกเลิก'),
