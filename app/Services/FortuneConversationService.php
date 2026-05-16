@@ -1659,6 +1659,11 @@ class FortuneConversationService
                             return $this->handleKeywordMatchResponse($matchedKeyword);
                         }
 
+                        // 💚 (2026-05-16) ลูกค้าถามหา LINE → ส่ง add-friend URL
+                        if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
+                            return $lineInfo;
+                        }
+
                         // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
                         if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
                             return $paymentInfo;
@@ -1858,6 +1863,11 @@ class FortuneConversationService
                     ]);
 
                     return $this->handleKeywordMatchResponse($matchedKeyword);
+                }
+
+                // 💚 (2026-05-16) ลูกค้าถามหา LINE → ส่ง add-friend URL
+                if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
+                    return $lineInfo;
                 }
 
                 // 💳 (2026-05-14) ลูกค้าขอเลขบัญชี/QR → ส่งข้อมูลทันที (เช็คก่อน pricing)
@@ -6117,6 +6127,11 @@ class FortuneConversationService
      */
     protected function handlePendingPayment(FortuneReading $reading, string $messageText): array
     {
+        // 💚 (2026-05-16) ลูกค้ารอจ่ายแต่ถามหา LINE → ตอบ URL ทันที ไม่ปิดบิล
+        if ($lineInfo = $this->maybePresentLineAddFriend($messageText)) {
+            return $lineInfo;
+        }
+
         // 💳 (2026-05-14) ลูกค้ารอจ่ายแต่ขอเลขบัญชี/QR — ส่งช่องทางทันที ไม่ปิดบิล
         if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
             return $paymentInfo;
@@ -10679,6 +10694,95 @@ PROMPT;
     {
         if ($this->looksLikePaymentInfoRequest($messageText)) {
             return $this->presentPaymentInfo();
+        }
+
+        return null;
+    }
+
+    /**
+     * 💚 (2026-05-16) ตรวจจับว่าลูกค้าถามหา LINE OA
+     *
+     * Patterns: ขอไลน์ / มีไลน์ไหม / ไอดีไลน์ / เพิ่มเพื่อนไลน์ / line id / add line
+     */
+    public function looksLikeAskLine(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        $patterns = [
+            // ขอ/มี + ไลน์
+            'ขอไลน์', 'ขอ ไลน์', 'มีไลน์', 'มี ไลน์', 'มีไลน์ไหม', 'มีไลน์มั้ย', 'มีไลน์รึป่าว', 'มีไลน์หรือเปล่า',
+            'ขอ line', 'ขอline', 'มี line', 'มีline',
+            // ID / ไอดี
+            'ไอดีไลน์', 'ไอดี ไลน์', 'ไลน์ไอดี', 'ไลน์ id', 'line id', 'lineid', 'id line', 'id ไลน์',
+            // เพิ่มเพื่อน
+            'เพิ่มเพื่อนไลน์', 'เพิ่มเพื่อน line', 'เพิ่มเพื่อนทางไลน์', 'add line', 'add ไลน์',
+            // LINE OA
+            'ไลน์โอเอ', 'line oa', 'lineoa', 'ไลน์@', 'line@', 'line at',
+            'ไลน์ของแม่หมอ', 'ไลน์แม่หมอ', 'ไลน์หมอ',
+            // ทักทาง/ติดต่อ
+            'ทักไลน์', 'คุยไลน์', 'คุยทางไลน์', 'ติดต่อไลน์', 'ติดต่อ line', 'ติดต่อทางไลน์',
+            // 🇱🇦 Lao
+            'ໄລນ໌', 'line ມີ', 'ມີ line',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (str_contains($text, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 💚 (2026-05-16) ส่ง LINE Add Friend URL + ID เมื่อลูกค้าถาม
+     *
+     * ดึง line_bot_basic_id จาก setting → สร้าง deep link line://ti/p/@xxx
+     */
+    public function presentLineAddFriend(): array
+    {
+        $basicId = $this->settings->line_bot_basic_id ?? null;
+
+        if (empty($basicId)) {
+            return [
+                'action' => 'no_line_oa',
+                'message' => "🙏 ขออภัยค่ะ ตอนนี้แม่หมอจันทรายังไม่มี LINE OA นะคะ\n\n"
+                    ."คุยทางช่องนี้ได้เลยค่ะ ✨",
+                'reading' => null,
+            ];
+        }
+
+        if (! str_starts_with($basicId, '@')) {
+            $basicId = '@'.$basicId;
+        }
+        $url = 'https://line.me/R/ti/p/'.$basicId;
+
+        return [
+            'action' => 'line_add_friend',
+            'message' => "💚 *LINE OA แม่หมอจันทรา* 💚\n\n"
+                ."📱 *ID:* {$basicId}\n"
+                ."🔗 {$url}\n\n"
+                ."กดลิงก์เพิ่มเพื่อนได้เลยนะคะ ✨\n"
+                ."หรือเปิด LINE → เพิ่มเพื่อน → ค้นหา ID นี้ก็ได้ค่ะ",
+            'line_url' => $url,
+            'line_id' => $basicId,
+            'reading' => null,
+        ];
+    }
+
+    /**
+     * 💚 Helper — ตรวจ + ส่ง LINE add friend ถ้าลูกค้าขอ
+     *
+     * ใช้คู่กับ maybePresentPaymentInfo ที่ entry points ของ processMessage
+     * Return null = ไม่ใช่คำขอ → caller ทำงานต่อ
+     */
+    public function maybePresentLineAddFriend(string $messageText): ?array
+    {
+        if ($this->looksLikeAskLine($messageText)) {
+            return $this->presentLineAddFriend();
         }
 
         return null;
