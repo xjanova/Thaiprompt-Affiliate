@@ -128,11 +128,10 @@ class CelticCrossService
             return ['success' => false, 'message' => 'ครบจำนวนคำถามแล้ว หรือเลยเวลา 1 ชั่วโมง'];
         }
 
-        // 🔒 sequence ใช้ count records + 1 เสมอ (ทั้ง customer + admin path)
-        //   เหตุผล: กัน collision เมื่อมี admin proxy แทรกระหว่าง customer Q
-        //   ปกติ (ไม่มี admin proxy) count == celtic_questions_used → ผลเหมือนเดิม
-        //   มี admin proxy → count > celtic_questions_used → sequence ของ customer ถัดไปยังไม่ชน
-        $sequence = FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
+        // sequence: customer path = counter + 1 (เดิม) / admin path = นับ record จริง + 1 (ไม่กระทบ counter)
+        $sequence = $countTowardsQuota
+            ? $reading->celtic_questions_used + 1
+            : FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
         $cards = $reading->getCelticCards();
 
         if (count($cards) < 10) {
@@ -293,12 +292,7 @@ class CelticCrossService
             // อัพเดต counter ใน reading (เฉพาะ customer path — admin proxy ไม่ตัด quota)
             if ($countTowardsQuota) {
                 $reading->refresh();
-
-                // 🔒 ใช้ counter+1 (ไม่ใช่ $sequence) — ป้องกัน customer โดน "ดูด" quota
-                //   ถ้ามี admin proxy แทรก: sequence=record count, counter ยังคงเป็นจำนวนถามจริงของลูกค้า
-                //   ทำงานเดิมในเคสปกติ (ไม่มี admin proxy) เพราะ counter+1 == sequence
-                $customerQuestionNumber = (int) $reading->celtic_questions_used + 1;
-                $reading->markCelticAnswered($customerQuestionNumber);
+                $reading->markCelticAnswered($sequence);
 
                 // 🃏 Celtic บันทึกแยกจาก 39฿ deep:
                 //   • Q1 + Q2 + Q3+... → เก็บแยก row ใน fortune_celtic_questions table (มีแล้วด้านบน)
@@ -306,7 +300,7 @@ class CelticCrossService
                 //   • ห้ามแตะ deep_response/basic_response — schema คนละแบบ (39฿ มีวันเกิด, Celtic มี 10 ใบ)
                 //   • reading_type 'celtic_cross' ถูกตั้งจาก setCelticPendingPayment() อยู่แล้ว
                 //   • ภาพ 10 ใบ → celtic_summary_image_path (CelticSpreadImageGenerator สร้างหลังเปิดครบ)
-                if ($customerQuestionNumber === 1) {
+                if ($sequence === 1) {
                     $reading->update([
                         'ai_response' => $response,
                         'ai_provider' => $aiProvider,
@@ -881,8 +875,7 @@ class CelticCrossService
             return ['success' => false, 'message' => 'ต้องเลือกไพ่ครบ 10 ใบก่อน'];
         }
 
-        // 🔒 sequence จาก count records + 1 (สอดคล้องกับ askQuestion — กัน collision จาก admin proxy)
-        $sequence = FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
+        $sequence = $reading->celtic_questions_used + 1;
         $cardsText = $this->formatCardsForPrompt($cards);
         $userText = trim($userText);
 
@@ -977,9 +970,7 @@ class CelticCrossService
             ]);
 
             $reading->refresh();
-            // 🔒 ใช้ counter+1 (กัน customer โดน "ดูด" quota จาก admin proxy ที่แทรก)
-            $customerQuestionNumber = (int) $reading->celtic_questions_used + 1;
-            $reading->markCelticAnswered($customerQuestionNumber);
+            $reading->markCelticAnswered($sequence);
 
             // tokens cumulative
             $reading->update([
