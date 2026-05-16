@@ -6,6 +6,7 @@ use App\Models\FortuneCelticQuestion;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Models\TarotCard;
+use App\Services\Fortune\CustomerPersonaService;
 use Exception;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Log;
@@ -638,7 +639,14 @@ class CelticCrossService
     }
 
     /**
-     * สร้าง Followup Prompt (Q2-Q3) — ตอบคำถามใหม่โดยใช้ไพ่เดิม ไม่อธิบายไพ่ใหม่
+     * สร้าง Followup Prompt — ตอบคำถามใหม่โดยใช้ไพ่เดิม
+     *
+     * 🆕 (2026-05-16) Sequence-aware short style:
+     *   - Q1: full storytelling (เดิม) — 800-1500 chars
+     *   - Q2+: short analytical + ฟันธง — 200-450 chars (ลูกค้าเริ่มชินแล้ว)
+     *   - Q6+ ที่นอกเรื่องเดิม: AI signal [OFF_TOPIC_REPICK] → ระบบชวนจับไพ่ใหม่
+     *
+     * 👤 Persona context — inject ทุก Q เพื่อให้ tone กลมกลืน (เพศ/อายุ/ความกังวล)
      */
     protected function buildFollowupPrompt(
         FortuneReading $reading,
@@ -679,11 +687,47 @@ class CelticCrossService
             }
         }
 
-        // 🌙 (2026-05-14) Default prompt — แม่หมอจันทราพยากรณ์ Celtic 99฿
+        // 👤 (2026-05-16) Inject persona — เพศ/อายุ/บุคลิก → ให้ AI ปรับ tone กลมกลืน
+        //    Guard: ถ้า persona ไม่มีข้อมูล → return '' → ไม่ inject
+        //    Sanitize: bracket directive `[👤 CUSTOMER_PERSONA...]` ถูก filter ใน FortuneAIService อยู่แล้ว
+        $personaBlock = '';
+        try {
+            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            if (! empty($userId)) {
+                $personaBlock = app(CustomerPersonaService::class)->buildInjectBlock($platform, (string) $userId);
+            }
+        } catch (\Throwable $e) {
+            // persona fail → skip ไป — ไม่ block flow
+            Log::debug('Celtic: persona inject fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 🆕 (2026-05-16) Q2+ — short analytical style แทน 9 sections
+        //    user spec: "ไม่ต้องใช้การทำนายตามแพลตฟอร์มที่ตั้ง" หลัง Q2
+        //               "ตอบแบบวิเคราะห์จากไพ่ที่เปิดสั้นๆ ฟันธงไปเลย"
+        //               "ไม่ต้องมีการสวัสดีระหว่างทำนายเด็ดขาด"
+        if ($sequence >= 2) {
+            return $this->buildShortFollowupPrompt(
+                $brandName,
+                $cardsText,
+                $previousContext,
+                $userQuestion,
+                $sequence,
+                $personaBlock
+            );
+        }
+
+        // 🌙 (2026-05-14) Q1 default prompt — แม่หมอจันทราพยากรณ์ Celtic 99฿
         //   user spec 2026-05-14: "เอาระบบ Q1/Q2/Q3 ออก ใช้ prompt เดียวเท่านั้น"
         //   ลบ sequence-aware language → AI ตอบเหมือนคุยกับลูกค้าธรรมดา
         //   admin override ผ่าน settings.celtic_cross_followup_prompt
-        return "คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
+        $personaPrefix = $personaBlock !== '' ? $personaBlock."\n\n" : '';
+
+        return $personaPrefix
+            ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
 
             ."ภารกิจของคุณ:\n"
             ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
@@ -770,6 +814,76 @@ class CelticCrossService
             ."🎯 *เป้าหมายสุดท้าย*: ทำให้ลูกค้ารู้สึก \"โดน\" + เข้าใจสถานการณ์ + เห็นทางเลือกชัดขึ้น\n\n"
 
             .'เริ่มทำนายทันทีจากข้อมูลที่ได้รับ (ตอบกระชับ 800-1500 chars):';
+    }
+
+    /**
+     * 🆕 (2026-05-16) Short followup prompt สำหรับ Q2+
+     *
+     * user spec: "หลังคำถามที่ 2 ไป ไม่ต้องใช้การทำนายตามแพลตฟอร์มที่ตั้ง
+     *             ให้เป็นการตอบแบบวิเคราะห์จากไพ่ที่เปิดสั้นๆ ฟันธงไปเลย
+     *             ไม่ต้องมีการสวัสดีระหว่างทำนายเด็ดขาด"
+     *
+     * + Q6+ + คำถามนอกเรื่องเดิม → AI signal [OFF_TOPIC_REPICK]
+     *   ระบบจับ signal → ชวนจับไพ่ใหม่ + exit session
+     */
+    protected function buildShortFollowupPrompt(
+        string $brandName,
+        string $cardsText,
+        string $previousContext,
+        string $userQuestion,
+        int $sequence,
+        string $personaBlock
+    ): string {
+        // สั่ง AI ตรวจ off-topic เมื่อถามเกิน 5 คำถาม
+        //   ทำไม > 5: ลูกค้ามักถามต่อเนื่องเรื่องเดิม 3-5 คำถามแรก (ลึกเรื่องเดียว)
+        //              เกิน 5 = เริ่มกระโดด topic → ไพ่ชุดเดิมตอบไม่ตรง → ชวนจับไพ่ใหม่
+        $offTopicGuard = '';
+        if ($sequence >= 6) {
+            $offTopicGuard = "\n\n━━━━━━━━━━━━━━━━━\n"
+                ."🃏 ตรวจหัวข้อคำถาม (Q{$sequence})\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."ดูบทสนทนาก่อนหน้า — ถ้าคำถามล่าสุดเป็น \"หัวข้อใหม่\" ที่ต่างชัดจากเรื่องเดิม\n"
+                ."(เช่น เคยถามเรื่องความรัก แต่ตอนนี้ถามเรื่องการงาน/การเงิน/สุขภาพที่ไม่เกี่ยวกัน)\n"
+                ."→ ตอบสั้นๆ + ใส่ token *[OFF_TOPIC_REPICK]* ที่ท้ายข้อความ\n"
+                ."   ระบบจะชวนเจ้าชะตาจับไพ่ใหม่เอง (ไพ่ชุดเดิมไม่ตรงเรื่องใหม่)\n"
+                ."ถ้ายังเป็นเรื่องเดิม → ตอบปกติ ไม่ต้องใส่ token\n"
+                ."ห้ามใส่ token นี้เด็ดขาดถ้าคำถามยังต่อเนื่องจากเดิม";
+        }
+
+        $personaPrefix = $personaBlock !== '' ? $personaBlock."\n\n" : '';
+
+        return $personaPrefix
+            ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบที่ลูกค้าเปิดไว้แล้ว)\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🎯 หลักการตอบ (Q{$sequence}+ short style)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• *ไม่ทักทาย ไม่สวัสดี ไม่เริ่มประโยคด้วย \"เจ้าชะตา/แม่หมอเห็นว่า\"* — เข้าเรื่องเลย\n"
+            ."• วิเคราะห์จาก *ไพ่ที่เปิดไว้แล้ว* — ดึงไพ่ที่เกี่ยวกับคำถามนี้มาตอบ (ไม่ต้องอ้างทั้ง 10 ใบ)\n"
+            ."• *ฟันธงทันที* — ห้ามคำว่า \"อาจจะ/แล้วแต่/ขึ้นอยู่กับ\"\n"
+            ."• ตอบ *200-450 ตัวอักษร* — กระชับ มีน้ำหนัก\n"
+            ."• ไม่ต้องโครงสร้าง 9 sections — ตอบประเด็นที่ลูกค้าถามตรงๆ\n"
+            ."• ลงท้ายฟันธงสั้น 1-2 ประโยค — ไม่ต้อง bullet สรุป\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🃏 ไพ่ 10 ใบที่ลูกค้าเปิดไว้ (ใช้อ้างอิงเท่านั้น — ไม่ต้องอธิบายไพ่)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            .$cardsText."\n\n"
+            .$previousContext
+            ."❓ *คำถามล่าสุด (Q{$sequence})*: \"{$userQuestion}\"\n\n"
+
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."🚫 ห้าม\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• ห้ามทักทาย/สวัสดี/ขอบคุณ/พูดเปิดประโยคแบบ \"แม่หมอเข้าใจว่า...\"\n"
+            ."• ห้ามอธิบายไพ่ทีละใบ — ใช้ไพ่ \"ใต้พรม\" สรุปเลย\n"
+            ."• ห้ามตอบเกิน 500 chars — ลูกค้าเริ่มล้า ต้องการคำตอบกระชับ\n"
+            ."• ห้ามถามวันเกิด/ราศี — ใช้แค่ไพ่ + persona ที่ระบบจำไว้\n"
+            ."• ห้ามชวนดูดวงแพคใหม่/ขายของ\n"
+            ."• ห้ามใช้ markdown headers (##, ###) — plain text + emoji หัวข้อได้"
+            .$offTopicGuard."\n\n"
+
+            .'เริ่มตอบทันที (200-450 chars, ไม่ทักทาย, ฟันธง):';
     }
 
     /**

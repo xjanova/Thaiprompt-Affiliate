@@ -569,7 +569,10 @@ class FortuneAIService
             return $result;
         }
 
-        $pattern = '/\[(?:TURNOVER|TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)(?:[_\s][^\]]*)?\]/u';
+        // 🃏 (2026-05-16) เพิ่ม OFF_TOPIC_REPICK — Celtic 99฿ Q6+ off-topic signal
+        //    AI ใส่ token นี้เมื่อตรวจว่าคำถามใหม่ต่างจากเรื่องเดิม → ระบบชวนจับไพ่ใหม่
+        //    ถ้า trait regex จับไม่ทัน (hyphen/dot variant) → sanitizer นี้กันการรั่ว
+        $pattern = '/\[(?:TURNOVER|TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION|OFF[_\s.-]?TOPIC[_\s.-]?REPICK)(?:[_\s][^\]]*)?\]/u';
         $cleaned = preg_replace($pattern, '', $response);
 
         // (2026-05-15) Strip [👤 CUSTOMER_PERSONA ...] header ถ้า AI หลอน echo

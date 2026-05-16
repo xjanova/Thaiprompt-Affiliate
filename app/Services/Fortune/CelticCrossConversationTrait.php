@@ -1345,7 +1345,7 @@ trait CelticCrossConversationTrait
         // 🛡️ (2026-05-05) DISABLE ai_signal early-end ตาม user spec
         //   user 2026-05-05: "สำคัญอย่าสรุปก่อนลูกค้าถามคำถามสุดท้ายต้องสรุปที่คำถามสุดท้าย"
         //   เดิม: wants_end จาก AI → end session ตั้งแต่ Q2 → ลูกค้าโดนตัดก่อนถามครบ
-        //   ใหม่: AI's wants_end ignore ทั้งหมด — ลูกค้าตัดสินใจเอง (พิมพ์ "พอแค่นี้") หรือ time_expired
+        //   ใหม่: AI's wants_end ignore ทั้งหมด — ลูกค้าตัดสินใจเอง (พิมพ์ "ยุติการทำนาย") หรือ time_expired
         if ($wantsEnd) {
             \Log::info('Celtic: AI signaled wants_end — ignored (user spec: free chat ภายในเวลา)', [
                 'reading_id' => $reading->id,
@@ -1353,10 +1353,42 @@ trait CelticCrossConversationTrait
             ]);
         }
 
+        // 🃏 (2026-05-16) Off-topic detection — AI signal [OFF_TOPIC_REPICK]
+        //   user spec: "ใครที่ถามคำถามเริ่มเยอะเกิน 5 คำถาม ที่เริ่มไม่เกี่ยวเรื่องเดิม
+        //               แม่หมอต้องพยายามให้จับไพ่ใหม่ (จบการทำนายนี้ แล้วให้จ่ายใหม่)
+        //               เพราะไพ่ชุดเดียวอาจตอบได้ไม่ตรงกับคำถามที่ต่างออกไป
+        //               ให้จับใหม่ และต้องออกจากการสนทนาก่อน"
+        //
+        //   Detection: AI ใส่ token [OFF_TOPIC_REPICK] ที่ท้ายข้อความ (จาก prompt Q6+)
+        //   strip token จาก response + exit session ด้วย reason 'off_topic_repick'
+        //   Pattern กว้างเผื่อ AI แต่งรูปแบบ — รับ space / underscore / hyphen / dot ระหว่างคำ
+        $offTopicPattern = '/\[\s*OFF[_\s.-]?TOPIC[_\s.-]?REPICK\s*\]/iu';
+        $aiResponse = (string) ($result['response'] ?? '');
+        if (preg_match($offTopicPattern, $aiResponse)) {
+            $aiResponse = trim(preg_replace($offTopicPattern, '', $aiResponse));
+
+            \Log::info('Celtic: AI signaled off-topic → ชวนจับไพ่ใหม่ + exit', [
+                'reading_id' => $reading->id,
+                'sequence' => $sequence,
+            ]);
+
+            // ส่ง response สั้นๆ + closing message ชวนจับไพ่ใหม่
+            $repickMessage = $aiResponse
+                ."\n\n──────────────────────\n"
+                ."🃏 *แม่หมอเห็นว่าเจ้าชะตาเริ่มถามเรื่องใหม่ที่ต่างจากเดิม* 🌙\n\n"
+                ."ไพ่ชุดนี้ (10 ใบ) แม่หมอเปิดให้สำหรับเรื่องที่เจ้าชะตามาดูในตอนแรกค่ะ\n"
+                ."ถ้าอยากให้แม่หมอทำนายเรื่องใหม่ — *ต้องจับไพ่ใหม่* ถึงจะตรงค่ะ\n\n"
+                ."🔮 พิมพ์ *\"ดูดวง\"* เมื่อพร้อม — แม่หมอจะเปิดประตูพลังให้ใหม่\n"
+                .'🙏 ขอบคุณที่ไว้วางใจแม่หมอจันทรานะคะ ✨';
+
+            // จบ session — exit Pro Session + status COMPLETED
+            return $this->endCelticSession($reading, 'off_topic_repick', $repickMessage);
+        }
+
         // 🌙 (2026-05-14) ลบ max_questions enforce ทั้งหมด
         //   user spec: "คุยกับแม่หมอจันทรา จนจุใจ 30 นาที"
         //   เดิม: ถ้าถามครบ max → end session ก่อนหมดเวลา → ลูกค้าโดนตัด → tier menu โผล่
-        //   ใหม่: ถามได้เรื่อยๆ จนกว่า canAskMoreCeltic() = false (หมดเวลา) หรือ "พอแค่นี้"
+        //   ใหม่: ถามได้เรื่อยๆ จนกว่า canAskMoreCeltic() = false (หมดเวลา) หรือ "ยุติการทำนาย"
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         $remainingMin = $reading->getCelticQaRemainingMinutes();
@@ -1368,11 +1400,11 @@ trait CelticCrossConversationTrait
         $followupOffer = "\n\n──────────────────────\n"
             .$timeHint."\n"
             .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ\n'
-            .'หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา ✨';
+            .'หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบสนทนา ✨';
 
         return [
             'action' => 'celtic_question_answered',
-            'message' => $result['response'].$followupOffer,
+            'message' => $aiResponse.$followupOffer,
             'reading' => $reading,
         ];
     }
@@ -1393,13 +1425,43 @@ trait CelticCrossConversationTrait
      *   - ครบ max questions (max_questions_reached) — combine final answer + summary
      *   - Idle timeout (idle) — เรียกจาก scheduled command fortune:celtic-auto-finalize
      *
-     * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'max_questions_reached' | 'idle'
+     * @param  string  $reason  'ai_signal' | 'time_expired' | 'customer_said_done' | 'max_questions_reached' | 'idle' | 'off_topic_repick'
      * @param  string|null  $aiMessage  ถ้ามีคำตอบสุดท้ายจาก AI — รวมเข้ากับ summary
      */
     public function endCelticSession(FortuneReading $reading, string $reason = 'ai_signal', ?string $aiMessage = null): array
     {
         // 🔄 reset state กลับ COMPLETED → normal loop พร้อมรับ "ดูดวง" ใหม่ได้
         $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+        // 🃏 (2026-05-16) off_topic_repick — ลูกค้าถามนอกเรื่องเดิม → ชวนจับไพ่ใหม่
+        //   ใช้ $aiMessage ที่ส่งเข้ามาตรงๆ (รวม response + ชวนจับใหม่ไว้แล้ว) — skip Grand Finale
+        //   เหตุผล: ลูกค้าจะไป flow "ดูดวง" ใหม่ — Grand Finale ไม่เกี่ยว
+        //   ใช้ action 'celtic_session_ended' เพื่อให้ channel handler ส่งภาพ composite ที่ระลึกได้
+        if ($reason === 'off_topic_repick' && ! empty($aiMessage)) {
+            // ปิด Pro Session ก่อน (อย่าให้ค้าง)
+            if (method_exists($this, 'clearProSessionFlags')) {
+                $this->clearProSessionFlags($reading);
+            }
+
+            // สร้างภาพ composite ที่ระลึก (best-effort)
+            $composeUrl = null;
+            try {
+                $generator = app(CelticSpreadImageGenerator::class);
+                $composeUrl = $generator->generate($reading);
+            } catch (\Throwable $e) {
+                \Log::warning('Celtic: composite image fail (off_topic_repick)', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return [
+                'action' => 'celtic_session_ended',
+                'message' => $aiMessage,
+                'reading' => $reading,
+                'celtic_summary_image_url' => $composeUrl,
+            ];
+        }
 
         // 🌙 (2026-05-08 v3) Pro Session linger detection
         //   ถ้า Pro Session ยังเปิดอยู่ → "ลาแบบหลอก" — ส่ง summary แต่ AI ยังอยู่ต่อ
