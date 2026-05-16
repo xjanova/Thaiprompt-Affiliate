@@ -4773,6 +4773,13 @@ class FortuneConversationService
             ];
         }
 
+        // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกวันเกิด (Pay-First flow)
+        //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอวันเกิด → ลูกค้าอยากตรวจสอบบัญชี/QR
+        //   ก่อนหน้านี้ parseBirthDate("ขอเลขบัญชี") fail → bot ขอวันเกิดอีกครั้ง ลูกค้างง
+        if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+            return $paymentInfo;
+        }
+
         // 🔁 (2026-05-01) ถ้ากำลังรอ user ยืนยันวันเกิดที่ระบบ parse ไว้แล้ว → route ไป confirmation
         if ($reading->getConversationState('awaiting_birthdate_confirmation', false)) {
             return $this->handleBirthdateConfirmation($reading, $messageText);
@@ -5229,6 +5236,13 @@ class FortuneConversationService
     protected function handleQuestionInput(FortuneReading $reading, string $messageText): array
     {
         try {
+            // 💳 (2026-05-16) ลูกค้าขอเลขบัญชี/QR ระหว่างกรอกคำถาม (Pay-First flow)
+            //   เคส: Pay-First — ลูกค้าจ่ายแล้ว → bot ขอคำถาม → ลูกค้าอยากตรวจสอบบัญชี/QR
+            //   ก่อนหน้านี้ถูกเก็บเป็น "คำถามดูดวง" ทำให้ AI สับสน
+            if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
+                return $paymentInfo;
+            }
+
             // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
             //    (pay_later_ack ถูก intercept ที่ continueConversation level แล้ว — ครอบคลุมทุก status)
             //    (ตรวจ FIRST — มิฉะนั้น race-guard ด้านล่างจะบล็อก "ใช่" ที่ legitimate)
