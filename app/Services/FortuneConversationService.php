@@ -4780,6 +4780,16 @@ class FortuneConversationService
             return $paymentInfo;
         }
 
+        // 🆘 (2026-05-16) Status inquiry — ลูกค้าไม่เห็น prompt ขอวันเกิด (LINE message lost)
+        //   user report: "LINE มันชอบค้างไม่เหมือน FB"
+        //   เคส: Pay-First — จ่ายแล้ว → bot push ขอวันเกิด → LINE push fail
+        //   → ลูกค้าพิมพ์ "ถึงไหน" / "ไม่เห็น" → ก่อน fix parseBirthDate fail → ขอวันเกิดอีก ลูกค้างง
+        //   ใหม่: detect inquiry → ส่ง state recovery (เตือนขั้นตอน + พิมพ์อะไรต่อ)
+        if (method_exists($this, 'looksLikeCelticStatusInquiry')
+            && $this->looksLikeCelticStatusInquiry($messageText)) {
+            return $this->buildDeepStatusRecovery($reading, 'collecting_birthdate');
+        }
+
         // 🔁 (2026-05-01) ถ้ากำลังรอ user ยืนยันวันเกิดที่ระบบ parse ไว้แล้ว → route ไป confirmation
         if ($reading->getConversationState('awaiting_birthdate_confirmation', false)) {
             return $this->handleBirthdateConfirmation($reading, $messageText);
@@ -5241,6 +5251,15 @@ class FortuneConversationService
             //   ก่อนหน้านี้ถูกเก็บเป็น "คำถามดูดวง" ทำให้ AI สับสน
             if ($paymentInfo = $this->maybePresentPaymentInfo($messageText)) {
                 return $paymentInfo;
+            }
+
+            // 🆘 (2026-05-16) Status inquiry — ลูกค้าไม่เห็น prompt ขอคำถาม (LINE message lost)
+            //   เคส: Pay-First — ใส่วันเกิดแล้ว → bot push ขอคำถาม → LINE push fail
+            //   → ลูกค้าพิมพ์ "ถึงไหน" / "ไม่เห็น" → ก่อน fix ถูกเก็บเป็นคำถาม → AI สับสน
+            //   ใหม่: detect inquiry → ส่ง state recovery
+            if (method_exists($this, 'looksLikeCelticStatusInquiry')
+                && $this->looksLikeCelticStatusInquiry($messageText)) {
+                return $this->buildDeepStatusRecovery($reading, 'collecting_questions');
             }
 
             // 🔁 ถ้าผู้ใช้กำลังอยู่ขั้น "ยืนยันคำถาม" และพิมพ์มา → route ไป confirmation handler
@@ -10711,6 +10730,78 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * 🆘 (2026-05-16) Deep 39฿ status recovery — ลูกค้าไม่เห็น prompt (LINE message lost)
+     *
+     * user spec: "LINE มันชอบค้างไม่เหมือน FB"
+     * เคส: Pay-First flow — bot push prompt → LINE push fail → ลูกค้าไม่เห็น
+     *       → ลูกค้าพิมพ์ "ถึงไหน" / "ไม่เห็น" / "ขั้นไหน"
+     *       → buildDeepStatusRecovery ส่ง state info + วิธีต่อ
+     *
+     * @param  string  $stage  'collecting_birthdate' หรือ 'collecting_questions'
+     */
+    public function buildDeepStatusRecovery(FortuneReading $reading, string $stage): array
+    {
+        $name = method_exists($reading, 'resolveCustomerName')
+            ? $reading->resolveCustomerName()
+            : ($reading->facebook_user_name ?? 'เจ้าชะตา');
+        $billRef = $reading->bill_reference ?? '-';
+
+        $header = "🌙 ขออภัยค่ะถ้าเจ้าชะตาไม่เห็นข้อความก่อนหน้า — แม่หมอส่งให้ใหม่นะคะ ✨\n\n";
+
+        if ($stage === 'collecting_birthdate') {
+            // ตรวจว่า step-by-step mode อยู่ไหม
+            $stepMode = (bool) $reading->getConversationState('birthdate_step_mode', false);
+            if ($stepMode) {
+                $partial = $reading->getConversationState('birthdate_partial', []) ?: [];
+                $hasYear = ! empty($partial['year']);
+                $hasMonth = ! empty($partial['month']);
+                $stepHint = ! $hasYear ? 'ปี' : (! $hasMonth ? 'เดือน' : 'วัน');
+                $message = $header
+                    ."📅 ตอนนี้แม่หมอรอ*{$stepHint}เกิด*ของเจ้าชะตาอยู่ค่ะ\n\n"
+                    ."💬 พิมพ์ตัวเลข {$stepHint}เกิดมาได้เลย\n"
+                    ."📋 บิล: {$billRef}";
+            } else {
+                $message = $header
+                    ."📅 *ตอนนี้แม่หมอรอวันเดือนปีเกิด* ของเจ้าชะตาค่ะ\n\n"
+                    ."💬 พิมพ์ได้หลายแบบ:\n"
+                    ."  • 15/8/1990  หรือ  15/8/2533\n"
+                    ."  • 15 สิงหาคม 2533\n"
+                    ."  • 15 ส.ค. 33\n\n"
+                    ."📋 บิล: {$billRef}";
+            }
+
+            return [
+                'action' => 'collecting_birthdate',
+                'message' => $message,
+                'reading' => $reading,
+            ];
+        }
+
+        if ($stage === 'collecting_questions') {
+            $message = $header
+                ."🔮 *ตอนนี้แม่หมอรอคำถาม* ที่เจ้าชะตาอยากรู้ค่ะ\n\n"
+                ."💬 พิมพ์เรื่องที่อยากให้แม่หมอทำนายมาได้เลย เช่น:\n"
+                ."  • ดวงความรักช่วงนี้\n"
+                ."  • การงานปีนี้\n"
+                ."  • การเงินจะดีขึ้นเมื่อไหร่\n\n"
+                ."📋 บิล: {$billRef}";
+
+            return [
+                'action' => 'awaiting_question',
+                'message' => $message,
+                'reading' => $reading,
+            ];
+        }
+
+        // Fallback ทั่วไป
+        return [
+            'action' => 'help',
+            'message' => $header.'💬 พิมพ์ข้อความถึงแม่หมอได้เลยค่ะ',
+            'reading' => $reading,
+        ];
     }
 
     /**
