@@ -174,7 +174,7 @@
                         alert('กรุณาพิมพ์คำถามอย่างน้อย 3 ตัวอักษร');
                         return false;
                     }
-                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) + (this.question.length > 200 ? '...' : '') + '\n\n✓ ไม่ตัดโควต้าลูกค้า (admin proxy)\n✓ ส่ง LINE/FB อัตโนมัติทันที')) {
+                    if (!confirm('ยืนยันส่งคำถามให้ AI ทำนาย?\n\nคำถาม: ' + this.question.substring(0, 200) + (this.question.length > 200 ? '...' : '') + '\n\n✓ ไม่ตัดโควต้าลูกค้า (admin proxy)\n✓ AI ทำงาน background (30-60 วินาที)\n✓ ลูกค้าได้รับคำตอบใน LINE/FB อัตโนมัติ')) {
                         e.preventDefault();
                         return false;
                     }
@@ -234,7 +234,7 @@
 
             <p class="text-xs text-emerald-700 dark:text-emerald-400 mt-3 flex items-start gap-1">
                 <span>✨</span>
-                <span>Admin proxy — <strong>ไม่ตัดโควต้าลูกค้า</strong> + AI ใช้บริบทไพ่ 10 ใบในการทำนาย + คำตอบส่งทันที (ไม่มี preview)</span>
+                <span>Admin proxy — <strong>ไม่ตัดโควต้าลูกค้า</strong> + AI ใช้บริบทไพ่ 10 ใบ + รันใน background 30-60s + ลูกค้าจะได้รับคำตอบเอง (ไม่มี preview)</span>
             </p>
         </div>
     @endif

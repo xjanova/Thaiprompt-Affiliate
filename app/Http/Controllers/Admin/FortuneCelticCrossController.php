@@ -582,7 +582,25 @@ class FortuneCelticCrossController extends Controller
         $platform = $reading->platform
             ?? (preg_match('/^U[0-9a-f]{32}$/i', $userId) ? 'line' : 'facebook');
 
-        Log::info('Celtic admin ask AI: เริ่มประมวลผล', [
+        // 📝 บันทึก takeover log ทันที (ก่อน dispatch)
+        try {
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => auth()->id(),
+                'platform' => $platform,
+                'action' => 'message',
+                'reason' => 'admin_ai_assist',
+                'message' => '[ADMIN ASK AI] '.mb_substr($validated['question'], 0, 500),
+                'metadata' => [
+                    'status_before' => $reading->conversation_status,
+                    'question_len' => mb_strlen($validated['question']),
+                ],
+            ]);
+        } catch (\Throwable $logErr) {
+            // ignore — non-critical
+        }
+
+        Log::info('Celtic admin ask AI: queue ใน shutdown handler', [
             'reading_id' => $reading->id,
             'admin_id' => auth()->id(),
             'platform' => $platform,
@@ -590,106 +608,47 @@ class FortuneCelticCrossController extends Controller
             'status_before' => $reading->conversation_status,
         ]);
 
-        try {
-            $settings = FortuneTellingSetting::getSettings();
-            $service = new CelticCrossService($settings);
-
-            // 🤖 เรียก AI ตอบคำถาม — countTowardsQuota=false (admin proxy ไม่ตัด quota ลูกค้า + bypass time window)
-            $result = $service->askQuestion($reading, $validated['question'], false);
-
-            if (! $result['success']) {
-                Log::warning('Celtic admin ask AI: service return success=false', [
-                    'reading_id' => $reading->id,
-                    'service_message' => $result['message'] ?? null,
-                ]);
-
-                return back()->with('error', '❌ AI ตอบไม่สำเร็จ — '.($result['message'] ?? 'ไม่ทราบสาเหตุ'));
-            }
-
-            $aiResponse = trim($result['response'] ?? '');
-            if ($aiResponse === '') {
-                Log::error('Celtic admin ask AI: AI response ว่าง', [
-                    'reading_id' => $reading->id,
-                    'result_keys' => array_keys($result),
-                ]);
-
-                return back()->with('error', '❌ AI ตอบกลับเป็นค่าว่าง — ตรวจ Laravel log');
-            }
-
-            // 📤 ส่งคำตอบให้ลูกค้าผ่าน LINE/FB
-            $reading->refresh();
-
-            $remainingMin = $reading->getCelticQaRemainingMinutes();
-            $qaWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
-            $timeHint = $remainingMin !== null
-                ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
-                : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
-
-            $customerMessage = $aiResponse
-                ."\n\n──────────────────────\n"
-                .$timeHint."\n"
-                .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
-
-            $channelManager = new FortuneChannelManager($settings);
-            $pushOk = $channelManager->sendResponse($platform, (string) $userId, [
-                'action' => 'celtic_question_answered',
-                'message' => $customerMessage,
-                'reading' => $reading,
-            ], [
-                'from_admin' => true,
-                'message_tag' => 'POST_PURCHASE_UPDATE',
-            ]);
-
-            Log::info('Celtic admin ask AI: ส่งให้ลูกค้า', [
-                'reading_id' => $reading->id,
-                'platform' => $platform,
-                'push_ok' => $pushOk,
-                'response_len' => mb_strlen($aiResponse),
-                'sequence' => $result['sequence'] ?? null,
-            ]);
-
-            // 📝 บันทึก takeover log (admin proxy question)
+        // 🚀 (2026-05-16) Dispatch background — ใช้ register_shutdown_function()
+        //   เลียนแบบ pattern จาก FortuneReadingsController::regenerateDeepReading
+        //   เหตุผล: AI ใช้เวลา 30-60s → ถ้า sync → admin request hang → ผู้ใช้เห็น "นิ่งเลย"
+        //   shutdown_function รันหลัง Laravel response ออกไปแล้ว → admin ได้ flash ทันที
+        $readingId = $reading->id;
+        $question = $validated['question'];
+        register_shutdown_function(function () use ($readingId, $question) {
             try {
-                \App\Models\FortuneTakeoverLog::create([
-                    'fortune_reading_id' => $reading->id,
-                    'user_id' => auth()->id(),
-                    'platform' => $platform,
-                    'action' => 'message',
-                    'reason' => 'admin_ai_assist',
-                    'message' => '[ADMIN ASK AI] '.mb_substr($validated['question'], 0, 500),
-                    'metadata' => [
-                        'sequence' => $result['sequence'] ?? null,
-                        'response_len' => mb_strlen($aiResponse),
-                        'push_ok' => $pushOk,
-                    ],
+                $reading = FortuneReading::find($readingId);
+                if (! $reading) {
+                    Log::error('Celtic admin ask AI shutdown: reading not found', ['id' => $readingId]);
+
+                    return;
+                }
+
+                $settings = FortuneTellingSetting::getSettings();
+                $service = new CelticCrossService($settings);
+
+                // 🤖 standalone method — bypass ทุก block + push customer ภายใน
+                $result = $service->askQuestionAsAdmin($reading, $question);
+
+                Log::info('Celtic admin ask AI shutdown: เสร็จ', [
+                    'reading_id' => $readingId,
+                    'success' => $result['success'] ?? false,
+                    'sequence' => $result['sequence'] ?? null,
+                    'pushed' => $result['pushed'] ?? null,
+                    'message' => $result['message'] ?? null,
                 ]);
-            } catch (\Throwable $logErr) {
-                // ignore — main flow สำเร็จแล้ว
+            } catch (\Throwable $e) {
+                Log::error('Celtic admin ask AI shutdown: exception', [
+                    'reading_id' => $readingId,
+                    'error' => $e->getMessage(),
+                    'trace' => substr($e->getTraceAsString(), 0, 500),
+                ]);
             }
+        });
 
-            $sequence = $result['sequence'] ?? '?';
-
-            if (! $pushOk) {
-                return back()->with(
-                    'warning',
-                    "⚠️ AI ทำนาย Q{$sequence} สำเร็จ + บันทึก record แล้ว แต่ส่ง ".strtoupper($platform).' ไม่สำเร็จ (ลูกค้ายังไม่ได้รับ) — ตรวจ log'
-                );
-            }
-
-            return back()->with(
-                'success',
-                "✅ ส่งคำถาม Q{$sequence} ให้ AI ทำนายแล้ว + แจ้งลูกค้าทาง ".strtoupper($platform).' สำเร็จ'
-            );
-        } catch (\Throwable $e) {
-            Log::error('Celtic admin ask AI exception', [
-                'reading_id' => $reading->id,
-                'admin_id' => auth()->id(),
-                'error' => $e->getMessage(),
-                'trace' => substr($e->getTraceAsString(), 0, 800),
-            ]);
-
-            return back()->with('error', "❌ สั่ง AI ทำนายล้มเหลว: {$e->getMessage()}");
-        }
+        return back()->with(
+            'success',
+            '🤖 ส่งคำถามให้ AI ทำนายแล้ว — รออีก 30-60 วินาที ลูกค้าจะได้รับคำตอบใน '.strtoupper($platform).' โดยอัตโนมัติ (ตรวจ Laravel log ถ้าไม่ได้รับ)'
+        );
     }
 
     /**
