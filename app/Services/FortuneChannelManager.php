@@ -1824,7 +1824,7 @@ class FortuneChannelManager
                 'processing' => $this->sendLineProcessingResponse($lineService, $userId, $result, $replyToken),
 
                 // ข้อความซ้ำซ้อน (mutex lock) / กำลังประมวลผลอยู่ → ส่ง text สั้นๆ
-                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: 'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏', $replyToken),
+                'busy' => $lineService->sendMessageWithReplyFallback($userId, $message ?: '🌙 แม่หมอจันทรากำลังพิมพ์... กรุณารอสักครู่ ✨', $replyToken),
 
                 // แสดงบัญชีธนาคาร → ส่ง text (ไม่มีปุ่มดูดวง)
                 'bank_account_info' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),

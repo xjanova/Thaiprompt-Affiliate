@@ -967,7 +967,7 @@ class FortuneConversationService
 
                 return [
                     'action' => 'busy',
-                    'message' => 'กำลังประมวลผลอยู่ กรุณารอสักครู่ 🙏',
+                    'message' => '🌙 แม่หมอจันทรากำลังพิมพ์... กรุณารอสักครู่ ✨',
                     'reading' => null,
                 ];
             }

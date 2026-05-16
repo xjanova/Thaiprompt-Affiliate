@@ -261,7 +261,7 @@ class LineFortuneWebhookController extends Controller
 
                 if ($replyToken) {
                     $this->lineService->replyMessage($replyToken, [
-                        ['type' => 'text', 'text' => "🙏 กรุณารอสักครู่ค่ะ ระบบกำลังประมวลผลอยู่\n\nพิมพ์ข้อความทีละข้อความนะคะ 💫"],
+                        ['type' => 'text', 'text' => "🌙 แม่หมอจันทรากำลังพิมพ์อยู่ค่ะ ✨\n\nกรุณารอสักครู่ — พิมพ์ทีละข้อความนะคะ 💫"],
                     ]);
                 }
 
