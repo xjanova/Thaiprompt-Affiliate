@@ -414,15 +414,51 @@ class CelticCrossService
             return $result;
         }
 
-        // sequence = count records + 1 (chronological)
-        $sequence = FortuneCelticQuestion::where('fortune_reading_id', $reading->id)->count() + 1;
-        $result['sequence'] = $sequence;
+        // 🔒 sequence + insert พร้อม retry — กัน race condition
+        //   ก่อนหน้านี้: count()+1 ชนกับ unique(fortune_reading_id, sequence) เมื่อ:
+        //     - ลูกค้าถามใน LINE/FB ระหว่างที่ admin ask AI กำลังรัน (30-60s)
+        //     - หรือ records เก่ามี gap เพราะ AI fail → record ถูก delete
+        //   ใหม่: MAX(sequence)+1 + retry 5 ครั้งถ้าเจอ duplicate
+        $questionRecord = null;
+        $sequence = 0;
+        $maxAttempts = 5;
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            $sequence = (int) FortuneCelticQuestion::where('fortune_reading_id', $reading->id)
+                ->max('sequence') + 1;
 
-        $questionRecord = FortuneCelticQuestion::create([
-            'fortune_reading_id' => $reading->id,
-            'sequence' => $sequence,
-            'question' => mb_substr($userQuestion, 0, 1000),
-        ]);
+            try {
+                $questionRecord = FortuneCelticQuestion::create([
+                    'fortune_reading_id' => $reading->id,
+                    'sequence' => $sequence,
+                    'question' => mb_substr($userQuestion, 0, 1000),
+                ]);
+                break; // สำเร็จ
+            } catch (\Illuminate\Database\QueryException $e) {
+                // 1062 = duplicate entry — อาจเกิดถ้า customer thread insert ก่อนใน race
+                $isDuplicate = $e->getCode() === '23000' || str_contains($e->getMessage(), 'Duplicate entry');
+                if (! $isDuplicate || $attempt === $maxAttempts) {
+                    Log::error('Celtic askQuestionAsAdmin: insert record fail', [
+                        'reading_id' => $reading->id,
+                        'sequence' => $sequence,
+                        'attempt' => $attempt,
+                        'error' => $e->getMessage(),
+                    ]);
+                    $result['message'] = 'ไม่สามารถบันทึกคำถามได้ (retry '.$attempt.'/'.$maxAttempts.'): '.$e->getMessage();
+
+                    return $result;
+                }
+                // wait + retry
+                usleep(100000); // 100ms
+            }
+        }
+
+        if (! $questionRecord) {
+            $result['message'] = 'ไม่สามารถบันทึกคำถามได้หลัง retry '.$maxAttempts.' ครั้ง';
+
+            return $result;
+        }
+
+        $result['sequence'] = $sequence;
 
         try {
             $aiStart = microtime(true);
