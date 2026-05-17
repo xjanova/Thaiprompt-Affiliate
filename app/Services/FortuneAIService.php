@@ -263,7 +263,11 @@ class FortuneAIService
         ],
         'deep' => [
             'max_tokens' => 6000,   // ↑ จาก 4096 — user "Q1 ตอบไม่ครบ" 2026-05-13
-            'temperature' => 0.8,
+            // 🎯 (2026-05-17) ลด 0.8 → 0.55 — user "คำทำนายคล้ายๆ กันหมด"
+            //   0.55 = balanced: AI ยังคงสร้างสรรค์ + ใช้ planet data เฉพาะของลูกค้า
+            //   0.8 เดิม → AI มี variance สูง แต่ตอบ template-like (generic patterns)
+            //   0.4 จะเข้มไป → ทุกคนได้คำทำนายซ้ำๆ
+            'temperature' => 0.55,
         ],
     ];
 
