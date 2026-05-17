@@ -393,10 +393,14 @@ class LineFortuneWebhookController extends Controller
     /**
      * จัดการเมื่อลูกค้าพิมพ์ขอคุยกับคนจริง (customer handoff request)
      *
+     * 🎯 (2026-05-17) Alert-only mode — ไม่ takeover อัตโนมัติ
+     *   user spec: ลูกค้าเลือก option B — "Alert only ให้ admin"
+     *
      * Flow:
-     * 1. หาหรือสร้าง active reading (LINE)
-     * 2. เทคโอเวอร์ด้วย reason=customer_request
-     * 3. แจ้งลูกค้าผ่าน replyToken (ถ้า settings เปิดไว้)
+     * 1. หาหรือสร้าง reading + log การขอ (FortuneTakeoverLog action=message)
+     * 2. แจ้งลูกค้าผ่าน replyToken (ฟรี) ว่าจะแจ้งแอดมิน
+     * 3. ส่ง alert ให้ admin (LineAlertService)
+     * 4. Admin ดูใน LINE OA Inbox แล้วจัดการเอง (ผ่าน admin panel /admin/takeover)
      */
     protected function handleCustomerHandoffRequest(
         string $userId,
@@ -418,32 +422,55 @@ class LineFortuneWebhookController extends Controller
                 'facebook_user_id' => $userId, // legacy column ต้องไม่ null
                 'reading_type' => 'basic',
                 'conversation_status' => FortuneReading::STATUS_COMPLETED,
-                'conversation_state' => ['placeholder' => true, 'source' => 'takeover_only'],
+                'conversation_state' => ['placeholder' => true, 'source' => 'customer_request_alert'],
                 'questions' => [],
                 'ai_response' => '',
                 'ai_provider' => 'none',
             ]);
         }
 
-        $this->takeoverService->takeover(
-            $reading,
-            FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
-            null,
-            null,
-            $messageText,
-        );
+        // 📝 บันทึก log การขอคุยกับคน (สำหรับ admin panel + audit)
+        try {
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => null,
+                'action' => \App\Models\FortuneTakeoverLog::ACTION_MESSAGE,
+                'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
+                'platform' => 'line',
+                'message' => mb_substr('🙋 ลูกค้าขอคุยกับคน: '.$messageText, 0, 2000),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('LINE Customer Handoff: log ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
 
-        // แจ้งลูกค้า (ถ้าเปิดไว้) ผ่าน replyToken (ฟรี ไม่นับ push quota)
-        if ($this->settings->shouldNotifyTakeoverToCustomer() && $replyToken) {
+        // 🌙 แจ้งลูกค้าผ่าน replyToken (ฟรี ไม่นับ push quota)
+        if ($replyToken) {
             $this->lineService->replyMessage($replyToken, [
                 [
                     'type' => 'text',
-                    'text' => $this->settings->getTakeoverCustomerMessage(),
+                    'text' => "🌙 รอแอดมินสักครู่นะคะ\n\n"
+                        ."แม่หมอจะแจ้งให้แอดมินมาตอบคุณค่ะ ✨\n"
+                        ."ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮",
                 ],
             ]);
         }
 
-        Log::info('🙋 LINE Takeover: ลูกค้าขอคุยกับคนจริง', [
+        // 📢 ส่ง alert ให้ admin
+        try {
+            $alertService = app(\App\Services\LineAlertService::class);
+            $alertService->alertUnusualActivity('🙋 ลูกค้า LINE ขอคุยกับคน', [
+                'user_id' => $userId,
+                'reading_id' => $reading->id,
+                'message' => mb_substr($messageText, 0, 200),
+                'admin_panel' => url('/admin/takeover/'.$reading->id),
+            ]);
+        } catch (\Throwable $alertErr) {
+            Log::warning('LINE Customer Handoff: ส่ง alert ไม่สำเร็จ (non-blocking)', [
+                'error' => $alertErr->getMessage(),
+            ]);
+        }
+
+        Log::info('🙋 LINE Customer Handoff: alert-only mode (ไม่ takeover)', [
             'user_id' => $userId,
             'reading_id' => $reading->id,
             'message_preview' => mb_substr($messageText, 0, 50),

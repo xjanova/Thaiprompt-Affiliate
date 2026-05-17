@@ -442,6 +442,10 @@ class FortuneTakeoverService
      * ตรวจสอบว่าเป็นคำสั่งให้ AI กลับมาหรือไม่ (แอดมินพิมพ์)
      *
      * Match แบบ exact (เริ่มต้นของข้อความ, trim แล้ว)
+     *
+     * 🎯 (2026-05-17) รองรับทั้ง 2 คำสั่ง:
+     *   - ai_resume_command setting (default: /ai)
+     *   - /aistart (hardcoded alias — สำหรับ admin จำคู่กับ /aistop ง่ายขึ้น)
      */
     public function detectAdminResumeCommand(string $message): bool
     {
@@ -450,7 +454,40 @@ class FortuneTakeoverService
             return false;
         }
 
-        $command = $this->settings()->getAiResumeCommand();
+        $commands = [
+            $this->settings()->getAiResumeCommand(),
+            '/aistart', // hardcoded alias — pair กับ /aistop
+        ];
+
+        foreach (array_unique($commands) as $command) {
+            if ($command === '') {
+                continue;
+            }
+            // Match ทั้งคำสั่งเดี่ยวๆ หรือขึ้นต้นด้วยคำสั่ง + space
+            if (strcasecmp($trimmed, $command) === 0
+                || stripos($trimmed, $command.' ') === 0
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ตรวจสอบว่าเป็นคำสั่งให้บอทหยุดทำงานหรือไม่ (แอดมินพิมพ์ /aistop)
+     *
+     * 🎯 (2026-05-17) เพิ่มเพื่อแทนที่ auto-takeover เดิม (FB echo auto-pause)
+     * Admin พิมพ์ "/aistop" ใน Page Inbox → ระบบ takeover ทันที
+     */
+    public function detectAdminPauseCommand(string $message): bool
+    {
+        $trimmed = trim($message);
+        if ($trimmed === '') {
+            return false;
+        }
+
+        $command = $this->settings()->getAiPauseCommand();
 
         // Match ทั้งคำสั่งเดี่ยวๆ หรือขึ้นต้นด้วยคำสั่ง + space
         return strcasecmp($trimmed, $command) === 0

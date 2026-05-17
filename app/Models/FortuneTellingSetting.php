@@ -117,6 +117,7 @@ class FortuneTellingSetting extends Model
         'admin_handover_timeout',
         // Admin Takeover (เทคโอเวอร์แบบใหม่ — LINE+Facebook รวมกัน)
         'ai_resume_command',
+        'ai_pause_command',
         'customer_handoff_keywords',
         'takeover_notify_customer',
         'takeover_customer_message',
@@ -1600,12 +1601,28 @@ PROMPT;
 
     /**
      * ดึงคำสั่งให้ AI กลับมาทำงาน
+     *
+     * Default: /ai (legacy) + /aistart (2026-05-17)
+     * Admin พิมพ์ทั้ง 2 คำสั่งเพื่อ resume bot ได้ (detector รองรับทั้งคู่)
      */
     public function getAiResumeCommand(): string
     {
         $cmd = trim((string) ($this->ai_resume_command ?? '/ai'));
 
         return $cmd !== '' ? $cmd : '/ai';
+    }
+
+    /**
+     * ดึงคำสั่งให้บอทหยุดทำงาน (admin manual pause via FB echo)
+     *
+     * 🎯 (2026-05-17) เพิ่มเพื่อแทนที่ auto-takeover เดิม (ลูกค้าบ่นว่าไม่เวิร์ค)
+     * Default: /aistop
+     */
+    public function getAiPauseCommand(): string
+    {
+        $cmd = trim((string) ($this->ai_pause_command ?? '/aistop'));
+
+        return $cmd !== '' ? $cmd : '/aistop';
     }
 
     /**

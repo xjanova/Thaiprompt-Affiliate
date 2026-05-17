@@ -1229,9 +1229,10 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // 🤝 (2026-05-08 v3) ระบบ Admin Handover — default = ON (auto)
-        //   user spec: "อยากได้แบบ ออโต้ไปเลย" — admin reply via Business Suite → bot pause auto
-        //   admin ปิด toggle ที่ /admin/fortune/settings ได้ถ้าไม่อยากใช้
+        // 🎯 (2026-05-17) Manual control mode — แทนที่ auto-takeover เดิม
+        //   user spec: "อัตโนมัติมันไม่เวิร์ค ถอนออกไปก่อน"
+        //   ใหม่: admin reply ปกติ → ไม่ทำอะไร (เดิม: auto takeover ทุก reply)
+        //   admin ต้องพิมพ์ /aistop เพื่อหยุดบอท, /aistart (หรือ /ai legacy) เพื่อให้บอทกลับมา
         if (! ($this->settings->admin_handover_enabled ?? true)) {
             return;
         }
@@ -1242,9 +1243,17 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // 🤝 (2026-05-08 v3) หา reading ล่าสุดของ user นี้ — รวม COMPLETED ที่อยู่ใน Pro Session ด้วย
-        //   เดิม: filter COMPLETED ออก → admin reply ระหว่าง Pro Session = ไม่ trigger takeover
-        //   ใหม่: ดู reading ล่าสุดใน 7 วัน (รวม COMPLETED) → admin reply ตอนไหนก็ trigger ได้
+        // 🎯 ตรวจ slash command — admin พิมพ์ /aistop หรือ /aistart เท่านั้น
+        //    ที่จะ trigger pause/resume. ข้อความอื่นๆ ของ admin ปล่อยผ่าน (ไม่ takeover อัตโนมัติ)
+        $isPauseCommand = $this->takeoverService->detectAdminPauseCommand($messageText);
+        $isResumeCommand = $this->takeoverService->detectAdminResumeCommand($messageText);
+
+        if (! $isPauseCommand && ! $isResumeCommand) {
+            // admin reply ปกติ — ไม่ทำอะไร (ไม่ auto-takeover เหมือนเดิม)
+            return;
+        }
+
+        // 🤝 หา reading ล่าสุดของ user นี้ — รวม COMPLETED ที่อยู่ใน Pro Session ด้วย
         $reading = FortuneReading::where(function ($q) use ($recipientId) {
             $q->where('facebook_user_id', $recipientId)
                 ->orWhere(function ($sub) use ($recipientId) {
@@ -1256,34 +1265,54 @@ class FacebookWebhookController extends Controller
             ->latest()
             ->first();
 
+        // ไม่มี active conversation — สร้าง placeholder เพื่อให้ track ได้
         if (! $reading) {
-            // ไม่มี active conversation — ข้าม (ถ้าลูกค้าสร้าง conversation ใหม่
-            // webhook processMessage จะเช็ค takeover ผ่าน isActiveByPlatform ใหม่อีกครั้ง)
-            Log::debug('Facebook Takeover: echo โดยไม่มี active reading — ข้าม', [
+            if ($isResumeCommand) {
+                // resume แต่ไม่มี reading → ไม่ทำอะไร (ไม่มีอะไรให้ resume)
+                Log::debug('Facebook /aistart: ไม่มี reading — ข้าม', [
+                    'user_id' => $recipientId,
+                ]);
+
+                return;
+            }
+            // /aistop แต่ไม่มี reading → สร้าง placeholder
+            $reading = FortuneReading::create([
+                'facebook_user_id' => $recipientId,
+                'platform' => 'facebook',
+                'platform_user_id' => $recipientId,
+                'reading_type' => 'basic',
+                'conversation_status' => FortuneReading::STATUS_COMPLETED,
+                'conversation_state' => ['placeholder' => true, 'source' => 'aistop_command'],
+                'questions' => [],
+                'ai_response' => '',
+                'ai_provider' => 'none',
+            ]);
+        }
+
+        // /aistart หรือ /ai → resume bot
+        if ($isResumeCommand) {
+            $this->takeoverService->resume($reading, null, true);
+            Log::info('✨ Facebook /aistart: แอดมินสั่งให้บอทกลับมาทำงาน', [
+                'reading_id' => $reading->id,
                 'user_id' => $recipientId,
             ]);
 
             return;
         }
 
-        // ตรวจว่าแอดมินพิมพ์คำสั่งให้ AI กลับมาหรือไม่
-        if ($this->takeoverService->detectAdminResumeCommand($messageText)) {
-            $this->takeoverService->resume($reading, null, true);
-            Log::info('✨ Facebook: แอดมินพิมพ์คำสั่งให้ AI กลับมา', [
-                'reading_id' => $reading->id,
-            ]);
-
-            return;
-        }
-
-        // แอดมินพิมพ์ปกติ → เทคโอเวอร์อัตโนมัติ
+        // /aistop → manual takeover
         $this->takeoverService->takeover(
             $reading,
-            FortuneReading::TAKEOVER_REASON_AUTO_REPLY,
+            FortuneReading::TAKEOVER_REASON_MANUAL,
             null,
             null,
-            $messageText,
+            '/aistop',
         );
+
+        Log::info('🛑 Facebook /aistop: แอดมินสั่งให้บอทหยุด', [
+            'reading_id' => $reading->id,
+            'user_id' => $recipientId,
+        ]);
     }
 
     /**
@@ -1357,17 +1386,14 @@ class FacebookWebhookController extends Controller
         $messageText = $messaging['message']['text'] ?? '';
         $attachments = $messaging['message']['attachments'] ?? [];
 
-        // 🙋 (2026-05-03) Customer Handoff ต้องเช็คก่อน pendingDelivery — กันลูกค้า
-        //    paid แล้วพิมพ์ "คุยกับคน" / "ขอแม่หมอตอบ" แล้วโดน push คำทำนายซ้ำแทนเข้า handoff
-        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
-            $this->handleCustomerHandoffRequest($senderId, $messageText);
-
-            return;
-        }
-
         // 🎯 (2026-05-02) Auto-deliver pending prediction — กัน sticker/emoji silent ignore
         //   user request: "คนแก่ส่ง sticker → ระบบควรส่งคำทำนายเลย ไม่ต้องพิมพ์"
         //   ถ้ามี deep_response รอส่ง → ส่งทันที ไม่ว่า user ส่งอะไรมา (text/sticker/emoji/image)
+        //
+        // 🚨 (2026-05-17) กฎเด็ดขาด: ต้องอยู่ก่อน customer handoff check — กันคำทำนายค้าง
+        //   เคส: ลูกค้าจ่าย 39฿ + พิมพ์ "คุยกับคน" → ต้องได้คำทำนายก่อน + alert admin
+        //   (เดิม customer handoff อยู่ก่อน + auto-takeover → คำทำนายไม่ส่ง)
+        //   ใหม่: alert-only mode → ส่งคำทำนายก่อน แล้ว handoff ส่ง alert ทีหลัง
         $pendingDelivery = FortuneReading::where('facebook_user_id', $senderId)
             ->where('is_paid', true)
             ->whereNotNull('deep_response')
@@ -1387,6 +1413,15 @@ class FacebookWebhookController extends Controller
             // ส่ง text เป็น 'อ่านคำทำนาย' ถ้า user ส่ง sticker/emoji เพื่อ trigger ส่งคำทำนาย
             $effectiveText = $messageText ?: 'อ่านคำทำนาย';
             $this->processConversationalMessage($senderId, $effectiveText);
+
+            return;
+        }
+
+        // 🙋 (2026-05-17) Customer handoff — alert-only mode (ไม่ takeover อัตโนมัติ)
+        //    ลูกค้าพิมพ์ "คุยกับคน" → ส่งข้อความ "รอแอดมิน" + alert admin
+        //    ⚠️ ต้องอยู่หลัง pendingDelivery — กันลูกค้าจ่ายแล้วพิมพ์ "คุยกับคน" คำทำนายค้าง
+        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+            $this->handleCustomerHandoffRequest($senderId, $messageText);
 
             return;
         }
@@ -1943,10 +1978,14 @@ class FacebookWebhookController extends Controller
     /**
      * จัดการเมื่อลูกค้าขอคุยกับคนจริง (customer handoff request)
      *
+     * 🎯 (2026-05-17) Alert-only mode — ไม่ takeover อัตโนมัติ
+     *   user spec: ลูกค้าเลือก option B — "Alert only ให้ admin"
+     *
      * Flow:
-     * 1. หาหรือสร้าง active reading
-     * 2. เทคโอเวอร์ด้วย reason=customer_request
-     * 3. แจ้งลูกค้า (ถ้า settings เปิดไว้)
+     * 1. หาหรือสร้าง reading + log การขอ (FortuneTakeoverLog action=message)
+     * 2. แจ้งลูกค้าว่าจะแจ้งแอดมิน (ไม่ทำ takeover)
+     * 3. ส่ง alert ให้ admin ผ่าน LINE OA push (LineAlertService)
+     * 4. Admin ดูใน Page Inbox + พิมพ์ /aistop เองเมื่อพร้อมตอบ
      */
     protected function handleCustomerHandoffRequest(string $senderId, string $messageText): void
     {
@@ -1969,28 +2008,56 @@ class FacebookWebhookController extends Controller
                 'platform_user_id' => $senderId,
                 'reading_type' => 'basic',
                 'conversation_status' => FortuneReading::STATUS_COMPLETED,
-                'conversation_state' => ['placeholder' => true, 'source' => 'takeover_only'],
+                'conversation_state' => ['placeholder' => true, 'source' => 'customer_request_alert'],
                 'questions' => [],
                 'ai_response' => '',
                 'ai_provider' => 'none',
             ]);
         }
 
-        $this->takeoverService->takeover(
-            $reading,
-            FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
-            null,
-            null,
-            $messageText,
+        // 📝 บันทึก log การขอคุยกับคน (สำหรับ admin panel + audit)
+        try {
+            \App\Models\FortuneTakeoverLog::create([
+                'fortune_reading_id' => $reading->id,
+                'user_id' => null,
+                'action' => \App\Models\FortuneTakeoverLog::ACTION_MESSAGE,
+                'reason' => FortuneReading::TAKEOVER_REASON_CUSTOMER_REQUEST,
+                'platform' => 'facebook',
+                'message' => mb_substr('🙋 ลูกค้าขอคุยกับคน: '.$messageText, 0, 2000),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('FB Customer Handoff: log ไม่สำเร็จ', ['error' => $e->getMessage()]);
+        }
+
+        // 🌙 แจ้งลูกค้าว่าจะแจ้งแอดมิน (ไม่ takeover — ลูกค้าจะรอแอดมินมาเอง)
+        $this->facebookService->sendMessage(
+            $senderId,
+            "🌙 รอแอดมินสักครู่นะคะ\n\n"
+            ."แม่หมอจะแจ้งให้แอดมินมาตอบคุณค่ะ ✨\n"
+            ."ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮"
         );
 
-        // แจ้งลูกค้า (ถ้าเปิดไว้)
-        if ($this->settings->shouldNotifyTakeoverToCustomer()) {
-            $this->facebookService->sendMessage(
-                $senderId,
-                $this->settings->getTakeoverCustomerMessage()
-            );
+        // 📢 ส่ง alert ให้ admin ผ่าน LINE OA push (admin ดูใน FB Page Inbox + พิมพ์ /aistop)
+        try {
+            $alertService = app(\App\Services\LineAlertService::class);
+            $alertService->alertUnusualActivity('🙋 ลูกค้า FB ขอคุยกับคน', [
+                'sender_id' => $senderId,
+                'reading_id' => $reading->id,
+                'message' => mb_substr($messageText, 0, 200),
+                'admin_panel' => url('/admin/takeover/'.$reading->id),
+                'note' => 'พิมพ์ /aistop ใน Page Inbox เพื่อหยุดบอท แล้วตอบลูกค้า',
+            ]);
+        } catch (\Throwable $alertErr) {
+            Log::warning('FB Customer Handoff: ส่ง alert ไม่สำเร็จ (non-blocking)', [
+                'error' => $alertErr->getMessage(),
+            ]);
         }
+
+        Log::info('🙋 FB Customer Handoff: alert-only mode (ไม่ takeover)', [
+            'sender_id' => $senderId,
+            'reading_id' => $reading->id,
+            'message_preview' => mb_substr($messageText, 0, 50),
+        ]);
     }
 
     /**
