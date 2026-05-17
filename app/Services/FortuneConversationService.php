@@ -403,6 +403,53 @@ class FortuneConversationService
                 return null;
             }
 
+            // 🎨 (2026-05-17) Banner composite — ลอง generate "banner + QR + ยอด" ก่อน
+            //   จุดประสงค์: หลบ FB detection (QR เปลือย → flag เป็น payment)
+            //   ถ้าเปิด payment_banner_enabled + GD ทำได้ → ใช้ composite
+            //   ถ้าล้ม → fallback QR เปลือย (logic เดิมด้านล่าง)
+            if ($this->settings->isPaymentBannerEnabled()) {
+                try {
+                    $reading = $readingId ? \App\Models\FortuneReading::find($readingId) : null;
+                    $billRef = $reading?->bill_reference ?? 'FTU-'.($readingId ?? 'NEW');
+
+                    // ดึงข้อมูล bank account ตัวแรกที่มี (สำหรับ display ใน banner)
+                    $bankName = null;
+                    $accountNumber = null;
+                    $accounts = $this->settings->getFortuneBankAccounts();
+                    foreach ($accounts as $account) {
+                        if (! empty($account->bank_name)) {
+                            $bankName = $account->bank_name;
+                            $accountNumber = $account->account_number;
+                            break;
+                        }
+                    }
+
+                    $bannerUrl = app(\App\Services\Fortune\PaymentBannerService::class)
+                        ->generateCompositeBanner(
+                            amount: $amount,
+                            billRef: $billRef,
+                            qrPayload: $emvPayload,
+                            bankName: $bankName,
+                            accountNumber: $accountNumber,
+                        );
+
+                    if ($bannerUrl) {
+                        Log::info('Fortune QR: ใช้ banner composite (anti-FB-detection)', [
+                            'amount' => $amount,
+                            'reading_id' => $readingId,
+                            'url' => $bannerUrl,
+                        ]);
+
+                        return $bannerUrl;
+                    }
+                    // composite ล้ม → fallback QR เปลือย ด้านล่าง
+                } catch (\Throwable $bannerErr) {
+                    Log::warning('Fortune QR: banner composite ล้มเหลว — fallback QR เปลือย', [
+                        'error' => $bannerErr->getMessage(),
+                    ]);
+                }
+            }
+
             // เตรียม directory สำหรับ save ไฟล์
             $filename = 'fortune_pp_'.($readingId ?? uniqid()).'.png';
             $directory = 'qrcodes/fortune';

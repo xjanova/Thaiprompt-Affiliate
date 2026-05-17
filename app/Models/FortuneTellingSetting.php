@@ -115,6 +115,12 @@ class FortuneTellingSetting extends Model
         // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
         'admin_handover_enabled',
         'admin_handover_timeout',
+        // Payment Banner Composite (2026-05-17) — anti-FB-detection
+        'payment_banner_enabled',
+        'payment_banner_template',
+        'payment_banner_qr_x',
+        'payment_banner_qr_y',
+        'payment_banner_qr_size',
         // Admin Takeover (เทคโอเวอร์แบบใหม่ — LINE+Facebook รวมกัน)
         'ai_resume_command',
         'ai_pause_command',
@@ -1597,6 +1603,37 @@ PROMPT;
     public function getTakeoverDefaultMinutes(): int
     {
         return max(1, (int) ($this->admin_handover_timeout ?? 15));
+    }
+
+    /**
+     * 🎨 (2026-05-17) ตรวจว่าเปิดใช้ banner composite (QR + ลายธนาคาร) หรือไม่
+     */
+    public function isPaymentBannerEnabled(): bool
+    {
+        return (bool) ($this->payment_banner_enabled ?? true);
+    }
+
+    /**
+     * ดึง path ของ banner template (admin upload) — null = ใช้ default ที่ระบบ generate
+     */
+    public function getPaymentBannerTemplate(): ?string
+    {
+        $path = trim((string) ($this->payment_banner_template ?? ''));
+
+        return $path !== '' ? $path : null;
+    }
+
+    /**
+     * ดึง URL ของ banner template (สำหรับ admin UI preview)
+     */
+    public function getPaymentBannerTemplateUrl(): ?string
+    {
+        $path = $this->getPaymentBannerTemplate();
+        if (! $path) {
+            return null;
+        }
+
+        return asset('storage/'.ltrim($path, '/'));
     }
 
     /**
