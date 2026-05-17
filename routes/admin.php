@@ -4010,6 +4010,12 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::put('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'updateBankAccount'])->name('settings.bank-accounts.update');
     Route::delete('/settings/bank-accounts/{account}', [FortuneSettingsController::class, 'deleteBankAccount'])->name('settings.bank-accounts.delete');
 
+    // 🎨 (2026-05-17) Payment Banner Admin — composite QR + ลายธนาคาร (anti-FB-detection)
+    Route::get('/payment-banner', [FortuneSettingsController::class, 'paymentBanner'])->name('payment-banner.index');
+    Route::post('/payment-banner', [FortuneSettingsController::class, 'updatePaymentBanner'])->name('payment-banner.update');
+    Route::post('/payment-banner/preview', [FortuneSettingsController::class, 'previewBanner'])->name('payment-banner.preview');
+    Route::post('/payment-banner/reset', [FortuneSettingsController::class, 'resetBanner'])->name('payment-banner.reset');
+
     // 🎙️ (2026-05-08) Voice Presets — Library, Import, Test, Apply
     Route::prefix('voice-presets')->name('voice-presets.')->group(function () {
         Route::get('/', [FortuneVoicePresetController::class, 'index'])->name('index');

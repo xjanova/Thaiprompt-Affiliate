@@ -520,6 +520,159 @@ class FortuneSettingsController extends Controller
             ->with('success', 'บันทึกการตั้งค่าสำเร็จ');
     }
 
+    // ============================================================
+    // 🎨 Payment Banner Admin (2026-05-17)
+    //   Anti-FB-detection composite: banner + QR + ยอด → ภาพเดียว
+    //   - GET  /admin/fortune/payment-banner          → paymentBanner (show)
+    //   - POST /admin/fortune/payment-banner          → updatePaymentBanner (save)
+    //   - POST /admin/fortune/payment-banner/preview  → previewBanner (AJAX test)
+    //   - POST /admin/fortune/payment-banner/reset    → resetBanner (กลับ default)
+    // ============================================================
+
+    /**
+     * แสดงหน้าจัดการ Payment Banner — upload + ปรับตำแหน่ง + preview
+     */
+    public function paymentBanner()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        // Generate default banner ถ้ายังไม่มี — ให้ admin preview ทันที
+        $defaultBannerPath = null;
+        try {
+            $svc = app(\App\Services\Fortune\PaymentBannerService::class);
+            $defaultBannerPath = $svc->getOrGenerateDefaultBanner();
+        } catch (\Throwable $e) {
+            \Log::warning('Admin Banner: generate default ล้มเหลว', ['error' => $e->getMessage()]);
+        }
+
+        $defaultBannerUrl = $defaultBannerPath
+            ? asset('storage/'.str_replace(storage_path('app/public/'), '', $defaultBannerPath))
+            : null;
+
+        return view('admin.fortune.payment-banner', [
+            'settings' => $settings,
+            'customBannerUrl' => $settings->getPaymentBannerTemplateUrl(),
+            'defaultBannerUrl' => $defaultBannerUrl,
+        ]);
+    }
+
+    /**
+     * Update banner settings — upload + ตำแหน่ง QR + size
+     */
+    public function updatePaymentBanner(Request $request)
+    {
+        $validated = $request->validate([
+            'payment_banner_enabled' => 'nullable|boolean',
+            'payment_banner_image' => 'nullable|image|mimes:jpg,jpeg,png|max:4096',
+            'payment_banner_qr_x' => 'nullable|integer|min:0|max:2000',
+            'payment_banner_qr_y' => 'nullable|integer|min:0|max:2000',
+            'payment_banner_qr_size' => 'nullable|integer|min:100|max:1000',
+        ]);
+
+        $settings = FortuneTellingSetting::getSettings();
+
+        $update = [
+            'payment_banner_enabled' => (bool) ($validated['payment_banner_enabled'] ?? false),
+            'payment_banner_qr_x' => $validated['payment_banner_qr_x'] ?? 100,
+            'payment_banner_qr_y' => $validated['payment_banner_qr_y'] ?? 150,
+            'payment_banner_qr_size' => $validated['payment_banner_qr_size'] ?? 400,
+        ];
+
+        // Upload banner image ถ้ามี
+        if ($request->hasFile('payment_banner_image')) {
+            // ลบรูปเก่า (ถ้าไม่ใช่ default)
+            if ($settings->payment_banner_template
+                && ! str_starts_with($settings->payment_banner_template, 'fortune/payment-banner-default')) {
+                Storage::disk('public')->delete($settings->payment_banner_template);
+            }
+
+            $path = $request->file('payment_banner_image')->store('fortune/banner-templates', 'public');
+            $update['payment_banner_template'] = $path;
+        }
+
+        $settings->update($update);
+
+        return redirect()
+            ->route('admin.fortune.payment-banner.index')
+            ->with('success', '🎨 บันทึก Payment Banner สำเร็จ');
+    }
+
+    /**
+     * Preview banner — generate test composite (AJAX)
+     */
+    public function previewBanner(Request $request)
+    {
+        try {
+            $settings = FortuneTellingSetting::getSettings();
+            $svc = app(\App\Services\Fortune\PaymentBannerService::class, ['settings' => $settings]);
+
+            // Test data
+            $provider = new \App\Services\Payment\PromptPayProvider;
+            $promptpayId = $request->input('test_promptpay', '0066885782958');
+            $amount = (float) $request->input('test_amount', 39.07);
+            $payload = $provider->buildPromptPayPayload($promptpayId, 'phone', $amount);
+
+            if (empty($payload)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'สร้าง PromptPay payload ไม่ได้ — ตรวจค่า PromptPay ID',
+                ]);
+            }
+
+            $url = $svc->generateCompositeBanner(
+                amount: $amount,
+                billRef: 'PREVIEW-'.substr(md5(microtime(true)), 0, 8),
+                qrPayload: $payload,
+                bankName: $request->input('test_bank', 'กสิกรไทย'),
+                accountNumber: $request->input('test_account', '066-8-85782958'),
+            );
+
+            if (! $url) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Composite ล้มเหลว — ตรวจ GD library / BaconQrCode',
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'preview_url' => $url,
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Admin Banner Preview: ล้มเหลว', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'เกิดข้อผิดพลาด: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset banner template — กลับไปใช้ default ที่ระบบ generate
+     */
+    public function resetBanner()
+    {
+        $settings = FortuneTellingSetting::getSettings();
+
+        // ลบไฟล์ admin upload (ถ้ามี)
+        if ($settings->payment_banner_template
+            && ! str_starts_with($settings->payment_banner_template, 'fortune/payment-banner-default')) {
+            Storage::disk('public')->delete($settings->payment_banner_template);
+        }
+
+        $settings->update([
+            'payment_banner_template' => null,
+            'payment_banner_qr_x' => 100,
+            'payment_banner_qr_y' => 150,
+            'payment_banner_qr_size' => 400,
+        ]);
+
+        return redirect()
+            ->route('admin.fortune.payment-banner.index')
+            ->with('success', '🔄 รีเซ็ตเป็น banner default แล้ว');
+    }
+
     /**
      * คำนวณ preview คอมมิชชั่นดูดวง (AJAX)
      *
