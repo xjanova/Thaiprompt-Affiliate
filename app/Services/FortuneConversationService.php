@@ -582,25 +582,30 @@ class FortuneConversationService
             // ═══════════════════════════════════════════════════════════════
             // ถ้า admin /aistop → bot เงียบ — ห้ามตอบ ห้ามแทรก
             //
-            // 🚨 (2026-05-17) PAID BYPASS — ห้ามหยุด flow ของลูกค้าที่จ่ายแล้ว
+            // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow ที่ลูกค้ากำลังจ่ายเงิน/รับคำทำนาย
+            //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
             //   user spec: "/aistop ควรหยุดแค่บอทแชทสนทนา ไม่หยุด flow ทำนาย"
-            //   ถ้าลูกค้ามี is_paid=true + ยังไม่ได้ delivery → bypass takeover
-            //   ครอบคลุม: pendingDelivery, Celtic picking/awaiting/generating, รอ Q&A
+            //
+            //   Bypass 3 เคส:
+            //     1. มี active reading state (AWAITING_CONFIRMATION/PENDING_PAYMENT/Celtic/etc.)
+            //     2. paid + รอ delivery (deep_response saved รอ user ทัก)
+            //     3. ข้อความเป็น buying intent (39, 99, ดูดวง, ราคา, qr, ฯลฯ)
             try {
                 $takeoverPlatform = $this->currentPlatform ?? 'facebook';
                 if (app(\App\Services\FortuneTakeoverService::class)
                     ->isActiveByPlatform($takeoverPlatform, $facebookUserId)) {
 
-                    // PAID BYPASS check — ลูกค้าจ่ายแล้ว + ยังมี active flow
+                    // เคส 1+2: มี active flow หรือ paid + รอ delivery
                     $platformColumn = $takeoverPlatform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
-                    $hasPaidActiveFlow = \App\Models\FortuneReading::where($platformColumn, $facebookUserId)
-                        ->where('is_paid', true)
+                    $hasActiveFlow = \App\Models\FortuneReading::where($platformColumn, $facebookUserId)
                         ->where(function ($q) {
-                            // เคส 1: paid + ยังมี active state (Celtic picking/QA/etc)
-                            $q->whereIn('conversation_status', \App\Models\FortuneReading::ACTIVE_READING_STATUSES)
-                                // เคส 2: paid + COMPLETED + มี deep_response รอส่ง (pendingDelivery)
+                            // locked states — กำลังจ่าย / จ่ายแล้ว / รอผลคำทำนาย
+                            // (ไม่รวม AWAITING_CONFIRMATION/TIER_CHOICE/DISCOVERY = soft states ที่ /aistop หยุดได้)
+                            $q->whereIn('conversation_status', \App\Models\FortuneReading::LOCKED_FLOW_STATUSES)
+                                // หรือ paid + COMPLETED + มี deep_response รอส่ง
                                 ->orWhere(function ($sub) {
-                                    $sub->where('conversation_status', \App\Models\FortuneReading::STATUS_COMPLETED)
+                                    $sub->where('is_paid', true)
+                                        ->where('conversation_status', \App\Models\FortuneReading::STATUS_COMPLETED)
                                         ->whereNotNull('deep_response')
                                         ->where('deep_response', '!=', '');
                                 });
@@ -608,14 +613,18 @@ class FortuneConversationService
                         ->where('created_at', '>=', now()->subDays(7))
                         ->exists();
 
-                    if ($hasPaidActiveFlow) {
-                        Log::info('Fortune: takeover active แต่ paid bypass — ดำเนิน flow ต่อ', [
+                    // เคส 3: buying intent keyword (39, 99, ดูดวง, ราคา, qr, ฯลฯ)
+                    $hasBuyingIntent = $this->messageHasBuyingIntent($messageText);
+
+                    if ($hasActiveFlow || $hasBuyingIntent) {
+                        Log::info('Fortune: takeover active แต่ flow bypass — ดำเนิน flow ต่อ', [
                             'platform' => $takeoverPlatform,
                             'user_id' => $facebookUserId,
+                            'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
                         ]);
-                        // ไม่ return — ดำเนิน flow ตามปกติ (paid ห้ามแทรก)
+                        // ไม่ return — ดำเนิน flow ตามปกติ
                     } else {
-                        Log::info('Fortune: admin /aistop — silent skip (ลูกค้ายังไม่จ่าย)', [
+                        Log::info('Fortune: admin /aistop — silent skip (chitchat ก่อนเข้า flow)', [
                             'platform' => $takeoverPlatform,
                             'user_id' => $facebookUserId,
                             'text_preview' => mb_substr($messageText, 0, 30),
@@ -10945,6 +10954,44 @@ PROMPT;
         }
 
         return null;
+    }
+
+    /**
+     * 🛒 (2026-05-17) ตรวจจับ buying intent — ลูกค้าจะจ่าย/เลือกแพคเกจ
+     *
+     * ใช้ใน takeover hard guard เพื่อ bypass — แม้ admin /aistop ก็ต้องให้บอทตอบ
+     * เมื่อลูกค้าจงใจเลือกแพคเกจ/ถามราคา (ห้ามขัด flow จ่ายเงิน)
+     *
+     * Patterns: 39, 99, ดูดวง, ราคา, จ่าย, qr, promptpay, etc.
+     */
+    public function messageHasBuyingIntent(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        // Exact match สำหรับตัวเลขราคา (กัน "อายุ 39 ปี" → false positive)
+        $exactNumbers = ['39', '99', '33'];
+        if (in_array($text, $exactNumbers, true)) {
+            return true;
+        }
+
+        // Substring match สำหรับ keyword ที่ระบุ buying intent ชัดเจน
+        $keywords = [
+            // fortune intent
+            'ดูดวง', 'ทำนาย', 'หมอดู', 'celtic', 'เซลติก', 'เชิงลึก', 'พื้นฐาน', 'ละเอียด',
+            // buying intent
+            'เท่าไหร่', 'ราคา', 'จ่าย', 'โอน', 'qr', 'พร้อมเพย์', 'promptpay',
+            'ขอบัญชี', 'เลขบัญชี', 'พร้อมโอน', 'ซื้อ',
+        ];
+        foreach ($keywords as $kw) {
+            if (mb_stripos($text, $kw) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

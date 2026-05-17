@@ -201,6 +201,27 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🎯 (2026-05-17) "Locked" states — กำลังจ่าย / จ่ายแล้ว / รอผลคำทำนาย
+     *
+     * ใช้ใน /aistop takeover bypass — admin /aistop ห้ามขัดสถานะเหล่านี้
+     * (กันลูกค้าจ่ายเงินแล้วค้าง หรือกรอกข้อมูลค้างกลางคัน)
+     *
+     * แตกต่างจาก ACTIVE_READING_STATUSES — ไม่รวม "soft" states
+     * (AWAITING_CONFIRMATION, TIER_CHOICE, DISCOVERY_*) ที่ลูกค้ายังไม่ตัดสินใจ
+     */
+    public const LOCKED_FLOW_STATUSES = [
+        self::STATUS_COLLECTING_BIRTHDATE,
+        self::STATUS_COLLECTING_QUESTIONS,
+        self::STATUS_COLLECTING_TAROT,
+        self::STATUS_PENDING_PAYMENT,
+        self::STATUS_CELTIC_PENDING_PAYMENT,
+        self::STATUS_CELTIC_PICKING,
+        self::STATUS_CELTIC_AWAITING_QUESTION,
+        self::STATUS_CELTIC_GENERATING,
+        self::STATUS_CELTIC_QA_PROMPT,
+    ];
+
+    /**
      * เช็คว่า user มี reading ที่ active อยู่หรือไม่ (cached 30s ลด DB hit)
      *
      * @param  string  $platform  'facebook' | 'line'

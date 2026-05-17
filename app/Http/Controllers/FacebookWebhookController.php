@@ -1365,18 +1365,30 @@ class FacebookWebhookController extends Controller
             }
         }
 
-        // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ → บอทหยุดทำงาน
+        // 🎯 Quick Reply payload — explicit user selection ต้องผ่านก่อน takeover guard
+        //    user spec (2026-05-17): "กดเลือกแพคเกจแล้ว ต้องเข้าโฟลการจ่ายเงิน อย่าขัด"
+        $quickReplyPayload = $messaging['message']['quick_reply']['payload'] ?? null;
+        if ($quickReplyPayload) {
+            $this->handleQuickReply($senderId, $quickReplyPayload);
+
+            return;
+        }
+
+        // 🛑 Admin Handover: ถ้าแอดมิน /aistop → บอทหยุด (เฉพาะ chitchat)
         //
-        // 🚨 (2026-05-17) PAID BYPASS — ห้ามหยุด flow ของลูกค้าที่จ่ายแล้ว
-        //   ถ้า takeover active แต่ลูกค้ามี paid reading active/pending → ดำเนิน flow ต่อ
-        //   ครอบคลุม: ส่งคำทำนาย (pendingDelivery), Celtic picking/QA, ฯลฯ
+        // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow จ่ายเงิน/รับคำทำนาย
+        //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
+        //   Bypass: active reading state, paid+pending delivery, buying intent keyword
         if ($this->isAdminActive($senderId)) {
-            $hasPaidActiveFlow = FortuneReading::where('facebook_user_id', $senderId)
-                ->where('is_paid', true)
+            $messageText = $messaging['message']['text'] ?? '';
+
+            $hasActiveFlow = FortuneReading::where('facebook_user_id', $senderId)
                 ->where(function ($q) {
-                    $q->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                    // locked states — กำลังจ่าย / จ่ายแล้ว (ไม่รวม soft AWAITING_CONFIRMATION/DISCOVERY)
+                    $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
                         ->orWhere(function ($sub) {
-                            $sub->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                            $sub->where('is_paid', true)
+                                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
                                 ->whereNotNull('deep_response')
                                 ->where('deep_response', '!=', '');
                         });
@@ -1384,27 +1396,23 @@ class FacebookWebhookController extends Controller
                 ->where('created_at', '>=', now()->subDays(7))
                 ->exists();
 
-            if (! $hasPaidActiveFlow) {
-                Log::info('👨‍💼 Admin /aistop: บอทข้าม (ลูกค้ายังไม่จ่าย)', [
+            $hasBuyingIntent = ! empty($messageText)
+                && $this->conversationService->messageHasBuyingIntent($messageText);
+
+            if (! $hasActiveFlow && ! $hasBuyingIntent) {
+                Log::info('👨‍💼 Admin /aistop: บอทข้าม (chitchat ก่อนเข้า flow)', [
                     'user_id' => $senderId,
-                    'message_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
+                    'message_preview' => mb_substr($messageText, 0, 50),
                 ]);
 
                 return;
             }
 
-            Log::info('💰 Admin /aistop active แต่ paid bypass — ดำเนิน flow ต่อ', [
+            Log::info('💰 Admin /aistop active แต่ flow bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $senderId,
+                'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
             ]);
-            // ดำเนิน flow ปกติ (ไม่ return) — pendingDelivery หรือ paid state handler จะทำงาน
-        }
-
-        // ตรวจสอบ Quick Reply payload
-        $quickReplyPayload = $messaging['message']['quick_reply']['payload'] ?? null;
-        if ($quickReplyPayload) {
-            $this->handleQuickReply($senderId, $quickReplyPayload);
-
-            return;
+            // ดำเนิน flow ปกติ (ไม่ return) — pendingDelivery / state handler / payment flow
         }
 
         $messageText = $messaging['message']['text'] ?? '';

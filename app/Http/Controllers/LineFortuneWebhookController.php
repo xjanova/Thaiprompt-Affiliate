@@ -229,19 +229,20 @@ class LineFortuneWebhookController extends Controller
         }
 
         // ========================================
-        // 🛑 Admin Takeover: ถ้าแม่หมอ/แอดมินกำลังดูแล → บอทเงียบ
+        // 🛑 Admin Takeover: ถ้าแม่หมอ /aistop → บอทเงียบ (เฉพาะ chitchat)
         //
-        // 🚨 (2026-05-17) PAID BYPASS — ห้ามหยุด flow ของลูกค้าที่จ่ายแล้ว
-        //   ถ้า takeover active แต่ลูกค้ามี paid reading active/pending → ดำเนิน flow ต่อ
-        //   เคส LINE: Celtic picking/QA, รอเปิดไพ่ ฯลฯ
+        // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow จ่ายเงิน/รับคำทำนาย
+        //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
+        //   Bypass: active reading state, paid+pending delivery, buying intent keyword
         // ========================================
         if ($this->takeoverService->isActiveByPlatform('line', $userId)) {
-            $hasPaidActiveFlow = FortuneReading::where('platform_user_id', $userId)
-                ->where('is_paid', true)
+            $hasActiveFlow = FortuneReading::where('platform_user_id', $userId)
                 ->where(function ($q) {
-                    $q->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                    // locked states — กำลังจ่าย / จ่ายแล้ว (ไม่รวม soft AWAITING_CONFIRMATION/DISCOVERY)
+                    $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
                         ->orWhere(function ($sub) {
-                            $sub->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                            $sub->where('is_paid', true)
+                                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
                                 ->whereNotNull('deep_response')
                                 ->where('deep_response', '!=', '');
                         });
@@ -249,8 +250,13 @@ class LineFortuneWebhookController extends Controller
                 ->where('created_at', '>=', now()->subDays(7))
                 ->exists();
 
-            if (! $hasPaidActiveFlow) {
-                Log::info('👨‍💼 LINE /aistop: บอทข้าม (ลูกค้ายังไม่จ่าย)', [
+            // ใช้ FortuneConversationService::messageHasBuyingIntent (shared logic)
+            $hasBuyingIntent = ! empty($messageText)
+                && app(\App\Services\FortuneConversationService::class)
+                    ->messageHasBuyingIntent($messageText);
+
+            if (! $hasActiveFlow && ! $hasBuyingIntent) {
+                Log::info('👨‍💼 LINE /aistop: บอทข้าม (chitchat ก่อนเข้า flow)', [
                     'user_id' => $userId,
                     'message_preview' => mb_substr($messageText, 0, 50),
                 ]);
@@ -258,10 +264,11 @@ class LineFortuneWebhookController extends Controller
                 return;
             }
 
-            Log::info('💰 LINE /aistop active แต่ paid bypass — ดำเนิน flow ต่อ', [
+            Log::info('💰 LINE /aistop active แต่ flow bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $userId,
+                'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
             ]);
-            // ดำเนิน flow ปกติ (ไม่ return) — paid state handler จะทำงาน
+            // ดำเนิน flow ปกติ (ไม่ return) — paid state handler / payment flow
         }
 
         // ========================================
