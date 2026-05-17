@@ -477,19 +477,29 @@ class PaymentBannerService
      */
     protected function drawCenteredText($img, string $text, string $fontPath, int $size, int $y, int $color, int $canvasW): void
     {
-        if (! function_exists('imagettftext') || ! file_exists($fontPath)) {
+        if (! function_exists('imagettftext') || ! file_exists($fontPath) || ! is_readable($fontPath)) {
             return;
         }
 
         try {
-            // คำนวณความกว้างของ text
-            $bbox = imagettfbbox($size, 0, $fontPath, $text);
-            $textW = abs($bbox[2] - $bbox[0]);
+            // คำนวณความกว้างของ text — suppress warnings (FreeType บางเวอร์ชันมี edge case)
+            $bbox = @imagettfbbox($size, 0, $fontPath, $text);
+
+            if (is_array($bbox) && isset($bbox[0], $bbox[2])) {
+                $textW = abs($bbox[2] - $bbox[0]);
+            } else {
+                // Fallback: approximate width (Thai+English mixed)
+                //   ค่าเฉลี่ย: 1 char ≈ 0.55 × size px
+                $textW = (int) (mb_strlen($text) * $size * 0.55);
+            }
+
             $x = (int) (($canvasW - $textW) / 2);
 
-            imagettftext($img, $size, 0, $x, $y, $color, $fontPath, $text);
+            @imagettftext($img, $size, 0, $x, $y, $color, $fontPath, $text);
         } catch (\Throwable $e) {
-            // ignore — fallback
+            \Log::debug('PaymentBanner: drawCenteredText fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
