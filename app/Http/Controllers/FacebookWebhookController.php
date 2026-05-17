@@ -1391,6 +1391,16 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 💰 (2026-05-17) Affiliate interest — opt-in only: คนทักว่าอยากทำ/อยากแชร์/ขอลิงก์
+        //    ส่ง Button Template "เข้าระบบด้วย Facebook" → FB OAuth → หน้าแชร์ลิงก์
+        //    ⚠️ ต้องอยู่หลัง pendingDelivery — กันลูกค้าจ่ายแล้วถามอยาก-ทำ-แชร์ตอนรอคำทำนาย
+        //    ลูกค้าที่จ่ายเงินแล้ว = ส่งคำทำนายก่อน, ถามต่อในวันถัดไป
+        if (! empty($messageText) && $this->conversationService->looksLikeAffiliateInterestRequest($messageText)) {
+            $this->sendFacebookAffiliateInvite($senderId);
+
+            return;
+        }
+
         // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
         // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
         if ($this->isUserSpamming($senderId, $messageText, $attachments)) {
@@ -1826,6 +1836,108 @@ class FacebookWebhookController extends Controller
             .'🌙 หมอจันทราพร้อมรับฟังเสมอค่ะ';
 
         $this->facebookService->sendMessage($senderId, $message);
+    }
+
+    /**
+     * 💰 (2026-05-17) ส่ง Button Template "เข้าระบบด้วย Facebook" → หน้าแชร์ลิงก์
+     *
+     * Flow:
+     * 1. ลูกค้าทักว่า "อยากทำ" / "อยากแชร์" / "ขอลิงก์" → trigger จาก looksLikeAffiliateInterestRequest
+     * 2. บอทส่ง Button Template + 3 ปุ่ม web_url ผ่าน /auth/facebook?redirect=...
+     * 3. ลูกค้ากด → FB OAuth (FacebookLoginController) → auto-match facebook_user_id/email
+     *    → redirect ไปหน้าเป้าหมาย (recruit/wallet/tree)
+     *
+     * Rate limit: 1 ครั้ง / 6 ชม. ต่อ user (กันสแปม แต่ไม่บล็อกการถามซ้ำในวันถัดไป)
+     */
+    protected function sendFacebookAffiliateInvite(string $senderId): void
+    {
+        // กันส่งซ้ำถี่ — 6 ชม. ต่อ user
+        $cacheKey = "fortune:fb_affiliate_invite:{$senderId}";
+        if (Cache::has($cacheKey)) {
+            Log::debug('FB Affiliate Invite: ข้ามเพราะเพิ่งส่งไปไม่ถึง 6 ชม.', [
+                'sender_id' => $senderId,
+            ]);
+
+            // ส่งข้อความสั้นๆ บอกว่ากดปุ่มจากข้อความก่อนหน้าได้เลย
+            $this->facebookService->sendMessage(
+                $senderId,
+                "🔗 กดปุ่ม \"เข้าเว็บด้วย Facebook\" จากข้อความก่อนหน้าได้เลยค่ะ\n\n"
+                ."หรือเข้าตรงๆ ที่: ".url('/auth/facebook')
+            );
+
+            return;
+        }
+
+        try {
+            // สร้างลิงก์ FB OAuth พร้อม redirect ไปหน้าเป้าหมาย
+            $recruitUrl = url('/auth/facebook?redirect='.urlencode(route('user.fortune-referral.recruit', [], false)));
+            $walletUrl = url('/auth/facebook?redirect='.urlencode(route('user.wallet.index', [], false)));
+            $treeUrl = url('/auth/facebook?redirect='.urlencode(route('user.fortune-referral.tree', [], false)));
+
+            $payload = [
+                'attachment' => [
+                    'type' => 'template',
+                    'payload' => [
+                        'template_type' => 'button',
+                        'text' => "🎉 ดีใจที่อยากร่วมทีมค่ะ!\n\n"
+                            ."💰 แชร์ลิงก์ให้เพื่อนดูดวง\n"
+                            ."รับ 10 บาท/บิล เข้ากระเป๋าตลอดไป\n\n"
+                            ."👇 กดปุ่มด้านล่างเข้าระบบด้วย Facebook\n"
+                            ."(ใช้ FB เดียวกันนี้ — เป็นสมาชิกอัตโนมัติ)",
+                        'buttons' => [
+                            [
+                                'type' => 'web_url',
+                                'url' => $recruitUrl,
+                                'title' => '🚀 รับลิงก์แชร์',
+                                'webview_height_ratio' => 'full',
+                            ],
+                            [
+                                'type' => 'web_url',
+                                'url' => $walletUrl,
+                                'title' => '💼 ดูกระเป๋าเงิน',
+                                'webview_height_ratio' => 'full',
+                            ],
+                            [
+                                'type' => 'web_url',
+                                'url' => $treeUrl,
+                                'title' => '📊 ดูสายงาน',
+                                'webview_height_ratio' => 'full',
+                            ],
+                        ],
+                    ],
+                ],
+            ];
+
+            $sent = $this->facebookService->sendButtonTemplate($senderId, $payload);
+
+            if ($sent) {
+                Cache::put($cacheKey, true, now()->addHours(6));
+                Log::info('💰 FB Affiliate Invite: ส่ง button template สำเร็จ', [
+                    'sender_id' => $senderId,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FB Affiliate Invite: ส่ง button template ล้มเหลว', [
+                'sender_id' => $senderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Fallback — ส่ง text + URL ตรงๆ
+            try {
+                $fallbackUrl = url('/auth/facebook?redirect=/user/fortune-referral/recruit');
+                $this->facebookService->sendMessage(
+                    $senderId,
+                    "🎉 ดีใจที่อยากร่วมทีมค่ะ!\n\n"
+                    ."💰 แชร์ลิงก์ให้เพื่อนดูดวง รับ 10 บาท/บิล\n\n"
+                    ."👇 เข้าระบบด้วย Facebook:\n{$fallbackUrl}"
+                );
+            } catch (\Throwable $fallbackErr) {
+                Log::error('FB Affiliate Invite: fallback ก็ล้มเหลว', [
+                    'sender_id' => $senderId,
+                    'error' => $fallbackErr->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
