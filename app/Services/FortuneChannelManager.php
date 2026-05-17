@@ -966,6 +966,11 @@ class FortuneChannelManager
                     ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
                 ], $extra),
 
+                // 🆕 (2026-05-17) celtic_typing_only — typing delay 60-120s pattern
+                //   Trait dispatch SendCelticDelayedPrediction job แล้ว — channel manager แค่ส่ง typing_on
+                //   (typing dot จะหายเองที่ ~20s แต่ยอมรับได้ — sendCelticThinkingAck แจ้งล่วงหน้าว่ารอ 1-2 นาที)
+                'celtic_typing_only' => true,
+
                 // 📜 (2026-05-03) Celtic Q&A review — legacy quick-reply list (Q1/Q2)
                 'celtic_review_detail', 'celtic_review_not_found' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     if (! empty($result['celtic_summary_image_url'])) {
@@ -2189,6 +2194,11 @@ class FortuneChannelManager
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
                     ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
                 ]),
+
+                // 🆕 (2026-05-17) celtic_typing_only — typing delay 60-120s pattern (LINE OA ไม่มี typing indicator)
+                //   Trait dispatch SendCelticDelayedPrediction job แล้ว — channel manager no-op
+                //   ลูกค้ารู้แล้วว่าต้องรอ 1-2 นาที (sendCelticThinkingAck แจ้งไว้)
+                'celtic_typing_only' => true,
 
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
                 //                 Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)

@@ -68,7 +68,9 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticGenerating(FortuneReading $reading): array
     {
-        $stuckThresholdSec = 120;
+        // 🆕 (2026-05-17) ขยาย threshold เป็น 240s — เพราะมี typing delay 60-120s + AI 30-60s
+        //   AI worst case 60s + delay max 120s = 180s → buffer 60s = 240s
+        $stuckThresholdSec = 240;
         $generatingForSec = $reading->updated_at
             ? abs(now()->diffInSeconds($reading->updated_at, false))
             : 0;
@@ -1471,22 +1473,68 @@ trait CelticCrossConversationTrait
         //   user spec: "คุยกับแม่หมอจันทรา จนจุใจ 30 นาที"
         //   เดิม: ถ้าถามครบ max → end session ก่อนหมดเวลา → ลูกค้าโดนตัด → tier menu โผล่
         //   ใหม่: ถามได้เรื่อยๆ จนกว่า canAskMoreCeltic() = false (หมดเวลา) หรือ "ยุติการทำนาย"
-        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+        //
+        // 🆕 (2026-05-17) Typing delay 60-120s — ให้รู้สึกเหมือนหมอจันทรากำลังพิมพ์เอง (ไม่ใช่บอท)
+        //   เก็บ status = CELTIC_GENERATING (ไม่กลับ AWAITING ทันที) → กัน user ถามใหม่ทับ
+        //   ระหว่างรอ — handleCelticGenerating จะ reply "หมอกำลังพิจารณา..." ให้
 
         $remainingMin = $reading->getCelticQaRemainingMinutes();
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $timeHint = $remainingMin !== null
-            ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
+            ? "⏳ เหลือเวลาคุยกับหมอจันทราอีก {$remainingMin} นาที"
             : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
 
         $followupOffer = "\n\n──────────────────────\n"
             .$timeHint."\n"
-            .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ\n'
+            .'💬 พิมพ์ต่อได้เรื่อยๆ — หมอจันทรารับฟังจนจุใจ\n'
             .'หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบสนทนา ✨';
 
+        $finalMessage = $aiResponse.$followupOffer;
+
+        // Dispatch delayed send — 60-120s random
+        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
+        $sendUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+        $delaySeconds = random_int(60, 120);
+
+        if ($sendUserId) {
+            \App\Jobs\SendCelticDelayedPrediction::dispatch(
+                $reading->id,
+                $finalMessage,
+                $platform,
+                $sendUserId,
+            )->delay(now()->addSeconds($delaySeconds));
+
+            // FB เท่านั้น — ส่ง typing_on ทันทีให้ลูกค้าเห็นจุดสามจุด (~20s แล้วหาย)
+            if ($platform === 'facebook') {
+                try {
+                    $settings = \App\Models\FortuneTellingSetting::getSettings();
+                    (new \App\Services\FacebookWebhookService($settings))
+                        ->sendTypingIndicator($sendUserId, true);
+                } catch (\Throwable $e) {
+                    \Log::debug('Celtic: typing_on ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+                }
+            }
+
+            \Log::info('Celtic: dispatched delayed prediction', [
+                'reading_id' => $reading->id,
+                'delay_sec' => $delaySeconds,
+                'platform' => $platform,
+            ]);
+        } else {
+            // Edge case — ไม่มี user ID → ส่งทันทีแบบเดิม (fallback)
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            return [
+                'action' => 'celtic_question_answered',
+                'message' => $finalMessage,
+                'reading' => $reading,
+            ];
+        }
+
+        // คืน action 'celtic_typing_only' → ChannelManager ไม่ส่ง message ทันที (รอ Job ส่งให้)
         return [
-            'action' => 'celtic_question_answered',
-            'message' => $aiResponse.$followupOffer,
+            'action' => 'celtic_typing_only',
+            'message' => '',
             'reading' => $reading,
         ];
     }
