@@ -580,28 +580,53 @@ class FortuneConversationService
             // ═══════════════════════════════════════════════════════════════
             // 🤝 (2026-05-08 v3) Admin Handover Hard Guard
             // ═══════════════════════════════════════════════════════════════
-            // ถ้า admin reply via Business Suite/Page Inbox → FB ส่ง echo event
-            //   → handleEchoMessage trigger takeover ผ่าน FortuneTakeoverService
-            //   → admin_takeover_until + Cache flag fortune_admin_active:* set
+            // ถ้า admin /aistop → bot เงียบ — ห้ามตอบ ห้ามแทรก
             //
-            // Guard นี้: ถ้า takeover active → bot เงียบทุกอย่าง — ห้ามตอบ ห้ามแทรก
-            //   ครอบคลุม: Pro Session / Quiet Period / forceTier / ทุก flow
-            //   admin พิมพ์ "/ai" → handleEchoMessage detect resume command → clear flag
+            // 🚨 (2026-05-17) PAID BYPASS — ห้ามหยุด flow ของลูกค้าที่จ่ายแล้ว
+            //   user spec: "/aistop ควรหยุดแค่บอทแชทสนทนา ไม่หยุด flow ทำนาย"
+            //   ถ้าลูกค้ามี is_paid=true + ยังไม่ได้ delivery → bypass takeover
+            //   ครอบคลุม: pendingDelivery, Celtic picking/awaiting/generating, รอ Q&A
             try {
                 $takeoverPlatform = $this->currentPlatform ?? 'facebook';
                 if (app(\App\Services\FortuneTakeoverService::class)
                     ->isActiveByPlatform($takeoverPlatform, $facebookUserId)) {
-                    Log::info('Fortune: admin handover active — silent skip', [
-                        'platform' => $takeoverPlatform,
-                        'user_id' => $facebookUserId,
-                        'text_preview' => mb_substr($messageText, 0, 30),
-                    ]);
 
-                    return [
-                        'action' => 'silent_skip',
-                        'message' => null,
-                        'reading' => null,
-                    ];
+                    // PAID BYPASS check — ลูกค้าจ่ายแล้ว + ยังมี active flow
+                    $platformColumn = $takeoverPlatform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
+                    $hasPaidActiveFlow = \App\Models\FortuneReading::where($platformColumn, $facebookUserId)
+                        ->where('is_paid', true)
+                        ->where(function ($q) {
+                            // เคส 1: paid + ยังมี active state (Celtic picking/QA/etc)
+                            $q->whereIn('conversation_status', \App\Models\FortuneReading::ACTIVE_READING_STATUSES)
+                                // เคส 2: paid + COMPLETED + มี deep_response รอส่ง (pendingDelivery)
+                                ->orWhere(function ($sub) {
+                                    $sub->where('conversation_status', \App\Models\FortuneReading::STATUS_COMPLETED)
+                                        ->whereNotNull('deep_response')
+                                        ->where('deep_response', '!=', '');
+                                });
+                        })
+                        ->where('created_at', '>=', now()->subDays(7))
+                        ->exists();
+
+                    if ($hasPaidActiveFlow) {
+                        Log::info('Fortune: takeover active แต่ paid bypass — ดำเนิน flow ต่อ', [
+                            'platform' => $takeoverPlatform,
+                            'user_id' => $facebookUserId,
+                        ]);
+                        // ไม่ return — ดำเนิน flow ตามปกติ (paid ห้ามแทรก)
+                    } else {
+                        Log::info('Fortune: admin /aistop — silent skip (ลูกค้ายังไม่จ่าย)', [
+                            'platform' => $takeoverPlatform,
+                            'user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip',
+                            'message' => null,
+                            'reading' => null,
+                        ];
+                    }
                 }
             } catch (\Throwable $takeoverErr) {
                 // Takeover check fail → ไม่ block flow ปกติ (fail open)

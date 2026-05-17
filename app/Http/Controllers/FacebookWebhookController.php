@@ -1366,13 +1366,37 @@ class FacebookWebhookController extends Controller
         }
 
         // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล user คนนี้ → บอทหยุดทำงาน
+        //
+        // 🚨 (2026-05-17) PAID BYPASS — ห้ามหยุด flow ของลูกค้าที่จ่ายแล้ว
+        //   ถ้า takeover active แต่ลูกค้ามี paid reading active/pending → ดำเนิน flow ต่อ
+        //   ครอบคลุม: ส่งคำทำนาย (pendingDelivery), Celtic picking/QA, ฯลฯ
         if ($this->isAdminActive($senderId)) {
-            Log::info('👨‍💼 Admin Handover: บอทข้ามข้อความ (แอดมินกำลังดูแล)', [
-                'user_id' => $senderId,
-                'message_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
-            ]);
+            $hasPaidActiveFlow = FortuneReading::where('facebook_user_id', $senderId)
+                ->where('is_paid', true)
+                ->where(function ($q) {
+                    $q->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                        ->orWhere(function ($sub) {
+                            $sub->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->whereNotNull('deep_response')
+                                ->where('deep_response', '!=', '');
+                        });
+                })
+                ->where('created_at', '>=', now()->subDays(7))
+                ->exists();
 
-            return;
+            if (! $hasPaidActiveFlow) {
+                Log::info('👨‍💼 Admin /aistop: บอทข้าม (ลูกค้ายังไม่จ่าย)', [
+                    'user_id' => $senderId,
+                    'message_preview' => mb_substr($messaging['message']['text'] ?? '', 0, 50),
+                ]);
+
+                return;
+            }
+
+            Log::info('💰 Admin /aistop active แต่ paid bypass — ดำเนิน flow ต่อ', [
+                'user_id' => $senderId,
+            ]);
+            // ดำเนิน flow ปกติ (ไม่ return) — pendingDelivery หรือ paid state handler จะทำงาน
         }
 
         // ตรวจสอบ Quick Reply payload
