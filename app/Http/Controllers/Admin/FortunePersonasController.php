@@ -115,7 +115,7 @@ class FortunePersonasController extends Controller
         // 🔗 Link กับ readings ที่เคยทำนาย (ถ้ามี)
         $readings = FortuneReading::where('platform', $persona->platform)
             ->where('facebook_user_id', $persona->platform_user_id)
-            ->select(['id', 'reading_type', 'status', 'amount_paid', 'is_paid', 'created_at'])
+            ->select(['id', 'reading_type', 'conversation_status', 'amount_paid', 'is_paid', 'created_at'])
             ->latest()
             ->limit(10)
             ->get();

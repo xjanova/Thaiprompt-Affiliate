@@ -424,7 +424,7 @@
                                     @endphp
                                     <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $typeBadge[1] }}">{{ $typeBadge[0] }}</span>
                                 </td>
-                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{{ $r->status }}</td>
+                                <td class="px-3 py-2 text-xs text-gray-600 dark:text-gray-300">{{ $r->conversation_status }}</td>
                                 <td class="px-3 py-2 text-right font-mono text-xs {{ $r->is_paid ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400' }}">
                                     @if($r->is_paid)
                                         ฿{{ number_format($r->amount_paid, 0) }}
