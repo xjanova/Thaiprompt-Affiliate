@@ -2765,7 +2765,28 @@ class FacebookWebhookController extends Controller
             // 🖼️ ส่งแบนเนอร์ welcome (ครั้งเดียวต่อ user/24 ชม.)
             // ส่งก่อน processMessage เพื่อให้ภาพมาก่อนข้อความตอบ
             // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — ลูกค้าเก่าได้ text ตรง (ไม่ส่งรูป)
-            if ($this->bannerService) {
+            //
+            // 🚨 (2026-05-17) Skip banner ระหว่าง active flow (กันแทรกกลาง payment/reading)
+            //   user report: ลูกค้ากรอก "39.54ค่ะ" แจ้งยอดจ่าย → ระบบส่ง welcome banner ซ้อน
+            //   เคสที่ครอบคลุม:
+            //     - PENDING_PAYMENT / AWAITING_PAYMENT_METHOD / CELTIC_PENDING_PAYMENT (รอจ่าย)
+            //     - COLLECTING_BIRTHDATE / QUESTIONS / TAROT (อยู่กลาง flow)
+            //     - CELTIC_PICKING / GENERATING / QA_PROMPT (จ่ายแล้ว ต่อ flow)
+            //     - paid + pendingDelivery (รอคำทำนาย)
+            $hasActiveFlow = FortuneReading::where('facebook_user_id', $senderId)
+                ->where(function ($q) {
+                    $q->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                        ->orWhere(function ($sub) {
+                            $sub->where('is_paid', true)
+                                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                                ->whereNotNull('deep_response')
+                                ->where('deep_response', '!=', '');
+                        });
+                })
+                ->where('created_at', '>=', now()->subHours(24))
+                ->exists();
+
+            if (! $hasActiveFlow && $this->bannerService) {
                 $this->bannerService->sendBannerOnce(
                     $senderId,
                     fn ($url) => $this->facebookService->sendImage($senderId, $url),
@@ -2773,6 +2794,10 @@ class FacebookWebhookController extends Controller
                     24,
                     'facebook'
                 );
+            } elseif ($hasActiveFlow) {
+                Log::debug('FB: skip welcome banner — มี active flow', [
+                    'sender_id' => $senderId,
+                ]);
             }
 
             // ✅ ใช้ FortuneChannelManager เพื่อ routing + Rich Message response
