@@ -917,11 +917,14 @@ class FortuneChannelManager
                     $picked = $reading?->getCelticPickedCount() ?? 0;
                     $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
 
-                    return $fbService->sendQuickReplies($userId, $message, [
-                        ['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY'],
-                        ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'],
-                        ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                    ], $extra);
+                    // 🆕 (2026-05-17) ซ่อนปุ่ม "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
+                    $quickReplies = [['content_type' => 'text', 'title' => $nextLabel, 'payload' => 'CELTIC_READY']];
+                    if ($reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
+                        $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
+                    }
+                    $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
+
+                    return $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite Celtic Cross + ข้อความขอ Q1
@@ -2076,12 +2079,16 @@ class FortuneChannelManager
                     $reading = $result['reading'] ?? null;
                     $picked = method_exists($reading, 'getCelticPickedCount') ? $reading->getCelticPickedCount() : 0;
                     $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                    // 🆕 (2026-05-17) ซ่อนปุ่ม "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
+                    $canShuffle = $reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain();
 
                     $quickReplyItems = [
                         ['type' => 'action', 'action' => ['type' => 'message', 'label' => $nextLabel, 'text' => 'พร้อม']],
-                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🔄 สับใหม่', 'text' => 'สับใหม่']],
-                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']],
                     ];
+                    if ($canShuffle) {
+                        $quickReplyItems[] = ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🔄 สับใหม่', 'text' => 'สับใหม่']];
+                    }
+                    $quickReplyItems[] = ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']];
 
                     // 🚀 Single replyMessage with [image, text+quickReply] — ฟรี + เร็ว
                     $messages = [];
@@ -2134,12 +2141,15 @@ class FortuneChannelManager
                         }
                     }
 
+                    // 🆕 (2026-05-17) ซ่อน "สับใหม่" เมื่อใช้ครบโควต้า (ใช้ $canShuffle จาก scope ด้านบน)
+                    $fallbackQuickReplies = [['label' => $nextLabel, 'text' => 'พร้อม']];
+                    if ($canShuffle) {
+                        $fallbackQuickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
+                    }
+                    $fallbackQuickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
+
                     $textOk = $lineService->sendMessage($userId, $message, [
-                        'quick_replies' => [
-                            ['label' => $nextLabel, 'text' => 'พร้อม'],
-                            ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'],
-                            ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
-                        ],
+                        'quick_replies' => $fallbackQuickReplies,
                     ]);
 
                     if (! $textOk) {
@@ -2895,11 +2905,12 @@ class FortuneChannelManager
                         ? '👉 กดปุ่ม *"🃏 เปิดไพ่ใบที่ 1"* เพื่อเริ่ม'
                         : "👉 กดปุ่ม *\"🃏 เปิดไพ่ใบถัดไป\"* (ใบที่ {$next})";
                     $btnLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
-                    $quickReplies = [
-                        ['content_type' => 'text', 'title' => $btnLabel, 'payload' => 'CELTIC_READY'],
-                        ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'],
-                        ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'],
-                    ];
+                    // 🆕 (2026-05-17) ซ่อน "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
+                    $quickReplies = [['content_type' => 'text', 'title' => $btnLabel, 'payload' => 'CELTIC_READY']];
+                    if (method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain()) {
+                        $quickReplies[] = ['content_type' => 'text', 'title' => '🔄 สับใหม่', 'payload' => 'CELTIC_RESET'];
+                    }
+                    $quickReplies[] = ['content_type' => 'text', 'title' => '❌ ยกเลิก', 'payload' => 'CANCEL_FORTUNE'];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
                     $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้';
                     $quickReplies = [

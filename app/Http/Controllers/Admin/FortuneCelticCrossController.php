@@ -198,6 +198,8 @@ class FortuneCelticCrossController extends Controller
 
             $reading->setConversationState('reading_sent_directly', false);
             $reading->setConversationState('celtic_qa_started_at', null);
+            // 🆕 (2026-05-17) Admin reset → คืนโควต้า "สับใหม่" ให้ลูกค้า
+            $reading->setConversationState('celtic_shuffle_count', 0);
             $reading->refresh();
 
             // 4. แจ้งลูกค้า (optional)

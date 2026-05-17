@@ -830,23 +830,25 @@ trait CelticCrossConversationTrait
             return $this->buildCelticStatusRecovery($reading);
         }
 
-        // 🔓 ยกเลิก / เริ่มใหม่ (anti-fraud: ก่อน Q1 ตอบ → restart ฟรี)
+        // 🔓 ยกเลิก / เริ่มใหม่ (anti-fraud: ก่อน Q1 ตอบ → สับใหม่ได้ 1 ครั้ง/บิล)
+        // 🆕 (2026-05-17) Limit สับใหม่เหลือ 1 ครั้ง — กันลูกค้าสับจนได้ไพ่ที่ชอบ
+        //   ดู CelticCrossService::resetPickedCards (throw พร้อมข้อความที่ส่งกลับลูกค้า)
         if ($this->matchesExactKeyword($messageText, ['เริ่มใหม่', 'restart', 'reset', 'สับใหม่'])) {
             try {
                 app(CelticCrossService::class)->resetPickedCards($reading);
 
                 return [
                     'action' => 'celtic_reset',
-                    'message' => "🔄 เริ่มใหม่ครบ — ไพ่ที่เคยเลือกถูกล้างแล้ว\n"
-                        ."ตอนนี้ตั้งจิตให้แน่วแน่อีกครั้ง แล้วเลือกใหม่นะคะ\n\n"
+                    'message' => "🔄 สับไพ่ใหม่เรียบร้อย — ไพ่ที่เคยเลือกถูกล้างแล้ว\n"
+                        ."⚠️ *หมายเหตุ: สับใหม่ได้ครั้งเดียวต่อบิล* — โควต้าหมดแล้วนะคะ\n\n"
+                        ."ตอนนี้ตั้งจิตให้แน่วแน่ แล้วเลือกใหม่อย่างมั่นใจค่ะ\n\n"
                         .$this->buildCelticPickPromptText($reading->fresh()),
                     'reading' => $reading,
                 ];
             } catch (\Exception $e) {
                 return [
                     'action' => 'celtic_reset_denied',
-                    'message' => "❌ ไม่สามารถเริ่มใหม่ได้ — เจ้าชะตาได้รับคำทำนายไปแล้ว\n"
-                        .'ต้องเริ่มรอบใหม่ (จ่ายค่าครูใหม่) เท่านั้นค่ะ',
+                    'message' => '❌ '.$e->getMessage(),
                     'reading' => $reading,
                 ];
             }
@@ -861,6 +863,10 @@ trait CelticCrossConversationTrait
         if (! $isExplicitPick && $this->looksLikeFortuneRestartRequest($messageText)) {
             $picked = $reading->getCelticPickedCount();
             $next = $reading->getNextCelticPosition() ?? 11;
+            $canShuffle = $reading->canShuffleCelticAgain();
+            $shuffleLine = $canShuffle
+                ? "🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่ใหม่ (ได้ครั้งเดียว — ยังไม่จ่ายซ้ำ)\n"
+                : "🔄 สับใหม่ใช้ครบโควต้า 1 ครั้งแล้ว — เปิดไพ่ต่อได้เลยค่ะ\n";
 
             return [
                 'action' => 'celtic_restart_hint',
@@ -868,7 +874,7 @@ trait CelticCrossConversationTrait
                     ."🃏 ตอนนี้เปิดไพ่ไปแล้ว *{$picked}/10 ใบ* — ใบถัดไปคือใบที่ {$next}\n\n"
                     ."──────────────────────\n"
                     ."👉 พิมพ์ *\"พร้อม\"* เพื่อเปิดไพ่ใบถัดไป\n"
-                    ."🔄 หรือพิมพ์ *\"สับใหม่\"* เพื่อสับไพ่เริ่มใหม่ (ยังไม่จ่ายซ้ำ)\n"
+                    .$shuffleLine
                     .'❌ พิมพ์ *"ยกเลิก"* ถ้าไม่อยากดูแล้ว',
                 'reading' => $reading,
             ];
@@ -911,12 +917,16 @@ trait CelticCrossConversationTrait
             $picked = $reading->getCelticPickedCount();
             $next = $reading->getNextCelticPosition() ?? '?';
 
+            $recoveryHint = $reading->canShuffleCelticAgain()
+                ? "\n\nหากกดแล้วไม่หาย ลองพิมพ์ *'สับใหม่'* เพื่อรีเซ็ตไพ่ (ได้ครั้งเดียวต่อบิล — ไม่ต้องจ่ายซ้ำ)"
+                : "\n\nลองพิมพ์ 'พร้อม' อีกครั้ง หรือพิมพ์ 'ยกเลิก' ถ้าต้องการออกจากรอบนี้";
+
             return [
                 'action' => 'celtic_chitchat_reminder',
                 'message' => "⚠️ สุ่มไพ่ใบที่ {$next} ไม่สำเร็จ — ลองพิมพ์ 'พร้อม' หรือกดปุ่มข้างล่างอีกครั้งนะคะ\n\n"
                     ."🃏 เปิดไพ่ไปแล้ว *{$picked}/10 ใบ*\n\n"
                     .($result['message'] ?? '')
-                    ."\n\nหากกดแล้วไม่หาย ลองพิมพ์ *'สับใหม่'* เพื่อรีเซ็ตไพ่ (ไม่ต้องจ่ายซ้ำ)",
+                    .$recoveryHint,
                 'reading' => $reading,
             ];
         }

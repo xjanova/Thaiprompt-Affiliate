@@ -98,6 +98,8 @@ class FortuneCelticReset extends Command
             // 4. ล้าง state อื่นที่อาจค้าง
             $reading->setConversationState('reading_sent_directly', false);
             $reading->setConversationState('celtic_qa_started_at', null);
+            // 🆕 (2026-05-17) Console reset → คืนโควต้า "สับใหม่" ให้ลูกค้า
+            $reading->setConversationState('celtic_shuffle_count', 0);
 
             $reading->refresh();
 

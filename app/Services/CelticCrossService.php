@@ -1424,15 +1424,25 @@ class CelticCrossService
      * Reset Celtic state ให้ลูกค้าเริ่มเลือกไพ่ใหม่ (ใช้กรณี anti-fraud restart ก่อน Q1)
      *
      * เก็บ bill_reference + is_paid + amount_paid ไว้ — ลูกค้าไม่ต้องจ่ายซ้ำ
+     *
+     * 🆕 (2026-05-17) Anti-fraud: สับไพ่ใหม่ได้แค่ 1 ครั้ง/บิล
+     *   กันลูกค้าสับไม่หยุดจนได้ไพ่ที่ "ชอบ" — ทำลายความศักดิ์สิทธิ์
+     *   Counter เก็บใน conversation_state['celtic_shuffle_count'] (ค่าเริ่ม 0)
      */
     public function resetPickedCards(FortuneReading $reading): void
     {
         if ($reading->celtic_questions_used > 0) {
             // ห้าม reset ถ้าตอบ Q ไปแล้ว (anti-fraud)
-            throw new Exception('ไม่สามารถ reset ได้ — ได้รับคำทำนายไปแล้ว');
+            throw new Exception('ไม่สามารถสับไพ่ใหม่ได้ — ได้รับคำทำนายไปแล้ว ต้องเริ่มรอบใหม่ (จ่ายค่าครูใหม่) เท่านั้นค่ะ');
+        }
+
+        $shuffleCount = (int) $reading->getConversationState('celtic_shuffle_count', 0);
+        if ($shuffleCount >= 1) {
+            throw new Exception('สับไพ่ใหม่ได้เพียง 1 ครั้งต่อบิลเท่านั้น — ใช้ครบโควต้าแล้วค่ะ ตั้งจิตให้แน่วแน่แล้วเปิดไพ่ใบถัดไปเลยนะคะ');
         }
 
         $reading->setConversationState('celtic_cards', []);
+        $reading->setConversationState('celtic_shuffle_count', $shuffleCount + 1);
         $reading->update([
             'conversation_status' => FortuneReading::STATUS_CELTIC_PICKING,
             'celtic_summary_image_path' => null,

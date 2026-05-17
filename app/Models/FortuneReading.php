@@ -1738,6 +1738,17 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🃏 (2026-05-17) เช็คว่ายังสับไพ่ใหม่ได้อีกหรือไม่ (Celtic Cross 99฿)
+     *
+     * ลูกค้าสับไพ่ใหม่ได้แค่ 1 ครั้ง/บิล (anti-fraud — ป้องกันสับจนได้ไพ่ที่ "ชอบ")
+     * Counter เก็บใน conversation_state['celtic_shuffle_count']
+     */
+    public function canShuffleCelticAgain(): bool
+    {
+        return (int) $this->getConversationState('celtic_shuffle_count', 0) < 1;
+    }
+
+    /**
      * ดึงข้อมูลจาก conversation state
      *
      * @param  mixed  $default
