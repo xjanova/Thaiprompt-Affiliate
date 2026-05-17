@@ -119,9 +119,15 @@
         <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📈 Token Usage รายวัน</h2>
         <div class="relative" style="height: 400px;">
             <canvas id="usageChart"></canvas>
-            <div x-show="!chartReady" class="absolute inset-0 flex items-center justify-center text-gray-400">
-                <span x-show="loading">⏳ กำลังโหลด...</span>
-                <span x-show="!loading && !chartReady">กดปุ่ม "โหลดข้อมูล" เพื่อแสดงกราฟ</span>
+            <div x-show="!chartReady" class="absolute inset-0 flex items-center justify-center text-gray-400 text-center px-4">
+                <div>
+                    <span x-show="loading">⏳ กำลังโหลด...</span>
+                    <span x-show="!loading && !chartReady && !chartError">กดปุ่ม "โหลดข้อมูล" เพื่อแสดงกราฟ</span>
+                    <span x-show="!loading && !chartReady && chartError" class="text-red-500" x-text="chartError"></span>
+                    <div x-show="!loading && !chartReady && chartError" class="mt-2">
+                        <button @click="fetchData()" class="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700">🔄 ลองใหม่</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -167,13 +173,14 @@
 </div>
 
 @push('scripts')
-{{-- Chart.js CDN — ต้องโหลดก่อน inline script ที่ใช้ window.Chart --}}
+{{-- Chart.js CDN --}}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script>
 function aiUsageDashboard() {
     return {
         loading: false,
         chartReady: false,
+        chartError: '',
         chart: null,
         start: '',
         end: '',
@@ -213,6 +220,7 @@ function aiUsageDashboard() {
 
         async fetchData() {
             this.loading = true;
+            this.chartError = '';
             try {
                 const params = new URLSearchParams();
                 params.append('start', this.start);
@@ -226,24 +234,54 @@ function aiUsageDashboard() {
                 const data = await resp.json();
 
                 if (!data.success) {
-                    alert('โหลดข้อมูลล้มเหลว');
+                    this.chartError = '⚠️ API ตอบกลับ success=false';
                     return;
                 }
 
                 this.summary = data.summary;
                 this.breakdown = data.breakdown;
-                this.renderChart(data.chart);
+                await this.renderChart(data.chart);
             } catch (e) {
                 console.error('fetchData error', e);
-                alert('โหลดข้อมูลล้มเหลว: ' + e.message);
+                this.chartError = '⚠️ โหลดข้อมูลล้มเหลว: ' + e.message;
             } finally {
                 this.loading = false;
             }
         },
 
-        renderChart(chartData) {
+        // 🆕 (2026-05-17) Wait for Chart.js to load — กัน race ตอน CDN ช้า/AdBlock
+        //   จากปัญหา "เห็นบ้างไม่เห็นบ้าง" — Chart undefined ตอน init เร็วเกินไป
+        async waitForChartJs(timeoutMs = 5000) {
+            if (typeof window.Chart !== 'undefined') return true;
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+                await new Promise(r => setTimeout(r, 100));
+                if (typeof window.Chart !== 'undefined') return true;
+            }
+            return false;
+        },
+
+        async renderChart(chartData) {
             const ctx = document.getElementById('usageChart');
-            if (!ctx) return;
+            if (!ctx) {
+                this.chartError = '⚠️ ไม่พบ canvas element (DOM ไม่พร้อม)';
+                return;
+            }
+
+            // กัน race: รอ Chart.js ให้พร้อมก่อน
+            const ready = await this.waitForChartJs();
+            if (!ready) {
+                this.chartError = '⚠️ Chart.js โหลดไม่สำเร็จ (อาจถูก AdBlocker บล็อค) — refresh หน้า / ปิด AdBlocker';
+                return;
+            }
+
+            // กันข้อมูลเปล่า — Chart.js render canvas เปล่าจะดูเหมือนไม่มีกราฟ
+            const hasData = chartData?.datasets?.some(ds => ds.data?.some(v => v > 0));
+            if (!hasData) {
+                this.chartError = '📭 ไม่มีข้อมูล token usage ในช่วงเวลาที่เลือก';
+                if (this.chart) { this.chart.destroy(); this.chart = null; }
+                return;
+            }
 
             if (this.chart) {
                 this.chart.destroy();
@@ -253,50 +291,54 @@ function aiUsageDashboard() {
             const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
             const textColor = isDark ? '#e5e7eb' : '#374151';
 
-            this.chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.labels,
-                    datasets: chartData.datasets,
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: { color: textColor, padding: 15, font: { size: 11 } },
+            try {
+                this.chart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: chartData.datasets,
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { color: textColor, padding: 15, font: { size: 11 } },
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} tokens`,
+                                },
+                            },
                         },
-                        tooltip: {
-                            callbacks: {
-                                label: (ctx) => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()} tokens`,
+                        scales: {
+                            x: {
+                                grid: { color: gridColor },
+                                ticks: { color: textColor },
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: gridColor },
+                                ticks: {
+                                    color: textColor,
+                                    callback: (value) => value.toLocaleString(),
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Tokens',
+                                    color: textColor,
+                                },
                             },
                         },
                     },
-                    scales: {
-                        x: {
-                            grid: { color: gridColor },
-                            ticks: { color: textColor },
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: gridColor },
-                            ticks: {
-                                color: textColor,
-                                callback: (value) => value.toLocaleString(),
-                            },
-                            title: {
-                                display: true,
-                                text: 'Tokens',
-                                color: textColor,
-                            },
-                        },
-                    },
-                },
-            });
-
-            this.chartReady = true;
+                });
+                this.chartReady = true;
+            } catch (e) {
+                console.error('Chart render error:', e);
+                this.chartError = '⚠️ สร้างกราฟล้มเหลว: ' + e.message;
+            }
         },
 
         formatNumber(n) {
