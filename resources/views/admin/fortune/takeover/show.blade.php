@@ -106,7 +106,7 @@
                     {{-- Flash Message --}}
                     <div x-show="flashMessage"
                          x-transition
-                         class="p-3 rounded-lg text-sm"
+                         class="p-3 rounded-lg text-sm whitespace-pre-line"
                          :class="flashType === 'success'
                             ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200'
                             : 'bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200'">

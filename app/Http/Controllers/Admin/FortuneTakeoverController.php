@@ -218,9 +218,13 @@ class FortuneTakeoverController extends Controller
         $sent = $this->sendMessageToPlatform($reading, $message);
 
         if (! $sent) {
+            // 🆕 (2026-05-17) Actionable hint — ครอบคลุม 2 เคสที่พบบ่อย
             return response()->json([
                 'success' => false,
-                'message' => '❌ ส่งข้อความไม่สำเร็จ — ตรวจสอบการตั้งค่า platform',
+                'message' => "❌ ส่งข้อความไม่สำเร็จ — อาจเป็นเพราะ:\n"
+                    . "• ลูกค้าหายไปนานเกิน 7 วัน (Meta จำกัด — รอให้ลูกค้าทักกลับมาก่อน)\n"
+                    . "• หรือยังไม่ได้เปิด HUMAN_AGENT permission ใน Facebook App → Messenger → Advanced Messaging\n"
+                    . "• ตรวจสอบรายละเอียดใน storage/logs/laravel.log (grep error_subcode)",
             ], 500);
         }
 
@@ -256,6 +260,14 @@ class FortuneTakeoverController extends Controller
 
     /**
      * ส่งข้อความไปยัง platform ที่เหมาะสม
+     *
+     * 🆕 (2026-05-17) FB Admin send fix:
+     *   ปัญหา: ลูกค้าทักล่าสุดเกิน 24 ชม. → RESPONSE fails → fallback POST_PURCHASE_UPDATE
+     *          → ใช้ไม่ได้ถ้าลูกค้ายังไม่จ่าย → admin send fail เงียบ
+     *   แก้: ส่ง message_tag = HUMAN_AGENT (Meta ให้แอดมิน human reply ได้ 7 วัน
+     *        หลัง user DM ล่าสุด — ไม่ผูกกับการชำระเงิน)
+     *        ต้องเปิดสิทธิ์ "Human Agent" ใน Facebook App → Messenger → Advanced Messaging
+     *        Reference brain: 12f9a3d8e8d5 (Admin Takeover & FB Handover Limitations)
      */
     protected function sendMessageToPlatform(FortuneReading $reading, string $message): bool
     {
@@ -278,10 +290,14 @@ class FortuneTakeoverController extends Controller
                 return $service->sendMessageWithReplyFallback($userId, $message, null);
             }
 
-            // Facebook (default)
+            // Facebook (default) — admin manual send ใช้ HUMAN_AGENT tag เป็น fallback
+            // ครอบคลุมทั้งเคสจ่ายแล้ว (POST_PURCHASE_UPDATE ก็ทำงานได้) และยังไม่จ่าย
             $service = new FacebookWebhookService($settings);
 
-            return $service->sendMessage($userId, $message);
+            return $service->sendMessage($userId, $message, [
+                'from_admin' => true,
+                'message_tag' => 'HUMAN_AGENT',
+            ]);
         } catch (\Exception $e) {
             Log::error('FortuneTakeover: ส่งข้อความล้มเหลว', [
                 'reading_id' => $reading->id,
