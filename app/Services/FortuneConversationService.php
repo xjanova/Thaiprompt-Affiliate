@@ -578,52 +578,13 @@ class FortuneConversationService
     {
         try {
             // ═══════════════════════════════════════════════════════════════
-            // 🤝 (2026-05-08 v3) Admin Handover Hard Guard
+            // 🤝 Admin Handover Hard Guard — ใช้ shouldBypassTakeover (DRY)
             // ═══════════════════════════════════════════════════════════════
-            // ถ้า admin /aistop → bot เงียบ — ห้ามตอบ ห้ามแทรก
-            //
-            // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow ที่ลูกค้ากำลังจ่ายเงิน/รับคำทำนาย
-            //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
-            //   user spec: "/aistop ควรหยุดแค่บอทแชทสนทนา ไม่หยุด flow ทำนาย"
-            //
-            //   Bypass 3 เคส:
-            //     1. มี active reading state (AWAITING_CONFIRMATION/PENDING_PAYMENT/Celtic/etc.)
-            //     2. paid + รอ delivery (deep_response saved รอ user ทัก)
-            //     3. ข้อความเป็น buying intent (39, 99, ดูดวง, ราคา, qr, ฯลฯ)
             try {
                 $takeoverPlatform = $this->currentPlatform ?? 'facebook';
-                if (app(\App\Services\FortuneTakeoverService::class)
-                    ->isActiveByPlatform($takeoverPlatform, $facebookUserId)) {
-
-                    // เคส 1+2: มี active flow หรือ paid + รอ delivery
-                    $platformColumn = $takeoverPlatform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
-                    $hasActiveFlow = \App\Models\FortuneReading::where($platformColumn, $facebookUserId)
-                        ->where(function ($q) {
-                            // locked states — กำลังจ่าย / จ่ายแล้ว / รอผลคำทำนาย
-                            // (ไม่รวม AWAITING_CONFIRMATION/TIER_CHOICE/DISCOVERY = soft states ที่ /aistop หยุดได้)
-                            $q->whereIn('conversation_status', \App\Models\FortuneReading::LOCKED_FLOW_STATUSES)
-                                // หรือ paid + COMPLETED + มี deep_response รอส่ง
-                                ->orWhere(function ($sub) {
-                                    $sub->where('is_paid', true)
-                                        ->where('conversation_status', \App\Models\FortuneReading::STATUS_COMPLETED)
-                                        ->whereNotNull('deep_response')
-                                        ->where('deep_response', '!=', '');
-                                });
-                        })
-                        ->where('created_at', '>=', now()->subDays(7))
-                        ->exists();
-
-                    // เคส 3: buying intent keyword (39, 99, ดูดวง, ราคา, qr, ฯลฯ)
-                    $hasBuyingIntent = $this->messageHasBuyingIntent($messageText);
-
-                    if ($hasActiveFlow || $hasBuyingIntent) {
-                        Log::info('Fortune: takeover active แต่ flow bypass — ดำเนิน flow ต่อ', [
-                            'platform' => $takeoverPlatform,
-                            'user_id' => $facebookUserId,
-                            'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
-                        ]);
-                        // ไม่ return — ดำเนิน flow ตามปกติ
-                    } else {
+                $takeoverService = app(\App\Services\FortuneTakeoverService::class);
+                if ($takeoverService->isActiveByPlatform($takeoverPlatform, $facebookUserId)) {
+                    if (! $takeoverService->shouldBypassTakeover($takeoverPlatform, $facebookUserId, $messageText)) {
                         Log::info('Fortune: admin /aistop — silent skip (chitchat ก่อนเข้า flow)', [
                             'platform' => $takeoverPlatform,
                             'user_id' => $facebookUserId,
@@ -636,6 +597,11 @@ class FortuneConversationService
                             'reading' => null,
                         ];
                     }
+
+                    Log::info('Fortune: /aistop active แต่ flow bypass — ดำเนิน flow ต่อ', [
+                        'platform' => $takeoverPlatform,
+                        'user_id' => $facebookUserId,
+                    ]);
                 }
             } catch (\Throwable $takeoverErr) {
                 // Takeover check fail → ไม่ block flow ปกติ (fail open)

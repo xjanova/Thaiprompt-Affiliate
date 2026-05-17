@@ -1378,28 +1378,10 @@ class FacebookWebhookController extends Controller
         //
         // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow จ่ายเงิน/รับคำทำนาย
         //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
-        //   Bypass: active reading state, paid+pending delivery, buying intent keyword
         if ($this->isAdminActive($senderId)) {
             $messageText = $messaging['message']['text'] ?? '';
 
-            $hasActiveFlow = FortuneReading::where('facebook_user_id', $senderId)
-                ->where(function ($q) {
-                    // locked states — กำลังจ่าย / จ่ายแล้ว (ไม่รวม soft AWAITING_CONFIRMATION/DISCOVERY)
-                    $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
-                        ->orWhere(function ($sub) {
-                            $sub->where('is_paid', true)
-                                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                                ->whereNotNull('deep_response')
-                                ->where('deep_response', '!=', '');
-                        });
-                })
-                ->where('created_at', '>=', now()->subDays(7))
-                ->exists();
-
-            $hasBuyingIntent = ! empty($messageText)
-                && $this->conversationService->messageHasBuyingIntent($messageText);
-
-            if (! $hasActiveFlow && ! $hasBuyingIntent) {
+            if (! $this->takeoverService->shouldBypassTakeover('facebook', $senderId, $messageText)) {
                 Log::info('👨‍💼 Admin /aistop: บอทข้าม (chitchat ก่อนเข้า flow)', [
                     'user_id' => $senderId,
                     'message_preview' => mb_substr($messageText, 0, 50),
@@ -1410,9 +1392,7 @@ class FacebookWebhookController extends Controller
 
             Log::info('💰 Admin /aistop active แต่ flow bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $senderId,
-                'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
             ]);
-            // ดำเนิน flow ปกติ (ไม่ return) — pendingDelivery / state handler / payment flow
         }
 
         $messageText = $messaging['message']['text'] ?? '';
@@ -2115,14 +2095,25 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // 🛑 Admin Handover: ถ้าแอดมินกำลังดูแล → บอทข้าม postback
+        // 🛑 Admin Handover: ถ้าแอดมิน /aistop → บอทข้าม postback
+        //
+        // 🚨 (2026-05-17) FLOW BYPASS — postback คือ explicit action (กดปุ่ม)
+        //   user spec: "กดเลือกแพคเกจแล้ว ต้องเข้า flow จ่ายเงิน อย่าขัด"
+        //   postback → bypass takeover เสมอ (Get Started / Persistent Menu / Quick Reply)
         if ($this->isAdminActive($senderId)) {
-            Log::info('👨‍💼 Admin Handover: บอทข้าม postback (แอดมินกำลังดูแล)', [
+            if (! $this->takeoverService->shouldBypassTakeover('facebook', $senderId, '', true)) {
+                Log::info('👨‍💼 Admin /aistop: บอทข้าม postback', [
+                    'user_id' => $senderId,
+                    'payload' => $payload,
+                ]);
+
+                return;
+            }
+
+            Log::info('💰 Admin /aistop active แต่ postback bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $senderId,
                 'payload' => $payload,
             ]);
-
-            return;
         }
 
         Log::info('📬 Facebook Postback received', [

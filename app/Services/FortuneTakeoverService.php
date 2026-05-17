@@ -93,6 +93,59 @@ class FortuneTakeoverService
     }
 
     /**
+     * 🎯 (2026-05-17) ตรวจว่าควร bypass takeover หรือไม่ (DRY helper)
+     *
+     * ใช้แทน raw isActiveByPlatform() ในทุก webhook entry point เพื่อให้
+     * /aistop ไม่หยุด flow ที่ลูกค้ากำลังจ่ายเงิน / รับคำทำนาย
+     *
+     * Return true = bypass (ดำเนิน flow ต่อ แม้ takeover active)
+     *
+     * Bypass logic:
+     *   1. $isExplicitAction = true (Quick Reply / Postback — กดปุ่ม)
+     *   2. มี locked state (กำลังจ่าย / กรอกข้อมูล / Celtic active)
+     *   3. paid + รอ delivery (deep_response saved รอ user ทัก)
+     *   4. ข้อความเป็น buying intent ("39", "99", "ดูดวง", "ราคา", ฯลฯ)
+     *
+     * @param  bool  $isExplicitAction  true ถ้ามาจาก Quick Reply / Postback
+     */
+    public function shouldBypassTakeover(
+        string $platform,
+        string $platformUserId,
+        string $messageText = '',
+        bool $isExplicitAction = false,
+    ): bool {
+        if ($isExplicitAction) {
+            return true;
+        }
+
+        $platformColumn = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
+        $hasActiveFlow = FortuneReading::where($platformColumn, $platformUserId)
+            ->where(function ($q) {
+                $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
+                    ->orWhere(function ($sub) {
+                        $sub->where('is_paid', true)
+                            ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                            ->whereNotNull('deep_response')
+                            ->where('deep_response', '!=', '');
+                    });
+            })
+            ->where('created_at', '>=', now()->subDays(7))
+            ->exists();
+
+        if ($hasActiveFlow) {
+            return true;
+        }
+
+        if ($messageText !== ''
+            && app(\App\Services\FortuneConversationService::class)->messageHasBuyingIntent($messageText)
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * ตรวจสอบโดยใช้ platform identifier (สำหรับ Facebook/LINE webhook)
      *
      * ใช้เมื่อยังไม่มี FortuneReading instance

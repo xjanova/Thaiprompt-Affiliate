@@ -123,19 +123,30 @@ class FortuneChannelManager
 
         // 🛑 Defense-in-depth: เช็ค takeover ก่อนเรียก AI ทุกครั้ง
         // (controller ควรเช็คแล้ว แต่ถ้าหลุดมา ให้เงียบ)
+        //
+        // 🚨 (2026-05-17) FLOW BYPASS — ใช้ shouldBypassTakeover เหมือน controller
+        //   $extra['is_explicit_action'] = true ถ้ามาจาก postback/quick reply
         if ($this->takeoverService->isActiveByPlatform($platform, $userId)) {
-            Log::info('🛑 ChannelManager: ข้ามข้อความ (กำลังถูกเทคโอเวอร์)', [
-                'platform' => $platform,
-                'user_id' => $userId,
-                'message_preview' => mb_substr($messageText, 0, 50),
-            ]);
+            $isExplicit = ! empty($extra['is_explicit_action']);
+            if (! $this->takeoverService->shouldBypassTakeover($platform, $userId, $messageText, $isExplicit)) {
+                Log::info('🛑 ChannelManager: ข้ามข้อความ (/aistop active, ไม่มี flow ที่ต้อง bypass)', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'message_preview' => mb_substr($messageText, 0, 50),
+                ]);
 
-            return [
-                'action' => 'skipped_takeover',
+                return [
+                    'action' => 'skipped_takeover',
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'reading' => null,
+                ];
+            }
+
+            Log::info('💰 ChannelManager: /aistop active แต่ bypass — ดำเนิน flow ต่อ', [
                 'platform' => $platform,
                 'user_id' => $userId,
-                'reading' => null,
-            ];
+            ]);
         }
 
         // ดึงโปรไฟล์ถ้ายังไม่มี

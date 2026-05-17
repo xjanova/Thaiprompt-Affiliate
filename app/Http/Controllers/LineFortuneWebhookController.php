@@ -232,30 +232,9 @@ class LineFortuneWebhookController extends Controller
         // 🛑 Admin Takeover: ถ้าแม่หมอ /aistop → บอทเงียบ (เฉพาะ chitchat)
         //
         // 🚨 (2026-05-17) FLOW BYPASS — ห้ามหยุด flow จ่ายเงิน/รับคำทำนาย
-        //   user spec: "พิมพ์ 99 33 / กดเลือกแพคเกจ ต้องเข้า flow จ่ายเงิน อย่าขัด"
-        //   Bypass: active reading state, paid+pending delivery, buying intent keyword
         // ========================================
         if ($this->takeoverService->isActiveByPlatform('line', $userId)) {
-            $hasActiveFlow = FortuneReading::where('platform_user_id', $userId)
-                ->where(function ($q) {
-                    // locked states — กำลังจ่าย / จ่ายแล้ว (ไม่รวม soft AWAITING_CONFIRMATION/DISCOVERY)
-                    $q->whereIn('conversation_status', FortuneReading::LOCKED_FLOW_STATUSES)
-                        ->orWhere(function ($sub) {
-                            $sub->where('is_paid', true)
-                                ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
-                                ->whereNotNull('deep_response')
-                                ->where('deep_response', '!=', '');
-                        });
-                })
-                ->where('created_at', '>=', now()->subDays(7))
-                ->exists();
-
-            // ใช้ FortuneConversationService::messageHasBuyingIntent (shared logic)
-            $hasBuyingIntent = ! empty($messageText)
-                && app(\App\Services\FortuneConversationService::class)
-                    ->messageHasBuyingIntent($messageText);
-
-            if (! $hasActiveFlow && ! $hasBuyingIntent) {
+            if (! $this->takeoverService->shouldBypassTakeover('line', $userId, $messageText)) {
                 Log::info('👨‍💼 LINE /aistop: บอทข้าม (chitchat ก่อนเข้า flow)', [
                     'user_id' => $userId,
                     'message_preview' => mb_substr($messageText, 0, 50),
@@ -266,9 +245,7 @@ class LineFortuneWebhookController extends Controller
 
             Log::info('💰 LINE /aistop active แต่ flow bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $userId,
-                'reason' => $hasActiveFlow ? 'active_flow' : 'buying_intent',
             ]);
-            // ดำเนิน flow ปกติ (ไม่ return) — paid state handler / payment flow
         }
 
         // ========================================
@@ -756,14 +733,24 @@ class LineFortuneWebhookController extends Controller
             return;
         }
 
-        // 🛑 Admin Takeover: ถ้าแม่หมอ/แอดมินกำลังดูแล → ข้าม postback ด้วย
+        // 🛑 Admin Takeover: ถ้าแม่หมอ /aistop → ข้าม postback
+        //
+        // 🚨 (2026-05-17) FLOW BYPASS — postback คือ explicit action (กดปุ่ม)
+        //   LINE Flex/Quick Reply button → bypass เสมอ (เปิดไพ่ Celtic, เลือกแพคเกจ, ฯลฯ)
         if ($this->takeoverService->isActiveByPlatform('line', $userId)) {
-            Log::info('👨‍💼 LINE Takeover: บอทข้าม postback (แม่หมอกำลังดูแล)', [
+            if (! $this->takeoverService->shouldBypassTakeover('line', $userId, '', true)) {
+                Log::info('👨‍💼 LINE /aistop: บอทข้าม postback', [
+                    'user_id' => $userId,
+                    'data' => mb_substr($data, 0, 50),
+                ]);
+
+                return;
+            }
+
+            Log::info('💰 LINE /aistop active แต่ postback bypass — ดำเนิน flow ต่อ', [
                 'user_id' => $userId,
                 'data' => mb_substr($data, 0, 50),
             ]);
-
-            return;
         }
 
         Log::info('LINE Webhook: Postback received', [
@@ -1072,7 +1059,10 @@ class LineFortuneWebhookController extends Controller
                 $userId,
                 $text,
                 $userProfile,
-                ['reply_token' => $replyToken]
+                [
+                    'reply_token' => $replyToken,
+                    'is_explicit_action' => true, // 🎯 postback = explicit (bypass takeover)
+                ]
             );
         } catch (\Exception $e) {
             Log::error('LINE Webhook: Postback simulate text ล้มเหลว', [
