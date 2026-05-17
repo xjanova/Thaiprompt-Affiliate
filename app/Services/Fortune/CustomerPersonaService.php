@@ -101,30 +101,45 @@ class CustomerPersonaService
         }
         Cache::put($throttleKey, true, self::EXTRACTION_THROTTLE_TTL);
 
-        // Sync driver → skip (ไม่ block webhook)
+        // 🎯 (2026-05-17) ใช้ dispatchAfterResponse — ทำงานได้ทั้ง sync และ async driver
+        //   เดิม: ถ้า QUEUE_CONNECTION=sync → skip dispatch → persona table ว่างเปล่า
+        //   ใหม่: dispatchAfterResponse() รันหลัง webhook ส่ง response แล้ว → ไม่ block ลูกค้า
+        //         + ทำงานได้แม้ไม่มี queue worker (รันใน same PHP process)
+        //   ถ้า queue driver ≠ sync → ใช้ async dispatch ปกติ (delay 5s ให้ message setdown)
         $driver = config('queue.default', 'sync');
-        if ($driver === 'sync') {
-            Log::debug('CustomerPersonaService: skip dispatch — sync driver', [
-                'platform' => $platform,
-                'user_id' => $userId,
-            ]);
-
-            return false;
-        }
 
         try {
-            ExtractCustomerPersonaJob::dispatch(
-                $platform,
-                $userId,
-                $messageText,
-                $displayName
-            )->delay(now()->addSeconds(5)); // delay สั้นๆ ให้ message setdown ก่อน
+            if ($driver === 'sync') {
+                // Sync driver → ใช้ dispatchAfterResponse (รันหลัง webhook response)
+                ExtractCustomerPersonaJob::dispatchAfterResponse(
+                    $platform,
+                    $userId,
+                    $messageText,
+                    $displayName
+                );
 
-            Log::info('CustomerPersonaService: dispatched extraction', [
-                'platform' => $platform,
-                'user_id' => $userId,
-                'message_length' => mb_strlen($messageText),
-            ]);
+                Log::info('CustomerPersonaService: dispatched extraction (after response)', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'message_length' => mb_strlen($messageText),
+                    'mode' => 'sync_after_response',
+                ]);
+            } else {
+                // Async driver → ใช้ queue normal
+                ExtractCustomerPersonaJob::dispatch(
+                    $platform,
+                    $userId,
+                    $messageText,
+                    $displayName
+                )->delay(now()->addSeconds(5));
+
+                Log::info('CustomerPersonaService: dispatched extraction (queue)', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'message_length' => mb_strlen($messageText),
+                    'mode' => 'async_queue',
+                ]);
+            }
 
             return true;
         } catch (\Throwable $e) {
