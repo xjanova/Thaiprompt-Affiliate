@@ -141,7 +141,10 @@ class PaymentBannerService
             imagedestroy($qrImg);
 
             // 5. Render text (ยอด + bill ref + bank info)
-            $this->renderText($banner, $amount, $billRef, $bankName, $accountNumber, $qrY + $qrSize);
+            // 🛡️ (2026-05-17 v3) +80 padding ใต้ QR — กัน text บัง QR (imagettftext y = baseline)
+            //   เคสจริง: font size 56 → text กินขึ้นไป ~50px จาก baseline → ทับ QR ถ้า startY = qrEnd
+            $textStartY = $qrY + $qrSize + 80;
+            $this->renderText($banner, $amount, $billRef, $bankName, $accountNumber, $textStartY);
 
             // 6. Save PNG
             $filename = 'banner-'.substr(md5($billRef.$amount.microtime(true)), 0, 12).'.png';
@@ -443,24 +446,26 @@ class PaymentBannerService
         $white = imagecolorallocate($banner, 0xFF, 0xFF, 0xFF);
         $green = imagecolorallocate($banner, 0x6A, 0xE6, 0x8A);
 
-        // ทับ footer placeholder ด้วย dark rectangle (ลบของเดิม)
+        // 🛡️ (2026-05-17 v3) blackOut เริ่มที่ $startY (ไม่ทับ QR)
+        //   imagettftext y = baseline → "฿" size 56 → กินขึ้นไป ~45px จาก baseline
+        //   เราใส่ text แรกที่ y = startY + 50 → text top ≈ startY + 5 (อยู่ใต้ rect)
         $blackOut = imagecolorallocate($banner, 0x2A, 0x10, 0x60);
-        imagefilledrectangle($banner, 40, $startY - 20, $W - 40, $startY + 220, $blackOut);
+        imagefilledrectangle($banner, 40, $startY, $W - 40, $startY + 240, $blackOut);
 
         $thaiFont = $this->thaiFont();
         $latinFont = $this->latinFont();
         $hasFont = file_exists($thaiFont) && function_exists('imagettftext');
 
         if ($hasFont) {
-            // ยอดเงิน — ตัวใหญ่ + สีทอง
-            $this->drawCenteredText($banner, '฿ '.number_format($amount, 2), $latinFont, 64, $startY + 30, $gold, $W);
+            // ยอดเงิน — ตัวใหญ่ + สีทอง (size 56, baseline at startY+60)
+            $this->drawCenteredText($banner, '฿ '.number_format($amount, 2), $latinFont, 56, $startY + 60, $gold, $W);
 
-            // Bill ref — ตัวกลาง สีขาว
-            $this->drawCenteredText($banner, 'Bill: '.$billRef, $latinFont, 32, $startY + 100, $white, $W);
+            // Bill ref — ตัวกลาง สีขาว (size 28, baseline at startY+125)
+            $this->drawCenteredText($banner, 'Bill: '.$billRef, $latinFont, 28, $startY + 125, $white, $W);
 
-            // Bank info — ใช้ Thai font (รองรับชื่อธนาคาร "กสิกรไทย")
+            // Bank info — Thai font (size 26, baseline at startY+185)
             if ($bankName && $accountNumber) {
-                $this->drawCenteredText($banner, "{$bankName}  {$accountNumber}", $thaiFont, 28, $startY + 165, $green, $W);
+                $this->drawCenteredText($banner, "{$bankName}  {$accountNumber}", $thaiFont, 26, $startY + 185, $green, $W);
             }
         } else {
             // Fallback: built-in font (ไม่รองรับไทย)
