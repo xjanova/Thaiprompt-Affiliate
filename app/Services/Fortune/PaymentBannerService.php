@@ -45,7 +45,13 @@ class PaymentBannerService
     protected int $bannerWidth = 1200;
     protected int $bannerHeight = 1600;
 
-    /** Font paths (TTF — รองรับ UTF-8 + Thai) */
+    /** Font paths (TTF — รองรับ UTF-8 + Thai)
+     *
+     * 🎯 (2026-05-17 v2) Production DejaVuSans.ttf อ่านไม่ได้ — debug result:
+     *   - NotoSansThai-Bold.ttf → bbox return ปกติ ✅
+     *   - DejaVuSans.ttf → bbox = false ("Could not read font") ❌
+     *   → ใช้ Noto Sans Thai ทั้งคู่ (รองรับ Latin chars + Thai)
+     */
     protected function thaiFont(): string
     {
         return resource_path('fonts/NotoSansThai-Bold.ttf');
@@ -53,7 +59,8 @@ class PaymentBannerService
 
     protected function latinFont(): string
     {
-        return resource_path('fonts/DejaVuSans.ttf');
+        // ใช้ Noto Sans Thai เพราะ DejaVu เสีย — Noto รองรับ Latin/digits ปกติ
+        return resource_path('fonts/NotoSansThai-Bold.ttf');
     }
 
     public function __construct(?FortuneTellingSetting $settings = null)
