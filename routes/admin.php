@@ -4015,6 +4015,7 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
     Route::post('/payment-banner', [FortuneSettingsController::class, 'updatePaymentBanner'])->name('payment-banner.update');
     Route::post('/payment-banner/preview', [FortuneSettingsController::class, 'previewBanner'])->name('payment-banner.preview');
     Route::post('/payment-banner/reset', [FortuneSettingsController::class, 'resetBanner'])->name('payment-banner.reset');
+    Route::get('/payment-banner/download-template', [FortuneSettingsController::class, 'downloadBannerTemplate'])->name('payment-banner.download');
 
     // 🎙️ (2026-05-08) Voice Presets — Library, Import, Test, Apply
     Route::prefix('voice-presets')->name('voice-presets.')->group(function () {

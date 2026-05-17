@@ -63,9 +63,21 @@
                         📤 Upload Banner Template (PNG/JPG, สูงสุด 4MB)
                     </label>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                        แนะนำขนาด 600x800px — ระบบจะวาด QR + ยอด+bill ทับลงไป
-                        <br>ปล่อยว่าง = ใช้ default ที่ระบบ generate (มี้ม่วงเข้ม + ดาว)
+                        ⭐ แนะนำขนาด <strong>1200x1600px</strong> — ระบบจะวาด QR + ยอด+bill ทับลงไป
+                        <br>ปล่อยว่าง = ใช้ default ที่ระบบ generate (ม่วงเข้ม + ดาว + Thai font)
                     </p>
+
+                    {{-- Download template button --}}
+                    <div class="mb-3">
+                        <a href="{{ route('admin.fortune.payment-banner.download') }}"
+                           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white text-sm font-semibold rounded-md transition">
+                            📥 ดาวน์โหลด Template ปัจจุบัน
+                        </a>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            💡 โหลด → แก้ใน Photoshop/Figma → upload กลับ → ตำแหน่ง QR ตรงกัน
+                        </p>
+                    </div>
+
                     <input type="file" name="payment_banner_image" accept="image/png,image/jpeg"
                            class="block w-full text-sm text-gray-600 dark:text-gray-300
                                   file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0

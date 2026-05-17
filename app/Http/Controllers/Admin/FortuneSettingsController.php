@@ -650,6 +650,9 @@ class FortuneSettingsController extends Controller
 
     /**
      * Reset banner template — กลับไปใช้ default ที่ระบบ generate
+     *
+     * 🎯 (2026-05-17 v2) Default qr_x/y = 0 → service auto-center
+     *   qr_size = 800 (ขนาดดีสำหรับ banner 1200x1600)
      */
     public function resetBanner()
     {
@@ -661,16 +664,54 @@ class FortuneSettingsController extends Controller
             Storage::disk('public')->delete($settings->payment_banner_template);
         }
 
+        // ลบ default banner เก่า (จะ regenerate ครั้งถัดไปด้วย design ใหม่)
+        $defaultPath = storage_path('app/public/fortune/payment-banner-default.png');
+        if (file_exists($defaultPath)) {
+            @unlink($defaultPath);
+        }
+
         $settings->update([
             'payment_banner_template' => null,
-            'payment_banner_qr_x' => 100,
-            'payment_banner_qr_y' => 150,
-            'payment_banner_qr_size' => 400,
+            'payment_banner_qr_x' => 0,    // 0 = service auto-center
+            'payment_banner_qr_y' => 0,
+            'payment_banner_qr_size' => 800,
         ]);
 
         return redirect()
             ->route('admin.fortune.payment-banner.index')
-            ->with('success', '🔄 รีเซ็ตเป็น banner default แล้ว');
+            ->with('success', '🔄 รีเซ็ตเป็น banner default แล้ว + ลบไฟล์เก่าเพื่อ regenerate ใหม่');
+    }
+
+    /**
+     * 📥 (2026-05-17) Download Banner Template — ภาพเปล่า ให้ admin แก้ external
+     *
+     * ส่ง banner default ปัจจุบัน (ไม่มี QR/text ทับ) เป็น PNG ให้ admin โหลด
+     * Admin แก้ใน Photoshop/Figma → upload กลับเข้าระบบ → ตำแหน่ง QR ตรงกัน
+     */
+    public function downloadBannerTemplate()
+    {
+        try {
+            $svc = app(\App\Services\Fortune\PaymentBannerService::class);
+            $path = $svc->getOrGenerateDefaultBanner();
+
+            if (! $path || ! file_exists($path)) {
+                return redirect()
+                    ->route('admin.fortune.payment-banner.index')
+                    ->with('error', 'ไม่สามารถสร้าง template ได้');
+            }
+
+            return response()->download(
+                $path,
+                'fortune-banner-template-1200x1600.png',
+                ['Content-Type' => 'image/png']
+            );
+        } catch (\Throwable $e) {
+            \Log::error('Banner Template Download fail', ['error' => $e->getMessage()]);
+
+            return redirect()
+                ->route('admin.fortune.payment-banner.index')
+                ->with('error', 'เกิดข้อผิดพลาด: '.$e->getMessage());
+        }
     }
 
     /**

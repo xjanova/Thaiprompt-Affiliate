@@ -1498,6 +1498,15 @@ class FortuneChannelManager
             $message = 'ระบบกำลังดำเนินการ 🙏';
         }
 
+        // 🕐 (2026-05-17) Human-like delay 15s — เฉพาะ chitchat บน FB
+        //   user spec: "ดีเลย์ 15 วินาที ยกเว้น ดูดวง/แพคเกจ/keyword command (เมนู)"
+        //   - ai_chat_response = chitchat → delay
+        //   - keyword_matched / payment_info / view_reading_* / etc. → ตอบทันที
+        //   - LINE ไม่ delay (LINE ช้าอยู่แล้ว — user spec)
+        if ($action === 'ai_chat_response') {
+            $this->humanLikeDelayFb($fbService, $userId, 15);
+        }
+
         // 🔍 Strip control tags ที่ไม่ควรโชว์ให้ลูกค้า (เผื่อหลุดจาก service layer)
         $offerFortune = (bool) ($result['offer_fortune'] ?? false);
         if (mb_strpos($message, '[OFFER_FORTUNE]') !== false) {
@@ -4518,5 +4527,39 @@ class FortuneChannelManager
         $message = preg_replace('/(?<![\p{L}\p{N}_])_([^_\n]+?)_(?![\p{L}\p{N}_])/u', '$1', $message);
 
         return $message;
+    }
+
+    /**
+     * 🕐 (2026-05-17) Human-like delay สำหรับ FB chitchat
+     *
+     * Refresh typing indicator → fastcgi_finish_request (flush response) →
+     * sleep N วินาที → message ส่งที่ caller ภายหลัง
+     *
+     * จุดประสงค์: ทำให้บอทดูเป็นมนุษย์ ไม่ตอบเร็วผิดธรรมชาติ
+     * Note: LINE ไม่ delay (per user spec — LINE ช้าอยู่แล้ว)
+     */
+    protected function humanLikeDelayFb(FacebookWebhookService $fbService, string $userId, int $seconds = 15): void
+    {
+        try {
+            // Refresh typing indicator — กัน FB hide ก่อน message มา
+            $fbService->sendTypingIndicator($userId, true);
+        } catch (\Throwable $e) {
+            // ignore — delay ยังเดินต่อ
+        }
+
+        // Flush response กลับ FB webhook ก่อน (กัน webhook timeout)
+        //   FB webhook timeout ~20s → flush ก่อน sleep ป้องกัน retry
+        if (function_exists('fastcgi_finish_request')) {
+            @fastcgi_finish_request();
+        }
+
+        // จำกัด delay: 1-25 วินาที (เผื่อ admin set ผิดพลาด)
+        $seconds = max(1, min(25, $seconds));
+        sleep($seconds);
+
+        Log::debug('FortuneChannelManager: human-like delay ครบ', [
+            'user_id' => $userId,
+            'seconds' => $seconds,
+        ]);
     }
 }

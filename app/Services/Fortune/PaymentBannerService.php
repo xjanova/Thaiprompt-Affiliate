@@ -41,9 +41,20 @@ class PaymentBannerService
     /** @var string default banner storage location */
     protected string $defaultBannerPath = 'fortune/payment-banner-default.png';
 
-    /** Banner dimensions (px) */
-    protected int $bannerWidth = 600;
-    protected int $bannerHeight = 800;
+    /** Banner dimensions (px) — 2x ของเดิม เพื่อความชัด */
+    protected int $bannerWidth = 1200;
+    protected int $bannerHeight = 1600;
+
+    /** Font paths (TTF — รองรับ UTF-8 + Thai) */
+    protected function thaiFont(): string
+    {
+        return resource_path('fonts/NotoSansThai-Bold.ttf');
+    }
+
+    protected function latinFont(): string
+    {
+        return resource_path('fonts/DejaVuSans.ttf');
+    }
 
     public function __construct(?FortuneTellingSetting $settings = null)
     {
@@ -241,49 +252,66 @@ class PaymentBannerService
      */
     protected function createDefaultBannerImage()
     {
-        $W = $this->bannerWidth;
-        $H = $this->bannerHeight;
+        $W = $this->bannerWidth;     // 1200
+        $H = $this->bannerHeight;    // 1600
 
         $img = imagecreatetruecolor($W, $H);
 
-        // Palette — Mystical Purple Gradient
-        $bgTop = imagecolorallocate($img, 0x1A, 0x1A, 0x3E);    // #1a1a3e dark blue
-        $bgBot = imagecolorallocate($img, 0x4A, 0x14, 0x8C);    // #4a148c deep purple
-        $gold = imagecolorallocate($img, 0xFF, 0xD7, 0x00);     // #ffd700 gold
+        // 🎨 Mystical Purple Gradient palette
+        $gold = imagecolorallocate($img, 0xFF, 0xD7, 0x00);     // gold
         $white = imagecolorallocate($img, 0xFF, 0xFF, 0xFF);
-        $silver = imagecolorallocate($img, 0xC0, 0xC0, 0xC0);
-        $qrBg = imagecolorallocate($img, 0xFF, 0xFF, 0xFF);     // white box for QR
+        $silver = imagecolorallocate($img, 0xD0, 0xD0, 0xE8);   // silver-blue
+        $qrBg = imagecolorallocate($img, 0xFF, 0xFF, 0xFF);
 
-        // Vertical gradient fill
+        // Smooth vertical gradient: dark blue → deep purple → magenta hint
         for ($y = 0; $y < $H; $y++) {
             $ratio = $y / $H;
-            $r = (int) (0x1A + ($ratio * (0x4A - 0x1A)));
-            $g = (int) (0x1A + ($ratio * (0x14 - 0x1A)));
-            $b = (int) (0x3E + ($ratio * (0x8C - 0x3E)));
+            // 3-stop gradient
+            if ($ratio < 0.5) {
+                $t = $ratio * 2;
+                $r = (int) (0x1A + $t * (0x3A - 0x1A));
+                $g = (int) (0x1A + $t * (0x0F - 0x1A));
+                $b = (int) (0x3E + $t * (0x6B - 0x3E));
+            } else {
+                $t = ($ratio - 0.5) * 2;
+                $r = (int) (0x3A + $t * (0x5C - 0x3A));
+                $g = (int) (0x0F + $t * (0x12 - 0x0F));
+                $b = (int) (0x6B + $t * (0x8E - 0x6B));
+            }
             $color = imagecolorallocate($img, $r, $g, $b);
             imageline($img, 0, $y, $W, $y, $color);
         }
 
-        // Decorative stars (random sprinkle)
-        mt_srand(42); // deterministic
-        for ($i = 0; $i < 80; $i++) {
+        // ✨ Decorative stars + sparkles
+        mt_srand(42);
+        for ($i = 0; $i < 200; $i++) {
             $x = mt_rand(0, $W);
             $y = mt_rand(0, $H);
-            $size = mt_rand(1, 3);
+            $size = mt_rand(1, 4);
             $brightness = mt_rand(160, 255);
             $star = imagecolorallocate($img, $brightness, $brightness, $brightness);
             imagefilledellipse($img, $x, $y, $size, $size, $star);
         }
+        // Large sparkles (4-point star shape)
+        for ($i = 0; $i < 12; $i++) {
+            $x = mt_rand(40, $W - 40);
+            $y = mt_rand(40, $H - 40);
+            $len = mt_rand(8, 16);
+            imageline($img, $x - $len, $y, $x + $len, $y, $gold);
+            imageline($img, $x, $y - $len, $x, $y + $len, $gold);
+        }
 
-        // Top border (gold line)
-        imagefilledrectangle($img, 0, 0, $W, 4, $gold);
-        imagefilledrectangle($img, 0, $H - 4, $W, $H, $gold);
+        // Top + Bottom gold borders
+        imagefilledrectangle($img, 0, 0, $W, 8, $gold);
+        imagefilledrectangle($img, 0, $H - 8, $W, $H, $gold);
 
-        // QR background white box (กลาง — 400x400 + 20px padding)
-        $qrSize = (int) ($this->settings->payment_banner_qr_size ?? 400);
+        // QR slot (กลาง banner — สูง)
+        $qrSize = (int) ($this->settings->payment_banner_qr_size ?? 800);
         $qrX = (int) (($W - $qrSize) / 2);
-        $qrY = (int) (($H - $qrSize) / 2) - 50;
-        $pad = 20;
+        $qrY = (int) (($H - $qrSize) / 2) - 100;
+        $pad = 40;
+
+        // White box behind QR
         imagefilledrectangle(
             $img,
             $qrX - $pad,
@@ -293,8 +321,8 @@ class PaymentBannerService
             $qrBg
         );
 
-        // Gold border รอบ QR box
-        for ($i = 0; $i < 3; $i++) {
+        // Gold border 6px thick รอบ QR
+        for ($i = 0; $i < 6; $i++) {
             imagerectangle(
                 $img,
                 $qrX - $pad - $i - 1,
@@ -305,24 +333,31 @@ class PaymentBannerService
             );
         }
 
-        // Header text (ใช้ imagestring เพราะไม่มี Thai font แน่นอน — ใช้ภาษาอังกฤษ + emoji เป็น text)
-        // ใช้ font built-in (ภาษาอังกฤษ)
-        $headerText1 = 'PromptPay QR Payment';
-        $headerText2 = 'Fortune by Mae Mor Janta';
-        $textColor = $white;
-        $titleY = 40;
+        // 🌙 Header text — ใช้ TTF font Thai (รองรับทั้งไทย + อังกฤษ)
+        $thaiFont = $this->thaiFont();
+        $latinFont = $this->latinFont();
+        $titleY = 110;
 
-        // Built-in font 5 = largest (15px high, 9px wide)
-        $text1W = imagefontwidth(5) * strlen($headerText1);
-        $text2W = imagefontwidth(4) * strlen($headerText2);
-        imagestring($img, 5, (int) (($W - $text1W) / 2), $titleY, $headerText1, $gold);
-        imagestring($img, 4, (int) (($W - $text2W) / 2), $titleY + 25, $headerText2, $silver);
+        if (file_exists($thaiFont)) {
+            // หัวเรื่องไทย
+            $this->drawCenteredText($img, '🌙 หมอจันทรา', $thaiFont, 56, $titleY, $gold, $W);
+            $this->drawCenteredText($img, 'PromptPay Payment', $latinFont, 32, $titleY + 70, $silver, $W);
+        } else {
+            // Fallback: built-in font
+            $h1 = 'Mae Mor Janta';
+            $h2 = 'PromptPay Payment';
+            imagestring($img, 5, (int) (($W - imagefontwidth(5) * strlen($h1)) / 2), $titleY, $h1, $gold);
+            imagestring($img, 4, (int) (($W - imagefontwidth(4) * strlen($h2)) / 2), $titleY + 30, $h2, $silver);
+        }
 
-        // Footer placeholder text — จะถูก overwrite ด้วย renderText() ตอน composite จริง
-        $footerY = $qrY + $qrSize + $pad + 30;
-        $footerText = 'Scan QR to pay (amount embedded)';
-        $footerW = imagefontwidth(3) * strlen($footerText);
-        imagestring($img, 3, (int) (($W - $footerW) / 2), $footerY, $footerText, $silver);
+        // Footer placeholder — จะถูก overwrite โดย renderText() ตอน composite จริง
+        $footerY = $qrY + $qrSize + $pad + 60;
+        if (file_exists($thaiFont)) {
+            $this->drawCenteredText($img, 'สแกน QR เพื่อชำระเงิน (ฝังยอดในนั้น)', $thaiFont, 28, $footerY, $silver, $W);
+        } else {
+            $ft = 'Scan QR to pay';
+            imagestring($img, 3, (int) (($W - imagefontwidth(3) * strlen($ft)) / 2), $footerY, $ft, $silver);
+        }
 
         return $img;
     }
@@ -383,6 +418,10 @@ class PaymentBannerService
 
     /**
      * Render text บน banner (ยอดเงิน + bill ref + bank info)
+     *
+     * 🎯 (2026-05-17) ใช้ TTF + imagettftext แทน built-in font
+     *   เดิม: imagestring() ไม่รองรับ UTF-8 → text ไทย "เพี้ยน"
+     *   ใหม่: imagettftext() + NotoSansThai → render ภาษาไทย/อังกฤษได้ชัดเจน
      */
     protected function renderText(
         $banner,
@@ -395,29 +434,62 @@ class PaymentBannerService
         $W = imagesx($banner);
         $gold = imagecolorallocate($banner, 0xFF, 0xD7, 0x00);
         $white = imagecolorallocate($banner, 0xFF, 0xFF, 0xFF);
-        $green = imagecolorallocate($banner, 0x4C, 0xAF, 0x50);
+        $green = imagecolorallocate($banner, 0x6A, 0xE6, 0x8A);
 
         // ทับ footer placeholder ด้วย dark rectangle (ลบของเดิม)
-        $blackOut = imagecolorallocate($banner, 0x2A, 0x10, 0x60); // ม่วงเข้ม
-        imagefilledrectangle($banner, 20, $startY - 5, $W - 20, $startY + 100, $blackOut);
+        $blackOut = imagecolorallocate($banner, 0x2A, 0x10, 0x60);
+        imagefilledrectangle($banner, 40, $startY - 20, $W - 40, $startY + 220, $blackOut);
 
-        // ยอดเงิน (font 5 = ใหญ่สุด)
-        $amountStr = '฿ '.number_format($amount, 2);
-        $amountW = imagefontwidth(5) * strlen($amountStr);
-        imagestring($banner, 5, (int) (($W - $amountW) / 2), $startY + 5, $amountStr, $gold);
+        $thaiFont = $this->thaiFont();
+        $latinFont = $this->latinFont();
+        $hasFont = file_exists($thaiFont) && function_exists('imagettftext');
 
-        // Bill ref
-        $billStr = 'Bill: '.$billRef;
-        $billW = imagefontwidth(3) * strlen($billStr);
-        imagestring($banner, 3, (int) (($W - $billW) / 2), $startY + 30, $billStr, $white);
+        if ($hasFont) {
+            // ยอดเงิน — ตัวใหญ่ + สีทอง
+            $this->drawCenteredText($banner, '฿ '.number_format($amount, 2), $latinFont, 64, $startY + 30, $gold, $W);
 
-        // Bank info (ถ้ามี)
-        if ($bankName && $accountNumber) {
-            $bankStr = $bankName.' '.$accountNumber;
-            // strlen ของ Thai chars แตกต่างจาก English — ใช้ mb_strlen ไม่ได้กับ imagefontwidth
-            // ใช้ approximation
-            $bankW = imagefontwidth(2) * (int) (strlen($bankStr) * 0.6);
-            imagestring($banner, 2, (int) (($W - $bankW) / 2), $startY + 55, $bankStr, $green);
+            // Bill ref — ตัวกลาง สีขาว
+            $this->drawCenteredText($banner, 'Bill: '.$billRef, $latinFont, 32, $startY + 100, $white, $W);
+
+            // Bank info — ใช้ Thai font (รองรับชื่อธนาคาร "กสิกรไทย")
+            if ($bankName && $accountNumber) {
+                $this->drawCenteredText($banner, "{$bankName}  {$accountNumber}", $thaiFont, 28, $startY + 165, $green, $W);
+            }
+        } else {
+            // Fallback: built-in font (ไม่รองรับไทย)
+            $amountStr = '฿ '.number_format($amount, 2);
+            imagestring($banner, 5, (int) (($W - imagefontwidth(5) * strlen($amountStr)) / 2), $startY + 5, $amountStr, $gold);
+            $billStr = 'Bill: '.$billRef;
+            imagestring($banner, 3, (int) (($W - imagefontwidth(3) * strlen($billStr)) / 2), $startY + 50, $billStr, $white);
+        }
+    }
+
+    /**
+     * 🎨 Helper: วาด text กลางแนวนอน ด้วย TTF font
+     *
+     * @param  \GdImage  $img
+     * @param  string  $text
+     * @param  string  $fontPath  Full path ของ TTF font
+     * @param  int  $size  font size (px)
+     * @param  int  $y  Y coordinate (baseline)
+     * @param  int  $color  GD color resource
+     * @param  int  $canvasW  width of canvas (สำหรับ center calculation)
+     */
+    protected function drawCenteredText($img, string $text, string $fontPath, int $size, int $y, int $color, int $canvasW): void
+    {
+        if (! function_exists('imagettftext') || ! file_exists($fontPath)) {
+            return;
+        }
+
+        try {
+            // คำนวณความกว้างของ text
+            $bbox = imagettfbbox($size, 0, $fontPath, $text);
+            $textW = abs($bbox[2] - $bbox[0]);
+            $x = (int) (($canvasW - $textW) / 2);
+
+            imagettftext($img, $size, 0, $x, $y, $color, $fontPath, $text);
+        } catch (\Throwable $e) {
+            // ignore — fallback
         }
     }
 
