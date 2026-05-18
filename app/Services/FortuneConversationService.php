@@ -12109,6 +12109,22 @@ PROMPT;
             $this->saveConversationMessage($userId, 'user', $messageText);
             $this->saveConversationMessage($userId, 'assistant', $responseText);
 
+            // 🛒 (2026-05-18) Hook A' — AI chat success = soft pitch
+            //   เหตุผล: AI chat system prompt มี directive ให้ soft-sell/ชวนดูดวงทุก response
+            //   → ถือเป็น pitch attempt ทุกครั้งที่ AI ตอบ chitchat สำเร็จ
+            //   → Hook C จะ trigger silence เมื่อลูกค้าตอบ chitchat 3 ครั้งติดใน 30min
+            //   throttle 5min ใน model กัน flood ของ rapid AI replies
+            try {
+                $personaSvcSoftPitch = app(\App\Services\Fortune\CustomerPersonaService::class);
+                $personaSvcSoftPitch->recordPitch(
+                    $platformForSilence ?? $this->detectPlatformFromUserId($userId),
+                    $userId,
+                    $userProfile['name'] ?? null
+                );
+            } catch (\Throwable $e) {
+                Log::debug('Fortune: soft pitch record failed (non-blocking)', ['error' => $e->getMessage()]);
+            }
+
             // ✅ ตรวจจับ [OFFER_FORTUNE] — AI สร้าง rapport เสร็จแล้ว เสนอให้เริ่มดูดวง
             // ไม่ redirect เลย — แค่ติดธง offer_fortune ให้ ChannelManager ใส่ปุ่มเริ่มดูดวงเด่น
             $offerFortune = false;
