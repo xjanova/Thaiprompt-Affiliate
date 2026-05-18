@@ -409,41 +409,42 @@ class AiApiKeyPoolService
      *
      * 🔄 (2026-05-13 v3) Cross-provider tier — ไม่แบ่ง provider ใน tier เดียวกัน
      *
-     * User spec:
-     *   "จุดประสงค์เดียวกัน → ดู priority (ไม่สน provider)
-     *    ถ้าเท่ากัน → ใช้ rotation mode
-     *    ทุก key ต้องเทสผ่านมาแล้วจึงจะนำมาลงสนาม"
+     * 🆕 (2026-05-18 v4) **Purpose-first** — purpose เจาะจงชนะ 'any' เสมอ
      *
-     * Logic — 2-axis:
-     *   AXIS 1: priority tier (DESC) — admin ตั้ง priority สูง = ใช้ก่อน
-     *   AXIS 2: ภายใน tier เดียวกัน → ใช้ rotation_mode "global"
+     * User spec (2026-05-18):
+     *   "เน้น purpose ก่อน แม้ priority ต่ำกว่า
+     *    เช็ค priority ที่ purpose เหมือนกันเท่านั้น ถึงจะมีน้ำหนัก"
+     *
+     * Logic — 3-axis (purpose ก่อน, priority รอง, mode สุดท้าย):
+     *   AXIS 1: purpose specificity (สูงสุดก่อน)
+     *           Tier 0 = exact purpose match (เช่น purpose='chat' เมื่อขอ 'chat')
+     *           Tier 1 = 'any' (backup สุดท้าย — admin set แบบ general-purpose)
+     *           Tier 2 = NULL (legacy / ไม่ระบุ — เก็บไว้กัน BC)
+     *   AXIS 2: priority tier (DESC — สูงสุดก่อน) — ภายใน purpose-tier เดียวกัน
+     *   AXIS 3: rotation_mode "global" ใน priority-tier เดียวกัน
      *           (จาก config('ai.cross_provider_rotation_mode', 'smart'))
-     *           เลือกจาก key ทุก provider ใน tier นั้นพร้อมกัน
      *
      * Health gate:
      *   - available() scope filter `last_test_passed_at IS NOT NULL`
      *     → admin ต้อง test key สำเร็จก่อน ระบบจึงจะเลือก key นั้น
      *
-     * ตัวอย่าง:
+     * ตัวอย่าง (เมื่อขอ purpose='chat'):
      *   Pool:
-     *     - openai_A: priority=100, tested=true
-     *     - openai_B: priority=100, tested=false ← ถูก skip!
-     *     - gemini_X: priority=100, tested=true
-     *     - gemini_Y: priority=100, tested=true
-     *     - groq_Q:   priority=50,  tested=true
+     *     - openai_A: priority=100, purpose='any',  tested=true
+     *     - openai_B: priority=80,  purpose='any',  tested=true
+     *     - groq_C:   priority=50,  purpose='chat', tested=true ← exact match!
      *
-     *   Tier 100: [openai_A, gemini_X, gemini_Y] (B ถูก skip)
-     *     → smart mode pick: ใช้ key load น้อยสุด (cross-provider!)
-     *   Tier 50: groq_Q (fallback)
+     *   v3 (เก่า): tier 100 = [openai_A] → openai_A ชนะ ❌
+     *   v4 (ใหม่): purpose-tier 0 [groq_C] → groq_C ชนะ ✅
+     *              ถ้า groq_C ติด cooldown → fallback purpose-tier 1 [openai_A, openai_B]
      *
      * @param  string|null  $purpose  filter (prediction_deep / chat / sensitive / etc.)
-     * @return AiApiKey|null
      */
     public function acquireKeyAnyProvider(?string $purpose = null): ?AiApiKey
     {
-        // 1. Query keys + purpose filter + priority DESC
+        // 1. Query keys + purpose filter
         //    available() scope = is_active + not critical + not disabled + last_test_passed_at IS NOT NULL
-        $query = AiApiKey::available()->orderByDesc('priority');
+        $query = AiApiKey::available();
         if ($purpose !== null && $purpose !== '') {
             $query->forPurpose($purpose);
         }
@@ -453,97 +454,115 @@ class AiApiKeyPoolService
             return null;
         }
 
-        // 2. Group keys by priority tier (DESC — สูงสุดก่อน)
-        //    🛡️ (2026-05-13 v2) Cast priority เป็น int — กัน sortKeysDesc lexical sort
-        //    เคสที่อาจพัง: priority=9, 50, 100 → string sort: "9","50","100" DESC = "9","50","100" ❌
-        //    หลัง cast: 100,50,9 ✅
-        $tiers = $allKeys
-            ->groupBy(fn ($k) => (int) $k->priority)
-            ->sortKeysDesc(SORT_NUMERIC);
+        // 2. 🆕 (v4) Group by purpose specificity FIRST
+        //    Tier 0 = exact match | Tier 1 = 'any' | Tier 2 = null/legacy
+        //    หมายเหตุ: ถ้า $purpose=null (caller ไม่ระบุ) → ทุก key ถือเป็น tier เดียวกัน
+        $purposeTiers = $allKeys->groupBy(function ($k) use ($purpose) {
+            if ($purpose !== null && $purpose !== '' && $k->purpose === $purpose) {
+                return 0; // exact match
+            }
+            if ($k->purpose === 'any') {
+                return 1; // general-purpose backup
+            }
 
-        // 3. Global rotation mode สำหรับ cross-provider tier
-        //    user spec: "ไม่สน provider" → ใช้ mode เดียวเลือกจาก keys ทุก provider ใน tier
-        //    Default = 'smart' (least-load) — ตั้ง override ได้ใน config('ai.cross_provider_rotation_mode')
+            return 2; // null / legacy / fallback purposes ที่ผ่าน scopeForPurpose
+        })->sortKeys();
+
+        // 3. Global rotation mode สำหรับ cross-provider priority-tier
         $globalMode = (string) (config('ai.cross_provider_rotation_mode')
             ?? AiApiKeySetting::forProvider('*')->rotation_mode
             ?? 'smart');
 
-        foreach ($tiers as $tierPriority => $tierKeys) {
-            // 4. กรอง runtime guards ก่อนเลือก (cooldown / inflight / rpm)
-            //    → ได้ "eligible pool" สำหรับ tier นี้
-            $eligible = $tierKeys->filter(function ($key) {
+        foreach ($purposeTiers as $pTier => $purposeTierKeys) {
+            // 🆕 (v4) ใน purpose-tier เดียวกัน → group ตาม priority DESC
+            //    🛡️ Cast priority เป็น int — กัน sortKeysDesc lexical sort
+            $priorityTiers = $purposeTierKeys
+                ->groupBy(fn ($k) => (int) $k->priority)
+                ->sortKeysDesc(SORT_NUMERIC);
+
+            foreach ($priorityTiers as $tierPriority => $tierKeys) {
+                // 4. กรอง runtime guards ก่อนเลือก (cooldown / inflight / rpm)
+                $eligible = $tierKeys->filter(function ($key) {
+                    $provider = $key->provider;
+
+                    if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
+                        return false;
+                    }
+
+                    $inflight = $this->getKeyInflight($provider, $key->id);
+                    $inflightCap = (int) (config('ai.per_key_inflight_cap') ?? 10);
+                    if ($inflight >= $inflightCap) {
+                        return false;
+                    }
+
+                    $rpm = $this->getKeyRpm($provider, $key->id);
+                    $rpmLimit = $key->rate_limit_per_minute ?? 60;
+                    if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
+                        return false;
+                    }
+
+                    return true;
+                })->values();
+
+                if ($eligible->isEmpty()) {
+                    continue; // priority-tier นี้หมดสิทธิ์ — ลง priority-tier ถัดไป
+                }
+
+                // 5. เลือก key จาก eligible pool ตาม global rotation mode
+                //    ✅ Scope key — แยกตาม purpose-tier + priority-tier (กัน rotation pointer ปนกัน)
+                $scopeKey = "p{$pTier}_pri{$tierPriority}_cross";
+                $key = $this->selectKeyByMode($eligible, $globalMode, $scopeKey);
+
+                if (! $key) {
+                    continue;
+                }
+
+                // 6. Acquire — increment in-flight (atomic ผ่าน Cache::lock)
                 $provider = $key->provider;
-
-                if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
-                    return false;
-                }
-
-                $inflight = $this->getKeyInflight($provider, $key->id);
-                if ($inflight >= 10) {
-                    return false;
-                }
-
-                $rpm = $this->getKeyRpm($provider, $key->id);
-                $rpmLimit = $key->rate_limit_per_minute ?? 60;
-                if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
-                    return false;
-                }
-
-                return true;
-            })->values();
-
-            if ($eligible->isEmpty()) {
-                continue; // tier นี้หมดสิทธิ์ — ลง tier ถัดไป
-            }
-
-            // 5. เลือก key จาก eligible pool ตาม global rotation mode
-            //    ✅ ใช้ key cache pointer แบบ cross-provider (group by tier priority)
-            $key = $this->selectKeyByMode($eligible, $globalMode, "tier_{$tierPriority}_cross");
-
-            if (! $key) {
-                continue;
-            }
-
-            // 6. Acquire — increment in-flight (atomic)
-            //    🛡️ (2026-05-13 v2) ใช้ Cache::lock กัน race condition ระหว่าง concurrent acquires
-            //    เคสที่กัน: 2 requests พร้อมกัน → both read inflight=0 → both put(1) → counter = 1 (ผิด ควร 2)
-            //    Redis cache → Cache::increment atomic ปลอดภัย
-            //    File/Database cache → ต้อง lock เพื่อ atomicity
-            $provider = $key->provider;
-            $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
-            $lockKey = "{$inflightKey}:lock";
-            $lock = Cache::lock($lockKey, 5);
-            try {
-                if ($lock->block(2)) {  // wait max 2s for lock
-                    if (Cache::has($inflightKey)) {
-                        Cache::increment($inflightKey);
+                $inflightKey = self::INFLIGHT_PREFIX."{$provider}:{$key->id}";
+                $lockKey = "{$inflightKey}:lock";
+                $lock = Cache::lock($lockKey, 5);
+                try {
+                    if ($lock->block(2)) {  // wait max 2s for lock
+                        if (Cache::has($inflightKey)) {
+                            Cache::increment($inflightKey);
+                        } else {
+                            Cache::put($inflightKey, 1, 30);
+                        }
                     } else {
-                        Cache::put($inflightKey, 1, 30);
+                        // lock fail — fallback non-atomic (likely ok ภายใต้ low contention)
+                        if (Cache::has($inflightKey)) {
+                            Cache::increment($inflightKey);
+                        } else {
+                            Cache::put($inflightKey, 1, 30);
+                        }
                     }
-                } else {
-                    // lock fail — fallback non-atomic (likely ok ภายใต้ low contention)
-                    if (Cache::has($inflightKey)) {
-                        Cache::increment($inflightKey);
-                    } else {
-                        Cache::put($inflightKey, 1, 30);
-                    }
+                } finally {
+                    optional($lock)->release();
                 }
-            } finally {
-                optional($lock)->release();
+
+                // 🆕 (v4) Log purpose-tier label เพื่อ verify การทำงาน
+                $tierLabel = match ($pTier) {
+                    0 => 'exact',
+                    1 => 'any',
+                    default => 'null/legacy',
+                };
+
+                Log::debug('Pool: acquireKeyAnyProvider — picked (purpose-first v4)', [
+                    'purpose_tier' => $pTier,
+                    'purpose_tier_label' => $tierLabel,
+                    'priority_tier' => $tierPriority,
+                    'tier_size' => $eligible->count(),
+                    'rotation_mode' => $globalMode,
+                    'provider' => $provider,
+                    'key_id' => $key->id,
+                    'key_name' => $key->name,
+                    'purpose_requested' => $purpose,
+                    'key_purpose' => $key->purpose,
+                ]);
+
+                return $key;
             }
-
-            Log::debug('Pool: acquireKeyAnyProvider — picked', [
-                'tier_priority' => $tierPriority,
-                'tier_size' => $eligible->count(),
-                'rotation_mode' => $globalMode,
-                'provider' => $provider,
-                'key_id' => $key->id,
-                'key_name' => $key->name,
-                'purpose_requested' => $purpose,
-                'key_purpose' => $key->purpose,
-            ]);
-
-            return $key;
         }
 
         return null;

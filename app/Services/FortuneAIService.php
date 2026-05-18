@@ -2131,7 +2131,7 @@ PROMPT;
             ."   • ✅ \"จากที่เล่ามา เรื่องนี้ดูซับซ้อน — แม่หมอลองเปิดไพ่ดูให้ได้ไหมคะ?\" (soft invite TURN 3+)\n"
             ."\n"
             ."⚠️ tag ที่ต้องใส่เมื่อเหมาะสม (TURN 2+): [OFFER_FORTUNE] [DEEP_READING] [ASK_SAVE] — ห้ามลบ ห้ามแปล (parser ใช้)\n"
-            ."⚠️ ใน TURN 1: **ห้ามใส่ tag เกี่ยวกับการขาย** [OFFER_FORTUNE] / [DEEP_READING]";
+            .'⚠️ ใน TURN 1: **ห้ามใส่ tag เกี่ยวกับการขาย** [OFFER_FORTUNE] / [DEEP_READING]';
 
         // 🚫 (2026-05-14) Anti-Hallucination directive — สำคัญที่สุด
         //   user report: "AI เพิ่งดูดวงไป แต่กลับแจ้งว่ากำลังดูให้อยู่ พร้อมส่งบิล"
@@ -2158,7 +2158,7 @@ PROMPT;
             ."\n"
             ."⚠️ ถ้าลูกค้าถามคำถามดวงตรงๆ \"จะรวยไหม / มีคู่ไหม\" → ตอบ:\n"
             ."   \"แม่หมอต้องเปิดไพ่ก่อนถึงจะตอบได้แม่นๆ ค่ะ — พิมพ์ 'ดูดวง' เพื่อเริ่มเลยนะคะ ✨\"\n"
-            ."   *(ห้าม pretend ทำนายเอง / ห้ามแต่งคำตอบ)*";
+            .'   *(ห้าม pretend ทำนายเอง / ห้ามแต่งคำตอบ)*';
 
         // 🌙 (2026-05-14) Memory & Returning Customer directive
         //   user spec: "อย่างน้อยใน 24 ชม ควรจำเรื่องที่คุยกับยูสเซ่อร์ได้"
@@ -2247,7 +2247,7 @@ PROMPT;
             ."[🚫 ห้ามหลุดจากบทบาท]\n"
             ."  - ห้ามบอกว่าเงินไปเข้ากระเป๋าหมอ/เจ้าของระบบ\n"
             ."  - ห้ามบอกราคาผิด (39฿ Deep / 99฿ Celtic Cross)\n"
-            ."  - ห้ามแต่งเรื่องอื่นที่ไม่ใช่ความหมายข้างต้น";
+            .'  - ห้ามแต่งเรื่องอื่นที่ไม่ใช่ความหมายข้างต้น';
 
         // 💳 (2026-05-09) Stripe option awareness — เปิด toggle เท่านั้น
         //    ลูกค้าต่างประเทศบอกว่า "อยู่ลาว/USA" / "ใช้บัตรเครดิต" / "ไม่มี QR Thai"
@@ -2266,7 +2266,7 @@ PROMPT;
                     ."  → แนะให้พิมพ์ \"บัตร\" หรือ \"QR ไทย\" หรือกดปุ่ม\n"
                     ."- ลูกค้าอยู่ขั้น 'รอจ่ายบัตร' (ส่งลิงก์ Stripe ไปแล้ว)\n"
                     ."  → ย้ำว่ากดลิงก์ที่ส่งให้ หรือพิมพ์ 'qr ไทย' เพื่อกลับไปเลือก QR Thai\n"
-                    ."⚠️ ห้าม AI พิมพ์ลิงก์ Stripe เอง — ระบบจัดการเอง AI แค่ \"แนะคำสั่ง\" เท่านั้น";
+                    .'⚠️ ห้าม AI พิมพ์ลิงก์ Stripe เอง — ระบบจัดการเอง AI แค่ "แนะคำสั่ง" เท่านั้น';
             }
         } catch (\Throwable $e) {
             // settings access fail → ข้าม directive (default ปกติ)
@@ -3249,6 +3249,11 @@ PROMPT;
                     }
 
                     // 🎯 (2026-05-01) ใช้ per-key model + base_url (override default ของ provider)
+                    // 🆕 (2026-05-18) purpose_tier — Axis 1 ใน sort สุดท้าย (exact ชนะ any เสมอ)
+                    $keyPurposeRaw = $poolKey->purpose ?? null;
+                    $purposeTier = ($keyPurposeRaw === $purpose && $purpose !== '' && $purpose !== null)
+                        ? 0 // exact match
+                        : (($keyPurposeRaw === 'any') ? 1 : 2); // any | null/legacy
                     $keys[] = [
                         'provider' => $provider,
                         'api_key' => $poolKey->api_key,
@@ -3257,6 +3262,8 @@ PROMPT;
                         'pool_key' => $poolKey,
                         'source' => 'pool',
                         'name' => $poolKey->name ?? "Pool #{$poolKey->id}",
+                        'purpose_tier' => $purposeTier,  // 🆕 (v4) sort axis 1
+                        'key_purpose' => $keyPurposeRaw, // 🆕 (v4) สำหรับ log/debug
                         'score' => $this->computeKeyScore(
                             $provider,
                             $poolKey,
@@ -3277,6 +3284,7 @@ PROMPT;
 
         // 2) ดึงจาก Fortune Settings (กรณี use_global_ai_settings = false)
         //    score ต่ำกว่า pool keys เพื่อให้ pool มาก่อน (ถ้าลูกค้าจัด pool)
+        //    🆕 (2026-05-18) purpose_tier=2 (legacy/null) — ใส่ลงท้าย หลัง exact + any
         if (! empty($this->settings->ai_api_key) && ! empty($this->settings->ai_provider)) {
             $settingsKey = $this->settings->ai_api_key;
             if (! in_array($settingsKey, $addedApiKeys)) {
@@ -3287,6 +3295,8 @@ PROMPT;
                     'pool_key' => null,
                     'source' => 'fortune_settings',
                     'name' => 'Fortune Settings Key',
+                    'purpose_tier' => 2,             // 🆕 (v4) legacy fallback
+                    'key_purpose' => null,            // 🆕 (v4) ไม่รู้ purpose ของ key นี้
                     'score' => -100, // รองจาก pool
                 ];
                 $addedApiKeys[] = $settingsKey;
@@ -3305,6 +3315,8 @@ PROMPT;
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Gemini Key',
+                    'purpose_tier' => 2,             // 🆕 (v4) legacy fallback
+                    'key_purpose' => null,
                     'score' => -200, // last resort
                 ];
                 $addedApiKeys[] = $geminiKey;
@@ -3319,6 +3331,8 @@ PROMPT;
                     'pool_key' => null,
                     'source' => 'global_settings',
                     'name' => 'Global Claude/OpenRouter Key',
+                    'purpose_tier' => 2,             // 🆕 (v4) legacy fallback
+                    'key_purpose' => null,
                     'score' => -200,
                 ];
                 $addedApiKeys[] = $claudeKey;
@@ -3327,8 +3341,42 @@ PROMPT;
             Log::debug('FortuneAI: Global settings ดึง keys ไม่ได้', ['error' => $e->getMessage()]);
         }
 
-        // 🎯 Phase H — เรียงตาม score DESC (สูงสุดก่อน = โหลดเบาสุด)
-        usort($keys, fn ($a, $b) => ($b['score'] ?? 0) <=> ($a['score'] ?? 0));
+        // 🆕 (2026-05-18 v4) Purpose-first sort
+        //   Axis 1: purpose_tier ASC (0=exact, 1=any, 2=null/legacy)
+        //   Axis 2: score DESC (priority + load balancing tie-breaker ภายใน purpose tier)
+        //
+        //   user spec (2026-05-18):
+        //     "เน้น purpose ก่อน แม้ priority ต่ำกว่า
+        //      เช็ค priority ที่ purpose เหมือนกันเท่านั้น ถึงจะมีน้ำหนัก"
+        //
+        //   ก่อนหน้า: usort by score เดียว → key priority สูง + purpose=any
+        //              ชนะ key priority ต่ำ + purpose exact (เพราะ priority * 10 = +1000+
+        //              เท่ากับ purpose boost +1000 → tie หรือชนะ)
+        //   ปัจจุบัน: sort 2-axis → exact-match ชนะ any เสมอ (เด็ดขาด)
+        usort($keys, function ($a, $b) {
+            $tierA = (int) ($a['purpose_tier'] ?? 2);
+            $tierB = (int) ($b['purpose_tier'] ?? 2);
+            if ($tierA !== $tierB) {
+                return $tierA <=> $tierB; // ASC — 0 ก่อน 1 ก่อน 2
+            }
+
+            // ภายใน purpose-tier เดียวกัน → score DESC (priority + load score)
+            return ($b['score'] ?? 0) <=> ($a['score'] ?? 0);
+        });
+
+        // 🆕 (2026-05-18) Log สรุป 5 ตัวแรก เพื่อ verify การจัดอันดับ
+        Log::debug('FortuneAI: collectAvailableKeys — purpose-first ranking (v4)', [
+            'purpose_requested' => $purpose,
+            'primary_provider' => $primaryProvider,
+            'total_keys' => count($keys),
+            'top5' => array_map(fn ($k) => [
+                'tier' => $k['purpose_tier'] ?? null,
+                'key_purpose' => $k['key_purpose'] ?? null,
+                'provider' => $k['provider'] ?? null,
+                'name' => $k['name'] ?? null,
+                'score' => $k['score'] ?? null,
+            ], array_slice($keys, 0, 5)),
+        ]);
 
         return $keys;
     }
