@@ -337,6 +337,8 @@ class FortuneReading extends Model
         // 🎙️ Voice Summary (TTS) — 2026-05-08
         'voice_audio_token',
         'voice_audio_path',
+        'voice_audio_disk',  // 🌥️ (2026-05-18) driver ที่เซฟ audio: local/r2/s3/gcs/firebase
+        'voice_audio_url',   // 🌥️ (2026-05-18) full URL (สำหรับ Firebase ที่มี token ใน URL)
         'voice_audio_duration_ms',
         'voice_audio_provider',
         'voice_audio_chars',

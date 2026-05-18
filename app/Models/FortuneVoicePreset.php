@@ -46,11 +46,25 @@ class FortuneVoicePreset extends Model
 
     /**
      * URL ของ sample audio (สำหรับ player ใน admin UI)
+     *
+     * 🌥️ (2026-05-18) ใช้ FortuneVoiceStorageService เพื่อรองรับ cloud driver
+     *   - admin เปลี่ยน driver → sample URL ต้องชี้ไปที่ cloud ที่ถูก
      */
     public function getSampleAudioUrlAttribute(): ?string
     {
         if (empty($this->sample_audio_path)) {
             return null;
+        }
+
+        try {
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            $storage = new \App\Services\FortuneVoiceStorageService($settings);
+            $url = $storage->audioUrl($this->sample_audio_path);
+            if (! empty($url)) {
+                return $url;
+            }
+        } catch (\Throwable $e) {
+            // fallback ลง local — รอ admin migrate
         }
 
         return \Illuminate\Support\Facades\Storage::disk('public')->url($this->sample_audio_path);

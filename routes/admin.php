@@ -83,7 +83,9 @@ use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
 use App\Http\Controllers\Admin\FortunePersonasController;
 use App\Http\Controllers\Admin\FortuneUsersController;
+use App\Http\Controllers\Admin\FortuneVoiceDiagnosticController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
+use App\Http\Controllers\Admin\FortuneVoiceStorageController;
 use App\Http\Controllers\Admin\ForumAdminController;
 use App\Http\Controllers\Admin\FreshMarketController;
 use App\Http\Controllers\Admin\GameController;
@@ -4028,6 +4030,20 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/import', [FortuneVoicePresetController::class, 'import'])->name('import');
         Route::post('/seed-thai', [FortuneVoicePresetController::class, 'seedThai'])->name('seed-thai');
     });
+
+    // 🌥️ (2026-05-18) Voice Cloud Storage — config + test + migrate
+    Route::prefix('voice-storage')->name('voice-storage.')->group(function () {
+        Route::post('/save', [FortuneVoiceStorageController::class, 'save'])->name('save');
+        Route::post('/test', [FortuneVoiceStorageController::class, 'test'])->name('test');
+        Route::post('/fix-symlink', [FortuneVoiceStorageController::class, 'fixSymlink'])->name('fix-symlink');
+        Route::post('/migrate', [FortuneVoiceStorageController::class, 'migrate'])->name('migrate');
+        Route::get('/stats', [FortuneVoiceStorageController::class, 'stats'])->name('stats');
+    });
+
+    // 🩺 (2026-05-18) Voice Diagnostic — ตรวจระบบ TTS ทั้งหมด
+    Route::get('/voice-diagnostic', [FortuneVoiceDiagnosticController::class, 'index'])->name('voice-diagnostic');
+    Route::post('/voice-diagnostic/test/{provider}', [FortuneVoiceDiagnosticController::class, 'testProvider'])->name('voice-diagnostic.test');
+    Route::post('/voice-diagnostic/regenerate/{reading}', [FortuneVoiceDiagnosticController::class, 'regenerateReading'])->name('voice-diagnostic.regenerate');
 
     // AI Playground - ทดสอบสนทนากับ AI
     Route::get('/playground', [FortuneSettingsController::class, 'playground'])->name('playground');

@@ -25,26 +25,36 @@ use Illuminate\Support\Str;
  *        primary  = MiniMax (paid, premium)
  *        fallback = Google Cloud TTS / gTTS (free)
  *        last     = OpenAI TTS (paid, alternative)
- *   3. สังเคราะห์ mp3 → save to storage/app/public/fortune-voice/{token}.mp3
- *      (token = random 32 chars — กัน enumeration ผ่าน reading_id)
- *   4. คืน public URL ให้ caller ใช้ส่งผ่าน LINE/FB
+ *   3. Provider เขียน mp3 ลง temp file ที่ storage/app/tmp-voice/
+ *   4. FortuneVoiceStorageService อัปโหลด temp → cloud/local (admin เลือก driver)
+ *      → ลด disk usage บนเซิร์ฟเวอร์ (ย้ายไป R2/S3/GCS/Firebase)
+ *   5. คืน public URL ให้ caller ใช้ส่งผ่าน LINE/FB
  *
  * Concurrency:
  *   - Cache lock 60s ต่อ reading_id — กันสร้างซ้ำซ้อน
  *
  * Cache:
- *   - mp3 file persist บน disk → caller สามารถ replay ส่งใหม่ได้ฟรี
- *   - DB column voice_audio_token = single source of truth
+ *   - mp3 file persist บน storage driver → caller สามารถ replay ส่งใหม่ได้ฟรี
+ *   - DB column voice_audio_token + voice_audio_disk = single source of truth
+ *
+ * 🌥️ (2026-05-18) Multi-cloud storage:
+ *   - admin เลือก driver ผ่าน /admin/fortune/settings → Voice → Storage
+ *   - รองรับ: local / r2 / s3 / gcs / firebase
+ *   - เก่า: voice_audio_disk=null → assume local (backward compat)
  */
 class FortuneVoiceSummaryService
 {
+    protected FortuneVoiceStorageService $storage;
+
     public function __construct(
         protected FortuneTellingSetting $settings,
         protected ?FortuneAIService $ai = null,
         protected ?AiApiKeyPoolService $pool = null,
+        ?FortuneVoiceStorageService $storage = null,
     ) {
         $this->ai ??= new FortuneAIService($settings);
         $this->pool ??= app(AiApiKeyPoolService::class);
+        $this->storage = $storage ?? new FortuneVoiceStorageService($settings);
     }
 
     /**
@@ -78,22 +88,27 @@ class FortuneVoiceSummaryService
         }
 
         try {
-            // 2. ถ้ามี audio cached แล้ว (token + path มีใน DB) → return เดิม
+            // 2. ถ้ามี audio cached แล้ว (token + path มีใน DB) → return URL เดิม
             if (! empty($reading->voice_audio_token) && ! empty($reading->voice_audio_path)) {
-                $absPath = Storage::disk('public')->path($reading->voice_audio_path);
-                if (file_exists($absPath) && filesize($absPath) > 1000) {
+                $existingDisk = $reading->voice_audio_disk ?: 'local';
+
+                // 🌥️ ใช้ voice_audio_url ก่อน (Firebase ต้องมี token ใน URL)
+                $cachedUrl = $reading->voice_audio_url ?: $this->storage->audioUrl($reading->voice_audio_path, $existingDisk);
+
+                if (! empty($cachedUrl)) {
                     return [
                         'success' => true,
-                        'audio_url' => Storage::disk('public')->url($reading->voice_audio_path),
-                        'audio_path' => $absPath,
+                        'audio_url' => $cachedUrl,
+                        'audio_path' => $reading->voice_audio_path,
                         'audio_duration_ms' => $reading->voice_audio_duration_ms ?? 60000,
-                        'provider_used' => $reading->voice_audio_provider.'+cache',
+                        'provider_used' => ($reading->voice_audio_provider ?: 'unknown').'+cache',
                         'error' => null,
                     ];
                 }
-                // ถ้าไฟล์หาย → regenerate (เคลียร์ DB ก่อน)
-                Log::info('FortuneVoiceSummary: cache file missing — regenerate', [
+                // ถ้าหา URL ไม่ได้ → regenerate
+                Log::info('FortuneVoiceSummary: cached URL หาย — regenerate', [
                     'reading_id' => $reading->id,
+                    'old_disk' => $existingDisk,
                     'old_path' => $reading->voice_audio_path,
                 ]);
             }
@@ -115,14 +130,17 @@ class FortuneVoiceSummaryService
                 $summary = $this->stripFormattingForSpeech(mb_substr($source, 0, $maxChars));
             }
 
-            // 5. Generate random token + relative path
+            // 5. สร้าง temp file path + final relative path
             //    token = 40 chars (URL-safe random) → ~240 bits entropy
             $token = $reading->voice_audio_token ?: Str::random(40);
             $relativePath = 'fortune-voice/'.$token.'.mp3';
-            $absolutePath = Storage::disk('public')->path($relativePath);
 
-            // ตรวจ storage:link — log ครั้งเดียวพอ
-            $this->ensureStorageLinkOrWarn();
+            // Temp path สำหรับ provider เขียน — ใน storage/app/ (ไม่ต้องผ่าน public symlink)
+            $tempDir = storage_path('app/tmp-voice');
+            if (! is_dir($tempDir)) {
+                @mkdir($tempDir, 0775, true);
+            }
+            $tempPath = $tempDir.'/'.$token.'.mp3';
 
             // 6. ลอง provider chain
             $chain = $this->settings->getVoiceProviderChain();
@@ -130,11 +148,13 @@ class FortuneVoiceSummaryService
             $providerUsed = null;
             $audioLengthMs = null;
             $usageChars = mb_strlen($summary);
+            $providerAttempts = [];
 
             foreach ($chain as $providerName) {
                 $provider = $this->resolveProvider($providerName);
                 if (! $provider) {
                     Log::warning('FortuneVoiceSummary: unknown provider', ['provider' => $providerName]);
+                    $providerAttempts[$providerName] = 'unknown_provider';
 
                     continue;
                 }
@@ -144,57 +164,95 @@ class FortuneVoiceSummaryService
                         'provider' => $providerName,
                         'reading_id' => $reading->id,
                     ]);
+                    $providerAttempts[$providerName] = 'not_available';
 
                     continue;
                 }
 
                 $result = $provider->synthesize($summary, [
-                    'output_path' => $absolutePath,
+                    'output_path' => $tempPath,
                     'language' => 'th',
                 ]);
 
-                if ($result['success'] && file_exists($absolutePath) && filesize($absolutePath) > 1000) {
+                if ($result['success'] && file_exists($tempPath) && filesize($tempPath) > 1000) {
                     $providerUsed = $providerName;
-                    $audioLengthMs = $result['audio_length_ms'] ?? $this->estimateDurationMs($absolutePath, $summary);
+                    $audioLengthMs = $result['audio_length_ms'] ?? $this->estimateDurationMs($tempPath, $summary);
                     $usageChars = $result['usage_chars'] ?? mb_strlen($summary);
+                    $providerAttempts[$providerName] = 'success';
 
-                    Log::info('🎙️ FortuneVoiceSummary: ✅ สำเร็จ', [
+                    Log::info('🎙️ FortuneVoiceSummary: ✅ TTS สำเร็จ', [
                         'reading_id' => $reading->id,
                         'provider' => $providerName,
                         'voice' => $result['voice_used'] ?? null,
-                        'duration_ms' => $result['duration_ms'] ?? null,
                         'audio_length_ms' => $audioLengthMs,
-                        'file_size_kb' => round(filesize($absolutePath) / 1024, 1),
+                        'file_size_kb' => round(filesize($tempPath) / 1024, 1),
                     ]);
                     break;
                 }
 
                 $lastError = $result['error'] ?? 'unknown';
+                $providerAttempts[$providerName] = $lastError;
                 Log::warning('FortuneVoiceSummary: provider fail — fallback ถัดไป', [
                     'reading_id' => $reading->id,
                     'provider' => $providerName,
                     'error' => $lastError,
                 ]);
+
+                // ลบ temp ที่ provider อาจสร้างไว้แต่ไม่สมบูรณ์
+                if (file_exists($tempPath) && filesize($tempPath) < 1000) {
+                    @unlink($tempPath);
+                }
             }
 
             if (! $providerUsed) {
-                return $this->failResult('ทุก TTS provider ล้มเหลว — last: '.($lastError ?? 'unknown'));
+                @unlink($tempPath);
+                $errSummary = 'TTS providers ทั้งหมดล้มเหลว — '.json_encode($providerAttempts, JSON_UNESCAPED_UNICODE);
+
+                return $this->failResult($errSummary);
             }
 
-            // 7. บันทึก metadata ลง DB
-            $reading->update([
+            // 7. อัปโหลด temp → storage driver (local / R2 / S3 / GCS / Firebase)
+            $putResult = $this->storage->putAudio($tempPath, $relativePath);
+
+            if (! $putResult['success']) {
+                @unlink($tempPath);
+
+                return $this->failResult(
+                    'TTS สำเร็จ ('.$providerUsed.') แต่ upload ไป '.$putResult['disk'].' ล้มเหลว: '.$putResult['error']
+                );
+            }
+
+            // local driver: temp = ปลายทาง อยู่แล้ว ไม่ต้องลบ
+            // cloud driver: storage service ลบ temp ให้แล้ว
+
+            // 8. บันทึก metadata ลง DB
+            $updateData = [
                 'voice_audio_token' => $token,
                 'voice_audio_path' => $relativePath,
                 'voice_audio_duration_ms' => $audioLengthMs,
                 'voice_audio_provider' => $providerUsed,
                 'voice_audio_chars' => $usageChars,
                 'voice_audio_generated_at' => now(),
-            ]);
+            ];
+
+            // 🌥️ voice_audio_disk + voice_audio_url อาจยังไม่ migrate → ใส่ใน try
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('fortune_readings', 'voice_audio_disk')) {
+                    $updateData['voice_audio_disk'] = $putResult['disk'];
+                }
+                if (\Illuminate\Support\Facades\Schema::hasColumn('fortune_readings', 'voice_audio_url')) {
+                    $updateData['voice_audio_url'] = $putResult['url'];
+                }
+            } catch (\Throwable $e) {
+                // ข้าม — backward compat
+            }
+
+            $reading->update($updateData);
 
             return [
                 'success' => true,
-                'audio_url' => Storage::disk('public')->url($relativePath),
-                'audio_path' => $absolutePath,
+                'audio_url' => $putResult['url'],
+                'audio_path' => $relativePath,
                 'audio_duration_ms' => $audioLengthMs,
                 'provider_used' => $providerUsed,
                 'error' => null,
@@ -256,41 +314,35 @@ class FortuneVoiceSummaryService
     }
 
     /**
-     * Warn admin ถ้า public/storage symlink ไม่มี (URL จะ 404)
-     */
-    protected function ensureStorageLinkOrWarn(): void
-    {
-        $symlinkPath = public_path('storage');
-        if (file_exists($symlinkPath) || is_link($symlinkPath)) {
-            return;
-        }
-
-        // Cache log warning เพื่อไม่ spam — log วันละครั้งพอ
-        $cacheKey = 'voice_summary_storage_link_warning_'.now()->format('Y-m-d');
-        if (Cache::has($cacheKey)) {
-            return;
-        }
-        Cache::put($cacheKey, true, 86400);
-
-        Log::warning('🚨 FortuneVoiceSummary: public/storage symlink ไม่มี — voice URL จะ 404! รัน: php artisan storage:link');
-    }
-
-    /**
      * ลบ audio cache ของ reading (admin regenerate)
      */
     public function clearCache(FortuneReading $reading): bool
     {
         if ($reading->voice_audio_path) {
-            Storage::disk('public')->delete($reading->voice_audio_path);
+            $disk = $reading->voice_audio_disk ?: 'local';
+            $this->storage->deleteAudio($reading->voice_audio_path, $disk);
         }
-        $reading->update([
+
+        $clearData = [
             'voice_audio_token' => null,
             'voice_audio_path' => null,
             'voice_audio_duration_ms' => null,
             'voice_audio_provider' => null,
             'voice_audio_chars' => null,
             'voice_audio_generated_at' => null,
-        ]);
+        ];
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('fortune_readings', 'voice_audio_disk')) {
+                $clearData['voice_audio_disk'] = null;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('fortune_readings', 'voice_audio_url')) {
+                $clearData['voice_audio_url'] = null;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        $reading->update($clearData);
 
         return true;
     }

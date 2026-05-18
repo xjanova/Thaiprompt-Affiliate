@@ -1632,6 +1632,302 @@ Format 2 — JSON array:
                  x-text="message"></div>
         </div> {{-- End Voice Library --}}
 
+        {{-- ===== 🌥️ (2026-05-18) Voice File Storage — Cloud Storage Config ===== --}}
+        @php
+            $voiceStorageDriver = $settings->voice_storage_driver ?: 'local';
+            $voiceStorageConfig = is_array($settings->voice_storage_config) ? $settings->voice_storage_config : [];
+            $cfgR2 = $voiceStorageConfig['r2'] ?? [];
+            $cfgS3 = $voiceStorageConfig['s3'] ?? [];
+            $cfgGcs = $voiceStorageConfig['gcs'] ?? [];
+            $cfgFirebase = $voiceStorageConfig['firebase'] ?? [];
+        @endphp
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6"
+             data-fortune-tab="tts"
+             x-data="voiceStorage({{ json_encode([
+                'driver' => $voiceStorageDriver,
+                'r2' => $cfgR2,
+                's3' => $cfgS3,
+                'gcs' => $cfgGcs,
+                'firebase' => $cfgFirebase,
+             ]) }})">
+            <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    🌥️ Voice File Storage
+                    <span class="text-xs font-normal text-blue-600 dark:text-blue-400">(แก้ปัญหา server เต็มเร็ว — ย้าย mp3 ไป cloud)</span>
+                </h3>
+                <a href="{{ route('admin.fortune.voice-diagnostic') }}"
+                   class="px-3 py-2 text-sm bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition flex items-center gap-1">
+                    🩺 Diagnostic
+                </a>
+            </div>
+
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                เลือก driver ที่จะใช้เก็บไฟล์เสียง mp3 — แต่ละการทำนาย Celtic 99฿ จะสร้างไฟล์ ~500KB-2MB.
+                ย้ายไป cloud เพื่อ:<br>
+                ✅ ไม่กิน disk บนเซิร์ฟเวอร์ &nbsp; ✅ โหลดเร็วผ่าน CDN &nbsp; ✅ Backup อัตโนมัติ
+            </p>
+
+            {{-- Driver picker --}}
+            <div class="mb-6">
+                <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">📦 เลือก Driver</label>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                    @foreach([
+                        'local' => ['📁 Local', 'แนะนำสำหรับเริ่มต้น'],
+                        'r2' => ['🟧 Cloudflare R2', 'ฟรี 10GB · free egress ⭐'],
+                        'firebase' => ['🔥 Firebase Storage', 'ฟรี 5GB · ง่ายสุด'],
+                        'gcs' => ['🔵 Google Cloud Storage', 'แม่นยำ · paid'],
+                        's3' => ['🟨 AWS S3', 'มาตรฐาน · paid'],
+                    ] as $val => $info)
+                        <label class="flex flex-col items-start p-3 border-2 rounded-lg cursor-pointer transition"
+                               :class="driver === '{{ $val }}' ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-300 dark:border-gray-600 hover:border-blue-300'">
+                            <input type="radio" x-model="driver" value="{{ $val }}" class="sr-only">
+                            <div class="text-sm font-bold text-gray-900 dark:text-white">{{ $info[0] }}</div>
+                            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ $info[1] }}</div>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Local config --}}
+            <div x-show="driver === 'local'" x-cloak class="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">📁 Local Disk</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    เก็บใน <code class="bg-gray-200 dark:bg-gray-800 px-1 rounded">storage/app/public/fortune-voice/</code> — ต้องรัน <code class="bg-gray-200 dark:bg-gray-800 px-1 rounded">php artisan storage:link</code>
+                </p>
+                <button type="button" @click="fixSymlink()" :disabled="busy"
+                        class="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg">
+                    🔗 สร้าง symlink (storage:link)
+                </button>
+                <details class="mt-3">
+                    <summary class="cursor-pointer text-sm font-medium text-blue-600 dark:text-blue-400">📖 วิธีใช้งาน</summary>
+                    <ol class="mt-2 ml-5 text-xs text-gray-600 dark:text-gray-400 list-decimal space-y-1">
+                        <li>กดปุ่ม "สร้าง symlink" ด้านบน หรือ SSH เข้าไป run <code>php artisan storage:link</code></li>
+                        <li>กดปุ่ม "ทดสอบการเชื่อมต่อ" ด้านล่าง เพื่อยืนยันว่า upload + delete ใช้ได้</li>
+                        <li>กด "บันทึก driver" → เริ่มใช้งานได้ทันที</li>
+                        <li>⚠️ ขนาดเพิ่มเร็ว ~50MB-200MB/วัน ถ้าลูกค้าจ่าย Celtic 99฿ บ่อย → แนะนำย้ายไป cloud</li>
+                    </ol>
+                </details>
+            </div>
+
+            {{-- R2 config --}}
+            <div x-show="driver === 'r2'" x-cloak class="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-300 dark:border-orange-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🟧 Cloudflare R2 (แนะนำ)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🆔 Account ID</label>
+                        <input type="text" x-model="r2.account_id" placeholder="32 chars hex"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔑 Access Key ID</label>
+                        <input type="text" x-model="r2.access_key_id"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔒 Secret Access Key</label>
+                        <input type="password" x-model="r2.secret_access_key" placeholder="เว้นว่าง = ใช้ค่าเดิม"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🪣 Bucket Name</label>
+                        <input type="text" x-model="r2.bucket" placeholder="fortune-voice"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🌐 Public URL (CDN/Public bucket URL)</label>
+                        <input type="text" x-model="r2.public_url" placeholder="https://pub-xxx.r2.dev"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                </div>
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm font-medium text-orange-700 dark:text-orange-400">📖 วิธีสมัคร R2 + หา credentials (5 นาที)</summary>
+                    <ol class="mt-3 ml-5 text-xs text-gray-700 dark:text-gray-300 list-decimal space-y-2">
+                        <li>เข้า <a href="https://dash.cloudflare.com/" target="_blank" class="text-orange-600 underline">dash.cloudflare.com</a> → R2 → Subscribe (ฟรี 10GB)</li>
+                        <li>สร้าง bucket ใหม่ ตั้งชื่อ เช่น <code>fortune-voice</code></li>
+                        <li>เปิด bucket → Settings → Public Access → "Allow Access" → จด URL ที่ขึ้นต้น <code>pub-xxx.r2.dev</code> ใส่ในช่อง "Public URL" ด้านบน</li>
+                        <li>กลับไป R2 → Manage API tokens → "Create API token" → Object Read & Write → Specify bucket → จด Access Key + Secret + Account ID</li>
+                        <li>วาง credentials ในฟอร์มด้านบน → กด "ทดสอบ" → กด "บันทึก driver"</li>
+                        <li>🎁 R2 = <strong>free egress</strong> = ลูกค้าฟัง audio กี่ครั้งก็ไม่เสีย bandwidth (S3 คิดเงิน!)</li>
+                    </ol>
+                </details>
+            </div>
+
+            {{-- Firebase config --}}
+            <div x-show="driver === 'firebase'" x-cloak class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-300 dark:border-amber-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🔥 Firebase Storage (ใช้ project plptdb ที่มีอยู่)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">📂 Credentials JSON Path</label>
+                        <input type="text" x-model="firebase.credentials_path"
+                               placeholder="storage/app/firebase-credentials.json"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                        <p class="text-xs text-gray-500 mt-1">ใช้ service account JSON เดียวกับ FCM</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🪣 Storage Bucket</label>
+                        <input type="text" x-model="firebase.bucket"
+                               placeholder="plptdb.firebasestorage.app"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                        <p class="text-xs text-gray-500 mt-1">ดูที่ Firebase Console → Storage → Bucket</p>
+                    </div>
+                </div>
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm font-medium text-amber-700 dark:text-amber-400">📖 วิธีตั้งค่า Firebase Storage (3 นาที)</summary>
+                    <ol class="mt-3 ml-5 text-xs text-gray-700 dark:text-gray-300 list-decimal space-y-2">
+                        <li>เข้า <a href="https://console.firebase.google.com/project/plptdb/storage" target="_blank" class="text-amber-600 underline">Firebase Console → Storage</a></li>
+                        <li>ถ้ายังไม่เปิด Storage → กด "Get Started" → เลือก location (asia-southeast1 = สิงคโปร์ แนะนำ)</li>
+                        <li>คัดลอกชื่อ bucket (เช่น <code>plptdb.firebasestorage.app</code> หรือ <code>plptdb.appspot.com</code>) วางในช่องด้านบน</li>
+                        <li>Credentials Path: ใช้ค่า default <code>storage/app/firebase-credentials.json</code> (มีอยู่แล้ว — ใช้กับ FCM)</li>
+                        <li>กด "ทดสอบ" → กด "บันทึก driver"</li>
+                        <li>🎁 ฟรี 5GB + 1GB/วัน download — เหมาะกับเริ่มต้น (ไม่ต้องตั้ง credentials ใหม่)</li>
+                    </ol>
+                </details>
+            </div>
+
+            {{-- GCS config --}}
+            <div x-show="driver === 'gcs'" x-cloak class="mb-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-300 dark:border-blue-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🔵 Google Cloud Storage</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">📂 Service Account JSON Path</label>
+                        <input type="text" x-model="gcs.credentials_path"
+                               placeholder="storage/app/firebase-credentials.json"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🪣 Bucket Name</label>
+                        <input type="text" x-model="gcs.bucket"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🌐 Public URL (optional — ถ้า bucket = public)</label>
+                        <input type="text" x-model="gcs.public_url"
+                               placeholder="https://storage.googleapis.com/your-bucket"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                        <p class="text-xs text-gray-500 mt-1">เว้นว่าง = ใช้ standard storage.googleapis.com URL (bucket ต้อง public)</p>
+                    </div>
+                </div>
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm font-medium text-blue-700 dark:text-blue-400">📖 วิธีตั้งค่า Google Cloud Storage (5 นาที)</summary>
+                    <ol class="mt-3 ml-5 text-xs text-gray-700 dark:text-gray-300 list-decimal space-y-2">
+                        <li>เข้า <a href="https://console.cloud.google.com/storage/browser" target="_blank" class="text-blue-600 underline">GCP Console → Cloud Storage</a></li>
+                        <li>กด "CREATE" → ตั้งชื่อ bucket → เลือก location (asia-southeast1) → Standard storage class → Uniform access</li>
+                        <li>(ถ้าอยากใช้ public URL) Permissions → Grant access → <code>allUsers</code> = Storage Object Viewer</li>
+                        <li>ใช้ service account เดียวกับ Translate/Vision/TTS — เพิ่ม role "Storage Object Admin" ที่ <a href="https://console.cloud.google.com/iam-admin/iam" target="_blank" class="text-blue-600 underline">IAM</a></li>
+                        <li>วางชื่อ bucket + credentials path ในฟอร์มด้านบน → กด "ทดสอบ"</li>
+                        <li>💡 5GB แรกฟรี/เดือน · หลังนั้น $0.020/GB</li>
+                    </ol>
+                </details>
+            </div>
+
+            {{-- S3 config --}}
+            <div x-show="driver === 's3'" x-cloak class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🟨 AWS S3</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔑 Access Key ID</label>
+                        <input type="text" x-model="s3.access_key_id"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔒 Secret Access Key</label>
+                        <input type="password" x-model="s3.secret_access_key" placeholder="เว้นว่าง = ใช้ค่าเดิม"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm font-mono">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🌏 Region</label>
+                        <input type="text" x-model="s3.region" placeholder="ap-southeast-1"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🪣 Bucket Name</label>
+                        <input type="text" x-model="s3.bucket"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🌐 Public URL (CDN/Static website)</label>
+                        <input type="text" x-model="s3.public_url"
+                               placeholder="https://my-bucket.s3.ap-southeast-1.amazonaws.com"
+                               class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-sm">
+                    </div>
+                </div>
+                <details class="mt-4">
+                    <summary class="cursor-pointer text-sm font-medium text-yellow-700 dark:text-yellow-400">📖 วิธีตั้งค่า AWS S3 (10 นาที)</summary>
+                    <ol class="mt-3 ml-5 text-xs text-gray-700 dark:text-gray-300 list-decimal space-y-2">
+                        <li>เข้า <a href="https://s3.console.aws.amazon.com/" target="_blank" class="text-yellow-600 underline">AWS S3 Console</a></li>
+                        <li>Create bucket → ตั้งชื่อ → region: <code>ap-southeast-1</code> (Singapore)</li>
+                        <li>Permissions → ปิด "Block all public access" → Bucket Policy: อนุญาต public read สำหรับ object</li>
+                        <li>IAM → Users → Create user → permission: <code>AmazonS3FullAccess</code> → จด Access Key + Secret</li>
+                        <li>วางใน form → กด "ทดสอบ" → "บันทึก"</li>
+                        <li>💡 5GB แรกฟรี/เดือน 12 เดือน · หลังนั้น ~$0.025/GB + $0.09/GB egress</li>
+                    </ol>
+                </details>
+            </div>
+
+            {{-- Action buttons --}}
+            <div class="flex flex-wrap gap-2 mb-3">
+                <button type="button" @click="testConnection()" :disabled="busy"
+                        class="px-4 py-2 text-sm bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white rounded-lg flex items-center gap-1">
+                    <span x-show="!busy">🧪 ทดสอบการเชื่อมต่อ</span>
+                    <span x-show="busy" x-cloak>⏳ กำลังทดสอบ...</span>
+                </button>
+                <button type="button" @click="saveDriver()" :disabled="busy"
+                        class="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-lg flex items-center gap-1">
+                    💾 บันทึก driver
+                </button>
+                <button type="button" @click="showMigrate = !showMigrate"
+                        class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex items-center gap-1">
+                    🚚 ย้ายไฟล์เก่า
+                </button>
+            </div>
+
+            {{-- Result message --}}
+            <div x-show="message" x-cloak x-transition
+                 :class="messageOk ? 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-200 border-emerald-300' : 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-200 border-red-300'"
+                 class="p-3 rounded-lg text-sm border" x-text="message"></div>
+
+            {{-- Migrate section --}}
+            <div x-show="showMigrate" x-cloak x-collapse class="mt-4 p-4 bg-purple-50 dark:bg-purple-900/20 border border-purple-300 dark:border-purple-700 rounded-lg">
+                <h4 class="font-semibold text-gray-900 dark:text-white mb-2">🚚 ย้ายไฟล์เก่าระหว่าง driver</h4>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    ถ้าเปลี่ยน driver แล้ว ไฟล์เก่าจะอยู่ที่ driver เก่า — กดย้ายเพื่อ migrate ไฟล์ทั้งหมดไปยัง driver ใหม่
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mb-3">
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">จาก</label>
+                        <select x-model="migrate.from" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm">
+                            <option value="local">📁 Local</option>
+                            <option value="r2">🟧 R2</option>
+                            <option value="firebase">🔥 Firebase</option>
+                            <option value="gcs">🔵 GCS</option>
+                            <option value="s3">🟨 S3</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">ไป</label>
+                        <select x-model="migrate.to" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-sm">
+                            <option value="local">📁 Local</option>
+                            <option value="r2">🟧 R2</option>
+                            <option value="firebase">🔥 Firebase</option>
+                            <option value="gcs">🔵 GCS</option>
+                            <option value="s3">🟨 S3</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" x-model="migrate.dryRun" class="mr-2 rounded">
+                            <span class="text-gray-700 dark:text-gray-300">🧪 Dry run (ไม่ย้ายจริง)</span>
+                        </label>
+                    </div>
+                </div>
+                <button type="button" @click="runMigrate()" :disabled="busy"
+                        class="px-4 py-2 text-sm bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded">
+                    🚀 เริ่มย้าย
+                </button>
+                <pre x-show="migrateOutput" x-cloak class="mt-3 p-3 bg-gray-900 text-green-400 text-xs font-mono rounded overflow-x-auto max-h-64" x-text="migrateOutput"></pre>
+            </div>
+        </div> {{-- End Voice Storage --}}
+
         {{-- ===== 🙏 Satisfaction Detector (2026-05-07 Phase 2) ===== --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="engagement"
              x-data="{
@@ -3873,6 +4169,152 @@ function fortuneSettings() {
                 btn.disabled = false;
             }
         }
+    };
+}
+
+// 🌥️ (2026-05-18) Voice Storage Alpine component — multi-cloud config + test + migrate
+function voiceStorage(initial) {
+    const csrf = '{{ csrf_token() }}';
+    const urls = {
+        save: '{{ route("admin.fortune.voice-storage.save") }}',
+        test: '{{ route("admin.fortune.voice-storage.test") }}',
+        fixSymlink: '{{ route("admin.fortune.voice-storage.fix-symlink") }}',
+        migrate: '{{ route("admin.fortune.voice-storage.migrate") }}',
+    };
+
+    return {
+        driver: initial.driver || 'local',
+        r2: initial.r2 || { account_id: '', access_key_id: '', secret_access_key: '', bucket: '', public_url: '' },
+        s3: initial.s3 || { access_key_id: '', secret_access_key: '', region: 'ap-southeast-1', bucket: '', endpoint: '', public_url: '' },
+        gcs: initial.gcs || { credentials_path: 'storage/app/firebase-credentials.json', bucket: '', public_url: '' },
+        firebase: initial.firebase || { credentials_path: 'storage/app/firebase-credentials.json', bucket: '' },
+        busy: false,
+        message: '',
+        messageOk: false,
+        showMigrate: false,
+        migrate: { from: 'local', to: 'r2', dryRun: true },
+        migrateOutput: '',
+
+        currentConfig() {
+            return { [this.driver]: this[this.driver] || {} };
+        },
+
+        async testConnection() {
+            this.busy = true;
+            this.message = '';
+            try {
+                const res = await fetch(urls.test, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        override_driver: this.driver,
+                        override_config: this[this.driver] || {},
+                    }),
+                });
+                const data = await res.json();
+                this.messageOk = !!data.success;
+                this.message = data.message || (data.success ? '✅ OK' : '❌ Failed');
+            } catch (e) {
+                this.messageOk = false;
+                this.message = '❌ Fetch error: ' + e.message;
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async saveDriver() {
+            if (!confirm('บันทึก driver: ' + this.driver + ' + config?\n\nหลังบันทึก voice ใหม่จะใช้ driver นี้ทันที')) return;
+            this.busy = true;
+            this.message = '';
+            try {
+                const res = await fetch(urls.save, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        driver: this.driver,
+                        config: {
+                            r2: this.r2,
+                            s3: this.s3,
+                            gcs: this.gcs,
+                            firebase: this.firebase,
+                        },
+                    }),
+                });
+                const data = await res.json();
+                this.messageOk = !!data.success;
+                this.message = data.message || (data.success ? '✅ บันทึกแล้ว' : '❌ Failed');
+            } catch (e) {
+                this.messageOk = false;
+                this.message = '❌ Fetch error: ' + e.message;
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async fixSymlink() {
+            this.busy = true;
+            try {
+                const res = await fetch(urls.fixSymlink, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' },
+                });
+                const data = await res.json();
+                this.messageOk = !!data.success;
+                this.message = data.message;
+            } catch (e) {
+                this.messageOk = false;
+                this.message = '❌ ' + e.message;
+            } finally {
+                this.busy = false;
+            }
+        },
+
+        async runMigrate() {
+            if (this.migrate.from === this.migrate.to) {
+                alert('from กับ to ต้องไม่เหมือนกัน');
+                return;
+            }
+            const confirmMsg = this.migrate.dryRun
+                ? 'ทดลองดูว่าจะย้ายกี่ไฟล์ (dry run — ไม่ย้ายจริง)?'
+                : '⚠️ ย้ายไฟล์ทั้งหมดจาก ' + this.migrate.from + ' → ' + this.migrate.to + ' จริงๆ?\n\nไฟล์ source จะถูกลบหลังย้าย';
+            if (!confirm(confirmMsg)) return;
+
+            this.busy = true;
+            this.migrateOutput = '⏳ กำลังย้าย... (อาจใช้เวลาหลายนาที สำหรับไฟล์เยอะ)';
+            try {
+                const res = await fetch(urls.migrate, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': csrf,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        from: this.migrate.from,
+                        to: this.migrate.to,
+                        dry_run: this.migrate.dryRun,
+                    }),
+                });
+                const data = await res.json();
+                this.messageOk = !!data.success;
+                this.message = data.message;
+                this.migrateOutput = data.output || JSON.stringify(data, null, 2);
+            } catch (e) {
+                this.messageOk = false;
+                this.message = '❌ ' + e.message;
+                this.migrateOutput = e.message;
+            } finally {
+                this.busy = false;
+            }
+        },
     };
 }
 </script>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\FortuneVoicePreset;
+use App\Services\FortuneVoiceStorageService;
 use App\Services\Tts\GoogleCloudTtsProvider;
 use App\Services\Tts\GttsProvider;
 use App\Services\Tts\MiniMaxTtsProvider;
@@ -100,8 +101,12 @@ class FortuneVoicePresetController extends Controller
      */
     public function destroy(FortuneVoicePreset $preset): JsonResponse
     {
-        // ลบ sample audio file ด้วย
+        // ลบ sample audio file ด้วย — ใช้ storage service เผื่อ admin ตั้ง cloud
         if ($preset->sample_audio_path) {
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            $storage = new FortuneVoiceStorageService($settings);
+            // sample ของ preset เก่าอาจอยู่ local — fallback ลบทั้ง 2 ที่
+            $storage->deleteAudio($preset->sample_audio_path);
             Storage::disk('public')->delete($preset->sample_audio_path);
         }
 
@@ -179,26 +184,42 @@ class FortuneVoicePresetController extends Controller
             }
 
             if (! $provider->isAvailable()) {
-                throw new \Exception("Provider '{$preset->provider}' ไม่พร้อมใช้ — เช็ค API key/credentials ก่อน");
+                throw new \Exception("Provider '{$preset->provider}' ไม่พร้อมใช้ — เช็ค API key/credentials ก่อน (ดู /admin/fortune/voice-diagnostic)");
             }
 
-            // ลบ sample เก่า ถ้ามี
+            // ลบ sample เก่า ถ้ามี — ใช้ storage service เผื่อ cloud
+            $storage = new FortuneVoiceStorageService($settings);
             if ($preset->sample_audio_path) {
+                $storage->deleteAudio($preset->sample_audio_path);
                 Storage::disk('public')->delete($preset->sample_audio_path);
             }
 
             $token = Str::random(20);
             $relativePath = 'fortune-voice-samples/preset-'.$preset->id.'-'.$token.'.mp3';
-            $absolutePath = Storage::disk('public')->path($relativePath);
+
+            // TTS provider เขียนลง temp file ก่อน → upload ผ่าน storage service
+            $tempDir = storage_path('app/tmp-voice');
+            if (! is_dir($tempDir)) {
+                @mkdir($tempDir, 0775, true);
+            }
+            $tempPath = $tempDir.'/sample-'.$token.'.mp3';
 
             $result = $provider->synthesize($sampleText, [
                 'voice' => $preset->voice_id,
-                'output_path' => $absolutePath,
+                'output_path' => $tempPath,
                 'language' => $preset->language ?? 'th',
             ]);
 
             if (! $result['success']) {
+                @unlink($tempPath);
                 throw new \Exception($result['error'] ?? 'TTS synthesis failed');
+            }
+
+            // อัปโหลด temp → storage driver ที่ admin เลือก
+            $put = $storage->putAudio($tempPath, $relativePath);
+            if (! $put['success']) {
+                @unlink($tempPath);
+                throw new \Exception('Upload sample ล้มเหลว: '.$put['error']);
             }
 
             $preset->update([
@@ -209,10 +230,11 @@ class FortuneVoicePresetController extends Controller
 
             return response()->json([
                 'success' => true,
-                'audio_url' => Storage::disk('public')->url($relativePath),
+                'audio_url' => $put['url'],
                 'duration_ms' => $result['audio_length_ms'] ?? null,
                 'voice_used' => $result['voice_used'] ?? $preset->voice_id,
-                'message' => 'สร้าง sample audio สำเร็จ',
+                'storage_driver' => $put['disk'],
+                'message' => 'สร้าง sample audio สำเร็จ (เซฟที่ '.$storage->driverName($put['disk']).')',
             ]);
         } catch (\Throwable $e) {
             Log::warning('FortuneVoicePreset: test fail', [

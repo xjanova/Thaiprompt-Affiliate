@@ -249,6 +249,9 @@ class FortuneTellingSetting extends Model
         'voice_summary_max_chars',
         'voice_summary_prompt',
         'voice_summary_intro_message',
+        // 🌥️ (2026-05-18) Voice file cloud storage — แก้ปัญหา disk เต็ม
+        'voice_storage_driver',
+        'voice_storage_config',
         // 🌟 (2026-05-08) Sensitive AI lock specific pool key
         'sensitive_ai_pool_key_id',
         // 💳 (2026-05-09) Stripe Checkout — บัตรต่างประเทศ
@@ -367,6 +370,7 @@ class FortuneTellingSetting extends Model
         'voice_summary_enabled' => 'boolean',
         'voice_summary_fallback_providers' => 'array',
         'voice_summary_max_chars' => 'integer',
+        'voice_storage_config' => 'array',
         'google_tts_speaking_rate' => 'decimal:2',
         // 💳 (2026-05-09) Stripe Checkout
         'enable_stripe_payment' => 'boolean',
@@ -473,6 +477,9 @@ class FortuneTellingSetting extends Model
         'google_tts_speaking_rate' => 0.95,
         'voice_summary_max_chars' => 2000,
         'voice_summary_intro_message' => '🎙️ แม่หมอจันทราอัดเสียงสรุปคำทำนายให้เจ้าชะตาแล้วค่ะ ลองฟังดูนะ ✨',
+        // 🌥️ (2026-05-18) Cloud storage — default local เพื่อ backward compat
+        'voice_storage_driver' => 'local',
+        'voice_storage_config' => null,
         // 🌟 Group Invite + Monthly Free Claim — ปิดเป็น default (admin เปิด + ใส่ URL ก่อน)
         'fortune_group_invite_enabled' => false,
         'monthly_free_claim_enabled' => false,
