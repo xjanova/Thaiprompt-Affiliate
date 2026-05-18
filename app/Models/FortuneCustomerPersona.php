@@ -52,6 +52,13 @@ class FortuneCustomerPersona extends Model
         'observation_count',
         'last_observed_at',
         'last_persona_sync_at',
+        // 🚫 (2026-05-18) Rambler cooldown — ตรวจจับลูกค้าเวิ่นเว้อ + silence 10 ชม
+        'sales_pitch_count',
+        'sales_pitch_failed_count',
+        'time_waster_score',
+        'last_pitch_at',
+        'chat_silenced_until',
+        'last_silence_reason',
     ];
 
     protected $casts = [
@@ -64,6 +71,41 @@ class FortuneCustomerPersona extends Model
         'observation_count' => 'integer',
         'last_observed_at' => 'datetime',
         'last_persona_sync_at' => 'datetime',
+        // 🚫 (2026-05-18) Rambler cooldown casts
+        'sales_pitch_count' => 'integer',
+        'sales_pitch_failed_count' => 'integer',
+        'time_waster_score' => 'integer',
+        'last_pitch_at' => 'datetime',
+        'chat_silenced_until' => 'datetime',
+    ];
+
+    /** Window สำหรับนับ pitch ↔ chitchat (นาที) */
+    public const PITCH_WINDOW_MINUTES = 30;
+
+    /** Threshold จำนวน chitchat-after-pitch ที่ทำให้ trigger silence */
+    public const SILENCE_TRIGGER_THRESHOLD = 3;
+
+    /** ระยะเวลา silence (ชั่วโมง) */
+    public const SILENCE_DURATION_HOURS = 10;
+
+    /** คะแนน time_waster ที่บวกเมื่อ trigger silence แต่ละครั้ง */
+    public const SCORE_INCREMENT_ON_SILENCE = 20;
+
+    /** คะแนน time_waster ที่ลดเมื่อ resume จาก cooldown */
+    public const SCORE_DECAY_ON_RESUME = 10;
+
+    /** Threshold score ที่ inject directive ลง AI prompt */
+    public const SCORE_INJECT_THRESHOLD = 40;
+
+    /**
+     * 🛒 Keyword bypass — ถ้าข้อความลูกค้ามี keyword พวกนี้ → ข้าม silence
+     *
+     * เหตุผล: ลูกค้าอยากซื้อจริง / พร้อมจ่าย / กลับมาถามดูดวง → ต้องตอบ
+     */
+    public const SILENCE_BYPASS_KEYWORDS = [
+        'ดูดวง', 'จ่าย', 'โอน', 'qr', 'คิวอาร์', 'พร้อม', 'พร้อมแล้ว',
+        '39', '99', 'ไพ่', 'เซลติก', 'celtic', 'deep', 'ละเอียด',
+        'สลิป', 'slip', 'ชำระ', 'ค่าบริการ',
     ];
 
     /**
@@ -202,6 +244,14 @@ class FortuneCustomerPersona extends Model
             $lines[] = '• สไตล์การคุย: ' . implode(' / ', $styleParts);
         }
 
+        // 🚫 (2026-05-18) Rambler/time-waster directive — inject เมื่อคะแนนสูง
+        //   เหตุผล: ลูกค้าฟุ้งซ่านไม่ปิดการขายเก่า → AI ต้องตอบสั้น ปฏิเสธ chitchat
+        //   Threshold 40 = ติด silence แล้ว 2 รอบ (20 + 20) → low engagement ชัดเจน
+        $timeWasterScore = (int) ($this->time_waster_score ?? 0);
+        if ($timeWasterScore >= self::SCORE_INJECT_THRESHOLD) {
+            $lines[] = "⚠️ score รบกวน: {$timeWasterScore}/100 (เคยคุยฟุ้งไม่ปิดการขาย) — ตอบสั้น ≤1 ประโยค ไม่ chitchat ปรับเข้าเรื่องดูดวงทันที";
+        }
+
         if (empty($lines)) {
             return ''; // ไม่มีข้อมูล → ไม่ inject block
         }
@@ -209,6 +259,142 @@ class FortuneCustomerPersona extends Model
         return "[👤 CUSTOMER_PERSONA — ใช้ปรับ tone เท่านั้น ห้ามอ้างตรงๆ ในคำตอบ]\n"
             . implode("\n", $lines)
             . "\n⚠️ AI ใช้ข้อมูลนี้ \"ใต้พรม\" — ปรับน้ำเสียง/คำพูดให้เข้ากับลูกค้า แต่อย่าเอ่ยถึงว่า \"จำได้ว่า...\" ตรงๆ";
+    }
+
+    /**
+     * 🛒 (2026-05-18) บันทึก "บอทเสนอขาย" — เพิ่ม count + set last_pitch_at
+     *
+     * Throttle: ถ้า last_pitch_at < 5 นาที → skip (กัน double count flow เดียวกัน)
+     *
+     * @return bool true = บันทึก, false = throttled
+     */
+    public function recordPitch(): bool
+    {
+        // Throttle — pitch flow อาจ trigger หลายจุด (askConfirmation → startDeepFlow → presentTier)
+        if ($this->last_pitch_at && $this->last_pitch_at->gt(now()->subMinutes(5))) {
+            return false;
+        }
+
+        $this->sales_pitch_count = ($this->sales_pitch_count ?? 0) + 1;
+        $this->last_pitch_at = now();
+        $this->save();
+
+        return true;
+    }
+
+    /**
+     * 💤 (2026-05-18) ตรวจว่าข้อความลูกค้ามี keyword bypass silence หรือไม่
+     *
+     * ถ้า true → ดำเนิน flow ปกติ แม้ chat_silenced_until > now
+     * เพื่อให้ลูกค้าที่ "พร้อมจ่าย/ดูดวงต่อ" ไม่โดนตัด
+     */
+    public static function shouldBypassSilence(string $message): bool
+    {
+        $lower = mb_strtolower(trim($message));
+        if ($lower === '') {
+            return false;
+        }
+
+        foreach (self::SILENCE_BYPASS_KEYWORDS as $keyword) {
+            if (mb_strpos($lower, mb_strtolower($keyword)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🤐 (2026-05-18) ตรวจว่า bot ควรเงียบกับลูกค้าคนนี้หรือไม่
+     *
+     * Lazy resume: ถ้า chat_silenced_until <= now → reset failed_count, decay score
+     */
+    public function isChatSilenced(): bool
+    {
+        // Lazy resume — ถ้าหมดเวลาแล้ว clear state
+        if ($this->chat_silenced_until && $this->chat_silenced_until->lte(now())) {
+            $this->resumeFromCooldown();
+            return false;
+        }
+
+        return $this->chat_silenced_until !== null
+            && $this->chat_silenced_until->gt(now());
+    }
+
+    /**
+     * 🔄 (2026-05-18) ปลดล็อค cooldown + decay score
+     *
+     * เรียกอัตโนมัติจาก isChatSilenced() เมื่อ chat_silenced_until <= now
+     */
+    public function resumeFromCooldown(): void
+    {
+        $oldScore = (int) ($this->time_waster_score ?? 0);
+        $newScore = max(0, $oldScore - self::SCORE_DECAY_ON_RESUME);
+
+        $this->chat_silenced_until = null;
+        $this->sales_pitch_failed_count = 0;
+        $this->time_waster_score = $newScore;
+        $this->save();
+    }
+
+    /**
+     * 💬 (2026-05-18) บันทึก "ลูกค้าตอบฟุ้งหลังบอทเสนอ" — increment failed_count
+     *
+     * Caller ต้องตรวจ pre-conditions ก่อนเรียก:
+     *  - last_pitch_at อยู่ใน rolling 30min window
+     *  - looksLikeMetaOrChitchat(message) = true
+     *  - ! shouldBypassSilence(message)
+     *
+     * @return bool true = ทำให้ failed_count ถึง threshold (caller ควร trigger silence)
+     */
+    public function recordChitchatAfterPitch(string $messageText): bool
+    {
+        $this->sales_pitch_failed_count = ($this->sales_pitch_failed_count ?? 0) + 1;
+        $this->save();
+
+        return $this->sales_pitch_failed_count >= self::SILENCE_TRIGGER_THRESHOLD;
+    }
+
+    /**
+     * 🔇 (2026-05-18) Trigger silence cooldown — เงียบ 10 ชม + score+=20
+     *
+     * @param  string|null  $reason  บันทึกเหตุผล (debug + admin UI)
+     */
+    public function triggerSilence(?string $reason = null): void
+    {
+        $this->chat_silenced_until = now()->addHours(self::SILENCE_DURATION_HOURS);
+        $this->time_waster_score = min(
+            100,
+            (int) ($this->time_waster_score ?? 0) + self::SCORE_INCREMENT_ON_SILENCE
+        );
+        $this->last_silence_reason = $reason;
+        $this->save();
+    }
+
+    /**
+     * 🎬 (2026-05-18) สร้าง "เนียน goodbye" message ก่อน silence เริ่ม
+     *
+     * ปรับ tone ตาม communication_style.formality + display_name
+     */
+    public function buildGoodbyeMessage(): string
+    {
+        $style = $this->communication_style ?? [];
+        $formality = strtolower((string) ($style['formality'] ?? 'polite'));
+
+        $name = trim((string) ($this->display_name ?? ''));
+        $greet = $name !== '' ? "คุณ{$name}" : 'จ๊ะ';
+
+        // Formal / polite — สุภาพ
+        if (in_array($formality, ['formal', 'polite', 'very_polite'], true)) {
+            return "ขออภัยค่ะ {$greet} ✨ ตอนนี้แม่หมอติดดูแลลูกค้าหลายท่าน\n"
+                . "ถ้าพร้อมดูดวง พิมพ์ \"ดูดวง\" ได้เลยนะคะ ❤️\n"
+                . "เดี๋ยวกลับมาคุยใหม่ตอนว่างค่ะ 🙏";
+        }
+
+        // Casual / informal — กันเอง
+        return "เดี๋ยวก่อนนะ {$greet} 🌙 แม่ติดดูคนอื่นเยอะ\n"
+            . "พร้อมดูดวงเมื่อไหร่พิมพ์ \"ดูดวง\" มาได้เลย ❤️\n"
+            . "ไว้เจอกันใหม่นะ";
     }
 
     /**

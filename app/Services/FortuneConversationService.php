@@ -658,6 +658,73 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🚫 (2026-05-18) Rambler Cooldown Hard Guard — silent_skip pattern
+            // ═══════════════════════════════════════════════════════════════
+            //   ถ้าลูกค้าโดน mark "เวิ่นเว้อ" (chat_silenced_until > now) + ไม่มี keyword พร้อมซื้อ
+            //   → silent_skip ทันที (ก่อน flow อื่น) — เลียน pattern takeover guard ข้างบน
+            //
+            //   ⚠️ Bypass conditions (ลูกค้าต้องตอบได้แม้ silenced):
+            //     1. shouldBypassSilence keyword (ดูดวง/จ่าย/qr/พร้อม/39/99/...)
+            //     2. มี active reading flow (เก็บวันเกิด/คำถาม/ไพ่/รอจ่าย)
+            //     3. hasPaidActiveReading (บิลค้าง — ต้องส่งคำทำนาย)
+            //     4. cancel dialogue ค้าง (ลูกค้ายกเลิกอยู่ — ต้องคุยจบ)
+            //
+            //   หมายเหตุ: Hook B ใน tryAIChatResponse เก็บเป็น defense in depth
+            try {
+                $silencePlatform = $this->currentPlatform
+                    ?? $this->detectPlatformFromUserId($facebookUserId);
+
+                $shouldCheckSilence = ! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText);
+
+                // Bypass 2: active reading flow
+                if ($shouldCheckSilence) {
+                    try {
+                        if (FortuneReading::hasActiveReading($silencePlatform, $facebookUserId)) {
+                            $shouldCheckSilence = false;
+                        }
+                    } catch (\Throwable $e) {
+                        // fail open — ตอบดีกว่า block
+                        $shouldCheckSilence = false;
+                    }
+                }
+
+                // Bypass 3: paid bill ค้าง
+                if ($shouldCheckSilence && $this->hasPaidActiveReading($facebookUserId)) {
+                    $shouldCheckSilence = false;
+                }
+
+                // Bypass 4: cancel dialogue ค้าง
+                if ($shouldCheckSilence) {
+                    $cancelKey = "fortune:cancel_dialog:{$silencePlatform}:{$facebookUserId}";
+                    if (Cache::has($cancelKey)) {
+                        $shouldCheckSilence = false;
+                    }
+                }
+
+                if ($shouldCheckSilence) {
+                    $personaSvcGuard = app(\App\Services\Fortune\CustomerPersonaService::class);
+                    if ($personaSvcGuard->isChatSilenced($silencePlatform, $facebookUserId)) {
+                        Log::info('Fortune: rambler silence active — silent_skip', [
+                            'platform' => $silencePlatform,
+                            'user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip',
+                            'message' => null,
+                            'reading' => null,
+                        ];
+                    }
+                }
+            } catch (\Throwable $silenceErr) {
+                // Silence check fail → fail open (ตอบปกติ ดีกว่า block customer)
+                Log::debug('Fortune: rambler silence check fail (non-blocking)', [
+                    'error' => $silenceErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🛑 (2026-05-15 v2) Cancel Dialogue Early Route — AI-driven
             // ═══════════════════════════════════════════════════════════════
             //   ถ้าลูกค้าอยู่ใน cancel dialogue (cache มี) → handle ก่อน flow อื่น
@@ -4530,6 +4597,17 @@ class FortuneConversationService
 
             // ปิด conversation เก่าที่ยังค้างอยู่ทั้งหมด
             $this->closeAllActiveConversations($facebookUserId);
+
+            // 🛒 (2026-05-18) Hook A — บันทึก "บอทเสนอขาย" (throttle 5min ใน model)
+            //   จุดนี้ flow แน่นอนว่าจะ pitch (deep enabled + ปิด basic = ต้องจ่าย)
+            try {
+                $platformForPitch = $this->detectPlatformFromUserId($facebookUserId);
+                app(\App\Services\Fortune\CustomerPersonaService::class)
+                    ->recordPitch($platformForPitch, $facebookUserId, $userProfile['name'] ?? null);
+            } catch (\Throwable $e) {
+                // non-blocking
+                Log::debug('Fortune: recordPitch failed (non-blocking)', ['error' => $e->getMessage()]);
+            }
 
             // 🛠️ (2026-05-01) ใช้ !empty เพื่อ fallback empty string → 'คุณ' (?? ไม่ catch '')
             $name = ! empty($userProfile['name']) ? $userProfile['name'] : 'คุณ';
@@ -11572,11 +11650,69 @@ PROMPT;
     protected function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null): ?array
     {
         try {
+            // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
+            //   ถ้าลูกค้าถูก mark "ฟุ้งซ่านไม่ปิดการขาย" + ไม่มี keyword พร้อมซื้อ → return null
+            //   ตรวจ keyword bypass ก่อนเสมอ (ลูกค้าพร้อมจ่ายต้อง pass — อย่าตัดราย!)
+            $platformForSilence = $this->detectPlatformFromUserId($userId);
+            if (! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)) {
+                $personaSvc = app(\App\Services\Fortune\CustomerPersonaService::class);
+                if ($personaSvc->isChatSilenced($platformForSilence, $userId)) {
+                    Log::info('Fortune: AI Chat silenced (rambler cooldown active)', [
+                        'platform' => $platformForSilence,
+                        'user_id' => $userId,
+                        'msg_preview' => mb_substr($messageText, 0, 40),
+                    ]);
+
+                    return null;
+                }
+            }
+
             // เช็คว่าเปิด AI Chat หรือไม่
             if (! ($this->settings->enable_ai_chat ?? false)) {
                 Log::debug('Fortune: AI Chat ปิดอยู่ (enable_ai_chat=false)', ['user_id' => $userId]);
 
                 return null;
+            }
+
+            // 💬 (2026-05-18) Hook C — ตรวจจับ chitchat หลังบอทเสนอขาย (rambler detection)
+            //   ถ้าลูกค้าพิมพ์ chitchat (meta/greeting) ภายใน 30 นาทีหลัง pitch + ไม่มี keyword พร้อมซื้อ:
+            //   - failed_count++
+            //   - ครบ 3 → trigger silence 10 ชม + ส่ง "เนียน goodbye" 1 ข้อความ
+            //   ตรวจก่อน AI call → ประหยัด token + ตัดเร็ว
+            if ($this->looksLikeMetaOrChitchat($messageText)
+                && ! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)) {
+                try {
+                    $personaSvc = app(\App\Services\Fortune\CustomerPersonaService::class);
+                    $chitchatResult = $personaSvc->recordChitchatAfterPitch(
+                        $platformForSilence,
+                        $userId,
+                        $messageText
+                    );
+
+                    if (! empty($chitchatResult['triggered'])) {
+                        // ส่ง "เนียน goodbye" 1 ข้อความ แล้วเงียบในรอบหน้า
+                        $goodbye = $chitchatResult['goodbye_message']
+                            ?? '🌙 เดี๋ยวกลับมาคุยใหม่นะคะ พิมพ์ "ดูดวง" เมื่อพร้อม ❤️';
+
+                        $this->saveConversationMessage($userId, 'user', $messageText);
+                        $this->saveConversationMessage($userId, 'assistant', $goodbye);
+
+                        Log::info('Fortune: rambler cooldown triggered → sent goodbye', [
+                            'platform' => $platformForSilence,
+                            'user_id' => $userId,
+                        ]);
+
+                        return [
+                            'action' => 'ai_chat_response',
+                            'message' => $goodbye,
+                            'reading' => null,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    Log::debug('Fortune: Hook C chitchat detection failed (non-blocking)', [
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             // ✅ Gatekeeper: เช็คทราฟฟิค AI ทั้งระบบก่อนเรียก

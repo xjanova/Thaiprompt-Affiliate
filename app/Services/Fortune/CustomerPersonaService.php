@@ -162,6 +162,151 @@ class CustomerPersonaService
     }
 
     /**
+     * 🛒 (2026-05-18) บันทึก "บอทเสนอขาย" — เรียกใน Hook A
+     *
+     * Throttle 5 นาที (ใน model) — เรียกซ้ำๆ ใน flow เดียวกันได้ปลอดภัย
+     */
+    public function recordPitch(string $platform, string $userId, ?string $displayName = null): bool
+    {
+        try {
+            $persona = FortuneCustomerPersona::getOrCreate($platform, $userId, $displayName);
+            $recorded = $persona->recordPitch();
+
+            if ($recorded) {
+                $this->invalidateCache($platform, $userId);
+
+                Log::info('CustomerPersonaService: recorded sales pitch', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'total_pitches' => $persona->sales_pitch_count,
+                ]);
+            }
+
+            return $recorded;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: recordPitch ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 🤐 (2026-05-18) ตรวจว่า bot ควรเงียบกับลูกค้าคนนี้หรือไม่
+     *
+     * ใช้ใน Hook B — เรียก lazy resume ถ้า cooldown หมด
+     * Caller ต้องตรวจ bypass keyword เอง (FortuneCustomerPersona::shouldBypassSilence)
+     */
+    public function isChatSilenced(string $platform, string $userId): bool
+    {
+        try {
+            $persona = $this->getCached($platform, $userId);
+            if (! $persona) {
+                return false;
+            }
+
+            $wasSilenced = $persona->chat_silenced_until !== null
+                && $persona->chat_silenced_until->gt(now());
+
+            $stillSilenced = $persona->isChatSilenced();
+
+            // ถ้า lazy resume ทำงาน → invalidate cache (state เปลี่ยน)
+            if ($wasSilenced && ! $stillSilenced) {
+                $this->invalidateCache($platform, $userId);
+
+                Log::info('CustomerPersonaService: chat resumed from cooldown', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'new_score' => $persona->time_waster_score,
+                ]);
+            }
+
+            return $stillSilenced;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: isChatSilenced ล้มเหลว (default: not silenced)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * 💬 (2026-05-18) บันทึก "ลูกค้าตอบฟุ้งหลังบอทเสนอ" — Hook C
+     *
+     * ตรวจ pre-conditions:
+     *  - last_pitch_at อยู่ใน rolling 30min window
+     *  - message ไม่ได้มี bypass keyword
+     *  - caller ต้องตรวจ looksLikeMetaOrChitchat() เอง
+     *
+     * @return array{triggered: bool, goodbye_message: ?string}
+     *   triggered = true → silence เริ่ม → caller ส่ง goodbye_message แทน AI response
+     */
+    public function recordChitchatAfterPitch(string $platform, string $userId, string $messageText): array
+    {
+        $result = ['triggered' => false, 'goodbye_message' => null];
+
+        try {
+            // Skip ถ้ามี bypass keyword (ลูกค้าพร้อมจ่าย/ดูดวงต่อ)
+            if (FortuneCustomerPersona::shouldBypassSilence($messageText)) {
+                return $result;
+            }
+
+            $persona = FortuneCustomerPersona::findByPlatformUser($platform, $userId);
+            if (! $persona || ! $persona->last_pitch_at) {
+                return $result;
+            }
+
+            // ต้องอยู่ใน rolling window
+            $windowMinutes = FortuneCustomerPersona::PITCH_WINDOW_MINUTES;
+            if ($persona->last_pitch_at->lt(now()->subMinutes($windowMinutes))) {
+                return $result;
+            }
+
+            $reachedThreshold = $persona->recordChitchatAfterPitch($messageText);
+
+            if ($reachedThreshold) {
+                $reason = sprintf(
+                    'failed %d pitches in %dmin window — example: %s',
+                    $persona->sales_pitch_failed_count,
+                    $windowMinutes,
+                    mb_substr($messageText, 0, 100)
+                );
+
+                $persona->triggerSilence($reason);
+
+                $result['triggered'] = true;
+                $result['goodbye_message'] = $persona->buildGoodbyeMessage();
+
+                Log::info('CustomerPersonaService: silence triggered (chitchat threshold reached)', [
+                    'platform' => $platform,
+                    'user_id' => $userId,
+                    'failed_count' => $persona->sales_pitch_failed_count,
+                    'new_score' => $persona->time_waster_score,
+                    'silenced_until' => $persona->chat_silenced_until?->toIso8601String(),
+                ]);
+
+                $this->invalidateCache($platform, $userId);
+            }
+
+            return $result;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: recordChitchatAfterPitch ล้มเหลว (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $result;
+        }
+    }
+
+    /**
      * 📝 Export persona เป็น Obsidian markdown
      */
     public function toObsidianMarkdown(FortuneCustomerPersona $persona): string

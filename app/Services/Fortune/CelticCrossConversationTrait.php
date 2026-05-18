@@ -441,6 +441,20 @@ trait CelticCrossConversationTrait
         //   atomic Cache::add lock 10s ครอบ resume check + UPA gen + setCelticPendingPayment
         //   ถ้า lock ไม่ได้ = มี request กำลังสร้างอยู่ → wait + เช็ค pending → reuse
         $userId = $reading->facebook_user_id ?? $reading->platform_user_id;
+
+        // 🛒 (2026-05-18) Hook A — บันทึก "บอทเสนอขาย Celtic 99฿" (throttle 5min)
+        try {
+            if (! empty($userId)) {
+                $platformForPitch = $reading->platform
+                    ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                app(\App\Services\Fortune\CustomerPersonaService::class)
+                    ->recordPitch($platformForPitch, $userId, $reading->facebook_user_name ?? null);
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+            \Log::debug('Celtic: recordPitch failed (non-blocking)', ['error' => $e->getMessage()]);
+        }
+
         $lockKey = "fortune:celtic_create_lock:{$userId}";
         $lockAcquired = ! empty($userId) ? \Illuminate\Support\Facades\Cache::add($lockKey, 1, 10) : true;
 
