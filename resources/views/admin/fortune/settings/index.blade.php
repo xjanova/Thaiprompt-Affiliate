@@ -1712,6 +1712,12 @@ Format 2 — JSON array:
             {{-- R2 config --}}
             <div x-show="driver === 'r2'" x-cloak class="mb-4 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-300 dark:border-orange-700">
                 <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🟧 Cloudflare R2 (แนะนำ)</h4>
+                @if(! class_exists(\League\Flysystem\AwsS3V3\AwsS3V3Adapter::class))
+                    <div class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded text-sm">
+                        ⚠️ <strong>ยังไม่ได้ติดตั้ง package</strong> — รันคำสั่งนี้ที่ server ก่อน:<br>
+                        <code class="block mt-1 p-2 bg-gray-900 text-green-400 rounded font-mono text-xs">composer require league/flysystem-aws-s3-v3 "^3.0"</code>
+                    </div>
+                @endif
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div class="md:col-span-2">
                         <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🆔 Account ID</label>
@@ -1823,6 +1829,12 @@ Format 2 — JSON array:
             {{-- S3 config --}}
             <div x-show="driver === 's3'" x-cloak class="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-300 dark:border-yellow-700">
                 <h4 class="font-semibold text-gray-900 dark:text-white mb-3">🟨 AWS S3</h4>
+                @if(! class_exists(\League\Flysystem\AwsS3V3\AwsS3V3Adapter::class))
+                    <div class="mb-3 p-3 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-700 rounded text-sm">
+                        ⚠️ <strong>ยังไม่ได้ติดตั้ง package</strong> — รันคำสั่งนี้ที่ server ก่อน:<br>
+                        <code class="block mt-1 p-2 bg-gray-900 text-green-400 rounded font-mono text-xs">composer require league/flysystem-aws-s3-v3 "^3.0"</code>
+                    </div>
+                @endif
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs text-gray-700 dark:text-gray-300 mb-1">🔑 Access Key ID</label>

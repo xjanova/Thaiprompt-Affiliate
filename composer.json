@@ -13,7 +13,6 @@
         "intervention/image": "^3.11",
         "jenssegers/agent": "^2.6",
         "laravel/framework": "^11.0",
-        "league/flysystem-aws-s3-v3": "^3.0",
         "laravel/reverb": "*",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.12",
