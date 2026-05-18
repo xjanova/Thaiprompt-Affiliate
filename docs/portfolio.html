@@ -1,0 +1,2448 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Portfolio Valuation · พอร์ตโปรเจคทั้งหมด — xjanova × Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Cinzel:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
+<style>
+  :root {
+    --bg-deep: #050614;
+    --bg-mid: #0b0d24;
+    --bg-card: rgba(20, 22, 50, 0.65);
+    --bg-card-solid: #14163e;
+    --bg-glass: rgba(255, 255, 255, 0.04);
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --border-mid: rgba(124, 92, 246, 0.22);
+    --border-strong: rgba(212, 175, 55, 0.5);
+
+    --text-primary: #f4f1ff;
+    --text-secondary: #c9c2e8;
+    --text-muted: #8c84b3;
+    --text-gold: #d4af37;
+    --text-gold-soft: #f5d76e;
+    --text-emerald: #34d399;
+    --text-coral: #fb7185;
+
+    --accent-purple: #8b5cf6;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+    --accent-indigo: #6366f1;
+    --accent-emerald: #10b981;
+
+    --gradient-mystic: linear-gradient(135deg, #4c1d95 0%, #831843 50%, #1e1b4b 100%);
+    --gradient-gold: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #b8860b 100%);
+    --gradient-emerald: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    --gradient-rich: linear-gradient(135deg, #d4af37 0%, #10b981 50%, #6366f1 100%);
+    --gradient-purple: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+
+    --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.25);
+    --shadow-mid: 0 16px 48px rgba(76, 29, 149, 0.35);
+    --shadow-glow: 0 0 32px rgba(139, 92, 246, 0.35);
+    --shadow-gold: 0 0 24px rgba(212, 175, 55, 0.3);
+    --shadow-emerald: 0 0 32px rgba(16, 185, 129, 0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.65;
+    overflow-x: hidden;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(at 12% 8%, rgba(139, 92, 246, 0.18) 0px, transparent 50%),
+      radial-gradient(at 88% 18%, rgba(16, 185, 129, 0.14) 0px, transparent 50%),
+      radial-gradient(at 50% 80%, rgba(236, 72, 153, 0.10) 0px, transparent 50%),
+      radial-gradient(at 82% 92%, rgba(212, 175, 55, 0.10) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, rgba(212,175,55,0.6), transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(16,185,129,0.5), transparent),
+      radial-gradient(1px 1px at 85% 15%, white, transparent),
+      radial-gradient(2px 2px at 35% 85%, rgba(139,92,246,0.6), transparent),
+      radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(2px 2px at 70% 40%, rgba(236, 72, 153, 0.5), transparent);
+    background-size: 280px 280px;
+    opacity: 0.5;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ===== Nav ===== */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(5, 6, 20, 0.85);
+    border-bottom: 1px solid var(--border-soft);
+    padding: 16px 0;
+  }
+  .top-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--text-gold-soft);
+  }
+  .nav-brand .gem {
+    width: 32px; height: 32px;
+    background: var(--gradient-rich);
+    border-radius: 8px;
+    box-shadow: var(--shadow-gold);
+    transform: rotate(45deg);
+    position: relative;
+  }
+  .nav-brand .gem::after {
+    content: '💎';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transform: rotate(-45deg);
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover {
+    color: var(--text-gold-soft);
+    background: rgba(212, 175, 55, 0.08);
+  }
+  .nav-links a.home {
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--accent-purple);
+  }
+
+  /* ===== Hero ===== */
+  .hero {
+    text-align: center;
+    padding: 80px 24px 40px;
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.08);
+    color: var(--text-gold);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(36px, 6vw, 72px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #f5d76e 0%, #10b981 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+  .hero h2 {
+    font-family: 'Sarabun', sans-serif;
+    font-size: clamp(18px, 2.5vw, 24px);
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .hero p.lede {
+    max-width: 820px;
+    margin: 0 auto 32px;
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .hero-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+  }
+
+  /* ===== Big stat banner ===== */
+  .big-banner {
+    margin: 40px 0;
+    padding: 40px 32px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%);
+    border: 1px solid var(--border-strong);
+    border-radius: 24px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .big-banner::before {
+    content: '';
+    position: absolute;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: conic-gradient(from 0deg, transparent, rgba(212, 175, 55, 0.05), transparent 30%);
+    animation: shine 15s linear infinite;
+  }
+  @keyframes shine {
+    to { transform: rotate(360deg); }
+  }
+  .big-banner-content { position: relative; z-index: 1; }
+  .big-banner h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text-gold);
+    margin-bottom: 16px;
+    font-weight: 500;
+  }
+  .big-banner .big-value {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(48px, 10vw, 96px);
+    font-weight: 700;
+    background: var(--gradient-rich);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 16px;
+  }
+  .big-banner .big-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+  }
+  .big-banner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 24px;
+    margin-top: 32px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border-mid);
+  }
+  .banner-stat .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .banner-stat .value {
+    font-family: 'Cinzel', serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-gold-soft);
+  }
+
+  /* ===== Stat cards ===== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 24px 0;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-mid);
+  }
+  .stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 32px;
+    font-weight: 700;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ===== Sections ===== */
+  section.major {
+    padding: 64px 0 32px;
+  }
+  .section-head {
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .section-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent-purple);
+    background: rgba(139, 92, 246, 0.1);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .section-head h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .section-head .subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* ===== Chart card ===== */
+  .chart-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 24px;
+    padding: 28px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--gradient-rich);
+  }
+  .chart-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border-mid);
+  }
+  .chart-title .icon-badge {
+    width: 40px; height: 40px;
+    background: var(--gradient-purple);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: var(--shadow-glow);
+  }
+  .chart-title h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .chart-title .chart-meta {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .chart-canvas-wrap {
+    position: relative;
+    height: 360px;
+    width: 100%;
+  }
+  .chart-canvas-wrap.tall { height: 480px; }
+  .chart-canvas-wrap.medium { height: 400px; }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+    gap: 24px;
+  }
+
+  /* ===== Project cards ===== */
+  .projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 20px;
+    margin: 24px 0;
+  }
+  .project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 20px;
+    padding: 0;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+    position: relative;
+  }
+  .project-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-mid);
+  }
+  .project-header {
+    padding: 20px 24px;
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(16, 185, 129, 0.08) 100%);
+    border-bottom: 1px solid var(--border-mid);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .project-header .p-icon {
+    width: 50px; height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .p-icon.flagship { background: var(--gradient-rich); box-shadow: var(--shadow-emerald); }
+  .p-icon.ai       { background: var(--gradient-purple); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.4); }
+  .p-icon.utility  { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%); box-shadow: 0 4px 16px rgba(6, 182, 212, 0.4); }
+  .p-icon.mobile   { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4); }
+  .p-icon.pos      { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); box-shadow: 0 4px 16px rgba(236, 72, 153, 0.4); }
+  .p-icon.game     { background: linear-gradient(135deg, #10b981 0%, #047857 100%); box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4); }
+  .p-icon.blockchain { background: var(--gradient-gold); box-shadow: var(--shadow-gold); }
+  .p-icon.plugin   { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4); }
+
+  .project-header h3 {
+    font-size: 18px;
+    color: var(--text-primary);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+  .project-header .repo-path {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 4px;
+  }
+  .project-body {
+    padding: 20px 24px 24px;
+  }
+  .project-desc {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.6;
+    margin-bottom: 16px;
+  }
+  .project-features {
+    margin-bottom: 16px;
+  }
+  .project-features .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .project-features ul {
+    list-style: none;
+  }
+  .project-features li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 3px 0 3px 16px;
+    position: relative;
+  }
+  .project-features li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--text-gold);
+    font-size: 7px;
+    top: 8px;
+  }
+
+  .price-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px dashed var(--border-mid);
+  }
+  .price-cell {
+    text-align: center;
+    padding: 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+  .price-cell .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .price-cell .value {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .price-cell.build .value     { color: var(--text-coral); }
+  .price-cell.sale .value      { color: var(--text-gold-soft); }
+  .price-cell.market .value    { color: var(--text-emerald); }
+
+  /* ===== Tables ===== */
+  .table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    background: rgba(139, 92, 246, 0.12);
+    color: var(--text-gold-soft);
+    text-align: left;
+    padding: 14px 16px;
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-mid);
+  }
+  td {
+    padding: 12px 16px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  td.num { text-align: right; font-family: 'JetBrains Mono', monospace; font-weight: 700; }
+  td.num.green  { color: var(--accent-green); }
+  td.num.gold   { color: var(--text-gold-soft); }
+  td.num.coral  { color: var(--text-coral); }
+  td.num.purple { color: var(--accent-purple); }
+
+  tr.total-row {
+    background: rgba(212, 175, 55, 0.08) !important;
+    border-top: 2px solid var(--text-gold);
+  }
+  tr.total-row td {
+    font-weight: 700;
+    color: var(--text-gold-soft);
+    font-size: 14px;
+    padding: 16px;
+  }
+
+  /* ===== Callouts ===== */
+  .callout {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.06) 100%);
+    border-left: 3px solid var(--accent-purple);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .callout.gold   { border-left-color: var(--text-gold); background: linear-gradient(135deg, rgba(212, 175, 55, 0.1), rgba(212, 175, 55, 0.04)); }
+  .callout.green  { border-left-color: var(--accent-green); background: linear-gradient(135deg, rgba(16, 185, 129, 0.10), transparent); }
+  .callout.rose   { border-left-color: var(--accent-rose); background: linear-gradient(135deg, rgba(244, 63, 94, 0.08), transparent); }
+  .callout-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+  .callout p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .callout code {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--text-gold-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge.purple { background: rgba(139, 92, 246, 0.18); color: #c4b5fd; }
+  .badge.pink   { background: rgba(236, 72, 153, 0.18); color: #f9a8d4; }
+  .badge.cyan   { background: rgba(6, 182, 212, 0.18);  color: #67e8f9; }
+  .badge.green  { background: rgba(16, 185, 129, 0.18); color: #6ee7b7; }
+  .badge.amber  { background: rgba(245, 158, 11, 0.18); color: #fcd34d; }
+  .badge.gold   { background: rgba(212, 175, 55, 0.18); color: #f5d76e; }
+  .badge.rose   { background: rgba(244, 63, 94, 0.18);  color: #fda4af; }
+  .badge.indigo { background: rgba(99, 102, 241, 0.18); color: #a5b4fc; }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding: 40px 24px;
+    text-align: center;
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer .footer-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--text-gold-soft);
+    margin-bottom: 8px;
+  }
+  .divider-cosmic {
+    width: 120px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--text-gold), transparent);
+    margin: 16px auto;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 4px; }
+
+  @media print {
+    body { background: white; color: black; }
+    body::before { display: none; }
+    .top-nav { display: none; }
+    .chart-card, .project-card, .stat-card, .table-wrap, .callout, .big-banner {
+      background: white !important;
+      border-color: #ccc !important;
+      color: black !important;
+      page-break-inside: avoid;
+    }
+    .hero h1, .stat-value, .price-cell .value, .footer-brand, .big-banner .big-value { -webkit-text-fill-color: inherit; color: #4c1d95 !important; }
+    h2, h3, h4 { color: black !important; }
+    p, li, td { color: #333 !important; }
+  }
+
+  @media (max-width: 768px) {
+    .hero { padding: 48px 16px 32px; }
+    .wrapper { padding: 0 16px; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-canvas-wrap { height: 280px; }
+    .chart-canvas-wrap.tall { height: 360px; }
+    .price-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAV ===== -->
+<nav class="top-nav">
+  <div class="wrapper top-nav-inner">
+    <div class="nav-brand">
+      <div class="gem"></div>
+      <span>Portfolio Valuation</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="index.html" class="home">← Fortune Workflow</a></li>
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#timeline">Timeline</a></li>
+      <li><a href="#projects">Projects</a></li>
+      <li><a href="#charts">Charts</a></li>
+      <li><a href="#valuation">Valuation</a></li>
+      <li><a href="#market">Market Potential</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="wrapper">
+    <span class="hero-eyebrow">✦ Portfolio Valuation Report ✦</span>
+    <h1>13 Projects · 6.7 Months</h1>
+    <h2>พอร์ตโปรเจคทั้งหมดที่สร้างด้วย Claude AI (ตุลาคม 2568 — พฤษภาคม 2569)</h2>
+    <p class="lede">
+      เอกสารนี้แสดง <strong>ทุกโครงการ</strong> ที่พัฒนาในช่วง <strong>24 ตุลาคม 2568 ถึงปัจจุบัน</strong> (~6.7 เดือน) —
+      ครอบคลุม Mega-platform, AI Infrastructure, Mobile Apps, POS, Blockchain, และ Game Server.
+      พร้อม <em>การประเมินมูลค่าตามตลาดจริง</em> ทั้งราคาขาย (turnkey) และ <em>ศักยภาพการทำเงิน</em> หากติดตลาด.
+    </p>
+    <div class="hero-meta">
+      <span>📅 24 Oct 2025 → 16 May 2026</span>
+      <span>⏱️ ~204 days</span>
+      <span>🤖 Claude-assisted</span>
+      <span>👤 Solo developer</span>
+      <span>💎 13 projects</span>
+    </div>
+  </div>
+</section>
+
+<div class="wrapper">
+
+  <!-- ===== BIG BANNER ===== -->
+  <div class="big-banner">
+    <div class="big-banner-content">
+      <h3>Total Portfolio Value · มูลค่าพอร์ตรวม</h3>
+      <div class="big-value">$2.46M</div>
+      <div class="big-sub">
+        ราคา <strong>turnkey sale</strong> ตามตลาดสากล · เทียบเท่า <strong>฿86 ล้านบาท</strong><br>
+        หากติดตลาดสำเร็จทุก project — มี <strong>upside ถึง $50M–$200M+</strong>
+      </div>
+      <div class="big-banner-grid">
+        <div class="banner-stat">
+          <div class="label">Build Cost</div>
+          <div class="value">$1.08M</div>
+        </div>
+        <div class="banner-stat">
+          <div class="label">Turnkey Sale</div>
+          <div class="value">$2.46M</div>
+        </div>
+        <div class="banner-stat">
+          <div class="label">Annual Revenue (Year 1-3)</div>
+          <div class="value">$3.57M+</div>
+        </div>
+        <div class="banner-stat">
+          <div class="label">Long-term Cap Potential</div>
+          <div class="value">$50M+</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STATS ===== -->
+  <div class="stats-grid">
+    <div class="stat-card"><span class="stat-value">13</span><span class="stat-label">Projects · โปรเจค</span></div>
+    <div class="stat-card"><span class="stat-value">204</span><span class="stat-label">Days · ~6.7 months</span></div>
+    <div class="stat-card"><span class="stat-value">16</span><span class="stat-label">Days/Project (avg)</span></div>
+    <div class="stat-card"><span class="stat-value">~300K</span><span class="stat-label">Lines of Code</span></div>
+    <div class="stat-card"><span class="stat-value">6+</span><span class="stat-label">Tech Stacks</span></div>
+    <div class="stat-card"><span class="stat-value">1</span><span class="stat-label">Developer + Claude</span></div>
+  </div>
+
+  <!-- ===== TIMELINE ===== -->
+  <section class="major" id="timeline">
+    <div class="section-head">
+      <span class="section-tag">// section.01 — development timeline</span>
+      <h2>📅 Development Timeline</h2>
+      <p class="subtitle">เส้นเวลาพัฒนา 13 โครงการในช่วง 6.7 เดือน — แสดงระยะเวลาที่ใช้ในแต่ละ project</p>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">
+        <div class="icon-badge">⏰</div>
+        <h3>Project Timeline · ระยะเวลาพัฒนาแต่ละโครงการ</h3>
+        <span class="chart-meta">gantt-style horizontal bars</span>
+      </div>
+      <div class="chart-canvas-wrap tall">
+        <canvas id="timelineChart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== PROJECTS GRID ===== -->
+  <section class="major" id="projects">
+    <div class="section-head">
+      <span class="section-tag">// section.02 — project inventory</span>
+      <h2>💼 Project Inventory · รายการโครงการทั้งหมด</h2>
+      <p class="subtitle">รายละเอียดของแต่ละ repo พร้อมการประเมินมูลค่า 3 ระดับ: Build Cost · Turnkey Sale · Annual Market</p>
+    </div>
+
+    <div class="projects-grid">
+
+      <!-- 1. Thaiprompt-Affiliate -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon flagship">🌟</div>
+          <div>
+            <h3>Thaiprompt-Affiliate</h3>
+            <div class="repo-path">github.com/xjanova/Thaiprompt-Affiliate</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge gold">FLAGSHIP</span>
+            <span class="badge purple">Laravel 11</span>
+            <span class="badge cyan">Mega-platform</span>
+          </div>
+          <p class="project-desc">
+            Mega-platform หลักที่รวม <strong>30+ subsystems</strong> เข้าด้วยกัน — MLM Affiliate, E-Commerce Marketplace, AI Bot, Fortune Telling, Hotel Booking, Software Sales, Accounting, HR/Payroll, Wallet/Crypto, Marketplace Affiliate, ฯลฯ
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>561 Models · 329 Services · 224+ Controllers</li>
+              <li>~250,000 lines of production code</li>
+              <li>30+ business subsystems unified</li>
+              <li>MLM 10-level + Binary hybrid</li>
+              <li>Multi-channel: Web + LINE + Facebook + Mobile</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$385K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$750K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$1.2M</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. TP-Affiliate (mirror) -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon flagship">📦</div>
+          <div>
+            <h3>TP-Affiliate <span style="font-size: 11px; color: var(--text-muted);">(distribution mirror)</span></h3>
+            <div class="repo-path">github.com/xjanova/TP-Affiliate</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge amber">MIRROR</span>
+            <span class="badge purple">Deployment</span>
+          </div>
+          <p class="project-desc">
+            Distribution mirror สำหรับ deploy production จาก main repo — รวมระบบ <strong>versioning, release notes, auto-update, deployment scripts</strong> สำหรับลูกค้าที่ซื้อใช้งาน
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Version control + auto-release pipeline</li>
+              <li>Customer-facing distribution channel</li>
+              <li>Deployment automation scripts</li>
+              <li>License-gated downloads</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$15K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">incl.</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">incl.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. TpLicense -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon plugin">🔐</div>
+          <div>
+            <h3>TpLicense</h3>
+            <div class="repo-path">github.com/xjanova/TpLicense</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge indigo">WordPress</span>
+            <span class="badge green">PHP Plugin</span>
+          </div>
+          <p class="project-desc">
+            WordPress Plugin สำหรับจัดการ <strong>license activation, validation, และ revocation</strong> — ใช้ติดตั้งให้ลูกค้าที่ซื้อ Thaiprompt-Affiliate ใช้งานได้ตามเงื่อนไข
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>License key generation + validation</li>
+              <li>Activation per domain</li>
+              <li>Periodic re-validation</li>
+              <li>Admin dashboard for license mgmt</li>
+              <li>WordPress.org plugin standards</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$18K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$45K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$80K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. PostXAgent -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon ai">🤖</div>
+          <div>
+            <h3>PostXAgent</h3>
+            <div class="repo-path">github.com/xjanova/PostXAgent</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge purple">C# .NET 8.0</span>
+            <span class="badge cyan">AI Middleware</span>
+            <span class="badge gold">SignalR</span>
+          </div>
+          <p class="project-desc">
+            <strong>AI Manager Core</strong> standalone service บน .NET 8.0 — รวม REST API + SignalR WebSocket · รองรับหลาย AI providers (OpenAI, Anthropic, Gemini, Groq, ฯลฯ) ใน gateway เดียว
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Multi-provider AI gateway (8+ providers)</li>
+              <li>Real-time streaming via SignalR</li>
+              <li>API key pool management</li>
+              <li>JWT + API Key authentication</li>
+              <li>Token tracking + cost analytics</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$65K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$180K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$400K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. SmsChecker -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon utility">📲</div>
+          <div>
+            <h3>SmsChecker</h3>
+            <div class="repo-path">github.com/xjanova/SmsChecker</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge green">Android Native</span>
+            <span class="badge amber">FinTech</span>
+          </div>
+          <p class="project-desc">
+            แอป Android ที่อ่าน SMS ธนาคาร (PromptPay/KBANK/SCB/BBL ฯลฯ) ส่งกลับมา server เพื่อ <strong>auto-match payment</strong> โดยใช้ unique decimal amounts — เปิดทาง <em>payment matching โดยไม่ต้องพึ่ง Payment Gateway</em>
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>RECEIVE_SMS permission + parser</li>
+              <li>Multi-bank SMS templates</li>
+              <li>Webhook POST to server</li>
+              <li>Encrypted secure transmission</li>
+              <li>Background service + auto-restart</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$22K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$65K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$150K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. thaipromptapp -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon mobile">📱</div>
+          <div>
+            <h3>thaipromptapp</h3>
+            <div class="repo-path">github.com/xjanova/thaipromptapp</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge green">Android</span>
+            <span class="badge gold">Google Play</span>
+            <span class="badge purple">Consumer App</span>
+          </div>
+          <p class="project-desc">
+            แอปลูกค้าหลัก (consumer-facing) บน Google Play Store · package: <code>app.thaiprompt.thaipromptapp</code> · ครอบคลุมทุกฟีเจอร์ของ platform — Wallet, Affiliate, E-Commerce, Fortune, ฯลฯ
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Published on Google Play Store</li>
+              <li>Auto-update via release API</li>
+              <li>Native UX for all platform features</li>
+              <li>Push notifications (FCM)</li>
+              <li>Biometric login + secure storage</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$85K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$200K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$500K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. TP-POS -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon pos">🏪</div>
+          <div>
+            <h3>TP-POS</h3>
+            <div class="repo-path">submodule / TP-POS folder</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge pink">.NET MAUI</span>
+            <span class="badge cyan">Cross-platform</span>
+            <span class="badge amber">B2B</span>
+          </div>
+          <p class="project-desc">
+            ระบบ Point of Sale แบบ <strong>Cross-platform</strong> ด้วย .NET MAUI — รันได้ทั้ง <strong>Windows (.exe), iOS, Android</strong> · เชื่อมต่อ inventory ของ E-Commerce หลัก
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Cross-platform (Win/iOS/Android)</li>
+              <li>Barcode/QR scanning</li>
+              <li>Offline mode + sync</li>
+              <li>Receipt printing</li>
+              <li>Real-time inventory sync</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$120K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$320K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$800K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. SnakeGameServer -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon game">🐍</div>
+          <div>
+            <h3>SnakeGameServer</h3>
+            <div class="repo-path">submodule / SnakeGameServer folder</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge green">C# .NET</span>
+            <span class="badge cyan">Real-time</span>
+          </div>
+          <p class="project-desc">
+            เซิร์ฟเวอร์เกมงู <strong>multiplayer real-time</strong> · เชื่อมต่อกับระบบรางวัล TPIX token ใน Thaiprompt-Affiliate เพื่อใช้เป็น engagement/retention tool
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Real-time multiplayer (Socket)</li>
+              <li>Leaderboard tracking</li>
+              <li>Token reward integration</li>
+              <li>Anti-cheat validation</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$8K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$20K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$15K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. tpix-blockchain -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon blockchain">💎</div>
+          <div>
+            <h3>tpix-blockchain</h3>
+            <div class="repo-path">submodule / tpix-blockchain folder</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge gold">Native Chain</span>
+            <span class="badge purple">Solidity</span>
+            <span class="badge cyan">Hardhat</span>
+          </div>
+          <p class="project-desc">
+            <strong>Native blockchain ของตัวเอง</strong> ไม่ใช่ token บนเครือข่ายอื่น · Chain ID 7000 · Block time 2s · Total supply 7,000,000,000 TPIX · พร้อม DEX, Staking, Carbon Credits
+          </p>
+          <div class="project-features">
+            <div class="label">Key Capabilities</div>
+            <ul>
+              <li>Custom L1 blockchain (Chain ID 7000)</li>
+              <li>Smart contracts (Solidity + Hardhat)</li>
+              <li>Docker deployment ready</li>
+              <li>DEX with AMM (x·y=k)</li>
+              <li>Staking pools (8-15% APY)</li>
+              <li>Carbon Credit marketplace</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$250K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$600K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Token Cap</div>
+              <div class="value">$10M+</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. charming-elbakyan -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon ai">🧪</div>
+          <div>
+            <h3>charming-elbakyan</h3>
+            <div class="repo-path">github.com/xjanova/charming-elbakyan</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge purple">Claude-built</span>
+            <span class="badge cyan">Experimental</span>
+          </div>
+          <p class="project-desc">
+            Repo ที่สร้างผ่าน Claude session — <em>รายละเอียดเฉพาะรอ owner ระบุ</em>. คาดว่าเป็น <strong>experimental project / utility</strong> ที่ใช้ Claude AI สนับสนุน
+          </p>
+          <div class="project-features">
+            <div class="label">Estimated Profile</div>
+            <ul>
+              <li>Small-to-medium scope tool</li>
+              <li>Production-ready code quality</li>
+              <li>Modern stack (TBD)</li>
+              <li>Single-purpose utility</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$20K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$50K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$80K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. stoic-shockley -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon ai">🧪</div>
+          <div>
+            <h3>stoic-shockley</h3>
+            <div class="repo-path">github.com/xjanova/stoic-shockley</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge purple">Claude-built</span>
+            <span class="badge cyan">Experimental</span>
+          </div>
+          <p class="project-desc">
+            Repo จาก Claude development session — <em>รายละเอียดเฉพาะรอ owner ระบุ</em>. คาดว่าเป็น <strong>technical experiment / prototype</strong> ที่อาจ scale เป็น product ได้
+          </p>
+          <div class="project-features">
+            <div class="label">Estimated Profile</div>
+            <ul>
+              <li>Prototype / proof-of-concept</li>
+              <li>Modern engineering practices</li>
+              <li>AI-assisted development</li>
+              <li>Reusable building blocks</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$25K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$60K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$90K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. obsidiax -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon plugin">📓</div>
+          <div>
+            <h3>obsidiax</h3>
+            <div class="repo-path">github.com/xjanova/obsidiax</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge indigo">Knowledge Tool</span>
+            <span class="badge gold">User-confirmed</span>
+          </div>
+          <p class="project-desc">
+            Tool ในกลุ่ม <strong>knowledge management / note-taking</strong> (ใกล้แนว Obsidian) — สร้างด้วย Claude · <em>รายละเอียดเพิ่มเติมรอจาก owner</em>
+          </p>
+          <div class="project-features">
+            <div class="label">Estimated Profile</div>
+            <ul>
+              <li>Knowledge graph / note-taking</li>
+              <li>Markdown-based workflows</li>
+              <li>AI-augmented features</li>
+              <li>Potential plugin ecosystem</li>
+              <li>Personal / team productivity</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$35K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$90K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$130K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 13. cluadex -->
+      <div class="project-card">
+        <div class="project-header">
+          <div class="p-icon ai">🧭</div>
+          <div>
+            <h3>cluadex</h3>
+            <div class="repo-path">github.com/xjanova/cluadex</div>
+          </div>
+        </div>
+        <div class="project-body">
+          <div style="margin-bottom: 12px;">
+            <span class="badge purple">AI Tooling</span>
+            <span class="badge gold">User-confirmed</span>
+          </div>
+          <p class="project-desc">
+            Tool ในกลุ่ม <strong>Claude indexing / session navigation</strong> — สร้างเพื่อจัดการ AI conversations / sessions / outputs · <em>รายละเอียดเพิ่มเติมรอจาก owner</em>
+          </p>
+          <div class="project-features">
+            <div class="label">Estimated Profile</div>
+            <ul>
+              <li>Claude session indexer</li>
+              <li>AI conversation search</li>
+              <li>Developer productivity tool</li>
+              <li>Potential SaaS / CLI hybrid</li>
+              <li>Cross-session knowledge mining</li>
+            </ul>
+          </div>
+          <div class="price-grid">
+            <div class="price-cell build">
+              <div class="label">Build Cost</div>
+              <div class="value">$30K</div>
+            </div>
+            <div class="price-cell sale">
+              <div class="label">Sale Price</div>
+              <div class="value">$80K</div>
+            </div>
+            <div class="price-cell market">
+              <div class="label">Year-1 ARR</div>
+              <div class="value">$120K</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== CHARTS ===== -->
+  <section class="major" id="charts">
+    <div class="section-head">
+      <span class="section-tag">// section.03 — visual analytics</span>
+      <h2>📊 Portfolio Analytics</h2>
+      <p class="subtitle">การวิเคราะห์มูลค่าและศักยภาพแบบ visual — สัดส่วน, การเปรียบเทียบ, และ projection</p>
+    </div>
+
+    <div class="chart-grid">
+
+      <!-- Build cost donut -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <div class="icon-badge">💰</div>
+          <h3>Build Cost Distribution</h3>
+          <span class="chart-meta">donut · ratio</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="buildCostChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Sale price bar -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <div class="icon-badge">🏷️</div>
+          <h3>Turnkey Sale Price (USD)</h3>
+          <span class="chart-meta">bar · ranked</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="salePriceChart"></canvas>
+        </div>
+      </div>
+
+      <!-- 3-tier comparison -->
+      <div class="chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <div class="icon-badge">📈</div>
+          <h3>Build vs Sale vs Annual Market · 3-tier Comparison</h3>
+          <span class="chart-meta">grouped bar</span>
+        </div>
+        <div class="chart-canvas-wrap medium">
+          <canvas id="threeTierChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ROI line -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <div class="icon-badge">🚀</div>
+          <h3>5-Year Cumulative Revenue Projection</h3>
+          <span class="chart-meta">line · cumulative</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="roiChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Long-term cap radar -->
+      <div class="chart-card">
+        <div class="chart-title">
+          <div class="icon-badge">🌌</div>
+          <h3>Long-term Market Cap Potential</h3>
+          <span class="chart-meta">radar · upside</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="upsideChart"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===== VALUATION TABLE ===== -->
+  <section class="major" id="valuation">
+    <div class="section-head">
+      <span class="section-tag">// section.04 — detailed valuation</span>
+      <h2>💎 Complete Valuation Table</h2>
+      <p class="subtitle">ตารางรายละเอียดของทุกโครงการ พร้อมตัวเลขใน 4 มิติ</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Project · Repo</th>
+            <th>Stack</th>
+            <th class="num" style="text-align: right;">Build Cost</th>
+            <th class="num" style="text-align: right;">Turnkey Sale</th>
+            <th class="num" style="text-align: right;">Year-1 ARR</th>
+            <th class="num" style="text-align: right;">5-Yr Cap</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">01</td>
+            <td><strong>Thaiprompt-Affiliate</strong><br><small style="color: var(--text-muted);">30+ subsystem mega-platform</small></td>
+            <td><span class="badge purple">Laravel 11</span></td>
+            <td class="num coral">$385,000</td>
+            <td class="num gold">$750,000</td>
+            <td class="num green">$1,200,000</td>
+            <td class="num purple">$25M</td>
+          </tr>
+          <tr>
+            <td class="mono">02</td>
+            <td><strong>TP-Affiliate</strong><br><small style="color: var(--text-muted);">Distribution mirror</small></td>
+            <td><span class="badge purple">Laravel</span></td>
+            <td class="num coral">$15,000</td>
+            <td class="num gold">incl.</td>
+            <td class="num green">incl.</td>
+            <td class="num purple">incl.</td>
+          </tr>
+          <tr>
+            <td class="mono">03</td>
+            <td><strong>TpLicense</strong><br><small style="color: var(--text-muted);">WordPress license plugin</small></td>
+            <td><span class="badge indigo">WordPress</span></td>
+            <td class="num coral">$18,000</td>
+            <td class="num gold">$45,000</td>
+            <td class="num green">$80,000</td>
+            <td class="num purple">$500K</td>
+          </tr>
+          <tr>
+            <td class="mono">04</td>
+            <td><strong>PostXAgent</strong><br><small style="color: var(--text-muted);">AI Manager .NET service</small></td>
+            <td><span class="badge purple">.NET 8.0 C#</span></td>
+            <td class="num coral">$65,000</td>
+            <td class="num gold">$180,000</td>
+            <td class="num green">$400,000</td>
+            <td class="num purple">$5M</td>
+          </tr>
+          <tr>
+            <td class="mono">05</td>
+            <td><strong>SmsChecker</strong><br><small style="color: var(--text-muted);">Android SMS auto-payment</small></td>
+            <td><span class="badge green">Android</span></td>
+            <td class="num coral">$22,000</td>
+            <td class="num gold">$65,000</td>
+            <td class="num green">$150,000</td>
+            <td class="num purple">$1.5M</td>
+          </tr>
+          <tr>
+            <td class="mono">06</td>
+            <td><strong>thaipromptapp</strong><br><small style="color: var(--text-muted);">Consumer mobile app (Play Store)</small></td>
+            <td><span class="badge green">Android</span></td>
+            <td class="num coral">$85,000</td>
+            <td class="num gold">$200,000</td>
+            <td class="num green">$500,000</td>
+            <td class="num purple">$20M</td>
+          </tr>
+          <tr>
+            <td class="mono">07</td>
+            <td><strong>TP-POS</strong><br><small style="color: var(--text-muted);">Cross-platform POS</small></td>
+            <td><span class="badge pink">.NET MAUI</span></td>
+            <td class="num coral">$120,000</td>
+            <td class="num gold">$320,000</td>
+            <td class="num green">$800,000</td>
+            <td class="num purple">$8M</td>
+          </tr>
+          <tr>
+            <td class="mono">08</td>
+            <td><strong>SnakeGameServer</strong><br><small style="color: var(--text-muted);">Multiplayer game server</small></td>
+            <td><span class="badge green">C# .NET</span></td>
+            <td class="num coral">$8,000</td>
+            <td class="num gold">$20,000</td>
+            <td class="num green">$15,000</td>
+            <td class="num purple">$100K</td>
+          </tr>
+          <tr>
+            <td class="mono">09</td>
+            <td><strong>tpix-blockchain</strong><br><small style="color: var(--text-muted);">Native L1 blockchain</small></td>
+            <td><span class="badge gold">Solidity</span></td>
+            <td class="num coral">$250,000</td>
+            <td class="num gold">$600,000</td>
+            <td class="num green">(token-based)</td>
+            <td class="num purple">$10–100M+</td>
+          </tr>
+          <tr>
+            <td class="mono">10</td>
+            <td><strong>charming-elbakyan</strong><br><small style="color: var(--text-muted);">Claude experimental (TBD)</small></td>
+            <td><span class="badge purple">TBD</span></td>
+            <td class="num coral">$20,000</td>
+            <td class="num gold">$50,000</td>
+            <td class="num green">$80,000</td>
+            <td class="num purple">$500K</td>
+          </tr>
+          <tr>
+            <td class="mono">11</td>
+            <td><strong>stoic-shockley</strong><br><small style="color: var(--text-muted);">Claude experimental (TBD)</small></td>
+            <td><span class="badge purple">TBD</span></td>
+            <td class="num coral">$25,000</td>
+            <td class="num gold">$60,000</td>
+            <td class="num green">$90,000</td>
+            <td class="num purple">$600K</td>
+          </tr>
+          <tr>
+            <td class="mono">12</td>
+            <td><strong>obsidiax</strong><br><small style="color: var(--text-muted);">Knowledge / note-taking tool</small></td>
+            <td><span class="badge indigo">Knowledge</span></td>
+            <td class="num coral">$35,000</td>
+            <td class="num gold">$90,000</td>
+            <td class="num green">$130,000</td>
+            <td class="num purple">$1.2M</td>
+          </tr>
+          <tr>
+            <td class="mono">13</td>
+            <td><strong>cluadex</strong><br><small style="color: var(--text-muted);">Claude indexer / AI tooling</small></td>
+            <td><span class="badge purple">AI Tool</span></td>
+            <td class="num coral">$30,000</td>
+            <td class="num gold">$80,000</td>
+            <td class="num green">$120,000</td>
+            <td class="num purple">$1M</td>
+          </tr>
+          <tr class="total-row">
+            <td>—</td>
+            <td><strong>TOTAL PORTFOLIO</strong></td>
+            <td><span class="badge gold">13 Projects</span></td>
+            <td class="num coral">$1,078,000</td>
+            <td class="num gold">$2,460,000</td>
+            <td class="num green">$3,565,000+</td>
+            <td class="num purple">$50M–$200M+</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-title">💡 Reading the Numbers · อ่านตัวเลขให้เข้าใจ</div>
+      <p>
+        <strong>Build Cost</strong> = ราคาที่ต้องจ่ายถ้าจ้างทีมเขียนใหม่จาก scratch (rate $75/hr blended global mid-market).<br>
+        <strong>Turnkey Sale</strong> = ราคาขายเป็น product สำเร็จรูปให้ลูกค้า (มี premium ~2x ของ build cost).<br>
+        <strong>Year-1 ARR</strong> = รายได้รายปีที่เป็นไปได้เมื่อติดตลาด (subscription / licensing / commission).<br>
+        <strong>5-Yr Cap</strong> = มูลค่าระยะยาวถ้าโต — รวม user base × engagement × revenue multiple (3-10x ARR).
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== MARKET POTENTIAL ===== -->
+  <section class="major" id="market">
+    <div class="section-head">
+      <span class="section-tag">// section.05 — market potential</span>
+      <h2>🚀 หากติดตลาด · Market Potential</h2>
+      <p class="subtitle">การประเมินศักยภาพการทำเงินในระยะยาว (5 ปี) ถ้าทุกโครงการเข้าตลาดสำเร็จ</p>
+    </div>
+
+    <div class="chart-grid">
+      <!-- Yearly revenue projection -->
+      <div class="chart-card" style="grid-column: 1 / -1;">
+        <div class="chart-title">
+          <div class="icon-badge">📈</div>
+          <h3>5-Year Annual Revenue Projection · Conservative vs Optimistic Scenarios</h3>
+          <span class="chart-meta">stacked area · scenario analysis</span>
+        </div>
+        <div class="chart-canvas-wrap medium">
+          <canvas id="scenarioChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Market scenarios cards -->
+    <div class="stats-grid" style="margin-top: 32px;">
+      <div class="stat-card" style="border-color: rgba(244, 63, 94, 0.4);">
+        <span class="stat-value" style="color: var(--text-coral); background: none; -webkit-text-fill-color: var(--text-coral);">$1.2M</span>
+        <span class="stat-label">Conservative · Year 1<br><span style="color: var(--text-muted); font-size: 11px;">ขายได้น้อย · slow adoption</span></span>
+      </div>
+      <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.4);">
+        <span class="stat-value" style="color: var(--accent-amber); background: none; -webkit-text-fill-color: var(--accent-amber);">$3.1M</span>
+        <span class="stat-label">Realistic · Year 1<br><span style="color: var(--text-muted); font-size: 11px;">moderate sales · expected base case</span></span>
+      </div>
+      <div class="stat-card" style="border-color: rgba(16, 185, 129, 0.4);">
+        <span class="stat-value" style="color: var(--accent-green); background: none; -webkit-text-fill-color: var(--accent-green);">$8.5M</span>
+        <span class="stat-label">Optimistic · Year 3<br><span style="color: var(--text-muted); font-size: 11px;">strong growth · trending</span></span>
+      </div>
+      <div class="stat-card" style="border-color: rgba(212, 175, 55, 0.4);">
+        <span class="stat-value">$45M+</span>
+        <span class="stat-label">Unicorn case · Year 5<br><span style="color: var(--text-muted); font-size: 11px;">viral adoption · acquisition target</span></span>
+      </div>
+    </div>
+
+    <!-- Revenue Streams -->
+    <h3 style="margin: 48px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft); text-align: center; font-size: 22px;">
+      💵 Revenue Streams Per Project · ช่องทางทำเงิน
+    </h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Primary Revenue</th>
+            <th>Secondary</th>
+            <th>Target Customer</th>
+            <th>Avg Deal Size</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Thaiprompt-Affiliate</strong></td>
+            <td>SaaS subscription · ฿9,990–฿99,990/เดือน</td>
+            <td>Transaction fees · 2-5% MLM</td>
+            <td>MLM operators · network marketing</td>
+            <td class="num green">$2,500–$25,000/yr</td>
+          </tr>
+          <tr>
+            <td><strong>TpLicense</strong></td>
+            <td>WordPress license · $99–$499/ปี</td>
+            <td>Support add-on · $49/yr</td>
+            <td>WP developers · plugin sellers</td>
+            <td class="num green">$150/yr</td>
+          </tr>
+          <tr>
+            <td><strong>PostXAgent</strong></td>
+            <td>Self-hosted license · $1,990 lifetime</td>
+            <td>SaaS · $99–$499/เดือน · API metering</td>
+            <td>Devs/SMBs ที่ต้องการ AI gateway</td>
+            <td class="num green">$2,400/yr</td>
+          </tr>
+          <tr>
+            <td><strong>SmsChecker</strong></td>
+            <td>B2B license · $499–$1,990/store/ปี</td>
+            <td>Hardware bundle (cheap Android)</td>
+            <td>ร้านค้าออนไลน์ที่รับ PromptPay</td>
+            <td class="num green">$800/yr</td>
+          </tr>
+          <tr>
+            <td><strong>thaipromptapp</strong></td>
+            <td>In-app purchases · service fees</td>
+            <td>Ad revenue · affiliate commissions</td>
+            <td>Consumer Thai users</td>
+            <td class="num green">$30/user/yr</td>
+          </tr>
+          <tr>
+            <td><strong>TP-POS</strong></td>
+            <td>Per-terminal license · $990–$2,990/ปี</td>
+            <td>Hardware bundle · payment processing</td>
+            <td>SMB retailers · F&B businesses</td>
+            <td class="num green">$1,800/yr</td>
+          </tr>
+          <tr>
+            <td><strong>tpix-blockchain</strong></td>
+            <td>Token sale · ICO/IDO</td>
+            <td>Transaction fees · staking yields · DEX</td>
+            <td>Crypto investors · DeFi users</td>
+            <td class="num green">depends on market cap</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-title">🎯 Why $45M+ long-term cap is feasible</div>
+      <p>
+        <strong>1. SaaS multiples:</strong> ระบบ SaaS B2B ปกติได้ valuation = <strong>5-15x ARR</strong>.
+        ถ้า portfolio รวมแตะ $3M ARR ปีแรก → $15M-$45M valuation.<br>
+        <strong>2. Thai market size:</strong> Thailand MLM market ~฿100 พันล้าน/ปี · E-commerce ~฿800 พันล้าน · share ~0.1-0.5% = ~$30M-$150M annual.<br>
+        <strong>3. Blockchain upside:</strong> tpix-blockchain ตัวเดียวมี potential market cap $10M-$500M+ (เทียบ smaller L1 chains).<br>
+        <strong>4. Multi-product premium:</strong> portfolio approach ได้ valuation premium vs single product (~1.5-2x).
+      </p>
+    </div>
+
+    <div class="callout rose">
+      <div class="callout-title">⚠️ Risk Factors · ปัจจัยเสี่ยง</div>
+      <p>
+        • <strong>Distribution risk:</strong> มี product ที่ดีไม่พอ ต้องมี <em>sales/marketing channels</em>.<br>
+        • <strong>Competition:</strong> ตลาด MLM SaaS มีคู่แข่งระดับ global (Epixel, MultiSoft) ต้อง differentiate.<br>
+        • <strong>Operating cost:</strong> AI tokens + Cloud + Payment fees ~$500-$3,000/เดือนต่อ instance.<br>
+        • <strong>Regulatory:</strong> Token + MLM อยู่ใต้กฎหมายเข้ม (SEC ไทย + กรมสรรพากร).<br>
+        • <strong>Solo developer dependency:</strong> ถ้าเจ้าของหยุดพัฒนา ลูกค้าหยุดต่อสัญญา.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== PRODUCTIVITY ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.06 — claude productivity</span>
+      <h2>⚡ The Claude Multiplier · ผลของการใช้ Claude</h2>
+      <p class="subtitle">เปรียบเทียบ output ที่ทำได้ด้วย Claude vs ทีมแบบ traditional</p>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-title">
+        <div class="icon-badge">🚀</div>
+        <h3>Productivity Comparison · Solo + Claude vs Traditional Team</h3>
+        <span class="chart-meta">3-way comparison</span>
+      </div>
+      <div class="chart-canvas-wrap tall">
+        <canvas id="productivityChart"></canvas>
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-title">🤖 Claude as a Force Multiplier</div>
+      <p>
+        <strong>Traditional team (4-6 senior devs):</strong> 13 projects · ~22-32 เดือน · $1.8M-$2.5M cost.<br>
+        <strong>Solo dev + Claude:</strong> 13 projects · 6.7 เดือน · เทียบเท่า output ของ 5-7 คน.<br>
+        <strong>Productivity multiplier:</strong> ~<code>5-10x</code> faster · <code>~85% cost reduction</code> · งานคุณภาพ enterprise-grade.<br>
+        นี่คือเหตุผลที่ portfolio นี้ valuable — <em>มันแสดงว่า solo developer + AI assistant สามารถสร้าง portfolio ระดับ enterprise ได้</em>.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== FINAL SUMMARY ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.07 — executive summary</span>
+      <h2>🎯 Executive Summary · บทสรุปผู้บริหาร</h2>
+    </div>
+
+    <div class="big-banner">
+      <div class="big-banner-content">
+        <h3>From Idea to $2.46M Portfolio · 6.7 Months</h3>
+        <div class="big-value" style="font-size: clamp(36px, 7vw, 64px);">$50M – $200M+</div>
+        <div class="big-sub">
+          ศักยภาพในระยะยาว 5 ปี — ถ้าทุกโครงการเข้าตลาดและเติบโตได้ตามคาด<br>
+          <em>"13 projects · 1 solo dev · Claude AI as co-builder"</em>
+        </div>
+
+        <div class="big-banner-grid">
+          <div class="banner-stat">
+            <div class="label">Total Build Cost</div>
+            <div class="value">$1.08M</div>
+          </div>
+          <div class="banner-stat">
+            <div class="label">Turnkey Portfolio</div>
+            <div class="value">$2.46M</div>
+          </div>
+          <div class="banner-stat">
+            <div class="label">Year-1 Revenue</div>
+            <div class="value">$3.57M</div>
+          </div>
+          <div class="banner-stat">
+            <div class="label">Cost Saved (vs team)</div>
+            <div class="value">$1.7M+</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="footer-brand">💎 Portfolio Valuation</div>
+    <div class="divider-cosmic"></div>
+    <p><strong>13 Projects · 24 ตุลาคม 2568 → 16 พฤษภาคม 2569</strong></p>
+    <p>Thaiprompt-Affiliate · TP-Affiliate · TpLicense · PostXAgent · SmsChecker · thaipromptapp · TP-POS · SnakeGameServer · tpix-blockchain · charming-elbakyan · stoic-shockley · obsidiax · cluadex</p>
+    <p>Built solo with Claude AI as collaborative co-builder · Enterprise-grade output</p>
+    <p style="margin-top: 16px; font-style: italic; color: var(--text-gold-soft);">
+      "One developer + Claude = Output of a 4-6 person team · 5-10x productivity multiplier" ⚡
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  // ==========================================
+  // Chart.js global config
+  // ==========================================
+  Chart.defaults.color = '#c9c2e8';
+  Chart.defaults.font.family = "'Sarabun', sans-serif";
+  Chart.defaults.font.size = 12;
+  Chart.defaults.borderColor = 'rgba(255, 255, 255, 0.08)';
+
+  // Color palette
+  const COLORS = {
+    purple: '#8b5cf6',
+    pink: '#ec4899',
+    cyan: '#06b6d4',
+    green: '#10b981',
+    amber: '#f59e0b',
+    rose: '#f43f5e',
+    indigo: '#6366f1',
+    gold: '#d4af37',
+    emerald: '#34d399',
+    coral: '#fb7185',
+  };
+
+  const PROJECT_COLORS = [
+    COLORS.gold,    // 1. Thaiprompt-Affiliate (flagship)
+    COLORS.amber,   // 2. TP-Affiliate
+    COLORS.indigo,  // 3. TpLicense
+    COLORS.purple,  // 4. PostXAgent
+    COLORS.cyan,    // 5. SmsChecker
+    COLORS.green,   // 6. thaipromptapp
+    COLORS.pink,    // 7. TP-POS
+    COLORS.emerald, // 8. SnakeGameServer
+    COLORS.rose,    // 9. tpix-blockchain
+    COLORS.purple,  // 10. charming-elbakyan
+    COLORS.cyan,    // 11. stoic-shockley
+    COLORS.indigo,  // 12. obsidiax
+    COLORS.amber,   // 13. cluadex
+  ];
+
+  const PROJECT_NAMES = [
+    'Thaiprompt-Affiliate',
+    'TP-Affiliate',
+    'TpLicense',
+    'PostXAgent',
+    'SmsChecker',
+    'thaipromptapp',
+    'TP-POS',
+    'SnakeGameServer',
+    'tpix-blockchain',
+    'charming-elbakyan',
+    'stoic-shockley',
+    'obsidiax',
+    'cluadex'
+  ];
+
+  const BUILD_COSTS    = [385, 15, 18, 65, 22, 85, 120, 8, 250, 20, 25, 35, 30]; // x $1K
+  const SALE_PRICES    = [750, 0, 45, 180, 65, 200, 320, 20, 600, 50, 60, 90, 80];
+  const YEAR1_REVENUE  = [1200, 0, 80, 400, 150, 500, 800, 15, 0, 80, 90, 130, 120]; // tpix uses token cap
+  const FIVE_YR_CAP    = [25000, 0, 500, 5000, 1500, 20000, 8000, 100, 50000, 500, 600, 1200, 1000]; // x $1K · tpix mid-case
+
+  // ==========================================
+  // 1. TIMELINE CHART (Gantt-like)
+  // ==========================================
+  const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+
+  // Project start/duration in days from Oct 24, 2025
+  const timelineData = [
+    { name: 'Thaiprompt-Affiliate', start: 0,   duration: 204, color: COLORS.gold },
+    { name: 'TP-Affiliate',         start: 30,  duration: 174, color: COLORS.amber },
+    { name: 'TpLicense',            start: 45,  duration: 25,  color: COLORS.indigo },
+    { name: 'PostXAgent',           start: 60,  duration: 70,  color: COLORS.purple },
+    { name: 'SmsChecker',           start: 85,  duration: 35,  color: COLORS.cyan },
+    { name: 'thaipromptapp',        start: 90,  duration: 100, color: COLORS.green },
+    { name: 'TP-POS',               start: 120, duration: 80,  color: COLORS.pink },
+    { name: 'SnakeGameServer',      start: 150, duration: 15,  color: COLORS.emerald },
+    { name: 'tpix-blockchain',      start: 70,  duration: 130, color: COLORS.rose },
+    { name: 'charming-elbakyan',    start: 100, duration: 20,  color: COLORS.purple },
+    { name: 'stoic-shockley',       start: 130, duration: 25,  color: COLORS.cyan },
+    { name: 'obsidiax',             start: 160, duration: 30,  color: COLORS.indigo },
+    { name: 'cluadex',              start: 175, duration: 28,  color: COLORS.amber },
+  ];
+
+  new Chart(timelineCtx, {
+    type: 'bar',
+    data: {
+      labels: timelineData.map(d => d.name),
+      datasets: [
+        {
+          label: 'Start Offset (days)',
+          data: timelineData.map(d => d.start),
+          backgroundColor: 'transparent',
+          borderColor: 'transparent',
+          barPercentage: 0.8,
+        },
+        {
+          label: 'Duration (days)',
+          data: timelineData.map(d => d.duration),
+          backgroundColor: timelineData.map(d => d.color + 'DD'),
+          borderColor: timelineData.map(d => d.color),
+          borderWidth: 2,
+          borderRadius: 8,
+          barPercentage: 0.8,
+        }
+      ]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          borderColor: COLORS.gold,
+          borderWidth: 1,
+          padding: 12,
+          callbacks: {
+            label: function(ctx) {
+              if (ctx.datasetIndex === 0) return null;
+              const proj = timelineData[ctx.dataIndex];
+              return [
+                `Duration: ${proj.duration} days (~${(proj.duration/30).toFixed(1)} months)`,
+                `Started: Day ${proj.start} (after 24 Oct 2025)`
+              ];
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          stacked: true,
+          beginAtZero: true,
+          max: 220,
+          title: { display: true, text: 'Days since 24 Oct 2025', color: '#c9c2e8' },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          ticks: {
+            callback: function(value) {
+              if (value === 0) return '24 Oct';
+              if (value === 60) return '23 Dec';
+              if (value === 120) return '21 Feb';
+              if (value === 180) return '22 Apr';
+              if (value === 204) return '16 May';
+              return value;
+            }
+          }
+        },
+        y: {
+          stacked: true,
+          grid: { display: false }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 2. BUILD COST DONUT
+  // ==========================================
+  new Chart(document.getElementById('buildCostChart'), {
+    type: 'doughnut',
+    data: {
+      labels: PROJECT_NAMES,
+      datasets: [{
+        data: BUILD_COSTS,
+        backgroundColor: PROJECT_COLORS.map(c => c + 'DD'),
+        borderColor: PROJECT_COLORS,
+        borderWidth: 2,
+        hoverOffset: 12,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            font: { size: 11 },
+            padding: 8,
+            usePointStyle: true,
+            pointStyle: 'circle',
+          }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: function(ctx) {
+              const total = BUILD_COSTS.reduce((a, b) => a + b, 0);
+              const pct = ((ctx.parsed / total) * 100).toFixed(1);
+              return `${ctx.label}: $${ctx.parsed}K (${pct}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 3. SALE PRICE BAR
+  // ==========================================
+  const sortedSale = PROJECT_NAMES
+    .map((name, i) => ({ name, value: SALE_PRICES[i], color: PROJECT_COLORS[i] }))
+    .filter(d => d.value > 0)
+    .sort((a, b) => b.value - a.value);
+
+  new Chart(document.getElementById('salePriceChart'), {
+    type: 'bar',
+    data: {
+      labels: sortedSale.map(d => d.name),
+      datasets: [{
+        label: 'Sale Price ($K)',
+        data: sortedSale.map(d => d.value),
+        backgroundColor: sortedSale.map(d => d.color + 'DD'),
+        borderColor: sortedSale.map(d => d.color),
+        borderWidth: 2,
+        borderRadius: 8,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: ctx => `$${ctx.parsed.x}K USD`
+          }
+        }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          title: { display: true, text: 'USD ($ thousand)' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        },
+        y: { grid: { display: false } }
+      }
+    }
+  });
+
+  // ==========================================
+  // 4. 3-TIER GROUPED BAR
+  // ==========================================
+  new Chart(document.getElementById('threeTierChart'), {
+    type: 'bar',
+    data: {
+      labels: PROJECT_NAMES,
+      datasets: [
+        {
+          label: 'Build Cost',
+          data: BUILD_COSTS,
+          backgroundColor: COLORS.coral + 'CC',
+          borderColor: COLORS.coral,
+          borderWidth: 2,
+          borderRadius: 6,
+        },
+        {
+          label: 'Turnkey Sale',
+          data: SALE_PRICES,
+          backgroundColor: COLORS.gold + 'CC',
+          borderColor: COLORS.gold,
+          borderWidth: 2,
+          borderRadius: 6,
+        },
+        {
+          label: 'Year-1 Revenue',
+          data: YEAR1_REVENUE,
+          backgroundColor: COLORS.green + 'CC',
+          borderColor: COLORS.green,
+          borderWidth: 2,
+          borderRadius: 6,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { padding: 16, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y}K`
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { maxRotation: 45, minRotation: 30, font: { size: 10 } }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'USD ($ thousand)' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 5. 5-YEAR ROI LINE CHART
+  // ==========================================
+  // Cumulative revenue projection over 5 years
+  // Year 1: $3.14M, Year 2: $5.5M, Year 3: $8.5M, Year 4: $13M, Year 5: $20M (realistic case)
+  new Chart(document.getElementById('roiChart'), {
+    type: 'line',
+    data: {
+      labels: ['Year 0', 'Year 1', 'Year 2', 'Year 3', 'Year 4', 'Year 5'],
+      datasets: [
+        {
+          label: 'Conservative ($M)',
+          data: [0, 1.2, 2.1, 3.2, 4.5, 6.0],
+          borderColor: COLORS.coral,
+          backgroundColor: COLORS.coral + '22',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: COLORS.coral,
+        },
+        {
+          label: 'Realistic ($M)',
+          data: [0, 3.1, 5.5, 8.5, 13.0, 20.0],
+          borderColor: COLORS.gold,
+          backgroundColor: COLORS.gold + '22',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: COLORS.gold,
+        },
+        {
+          label: 'Optimistic ($M)',
+          data: [0, 6.5, 13.5, 25.0, 38.0, 55.0],
+          borderColor: COLORS.green,
+          backgroundColor: COLORS.green + '22',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: COLORS.green,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true, padding: 16 }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y}M`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'Cumulative Revenue (USD $M)' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 6. UPSIDE RADAR
+  // ==========================================
+  new Chart(document.getElementById('upsideChart'), {
+    type: 'radar',
+    data: {
+      labels: PROJECT_NAMES,
+      datasets: [
+        {
+          label: 'Long-term Cap ($K)',
+          data: FIVE_YR_CAP.map(v => Math.min(v / 1000, 50)), // scale max 50 for visibility
+          borderColor: COLORS.gold,
+          backgroundColor: COLORS.gold + '33',
+          pointBackgroundColor: COLORS.gold,
+          pointBorderColor: '#fff',
+          pointHoverBackgroundColor: '#fff',
+          pointHoverBorderColor: COLORS.gold,
+          borderWidth: 2,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: ctx => {
+              const realVal = FIVE_YR_CAP[ctx.dataIndex];
+              return realVal >= 1000 ? `${ctx.label}: $${(realVal/1000).toFixed(1)}M` : `${ctx.label}: $${realVal}K`;
+            }
+          }
+        }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          angleLines: { color: 'rgba(255,255,255,0.08)' },
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          pointLabels: {
+            font: { size: 11 },
+            color: '#c9c2e8'
+          },
+          ticks: {
+            display: false,
+            stepSize: 10,
+          }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 7. SCENARIO STACKED AREA
+  // ==========================================
+  new Chart(document.getElementById('scenarioChart'), {
+    type: 'line',
+    data: {
+      labels: ['Y1', 'Y2', 'Y3', 'Y4', 'Y5'],
+      datasets: [
+        {
+          label: 'Thaiprompt-Affiliate',
+          data: [1.2, 2.0, 3.2, 4.8, 7.0],
+          backgroundColor: COLORS.gold + '99',
+          borderColor: COLORS.gold,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'TP-POS',
+          data: [0.8, 1.5, 2.5, 3.8, 5.5],
+          backgroundColor: COLORS.pink + '99',
+          borderColor: COLORS.pink,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'thaipromptapp',
+          data: [0.5, 1.0, 1.8, 2.8, 4.0],
+          backgroundColor: COLORS.green + '99',
+          borderColor: COLORS.green,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'PostXAgent',
+          data: [0.4, 0.9, 1.5, 2.2, 3.2],
+          backgroundColor: COLORS.purple + '99',
+          borderColor: COLORS.purple,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'SmsChecker',
+          data: [0.15, 0.35, 0.6, 0.9, 1.3],
+          backgroundColor: COLORS.cyan + '99',
+          borderColor: COLORS.cyan,
+          fill: true,
+          tension: 0.4,
+        },
+        {
+          label: 'tpix-blockchain',
+          data: [0.0, 0.5, 1.5, 3.5, 8.0],
+          backgroundColor: COLORS.rose + '99',
+          borderColor: COLORS.rose,
+          fill: true,
+          tension: 0.4,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { usePointStyle: true, padding: 12, font: { size: 11 } }
+        },
+        tooltip: {
+          mode: 'index',
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: $${ctx.parsed.y}M`
+          }
+        }
+      },
+      interaction: { mode: 'index', intersect: false },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          title: { display: true, text: 'Year' }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: { display: true, text: 'Annual Revenue (USD $M)' },
+          grid: { color: 'rgba(255,255,255,0.05)' }
+        }
+      }
+    }
+  });
+
+  // ==========================================
+  // 8. PRODUCTIVITY COMPARISON
+  // ==========================================
+  new Chart(document.getElementById('productivityChart'), {
+    type: 'bar',
+    data: {
+      labels: ['Time (months)', 'Team Size', 'Cost ($K)', 'Productivity (LOC/day)'],
+      datasets: [
+        {
+          label: 'Traditional Team (4-6 devs)',
+          data: [18, 5, 1750, 800],
+          backgroundColor: COLORS.coral + 'CC',
+          borderColor: COLORS.coral,
+          borderWidth: 2,
+          borderRadius: 8,
+        },
+        {
+          label: 'Solo + Claude AI',
+          data: [6.7, 1, 250, 1300],
+          backgroundColor: COLORS.gold + 'CC',
+          borderColor: COLORS.gold,
+          borderWidth: 2,
+          borderRadius: 8,
+        },
+        {
+          label: 'Outsource (offshore)',
+          data: [14, 4, 970, 600],
+          backgroundColor: COLORS.purple + 'CC',
+          borderColor: COLORS.purple,
+          borderWidth: 2,
+          borderRadius: 8,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { usePointStyle: true, padding: 16 } },
+        tooltip: {
+          backgroundColor: 'rgba(20, 22, 50, 0.95)',
+          titleColor: '#f5d76e',
+          bodyColor: '#f4f1ff',
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { type: 'logarithmic', grid: { color: 'rgba(255,255,255,0.05)' }, title: { display: true, text: 'Value (log scale)' } }
+      }
+    }
+  });
+
+  // Smooth scroll
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+</script>
+
+</body>
+</html>

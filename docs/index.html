@@ -1,0 +1,2998 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fortune Telling System Workflow | ระบบดูดวงออนไลน์ — Thaiprompt Affiliate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700;800&family=Cinzel:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg-deep: #0a0a1f;
+    --bg-mid: #14142b;
+    --bg-card: rgba(28, 22, 56, 0.65);
+    --bg-card-solid: #1c1638;
+    --bg-glass: rgba(255, 255, 255, 0.04);
+    --border-soft: rgba(255, 255, 255, 0.08);
+    --border-mid: rgba(180, 140, 255, 0.18);
+    --border-strong: rgba(212, 175, 55, 0.45);
+
+    --text-primary: #f4f1ff;
+    --text-secondary: #c9c2e8;
+    --text-muted: #8c84b3;
+    --text-gold: #d4af37;
+    --text-gold-soft: #f5d76e;
+
+    --accent-purple: #8b5cf6;
+    --accent-purple-deep: #6d28d9;
+    --accent-pink: #ec4899;
+    --accent-cyan: #06b6d4;
+    --accent-green: #10b981;
+    --accent-amber: #f59e0b;
+    --accent-rose: #f43f5e;
+    --accent-indigo: #6366f1;
+
+    --gradient-mystic: linear-gradient(135deg, #4c1d95 0%, #831843 50%, #1e1b4b 100%);
+    --gradient-gold: linear-gradient(135deg, #d4af37 0%, #f5d76e 50%, #b8860b 100%);
+    --gradient-purple: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+    --gradient-pink: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+    --gradient-cyan: linear-gradient(135deg, #06b6d4 0%, #0e7490 100%);
+    --gradient-green: linear-gradient(135deg, #10b981 0%, #047857 100%);
+    --gradient-amber: linear-gradient(135deg, #f59e0b 0%, #b45309 100%);
+    --gradient-rose: linear-gradient(135deg, #f43f5e 0%, #be123c 100%);
+    --gradient-card: linear-gradient(140deg, rgba(139, 92, 246, 0.12) 0%, rgba(236, 72, 153, 0.08) 100%);
+
+    --shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.25);
+    --shadow-mid: 0 16px 48px rgba(76, 29, 149, 0.35);
+    --shadow-glow: 0 0 32px rgba(139, 92, 246, 0.35);
+    --shadow-gold: 0 0 24px rgba(212, 175, 55, 0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.65;
+    overflow-x: hidden;
+    min-height: 100vh;
+    background-image:
+      radial-gradient(at 15% 10%, rgba(139, 92, 246, 0.18) 0px, transparent 50%),
+      radial-gradient(at 85% 20%, rgba(236, 72, 153, 0.12) 0px, transparent 50%),
+      radial-gradient(at 50% 80%, rgba(6, 182, 212, 0.10) 0px, transparent 50%),
+      radial-gradient(at 80% 90%, rgba(212, 175, 55, 0.08) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+
+  /* ✨ Decorative cosmos background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 20% 30%, white, transparent),
+      radial-gradient(1px 1px at 60% 70%, rgba(255,255,255,0.7), transparent),
+      radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.5), transparent),
+      radial-gradient(2px 2px at 35% 85%, rgba(245, 215, 110, 0.6), transparent),
+      radial-gradient(1px 1px at 10% 60%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(2px 2px at 70% 40%, rgba(236, 72, 153, 0.5), transparent);
+    background-size: 250px 250px;
+    opacity: 0.6;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ===== Layout containers ===== */
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+
+  /* ===== Top nav ===== */
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+    background: rgba(10, 10, 31, 0.85);
+    border-bottom: 1px solid var(--border-soft);
+    padding: 16px 0;
+  }
+  .top-nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 18px;
+    color: var(--text-gold-soft);
+  }
+  .nav-brand .crystal {
+    width: 32px; height: 32px;
+    background: var(--gradient-gold);
+    border-radius: 50%;
+    box-shadow: var(--shadow-gold);
+    position: relative;
+  }
+  .nav-brand .crystal::after {
+    content: '🔮';
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    text-decoration: none;
+    color: var(--text-secondary);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover {
+    color: var(--text-gold-soft);
+    background: rgba(212, 175, 55, 0.08);
+  }
+
+  /* ===== Hero ===== */
+  .hero {
+    text-align: center;
+    padding: 80px 24px 60px;
+    position: relative;
+  }
+  .hero-eyebrow {
+    display: inline-block;
+    padding: 6px 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: rgba(212, 175, 55, 0.08);
+    color: var(--text-gold);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #f5d76e 0%, #ec4899 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    line-height: 1.15;
+  }
+  .hero h2 {
+    font-family: 'Sarabun', sans-serif;
+    font-size: clamp(20px, 3vw, 28px);
+    font-weight: 400;
+    color: var(--text-secondary);
+    margin-bottom: 24px;
+  }
+  .hero p.lede {
+    max-width: 760px;
+    margin: 0 auto 40px;
+    font-size: 17px;
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .hero-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+  }
+
+  /* ===== Stats grid ===== */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    padding: 40px 0;
+  }
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+  }
+  .stat-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-mid);
+  }
+  .stat-value {
+    font-family: 'Cinzel', serif;
+    font-size: 36px;
+    font-weight: 700;
+    background: var(--gradient-gold);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+  .stat-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  /* ===== Sections ===== */
+  section.major {
+    padding: 64px 0 32px;
+  }
+  .section-head {
+    margin-bottom: 32px;
+    text-align: center;
+  }
+  .section-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--accent-purple);
+    background: rgba(139, 92, 246, 0.1);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+  .section-head h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(28px, 4vw, 40px);
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
+  }
+  .section-head .subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 700px;
+    margin: 0 auto;
+  }
+
+  /* ===== Diagram card ===== */
+  .diagram-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 24px;
+    padding: 32px;
+    margin: 24px 0;
+    backdrop-filter: blur(10px);
+    overflow-x: auto;
+    position: relative;
+  }
+  .diagram-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--text-gold), transparent);
+  }
+  .diagram-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed var(--border-mid);
+  }
+  .diagram-title .icon-badge {
+    width: 40px; height: 40px;
+    background: var(--gradient-purple);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    box-shadow: var(--shadow-glow);
+  }
+  .diagram-title h3 {
+    font-size: 20px;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+  .diagram-title .meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .mermaid {
+    background: transparent !important;
+    text-align: center;
+    min-height: 100px;
+  }
+
+  /* ===== Cards grid ===== */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin: 24px 0;
+  }
+  .grid.cols-2 { grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); }
+  .grid.cols-3 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid.cols-4 { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+
+  .feature-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s;
+    backdrop-filter: blur(10px);
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: -50%; right: -50%;
+    width: 100%; height: 100%;
+    background: radial-gradient(circle, rgba(212, 175, 55, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .feature-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-mid);
+  }
+  .feature-card .card-icon {
+    width: 48px; height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  .card-icon.purple { background: var(--gradient-purple); box-shadow: 0 4px 16px rgba(139, 92, 246, 0.35); }
+  .card-icon.pink   { background: var(--gradient-pink);   box-shadow: 0 4px 16px rgba(236, 72, 153, 0.35); }
+  .card-icon.cyan   { background: var(--gradient-cyan);   box-shadow: 0 4px 16px rgba(6, 182, 212, 0.35); }
+  .card-icon.green  { background: var(--gradient-green);  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.35); }
+  .card-icon.amber  { background: var(--gradient-amber);  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.35); }
+  .card-icon.rose   { background: var(--gradient-rose);   box-shadow: 0 4px 16px rgba(244, 63, 94, 0.35); }
+  .card-icon.gold   { background: var(--gradient-gold);   box-shadow: var(--shadow-gold); }
+  .card-icon.indigo { background: linear-gradient(135deg, #6366f1 0%, #4338ca 100%); box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35); }
+
+  .feature-card h4 {
+    font-size: 17px;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .feature-card .card-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 12px;
+  }
+  .feature-card p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .feature-card ul {
+    list-style: none;
+    margin-top: 12px;
+  }
+  .feature-card ul li {
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 4px 0 4px 18px;
+    position: relative;
+  }
+  .feature-card ul li::before {
+    content: '◆';
+    position: absolute;
+    left: 0;
+    color: var(--text-gold);
+    font-size: 9px;
+    top: 8px;
+  }
+
+  /* ===== Tier comparison ===== */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin: 24px 0;
+  }
+  .tier-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border-mid);
+    border-radius: 20px;
+    padding: 32px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .tier-card.free      { border-color: rgba(16, 185, 129, 0.4); }
+  .tier-card.deep      { border-color: rgba(139, 92, 246, 0.5); transform: scale(1.02); }
+  .tier-card.celtic    { border-color: rgba(212, 175, 55, 0.6); }
+  .tier-card.discovery { border-color: rgba(6, 182, 212, 0.4); }
+  .tier-card:hover { transform: translateY(-4px) scale(1.03); box-shadow: var(--shadow-mid); }
+  .tier-card.deep:hover { transform: translateY(-4px) scale(1.05); }
+
+  .tier-badge {
+    position: absolute;
+    top: -1px; right: 16px;
+    background: var(--gradient-gold);
+    color: #1c1638;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 0 0 8px 8px;
+    letter-spacing: 1px;
+  }
+  .tier-name {
+    font-family: 'Cinzel', serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+  .tier-name-th {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 16px;
+  }
+  .tier-price {
+    font-family: 'Cinzel', serif;
+    font-size: 48px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .tier-price.free   { color: var(--accent-green); }
+  .tier-price.deep   { background: var(--gradient-purple); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .tier-price.celtic { background: var(--gradient-gold);   -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .tier-price.discovery { color: var(--accent-cyan); }
+  .tier-price small { font-size: 18px; opacity: 0.7; font-weight: 400; }
+  .tier-desc {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+    min-height: 36px;
+  }
+  .tier-features {
+    list-style: none;
+    border-top: 1px solid var(--border-mid);
+    padding-top: 16px;
+  }
+  .tier-features li {
+    padding: 6px 0 6px 24px;
+    position: relative;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .tier-features li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--text-gold);
+    font-weight: 700;
+  }
+
+  /* ===== Pipeline / process ===== */
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    overflow-x: auto;
+    gap: 0;
+    padding: 8px 0 24px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-purple) transparent;
+  }
+  .pipeline-step {
+    flex: 1 0 220px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 14px;
+    padding: 18px;
+    margin: 0 6px;
+    position: relative;
+    transition: all 0.2s;
+  }
+  .pipeline-step:hover {
+    border-color: var(--text-gold);
+    transform: translateY(-2px);
+  }
+  .pipeline-step::after {
+    content: '→';
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: var(--text-gold);
+    z-index: 2;
+  }
+  .pipeline-step:last-child::after { display: none; }
+  .pipeline-step .step-num {
+    width: 28px; height: 28px;
+    background: var(--gradient-purple);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    margin-bottom: 12px;
+    color: white;
+  }
+  .pipeline-step .step-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+  .pipeline-step .step-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ===== Decision callout ===== */
+  .callout {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.06) 100%);
+    border-left: 3px solid var(--accent-purple);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin: 20px 0;
+  }
+  .callout.gold   { border-left-color: var(--text-gold); background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, rgba(212, 175, 55, 0.04) 100%); }
+  .callout.green  { border-left-color: var(--accent-green); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, transparent 100%); }
+  .callout.rose   { border-left-color: var(--accent-rose); background: linear-gradient(135deg, rgba(244, 63, 94, 0.08) 0%, transparent 100%); }
+  .callout-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+  .callout p {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.7;
+  }
+  .callout code {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--text-gold-soft);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* ===== Tables ===== */
+  .table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border-mid);
+    border-radius: 16px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13.5px;
+  }
+  th {
+    background: rgba(139, 92, 246, 0.1);
+    color: var(--text-gold-soft);
+    text-align: left;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-mid);
+  }
+  td {
+    padding: 12px 18px;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+  td.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-gold-soft); }
+
+  .badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .badge.purple { background: rgba(139, 92, 246, 0.15); color: #c4b5fd; border: 1px solid rgba(139, 92, 246, 0.3); }
+  .badge.pink   { background: rgba(236, 72, 153, 0.15); color: #f9a8d4; border: 1px solid rgba(236, 72, 153, 0.3); }
+  .badge.cyan   { background: rgba(6, 182, 212, 0.15);  color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.3); }
+  .badge.green  { background: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+  .badge.amber  { background: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+  .badge.rose   { background: rgba(244, 63, 94, 0.15);  color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+  .badge.gold   { background: rgba(212, 175, 55, 0.15); color: #f5d76e; border: 1px solid rgba(212, 175, 55, 0.3); }
+
+  /* ===== Footer ===== */
+  footer {
+    margin-top: 80px;
+    padding: 40px 24px;
+    text-align: center;
+    border-top: 1px solid var(--border-soft);
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer .footer-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 18px;
+    color: var(--text-gold-soft);
+    margin-bottom: 8px;
+  }
+  footer p { margin: 4px 0; }
+  .divider-cosmic {
+    width: 120px; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--text-gold), transparent);
+    margin: 16px auto;
+  }
+
+  /* ===== Scrollbar ===== */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: var(--bg-deep); }
+  ::-webkit-scrollbar-thumb { background: var(--accent-purple); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-purple-deep); }
+
+  /* ===== Print ===== */
+  @media print {
+    body { background: white; color: black; }
+    body::before { display: none; }
+    .top-nav { display: none; }
+    .feature-card, .tier-card, .diagram-card, .stat-card, .table-wrap, .callout {
+      background: white !important;
+      border-color: #ccc !important;
+      color: black !important;
+      page-break-inside: avoid;
+    }
+    .hero h1, .stat-value, .tier-price, .footer-brand { -webkit-text-fill-color: inherit; color: #4c1d95 !important; }
+    h2, h3, h4 { color: black !important; }
+    p, li, td { color: #333 !important; }
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 768px) {
+    .hero { padding: 48px 16px 32px; }
+    .wrapper { padding: 0 16px; }
+    .diagram-card { padding: 20px 16px; }
+    .pipeline-step::after { display: none; }
+    .tier-card.deep { transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== NAVIGATION ===== -->
+<nav class="top-nav">
+  <div class="wrapper top-nav-inner">
+    <div class="nav-brand">
+      <div class="crystal"></div>
+      <span>Fortune Telling System</span>
+    </div>
+    <ul class="nav-links">
+      <li><a href="#overview">Overview</a></li>
+      <li><a href="#architecture">Architecture</a></li>
+      <li><a href="#flow">Main Flow</a></li>
+      <li><a href="#tiers">Tiers</a></li>
+      <li><a href="#conversation">Conversation</a></li>
+      <li><a href="#ai">AI Routing</a></li>
+      <li><a href="#celtic">Celtic Cross</a></li>
+      <li><a href="#payment">Payment</a></li>
+      <li><a href="#antispam">Anti-Spam</a></li>
+      <li><a href="#admin">Admin</a></li>
+      <li><a href="#data">Data Model</a></li>
+      <li><a href="#valuation" style="background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(245,158,11,0.2)); color: var(--text-gold-soft); font-weight: 700; border: 1px solid rgba(212,175,55,0.4);">💎 Valuation $</a></li>
+      <li><a href="portfolio.html" style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(139,92,246,0.2)); color: #6ee7b7; font-weight: 700; border: 1px solid rgba(16,185,129,0.4);">🚀 Portfolio →</a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="wrapper">
+    <span class="hero-eyebrow">✦ System Workflow Documentation ✦</span>
+    <h1>Fortune Telling System</h1>
+    <h2>ระบบดูดวงออนไลน์ครบวงจรด้วย AI · Multi-channel · Multi-tier</h2>
+    <p class="lede">
+      เอกสารนี้แสดง <strong>workflow, logic การตัดสินใจ</strong> และ <strong>สถาปัตยกรรมระบบดูดวง</strong>
+      ของแพลตฟอร์ม Thaiprompt Affiliate — ระบบที่ผสาน <em>AI หลายผู้ให้บริการ</em>, <em>Facebook Messenger + LINE</em>,
+      <em>ระบบชำระเงิน SMS/Stripe</em>, และ <em>ระบบ Affiliate Commission</em> เข้าด้วยกันอย่างสมบูรณ์
+    </p>
+    <div class="hero-meta">
+      <span>📦 Laravel 11 + Vite</span>
+      <span>🤖 8 AI Providers</span>
+      <span>💬 Facebook + LINE</span>
+      <span>💳 SMS + Stripe</span>
+      <span>🇹🇭 Thai · 🇱🇦 Lao</span>
+      <span>📅 Updated 2026-05-16</span>
+    </div>
+  </div>
+</section>
+
+<div class="wrapper">
+
+  <!-- ===== STATISTICS ===== -->
+  <div class="stats-grid">
+    <div class="stat-card"><span class="stat-value">26+</span><span class="stat-label">Models · ตาราง</span></div>
+    <div class="stat-card"><span class="stat-value">15+</span><span class="stat-label">Services · บริการ</span></div>
+    <div class="stat-card"><span class="stat-value">50+</span><span class="stat-label">Controllers · ตัวควบคุม</span></div>
+    <div class="stat-card"><span class="stat-value">8</span><span class="stat-label">AI Providers · ผู้ให้บริการ AI</span></div>
+    <div class="stat-card"><span class="stat-value">3</span><span class="stat-label">Reading Tiers · ระดับการดูดวง</span></div>
+    <div class="stat-card"><span class="stat-value">33+</span><span class="stat-label">Console Commands · คำสั่ง</span></div>
+    <div class="stat-card"><span class="stat-value">80+</span><span class="stat-label">Migrations · การย้ายฐานข้อมูล</span></div>
+    <div class="stat-card"><span class="stat-value">97</span><span class="stat-label">Total DB Migrations</span></div>
+  </div>
+
+  <!-- ===== OVERVIEW ===== -->
+  <section class="major" id="overview">
+    <div class="section-head">
+      <span class="section-tag">// section.01 — overview</span>
+      <h2>System Overview</h2>
+      <p class="subtitle">
+        ระบบดูดวงนี้คือ <strong>ecosystem</strong> ที่ลูกค้าสามารถเข้าถึงผ่านหลายช่องทาง — ดูดวงด้วย AI,
+        จ่ายเงินอัตโนมัติผ่าน SMS หรือ Stripe, และยังเป็นรายได้ให้ <em>affiliate</em> ผ่านระบบ commission
+      </p>
+    </div>
+
+    <div class="grid cols-3">
+      <div class="feature-card">
+        <div class="card-icon purple">🌐</div>
+        <h4>Multi-Channel Entry</h4>
+        <div class="card-sub">3 platforms unified</div>
+        <p>รับลูกค้าจาก <strong>Facebook Messenger</strong>, <strong>LINE Official Account</strong>, และ <strong>Juntra Mobile App API</strong> — ทุกช่องผ่าน logic เดียวกัน</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon pink">🤖</div>
+        <h4>Smart AI Routing</h4>
+        <div class="card-sub">API Key Pool · purpose-based</div>
+        <p>เลือก provider/model จาก <strong>API Key Pool</strong> อัตโนมัติตาม purpose (prediction/chat/free_card) พร้อม fallback หลายชั้น</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon gold">💎</div>
+        <h4>Tiered Pricing</h4>
+        <div class="card-sub">Free · 39฿ · 99฿</div>
+        <p><strong>Free Card</strong> (ฟรี), <strong>Deep Reading</strong> 39฿ (ไพ่ 1 ใบ + วันเกิด), <strong>Celtic Cross</strong> 99฿ (ไพ่ 10 ใบ premium)</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon green">💳</div>
+        <h4>Auto Payment Match</h4>
+        <div class="card-sub">SMS · QR · Stripe</div>
+        <p>ตรวจจับ SMS ธนาคารด้วย <strong>unique amount</strong> และ <strong>fuzzy matcher</strong> จับคู่บิลอัตโนมัติ — รองรับ Stripe webhook ด้วย</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon cyan">🛡️</div>
+        <h4>Anti-Spam Engine</h4>
+        <div class="card-sub">Multi-layer protection</div>
+        <p>กัน <strong>prompt injection</strong>, <strong>rapid-fire flood</strong>, <strong>AI attack patterns</strong>, และ <strong>repetitive messages</strong></p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">📊</div>
+        <h4>Affiliate Commission</h4>
+        <div class="card-sub">MLM · referral tracking</div>
+        <p>ติดตาม referral chain — จ่าย commission ทุกครั้งที่ลูกค้าจ่ายเงิน พร้อม admin approval workflow</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon rose">👁️</div>
+        <h4>Human Takeover</h4>
+        <div class="card-sub">Mae-Mor handover</div>
+        <p>แอดมิน/แม่หมอเข้ามาคุยแทน AI ได้ทันที — บันทึก <code>FortuneTakeoverLog</code> และจัดการ state ครบ</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon indigo">🎴</div>
+        <h4>Discovery Chat</h4>
+        <div class="card-sub">Psychologist-style flow</div>
+        <p>AI คุยแบบจิตวิทยา ไม่ใช่ฟอร์มแข็ง — ค่อย ๆ รวบรวมเรื่องราว แล้วเสนอ tier ที่เหมาะสม</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon purple">🌙</div>
+        <h4>Horoscope Automation</h4>
+        <div class="card-sub">Daily auto-posting</div>
+        <p>ปั่นเนื้อหา 12 ราศีรายวัน + โพสต์ Facebook อัตโนมัติด้วย scheduled commands</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ARCHITECTURE ===== -->
+  <section class="major" id="architecture">
+    <div class="section-head">
+      <span class="section-tag">// section.02 — architecture</span>
+      <h2>High-Level Architecture</h2>
+      <p class="subtitle">ภาพรวมสถาปัตยกรรม — ลูกค้า → Channel → Webhook → Service Layer → Storage</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🏛️</div>
+        <h3>End-to-End System Architecture</h3>
+        <span class="meta">flowchart · top-down</span>
+      </div>
+      <div class="mermaid">
+flowchart TB
+    subgraph users["👥 USER ENTRY POINTS · ช่องทางลูกค้า"]
+        FB["📘 Facebook<br/>Comment / DM"]
+        LINE["💚 LINE OA<br/>Message / Postback"]
+        APP["📱 Juntra App<br/>REST API"]
+        WEB["🌐 Web Frontend<br/>Horoscope / Tarot"]
+    end
+
+    subgraph webhook["🔌 WEBHOOK / CONTROLLER LAYER"]
+        FBC["FacebookWebhookController<br/>verify · webhook"]
+        LNC["LineFortuneWebhookController<br/>handle events"]
+        API["Api/Juntra/FortuneController<br/>draw · read · session"]
+        STR["FortuneStripeWebhookController<br/>payment callback"]
+    end
+
+    subgraph mid["🛡️ MIDDLEWARE / GUARDS"]
+        RATE["FortuneRateLimitMiddleware<br/>throttling"]
+        SIG["Signature Verification<br/>X-Hub-Signature / LINE-Signature"]
+    end
+
+    subgraph core["🎯 CORE SERVICE LAYER"]
+        CM["FortuneChannelManager<br/>🚦 Channel Router"]
+        CS["FortuneConversationService<br/>🧠 State Machine + Traits"]
+        AI["FortuneAIService<br/>🤖 AI Pool Manager"]
+        PAY["FortunePaymentService<br/>💳 Payment + Bill"]
+        TO["FortuneTakeoverService<br/>👤 Human Handover"]
+        BAN["FortuneBannerService<br/>🖼️ DM Banner"]
+        COM["FortuneCommissionService<br/>💰 Affiliate Payout"]
+    end
+
+    subgraph detect["🔍 SPECIALIZED DETECTORS"]
+        D1["SensitivityDetector"]
+        D2["OffTopicTracker"]
+        D3["SatisfactionDetector"]
+        D4["PaymentFuzzyMatcher"]
+        D5["CelticPremiumDetector"]
+        D6["BillContextDetector"]
+        D7["SensitiveBudgetGuard"]
+    end
+
+    subgraph queue["⚡ ASYNC JOBS (Queue)"]
+        JOB1["ProcessFortuneTelling<br/>tries=3 · backoff=10/30/90s"]
+        JOB2["ProcessDeepFortuneReading<br/>celtic pipeline"]
+        JOB3["FortuneAiPingJob<br/>keep-alive"]
+        JOB4["FortuneAiStuckAlertJob<br/>failure alert"]
+    end
+
+    subgraph providers["🌟 AI PROVIDERS POOL"]
+        P1["Gemini ⭐"]
+        P2["Groq"]
+        P3["Qwen / HF"]
+        P4["OpenRouter"]
+        P5["OpenAI"]
+        P6["DeepSeek"]
+        P7["Typhoon"]
+        P8["Grok"]
+    end
+
+    subgraph data["💾 DATA LAYER (MySQL)"]
+        DB1["FortuneReading<br/>readings + bills"]
+        DB2["FortuneTellingSetting<br/>singleton config"]
+        DB3["FortuneUserCredit<br/>quota per user"]
+        DB4["FortuneCommission<br/>+ FortuneReferral"]
+        DB5["FortuneTakeoverLog<br/>+ SensitiveEvent"]
+        DB6["FortuneCustomerPersona<br/>+ SavedQuestion"]
+    end
+
+    subgraph ext["🌍 EXTERNAL SERVICES"]
+        FBAPI["Facebook Graph API<br/>v21.0"]
+        LINEAPI["LINE Messaging API"]
+        SMS["SMS Payment Checker<br/>(Android app + FCM)"]
+        STRIPEAPI["Stripe API"]
+        FCM["Firebase FCM<br/>admin alerts"]
+    end
+
+    FB --> FBC
+    LINE --> LNC
+    APP --> API
+    WEB --> API
+
+    FBC --> SIG
+    LNC --> SIG
+    API --> RATE
+    SIG --> RATE
+    STR --> PAY
+
+    RATE --> CM
+    CM --> CS
+    CS --> AI
+    CS --> PAY
+    CS --> TO
+    CS --> BAN
+    CS --> COM
+    CS -.uses.-> D1 & D2 & D3 & D4 & D5 & D6 & D7
+
+    AI --> P1 & P2 & P3 & P4 & P5 & P6 & P7 & P8
+
+    CS --> JOB1
+    JOB1 --> AI
+    JOB1 --> FBAPI
+    JOB2 --> AI
+
+    SMS --> PAY
+    STRIPEAPI --> STR
+
+    CS --> DB1 & DB2 & DB3 & DB4 & DB5 & DB6
+    PAY --> DB1
+    COM --> DB4
+
+    CM --> FBAPI
+    CM --> LINEAPI
+    PAY --> FCM
+
+    style users fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style webhook fill:#1c1638,stroke:#ec4899,color:#fff
+    style mid fill:#1c1638,stroke:#f43f5e,color:#fff
+    style core fill:#1c1638,stroke:#d4af37,color:#fff
+    style detect fill:#1c1638,stroke:#06b6d4,color:#fff
+    style queue fill:#1c1638,stroke:#f59e0b,color:#fff
+    style providers fill:#1c1638,stroke:#10b981,color:#fff
+    style data fill:#1c1638,stroke:#6366f1,color:#fff
+    style ext fill:#1c1638,stroke:#8b5cf6,color:#fff
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-title">💡 Key Design Decisions · ตัดสินใจสำคัญทางสถาปัตยกรรม</div>
+      <p>
+        <strong>1. ChannelManager pattern</strong> — แยก channel-specific code (FB vs LINE vs API) ออกจาก business logic
+        ทำให้ <code>FortuneConversationService</code> ใช้ logic เดียวกันได้ทุกช่อง.<br>
+        <strong>2. Trait-based state machine</strong> — <code>FreeCardConversationTrait</code> + <code>ProSessionTrait</code> +
+        <code>CelticCrossConversationTrait</code> + <code>PayFirstGateTrait</code> แยก concern ตาม tier.<br>
+        <strong>3. Pool-first AI</strong> — <code>AiApiKeyPoolService</code> เลือก key ตาม <em>purpose</em> + <em>preferred provider</em>
+        ก่อน fallback ไป settings (single source of truth).<br>
+        <strong>4. Queue-based AI calls</strong> — ทุก AI request ผ่าน <code>ProcessFortuneTelling</code> job (retry 3 ครั้ง + exponential backoff)
+        เพื่อป้องกัน webhook timeout (Facebook จะ disable หากเกิน 200 response).
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== MAIN FLOW ===== -->
+  <section class="major" id="flow">
+    <div class="section-head">
+      <span class="section-tag">// section.03 — main user flow</span>
+      <h2>End-to-End User Flow</h2>
+      <p class="subtitle">ทุกขั้นตอนตั้งแต่ลูกค้าทักทาย จนได้รับคำทำนายและ commission จ่ายออก</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🌟</div>
+        <h3>Customer Journey · Sequence Diagram</h3>
+        <span class="meta">sequenceDiagram</span>
+      </div>
+      <div class="mermaid">
+sequenceDiagram
+    autonumber
+    actor U as 👤 User<br/>(FB/LINE)
+    participant W as 🔌 Webhook<br/>Controller
+    participant CM as 🚦 Channel<br/>Manager
+    participant CS as 🧠 Conversation<br/>Service
+    participant PG as 🛡️ Anti-Spam<br/>+ PayGate
+    participant AI as 🤖 AI Service<br/>(Pool)
+    participant Q as ⚡ Queue<br/>Worker
+    participant DB as 💾 DB
+    participant SMS as 📲 SMS<br/>Checker
+    participant CO as 💰 Commission<br/>Service
+
+    U->>W: "ดูดวง" / hi / sticker
+    W->>W: verify signature<br/>(X-Hub / LINE-Sig)
+    W->>CM: route(platform, event)
+    CM->>PG: check rate limit + spam
+
+    alt 🛑 ตรวจพบ spam/injection
+        PG-->>U: silent mode 2 นาที
+    else ✅ ผ่าน
+        PG->>CS: processMessage()
+        CS->>DB: load conversation state
+
+        alt 🆕 ลูกค้าใหม่
+            CS->>U: greet + Quick Reply<br/>[🎴 ฟรี] [🔹 39฿] [🔮 99฿]
+        else 📋 มีบิลค้าง
+            CS->>U: ⚠️ warning + ยังให้ทำต่อได้
+        end
+
+        U->>CS: เลือก tier (39฿)
+        CS->>U: ขอวันเกิด
+        U->>CS: 15/03/1990
+        CS->>U: ขอ 1 คำถาม
+        U->>CS: "ความรักจะดีไหม"
+
+        CS->>DB: create FortuneReading<br/>+ unique_amount (39.07)
+        CS->>U: 📱 QR code + เลขที่บัญชี<br/>"โอน 39.07 บาทแล้วแจ้ง"
+
+        Note over U,SMS: 🕐 ลูกค้าโอนเงินจริง
+
+        SMS->>W: SMS notification (39.07฿)
+        W->>CS: PaymentFuzzyMatcher.match()
+        CS->>DB: update is_paid=true
+        CS->>Q: dispatch ProcessFortuneTelling
+
+        Q->>AI: generateFortuneTelling()
+        AI->>AI: acquireKey(purpose=prediction)
+
+        alt ⚡ Primary AI ทำงานปกติ
+            AI-->>Q: AI response (Gemini/OpenAI/etc.)
+        else 🚨 AI ล่ม / timeout
+            AI->>AI: FortuneAiFailureRecovery<br/>fallback to next provider
+            AI-->>Q: AI response (fallback)
+        end
+
+        Q->>DB: save ai_response + tokens
+        Q->>U: ส่งคำทำนาย (split 2000 chars)
+        Q->>CO: triggerCommission(reading)
+        CO->>DB: create FortuneCommission<br/>(pending approval)
+        Q->>U: 🎁 Quick Reply "ดูดวงอีก / Celtic 99฿"
+    end
+      </div>
+    </div>
+
+    <h3 style="margin-top: 40px; margin-bottom: 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft);">📋 7-Step Linear Pipeline</h3>
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <div class="step-num">1</div>
+        <div class="step-title">User Sends</div>
+        <div class="step-desc">ลูกค้าพิมพ์ "ดูดวง" หรือกด Quick Reply ผ่าน Facebook Messenger / LINE OA / Mobile App</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">2</div>
+        <div class="step-title">Webhook Verify</div>
+        <div class="step-desc">ตรวจ signature (HMAC-SHA256), return HTTP 200 ทันที, push event เข้า queue</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">3</div>
+        <div class="step-title">Anti-Spam Guard</div>
+        <div class="step-desc">เช็ค rate limit, prompt injection, rapid-fire flood, repetitive — pass หรือ silent mode</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">4</div>
+        <div class="step-title">State Machine</div>
+        <div class="step-desc">ConversationService อ่าน state ปัจจุบัน (NEW/COLLECTING_BIRTHDATE/PENDING_PAYMENT/...) แล้วเลือก action</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">5</div>
+        <div class="step-title">Payment Match</div>
+        <div class="step-desc">SMS Checker หรือ Stripe webhook → FuzzyMatcher จับคู่ unique_amount → mark is_paid</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">6</div>
+        <div class="step-title">AI Generation</div>
+        <div class="step-desc">Queue worker ดึง key จาก Pool (purpose-based) → call provider → save response + tokens</div>
+      </div>
+      <div class="pipeline-step">
+        <div class="step-num">7</div>
+        <div class="step-title">Deliver + Comm</div>
+        <div class="step-desc">ส่ง message แบ่ง chunk (2000 ตัวอักษร) → trigger commission → upsell Quick Reply</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TIERS ===== -->
+  <section class="major" id="tiers">
+    <div class="section-head">
+      <span class="section-tag">// section.04 — reading tiers</span>
+      <h2>Reading Tiers · ระดับการดูดวง</h2>
+      <p class="subtitle">4 รูปแบบหลัก — แต่ละแบบมี <em>logic, prompt template, AI key purpose</em> แยกกัน</p>
+    </div>
+
+    <div class="tier-grid">
+      <div class="tier-card free">
+        <div class="tier-name">Free Card</div>
+        <div class="tier-name-th">ไพ่ฟรี · ของขวัญลูกค้าใหม่</div>
+        <div class="tier-price free">฿0<small>/ครั้ง</small></div>
+        <div class="tier-desc">ไพ่ 1 ใบ + คำทำนายสั้น สำหรับลูกค้าใหม่ครั้งแรก</div>
+        <ul class="tier-features">
+          <li>ไพ่ทาโรต์ 1 ใบ (random)</li>
+          <li>วิเคราะห์ situation + solution</li>
+          <li>โควต้า: 1 ครั้ง/ลูกค้าใหม่</li>
+          <li>AI Key purpose: <code>free_card</code></li>
+          <li>Soft upsell หลังจบ (ไม่บังคับ)</li>
+          <li>Decline → ปรัชญาคำคม + ลา</li>
+        </ul>
+      </div>
+
+      <div class="tier-card deep">
+        <div class="tier-badge">⭐ POPULAR</div>
+        <div class="tier-name">Deep Reading</div>
+        <div class="tier-name-th">ดูดวงเชิงลึก · ไพ่ 1 ใบ + วันเกิด</div>
+        <div class="tier-price deep">฿39<small>/ครั้ง</small></div>
+        <div class="tier-desc">ดูดวงด้วยวันเกิด + คำถาม 1 ข้อ — เน้นความแม่นยำ</div>
+        <ul class="tier-features">
+          <li>วันเดือนปีเกิด (required)</li>
+          <li>คำถามชี้เป้า 1 ข้อ</li>
+          <li>คำตอบยาว ~800-1500 ตัวอักษร</li>
+          <li>AI Key purpose: <code>prediction</code></li>
+          <li>Unique amount: 39.0X (ทศนิยมต่อบิล)</li>
+          <li>Affiliate commission triggered</li>
+        </ul>
+      </div>
+
+      <div class="tier-card celtic">
+        <div class="tier-badge">🏆 PREMIUM</div>
+        <div class="tier-name">Celtic Cross</div>
+        <div class="tier-name-th">ไพ่ยิปซีเต็มสำรับ · 10 ตำแหน่ง</div>
+        <div class="tier-price celtic">฿99<small>/ครั้ง</small></div>
+        <div class="tier-desc">การวางไพ่แบบ Celtic Cross 10 ใบ — วิเคราะห์ครบมิติ</div>
+        <ul class="tier-features">
+          <li>ไพ่ทาโรต์ 10 ใบ (interactive picking)</li>
+          <li>3 หัวข้อคำถาม (Q1/Q2/Q3)</li>
+          <li>วิเคราะห์ทีละตำแหน่ง</li>
+          <li>AI Key purpose: <code>prediction_celtic</code></li>
+          <li>Preferred provider: OpenAI</li>
+          <li>Vision AI (ส่งภาพไพ่ได้)</li>
+        </ul>
+      </div>
+
+      <div class="tier-card discovery">
+        <div class="tier-name">Discovery Chat</div>
+        <div class="tier-name-th">คุยเหมือนนักจิตวิทยา · เลือก tier เอง</div>
+        <div class="tier-price discovery">AI</div>
+        <div class="tier-desc">AI ค่อยๆ ถามแบบจิตวิทยา ก่อนแนะนำ tier 39฿ หรือ 99฿</div>
+        <ul class="tier-features">
+          <li>ไม่ใช่ form แข็ง — คุยธรรมชาติ</li>
+          <li>รวบรวม pain point ของลูกค้า</li>
+          <li>เสนอ tier ที่เหมาะสม</li>
+          <li>AI Key purpose: <code>chat</code></li>
+          <li>Conversion-optimized prompts</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">🎯 Why Unique Decimal Amounts? · ทำไมต้องใช้เศษทศนิยม?</div>
+      <p>
+        ระบบสร้าง <code>unique_amount</code> ต่อบิลด้วยการสุ่มทศนิยม (เช่น 39.01, 39.02, 39.07...)
+        เพื่อให้ <strong>SMS Payment Checker</strong> สามารถจับคู่ SMS จากธนาคารกับบิลที่ถูกต้องได้
+        แม้ในกรณีลูกค้าหลายคนโอนพร้อมกัน — ทศนิยมคือ <em>fingerprint ของบิล</em>.
+        ถ้าโอนผิดยอด (เช่น โอน 39.00 แทน 39.07) ระบบจะ <strong>ไม่จับคู่อัตโนมัติ</strong> — ต้องให้แอดมิน assign manual.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== CONVERSATION STATE MACHINE ===== -->
+  <section class="major" id="conversation">
+    <div class="section-head">
+      <span class="section-tag">// section.05 — conversation state</span>
+      <h2>Conversation State Machine</h2>
+      <p class="subtitle">การเปลี่ยน state ของบทสนทนา — แต่ละ state มี logic + valid transitions ของตัวเอง</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🔄</div>
+        <h3>State Transitions · Deep Reading (39฿) Path</h3>
+        <span class="meta">stateDiagram-v2</span>
+      </div>
+      <div class="mermaid">
+stateDiagram-v2
+    direction LR
+    [*] --> NEW: ลูกค้าทักครั้งแรก
+
+    NEW --> GREETING: ส่งทักทาย + Quick Reply
+    GREETING --> CHOOSING_TIER: รอลูกค้าเลือก tier
+
+    CHOOSING_TIER --> FREE_CARD_FLOW: กด "ฟรี"
+    CHOOSING_TIER --> DEEP_FLOW: กด "39฿"
+    CHOOSING_TIER --> CELTIC_FLOW: กด "99฿"
+    CHOOSING_TIER --> DISCOVERY_CHAT: พิมพ์ข้อความอิสระ
+
+    DISCOVERY_CHAT --> CHOOSING_TIER: AI เสนอ tier
+
+    state DEEP_FLOW {
+        [*] --> COLLECTING_BIRTHDATE
+        COLLECTING_BIRTHDATE --> COLLECTING_QUESTIONS: วันเกิดถูกต้อง
+        COLLECTING_BIRTHDATE --> COLLECTING_BIRTHDATE: format ผิด → ขอใหม่
+        COLLECTING_QUESTIONS --> READY_TO_PAY: คำถาม 1-500 chars
+        READY_TO_PAY --> PENDING_PAYMENT: สร้าง bill + unique_amount
+        PENDING_PAYMENT --> PENDING_PAYMENT: ยังไม่จ่าย<br/>(เตือน reminder)
+        PENDING_PAYMENT --> PAID: SMS match สำเร็จ
+        PAID --> AI_PROCESSING: dispatch job
+        AI_PROCESSING --> COMPLETED: ส่งคำทำนายแล้ว
+        AI_PROCESSING --> AI_FAILED: AI ล่มทุก provider
+        AI_FAILED --> AI_PROCESSING: retry (max 3)
+        COMPLETED --> [*]
+    }
+
+    state FREE_CARD_FLOW {
+        [*] --> CHECK_ELIGIBILITY
+        CHECK_ELIGIBILITY --> FREE_DENIED: เคยใช้แล้ว
+        CHECK_ELIGIBILITY --> DRAW_CARD: ลูกค้าใหม่
+        DRAW_CARD --> FREE_GENERATING: dispatch job
+        FREE_GENERATING --> FREE_DELIVERED: ส่งผล
+        FREE_DELIVERED --> UPSELL_OFFER: เสนอ 39฿/99฿
+        UPSELL_OFFER --> [*]: รับ → CHOOSING_TIER
+        UPSELL_OFFER --> PHILOSOPHY_QUOTE: ปฏิเสธ
+        FREE_DENIED --> [*]
+        PHILOSOPHY_QUOTE --> [*]
+    }
+
+    state TAKEOVER_MODE {
+        [*] --> ADMIN_REPLYING
+        ADMIN_REPLYING --> ADMIN_REPLYING: timer reset
+        ADMIN_REPLYING --> [*]: timeout / "เลิก"
+    }
+
+    NEW --> TAKEOVER_MODE: admin เปิด takeover
+    GREETING --> TAKEOVER_MODE: admin เปิด takeover
+    DEEP_FLOW --> TAKEOVER_MODE: admin เปิด takeover
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="feature-card">
+        <div class="card-icon purple">📜</div>
+        <h4>Trait Composition</h4>
+        <div class="card-sub">FortuneConversationService.php</div>
+        <p>Service หลักใช้ 4 traits แยก concern:</p>
+        <ul>
+          <li><code>CelticCrossConversationTrait</code> — 99฿ flow</li>
+          <li><code>FreeCardConversationTrait</code> — ฟรี flow</li>
+          <li><code>PayFirstGateTrait</code> — บิลค้างเตือน</li>
+          <li><code>ProSessionTrait</code> — 39฿ flow</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon cyan">⏱️</div>
+        <h4>Re-engagement Window</h4>
+        <div class="card-sub">Platform-specific cooldown</div>
+        <p>เวลาที่บอทส่ง re-engagement message ได้:</p>
+        <ul>
+          <li><strong>Facebook:</strong> ส่งได้หลัง <code>24 hours</code></li>
+          <li><strong>LINE:</strong> ส่งได้หลัง <code>1 hour</code></li>
+          <li>เก็บ <code>last_reengagement_at</code> ใน conversation state</li>
+          <li>นับ <code>reengagement_count</code> ป้องกัน spam</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">💬</div>
+        <h4>Message Constraints</h4>
+        <div class="card-sub">Validation rules</div>
+        <p>ลิมิตของข้อความที่รับ:</p>
+        <ul>
+          <li><code>MIN_QUESTION_LENGTH</code> = 1 char</li>
+          <li><code>MAX_QUESTION_LENGTH</code> = 500 chars</li>
+          <li><code>MAX_MESSAGE_LENGTH</code> = 2000 chars</li>
+          <li><code>REQUIRED_QUESTIONS</code> = 1 ข้อ (ลดจาก 3)</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon green">🌐</div>
+        <h4>Locale-Aware Replies</h4>
+        <div class="card-sub">FortuneLocaleService</div>
+        <p>รองรับ 2 ภาษาแบบ inline:</p>
+        <ul>
+          <li><code>LOCALE_TH</code> — ภาษาไทย (default)</li>
+          <li><code>LOCALE_LO</code> — ภาษาลาว</li>
+          <li>auto-detect จาก user profile / first message</li>
+          <li>เก็บใน <code>FortuneUserLanguage</code></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== AI ROUTING ===== -->
+  <section class="major" id="ai">
+    <div class="section-head">
+      <span class="section-tag">// section.06 — AI routing logic</span>
+      <h2>AI Provider Routing Logic</h2>
+      <p class="subtitle">การเลือก AI key + provider + model — Pool-first, purpose-aware, fallback-safe</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🤖</div>
+        <h3>AI Key Selection Decision Tree</h3>
+        <span class="meta">flowchart</span>
+      </div>
+      <div class="mermaid">
+flowchart TD
+    START([🎯 ProcessFortuneTelling Job<br/>ต้องเรียก AI]) --> P1{มี<br/>preferredProvider?}
+
+    P1 -->|ใช่ เช่น Celtic 99฿<br/>preferredProvider='openai'| P2[เรียก pool.acquireKey<br/>provider=openai<br/>purpose=prediction_celtic]
+    P1 -->|ไม่| P3{มี<br/>purpose?}
+
+    P2 -->|มี key พร้อมใช้| USE1[✅ ใช้ OpenAI key<br/>+ model จาก pool]
+    P2 -->|ไม่มี key| FALLBACK1[⚠️ fallback any-provider<br/>purpose=prediction_celtic]
+
+    P3 -->|ใช่ เช่น 'prediction'<br/>หรือ 'chat' หรือ 'free_card'| P4[pool.acquireKeyAnyProvider<br/>purpose=X]
+    P3 -->|ไม่| P5[pool.acquireKeyAnyProvider<br/>purpose=null any]
+
+    P4 -->|มี key| USE2[✅ ใช้ key ที่ตรง purpose<br/>provider+model จาก pool]
+    P4 -->|ไม่มี| FALLBACK2[⚠️ fallback to settings<br/>ai_provider + ai_api_key]
+
+    P5 -->|มี key| USE3[✅ ใช้ key ใดก็ได้<br/>ที่ active+ไม่หมดโควต้า]
+    P5 -->|ไม่มี| FALLBACK2
+
+    FALLBACK1 --> P4
+
+    USE1 --> CALL[📡 callProviderDirect<br/>HTTP request]
+    USE2 --> CALL
+    USE3 --> CALL
+    FALLBACK2 --> CALL
+
+    CALL --> RESP{Response<br/>OK?}
+
+    RESP -->|✅ 200 OK| SAVE[💾 บันทึก tokens_used<br/>+ provider + model<br/>+ ai_response]
+    RESP -->|❌ 401/403<br/>quota exceed| MARK[🚫 mark key as exhausted<br/>+ rotate to next]
+    RESP -->|❌ 5xx<br/>timeout| RECOVERY[🔄 FortuneAiFailureRecovery<br/>try next provider in priority]
+
+    MARK --> RETRY{ลองใหม่<br/>tries &lt; 3?}
+    RECOVERY --> RETRY
+
+    RETRY -->|ใช่| CALL
+    RETRY -->|ไม่| ALERT[🚨 FortuneAiStuckAlertJob<br/>แจ้ง admin via FCM<br/>+ บันทึก failure log]
+
+    SAVE --> END([🎉 Deliver to user])
+    ALERT --> FALLMSG[💌 ส่ง fallback message<br/>'ขออภัย ระบบ AI ติดขัด<br/>กรุณารอสักครู่']
+    FALLMSG --> END
+
+    style START fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style USE1 fill:#1c1638,stroke:#10b981,color:#fff
+    style USE2 fill:#1c1638,stroke:#10b981,color:#fff
+    style USE3 fill:#1c1638,stroke:#10b981,color:#fff
+    style MARK fill:#1c1638,stroke:#f43f5e,color:#fff
+    style ALERT fill:#1c1638,stroke:#ef4444,color:#fff
+    style SAVE fill:#1c1638,stroke:#d4af37,color:#fff
+    style END fill:#1c1638,stroke:#10b981,color:#fff
+      </div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft);">🌟 AI Provider Comparison Table</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Provider</th>
+            <th>Default Model</th>
+            <th>Cost</th>
+            <th>Speed</th>
+            <th>Best For</th>
+            <th>Purpose Mapping</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge gold">Gemini ⭐</span></td>
+            <td class="mono">gemini-1.5-flash</td>
+            <td><span class="badge green">FREE</span></td>
+            <td>⚡⚡⚡⚡</td>
+            <td>เริ่มต้น · default fallback</td>
+            <td class="mono">free_card · chat</td>
+          </tr>
+          <tr>
+            <td><span class="badge purple">Groq</span></td>
+            <td class="mono">llama-3.1-70b-versatile</td>
+            <td><span class="badge green">FREE</span></td>
+            <td>⚡⚡⚡⚡⚡</td>
+            <td>ความเร็วสูงสุด · fast chat</td>
+            <td class="mono">chat · prediction</td>
+          </tr>
+          <tr>
+            <td><span class="badge cyan">Qwen / HF</span></td>
+            <td class="mono">Qwen/Qwen2.5-72B-Instruct</td>
+            <td><span class="badge green">FREE</span></td>
+            <td>⚡⚡⚡</td>
+            <td>ภาษาไทย/จีนเก่ง</td>
+            <td class="mono">prediction</td>
+          </tr>
+          <tr>
+            <td><span class="badge pink">OpenRouter</span></td>
+            <td class="mono">anthropic/claude-3-sonnet</td>
+            <td><span class="badge amber">PAID</span></td>
+            <td>⚡⚡⚡⚡</td>
+            <td>หลายรุ่นให้เลือก</td>
+            <td class="mono">prediction · prediction_celtic</td>
+          </tr>
+          <tr>
+            <td><span class="badge gold">OpenAI</span></td>
+            <td class="mono">gpt-4o / gpt-4o-mini</td>
+            <td><span class="badge amber">PAID</span></td>
+            <td>⚡⚡⚡⚡</td>
+            <td>Celtic 99฿ premium · vision</td>
+            <td class="mono">prediction_celtic (preferred)</td>
+          </tr>
+          <tr>
+            <td><span class="badge purple">DeepSeek</span></td>
+            <td class="mono">deepseek-chat</td>
+            <td><span class="badge green">CHEAP</span></td>
+            <td>⚡⚡⚡⚡</td>
+            <td>ต้นทุนต่ำ · long context</td>
+            <td class="mono">prediction</td>
+          </tr>
+          <tr>
+            <td><span class="badge cyan">Typhoon</span></td>
+            <td class="mono">typhoon-v2-70b</td>
+            <td><span class="badge amber">PAID</span></td>
+            <td>⚡⚡⚡</td>
+            <td>ไทยโดยเฉพาะ · SCB AI</td>
+            <td class="mono">prediction · chat</td>
+          </tr>
+          <tr>
+            <td><span class="badge rose">Grok</span></td>
+            <td class="mono">grok-beta</td>
+            <td><span class="badge amber">PAID</span></td>
+            <td>⚡⚡⚡</td>
+            <td>Sensitive content tolerant</td>
+            <td class="mono">sensitive_ai_pool</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">🔑 Pool-First Architecture (since 2026-05-13)</div>
+      <p>
+        เดิม: <code>$settings-&gt;getActualAIProvider()</code> อ่านจาก <code>ai_provider</code> field
+        → ถ้า admin ลืม set field จะ fallback ไป Gemini (default) → admin งง "ตั้ง OpenAI ใน UI แต่ระบบใช้ Gemini".<br>
+        <strong>ใหม่:</strong> <code>AiApiKeyPoolService</code> เป็น single source of truth — admin จัดการ Pool ที่เดียว
+        ไม่ต้องตั้งซ้ำใน 2 ที่. Pool ว่าง → fallback ไป settings (backward compat).
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== CELTIC CROSS ===== -->
+  <section class="major" id="celtic">
+    <div class="section-head">
+      <span class="section-tag">// section.07 — celtic cross flow</span>
+      <h2>Celtic Cross 99฿ · Premium Flow</h2>
+      <p class="subtitle">ขั้นตอนการเล่นไพ่ทาโรต์แบบ Celtic Cross 10 ใบ + วิเคราะห์ทีละตำแหน่ง</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🔮</div>
+        <h3>Celtic Cross Interactive Picking Flow</h3>
+        <span class="meta">flowchart · stateful</span>
+      </div>
+      <div class="mermaid">
+flowchart TD
+    A[🎯 ลูกค้าเลือก<br/>Celtic Cross 99฿] --> B{ตรวจ<br/>Premium Detector}
+
+    B -->|✅ Available<br/>ระบบเปิด feature| C[สร้าง bill<br/>unique_amount 99.0X]
+    B -->|❌ Feature off| Z[💬 'ฟีเจอร์นี้ยังไม่เปิด<br/>กรุณาเลือก 39฿']
+
+    C --> D[📱 ส่ง QR + bank info<br/>+ คำอธิบาย Celtic Cross]
+    D --> E{รอ SMS<br/>match}
+
+    E -->|❌ ไม่จ่าย 24ชม.| REMIND[📨 ส่ง reminder]
+    REMIND --> E
+    E -->|❌ จ่ายผิดยอด| FLOAT[🚧 Floating bill<br/>admin assign]
+
+    E -->|✅ SMS match<br/>99.07 บาท| F[🎴 เปิด Card Picking UI<br/>การ์ดคว่ำ 78 ใบ]
+
+    F --> POS1[ตำแหน่ง 1: Present<br/>'หยิบไพ่ใบ 1']
+    POS1 --> CARD1[ลูกค้าเลือกการ์ด]
+    CARD1 --> ASK1{ถามคำถาม<br/>Q1?}
+    ASK1 -->|ต้องการ| Q1[ลูกค้าพิมพ์<br/>คำถามข้อ 1]
+    ASK1 -->|ข้าม| POS2
+    Q1 --> POS2
+
+    POS2[ตำแหน่ง 2: Obstacle<br/>'หยิบไพ่ใบ 2'] --> CARD2[เลือกการ์ด]
+    CARD2 --> POS3[ตำแหน่ง 3: Goal]
+    POS3 --> CARD3[เลือกการ์ด]
+    CARD3 --> ASK2{Q2?}
+    ASK2 -->|ใช่| Q2[คำถามข้อ 2]
+    ASK2 -->|ข้าม| POS4
+    Q2 --> POS4
+
+    POS4[ตำแหน่ง 4: Foundation] --> POS5[ตำแหน่ง 5: Past]
+    POS5 --> POS6[ตำแหน่ง 6: Near Future]
+    POS6 --> POS7[ตำแหน่ง 7: Self/Attitude]
+    POS7 --> POS8[ตำแหน่ง 8: External]
+    POS8 --> POS9[ตำแหน่ง 9: Hopes/Fears]
+    POS9 --> ASK3{Q3?}
+    ASK3 -->|ใช่| Q3[คำถามข้อ 3]
+    ASK3 -->|ข้าม| POS10
+    Q3 --> POS10
+    POS10[ตำแหน่ง 10: Outcome] --> CARD10[เลือกการ์ด]
+
+    CARD10 --> AI[🤖 ProcessDeepFortuneReading Job<br/>preferred=OpenAI<br/>purpose=prediction_celtic]
+
+    AI --> ANALYZE[วิเคราะห์ทีละตำแหน่ง<br/>1-10 + คำถาม Q1/Q2/Q3]
+    ANALYZE --> SUMMARY[สรุปรวมท้ายสุด<br/>Overall reading]
+
+    SUMMARY --> SEND[📤 ส่งคำทำนายยาว<br/>แบ่ง chunk 2000 chars]
+    SEND --> VOICE{ต้องการ<br/>เสียง?}
+    VOICE -->|ใช่| TTS[🎤 FortuneVoiceSummaryService<br/>generate audio]
+    VOICE -->|ไม่| FINAL[✅ COMPLETED]
+    TTS --> FINAL
+
+    FINAL --> COMM[💰 trigger commission<br/>99฿ × rate%]
+
+    style A fill:#1c1638,stroke:#d4af37,color:#fff
+    style F fill:#1c1638,stroke:#d4af37,color:#fff
+    style AI fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style FINAL fill:#1c1638,stroke:#10b981,color:#fff
+    style COMM fill:#1c1638,stroke:#f59e0b,color:#fff
+      </div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft);">🎴 10 Celtic Cross Positions</h3>
+    <div class="grid cols-4">
+      <div class="feature-card"><div class="card-icon purple">1</div><h4>Present</h4><p>สถานการณ์ปัจจุบัน — สิ่งที่เผชิญอยู่</p></div>
+      <div class="feature-card"><div class="card-icon pink">2</div><h4>Obstacle</h4><p>อุปสรรคที่ขวางหน้า — ความท้าทาย</p></div>
+      <div class="feature-card"><div class="card-icon cyan">3</div><h4>Conscious Goal</h4><p>เป้าหมายที่ตั้งใจ — จุดมุ่งหมาย</p></div>
+      <div class="feature-card"><div class="card-icon green">4</div><h4>Foundation</h4><p>รากฐาน · จิตใต้สำนึก</p></div>
+      <div class="feature-card"><div class="card-icon amber">5</div><h4>Past</h4><p>อดีต — สิ่งที่ผ่านมาแล้ว</p></div>
+      <div class="feature-card"><div class="card-icon rose">6</div><h4>Near Future</h4><p>อนาคตอันใกล้ — สิ่งที่กำลังจะมา</p></div>
+      <div class="feature-card"><div class="card-icon indigo">7</div><h4>Self / Attitude</h4><p>ตัวคุณ — ทัศนคติ</p></div>
+      <div class="feature-card"><div class="card-icon purple">8</div><h4>External Influence</h4><p>อิทธิพลภายนอก — คนรอบข้าง</p></div>
+      <div class="feature-card"><div class="card-icon pink">9</div><h4>Hopes &amp; Fears</h4><p>ความหวัง · ความกลัว</p></div>
+      <div class="feature-card"><div class="card-icon gold">10</div><h4>Outcome</h4><p>ผลลัพธ์สุดท้าย — บทสรุป</p></div>
+    </div>
+  </section>
+
+  <!-- ===== PAYMENT ===== -->
+  <section class="major" id="payment">
+    <div class="section-head">
+      <span class="section-tag">// section.08 — payment processing</span>
+      <h2>Payment Processing Flow</h2>
+      <p class="subtitle">SMS Auto-match · Stripe webhook · Floating bills · Fuzzy matching</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">💳</div>
+        <h3>SMS Payment Auto-Match Pipeline</h3>
+        <span class="meta">flowchart</span>
+      </div>
+      <div class="mermaid">
+flowchart TD
+    BANK[🏦 ธนาคารส่ง SMS<br/>'รับโอน 39.07 บาท จาก สมชาย ใจดี<br/>14:32 บัญชี xxx-1234'] --> APP[📱 Android SMS Checker App<br/>อ่าน SMS ผ่าน RECEIVE_SMS permission]
+
+    APP --> POST[🌐 POST /api/sms-notification<br/>amount · sender · bank · ref]
+    POST --> DB1[💾 บันทึก<br/>SmsPaymentNotification<br/>status=pending]
+
+    DB1 --> CHECK{ตรวจสอบ<br/>ยอดพิเศษ?}
+    CHECK -->|❌ ไม่ใช่ amount พิเศษ| NORMAL[ผ่าน — เป็นแค่ SMS เก็บ log]
+    CHECK -->|✅ findSpecialAmount<br/>tolerance 0.01| AMT[เป็นยอด fortune<br/>config matched]
+
+    AMT --> FIND[🔍 findUserFromNotification]
+    FIND --> S1{ค้นจากชื่อ<br/>ผู้โอน?}
+    S1 -->|พบ| MATCHED[✅ user_id ถูกต้อง]
+    S1 -->|ไม่พบ| S2{ค้นจากเลข<br/>บัญชี?}
+    S2 -->|พบ| MATCHED
+    S2 -->|ไม่พบ| FLOAT[🚧 is_floating=true<br/>user_id=null]
+
+    MATCHED --> CHECK_BILL{ค้นบิล<br/>pending matching<br/>amount นี้?}
+    FLOAT --> CHECK_BILL
+
+    CHECK_BILL -->|✅ เจอบิลตรง| LINK[🔗 update FortuneReading<br/>is_paid=true<br/>paid_at=now<br/>sms_notification_id]
+    CHECK_BILL -->|❌ ไม่มีบิล<br/>หรือมีหลายใบ| FUZZY[🧮 FortunePaymentFuzzyMatcher<br/>amount + time window + sender]
+
+    FUZZY --> CONF{Confidence<br/>&gt; 80%?}
+    CONF -->|✅ Match| LINK
+    CONF -->|⚠️ Match low<br/>หรือไม่มี| CREATE[➕ createFromSmsNotification<br/>auto-create reading<br/>floating bill]
+
+    LINK --> DISPATCH[⚡ dispatch ProcessFortuneTelling]
+    CREATE --> ADMIN_REVIEW[👤 admin review queue]
+
+    DISPATCH --> AI[🤖 AI generates response]
+    AI --> SEND[📤 ส่งคำทำนายให้ลูกค้า]
+    SEND --> COMM[💰 trigger commission]
+
+    LINK --> FCM[📲 FCM notify admin<br/>'บิลใหม่ matched']
+    CREATE --> FCM2[📲 FCM notify admin<br/>'⚠️ floating bill - manual assign']
+
+    style BANK fill:#1c1638,stroke:#10b981,color:#fff
+    style LINK fill:#1c1638,stroke:#10b981,color:#fff
+    style FLOAT fill:#1c1638,stroke:#f59e0b,color:#fff
+    style CREATE fill:#1c1638,stroke:#f43f5e,color:#fff
+    style COMM fill:#1c1638,stroke:#d4af37,color:#fff
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="feature-card">
+        <div class="card-icon green">💎</div>
+        <h4>3 Payment Channels</h4>
+        <div class="card-sub">Multiple options</div>
+        <ul>
+          <li><strong>QR PromptPay (Thai)</strong> — SMS auto-match</li>
+          <li><strong>Stripe</strong> — international cards + webhook</li>
+          <li><strong>Manual admin assign</strong> — fallback สำหรับ floating bills</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">🧮</div>
+        <h4>Fuzzy Matcher Logic</h4>
+        <div class="card-sub">PaymentFuzzyMatcher.php</div>
+        <ul>
+          <li>amount tolerance ±0.01 บาท</li>
+          <li>time window (30 นาที backward)</li>
+          <li>sender name similarity (Levenshtein)</li>
+          <li>confidence score 0-100</li>
+          <li>threshold 80% → auto-link</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon rose">🚧</div>
+        <h4>Floating Bills</h4>
+        <div class="card-sub">Manual review queue</div>
+        <ul>
+          <li>SMS เข้าแต่ไม่ match user หรือ bill</li>
+          <li>เก็บใน FortuneReading + <code>is_floating=true</code></li>
+          <li>FCM แจ้ง admin app ทันที</li>
+          <li>admin assign ผ่าน <code>assignFloatingBill()</code></li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon purple">🔁</div>
+        <h4>Stripe Webhook</h4>
+        <div class="card-sub">FortuneStripeWebhookController</div>
+        <ul>
+          <li>endpoint: <code>POST /webhook/fortune-stripe</code></li>
+          <li>verify Stripe signature</li>
+          <li>handle: <code>payment_intent.succeeded</code></li>
+          <li>auto-link by metadata.bill_reference</li>
+          <li>FortuneStripeService idempotency</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout green">
+      <div class="callout-title">💡 Why decimal-based matching?</div>
+      <p>
+        ปกติแล้ว SMS ธนาคารไม่ส่ง <em>metadata</em> ของบิลกลับมา — มีแค่จำนวนเงินกับชื่อผู้โอน.
+        ระบบจึงใช้ <code>unique_amount</code> (เช่น 39.07, 39.13, 99.23) ที่สร้างเฉพาะต่อบิล
+        ทำให้ <strong>amount = bill ID โดยปริยาย</strong>. วิธีนี้ <em>ไม่ต้องพึ่ง Payment Gateway</em>
+        — ใช้ได้กับทุกธนาคารที่ส่ง SMS notification (PromptPay, KBANK, SCB, BBL ฯลฯ).
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== ANTI-SPAM ===== -->
+  <section class="major" id="antispam">
+    <div class="section-head">
+      <span class="section-tag">// section.09 — anti-spam protection</span>
+      <h2>Anti-Spam &amp; Safety Engine</h2>
+      <p class="subtitle">ป้องกันการโจมตี · prompt injection · flood · automated scraping</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🛡️</div>
+        <h3>Multi-Layer Spam Protection</h3>
+        <span class="meta">flowchart · layered defense</span>
+      </div>
+      <div class="mermaid">
+flowchart TD
+    MSG[💬 ลูกค้าส่งข้อความ] --> L1{L1: Length<br/>check}
+    L1 -->|&gt; 2000 chars| DROP1[🚫 Drop · spam]
+    L1 -->|OK| L2{L2: Rate Limit<br/>per minute}
+
+    L2 -->|&gt; 120/min| DROP2[🚫 429 Too Many<br/>silent 1 min]
+    L2 -->|OK| L3{L3: Rate Limit<br/>per hour}
+
+    L3 -->|&gt; 1000/hr| DROP3[🚫 silent 5 min]
+    L3 -->|OK| L4{L4: AI calls<br/>per day}
+
+    L4 -->|&gt; 50/day| QUOTA[💰 quota exceeded<br/>เสนอจ่ายเงิน]
+    L4 -->|OK| L5{L5: Rapid-fire<br/>&gt;20 msgs / 15s?}
+
+    L5 -->|ใช่| SILENT[🔇 SILENT_MODE_MINUTES=2<br/>หยุดตอบ 2 นาที]
+    L5 -->|ไม่| L6{L6: Repetitive<br/>&gt;3 ข้อความซ้ำ?}
+
+    L6 -->|ใช่| WARN[⚠️ ส่งเตือน 'พิมพ์ซ้ำเกินไป']
+    L6 -->|ไม่| L7{L7: Prompt<br/>Injection?}
+
+    L7 -->|ตรวจพบ pattern<br/>'ignore previous'<br/>'system prompt'<br/>'jailbreak' ฯลฯ| BLOCK1[🚨 BLOCKED<br/>log + alert admin]
+    L7 -->|OK| L8{L8: AI Attack<br/>Patterns?}
+
+    L8 -->|ตรวจพบ<br/>'as an AI'<br/>'benchmark'<br/>'test case'| BLOCK2[🚨 BLOCKED<br/>log + alert admin]
+    L8 -->|OK| L9{L9: Sensitivity<br/>Detector}
+
+    L9 -->|ตรวจพบ<br/>self-harm/illegal/<br/>medical/financial advice| SENS[🌹 SensitiveBudgetGuard<br/>+ ส่งคำเตือน + ส่ง AI พิเศษ<br/>provider = Grok]
+    L9 -->|OK| L10{L10: Pay-First<br/>Gate}
+
+    L10 -->|มีบิลค้าง| WARN_BILL[⚠️ ใส่ warning ก่อน reply<br/>'มีบิลค้าง ค่าครู 39฿']
+    L10 -->|OK| PASS[✅ process ปกติ]
+
+    WARN_BILL --> PASS
+    SENS --> PASS
+    WARN --> PASS
+
+    PASS --> AI[🤖 FortuneAIService]
+
+    DROP1 -.log.-> LOG[(📜 FortuneSensitiveEvent<br/>+ Log)]
+    DROP2 -.log.-> LOG
+    DROP3 -.log.-> LOG
+    SILENT -.log.-> LOG
+    BLOCK1 -.log.-> LOG
+    BLOCK2 -.log.-> LOG
+    SENS -.log.-> LOG
+
+    style MSG fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style BLOCK1 fill:#1c1638,stroke:#ef4444,color:#fff
+    style BLOCK2 fill:#1c1638,stroke:#ef4444,color:#fff
+    style SILENT fill:#1c1638,stroke:#f59e0b,color:#fff
+    style SENS fill:#1c1638,stroke:#ec4899,color:#fff
+    style PASS fill:#1c1638,stroke:#10b981,color:#fff
+    style AI fill:#1c1638,stroke:#d4af37,color:#fff
+      </div>
+    </div>
+
+    <div class="grid cols-3">
+      <div class="feature-card">
+        <div class="card-icon rose">🚫</div>
+        <h4>Prompt Injection Patterns</h4>
+        <div class="card-sub">PROMPT_INJECTION_PATTERNS</div>
+        <p>คำที่ block — ทั้ง EN/TH:</p>
+        <ul>
+          <li>"ignore previous instructions"</li>
+          <li>"system prompt"</li>
+          <li>"jailbreak", "DAN mode"</li>
+          <li>"ลืมคำสั่งก่อนหน้า"</li>
+          <li>"แกล้งทำเป็น"</li>
+          <li>"show prompt", "reveal prompt"</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">🤖</div>
+        <h4>AI Attack Patterns</h4>
+        <div class="card-sub">AI_ATTACK_PATTERNS</div>
+        <p>ตรวจ AI อื่นเข้ามาคุย:</p>
+        <ul>
+          <li>"as an AI / language model"</li>
+          <li>"I am ChatGPT / Claude"</li>
+          <li>"generate a response"</li>
+          <li>"benchmark", "evaluation:"</li>
+          <li>"test case:", "scenario:"</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon purple">⏱️</div>
+        <h4>Rate Limit Tiers</h4>
+        <div class="card-sub">Per platform_user_id</div>
+        <p>ขีดจำกัดต่อ user:</p>
+        <ul>
+          <li><code>MAX_MESSAGES_PER_MINUTE</code> = 120</li>
+          <li><code>MAX_MESSAGES_PER_HOUR</code> = 1000</li>
+          <li><code>MAX_AI_CALLS_PER_DAY</code> = 50</li>
+          <li><code>RAPID_FIRE_THRESHOLD</code> = 20/15s</li>
+          <li><code>SILENT_MODE_MINUTES</code> = 2</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon cyan">🎭</div>
+        <h4>Specialized Detectors</h4>
+        <div class="card-sub">app/Services/Fortune/*.php</div>
+        <p>Modules:</p>
+        <ul>
+          <li><code>SensitivityDetector</code></li>
+          <li><code>OffTopicTracker</code></li>
+          <li><code>SatisfactionDetector</code></li>
+          <li><code>BillContextDetector</code></li>
+          <li><code>SensitiveBudgetGuard</code></li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon green">🌹</div>
+        <h4>Sensitive Topics</h4>
+        <div class="card-sub">SensitiveAI key pool</div>
+        <p>หัวข้ออ่อนไหว → ส่งไป provider ที่ระบบยอม (เช่น Grok):</p>
+        <ul>
+          <li>self-harm / suicide</li>
+          <li>medical advice แม่นยำ</li>
+          <li>financial advice ลงทุน</li>
+          <li>illegal activities</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon pink">📜</div>
+        <h4>Sensitive Event Log</h4>
+        <div class="card-sub">FortuneSensitiveEvent</div>
+        <p>บันทึกทุก trigger:</p>
+        <ul>
+          <li>platform + user_id + reason</li>
+          <li>raw message snippet</li>
+          <li>action taken</li>
+          <li>admin review queue</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ADMIN PANEL ===== -->
+  <section class="major" id="admin">
+    <div class="section-head">
+      <span class="section-tag">// section.10 — admin panel</span>
+      <h2>Admin Panel Structure</h2>
+      <p class="subtitle">หน้าจัดการในหลังบ้าน · 17+ ส่วนสำหรับควบคุมระบบทั้งหมด</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">⚙️</div>
+        <h3>Admin Controllers · Sitemap</h3>
+        <span class="meta">mindmap</span>
+      </div>
+      <div class="mermaid">
+mindmap
+  root((🔮 Admin Fortune<br/>Control Panel))
+    Configuration
+      FortuneSettingsController
+        AI provider settings
+        Facebook tokens
+        LINE channel tokens
+        Pricing tiers
+        Payment QR upload
+        Verify tokens
+      FortuneChannelController
+        Multi-channel routing
+        Per-channel toggles
+        Webhook URLs
+    Content Management
+      FortuneCategoriesController
+        6 default หมวด
+        Custom categories
+        Per-category prompts
+      FortuneResponseTemplatesController
+        Welcome messages
+        Error templates
+        Multilingual TH/LO
+      FortuneSavedQuestionsController
+        Common Q&A cache
+      FortuneBannerController
+        DM banner images
+        Campaign rotation
+    Readings & Bills
+      FortuneReadingsController
+        ประวัติทำนาย
+        Filter by status
+        Export CSV
+        Re-process button
+      FortuneBillingController
+        Floating bills
+        Manual assign
+        Refund / cancel
+      FortuneUsersController
+        User credits
+        Quota management
+        Block / unblock
+    Marketing
+      FortuneHoroscopeController
+        Daily horoscope content
+        12 zodiac scheduling
+        FB auto-posting
+      FortuneMysticController
+        Mystic topics
+        Mystic posts
+      FortuneMarketingController
+        Campaigns
+        Push notifications
+        Promo codes
+      FortunePersonasController
+        Customer segments
+        Targeting rules
+    Premium Features
+      FortuneCelticCrossController
+        99฿ tier settings
+        Card deck management
+        AI prompt template
+      FortuneVoicePresetController
+        TTS voice settings
+        Voice selection
+      FortuneAstrologyController
+        Birth chart calc
+        Astrology rules
+    LINE Specific
+      FortuneRichMenuEditorController
+        UI builder
+        Tab layouts
+      FortuneRichMenuDeployController
+        Deploy to LINE
+        A/B test variants
+    Affiliate & Finance
+      FortuneCommissionController
+        Approve / reject
+        Bulk payout
+        Per-affiliate stats
+      FortuneTakeoverController
+        Mae-mor handover
+        Active sessions
+        Takeover logs
+      </div>
+    </div>
+
+    <div class="callout">
+      <div class="callout-title">📊 Admin Dashboard Key Features</div>
+      <p>
+        <strong>Real-time stats</strong> — ดูสถิติการดูดวงสด · ยอด/วัน, AI provider usage, conversion rate.<br>
+        <strong>Bill triage</strong> — bills แบ่งเป็น: <em>matched</em> · <em>floating</em> · <em>expired</em> · <em>cancelled</em>.<br>
+        <strong>Takeover console</strong> — admin / แม่หมอ <em>เข้ามาคุยแทน AI</em> ได้ทันที (พร้อม FCM alert).<br>
+        <strong>Commission review</strong> — approve/reject commissions ก่อน payout (ป้องกัน fraud).<br>
+        <strong>Sensitive event review</strong> — ดู messages ที่ถูก block + investigate.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== DATA MODEL ===== -->
+  <section class="major" id="data">
+    <div class="section-head">
+      <span class="section-tag">// section.11 — data model</span>
+      <h2>Database Schema · Core Entities</h2>
+      <p class="subtitle">26+ tables — แยกตาม domain (Reading · Settings · Marketing · Affiliate · Logs)</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">💾</div>
+        <h3>Core Entity Relationships</h3>
+        <span class="meta">erDiagram</span>
+      </div>
+      <div class="mermaid">
+erDiagram
+    FortuneTellingSetting ||--o{ FortuneReading : "configures"
+    FortuneTellingSetting ||--o{ FortuneCategory : "manages"
+    FortuneTellingSetting ||--o{ FortuneBanner : "controls"
+
+    User ||--o{ FortuneReading : "owns (nullable)"
+    User ||--o{ FortuneUserCredit : "has 1"
+    User ||--o{ FortuneReferral : "refers / referred"
+    User ||--o{ FortuneCommission : "earns from"
+
+    FortuneReading ||--o| SmsPaymentNotification : "matched by"
+    FortuneReading ||--o{ FortuneCommission : "triggers"
+    FortuneReading ||--o| FortuneTakeoverLog : "human takeover"
+    FortuneReading ||--o{ FortuneSensitiveEvent : "flagged?"
+
+    FortuneCategory ||--o{ FortuneReading : "categorizes"
+    FortuneCategory ||--o{ FortuneSavedQuestion : "has questions"
+
+    FortuneCustomerPersona ||--o{ FortuneReading : "targets"
+    FortuneMarketingCampaign ||--o{ FortuneCustomerPersona : "targets segments"
+
+    FortuneHoroscopeContent ||--o{ FortuneHoroscopePost : "published as"
+    FortuneHoroscopeCampaign ||--o{ FortuneHoroscopeContent : "schedules"
+
+    FortuneMysticTopic ||--o{ FortuneMysticPost : "spawns"
+
+    FortuneReading {
+        bigint id PK
+        bigint user_id FK "nullable - guest support"
+        string facebook_user_id
+        string line_user_id
+        json questions
+        text ai_response
+        string ai_provider
+        string ai_model
+        int tokens_used
+        enum reading_type "basic/deep/celtic_cross/free_card"
+        enum conversation_status "NEW/COLLECTING/PENDING_PAYMENT/PAID/COMPLETED"
+        longtext conversation_state "JSON state machine"
+        decimal amount_paid
+        decimal unique_amount "39.07 / 99.13 ฯลฯ"
+        boolean is_paid
+        boolean is_floating
+        timestamp paid_at
+        json celtic_cards "10 positions"
+        string voice_audio_url
+        string stripe_payment_intent_id
+        timestamps
+    }
+
+    FortuneUserCredit {
+        bigint id PK
+        bigint user_id FK
+        int free_credits_remaining
+        int paid_credits_remaining
+        date last_reset_date
+        timestamp last_free_used_at
+        boolean follows_facebook
+        timestamps
+    }
+
+    FortuneCommission {
+        bigint id PK
+        bigint reading_id FK
+        bigint user_id FK "affiliate"
+        bigint referred_user_id FK
+        decimal commission_amount
+        decimal commission_rate
+        enum status "pending/approved/paid/rejected"
+        timestamp approved_at
+        timestamp paid_at
+        timestamps
+    }
+
+    FortuneReferral {
+        bigint id PK
+        bigint user_id FK "ผู้แนะนำ"
+        bigint referred_user_id FK
+        string referral_code
+        int level "MLM level"
+        timestamps
+    }
+
+    FortuneTellingSetting {
+        bigint id PK "singleton id=1"
+        boolean is_enabled
+        string ai_provider
+        string ai_model
+        text ai_api_key
+        string facebook_page_token
+        string facebook_verify_token
+        string line_channel_access_token
+        string line_channel_secret
+        decimal reading_price
+        decimal deep_reading_price
+        boolean enable_celtic_cross
+        boolean enable_free_card
+        boolean enable_discovery_chat
+        int max_free_readings
+        text basic_prompt_template
+        text deep_prompt_template
+        string payment_qr_image
+        boolean fuzzy_payment_default_enabled
+        timestamps
+    }
+      </div>
+    </div>
+
+    <h3 style="margin: 32px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft);">📚 Tables by Domain</h3>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Domain</th>
+            <th>Tables</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="badge purple">Configuration</span></td>
+            <td class="mono">fortune_telling_settings</td>
+            <td>Singleton — ตั้งค่าระบบทั้งหมด (API keys, prices, toggles)</td>
+          </tr>
+          <tr>
+            <td><span class="badge cyan">Reading Core</span></td>
+            <td class="mono">fortune_readings · fortune_categories · fortune_saved_questions</td>
+            <td>ประวัติการดูดวง · หมวดหมู่ · คำถามคงเหลือ</td>
+          </tr>
+          <tr>
+            <td><span class="badge green">User</span></td>
+            <td class="mono">fortune_user_credits · fortune_user_languages · fortune_customer_personas</td>
+            <td>Credits · ภาษา · persona segmentation</td>
+          </tr>
+          <tr>
+            <td><span class="badge amber">Affiliate</span></td>
+            <td class="mono">fortune_commissions · fortune_referrals</td>
+            <td>MLM commissions + referral chain</td>
+          </tr>
+          <tr>
+            <td><span class="badge pink">Horoscope</span></td>
+            <td class="mono">fortune_horoscope_content · fortune_horoscope_campaigns · fortune_horoscope_posts · fortune_daily_horoscope_posts</td>
+            <td>เนื้อหา 12 ราศี + auto-post FB</td>
+          </tr>
+          <tr>
+            <td><span class="badge gold">Premium</span></td>
+            <td class="mono">fortune_voice_presets · fortune_banners</td>
+            <td>TTS settings + DM banners</td>
+          </tr>
+          <tr>
+            <td><span class="badge rose">Safety/Logs</span></td>
+            <td class="mono">fortune_takeover_logs · fortune_sensitive_events · fortune_comment_engagements · fortune_post_reactions</td>
+            <td>Human handover + sensitive content + engagement</td>
+          </tr>
+          <tr>
+            <td><span class="badge purple">Mystic/Marketing</span></td>
+            <td class="mono">fortune_mystic_topics · fortune_mystic_posts · fortune_marketing_campaigns · fortune_response_templates · fortune_monthly_free_claims</td>
+            <td>เนื้อหา mystic + campaigns + claims</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== HOROSCOPE AUTO ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.12 — horoscope automation</span>
+      <h2>Horoscope Auto-Publishing</h2>
+      <p class="subtitle">เนื้อหาดวงรายวัน 12 ราศี → โพสต์ Facebook อัตโนมัติ</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">🌌</div>
+        <h3>Daily Horoscope Cron Pipeline</h3>
+        <span class="meta">flowchart · scheduled</span>
+      </div>
+      <div class="mermaid">
+flowchart LR
+    CRON[⏰ Cron 06:00 ทุกวัน] --> CMD1[HoroscopeGenerateDailyCommand]
+    CMD1 --> AI1[🤖 generate 12 zodiac<br/>predictions via AI]
+    AI1 --> SAVE1[(💾 HoroscopeDailyPrediction<br/>+ FortuneHoroscopeContent)]
+
+    SAVE1 --> CRON2[⏰ Cron 09:00 ทุกวัน]
+    CRON2 --> CMD2[FortuneDailyHoroscopePublish]
+    CMD2 --> CHECK1{มี campaign<br/>active?}
+
+    CHECK1 -->|✅| GENIMG[🎨 generate horoscope image<br/>FortuneChartService]
+    CHECK1 -->|❌| SKIP[skip - no campaign]
+
+    GENIMG --> POST_FB[📘 POST to Facebook<br/>Graph API v21.0]
+    POST_FB --> SAVE2[(💾 FortuneDailyHoroscopePost<br/>fb_post_id)]
+    SAVE2 --> SUBSCRIBE[🔔 subscribe comments<br/>via FortuneScanOldComments]
+
+    SUBSCRIBE --> COMMENT[🗣️ users comment 'ดูดวง']
+    COMMENT --> WEBHOOK[🔌 Facebook webhook event]
+    WEBHOOK --> PROCESS[ProcessCommentEngagement Job]
+    PROCESS --> REPLY[💬 auto-reply with reading]
+
+    style CRON fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style CRON2 fill:#1c1638,stroke:#8b5cf6,color:#fff
+    style POST_FB fill:#1c1638,stroke:#1877f2,color:#fff
+    style REPLY fill:#1c1638,stroke:#10b981,color:#fff
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONSOLE COMMANDS ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.13 — scheduled commands</span>
+      <h2>Scheduled Commands · Cron Jobs</h2>
+      <p class="subtitle">33+ Artisan commands ที่ทำงานในเบื้องหลังอย่างต่อเนื่อง</p>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Command</th>
+            <th>Frequency</th>
+            <th>Purpose · จุดประสงค์</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">fortune:horoscope-process</td>
+            <td><span class="badge green">Daily 06:00</span></td>
+            <td>สร้างคำทำนายรายวัน 12 ราศี</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:daily-horoscope-publish</td>
+            <td><span class="badge green">Daily 09:00</span></td>
+            <td>โพสต์ horoscope ใน Facebook</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:mystic-publish</td>
+            <td><span class="badge cyan">Daily</span></td>
+            <td>โพสต์ mystic content เผยแพร่</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:process-deep-reading</td>
+            <td><span class="badge purple">On-demand</span></td>
+            <td>ประมวลผล Celtic Cross 99฿</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:check-pending-readings</td>
+            <td><span class="badge amber">Every 5min</span></td>
+            <td>เช็คบิลที่ค้างชำระ + ส่ง reminder</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:send-bill-reminder</td>
+            <td><span class="badge amber">Every 1hr</span></td>
+            <td>เตือนลูกค้าจ่ายบิลที่ค้าง</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:stripe-poll</td>
+            <td><span class="badge cyan">Every 5min</span></td>
+            <td>polling Stripe transactions สำรอง webhook</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:expire-conversations</td>
+            <td><span class="badge rose">Hourly</span></td>
+            <td>หมดอายุบทสนทนาเก่า (cleanup state)</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:celtic-auto-finalize</td>
+            <td><span class="badge gold">Every 10min</span></td>
+            <td>Celtic Cross ที่ค้างหลายชั่วโมง → finalize</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:scan-old-comments</td>
+            <td><span class="badge pink">Hourly</span></td>
+            <td>สแกน comments Facebook ที่ยังไม่ตอบ</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:cleanup-free-readings</td>
+            <td><span class="badge green">Daily 00:00</span></td>
+            <td>รีเซ็ตโควต้าฟรีรายวัน</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:resync-cancelled-bills</td>
+            <td><span class="badge amber">Daily</span></td>
+            <td>sync บิลที่ถูกยกเลิก</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:audit-suspicious-payments</td>
+            <td><span class="badge rose">Daily</span></td>
+            <td>ตรวจสอบ payment ผิดปกติ (anti-fraud)</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:marketing-send</td>
+            <td><span class="badge purple">On schedule</span></td>
+            <td>ส่ง marketing campaign push</td>
+          </tr>
+          <tr>
+            <td class="mono">fortune:process-voice-summary</td>
+            <td><span class="badge cyan">On-demand</span></td>
+            <td>TTS audio generation</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== KEY DECISIONS ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.14 — design decisions</span>
+      <h2>Critical Design Decisions</h2>
+      <p class="subtitle">ทำไมระบบถึงออกแบบแบบนี้ · trade-offs ที่เลือก</p>
+    </div>
+
+    <div class="grid cols-2">
+      <div class="feature-card">
+        <div class="card-icon gold">🎯</div>
+        <h4>Pay-First Warning, Not Block</h4>
+        <div class="card-sub">2026-05-03 · refactor v1 → v2</div>
+        <p><strong>ก่อน:</strong> มีบิลค้าง → block ทุก service</p>
+        <p><strong>ใหม่:</strong> เตือนใน reply แต่ยังให้สร้างบิลใหม่ได้ — เพิ่มอัตราการ recover บิล</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon purple">🔄</div>
+        <h4>Reduced Required Questions</h4>
+        <div class="card-sub">3 → 1 questions</div>
+        <p><strong>ก่อน:</strong> ต้องการ 3 คำถาม → ลูกค้าหลายคนเลิกกลางทาง</p>
+        <p><strong>ใหม่:</strong> 1 คำถามเพียงพอ — focus ลึก แม่นกว่า</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon cyan">⚡</div>
+        <h4>Relaxed Rapid-Fire Threshold</h4>
+        <div class="card-sub">6 → 20 msgs / 15s</div>
+        <p><strong>ก่อน:</strong> 6 msgs/30s trip silent mode — บล็อก legitimate flow บ่อย</p>
+        <p><strong>ใหม่:</strong> 20 msgs/15s — จับเฉพาะ real flood</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon green">🌐</div>
+        <h4>Pool-First, Settings-Fallback</h4>
+        <div class="card-sub">2026-05-13</div>
+        <p><strong>ก่อน:</strong> ตั้งใน 2 ที่ (Pool + Settings) สับสน</p>
+        <p><strong>ใหม่:</strong> Pool เป็น single source of truth — settings fallback เท่านั้น</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon rose">💸</div>
+        <h4>Unique Decimal Amounts</h4>
+        <div class="card-sub">39.07 · 99.13 ฯลฯ</div>
+        <p>ไม่ต้องใช้ Payment Gateway — ใช้ amount เป็น bill ID ใน SMS</p>
+        <p>ใช้ได้กับทุกธนาคารไทย · ลูกค้าโอนผิดยอด = บิลค้าง (มี protection)</p>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">🛡️</div>
+        <h4>Queue Everything AI</h4>
+        <div class="card-sub">ProcessFortuneTelling Job</div>
+        <p>ทุก AI call ต้องผ่าน queue — กัน webhook timeout (FB จะ disable หลัง 500)</p>
+        <p>Retry 3 ครั้ง · exponential backoff 10/30/90s</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== COMMISSION ===== -->
+  <section class="major">
+    <div class="section-head">
+      <span class="section-tag">// section.15 — affiliate commission</span>
+      <h2>Affiliate Commission Flow</h2>
+      <p class="subtitle">ลูกค้าจ่ายเงิน → trigger commission → admin approve → payout</p>
+    </div>
+
+    <div class="diagram-card">
+      <div class="diagram-title">
+        <div class="icon-badge">💰</div>
+        <h3>Commission Lifecycle</h3>
+        <span class="meta">stateDiagram</span>
+      </div>
+      <div class="mermaid">
+stateDiagram-v2
+    direction LR
+    [*] --> CHECK_REFERRER: Fortune Reading is_paid=true
+
+    CHECK_REFERRER --> NO_REFERRER: ลูกค้าไม่มีคนแนะนำ
+    CHECK_REFERRER --> HAS_REFERRER: มี FortuneReferral entry
+
+    NO_REFERRER --> [*]: skip
+
+    HAS_REFERRER --> CALC: คำนวณ commission<br/>amount × rate%
+    CALC --> CREATE: create FortuneCommission<br/>status=pending
+
+    CREATE --> NOTIFY: FCM notify admin
+    NOTIFY --> PENDING_REVIEW
+
+    PENDING_REVIEW --> APPROVED: admin approve
+    PENDING_REVIEW --> REJECTED: admin reject<br/>(fraud detected)
+
+    APPROVED --> SCHEDULED: queued for payout
+    REJECTED --> [*]
+
+    SCHEDULED --> PAID: bank transfer<br/>or wallet credit
+    PAID --> [*]
+
+    note right of CHECK_REFERRER
+        MLM chain support
+        Level 1: 20%
+        Level 2: 5%
+        Level 3: 2%
+    end note
+
+    note right of PENDING_REVIEW
+        Manual approval prevents:
+        - Self-referral fraud
+        - Refunded transactions
+        - Suspicious patterns
+    end note
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== VALUATION ===== -->
+  <section class="major" id="valuation">
+    <div class="section-head">
+      <span class="section-tag">// section.16 — market valuation</span>
+      <h2>💎 Project Market Valuation</h2>
+      <p class="subtitle">การประเมินมูลค่าโครงการตามราคาตลาดจริง (Industry-Standard Rates) — แยกตามภูมิภาคและ deliverable</p>
+    </div>
+
+    <!-- Valuation Summary Cards -->
+    <div class="tier-grid">
+      <div class="tier-card free">
+        <div class="tier-name">SEA Market</div>
+        <div class="tier-name-th">ตลาดเอเชียตะวันออกเฉียงใต้ · TH/VN/PH</div>
+        <div class="tier-price free">$165K<small>–$280K</small></div>
+        <div class="tier-desc">Rate ~$35–60/hr · Senior Laravel devs</div>
+        <ul class="tier-features">
+          <li>~3,300–4,700 dev hours</li>
+          <li>Team: 4–6 people · 6–9 months</li>
+          <li>Onshore Thailand เหมาะที่สุด</li>
+          <li>ราคาแบบ <strong>โครงการ commercial</strong> ในไทย</li>
+        </ul>
+      </div>
+
+      <div class="tier-card deep">
+        <div class="tier-badge">⭐ FAIR MARKET</div>
+        <div class="tier-name">Global Mid-Market</div>
+        <div class="tier-name-th">EU / Eastern Europe / Latin America</div>
+        <div class="tier-price deep">$285K<small>–$485K</small></div>
+        <div class="tier-desc">Rate ~$60–100/hr · Senior full-stack</div>
+        <ul class="tier-features">
+          <li>~4,700–5,500 dev hours</li>
+          <li>Agency / studio price tier</li>
+          <li><strong>Fair Market Value</strong> = ~$385K USD</li>
+          <li>มาตรฐาน enterprise SaaS</li>
+          <li>เทียบเท่า MLM platform B2B</li>
+        </ul>
+      </div>
+
+      <div class="tier-card celtic">
+        <div class="tier-badge">🏆 ENTERPRISE</div>
+        <div class="tier-name">US / Western EU</div>
+        <div class="tier-name-th">San Francisco · NYC · London</div>
+        <div class="tier-price celtic">$520K<small>–$900K</small></div>
+        <div class="tier-desc">Rate ~$110–185/hr · Senior US contractors</div>
+        <ul class="tier-features">
+          <li>~5,500–6,500 dev hours</li>
+          <li>FAANG-level engineers</li>
+          <li>Premium consultancy (Big-4 / Accenture)</li>
+          <li>รวม project management + QA</li>
+          <li>Sticker price ใน Silicon Valley</li>
+        </ul>
+      </div>
+
+      <div class="tier-card discovery">
+        <div class="tier-name">SaaS Valuation</div>
+        <div class="tier-name-th">As a Product · Revenue-multiple</div>
+        <div class="tier-price discovery">$1.2M+</div>
+        <div class="tier-desc">ราคาขายในตลาด acquisition ถ้ามี revenue</div>
+        <ul class="tier-features">
+          <li>3–5x ARR (ถ้ามี recurring revenue)</li>
+          <li>Niche vertical SaaS premium</li>
+          <li>AI-powered = valuation booster</li>
+          <li>ตลาด ดูดวงในไทย ~7 พันล้านบาท/ปี</li>
+          <li>เทียบ Calm/Headspace ~$2B</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="callout gold">
+      <div class="callout-title">📊 Recommended Project Quote · ราคาเสนองานแนะนำ</div>
+      <p>
+        <strong>For Thai client (development cost):</strong> <code>$220,000 – $280,000 USD</code> (~฿8M – ฿10M บาท)<br>
+        <strong>Fair Global Market Value:</strong> <code>$385,000 USD</code> (~฿13.5M บาท)<br>
+        <strong>If sold as a turnkey product:</strong> <code>$500,000 – $750,000 USD</code> (~฿17.5M – ฿26M บาท)<br>
+        <strong>As ongoing SaaS (with users):</strong> <code>$1,200,000+ USD</code> (3–5× ARR)
+      </p>
+    </div>
+
+    <!-- Detailed Component Breakdown -->
+    <h3 style="margin: 48px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft); text-align: center; font-size: 24px;">
+      📋 Component-Level Cost Breakdown · ต้นทุนแยกตาม component
+    </h3>
+    <p style="text-align: center; color: var(--text-secondary); margin-bottom: 24px; font-size: 14px;">
+      <em>Estimates use blended rate $75/hr (mid-market global benchmark)</em>
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Component · ส่วนประกอบ</th>
+            <th>Complexity</th>
+            <th>Est. Hours</th>
+            <th>Cost (USD)</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">01</td>
+            <td><strong>Core Backend &amp; DB Architecture</strong><br><small style="color: var(--text-muted);">Laravel 11 setup, 26+ models, 80+ migrations, config</small></td>
+            <td><span class="badge purple">High</span></td>
+            <td class="mono">280h</td>
+            <td class="mono">$21,000</td>
+            <td>SafeMigration trait + singletons</td>
+          </tr>
+          <tr>
+            <td class="mono">02</td>
+            <td><strong>Multi-Channel Integration</strong><br><small style="color: var(--text-muted);">FB Messenger + LINE OA + Juntra Mobile API</small></td>
+            <td><span class="badge rose">Very High</span></td>
+            <td class="mono">220h</td>
+            <td class="mono">$16,500</td>
+            <td>Channel abstraction + webhook security</td>
+          </tr>
+          <tr>
+            <td class="mono">03</td>
+            <td><strong>AI Service + 8 Providers + Pool</strong><br><small style="color: var(--text-muted);">FortuneAIService 5,364 lines · Gemini/OpenAI/Groq/Qwen/+4</small></td>
+            <td><span class="badge rose">Very High</span></td>
+            <td class="mono">280h</td>
+            <td class="mono">$21,000</td>
+            <td>Purpose-based key routing + failover</td>
+          </tr>
+          <tr>
+            <td class="mono">04</td>
+            <td><strong>Conversation State Machine</strong><br><small style="color: var(--text-muted);">FortuneConversationService 16,642 lines · 4 traits</small></td>
+            <td><span class="badge rose">Very High</span></td>
+            <td class="mono">450h</td>
+            <td class="mono">$33,750</td>
+            <td>Most complex single component</td>
+          </tr>
+          <tr>
+            <td class="mono">05</td>
+            <td><strong>Payment Processing</strong><br><small style="color: var(--text-muted);">SMS auto-match + Stripe webhook + Fuzzy matcher</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">140h</td>
+            <td class="mono">$10,500</td>
+            <td>Unique amount system · idempotent</td>
+          </tr>
+          <tr>
+            <td class="mono">06</td>
+            <td><strong>Celtic Cross 99฿ Premium</strong><br><small style="color: var(--text-muted);">Interactive 10-card picking + Vision AI + position analysis</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">130h</td>
+            <td class="mono">$9,750</td>
+            <td>Complex prompt engineering</td>
+          </tr>
+          <tr>
+            <td class="mono">07</td>
+            <td><strong>Free Card + Discovery Chat</strong><br><small style="color: var(--text-muted);">Soft upsell flow · psychologist-style conversation</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">100h</td>
+            <td class="mono">$7,500</td>
+            <td>Conversion-optimized prompts</td>
+          </tr>
+          <tr>
+            <td class="mono">08</td>
+            <td><strong>Horoscope Auto-Publishing</strong><br><small style="color: var(--text-muted);">12 zodiac daily AI generation + FB auto-post</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">100h</td>
+            <td class="mono">$7,500</td>
+            <td>Includes chart image generator</td>
+          </tr>
+          <tr>
+            <td class="mono">09</td>
+            <td><strong>Admin Panel (17+ areas)</strong><br><small style="color: var(--text-muted);">50+ controllers · 103 Blade views · Tailwind + Alpine</small></td>
+            <td><span class="badge rose">Very High</span></td>
+            <td class="mono">350h</td>
+            <td class="mono">$26,250</td>
+            <td>CRUD + analytics + bulk ops</td>
+          </tr>
+          <tr>
+            <td class="mono">10</td>
+            <td><strong>Affiliate Commission MLM</strong><br><small style="color: var(--text-muted);">Multi-level chain · approval workflow · payouts</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">130h</td>
+            <td class="mono">$9,750</td>
+            <td>Fraud detection included</td>
+          </tr>
+          <tr>
+            <td class="mono">11</td>
+            <td><strong>Anti-Spam Engine</strong><br><small style="color: var(--text-muted);">7 specialized detectors · multi-layer guards</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">110h</td>
+            <td class="mono">$8,250</td>
+            <td>Prompt injection + AI attack patterns</td>
+          </tr>
+          <tr>
+            <td class="mono">12</td>
+            <td><strong>Human Takeover System</strong><br><small style="color: var(--text-muted);">Real-time admin chat · FCM alerts · state transitions</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">80h</td>
+            <td class="mono">$6,000</td>
+            <td>Mae-Mor handover feature</td>
+          </tr>
+          <tr>
+            <td class="mono">13</td>
+            <td><strong>Voice TTS Integration</strong><br><small style="color: var(--text-muted);">Voice presets · audio generation pipeline · S3 storage</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">60h</td>
+            <td class="mono">$4,500</td>
+            <td>Premium feature</td>
+          </tr>
+          <tr>
+            <td class="mono">14</td>
+            <td><strong>Localization (TH + LO)</strong><br><small style="color: var(--text-muted);">Dual-language replies · auto-detect · LocaleService</small></td>
+            <td><span class="badge green">Low-Med</span></td>
+            <td class="mono">45h</td>
+            <td class="mono">$3,375</td>
+            <td>Lao market expansion</td>
+          </tr>
+          <tr>
+            <td class="mono">15</td>
+            <td><strong>33+ Console Commands</strong><br><small style="color: var(--text-muted);">Cron jobs · cleanup · audits · reminders</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">130h</td>
+            <td class="mono">$9,750</td>
+            <td>Operational reliability</td>
+          </tr>
+          <tr>
+            <td class="mono">16</td>
+            <td><strong>Frontend UI / Public Pages</strong><br><small style="color: var(--text-muted);">103 Blade templates · Tailwind + Alpine.js · responsive</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">260h</td>
+            <td class="mono">$19,500</td>
+            <td>Horoscope/Tarot public pages</td>
+          </tr>
+          <tr>
+            <td class="mono">17</td>
+            <td><strong>Mobile App API (Juntra)</strong><br><small style="color: var(--text-muted);">REST API · session management · Sanctum auth</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">100h</td>
+            <td class="mono">$7,500</td>
+            <td>Mobile native support</td>
+          </tr>
+          <tr>
+            <td class="mono">18</td>
+            <td><strong>Testing &amp; Quality Assurance</strong><br><small style="color: var(--text-muted);">PHPUnit · feature tests · manual QA · regression</small></td>
+            <td><span class="badge amber">High</span></td>
+            <td class="mono">130h</td>
+            <td class="mono">$9,750</td>
+            <td>Critical for payment systems</td>
+          </tr>
+          <tr>
+            <td class="mono">19</td>
+            <td><strong>DevOps / Deployment</strong><br><small style="color: var(--text-muted);">CI/CD · GitHub Actions · deploy scripts · monitoring</small></td>
+            <td><span class="badge cyan">Medium</span></td>
+            <td class="mono">80h</td>
+            <td class="mono">$6,000</td>
+            <td>Production deployment ready</td>
+          </tr>
+          <tr>
+            <td class="mono">20</td>
+            <td><strong>Documentation</strong><br><small style="color: var(--text-muted);">FORTUNE_TELLING_GUIDE · API docs · admin manual</small></td>
+            <td><span class="badge green">Low-Med</span></td>
+            <td class="mono">65h</td>
+            <td class="mono">$4,875</td>
+            <td>100+ markdown docs</td>
+          </tr>
+          <tr style="background: rgba(212, 175, 55, 0.06); border-top: 2px solid var(--text-gold);">
+            <td class="mono" style="color: var(--text-gold-soft);"><strong>—</strong></td>
+            <td><strong style="color: var(--text-gold-soft);">TOTAL · รวมทั้งสิ้น</strong></td>
+            <td><span class="badge gold">Enterprise</span></td>
+            <td class="mono" style="color: var(--text-gold-soft);"><strong>~3,240h</strong></td>
+            <td class="mono" style="color: var(--text-gold-soft); font-size: 16px;"><strong>$243,000</strong></td>
+            <td><em>Base estimate @ $75/hr blended</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Rate Card Comparison -->
+    <h3 style="margin: 48px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft); text-align: center; font-size: 24px;">
+      🌍 Same Project · Different Markets · Different Prices
+    </h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Market · ตลาด</th>
+            <th>Avg Senior Rate</th>
+            <th>3,240 Hours Total</th>
+            <th>+25% Project Mgmt</th>
+            <th>Final Project Quote</th>
+            <th>≈ Thai Baht</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>🇮🇳 India</strong><br><small style="color: var(--text-muted);">Offshore outsourcing</small></td>
+            <td class="mono">$30/hr</td>
+            <td class="mono">$97,200</td>
+            <td class="mono">$24,300</td>
+            <td class="mono" style="color: var(--accent-green);"><strong>$121,500</strong></td>
+            <td class="mono">฿4.3M</td>
+          </tr>
+          <tr>
+            <td><strong>🇵🇭 Philippines / 🇻🇳 Vietnam</strong><br><small style="color: var(--text-muted);">SEA offshore</small></td>
+            <td class="mono">$40/hr</td>
+            <td class="mono">$129,600</td>
+            <td class="mono">$32,400</td>
+            <td class="mono" style="color: var(--accent-green);"><strong>$162,000</strong></td>
+            <td class="mono">฿5.7M</td>
+          </tr>
+          <tr style="background: rgba(139, 92, 246, 0.06);">
+            <td><strong>🇹🇭 Thailand (local)</strong><br><small style="color: var(--text-muted);">Bangkok · senior Laravel</small></td>
+            <td class="mono">$50/hr</td>
+            <td class="mono">$162,000</td>
+            <td class="mono">$40,500</td>
+            <td class="mono" style="color: var(--accent-purple);"><strong>$202,500</strong></td>
+            <td class="mono"><strong>฿7.1M</strong></td>
+          </tr>
+          <tr style="background: rgba(212, 175, 55, 0.08); border-left: 4px solid var(--text-gold);">
+            <td><strong>🌏 Global Mid-Market</strong><br><small style="color: var(--text-muted);">Eastern EU · LatAm · blended</small></td>
+            <td class="mono">$75/hr</td>
+            <td class="mono">$243,000</td>
+            <td class="mono">$60,750</td>
+            <td class="mono" style="color: var(--text-gold-soft); font-size: 15px;"><strong>$303,750</strong></td>
+            <td class="mono"><strong>฿10.6M</strong></td>
+          </tr>
+          <tr>
+            <td><strong>🇪🇺 Western Europe</strong><br><small style="color: var(--text-muted);">Germany · Netherlands · UK</small></td>
+            <td class="mono">$110/hr</td>
+            <td class="mono">$356,400</td>
+            <td class="mono">$89,100</td>
+            <td class="mono" style="color: var(--accent-pink);"><strong>$445,500</strong></td>
+            <td class="mono">฿15.6M</td>
+          </tr>
+          <tr>
+            <td><strong>🇸🇬 Singapore / 🇯🇵 Japan</strong><br><small style="color: var(--text-muted);">APAC tier-1</small></td>
+            <td class="mono">$130/hr</td>
+            <td class="mono">$421,200</td>
+            <td class="mono">$105,300</td>
+            <td class="mono" style="color: var(--accent-pink);"><strong>$526,500</strong></td>
+            <td class="mono">฿18.4M</td>
+          </tr>
+          <tr style="background: rgba(244, 63, 94, 0.04);">
+            <td><strong>🇺🇸 USA (SF / NYC)</strong><br><small style="color: var(--text-muted);">Silicon Valley · senior contractor</small></td>
+            <td class="mono">$165/hr</td>
+            <td class="mono">$534,600</td>
+            <td class="mono">$133,650</td>
+            <td class="mono" style="color: var(--accent-rose); font-size: 15px;"><strong>$668,250</strong></td>
+            <td class="mono">฿23.4M</td>
+          </tr>
+          <tr>
+            <td><strong>🏛️ Big-4 / Accenture</strong><br><small style="color: var(--text-muted);">Consulting firm enterprise</small></td>
+            <td class="mono">$220/hr</td>
+            <td class="mono">$712,800</td>
+            <td class="mono">$178,200</td>
+            <td class="mono" style="color: var(--accent-rose); font-size: 15px;"><strong>$891,000</strong></td>
+            <td class="mono">฿31.2M</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- What's Inside? -->
+    <h3 style="margin: 48px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft); text-align: center; font-size: 24px;">
+      💼 What's Included · Deliverable Inventory
+    </h3>
+
+    <div class="grid cols-3">
+      <div class="feature-card">
+        <div class="card-icon purple">📦</div>
+        <h4>Source Code</h4>
+        <div class="card-sub">Full ownership delivery</div>
+        <ul>
+          <li>~339+ Eloquent models (incl. 26+ fortune)</li>
+          <li>~41+ controllers (50+ fortune-specific)</li>
+          <li>~100+ Blade templates (103 fortune views)</li>
+          <li>20+ JavaScript modules</li>
+          <li>~80 fortune migrations</li>
+          <li>33+ Artisan commands</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon cyan">🔌</div>
+        <h4>Integrations</h4>
+        <div class="card-sub">8 AI + 3 channels + payments</div>
+        <ul>
+          <li>Gemini · OpenAI · Groq · Qwen</li>
+          <li>OpenRouter · DeepSeek · Typhoon · Grok</li>
+          <li>Facebook Graph API v21.0</li>
+          <li>LINE Messaging API</li>
+          <li>Stripe + SMS bank checker</li>
+          <li>Firebase FCM (admin alerts)</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon gold">🎨</div>
+        <h4>UI / UX</h4>
+        <div class="card-sub">V3 stack — modern</div>
+        <ul>
+          <li>Tailwind CSS (utility-first)</li>
+          <li>Alpine.js (reactive)</li>
+          <li>SortableJS (drag-drop)</li>
+          <li>Chart.js · Three.js · D3.js</li>
+          <li>Dark / Light mode support</li>
+          <li>Mobile-first responsive</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon green">🛡️</div>
+        <h4>Security &amp; Compliance</h4>
+        <div class="card-sub">Production-grade</div>
+        <ul>
+          <li>HMAC-SHA256 webhook verification</li>
+          <li>Laravel Sanctum API auth</li>
+          <li>Prompt injection prevention</li>
+          <li>AI attack pattern detection</li>
+          <li>Rate limiting (4 tiers)</li>
+          <li>Sensitive content guard</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon amber">📊</div>
+        <h4>Business Logic</h4>
+        <div class="card-sub">Monetization-ready</div>
+        <ul>
+          <li>3-tier pricing (Free / 39฿ / 99฿)</li>
+          <li>Affiliate MLM commission</li>
+          <li>SMS auto-payment matching</li>
+          <li>Unique decimal billing</li>
+          <li>Human takeover system</li>
+          <li>Discovery chat (psychology-style)</li>
+        </ul>
+      </div>
+      <div class="feature-card">
+        <div class="card-icon rose">📚</div>
+        <h4>Documentation</h4>
+        <div class="card-sub">100+ markdown files</div>
+        <ul>
+          <li>FORTUNE_TELLING_GUIDE.md (28KB)</li>
+          <li>ARCHITECTURE.md (19KB)</li>
+          <li>API_ARCHITECTURE_GUIDE.md (28KB)</li>
+          <li>DESIGN_GUIDELINES.md (46KB)</li>
+          <li>V3 coding guidelines</li>
+          <li>Thai language rules</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Comparable Products -->
+    <h3 style="margin: 48px 0 16px; font-family: 'Cinzel', serif; color: var(--text-gold-soft); text-align: center; font-size: 24px;">
+      📈 Market Comparables · ราคาเทียบกับผลิตภัณฑ์อื่น
+    </h3>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Product · ผลิตภัณฑ์เทียบ</th>
+            <th>Type</th>
+            <th>Estimated Build Cost</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>Calm</strong> / <strong>Headspace</strong></td>
+            <td><span class="badge cyan">Wellness SaaS</span></td>
+            <td class="mono">$500K–$2M build · $2B valuation</td>
+            <td>Wellness/meditation similar tech stack</td>
+          </tr>
+          <tr>
+            <td><strong>Co-Star</strong> astrology app</td>
+            <td><span class="badge purple">Astrology</span></td>
+            <td class="mono">$1.5M build · $35M valuation</td>
+            <td>Direct competitor type · simpler tech</td>
+          </tr>
+          <tr>
+            <td><strong>Sanook Horoscope</strong> (TH)</td>
+            <td><span class="badge gold">Thai market</span></td>
+            <td class="mono">~฿15–25M ($430K–$715K)</td>
+            <td>Thai-only · less AI · fewer channels</td>
+          </tr>
+          <tr>
+            <td><strong>ManyChat</strong> (FB Messenger SaaS)</td>
+            <td><span class="badge pink">Chat platform</span></td>
+            <td class="mono">$3M+ build · $200M+ valuation</td>
+            <td>Similar messenger automation</td>
+          </tr>
+          <tr>
+            <td><strong>MLM platforms</strong> (Epixel, MultiSoft)</td>
+            <td><span class="badge amber">Affiliate</span></td>
+            <td class="mono">$150K–$500K white-label</td>
+            <td>Affiliate only · no AI</td>
+          </tr>
+          <tr style="background: rgba(212, 175, 55, 0.08); border-left: 4px solid var(--text-gold);">
+            <td><strong>🔮 This System</strong></td>
+            <td><span class="badge gold">All-in-one</span></td>
+            <td class="mono" style="color: var(--text-gold-soft);"><strong>$303,750 (fair market)</strong></td>
+            <td><em>AI + Multi-channel + Payment + MLM</em></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ROI / Value Proposition -->
+    <div class="callout green" style="margin-top: 32px;">
+      <div class="callout-title">💡 Why this estimate is reasonable</div>
+      <p>
+        <strong>1. Real LOC:</strong> Code base ~30,000 บรรทัด (เฉพาะ fortune services) · industry productivity ~10–15 LOC/hr → ~2,000–3,000 hours.<br>
+        <strong>2. Feature parity:</strong> ถ้าจ้างทำใหม่จาก scratch จะใช้เวลา 6–9 เดือน · 4–6 senior devs.<br>
+        <strong>3. AI integration multiplier:</strong> 8 providers + pool management = +25% complexity premium.<br>
+        <strong>4. Payment + Compliance:</strong> ระบบเงินจริง · ต้อง audit · ราคาประเมินรวม risk premium.<br>
+        <strong>5. Multi-language + Multi-channel:</strong> ปกติ +20–30% ของราคาฐาน.
+      </p>
+    </div>
+
+    <div class="callout rose" style="margin-top: 16px;">
+      <div class="callout-title">⚠️ Caveats · ข้อพึงระวัง</div>
+      <p>
+        • <strong>ราคาประเมินนี้ = build cost</strong> · ไม่รวม ongoing operations (server, AI API tokens, payment gateway fees).<br>
+        • <strong>ต้นทุน operating รายเดือน:</strong> ~$500–$3,000/เดือน (Cloud + AI tokens + SMS + Stripe fees).<br>
+        • <strong>การขายเป็น SaaS:</strong> มูลค่าจริงในตลาด = revenue multiple, ไม่ใช่ build cost. ถ้ามี users + revenue → valuation อาจสูงกว่า build cost 3–10 เท่า.<br>
+        • <strong>ราคา reseller / white-label:</strong> ปกติคิดเป็น licensing fee รายปี ($5K–$50K/ลูกค้า) แทนการขาย source code ตรง.
+      </p>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER ===== -->
+  <footer>
+    <div class="footer-brand">🔮 Fortune Telling System</div>
+    <div class="divider-cosmic"></div>
+    <p>System Workflow Documentation · ระบบดูดวงออนไลน์ · Thaiprompt Affiliate Platform</p>
+    <p><strong>Version 3.0</strong> · Laravel 11 · 26+ models · 50+ controllers · 8 AI providers</p>
+    <p>Generated 2026-05-16 · For presentation &amp; reference purposes</p>
+    <p style="margin-top: 16px; font-style: italic; color: var(--text-gold-soft);">
+      "ดูดวงด้วย AI — แม่นยำ รวดเร็ว ทันสมัย" ✨🔮
+    </p>
+  </footer>
+
+</div>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#1c1638',
+      primaryColor: '#4c1d95',
+      primaryTextColor: '#f4f1ff',
+      primaryBorderColor: '#8b5cf6',
+      lineColor: '#d4af37',
+      secondaryColor: '#831843',
+      tertiaryColor: '#0e7490',
+      mainBkg: '#1c1638',
+      secondBkg: '#14142b',
+      tertiaryBkg: '#0a0a1f',
+      nodeTextColor: '#f4f1ff',
+      textColor: '#f4f1ff',
+      labelTextColor: '#f4f1ff',
+      edgeLabelBackground: '#1c1638',
+      clusterBkg: '#14142b',
+      clusterBorder: '#6d28d9',
+      titleColor: '#f5d76e',
+      fontFamily: 'Sarabun, sans-serif',
+    },
+    flowchart: {
+      htmlLabels: true,
+      curve: 'basis',
+      padding: 20,
+      useMaxWidth: true,
+    },
+    sequence: {
+      diagramMarginX: 30,
+      diagramMarginY: 20,
+      actorMargin: 70,
+      width: 150,
+      height: 50,
+      boxMargin: 10,
+      messageMargin: 35,
+      mirrorActors: false,
+      bottomMarginAdj: 1,
+      useMaxWidth: true,
+      rightAngles: false,
+      showSequenceNumbers: false,
+    },
+    stateDiagram: {
+      useMaxWidth: true,
+    },
+    er: {
+      useMaxWidth: true,
+    },
+    mindmap: {
+      useMaxWidth: true,
+    },
+  });
+
+  // Smooth scroll for anchor links
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>
