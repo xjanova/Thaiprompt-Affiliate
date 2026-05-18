@@ -1719,6 +1719,19 @@ PROMPT;
 
         if ($hasDirectKey) {
             // Step 1: ลอง chat AI หลัก (admin set direct key)
+            // 🆕 (2026-05-18) Groq 429 wait+retry — user spec:
+            //   "แชทปกติ ให้รอ 429 ใช้ได้แล้วค่อยตอบ นานขึ้น
+            //    ถ้ารอแล้วไม่ได้ เฟลไป gemini flash 2.5"
+            //   Logic:
+            //     - ถ้า primary error เป็น 429 → parse Retry-After จาก error message
+            //     - wait = min(parsed_wait, max_user_spec=20s, remaining_budget - retry_buffer)
+            //     - ถ้า wait > 0 → sleep + retry 1 ครั้ง (direct chat AI เดิม)
+            //     - ถ้ายัง 429 → fallback Pool (Gemini Flash 2.5 ผ่าน purpose-first v4)
+            //   หมายเหตุ: caller ปัจจุบันส่ง totalTimeoutMs=15s (Phase G)
+            //             → ถ้า error มา instant + Retry-After ≤ 11s → ทำ retry ได้
+            //             → ถ้า Retry-After 20s + budget เหลือ < 14s → fallback ทันที (ไม่รอ)
+            $maxWaitSecUserCap = 20;       // user spec — รอนานสุด 20s
+            $retryCallBufferMs = 3000;     // กัน retry call เอง timeout (~3s)
             try {
                 if (! empty($history)) {
                     return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
@@ -1726,10 +1739,59 @@ PROMPT;
 
                 return $this->generateChatResponse($messageText, $userProfile);
             } catch (Exception $primaryErr) {
-                Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
-                    'primary_error' => mb_substr($primaryErr->getMessage(), 0, 150),
-                    'elapsed_ms' => $elapsedMs(),
-                ]);
+                $errMsg = $primaryErr->getMessage();
+                $is429 = str_contains($errMsg, '429') || stripos($errMsg, 'rate limit') !== false;
+
+                if ($is429) {
+                    // Parse wait time จาก error: "Please try again in X.Xs" หรือ "retry after Ns"
+                    $parsedWaitSec = 5; // default ถ้า parse ไม่ออก
+                    if (preg_match('/try again in ([\d.]+)s/i', $errMsg, $m)) {
+                        $parsedWaitSec = (int) ceil((float) $m[1]) + 1; // round up + buffer 1s
+                    } elseif (preg_match('/retry.{0,10}([\d]+)\s*(?:s|sec)/i', $errMsg, $m)) {
+                        $parsedWaitSec = (int) $m[1];
+                    }
+
+                    // Cap ตาม user spec (20s) + budget เหลือ
+                    $remainingMs = $totalTimeoutMs - $elapsedMs();
+                    $maxBudgetWaitSec = (int) floor(max(0, $remainingMs - $retryCallBufferMs) / 1000);
+                    $finalWaitSec = min($parsedWaitSec, $maxWaitSecUserCap, $maxBudgetWaitSec);
+
+                    if ($finalWaitSec > 0) {
+                        Log::info('FortuneAIService: Chat 429 → wait '.$finalWaitSec.'s แล้ว retry direct', [
+                            'wait_sec' => $finalWaitSec,
+                            'parsed_wait_sec' => $parsedWaitSec,
+                            'max_user_cap_sec' => $maxWaitSecUserCap,
+                            'max_budget_wait_sec' => $maxBudgetWaitSec,
+                            'remaining_ms' => $remainingMs,
+                            'error_preview' => mb_substr($errMsg, 0, 100),
+                        ]);
+                        sleep($finalWaitSec);
+
+                        try {
+                            if (! empty($history)) {
+                                return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
+                            }
+
+                            return $this->generateChatResponse($messageText, $userProfile);
+                        } catch (Exception $retryErr) {
+                            Log::info('FortuneAIService: Chat retry หลัง wait '.$finalWaitSec.'s ยังล้มเหลว → fallback Pool', [
+                                'retry_error' => mb_substr($retryErr->getMessage(), 0, 150),
+                                'elapsed_ms' => $elapsedMs(),
+                            ]);
+                        }
+                    } else {
+                        Log::info('FortuneAIService: Chat 429 — budget ไม่พอจะรอ → fallback Pool ทันที', [
+                            'remaining_ms' => $remainingMs,
+                            'parsed_wait_sec' => $parsedWaitSec,
+                            'max_budget_wait_sec' => $maxBudgetWaitSec,
+                        ]);
+                    }
+                } else {
+                    Log::info('FortuneAIService: Chat AI หลักล้มเหลว → ลอง AI Pool fallback', [
+                        'primary_error' => mb_substr($errMsg, 0, 150),
+                        'elapsed_ms' => $elapsedMs(),
+                    ]);
+                }
             }
 
             if ($elapsedMs() >= $totalTimeoutMs) {

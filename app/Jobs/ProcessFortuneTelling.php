@@ -105,8 +105,10 @@ class ProcessFortuneTelling implements ShouldQueue
 
             // 🆕 (2026-05-07) สร้าง AI service พร้อม purpose ที่ตรง — pool จะเลือก key ที่ตรงประเภท
             //   เดิม: DI inject $aiService โดยไม่รู้ purpose → ได้ key ทั่วไป
-            //   ใหม่: deep = 'prediction' (paid), basic = 'free_card' (free)
-            $aiService = new FortuneAIService(null, $isDeep ? 'prediction' : 'free_card');
+            //   ใหม่: deep = 'prediction_deep' (Gemini 3.1 Pro), basic = 'free_card'
+            // 🎯 (2026-05-18) Deep 39฿ ใช้ Gemini 3.1 Pro → purpose='prediction_deep'
+            //   (scopeForPurpose hierarchy: prediction_deep → prediction → any → null)
+            $aiService = new FortuneAIService(null, $isDeep ? 'prediction_deep' : 'free_card');
 
             // ส่ง typing indicator ขณะ AI กำลังประมวลผล (Messenger only)
             if (! $isComment && $fromId) {
