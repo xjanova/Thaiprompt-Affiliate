@@ -405,6 +405,24 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // 🚨 (2026-05-19 Batch 2) Fortune Expire Stuck Paid — Last-resort safety net
+        //   หาบิลค้างเกิน 24 ชม. (เกินกรอบ check-pending recovery)
+        //   → mark admin_review_needed + alert admin via LINE + push คำขอโทษให้ลูกค้า
+        //   ครอบ Deep 39฿ + Celtic 99฿ ทั้งคู่
+        //   user spec: "ลูกค้าจ่ายแล้วต้องได้คำทำนาย — แอดมินดูแลถ้าระบบฟันไม่ได้"
+        // ========================================
+        $schedule->command('fortune:expire-stuck-paid', ['--hours=24', '--limit=50'])
+            ->everySixHours()
+            ->withoutOverlapping(30)
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Expire Stuck Paid] รอบสำรวจ stuck readings เสร็จ');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Expire Stuck Paid] expire stuck paid readings ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
         //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
         //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ
