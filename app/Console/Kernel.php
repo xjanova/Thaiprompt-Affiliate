@@ -378,6 +378,33 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // 🛟 (2026-05-19 Batch 1) Fortune Celtic Recovery — auto-scan stuck Celtic 99฿
+        //   เคสที่ครอบ: ลูกค้าจ่าย Celtic แล้วบอทเงียบไม่ส่งให้เลือกไพ่ (picked=0 + ค้าง > 5 นาที)
+        //   command มีอยู่แล้ว (FortuneCelticRecover.php — รับ --auto flag) แต่ยังไม่ schedule
+        //   ทำให้ stuck Celtic ไม่ self-heal — ลูกค้าต้องรอ admin manual recover
+        // ========================================
+        $schedule->command('fortune:celtic-recover', ['--auto', '--minutes=5'])
+            ->everyTenMinutes()
+            ->withoutOverlapping(15) // lock 15 นาที (re-push อาจช้าถ้าหลายราย)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Celtic Recover] auto-recover Celtic readings ล้มเหลว');
+            });
+
+        // ========================================
+        // 🛟 (2026-05-19 Batch 1) Fortune Recover Paid No Birthdate — Deep 39฿ Pay-First stuck
+        //   เคสที่ครอบ: ลูกค้าจ่าย 39 แล้ว Pay-First ไม่ขอวันเกิด (birth_date=NULL + paid_at > 3 นาที)
+        //   command มีอยู่แล้ว (FortuneRecoverPaidNoBirthdate.php — รับ --auto flag) แต่ยังไม่ schedule
+        // ========================================
+        $schedule->command('fortune:recover-paid-no-birthdate', ['--auto', '--min-age-minutes=3', '--hours=24'])
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Recover Paid No Birthdate] auto-recover Deep readings ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
         //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
         //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ
