@@ -479,72 +479,54 @@ class ProcessDeepFortuneReadingJob implements ShouldQueue
                             // notification_attempted=true แล้ว → FCS:794 จะส่งคำทำนายเต็มทันทีตอนทักกลับ
                         }
                     } else {
-                        // 📱 Facebook: ส่งคำทำนายเต็มทันที (ไม่ถามก่อน)
+                        // 📱 (2026-05-19 Batch 7) Facebook: push แจ้งเตือน "คำทำนายพร้อม จะอ่านไหม?"
+                        //    User spec: "เปิดไพ่ → เห็นไพ่ → AI ทำนาย → ส่งแจ้งเตือนว่าจะอ่านไหม → กดอ่าน → ส่งคำทำนาย"
+                        //
+                        //    เดิม: push view_reading_deep ทันที (ลูกค้าโดน wall of text)
+                        //    ใหม่: push fortune_ready_notification (button "📖 อ่านคำทำนาย / ⏰ ไว้ดูทีหลัง")
+                        //          → ลูกค้ากด VIEW_READING postback → FacebookWebhookController:3457
+                        //          → FCS:1252+ unsentReading guard ส่งคำทำนายเต็มผ่าน replyMessage (ฟรี — ไม่กิน push quota)
                         try {
-                            // ประกอบข้อความคำทำนายเต็ม (รูปแบบเดียวกับ FCS:779-784)
-                            $readingMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
-                            $readingMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
-                            $readingMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
-                            $readingMessage .= "═══════════════════════\n\n";
-                            $readingMessage .= $reading->deep_response;
+                            $readyMessage = "🔮✨ คุณ{$name}คะ คำทำนายเชิงลึกพร้อมแล้วค่ะ!\n\n"
+                                .'📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n\n"
+                                ."อ่านเลยไหมคะ? 💎\n"
+                                ."💡 กดปุ่ม 'อ่านคำทำนาย' ด้านล่างเลยค่ะ ✨";
 
-                            Log::info('ProcessDeepFortuneReadingJob: Facebook — ส่งคำทำนายเต็มทันที (push)', [
+                            Log::info('ProcessDeepFortuneReadingJob: Facebook — push แจ้งเตือน "คำทำนายพร้อม" (button template)', [
                                 'reading_id' => $this->readingId,
                                 'user_id' => $this->userId,
-                                'message_length' => mb_strlen($readingMessage),
-                                'has_chart' => ! empty($reading->reading_image_url),
                                 'retry_count' => $retryCount,
                             ]);
 
-                            // 🃏 (2026-05-05) ส่งรูปไพ่ Pay-First explicit (เหมือน Pay-Later branch)
-                            //    เดิม: pay-first push ไม่มี tarot_image_urls → ChannelManager fallback
-                            //          ผ่าน normalizeTarotImageUrls อาจ fail ถ้า reading hydration ไม่ครบ
-                            //    ใหม่: ส่งตรงๆ เหมือน Pay-Later block (line 402-409)
-                            $tarotImageUrls = collect($reading->getCollectedTarotCards())
-                                ->pluck('image_url')
-                                ->filter()
-                                ->values()
-                                ->all();
-
                             $sent = $channelManager->sendResponse($this->platform, $this->userId, [
-                                'action' => 'view_reading_deep',
-                                'message' => $readingMessage,
+                                'action' => 'fortune_ready_notification',
+                                'message' => $readyMessage,
                                 'reading' => $reading,
-                                'chart_image_url' => $reading->reading_image_url,
-                                'tarot_image_urls' => $tarotImageUrls,
                             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                            // 🛡️ (2026-05-03) เขียน flag เฉพาะเมื่อ $sent === true
-                            //    เคสเดิม: transient FB error → $sent=false → flag เขียน false → retry counter
-                            //    ขึ้นไป → 3 fail = lock ออกจาก push ถาวร (ลูกค้าจ่ายแล้วเงียบ)
-                            //    ตอนนี้: false → ไม่เขียน flag → reply path (ตอนลูกค้าทักกลับ) ยังส่งได้
+                            // 🛡️ (2026-05-19 Batch 7) เขียน flag เฉพาะเมื่อ $sent === true — กัน transient lock
+                            //    *สำคัญ*: ไม่ตั้ง reading_sent_directly=true เพราะคำทำนายเต็มยังไม่ได้ส่ง
+                            //    flag นั้นจะถูกตั้งโดย FCS:1287 (ตอนลูกค้ากด VIEW_READING / พิมพ์อะไรก็ได้)
                             if ($sent) {
-                                $reading->setConversationState('reading_sent_directly', true);
                                 $reading->setConversationState('reading_notification_sent', true);
-                                $reading->setConversationState('reading_ready_sent', true);
-                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
-                                $reading->setConversationState('delivered_by_push', true);
-
-                                // 🚫 (2026-05-08) per user — ห้ามส่ง invite text "คุยต่อ 48 ชม"
-                                //    ระบบ premium chat ทำงานเงียบๆ — ลูกค้าทักภายใน 10 นาที AI ตอบ Pro mode
-                                //    เดิม: $this->sendPostReadingFollowUp($channelManager, $reading, $name);
+                                $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
                             } else {
-                                Log::warning('ProcessDeepFortuneReadingJob: Facebook push fail (transient) — ไม่ lock retry, จะ fallback ตอน user ทักกลับ', [
+                                Log::warning('ProcessDeepFortuneReadingJob: Facebook push notification fail (transient) — fallback ตอน user ทักกลับ', [
                                     'reading_id' => $this->readingId,
                                     'retry_count' => $retryCount,
                                 ]);
                             }
 
-                            Log::info('ProcessDeepFortuneReadingJob: Facebook push คำทำนายเต็ม ผลลัพธ์', [
+                            Log::info('ProcessDeepFortuneReadingJob: Facebook push notification ผลลัพธ์', [
                                 'reading_id' => $this->readingId,
                                 'sent' => $sent,
                             ]);
                         } catch (\Exception $notifyErr) {
-                            Log::warning('ProcessDeepFortuneReadingJob: Facebook push คำทำนายล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
+                            Log::warning('ProcessDeepFortuneReadingJob: Facebook push notification ล้มเหลว (จะ fallback ตอน user ทักกลับมา)', [
                                 'reading_id' => $this->readingId,
                                 'error' => $notifyErr->getMessage(),
                             ]);
-                            // notification_attempted=true แล้ว → FCS:794 จะส่งคำทำนายเต็มทันทีตอนทักกลับ
+                            // notification_attempted=true แล้ว → FCS:1287 จะส่งคำทำนายเต็มตอนทักกลับ
                         }
                     }
                 }
