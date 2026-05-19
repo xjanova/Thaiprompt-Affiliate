@@ -159,11 +159,21 @@
 
     {{-- Line chart --}}
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-6">
-        <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">📈 Token Usage รายวัน</h2>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white">📈 Token Usage รายวัน</h2>
+            {{-- 🆕 (2026-05-19) Refresh button visible เสมอ — กัน "กราฟเห็นบ้างไม่เห็นบ้าง" --}}
+            <button @click="fetchData()" :disabled="loading"
+                    class="px-3 py-1 text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded hover:bg-blue-200 disabled:opacity-50 flex items-center gap-1">
+                <svg class="w-3 h-3" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                </svg>
+                <span x-text="loading ? 'กำลังโหลด...' : 'รีเฟรชกราฟ'"></span>
+            </button>
+        </div>
         <div class="relative" style="height: 400px;">
             <canvas id="usageChart"></canvas>
-            <div x-show="!chartReady" class="absolute inset-0 flex items-center justify-center text-gray-400 text-center px-4">
-                <div>
+            <div x-show="!chartReady" class="absolute inset-0 flex items-center justify-center text-gray-400 text-center px-4 pointer-events-none">
+                <div class="pointer-events-auto">
                     <span x-show="loading">⏳ กำลังโหลด...</span>
                     <span x-show="!loading && !chartReady && !chartError">กดปุ่ม "โหลดข้อมูล" เพื่อแสดงกราฟ</span>
                     <span x-show="!loading && !chartReady && chartError" class="text-red-500" x-text="chartError"></span>
@@ -172,6 +182,10 @@
                     </div>
                 </div>
             </div>
+        </div>
+        {{-- 🆕 (2026-05-19) Diagnostic strip — แสดง state ของ render เพื่อ debug --}}
+        <div class="mt-2 text-xs text-gray-400 dark:text-gray-500 font-mono" x-show="renderDiag">
+            <span x-text="renderDiag"></span>
         </div>
     </div>
 
@@ -233,6 +247,10 @@ function aiUsageDashboard() {
         filterPurpose: '',
         summary: null,
         breakdown: [],
+        // 🆕 (2026-05-19) Re-entrance guard + diagnostics — กัน "เห็นบ้างไม่เห็นบ้าง"
+        _rendering: false,
+        _fetching: false,
+        renderDiag: '',
 
         init() {
             // ค่าเริ่มต้น: 7 วันย้อนหลัง
@@ -296,6 +314,12 @@ function aiUsageDashboard() {
         },
 
         async fetchData() {
+            // 🆕 (2026-05-19) Re-entrance guard — ถ้า fetch อยู่แล้ว ข้าม
+            if (this._fetching) {
+                this.renderDiag = `[skip] fetch กำลังทำงานอยู่`;
+                return;
+            }
+            this._fetching = true;
             this.loading = true;
             this.chartError = '';
             try {
@@ -331,12 +355,13 @@ function aiUsageDashboard() {
                 this.chartError = '⚠️ โหลดข้อมูลล้มเหลว: ' + e.message;
             } finally {
                 this.loading = false;
+                this._fetching = false;
             }
         },
 
-        // 🆕 (2026-05-17) Wait for Chart.js to load — กัน race ตอน CDN ช้า/AdBlock
-        //   จากปัญหา "เห็นบ้างไม่เห็นบ้าง" — Chart undefined ตอน init เร็วเกินไป
-        async waitForChartJs(timeoutMs = 5000) {
+        // 🆕 (2026-05-19 v2) Wait for Chart.js — เพิ่ม timeout เป็น 15s (CDN ช้าบ่อยกว่า 5s)
+        //   ถ้า AdBlock บล็อค → 15s ก็ไม่ช่วย แต่ user มีเวลาเห็น diag
+        async waitForChartJs(timeoutMs = 15000) {
             if (typeof window.Chart !== 'undefined') return true;
             const start = Date.now();
             while (Date.now() - start < timeoutMs) {
@@ -346,35 +371,76 @@ function aiUsageDashboard() {
             return false;
         },
 
+        // 🆕 (2026-05-19) Wait for canvas to have non-zero dimensions
+        //   Chart.js v4 ถ้า canvas width/height = 0 จะวาดเปล่า — กราฟไม่ขึ้น
+        //   เกิดตอน parent layout ยังไม่ stable (CSS เพิ่งโหลด, transition active)
+        async waitForCanvasLayout(canvas, timeoutMs = 3000) {
+            const start = Date.now();
+            while (Date.now() - start < timeoutMs) {
+                const rect = canvas.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) return true;
+                await new Promise(r => setTimeout(r, 100));
+            }
+            return false;
+        },
+
         async renderChart(chartData) {
-            const ctx = document.getElementById('usageChart');
-            if (!ctx) {
-                this.chartError = '⚠️ ไม่พบ canvas element (DOM ไม่พร้อม)';
+            // 🆕 (2026-05-19) Re-entrance guard
+            if (this._rendering) {
+                this.renderDiag = `[skip] render กำลังทำงานอยู่`;
                 return;
             }
+            this._rendering = true;
 
-            // กัน race: รอ Chart.js ให้พร้อมก่อน
-            const ready = await this.waitForChartJs();
-            if (!ready) {
-                this.chartError = '⚠️ Chart.js โหลดไม่สำเร็จ (อาจถูก AdBlocker บล็อค) — refresh หน้า / ปิด AdBlocker';
-                return;
-            }
+            try {
+                const ctx = document.getElementById('usageChart');
+                if (!ctx) {
+                    this.chartError = '⚠️ ไม่พบ canvas element (DOM ไม่พร้อม)';
+                    this.renderDiag = '[fail] canvas not found';
+                    return;
+                }
 
-            // กันข้อมูลเปล่า — Chart.js render canvas เปล่าจะดูเหมือนไม่มีกราฟ
-            const hasData = chartData?.datasets?.some(ds => ds.data?.some(v => v > 0));
-            if (!hasData) {
-                this.chartError = '📭 ไม่มีข้อมูล token usage ในช่วงเวลาที่เลือก';
-                if (this.chart) { this.chart.destroy(); this.chart = null; }
-                return;
-            }
+                // 1) กัน race: รอ Chart.js ให้พร้อมก่อน (15s)
+                this.renderDiag = '[step 1/4] รอ Chart.js โหลด...';
+                const ready = await this.waitForChartJs();
+                if (!ready) {
+                    this.chartError = '⚠️ Chart.js โหลดไม่สำเร็จใน 15 วินาที (อาจถูก AdBlocker บล็อค) — refresh หน้า / ปิด AdBlocker';
+                    this.renderDiag = '[fail] Chart.js timeout';
+                    return;
+                }
 
-            if (this.chart) {
-                this.chart.destroy();
-            }
+                // 2) รอ canvas ให้มีขนาด (กัน width=0 เพราะ layout ยังไม่ stable)
+                this.renderDiag = '[step 2/4] รอ canvas layout...';
+                const layoutOk = await this.waitForCanvasLayout(ctx);
+                if (!layoutOk) {
+                    this.chartError = '⚠️ Canvas ไม่มีขนาด (layout ผิดปกติ) — refresh หน้าใหม่';
+                    this.renderDiag = '[fail] canvas dimensions = 0';
+                    return;
+                }
 
-            const isDark = document.documentElement.classList.contains('dark');
-            const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
-            const textColor = isDark ? '#e5e7eb' : '#374151';
+                // 3) กันข้อมูลเปล่า
+                const hasData = chartData?.datasets?.some(ds => ds.data?.some(v => v > 0));
+                if (!hasData) {
+                    this.chartError = '📭 ไม่มีข้อมูล token usage ในช่วงเวลาที่เลือก';
+                    this.renderDiag = '[done] empty data';
+                    if (this.chart) { try { this.chart.destroy(); } catch (e) {} this.chart = null; }
+                    const stale = window.Chart?.getChart?.(ctx);
+                    if (stale) { try { stale.destroy(); } catch (e) {} }
+                    return;
+                }
+
+                // 4) Destroy chart เก่า — รวม "stale instance" ที่ Chart.js attach กับ canvas
+                //    เคสที่ทำให้ "เห็นบ้างไม่เห็นบ้าง": new Chart() throws ถ้า canvas ถูกใช้แล้ว
+                this.renderDiag = '[step 3/4] cleanup chart เก่า...';
+                if (this.chart) { try { this.chart.destroy(); } catch (e) {} this.chart = null; }
+                const stale = window.Chart.getChart?.(ctx);
+                if (stale) { try { stale.destroy(); } catch (e) {} }
+
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)';
+                const textColor = isDark ? '#e5e7eb' : '#374151';
+
+                this.renderDiag = '[step 4/4] วาดกราฟ...';
 
             try {
                 this.chart = new Chart(ctx, {
@@ -420,9 +486,14 @@ function aiUsageDashboard() {
                     },
                 });
                 this.chartReady = true;
+                this.renderDiag = `[done] วาดกราฟสำเร็จ (${chartData.datasets?.length || 0} datasets)`;
             } catch (e) {
                 console.error('Chart render error:', e);
                 this.chartError = '⚠️ สร้างกราฟล้มเหลว: ' + e.message;
+                this.renderDiag = `[fail] new Chart error: ${e.message}`;
+            }
+            } finally {
+                this._rendering = false;
             }
         },
 
