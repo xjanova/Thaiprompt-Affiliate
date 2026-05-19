@@ -73,15 +73,13 @@ class FortuneConversationService
      * 🚨 (2026-05-19) Recovery window สำหรับ paid+incomplete deep readings
      *
      * ใช้ใน processMessage processingReading guard (FCS:1376+)
-     *   - ลูกค้าจ่ายแล้ว → reading ค้าง (AI/queue ตาย) → กลับมาภายใน N นาที
+     *   - ลูกค้าจ่ายแล้ว → reading ค้าง (AI/queue ตาย) → กลับมาภายใน N ชม.
      *   - ระบบจำได้ + แสดงสถานะรอ (ไม่ปล่อยให้สร้างบิลใหม่ = จ่ายซ้ำ)
      *
-     * ⚠️ 2026-05-19 hotfix: เคยตั้ง 24 ชม. แต่ block ลูกค้าที่มี orphan bill เก่า (paid+incomplete
-     *    ใน DB legacy bugs) ไม่ให้คุยปกติ → "บอทไม่คุยกับใครเลย" regression
-     *    → revert กลับ 30 นาที (เดิม) — เกินจากนี้ ปล่อยให้ chat ตามปกติ
-     *    Recovery ใน 0-24 ชม. ใช้ cron `fortune:check-pending` (auto retry) + `fortune:expire-stuck-paid` แทน
+     * 24 ชม. = sync กับ fortune:check-pending MAX_WAIT_MINUTES (1440)
+     *   เกินจากนี้ → fortune:expire-stuck-paid mark "admin_review_needed"
      */
-    public const PROCESSING_RECOVERY_WINDOW_MINUTES = 30;
+    public const PROCESSING_RECOVERY_WINDOW_HOURS = 24;
 
     /**
      * จำนวนคำถามที่ต้องการ — ลดเหลือ 1 ข้อ เพื่อโฟกัสคำทำนายให้แม่นยำ
@@ -1394,12 +1392,13 @@ class FortuneConversationService
                     //   + status=COMPLETED + no deep_response (เก็บใน fortune_celtic_questions แทน)
                     //   เดิม: จับ Celtic เป็น "processing" → ลูกค้าพิมพ์ "อ่านคำทำนาย" ได้ข้อความรอแทน Q&A list
                     //
-                    // ⚠️ (2026-05-19 hotfix) Window 30 นาที (revert จาก 24 ชม.)
-                    //   เคสที่พัง: ขยาย 24 ชม. ทำให้ orphan bills เก่า (legacy paid+incomplete ใน DB)
-                    //              lock ลูกค้าไม่ให้คุย → "บอทไม่คุยกับใครเลย"
-                    //   Recovery 0-24 ชม. ใช้ cron `fortune:check-pending` (auto retry, ทุก 1 นาที)
-                    //   + `fortune:expire-stuck-paid` (24hr safety net) แทน — ไม่ block ที่ chat
-                    $cutoffMinutes = self::PROCESSING_RECOVERY_WINDOW_MINUTES;
+                    // 🚨 (2026-05-19) Recovery window ขยาย 30 นาที → 24 ชั่วโมง
+                    //   User report: ลูกค้าจ่าย 39฿ + AI/queue ค้าง > 30 นาที → กลับมาพิมพ์ "ดูดวง"
+                    //                → query window หมด → tier-direct สร้างบิลใหม่ ❌ จ่ายซ้ำ
+                    //   Fix: ใช้ 24 ชม. ตรงกับ MAX_WAIT_MINUTES ใน fortune:check-pending (auto recovery cron)
+                    //        > 24 ชม. → fortune:expire-stuck-paid mark "admin_review_needed" + alert
+                    //   ความเสี่ยง: orphan bills (จ่ายแล้วลืม) — กันได้ด้วย expire policy 24hr
+                    $cutoffMinutes = self::PROCESSING_RECOVERY_WINDOW_HOURS * 60;
                     $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
                         ->where('is_paid', true)
                         ->where('reading_type', '!=', FortuneReading::READING_TYPE_CELTIC_CROSS)
