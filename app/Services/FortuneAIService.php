@@ -1448,6 +1448,11 @@ PROMPT;
             // 👤 (2026-05-19 Batch 6a) Name directive — additive ใน local var (ไม่ mutate parameter)
             $systemPromptWithName = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
 
+            // 📚 (2026-05-19) RAG Admin Q&A — ครอบ Bill Psychology / Celtic Premium / Post-Reading Deep / Sensitive
+            //   ลูกค้าลังเลเลือกแพคเกจ + บิลค้างยังไม่โอน = สถานการณ์ที่ admin ตอบบ่อยที่สุด
+            //   → Pro AI ใช้ few-shot ของ admin → ตอบกระตุ้น/แนะนำในแนวสไตล์เดียวกัน
+            $systemPromptWithName = $this->injectAdminQARagFewShot($systemPromptWithName, $messageText);
+
             // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
             $prompt = $messageText;
 
