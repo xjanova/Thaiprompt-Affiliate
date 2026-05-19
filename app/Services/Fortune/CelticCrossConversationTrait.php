@@ -411,37 +411,7 @@ trait CelticCrossConversationTrait
             }
         }
 
-        // ❓ ไม่ตรงกับ keyword ใดๆ
-        //
-        // 🤖 (2026-05-19) ก่อน fallback re-show menu → ลอง AI chitchat ตอบให้
-        //   User report: "ระหว่างนำเสนอแพคเกจ ถ้าผู้ใช้พูดอื่น AI ต้องตอบได้ ไม่ใช่บังคับเลือกอย่างเดียว"
-        //
-        //   Strategy: ถ้า message ดูเป็น chitchat/meta (คำถาม, ความรู้สึก, เรื่องอื่น) →
-        //     ใช้ buildAIAssistedStepReminder ตอบ AI สั้นๆ + เตือนเบาๆ "ยังรอเลือกแพคเกจอยู่นะคะ"
-        //     ถ้า AI disabled / Gatekeeper throttle / API fail → fallback re-show menu (hint อย่างเดียว)
-        //
-        //   pattern เดียวกับ handleConfirmationResponse:3712 / handleBirthdateInput:5028 etc.
-        $stepHintCompact = "🙏 ยังรอเจ้าชะตาเลือกแพคเกจอยู่นะคะ\n"
-            ."🔹 *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท (วันเกิด + ไพ่ 1 ใบ)\n"
-            ."🔮 *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท (10 ใบ + คุยจุใจ {$qaWindow} นาที)\n"
-            ."❌ *\"ยกเลิก\"* — หากไม่ต้องการตอนนี้";
-
-        if ($this->looksLikeMetaOrChitchat($messageText)) {
-            $aiMessage = $this->buildAIAssistedStepReminder(
-                $messageText,
-                $stepHintCompact,
-                $reading->user_profile,
-                'tier_choice'
-            );
-
-            return [
-                'action' => 'tier_choice_chitchat',
-                'message' => $aiMessage,
-                'reading' => $reading,
-            ];
-        }
-
-        // ❓ ไม่ใช่ chitchat — ส่ง re-show menu แบบกระชับ (fallback เดิม)
+        // ❓ ไม่ตรงกับ keyword ใดๆ → re-show menu แบบกระชับ (ไม่ส่งข้อความยาวซ้ำ)
         return [
             'action' => 'tier_choice_invalid',
             'message' => "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"

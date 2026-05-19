@@ -70,18 +70,6 @@ class FortuneConversationService
     public const DEEP_READING_PRICE = 39;
 
     /**
-     * 🚨 (2026-05-19) Recovery window สำหรับ paid+incomplete deep readings
-     *
-     * ใช้ใน processMessage processingReading guard (FCS:1376+)
-     *   - ลูกค้าจ่ายแล้ว → reading ค้าง (AI/queue ตาย) → กลับมาภายใน N ชม.
-     *   - ระบบจำได้ + แสดงสถานะรอ (ไม่ปล่อยให้สร้างบิลใหม่ = จ่ายซ้ำ)
-     *
-     * 24 ชม. = sync กับ fortune:check-pending MAX_WAIT_MINUTES (1440)
-     *   เกินจากนี้ → fortune:expire-stuck-paid mark "admin_review_needed"
-     */
-    public const PROCESSING_RECOVERY_WINDOW_HOURS = 24;
-
-    /**
      * จำนวนคำถามที่ต้องการ — ลดเหลือ 1 ข้อ เพื่อโฟกัสคำทำนายให้แม่นยำ
      *
      * ⚠️ ห้าม hardcode "1 คำถาม" หรือ "2 คำถาม" ในข้อความ — ใช้ self::REQUIRED_QUESTIONS เสมอ
@@ -1391,14 +1379,6 @@ class FortuneConversationService
                     // 🛡️ (2026-05-03) Exclude Celtic Cross — Celtic legitimately มี is_paid=true
                     //   + status=COMPLETED + no deep_response (เก็บใน fortune_celtic_questions แทน)
                     //   เดิม: จับ Celtic เป็น "processing" → ลูกค้าพิมพ์ "อ่านคำทำนาย" ได้ข้อความรอแทน Q&A list
-                    //
-                    // 🚨 (2026-05-19) Recovery window ขยาย 30 นาที → 24 ชั่วโมง
-                    //   User report: ลูกค้าจ่าย 39฿ + AI/queue ค้าง > 30 นาที → กลับมาพิมพ์ "ดูดวง"
-                    //                → query window หมด → tier-direct สร้างบิลใหม่ ❌ จ่ายซ้ำ
-                    //   Fix: ใช้ 24 ชม. ตรงกับ MAX_WAIT_MINUTES ใน fortune:check-pending (auto recovery cron)
-                    //        > 24 ชม. → fortune:expire-stuck-paid mark "admin_review_needed" + alert
-                    //   ความเสี่ยง: orphan bills (จ่ายแล้วลืม) — กันได้ด้วย expire policy 24hr
-                    $cutoffMinutes = self::PROCESSING_RECOVERY_WINDOW_HOURS * 60;
                     $processingReading = FortuneReading::where('facebook_user_id', $facebookUserId)
                         ->where('is_paid', true)
                         ->where('reading_type', '!=', FortuneReading::READING_TYPE_CELTIC_CROSS)
@@ -1412,9 +1392,9 @@ class FortuneConversationService
                                         });
                                 });
                         })
-                        ->where(function ($q) use ($cutoffMinutes) {
-                            // ใช้ paid_at เป็น primary; fallback updated_at
-                            $cutoff = now()->subMinutes($cutoffMinutes);
+                        ->where(function ($q) {
+                            // ใช้ paid_at เป็น primary; fallback updated_at; fallback created_at
+                            $cutoff = now()->subMinutes(30);
                             $q->where('paid_at', '>=', $cutoff)
                                 ->orWhere(function ($q2) use ($cutoff) {
                                     $q2->whereNull('paid_at')
@@ -1440,40 +1420,16 @@ class FortuneConversationService
                             'waited_minutes' => $waitedMinutes,
                         ]);
 
-                        // 🪐 (2026-05-19) ข้อความปรับตามช่วงเวลารอ — 3 tiers
-                        //   < 5 min   = "กำลังคำนวณ" (UX ปกติ)
-                        //   5-30 min  = "ใช้เวลานานกว่าปกติ" + เสนอ "เช็คสถานะ"
-                        //   > 30 min  = "ระบบช้า แอดมินกำลังตรวจ" + เสนอ "คุยกับแม่หมอ" (handoff)
-                        $billRef = $processingReading->bill_reference ?? '-';
+                        // 🪐 ข้อความปลอบใจ "แม่หมอกำลังคำนวณดวงดาว" + เลขบิล + เวลารอ
+                        $message = "🌙 คุณ{$name} แม่หมอกำลังคำนวณดวงดาวอยู่ค่ะ\n\n"
+                            .'📋 เลขที่บิล: '.($processingReading->bill_reference ?? '-')."\n"
+                            ."⏳ รอมาแล้ว {$waitedMinutes} นาที (ปกติใช้เวลา 1-3 นาที)\n\n"
+                            ."🔮 ดาวเจ้าชนะของคุณกำลังเรียงอยู่ — รอสักครู่ คำทำนายจะส่งไปทันทีเมื่อเสร็จ ✨\n\n"
+                            .'💡 ระหว่างรอ — ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ) จะแจ้งเตือนทันทีเมื่อคำทำนายพร้อม';
 
-                        if ($waitedMinutes < 5) {
-                            // tier 1: ปกติ
-                            $message = "🌙 คุณ{$name} แม่หมอกำลังคำนวณดวงดาวอยู่ค่ะ\n\n"
-                                ."📋 เลขที่บิล: {$billRef}\n"
-                                ."⏳ รอมาแล้ว {$waitedMinutes} นาที (ปกติใช้เวลา 1-3 นาที)\n\n"
-                                ."🔮 ดาวเจ้าชนะของคุณกำลังเรียงอยู่ — รอสักครู่ คำทำนายจะส่งไปทันทีเมื่อเสร็จ ✨\n\n"
-                                .'💡 ระหว่างรอ — ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ) จะแจ้งเตือนทันทีเมื่อคำทำนายพร้อม';
-                        } elseif ($waitedMinutes < 30) {
-                            // tier 2: นานกว่าปกติ
-                            $message = "🌙 คุณ{$name} แม่หมอกำลังคำนวณดวงดาวอยู่ค่ะ\n\n"
-                                ."📋 เลขที่บิล: {$billRef}\n"
-                                ."⏳ รอมาแล้ว {$waitedMinutes} นาที\n\n"
-                                ."⚠️ ใช้เวลานานกว่าปกติ — ระบบกำลัง retry อัตโนมัติ (ทุก 1 นาที)\n"
-                                ."🔮 คำทำนายจะส่งให้ทันทีเมื่อ AI ทำเสร็จ ห้ามสร้างบิลใหม่นะคะ ✨\n\n"
-                                ."💡 พิมพ์ 'เช็คสถานะ' เพื่อตรวจอีกครั้ง";
-                        } else {
-                            // tier 3: ช้ามาก > 30 นาที — เสนอ handoff
-                            $waitedDisplay = $waitedMinutes >= 60
-                                ? sprintf('%d ชม. %d นาที', intdiv($waitedMinutes, 60), $waitedMinutes % 60)
-                                : "{$waitedMinutes} นาที";
-                            $message = "🙏 ขออภัยที่ทำให้รอนานนะคะ คุณ{$name}\n\n"
-                                ."📋 เลขที่บิล: {$billRef}\n"
-                                ."⏳ รอมาแล้ว {$waitedDisplay}\n\n"
-                                ."⚠️ ระบบ AI ขัดข้องชั่วคราว — แอดมินได้รับแจ้งแล้วและกำลังตรวจสอบให้ค่ะ\n\n"
-                                ."🔮 *ลูกค้าจ่ายเงินแล้ว — รับประกันได้คำทำนายแน่นอน*\n"
-                                ."ห้ามสร้างบิลใหม่นะคะ (ป้องกันจ่ายซ้ำ)\n\n"
-                                ."💬 พิมพ์ 'คุยกับแม่หมอ' เพื่อให้แอดมินช่วยโดยตรง\n"
-                                ."💡 หรือพิมพ์ 'เช็คสถานะ' เพื่อตรวจอีกครั้ง";
+                        // ⏰ ถ้ารอเกิน 5 นาที → เพิ่มทางออก (เผื่อ queue ตาย/AI hang)
+                        if ($waitedMinutes >= 5) {
+                            $message .= "\n\n⚠️ ใช้เวลานานกว่าปกติ — ถ้ารออีก 2-3 นาทีไม่มา พิมพ์ 'เช็คสถานะ' เพื่อตรวจอีกครั้ง";
                         }
 
                         return [
@@ -11288,8 +11244,6 @@ PROMPT;
                     // 💳 (2026-05-09) Stripe payment states
                     'awaiting_payment_method' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกวิธีชำระเงิน" — มี 2 ปุ่ม: "QR ไทย" หรือ "บัตร ตปท." (Visa/Mastercard +15 บาท) — แนะให้กดปุ่มหรือพิมพ์ "qr ไทย" / "บัตร"',
                     'pending_stripe_payment' => 'ผู้ใช้กำลังรอจ่ายผ่านบัตรเครดิต Stripe — ระบบส่งลิงก์ checkout ให้แล้ว — แนะให้กดลิงก์ หรือพิมพ์ "qr ไทย" เพื่อกลับมาเลือก QR Thai',
-                    // 🎴 (2026-05-19) Tier choice — ลูกค้าเลือกแพคเกจ 39/99 — ห้ามบังคับเลือกอย่างเดียว
-                    'tier_choice' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกแพคเกจ" — มี 39฿ (พื้นฐาน + ไพ่ 1 ใบ) และ 99฿ (Celtic ไพ่ 10 ใบ) — ตอบคำถามเขาให้เข้าใจ แล้วค่อยใบ้ให้เลือกแพคเกจตอนท้าย ห้ามบังคับเลือกทันที',
                 ];
                 $contextHint = $contextMap[$flowContext] ?? '';
             }
