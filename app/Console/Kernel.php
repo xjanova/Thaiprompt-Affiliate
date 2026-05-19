@@ -378,6 +378,54 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // 🛟 (2026-05-19) Fortune Celtic Recovery — auto-scan stuck Celtic 99฿
+        //   user spec: ลูกค้าจ่าย Celtic แล้วบอทเงียบ → re-push first card prompt
+        //   หา reading_type=celtic, is_paid=true, picked=0, updated > 5 min ago
+        //   ไม่ได้ schedule มาก่อน — มีแต่ command standalone (admin manual)
+        //   ทำให้ stuck Celtic ไม่ self-heal — ลูกค้าหาย แอดมินไม่รู้
+        // ========================================
+        $schedule->command('fortune:celtic-recover', ['--auto', '--minutes=5'])
+            ->everyTenMinutes()
+            ->withoutOverlapping(15) // lock 15 นาที (re-push อาจช้าถ้าหลายราย)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Celtic Recover] auto-recover Celtic readings ล้มเหลว');
+            });
+
+        // ========================================
+        // 🛟 (2026-05-19) Fortune Recover Paid No Birthdate — auto-recover Deep 39฿ Pay-First stuck
+        //   user spec: ลูกค้าจ่าย 39 แล้ว Pay-First ไม่ขอวันเกิด → re-push "ขอวันเกิด" ใหม่
+        //   หา reading_type=deep, is_paid=true, birth_date=NULL, paid_at > 3 min
+        //   ไม่ได้ schedule มาก่อน — มีแต่ command standalone
+        //   ทำให้ Pay-First stuck (โดยเฉพาะ #2474 Entony case) ไม่ self-heal
+        // ========================================
+        $schedule->command('fortune:recover-paid-no-birthdate', ['--auto', '--min-age-minutes=3', '--hours=24'])
+            ->everyFiveMinutes()
+            ->withoutOverlapping(10)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Recover Paid No Birthdate] auto-recover Deep readings ล้มเหลว');
+            });
+
+        // ========================================
+        // 🚨 (2026-05-19) Fortune Expire Stuck Paid — Last-resort safety net
+        //   หาบิลค้างเกิน 24 ชม. (เกินกรอบ check-pending recovery)
+        //   → mark admin_review_needed + alert admin via LINE + push คำขอโทษให้ลูกค้า
+        //   user spec: "ทำ ข้อ C ส่วน 99 ให้เช็คด้วยว่าเป็นไหม"
+        //   ครอบ Deep 39฿ + Celtic 99฿ ทั้งคู่
+        // ========================================
+        $schedule->command('fortune:expire-stuck-paid', ['--hours=24', '--limit=50'])
+            ->everySixHours()
+            ->withoutOverlapping(30)
+            ->runInBackground()
+            ->onSuccess(function () {
+                \Log::info('[Fortune Expire Stuck Paid] รอบสำรวจ stuck readings เสร็จ');
+            })
+            ->onFailure(function () {
+                \Log::error('[Fortune Expire Stuck Paid] expire stuck paid readings ล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
         //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
         //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ

@@ -426,6 +426,15 @@ class FortuneAIService
 9) สำคัญ: ถ้าตอบไม่ได้หรือต้องให้แอดมิน ให้ใส่ [ASK_SAVE] ท้ายข้อความ + ตอบ "หมอจันทราไม่แน่ใจเรื่องนี้ จะฝากถึงแอดมินให้มาตอบกลับไหม 📝"
 10) สำคัญ: ถ้าผู้ใช้สนใจดูดวงเชิงลึก/ละเอียด/แบบเสียเงิน (เช่น "อยากดูแบบละเอียด", "สนใจเจาะลึก", "มีแบบพรีเมียมไหม") ให้ใส่ [DEEP_READING] ท้ายข้อความ + แนะนำบริการ
 
+[⚠️ กฎเรียกชื่อ — สำคัญมาก! กันบอท-feel]
+- **ห้ามเรียกชื่อลูกค้าทุกข้อความ** — ทำให้รู้สึกเหมือนบอท/scripted ไม่ใช่คนจริง
+- เรียกชื่อ "คุณ[ชื่อ]" ได้แค่ **ตอนแรกที่ทักทาย** หรือ **ตอนอำลา** เท่านั้น
+- ในประโยคถัด ๆ ไป ใช้สรรพนามที่หลากหลาย — "เจ้าชะตา" / "เธอ" / "เรา" / ไม่ระบุประธาน (Thai language ไม่ต้องเสมอ)
+- ❌ ผิด: "คุณแดงคะ ดวงคุณแดงน่าสนใจเลยค่ะ คุณแดงเป็นคนที่..." (เรียก 3 ครั้ง = บอท)
+- ✅ ถูก: "คุณแดงคะ ดวงน่าสนใจเลย — เห็นว่าเป็นคนที่... เจ้าชะตามีจุดเด่นเรื่อง..." (เรียก 1 ครั้ง แล้วใช้สรรพนามอื่น)
+- ถ้าไม่รู้ชื่อ — ใช้ "เจ้าชะตา" ตั้งแต่ประโยคแรก **ห้ามใช้ "คุณคุณ" หรือ "คุณ " ลอย ๆ**
+- ลูกค้าที่คุยมาแล้ว 5+ ครั้ง (RETURNING_24H dm_count >= 5 หรือ persona.level >= 3) = สนิทแล้ว → **ลดการเรียกชื่อ** คุยเหมือนเพื่อน ใช้สรรพนาม "หมอ-เธอ" ก็ได้
+
 [🎯 จับ intent แบบเนียน — อย่าตอบห้วนเป็น pattern]
 - ถ้าข้อความดูเหมือน **วันเกิด** (เช่น "15/8/1990", "15 ส.ค. 2533", "2533", "ปี 33") → ตอบยืนยัน + เสนอดูดวงเชิงลึกพร้อม [DEEP_READING]
   * เช่น: "ได้วันเกิด 15 สิงหาคม 2533 แล้ว หมอจันทราลองดูดวงเชิงลึกให้จากวันเกิดนี้ได้เลยนะคะ [DEEP_READING]"
@@ -496,12 +505,11 @@ class FortuneAIService
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
 
-        // สร้าง prompt สั้นๆ สำหรับ chat
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19) Inject customer name directive — กันบอท-feel เรียกชื่อทุกประโยค
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
+        // สร้าง prompt สั้นๆ สำหรับ chat — ไม่ prefix ชื่อ (อยู่ใน system message แล้ว)
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
@@ -1119,12 +1127,11 @@ PROMPT;
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
 
-        // สร้าง prompt พร้อมชื่อผู้ใช้
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19) Inject customer name directive — กันบอท-feel เรียกชื่อทุกประโยค
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
+        // สร้าง prompt — ไม่ prefix ชื่อ (อยู่ใน system message แล้ว)
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
@@ -1220,11 +1227,11 @@ PROMPT;
             $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
             $systemMessage = $this->buildSensitiveChatSystemMessage();
 
-            $userName = $userProfile['name'] ?? '';
+            // 👤 (2026-05-19) Inject customer name directive — กันบอท-feel เรียกชื่อทุกประโยค
+            $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
+            // ไม่ prefix ชื่อใน user message (อยู่ใน system message แล้ว)
             $prompt = $messageText;
-            if (! empty($userName) && $userName !== 'คุณ') {
-                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-            }
 
             $config = [
                 'temperature' => 0.7, // ต่ำกว่า chat ปกติ (0.8) — ตอบมีสติมากขึ้น
@@ -1430,11 +1437,12 @@ PROMPT;
             $apiKey = $sensitiveKey->api_key;
             $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
 
-            $userName = $userProfile['name'] ?? '';
+            // 👤 (2026-05-19) Inject customer name directive — กันบอท-feel เรียกชื่อทุกประโยค
+            //    $systemPrompt = parameter — ไม่ mutate, ใช้ local var แทน
+            $systemPromptResolved = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
+
+            // ไม่ prefix ชื่อใน user message (อยู่ใน system message แล้ว)
             $prompt = $messageText;
-            if (! empty($userName) && $userName !== 'คุณ') {
-                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-            }
 
             $config = [
                 'temperature' => 0.7,
@@ -1445,14 +1453,14 @@ PROMPT;
 
             $result = match ($sensitiveProvider) {
                 'gemini' => empty($history)
-                    ? $this->callChatGemini($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
-                    : $this->callChatGeminiWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatGemini($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $config, $history),
                 'anthropic' => empty($history)
-                    ? $this->callChatAnthropic($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
-                    : $this->callChatAnthropicWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatAnthropic($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $config, $history),
                 default => empty($history)
-                    ? $this->callChatOpenAICompatible($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config)
-                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+                    ? $this->callChatOpenAICompatible($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptResolved, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
             };
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -1764,11 +1772,11 @@ PROMPT;
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
 
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19) Inject customer name directive — กันบอท-feel เรียกชื่อทุกประโยค
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
+        // ไม่ prefix ชื่อใน user message (อยู่ใน system message แล้ว)
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
@@ -2097,6 +2105,31 @@ PROMPT;
      * 🩹 (review L4) — match existing template "2-4 ประโยค" (ไม่ใช่ 1-2)
      *   เพื่อไม่ให้ AI งงเพราะ conflict ระหว่าง template + directive
      */
+
+    /**
+     * 👤 (2026-05-19) Inject customer name directive into system message — กันบอท-feel
+     *
+     * เดิม: prefix ทุก user message ด้วย "(ผู้ใช้ชื่อ: XXX) <message>"
+     *       → AI เห็นชื่อทุก turn → เรียก "คุณXXX" ทุกประโยค → ดูเป็นบอท/scripted
+     *
+     * ใหม่: ใส่ directive ใน system message ครั้งเดียว — AI จดจำชื่อ + ใช้แค่ทักทาย/อำลา
+     *       Persona-aware: ถ้าสนิทแล้ว (level 3+ / dm_count 5+) → ลดเรียกชื่ออีก
+     */
+    public function injectCustomerNameDirective(string $systemMessage, ?array $userProfile): string
+    {
+        $userName = $userProfile['name'] ?? '';
+        if (empty($userName) || $userName === 'คุณ') {
+            return $systemMessage;
+        }
+
+        return $systemMessage
+            ."\n\n[👤 ลูกค้าคนนี้: คุณ{$userName}]\n"
+            ."- เรียก \"คุณ{$userName}\" ได้ **เฉพาะตอนทักทายครั้งแรก** (1 ครั้งเท่านั้น)\n"
+            ."- ประโยคถัด ๆ ไปใช้ \"เจ้าชะตา\" / \"เธอ\" / ไม่ระบุประธาน (Thai ไม่ต้องเสมอ)\n"
+            ."- ❌ ห้ามเขียน \"คุณ{$userName}คะ ... คุณ{$userName}... คุณ{$userName}จะเห็นว่า...\" (ดูเป็นบอท)\n"
+            ."- ถ้ามี history >= 3 turn หรือ persona level สูง = สนิทแล้ว → ลดเรียกชื่ออีก คุยเหมือนเพื่อน";
+    }
+
     public function appendUxFriendlyDirective(string $systemMessage): string
     {
         // 🫂 (2026-05-14 v2) Empathy-First Protocol — TOP PRIORITY

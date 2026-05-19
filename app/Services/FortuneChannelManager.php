@@ -685,7 +685,7 @@ class FortuneChannelManager
                 //   - 99฿ Celtic Cross (ไพ่ยิปซีเต็มสำรับ 10 ใบ)
                 //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
                 //   ✏️ (2026-05-03) ซ่อนปุ่ม 99 ถ้า admin ปิด Celtic
-                'tier_choice', 'tier_choice_invalid' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $buttons = [];
@@ -1899,7 +1899,7 @@ class FortuneChannelManager
                 //   - 🎁 ฟรี (เฉพาะ first-timer + feature เปิด — flag offer_free)
                 //   - 39฿ Basic Deep
                 //   - 99฿ Celtic Cross (ถ้า admin เปิด)
-                'tier_choice', 'tier_choice_invalid' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $quickReplies = [];
