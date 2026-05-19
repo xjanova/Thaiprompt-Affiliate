@@ -1869,21 +1869,44 @@ PROMPT;
 
             $attempts++;
             $inflightCache = $this->acquireKeyInflight($keyInfo);
+            $callStart = microtime(true);
 
             try {
                 $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
                 $this->releaseKeyInflight($keyInfo, $inflightCache, true);
 
+                // 🩹 (2026-05-19) Record usage — กัน dashboard เห็น 0 tokens ทั้งที่ใช้จริง
+                //   เดิม: chat Pool path ไม่เรียก recordUsageForKey → usage_logs ไม่ INSERT
+                //   → dashboard query ai_api_key_usage_logs → ไม่เห็น Groq ทั้งที่ 96.7% pick
+                $poolKey = $keyInfo['pool_key'] ?? null;
+                if ($poolKey instanceof AiApiKey) {
+                    $this->recordUsageForKey(
+                        $poolKey,
+                        (int) ($result['tokens_used'] ?? 0),
+                        (string) ($result['model'] ?? $keyInfo['model'] ?? ''),
+                        (int) ((microtime(true) - $callStart) * 1000),
+                        'chat'
+                    );
+                }
+
                 Log::info('FortuneAIService: Phase 1 (free) สำเร็จ', [
                     'provider' => $keyInfo['provider'],
                     'name' => $keyInfo['name'] ?? 'unknown',
                     'attempts' => $attempts,
+                    'tokens' => $result['tokens_used'] ?? 0,
                     'elapsed_ms' => $elapsedMs(),
                 ]);
 
                 return $this->sanitizeChatResult($result);
             } catch (Exception $poolErr) {
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false, $poolErr->getMessage());
+
+                // 🩹 (2026-05-19) Record error → dashboard เห็น failed count
+                $poolKey = $keyInfo['pool_key'] ?? null;
+                if ($poolKey instanceof AiApiKey) {
+                    $this->recordErrorForKey($poolKey, $poolErr->getMessage(), $keyInfo['model'] ?? null);
+                }
+
                 $errors[] = "FREE {$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($poolErr->getMessage(), 0, 80);
 
                 continue;
@@ -1912,22 +1935,43 @@ PROMPT;
 
                 $paidAttempts++;
                 $inflightCache = $this->acquireKeyInflight($keyInfo);
+                $callStart = microtime(true);
 
                 try {
                     $result = $this->callChatWithKey($keyInfo, $prompt, $systemMessage, $config, $history);
                     $this->releaseKeyInflight($keyInfo, $inflightCache, true);
+
+                    // 🩹 (2026-05-19) Record usage สำหรับ paid key path ด้วย
+                    $poolKey = $keyInfo['pool_key'] ?? null;
+                    if ($poolKey instanceof AiApiKey) {
+                        $this->recordUsageForKey(
+                            $poolKey,
+                            (int) ($result['tokens_used'] ?? 0),
+                            (string) ($result['model'] ?? $keyInfo['model'] ?? ''),
+                            (int) ((microtime(true) - $callStart) * 1000),
+                            'chat_paid'
+                        );
+                    }
 
                     Log::info('FortuneAIService: Phase 2 (PAID) สำเร็จ — emergency fallback', [
                         'provider' => $keyInfo['provider'],
                         'name' => $keyInfo['name'] ?? 'unknown',
                         'free_attempts' => $attempts,
                         'paid_attempts' => $paidAttempts,
+                        'tokens' => $result['tokens_used'] ?? 0,
                         'elapsed_ms' => $elapsedMs(),
                     ]);
 
                     return $this->sanitizeChatResult($result);
                 } catch (Exception $paidErr) {
                     $this->releaseKeyInflight($keyInfo, $inflightCache, false, $paidErr->getMessage());
+
+                    // 🩹 (2026-05-19) Record error
+                    $poolKey = $keyInfo['pool_key'] ?? null;
+                    if ($poolKey instanceof AiApiKey) {
+                        $this->recordErrorForKey($poolKey, $paidErr->getMessage(), $keyInfo['model'] ?? null);
+                    }
+
                     $errors[] = "PAID {$keyInfo['provider']}/{$keyInfo['name']}: ".mb_substr($paidErr->getMessage(), 0, 80);
 
                     continue;
