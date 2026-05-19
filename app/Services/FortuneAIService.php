@@ -504,6 +504,10 @@ class FortuneAIService
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
 
+        // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย
+        //   เก็บ prefix "(ผู้ใช้ชื่อ: XXX)" ใน user prompt ไว้ — Batch 6b จะลบหลังจาก verify 6a OK
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
         // สร้าง prompt สั้นๆ สำหรับ chat
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;
@@ -1127,6 +1131,9 @@ PROMPT;
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
 
+        // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
         // สร้าง prompt พร้อมชื่อผู้ใช้
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;
@@ -1227,6 +1234,9 @@ PROMPT;
             $apiKey = $sensitiveKey->api_key;
             $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
             $systemMessage = $this->buildSensitiveChatSystemMessage();
+
+            // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
+            $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
             $userName = $userProfile['name'] ?? '';
             $prompt = $messageText;
@@ -1438,6 +1448,9 @@ PROMPT;
             $apiKey = $sensitiveKey->api_key;
             $resolvedModel = $sensitiveKey->resolveModel() ?? $sensitiveModel;
 
+            // 👤 (2026-05-19 Batch 6a) Name directive — additive ใน local var (ไม่ mutate parameter)
+            $systemPromptWithName = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
+
             $userName = $userProfile['name'] ?? '';
             $prompt = $messageText;
             if (! empty($userName) && $userName !== 'คุณ') {
@@ -1453,14 +1466,14 @@ PROMPT;
 
             $result = match ($sensitiveProvider) {
                 'gemini' => empty($history)
-                    ? $this->callChatGemini($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
-                    : $this->callChatGeminiWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatGemini($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
+                    : $this->callChatGeminiWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
                 'anthropic' => empty($history)
-                    ? $this->callChatAnthropic($prompt, $systemPrompt, $apiKey, $resolvedModel, $config)
-                    : $this->callChatAnthropicWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $config, $history),
+                    ? $this->callChatAnthropic($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config)
+                    : $this->callChatAnthropicWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $config, $history),
                 default => empty($history)
-                    ? $this->callChatOpenAICompatible($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config)
-                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPrompt, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
+                    ? $this->callChatOpenAICompatible($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config)
+                    : $this->callChatOpenAICompatibleWithHistory($prompt, $systemPromptWithName, $apiKey, $resolvedModel, $sensitiveProvider, $config, $history),
             };
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
@@ -1771,6 +1784,9 @@ PROMPT;
         if (! empty($userProfile['_persona_context'])) {
             $systemMessage .= "\n\n".$userProfile['_persona_context'];
         }
+
+        // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
+        $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
         $userName = $userProfile['name'] ?? '';
         $prompt = $messageText;
@@ -2095,6 +2111,41 @@ PROMPT;
      * ทำให้ AI รู้จักราคา, จำนวนฟรี, ค่าคอมมิชชั่น ตามที่ตั้งค่าจริง
      * ไม่ hardcode ตัวเลข — แปรผันตาม admin settings
      */
+    /**
+     * 👤 (2026-05-19 Batch 6a) Inject customer name directive — guard ห้ามเรียกชื่อบ่อย
+     *
+     * Strategy: append directive ใน system message — *ไม่ลบ* user prompt prefix
+     *   (Batch 6b จะลบ prefix แยกถ้า 6a verify OK)
+     *
+     * Null-safe: รับ ?array $userProfile, ถ้า null/non-array/empty name → return $systemMessage เดิม
+     *
+     * Test scenarios:
+     *   - $userProfile = null         → return $systemMessage (no change)
+     *   - $userProfile = []           → return $systemMessage (no change)
+     *   - ['name' => '']              → return $systemMessage (no change)
+     *   - ['name' => 'คุณ']           → return $systemMessage (no change, fallback name)
+     *   - ['name' => 'แดง']           → append directive
+     */
+    public function injectCustomerNameDirective(string $systemMessage, ?array $userProfile): string
+    {
+        // 🛡️ Null safety — รับ null / non-array / missing key อย่างปลอดภัย
+        if (! is_array($userProfile) || empty($userProfile)) {
+            return $systemMessage;
+        }
+
+        $userName = $userProfile['name'] ?? '';
+        if (! is_string($userName) || $userName === '' || $userName === 'คุณ') {
+            return $systemMessage;
+        }
+
+        return $systemMessage
+            ."\n\n[👤 ลูกค้าคนนี้: คุณ{$userName}]\n"
+            ."- เรียก \"คุณ{$userName}\" ได้ **เฉพาะตอนทักทายครั้งแรก** (1 ครั้งเท่านั้น)\n"
+            ."- ประโยคถัด ๆ ไปใช้ \"เจ้าชะตา\" / \"เธอ\" / ไม่ระบุประธาน (Thai ไม่ต้องเสมอ)\n"
+            ."- ❌ ห้ามเขียน \"คุณ{$userName}คะ ... คุณ{$userName}... คุณ{$userName}จะ...\" (ดูเป็นบอท)\n"
+            ."- ถ้ามี history >= 3 turn = สนิทแล้ว → ลดเรียกชื่ออีก คุยเหมือนเพื่อน";
+    }
+
     /**
      * 🎯 (2026-05-08 review L3 fix) Append UX friendly directive to system message
      *
