@@ -37,6 +37,18 @@ class AiApiKeyPoolService
     private const RPM_PREFIX = 'pool:rpm:';            // {provider}:{key_id} — TTL 60s
 
     /**
+     * 🆕 (v5.1 — 2026-05-19) Strict purposes ที่ห้ามถูกใช้กับ generic call (caller=null)
+     *
+     *   เหตุผล: admin ตั้ง purpose นี้ = สงวน strictly (ไม่ fallback)
+     *     - 'sensitive' → Pro model (gpt-5.5, claude-opus) แพง 5-15x → เผา quota
+     *     - 'tts' → schema คนละแบบ (text-to-speech endpoint) → call fail
+     *
+     *   ใช้ใน acquireKeyAnyProvider($purpose=null) — exclude ออกก่อน tier sort
+     *   admin ที่อยาก force ใช้ key นี้ → เรียก acquireKey($provider, 'sensitive') ตรง
+     */
+    private const STRICT_PURPOSES_BLOCKED_FOR_GENERIC = ['sensitive', 'tts'];
+
+    /**
      * ดึง API Key ที่พร้อมใช้งานสำหรับ provider
      *
      * 🆕 (2026-05-07) รองรับ $purpose filter — เลือกเฉพาะ key ที่ตรง purpose
@@ -447,6 +459,13 @@ class AiApiKeyPoolService
         $query = AiApiKey::available();
         if ($purpose !== null && $purpose !== '') {
             $query->forPurpose($purpose);
+        } else {
+            // 🆕 (v5.1 — 2026-05-19) caller=null → exclude strict-reserved purposes
+            //   admin ตั้ง purpose นี้ = สงวน strictly (ไม่ fallback) — ห้ามใช้กับ generic call
+            //     - 'sensitive' → Pro model แพง 5-15x → เผา OpenAI quota
+            //     - 'tts' → schema คนละแบบ (text-to-speech) → call fail
+            //   admin ที่อยาก force → เรียก acquireKey($provider, 'sensitive') ตรง
+            $query->whereNotIn('purpose', self::STRICT_PURPOSES_BLOCKED_FOR_GENERIC);
         }
 
         $allKeys = $query->get();
