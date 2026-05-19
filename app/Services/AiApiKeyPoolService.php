@@ -454,18 +454,47 @@ class AiApiKeyPoolService
             return null;
         }
 
-        // 2. 🆕 (v4) Group by purpose specificity FIRST
-        //    Tier 0 = exact match | Tier 1 = 'any' | Tier 2 = null/legacy
-        //    หมายเหตุ: ถ้า $purpose=null (caller ไม่ระบุ) → ทุก key ถือเป็น tier เดียวกัน
+        // 2. 🆕 (v5 — 2026-05-19) Group by purpose specificity FIRST
+        //    User rule: "key ที่ตั้ง chat ต้องมาก่อน any" — specific purpose ชนะ 'any' เสมอ
+        //
+        //    Caller ระบุ purpose (เช่น 'chat'):
+        //      Tier 0 = exact match (purpose='chat')
+        //      Tier 1 = 'any'        (general backup)
+        //      Tier 2 = null/legacy  (สุดท้าย)
+        //
+        //    Caller ไม่ระบุ purpose (purpose=null) — เปลี่ยน v5:
+        //      Tier 1 = specific (purpose != null, != 'any')  ← Groq 'chat' / OpenAI 'sensitive' ชนะ
+        //      Tier 2 = 'any'                                  ← Gemini 'any' fallback
+        //      Tier 3 = null/legacy                            ← key เก่าไม่มี purpose
+        //      เหตุผล: ถ้า admin ลงทุนตั้ง purpose เจาะจง = ตั้งใจสงวน — ให้ใช้ก่อน 'any'
         $purposeTiers = $allKeys->groupBy(function ($k) use ($purpose) {
-            if ($purpose !== null && $purpose !== '' && $k->purpose === $purpose) {
-                return 0; // exact match
-            }
-            if ($k->purpose === 'any') {
-                return 1; // general-purpose backup
+            $callerHasPurpose = ($purpose !== null && $purpose !== '');
+            $keyPurpose = $k->purpose;
+            $keyIsAny = ($keyPurpose === 'any');
+            $keyIsNull = ($keyPurpose === null || $keyPurpose === '');
+            $keyIsSpecific = ! $keyIsAny && ! $keyIsNull;
+
+            if ($callerHasPurpose) {
+                // Caller ระบุ — exact ก่อน, any ตามมา, null สุดท้าย
+                if ($keyPurpose === $purpose) {
+                    return 0; // exact match
+                }
+                if ($keyIsAny) {
+                    return 1; // general-purpose backup
+                }
+
+                return 2; // null / legacy
             }
 
-            return 2; // null / legacy / fallback purposes ที่ผ่าน scopeForPurpose
+            // Caller ไม่ระบุ — specific ชนะ any ตาม user rule
+            if ($keyIsSpecific) {
+                return 1; // เจาะจง purpose (chat/prediction/sensitive/etc.) มาก่อน
+            }
+            if ($keyIsAny) {
+                return 2; // 'any' fallback
+            }
+
+            return 3; // null / legacy สุดท้าย
         })->sortKeys();
 
         // 3. Global rotation mode สำหรับ cross-provider priority-tier
@@ -541,14 +570,23 @@ class AiApiKeyPoolService
                     optional($lock)->release();
                 }
 
-                // 🆕 (v4) Log purpose-tier label เพื่อ verify การทำงาน
-                $tierLabel = match ($pTier) {
-                    0 => 'exact',
-                    1 => 'any',
+                // 🆕 (v5 — 2026-05-19) Log purpose-tier label
+                //   Caller specified  : 0=exact, 1=any, 2=null/legacy
+                //   Caller null       : 1=specific, 2=any, 3=null/legacy
+                $callerSpecified = ($purpose !== null && $purpose !== '');
+                $tierLabel = $callerSpecified
+                    ? match ($pTier) {
+                        0 => 'exact',
+                        1 => 'any',
+                        default => 'null/legacy',
+                    }
+                : match ($pTier) {
+                    1 => 'specific',
+                    2 => 'any',
                     default => 'null/legacy',
                 };
 
-                Log::debug('Pool: acquireKeyAnyProvider — picked (purpose-first v4)', [
+                Log::debug('Pool: acquireKeyAnyProvider — picked (purpose-first v5)', [
                     'purpose_tier' => $pTier,
                     'purpose_tier_label' => $tierLabel,
                     'priority_tier' => $tierPriority,
