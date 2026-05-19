@@ -167,6 +167,7 @@ class FortuneExpireStuckPaid extends Command
 
         $alerted = 0;
         $failed = 0;
+        $processedReadingIds = []; // 🩹 (Batch 8) Track readings ที่ process success → set alerted flag *หลัง* alert ส่งสำเร็จ
 
         // 🛡️ Safe service init — ถ้า settings/services โหลดไม่ได้ ก็ไม่ block
         try {
@@ -184,6 +185,7 @@ class FortuneExpireStuckPaid extends Command
             try {
                 $this->processOne($reading, $channelManager, $alertService);
                 $alerted++;
+                $processedReadingIds[] = $reading->id; // 🩹 (Batch 8) collect ตัวที่ process ผ่าน
             } catch (\Throwable $e) {
                 $this->error("  ❌ #{$reading->id} ล้มเหลว: {$e->getMessage()}");
                 $failed++;
@@ -196,7 +198,13 @@ class FortuneExpireStuckPaid extends Command
 
         // ─────────────────────────────────────────────────────────────────
         // Phase 3: Aggregate admin alert (สรุปรวมรอบเดียว แทนการ alert ทีละบิล)
+        //
+        // 🩹 (Batch 8 hotfix BUG 1) Race condition fix:
+        //   เดิม: processOne ตั้ง admin_review_alerted=true ก่อน → ถ้า alert throw = silent loss
+        //         (idempotent guard ใน query จะ skip รอบถัดไป → admin ไม่มีทางรู้)
+        //   ใหม่: ตั้ง flag *หลัง* alert success — ถ้า alert fail = ไม่ตั้ง flag → next cron retry alert
         // ─────────────────────────────────────────────────────────────────
+        $alertSent = false;
         if ($alerted > 0) {
             try {
                 $alertService->alertSystemError(
@@ -209,15 +217,38 @@ class FortuneExpireStuckPaid extends Command
                         'admin_action' => 'ไปที่ /admin/fortune/billing → filter admin_review_needed → retry/refund/manual recover',
                     ]
                 );
+                $alertSent = true;
             } catch (\Throwable $alertErr) {
-                Log::warning('Fortune Expire Stuck Paid: aggregate LINE alert ล้มเหลว', [
+                Log::warning('Fortune Expire Stuck Paid: aggregate LINE alert ล้มเหลว — flag ยังไม่ตั้ง รอบหน้า retry', [
                     'error' => $alertErr->getMessage(),
+                    'pending_reading_ids' => $processedReadingIds,
+                ]);
+            }
+        }
+
+        // 🩹 (Batch 8) Set admin_review_alerted=true เฉพาะเมื่อ alert success
+        //   ถ้า alert fail → flag ไม่ set → next cron round เจอ reading เดิม → retry alert
+        //   guard ไม่ duplicate apology: processOne ใช้ admin_review_apology_sent (set ในขั้น push)
+        if ($alertSent && ! empty($processedReadingIds)) {
+            try {
+                FortuneReading::whereIn('id', $processedReadingIds)
+                    ->get()
+                    ->each(function ($reading) {
+                        $reading->setConversationState('admin_review_alerted', true);
+                        $reading->setConversationState('admin_review_alerted_at', now()->toIso8601String());
+                    });
+                Log::info('Fortune Expire Stuck Paid: marked admin_review_alerted หลัง alert success', [
+                    'count' => count($processedReadingIds),
+                ]);
+            } catch (\Throwable $flagErr) {
+                Log::warning('Fortune Expire Stuck Paid: ตั้ง admin_review_alerted หลัง alert ล้ม', [
+                    'error' => $flagErr->getMessage(),
                 ]);
             }
         }
 
         $this->newLine();
-        $this->info("📊 สรุป: alerted {$alerted} | failed {$failed}");
+        $this->info("📊 สรุป: alerted {$alerted} | failed {$failed}".($alertSent ? ' | LINE alert ✅' : ' | LINE alert ⚠️ จะ retry รอบหน้า'));
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
@@ -233,10 +264,11 @@ class FortuneExpireStuckPaid extends Command
         $billRef = $reading->bill_reference ?? "#{$reading->id}";
         $waitedHours = $reading->paid_at ? round($reading->paid_at->diffInHours(now()), 1) : 0;
 
-        // 1. Set conversation_state flags (idempotent — เช็คใน query แล้ว)
+        // 1. Set conversation_state flags
+        //   🩹 (Batch 8 hotfix BUG 1) admin_review_alerted ย้ายไปตั้งหลัง alert success ใน Phase 3
+        //      เพื่อป้องกัน silent failure: ถ้า aggregate alert throw → flag ไม่ set → cron retry รอบถัดไป
         $reading->setConversationState('admin_review_needed', true);
         $reading->setConversationState('admin_review_at', now()->toIso8601String());
-        $reading->setConversationState('admin_review_alerted', true);
         $reading->setConversationState('admin_review_reason', 'stuck_paid_over_24hr');
 
         // 2. สร้าง FortuneTakeoverLog (audit trail)
