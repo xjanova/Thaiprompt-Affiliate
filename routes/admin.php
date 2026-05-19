@@ -62,6 +62,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\FacebookOAuthController;
 use App\Http\Controllers\Admin\FeaturedStoreController;
 use App\Http\Controllers\Admin\FloatingToolsController;
+use App\Http\Controllers\Admin\FortuneAdminQAController;
 use App\Http\Controllers\Admin\FortuneAstrologyController;
 use App\Http\Controllers\Admin\FortuneBannerController;
 use App\Http\Controllers\Admin\FortuneBillingController;
@@ -73,6 +74,7 @@ use App\Http\Controllers\Admin\FortuneDebugToolsController;
 use App\Http\Controllers\Admin\FortuneHoroscopeController;
 use App\Http\Controllers\Admin\FortuneMarketingController;
 use App\Http\Controllers\Admin\FortuneMysticController;
+use App\Http\Controllers\Admin\FortunePersonasController;
 use App\Http\Controllers\Admin\FortuneReadingsController;
 use App\Http\Controllers\Admin\FortuneResponseTemplatesController;
 use App\Http\Controllers\Admin\FortuneRichMenuDeployController;
@@ -81,7 +83,6 @@ use App\Http\Controllers\Admin\FortuneSavedQuestionsController;
 use App\Http\Controllers\Admin\FortuneSettingsController;
 use App\Http\Controllers\Admin\FortuneTakeoverController;
 use App\Http\Controllers\Admin\FortuneUserCreditController;
-use App\Http\Controllers\Admin\FortunePersonasController;
 use App\Http\Controllers\Admin\FortuneUsersController;
 use App\Http\Controllers\Admin\FortuneVoiceDiagnosticController;
 use App\Http\Controllers\Admin\FortuneVoicePresetController;
@@ -4093,6 +4094,17 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{banner}/toggle', [FortuneBannerController::class, 'toggle'])->name('toggle');
         Route::post('/reorder', [FortuneBannerController::class, 'reorder'])->name('reorder');
         Route::post('/settings', [FortuneBannerController::class, 'saveSettings'])->name('settings');
+    });
+
+    // 📚 RAG Admin Q&A — เก็บ + ใช้คำตอบของแอดมินเป็น few-shot
+    Route::prefix('admin-qa')->name('admin-qa.')->group(function () {
+        Route::get('/', [FortuneAdminQAController::class, 'index'])->name('index');
+        Route::get('/{qa}/edit', [FortuneAdminQAController::class, 'edit'])->name('edit');
+        Route::put('/{qa}', [FortuneAdminQAController::class, 'update'])->name('update');
+        Route::post('/{qa}/toggle', [FortuneAdminQAController::class, 'toggleActive'])->name('toggle');
+        Route::post('/{qa}/reembed', [FortuneAdminQAController::class, 'reembed'])->name('reembed');
+        Route::delete('/{qa}', [FortuneAdminQAController::class, 'destroy'])->name('destroy');
+        Route::post('/settings', [FortuneAdminQAController::class, 'updateSettings'])->name('settings');
     });
 
     // ระบบเทคโอเวอร์ (Takeover Control) — แม่หมอ/แอดมินคุยแทน AI

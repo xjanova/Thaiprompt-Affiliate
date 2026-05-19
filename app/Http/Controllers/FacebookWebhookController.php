@@ -1249,7 +1249,31 @@ class FacebookWebhookController extends Controller
         $isResumeCommand = $this->takeoverService->detectAdminResumeCommand($messageText);
 
         if (! $isPauseCommand && ! $isResumeCommand) {
-            // admin reply ปกติ — ไม่ทำอะไร (ไม่ auto-takeover เหมือนเดิม)
+            // admin reply ปกติ — ไม่ auto-takeover
+
+            // 📚 (2026-05-19) Capture admin Q&A สำหรับ RAG learning
+            //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A
+            //   Job หา last customer message (Q) เอง + embed + INSERT
+            //   ถ้า settings ปิด admin_qa_capture ก็ skip (default เปิด)
+            $captureEnabled = (bool) ($this->settings->admin_qa_capture_enabled ?? true);
+            if ($captureEnabled && trim($messageText) !== '') {
+                try {
+                    \App\Jobs\CaptureAdminQAJob::dispatch(
+                        'facebook',
+                        $recipientId,
+                        $messageText,
+                        null, // admin_user_id ไม่รู้ (FB Page Inbox ไม่บอก)
+                        ['app_id' => null, 'echo' => true],
+                    );
+                } catch (\Throwable $e) {
+                    // non-blocking — ไม่ throw ออกมา กัน webhook fail
+                    \Illuminate\Support\Facades\Log::warning(
+                        'FacebookWebhook: CaptureAdminQAJob dispatch ล้มเหลว',
+                        ['error' => $e->getMessage()]
+                    );
+                }
+            }
+
             return;
         }
 
@@ -1909,7 +1933,7 @@ class FacebookWebhookController extends Controller
             $this->facebookService->sendMessage(
                 $senderId,
                 "🔗 กดปุ่ม \"เข้าเว็บด้วย Facebook\" จากข้อความก่อนหน้าได้เลยค่ะ\n\n"
-                ."หรือเข้าตรงๆ ที่: ".url('/auth/facebook')
+                .'หรือเข้าตรงๆ ที่: '.url('/auth/facebook')
             );
 
             return;
@@ -1930,7 +1954,7 @@ class FacebookWebhookController extends Controller
                             ."💰 แชร์ลิงก์ให้เพื่อนดูดวง\n"
                             ."รับ 10 บาท/บิล เข้ากระเป๋าตลอดไป\n\n"
                             ."👇 กดปุ่มด้านล่างเข้าระบบด้วย Facebook\n"
-                            ."(ใช้ FB เดียวกันนี้ — เป็นสมาชิกอัตโนมัติ)",
+                            .'(ใช้ FB เดียวกันนี้ — เป็นสมาชิกอัตโนมัติ)',
                         'buttons' => [
                             [
                                 'type' => 'web_url',
@@ -2046,7 +2070,7 @@ class FacebookWebhookController extends Controller
             $senderId,
             "🌙 รอแอดมินสักครู่นะคะ\n\n"
             ."แม่หมอจะแจ้งให้แอดมินมาตอบคุณค่ะ ✨\n"
-            ."ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮"
+            .'ระหว่างรอ พิมพ์ถามแม่หมอต่อได้นะคะ 🔮'
         );
 
         // 📢 ส่ง alert ให้ admin ผ่าน LINE OA push (admin ดูใน FB Page Inbox + พิมพ์ /aistop)

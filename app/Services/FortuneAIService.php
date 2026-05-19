@@ -508,6 +508,9 @@ class FortuneAIService
         //   เก็บ prefix "(ผู้ใช้ชื่อ: XXX)" ใน user prompt ไว้ — Batch 6b จะลบหลังจาก verify 6a OK
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
+        // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
+
         // 👤 (2026-05-19 Batch 6b) ลบ prefix "(ผู้ใช้ชื่อ: XXX)" — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
         //   เดิม: prefix ทุก user message → AI เห็นชื่อทุก turn → เรียกบ่อย = บอท-feel
         //   ใหม่: ใช้แค่ system directive ของ injectCustomerNameDirective
@@ -1131,6 +1134,9 @@ PROMPT;
 
         // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
+
+        // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
 
         // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
         $prompt = $messageText;
@@ -1776,6 +1782,11 @@ PROMPT;
         // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
+        // 📚 (2026-05-19) RAG Admin Q&A — inject few-shot ตัวอย่างคำตอบของแอดมิน
+        //   ถ้าเปิด setting admin_qa_rag_enabled และมี Q&A ที่คล้าย ≥ threshold
+        //   → AI จะเห็นตัวอย่างคำตอบของแอดมิน + เลียนสไตล์/เนื้อหา
+        $systemMessage = $this->injectAdminQARagFewShot($systemMessage, $messageText);
+
         // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
         $prompt = $messageText;
 
@@ -2128,7 +2139,63 @@ PROMPT;
             ."- เรียก \"คุณ{$userName}\" ได้ **เฉพาะตอนทักทายครั้งแรก** (1 ครั้งเท่านั้น)\n"
             ."- ประโยคถัด ๆ ไปใช้ \"เจ้าชะตา\" / \"เธอ\" / ไม่ระบุประธาน (Thai ไม่ต้องเสมอ)\n"
             ."- ❌ ห้ามเขียน \"คุณ{$userName}คะ ... คุณ{$userName}... คุณ{$userName}จะ...\" (ดูเป็นบอท)\n"
-            ."- ถ้ามี history >= 3 turn = สนิทแล้ว → ลดเรียกชื่ออีก คุยเหมือนเพื่อน";
+            .'- ถ้ามี history >= 3 turn = สนิทแล้ว → ลดเรียกชื่ออีก คุยเหมือนเพื่อน';
+    }
+
+    /**
+     * 📚 (2026-05-19) Inject RAG admin Q&A few-shot ลง system prompt
+     *
+     * Flow:
+     *   1. ถ้า settings admin_qa_rag_enabled=false → ข้าม
+     *   2. Retrieve top-3 admin Q&A ที่คล้าย $messageText (cosine ≥ threshold)
+     *   3. ถ้ามี ≥ 1 row → append section "ตัวอย่างคำตอบของแอดมิน..."
+     *   4. AI ใช้เป็นแนวสไตล์ + เนื้อหา (ไม่ copy ตรงๆ)
+     *
+     * Failure: ถ้า retrieve ล้มเหลว (Gemini embedding fail / DB error)
+     *          → คืน $systemMessage เดิม (silent fallback)
+     */
+    public function injectAdminQARagFewShot(string $systemMessage, string $messageText): string
+    {
+        $messageText = trim($messageText);
+        if ($messageText === '') {
+            return $systemMessage;
+        }
+
+        // Settings gate — admin toggle ปิดได้
+        $enabled = (bool) ($this->settings->admin_qa_rag_enabled ?? true);
+        if (! $enabled) {
+            return $systemMessage;
+        }
+
+        try {
+            $retriever = new \App\Services\AdminQARetriever;
+            $topK = (int) ($this->settings->admin_qa_rag_top_k ?? 3);
+            $threshold = (float) ($this->settings->admin_qa_rag_threshold ?? \App\Models\FortuneAdminQA::DEFAULT_THRESHOLD);
+
+            $results = $retriever->searchSimilar($messageText, $topK, $threshold);
+            if (empty($results)) {
+                return $systemMessage;
+            }
+
+            $fewShot = \App\Services\AdminQARetriever::formatAsFewShot($results);
+            if ($fewShot === '') {
+                return $systemMessage;
+            }
+
+            Log::debug('FortuneAIService: inject RAG admin Q&A few-shot', [
+                'query_preview' => mb_substr($messageText, 0, 50),
+                'matched_count' => count($results),
+                'top_similarity' => $results[0]['similarity'] ?? null,
+            ]);
+
+            return $systemMessage."\n\n".$fewShot;
+        } catch (\Throwable $e) {
+            Log::warning('FortuneAIService: RAG few-shot inject ล้มเหลว', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return $systemMessage;
+        }
     }
 
     /**

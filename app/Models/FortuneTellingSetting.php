@@ -115,6 +115,11 @@ class FortuneTellingSetting extends Model
         // Admin Handover (บอทหยุดเมื่อแอดมินกำลังดูแล)
         'admin_handover_enabled',
         'admin_handover_timeout',
+        // RAG Admin Q&A — เก็บคำตอบแอดมินไว้ให้บอทเรียนรู้ (2026-05-19)
+        'admin_qa_capture_enabled',
+        'admin_qa_rag_enabled',
+        'admin_qa_rag_threshold',
+        'admin_qa_rag_top_k',
         // Payment Banner Composite (2026-05-17) — anti-FB-detection
         'payment_banner_enabled',
         'payment_banner_template',
@@ -296,6 +301,10 @@ class FortuneTellingSetting extends Model
         'comment_engagement_enabled' => 'boolean',
         'admin_handover_enabled' => 'boolean',
         'admin_handover_timeout' => 'integer',
+        'admin_qa_capture_enabled' => 'boolean',
+        'admin_qa_rag_enabled' => 'boolean',
+        'admin_qa_rag_threshold' => 'float',
+        'admin_qa_rag_top_k' => 'integer',
         'customer_handoff_keywords' => 'array',
         'takeover_notify_customer' => 'boolean',
         'line_enabled' => 'boolean',
@@ -650,7 +659,7 @@ class FortuneTellingSetting extends Model
      * Default: 0 = ไม่จำกัด (free chat ภายในเวลา) — ตรงกับ user spec
      *   "คุยกับแม่หมอจันทรา จนจุใจ 30 นาที"
      *
-     * @return int  ≥ 0 (0 = unlimited)
+     * @return int ≥ 0 (0 = unlimited)
      */
     public function getCelticMaxQuestions(): int
     {
