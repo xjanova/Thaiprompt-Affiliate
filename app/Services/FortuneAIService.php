@@ -508,12 +508,10 @@ class FortuneAIService
         //   เก็บ prefix "(ผู้ใช้ชื่อ: XXX)" ใน user prompt ไว้ — Batch 6b จะลบหลังจาก verify 6a OK
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
-        // สร้าง prompt สั้นๆ สำหรับ chat
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19 Batch 6b) ลบ prefix "(ผู้ใช้ชื่อ: XXX)" — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
+        //   เดิม: prefix ทุก user message → AI เห็นชื่อทุก turn → เรียกบ่อย = บอท-feel
+        //   ใหม่: ใช้แค่ system directive ของ injectCustomerNameDirective
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
@@ -1134,12 +1132,8 @@ PROMPT;
         // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
-        // สร้าง prompt พร้อมชื่อผู้ใช้
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive (Batch 6a) แล้ว
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
@@ -1238,11 +1232,8 @@ PROMPT;
             // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
             $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
-            $userName = $userProfile['name'] ?? '';
+            // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
             $prompt = $messageText;
-            if (! empty($userName) && $userName !== 'คุณ') {
-                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-            }
 
             $config = [
                 'temperature' => 0.7, // ต่ำกว่า chat ปกติ (0.8) — ตอบมีสติมากขึ้น
@@ -1451,11 +1442,8 @@ PROMPT;
             // 👤 (2026-05-19 Batch 6a) Name directive — additive ใน local var (ไม่ mutate parameter)
             $systemPromptWithName = $this->injectCustomerNameDirective($systemPrompt, $userProfile);
 
-            $userName = $userProfile['name'] ?? '';
+            // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
             $prompt = $messageText;
-            if (! empty($userName) && $userName !== 'คุณ') {
-                $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-            }
 
             $config = [
                 'temperature' => 0.7,
@@ -1788,11 +1776,8 @@ PROMPT;
         // 👤 (2026-05-19 Batch 6a) Name directive — บอก AI ห้ามเรียกชื่อบ่อย (additive only)
         $systemMessage = $this->injectCustomerNameDirective($systemMessage, $userProfile);
 
-        $userName = $userProfile['name'] ?? '';
+        // 👤 (2026-05-19 Batch 6b) ลบ prefix — AI รู้ชื่อจาก system directive แล้ว
         $prompt = $messageText;
-        if (! empty($userName) && $userName !== 'คุณ') {
-            $prompt = "(ผู้ใช้ชื่อ: {$userName}) {$messageText}";
-        }
 
         $config = [
             'temperature' => 0.8,
