@@ -411,7 +411,49 @@ trait CelticCrossConversationTrait
             }
         }
 
-        // ❓ ไม่ตรงกับ keyword ใดๆ → re-show menu แบบกระชับ (ไม่ส่งข้อความยาวซ้ำ)
+        // ❓ ไม่ตรงกับ keyword ใดๆ
+        //
+        // 🤖 (2026-05-19 Batch 4) ก่อน fallback re-show menu → ลอง AI chitchat ตอบให้
+        //   User spec: "ระหว่างนำเสนอแพคเกจ ถ้าผู้ใช้พูดอื่น AI ต้องตอบได้ ไม่ใช่บังคับเลือกอย่างเดียว"
+        //
+        //   Strategy: ถ้า message ดูเป็น chitchat/meta (คำถาม, ความรู้สึก, เรื่องอื่น) →
+        //     ใช้ buildAIAssistedStepReminder ตอบ AI สั้นๆ + เตือนเบาๆ "ยังรอเลือกแพคเกจอยู่นะคะ"
+        //     ถ้า AI disabled / Gatekeeper throttle / API fail → fallback re-show menu (hint อย่างเดียว)
+        //
+        //   Pattern เดียวกับ handleConfirmationResponse:3712, handleBirthdateInput, handleQuestionInput
+        //   ✅ safe ที่ปลอดภัย (ทดสอบมาแล้วใน flow อื่น) — ถ้า looksLikeMetaOrChitchat=false → fallback เดิม
+        $stepHintCompact = "🙏 ยังรอเจ้าชะตาเลือกแพคเกจอยู่นะคะ\n"
+            ."🔹 *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท (วันเกิด + ไพ่ 1 ใบ)\n"
+            ."🔮 *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท (10 ใบ + คุยจุใจ {$qaWindow} นาที)\n"
+            ."❌ *\"ยกเลิก\"* — หากไม่ต้องการตอนนี้";
+
+        // 🛡️ Safe guard — ถ้า looksLikeMetaOrChitchat/buildAIAssistedStepReminder ไม่มี (trait isolation)
+        //   หรือ throw exception → fallback re-show menu ปกติ ไม่ทำให้ flow crash
+        try {
+            if (method_exists($this, 'looksLikeMetaOrChitchat')
+                && $this->looksLikeMetaOrChitchat($messageText)) {
+                $aiMessage = $this->buildAIAssistedStepReminder(
+                    $messageText,
+                    $stepHintCompact,
+                    $reading->user_profile,
+                    'tier_choice'
+                );
+
+                return [
+                    'action' => 'tier_choice_chitchat',
+                    'message' => $aiMessage,
+                    'reading' => $reading,
+                ];
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('handleTierChoice: chitchat fallback ล้ม (non-blocking)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            // fall through to default re-show menu
+        }
+
+        // ❓ ไม่ใช่ chitchat (หรือ AI fail) → ส่ง re-show menu แบบกระชับ (fallback เดิม)
         return [
             'action' => 'tier_choice_invalid',
             'message' => "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
