@@ -43,34 +43,77 @@
             </div>
         </div>
 
+        {{-- Provider + Purpose dropdowns (2026-05-19) --}}
+        @php
+            $uniqueProviders = collect($allKeys)->pluck('provider')->unique()->filter()->sort()->values();
+            $uniquePurposes = collect($allKeys)->pluck('purpose')->map(fn ($p) => $p ?: 'null')->unique()->sort()->values();
+        @endphp
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    🌐 Provider
+                </label>
+                <select x-model="filterProvider" @change="applyKeyFilters()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">— ทุก provider —</option>
+                    @foreach ($uniqueProviders as $p)
+                        <option value="{{ $p }}">{{ $p }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    🎯 Purpose (จุดประสงค์การใช้)
+                </label>
+                <select x-model="filterPurpose" @change="applyKeyFilters()"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">— ทุก purpose —</option>
+                    @foreach ($uniquePurposes as $p)
+                        <option value="{{ $p }}">{{ $p === 'null' ? '(ไม่กำหนด)' : $p }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
+
         {{-- Keys filter --}}
         <div class="mt-4">
             <div class="flex items-center justify-between mb-2">
                 <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    เลือกคีย์ที่จะแสดง (ไม่เลือก = ทั้งหมด)
+                    เลือกคีย์ที่จะแสดง (ไม่เลือก = ทั้งหมดที่ผ่านฟิลเตอร์)
                 </label>
                 <div class="flex gap-2">
-                    <button @click="selectAllKeys()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">เลือกทั้งหมด</button>
+                    <button @click="selectAllVisibleKeys()" class="text-xs text-blue-600 dark:text-blue-400 hover:underline">เลือกทั้งหมดที่เห็น</button>
                     <span class="text-gray-300">|</span>
                     <button @click="clearKeys()" class="text-xs text-red-600 dark:text-red-400 hover:underline">ล้าง</button>
                 </div>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-y-auto p-3 bg-gray-50 dark:bg-gray-900 rounded-lg">
-                @foreach($allKeys as $key)
-                <label class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
-                    <input type="checkbox" :value="{{ $key->id }}" x-model="selectedKeyIds"
-                           class="rounded text-blue-600 focus:ring-2 focus:ring-blue-500">
-                    <span class="text-sm text-gray-700 dark:text-gray-200 truncate">
-                        <span class="font-medium">{{ $key->provider }}</span>/{{ $key->name }}
-                        @if($key->model)
-                        <span class="text-xs text-gray-500 dark:text-gray-400 block">{{ $key->model }}</span>
-                        @endif
-                        @if($key->purpose && $key->purpose !== 'any')
-                        <span class="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{ $key->purpose }}</span>
-                        @endif
-                    </span>
-                </label>
+                @foreach ($allKeys as $key)
+                    <label
+                        x-show="keyMatchesFilter('{{ $key->provider }}', '{{ $key->purpose ?: 'null' }}')"
+                        data-key-id="{{ $key->id }}"
+                        data-provider="{{ $key->provider }}"
+                        data-purpose="{{ $key->purpose ?: 'null' }}"
+                        class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-gray-800 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                        <input type="checkbox" :value="{{ $key->id }}" x-model="selectedKeyIds"
+                               class="rounded text-blue-600 focus:ring-2 focus:ring-blue-500">
+                        <span class="text-sm text-gray-700 dark:text-gray-200 truncate">
+                            <span class="font-medium">{{ $key->provider }}</span>/{{ $key->name }}
+                            @if ($key->model)
+                                <span class="text-xs text-gray-500 dark:text-gray-400 block">{{ $key->model }}</span>
+                            @endif
+                            @if ($key->purpose && $key->purpose !== 'any')
+                                <span class="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{ $key->purpose }}</span>
+                            @elseif ($key->purpose === 'any')
+                                <span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">any</span>
+                            @endif
+                        </span>
+                    </label>
                 @endforeach
+            </div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                แสดง: <span x-text="visibleKeyCount()"></span> คีย์ / ทั้งหมด {{ count($allKeys) }}
+                — เลือก: <span x-text="selectedKeyIds.length"></span> คีย์
             </div>
         </div>
 
@@ -185,6 +228,9 @@ function aiUsageDashboard() {
         start: '',
         end: '',
         selectedKeyIds: [],
+        // 🆕 (2026-05-19) Filter ตาม provider + purpose
+        filterProvider: '',
+        filterPurpose: '',
         summary: null,
         breakdown: [],
 
@@ -209,9 +255,40 @@ function aiUsageDashboard() {
             this.fetchData();
         },
 
-        selectAllKeys() {
-            const allCheckboxes = document.querySelectorAll('input[type="checkbox"][x-model="selectedKeyIds"]');
-            this.selectedKeyIds = Array.from(allCheckboxes).map(c => parseInt(c.value));
+        // 🆕 (2026-05-19) เช็คว่า key ตรงกับ filter ที่เลือกหรือไม่
+        keyMatchesFilter(provider, purpose) {
+            if (this.filterProvider && this.filterProvider !== provider) return false;
+            if (this.filterPurpose && this.filterPurpose !== purpose) return false;
+            return true;
+        },
+
+        // 🆕 (2026-05-19) ตอนเปลี่ยน filter — ลบ key ที่เลือกอยู่ออกถ้าไม่ match แล้ว
+        applyKeyFilters() {
+            const visibleKeyIds = this.getVisibleKeyIds();
+            this.selectedKeyIds = this.selectedKeyIds.filter(id => visibleKeyIds.includes(id));
+        },
+
+        // 🆕 ดึง key IDs ของ checkbox ที่ visible ตาม filter
+        getVisibleKeyIds() {
+            const labels = document.querySelectorAll('label[data-key-id]');
+            const visible = [];
+            labels.forEach(lbl => {
+                const p = lbl.dataset.provider;
+                const pp = lbl.dataset.purpose;
+                if (this.keyMatchesFilter(p, pp)) {
+                    visible.push(parseInt(lbl.dataset.keyId));
+                }
+            });
+            return visible;
+        },
+
+        visibleKeyCount() {
+            return this.getVisibleKeyIds().length;
+        },
+
+        // 🆕 เลือกทั้งหมด *เฉพาะที่ visible* (รองรับ filter)
+        selectAllVisibleKeys() {
+            this.selectedKeyIds = this.getVisibleKeyIds();
         },
 
         clearKeys() {
@@ -225,7 +302,15 @@ function aiUsageDashboard() {
                 const params = new URLSearchParams();
                 params.append('start', this.start);
                 params.append('end', this.end);
-                this.selectedKeyIds.forEach(id => params.append('key_ids[]', id));
+
+                // 🆕 (2026-05-19) ถ้า user ตั้ง filter (provider/purpose) แต่ยังไม่กดเลือก
+                //   → ใช้ visible keys ทั้งหมดที่ผ่าน filter
+                //   ไม่มี filter + ไม่เลือก = ทั้งหมด (เดิม)
+                let keyIds = this.selectedKeyIds;
+                if (keyIds.length === 0 && (this.filterProvider || this.filterPurpose)) {
+                    keyIds = this.getVisibleKeyIds();
+                }
+                keyIds.forEach(id => params.append('key_ids[]', id));
 
                 const url = `{{ route('admin.ai-api-keys.usage-dashboard.data') }}?${params.toString()}`;
                 const resp = await fetch(url, {
