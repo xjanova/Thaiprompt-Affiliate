@@ -2509,6 +2509,15 @@ class FortuneReading extends Model
             return true;
         }
 
+        // 🛡️ (2026-05-21) Safety valve — ถ้า admin reset (celticQuestions ว่าง / counter=0)
+        //   → ignore stale celtic_first_answered_at + allow asking
+        //   เคสจริง: reading 3201 Q1 ถูก mark answered ตอน push fail (spam silenced)
+        //            → timer expired ลูกค้าไม่รู้ตัว → admin reset แต่ field ค้างอยู่
+        //   Fix: ถ้า questions used ลดลงเป็น 0 หรือ records ว่าง = reset แล้ว → reset timer implicit
+        if ($this->celtic_questions_used === 0 || $this->celticQuestions()->count() === 0) {
+            return true;
+        }
+
         // หลัง Q1 → เช็ค window 30 นาที (anti-troll)
         $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 
