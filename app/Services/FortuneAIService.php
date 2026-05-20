@@ -964,12 +964,6 @@ PROMPT;
     }
 
     /**
-     * 📸 OpenAI Vision call — Chat Completions multimodal
-     *
-     * Note: Responses API (GPT-5+) ก็รองรับ multimodal — ใช้ format เดียวกัน
-     *       แต่เริ่มจาก Chat Completions เพราะรองรับ wide model range (gpt-4o, gpt-5)
-     */
-    /**
      * 🆕 (2026-05-20 Phase 3b) Download + base64 image — DRY helper
      *
      * เหตุผล: ทั้ง OpenAI และ Gemini vision ดึง external URL ไม่ได้ — ต้อง base64 ฝั่งเรา
@@ -1088,19 +1082,24 @@ PROMPT;
         $base64Data = $m[2];
 
         // 3. Resolve key + model (ใช้ Pool ถ้าไม่ระบุ — ขอ chat purpose เพราะถูกกว่า sensitive)
+        // 🛡️ (2026-05-20 review fix) — track Pool key เพื่อ release ใน finally block
+        //   เดิม: acquire key แต่ไม่ release → inflight counter ค้าง → Pool ไม่ pick key นั้นอีก
+        $poolService = null;
+        $acquiredKey = null;
+
         if (empty($apiKey) || empty($model)) {
             $poolService = new \App\Services\AiApiKeyPoolService;
-            $geminiKey = $poolService->acquireKey('gemini', 'chat')
+            $acquiredKey = $poolService->acquireKey('gemini', 'chat')
                 ?: $poolService->acquireKey('gemini', null);
 
-            if (! $geminiKey) {
+            if (! $acquiredKey) {
                 Log::warning('FortuneAIService chatWithImageGemini: ไม่มี Gemini key พร้อมใช้');
 
                 return null;
             }
 
-            $apiKey = $apiKey ?: $geminiKey->api_key;
-            $model = $model ?: ($geminiKey->resolveModel() ?? 'gemini-2.0-flash');
+            $apiKey = $apiKey ?: $acquiredKey->api_key;
+            $model = $model ?: ($acquiredKey->resolveModel() ?? 'gemini-2.0-flash');
         }
 
         $userText = trim($userText) !== '' ? $userText : 'อธิบายสิ่งที่เห็นในรูป';
@@ -1148,6 +1147,11 @@ PROMPT;
                     'model' => $model,
                 ]);
 
+                // record error สำหรับ Pool circuit breaker (ถ้า acquire จาก Pool)
+                if ($acquiredKey && method_exists($acquiredKey, 'recordError')) {
+                    $acquiredKey->recordError("HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200), $model);
+                }
+
                 return null;
             }
 
@@ -1161,6 +1165,17 @@ PROMPT;
             }
 
             $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            // 🩹 (2026-05-20) Record usage สำหรับ Pool key (เพื่อ token tracking + analytics dashboard)
+            if ($acquiredKey && method_exists($acquiredKey, 'recordUsage')) {
+                $acquiredKey->recordUsage(
+                    (int) ($data['usageMetadata']['promptTokenCount'] ?? 0),
+                    (int) ($data['usageMetadata']['candidatesTokenCount'] ?? 0),
+                    $model,
+                    $responseTime,
+                    'image_vision'
+                );
+            }
 
             Log::info('FortuneAIService chatWithImageGemini สำเร็จ', [
                 'provider' => 'gemini',
@@ -1184,10 +1199,36 @@ PROMPT;
                 'error' => $e->getMessage(),
             ]);
 
+            if ($acquiredKey && method_exists($acquiredKey, 'recordError')) {
+                $acquiredKey->recordError($e->getMessage(), $model);
+            }
+
             return null;
+        } finally {
+            // 🛡️ (2026-05-20 review fix) — Release Pool key เสมอ (กัน inflight ค้าง)
+            //   ทำใน finally เพื่อให้ทำงานทั้ง success path / exception path / early return
+            if ($poolService && $acquiredKey) {
+                try {
+                    $poolService->releaseKey('gemini', $acquiredKey->id);
+                } catch (\Throwable $relErr) {
+                    Log::debug('chatWithImageGemini: release key fail (non-blocking)', [
+                        'error' => $relErr->getMessage(),
+                    ]);
+                }
+            }
         }
     }
 
+    /**
+     * 📸 OpenAI Vision call — Chat Completions multimodal
+     *
+     * Note: Responses API (GPT-5+) ก็รองรับ multimodal — ใช้ format เดียวกัน
+     *       แต่เริ่มจาก Chat Completions เพราะรองรับ wide model range (gpt-4o, gpt-5)
+     *
+     * 🆕 (2026-05-20) gpt-5+/o-series ใช้ schema ใหม่:
+     *   • max_completion_tokens (ไม่ใช่ max_tokens)
+     *   • ห้ามส่ง temperature (รับเฉพาะ default 1.0)
+     */
     protected function callVisionOpenAI(string $imageData, string $systemPrompt, string $userText, string $apiKey, string $model, array $config): array
     {
         $url = 'https://api.openai.com/v1/chat/completions';
