@@ -160,22 +160,101 @@ class LineFortuneWebhookController extends Controller
         //   PAID / processing → "แม่หมอกำลังคำนวณ"
         //   ไม่มี active → guidance generic
         if ($messageType === 'image') {
-            // 🃏 Celtic active + เปิดไพ่ครบ 10 → ส่งให้ vision AI
-            $celticVisionReading = FortuneReading::where(function ($q) use ($userId) {
-                $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
-            })
-                ->whereIn('conversation_status', [
-                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
-                    FortuneReading::STATUS_CELTIC_GENERATING,
-                ])
-                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
-                ->latest()
-                ->first();
+            // 🚫 (2026-05-20 Phase 3b.5) Image spam guard — ก่อน dispatch
+            //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
+            try {
+                $spamGuard = app(\App\Services\Fortune\ImageSpamGuard::class);
+                $spamCheck = $spamGuard->check('line', $userId);
+                if ($spamCheck['blocked']) {
+                    Log::info('LINE: image spam cooldown active → silent', [
+                        'user_id' => $userId,
+                        'level' => $spamCheck['level'],
+                    ]);
 
-            if ($celticVisionReading && $celticVisionReading->getCelticPickedCount() >= 10) {
-                $this->handleCelticVisionImage($userId, $messageId, $celticVisionReading, $replyToken);
+                    return;
+                }
+                $spamRecord = $spamGuard->record('line', $userId);
+                if ($spamRecord['triggered']) {
+                    Log::info('LINE: image spam triggered (silent)', [
+                        'user_id' => $userId,
+                        'level' => $spamRecord['level'],
+                        'count' => $spamRecord['count'],
+                    ]);
+
+                    return;
+                }
+            } catch (\Throwable $spamErr) {
+                Log::debug('LINE: spam guard exception (non-blocking)', [
+                    'error' => $spamErr->getMessage(),
+                ]);
+            }
+
+            // 🆕 (2026-05-20 Phase 3b.5) Classify image — ดึง LINE content แล้ว classify
+            //   หมายเหตุ: LINE webhook ไม่ส่ง URL ตรง ๆ ต้องดึงผ่าน content API + base64 ก่อน
+            //   ถ้า download fail → fall through ไป existing logic (Celtic vision หรือ slip handler ดึงเอง)
+            $intent = null;
+            $cachedBase64 = null; // เก็บไว้ส่งต่อให้ handleCelticVisionImage ได้
+            if (! empty($messageId)) {
+                try {
+                    $cachedBase64 = $this->downloadLineImageAsBase64($messageId);
+                    if ($cachedBase64) {
+                        $hasActiveFortune = FortuneReading::where(function ($q) use ($userId) {
+                            $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                        })
+                            ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                            ->exists();
+
+                        $contextHint = $hasActiveFortune ? 'celtic_active' : 'chat_normal';
+                        $intentResult = app(\App\Services\Fortune\ImageIntentClassifier::class)
+                            ->classify($cachedBase64, $contextHint);
+                        $intent = $intentResult['intent'] ?? null;
+
+                        Log::info('LINE: image classified', [
+                            'user_id' => $userId,
+                            'intent' => $intent,
+                            'confidence' => $intentResult['confidence'] ?? null,
+                            'context_hint' => $contextHint,
+                        ]);
+                    }
+                } catch (\Throwable $clErr) {
+                    Log::debug('LINE: classifier exception (fall through)', [
+                        'error' => $clErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // 🤐 Emoji/nonsense → silent
+            if (in_array($intent, [
+                \App\Services\Fortune\ImageIntentClassifier::INTENT_EMOJI_STICKER,
+                \App\Services\Fortune\ImageIntentClassifier::INTENT_NONSENSE,
+            ], true)) {
+                Log::debug('LINE: emoji/nonsense → silent', [
+                    'user_id' => $userId,
+                    'intent' => $intent,
+                ]);
 
                 return;
+            }
+
+            // 🃏 Celtic active + เปิดไพ่ครบ 10 → ส่งให้ vision AI
+            //    🆕 (Phase 3b.5) Skip ถ้า classifier บอก payment_slip — ส่ง slip flow แทน
+            if ($intent !== \App\Services\Fortune\ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
+                $celticVisionReading = FortuneReading::where(function ($q) use ($userId) {
+                    $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+                })
+                    ->whereIn('conversation_status', [
+                        FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                        FortuneReading::STATUS_CELTIC_GENERATING,
+                    ])
+                    ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                    ->latest()
+                    ->first();
+
+                if ($celticVisionReading && $celticVisionReading->getCelticPickedCount() >= 10) {
+                    $this->handleCelticVisionImage($userId, $messageId, $celticVisionReading, $replyToken);
+
+                    return;
+                }
             }
 
             $this->handleSlipImageOnly($userId, $replyToken);
@@ -1355,6 +1434,67 @@ class LineFortuneWebhookController extends Controller
      *   3. Call CelticCrossService::askQuestionWithImage()
      *   4. Reply ผ่าน FortuneChannelManager (action celtic_question_answered)
      */
+    /**
+     * 🆕 (2026-05-20 Phase 3b.5) Download LINE image content → base64 data URL
+     *
+     * เหตุผล: ใช้ทั้ง classifier + Celtic vision — DRY + cache ภายใน request
+     *
+     * @return string|null  data:image/jpeg;base64,...  หรือ null ถ้า fail
+     */
+    protected function downloadLineImageAsBase64(string $messageId): ?string
+    {
+        try {
+            $settings = \App\Models\FortuneTellingSetting::getSettings();
+            $accessToken = $settings->line_channel_access_token
+                ?? config('services.line.channel_token');
+
+            if (empty($accessToken)) {
+                Log::warning('LINE downloadLineImageAsBase64: access token ไม่พบ');
+
+                return null;
+            }
+
+            $response = \Illuminate\Support\Facades\Http::timeout(15)
+                ->withHeaders(['Authorization' => 'Bearer '.$accessToken])
+                ->get("https://api-data.line.me/v2/bot/message/{$messageId}/content");
+
+            if (! $response->successful()) {
+                Log::warning('LINE downloadLineImageAsBase64: download fail', [
+                    'status' => $response->status(),
+                    'message_id' => $messageId,
+                ]);
+
+                return null;
+            }
+
+            $bytes = $response->body();
+            if (strlen($bytes) > 10 * 1024 * 1024) {
+                Log::warning('LINE downloadLineImageAsBase64: image too large', [
+                    'size_mb' => round(strlen($bytes) / 1024 / 1024, 2),
+                ]);
+
+                return null;
+            }
+
+            $mime = $response->header('Content-Type') ?: 'image/jpeg';
+            $mime = trim(explode(';', $mime)[0]);
+
+            if (! str_starts_with($mime, 'image/')) {
+                Log::warning('LINE downloadLineImageAsBase64: non-image MIME', ['mime' => $mime]);
+
+                return null;
+            }
+
+            return 'data:'.$mime.';base64,'.base64_encode($bytes);
+        } catch (\Throwable $e) {
+            Log::warning('LINE downloadLineImageAsBase64 exception', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     protected function handleCelticVisionImage(
         string $userId,
         string $messageId,

@@ -12,6 +12,8 @@ use App\Models\FortuneUserCredit;
 use App\Services\CelticCrossService;
 use App\Services\FacebookRichMessageService;
 use App\Services\FacebookWebhookService;
+use App\Services\Fortune\ImageIntentClassifier;
+use App\Services\Fortune\ImageSpamGuard;
 use App\Services\FortuneAIService;
 use App\Services\FortuneBannerService;
 use App\Services\FortuneChannelManager;
@@ -1504,12 +1506,118 @@ class FacebookWebhookController extends Controller
                 }
             }
 
+            // 🚫 (2026-05-20 Phase 3b.5) Spam guard — ก่อน dispatch อื่น
+            //   ลูกค้าส่งรูปรัวๆ (>= 3/10s) → silent cooldown 60s
+            //   sustained (>= 5/60s) → cooldown 5 นาที + alert admin
+            //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
+            if ($userImageUrl) {
+                try {
+                    $spamGuard = app(ImageSpamGuard::class);
+                    $spamCheck = $spamGuard->check('facebook', $senderId);
+                    if ($spamCheck['blocked']) {
+                        Log::info('FB: image spam cooldown active → silent', [
+                            'sender_id' => $senderId,
+                            'level' => $spamCheck['level'],
+                            'cooldown_until' => $spamCheck['cooldown_until'],
+                        ]);
+
+                        return;
+                    }
+                    // Record this image — อาจ trigger cooldown ถ้าครบเกณฑ์
+                    $spamRecord = $spamGuard->record('facebook', $senderId);
+                    if ($spamRecord['triggered']) {
+                        Log::info('FB: image spam triggered (silent)', [
+                            'sender_id' => $senderId,
+                            'level' => $spamRecord['level'],
+                            'count' => $spamRecord['count'],
+                        ]);
+
+                        return;
+                    }
+                } catch (\Throwable $spamErr) {
+                    // Spam guard fail = ไม่ block flow ปกติ
+                    Log::debug('FB: spam guard exception (non-blocking)', [
+                        'error' => $spamErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // 🆕 (2026-05-20 Phase 3b.5) Classify image intent ก่อน routing
+            //   ใช้ Gemini Flash (ราคาถูก) เพื่อ first-pass classify:
+            //     • payment_slip       → existing slip flow
+            //     • fortune_subject    → Celtic vision (ถ้า Celtic active+10ใบ) OR hint
+            //     • general_photo      → chat reply (เมื่อ no active)
+            //     • emoji_sticker      → silent (ลูกค้าส่งสติ๊กเกอร์ไม่ต้องตอบทุกครั้ง)
+            //     • nonsense           → silent
+            //   Fallback: ถ้า classifier fail → fall through ไป existing logic (zero regression)
+            $intent = null;
+            if ($userImageUrl) {
+                try {
+                    $contextHint = $hasActiveFortune ? 'celtic_active' : 'chat_normal';
+                    $intentResult = app(ImageIntentClassifier::class)->classify($userImageUrl, $contextHint);
+                    $intent = $intentResult['intent'] ?? null;
+
+                    Log::info('FB: image classified', [
+                        'sender_id' => $senderId,
+                        'intent' => $intent,
+                        'confidence' => $intentResult['confidence'] ?? null,
+                        'reason' => $intentResult['reason'] ?? null,
+                        'context_hint' => $contextHint,
+                    ]);
+                } catch (\Throwable $clErr) {
+                    Log::debug('FB: classifier exception (fall through to legacy logic)', [
+                        'error' => $clErr->getMessage(),
+                    ]);
+                }
+            }
+
+            // 🤐 Emoji/nonsense → silent (ไม่ตอบ ไม่ flood ลูกค้า)
+            if (in_array($intent, [ImageIntentClassifier::INTENT_EMOJI_STICKER, ImageIntentClassifier::INTENT_NONSENSE], true)) {
+                Log::debug('FB: emoji/nonsense → silent', [
+                    'sender_id' => $senderId,
+                    'intent' => $intent,
+                ]);
+
+                return;
+            }
+
             // 🔇 ไม่มี active flow + attachment ใดๆ → silent (ทุกประเภท)
+            //   เคสที่ classifier ไม่ active (intent=null) — เก็บ behavior เดิม
+            //   เคสที่ classifier บอก general_photo + no active flow → ตอบ chat สั้น ๆ
             if (empty($messageText) && ! $hasActiveFortune) {
+                // 🆕 (2026-05-20) Classifier บอก general_photo / fortune_subject → ตอบเชิญดูดวง
+                if ($intent === ImageIntentClassifier::INTENT_FORTUNE_SUBJECT) {
+                    $this->facebookService->sendMessage(
+                        $senderId,
+                        "🌙 เห็นเจ้าชะตาส่งรูปมา — สนใจดูดวงเรื่องคนในรูปใช่ไหมคะ?\n\n"
+                        ."✨ พิมพ์ \"ดูดวง\" เพื่อเริ่มทำนายเลยค่ะ"
+                    );
+
+                    Log::info('FB: classifier=fortune_subject (no active) → invite ดูดวง', [
+                        'sender_id' => $senderId,
+                    ]);
+
+                    return;
+                }
+                if ($intent === ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
+                    $this->facebookService->sendMessage(
+                        $senderId,
+                        "🌙 ดูเหมือนเป็นสลิปการโอนเงิน — แต่แม่หมอยังไม่มีรายการที่ต้องชำระสำหรับเจ้าชะตาตอนนี้นะคะ\n\n"
+                        ."✨ ถ้าอยากดูดวง พิมพ์ \"ดูดวง\" เพื่อเริ่มเลยค่ะ"
+                    );
+
+                    Log::info('FB: classifier=payment_slip (no active) → แจ้งไม่มีรายการ', [
+                        'sender_id' => $senderId,
+                    ]);
+
+                    return;
+                }
+                // general_photo / unknown → silent เดิม (ไม่ตอบรูปสุ่ม)
                 Log::debug('FB: silent ignore attachment (no active fortune flow)', [
                     'sender_id' => $senderId,
                     'has_image' => ! empty($userImageUrl),
                     'has_sticker' => $hasSticker,
+                    'intent' => $intent,
                     'attachment_types' => array_column($attachments, 'type'),
                 ]);
 
@@ -1518,7 +1626,8 @@ class FacebookWebhookController extends Controller
 
             // 📸 (2026-05-16) Celtic Pro Session + image → vision AI วิเคราะห์
             //    ลูกค้าจ่าย 99 เปิดไพ่ครบ → ส่งรูปมา → ส่งให้ vision AI แทนที่จะตอบ "สลิป"
-            if ($userImageUrl) {
+            //    🆕 (Phase 3b.5) Skip ถ้า classifier บอก payment_slip — ส่ง slip flow แทน
+            if ($userImageUrl && $intent !== ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
                 $celticVisionReading = FortuneReading::where('facebook_user_id', $senderId)
                     ->whereIn('conversation_status', [
                         FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
