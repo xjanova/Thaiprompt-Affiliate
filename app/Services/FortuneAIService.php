@@ -915,6 +915,58 @@ PROMPT;
             ? $userText
             : 'เจ้าชะตาส่งรูปนี้มาให้แม่หมอ — ช่วยวิเคราะห์ในบริบทคำทำนายเซลติกที่เปิดไพ่ไว้';
 
+        // 📥 (2026-05-20) Download → base64 data URL ถ้าเป็น http(s) URL
+        //   เหตุผล: OpenAI Vision API ดึง external URL ไม่ได้ (FB CDN/Wikipedia block)
+        //   verified bug: OpenAI return "invalid_image_url" สำหรับ external URL ทุกครั้ง
+        //   วิธีแก้: เราดาวน์โหลดเอง + ใส่ User-Agent → encode base64 → ส่ง data URL ให้ OpenAI
+        //   ✅ test ผ่าน: gpt-5.5 accept data URL + ตอบเป็นไทยปกติ
+        if (str_starts_with($imageData, 'http://') || str_starts_with($imageData, 'https://')) {
+            try {
+                $imgResp = Http::withHeaders([
+                    'User-Agent' => 'Mozilla/5.0 (compatible; ThaipromptBot/1.0)',
+                    'Accept' => 'image/*',
+                ])->timeout(15)->get($imageData);
+
+                if ($imgResp->status() !== 200 || strlen($imgResp->body()) < 500) {
+                    Log::warning('FortuneAIService chatWithImage: download fail', [
+                        'status' => $imgResp->status(),
+                        'size' => strlen($imgResp->body()),
+                        'url_prefix' => mb_substr($imageData, 0, 100),
+                    ]);
+
+                    return null;
+                }
+
+                // Detect MIME — strip charset suffix ถ้ามี (e.g. "image/jpeg; charset=binary")
+                $contentType = $imgResp->header('Content-Type') ?: 'image/jpeg';
+                $mime = trim(explode(';', $contentType)[0]);
+
+                // 🛡️ Guard: ต้องเป็น image จริง (กัน HTML error page → "Invalid MIME")
+                if (! str_starts_with($mime, 'image/')) {
+                    Log::warning('FortuneAIService chatWithImage: non-image MIME', [
+                        'mime' => $mime,
+                        'url_prefix' => mb_substr($imageData, 0, 100),
+                    ]);
+
+                    return null;
+                }
+
+                $imageData = 'data:'.$mime.';base64,'.base64_encode($imgResp->body());
+
+                Log::debug('FortuneAIService chatWithImage: downloaded + base64 encoded', [
+                    'mime' => $mime,
+                    'size_bytes' => strlen($imgResp->body()),
+                ]);
+            } catch (\Throwable $dlErr) {
+                Log::warning('FortuneAIService chatWithImage: download exception', [
+                    'error' => $dlErr->getMessage(),
+                    'url_prefix' => mb_substr($imageData, 0, 100),
+                ]);
+
+                return null;
+            }
+        }
+
         try {
             $startTime = microtime(true);
 
@@ -967,23 +1019,42 @@ PROMPT;
     {
         $url = 'https://api.openai.com/v1/chat/completions';
 
-        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
-            ->withToken($apiKey)
-            ->post($url, [
-                'model' => $model,
-                'messages' => [
-                    ['role' => 'system', 'content' => $systemPrompt],
-                    [
-                        'role' => 'user',
-                        'content' => [
-                            ['type' => 'text', 'text' => $userText],
-                            ['type' => 'image_url', 'image_url' => ['url' => $imageData]],
-                        ],
+        // 🆕 (2026-05-20) gpt-5+/o-series ใช้ schema ต่างจาก legacy:
+        //   • verified bug 1: OpenAI 400 "Unsupported parameter: 'max_tokens'"
+        //     → ต้องใช้ 'max_completion_tokens' แทน
+        //   • verified bug 2: OpenAI 400 "temperature does not support 0.7
+        //     with this model. Only the default (1) value is supported"
+        //     → ห้ามส่ง 'temperature' เลย (reasoning models บังคับ 1.0)
+        //   gpt-4o/4-turbo legacy ยังใช้ max_tokens + temperature ได้ปกติ
+        $isReasoningModel = (bool) preg_match('/^(gpt-5|o[1-9])/i', $model);
+        $tokens = $config['max_tokens'] ?? 800;
+
+        $payload = [
+            'model' => $model,
+            'messages' => [
+                ['role' => 'system', 'content' => $systemPrompt],
+                [
+                    'role' => 'user',
+                    'content' => [
+                        ['type' => 'text', 'text' => $userText],
+                        ['type' => 'image_url', 'image_url' => ['url' => $imageData]],
                     ],
                 ],
-                'temperature' => $config['temperature'] ?? 0.7,
-                'max_tokens' => $config['max_tokens'] ?? 800,
-            ])->throw();
+            ],
+        ];
+
+        if ($isReasoningModel) {
+            // gpt-5+/o-series — schema ใหม่ (no custom temperature)
+            $payload['max_completion_tokens'] = $tokens;
+        } else {
+            // gpt-4o/4-turbo legacy — schema เก่า (มี temperature ได้)
+            $payload['max_tokens'] = $tokens;
+            $payload['temperature'] = $config['temperature'] ?? 0.7;
+        }
+
+        $response = Http::timeout(self::CHAT_PROVIDER_TIMEOUT)
+            ->withToken($apiKey)
+            ->post($url, $payload)->throw();
 
         $data = $response->json();
         $text = $data['choices'][0]['message']['content'] ?? '';
