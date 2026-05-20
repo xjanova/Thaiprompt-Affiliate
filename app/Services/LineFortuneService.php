@@ -248,6 +248,45 @@ class LineFortuneService implements MessagingPlatformInterface
     }
 
     /**
+     * 🚀 (2026-05-21) ส่ง image + text + quick replies ใน 1 push call เดียว
+     *
+     * เคสจริง: ลูกค้าเปิดไพ่เร็ว ๆ → 2 push calls ต่อใบ (image + text) = 20 calls/10 ใบ
+     *   → LINE rate limit / dedup → บาง message ไม่ถึงลูกค้า
+     * Fix: รวมเป็น 1 push call (atomic) — ทั้ง image + text + quickReply ส่งพร้อมกัน
+     *   ลดเป็น 10 calls/10 ใบ → ลด rate limit pressure ครึ่ง
+     *
+     * @param  string  $recipientId  LINE user ID
+     * @param  string  $imageUrl  รูปภาพ (HTTPS — auto convert)
+     * @param  string  $text  ข้อความ
+     * @param  array  $quickReplies  [['label'=>..., 'text'=>...], ...] (optional)
+     */
+    public function sendImageAndText(string $recipientId, string $imageUrl, string $text, array $quickReplies = []): bool
+    {
+        $imageUrl = $this->ensureHttps($imageUrl);
+
+        $messages = [
+            [
+                'type' => 'image',
+                'originalContentUrl' => $imageUrl,
+                'previewImageUrl' => $imageUrl,
+            ],
+            [
+                'type' => 'text',
+                'text' => mb_substr($text, 0, 4900),  // LINE text max 5000
+            ],
+        ];
+
+        // เพิ่ม quick replies ไปที่ text message (LINE: quickReply attaches to last message)
+        if (! empty($quickReplies)) {
+            $messages[1]['quickReply'] = [
+                'items' => $this->buildQuickReplyItems($quickReplies),
+            ];
+        }
+
+        return $this->pushMessage($recipientId, $messages);
+    }
+
+    /**
      * {@inheritdoc}
      */
     public function sendImage(string $recipientId, string $imageUrl, ?string $previewUrl = null): bool

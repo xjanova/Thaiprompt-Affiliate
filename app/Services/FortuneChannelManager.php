@@ -2123,65 +2123,54 @@ class FortuneChannelManager
                     //     ensureHttps() เป็น protected → เรียกจาก channel manager throw 500
                     //     → silent error → ลูกค้าไม่เห็นอะไรเลย
                     //   Fix: ลบ messages array (ไม่ใช้แล้ว) — push ตรง sendImage handle HTTPS เอง
-                    \Log::info('LINE Celtic: SKIP reply → push only (force push mode)', [
+                    // 🚀 (2026-05-21) Combine image + text เป็น 1 push call เดียว
+                    //   เคสจริง: ลูกค้าเปิดไพ่เร็ว ๆ → push 2 calls/ใบ × 10 ใบ = 20 calls
+                    //            → LINE rate limit / dedup → บาง msg หาย
+                    //   Fix: ใช้ sendImageAndText (atomic — 1 call ส่งทั้ง image+text+quickReply)
+                    //        ลด 50% ของ rate limit pressure
+                    \Log::info('LINE Celtic: SKIP reply → push (combined)', [
                         'user_id' => $userId,
                         'reading_id' => $reading?->id,
                     ]);
 
-                    // 1. Push image
-                    $imageOk = true;
-                    if (! empty($result['tarot_image_url'])) {
-                        try {
-                            $imageOk = $lineService->sendImage($userId, $result['tarot_image_url']);
-                            \Log::info('LINE Celtic: sendImage (push) result', [
-                                'user_id' => $userId,
-                                'reading_id' => $reading?->id,
-                                'success' => $imageOk,
-                                'image_url' => $result['tarot_image_url'],
-                            ]);
-                        } catch (\Throwable $e) {
-                            $imageOk = false;
-                            \Log::error('LINE Celtic: sendImage (push) exception', [
-                                'user_id' => $userId,
-                                'reading_id' => $reading?->id,
-                                'error' => $e->getMessage(),
-                                'image_url' => $result['tarot_image_url'],
+                    $pushOk = false;
+                    $imageUrl = $result['tarot_image_url'] ?? null;
+                    try {
+                        if (! empty($imageUrl)) {
+                            // มีรูป → ใช้ combined push (1 call)
+                            $pushOk = $lineService->sendImageAndText($userId, $imageUrl, $message, $quickReplies);
+                        } else {
+                            // ไม่มีรูป → text only
+                            $pushOk = $lineService->sendMessage($userId, $message, [
+                                'quick_replies' => $quickReplies,
                             ]);
                         }
-                    }
-
-                    // 2. Push text + quick replies (smart logic จากข้างบน)
-                    $textOk = false;
-                    try {
-                        $textOk = $lineService->sendMessage($userId, $message, [
-                            'quick_replies' => $quickReplies,
-                        ]);
-                        \Log::info('LINE Celtic: sendMessage (push) result', [
+                        \Log::info('LINE Celtic: combined push result', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
-                            'success' => $textOk,
+                            'success' => $pushOk,
+                            'has_image' => ! empty($imageUrl),
                             'msg_preview' => mb_substr($message, 0, 80),
                         ]);
                     } catch (\Throwable $e) {
-                        \Log::error('LINE Celtic: sendMessage (push) exception', [
+                        \Log::error('LINE Celtic: combined push exception', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'error' => $e->getMessage(),
                         ]);
                     }
 
-                    if (! $textOk) {
-                        \Log::critical('LINE Celtic: sendMessage (text) ล้มเหลว — ลูกค้าไม่เห็นไพ่!', [
+                    if (! $pushOk) {
+                        \Log::critical('LINE Celtic: combined push ล้มเหลว — ลูกค้าไม่เห็นไพ่!', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'action' => $result['action'] ?? null,
-                            'image_ok' => $imageOk,
                             'message_preview' => mb_substr($message, 0, 100),
                             'hint' => 'ตรวจ LINE token / push quota / userId',
                         ]);
                     }
 
-                    return $textOk;
+                    return $pushOk;
                 })(),
 
                 // celtic_all_picked → ส่งภาพ composite + ขอ Q1 + ปุ่ม "เริ่มถามคำถาม"
