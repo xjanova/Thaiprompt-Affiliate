@@ -227,6 +227,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_main_prompt',
         'celtic_cross_followup_prompt',
         'celtic_cross_proactive_enabled',
+        // 📦 (2026-05-20 Phase 4) Message debounce — รอรวมข้อความที่ลูกค้าพิมพ์ติด ๆ
+        'message_debounce_seconds',
         // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
         'enable_free_card_reading',
         'free_card_news_context',

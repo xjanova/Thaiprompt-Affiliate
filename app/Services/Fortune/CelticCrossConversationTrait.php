@@ -1425,6 +1425,73 @@ trait CelticCrossConversationTrait
         // 🛑 (2026-05-13) ลบ max_questions enforcement — flow ใหม่เป็น free chat
         //   user spec: คุยเรื่อยๆ จนถึง time_expired หรือ "พอแค่นี้"
 
+        // 📦 (2026-05-20 Phase 4a) Message Debounce — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ
+        //   User spec 2026-05-20: "ลูกค้าอาจพิมพ์ยังไม่ครบ ให้ใช้ช่วงเวลาดีเลย์นี้
+        //     คอยดูว่าเขาพิมพ์อะไรมา แล้วค่อยนำมารวมแล้วคุยต่อ"
+        //
+        //   เงื่อนไข:
+        //     • debounce_seconds > 0 (admin เปิด feature)
+        //     • celtic_questions_used >= 1 (Q2+ เท่านั้น — Q1 ตอบทันทีเพราะลูกค้าจ่ายแพง)
+        //     • ผ่าน keyword checks แล้ว (ยุติ/restart/time_expired)
+        //
+        //   Flow:
+        //     1. Append message ลง buffer (Cache, TTL 5 min)
+        //     2. Dispatch ProcessBufferedCelticMessageJob delayed N+1 sec
+        //     3. Return silent_skip — ไม่ตอบทันที (job จะ flush + AI ตอบ)
+        //     4. ถ้าลูกค้าพิมพ์เพิ่ม → append + dispatch อีก job
+        //        Job ตัวก่อนหน้าจะเห็น last_at ยังใหม่ → skip (job ตัวสุดท้าย flush)
+        $debounceSeconds = (int) ($this->settings->message_debounce_seconds ?? 3);
+        $celticQuestionsUsed = (int) ($reading->celtic_questions_used ?? 0);
+        if ($debounceSeconds > 0 && $celticQuestionsUsed >= 1) {
+            try {
+                $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
+                $bufferUserId = $reading->facebook_user_id ?: $reading->line_user_id;
+
+                if (! empty($bufferUserId)) {
+                    $buffer = app(\App\Services\Fortune\MessageBuffer::class);
+                    $stats = $buffer->append('celtic_q', (string) $bufferUserId, $question);
+
+                    // Dispatch job delayed (+1 sec buffer เผื่อ race condition)
+                    \App\Jobs\ProcessBufferedCelticMessageJob::dispatch(
+                        $reading->id,
+                        $platform,
+                        (string) $bufferUserId,
+                        $debounceSeconds
+                    )->delay(now()->addSeconds($debounceSeconds + 1));
+
+                    // ส่ง typing indicator (FB only) — ลูกค้าเห็นว่ารับ message แล้ว
+                    if ($platform === 'facebook') {
+                        try {
+                            app(\App\Services\FacebookWebhookService::class)
+                                ->sendTypingOn((string) $bufferUserId);
+                        } catch (\Throwable $typingErr) {
+                            // ignore
+                        }
+                    }
+
+                    \Log::info('Celtic: message buffered (debounce)', [
+                        'reading_id' => $reading->id,
+                        'platform' => $platform,
+                        'sequence_used' => $celticQuestionsUsed,
+                        'buffer_count' => $stats['count'],
+                        'window_sec' => $debounceSeconds,
+                    ]);
+
+                    return [
+                        'action' => 'silent_skip', // ChannelManager จะ skip การส่ง
+                        'message' => '',
+                        'reading' => $reading,
+                    ];
+                }
+            } catch (\Throwable $bufErr) {
+                // Buffer fail = fall through ไปใช้ logic เดิม (ตอบทันที) — zero regression
+                \Log::warning('Celtic: buffer/dispatch fail (fall through to immediate)', [
+                    'reading_id' => $reading->id,
+                    'error' => $bufErr->getMessage(),
+                ]);
+            }
+        }
+
         // ส่งให้ AI Pool — ทุก message ส่งเข้า askQuestion (chat-style follow-up)
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_GENERATING]);
 
