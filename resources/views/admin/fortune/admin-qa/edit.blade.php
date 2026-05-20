@@ -39,6 +39,20 @@
                       class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">{{ old('a_text', $qa->a_text) }}</textarea>
         </div>
 
+        {{-- 🏷 หมวด (category) — override classifier ได้ --}}
+        <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                🏷 หมวด (category)
+                <span class="text-xs text-gray-500">— ระบบจัดให้อัตโนมัติจาก state ตอน capture แอดมินแก้ได้ถ้าผิด</span>
+            </label>
+            <select name="category" class="w-full px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                <option value="">— ไม่ระบุ (legacy / ทั่วไป) —</option>
+                @foreach ($categoryOptions as $catKey => $catLabel)
+                    <option value="{{ $catKey }}" @selected(old('category', $qa->category) === $catKey)>{{ $catLabel }}</option>
+                @endforeach
+            </select>
+        </div>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label class="flex items-center gap-2">
                 <input type="hidden" name="is_active" value="0">
@@ -59,12 +73,31 @@
             </div>
         </div>
 
-        <div class="text-xs text-gray-500 dark:text-gray-400 border-t pt-4">
+        <div class="text-xs text-gray-500 dark:text-gray-400 border-t pt-4 space-y-1">
             <div>Platform: <span class="font-mono">{{ $qa->source_platform }}</span></div>
             <div>Customer: <span class="font-mono">{{ $qa->source_user_id ?? '-' }}</span></div>
+            @if ($qa->page_id)
+                <div>Page ID: <span class="font-mono">{{ $qa->page_id }}</span></div>
+            @endif
+            @if ($qa->reading_id)
+                <div>Reading: <span class="font-mono">#{{ $qa->reading_id }}</span> ({{ $qa->reading_type ?? '?' }})</div>
+            @endif
             <div>Embedding: {{ $qa->q_embedding ? count($qa->q_embedding) . 'd' : 'ว่าง' }}</div>
             <div>Hits: {{ $qa->hit_count }} (last: {{ $qa->last_hit_at?->diffForHumans() ?? 'never' }})</div>
             <div>Created: {{ $qa->created_at }}</div>
+            @if (! empty($qa->context_json['prev_turns']))
+                <details class="mt-2">
+                    <summary class="cursor-pointer text-blue-600 dark:text-blue-400">📜 บริบทย้อนหลัง ({{ count($qa->context_json['prev_turns']) }} turn)</summary>
+                    <div class="mt-2 space-y-1 p-2 bg-gray-50 dark:bg-gray-900 rounded text-xs">
+                        @foreach ($qa->context_json['prev_turns'] as $turn)
+                            <div>
+                                <span class="font-semibold {{ $turn['role'] === 'user' ? 'text-blue-600' : 'text-green-600' }}">{{ $turn['role'] }}:</span>
+                                <span class="text-gray-700 dark:text-gray-300">{{ $turn['content'] }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </details>
+            @endif
         </div>
 
         <div class="flex gap-3">

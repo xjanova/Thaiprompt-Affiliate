@@ -2478,18 +2478,25 @@ PROMPT;
 
     /**
      * 📚 (2026-05-19) Inject RAG admin Q&A few-shot ลง system prompt
+     *     (2026-05-20) v2 — รับ FortuneReading optional + classify category → pre-filter
      *
      * Flow:
      *   1. ถ้า settings admin_qa_rag_enabled=false → ข้าม
-     *   2. Retrieve top-3 admin Q&A ที่คล้าย $messageText (cosine ≥ threshold)
-     *   3. ถ้ามี ≥ 1 row → append section "ตัวอย่างคำตอบของแอดมิน..."
-     *   4. AI ใช้เป็นแนวสไตล์ + เนื้อหา (ไม่ copy ตรงๆ)
+     *   2. Classify category จาก reading state (ถ้ามี)
+     *   3. Retrieve top-3 admin Q&A ที่ category ตรง + cosine ≥ threshold
+     *   4. ถ้ามี ≥ 1 row → append section "ตัวอย่างคำตอบของแอดมิน..."
+     *   5. AI ใช้เป็นแนวสไตล์ + เนื้อหา (ไม่ copy ตรงๆ)
      *
      * Failure: ถ้า retrieve ล้มเหลว (Gemini embedding fail / DB error)
      *          → คืน $systemMessage เดิม (silent fallback)
+     *
+     * @param  \App\Models\FortuneReading|null  $reading  reading ปัจจุบันของลูกค้า (ถ้ามี) ใช้ classify category
      */
-    public function injectAdminQARagFewShot(string $systemMessage, string $messageText): string
-    {
+    public function injectAdminQARagFewShot(
+        string $systemMessage,
+        string $messageText,
+        ?\App\Models\FortuneReading $reading = null,
+    ): string {
         $messageText = trim($messageText);
         if ($messageText === '') {
             return $systemMessage;
@@ -2506,7 +2513,27 @@ PROMPT;
             $topK = (int) ($this->settings->admin_qa_rag_top_k ?? 3);
             $threshold = (float) ($this->settings->admin_qa_rag_threshold ?? \App\Models\FortuneAdminQA::DEFAULT_THRESHOLD);
 
-            $results = $retriever->searchSimilar($messageText, $topK, $threshold);
+            // 🏷 (2026-05-20) classify category จาก reading state ของลูกค้าปัจจุบัน
+            //    → pre-filter Q&A ที่ context เดียวกัน = AI ค้นถูกบริบทเร็วขึ้น 5-10x
+            //    ถ้าไม่มี reading → classifier ใช้ keyword heuristic
+            $category = \App\Services\FortuneAdminQAClassifier::currentCategoryForRetrieve(
+                $reading,
+                $messageText,
+            );
+
+            $results = $retriever->searchSimilar($messageText, $topK, $threshold, $category);
+
+            // 🔁 Fallback — ถ้า category-filter ไม่เจอ ลอง search แบบไม่ filter (legacy data)
+            //    ทำเฉพาะถ้า category ไม่ใช่ general (general ก็คือ "ไม่ filter อยู่แล้ว")
+            if (empty($results) && $category !== \App\Models\FortuneAdminQA::CATEGORY_GENERAL) {
+                $results = $retriever->searchSimilar($messageText, $topK, $threshold, null);
+                if (! empty($results)) {
+                    Log::debug('FortuneAIService: RAG fallback to all-categories', [
+                        'preferred_category' => $category,
+                    ]);
+                }
+            }
+
             if (empty($results)) {
                 return $systemMessage;
             }
@@ -2518,6 +2545,7 @@ PROMPT;
 
             Log::debug('FortuneAIService: inject RAG admin Q&A few-shot', [
                 'query_preview' => mb_substr($messageText, 0, 50),
+                'category' => $category,
                 'matched_count' => count($results),
                 'top_similarity' => $results[0]['similarity'] ?? null,
             ]);

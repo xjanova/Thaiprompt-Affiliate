@@ -13,15 +13,18 @@ use Illuminate\Support\Facades\Log;
  *
  * Strategy:
  *   1. Embed customer query → float vector 768
- *   2. Load active Q&A rows ที่มี embedding (ทั้งหมด)
- *   3. Cosine similarity per row → sort DESC → return top-K ที่ ≥ threshold
- *   4. Cache 5 นาที per query (ลูกค้าพิมพ์ซ้ำ → ไม่ต้อง embed ใหม่)
+ *   2. Pre-filter ตาม category (ถ้ามี) → กรอง subset ก่อน loop = เร็วขึ้น 5-10x
+ *   3. Load rows ที่ active + has embedding + recent (≤ 6 เดือน)
+ *   4. Cosine similarity per row → sort DESC → return top-K ที่ ≥ threshold
+ *   5. Cache 5 นาที per (query, category) → query ซ้ำ → ไม่ต้อง embed/load ใหม่
  *
  * Performance:
- *   - <10k rows: ~50ms PHP (acceptable)
- *   - >10k rows: ควรย้ายไป pgvector หรือ external vector store
+ *   - กระจาย 8 category × <5k rows total → cosine loop เฉลี่ย ~600 rows = ~30ms PHP
+ *   - >10k rows ต่อ category → ควรย้าย pgvector / Redis cache full set
  *
- * Failure handling: คืน [] ถ้า embedding/DB fail (caller fall back ไป AI ปกติ)
+ * Failure handling:
+ *   - คืน [] ถ้า embedding/DB fail (caller fall back ไป AI ปกติ)
+ *   - ถ้า retrieve > 800ms → log warning (defensive alarm)
  */
 class AdminQARetriever
 {
@@ -34,6 +37,19 @@ class AdminQARetriever
      * Cache prefix
      */
     private const CACHE_PREFIX = 'admin_qa:retrieve:';
+
+    /**
+     * เก็บข้อมูลย้อนหลังกี่เดือน (ตัดทิ้ง rows เก่าตอน retrieve)
+     *
+     * ป้องกัน rows สะสมเยอะเกินจน cosine ช้า
+     * Admin ลบ/disable เองได้ผ่าน UI ถ้าอยากเก็บนาน
+     */
+    private const RECENT_MONTHS = 6;
+
+    /**
+     * Threshold alarm — ถ้า retrieve ใช้เวลานานเกิน ms นี้ log warning
+     */
+    private const SLOW_RETRIEVE_THRESHOLD_MS = 800;
 
     protected GeminiEmbeddingService $embedding;
 
@@ -48,17 +64,24 @@ class AdminQARetriever
      * @param  string  $queryText  ข้อความค้นหา (customer message)
      * @param  int  $topK  จำนวน top results (default 3)
      * @param  float  $threshold  cosine ≥ ค่านี้ ถึงนับ (default 0.78)
+     * @param  string|null  $category  pre-filter category (null = ไม่ filter)
      * @return array<int,array{qa:FortuneAdminQA,similarity:float}> [{qa, similarity}, ...]
      */
-    public function searchSimilar(string $queryText, int $topK = 3, float $threshold = 0.78): array
-    {
+    public function searchSimilar(
+        string $queryText,
+        int $topK = 3,
+        float $threshold = 0.78,
+        ?string $category = null,
+    ): array {
+        $startTime = microtime(true);
+
         $queryText = trim($queryText);
         if ($queryText === '') {
             return [];
         }
 
-        // 1) Cache check (query + topK + threshold เป็น key)
-        $cacheKey = self::CACHE_PREFIX.hash('sha256', $queryText."|{$topK}|{$threshold}");
+        // 1) Cache check (query + topK + threshold + category เป็น key)
+        $cacheKey = self::CACHE_PREFIX.hash('sha256', $queryText."|{$topK}|{$threshold}|".($category ?? 'all'));
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
             return $this->hydrateCached($cached);
@@ -74,10 +97,21 @@ class AdminQARetriever
             return [];
         }
 
-        // 3) Load active rows + cosine similarity
+        // 3) Load active + has embedding + recent + (optional) category
         try {
-            $rows = FortuneAdminQA::active()->hasEmbedding()->get();
+            $query = FortuneAdminQA::active()
+                ->hasEmbedding()
+                ->recent(self::RECENT_MONTHS);
+
+            // 🏷 Pre-filter by category — เร็วขึ้น 5-10x เมื่อ data โต
+            if ($category !== null && $category !== '') {
+                $query->byCategory($category);
+            }
+
+            $rows = $query->get();
             if ($rows->isEmpty()) {
+                $this->logIfSlow($startTime, 0, $category, 'empty_result');
+
                 return [];
             }
 
@@ -111,7 +145,7 @@ class AdminQARetriever
             ], $top);
             Cache::put($cacheKey, $cacheable, self::QUERY_CACHE_TTL);
 
-            // 6) Record hit (เพิ่ม counter — ทำใน background ไม่ block)
+            // 6) Record hit (เพิ่ม counter — non-critical)
             foreach ($top as $r) {
                 try {
                     $r['qa']->recordHit();
@@ -120,10 +154,14 @@ class AdminQARetriever
                 }
             }
 
+            // 7) Defensive alarm — log ถ้าช้าผิดปกติ
+            $this->logIfSlow($startTime, $rows->count(), $category, 'success');
+
             return $top;
         } catch (\Throwable $e) {
             Log::warning('AdminQARetriever: search ล้มเหลว', [
                 'error' => $e->getMessage(),
+                'category' => $category,
             ]);
 
             return [];
@@ -158,6 +196,23 @@ class AdminQARetriever
         }
 
         return $result;
+    }
+
+    /**
+     * Defensive alarm — log warning ถ้า retrieve ช้าเกิน threshold
+     */
+    protected function logIfSlow(float $startTime, int $rowsScanned, ?string $category, string $status): void
+    {
+        $elapsedMs = (int) ((microtime(true) - $startTime) * 1000);
+        if ($elapsedMs >= self::SLOW_RETRIEVE_THRESHOLD_MS) {
+            Log::warning('AdminQARetriever: slow retrieve', [
+                'elapsed_ms' => $elapsedMs,
+                'rows_scanned' => $rowsScanned,
+                'category' => $category,
+                'status' => $status,
+                'threshold_ms' => self::SLOW_RETRIEVE_THRESHOLD_MS,
+            ]);
+        }
     }
 
     /**

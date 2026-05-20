@@ -1277,6 +1277,11 @@ class FacebookWebhookController extends Controller
         $recipientId = $messaging['recipient']['id'] ?? null;
         $appId = $messaging['message']['app_id'] ?? null;
         $messageText = $messaging['message']['text'] ?? '';
+        // 🆔 (2026-05-20) sender.id ใน echo = Page ID (ไม่ใช่ admin individual)
+        //    เก็บไว้เพื่อ:
+        //      - รู้ว่าตอบจากเพจไหน (multi-page support)
+        //      - debug/analytics ใน RAG Q&A
+        $pageId = $messaging['sender']['id'] ?? null;
 
         if (empty($recipientId)) {
             return;
@@ -1305,18 +1310,39 @@ class FacebookWebhookController extends Controller
             // admin reply ปกติ — ไม่ auto-takeover
 
             // 📚 (2026-05-19) Capture admin Q&A สำหรับ RAG learning
-            //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A
-            //   Job หา last customer message (Q) เอง + embed + INSERT
+            //     (2026-05-20) v2 — ส่ง context (page_id, reading_id, reading_type) เข้า job
+            //                       เพื่อให้ classifier แบ่งหมวด Q&A ได้ถูกต้อง
+            //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A + category
+            //   Job หา last customer message (Q) เอง + embed + classify + INSERT
             //   ถ้า settings ปิด admin_qa_capture ก็ skip (default เปิด)
             $captureEnabled = (bool) ($this->settings->admin_qa_capture_enabled ?? true);
             if ($captureEnabled && trim($messageText) !== '') {
                 try {
+                    // 🔍 หา reading ที่ลูกค้ามี active ณ ขณะนี้ (7 วันล่าสุด)
+                    //    ใช้ classify category — รู้ว่า admin ตอบลูกค้าที่อยู่ใน state ไหน
+                    $activeReading = \App\Models\FortuneReading::where(function ($q) use ($recipientId) {
+                        $q->where('facebook_user_id', $recipientId)
+                            ->orWhere(function ($sub) use ($recipientId) {
+                                $sub->where('platform', 'facebook')
+                                    ->where('platform_user_id', $recipientId);
+                            });
+                    })
+                        ->where('created_at', '>=', now()->subDays(7))
+                        ->latest()
+                        ->first();
+
                     \App\Jobs\CaptureAdminQAJob::dispatch(
                         'facebook',
                         $recipientId,
                         $messageText,
                         null, // admin_user_id ไม่รู้ (FB Page Inbox ไม่บอก)
-                        ['app_id' => null, 'echo' => true],
+                        [
+                            'app_id' => null,
+                            'echo' => true,
+                            'page_id' => $pageId,
+                            'reading_id' => $activeReading?->id,
+                            'reading_type' => $activeReading?->reading_type,
+                        ],
                     );
                 } catch (\Throwable $e) {
                     // non-blocking — ไม่ throw ออกมา กัน webhook fail

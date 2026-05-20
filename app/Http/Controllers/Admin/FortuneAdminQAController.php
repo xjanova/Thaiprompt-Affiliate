@@ -52,15 +52,34 @@ class FortuneAdminQAController extends Controller
             $query->where('is_active', false);
         }
 
+        // 🏷 (2026-05-20) กรองตาม category
+        $categoryFilter = $request->input('category');
+        if ($categoryFilter !== null && $categoryFilter !== '') {
+            if ($categoryFilter === '__null__') {
+                // กรองเฉพาะ rows ที่ยังไม่มี category (legacy data)
+                $query->whereNull('category');
+            } elseif (in_array($categoryFilter, FortuneAdminQA::CATEGORIES, true)) {
+                $query->where('category', $categoryFilter);
+            }
+        }
+
         $rows = $query->latest()->paginate(20)->withQueryString();
 
         $settings = FortuneTellingSetting::getSettings();
+
+        // 📊 Stats — รวม breakdown ตาม category
+        $categoryBreakdown = FortuneAdminQA::query()
+            ->selectRaw('COALESCE(category, "__null__") as category, COUNT(*) as total')
+            ->groupBy('category')
+            ->pluck('total', 'category')
+            ->toArray();
 
         $stats = [
             'total' => FortuneAdminQA::count(),
             'active' => FortuneAdminQA::where('is_active', true)->count(),
             'with_embedding' => FortuneAdminQA::whereNotNull('q_embedding')->count(),
             'total_hits' => (int) FortuneAdminQA::sum('hit_count'),
+            'category_breakdown' => $categoryBreakdown,
         ];
 
         return view('admin.fortune.admin-qa.index', [
@@ -70,6 +89,8 @@ class FortuneAdminQAController extends Controller
             'search' => $search,
             'platform' => $platform,
             'activeFilter' => $activeFilter,
+            'categoryFilter' => $categoryFilter,
+            'categoryOptions' => FortuneAdminQA::CATEGORY_LABELS,
             'pageTitle' => 'RAG Admin Q&A',
         ]);
     }
@@ -81,6 +102,7 @@ class FortuneAdminQAController extends Controller
     {
         return view('admin.fortune.admin-qa.edit', [
             'qa' => $qa,
+            'categoryOptions' => FortuneAdminQA::CATEGORY_LABELS,
             'pageTitle' => 'แก้ไข Admin Q&A #'.$qa->id,
         ]);
     }
@@ -97,6 +119,7 @@ class FortuneAdminQAController extends Controller
             'a_text' => 'required|string|min:1|max:20000',
             'is_active' => 'nullable|boolean',
             'similarity_threshold' => 'nullable|numeric|min:0|max:1',
+            'category' => 'nullable|string|in:'.implode(',', FortuneAdminQA::CATEGORIES),
         ]);
 
         $shouldReembed = trim($qa->q_text) !== trim($validated['q_text']);
@@ -105,6 +128,8 @@ class FortuneAdminQAController extends Controller
         $qa->a_text = $validated['a_text'];
         $qa->is_active = (bool) ($validated['is_active'] ?? false);
         $qa->similarity_threshold = $validated['similarity_threshold'] ?? null;
+        // 🏷 admin override category — null = ลบ category (จะถูกรวมเข้า general ตอน retrieve)
+        $qa->category = $validated['category'] ?? null;
 
         // Re-embed ถ้า q_text เปลี่ยน
         if ($shouldReembed) {

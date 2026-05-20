@@ -46,6 +46,30 @@
         </div>
     </div>
 
+    {{-- 🏷 Category breakdown — กระจายตามหมวด --}}
+    @if (! empty($stats['category_breakdown']))
+        <details class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+            <summary class="cursor-pointer font-semibold text-gray-900 dark:text-white">🏷 กระจายตามหมวด ({{ count($stats['category_breakdown']) }} หมวด)</summary>
+            <div class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
+                @foreach ($categoryOptions as $catKey => $catLabel)
+                    @php($catCount = $stats['category_breakdown'][$catKey] ?? 0)
+                    <a href="{{ route('admin.fortune.admin-qa.index', ['category' => $catKey]) }}"
+                       class="block p-3 bg-gray-50 dark:bg-gray-700 rounded hover:bg-blue-50 dark:hover:bg-blue-900 transition">
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ $catLabel }}</div>
+                        <div class="text-lg font-bold text-gray-900 dark:text-white">{{ number_format($catCount) }}</div>
+                    </a>
+                @endforeach
+                @if (isset($stats['category_breakdown']['__null__']))
+                    <a href="{{ route('admin.fortune.admin-qa.index', ['category' => '__null__']) }}"
+                       class="block p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900 transition">
+                        <div class="text-xs text-yellow-700 dark:text-yellow-300">⚠️ ยังไม่จัดหมวด (legacy)</div>
+                        <div class="text-lg font-bold text-yellow-900 dark:text-yellow-100">{{ number_format($stats['category_breakdown']['__null__']) }}</div>
+                    </a>
+                @endif
+            </div>
+        </details>
+    @endif
+
     {{-- Settings panel --}}
     <details class="mb-6 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
         <summary class="cursor-pointer font-semibold text-gray-900 dark:text-white">⚙️ ตั้งค่าระบบ RAG</summary>
@@ -98,6 +122,13 @@
     <form method="GET" class="mb-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <input type="text" name="search" value="{{ $search }}" placeholder="🔍 ค้น Q หรือ A..."
                class="md:col-span-2 px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
+        <select name="category" class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
+            <option value="">— ทุกหมวด —</option>
+            @foreach ($categoryOptions as $catKey => $catLabel)
+                <option value="{{ $catKey }}" @selected($categoryFilter === $catKey)>{{ $catLabel }}</option>
+            @endforeach
+            <option value="__null__" @selected($categoryFilter === '__null__')>⚠️ ยังไม่จัดหมวด</option>
+        </select>
         <select name="platform" class="px-3 py-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600">
             <option value="">— ทุก platform —</option>
             <option value="facebook" @selected($platform === 'facebook')>Facebook</option>
@@ -109,7 +140,10 @@
             <option value="1" @selected($activeFilter === '1')>✅ เปิด</option>
             <option value="0" @selected($activeFilter === '0')>⏸ ปิด</option>
         </select>
-        <button type="submit" class="md:col-span-4 px-4 py-2 bg-gray-700 dark:bg-gray-600 text-white rounded hover:bg-gray-800">ค้นหา</button>
+        <div class="md:col-span-2 flex gap-2">
+            <button type="submit" class="flex-1 px-4 py-2 bg-gray-700 dark:bg-gray-600 text-white rounded hover:bg-gray-800">ค้นหา</button>
+            <a href="{{ route('admin.fortune.admin-qa.index') }}" class="px-4 py-2 bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-400 dark:hover:bg-gray-600">ล้าง</a>
+        </div>
     </form>
 
     {{-- Table --}}
@@ -120,6 +154,7 @@
                     <tr>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">#</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Q / A</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">หมวด</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">แหล่ง</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Embed</th>
                         <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase">Hits</th>
@@ -140,6 +175,27 @@
                                     <div class="text-xs text-green-600 dark:text-green-400 font-semibold">A ({{ Str::length($qa->a_text) }} chars)</div>
                                     <div class="text-gray-700 dark:text-gray-300">{{ Str::limit($qa->a_text, 150) }}</div>
                                 </div>
+                            </td>
+                            <td class="px-4 py-4 text-sm align-top">
+                                @if ($qa->category)
+                                    <span class="inline-flex px-2 py-1 text-xs rounded-full
+                                        @switch($qa->category)
+                                            @case('pre_purchase') bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 @break
+                                            @case('birthdate_help') bg-indigo-100 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 @break
+                                            @case('question_input') bg-violet-100 dark:bg-violet-900 text-violet-800 dark:text-violet-200 @break
+                                            @case('pre_payment') bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 @break
+                                            @case('payment_confirm') bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 @break
+                                            @case('post_reading') bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 @break
+                                            @case('celtic_picking') bg-pink-100 dark:bg-pink-900 text-pink-800 dark:text-pink-200 @break
+                                            @default bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200
+                                        @endswitch
+                                    ">{{ $qa->categoryLabel() }}</span>
+                                @else
+                                    <span class="inline-flex px-2 py-1 text-xs rounded-full bg-orange-100 dark:bg-orange-900/40 text-orange-800 dark:text-orange-300">⚠️ ไม่ระบุ</span>
+                                @endif
+                                @if ($qa->reading_type)
+                                    <div class="text-xs text-gray-500 mt-1">📦 {{ $qa->reading_type }}</div>
+                                @endif
                             </td>
                             <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-300 align-top">
                                 <div>{{ $qa->source_platform }}</div>
@@ -180,7 +236,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
+                            <td colspan="8" class="px-4 py-12 text-center text-gray-500 dark:text-gray-400">
                                 ยังไม่มีข้อมูล — แอดมินตอบลูกค้าใน FB Page Inbox แล้วระบบจะเก็บอัตโนมัติ
                             </td>
                         </tr>
