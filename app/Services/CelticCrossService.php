@@ -242,8 +242,15 @@ class CelticCrossService
                 );
             }
 
-            if ($response === '' || mb_strlen($response) < 100) {
-                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร)');
+            // 🛡️ (2026-05-21) Sequence-aware threshold
+            //   Q1 (sequence=1): form prediction → ต้อง >= 100 chars (9 sections)
+            //   Q2+ (chat mode): chitchat/empathy → 30 chars OK (เช่น "เข้าใจค่ะ ค่อย ๆ คิดนะคะ")
+            //   เคสจริง: reading 3201 Q4 ลูกค้าถาม "การงาน" AI ตอบ 68 chars → throw
+            //            → ลูกค้าได้ error แทนคำตอบดี ๆ
+            //   user spec: Q2+ chat-smart mode allowed short responses
+            $minChars = $sequence === 1 ? 100 : 30;
+            if ($response === '' || mb_strlen($response) < $minChars) {
+                throw new Exception('AI ตอบกลับสั้นเกินไป ('.mb_strlen($response).' ตัวอักษร, min='.$minChars.')');
             }
 
             // 🛡️ (2026-05-13) Truncation guard — log warning ถ้าตอบสั้นกว่าคาด
