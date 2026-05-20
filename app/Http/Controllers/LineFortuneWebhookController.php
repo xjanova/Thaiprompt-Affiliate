@@ -443,10 +443,12 @@ class LineFortuneWebhookController extends Controller
             $hasActiveForAffiliate = \App\Models\FortuneReading::hasActiveReading('line', $userId);
             if (! $hasActiveForAffiliate) {
                 // เช็คเพิ่ม: paid + awaiting delivery (status PAID หรือ COMPLETED แต่ยังไม่ส่งคำทำนาย)
+                // 🩹 (2026-05-21 hotfix) ลบ orWhere('line_user_id') — fortune_readings ไม่มี column นี้
+                //   SQL error: 'Unknown column line_user_id in WHERE' → webhook throw → flex error to customer
+                //   ดู bc3415a9a192: LINE customer ใช้ platform_user_id (legacy facebook_user_id ด้วย)
                 $hasPendingDelivery = \App\Models\FortuneReading::where(function ($q) use ($userId) {
                     $q->where('platform_user_id', $userId)
-                        ->orWhere('facebook_user_id', $userId)
-                        ->orWhere('line_user_id', $userId);
+                        ->orWhere('facebook_user_id', $userId);
                 })
                     ->where('is_paid', true)
                     ->whereIn('conversation_status', [
