@@ -125,7 +125,19 @@ class CelticCrossService
             return ['success' => false, 'message' => 'ครบจำนวนคำถามแล้ว หรือเลยเวลา 1 ชั่วโมง'];
         }
 
-        $sequence = $reading->celtic_questions_used + 1;
+        // 🛡️ (2026-05-21) Sequence จาก records จริง — กัน counter inconsistency
+        //   เคสจริง: reading 3201 q_used=2 แต่มี 1 record → customer ถามต่อ sequence=3 (short)
+        //            ที่ถูกคือ sequence=2 (เพราะมีแค่ Q1 record จริง)
+        //   ใช้ MAX(records.sequence) + 1 → consistent กับข้อมูลจริง
+        //   Fallback to counter ถ้า query fail
+        try {
+            $maxSeq = (int) $reading->celticQuestions()
+                ->whereNotNull('answered_at')
+                ->max('sequence');
+            $sequence = max($maxSeq + 1, 1);
+        } catch (\Throwable $e) {
+            $sequence = $reading->celtic_questions_used + 1;
+        }
         $cards = $reading->getCelticCards();
 
         if (count($cards) < 10) {
