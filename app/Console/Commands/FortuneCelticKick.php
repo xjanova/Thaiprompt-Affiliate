@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\LineFortuneService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 
@@ -55,8 +56,11 @@ class FortuneCelticKick extends Command
             return 1;
         }
 
-        if ($platform !== 'facebook') {
-            $this->warn("⚠️ คำสั่งนี้สำหรับ Facebook เท่านั้น (reading platform: {$platform})");
+        // 🆕 (2026-05-21) รองรับทั้ง FB + LINE
+        //   เคสจริง: บิล FTU-260520-Y0148 LINE — replyMessage timeout/push fail
+        //   ลูกค้าเปิดไพ่ใน DB แล้ว แต่ไม่เห็นใน LINE
+        if (! in_array($platform, ['facebook', 'line'], true)) {
+            $this->warn("⚠️ รองรับเฉพาะ facebook/line (reading platform: {$platform})");
 
             return 1;
         }
@@ -120,6 +124,69 @@ class FortuneCelticKick extends Command
 
         // FRESH settings — ไม่ผ่าน app() singleton
         $settings = FortuneTellingSetting::query()->first();
+
+        // 🆕 (2026-05-21) แยก path ตาม platform
+        if ($platform === 'line') {
+            return $this->kickLine($settings, $uid, $message, $imageUrl, $count, $noImage);
+        }
+
+        return $this->kickFacebook($settings, $uid, $message, $imageUrl, $count, $tag, $noImage, $id);
+    }
+
+    /**
+     * Push บน LINE — sendImage (push) + sendQuickReplies (push)
+     */
+    protected function kickLine(FortuneTellingSetting $settings, string $uid, string $message, ?string $imageUrl, int $count, bool $noImage): int
+    {
+        $tokenLen = mb_strlen($settings->line_channel_access_token ?? '');
+        $this->info("LINE token len: {$tokenLen}");
+        if ($tokenLen === 0) {
+            $this->error('❌ LINE Channel Access Token ใน settings ว่าง');
+
+            return 1;
+        }
+
+        $line = new LineFortuneService($settings);
+
+        if (! $noImage && $imageUrl) {
+            $this->info('Sending LINE image (push)...');
+            try {
+                $imgOk = $line->sendImage($uid, $imageUrl);
+                $this->info('Image: ' . ($imgOk ? '✅' : '❌'));
+            } catch (\Throwable $e) {
+                $this->warn('Image error: ' . $e->getMessage());
+            }
+        }
+
+        $this->info('Sending LINE text + quick replies (push)...');
+        $quickReplies = [
+            ['label' => $count >= 10 ? '🌟 รอแม่หมอ' : '🃏 เปิดไพ่ใบถัดไป', 'text' => 'พร้อม'],
+            ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'],
+        ];
+        $txtOk = $line->sendQuickReplies($uid, $message, $quickReplies);
+        $this->info('Text: ' . ($txtOk ? '✅' : '❌'));
+
+        if (! $txtOk) {
+            $this->newLine();
+            $this->warn('⚠️ LINE push fail — ตรวจ:');
+            $this->line('  - LINE token หมดอายุหรือยัง (admin/fortune/channels)');
+            $this->line('  - LINE Push API quota เกินหรือเปล่า (ฟรี 500/เดือน)');
+            $this->line('  - userId ถูกต้องไหม: ' . $uid);
+
+            return 1;
+        }
+
+        $this->newLine();
+        $this->info("✅ ส่งใบที่ {$count}/10 สำเร็จบน LINE");
+
+        return 0;
+    }
+
+    /**
+     * Push บน Facebook — sendImageMessage + sendMessage (original behavior)
+     */
+    protected function kickFacebook(FortuneTellingSetting $settings, string $uid, string $message, ?string $imageUrl, int $count, string $tag, bool $noImage, string $id): int
+    {
         $tokenLen = mb_strlen($settings->facebook_page_token ?? '');
         $this->info("Settings token len: {$tokenLen}");
 
@@ -130,10 +197,8 @@ class FortuneCelticKick extends Command
         }
 
         $fb = new FacebookWebhookService($settings);
-
         $sendOpts = ['message_tag' => $tag, 'from_admin' => true];
 
-        // ส่งรูปก่อน
         if (! $noImage && $imageUrl) {
             $this->info("Sending image with tag={$tag}...");
             try {
@@ -144,7 +209,6 @@ class FortuneCelticKick extends Command
             }
         }
 
-        // ส่งข้อความ
         $this->info("Sending text with tag={$tag}...");
         $txtOk = $fb->sendMessage($uid, $message, $sendOpts);
         $this->info('Text: ' . ($txtOk ? '✅' : '❌'));
