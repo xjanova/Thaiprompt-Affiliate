@@ -2095,6 +2095,17 @@ class FortuneChannelManager
                     }
                     $quickReplyItems[] = ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']];
 
+                    // 🚨 (2026-05-21) ENTRY LOG — กัน silent path ไม่รู้ว่า handler เคยรันไหม
+                    \Log::info('LINE Celtic handler ENTRY', [
+                        'user_id' => $userId,
+                        'action' => $result['action'] ?? null,
+                        'reading_id' => $reading?->id,
+                        'picked' => $picked,
+                        'has_reply_token' => ! empty($replyToken),
+                        'has_image' => ! empty($result['tarot_image_url']),
+                        'msg_len' => mb_strlen($message),
+                    ]);
+
                     // 🚀 Single replyMessage with [image, text+quickReply] — ฟรี + เร็ว
                     $messages = [];
                     if (! empty($result['tarot_image_url'])) {
@@ -2111,59 +2122,78 @@ class FortuneChannelManager
                         'quickReply' => ['items' => $quickReplyItems],
                     ];
 
-                    // Try replyMessage — ฟรี + atomic (1 ทริปทั้ง image + text)
-                    if ($replyToken) {
-                        if ($lineService->replyMessage($replyToken, $messages)) {
-                            return true;
-                        }
-                        \Log::warning('LINE Celtic: replyMessage ล้มเหลว → fallback push', [
-                            'user_id' => $userId,
-                            'action' => $result['action'] ?? null,
-                        ]);
-                    }
+                    // 🛡️ (2026-05-21) Force push for picking — replyMessage ไม่เสถียร
+                    //   เคสจริง: ลูกค้าเลือกใบต่อไป → DB ขยับ แต่ LINE ไม่เด้ง
+                    //   admin ต้อง manual kick ทุกใบ (kick=push ทำงานได้ตลอด)
+                    //   Hypothesis: replyToken อาจถูก consume ที่อื่น / format ผิด / silent drop
+                    //   Trade-off: ใช้ push quota (free 500/month) แทน reply ฟรี
+                    //              แต่ guarantee ลูกค้าเห็นไพ่ที่จ่าย 99฿
+                    //   ❄️ Soft fallback: ลอง reply ก่อน 1 ครั้ง — ถ้า return true ดูเหมือนสำเร็จ
+                    //                      แต่บังคับ push ตามหลังเพื่อ guarantee delivery
+                    //                      (LINE deduplicate ตาม content — ถ้า reply ส่งสำเร็จจริง, push จะซ้ำ)
+                    //   🔁 (Updated) Skip reply ทั้งหมด — push only (เพราะ kick (=push) ทำงาน 100%)
+                    \Log::info('LINE Celtic: SKIP reply → push only (force push mode)', [
+                        'user_id' => $userId,
+                        'reading_id' => $reading?->id,
+                        'reason' => 'reply unreliable per 2026-05-21 incident',
+                    ]);
 
-                    // 🆘 (2026-05-16) Fallback: sendImage (push) + sendMessage (push) แยกกัน
-                    //   user report: "LINE message lost — ลูกค้าไม่เห็นไพ่ที่เปิดไปแล้ว"
-                    //   ก่อน fix: silent catch — ถ้า push fail ลูกค้าไม่รู้ ระบบไม่ alert
-                    //   ใหม่: log ทุกครั้งที่ fail + return false ถ้า text ก็ส่งไม่ได้
-                    //         → upstream รู้ว่า send fail, customer ต้องพิมพ์ "ไม่เห็น" เพื่อ recover
+                    // 1. Push image
                     $imageOk = true;
                     if (! empty($result['tarot_image_url'])) {
                         try {
                             $imageOk = $lineService->sendImage($userId, $result['tarot_image_url']);
-                            if (! $imageOk) {
-                                \Log::warning('LINE Celtic: sendImage (push) ล้มเหลว', [
-                                    'user_id' => $userId,
-                                    'image_url' => $result['tarot_image_url'],
-                                ]);
-                            }
+                            \Log::info('LINE Celtic: sendImage (push) result', [
+                                'user_id' => $userId,
+                                'reading_id' => $reading?->id,
+                                'success' => $imageOk,
+                                'image_url' => $result['tarot_image_url'],
+                            ]);
                         } catch (\Throwable $e) {
                             $imageOk = false;
-                            \Log::warning('LINE Celtic: sendImage exception', [
+                            \Log::error('LINE Celtic: sendImage (push) exception', [
                                 'user_id' => $userId,
+                                'reading_id' => $reading?->id,
                                 'error' => $e->getMessage(),
+                                'image_url' => $result['tarot_image_url'],
                             ]);
                         }
                     }
 
-                    // 🆕 (2026-05-17) ซ่อน "สับใหม่" เมื่อใช้ครบโควต้า (ใช้ $canShuffle จาก scope ด้านบน)
+                    // 2. Push text + quick replies
                     $fallbackQuickReplies = [['label' => $nextLabel, 'text' => 'พร้อม']];
                     if ($canShuffle) {
                         $fallbackQuickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
                     }
                     $fallbackQuickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
 
-                    $textOk = $lineService->sendMessage($userId, $message, [
-                        'quick_replies' => $fallbackQuickReplies,
-                    ]);
+                    $textOk = false;
+                    try {
+                        $textOk = $lineService->sendMessage($userId, $message, [
+                            'quick_replies' => $fallbackQuickReplies,
+                        ]);
+                        \Log::info('LINE Celtic: sendMessage (push) result', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'success' => $textOk,
+                            'msg_preview' => mb_substr($message, 0, 80),
+                        ]);
+                    } catch (\Throwable $e) {
+                        \Log::error('LINE Celtic: sendMessage (push) exception', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
 
                     if (! $textOk) {
                         \Log::critical('LINE Celtic: sendMessage (text) ล้มเหลว — ลูกค้าไม่เห็นไพ่!', [
                             'user_id' => $userId,
+                            'reading_id' => $reading?->id,
                             'action' => $result['action'] ?? null,
                             'image_ok' => $imageOk,
                             'message_preview' => mb_substr($message, 0, 100),
-                            'hint' => 'ลูกค้าจะพิมพ์ "ไม่เห็น" / "ถึงไหน" → buildCelticStatusRecovery จะกู้',
+                            'hint' => 'ตรวจ LINE token / push quota / userId',
                         ]);
                     }
 
