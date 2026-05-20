@@ -68,14 +68,43 @@ class FortuneCommentEngagement extends Model
     /**
      * 📆 ตรวจว่าผู้ใช้คนนี้เคยถูก DM จาก comment engagement ใน 24 ชม. ล่าสุดหรือไม่
      *
-     * นโยบาย: 1 user → 1 DM ต่อวัน (rolling 24h) ไม่ว่าจะคอมเม้นต์กี่ครั้ง/กี่โพสต์
-     * เหตุผล: กัน spam ลูกค้าที่ active comment เยอะ — ได้รับ DM ซ้ำ ๆ จะรำคาญ
+     * @deprecated 2026-05-20 — ใช้ hasEngagedRecently($userId, 1) แทน
+     *             คงไว้เพื่อ backward compat กับ caller เดิม
      */
     public static function hasEngagedToday(string $userId): bool
     {
         return self::where('facebook_user_id', $userId)
             ->where('engaged_at', '>=', now()->subHours(24))
             ->exists();
+    }
+
+    /**
+     * 📆 ตรวจว่าผู้ใช้คนนี้เคยถูก DM ใน N "calendar days" ล่าสุดหรือไม่
+     *
+     * นโยบาย 2026-05-20 (default 3 วัน):
+     * - คนเก่าที่เคย DM แล้ว → เว้น 3 วันก่อนทักใหม่ + เปลี่ยนคำทักทาย
+     * - "Calendar day reset" → ใช้ today()->subDays() แทน now()->subHours()
+     *   เช่น DM วันที่ 20 → ทักได้อีกครั้งวันที่ 24 (ผ่าน 21, 22, 23 = 3 วันเต็ม)
+     *
+     * @param  int  $days  จำนวนวัน (default 3)
+     */
+    public static function hasEngagedRecently(string $userId, int $days = 3): bool
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('engaged_at', '>=', today()->subDays($days))
+            ->exists();
+    }
+
+    /**
+     * 🔁 ตรวจว่าผู้ใช้คนนี้เคยถูก DM จาก comment engagement มาก่อนหรือไม่ (returning user check)
+     *
+     * ใช้ตัดสินว่าจะใช้ "first-time greeting" หรือ "returning-user greeting"
+     * - true = คนเก่า (เคย DM แล้ว ≥ 1 ครั้ง) → ทักด้วย "กลับมาแล้วนะคะ"
+     * - false = คนใหม่ → ทักด้วย "สวัสดีค่ะ ขอบคุณที่คอมเม้นต์"
+     */
+    public static function hasAnyEngagement(string $userId): bool
+    {
+        return self::where('facebook_user_id', $userId)->exists();
     }
 
     /**

@@ -4730,12 +4730,14 @@ PROMPT;
      * @param  string  $commentText  ข้อความคอมเม้นต์
      * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้ (name, gender, birthday ฯลฯ)
      * @param  string|null  $engagementPrompt  Prompt template (ถ้าไม่ระบุจะใช้ค่าเริ่มต้นจาก settings)
+     * @param  bool  $isReturning  ลูกค้าเก่า (เคย DM แล้ว ผ่าน 3-day cooldown) → เปลี่ยน greeting
      * @return array ['comment_reply' => '...', 'dm_message' => '...']
      */
     public function generateCommentEngagement(
         string $commentText,
         ?array $userProfile = null,
-        ?string $engagementPrompt = null
+        ?string $engagementPrompt = null,
+        bool $isReturning = false
     ): array {
         // ตรวจสอบ API Key ก่อนเรียก AI
         if (empty($this->apiKey)) {
@@ -4756,6 +4758,21 @@ PROMPT;
             [$commentText, $name, $profileInfo],
             $prompt
         );
+
+        // 🔁 (2026-05-20) Returning-user directive — inject ก่อน prompt หลัก
+        //   ห้าม AI ทักว่า "สวัสดี ขอบคุณที่คอมเม้นต์ครั้งแรก" สำหรับลูกค้าเก่า
+        //   ผ่าน 3-day cooldown แล้ว = ทักได้ แต่ใช้คำว่า "กลับมาแล้วนะคะ" / "เห็นแวะมาอีก"
+        if ($isReturning) {
+            $returningDirective = <<<'TXT'
+[สำคัญมาก — ลูกค้าคนนี้เป็น "ลูกค้าเก่า" ที่เคยได้รับ DM จากหมอจันทรามาก่อน]
+- ห้ามทักว่า "สวัสดีครั้งแรก" / "ขอบคุณที่คอมเม้นต์เพจเรา" / "ขอบคุณที่กดไลก์ครั้งแรก"
+- ให้ใช้คำทักทายแบบ "กลับมาแล้วนะคะ" / "เห็นแวะมาอีกครั้ง" / "ดีใจที่ยังตามเพจอยู่" / "ไม่ได้คุยกันมาสักพัก"
+- น้ำเสียง: คุ้นเคย อบอุ่น เหมือนทักทายเพื่อนเก่า ไม่ใช่แนะนำตัว
+- ยังคงชวนดูดวง (ฟรี ถ้าระบบฟรีเปิดอยู่) ตามปกติ แต่อย่าเริ่มต้นด้วยการแนะนำตัว
+
+TXT;
+            $prompt = $returningDirective."\n".$prompt;
+        }
 
         $config = [
             'max_tokens' => 400,

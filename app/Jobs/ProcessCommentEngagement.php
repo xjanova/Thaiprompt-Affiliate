@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneCommentEngagement;
+use App\Models\FortunePostReaction;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
 use App\Services\FortuneAIService;
@@ -91,15 +92,23 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
-            // 📆 1 user → 1 DM ต่อวัน (rolling 24h) — กัน spam ลูกค้า active comment เยอะ
-            if (FortuneCommentEngagement::hasEngagedToday($userId)) {
-                Log::info('Comment engagement skip — user ได้ DM ใน 24 ชม. แล้ว (1/วัน policy)', [
+            // 📆 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม
+            //    เคย DM (comment OR reaction) ใน 3 วันล่าสุด → ข้าม
+            //    ลูกค้าเก่ารำคาญถ้า DM ทุกวัน → เว้น 3 วัน + เปลี่ยนคำทักทาย
+            if (FortuneCommentEngagement::hasEngagedRecently($userId, 3)
+                || FortunePostReaction::hasDmSuccessRecently($userId, 3)) {
+                Log::info('Comment engagement skip — user ได้ DM ใน 3 วันล่าสุดแล้ว', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
                 return;
             }
+
+            // 🔁 (2026-05-20) Returning-user detection — เปลี่ยนคำทักทายถ้าเคย DM แล้ว
+            //   ผ่าน 3-day cooldown ข้างบน = สิทธิ์ทักใหม่ — แต่คำทักทายต้องไม่ซ้ำเดิม
+            $isReturning = FortuneCommentEngagement::hasAnyEngagement($userId)
+                || FortunePostReaction::hasEverDmSuccess($userId);
 
             // 1. ดึง user profile (ชื่อ, เพศ, วันเกิด ฯลฯ)
             $userProfile = $facebookService->getUserProfile($userId);
@@ -134,10 +143,13 @@ class ProcessCommentEngagement implements ShouldQueue
 
             // 2. AI สร้างข้อความ — ถ้าล้ม → fallback เป็น template
             //    (AI rate-limited / key หมด / 429 ฯลฯ จะไม่ทำให้ลูกค้าเงียบ)
+            //    🔁 (2026-05-20) ส่ง $isReturning เข้า AI เพื่อเปลี่ยน greeting คนเก่า
             try {
                 $engagement = $aiService->generateCommentEngagement(
                     $commentText,
-                    $userProfile
+                    $userProfile,
+                    null,
+                    $isReturning
                 );
                 $commentReply = $engagement['comment_reply'] ?? '';
                 $dmMessage = $engagement['dm_message'] ?? '';
@@ -155,13 +167,14 @@ class ProcessCommentEngagement implements ShouldQueue
                 $commentReply = str_replace(
                     ['{name}', '{comment}'],
                     [$name, $commentText],
-                    $settings->getCommentReplyTemplate()
+                    $settings->getCommentReplyTemplate($isReturning)
                 );
                 $dmMessage = str_replace(
                     ['{name}', '{comment}'],
                     [$name, $commentText],
                     // 🎯 Phase L — ส่ง userId เพื่อเลือก variant (stable per user)
-                    $settings->getCommentDmTemplate($userId)
+                    // 🔁 (2026-05-20) ส่ง $isReturning สลับชุด first-time / returning
+                    $settings->getCommentDmTemplate($userId, $isReturning)
                 );
             }
 

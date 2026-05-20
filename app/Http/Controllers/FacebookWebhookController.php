@@ -504,17 +504,22 @@ class FacebookWebhookController extends Controller
     protected function tryReactionDm(FortunePostReaction $reaction): void
     {
         $reaction->dm_attempted = true;
+        $userId = $reaction->facebook_user_id;
 
         try {
-            // 🔒 (2026-05-03) H4 — Per-user 24h guard (กัน reaction DM spam)
-            //    เดิม: dedupe per (user_id, post_id) → user reaction หลายโพสต์ → DM 5 ครั้ง
-            //    ใหม่: ถ้าเคยส่ง DM ให้ user คนนี้ใน 24hr → ข้าม (ไม่ว่าจะ post ไหน)
-            //    ⚠️ Anti-pattern guard (lesson #5): เขียน Cache เฉพาะตอนสำเร็จ ไม่เขียน false
-            $userGuardKey = 'reaction_dm_user_24h:'.$reaction->facebook_user_id;
-            if (Cache::has($userGuardKey)) {
-                Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ในช่วง 24hr แล้ว', [
-                    'user_id' => $reaction->facebook_user_id,
+            // 🔒 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม (H4)
+            //    เดิม: Cache::has reaction_dm_user_24h
+            //    ใหม่: DB query — ถ้า user คนนี้ได้รับ DM (reaction OR comment) ใน 3 calendar
+            //          days ที่ผ่านมา → ข้าม. ใช้ today()->subDays(3) (reset midnight)
+            //    เหตุผล: ลูกค้าเก่ารำคาญถ้า DM ทุก 1 วัน → เว้น 3 วันแล้วทักใหม่ด้วยคำใหม่
+            $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 3);
+            $hasRecentCommentDm = FortuneCommentEngagement::hasEngagedRecently($userId, 3);
+
+            if ($hasRecentReactionDm || $hasRecentCommentDm) {
+                Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ใน 3 วันล่าสุดแล้ว', [
+                    'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
+                    'reason' => $hasRecentReactionDm ? 'recent_reaction_dm' : 'recent_comment_dm',
                 ]);
                 $reaction->dm_success = false;
                 $reaction->save();
@@ -525,10 +530,10 @@ class FacebookWebhookController extends Controller
             // 🚫 ถ้าลูกค้ากำลังคุยกับบอท (มี active reading) → ห้ามส่ง DM "ขอบคุณที่กดไลก์"
             //    แทรก เพราะจะทำให้ลูกค้างง (กำลังคุยเรื่องดูดวงอยู่แล้ว)
             try {
-                $hasActive = FortuneReading::activeConversation($reaction->facebook_user_id)->exists();
+                $hasActive = FortuneReading::activeConversation($userId)->exists();
                 if ($hasActive) {
                     Log::info('👍 Reaction DM ข้าม — user กำลังคุยกับบอทอยู่', [
-                        'user_id' => $reaction->facebook_user_id,
+                        'user_id' => $userId,
                     ]);
                     $reaction->dm_success = false;
                     $reaction->save();
@@ -540,10 +545,15 @@ class FacebookWebhookController extends Controller
                 Log::debug('tryReactionDm: active check failed (non-blocking): '.$e->getMessage());
             }
 
+            // 🔁 (2026-05-20) Returning-user detection — เปลี่ยนคำทักทายถ้าเคย DM แล้ว
+            //    ผ่าน 3-day cooldown ข้างบน = สิทธิ์ทักใหม่ได้ — แต่คำทักทายต้องไม่ซ้ำเดิม
+            $isReturning = FortunePostReaction::hasEverDmSuccess($userId)
+                || FortuneCommentEngagement::hasAnyEngagement($userId);
+
             // 🎯 Phase L — rotating reaction DM variants (คนละข้อความตาม userId)
             // 🎁 (2026-05-04) เน้นฟรี ไม่เน้นขาย — เพื่อ conversion ตอบกลับสูง
             //   เมื่อลูกค้าตอบกลับครั้งแรก → tryAutoFreeCardForFirstReply ทำนายฟรีทันที
-            $message = $this->pickReactionDmVariant($reaction->facebook_user_id);
+            $message = $this->pickReactionDmVariant($userId, $isReturning);
 
             // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
             $quickReplies = [];
@@ -552,15 +562,15 @@ class FacebookWebhookController extends Controller
             //   👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — pass platform+userId เพื่อ skip ลูกค้าเก่า
             if ($this->bannerService) {
                 $this->bannerService->sendBannerThenWait(
-                    fn ($url) => $this->facebookService->sendImage($reaction->facebook_user_id, $url),
+                    fn ($url) => $this->facebookService->sendImage($userId, $url),
                     'reaction',
                     'facebook',
-                    $reaction->facebook_user_id
+                    $userId
                 );
             }
 
             $success = $this->facebookService->sendQuickReplies(
-                $reaction->facebook_user_id,
+                $userId,
                 $message,
                 $quickReplies,
                 ['messaging_type' => 'RESPONSE']
@@ -570,17 +580,14 @@ class FacebookWebhookController extends Controller
             $reaction->save();
 
             if ($success) {
-                // 🔒 H4 — เขียน guard เฉพาะเมื่อส่งสำเร็จ (anti-pattern lesson #5: ห้าม lock retry)
-                //    user รับ DM แล้ว → block 24hr ไม่ให้ส่งซ้ำจาก reaction post อื่น
-                Cache::put($userGuardKey, true, now()->addHours(24));
-
                 Log::info('✅ Reaction DM sent', [
-                    'user_id' => $reaction->facebook_user_id,
+                    'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
+                    'returning' => $isReturning,
                 ]);
             } else {
                 Log::info('ℹ️ Reaction DM skipped (user not in 24hr window)', [
-                    'user_id' => $reaction->facebook_user_id,
+                    'user_id' => $userId,
                 ]);
             }
         } catch (\Exception $e) {
@@ -588,7 +595,7 @@ class FacebookWebhookController extends Controller
             $reaction->save();
 
             Log::debug('tryReactionDm: '.$e->getMessage(), [
-                'user_id' => $reaction->facebook_user_id,
+                'user_id' => $userId,
             ]);
         }
     }
@@ -603,14 +610,49 @@ class FacebookWebhookController extends Controller
      *   ⚠️ ห้ามใส่ราคา 39/99 / "ค่ากาแฟ" / pay-later teaser ใน DM นี้
      *      เพราะลูกค้าจะรู้สึก "ขายตั้งแต่แรก" → ไม่ตอบกลับ
      *
+     * 🔁 (2026-05-20) Returning-user variants — เพิ่มชุดทักคนเก่า
+     *   $isReturning=true → ใช้ตัวที่ไม่ทักว่า "ขอบคุณที่กดไลก์" (รู้จักกันแล้ว)
+     *
      * Fallback: ถ้าปิดระบบฟรี → ใช้ shorter variant ที่ไม่กล่าวถึงราคา (ชวนทักธรรมดา)
      */
-    protected function pickReactionDmVariant(string $facebookUserId): string
+    protected function pickReactionDmVariant(string $facebookUserId, bool $isReturning = false): string
     {
         $freeEnabled = $this->settings->isFreeReadingEnabled();
 
-        if ($freeEnabled) {
-            // 🎁 4 variants — ทุกตัวเน้น "ทำนายฟรี" + "ทักมาคุย" ไม่ใส่ราคา
+        if ($isReturning) {
+            // 🔁 Returning user — เคย DM แล้ว ผ่าน 3-day cooldown มา → ทักแบบ "กลับมาอีกครั้ง"
+            //   ห้ามใช้คำว่า "ขอบคุณที่กดไลก์" (รู้จักกันแล้ว แปลกหู)
+            if ($freeEnabled) {
+                $variants = [
+                    // v1: warm welcome back
+                    "🌙 เห็นแวะกลับมาอีกครั้งนะคะ ✨\n\n"
+                        ."หมอจันทรารู้สึกถึงพลังของคุณที่ยังเชื่อมถึงกันค่ะ\n"
+                        .'🎁 เปิดไพ่ทำนาย *ฟรี 1 ใบ* รออยู่ — ทักทายมาได้เลยนะคะ 🔮',
+
+                    // v2: cosmic + remembers
+                    "✨ พลังของคุณกลับมาที่หน้าเพจอีกครั้งแล้วนะคะ\n\n"
+                        ."🃏 ช่วงนี้มีอะไรในใจไหมคะ?\n"
+                        .'หมอเปิดทำนาย *ฟรี* รออยู่ — ทักคำทักทายมาก่อนได้เลย 🌙',
+
+                    // v3: gentle re-engage
+                    "🙏 ขอบคุณที่ยังตามเพจอยู่นะคะ 💫\n\n"
+                        ."ไม่ได้คุยกันมาสักพัก — มีเรื่องอะไรอยากปรึกษาดวงไหมคะ?\n"
+                        .'🎁 หมอเปิดไพ่ฟรีให้ทุกครั้งที่ทักมาค่ะ ✨',
+
+                    // v4: signal-driven
+                    "🌙 ดวงดาวสะกิดบอกหมอว่าคุณยังคิดถึงคำทำนายค่ะ ✨\n\n"
+                        ."🔮 ทักคำเดียวก็พอ — หมอจันทราจะเปิดไพ่ใหม่ให้\n"
+                        .'(ฟรี ไม่ต้องกรอกอะไร)',
+                ];
+            } else {
+                $variants = [
+                    "🌙 เห็นแวะกลับมาอีกครั้งนะคะ ✨\n\nมีเรื่องอะไรอยากปรึกษาดวงไหม? ทักมาคุยได้เลยค่ะ 🔮",
+                    "✨ ยินดีที่ยังตามเพจอยู่นะคะ\nหมอจันทราพร้อมรับฟัง — ทักมาได้เลยค่ะ 🌙",
+                    "🙏 ไม่ได้คุยกันมาสักพัก ทักทายมาคุยกันใหม่ได้เลยนะคะ 💫",
+                ];
+            }
+        } elseif ($freeEnabled) {
+            // 🎁 4 variants — ทุกตัวเน้น "ทำนายฟรี" + "ทักมาคุย" ไม่ใส่ราคา (first-time)
             $variants = [
                 // v1: invite — เน้นทักมา
                 "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
@@ -871,9 +913,12 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // 📆 1 user → 1 DM ต่อวัน (rolling 24h) — กัน spam ลูกค้า active comment เยอะ
-            if (FortuneCommentEngagement::hasEngagedToday($fromId)) {
-                Log::info('Comment Engagement: user ได้ DM ใน 24 ชม. แล้ว ข้าม (1/วัน policy)', [
+            // 📆 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม
+            //    เคย DM (comment OR reaction) ใน 3 วันล่าสุด → ข้าม
+            //    ลูกค้าเก่ารำคาญถ้า DM ทุกวัน → เว้น 3 วัน + เปลี่ยนคำทักทาย
+            if (FortuneCommentEngagement::hasEngagedRecently($fromId, 3)
+                || FortunePostReaction::hasDmSuccessRecently($fromId, 3)) {
+                Log::info('Comment Engagement: user ได้ DM ใน 3 วันล่าสุดแล้ว ข้าม', [
                     'user_id' => $fromId,
                     'comment_id' => $commentId,
                 ]);
@@ -974,17 +1019,23 @@ class FacebookWebhookController extends Controller
         //   Fix: save name ลง credit ตั้งแต่ point ที่ได้ name → flow อื่นใช้ผ่าน credit
         FortuneUserCredit::rememberName($fromId, 'facebook', $name);
 
+        // 🔁 (2026-05-20) Returning-user detection — ผ่าน 3-day cooldown แล้ว
+        //   ถ้าเคย DM (comment OR reaction) มาก่อน → ใช้ variant ทักคนเก่า
+        $isReturning = FortuneCommentEngagement::hasAnyEngagement($fromId)
+            || FortunePostReaction::hasEverDmSuccess($fromId);
+
         // แทนที่ placeholders
         $commentReply = str_replace(
             ['{name}', '{comment}'],
             [$name, $commentText],
-            $this->settings->getCommentReplyTemplate()
+            $this->settings->getCommentReplyTemplate($isReturning)
         );
         $dmMessage = str_replace(
             ['{name}', '{comment}'],
             [$name, $commentText],
             // 🎯 Phase L — ส่ง userId ให้ getCommentDmTemplate เลือก variant (stable per user)
-            $this->settings->getCommentDmTemplate($fromId)
+            // 🔁 (2026-05-20) ส่ง $isReturning เพื่อสลับชุด first-time / returning
+            $this->settings->getCommentDmTemplate($fromId, $isReturning)
         );
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)

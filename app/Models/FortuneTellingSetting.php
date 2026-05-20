@@ -1206,11 +1206,18 @@ EOT;
 
     /**
      * เทมเพลตตอบคอมเม้นต์ (มีค่า default)
+     *
+     * 🔁 (2026-05-20) รับ $isReturning เพื่อปรับคำตอบในคอมเม้นต์ลูกค้าเก่า
+     *   ลูกค้าเก่า → ตอบสั้นลง ไม่ทักว่า "สวัสดี" ครั้งแรก (รู้จักกันแล้ว)
      */
-    public function getCommentReplyTemplate(): string
+    public function getCommentReplyTemplate(bool $isReturning = false): string
     {
         if (! empty($this->comment_reply_template)) {
             return $this->comment_reply_template;
+        }
+
+        if ($isReturning) {
+            return '🌙 คุณ {name} แวะมาอีกแล้วนะคะ ✨ ทักใน inbox ได้เลย หมอเปิดไพ่ฟรีให้ค่ะ 🔮';
         }
 
         return 'สวัสดีค่ะคุณ {name} 🔮 สนใจดูดวงไหมคะ? ทักมาใน inbox ได้เลยนะคะ ✨';
@@ -1223,9 +1230,13 @@ EOT;
      *   - ถ้าแอดมินตั้ง custom template → ใช้ตามนั้น (เหมือนเดิม)
      *   - ถ้าไม่ได้ตั้ง → สุ่มจาก 5 variants ตาม crc32($userId)
      *
+     * 🔁 (2026-05-20) Returning-user variants — $isReturning=true ใช้คนละชุด
+     *   ห้ามทักว่า "ขอบคุณที่คอมเม้นต์ให้เพจเรา" (รู้จักกันแล้ว) → "กลับมาแล้วนะคะ"
+     *
      * @param  string|null  $userId  facebook user id (ถ้า null → variant แรก)
+     * @param  bool  $isReturning  ลูกค้าเก่า (เคย DM แล้ว) → ใช้คำทักทาย returning
      */
-    public function getCommentDmTemplate(?string $userId = null): string
+    public function getCommentDmTemplate(?string $userId = null, bool $isReturning = false): string
     {
         if (! empty($this->comment_dm_template)) {
             return $this->comment_dm_template;
@@ -1233,13 +1244,46 @@ EOT;
 
         $freeEnabled = $this->isFreeReadingEnabled();
 
-        // 🎁 (2026-05-04) Strategy reset: เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับสูง
-        //   เมื่อตอบ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที (ไม่ถามอะไร)
-        //   ลูกค้าเชื่อใจว่าฟรีจริง → ค่อย soft-sell หลังคำทำนาย
-        //
-        //   ⚠️ ห้ามใส่ราคา 39/99/ค่ากาแฟ/pay-later teaser ใน DM นี้
-        //      เพราะลูกค้าจะรู้สึก "ขายตั้งแต่แรก" → ไม่ตอบกลับ
-        if ($freeEnabled) {
+        // 🔁 (2026-05-20) Returning-user variants — ลูกค้าเก่าที่ผ่าน 3-day cooldown
+        //   ห้ามใช้ "ขอบคุณที่คอมเม้นต์ครั้งแรก" (รู้จักกันแล้ว → ทักเหมือนเดิม = แปลกหู)
+        if ($isReturning) {
+            if ($freeEnabled) {
+                $variants = [
+                    // v1: welcome back + free
+                    "🌙 สวัสดีอีกครั้งค่ะคุณ {name}\n\n"
+                        ."เห็นคุณกลับมาคอมเม้นต์อีก หมอจันทราดีใจนะคะ ✨\n\n"
+                        ."🎁 เปิดทำนาย *ฟรี 1 ใบ* รออยู่อีกครั้งค่ะ\n"
+                        .'ตอบกลับมาคุยกัน — แม่หมอเปิดไพ่ให้ทันที 🔮',
+
+                    // v2: remembered + cosmic
+                    "✨ คุณ {name} กลับมาแล้วนะคะ 🌙\n\n"
+                        ."ช่วงนี้พลังของคุณเริ่มเปลี่ยน — มีอะไรอยากปรึกษาดวงไหมคะ?\n\n"
+                        .'🃏 ทักมาตอบกลับ หมอเปิดไพ่ *ฟรี* ให้เลยค่ะ',
+
+                    // v3: gentle re-engage
+                    "💫 ขอบคุณที่ยังตามเพจอยู่นะคะคุณ {name}\n\n"
+                        ."ไม่ได้คุยกันมาพักหนึ่ง — หมอจันทราอยากเปิดไพ่ใหม่ให้ค่ะ\n"
+                        .'🎁 *ฟรี* ทักทายมาได้เลย ไม่ต้องกรอกอะไร 🙏',
+
+                    // v4: signal hook
+                    "🔮 สวัสดีค่ะคุณ {name}\n\n"
+                        ."ดวงดาวสะกิดบอกหมอว่าคุณยังคิดถึงคำทำนายอยู่นะคะ ✨\n\n"
+                        .'ทักคำเดียวพอ — หมอจะเปิดไพ่ใหม่ *ฟรี* ให้เลย 🌙',
+                ];
+            } else {
+                $variants = [
+                    "🌙 สวัสดีอีกครั้งค่ะคุณ {name}\nมีอะไรอยากปรึกษาดวงไหมคะ? ทักมาคุยกันได้เลยค่ะ 🔮",
+                    "✨ คุณ {name} กลับมาแล้วนะคะ\nหมอจันทราพร้อมรับฟัง — ทักทายมาเลยค่ะ 🌙",
+                    "💫 ขอบคุณที่ยังตามเพจอยู่นะคะคุณ {name}\nทักมาคุยกันใหม่ได้เลย แม่หมอพร้อมตอบทุกเรื่องค่ะ 🙏",
+                ];
+            }
+        } elseif ($freeEnabled) {
+            // 🎁 (2026-05-04) Strategy reset: เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับสูง
+            //   เมื่อตอบ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที (ไม่ถามอะไร)
+            //   ลูกค้าเชื่อใจว่าฟรีจริง → ค่อย soft-sell หลังคำทำนาย
+            //
+            //   ⚠️ ห้ามใส่ราคา 39/99/ค่ากาแฟ/pay-later teaser ใน DM นี้
+            //      เพราะลูกค้าจะรู้สึก "ขายตั้งแต่แรก" → ไม่ตอบกลับ
             $variants = [
                 // v1: invite + คำว่าฟรี ชัดเจน
                 "สวัสดีค่ะคุณ {name} 🌙\n\n"

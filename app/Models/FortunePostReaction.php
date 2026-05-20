@@ -68,4 +68,32 @@ class FortunePostReaction extends Model
     {
         return $query->where('dm_attempted', false);
     }
+
+    /**
+     * 📆 ตรวจว่าเคยส่ง DM "สำเร็จ" ให้ user คนนี้ใน N calendar days ล่าสุดหรือไม่
+     *
+     * นโยบาย 2026-05-20 (default 3 วัน) — เว้นระยะคนเก่า
+     * "Calendar day" → ใช้ today()->subDays() (reset midnight) ไม่ใช่ rolling hours
+     *
+     * @param  int  $days  จำนวนวัน (default 3)
+     */
+    public static function hasDmSuccessRecently(string $userId, int $days = 3): bool
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('dm_success', true)
+            ->where('updated_at', '>=', today()->subDays($days))
+            ->exists();
+    }
+
+    /**
+     * 🔁 ตรวจว่าเคยส่ง DM "สำเร็จ" ให้ user คนนี้มาก่อนหรือไม่ (returning user check)
+     *
+     * ใช้ตัดสินว่าจะใช้ "first-time greeting" หรือ "returning-user greeting"
+     */
+    public static function hasEverDmSuccess(string $userId): bool
+    {
+        return self::where('facebook_user_id', $userId)
+            ->where('dm_success', true)
+            ->exists();
+    }
 }
