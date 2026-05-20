@@ -1676,8 +1676,23 @@ trait CelticCrossConversationTrait
         $finalMessage = $aiResponse.$followupOffer;
 
         // Dispatch delayed send — 60-120s random
-        $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';
-        $sendUserId = $reading->facebook_user_id ?: $reading->platform_user_id;
+        // 🛡️ (2026-05-21) FIX platform detection
+        //   เคสจริง: reading 3201 ลูกค้า LINE (Ud30f...) แต่ facebook_user_id ก็ populated ด้วย (legacy)
+        //            → เก่าใช้ 'facebook' → FB API throw 'invalid recipient'
+        //   Fix priority:
+        //     1. ใช้ $reading->platform ก่อน (เก็บตอนสร้าง reading)
+        //     2. Fallback: detect จาก user_id pattern (LINE = U[a-f0-9]{32}, FB = digits)
+        //     3. Last resort: facebook_user_id present
+        $platform = $reading->platform;
+        if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
+            $candidateId = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
+            $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
+        }
+        // For LINE — use platform_user_id (canonical), fallback facebook_user_id (legacy)
+        // For FB — use facebook_user_id (canonical)
+        $sendUserId = $platform === 'line'
+            ? ($reading->platform_user_id ?: $reading->facebook_user_id)
+            : ($reading->facebook_user_id ?: $reading->platform_user_id);
         $delaySeconds = random_int(60, 120);
 
         if ($sendUserId) {
