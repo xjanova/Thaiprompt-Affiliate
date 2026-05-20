@@ -286,6 +286,8 @@ class FortuneSettingsController extends Controller
             'chat_ai_model' => 'nullable|string|max:100',
             'chat_ai_api_key' => 'nullable|string',
             'chat_system_prompt' => 'nullable|string|max:5000',
+            // 📦 (2026-05-20 Phase 4) Message Debounce — รวมข้อความก่อนตอบ
+            'message_debounce_seconds' => 'nullable|integer|min:0|max:30',
             // Admin Takeover (เทคโอเวอร์ — LINE + Facebook รวมกัน)
             'admin_handover_enabled' => 'boolean',
             'admin_handover_timeout' => 'nullable|integer|min:1|max:1440',

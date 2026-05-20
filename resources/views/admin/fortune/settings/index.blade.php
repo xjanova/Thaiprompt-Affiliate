@@ -588,6 +588,24 @@
                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">{{ old('chat_system_prompt', $settings->chat_system_prompt) }}</textarea>
                 </div>
 
+                {{-- 📦 (2026-05-20 Phase 4) Message Debounce — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ --}}
+                <div class="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-700 rounded-lg p-4">
+                    <label class="block text-sm font-bold text-purple-700 dark:text-purple-300 mb-2">
+                        📦 Message Debounce (วินาที)
+                        <span class="text-xs font-normal text-purple-600 dark:text-purple-400">— รอรวมข้อความที่ลูกค้าพิมพ์ติด ๆ ก่อนตอบ</span>
+                    </label>
+                    <input type="number" name="message_debounce_seconds"
+                           value="{{ old('message_debounce_seconds', $settings->message_debounce_seconds ?? 3) }}"
+                           min="0" max="30" step="1"
+                           class="w-full px-4 py-2 border border-purple-300 dark:border-purple-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
+                    <div class="text-xs text-gray-600 dark:text-gray-400 mt-2 space-y-1">
+                        <p>💡 <strong>0 = ปิด feature</strong> (บอทตอบทันทีทุกข้อความ — behavior เดิม)</p>
+                        <p>💡 <strong>3-5 วินาที = แนะนำ</strong> — ลูกค้าพิมพ์ติด ๆ จะรวมเป็นข้อความเดียวก่อนตอบ</p>
+                        <p>💡 <strong>10+ วินาที</strong> — รอรวมเยอะขึ้น แต่ลูกค้าอาจคิดว่าบอทช้า</p>
+                        <p class="text-amber-600 dark:text-amber-400">⚠️ ใช้กับ chat ปกติ + Celtic Q2+ (Q1 ตอบทันที / payment/command bypass อัตโนมัติ)</p>
+                    </div>
+                </div>
+
                 {{-- Info box --}}
                 <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <p class="text-xs text-blue-800 dark:text-blue-200">

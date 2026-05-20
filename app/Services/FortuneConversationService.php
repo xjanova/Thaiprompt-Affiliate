@@ -11649,7 +11649,49 @@ PROMPT;
      * @param  array|null  $userProfile  โปรไฟล์ผู้ใช้
      * @return array|null ผลลัพธ์ action 'ai_chat_response' หรือ null ถ้าล้มเหลว
      */
-    protected function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null): ?array
+    /**
+     * 📦 (2026-05-20 Phase 4b) ตัดสินใจว่า message นี้ควร buffer (debounce) หรือไม่
+     *
+     * Skip buffer (ตอบทันที) สำหรับ:
+     *   • Command keywords    — ดูดวง / ยุติ / จบ / พร้อม / สับใหม่ / เริ่มใหม่
+     *   • Payment keywords    — โอนแล้ว / แจ้งชำระ / จ่ายแล้ว / สลิป
+     *   • Bypass silence kw   — ใช้ FortuneCustomerPersona::shouldBypassSilence (มี keyword ลูกค้าพร้อมซื้อ)
+     *   • Empty / very short  — < 3 chars (อาจเป็น sticker text fallback)
+     *
+     * Reference: feedback_never_interrupt_payment_to_prediction_flow.md
+     */
+    protected function shouldBufferChatMessage(string $messageText): bool
+    {
+        $msg = trim($messageText);
+        if (mb_strlen($msg) < 3) {
+            return false;
+        }
+
+        // 🚨 Payment keywords — ต้องตอบทันที (revenue critical)
+        $paymentKw = ['โอนแล้ว', 'จ่ายแล้ว', 'แจ้งชำระ', 'แจ้งโอน', 'สลิป', 'paid', 'payment'];
+        foreach ($paymentKw as $kw) {
+            if (mb_stripos($msg, $kw) !== false) {
+                return false;
+            }
+        }
+
+        // 🚨 Command keywords — action ต้อง response ทันที
+        $commandKw = ['ดูดวง', 'ยุติ', 'พอแค่นี้', 'พอแล้ว', 'จบ', 'หยุด', 'stop', 'พร้อม', 'สับใหม่', 'เริ่มใหม่', 'ยกเลิก'];
+        foreach ($commandKw as $kw) {
+            if (mb_stripos($msg, $kw) !== false) {
+                return false;
+            }
+        }
+
+        // 🚨 ลูกค้าพร้อมซื้อ (bypass silence) — ห้ามตัดราย
+        if (\App\Models\FortuneCustomerPersona::shouldBypassSilence($msg)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    public function tryAIChatResponse(string $userId, string $messageText, ?array $userProfile = null, ?array $dmContext = null, bool $bypassBuffer = false): ?array
     {
         try {
             // 🚫 (2026-05-18) Hook B — Rambler cooldown silence check
@@ -11674,6 +11716,60 @@ PROMPT;
                 Log::debug('Fortune: AI Chat ปิดอยู่ (enable_ai_chat=false)', ['user_id' => $userId]);
 
                 return null;
+            }
+
+            // 📦 (2026-05-20 Phase 4b) Message Debounce — รวมข้อความที่ลูกค้าพิมพ์ติด ๆ
+            //   User spec 2026-05-20: รวมข้อความก่อนตอบ
+            //
+            //   Skip rules (CRITICAL — bypass debounce):
+            //     • $bypassBuffer = true   (เรียกจาก Job — กัน recursion)
+            //     • debounce_seconds = 0  (admin ปิด feature)
+            //     • payment/command keywords (โอนแล้ว/ดูดวง/ยุติ — ต้องตอบทันที)
+            //     • shouldBypassSilence    (ลูกค้าพร้อมซื้อ — ห้ามตัดราย)
+            //
+            //   Reference: feedback_never_interrupt_payment_to_prediction_flow.md
+            if (! $bypassBuffer) {
+                $debounceSeconds = (int) ($this->settings->message_debounce_seconds ?? 3);
+                if ($debounceSeconds > 0 && $this->shouldBufferChatMessage($messageText)) {
+                    try {
+                        $buffer = app(\App\Services\Fortune\MessageBuffer::class);
+                        $stats = $buffer->append('chat', $userId, $messageText);
+
+                        \App\Jobs\ProcessBufferedChatMessageJob::dispatch(
+                            $platformForSilence,
+                            $userId,
+                            $debounceSeconds
+                        )->delay(now()->addSeconds($debounceSeconds + 1));
+
+                        // ส่ง typing indicator (FB เท่านั้น)
+                        if ($platformForSilence === 'facebook') {
+                            try {
+                                app(\App\Services\FacebookWebhookService::class)->sendTypingOn($userId);
+                            } catch (\Throwable $typingErr) {
+                                // ignore
+                            }
+                        }
+
+                        Log::info('Fortune Chat: message buffered (debounce)', [
+                            'platform' => $platformForSilence,
+                            'user_id' => $userId,
+                            'buffer_count' => $stats['count'],
+                            'window_sec' => $debounceSeconds,
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip',
+                            'message' => '',
+                            'reading' => null,
+                        ];
+                    } catch (\Throwable $bufErr) {
+                        // buffer fail = fall through ไป AI ตอบทันที (no regression)
+                        Log::warning('Fortune Chat: buffer fail (fall through immediate)', [
+                            'user_id' => $userId,
+                            'error' => $bufErr->getMessage(),
+                        ]);
+                    }
+                }
             }
 
             // 💬 (2026-05-18) Hook C — ตรวจจับ chitchat หลังบอทเสนอขาย (rambler detection)
