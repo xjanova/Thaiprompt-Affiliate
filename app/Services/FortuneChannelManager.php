@@ -2128,6 +2128,27 @@ class FortuneChannelManager
                     //            → LINE rate limit / dedup → บาง msg หาย
                     //   Fix: ใช้ sendImageAndText (atomic — 1 call ส่งทั้ง image+text+quickReply)
                     //        ลด 50% ของ rate limit pressure
+                    //
+                    // ⏱️ (2026-05-21) Per-user throttle 1.2s — กัน LINE block rapid pushes
+                    //   user spec: 'ใช้ push message ก็ใช่ไปเลยถ้าแก้ปัญหาได้'
+                    //   ลูกค้ากด 'พร้อม' รัว ๆ → 5 webhooks ภายใน 2s → 5 pushes ติด ๆ
+                    //   LINE อาจ throttle → ลูกค้าเห็นแค่บางใบ
+                    //   Throttle: ถ้า last push < 1.2s ago → sleep รอ จนครบ 1.2s
+                    $throttleKey = "celtic_push_cooldown:line:{$userId}";
+                    $lastPushAt = (float) \Illuminate\Support\Facades\Cache::get($throttleKey, 0);
+                    $now = microtime(true);
+                    $elapsed = $now - $lastPushAt;
+                    if ($lastPushAt > 0 && $elapsed < 1.2) {
+                        $sleepMs = (int) ((1.2 - $elapsed) * 1000);
+                        \Log::info('LINE Celtic: throttle delay applied', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'sleep_ms' => $sleepMs,
+                            'elapsed_ms' => (int) ($elapsed * 1000),
+                        ]);
+                        usleep($sleepMs * 1000);
+                    }
+
                     \Log::info('LINE Celtic: SKIP reply → push (combined)', [
                         'user_id' => $userId,
                         'reading_id' => $reading?->id,
@@ -2168,6 +2189,9 @@ class FortuneChannelManager
                             'message_preview' => mb_substr($message, 0, 100),
                             'hint' => 'ตรวจ LINE token / push quota / userId',
                         ]);
+                    } else {
+                        // อัพเดท throttle timestamp เฉพาะเมื่อ push สำเร็จ
+                        \Illuminate\Support\Facades\Cache::put($throttleKey, microtime(true), 60);
                     }
 
                     return $pushOk;
@@ -2198,6 +2222,22 @@ class FortuneChannelManager
                 //   ทำนายเสร็จที่ server แต่ไม่ส่งถึงลูกค้าบน LINE)
                 'celtic_question_answered', 'celtic_qa_prompt_resume' => (function () use ($lineService, $userId, $message, $result) {
                     $reading = $result['reading'] ?? null;
+
+                    // ⏱️ (2026-05-21) Per-user throttle (เหมือน picking) — กัน rate limit
+                    $throttleKey = "celtic_push_cooldown:line:{$userId}";
+                    $lastPushAt = (float) \Illuminate\Support\Facades\Cache::get($throttleKey, 0);
+                    $now = microtime(true);
+                    $elapsed = $now - $lastPushAt;
+                    if ($lastPushAt > 0 && $elapsed < 1.2) {
+                        $sleepMs = (int) ((1.2 - $elapsed) * 1000);
+                        \Log::info('LINE Celtic Q&A: throttle delay applied', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'sleep_ms' => $sleepMs,
+                        ]);
+                        usleep($sleepMs * 1000);
+                    }
+
                     \Log::info('LINE Celtic Q&A: force push delivery', [
                         'user_id' => $userId,
                         'action' => $result['action'] ?? null,
@@ -2232,6 +2272,8 @@ class FortuneChannelManager
                             'reading_id' => $reading?->id,
                             'msg_preview' => mb_substr($message, 0, 200),
                         ]);
+                    } else {
+                        \Illuminate\Support\Facades\Cache::put($throttleKey, microtime(true), 60);
                     }
 
                     return $textOk;
