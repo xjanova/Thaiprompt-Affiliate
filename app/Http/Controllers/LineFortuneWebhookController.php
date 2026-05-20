@@ -1811,6 +1811,58 @@ class LineFortuneWebhookController extends Controller
         $lastTextKey = "fortune:spam:last_text:line:{$userId}";
         $maxStrikes = 5;
 
+        // 🛡️ (2026-05-21) CRITICAL FIX — Bypass spam guard ถ้า user อยู่ใน active prediction flow
+        //   เคสจริง: ลูกค้า LINE Celtic 99฿ พิมพ์ "พร้อม" 5 ครั้ง (เปิดไพ่ 5 ใบ)
+        //            → strike #3 (text เหมือนเดิม) ติด 5 ครั้ง → silenced 1 ชั่วโมง
+        //            → บอทเงียบ ลูกค้าเสียเงินใช้ไม่ได้
+        //   บอทเอง instruct ให้พิมพ์ "พร้อม" 10 ครั้งติดกัน — ไม่ใช่ spam!
+        //
+        //   Statuses ที่ bypass:
+        //   - CELTIC_PICKING — เปิดไพ่ (พิมพ์ "พร้อม" ซ้ำ 10 ครั้ง)
+        //   - CELTIC_AWAITING_QUESTION/GENERATING/QA_PROMPT — Q&A flow
+        //   - PAID — รอ AI gen (อย่ารังควาน)
+        //   - COLLECTING_BIRTHDATE/QUESTIONS/TAROT — pre-payment flow
+        $bypassStatuses = [
+            \App\Models\FortuneReading::STATUS_CELTIC_PICKING,
+            \App\Models\FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            \App\Models\FortuneReading::STATUS_CELTIC_GENERATING,
+            \App\Models\FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            \App\Models\FortuneReading::STATUS_PAID,
+            \App\Models\FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+            \App\Models\FortuneReading::STATUS_COLLECTING_QUESTIONS,
+            \App\Models\FortuneReading::STATUS_COLLECTING_TAROT,
+            \App\Models\FortuneReading::STATUS_PENDING_PAYMENT,
+        ];
+        try {
+            $hasActiveFlow = \App\Models\FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)
+                    ->orWhere('facebook_user_id', $userId);
+            })
+                ->whereIn('conversation_status', $bypassStatuses)
+                ->where('updated_at', '>=', now()->subHours(2))
+                ->exists();
+
+            if ($hasActiveFlow) {
+                // ลูกค้าอยู่ใน flow ปกติ → ไม่ใช่ spam
+                // เคลียร์ silence + strikes ที่อาจติดมาจาก guard ผิดพลาด
+                if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
+                    \Illuminate\Support\Facades\Cache::forget($silencedKey);
+                    \Illuminate\Support\Facades\Cache::forget($strikeKey);
+                    Log::info('LINE Fortune spam guard: bypassed + cleared silence (active flow)', [
+                        'user_id' => $userId,
+                        'text_preview' => mb_substr($text, 0, 50),
+                    ]);
+                }
+
+                return false;
+            }
+        } catch (\Throwable $e) {
+            // เช็คล้มเหลว → fall through ไป spam check ปกติ
+            Log::debug('LINE spam guard: active flow check fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         if (\Illuminate\Support\Facades\Cache::has($silencedKey)) {
             return true;
         }
