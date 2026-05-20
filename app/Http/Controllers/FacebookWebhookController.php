@@ -1506,10 +1506,25 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🔒 (2026-05-20) IN-PREDICTION guard — ห้าม handoff/affiliate ระหว่างทำนาย
+        //    User spec: ระหว่างทำนาย ไม่ต้องคุยกับคน ไม่ต้องโยน affiliate
+        //    เดี๋ยวแอดมินจะแทคเอง ถ้าจำเป็น (admin /aistop ยัง win)
+        $inPredictionGuardActive = false;
+        try {
+            $inPredictionGuardActive = $this->conversationService->isInPrediction($senderId);
+        } catch (\Throwable $e) {
+            Log::debug('FB: in-prediction guard check fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         // 🙋 (2026-05-17) Customer handoff — alert-only mode (ไม่ takeover อัตโนมัติ)
         //    ลูกค้าพิมพ์ "คุยกับคน" → ส่งข้อความ "รอแอดมิน" + alert admin
         //    ⚠️ ต้องอยู่หลัง pendingDelivery — กันลูกค้าจ่ายแล้วพิมพ์ "คุยกับคน" คำทำนายค้าง
-        if (! empty($messageText) && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+        //    🔒 (2026-05-20) skip ถ้าอยู่ระหว่างทำนาย (ห้ามแทรก)
+        if (! $inPredictionGuardActive
+            && ! empty($messageText)
+            && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
             $this->handleCustomerHandoffRequest($senderId, $messageText);
 
             return;
@@ -1519,7 +1534,10 @@ class FacebookWebhookController extends Controller
         //    ส่ง Button Template "เข้าระบบด้วย Facebook" → FB OAuth → หน้าแชร์ลิงก์
         //    ⚠️ ต้องอยู่หลัง pendingDelivery — กันลูกค้าจ่ายแล้วถามอยาก-ทำ-แชร์ตอนรอคำทำนาย
         //    ลูกค้าที่จ่ายเงินแล้ว = ส่งคำทำนายก่อน, ถามต่อในวันถัดไป
-        if (! empty($messageText) && $this->conversationService->looksLikeAffiliateInterestRequest($messageText)) {
+        //    🔒 (2026-05-20) skip ถ้าอยู่ระหว่างทำนาย (ห้ามแทรก)
+        if (! $inPredictionGuardActive
+            && ! empty($messageText)
+            && $this->conversationService->looksLikeAffiliateInterestRequest($messageText)) {
             $this->sendFacebookAffiliateInvite($senderId);
 
             return;

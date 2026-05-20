@@ -658,6 +658,78 @@ class FortuneConversationService
             }
 
             // ═══════════════════════════════════════════════════════════════
+            // 🔒 (2026-05-20) IN-PREDICTION Hard Guard — ห้ามแทรกระหว่างทำนาย
+            // ═══════════════════════════════════════════════════════════════
+            //   User spec: "ระหว่างการทำนาย ห้ามมีการสร้างบิล หรือออกนอกเรื่องทำนาย
+            //   อะไรๆ ก็ไม่ควรเข้ามาแทรกเลย ต้องทำนายให้เสร็จก่อน ไม่ว่า 39 หรือ 99"
+            //
+            //   Behavior:
+            //   - AI กำลัง gen (PAID / CELTIC_GENERATING) → silent_skip ทุกข้อความ
+            //   - รอ user input (CELTIC_PICKING/AWAITING_QUESTION/QA_PROMPT)
+            //       → ข้ามทุก hook ก่อนหน้า (tier-direct, smart-skip, chat AI, cancel,
+            //         handoff keyword, etc.) → ส่งตรงไป Celtic state handler ผ่าน
+            //         continueConversation()
+            //
+            //   ไม่มี bypass keyword — ไม่ accept ยกเลิก / คุยกับคน ระหว่างนี้
+            //   (admin จะ /aistop เองถ้าจำเป็น — takeover guard ข้างบนยัง win อยู่)
+            try {
+                $inPredictionReading = $this->findInPredictionReading($facebookUserId);
+                if ($inPredictionReading !== null) {
+                    $status = $inPredictionReading->conversation_status;
+
+                    // AI กำลังทำงาน → silent_skip
+                    if (in_array($status, FortuneReading::AI_GENERATING_STATUSES, true)) {
+                        Log::info('Fortune: in-prediction silent_skip (AI generating)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'reading_id' => $inPredictionReading->id,
+                            'status' => $status,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip_in_prediction',
+                            'message' => null,
+                            'reading' => $inPredictionReading,
+                        ];
+                    }
+
+                    // รอ user input (Celtic flow) → ส่งตรงไป state handler
+                    // ข้ามทุก hook ระหว่างนี้ (force_tier / smart_skip / chat AI / etc.)
+                    //
+                    // 🚫 ถ้าลูกค้าพิมพ์ keyword นอกเรื่องทำนาย (ดูดวง/39/99/ยกเลิก/คุยกับคน)
+                    //    → silent_skip (ห้ามแทรก ห้ามสร้างบิล ห้ามยกเลิก ห้าม handoff)
+                    //    User spec: "ปุ่มต่างๆ เอาออกหมด ที่ไม่เกี่ยวข้องกับการทำนาย"
+                    if ($this->isInterruptKeyword($messageText)) {
+                        Log::info('Fortune: in-prediction silent_skip (interrupt keyword)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'reading_id' => $inPredictionReading->id,
+                            'status' => $status,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip_in_prediction',
+                            'message' => null,
+                            'reading' => $inPredictionReading,
+                        ];
+                    }
+
+                    Log::info('Fortune: in-prediction → continueConversation direct', [
+                        'facebook_user_id' => $facebookUserId,
+                        'reading_id' => $inPredictionReading->id,
+                        'status' => $status,
+                    ]);
+
+                    return $this->continueConversation($inPredictionReading, $messageText, $userProfile);
+                }
+            } catch (\Throwable $inPredErr) {
+                // Hard Guard fail → fail open (flow ปกติ ดีกว่า block ลูกค้า)
+                Log::warning('Fortune: in-prediction guard fail (non-blocking)', [
+                    'error' => $inPredErr->getMessage(),
+                ]);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
             // 🚫 (2026-05-18) Rambler Cooldown Hard Guard — silent_skip pattern
             // ═══════════════════════════════════════════════════════════════
             //   ถ้าลูกค้าโดน mark "เวิ่นเว้อ" (chat_silenced_until > now) + ไม่มี keyword พร้อมซื้อ
@@ -884,9 +956,17 @@ class FortuneConversationService
 
                     // เช็คเฉพาะ paid + active — ลูกค้าจ่ายแล้วกำลังรอ AI / กำลังเลือกไพ่ Celtic
                     // → respect (ไม่ override flow ที่จ่ายเงินแล้ว)
+                    //
+                    // 🔒 (2026-05-20) Defense-in-depth — Hard Guard ข้างบนจับ IN_PREDICTION
+                    //   ไปแล้ว guard นี้ดักเพิ่ม กรณีที่ guard บนล้ม (fail open path) +
+                    //   ครอบ ACTIVE statuses ที่ยังไม่ถึง IN_PREDICTION (เช่น TIER_CHOICE
+                    //   ที่ paid แล้วแต่ยังไม่ครบ flow)
                     $hasPaidActive = FortuneReading::where($column, $facebookUserId)
                         ->where('is_paid', true)
-                        ->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                        ->where(function ($q) {
+                            $q->whereIn('conversation_status', FortuneReading::ACTIVE_READING_STATUSES)
+                                ->orWhereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES);
+                        })
                         ->exists();
 
                     if (! $hasPaidActive) {
@@ -4564,6 +4644,25 @@ class FortuneConversationService
     protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null): array
     {
         try {
+            // 🔒 (2026-05-20) Defense-in-depth — ห้ามสร้างบิลใหม่ระหว่างทำนาย
+            //   ผู้ใช้มี IN_PREDICTION reading (PAID / CELTIC_*) → return silent_skip
+            //   Hard Guard ที่ processMessage จับไปแล้ว แต่ caller ยังมี 13+ จุด
+            //   (state machine, chat AI intent detect, free card path, ChannelManager)
+            //   ที่อาจ bypass guard บน → ต้องดักที่ entry ของ method นี้ด้วย
+            if ($this->isInPrediction($facebookUserId)) {
+                Log::warning('Fortune: startDeepReadingFlow ถูกเรียกระหว่างทำนาย — silent skip', [
+                    'facebook_user_id' => $facebookUserId,
+                    'force_tier' => $forceTier,
+                    'caller' => debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3)[1]['function'] ?? 'unknown',
+                ]);
+
+                return [
+                    'action' => 'silent_skip_in_prediction',
+                    'message' => null,
+                    'reading' => null,
+                ];
+            }
+
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
             if (! $this->settings->isDeepReadingEnabled()) {
                 Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
@@ -8882,6 +8981,96 @@ class FortuneConversationService
     public function clearPaidActiveCache(string $userId): void
     {
         Cache::forget("fortune:has_paid_active:{$userId}");
+        Cache::forget("fortune:in_prediction:{$userId}");
+    }
+
+    /**
+     * 🔒 (2026-05-20) ตรวจว่า user มี reading ที่กำลัง "ทำนาย" อยู่หรือไม่
+     *
+     * "ทำนาย" = จ่ายเงินแล้ว + status IN FortuneReading::IN_PREDICTION_STATUSES
+     * - PAID (39฿ AI gen)
+     * - CELTIC_PICKING / AWAITING_QUESTION / GENERATING / QA_PROMPT
+     *
+     * นโยบาย: ระหว่างนี้ห้ามมีการสร้างบิลใหม่ / ออกนอกเรื่องทำนาย / ส่งปุ่มไม่เกี่ยวข้อง
+     *
+     * Cache 30s — ลด DB hit แต่ยังตามทันการเปลี่ยน state
+     */
+    public function isInPrediction(string $userId): bool
+    {
+        $key = "fortune:in_prediction:{$userId}";
+
+        return (bool) Cache::remember($key, 30, function () use ($userId) {
+            return FortuneReading::where(function ($q) use ($userId) {
+                $q->where('facebook_user_id', $userId)
+                    ->orWhere('platform_user_id', $userId);
+            })
+                ->where('is_paid', true)
+                ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
+                ->where('updated_at', '>=', now()->subHours(2))
+                ->exists();
+        });
+    }
+
+    /**
+     * 🔒 (2026-05-20) คืน reading ที่กำลังทำนายอยู่ (ใช้ใน Hard Guard เพื่อ route ถูก state)
+     *
+     * ไม่ cached — ต้องการ status ล่าสุดเสมอ (state อาจ transition ระหว่าง 30s)
+     */
+    protected function findInPredictionReading(string $userId): ?FortuneReading
+    {
+        return FortuneReading::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->where('is_paid', true)
+            ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
+            ->where('updated_at', '>=', now()->subHours(2))
+            ->latest('updated_at')
+            ->first();
+    }
+
+    /**
+     * 🔒 (2026-05-20) ตรวจ "keyword ที่อยู่นอกเรื่องทำนาย" — ใช้ silent skip ระหว่างทำนาย
+     *
+     * User spec: ระหว่างทำนาย ห้ามแทรกด้วย:
+     * - tier keyword (สร้างบิลใหม่): "ดูดวง", "39", "99", "ดูดวงเชิงลึก", "เซลติก"
+     * - cancel keyword: "ยกเลิก", "ไม่เอา", "คืนเงิน"
+     * - handoff keyword: "คุยกับคน", "ติดต่อแอดมิน" (ใช้ takeover service)
+     *
+     * คืน true → ห้ามตอบ (silent_skip)
+     * คืน false → ปล่อย state handler ทำงาน (ลูกค้าน่าจะถามคำถาม Celtic)
+     */
+    protected function isInterruptKeyword(string $text): bool
+    {
+        $trimmed = mb_strtolower(trim($text));
+        if ($trimmed === '') {
+            return false;
+        }
+
+        // tier-direct keywords (สร้างบิลใหม่)
+        $tierKeywords = ['39', '99', 'ดูดวง', 'ดูดวงเชิงลึก', 'ดูดวงเซลติก', 'เซลติก', 'celtic'];
+        foreach ($tierKeywords as $kw) {
+            if ($trimmed === $kw || str_starts_with($trimmed, $kw)) {
+                return true;
+            }
+        }
+
+        // cancel keywords (ห้ามยกเลิกระหว่างทำนาย)
+        if ($this->isCancelRequest($text)) {
+            return true;
+        }
+
+        // handoff keywords (แอดมินจะ /aistop เองถ้าจำเป็น)
+        try {
+            $takeoverSvc = app(\App\Services\FortuneTakeoverService::class);
+            if ($takeoverSvc->detectCustomerHandoffRequest($text)) {
+                return true;
+            }
+        } catch (\Throwable $e) {
+            // non-blocking
+        }
+
+        return false;
     }
 
     /**

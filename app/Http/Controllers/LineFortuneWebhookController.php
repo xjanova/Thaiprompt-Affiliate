@@ -357,8 +357,18 @@ class LineFortuneWebhookController extends Controller
 
         // ========================================
         // 🙋 ลูกค้าขอคุยกับคนจริง → เทคโอเวอร์ + แจ้ง
+        // 🔒 (2026-05-20) skip ถ้าอยู่ระหว่างทำนาย (ห้ามแทรก — แอดมินจะ /aistop เองถ้าจำเป็น)
         // ========================================
-        if ($this->takeoverService->detectCustomerHandoffRequest($messageText)) {
+        $inPredictionGuardActive = false;
+        try {
+            $inPredictionGuardActive = $this->conversationService->isInPrediction($userId);
+        } catch (\Throwable $e) {
+            \Log::debug('LINE: in-prediction guard check fail (non-blocking)', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        if (! $inPredictionGuardActive && $this->takeoverService->detectCustomerHandoffRequest($messageText)) {
             $this->handleCustomerHandoffRequest($userId, $messageText, $replyToken);
 
             return;

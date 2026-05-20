@@ -222,6 +222,39 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🔒 (2026-05-20) "In Prediction" states — ลูกค้าจ่ายแล้วและกำลังทำนาย
+     *
+     * นโยบาย: ระหว่างนี้ห้ามมีการสร้างบิลใหม่ หรือออกนอกเรื่องทำนาย เด็ดขาด
+     * - PAID = 39฿ AI กำลัง gen คำทำนาย
+     * - CELTIC_PICKING = 99฿ ลูกค้ากำลังเปิดไพ่ 10 ใบ
+     * - CELTIC_AWAITING_QUESTION = 99฿ รอลูกค้าถามคำถาม
+     * - CELTIC_GENERATING = 99฿ AI กำลัง gen คำตอบ
+     * - CELTIC_QA_PROMPT = 99฿ รอคำถามถัดไป
+     *
+     * แตกต่างจาก LOCKED_FLOW_STATUSES — ไม่รวม pending_payment (ยังไม่จ่าย)
+     * หรือ COLLECTING_* (กรอกข้อมูล pre-payment)
+     */
+    public const IN_PREDICTION_STATUSES = [
+        self::STATUS_PAID,
+        self::STATUS_CELTIC_PICKING,
+        self::STATUS_CELTIC_AWAITING_QUESTION,
+        self::STATUS_CELTIC_GENERATING,
+        self::STATUS_CELTIC_QA_PROMPT,
+    ];
+
+    /**
+     * 🔮 (2026-05-20) "AI Generating" subset — AI กำลังทำงานจริง ๆ ห้ามตอบทุกกรณี
+     *
+     * ใช้แยกพฤติกรรม guard:
+     * - state ใน list นี้ → silent_skip ทุกข้อความ (รอ AI ส่งผลให้)
+     * - state อื่นใน IN_PREDICTION_STATUSES → ปล่อย state machine handler (รอ user input)
+     */
+    public const AI_GENERATING_STATUSES = [
+        self::STATUS_PAID,
+        self::STATUS_CELTIC_GENERATING,
+    ];
+
+    /**
      * เช็คว่า user มี reading ที่ active อยู่หรือไม่ (cached 30s ลด DB hit)
      *
      * @param  string  $platform  'facebook' | 'line'
@@ -241,8 +274,15 @@ class FortuneReading extends Model
                 //   → bot ตอบ error → ดูดวงไม่ต่อ
                 $column = $platform === 'facebook' ? 'facebook_user_id' : 'platform_user_id';
 
+                // 🔒 (2026-05-20) รวม IN_PREDICTION_STATUSES ด้วย — กัน default QR
+                //   ปรากฏระหว่าง STATUS_PAID (39฿ AI gen) ที่ ACTIVE list เดิมไม่มี
+                $statuses = array_unique(array_merge(
+                    self::ACTIVE_READING_STATUSES,
+                    self::IN_PREDICTION_STATUSES,
+                ));
+
                 return self::where($column, $userId)
-                    ->whereIn('conversation_status', self::ACTIVE_READING_STATUSES)
+                    ->whereIn('conversation_status', $statuses)
                     ->exists();
             }
         );

@@ -484,6 +484,22 @@ trait CelticCrossConversationTrait
         //   ถ้า lock ไม่ได้ = มี request กำลังสร้างอยู่ → wait + เช็ค pending → reuse
         $userId = $reading->facebook_user_id ?? $reading->platform_user_id;
 
+        // 🔒 (2026-05-20) Defense-in-depth — ห้ามสร้างบิลใหม่ระหว่างทำนาย
+        //   ถ้าลูกค้ามี IN_PREDICTION reading อื่นที่ paid อยู่ (39฿ AI gen หรือ
+        //   Celtic flow อื่น) → ห้ามสร้าง Celtic ใหม่
+        if (! empty($userId) && method_exists($this, 'isInPrediction') && $this->isInPrediction($userId)) {
+            \Log::warning('Celtic: startCelticCrossFlow ถูกเรียกระหว่างทำนาย — silent skip', [
+                'facebook_user_id' => $userId,
+                'reading_id' => $reading->id,
+            ]);
+
+            return [
+                'action' => 'silent_skip_in_prediction',
+                'message' => null,
+                'reading' => null,
+            ];
+        }
+
         // 🛒 (2026-05-18) Hook A — บันทึก "บอทเสนอขาย Celtic 99฿" (throttle 5min)
         try {
             if (! empty($userId)) {
