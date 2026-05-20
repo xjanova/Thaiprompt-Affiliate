@@ -1287,17 +1287,62 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // 🎯 (2026-05-17) Manual control mode — แทนที่ auto-takeover เดิม
-        //   user spec: "อัตโนมัติมันไม่เวิร์ค ถอนออกไปก่อน"
-        //   ใหม่: admin reply ปกติ → ไม่ทำอะไร (เดิม: auto takeover ทุก reply)
-        //   admin ต้องพิมพ์ /aistop เพื่อหยุดบอท, /aistart (หรือ /ai legacy) เพื่อให้บอทกลับมา
-        if (! ($this->settings->admin_handover_enabled ?? true)) {
+        // ถ้า echo มี app_id แสดงว่าเป็นข้อความที่บอทส่งเอง → ข้าม
+        // เราสนใจเฉพาะข้อความที่แอดมิน (คน) พิมพ์ตอบเอง (ไม่มี app_id)
+        // ⚠️ ต้องอยู่ก่อน Capture block — กัน bot reply ถูกเก็บเป็น Q&A
+        if (! empty($appId)) {
             return;
         }
 
-        // ถ้า echo มี app_id แสดงว่าเป็นข้อความที่บอทส่งเอง → ข้าม
-        // เราสนใจเฉพาะข้อความที่แอดมิน (คน) พิมพ์ตอบเอง (ไม่มี app_id)
-        if (! empty($appId)) {
+        // 📚 (2026-05-19) Capture admin Q&A สำหรับ RAG learning
+        //     (2026-05-20) v2 — ส่ง context (page_id, reading_id, reading_type) เข้า job
+        //     (2026-05-20) v2.1 — ย้ายออกมาก่อน handover gate
+        //                          เพราะ Capture เป็น feature แยกจาก handover
+        //                          admin ต้องเรียนรู้สไตล์ได้ไม่ว่า handover จะ ON/OFF
+        //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A + category
+        //   ถ้า settings ปิด admin_qa_capture ก็ skip (default เปิด)
+        $captureEnabled = (bool) ($this->settings->admin_qa_capture_enabled ?? true);
+        if ($captureEnabled && trim($messageText) !== '') {
+            try {
+                // 🔍 หา reading ที่ลูกค้ามี active ณ ขณะนี้ (7 วันล่าสุด)
+                //    ใช้ classify category — รู้ว่า admin ตอบลูกค้าที่อยู่ใน state ไหน
+                $activeReading = \App\Models\FortuneReading::where(function ($q) use ($recipientId) {
+                    $q->where('facebook_user_id', $recipientId)
+                        ->orWhere(function ($sub) use ($recipientId) {
+                            $sub->where('platform', 'facebook')
+                                ->where('platform_user_id', $recipientId);
+                        });
+                })
+                    ->where('created_at', '>=', now()->subDays(7))
+                    ->latest()
+                    ->first();
+
+                \App\Jobs\CaptureAdminQAJob::dispatch(
+                    'facebook',
+                    $recipientId,
+                    $messageText,
+                    null, // admin_user_id ไม่รู้ (FB Page Inbox ไม่บอก)
+                    [
+                        'app_id' => null,
+                        'echo' => true,
+                        'page_id' => $pageId,
+                        'reading_id' => $activeReading?->id,
+                        'reading_type' => $activeReading?->reading_type,
+                    ],
+                );
+            } catch (\Throwable $e) {
+                // non-blocking — ไม่ throw ออกมา กัน webhook fail
+                \Illuminate\Support\Facades\Log::warning(
+                    'FacebookWebhook: CaptureAdminQAJob dispatch ล้มเหลว',
+                    ['error' => $e->getMessage()]
+                );
+            }
+        }
+
+        // 🎯 (2026-05-17) Manual control mode — แทนที่ auto-takeover เดิม
+        //   user spec: "อัตโนมัติมันไม่เวิร์ค ถอนออกไปก่อน"
+        //   ถ้าปิด handover → ไม่ process /aistop /aistart (Capture ทำไปแล้วข้างบน)
+        if (! ($this->settings->admin_handover_enabled ?? true)) {
             return;
         }
 
@@ -1307,52 +1352,7 @@ class FacebookWebhookController extends Controller
         $isResumeCommand = $this->takeoverService->detectAdminResumeCommand($messageText);
 
         if (! $isPauseCommand && ! $isResumeCommand) {
-            // admin reply ปกติ — ไม่ auto-takeover
-
-            // 📚 (2026-05-19) Capture admin Q&A สำหรับ RAG learning
-            //     (2026-05-20) v2 — ส่ง context (page_id, reading_id, reading_type) เข้า job
-            //                       เพื่อให้ classifier แบ่งหมวด Q&A ได้ถูกต้อง
-            //   admin คนตอบลูกค้าใน Page Inbox → เก็บเป็นคู่ Q&A + category
-            //   Job หา last customer message (Q) เอง + embed + classify + INSERT
-            //   ถ้า settings ปิด admin_qa_capture ก็ skip (default เปิด)
-            $captureEnabled = (bool) ($this->settings->admin_qa_capture_enabled ?? true);
-            if ($captureEnabled && trim($messageText) !== '') {
-                try {
-                    // 🔍 หา reading ที่ลูกค้ามี active ณ ขณะนี้ (7 วันล่าสุด)
-                    //    ใช้ classify category — รู้ว่า admin ตอบลูกค้าที่อยู่ใน state ไหน
-                    $activeReading = \App\Models\FortuneReading::where(function ($q) use ($recipientId) {
-                        $q->where('facebook_user_id', $recipientId)
-                            ->orWhere(function ($sub) use ($recipientId) {
-                                $sub->where('platform', 'facebook')
-                                    ->where('platform_user_id', $recipientId);
-                            });
-                    })
-                        ->where('created_at', '>=', now()->subDays(7))
-                        ->latest()
-                        ->first();
-
-                    \App\Jobs\CaptureAdminQAJob::dispatch(
-                        'facebook',
-                        $recipientId,
-                        $messageText,
-                        null, // admin_user_id ไม่รู้ (FB Page Inbox ไม่บอก)
-                        [
-                            'app_id' => null,
-                            'echo' => true,
-                            'page_id' => $pageId,
-                            'reading_id' => $activeReading?->id,
-                            'reading_type' => $activeReading?->reading_type,
-                        ],
-                    );
-                } catch (\Throwable $e) {
-                    // non-blocking — ไม่ throw ออกมา กัน webhook fail
-                    \Illuminate\Support\Facades\Log::warning(
-                        'FacebookWebhook: CaptureAdminQAJob dispatch ล้มเหลว',
-                        ['error' => $e->getMessage()]
-                    );
-                }
-            }
-
+            // admin reply ปกติ — ไม่ auto-takeover (Capture ทำไปแล้วข้างบน)
             return;
         }
 
