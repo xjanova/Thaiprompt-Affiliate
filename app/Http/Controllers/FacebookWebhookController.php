@@ -1299,11 +1299,32 @@ class FacebookWebhookController extends Controller
             return;
         }
 
-        // ถ้า echo มี app_id แสดงว่าเป็นข้อความที่บอทส่งเอง → ข้าม
-        // เราสนใจเฉพาะข้อความที่แอดมิน (คน) พิมพ์ตอบเอง (ไม่มี app_id)
-        // ⚠️ ต้องอยู่ก่อน Capture block — กัน bot reply ถูกเก็บเป็น Q&A
-        if (! empty($appId)) {
-            return;
+        // 🚦 (2026-05-20 v2.2) แยก bot vs human reply ผ่าน app_id เปรียบเทียบ
+        //   เดิม: !empty($appId) → skip ทุก echo ที่มี app_id (ผิด!)
+        //   ปัญหา: แอดมินตอบใน Meta Business Suite → echo มี app_id=263902037430900
+        //          (= Business Suite's app_id) → ถูก skip ผิด เป็น Q&A ไม่เคยถูกจับ
+        //   ใหม่: เปรียบเทียบ app_id กับ bot's app_id เฉพาะตัวเรา
+        //          → bot's own echo (app_id=our_app) → skip
+        //          → admin via Meta Business Suite (app_id=263902037430900) → capture
+        //          → admin via Page Inbox classic (app_id=null) → capture
+        //   Fallback: ถ้า settings->facebook_app_id ว่าง → ใช้ behavior เก่า (safe default)
+        $ourBotAppId = (string) ($this->settings->facebook_app_id ?? '');
+        $echoAppId = $appId !== null ? (string) $appId : '';
+
+        if ($ourBotAppId !== '') {
+            // มี settings → เช็คแม่นยำ — skip เฉพาะ bot ของเรา
+            if ($echoAppId === $ourBotAppId) {
+                return; // bot's own message
+            }
+        } else {
+            // ไม่มี settings → fallback ใช้ behavior เก่า (กัน false positive)
+            \Illuminate\Support\Facades\Log::warning(
+                'FB Echo: facebook_app_id ใน settings ว่าง — ใช้ legacy check (skip ทุก echo ที่มี app_id)',
+                ['echo_app_id' => $echoAppId]
+            );
+            if (! empty($appId)) {
+                return;
+            }
         }
 
         // 📚 (2026-05-19) Capture admin Q&A สำหรับ RAG learning
