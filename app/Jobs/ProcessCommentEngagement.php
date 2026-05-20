@@ -92,23 +92,17 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
-            // 📆 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม
-            //    เคย DM (comment OR reaction) ใน 3 วันล่าสุด → ข้าม
-            //    ลูกค้าเก่ารำคาญถ้า DM ทุกวัน → เว้น 3 วัน + เปลี่ยนคำทักทาย
-            if (FortuneCommentEngagement::hasEngagedRecently($userId, 3)
-                || FortunePostReaction::hasDmSuccessRecently($userId, 3)) {
-                Log::info('Comment engagement skip — user ได้ DM ใน 3 วันล่าสุดแล้ว', [
+            // 📆 (2026-05-21) 24h rolling cooldown — reverted จาก 3-day (คนเงียบเลย)
+            //    เคย DM (comment OR reaction) ใน 24 ชม. ล่าสุด → ข้าม
+            if (FortuneCommentEngagement::hasEngagedRecently($userId, 24)
+                || FortunePostReaction::hasDmSuccessRecently($userId, 24)) {
+                Log::info('Comment engagement skip — user ได้ DM ใน 24 ชม. ล่าสุดแล้ว', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
                 return;
             }
-
-            // 🔁 (2026-05-20) Returning-user detection — เปลี่ยนคำทักทายถ้าเคย DM แล้ว
-            //   ผ่าน 3-day cooldown ข้างบน = สิทธิ์ทักใหม่ — แต่คำทักทายต้องไม่ซ้ำเดิม
-            $isReturning = FortuneCommentEngagement::hasAnyEngagement($userId)
-                || FortunePostReaction::hasEverDmSuccess($userId);
 
             // 1. ดึง user profile (ชื่อ, เพศ, วันเกิด ฯลฯ)
             $userProfile = $facebookService->getUserProfile($userId);
@@ -141,42 +135,35 @@ class ProcessCommentEngagement implements ShouldQueue
                 'has_profile' => ! empty($userProfile),
             ]);
 
-            // 2. AI สร้างข้อความ — ถ้าล้ม → fallback เป็น template
-            //    (AI rate-limited / key หมด / 429 ฯลฯ จะไม่ทำให้ลูกค้าเงียบ)
-            //    🔁 (2026-05-20) ส่ง $isReturning เข้า AI เพื่อเปลี่ยน greeting คนเก่า
+            // 2. AI สร้าง comment_reply (public reply ในคอมเม้นต์) — context-aware
+            //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
+            //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
             try {
                 $engagement = $aiService->generateCommentEngagement(
                     $commentText,
-                    $userProfile,
-                    null,
-                    $isReturning
+                    $userProfile
                 );
                 $commentReply = $engagement['comment_reply'] ?? '';
-                $dmMessage = $engagement['dm_message'] ?? '';
             } catch (Throwable $aiError) {
                 Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
                     'user_id' => $userId,
                     'error' => $aiError->getMessage(),
                 ]);
                 $commentReply = '';
-                $dmMessage = '';
             }
 
-            // Guard: ถ้า AI คืน empty → ใช้ template แทน
-            if (empty($commentReply) || empty($dmMessage)) {
+            // Comment reply fallback ถ้า AI คืน empty
+            if (empty($commentReply)) {
                 $commentReply = str_replace(
                     ['{name}', '{comment}'],
                     [$name, $commentText],
-                    $settings->getCommentReplyTemplate($isReturning)
-                );
-                $dmMessage = str_replace(
-                    ['{name}', '{comment}'],
-                    [$name, $commentText],
-                    // 🎯 Phase L — ส่ง userId เพื่อเลือก variant (stable per user)
-                    // 🔁 (2026-05-20) ส่ง $isReturning สลับชุด first-time / returning
-                    $settings->getCommentDmTemplate($userId, $isReturning)
+                    $settings->getCommentReplyTemplate()
                 );
             }
+
+            // 🌙 DM message — ดวงประจำวันสั้นๆ (มีวันเกิด → ดวงวันเกิด, ไม่มี → ชวนดูดวง)
+            $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
+            $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
             // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
             try {

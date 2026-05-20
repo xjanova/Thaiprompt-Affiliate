@@ -70,18 +70,19 @@ class FortunePostReaction extends Model
     }
 
     /**
-     * 📆 ตรวจว่าเคยส่ง DM "สำเร็จ" ให้ user คนนี้ใน N calendar days ล่าสุดหรือไม่
+     * 📆 ตรวจว่าเคยส่ง DM "สำเร็จ" ให้ user คนนี้ใน N ชั่วโมงที่ผ่านมา (rolling hours)
      *
-     * นโยบาย 2026-05-20 (default 3 วัน) — เว้นระยะคนเก่า
-     * "Calendar day" → ใช้ today()->subDays() (reset midnight) ไม่ใช่ rolling hours
+     * 🔁 REVERTED 2026-05-21 — เปลี่ยนกลับเป็น 24h rolling (เดิม 3 calendar days)
+     *    เหตุผล: ลูกค้าตอบกลับน้อยลง ("คนเงียบเลย") — cooldown 3 วันยาวเกิน
+     *    กลับมาใช้ 24h rolling เหมือนนโยบายเดิม
      *
-     * @param  int  $days  จำนวนวัน (default 3)
+     * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
-    public static function hasDmSuccessRecently(string $userId, int $days = 3): bool
+    public static function hasDmSuccessRecently(string $userId, int $hours = 24): bool
     {
         return self::where('facebook_user_id', $userId)
             ->where('dm_success', true)
-            ->where('updated_at', '>=', today()->subDays($days))
+            ->where('updated_at', '>=', now()->subHours($hours))
             ->exists();
     }
 

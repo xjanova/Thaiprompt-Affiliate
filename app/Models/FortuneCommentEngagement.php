@@ -79,19 +79,18 @@ class FortuneCommentEngagement extends Model
     }
 
     /**
-     * 📆 ตรวจว่าผู้ใช้คนนี้เคยถูก DM ใน N "calendar days" ล่าสุดหรือไม่
+     * 📆 ตรวจว่าผู้ใช้คนนี้เคยถูก DM ใน N ชั่วโมงที่ผ่านมา (rolling hours)
      *
-     * นโยบาย 2026-05-20 (default 3 วัน):
-     * - คนเก่าที่เคย DM แล้ว → เว้น 3 วันก่อนทักใหม่ + เปลี่ยนคำทักทาย
-     * - "Calendar day reset" → ใช้ today()->subDays() แทน now()->subHours()
-     *   เช่น DM วันที่ 20 → ทักได้อีกครั้งวันที่ 24 (ผ่าน 21, 22, 23 = 3 วันเต็ม)
+     * 🔁 REVERTED 2026-05-21 — เปลี่ยนกลับเป็น 24h rolling (เดิม 3 calendar days)
+     *    เหตุผล: ลูกค้าตอบกลับน้อยลง ("คนเงียบเลย") — cooldown 3 วันยาวเกิน
+     *    กลับมาใช้ 24h rolling เหมือนนโยบายเดิม
      *
-     * @param  int  $days  จำนวนวัน (default 3)
+     * @param  int  $hours  จำนวนชั่วโมง (default 24)
      */
-    public static function hasEngagedRecently(string $userId, int $days = 3): bool
+    public static function hasEngagedRecently(string $userId, int $hours = 24): bool
     {
         return self::where('facebook_user_id', $userId)
-            ->where('engaged_at', '>=', today()->subDays($days))
+            ->where('engaged_at', '>=', now()->subHours($hours))
             ->exists();
     }
 

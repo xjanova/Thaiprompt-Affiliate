@@ -255,6 +255,27 @@ class FortuneReading extends Model
     ];
 
     /**
+     * 🎂 (2026-05-21) หาวันเกิดล่าสุดของ user (ใช้ใน DM greeting "ดวงประจำวันสั้นๆ")
+     *
+     * Look up ล่าสุดที่ลูกค้าเคยกรอก birth_date — ไม่จำกัด is_paid (free reading
+     * ก็มีวันเกิดได้). คืน Carbon|null
+     *
+     * @param  string  $userId  facebook_user_id หรือ platform_user_id
+     */
+    public static function findLatestBirthdate(string $userId): ?\Carbon\Carbon
+    {
+        $reading = self::where(function ($q) use ($userId) {
+            $q->where('facebook_user_id', $userId)
+                ->orWhere('platform_user_id', $userId);
+        })
+            ->whereNotNull('birth_date')
+            ->latest('updated_at')
+            ->first(['birth_date']);
+
+        return $reading?->birth_date;
+    }
+
+    /**
      * เช็คว่า user มี reading ที่ active อยู่หรือไม่ (cached 30s ลด DB hit)
      *
      * @param  string  $platform  'facebook' | 'line'

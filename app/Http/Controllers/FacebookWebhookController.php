@@ -507,16 +507,14 @@ class FacebookWebhookController extends Controller
         $userId = $reaction->facebook_user_id;
 
         try {
-            // 🔒 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม (H4)
-            //    เดิม: Cache::has reaction_dm_user_24h
-            //    ใหม่: DB query — ถ้า user คนนี้ได้รับ DM (reaction OR comment) ใน 3 calendar
-            //          days ที่ผ่านมา → ข้าม. ใช้ today()->subDays(3) (reset midnight)
-            //    เหตุผล: ลูกค้าเก่ารำคาญถ้า DM ทุก 1 วัน → เว้น 3 วันแล้วทักใหม่ด้วยคำใหม่
-            $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 3);
-            $hasRecentCommentDm = FortuneCommentEngagement::hasEngagedRecently($userId, 3);
+            // 🔒 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
+            //    DB query — ถ้า user คนนี้ได้รับ DM (reaction OR comment) ใน 24 ชม.
+            //    ที่ผ่านมา → ข้าม. ใช้ now()->subHours(24) (rolling)
+            $hasRecentReactionDm = FortunePostReaction::hasDmSuccessRecently($userId, 24);
+            $hasRecentCommentDm = FortuneCommentEngagement::hasEngagedRecently($userId, 24);
 
             if ($hasRecentReactionDm || $hasRecentCommentDm) {
-                Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ใน 3 วันล่าสุดแล้ว', [
+                Log::info('👍 Reaction DM ข้าม — user คนนี้ได้รับ DM ใน 24 ชม. ล่าสุดแล้ว', [
                     'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
                     'reason' => $hasRecentReactionDm ? 'recent_reaction_dm' : 'recent_comment_dm',
@@ -545,15 +543,19 @@ class FacebookWebhookController extends Controller
                 Log::debug('tryReactionDm: active check failed (non-blocking): '.$e->getMessage());
             }
 
-            // 🔁 (2026-05-20) Returning-user detection — เปลี่ยนคำทักทายถ้าเคย DM แล้ว
-            //    ผ่าน 3-day cooldown ข้างบน = สิทธิ์ทักใหม่ได้ — แต่คำทักทายต้องไม่ซ้ำเดิม
-            $isReturning = FortunePostReaction::hasEverDmSuccess($userId)
-                || FortuneCommentEngagement::hasAnyEngagement($userId);
-
-            // 🎯 Phase L — rotating reaction DM variants (คนละข้อความตาม userId)
-            // 🎁 (2026-05-04) เน้นฟรี ไม่เน้นขาย — เพื่อ conversion ตอบกลับสูง
-            //   เมื่อลูกค้าตอบกลับครั้งแรก → tryAutoFreeCardForFirstReply ทำนายฟรีทันที
-            $message = $this->pickReactionDmVariant($userId, $isReturning);
+            // 🌙 (2026-05-21) Daily Horoscope greeting — แทน returning-user variants เดิม
+            //    มี birth_date ใน DB → ส่งดวงประจำวันตาม day_of_birth
+            //    ไม่มี → ทักทายชวนดูดวง + promise ส่งดวงฟรีหลังจากนั้น
+            $userName = $reaction->user_name ?? null;
+            if (empty($userName)) {
+                // ลอง lookup จาก past reading
+                $userName = \App\Models\FortuneReading::where('facebook_user_id', $userId)
+                    ->whereNotNull('facebook_user_name')
+                    ->latest('updated_at')
+                    ->value('facebook_user_name');
+            }
+            $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
+            $message = $greetingService->buildDailyHoroscopeGreeting($userId, $userName ?? 'คุณ');
 
             // ⚠️ ไม่ใส่ Quick Reply ปุ่มขาย/ดูดวง — ให้ลูกค้าพิมพ์ตอบเอง (ตอบอะไรก็ทำนายฟรี)
             $quickReplies = [];
@@ -580,10 +582,9 @@ class FacebookWebhookController extends Controller
             $reaction->save();
 
             if ($success) {
-                Log::info('✅ Reaction DM sent', [
+                Log::info('✅ Reaction DM sent (daily horoscope greeting)', [
                     'user_id' => $userId,
                     'post_id' => $reaction->facebook_post_id,
-                    'returning' => $isReturning,
                 ]);
             } else {
                 Log::info('ℹ️ Reaction DM skipped (user not in 24hr window)', [
@@ -598,95 +599,6 @@ class FacebookWebhookController extends Controller
                 'user_id' => $userId,
             ]);
         }
-    }
-
-    /**
-     * 🎯 Phase L — เลือก reaction DM variant ตาม userId (stable per user)
-     *
-     * 🎁 (2026-05-04) Strategy reset: เน้นฟรี ไม่เน้นขาย → ลูกค้าตอบกลับสูง
-     *   เมื่อลูกค้าตอบ → tryAutoFreeCardForFirstReply ทำนายฟรีทันที (ไม่ถามอะไร)
-     *   ลูกค้าเชื่อใจว่าฟรีจริง → ค่อย soft-sell หลังคำทำนาย
-     *
-     *   ⚠️ ห้ามใส่ราคา 39/99 / "ค่ากาแฟ" / pay-later teaser ใน DM นี้
-     *      เพราะลูกค้าจะรู้สึก "ขายตั้งแต่แรก" → ไม่ตอบกลับ
-     *
-     * 🔁 (2026-05-20) Returning-user variants — เพิ่มชุดทักคนเก่า
-     *   $isReturning=true → ใช้ตัวที่ไม่ทักว่า "ขอบคุณที่กดไลก์" (รู้จักกันแล้ว)
-     *
-     * Fallback: ถ้าปิดระบบฟรี → ใช้ shorter variant ที่ไม่กล่าวถึงราคา (ชวนทักธรรมดา)
-     */
-    protected function pickReactionDmVariant(string $facebookUserId, bool $isReturning = false): string
-    {
-        $freeEnabled = $this->settings->isFreeReadingEnabled();
-
-        if ($isReturning) {
-            // 🔁 Returning user — เคย DM แล้ว ผ่าน 3-day cooldown มา → ทักแบบ "กลับมาอีกครั้ง"
-            //   ห้ามใช้คำว่า "ขอบคุณที่กดไลก์" (รู้จักกันแล้ว แปลกหู)
-            if ($freeEnabled) {
-                $variants = [
-                    // v1: warm welcome back
-                    "🌙 เห็นแวะกลับมาอีกครั้งนะคะ ✨\n\n"
-                        ."หมอจันทรารู้สึกถึงพลังของคุณที่ยังเชื่อมถึงกันค่ะ\n"
-                        .'🎁 เปิดไพ่ทำนาย *ฟรี 1 ใบ* รออยู่ — ทักทายมาได้เลยนะคะ 🔮',
-
-                    // v2: cosmic + remembers
-                    "✨ พลังของคุณกลับมาที่หน้าเพจอีกครั้งแล้วนะคะ\n\n"
-                        ."🃏 ช่วงนี้มีอะไรในใจไหมคะ?\n"
-                        .'หมอเปิดทำนาย *ฟรี* รออยู่ — ทักคำทักทายมาก่อนได้เลย 🌙',
-
-                    // v3: gentle re-engage
-                    "🙏 ขอบคุณที่ยังตามเพจอยู่นะคะ 💫\n\n"
-                        ."ไม่ได้คุยกันมาสักพัก — มีเรื่องอะไรอยากปรึกษาดวงไหมคะ?\n"
-                        .'🎁 หมอเปิดไพ่ฟรีให้ทุกครั้งที่ทักมาค่ะ ✨',
-
-                    // v4: signal-driven
-                    "🌙 ดวงดาวสะกิดบอกหมอว่าคุณยังคิดถึงคำทำนายค่ะ ✨\n\n"
-                        ."🔮 ทักคำเดียวก็พอ — หมอจันทราจะเปิดไพ่ใหม่ให้\n"
-                        .'(ฟรี ไม่ต้องกรอกอะไร)',
-                ];
-            } else {
-                $variants = [
-                    "🌙 เห็นแวะกลับมาอีกครั้งนะคะ ✨\n\nมีเรื่องอะไรอยากปรึกษาดวงไหม? ทักมาคุยได้เลยค่ะ 🔮",
-                    "✨ ยินดีที่ยังตามเพจอยู่นะคะ\nหมอจันทราพร้อมรับฟัง — ทักมาได้เลยค่ะ 🌙",
-                    "🙏 ไม่ได้คุยกันมาสักพัก ทักทายมาคุยกันใหม่ได้เลยนะคะ 💫",
-                ];
-            }
-        } elseif ($freeEnabled) {
-            // 🎁 4 variants — ทุกตัวเน้น "ทำนายฟรี" + "ทักมาคุย" ไม่ใส่ราคา (first-time)
-            $variants = [
-                // v1: invite — เน้นทักมา
-                "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\n"
-                    ."🌙 หมอจันทราอยากเปิดไพ่ทำนายฟรีให้สักใบ\n"
-                    .'ลองทักทายมาสักคำสิคะ — แม่หมอจะอ่านพลังให้ทันที 🔮',
-
-                // v2: curious + free hint
-                "✨ เห็นคุณกดไลก์ — รู้สึกถึงพลังที่เชื่อมถึงกันเลยนะคะ\n\n"
-                    ."🃏 หมอเปิดดูดวงไพ่ยิปซี *ฟรี 1 ใบ* รออยู่\n"
-                    .'ทักคำว่า "สวัสดี" หรืออะไรก็ได้ มาคุยกันได้เลยค่ะ 🌙',
-
-                // v3: warm + cosmic
-                "🌙 ดวงดาวช่วงนี้กำลังส่งสัญญาณบางอย่าง...\n\n"
-                    ."🎁 หมอจันทราเปิดทำนาย *ฟรี* ให้ลูกเพจที่กดไลก์ค่ะ\n"
-                    .'ทักมาทักทายได้เลย — แม่หมอพร้อมเปิดไพ่ให้ ✨',
-
-                // v4: gentle + non-pushy
-                "🙏 ขอบคุณที่ติดตามเพจค่ะ 💫\n\n"
-                    ."🔮 อยากให้ลองรู้จักหมอจันทราผ่าน *การทำนายฟรี 1 ใบ*\n"
-                    ."ทักมาตอบกลับ — หมอจะเปิดไพ่ให้เลยค่ะ 🌙\n"
-                    .'(ไม่มีค่าใช้จ่าย ไม่ต้องกรอกอะไร)',
-            ];
-        } else {
-            // ระบบฟรีปิด — variant กลางๆ ชวนทัก (ไม่ใส่ราคา ไม่ขาย)
-            $variants = [
-                "🙏 ขอบคุณที่กดไลก์นะคะ ✨\n\nหมอจันทราอยากชวนทักทายค่ะ — ทักคำสั้นๆ มาเลยได้เลย 🔮",
-                "🌙 เห็นคุณกดไลก์ — อยากชวนคุยสักนิดค่ะ\nทักทายมาเลยนะคะ ✨",
-                "✨ ขอบคุณที่สนใจเพจเรา\nทักคำสวัสดีมาได้เลยนะคะ 🙏",
-            ];
-        }
-
-        $idx = abs(crc32($facebookUserId)) % count($variants);
-
-        return $variants[$idx];
     }
 
     /**
@@ -913,12 +825,11 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // 📆 (2026-05-20) 3-day calendar cooldown — ขยายจาก 24h เดิม
-            //    เคย DM (comment OR reaction) ใน 3 วันล่าสุด → ข้าม
-            //    ลูกค้าเก่ารำคาญถ้า DM ทุกวัน → เว้น 3 วัน + เปลี่ยนคำทักทาย
-            if (FortuneCommentEngagement::hasEngagedRecently($fromId, 3)
-                || FortunePostReaction::hasDmSuccessRecently($fromId, 3)) {
-                Log::info('Comment Engagement: user ได้ DM ใน 3 วันล่าสุดแล้ว ข้าม', [
+            // 📆 (2026-05-21) 24h rolling cooldown (reverted จาก 3-day — คนเงียบเลย)
+            //    เคย DM (comment OR reaction) ใน 24 ชม. ล่าสุด → ข้าม
+            if (FortuneCommentEngagement::hasEngagedRecently($fromId, 24)
+                || FortunePostReaction::hasDmSuccessRecently($fromId, 24)) {
+                Log::info('Comment Engagement: user ได้ DM ใน 24 ชม. ล่าสุดแล้ว ข้าม', [
                     'user_id' => $fromId,
                     'comment_id' => $commentId,
                 ]);
@@ -1019,24 +930,18 @@ class FacebookWebhookController extends Controller
         //   Fix: save name ลง credit ตั้งแต่ point ที่ได้ name → flow อื่นใช้ผ่าน credit
         FortuneUserCredit::rememberName($fromId, 'facebook', $name);
 
-        // 🔁 (2026-05-20) Returning-user detection — ผ่าน 3-day cooldown แล้ว
-        //   ถ้าเคย DM (comment OR reaction) มาก่อน → ใช้ variant ทักคนเก่า
-        $isReturning = FortuneCommentEngagement::hasAnyEngagement($fromId)
-            || FortunePostReaction::hasEverDmSuccess($fromId);
-
-        // แทนที่ placeholders
+        // 🌙 (2026-05-21) Comment reply: short text in the public comment
         $commentReply = str_replace(
             ['{name}', '{comment}'],
             [$name, $commentText],
-            $this->settings->getCommentReplyTemplate($isReturning)
+            $this->settings->getCommentReplyTemplate()
         );
-        $dmMessage = str_replace(
-            ['{name}', '{comment}'],
-            [$name, $commentText],
-            // 🎯 Phase L — ส่ง userId ให้ getCommentDmTemplate เลือก variant (stable per user)
-            // 🔁 (2026-05-20) ส่ง $isReturning เพื่อสลับชุด first-time / returning
-            $this->settings->getCommentDmTemplate($fromId, $isReturning)
-        );
+
+        // 🌙 DM message — ดวงประจำวันสั้นๆ (deterministic)
+        //   มี birth_date ใน DB → ดวงประจำวันตาม day_of_birth
+        //   ไม่มี → ทักทาย + ชวนดูดวง + promise ส่งดวงฟรีหลังจากนั้น
+        $greetingService = app(\App\Services\Fortune\FortuneGreetingService::class);
+        $dmMessage = $greetingService->buildDailyHoroscopeGreeting($fromId, $name);
 
         // 1. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
         try {
