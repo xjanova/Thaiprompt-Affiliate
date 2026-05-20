@@ -2083,17 +2083,28 @@ class FortuneChannelManager
                     // 🃏 Dynamic label ตามจำนวนไพ่ที่เปิด
                     $reading = $result['reading'] ?? null;
                     $picked = method_exists($reading, 'getCelticPickedCount') ? $reading->getCelticPickedCount() : 0;
-                    $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
                     // 🆕 (2026-05-17) ซ่อนปุ่ม "สับใหม่" เมื่อใช้ครบโควต้า 1 ครั้งแล้ว
                     $canShuffle = $reading && method_exists($reading, 'canShuffleCelticAgain') && $reading->canShuffleCelticAgain();
 
-                    $quickReplyItems = [
-                        ['type' => 'action', 'action' => ['type' => 'message', 'label' => $nextLabel, 'text' => 'พร้อม']],
-                    ];
-                    if ($canShuffle) {
-                        $quickReplyItems[] = ['type' => 'action', 'action' => ['type' => 'message', 'label' => '🔄 สับใหม่', 'text' => 'สับใหม่']];
+                    // 🛡️ (2026-05-21) Smart quick replies — ครบ 10 ใบ → แค่ "ยุติการทำนาย"
+                    //   เคสจริง: ลูกค้าเปิดครบ 10 ใบเข้า Q&A mode แล้ว แต่ปุ่ม "เปิดไพ่ใบถัดไป"
+                    //            + "สับใหม่" ยังโชว์อยู่ → ลูกค้าสับสน
+                    //   user spec: "ปุ่มเปิดไพ่ ยังอยู่ทั้งๆ ที่เปิดไพ่ครบแล้ว"
+                    //
+                    //   Format: simple {label, text} — sendMessage แปลงเป็น LINE format ภายใน
+                    $quickReplies = [];
+                    if ($picked >= 10) {
+                        // ครบ 10 ใบ — Q&A mode → ปุ่มเดียว
+                        $quickReplies[] = ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'];
+                    } else {
+                        // ยังเปิดไม่ครบ → ปุ่มเปิดไพ่ + สับใหม่ (ถ้ามีสิทธิ์) + ยกเลิก
+                        $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
+                        $quickReplies[] = ['label' => $nextLabel, 'text' => 'พร้อม'];
+                        if ($canShuffle) {
+                            $quickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
+                        }
+                        $quickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
                     }
-                    $quickReplyItems[] = ['type' => 'action', 'action' => ['type' => 'message', 'label' => '❌ ยกเลิก', 'text' => 'ยกเลิก']];
 
                     // 🚨 (2026-05-21) ENTRY LOG — กัน silent path ไม่รู้ว่า handler เคยรันไหม
                     \Log::info('LINE Celtic handler ENTRY', [
@@ -2139,17 +2150,11 @@ class FortuneChannelManager
                         }
                     }
 
-                    // 2. Push text + quick replies
-                    $fallbackQuickReplies = [['label' => $nextLabel, 'text' => 'พร้อม']];
-                    if ($canShuffle) {
-                        $fallbackQuickReplies[] = ['label' => '🔄 สับใหม่', 'text' => 'สับใหม่'];
-                    }
-                    $fallbackQuickReplies[] = ['label' => '❌ ยกเลิก', 'text' => 'ยกเลิก'];
-
+                    // 2. Push text + quick replies (smart logic จากข้างบน)
                     $textOk = false;
                     try {
                         $textOk = $lineService->sendMessage($userId, $message, [
-                            'quick_replies' => $fallbackQuickReplies,
+                            'quick_replies' => $quickReplies,
                         ]);
                         \Log::info('LINE Celtic: sendMessage (push) result', [
                             'user_id' => $userId,
