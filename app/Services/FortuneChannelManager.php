@@ -2205,9 +2205,48 @@ class FortuneChannelManager
                 })(),
 
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — เหลือแค่ "ยุติการทำนาย"
-                'celtic_question_answered', 'celtic_qa_prompt_resume' => $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
-                    ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
-                ]),
+                // 🛡️ (2026-05-21) Force push — replyMessage ไม่เสถียร (ลูกค้าจ่าย 99฿
+                //   ทำนายเสร็จที่ server แต่ไม่ส่งถึงลูกค้าบน LINE)
+                'celtic_question_answered', 'celtic_qa_prompt_resume' => (function () use ($lineService, $userId, $message, $result) {
+                    $reading = $result['reading'] ?? null;
+                    \Log::info('LINE Celtic Q&A: force push delivery', [
+                        'user_id' => $userId,
+                        'action' => $result['action'] ?? null,
+                        'reading_id' => $reading?->id,
+                        'msg_len' => mb_strlen($message),
+                    ]);
+
+                    $textOk = false;
+                    try {
+                        $textOk = $lineService->sendMessage($userId, $message, [
+                            'quick_replies' => [
+                                ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
+                            ],
+                        ]);
+                        \Log::info('LINE Celtic Q&A: sendMessage (push) result', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'success' => $textOk,
+                            'msg_preview' => mb_substr($message, 0, 100),
+                        ]);
+                    } catch (\Throwable $e) {
+                        \Log::error('LINE Celtic Q&A: sendMessage (push) exception', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+
+                    if (! $textOk) {
+                        \Log::critical('LINE Celtic Q&A: ส่งคำทำนายล้มเหลว — ลูกค้าไม่ได้รับ!', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'msg_preview' => mb_substr($message, 0, 200),
+                        ]);
+                    }
+
+                    return $textOk;
+                })(),
 
                 // 🆕 (2026-05-17) celtic_typing_only — typing delay 60-120s pattern (LINE OA ไม่มี typing indicator)
                 //   Trait dispatch SendCelticDelayedPrediction job แล้ว — channel manager no-op
@@ -2267,11 +2306,30 @@ class FortuneChannelManager
 
                 // Celtic actions ที่เป็น text-only
                 // celtic_resume_qa → resume เข้า AWAITING_QUESTION (ลูกค้าพิมพ์คำถามเอง — ไม่ใส่ปุ่ม)
+                // 🛡️ (2026-05-21) Force push — ลูกค้าต้องได้ข้อความเสมอ
                 'celtic_cancelled', 'celtic_completed', 'celtic_qa_window_expired',
                 'celtic_ai_failed', 'celtic_processing', 'celtic_disabled',
                 'celtic_question_too_short', 'celtic_pick_failed', 'celtic_reset_denied',
                 'celtic_awaiting_payment', 'celtic_bill_creation_failed',
-                'celtic_resume_qa' => $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken),
+                'celtic_resume_qa' => (function () use ($lineService, $userId, $message, $result) {
+                    \Log::info('LINE Celtic text-only: force push', [
+                        'user_id' => $userId,
+                        'action' => $result['action'] ?? null,
+                        'msg_len' => mb_strlen($message),
+                    ]);
+
+                    try {
+                        return $lineService->sendMessage($userId, $message);
+                    } catch (\Throwable $e) {
+                        \Log::error('LINE Celtic text-only push exception', [
+                            'user_id' => $userId,
+                            'action' => $result['action'] ?? null,
+                            'error' => $e->getMessage(),
+                        ]);
+
+                        return false;
+                    }
+                })(),
 
                 // 📚 (2026-05-09) ประวัติบิล — ส่งข้อความ list + Quick Reply ปุ่มเลือกบิล
                 //   handleMyBills คืน quick_replies = [['title','text','payload']] (FB format)
