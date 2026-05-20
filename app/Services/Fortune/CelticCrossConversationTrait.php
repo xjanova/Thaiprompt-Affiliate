@@ -1458,6 +1458,19 @@ trait CelticCrossConversationTrait
         //        Job ตัวก่อนหน้าจะเห็น last_at ยังใหม่ → skip (job ตัวสุดท้าย flush)
         $debounceSeconds = (int) ($this->settings->message_debounce_seconds ?? 3);
         $celticQuestionsUsed = (int) ($reading->celtic_questions_used ?? 0);
+
+        // 🚨 (2026-05-20 hotfix) ถ้า queue=sync → delay() ไม่ทำงาน → job รัน immediate
+        //    → isReadyToFlush returns false → bot silent ตลอดกาล
+        //    Workaround: bypass debounce ใน sync mode → reply ทันที
+        //    Permanent: เปลี่ยน QUEUE_CONNECTION เป็น database/redis + queue:work
+        if ($debounceSeconds > 0 && config('queue.default') === 'sync') {
+            \Illuminate\Support\Facades\Log::warning(
+                'Celtic Q2+: queue=sync detected — bypass debounce กัน bot silent',
+                ['reading_id' => $reading->id, 'window' => $debounceSeconds]
+            );
+            $debounceSeconds = 0;
+        }
+
         if ($debounceSeconds > 0 && $celticQuestionsUsed >= 1) {
             try {
                 $platform = ! empty($reading->facebook_user_id) ? 'facebook' : 'line';

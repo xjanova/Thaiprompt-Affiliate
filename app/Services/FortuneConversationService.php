@@ -11919,6 +11919,19 @@ PROMPT;
             //   Reference: feedback_never_interrupt_payment_to_prediction_flow.md
             if (! $bypassBuffer) {
                 $debounceSeconds = (int) ($this->settings->message_debounce_seconds ?? 3);
+
+                // 🚨 (2026-05-20 hotfix) ถ้า queue=sync → delay() ไม่ทำงาน → job รัน immediate
+                //    → isReadyToFlush returns false (buffer ยังใหม่) → bot silent ตลอดกาล
+                //    Workaround: bypass debounce ใน sync mode → reply ทันที
+                //    Permanent: เปลี่ยน QUEUE_CONNECTION เป็น database/redis + queue:work
+                if ($debounceSeconds > 0 && config('queue.default') === 'sync') {
+                    Log::warning(
+                        'Fortune Chat: queue=sync detected — bypass debounce กัน bot silent',
+                        ['user_id' => $userId, 'window' => $debounceSeconds]
+                    );
+                    $debounceSeconds = 0;
+                }
+
                 if ($debounceSeconds > 0 && $this->shouldBufferChatMessage($messageText)) {
                     try {
                         $buffer = app(\App\Services\Fortune\MessageBuffer::class);
