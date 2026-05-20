@@ -2106,36 +2106,15 @@ class FortuneChannelManager
                         'msg_len' => mb_strlen($message),
                     ]);
 
-                    // 🚀 Single replyMessage with [image, text+quickReply] — ฟรี + เร็ว
-                    $messages = [];
-                    if (! empty($result['tarot_image_url'])) {
-                        $imageUrl = $lineService->ensureHttps($result['tarot_image_url']);
-                        $messages[] = [
-                            'type' => 'image',
-                            'originalContentUrl' => $imageUrl,
-                            'previewImageUrl' => $imageUrl,
-                        ];
-                    }
-                    $messages[] = [
-                        'type' => 'text',
-                        'text' => mb_substr($message, 0, 4900),  // LINE text max 5000
-                        'quickReply' => ['items' => $quickReplyItems],
-                    ];
-
                     // 🛡️ (2026-05-21) Force push for picking — replyMessage ไม่เสถียร
                     //   เคสจริง: ลูกค้าเลือกใบต่อไป → DB ขยับ แต่ LINE ไม่เด้ง
-                    //   admin ต้อง manual kick ทุกใบ (kick=push ทำงานได้ตลอด)
-                    //   Hypothesis: replyToken อาจถูก consume ที่อื่น / format ผิด / silent drop
-                    //   Trade-off: ใช้ push quota (free 500/month) แทน reply ฟรี
-                    //              แต่ guarantee ลูกค้าเห็นไพ่ที่จ่าย 99฿
-                    //   ❄️ Soft fallback: ลอง reply ก่อน 1 ครั้ง — ถ้า return true ดูเหมือนสำเร็จ
-                    //                      แต่บังคับ push ตามหลังเพื่อ guarantee delivery
-                    //                      (LINE deduplicate ตาม content — ถ้า reply ส่งสำเร็จจริง, push จะซ้ำ)
-                    //   🔁 (Updated) Skip reply ทั้งหมด — push only (เพราะ kick (=push) ทำงาน 100%)
+                    //   ROOT CAUSE 2026-05-21 (commit f7442a914 first attempt):
+                    //     ensureHttps() เป็น protected → เรียกจาก channel manager throw 500
+                    //     → silent error → ลูกค้าไม่เห็นอะไรเลย
+                    //   Fix: ลบ messages array (ไม่ใช้แล้ว) — push ตรง sendImage handle HTTPS เอง
                     \Log::info('LINE Celtic: SKIP reply → push only (force push mode)', [
                         'user_id' => $userId,
                         'reading_id' => $reading?->id,
-                        'reason' => 'reply unreliable per 2026-05-21 incident',
                     ]);
 
                     // 1. Push image
