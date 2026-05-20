@@ -915,56 +915,10 @@ PROMPT;
             ? $userText
             : 'เจ้าชะตาส่งรูปนี้มาให้แม่หมอ — ช่วยวิเคราะห์ในบริบทคำทำนายเซลติกที่เปิดไพ่ไว้';
 
-        // 📥 (2026-05-20) Download → base64 data URL ถ้าเป็น http(s) URL
-        //   เหตุผล: OpenAI Vision API ดึง external URL ไม่ได้ (FB CDN/Wikipedia block)
-        //   verified bug: OpenAI return "invalid_image_url" สำหรับ external URL ทุกครั้ง
-        //   วิธีแก้: เราดาวน์โหลดเอง + ใส่ User-Agent → encode base64 → ส่ง data URL ให้ OpenAI
-        //   ✅ test ผ่าน: gpt-5.5 accept data URL + ตอบเป็นไทยปกติ
-        if (str_starts_with($imageData, 'http://') || str_starts_with($imageData, 'https://')) {
-            try {
-                $imgResp = Http::withHeaders([
-                    'User-Agent' => 'Mozilla/5.0 (compatible; ThaipromptBot/1.0)',
-                    'Accept' => 'image/*',
-                ])->timeout(15)->get($imageData);
-
-                if ($imgResp->status() !== 200 || strlen($imgResp->body()) < 500) {
-                    Log::warning('FortuneAIService chatWithImage: download fail', [
-                        'status' => $imgResp->status(),
-                        'size' => strlen($imgResp->body()),
-                        'url_prefix' => mb_substr($imageData, 0, 100),
-                    ]);
-
-                    return null;
-                }
-
-                // Detect MIME — strip charset suffix ถ้ามี (e.g. "image/jpeg; charset=binary")
-                $contentType = $imgResp->header('Content-Type') ?: 'image/jpeg';
-                $mime = trim(explode(';', $contentType)[0]);
-
-                // 🛡️ Guard: ต้องเป็น image จริง (กัน HTML error page → "Invalid MIME")
-                if (! str_starts_with($mime, 'image/')) {
-                    Log::warning('FortuneAIService chatWithImage: non-image MIME', [
-                        'mime' => $mime,
-                        'url_prefix' => mb_substr($imageData, 0, 100),
-                    ]);
-
-                    return null;
-                }
-
-                $imageData = 'data:'.$mime.';base64,'.base64_encode($imgResp->body());
-
-                Log::debug('FortuneAIService chatWithImage: downloaded + base64 encoded', [
-                    'mime' => $mime,
-                    'size_bytes' => strlen($imgResp->body()),
-                ]);
-            } catch (\Throwable $dlErr) {
-                Log::warning('FortuneAIService chatWithImage: download exception', [
-                    'error' => $dlErr->getMessage(),
-                    'url_prefix' => mb_substr($imageData, 0, 100),
-                ]);
-
-                return null;
-            }
+        // 📥 (2026-05-20) Download image → base64 data URL — DRY helper สำหรับ OpenAI/Gemini
+        $imageData = $this->ensureImageAsDataUrl($imageData, 'chatWithImage');
+        if ($imageData === null) {
+            return null;
         }
 
         try {
@@ -1015,6 +969,225 @@ PROMPT;
      * Note: Responses API (GPT-5+) ก็รองรับ multimodal — ใช้ format เดียวกัน
      *       แต่เริ่มจาก Chat Completions เพราะรองรับ wide model range (gpt-4o, gpt-5)
      */
+    /**
+     * 🆕 (2026-05-20 Phase 3b) Download + base64 image — DRY helper
+     *
+     * เหตุผล: ทั้ง OpenAI และ Gemini vision ดึง external URL ไม่ได้ — ต้อง base64 ฝั่งเรา
+     * Reuse: chatWithImage (OpenAI) + chatWithImageGemini + ImageIntentClassifier
+     *
+     * @param  string  $imageData  URL (http/https) หรือ data:URL อยู่แล้ว
+     * @param  string  $caller  ชื่อ caller สำหรับ log
+     * @return string|null  data:image/...;base64,... หรือ null ถ้า fail
+     */
+    protected function ensureImageAsDataUrl(string $imageData, string $caller = 'vision'): ?string
+    {
+        // ถ้าเป็น data URL อยู่แล้ว → return ทันที
+        if (str_starts_with($imageData, 'data:')) {
+            return $imageData;
+        }
+
+        // ถ้าไม่ใช่ http(s) URL — ไม่รู้จะ download ยังไง
+        if (! str_starts_with($imageData, 'http://') && ! str_starts_with($imageData, 'https://')) {
+            Log::warning("FortuneAIService {$caller}: imageData ไม่ใช่ URL หรือ data URL", [
+                'prefix' => mb_substr($imageData, 0, 80),
+            ]);
+
+            return null;
+        }
+
+        try {
+            // 🌐 User-Agent + Accept header — กัน Wikipedia/FB CDN reject
+            $imgResp = Http::withHeaders([
+                'User-Agent' => 'Mozilla/5.0 (compatible; ThaipromptBot/1.0)',
+                'Accept' => 'image/*',
+            ])->timeout(15)->get($imageData);
+
+            if ($imgResp->status() !== 200 || strlen($imgResp->body()) < 500) {
+                Log::warning("FortuneAIService {$caller}: download fail", [
+                    'status' => $imgResp->status(),
+                    'size' => strlen($imgResp->body()),
+                    'url_prefix' => mb_substr($imageData, 0, 100),
+                ]);
+
+                return null;
+            }
+
+            // Detect MIME — strip charset suffix ถ้ามี
+            $contentType = $imgResp->header('Content-Type') ?: 'image/jpeg';
+            $mime = trim(explode(';', $contentType)[0]);
+
+            // 🛡️ Guard: ต้องเป็น image จริง (กัน HTML error page)
+            if (! str_starts_with($mime, 'image/')) {
+                Log::warning("FortuneAIService {$caller}: non-image MIME", [
+                    'mime' => $mime,
+                    'url_prefix' => mb_substr($imageData, 0, 100),
+                ]);
+
+                return null;
+            }
+
+            $dataUrl = 'data:'.$mime.';base64,'.base64_encode($imgResp->body());
+
+            Log::debug("FortuneAIService {$caller}: downloaded + base64 encoded", [
+                'mime' => $mime,
+                'size_bytes' => strlen($imgResp->body()),
+            ]);
+
+            return $dataUrl;
+        } catch (\Throwable $dlErr) {
+            Log::warning("FortuneAIService {$caller}: download exception", [
+                'error' => $dlErr->getMessage(),
+                'url_prefix' => mb_substr($imageData, 0, 100),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * 🆕 (2026-05-20 Phase 3b) Gemini Vision — สำหรับ slip detection / image classifier / chat ทั่วไป
+     *
+     * Use case (ตาม user spec 2026-05-20):
+     *   • Slip detection — ลูกค้าส่งสลิปการโอนเงิน → classify เพื่อ routing ไป SMS payment
+     *   • Image classifier — แยก รูปจริง / อีโมจิ / สแปม / รูปสายดวง
+     *   • Chat ปกติ — ลูกค้าส่งรูปขณะคุย (ไม่ใช่ Celtic) → ตอบ chat
+     *
+     * Why Gemini (ไม่ใช่ OpenAI):
+     *   • Gemini Flash = ฟรี/ราคาถูก → คุ้มสำหรับ noise classification
+     *   • OpenAI สงวนสำหรับ Celtic 99฿ paid (คุณภาพมาก่อน)
+     *
+     * @param  string  $imageData  URL หรือ data:URL
+     * @param  string  $systemPrompt  system message
+     * @param  string  $userText  ข้อความที่ลูกค้าพิมพ์มากับรูป (อาจว่าง)
+     * @param  string  $apiKey  Gemini API key
+     * @param  string  $model  gemini-2.0-flash / gemini-3.x-flash / gemini-flash-latest
+     * @param  array  $config  ['temperature' => float, 'max_tokens' => int]
+     * @return array|null ['response', 'tokens_used', 'provider', 'model']
+     */
+    public function chatWithImageGemini(
+        string $imageData,
+        string $systemPrompt,
+        string $userText = '',
+        ?string $apiKey = null,
+        ?string $model = null,
+        array $config = []
+    ): ?array {
+        // 1. Download → base64 (Gemini ก็ดึง external URL ไม่ได้ในหลายกรณี — ทำ base64 เสมอเพื่อความสม่ำเสมอ)
+        $dataUrl = $this->ensureImageAsDataUrl($imageData, 'chatWithImageGemini');
+        if ($dataUrl === null) {
+            return null;
+        }
+
+        // 2. แยก MIME + base64 data ออกจาก data URL
+        if (! preg_match('/^data:([^;]+);base64,(.+)$/s', $dataUrl, $m)) {
+            Log::warning('FortuneAIService chatWithImageGemini: parse data URL failed');
+
+            return null;
+        }
+        $mimeType = $m[1];
+        $base64Data = $m[2];
+
+        // 3. Resolve key + model (ใช้ Pool ถ้าไม่ระบุ — ขอ chat purpose เพราะถูกกว่า sensitive)
+        if (empty($apiKey) || empty($model)) {
+            $poolService = new \App\Services\AiApiKeyPoolService;
+            $geminiKey = $poolService->acquireKey('gemini', 'chat')
+                ?: $poolService->acquireKey('gemini', null);
+
+            if (! $geminiKey) {
+                Log::warning('FortuneAIService chatWithImageGemini: ไม่มี Gemini key พร้อมใช้');
+
+                return null;
+            }
+
+            $apiKey = $apiKey ?: $geminiKey->api_key;
+            $model = $model ?: ($geminiKey->resolveModel() ?? 'gemini-2.0-flash');
+        }
+
+        $userText = trim($userText) !== '' ? $userText : 'อธิบายสิ่งที่เห็นในรูป';
+
+        try {
+            $startTime = microtime(true);
+
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+
+            $genConfig = [
+                'temperature' => $config['temperature'] ?? 0.5,
+                'topK' => 40,
+                'topP' => 0.95,
+                'maxOutputTokens' => $config['max_tokens'] ?? 800,
+            ];
+            // 🐛 (2026-05-02) ปิด thinking สำหรับ Gemini 2.5+
+            if (str_contains($model, '2.5') || str_contains($model, '3.')) {
+                $genConfig['thinkingConfig'] = ['thinkingBudget' => 0];
+            }
+
+            $payload = [
+                'system_instruction' => [
+                    'parts' => [['text' => $systemPrompt]],
+                ],
+                'contents' => [[
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => $userText],
+                        ['inline_data' => [
+                            'mime_type' => $mimeType,
+                            'data' => $base64Data,
+                        ]],
+                    ],
+                ]],
+                'generationConfig' => $genConfig,
+            ];
+
+            $response = Http::timeout($this->geminiTimeoutFor(self::CHAT_PROVIDER_TIMEOUT, $model))->post($url, $payload);
+
+            if (! $response->successful()) {
+                $errBody = $response->json();
+                Log::warning('FortuneAIService chatWithImageGemini: API error', [
+                    'status' => $response->status(),
+                    'error' => $errBody['error']['message'] ?? mb_substr($response->body(), 0, 300),
+                    'model' => $model,
+                ]);
+
+                return null;
+            }
+
+            $data = $response->json();
+            $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+            if (empty(trim($text))) {
+                Log::warning('FortuneAIService chatWithImageGemini: empty response', ['model' => $model]);
+
+                return null;
+            }
+
+            $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+
+            Log::info('FortuneAIService chatWithImageGemini สำเร็จ', [
+                'provider' => 'gemini',
+                'model' => $model,
+                'response_time_ms' => $responseTime,
+                'tokens' => $data['usageMetadata']['totalTokenCount'] ?? 0,
+                'response_preview' => mb_substr($text, 0, 80),
+            ]);
+
+            return [
+                'response' => trim($text),
+                'tokens_used' => $data['usageMetadata']['totalTokenCount'] ?? 0,
+                'input_tokens' => $data['usageMetadata']['promptTokenCount'] ?? 0,
+                'output_tokens' => $data['usageMetadata']['candidatesTokenCount'] ?? 0,
+                'provider' => 'gemini',
+                'model' => $model,
+            ];
+        } catch (\Throwable $e) {
+            Log::warning('FortuneAIService chatWithImageGemini ล้มเหลว', [
+                'model' => $model,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
     protected function callVisionOpenAI(string $imageData, string $systemPrompt, string $userText, string $apiKey, string $model, array $config): array
     {
         $url = 'https://api.openai.com/v1/chat/completions';
