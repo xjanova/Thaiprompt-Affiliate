@@ -1283,6 +1283,18 @@ class FacebookWebhookController extends Controller
         //      - debug/analytics ใน RAG Q&A
         $pageId = $messaging['sender']['id'] ?? null;
 
+        // 🔍 (2026-05-20) Diagnostic log — confirm echo arrival + state
+        //    ใช้ตรวจว่า FB ส่ง echo มาจริงไหม, และเหตุผลที่ skip (ถ้ามี)
+        \Illuminate\Support\Facades\Log::info('🟢 FB Echo received', [
+            'recipient_id' => $recipientId,
+            'page_id' => $pageId,
+            'app_id' => $appId,
+            'is_human_typed' => empty($appId),
+            'text_preview' => mb_substr($messageText, 0, 80),
+            'capture_enabled' => (bool) ($this->settings->admin_qa_capture_enabled ?? true),
+            'handover_enabled' => (bool) ($this->settings->admin_handover_enabled ?? true),
+        ]);
+
         if (empty($recipientId)) {
             return;
         }
