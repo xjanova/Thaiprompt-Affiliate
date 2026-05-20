@@ -281,22 +281,33 @@ class CelticCrossService
             //     • TYPE:D = เล่าเรื่อง/บริบท → ไม่ save + ไม่นับ
             //   Fallback: ถ้าไม่มี token → default 'A' (เพื่อปลอดภัย — ลูกค้าจ่ายเงินต้องได้ Q)
             //
-            // 🛡️ (2026-05-20 hotfix) Strip TYPE token ทุกที่ ไม่ใช่แค่ start
-            //   เคสจริง: AI ใส่ "หมอจันทราว่า : [TYPE: C] ..." หรือ "**[TYPE:A]**"
-            //            → regex ^\s*\[ ไม่ match → token หลุดให้ลูกค้าเห็น
-            //   Fix: ใช้ pattern กว้าง รับ:
-            //     - markdown wrapper (**, *) รอบ token
-            //     - bracket types ต่าง (Western [, Thai [, CJK 【】)
-            //     - prefix อะไรก็ตามก่อน token
-            //     - multiple occurrences ในข้อความเดียว
-            $typePattern = '/\*{0,2}[\[\【]\s*TYPE\s*:\s*([A-D])\s*[\]\】]\*{0,2}/iu';
+            // 🛡️ (2026-05-20 hotfix v2) Strip TYPE token — bulletproof variant
+            //   เคสจริง: ลูกค้าเห็น "[TYPE:A]" / "[TYPE: C]" / "**[TYPE:A]**" / "หมอว่า : [TYPE:C]"
+            //   อาจมี zero-width char / fullwidth bracket / nbsp ปนมา → regex เดิมพลาด
+            //
+            // 2-pass strategy:
+            //   Pass 1: normalize — remove zero-width chars + map fullwidth bracket → ASCII
+            //   Pass 2: strip ทุก variant ของ TYPE token (bracket optional, ทุกตำแหน่ง)
+            //
+            // detection ก่อน strip — จับ type จาก response ดิบ
             $responseType = 'A';
-            if (preg_match($typePattern, $response, $tm)) {
+            if (preg_match('/TYPE\s*[:：]\s*([A-D])/iu', $response, $tm)) {
                 $responseType = strtoupper($tm[1]);
             }
-            // Strip ทุก token (อาจมีหลายตัวในข้อความเดียว) + cleanup ช่องว่าง/บรรทัดซ้ำ
-            $response = preg_replace($typePattern, '', $response);
+
+            // Pass 1: remove zero-width chars (U+200B, U+200C, U+200D, U+FEFF, U+00A0 nbsp)
+            $response = preg_replace('/[\x{200B}-\x{200D}\x{FEFF}\x{00A0}]/u', '', $response);
+
+            // Pass 2: strip TYPE token ทุกรูปแบบ
+            //   - bracket: [ ] หรือ 【 】 หรือ ［ ］ (fullwidth) หรือไม่มี bracket
+            //   - markdown wrapper: ** ** หรือ * * หรือ ` ` รอบ token
+            //   - colon: : (ASCII) หรือ ： (fullwidth)
+            $typeStripPattern = '/[`*]{0,3}[\[\【\［\「]?\s*TYPE\s*[:：]\s*[A-D]\s*[\]\】\］\」]?[`*]{0,3}/iu';
+            $response = preg_replace($typeStripPattern, '', $response);
+
+            // Cleanup leftover whitespace + empty lines
             $response = trim(preg_replace('/\n{3,}/', "\n\n", (string) $response));
+            $response = trim(preg_replace('/^\s*[:：]\s*/u', '', $response)); // กรณี "หมอว่า :" เหลือ colon ลอย
 
             // 🚫 Non-prediction (B/C/D) — ไม่บันทึก row + ไม่ increment counter
             //   user spec 2026-05-20: "นับเป็นคำถามที่ต้องบันทึกคือคำถามที่เราตอบเพื่อทำนายเท่านั้น"
