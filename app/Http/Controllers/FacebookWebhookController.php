@@ -1506,10 +1506,40 @@ class FacebookWebhookController extends Controller
                 }
             }
 
+            // 🛡️ (2026-05-20 Patch 1+2) Celtic paid 99฿ bypass — ตรวจก่อนทุกอย่าง
+            //   เหตุผล: ลูกค้าจ่าย 99฿ ส่งรูป → ต้องได้ vision ทันที ห้ามถูก spam block / classify ผิด
+            //   • Patch 1: skip spam guard (paid → ไม่ใช่ spam แม้ส่งหลายรูป)
+            //   • Patch 2: skip classifier (Celtic + picked=10 = ส่งให้ vision ตรง ไม่เสี่ยง classify ผิด)
+            $isCelticPaidVision = false;
+            if ($userImageUrl) {
+                $celticPaidCheck = FortuneReading::where('facebook_user_id', $senderId)
+                    ->whereIn('conversation_status', [
+                        FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                        FortuneReading::STATUS_CELTIC_GENERATING,
+                    ])
+                    ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                    ->latest()
+                    ->first();
+
+                if ($celticPaidCheck && $celticPaidCheck->getCelticPickedCount() >= 10) {
+                    $isCelticPaidVision = true;
+                    Log::info('FB: Celtic paid vision path → bypass spam+classifier', [
+                        'sender_id' => $senderId,
+                        'reading_id' => $celticPaidCheck->id,
+                    ]);
+
+                    // ส่ง vision ตรง — ไม่ผ่าน spam/classifier
+                    $this->handleCelticVisionImage($senderId, $userImageUrl, $messageText, $celticPaidCheck);
+
+                    return;
+                }
+            }
+
             // 🚫 (2026-05-20 Phase 3b.5) Spam guard — ก่อน dispatch อื่น
             //   ลูกค้าส่งรูปรัวๆ (>= 3/10s) → silent cooldown 60s
             //   sustained (>= 5/60s) → cooldown 5 นาที + alert admin
             //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
+            //   ⚠️ Patch 1: Celtic paid bypass แล้ว — มาถึงตรงนี้ = non-paid Celtic / no active
             if ($userImageUrl) {
                 try {
                     $spamGuard = app(ImageSpamGuard::class);
@@ -1550,6 +1580,7 @@ class FacebookWebhookController extends Controller
             //     • emoji_sticker      → silent (ลูกค้าส่งสติ๊กเกอร์ไม่ต้องตอบทุกครั้ง)
             //     • nonsense           → silent
             //   Fallback: ถ้า classifier fail → fall through ไป existing logic (zero regression)
+            //   ⚠️ Patch 2: Celtic paid vision bypassed แล้ว — ตรงนี้ classify เฉพาะ non-paid path
             $intent = null;
             if ($userImageUrl) {
                 try {

@@ -160,8 +160,36 @@ class LineFortuneWebhookController extends Controller
         //   PAID / processing → "แม่หมอกำลังคำนวณ"
         //   ไม่มี active → guidance generic
         if ($messageType === 'image') {
+            // 🛡️ (2026-05-20 Patch 1+2) Celtic paid 99฿ bypass — ตรวจก่อนทุกอย่าง
+            //   เหตุผล: ลูกค้าจ่าย 99฿ ส่งรูป → ต้องได้ vision ทันที ห้ามถูก spam block / classify ผิด
+            //   • Patch 1: skip spam guard (paid → ไม่ใช่ spam แม้ส่งหลายรูป)
+            //   • Patch 2: skip classifier (Celtic + picked=10 = ส่งให้ vision ตรง ไม่เสี่ยง classify ผิด)
+            $celticPaidCheck = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+            })
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                ])
+                ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                ->latest()
+                ->first();
+
+            if ($celticPaidCheck && $celticPaidCheck->getCelticPickedCount() >= 10) {
+                Log::info('LINE: Celtic paid vision path → bypass spam+classifier', [
+                    'user_id' => $userId,
+                    'reading_id' => $celticPaidCheck->id,
+                ]);
+
+                // ส่ง vision ตรง — ไม่ผ่าน spam/classifier
+                $this->handleCelticVisionImage($userId, $messageId, $celticPaidCheck, $replyToken);
+
+                return;
+            }
+
             // 🚫 (2026-05-20 Phase 3b.5) Image spam guard — ก่อน dispatch
             //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
+            //   ⚠️ Patch 1: Celtic paid bypassed แล้ว — มาถึงตรงนี้ = non-paid path
             try {
                 $spamGuard = app(\App\Services\Fortune\ImageSpamGuard::class);
                 $spamCheck = $spamGuard->check('line', $userId);
