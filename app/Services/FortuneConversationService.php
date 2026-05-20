@@ -677,20 +677,52 @@ class FortuneConversationService
                 if ($inPredictionReading !== null) {
                     $status = $inPredictionReading->conversation_status;
 
-                    // AI กำลังทำงาน → silent_skip
+                    // AI กำลังทำงาน → silent_skip (แต่มี TTL กัน stuck)
                     if (in_array($status, FortuneReading::AI_GENERATING_STATUSES, true)) {
-                        Log::info('Fortune: in-prediction silent_skip (AI generating)', [
-                            'facebook_user_id' => $facebookUserId,
-                            'reading_id' => $inPredictionReading->id,
-                            'status' => $status,
-                            'text_preview' => mb_substr($messageText, 0, 30),
-                        ]);
+                        // 🛡️ (2026-05-20 hotfix) TTL guard — ถ้า state เก่ากว่า 90s = stuck
+                        //   เคสจริง: askQuestion throw exception → state ค้าง GENERATING
+                        //   → silent_skip ทุก message → ลูกค้าจ่ายแล้วใช้ไม่ได้
+                        //   Fix: ถ้าเก่ากว่า 90s → auto-recover state + fall through (ไม่ silent_skip)
+                        $stuckSeconds = $inPredictionReading->updated_at?->diffInSeconds(now()) ?? 0;
+                        if ($stuckSeconds > 90) {
+                            $recoverStatus = $status === FortuneReading::STATUS_CELTIC_GENERATING
+                                ? FortuneReading::STATUS_CELTIC_AWAITING_QUESTION
+                                : FortuneReading::STATUS_PAID;
 
-                        return [
-                            'action' => 'silent_skip_in_prediction',
-                            'message' => null,
-                            'reading' => $inPredictionReading,
-                        ];
+                            Log::warning('Fortune: stuck GENERATING > 90s → auto-recover state', [
+                                'facebook_user_id' => $facebookUserId,
+                                'reading_id' => $inPredictionReading->id,
+                                'status_was' => $status,
+                                'status_now' => $recoverStatus,
+                                'stuck_seconds' => $stuckSeconds,
+                            ]);
+
+                            try {
+                                $inPredictionReading->update(['conversation_status' => $recoverStatus]);
+                                $inPredictionReading->refresh();
+                                $status = $inPredictionReading->conversation_status;
+                                // fall through → continueConversation จะ route ถูก state ใหม่
+                            } catch (\Throwable $recoverErr) {
+                                Log::error('Fortune: stuck state recovery failed', [
+                                    'reading_id' => $inPredictionReading->id,
+                                    'error' => $recoverErr->getMessage(),
+                                ]);
+                            }
+                        } else {
+                            Log::info('Fortune: in-prediction silent_skip (AI generating)', [
+                                'facebook_user_id' => $facebookUserId,
+                                'reading_id' => $inPredictionReading->id,
+                                'status' => $status,
+                                'stuck_seconds' => $stuckSeconds,
+                                'text_preview' => mb_substr($messageText, 0, 30),
+                            ]);
+
+                            return [
+                                'action' => 'silent_skip_in_prediction',
+                                'message' => null,
+                                'reading' => $inPredictionReading,
+                            ];
+                        }
                     }
 
                     // รอ user input (Celtic flow) → ส่งตรงไป state handler

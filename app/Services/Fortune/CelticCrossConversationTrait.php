@@ -1551,20 +1551,52 @@ trait CelticCrossConversationTrait
             );
         }
 
+        // 🛡️ (2026-05-20 hotfix) State recovery — ถ้า askQuestion throw exception
+        //   → state ค้างที่ GENERATING → IN-PREDICTION Guard silent_skip ทุกข้อความตามมา
+        //   → บอทเงียบตลอดกาล ลูกค้าจ่าย 99฿ แล้วใช้ไม่ได้
+        //   Fix: finally block restore state เป็น AWAITING_QUESTION ทุกกรณี (ถ้าไม่สำเร็จ)
         $service = app(CelticCrossService::class);
+        $result = ['success' => false, 'message' => 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'];
+        $exceptionThrown = null;
         try {
             $result = $service->askQuestion($reading, $question);
+        } catch (\Throwable $askErr) {
+            // เก็บไว้ log/return หลัง finally — ห้าม throw ต่อ (จะทำให้ state stuck)
+            $exceptionThrown = $askErr;
+            \Log::error('Celtic: askQuestion exception (Q1 sync path) — state จะถูกคืน', [
+                'reading_id' => $reading->id,
+                'error' => $askErr->getMessage(),
+                'trace' => mb_substr($askErr->getTraceAsString(), 0, 500),
+            ]);
         } finally {
             // ปิด AI session — pings ที่ยังไม่ run จะ skip
             if ($userId) {
                 \App\Services\Fortune\FortuneAiPingDispatcher::complete($reading->id);
             }
+
+            // 🚨 State recovery — ถ้า exception หรือ success=false → คืน state ทันที
+            //   ไม่งั้น IN-PREDICTION Hard Guard จะ silent_skip ทุก message ตามมา
+            if ($exceptionThrown !== null || empty($result['success'])) {
+                try {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+                } catch (\Throwable $stateErr) {
+                    \Log::critical('Celtic: state recovery FAILED — reading stuck!', [
+                        'reading_id' => $reading->id,
+                        'error' => $stateErr->getMessage(),
+                    ]);
+                }
+            }
+        }
+
+        if ($exceptionThrown !== null) {
+            return [
+                'action' => 'celtic_ai_failed',
+                'message' => '⚠️ AI ระบบขัดข้องชั่วคราว ลองพิมพ์คำถามอีกครั้งค่ะ',
+                'reading' => $reading,
+            ];
         }
 
         if (! $result['success']) {
-            // กลับเข้า awaiting state ให้ลองใหม่
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-
             return [
                 'action' => 'celtic_ai_failed',
                 'message' => '⚠️ '.($result['message'] ?? 'AI ระบบขัดข้องชั่วคราว ลองอีกครั้งค่ะ'),
