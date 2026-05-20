@@ -78,17 +78,29 @@ class FortuneCelticKick extends Command
             return 1;
         }
 
-        // Clear all spam guards
+        // Clear all spam guards (LINE + FB)
         $cleared = [
             'fortune:silent',
             'fortune:rapid',
             'fortune:processing',
             'fortune:has_paid_active',
+            // FB spam guard keys
+            'fortune:spam:silenced',
+            'fortune:spam:rate',
+            'fortune:spam:repeat',
         ];
         foreach ($cleared as $k) {
             Cache::forget("{$k}:{$uid}");
         }
-        $this->info('✅ Cleared spam guards');
+        // 🛡️ (2026-05-21) LINE spam guard keys (different format ":line:" suffix)
+        //   เคสจริง: ลูกค้า LINE Celtic พิมพ์ "พร้อม" 5 ครั้ง → silenced 1 ชม.
+        //   kick ต้องลบเพื่อให้ webhook ตอบลูกค้าได้
+        if ($platform === 'line') {
+            Cache::forget("fortune:spam:silenced:line:{$uid}");
+            Cache::forget("fortune:spam:strikes:line:{$uid}");
+            Cache::forget("fortune:spam:last_text:line:{$uid}");
+        }
+        $this->info('✅ Cleared spam guards (including LINE spam keys)');
 
         // อ่าน card ล่าสุด
         $last = end($cards);
