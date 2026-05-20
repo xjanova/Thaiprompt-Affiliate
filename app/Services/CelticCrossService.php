@@ -280,11 +280,23 @@ class CelticCrossService
             //     • TYPE:C = chitchat สั้น → ไม่ save + ไม่นับ
             //     • TYPE:D = เล่าเรื่อง/บริบท → ไม่ save + ไม่นับ
             //   Fallback: ถ้าไม่มี token → default 'A' (เพื่อปลอดภัย — ลูกค้าจ่ายเงินต้องได้ Q)
+            //
+            // 🛡️ (2026-05-20 hotfix) Strip TYPE token ทุกที่ ไม่ใช่แค่ start
+            //   เคสจริง: AI ใส่ "หมอจันทราว่า : [TYPE: C] ..." หรือ "**[TYPE:A]**"
+            //            → regex ^\s*\[ ไม่ match → token หลุดให้ลูกค้าเห็น
+            //   Fix: ใช้ pattern กว้าง รับ:
+            //     - markdown wrapper (**, *) รอบ token
+            //     - bracket types ต่าง (Western [, Thai [, CJK 【】)
+            //     - prefix อะไรก็ตามก่อน token
+            //     - multiple occurrences ในข้อความเดียว
+            $typePattern = '/\*{0,2}[\[\【]\s*TYPE\s*:\s*([A-D])\s*[\]\】]\*{0,2}/iu';
             $responseType = 'A';
-            if (preg_match('/^\s*\[\s*TYPE\s*:\s*([A-D])\s*\]\s*/iu', $response, $tm)) {
+            if (preg_match($typePattern, $response, $tm)) {
                 $responseType = strtoupper($tm[1]);
-                $response = trim(preg_replace('/^\s*\[\s*TYPE\s*:\s*[A-D]\s*\]\s*/iu', '', $response));
             }
+            // Strip ทุก token (อาจมีหลายตัวในข้อความเดียว) + cleanup ช่องว่าง/บรรทัดซ้ำ
+            $response = preg_replace($typePattern, '', $response);
+            $response = trim(preg_replace('/\n{3,}/', "\n\n", (string) $response));
 
             // 🚫 Non-prediction (B/C/D) — ไม่บันทึก row + ไม่ increment counter
             //   user spec 2026-05-20: "นับเป็นคำถามที่ต้องบันทึกคือคำถามที่เราตอบเพื่อทำนายเท่านั้น"
