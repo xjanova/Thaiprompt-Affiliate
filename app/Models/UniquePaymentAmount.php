@@ -106,15 +106,39 @@ class UniquePaymentAmount extends Model
         return \Illuminate\Support\Facades\DB::transaction(function () use (
             $baseAmount, $transactionId, $transactionType, $expiryMinutes, $maxPending
         ) {
-            // ลบ reservations ที่หมดอายุ (ไม่ใช่ update เพราะจะ violate unique constraint)
+            // 🔧 (2026-05-21) Mark expired แทน DELETE — กัน orphan FK ใน fortune_readings
+            //   เคสบั๊ก (Bill FTU-260521-F3826):
+            //     1. ลูกค้าสร้างบิล 39.80 → UPA #777 reserved
+            //     2. ลูกค้าโอนช้ากว่า 30 นาที (UPA expired)
+            //     3. คนอื่นสร้างบิลใหม่ → generate() ลบ UPA #777
+            //     4. SMS ของลูกค้ามาถึง (ใน grace 60 นาที) → findMatch() Path 2
+            //        หา UPA reserved/expired ไม่เจอ (#777 ถูกลบไปแล้ว)
+            //     5. บิลค้าง pending_payment ตลอดกาล — admin force fix ผ่าน tinker
+            //   Migration 2026_02_05_180500 ลบ unique constraint บน (base_amount,
+            //   decimal_suffix, status) ไปแล้ว → update status='expired' ปลอดภัย
+            //   findMatch() Path 2 (whereIn['reserved','expired']) จะหา UPA เจอ
             static::where('status', 'reserved')
                 ->where('expires_at', '<=', now())
-                ->delete();
+                ->update(['status' => 'expired']);
 
-            // ลบ expired records เก่าๆ ที่ไม่จำเป็นแล้ว (เก่ากว่า 24 ชั่วโมง)
-            static::where('status', 'expired')
-                ->where('updated_at', '<', now()->subDay())
-                ->delete();
+            // ลบ expired records เก่าๆ เฉพาะที่ไม่ถูกอ้างอิงใน fortune_readings
+            // (เก่ากว่า 7 วัน + ไม่มี orphan FK risk)
+            //   ⚠️ ก่อนหน้านี้ใช้ 1 วัน — ผ่อนเป็น 7 วัน เพื่อให้ grace recovery + admin review ทัน
+            $candidateIds = static::where('status', 'expired')
+                ->where('updated_at', '<', now()->subDays(7))
+                ->pluck('id')
+                ->toArray();
+            if (! empty($candidateIds)) {
+                // กรองออก ids ที่ยังถูกอ้างอิงใน fortune_readings (กัน orphan FK)
+                $stillReferenced = \App\Models\FortuneReading::whereIn('unique_payment_amount_id', $candidateIds)
+                    ->pluck('unique_payment_amount_id')
+                    ->unique()
+                    ->toArray();
+                $safeToDelete = array_diff($candidateIds, $stillReferenced);
+                if (! empty($safeToDelete)) {
+                    static::whereIn('id', $safeToDelete)->delete();
+                }
+            }
 
             // ปัดเศษ base_amount เป็นจำนวนเต็มเพื่อให้ทศนิยมใช้เป็น suffix เท่านั้น
             $intBaseAmount = intval($baseAmount);
