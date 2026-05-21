@@ -13561,6 +13561,17 @@ output คือ *เรื่องเล่ากระชับ เฉพา�
 
 🇹🇭 ภาษาไทยอบอุ่น เหมือนแม่หมอนั่งคุย — *ไม่ใช่เลคเชอร์โหราศาสตร์*
 
+⚠️ **OUTPUT FORMAT — บังคับเข้มที่สุด**:
+   output คือกล่องคำทำนายเดียว ภาษาไทย ที่ลูกค้าจะอ่านโดยตรง
+   🚫 *ห้ามเด็ดขาด* แสดง label/header ภาษาอังกฤษ เช่น:
+      "Revision Sec A:*", "Section A:", "Sec A: Mercury (Tanu)...", "Sec B: Transit Moon...",
+      "List of planets used now:", "Perfect. Zero overlap of planets.",
+      "No topic-based paragraphs?* Yes", "No forbidden words?* Checked",
+      "Used 'จะ', 'คือ'", "Specific timelines", "Checked.", "Confirmed."
+   🚫 *ห้าม* รายงานการตรวจสอบตัวเอง / self-review / checklist / chain-of-thought
+   🚫 *ห้าม* ใส่คำทำนายในเครื่องหมายคำพูด "..." (เขียนตรงๆ ไม่ต้องใส่ quotes)
+   ✅ เริ่มต้นด้วย Section A หรือ Section B ตามที่กำหนด — เริ่มเลย ไม่มี preamble
+
 ตอนนี้ — ทำนายเฉพาะคำถามที่ {question_number} เท่านั้น
 PROMPT;
     }

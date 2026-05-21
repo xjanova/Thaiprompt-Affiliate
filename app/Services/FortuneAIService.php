@@ -607,12 +607,17 @@ class FortuneAIService
      *   - `(ลูกค้าคนนี้: คุณXXX / เพศ ชาย / บุคลิก: เครียด / เคยคุยเรื่อง: ...)`
      *      — AI เรียบเรียง persona block ใหม่เป็น paren + "/" คั่น
      *
-     * **กลยุทธ์ 4 ชั้น:**
+     * **กลยุทธ์ 5 ชั้น:**
      *   1. Whitelist-based bracket strip — ลบทุก `[XXX_YYY ...]` ที่ ไม่ใช่ intended action tag
      *      (intended: OFFER_FORTUNE, DEEP_READING, ASK_SAVE, USE_STRIPE — caller parser ใช้)
      *   2. Persona pseudo-format strip — `[👤 ...]` หรือ `(👤 ...)` หรือ `(ลูกค้าคนนี้: ...)`
      *   3. Bullet-line strip — `• บุคลิก: ...` / `• เคยคุยเรื่อง: ...` (จาก toAiContextBlock format)
-     *   4. Whitespace cleanup
+     *   4. English meta-review/checklist strip (2026-05-21 v2) —
+     *      ลูกค้าวรวิทย์ FTU-260521-Z6925 เห็น "Revision Sec A:* ...",
+     *      "List of planets used now:", "Sec A: Mercury (Tanu)...",
+     *      "Perfect. Zero overlap of planets.", "No forbidden words?* Checked.",
+     *      "Specific timelines" ฯลฯ — AI หลอน chain-of-thought / self-review เป็นอังกฤษ
+     *   5. Whitespace cleanup
      *
      * Static + public — เรียกได้จาก FortuneConversationService::getHistoryForAI()
      * เพื่อ sync pattern ระหว่าง output sanitizer กับ history sanitizer
@@ -662,7 +667,44 @@ class FortuneAIService
         $bulletLinePattern = '/^[ \t]*[•·]\s*(?:บุคลิก|เคยคุยเรื่อง|ชอบ|ไม่ชอบ|สไตล์การคุย|เพศ|งาน|อายุ|tone|formality|emoji|score รบกวน)[:：][^\n]*\n?/um';
         $cleaned = preg_replace($bulletLinePattern, '', $cleaned ?? $text);
 
-        // ========== ชั้น 3: Whitespace cleanup ==========
+        // ========== ชั้น 3 (2026-05-21 v2): English meta-review / checklist strip ==========
+        //   เคสจริง: ลูกค้าวรวิทย์ FTU-260521-Z6925 (Deep 39฿ Q1) เห็นคำทำนายมี:
+        //     Revision Sec A:* "ลึกๆ ในใจตอนนี้ เจ้าชะตา..."  ← prefix label
+        //     List of planets used now:                       ← English header
+        //     Sec A: Mercury (Tanu), Ketu (Patni), Saturn ... ← English planet mapping
+        //     Sec B: Transit Moon (Putta), Transit Rahu ...
+        //     Perfect. Zero overlap of planets.               ← AI self-praise
+        //     No topic-based paragraphs?* Yes, paragraphs ... ← self-check Q&A
+        //     No forbidden words?* Checked. No "อาจจะ" ...   ← self-check Q&A
+        //     Specific timelines                              ← lonely English check
+        //
+        //   AI ทำตามกฎใน prompt (ห้ามดาวซ้ำ, ห้ามคำคลุมเครือ) แล้ว "รายงาน" การปฏิบัติตาม
+        //   ออกมาเป็นภาษาอังกฤษ — เหมือน chain-of-thought ที่หลุดออกมา
+        //   วิธีแก้: ลบทีละบรรทัดด้วย pattern แม่นยำ (กัน false positive ใน Thai prediction)
+        $metaPatterns = [
+            // 3a. "Revision Sec A:* " / "Revision Sec B:*" prefix — ลบ label, เก็บเนื้อหา
+            '/^[ \t]*Revision\s+Sec\s+[A-Z][A-Za-z0-9 _-]{0,30}:\*?\s*/um',
+            // 3b. "List of planets/cards/houses/stars/sections/tags/words [used now]:"
+            '/^[ \t]*List of (?:planets|cards|stars|houses|sections|tags|words)\s+[^\n]{0,150}\n?/uim',
+            // 3c. "Sec A: Mercury (Tanu)..." — English planet+house mapping
+            //     ต้องมี "(English-word)" ต่อท้าย → กัน false positive Thai content
+            '/^[ \t]*Sec(?:tion)?\s+[A-Z][A-Za-z0-9]*\s*:[^\n]*\([A-Z][A-Za-z]{2,}\)[^\n]*\n?/um',
+            // 3d. "Perfect. Zero overlap..." / "Perfect, All ..." — AI self-praise
+            '/^[ \t]*Perfect[\.\,]\s+(?:Zero|All|No|Each|Every)\s+[^\n]*\n?/um',
+            // 3e. "No XXX?* Yes/Checked..." — self-check Q&A
+            '/^[ \t]*(?:No|Has|Have|Is|Are|Does|Did|Each|Every|All)\s+[A-Za-z][^?\n]{0,100}\?\*?\s+(?:Yes|No|Checked|Confirmed|OK|Done)[^\n]*\n?/um',
+            // 3f. 'Used "X", "Y", ...' standalone confirmation list
+            '/^[ \t]*Used\s+["“"„][^\n]{0,300}\n?/um',
+            // 3g. "Specific timelines" / "Concrete events" — lonely English check
+            '/^[ \t]*(?:Specific|Concrete|Anchored|Verified|Validated|Reviewed|Strict(?:ly)?|Each|Every)\s+(?:timelines?|events?|planets?|paragraphs?|words?|checks?|cards?|houses?)[\.\,]?\s*$\n?/um',
+            // 3h. "Checked." / "Confirmed." / "Done." / "OK." standalone
+            '/^[ \t]*(?:Checked|Confirmed|Done|OK|Verified)[\.\,]?\s*$\n?/um',
+        ];
+        foreach ($metaPatterns as $metaPat) {
+            $cleaned = preg_replace($metaPat, '', $cleaned ?? $text);
+        }
+
+        // ========== ชั้น 4: Whitespace cleanup ==========
         //   หลัง strip มักเหลือ space/newline ค้าง — เก็บ
         if ($cleaned !== null) {
             $cleaned = preg_replace('/[ \t]{2,}/', ' ', $cleaned);  // dedupe spaces
@@ -3436,6 +3478,12 @@ PROMPT;
                     'response_time_ms' => $responseTime,
                     'score' => $keyInfo['score'] ?? 0,
                 ]);
+
+                // 🧹 (2026-05-21 v2) Sanitize ก่อน return — กัน AI leak chain-of-thought
+                //   เคส FTU-260521-Z6925: ลูกค้าวรวิทย์ได้คำทำนายมี "Revision Sec A:* ...",
+                //   "List of planets used now:", "No forbidden words?* Checked." ปนมา
+                //   path นี้ใช้ทั้ง deep prediction + free-card + chat → strip ครอบทุกเคส
+                $result = $this->sanitizeChatResult($result);
 
                 return $result;
             } catch (Exception $e) {
