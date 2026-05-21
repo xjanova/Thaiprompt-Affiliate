@@ -2976,6 +2976,8 @@ class SmsPaymentController extends Controller
         $validator = Validator::make($request->all(), [
             'bill_reference' => 'required|string|max:50',
             'sms_notification_id' => 'nullable|integer|min:1',
+            // 🤖 (2026-05-21) Smart mode flag — distinguish auto vs admin-confirmed
+            'auto_smart' => 'nullable|boolean',
         ]);
         if ($validator->fails()) {
             return response()->json([
@@ -2987,6 +2989,7 @@ class SmsPaymentController extends Controller
 
         $billRef = (string) $request->input('bill_reference');
         $smsId = $request->input('sms_notification_id');
+        $autoSmart = (bool) $request->input('auto_smart', false);
 
         $reading = FortuneReading::where('bill_reference', $billRef)->first();
         if (! $reading) {
@@ -3001,10 +3004,13 @@ class SmsPaymentController extends Controller
             : null;
 
         $matcher = app(\App\Services\Fortune\FortunePaymentFuzzyMatcher::class);
+        $contextLabel = $autoSmart
+            ? "device={$device->device_id} via Android SMART AUTO (no admin click)"
+            : "device={$device->device_id} via Android orphan manual match";
         $ok = $matcher->confirmMatchByAdmin(
             $reading,
             $sms,
-            "device={$device->device_id} via Android orphan match"
+            $contextLabel
         );
 
         if (! $ok) {
