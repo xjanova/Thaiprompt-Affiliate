@@ -1969,9 +1969,10 @@ class FortuneConversationService
                         // ✅ ใหม่: ตอบข้อความทั่วไป + ชวนดูดวง (ไม่สร้าง FortuneReading)
                         // 🎯 Phase D — ใช้ action 'welcome_guide_button' เพื่อให้ controller ส่ง quick reply
                         //    ชี้ไปที่ปุ่ม 💎 ดูดวงละเอียด ชัดเจน (แทนคำว่า "พิมพ์")
+                        // 🩹 (2026-05-21 v2) context-aware — กัน "สวัสดี" โผล่กลางสนทนา
                         return [
                             'action' => 'welcome_guide_button',
-                            'message' => $this->buildWelcomeGuideMessage(),
+                            'message' => $this->buildWelcomeGuideMessage($this->isMidConversation($facebookUserId)),
                             'reading' => null,
                             'show_quick_replies' => true,
                         ];
@@ -7917,9 +7918,19 @@ class FortuneConversationService
      * ใช้เมื่อ AI Chat + Pool fallback ล้มเหลวหมด หรือผู้ใช้พิมพ์ข้อความที่
      * ไม่ match intent ใดๆ — เน้นบอกให้กดปุ่ม ไม่ให้ "พิมพ์ X" อย่างเดียว
      * (เพราะผู้สูงวัยมักไม่รู้ว่าต้องพิมพ์อะไร)
+     *
+     * 🩹 (2026-05-21 v2) Context-aware —
+     *   เคสจริง: ลูกค้า (FB) คุยกับบอท 3-4 turn แล้ว AI Chat fail → fallback ไป
+     *   "🌙 สวัสดีค่ะ" กลางสนทนา → ลูกค้างง (admin: "ทำไมมีสวัสดีโผล่มา ลูกค้าถามไม่ตอบ ไปสวัสดีทำไม")
+     *   Fix: ถ้า $isMidConversation = true → ไม่ทักทาย ใช้ ack ตรงประเด็น + ชี้ปุ่ม
      */
-    protected function buildWelcomeGuideMessage(): string
+    protected function buildWelcomeGuideMessage(bool $isMidConversation = false): string
     {
+        if ($isMidConversation) {
+            // 🌙 ลูกค้าคุยอยู่กลางทาง — ห้ามทักทาย ใช้ ack สั้น + ชี้ปุ่มเลือกแพ็คเกจ
+            return "🌙 อืม... ขออ่านอีกรอบนะเจ้าชะตา หรือกด 💎 ดูดวงละเอียด 39฿ / 🔮 ไพ่ 10 ใบ 99฿ ได้เลยค่ะ ✨";
+        }
+
         // 🩹 (2026-05-08 audit fix) — เปลี่ยนเป็น short friendly greeting
         //   user feedback: "ทำไมฉันไม่เห็นเอไอคุยมีแต่กล่องข้อความ"
         //   เดิม: sales pitch wall ยาวๆ + bullet list บริการ — ตาลาย
@@ -7929,6 +7940,34 @@ class FortuneConversationService
         //   ลดความรกแม้ AI fail ก็ไม่ทำให้ลูกค้ารู้สึกถูกขาย
         return "🌙 สวัสดีค่ะ\n\n"
             .'พิมพ์เรื่องที่อยากให้แม่หมอช่วยดูได้เลยนะคะ ✨';
+    }
+
+    /**
+     * 🌙 (2026-05-21 v2) ตรวจว่า user คุยกับบอทไปแล้วใน 30 นาทีล่าสุดหรือไม่
+     *
+     * ใช้กับ welcome_guide fallback — กัน "สวัสดีค่ะ" โผล่กลางสนทนา
+     *
+     * เกณฑ์ mid-conversation:
+     *   • มี LineBotConversation row + last_message_at < 30 นาที — ลูกค้ายังนั่งคุย
+     *   • OR มี history ≥ 1 assistant message ใน window — บอทเคยตอบไปแล้ว
+     *
+     * 30 นาที = ระยะ session ปกติของ Messenger; นานกว่านี้ลูกค้าน่าจะ "กลับมาใหม่"
+     */
+    protected function isMidConversation(string $userId): bool
+    {
+        try {
+            $platform = $this->detectPlatformFromUserId($userId);
+            // LineBotConversation column = `line_user_id` (legacy name) ใช้กับทุก platform
+            $conversation = \App\Models\LineBotConversation::where('line_user_id', $userId)
+                ->where('platform', $platform)
+                ->where('last_message_at', '>=', now()->subMinutes(30))
+                ->first();
+
+            return $conversation !== null;
+        } catch (\Throwable $e) {
+            // หา conversation ไม่ได้ก็ assume first-time (greeting ปกติ)
+            return false;
+        }
     }
 
     /**
@@ -8034,10 +8073,14 @@ class FortuneConversationService
             ];
         }
 
-        // ครั้งแรกใน 10 นาที → ส่ง greeting ปกติ
+        // ครั้งแรกใน 10 นาที → ส่ง greeting (context-aware)
+        // 🩹 (2026-05-21 v2) — ถ้าลูกค้าคุยมาแล้วใน 30 นาที (mid-conversation)
+        //   → buildWelcomeGuideMessage(true) คืนข้อความที่ไม่มี "สวัสดี" + ชี้ปุ่มเลย
+        //   เคสจริง: ลูกค้าถาม clarification (vip99 ดูทุกเรื่องไหม) → AI Chat fail
+        //   → fallback เดิมทักทาย "🌙 สวัสดีค่ะ" กลางสนทนา → admin ต้อง takeover เอง
         return [
             'action' => 'welcome_guide_button',
-            'message' => $this->buildWelcomeGuideMessage(),
+            'message' => $this->buildWelcomeGuideMessage($this->isMidConversation($facebookUserId)),
             'reading' => null,
             'show_quick_replies' => true,
         ];
