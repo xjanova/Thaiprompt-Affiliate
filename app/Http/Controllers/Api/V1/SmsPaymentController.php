@@ -2848,4 +2848,192 @@ class SmsPaymentController extends Controller
             return ! empty($timestamps) ? max($timestamps) : time();
         });
     }
+
+    // ================================================================
+    // 🔍 (2026-05-21) Orphan SMS → Bill Candidates (admin-side fuzzy match)
+    //
+    // Flow: admin เห็น orphan SMS ใน SmsChecker app → กด "หาบิลตรงกัน"
+    //       → app POST /orphans/find-bill-candidates
+    //       → backend return list ของ bills ที่ name+time+amount match
+    //       → admin เลือก → app POST /orphans/confirm-match
+    //       → backend approve + dispatch flow
+    //
+    // Rule (user spec 2026-05-21):
+    //   - amount: ลูกค้าโอน >= bill.base_amount (ไม่ยอมขาด)
+    //   - name fuzzy + time window
+    //   - admin ยืนยันทุกครั้ง (ไม่ auto)
+    // ================================================================
+
+    /**
+     * 🔎 POST /api/v1/sms-payment/orphans/find-bill-candidates
+     *
+     * รับ SMS info → return list ของบิลที่อาจตรงกัน (sorted by name_score desc)
+     *
+     * Body:
+     *   - amount: float (จำนวนเงินใน SMS)
+     *   - sender_name: string|null (ชื่อผู้โอน)
+     *   - sms_timestamp: string (ISO 8601)
+     *   - window_hours: int|null (default 24)
+     */
+    public function findBillCandidatesForOrphan(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (! $this->deviceCanAccessFortuneReading($device)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin devices can search fortune bills',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'amount' => 'required|numeric|min:0.01',
+            'sender_name' => 'nullable|string|max:255',
+            'sms_timestamp' => 'required|date',
+            'window_hours' => 'nullable|integer|min:1|max:168', // max 1 week
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $amount = (float) $request->input('amount');
+        $senderName = $request->input('sender_name');
+        $smsTimestamp = \Carbon\Carbon::parse($request->input('sms_timestamp'));
+        $windowHours = (int) $request->input('window_hours', 24);
+
+        $matcher = app(\App\Services\Fortune\FortunePaymentFuzzyMatcher::class);
+        $candidates = $matcher->findBillCandidatesForOrphan(
+            $amount,
+            $senderName,
+            $smsTimestamp,
+            $windowHours
+        );
+
+        $payload = array_map(function ($c) {
+            /** @var FortuneReading $r */
+            $r = $c['reading'];
+            return [
+                'bill_reference' => $r->bill_reference,
+                'reading_id' => $r->id,
+                'reading_type' => $r->reading_type,
+                'customer_name' => $r->facebook_user_name,
+                'expected_amount' => (float) ($r->uniquePaymentAmount?->unique_amount ?? $r->amount_paid),
+                'base_price' => (float) ($r->uniquePaymentAmount?->base_amount ?? 0),
+                'name_score' => $c['name_score'],
+                'time_delta_minutes' => $c['time_delta_minutes'],
+                'amount_delta' => $c['amount_delta'],
+                'bill_created_at' => $r->created_at?->toIso8601String(),
+                'platform' => $r->platform,
+            ];
+        }, $candidates);
+
+        Log::info('SMS Payment: orphan bill-candidates lookup', [
+            'device_id' => $device->device_id,
+            'amount' => $amount,
+            'sender' => $senderName,
+            'candidates_count' => count($payload),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'candidates' => $payload,
+                'count' => count($payload),
+            ],
+        ]);
+    }
+
+    /**
+     * ✅ POST /api/v1/sms-payment/orphans/confirm-match
+     *
+     * Admin ยืนยัน: ผูก SMS เข้ากับบิล + approve + dispatch flow
+     *
+     * Body:
+     *   - bill_reference: string (บิลที่เลือก)
+     *   - sms_notification_id: int|null (SMS ที่จะผูก — null = no SMS link)
+     */
+    public function confirmOrphanMatch(Request $request): JsonResponse
+    {
+        $device = $request->attributes->get('sms_checker_device');
+        if (! $device instanceof SmsCheckerDevice) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        if (! $this->deviceCanAccessFortuneReading($device)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Only admin devices can confirm bill matches',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'bill_reference' => 'required|string|max:50',
+            'sms_notification_id' => 'nullable|integer|min:1',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $billRef = (string) $request->input('bill_reference');
+        $smsId = $request->input('sms_notification_id');
+
+        $reading = FortuneReading::where('bill_reference', $billRef)->first();
+        if (! $reading) {
+            return response()->json([
+                'success' => false,
+                'message' => "ไม่พบบิล {$billRef}",
+            ], 404);
+        }
+
+        $sms = $smsId
+            ? SmsPaymentNotification::find((int) $smsId)
+            : null;
+
+        $matcher = app(\App\Services\Fortune\FortunePaymentFuzzyMatcher::class);
+        $ok = $matcher->confirmMatchByAdmin(
+            $reading,
+            $sms,
+            "device={$device->device_id} via Android orphan match"
+        );
+
+        if (! $ok) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Confirm match ล้มเหลว — เช็ค log',
+            ], 500);
+        }
+
+        // Dispatch flow ทำนาย/Celtic (เหมือน approveOrder)
+        $reading = $reading->fresh();
+        $dispatched = $this->dispatchFortuneApprovalFlow($reading, $sms);
+
+        Log::warning('💎 SMS Payment: orphan confirm-match by admin', [
+            'device_id' => $device->device_id,
+            'bill_reference' => $billRef,
+            'reading_id' => $reading->id,
+            'sms_id' => $sms?->id,
+            'dispatched' => $dispatched,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ผูก SMS เข้าบิลสำเร็จ + เริ่มส่งคำทำนาย',
+            'data' => [
+                'bill_reference' => $billRef,
+                'reading_id' => $reading->id,
+                'flow_dispatched' => $dispatched,
+            ],
+        ]);
+    }
 }

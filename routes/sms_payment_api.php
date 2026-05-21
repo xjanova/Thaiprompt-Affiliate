@@ -64,6 +64,11 @@ Route::prefix('v1/sms-payment')->group(function () {
             Route::post('/orders/bulk-approve', [SmsPaymentController::class, 'bulkApproveOrders']);
             Route::get('/orders/sync', [SmsPaymentController::class, 'syncOrders']);
 
+            // 🔍 (2026-05-21) Orphan SMS → bill fuzzy match (admin-side)
+            //   ใช้กรณี SMS เลขกลม (39, 100) ไม่จับคู่อัตโนมัติ — admin หาบิลด้วยมือ
+            Route::post('/orphans/find-bill-candidates', [SmsPaymentController::class, 'findBillCandidatesForOrphan']);
+            Route::post('/orphans/confirm-match', [SmsPaymentController::class, 'confirmOrphanMatch']);
+
             // Legacy sync (Android app เวอร์ชันเก่า)
             Route::get('/sync', [SmsPaymentController::class, 'sync']);
 

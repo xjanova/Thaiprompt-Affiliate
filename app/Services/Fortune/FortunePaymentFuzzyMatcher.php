@@ -509,4 +509,199 @@ class FortunePaymentFuzzyMatcher
     {
         return (bool) ($this->settings->enable_fuzzy_payment_match ?? false);
     }
+
+    // ================================================================
+    // 🚀 (2026-05-21) Admin-side Orphan Match — reverse lookup
+    // ใช้กรณี: admin เห็น SMS ไม่จับคู่บิล (เช่น ลูกค้าโอนเลขกลม 39 บาท)
+    //         → admin กดปุ่ม "หาบิลที่ตรงกัน" ใน SmsChecker app
+    //         → backend หา FortuneReading pending ที่ name+time match
+    //         → admin เลือก confirm → ระบบ approve ทันที
+    //
+    // ต่างจาก findCandidates() เดิม:
+    //   - เดิม: bill → หา SMS (customer side, ลูกค้าเช็คสถานะ)
+    //   - ใหม่: SMS → หา bills (admin side, manual review)
+    //
+    // Amount rule (user spec 2026-05-21):
+    //   - ลูกค้าโอน >= bill.base_amount (ราคาเต็ม 39, 99)
+    //   - ห้ามต่ำกว่า (กัน fraud โอนขาด) — ระบบใช้ admin confirm ทุกครั้ง
+    //   - ไม่จำกัดเกิน (admin ตัดสินใจ)
+    // ================================================================
+
+    /**
+     * 🔎 (2026-05-21) Reverse lookup: SMS → list of candidate bills
+     *
+     * ใช้กรณี admin เห็น orphan SMS ใน SmsChecker app, กดปุ่ม "หาบิลที่ตรงกัน"
+     *
+     * Criteria:
+     *   - reading_type IN [deep, celtic_cross] (เฉพาะบิลเสียเงิน)
+     *   - is_paid = false
+     *   - conversation_status IN [pending_payment, celtic_pending_payment]
+     *   - bill.base_amount <= sms.amount (ลูกค้าโอน >= ราคาเต็ม)
+     *   - bill.created_at <= sms.sms_timestamp (SMS ต้องมาหลังบิล)
+     *   - sms.sms_timestamp - bill.created_at <= window_hours (default 24h)
+     *
+     * Return: bills sorted by name_score DESC (best match first)
+     * แต่ละ candidate มี: bill, name_score, time_delta_minutes, amount_delta
+     *
+     * @return array<int, array{
+     *   reading: FortuneReading,
+     *   name_score: int,
+     *   time_delta_minutes: int,
+     *   amount_delta: float
+     * }>
+     */
+    public function findBillCandidatesForOrphan(
+        float $amount,
+        ?string $senderName,
+        Carbon $smsTimestamp,
+        int $windowHours = 24
+    ): array {
+        $smsName = trim((string) $senderName);
+
+        // 1) Query bills ที่ผ่านเงื่อนไข hard (amount, time, status)
+        //    name match ทำใน PHP เพราะ similar_text ไม่มีใน SQL
+        $bills = FortuneReading::query()
+            ->whereIn('reading_type', [
+                FortuneReading::READING_TYPE_DEEP ?? 'deep',
+                FortuneReading::READING_TYPE_CELTIC_CROSS,
+            ])
+            ->where('is_paid', false)
+            ->whereIn('conversation_status', [
+                FortuneReading::STATUS_PENDING_PAYMENT,
+                FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+            ])
+            ->where('created_at', '<=', $smsTimestamp)
+            ->where('created_at', '>=', $smsTimestamp->copy()->subHours($windowHours))
+            ->whereHas('uniquePaymentAmount', function ($q) use ($amount) {
+                // base_amount <= SMS amount → ลูกค้าโอน >= ราคาเต็ม
+                $q->whereColumn('base_amount', '<=', DB::raw($amount))
+                    ->orWhere('base_amount', '<=', $amount);
+            })
+            ->with('uniquePaymentAmount')
+            ->get();
+
+        $candidates = [];
+        foreach ($bills as $bill) {
+            $basePrice = (float) ($bill->uniquePaymentAmount?->base_amount ?? 0);
+            if ($basePrice <= 0 || $amount < $basePrice) {
+                continue; // double-check (กัน eager-load คาด)
+            }
+
+            $nameScore = $this->scoreNameMatch(
+                $smsName,
+                (string) ($bill->facebook_user_name ?? '')
+            );
+
+            $timeDeltaMin = (int) abs($bill->created_at->diffInMinutes($smsTimestamp, true));
+            $amountDelta = round($amount - $basePrice, 2);
+
+            $candidates[] = [
+                'reading' => $bill,
+                'name_score' => $nameScore,
+                'time_delta_minutes' => $timeDeltaMin,
+                'amount_delta' => $amountDelta,
+            ];
+        }
+
+        // Sort: name_score DESC, time_delta ASC (best match first)
+        usort($candidates, function ($a, $b) {
+            if ($a['name_score'] !== $b['name_score']) {
+                return $b['name_score'] - $a['name_score'];
+            }
+            return $a['time_delta_minutes'] - $b['time_delta_minutes'];
+        });
+
+        return $candidates;
+    }
+
+    /**
+     * ✅ (2026-05-21) Admin confirm: ผูก SMS เข้ากับบิล + approve
+     *
+     * ใช้หลัง admin ดู candidate list ใน Android app แล้วเลือกบิลที่ใช่
+     *
+     * Pattern: ใช้ DB::transaction + lockForUpdate (เหมือน approve() เดิม)
+     *
+     * @param  FortuneReading  $reading  บิลที่จะ approve
+     * @param  SmsPaymentNotification|null  $sms  SMS ที่จะผูก (null = force approve no SMS link)
+     * @param  string  $adminContext  audit info (e.g. "device_id=X via Android orphan match")
+     * @return bool true = approve สำเร็จ
+     */
+    public function confirmMatchByAdmin(
+        FortuneReading $reading,
+        ?SmsPaymentNotification $sms,
+        string $adminContext = ''
+    ): bool {
+        try {
+            return DB::transaction(function () use ($reading, $sms, $adminContext) {
+                $readingLocked = FortuneReading::lockForUpdate()->find($reading->id);
+                $smsLocked = $sms ? SmsPaymentNotification::lockForUpdate()->find($sms->id) : null;
+
+                if (! $readingLocked) {
+                    Log::warning('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: reading not found', [
+                        'reading_id' => $reading->id,
+                    ]);
+                    return false;
+                }
+
+                // กัน race — ถ้าจ่ายไปแล้ว → idempotent success
+                if ($readingLocked->is_paid) {
+                    Log::info('FortunePaymentFuzzyMatcher::confirmMatchByAdmin: already paid', [
+                        'reading_id' => $reading->id,
+                    ]);
+                    return true;
+                }
+
+                $basePrice = (float) ($readingLocked->uniquePaymentAmount?->base_amount ?? 0);
+                $smsAmount = $sms ? (float) $sms->amount : (float) $readingLocked->amount_paid;
+                $delta = round($smsAmount - $basePrice, 2);
+
+                $nameScore = $sms
+                    ? $this->scoreNameMatch(
+                        (string) ($sms->sender_or_receiver ?? ''),
+                        (string) ($readingLocked->facebook_user_name ?? '')
+                    )
+                    : 0;
+
+                // confirmPayment เซ็ต is_paid + paid_at + status=PAID + (ถ้ามี SMS) อัปเดต sms_notification_id
+                $readingLocked->confirmPayment($smsLocked);
+
+                // อัปเดต SMS notification (idempotent — ถ้า matched_transaction_id ว่างเท่านั้น)
+                if ($smsLocked && $smsLocked->matched_transaction_id === null) {
+                    $smsLocked->update([
+                        'status' => 'matched',
+                        'matched_transaction_id' => $readingLocked->id,
+                        'matched_at' => now(),
+                    ]);
+                }
+
+                // Audit fields
+                $readingLocked->update([
+                    'fuzzy_approved_at' => now(),
+                    'fuzzy_approved_delta' => $delta,
+                    'fuzzy_approved_sms_id' => $smsLocked?->id,
+                    'fuzzy_approved_name_score' => $nameScore,
+                ]);
+
+                Log::warning('💎 FortunePaymentFuzzyMatcher::confirmMatchByAdmin', [
+                    'reading_id' => $readingLocked->id,
+                    'bill_reference' => $readingLocked->bill_reference,
+                    'sms_id' => $smsLocked?->id,
+                    'sms_amount' => $smsAmount,
+                    'base_price' => $basePrice,
+                    'delta' => $delta,
+                    'name_score' => $nameScore,
+                    'admin_context' => $adminContext,
+                ]);
+
+                return true;
+            });
+        } catch (\Throwable $e) {
+            Log::error('FortunePaymentFuzzyMatcher::confirmMatchByAdmin failed', [
+                'reading_id' => $reading->id,
+                'sms_id' => $sms?->id,
+                'error' => $e->getMessage(),
+            ]);
+            return false;
+        }
+    }
 }
