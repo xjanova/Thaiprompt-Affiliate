@@ -9830,6 +9830,22 @@ class FortuneConversationService
             return $fuzzyResult;
         }
 
+        // 📡 (2026-05-21) Trigger SMS Re-scan
+        //   เคส: ธนาคารส่ง SMS แล้วแต่ broadcast receiver ของ smschecker พลาด
+        //   (app sleeping, doze mode, OEM kill) → SMS ไม่เคยถูก process
+        //   ลูกค้ากดเช็คสถานะ / ส่งสลิป → trigger app ให้รื้อ SMS inbox ในโทรศัพท์
+        //   App รับ FCM → query Telephony.Sms.Inbox + parse SMS ใหม่
+        //   Rate-limited: 30s/บิล (กัน spam)
+        try {
+            app(\App\Services\FcmNotificationService::class)
+                ->notifyTriggerSmsRescan($reading, 'check_status');
+        } catch (\Throwable $e) {
+            \Log::warning('Trigger SMS rescan failed (non-fatal)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         // กรณี 3: ยังไม่ paid + UPA ยัง reserved + ยังไม่หมดอายุ
         $expiresAt = $uniqueAmount->expires_at->format('H:i');
         $message = "⏳ *ระบบยังไม่พบยอดในบัญชี*\n\n"

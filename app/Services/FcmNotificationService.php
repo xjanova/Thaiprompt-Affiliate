@@ -379,6 +379,75 @@ class FcmNotificationService
     }
 
     /**
+     * 📡 (2026-05-21) ส่ง FCM "trigger_sms_rescan" — ขอให้ smschecker app
+     *    รื้อ SMS inbox ในโทรศัพท์ที่อาจพลาดไป
+     *
+     * เคสที่ใช้:
+     *   - ลูกค้ากด "เช็คสถานะ" / ส่งสลิป → trigger handlePaymentClaim ที่ยังไม่ paid
+     *   - ระบบสงสัยว่าธนาคารส่ง SMS แล้วแต่ broadcast receiver พลาด
+     *   - App รับ FCM → query Telephony.Sms.Inbox + parse SMS ใหม่
+     *
+     * Rate limit: cache 30 วินาที/บิล (กัน spam หาก customer กด check status รัวๆ)
+     *
+     * @param  FortuneReading  $reading  บิลที่ trigger
+     * @param  string  $reason  'check_status' | 'slip_uploaded' | 'admin_manual'
+     */
+    public function notifyTriggerSmsRescan(FortuneReading $reading, string $reason = 'check_status'): bool
+    {
+        // Rate limit — กัน spam: 1 trigger / 30s ต่อบิล
+        $cacheKey = "fcm:rescan_trigger:{$reading->id}";
+        if (\Illuminate\Support\Facades\Cache::has($cacheKey)) {
+            Log::debug('FCM: rescan trigger throttled (cooldown 30s)', [
+                'reading_id' => $reading->id,
+                'reason' => $reason,
+            ]);
+
+            return false;
+        }
+        \Illuminate\Support\Facades\Cache::put($cacheKey, true, now()->addSeconds(30));
+
+        $tokens = $this->getTargetTokens(null);
+        if (empty($tokens)) {
+            Log::debug('FCM: No tokens for rescan trigger', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return false;
+        }
+
+        $upa = $reading->uniquePaymentAmount;
+        $expectedAmount = (float) ($upa?->unique_amount ?? $reading->amount_paid ?? 0);
+        $basePrice = (float) ($upa?->base_amount ?? 0);
+
+        // Lookback: SMS อาจมาก่อนหน้า bill creation ไม่กี่นาที (กรณีโอนล่วงหน้า)
+        //          แต่ที่สำคัญ — ครอบ SMS ที่มาหลัง bill creation จนถึงตอนนี้
+        $lookbackHours = max(1, (int) ceil(now()->diffInHours($reading->created_at) + 1));
+        $lookbackHours = min($lookbackHours, 48); // hard cap 48 ชม.
+
+        $data = [
+            'type' => 'trigger_sms_rescan',
+            'reading_id' => (string) $reading->id,
+            'bill_reference' => $reading->bill_reference ?? '',
+            'expected_amount' => number_format($expectedAmount, 2, '.', ''),
+            'base_price' => number_format($basePrice, 2, '.', ''),
+            'customer_name' => $reading->facebook_user_name ?? '',
+            'lookback_hours' => (string) $lookbackHours,
+            'reason' => $reason,
+            'server_url' => config('app.url'),
+        ];
+
+        Log::info('📡 FCM: Sending trigger_sms_rescan (data-only)', [
+            'reading_id' => $reading->id,
+            'bill_reference' => $reading->bill_reference,
+            'reason' => $reason,
+            'lookback_hours' => $lookbackHours,
+            'tokens_count' => count($tokens),
+        ]);
+
+        return $this->sendToMultipleTokens($tokens, $data, null);
+    }
+
+    /**
      * 🚨 ส่ง push แจ้ง admin เมื่อมียอดดูดวงเข้าแต่ไม่มีบิลจับคู่
      *
      * เคสที่ trigger: ลูกค้าโอนยอดในช่วงดูดวง (เช่น 39.34) แต่บิลถูกยกเลิก/หมดอายุ
