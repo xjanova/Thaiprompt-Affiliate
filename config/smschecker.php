@@ -20,8 +20,12 @@ return [
     'timestamp_tolerance' => env('SMSCHECKER_TIMESTAMP_TOLERANCE', 300),
 
     // เวลาหมดอายุสำหรับ unique amounts (นาที)
-    // ตั้งเป็น 30 นาที - หลังจากหมดเวลาระบบจะยกเลิกบิลอัตโนมัติ
-    'unique_amount_expiry' => env('SMSCHECKER_AMOUNT_EXPIRY', 30),
+    // 🔧 (2026-05-21) ขยายจาก 30 นาที → 24 ชั่วโมง (1440 นาที)
+    //   เคสบั๊ก: ลูกค้าจำนวนมากโอนช้ากว่า 30 นาที (รอเช็คยอด, รอเงินเดือนออก, เครื่องดับ)
+    //   แต่ลูกค้าไม่รู้ว่าบิลหมดอายุ — โอนแล้วระบบไม่ตัด → ต้อง admin force fix
+    //   ขยายเป็น 24 ชม. ให้ลูกค้ามีเวลาเหลือเฟือ + Path 1 ของ findMatch() หา UPA active เจอตรงๆ
+    //   ไม่กระทบ suffix space (max 99/ราคา) — ปกติบิลต่อชั่วโมงน้อยกว่านั้นมาก
+    'unique_amount_expiry' => env('SMSCHECKER_AMOUNT_EXPIRY', 1440),
 
     // จำนวนสูงสุดของ unique amounts ที่ pending ได้ต่อราคาเดียวกัน
     // ค่าสูงสุด 99 (suffix 01-99)

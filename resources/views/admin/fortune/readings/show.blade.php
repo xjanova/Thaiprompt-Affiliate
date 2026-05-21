@@ -257,7 +257,7 @@
 
                     {{-- 🛑 (2026-05-07) Pay-Later removed — เหลือเฉพาะ pay-first badge --}}
                     @if($reading->reading_type === 'deep' && ! $reading->is_paid && $reading->amount_paid > 0)
-                        <span class="ml-1 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" title="ลูกค้าต้องจ่ายก่อนถึงจะได้รับคำทำนาย — UPA หมดอายุ 30 นาที">
+                        <span class="ml-1 px-3 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" title="ลูกค้าต้องจ่ายก่อนถึงจะได้รับคำทำนาย — UPA หมดอายุ 24 ชม.">
                             💳 จ่ายก่อนดู
                         </span>
                     @endif
@@ -272,6 +272,86 @@
                 <span class="ml-2 text-gray-900 dark:text-white">{{ $reading->paid_at ? $reading->paid_at->format('d/m/Y H:i') : '-' }}</span>
             </div>
         </div>
+
+        {{-- 🚑 (2026-05-21) Force Approve Deep 39฿ — bypass SMS matching --}}
+        {{-- ใช้กรณี: ลูกค้าโอนยอดผิด / UPA หมดอายุ / SMS หาย / amount mismatch --}}
+        {{-- เทียบเท่ากับ Celtic Cross Force Approve (commit 0b72efe90) --}}
+        @if($reading->reading_type === 'deep' && ! $reading->is_paid && $reading->amount_paid > 0)
+            <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="mb-3 px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700">
+                    <div class="flex items-start gap-2">
+                        <span class="text-blue-500 text-lg">💳</span>
+                        <div class="flex-1">
+                            <p class="text-blue-800 dark:text-blue-200 font-medium">บิล Deep 39฿ ยังไม่ได้ตัด — Force Approve ได้</p>
+                            <p class="text-blue-600 dark:text-blue-400 text-sm mt-1">
+                                ใช้เมื่อ: ลูกค้าโอนยอดผิด (เช่น 39 แทน 39.80) / SMS ไม่มา / UPA หมดอายุ / amount mismatch
+                                <br>
+                                ระบบจะ <strong>มาร์คบิลจ่ายแล้ว</strong> + ผูก SMS notification ที่ยอดตรง (ถ้ามี) + <strong>เริ่มสร้างคำทำนายให้ลูกค้าทันที</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-data="{ open: false, amount: '{{ $reading->amount_paid ?? 39 }}' }" class="inline-block">
+                    <button @click="open = true" type="button"
+                            class="px-4 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50 rounded-lg text-sm font-semibold">
+                        🚀 Force Approve (โอนไม่ตรงยอด / SMS หาย)
+                    </button>
+
+                    {{-- Modal --}}
+                    <div x-show="open" x-cloak
+                         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                         @click.self="open = false">
+                        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                🚀 Force Approve บิล {{ $reading->bill_reference ?? '#' . $reading->id }}
+                            </h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                ใช้กรณีลูกค้าโอนเงินแล้วแต่ระบบไม่ตัด (ยอดไม่ตรง / SMS หาย / UPA หมดอายุ)<br>
+                                ระบบจะ <strong>มาร์คบิลจ่ายแล้ว</strong> + ผูก SMS ที่ยอดตรง (ถ้ามี) + <strong>เริ่มสร้างคำทำนายให้ลูกค้า</strong>
+                            </p>
+
+                            <form action="{{ route('admin.fortune.readings.force-approve', $reading) }}" method="POST">
+                                @csrf
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                                    จำนวนเงินที่ลูกค้าโอนจริง (บาท)
+                                </label>
+                                <input type="number" name="actual_amount" x-model="amount"
+                                       step="0.01" min="0.01" max="9999" required
+                                       class="w-full px-3 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                    ยอดบิลที่ตั้งไว้: ฿{{ number_format($reading->amount_paid ?? 39, 2) }}
+                                </p>
+
+                                <div class="flex gap-2 mt-5">
+                                    <button @click="open = false" type="button"
+                                            class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600">
+                                        ยกเลิก
+                                    </button>
+                                    <button type="submit"
+                                            onclick="return confirm('ยืนยัน? ระบบจะมาร์คบิลจ่ายแล้ว + เริ่มสร้างคำทำนายให้ลูกค้า — ย้อนกลับไม่ได้');"
+                                            class="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-semibold">
+                                        🚀 ยืนยัน Force Approve
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Flash messages สำหรับ force-approve action --}}
+                @if(session('success'))
+                    <div class="mt-3 px-4 py-3 rounded-lg bg-green-50 dark:bg-green-900/30 text-green-800 dark:text-green-200 text-sm">
+                        {{ session('success') }}
+                    </div>
+                @endif
+                @if(session('error'))
+                    <div class="mt-3 px-4 py-3 rounded-lg bg-red-50 dark:bg-red-900/30 text-red-800 dark:text-red-200 text-sm">
+                        {{ session('error') }}
+                    </div>
+                @endif
+            </div>
+        @endif
 
         {{-- ปุ่ม Manual Action สำหรับ Admin (deep reading) --}}
         {{-- 🩹 (2026-05-04) เปิดให้กดได้รวม Pay-Later flow (is_paid=false แต่มี deep_response แล้ว)

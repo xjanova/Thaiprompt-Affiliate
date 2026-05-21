@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Jobs\ProcessDeepFortuneReadingJob;
 use App\Models\FortuneReading;
 use App\Models\FortuneTellingSetting;
+use App\Models\SmsPaymentNotification;
+use App\Models\UniquePaymentAmount;
 use App\Services\FortuneChannelManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -365,6 +367,119 @@ class FortuneReadingsController extends Controller
         return redirect()
             ->route('admin.fortune.readings.show', $reading)
             ->with('success', '🔮 เริ่มสร้างคำทำนายเชิงลึก... หน้าจะอัปเดตอัตโนมัติเมื่อเสร็จ');
+    }
+
+    /**
+     * 🚑 (2026-05-21) Force Approve บิล Deep 39฿ — bypass SMS matching
+     *
+     * Use case: ลูกค้าโอนยอดผิด / UPA หมดอายุ / SMS หาย / amount mismatch
+     *           → ระบบ auto-match ไม่ทำงาน → admin ต้อง force confirm ด้วยมือ
+     *
+     * Flow:
+     *   1. confirmPayment(notification|null) → is_paid=true + paid_at=now() + status=PAID
+     *   2. หา SMS notification ที่ยอดตรง + ยังไม่ matched → ผูก (best-effort)
+     *   3. Dispatch ProcessDeepFortuneReadingJob → AI gen + push ให้ลูกค้า
+     *
+     * Symmetry: เหมือน FortuneCelticCrossController::forceApprove() ของ Celtic 99฿
+     *           แต่สำหรับ Deep 39฿ (route: readings.force-approve)
+     */
+    public function forceApprove(Request $request, FortuneReading $reading)
+    {
+        // ตรวจสอบ: ต้องเป็น Deep reading
+        if ($reading->reading_type !== 'deep') {
+            return back()->with('error', '❌ ใช้ได้เฉพาะ Deep 39฿ — Celtic 99฿ ให้ใช้ปุ่มในหน้า Celtic Cross');
+        }
+
+        // ตรวจสอบ: ยังไม่ paid (กัน double-confirm)
+        if ($reading->is_paid) {
+            return back()->with('error', '❌ บิลนี้จ่ายแล้ว — ใช้ปุ่ม "สร้างคำทำนายใหม่" / "ส่งซ้ำ" แทน');
+        }
+
+        $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+        if (empty($userId)) {
+            return back()->with('error', '❌ บิลนี้ไม่มี user_id — push ไปไม่ได้');
+        }
+
+        // จำนวนเงินที่ลูกค้าโอนจริง (admin กรอกได้) — default = ยอดบิล
+        $actualAmount = (float) $request->input('actual_amount', $reading->amount_paid ?? 39.00);
+        if ($actualAmount <= 0) {
+            return back()->with('error', '❌ จำนวนเงินไม่ถูกต้อง');
+        }
+
+        $platform = $reading->platform
+            ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId)) ? 'line' : 'facebook');
+
+        try {
+            // 1. หา SMS notification ที่ยอดตรง + ยังไม่ matched (best-effort)
+            //    ถ้าหาได้ → ผูก เพื่อ audit trail; ถ้าไม่ได้ → confirm แบบ admin-only
+            $notification = SmsPaymentNotification::where('amount', $actualAmount)
+                ->where('type', 'credit')
+                ->whereNull('matched_transaction_id')
+                ->where('created_at', '>=', now()->subDays(7))
+                ->orderByDesc('sms_timestamp')
+                ->first();
+
+            // 2. มาร์คบิลเป็นจ่ายแล้ว (notification อาจเป็น null = admin force)
+            $reading->confirmPayment($notification);
+            $reading = $reading->fresh();
+
+            // 3. ผูก SMS notification (ถ้ามี) → กัน match ซ้ำกับบิลอื่น
+            if ($notification) {
+                $notification->update([
+                    'matched_transaction_id' => $reading->id,
+                    'matched_at' => now(),
+                    'status' => 'confirmed',
+                ]);
+            }
+
+            // 4. Dispatch Deep reading flow (AI gen + push customer)
+            //    ใช้ register_shutdown_function pattern เดียวกับ retryDeepReading()
+            //    เหตุผล: ตอบ admin กลับก่อน → ไม่ต้องรอ AI 30-60s
+            $readingId = $reading->id;
+            $notificationId = $notification?->id;
+            register_shutdown_function(function () use ($readingId, $notificationId, $platform, $userId) {
+                try {
+                    ProcessDeepFortuneReadingJob::dispatchSmart($readingId, $notificationId, $platform, $userId);
+                } catch (\Throwable $e) {
+                    Log::error('Admin force-approve: dispatch failed in shutdown', [
+                        'reading_id' => $readingId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            });
+
+            Log::info('💎 Admin Force Approve Deep 39฿ (web)', [
+                'reading_id' => $reading->id,
+                'bill_reference' => $reading->bill_reference,
+                'admin_id' => auth()->id(),
+                'admin_name' => auth()->user()?->name,
+                'platform' => $platform,
+                'actual_amount' => $actualAmount,
+                'expected_amount' => $reading->amount_paid,
+                'sms_notification_id' => $notificationId,
+                'matched_sms' => $notification !== null,
+            ]);
+
+            $msg = "✅ Force Approve สำเร็จ — บิล {$reading->bill_reference} มาร์คจ่ายแล้ว";
+            if ($notification) {
+                $msg .= " + ผูก SMS#{$notification->id}";
+            } else {
+                $msg .= ' (ไม่มี SMS ตรงยอด — confirm แบบ admin only)';
+            }
+            $msg .= ' + เริ่มสร้างคำทำนายให้ลูกค้า...';
+
+            return redirect()
+                ->route('admin.fortune.readings.show', $reading)
+                ->with('success', $msg);
+        } catch (\Throwable $e) {
+            Log::error('Admin Force Approve Deep ล้มเหลว', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return back()->with('error', "❌ Force Approve ล้มเหลว: {$e->getMessage()}");
+        }
     }
 
     /**
