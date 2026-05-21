@@ -12598,12 +12598,15 @@ PROMPT;
             // 🧹 (2026-05-15) Strip context tag ที่อาจค้างใน history เก่า
             //   เคส: ก่อน fix sanitizer มี AI echo "[TURN 3]" ลง assistant message → save ลง DB
             //   ถ้าไม่ strip ตอนดึง → turn ถัดไป AI เห็น tag ใน history → echo อีก loop ไม่จบ
-            $pattern = '/\[(?:TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION)\b[^\]]*\]/u';
+            //
+            // 🛡️ (2026-05-21) ใช้ FortuneAIService::stripInternalContextTags — pattern เดียวกับ
+            //   output sanitizer (sanitizeChatResult) → ครอบคลุม TURNS/TURNING_CUSTOMER variants
+            //   + persona pseudo-format "(ลูกค้าคนนี้: ...)" + bullet lines
             foreach ($history as $i => $msg) {
                 if (! empty($msg['content']) && is_string($msg['content'])) {
-                    $cleaned = preg_replace($pattern, '', $msg['content']);
-                    if ($cleaned !== null && $cleaned !== $msg['content']) {
-                        $history[$i]['content'] = trim(preg_replace('/[ \t]{2,}/', ' ', $cleaned));
+                    $cleaned = FortuneAIService::stripInternalContextTags($msg['content']);
+                    if ($cleaned !== $msg['content']) {
+                        $history[$i]['content'] = $cleaned;
                     }
                 }
             }

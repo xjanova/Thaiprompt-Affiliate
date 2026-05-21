@@ -586,24 +586,91 @@ class FortuneAIService
             return $result;
         }
 
-        // 🃏 (2026-05-16) เพิ่ม OFF_TOPIC_REPICK — Celtic 99฿ Q6+ off-topic signal
-        //    AI ใส่ token นี้เมื่อตรวจว่าคำถามใหม่ต่างจากเรื่องเดิม → ระบบชวนจับไพ่ใหม่
-        //    ถ้า trait regex จับไม่ทัน (hyphen/dot variant) → sanitizer นี้กันการรั่ว
-        $pattern = '/\[(?:TURNOVER|TURN|DM_COUNT|RETURNING_24H|RETURNING_CUSTOMER|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|END_SESSION|OFF[_\s.-]?TOPIC[_\s.-]?REPICK)(?:[_\s][^\]]*)?\]/u';
-        $cleaned = preg_replace($pattern, '', $response);
+        $cleaned = self::stripInternalContextTags($response);
 
-        // (2026-05-15) Strip [👤 CUSTOMER_PERSONA ...] header ถ้า AI หลอน echo
-        //   emoji optional + อนุญาตเนื้อหาภายในยกเว้น ] เพื่อกัน greedy ข้าม line
-        $personaPattern = '/\[(?:👤\s*)?CUSTOMER_PERSONA[^\]]*\]/u';
-        $cleaned = preg_replace($personaPattern, '', $cleaned ?? $response);
-
-        if ($cleaned !== null && $cleaned !== $response) {
-            // เก็บ whitespace ที่อาจค้างหลัง strip — ลบช่องว่างซ้ำ + trim
-            $cleaned = trim(preg_replace('/[ \t]{2,}/', ' ', $cleaned));
+        if ($cleaned !== $response) {
             $result['response'] = $cleaned;
         }
 
         return $result;
+    }
+
+    /**
+     * 🧹 (2026-05-21 — incident: AI echo "[TURNS 17]" + "(ลูกค้าคนนี้: ... / บุคลิก: ...)")
+     *
+     * Defense-in-depth stripper สำหรับ context tags ที่ AI หลอน echo ออกมาในคำตอบ
+     *
+     * **เคสจริงที่หลุด (ก่อน fix นี้):**
+     *   - `[TURNS 17]` — AI หลอนพหูพจน์ S (regex เดิม `TURN` ต้องการ `_/space` ต่อ → ไม่ match)
+     *   - `[TURNING_CUSTOMER reading_type="deep" days_ago=2 past_topics="การเงิน"]`
+     *      — AI หลอนตัด "RE" หน้า (regex เดิมจับแต่ "RETURNING_CUSTOMER")
+     *   - `(ลูกค้าคนนี้: คุณXXX / เพศ ชาย / บุคลิก: เครียด / เคยคุยเรื่อง: ...)`
+     *      — AI เรียบเรียง persona block ใหม่เป็น paren + "/" คั่น
+     *
+     * **กลยุทธ์ 4 ชั้น:**
+     *   1. Whitelist-based bracket strip — ลบทุก `[XXX_YYY ...]` ที่ ไม่ใช่ intended action tag
+     *      (intended: OFFER_FORTUNE, DEEP_READING, ASK_SAVE, USE_STRIPE — caller parser ใช้)
+     *   2. Persona pseudo-format strip — `[👤 ...]` หรือ `(👤 ...)` หรือ `(ลูกค้าคนนี้: ...)`
+     *   3. Bullet-line strip — `• บุคลิก: ...` / `• เคยคุยเรื่อง: ...` (จาก toAiContextBlock format)
+     *   4. Whitespace cleanup
+     *
+     * Static + public — เรียกได้จาก FortuneConversationService::getHistoryForAI()
+     * เพื่อ sync pattern ระหว่าง output sanitizer กับ history sanitizer
+     *
+     * @param  string  $text  AI response (อาจมี leaked context tags)
+     * @return string  cleaned response (พร้อมส่งให้ลูกค้า)
+     */
+    public static function stripInternalContextTags(string $text): string
+    {
+        if ($text === '') {
+            return $text;
+        }
+
+        // ========== ชั้น 1: Whitelist bracket strip ==========
+        //   ลบทุก [SOMETHING ...] ที่ไม่ใช่ intended action tag
+        //   ใช้ negative lookahead กัน whitelist
+        //
+        // ตัวที่ห้ามแตะ (caller chat parser ใช้):
+        //   - [OFFER_FORTUNE] / [DEEP_READING] / [ASK_SAVE] / [USE_STRIPE]
+        //     — sales/save signals: caller (tryAIChatResponse) ตรวจแล้ว str_replace strip
+        //
+        // Celtic signals [END_SESSION] / [OFF_TOPIC_REPICK]:
+        //   ไม่ whitelist เพราะ Celtic flow แยก (CelticCrossService strip เอง) — ไม่ผ่าน sanitizer นี้
+        //   ถ้า leak ผ่าน chat path = ควร strip (safety net)
+        //
+        // ตัวที่ strip (context metadata + variants ที่ AI หลอน):
+        //   - [TURN N] [TURNS N] [TURNOVER ...] [Turn N] [turn n] (case-insensitive)
+        //   - [DM_COUNT N] [DM COUNT N]
+        //   - [RETURNING_24H ...] [RETURNING_CUSTOMER ...] [TURNING_CUSTOMER ...]
+        //   - [HAS_FRESH_DEEP_READING] [NO_HISTORY_NO_PAID_READING]
+        //   - [👤 ...] [👤 ลูกค้าคนนี้: ...] [CUSTOMER_PERSONA ...]
+        //   - [HALLUCINATION_VARIANT_X] (defense — กัน hallucination variants ใหม่ที่ไม่รู้จัก)
+        //
+        // Pattern requires: start with emoji `👤` OR English letter [A-Za-z] after `[`
+        //   → ปลอดภัยกับข้อความปกติที่ใช้ `[ภาษาไทย]` (เช่น `[หมายเหตุ]`) — ไม่จับ
+        $whitelistKeep = '(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE|USE_STRIPE)';
+        $bracketPattern = '/\[(?!'.$whitelistKeep.'\b)(?:👤\s*|[A-Za-z])[^\]\n]{0,300}\]/iu';
+        $cleaned = preg_replace($bracketPattern, '', $text);
+
+        // เพิ่มจับ "(ลูกค้าคนนี้: ... / ... )" — AI หลอน paren format
+        $personaParenPattern = '/[\(\[]\s*(?:👤\s*)?ลูกค้าคนนี้\s*[:：][^\)\]]{0,500}[\)\]]/u';
+        $cleaned = preg_replace($personaParenPattern, '', $cleaned ?? $text);
+
+        // ========== ชั้น 2: Bullet-line strip ==========
+        //   ลบบรรทัดที่ขึ้นต้นด้วย • + keyword จาก toAiContextBlock format
+        //   AI อาจ echo เป็น bullet list — ลูกค้าจะเห็น "• บุคลิก: ..." แปลกๆ
+        $bulletLinePattern = '/^[ \t]*[•·]\s*(?:บุคลิก|เคยคุยเรื่อง|ชอบ|ไม่ชอบ|สไตล์การคุย|เพศ|งาน|อายุ|tone|formality|emoji|score รบกวน)[:：][^\n]*\n?/um';
+        $cleaned = preg_replace($bulletLinePattern, '', $cleaned ?? $text);
+
+        // ========== ชั้น 3: Whitespace cleanup ==========
+        //   หลัง strip มักเหลือ space/newline ค้าง — เก็บ
+        if ($cleaned !== null) {
+            $cleaned = preg_replace('/[ \t]{2,}/', ' ', $cleaned);  // dedupe spaces
+            $cleaned = preg_replace('/\n{3,}/', "\n\n", $cleaned);  // max 2 newlines
+            $cleaned = trim($cleaned);
+        }
+
+        return $cleaned ?? $text;
     }
 
     /**
