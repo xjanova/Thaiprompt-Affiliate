@@ -161,7 +161,13 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 try {
                     $messagePayload = ['text' => $chunk];
 
-                    // ✅ เพิ่ม Quick Reply buttons ใน chunk สุดท้าย
+                    // ✅ เพิ่ม Quick Reply buttons ใน chunk สุดท้าย (เฉพาะที่ caller ตั้งใจ pass มา)
+                    //
+                    // 🚫 (2026-05-21) เลิก auto-inject Default QR "ดูดวง 39฿ / ไพ่ 10 ใบ 99฿ / เมนู"
+                    //   ใต้ทุก DM — เปลี่ยนเป็น chatbot mode (เฟรนลี่ ไม่ฮาร์ดเซล)
+                    //   ลูกค้าบอก: ปุ่มราคาติดท้ายทุกข้อความ → vending machine ไม่ใช่แม่หมอ
+                    //   หลังทำนายจบ ลูกค้าควรพิมพ์ "ดูดวง" เองตามที่ closing message บอก
+                    //   `no_default_qr` flag กับ getDefaultQuickReplies() ยังคงไว้กันโค้ดเก่าแตก
                     $isLastChunk = ($chunkIndex === count($chunks) - 1);
                     if ($isLastChunk && ! empty($options['quick_replies'])) {
                         $messagePayload['quick_replies'] = array_map(function ($reply) {
@@ -171,25 +177,6 @@ class FacebookWebhookService implements MessagingPlatformInterface
                                 'payload' => $reply['text'] ?? $reply['payload'] ?? $reply['label'] ?? '',
                             ];
                         }, array_slice($options['quick_replies'], 0, 13));
-                    } elseif ($isLastChunk && empty($options['no_default_qr'])) {
-                        // 🌐 (2026-05-03) Default Quick Reply "ดูดวง" — แสดงทุก DM
-                        //   เพื่อให้ลูกค้ากดเริ่มดูดวงใหม่ได้ทันทีจากที่ใดก็ได้
-                        //   ⚠️ หาก flow ใดต้องการปิด → ส่ง option 'no_default_qr' => true
-                        //   (เช่น flow รอ user พิมพ์วันเกิด — ปุ่มอาจสร้างความสับสน)
-                        //
-                        // 🚦 (2026-05-06) ปิดอัตโนมัติเมื่อ user มี active reading
-                        //   ลูกค้าบอก: ปุ่มลอยทำให้สับสนระหว่างกำลังทำนาย
-                        //   เช็ค ACTIVE_READING_STATUSES (cached 30s กัน DB hammer)
-                        $hasActive = false;
-                        try {
-                            $hasActive = FortuneReading::hasActiveReading('facebook', $recipientId);
-                        } catch (\Throwable $e) {
-                            // ถ้าเช็คไม่ได้ — ใช้ default behaviour (แสดง QR)
-                        }
-
-                        if (! $hasActive) {
-                            $messagePayload['quick_replies'] = $this->getDefaultQuickReplies();
-                        }
                     }
 
                     $payload = [
