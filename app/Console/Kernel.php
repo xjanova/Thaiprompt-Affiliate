@@ -383,26 +383,32 @@ class Kernel extends ConsoleKernel
         //   command มีอยู่แล้ว (FortuneCelticRecover.php — รับ --auto flag) แต่ยังไม่ schedule
         //   ทำให้ stuck Celtic ไม่ self-heal — ลูกค้าต้องรอ admin manual recover
         // ========================================
-        $schedule->command('fortune:celtic-recover', ['--auto', '--minutes=5'])
-            ->everyTenMinutes()
-            ->withoutOverlapping(15) // lock 15 นาที (re-push อาจช้าถ้าหลายราย)
-            ->runInBackground()
-            ->onFailure(function () {
-                \Log::error('[Fortune Celtic Recover] auto-recover Celtic readings ล้มเหลว');
-            });
+        // 🛑 (2026-05-22 #5) DISABLED per user request — "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย"
+        //   เหตุผล: re-push "เลือกไพ่ใบแรก" ซ้ำๆ สร้างปัญหา (annoy ลูกค้า + เปลือง FB quota)
+        //   ลูกค้า paid + ค้าง = admin จัดการ manual ผ่าน /admin/fortune/billing
+        // $schedule->command('fortune:celtic-recover', ['--auto', '--minutes=5'])
+        //     ->everyTenMinutes()
+        //     ->withoutOverlapping(15) // lock 15 นาที (re-push อาจช้าถ้าหลายราย)
+        //     ->runInBackground()
+        //     ->onFailure(function () {
+        //         \Log::error('[Fortune Celtic Recover] auto-recover Celtic readings ล้มเหลว');
+        //     });
 
         // ========================================
         // 🛟 (2026-05-19 Batch 1) Fortune Recover Paid No Birthdate — Deep 39฿ Pay-First stuck
         //   เคสที่ครอบ: ลูกค้าจ่าย 39 แล้ว Pay-First ไม่ขอวันเกิด (birth_date=NULL + paid_at > 3 นาที)
         //   command มีอยู่แล้ว (FortuneRecoverPaidNoBirthdate.php — รับ --auto flag) แต่ยังไม่ schedule
         // ========================================
-        $schedule->command('fortune:recover-paid-no-birthdate', ['--auto', '--min-age-minutes=3', '--hours=24'])
-            ->everyFiveMinutes()
-            ->withoutOverlapping(10)
-            ->runInBackground()
-            ->onFailure(function () {
-                \Log::error('[Fortune Recover Paid No Birthdate] auto-recover Deep readings ล้มเหลว');
-            });
+        // 🛑 (2026-05-22 #5) DISABLED per user request — "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย"
+        //   เหตุผล: re-push "ขอวันเกิด" ซ้ำๆ สร้างปัญหา (ลูกค้าทิ้งแล้วก็ทิ้งเลย)
+        //   ลูกค้า paid + ไม่กรอกวันเกิด = admin จัดการ manual ผ่าน /admin/fortune/billing
+        // $schedule->command('fortune:recover-paid-no-birthdate', ['--auto', '--min-age-minutes=3', '--hours=24'])
+        //     ->everyFiveMinutes()
+        //     ->withoutOverlapping(10)
+        //     ->runInBackground()
+        //     ->onFailure(function () {
+        //         \Log::error('[Fortune Recover Paid No Birthdate] auto-recover Deep readings ล้มเหลว');
+        //     });
 
         // ========================================
         // 🚨 (2026-05-19 Batch 2) Fortune Expire Stuck Paid — Last-resort safety net

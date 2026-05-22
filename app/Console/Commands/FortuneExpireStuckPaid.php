@@ -297,52 +297,11 @@ class FortuneExpireStuckPaid extends Command
         }
 
         // 3. Push คำขอโทษให้ลูกค้า + เสนอ handoff (best-effort)
-        $userId = $reading->platform_user_id ?? $reading->facebook_user_id ?? '';
-        $platform = $reading->platform
-            ?? (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
-
-        if (! empty($userId)) {
-            try {
-                $name = $reading->facebook_user_name ?? 'คุณ';
-                $waitedDisplay = $waitedHours >= 24
-                    ? sprintf('%d วัน', (int) round($waitedHours / 24))
-                    : "{$waitedHours} ชม.";
-
-                $message = "🙏 ขออภัยอย่างสูงค่ะ คุณ{$name}\n\n"
-                    ."📋 เลขที่บิล: {$billRef}\n"
-                    ."⏳ รอมานานแล้ว ({$waitedDisplay})\n\n"
-                    ."⚠️ ระบบ AI ขัดข้องเกินเยียวยา — แอดมินได้รับแจ้งแล้วและจะดูแลให้โดยเร็วที่สุด\n\n"
-                    ."🔮 *รับประกัน*: คำทำนายของคุณจะมาแน่นอน — แอดมินจะทำให้เอง\n\n"
-                    ."💬 พิมพ์ 'คุยกับแม่หมอ' เพื่อติดต่อแอดมินโดยตรง\n"
-                    ."💡 หากต้องการขอเงินคืน พิมพ์ 'ขอเงินคืน' ได้นะคะ";
-
-                $sent = $channelManager->sendResponse($platform, $userId, [
-                    'action' => 'stuck_paid_apology',
-                    'message' => $message,
-                    'reading' => $reading,
-                ], [
-                    'from_admin' => true,
-                    'message_tag' => 'POST_PURCHASE_UPDATE',
-                ]);
-
-                if ($sent) {
-                    $reading->setConversationState('admin_review_apology_sent', true);
-                    $reading->setConversationState('admin_review_apology_at', now()->toIso8601String());
-                    $this->info("  ✅ #{$reading->id} ({$billRef}) — flag + apology sent ({$platform})");
-                } else {
-                    // push fail (FB 24hr expired / LINE quota) — flag ยังตั้ง รอลูกค้าทักกลับ
-                    $this->warn("  ⚠️ #{$reading->id} ({$billRef}) — flag set, apology push fail");
-                }
-            } catch (\Throwable $pushErr) {
-                $this->warn("  ⚠️ #{$reading->id} ({$billRef}) — flag set, apology push exception: {$pushErr->getMessage()}");
-                Log::warning('Fortune Expire Stuck Paid: push apology ล้มเหลว', [
-                    'reading_id' => $reading->id,
-                    'error' => $pushErr->getMessage(),
-                ]);
-            }
-        } else {
-            $this->info("  ✅ #{$reading->id} ({$billRef}) — flag set (no user_id, skip apology)");
-        }
+        // 🛑 (2026-05-22 #5) DISABLED per user request — "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย"
+        //   เหตุผล: apology DM "คำทำนายของคุณจะมาแน่นอน" → admin ดูแลไม่ทัน → ลูกค้าด่ามากกว่าเดิม
+        //   ลูกค้า paid + เกิน 24 ชม. = admin alert via LINE + flag admin_review_needed
+        //   admin จัดการ manual ผ่าน /admin/fortune/billing filter=admin_review_needed
+        $this->info("  ✅ #{$reading->id} ({$billRef}) — flag set (apology DM disabled, admin LINE alert ยังเปิด)");
 
         Log::info('Fortune Expire Stuck Paid: marked admin_review_needed', [
             'reading_id' => $reading->id,
