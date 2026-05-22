@@ -2103,7 +2103,7 @@ PROMPT;
      * - Per-key 429 cooldown 30s → กัน thundering herd
      *
      * @param  int  $totalTimeoutMs  งบเวลารวมสูงสุด (default 15000 = 15s, เหลือ 5s ให้ FB)
-     * @param  int  $maxPoolAttempts  จำกัดจำนวน pool key ที่ลอง (default 4)
+     * @param  int  $maxPoolAttempts  จำกัดจำนวน free pool key ที่ลอง (default 8)
      * @param  string|null  $userContext  สำหรับ jitter (เช่น facebookUserId)
      * @return array ['response' => string, 'provider' => string, 'model' => string]
      *
@@ -2114,7 +2114,7 @@ PROMPT;
         ?array $userProfile = null,
         array $history = [],
         int $totalTimeoutMs = 15000,
-        int $maxPoolAttempts = 4,
+        int $maxPoolAttempts = 8,  // 🎯 (2026-05-22) bumped 4→8 — 429 fail fast (~330ms) มีเวลาลองหลายตัว
         ?string $userContext = null
     ): array {
         $startTime = microtime(true);
@@ -2215,15 +2215,34 @@ PROMPT;
         //   1. แยก keys เป็น free vs paid (โดย pool_key.metadata.tier === 'paid')
         //   2. Phase 1: free keys — budget 10s OR maxPoolAttempts
         //   3. Phase 2: paid keys — only เมื่อ Phase 1 fail (paid = emergency, max 2 attempts)
+        // 🎯 (2026-05-22) Auto-detect paid tier เมื่อ admin ลืม set metadata.tier='paid'
+        //   Production bug 14:07:47 — `free=4, paid=0` — Pool ใช้ free key 429 หมด แต่
+        //   ไม่ลอง paid Gemini เลย เพราะ paid key ไม่มี metadata.tier='paid' ตั้งไว้
+        //   → ทุก key ลง freeKeys หมด → maxPoolAttempts=4 หมดก่อนถึง paid (priority ต่ำสุด)
+        //
+        // Signal ที่บอกว่าเป็น paid:
+        //   1. metadata.tier === 'paid'              (admin set ตรง — ทางการ)
+        //   2. rate_limit_per_minute >= 100          (paid ตั้ง RPM สูง = free tier <= 30)
+        //   3. priority <= 20                        (user spec: paid priority ต่ำเป็น backup)
         $freeKeys = [];
         $paidKeys = [];
         foreach ($allKeys as $k) {
             $tier = '';
+            $rpmExplicit = 0;
+            $priorityHint = 50;
             if (isset($k['pool_key']) && $k['pool_key'] instanceof AiApiKey) {
-                $meta = $k['pool_key']->metadata ?? [];
+                $poolKeyModel = $k['pool_key'];
+                $meta = $poolKeyModel->metadata ?? [];
                 $tier = (string) ($meta['tier'] ?? '');
+                $rpmExplicit = (int) ($poolKeyModel->attributes['rate_limit_per_minute'] ?? 0);
+                $priorityHint = (int) ($poolKeyModel->priority ?? 50);
             }
-            if ($tier === 'paid') {
+
+            $isPaid = ($tier === 'paid')
+                || ($rpmExplicit >= 100)
+                || ($priorityHint <= 20);
+
+            if ($isPaid) {
                 $paidKeys[] = $k;
             } else {
                 $freeKeys[] = $k;
