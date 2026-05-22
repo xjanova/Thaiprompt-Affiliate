@@ -3551,10 +3551,93 @@ PROMPT;
             }
         }
 
-        // ทุก key ล้มหมด
+        // 🆘 (2026-05-22) Emergency broadening — purpose-scoped keys หมด → ลอง key อื่น
+        //   เคสจริง: FTU-260522-V8290 — Gemini prediction_deep ทุก key 429 หมด แต่ admin
+        //   มี OpenAI key purpose='prediction_celtic' (สงวนสำหรับ Celtic 99) → ไม่ match
+        //   scope prediction_deep → Pool ไม่หมุนไป OpenAI → ลูกค้าไม่ได้คำทำนาย
+        //
+        //   Fix: ถ้า purpose เป็น prediction-family แล้วหมดทุก key → expand scope
+        //   ลอง key ทุกตัวที่ available (skip sensitive/tts — strict scope) + ยังไม่เคยลอง
+        $isEmergencyEligible = in_array(
+            $purpose,
+            ['prediction_deep', 'prediction_celtic', 'prediction', 'free_card'],
+            true
+        );
+        $stillHaveBudget = (microtime(true) - $startTime) < self::DEEP_TOTAL_BUDGET_SEC;
+
+        if ($isEmergencyEligible && $stillHaveBudget && ! empty($errors)) {
+            // ID ของ keys ที่ลองไปแล้วใน main loop
+            $triedIds = [];
+            foreach ($allKeys as $k) {
+                if (isset($k['pool_key']) && $k['pool_key'] instanceof AiApiKey) {
+                    $triedIds[] = $k['pool_key']->id;
+                }
+            }
+
+            // เปิด scope กว้าง — รวม prediction_celtic + free_card + chat + null
+            // exclude: sensitive (strict, Pro แพง) + tts (schema ต่าง)
+            $emergencyKeys = AiApiKey::available()
+                ->whereNotIn('purpose', ['sensitive', 'tts'])
+                ->when(! empty($triedIds), fn ($q) => $q->whereNotIn('id', $triedIds))
+                ->orderBy('priority', 'desc')
+                ->get();
+
+            Log::warning('FortuneAI: 🆘 Emergency broadening — purpose scope exhausted → ลอง key อื่น', [
+                'original_purpose' => $purpose,
+                'tried_count' => count($triedIds),
+                'emergency_candidates' => $emergencyKeys->count(),
+                'providers_available' => $emergencyKeys->pluck('provider')->unique()->values()->toArray(),
+            ]);
+
+            foreach ($emergencyKeys as $emKey) {
+                if ((microtime(true) - $startTime) >= self::DEEP_TOTAL_BUDGET_SEC) {
+                    Log::warning('FortuneAI: emergency expand เกิน budget — หยุด');
+                    break;
+                }
+
+                $emProvider = $emKey->provider;
+                $emModel = $emKey->resolveModel() ?: '';
+                $emBaseUrl = $emKey->resolveBaseUrl();
+                $emLabel = "EMERGENCY {$emProvider}/{$emKey->name}";
+
+                try {
+                    Log::info("FortuneAI: 🆘 ลอง emergency key {$emLabel} (purpose={$emKey->purpose})");
+
+                    $result = $this->callProviderDirect(
+                        $emProvider, $emKey->api_key, $emModel, $prompt, $config, $emBaseUrl
+                    );
+
+                    $responseTime = (int) ((microtime(true) - $startTime) * 1000);
+                    $this->recordUsageForKey(
+                        $emKey,
+                        (int) ($result['tokens_used'] ?? 0),
+                        (string) ($result['model'] ?? $emModel),
+                        $responseTime,
+                        $readingType
+                    );
+
+                    Log::warning("FortuneAI: 🆘 EMERGENCY EXPAND สำเร็จ — {$emLabel}", [
+                        'original_purpose' => $purpose,
+                        'rescue_purpose' => $emKey->purpose,
+                        'tokens_used' => $result['tokens_used'] ?? 0,
+                        'elapsed_ms' => $responseTime,
+                    ]);
+
+                    return $this->sanitizeChatResult($result);
+                } catch (Exception $emErr) {
+                    $this->recordErrorForKey($emKey, $emErr->getMessage(), $emModel);
+                    $errors[] = "{$emLabel}: ".Str::limit($emErr->getMessage(), 100);
+
+                    continue;
+                }
+            }
+        }
+
+        // ทุก key ล้มหมด (รวม emergency expand)
         $errorSummary = implode(' | ', array_slice($errors, 0, 5));
-        Log::error('FortuneAI: ทุก key ล้มหมด', [
+        Log::error('FortuneAI: ทุก key ล้มหมด (รวม emergency expand)', [
             'total_tried' => count($errors),
+            'purpose' => $purpose,
             'errors' => $errors,
         ]);
         throw new Exception('ไม่สามารถเชื่อมต่อ AI ได้ (ลองแล้ว '.count($errors)." keys): {$errorSummary}");
