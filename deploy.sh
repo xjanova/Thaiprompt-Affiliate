@@ -1936,6 +1936,41 @@ else
     print_warning "⚠ Unexpected files in working directory"
 fi
 
+# ============================================================
+# 🔄 CRON SELF-HEAL (DirectAdmin/shared hosting มัก wipe crontab)
+# ============================================================
+# Laravel scheduler base cron (* * * * * php artisan schedule:run)
+# คือ "หัวใจ" ที่รัน fortune:mystic:publish, celtic-recover, sms-sweep ฯลฯ
+# ถ้าหาย = ระบบ auto-post + recovery ทั้งหมดตาย เงียบๆ
+# ensure-cron.sh เป็น idempotent — รันซ้ำกี่ครั้งก็ไม่ duplicate
+print_info "🔄 Ensuring Laravel scheduler cron is installed..."
+if [ -x "$SCRIPT_DIR/scripts/ensure-cron.sh" ] || [ -f "$SCRIPT_DIR/scripts/ensure-cron.sh" ]; then
+    if bash "$SCRIPT_DIR/scripts/ensure-cron.sh" "$SCRIPT_DIR" >> "$LOG_FILE" 2>&1; then
+        print_success "✓ Cron schedule:run verified/installed"
+    else
+        print_warning "⚠ ensure-cron.sh failed (crontab unavailable in this shell?)"
+        print_warning "  Manually add in DirectAdmin → Cron Jobs:"
+        print_warning "  * * * * * cd $SCRIPT_DIR && php artisan schedule:run >> /dev/null 2>&1"
+    fi
+else
+    print_warning "⚠ scripts/ensure-cron.sh not found — skipping cron self-heal"
+fi
+
+# Verify cron actually installed (independent check)
+if command -v crontab >/dev/null 2>&1; then
+    if crontab -l 2>/dev/null | grep -q "artisan schedule:run"; then
+        CRON_COUNT=$(crontab -l 2>/dev/null | grep -c "artisan schedule:run")
+        if [ "$CRON_COUNT" -eq 1 ]; then
+            print_success "✓ Cron verified: 1 schedule:run entry present"
+        else
+            print_warning "⚠ Found $CRON_COUNT schedule:run entries (expected 1) — may need cleanup"
+        fi
+    else
+        print_warning "⚠ CRITICAL: No 'artisan schedule:run' cron found after install attempt!"
+        print_warning "  ระบบ auto-post + scheduled jobs จะไม่ทำงาน — ต้องตั้งใน DirectAdmin manually"
+    fi
+fi
+
 # Deployment Summary
 print_header "✅ Deployment Completed Successfully!"
 
@@ -1958,6 +1993,7 @@ echo "  ✓ Laravel Sanctum installed/updated"
 echo "  ✓ Database migrations applied"
 echo "  ✓ All caches regenerated"
 echo "  ✓ Permissions configured"
+echo "  ✓ Cron schedule:run verified (self-heal)"
 echo ""
 
 print_info "📋 Post-Deployment Checklist:"
@@ -1966,6 +2002,8 @@ echo "  □ Check logs: tail -f storage/logs/laravel.log"
 echo "  □ Monitor error logs: tail -f storage/logs/deployment.log"
 echo "  □ Verify database migrations: php artisan migrate:status"
 echo "  □ Check queue workers: php artisan queue:monitor"
+echo "  □ Verify cron: crontab -l | grep schedule:run  (ต้องเจอ 1 บรรทัด)"
+echo "  □ Test scheduler: php artisan schedule:list  (ดู task ที่ลงคิว)"
 echo ""
 
 # Generate rollback commands from history
