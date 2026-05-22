@@ -246,6 +246,57 @@ class AiApiKey extends Model
      *
      * ค่าในตารางลบ safety margin 5-10% — กัน boundary 429
      */
+    /**
+     * 🪙 (2026-05-23 Phase 5) TPM (Tokens Per Minute) free-tier limits
+     *
+     * พบ 2026-05-23: Groq llama-3.3-70b TPM=6000 แต่ avg/call=7946 tokens
+     * → ทะลุตั้งแต่ call แรก! RPM check ที่ 28 ไม่ช่วย (TPM ตันก่อน)
+     *
+     * Strategy: ก่อน acquire ดู accumulated TPM ของ key — ถ้า > 90% limit → skip
+     * (แม้ยังไม่ทะลุ ก็ส่งไปคีย์อื่น เผื่อ next call ทะลุ)
+     *
+     * Verified 2026-05 (free tier):
+     */
+    public const MODEL_TPM_FREE_TIER = [
+        'groq' => [
+            '_default' => 6000,
+            'llama-3.3-70b-versatile' => 6000,           // ตัวที่ทะลุจริงในระบบเรา
+            'llama-3.1-70b-versatile' => 6000,
+            'llama-3.1-8b-instant' => 30000,             // ขยับมาใช้ตัวนี้แทน 70b — TPM 5x
+            'llama-3.2-90b-vision-preview' => 7000,
+            'llama-3.2-11b-vision-preview' => 7000,
+            'meta-llama/llama-4-scout-17b-16e-instruct' => 30000,
+            'meta-llama/llama-4-maverick-17b-128e-instruct' => 30000,
+            'openai/gpt-oss-120b' => 8000,
+            'openai/gpt-oss-20b' => 8000,
+            'gemma2-9b-it' => 15000,
+            'qwen-qwq-32b' => 6000,
+            'deepseek-r1-distill-llama-70b' => 6000,
+        ],
+        'gemini' => [
+            // Gemini ใช้ Project quota เป็นหลัก (RPD/TPD) — TPM ไม่ใช่ bottleneck หลัก
+            // แต่ใส่ไว้กันเหนียว
+            '_default' => 250000,
+            'gemini-3.1-pro-preview' => 250000,
+            'gemini-2.5-pro' => 250000,
+            'gemini-2.5-flash' => 250000,
+            'gemini-2.5-flash-lite' => 250000,
+            'gemini-2.0-flash' => 1000000,
+            'gemini-2.0-flash-lite' => 1000000,
+            'gemini-1.5-flash' => 250000,
+            'gemini-1.5-pro' => 32000,
+        ],
+        'grok' => ['_default' => 100000],
+        'openai' => ['_default' => 200000],                  // Tier 1
+        'openrouter' => ['_default' => 60000],
+        'deepseek' => ['_default' => 200000],
+        'qwen' => ['_default' => 60000],
+        'typhoon' => ['_default' => 60000],
+        'xiaomi' => ['_default' => 60000],
+        'anthropic' => ['_default' => 40000],
+        'minimax' => ['_default' => 60000],
+    ];
+
     public const MODEL_RPM_FREE_TIER = [
         'groq' => [
             '_default' => 28,                                      // 30 actual
@@ -311,6 +362,10 @@ class AiApiKey extends Model
     public const PURPOSES = [
         'any' => '⚙️ ใช้ได้ทุกอย่าง (default — แชท/ทำนาย/ฟรีการ์ด ใช้ได้)',
         'chat' => '💬 แชทสนทนา (คุยกับลูกค้าทั่วไป)',
+        // 💙 (2026-05-23) Paid chat — last resort หลัง free chat + any หมด
+        //    STRICT scope (เหมือน 'sensitive') — caller=null ไม่ใช้
+        //    เผา quota paid; caller='chat' เท่านั้นที่จะถึงได้
+        'chat_paid' => '💙 แชทพิเศษ (Paid Chat — last resort หลัง free หมด)',
         'prediction' => '🔮 ทำนายทั่วไป (ใช้ทั้ง Deep 39 + Celtic 99 ถ้าไม่แยก)',
         // 🎯 (2026-05-13) แยกตามแพคเกจ — admin มาร์คได้ละเอียด
         'prediction_deep' => '🌟 ทำนาย Deep 39฿ เฉพาะ (เน้น speed)',
@@ -643,6 +698,14 @@ class AiApiKey extends Model
             return $query->where('purpose', 'tts');
         }
 
+        // 💙 (2026-05-23) chat_paid = STRICT scope (เรียกตรงเท่านั้น)
+        //    caller='chat_paid' = admin/system บังคับใช้ paid chat key ตรง
+        //    caller='chat' → ไป path ปกติ (chat+any+null) แต่ acquireKeyAnyProvider
+        //    จะ promote chat_paid เป็น Tier 3 fallback (last resort) อัตโนมัติ
+        if ($purpose === 'chat_paid') {
+            return $query->where('purpose', 'chat_paid');
+        }
+
         // 🎯 (2026-05-13) prediction_deep — Deep 39฿ เจาะจง
         //   Fallback chain: prediction_deep → prediction → any → null
         //   admin มาร์คเจาะจง 'prediction_deep' = ใช้ key นี้ก่อน,
@@ -680,7 +743,17 @@ class AiApiKey extends Model
             });
         }
 
-        // chat / อื่นๆ = match purpose ตรง + any/null (ไม่ใช้ sensitive)
+        // 💬 (2026-05-23) chat = match [chat, any, null, chat_paid]
+        //    chat_paid อยู่ใน pool เพื่อให้ acquireKeyAnyProvider classify เป็น Tier 3 (last resort)
+        //    ตอน free chat + any หมดแล้วเท่านั้นจึงจะถึง chat_paid
+        if ($purpose === 'chat') {
+            return $query->where(function ($q) {
+                $q->whereNull('purpose')
+                    ->orWhereIn('purpose', ['any', 'chat', 'chat_paid']);
+            });
+        }
+
+        // อื่นๆ = match purpose ตรง + any/null (ไม่ใช้ sensitive)
         return $query->where(function ($q) use ($purpose) {
             $q->whereNull('purpose')
                 ->orWhere('purpose', 'any')
@@ -835,6 +908,34 @@ class AiApiKey extends Model
         }
 
         return (int) ($providerMap['_default'] ?? 30);
+    }
+
+    /**
+     * 🪙 (2026-05-23 Phase 5) คืน TPM (Tokens Per Minute) limit ที่ใช้จริง
+     *
+     * Logic เหมือน getEffectiveRpmLimit แต่ดู MODEL_TPM_FREE_TIER
+     *
+     * @return int  TPM limit (0 = unlimited)
+     */
+    public function getEffectiveTpmLimit(): int
+    {
+        // Admin override ผ่าน metadata.tpm_limit (optional — ส่วนใหญ่ไม่ต้องตั้ง)
+        $metadata = $this->metadata ?? [];
+        if (isset($metadata['tpm_limit']) && is_numeric($metadata['tpm_limit'])) {
+            return (int) $metadata['tpm_limit'];
+        }
+
+        $providerMap = self::MODEL_TPM_FREE_TIER[$this->provider] ?? null;
+        if (! is_array($providerMap)) {
+            return 0; // unknown provider → unlimited (เพราะไม่อยากบล็อก provider ใหม่)
+        }
+
+        $model = ! empty($this->model) ? $this->model : null;
+        if ($model !== null && isset($providerMap[$model])) {
+            return (int) $providerMap[$model];
+        }
+
+        return (int) ($providerMap['_default'] ?? 0);
     }
 
     // ============================================================
@@ -1006,6 +1107,18 @@ class AiApiKey extends Model
             'is_success' => true,
             'request_type' => $requestType,
         ]);
+
+        // 🪙 (2026-05-23 Phase 5) Accumulate TPM (Tokens Per Minute) — กัน Groq llama-3.3-70b ทะลุ 6000
+        //   ทุก call ที่สำเร็จ → บวก tokens ลง 'pool:tpm:{provider}:{key_id}' (TTL 60s)
+        //   AiApiKeyPoolService.isTpmSaturated() ใช้ filter ก่อน acquire ครั้งถัดไป
+        if ($totalTokens > 0) {
+            $tpmKey = "pool:tpm:{$this->provider}:{$this->id}";
+            if (Cache::has($tpmKey)) {
+                Cache::increment($tpmKey, $totalTokens);
+            } else {
+                Cache::put($tpmKey, $totalTokens, 60);
+            }
+        }
     }
 
     /**

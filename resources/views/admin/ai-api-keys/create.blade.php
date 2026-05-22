@@ -126,7 +126,8 @@
                     🌟 <strong>prediction_deep</strong> → Deep 39฿ ก่อน, fallback → prediction → any<br>
                     🔮 <strong>prediction</strong> = legacy — ใช้ทั้ง Deep + Celtic (ถ้าไม่อยากแยก)<br>
                     🎁 <strong>free_card</strong> → ทำนายฟรี (boost +1000 — สงวน paid keys)<br>
-                    💬 <strong>chat</strong> → แชทสนทนา — ไม่กระทบ pool ทำนาย<br>
+                    💬 <strong>chat</strong> → แชทสนทนา (FREE) — ไม่กระทบ pool ทำนาย<br>
+                    <span class="text-blue-600 dark:text-blue-400">💙 <strong>chat_paid</strong> → แชทพิเศษ (สีฟ้า, paid) — LAST RESORT หลัง free + any หมด</span><br>
                     🌟 <strong>sensitive</strong> = STRICT — Pro Session (Bill / Celtic Premium) ไม่ fallback<br>
                     🎙️ <strong>tts</strong> = STRICT — เฉพาะสังเคราะห์เสียง<br>
                     🔼 <strong>Priority</strong> สูง = เลือกก่อนใน purpose เดียวกัน (100 = สูงสุด)

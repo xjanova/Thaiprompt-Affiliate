@@ -175,7 +175,13 @@
                                 $purposeBadges = [
                                     'free_card' => ['emoji' => '🎁', 'label' => 'ฟรี', 'class' => 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'],
                                     'prediction' => ['emoji' => '💎', 'label' => 'ทำนายเสีย', 'class' => 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'],
+                                    'prediction_deep' => ['emoji' => '🌟', 'label' => 'Deep 39', 'class' => 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'],
+                                    'prediction_celtic' => ['emoji' => '💎', 'label' => 'Celtic 99', 'class' => 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'],
                                     'chat' => ['emoji' => '💬', 'label' => 'แชท', 'class' => 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300'],
+                                    // 💙 (2026-05-23) Paid chat — LAST RESORT badge สีฟ้าเข้ม
+                                    'chat_paid' => ['emoji' => '💙', 'label' => 'แชทพิเศษ', 'class' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-400'],
+                                    'sensitive' => ['emoji' => '🌟', 'label' => 'Sensitive', 'class' => 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'],
+                                    'tts' => ['emoji' => '🎙️', 'label' => 'TTS', 'class' => 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'],
                                 ];
                                 $purpose = $key['purpose'] ?? 'any';
                             @endphp

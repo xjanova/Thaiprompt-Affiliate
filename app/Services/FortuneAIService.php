@@ -4226,24 +4226,52 @@ PROMPT;
         }
         $provider = $keyInfo['provider'];
 
-        if ($success) {
-            // Increment RPM (TTL 60s)
-            $rpmKey = "pool:rpm:{$provider}:{$poolKey->id}";
-            if (cache()->has($rpmKey)) {
-                cache()->increment($rpmKey);
-            } else {
-                cache()->put($rpmKey, 1, 60);
-            }
-        } elseif ($errorMessage !== null) {
+        // 🩹 (2026-05-23 Phase 3) RPM increment ทั้ง success + fail
+        //   เดิม: increment เฉพาะ success → fail (429) ไม่ถูก count
+        //   → ระบบมองว่า key ยังว่าง → เลือกซ้ำ → 429 loop
+        //   ใหม่: ทุก call ที่ "ได้ยิง API" → count (เพราะ quota provider ใช้ไปแล้ว)
+        $rpmKey = "pool:rpm:{$provider}:{$poolKey->id}";
+        if (cache()->has($rpmKey)) {
+            cache()->increment($rpmKey);
+        } else {
+            cache()->put($rpmKey, 1, 60);
+        }
+
+        if (! $success && $errorMessage !== null) {
             // Per-key cooldown ถ้าโดน rate limit (429) — 30s
             $msg = mb_strtolower($errorMessage);
-            if (str_contains($msg, '429') || str_contains($msg, 'rate limit') || str_contains($msg, 'quota')) {
+            $is429 = str_contains($msg, '429') || str_contains($msg, 'rate limit') || str_contains($msg, 'quota');
+
+            if ($is429) {
                 cache()->put("pool:cooldown:{$provider}:{$poolKey->id}", true, 30);
                 Log::info('FortuneAI: Per-key cooldown 30s (429)', [
                     'provider' => $provider,
                     'key_id' => $poolKey->id,
                     'error_preview' => mb_substr($errorMessage, 0, 80),
                 ]);
+
+                // 🏢 (2026-05-23 Phase 4) Groq org-level ban
+                //   ถ้า provider=groq → extract org_id + ban ทั้ง org 60s
+                //   ทุก key อื่นใน org เดียวกันจะถูก skip ใน Pool filter
+                //   → กัน rotate ใน org เดิม → กระจายไป org อื่น
+                if ($provider === 'groq') {
+                    try {
+                        /** @var \App\Services\AiApiKeyPoolService $pool */
+                        $pool = app(\App\Services\AiApiKeyPoolService::class);
+                        $orgId = $pool->learnGroqOrgId($poolKey, $errorMessage);
+                        if ($orgId) {
+                            $pool->banGroqOrg($orgId, 60);
+                            Log::warning('FortuneAI: Groq org banned 60s', [
+                                'key_id' => $poolKey->id,
+                                'org_id' => $orgId,
+                            ]);
+                        }
+                    } catch (\Throwable $e) {
+                        Log::warning('FortuneAI: Groq org ban failed', [
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
         }
     }

@@ -37,6 +37,52 @@ class AiApiKeyPoolService
     private const RPM_PREFIX = 'pool:rpm:';            // {provider}:{key_id} — TTL 60s
 
     /**
+     * 🆕 (2026-05-23 Phase 2) Per-key spacing สำหรับ chat-family purposes
+     *
+     * วัตถุประสงค์: บังคับเว้นระยะระหว่างใช้ key เดิม → กระจาย load
+     * → ทุก key ถูกใช้สลับกัน (ตายช้าที่สุด)
+     *
+     * spacing = 60 / rpm_limit × CHAT_SPACING_FACTOR วินาที
+     *   เช่น Groq RPM=28 → 60/28 × 2.0 = 4.3 วินาที/คีย์
+     *   เช่น Gemini Flash-Lite RPM=14 → 60/14 × 2.0 = 8.6 วินาที/คีย์
+     *
+     * Apply เฉพาะ chat-family (chat, chat_paid) ไม่กระทบ prediction
+     * (prediction ใช้เวลา 30-60s อยู่แล้ว throughput ต่ำ ไม่ต้อง space)
+     */
+    private const CHAT_SPACING_PREFIX = 'pool:chat_spacing:'; // {provider}:{key_id} — TTL = spacing seconds
+
+    private const CHAT_SPACING_FACTOR = 2.0;
+
+    private const CHAT_FAMILY_PURPOSES = ['chat', 'chat_paid'];
+
+    /**
+     * 🏢 (2026-05-23 Phase 4) Groq organization-level cooldown
+     *
+     * Groq นับ rate limit per ORGANIZATION ไม่ใช่ per key
+     * ถ้า admin ใช้ Groq หลาย key ในองค์กรเดียวกัน → 1 key ติด 429 = ทั้ง org เต็ม
+     *
+     * ค้นพบ 2026-05-23: 10 Groq keys = แค่ 7 องค์กร (3 key × 2 orgs)
+     * Pool เลือก key A 429 → fallback key B (org เดียวกัน) → 429 ทันที → loop
+     *
+     * Fix: parse org_id จาก error message → ban ทั้ง org 60s
+     */
+    private const GROQ_ORG_BAN_PREFIX = 'pool:groq_org_ban:';  // {org_id} — TTL = retry_after
+
+    /**
+     * 🪙 (2026-05-23 Phase 5) TPM (Tokens Per Minute) accumulator
+     *
+     * Track tokens ที่ key ใช้ใน 60s ที่ผ่านมา → กัน TPM ทะลุ provider limit
+     *
+     * Threshold: ถ้า current TPM >= 90% ของ limit → skip key (preemptive)
+     * เพราะ next call อาจใช้เพิ่ม 10-20% → ทะลุ
+     *
+     * เก็บ Cache::put(TTL=60s) → reset อัตโนมัติทุก 60s
+     */
+    private const TPM_PREFIX = 'pool:tpm:';  // {provider}:{key_id} — TTL 60s
+
+    private const TPM_SAFETY_THRESHOLD = 0.9;  // skip ถ้า used >= 90% limit
+
+    /**
      * 🆕 (v5.1 — 2026-05-19) Strict purposes ที่ห้ามถูกใช้กับ generic call (caller=null)
      *
      *   เหตุผล: admin ตั้ง purpose นี้ = สงวน strictly (ไม่ fallback)
@@ -46,7 +92,9 @@ class AiApiKeyPoolService
      *   ใช้ใน acquireKeyAnyProvider($purpose=null) — exclude ออกก่อน tier sort
      *   admin ที่อยาก force ใช้ key นี้ → เรียก acquireKey($provider, 'sensitive') ตรง
      */
-    private const STRICT_PURPOSES_BLOCKED_FOR_GENERIC = ['sensitive', 'tts'];
+    // 💙 (2026-05-23) เพิ่ม chat_paid — caller=null ห้ามใช้ paid chat key (เผา quota)
+    //    caller='chat' เท่านั้นที่ acquireKeyAnyProvider จะ promote chat_paid เป็น Tier 3
+    private const STRICT_PURPOSES_BLOCKED_FOR_GENERIC = ['sensitive', 'tts', 'chat_paid'];
 
     /**
      * ดึง API Key ที่พร้อมใช้งานสำหรับ provider
@@ -507,6 +555,14 @@ class AiApiKeyPoolService
                     return 1; // general-purpose backup
                 }
 
+                // 💙 (2026-05-23) chat_paid = Tier 3 last-resort fallback
+                //    เมื่อ caller='chat' + free chat (Tier 0) + any (Tier 1) + null (Tier 2) หมด
+                //    ระบบจึงจะถึง chat_paid (paid chat key สีฟ้า)
+                //    กัน paid quota เผาไปกับ chitchat ลูกค้าเดินผ่าน
+                if ($purpose === 'chat' && $keyPurpose === 'chat_paid') {
+                    return 3; // last resort — paid chat
+                }
+
                 return 2; // null / legacy
             }
 
@@ -533,12 +589,35 @@ class AiApiKeyPoolService
                 ->groupBy(fn ($k) => (int) $k->priority)
                 ->sortKeysDesc(SORT_NUMERIC);
 
+            // 💬 (2026-05-23 Phase 2) Detect chat-family request — เปิด spacing + LRU
+            //   chat-family = caller='chat' / 'chat_paid' (ห้าม spam key เดิม)
+            //   prediction/sensitive/tts ไม่ space เพราะ throughput ต่ำอยู่แล้ว
+            $isChatFamily = in_array($purpose, self::CHAT_FAMILY_PURPOSES, true);
+
             foreach ($priorityTiers as $tierPriority => $tierKeys) {
-                // 4. กรอง runtime guards ก่อนเลือก (cooldown / inflight / rpm)
-                $eligible = $tierKeys->filter(function ($key) {
+                // 4. กรอง runtime guards ก่อนเลือก (cooldown / inflight / rpm / spacing)
+                $eligible = $tierKeys->filter(function ($key) use ($isChatFamily) {
                     $provider = $key->provider;
 
                     if (Cache::has("pool:cooldown:{$provider}:{$key->id}")) {
+                        return false;
+                    }
+
+                    // 🏢 (Phase 4) Groq org-level ban — กัน rotate ภายใน org เดียวกัน
+                    //   Groq นับ rate limit per org ไม่ใช่ per key
+                    //   ถ้า key A ติด 429 → key B/C ใน org เดียวกัน = ติดด้วย
+                    //   pool รู้ org_id ของแต่ละ key ผ่าน metadata.groq_org_id (auto-learn)
+                    if ($provider === 'groq') {
+                        $orgId = $key->metadata['groq_org_id'] ?? null;
+                        if ($this->isGroqOrgBanned($orgId)) {
+                            return false;
+                        }
+                    }
+
+                    // 💬 (Phase 2) spacing — chat-family เท่านั้น
+                    //   หลังใช้ key A → ต้องรอ 60/rpm × 2.0 วินาที ก่อนใช้ A ซ้ำ
+                    //   ช่วงนี้ ไป key B, C, D, ... → หมุนเวียนยุติธรรม
+                    if ($isChatFamily && $this->isChatSpaced($provider, $key->id)) {
                         return false;
                     }
 
@@ -560,6 +639,14 @@ class AiApiKeyPoolService
                         return false;
                     }
 
+                    // 🪙 (Phase 5) TPM check — กัน Groq llama-3.3-70b ทะลุ 6000 tokens/min
+                    //   ดู MODEL_TPM_FREE_TIER. skip ถ้า used >= 90% limit (preemptive)
+                    //   พบ 2026-05-23: avg/call=7946 → 1 call ทะลุ TPM 6000 ของ llama-3.3-70b
+                    //   แก้: เปลี่ยน model เป็น llama-3.1-8b-instant (TPM 30000) ที่ admin UI
+                    if ($this->isTpmSaturated($key)) {
+                        return false;
+                    }
+
                     return true;
                 })->values();
 
@@ -567,10 +654,24 @@ class AiApiKeyPoolService
                     continue; // priority-tier นี้หมดสิทธิ์ — ลง priority-tier ถัดไป
                 }
 
+                // 💬 (2026-05-23 Phase 2) LRU sort สำหรับ chat-family
+                //   เรียง key ตาม last_used_at ASC → คีย์พักนานสุดมาก่อน
+                //   → กระจายการใช้ยุติธรรม + กัน thundering herd
+                //   key ที่ไม่เคยใช้ (last_used_at=null) มาก่อนสุด (priority แรก)
+                if ($isChatFamily) {
+                    $eligible = $eligible->sortBy(function ($k) {
+                        // null = ไม่เคยใช้ → sort ขึ้นก่อน (timestamp 0)
+                        return $k->last_used_at ? $k->last_used_at->timestamp : 0;
+                    })->values();
+                }
+
                 // 5. เลือก key จาก eligible pool ตาม global rotation mode
                 //    ✅ Scope key — แยกตาม purpose-tier + priority-tier (กัน rotation pointer ปนกัน)
+                //    💬 (Phase 2) chat-family — eligible ถูก sort LRU แล้ว → pick top
                 $scopeKey = "p{$pTier}_pri{$tierPriority}_cross";
-                $key = $this->selectKeyByMode($eligible, $globalMode, $scopeKey);
+                $key = $isChatFamily
+                    ? $eligible->first()
+                    : $this->selectKeyByMode($eligible, $globalMode, $scopeKey);
 
                 if (! $key) {
                     continue;
@@ -600,14 +701,30 @@ class AiApiKeyPoolService
                     optional($lock)->release();
                 }
 
+                // 🩹 (2026-05-23 Phase 3) Pre-call RPM increment — กัน thundering herd
+                //   นับทันทีหลัง acquire สำเร็จ (ก่อนยิง API)
+                //   ทั้ง success และ fail (429) จะถูก count → ระบบเห็น load จริง
+                //   → ครั้งถัดไป pool จะเลือก key อื่นที่ RPM ยังต่ำ
+                $this->incrementKeyRpm($provider, $key->id);
+
+                // 💬 (2026-05-23 Phase 2) Set chat-family spacing — บังคับเว้นระยะก่อนใช้ key เดิม
+                //   ตัวอย่าง: Groq RPM=28 → spacing 4.3s/key
+                //   ตอน acquire ครั้งถัดไป (ภายใน window): key นี้ถูก skip → ระบบไป key อื่น
+                //   → หมุนเวียนยุติธรรม / ไม่ thundering herd
+                //   Tier 3 (chat_paid) ก็ space เหมือนกัน (กัน paid quota เผาเร็ว)
+                if ($isChatFamily) {
+                    $this->setChatSpacing($provider, $key->id, $key->getEffectiveRpmLimit());
+                }
+
                 // 🆕 (v5 — 2026-05-19) Log purpose-tier label
-                //   Caller specified  : 0=exact, 1=any, 2=null/legacy
+                //   Caller specified  : 0=exact, 1=any, 2=null/legacy, 3=chat_paid (last resort)
                 //   Caller null       : 1=specific, 2=any, 3=null/legacy
                 $callerSpecified = ($purpose !== null && $purpose !== '');
                 $tierLabel = $callerSpecified
                     ? match ($pTier) {
                         0 => 'exact',
                         1 => 'any',
+                        3 => 'chat_paid (LAST RESORT)',
                         default => 'null/legacy',
                     }
                 : match ($pTier) {
@@ -745,13 +862,8 @@ class AiApiKeyPoolService
             Cache::forget($inflightKey);
         }
 
-        // ✅ Increment requests per minute counter (TTL 60s)
-        $rpmKey = self::RPM_PREFIX."{$provider}:{$keyId}";
-        if (Cache::has($rpmKey)) {
-            Cache::increment($rpmKey);
-        } else {
-            Cache::put($rpmKey, 1, 60);
-        }
+        // 🩹 (2026-05-23 Phase 3) RPM increment ย้ายไป pre-call ใน acquireKeyAnyProvider
+        //   เพื่อให้ count ทั้ง success+fail (เดิม count เฉพาะ success → fail loop)
     }
 
     /**
@@ -768,6 +880,179 @@ class AiApiKeyPoolService
     public function getKeyRpm(string $provider, int $keyId): int
     {
         return (int) Cache::get(self::RPM_PREFIX."{$provider}:{$keyId}", 0);
+    }
+
+    /**
+     * 🩹 (2026-05-23 Phase 3) Pre-call RPM increment — กัน thundering herd
+     *
+     * เดิม: RPM increment อยู่ใน releaseKey (post-success) เท่านั้น
+     *   → fail (429) ไม่ count → ระบบมองว่า key ยังว่าง → เลือกซ้ำ → 429 loop
+     *
+     * ใหม่: increment ทันทีหลัง pick key (ก่อนยิง API)
+     *   → ทั้ง success และ fail ถูก track
+     *   → ระบบเห็น load จริง → กระจายไป key อื่น
+     */
+    public function incrementKeyRpm(string $provider, int $keyId): void
+    {
+        $rpmKey = self::RPM_PREFIX."{$provider}:{$keyId}";
+        if (Cache::has($rpmKey)) {
+            Cache::increment($rpmKey);
+        } else {
+            Cache::put($rpmKey, 1, 60);
+        }
+    }
+
+    /**
+     * 💬 (2026-05-23 Phase 2) ตั้ง spacing cooldown สำหรับ chat-family key
+     *
+     * เรียกหลัง acquire สำเร็จ — บังคับเว้นระยะก่อนใช้ key เดิมซ้ำ
+     * → กระจาย load สม่ำเสมอ ทุก key ถูกหมุนเวียน
+     *
+     * spacing = 60 / rpm × 2.0 วินาที (ผู้ใช้เลือก factor 2.0 = ใจดี ยืดอายุสุด)
+     *
+     * @param  int  $rpmLimit  RPM limit ของ key (จาก getEffectiveRpmLimit)
+     */
+    public function setChatSpacing(string $provider, int $keyId, int $rpmLimit): void
+    {
+        if ($rpmLimit <= 0) {
+            return; // unlimited → ไม่ space
+        }
+
+        $spacingSeconds = (int) ceil(60.0 / $rpmLimit * self::CHAT_SPACING_FACTOR);
+        $spacingSeconds = max(1, $spacingSeconds); // อย่างน้อย 1 วินาที
+
+        Cache::put(self::CHAT_SPACING_PREFIX."{$provider}:{$keyId}", 1, $spacingSeconds);
+    }
+
+    /**
+     * 💬 (2026-05-23 Phase 2) ตรวจว่า key อยู่ใน spacing window หรือไม่
+     */
+    public function isChatSpaced(string $provider, int $keyId): bool
+    {
+        return Cache::has(self::CHAT_SPACING_PREFIX."{$provider}:{$keyId}");
+    }
+
+    /**
+     * 🏢 (2026-05-23 Phase 4) Extract Groq organization ID จาก error message
+     *
+     * ตัวอย่าง error:
+     *   "Rate limit reached for model `llama-3.3-70b-versatile`
+     *    in organization `org_01khzabedsegztw5mffmz4y` ..."
+     *
+     * @return string|null  org_id (เช่น "org_01khzabedsegztw5mffmz4y") หรือ null ถ้าไม่พบ
+     */
+    public function extractGroqOrgId(string $errorMessage): ?string
+    {
+        if (preg_match('/org_[a-z0-9]+/i', $errorMessage, $m)) {
+            return strtolower($m[0]);
+        }
+
+        return null;
+    }
+
+    /**
+     * 🏢 (2026-05-23 Phase 4) เรียนรู้ + บันทึก groq_org_id ของ key (ลง metadata JSON)
+     *
+     * เรียกตอน key Groq โดน 429 ครั้งแรก — เก็บ org_id ลง metadata
+     * ครั้งถัดไป pool รู้ทันทีว่า key นี้อยู่ org ไหน → check org ban ก่อน
+     */
+    public function learnGroqOrgId(AiApiKey $key, string $errorMessage): ?string
+    {
+        if ($key->provider !== 'groq') {
+            return null;
+        }
+
+        // ถ้า metadata มี org_id แล้ว ใช้ค่าเดิม (กัน update ซ้ำซาก)
+        $metadata = $key->metadata ?? [];
+        if (! empty($metadata['groq_org_id'])) {
+            return $metadata['groq_org_id'];
+        }
+
+        $orgId = $this->extractGroqOrgId($errorMessage);
+        if ($orgId === null) {
+            return null;
+        }
+
+        // Save to metadata (silent — fail ไม่ block flow)
+        try {
+            $metadata['groq_org_id'] = $orgId;
+            $key->update(['metadata' => $metadata]);
+        } catch (\Throwable $e) {
+            Log::warning('Pool: learnGroqOrgId update failed', [
+                'key_id' => $key->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        return $orgId;
+    }
+
+    /**
+     * 🏢 (2026-05-23 Phase 4) Ban Groq organization (ทุก key ใน org นี้)
+     *
+     * @param  int  $seconds  TTL ของ ban (default 60s ตาม Groq rate limit window)
+     */
+    public function banGroqOrg(string $orgId, int $seconds = 60): void
+    {
+        Cache::put(self::GROQ_ORG_BAN_PREFIX.$orgId, 1, $seconds);
+    }
+
+    /**
+     * 🏢 (2026-05-23 Phase 4) ตรวจว่า org อยู่ใน ban หรือไม่
+     */
+    public function isGroqOrgBanned(?string $orgId): bool
+    {
+        if (! $orgId) {
+            return false;
+        }
+
+        return Cache::has(self::GROQ_ORG_BAN_PREFIX.$orgId);
+    }
+
+    /**
+     * 🪙 (2026-05-23 Phase 5) ดึง TPM accumulator ของ key (60s window)
+     */
+    public function getKeyTpm(string $provider, int $keyId): int
+    {
+        return (int) Cache::get(self::TPM_PREFIX."{$provider}:{$keyId}", 0);
+    }
+
+    /**
+     * 🪙 (2026-05-23 Phase 5) เพิ่ม tokens ใน TPM accumulator (post-call)
+     *
+     * เรียกหลัง API call สำเร็จ — accumulate tokens ที่ใช้จริง
+     * Window 60s — Cache TTL จะ reset อัตโนมัติ
+     */
+    public function incrementKeyTpm(string $provider, int $keyId, int $tokens): void
+    {
+        if ($tokens <= 0) {
+            return;
+        }
+
+        $tpmKey = self::TPM_PREFIX."{$provider}:{$keyId}";
+        if (Cache::has($tpmKey)) {
+            Cache::increment($tpmKey, $tokens);
+        } else {
+            Cache::put($tpmKey, $tokens, 60);
+        }
+    }
+
+    /**
+     * 🪙 (2026-05-23 Phase 5) ตรวจว่า key ใกล้เต็ม TPM แล้วหรือยัง
+     *
+     * ใช้ใน eligible filter — ถ้า used >= 90% limit → skip (preemptive)
+     */
+    public function isTpmSaturated(AiApiKey $key): bool
+    {
+        $limit = $key->getEffectiveTpmLimit();
+        if ($limit <= 0) {
+            return false; // unlimited
+        }
+
+        $used = $this->getKeyTpm($key->provider, $key->id);
+        $threshold = (int) ($limit * self::TPM_SAFETY_THRESHOLD);
+
+        return $used >= $threshold;
     }
 
     // ============================================================
