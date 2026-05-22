@@ -630,13 +630,19 @@ class FortuneCelticCrossController extends Controller
                 $reading->setConversationState('pro_session_window_minutes', $minutes);
                 $reading->setConversationState('pro_session_pending_exit', false);
 
-                // กลับเข้า chat state ถ้า COMPLETED แล้ว
-                if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
-                    $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-                }
-
                 $newRemaining = $minutes;
                 $action = "เปิด Pro Session ใหม่ {$minutes} นาที (session ปิดอยู่)";
+            }
+
+            // 🆕 Flip status กลับ active Celtic state ถ้าจำเป็น (ครอบคลุมทุก mode)
+            // ครอบคลุม: COMPLETED, celtic_qa_window_expired, expired, cancelled, อื่นๆ
+            $activeCelticStates = [
+                FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                FortuneReading::STATUS_CELTIC_GENERATING,
+                FortuneReading::STATUS_CELTIC_QA_PROMPT,
+            ];
+            if (! in_array($reading->conversation_status, $activeCelticStates, true)) {
+                $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
             }
 
             $reading->refresh();

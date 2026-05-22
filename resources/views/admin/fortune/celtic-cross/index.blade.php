@@ -245,18 +245,39 @@
                                 </td>
                                 <td class="px-3 py-2">{{ $reading->celtic_questions_used }} คำถาม</td>
                                 <td class="px-3 py-2 text-xs text-gray-500">
-                                    @if($reading->celtic_first_answered_at)
-                                        @php
-                                            $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 30);
-                                            $minRemaining = max(0, (int) ceil(now()->diffInSeconds($deadline, false) / 60));
-                                        @endphp
-                                        @if($minRemaining > 0)
-                                            <span class="text-green-600">{{ $minRemaining }} นาที</span>
-                                        @else
-                                            <span class="text-red-600">หมดเวลา</span>
+                                    @php
+                                        // 🆕 (2026-05-22) อ่าน Pro Session state ก่อน (รองรับ admin extend)
+                                        // fallback: สูตรเก่า celtic_first_answered_at + setting (legacy 3Q flow)
+                                        $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
+                                        $_proStartedAt = $reading->getConversationState('pro_session_started_at');
+                                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 30);
+                                        $_minRemaining = null;
+                                        $_isExtended = false;
+
+                                        if ($_proActive && ! empty($_proStartedAt)) {
+                                            try {
+                                                $_elapsed = (int) \Carbon\Carbon::parse($_proStartedAt)->diffInMinutes(now(), true);
+                                                $_minRemaining = max(0, $_proWindowMin - $_elapsed);
+                                                $_isExtended = $_proWindowMin > ($settings->celtic_cross_qa_window_minutes ?? 30);
+                                            } catch (\Throwable $e) {
+                                                $_minRemaining = null;
+                                            }
+                                        }
+
+                                        if ($_minRemaining === null && $reading->celtic_first_answered_at) {
+                                            $_deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 30);
+                                            $_minRemaining = max(0, (int) ceil(now()->diffInSeconds($_deadline, false) / 60));
+                                        }
+                                    @endphp
+                                    @if($_minRemaining === null)
+                                        <span>—</span>
+                                    @elseif($_minRemaining > 0)
+                                        <span class="text-green-600">{{ $_minRemaining }} นาที</span>
+                                        @if($_isExtended)
+                                            <span class="text-cyan-600 dark:text-cyan-400 ml-1" title="แอดมินขยายเวลาแล้ว (window {{ $_proWindowMin }}m)">⏰+</span>
                                         @endif
                                     @else
-                                        <span>—</span>
+                                        <span class="text-red-600">หมดเวลา</span>
                                     @endif
                                 </td>
                                 <td class="px-3 py-2 text-right">
