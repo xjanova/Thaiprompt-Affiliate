@@ -148,7 +148,7 @@ class FortuneDailyHoroscopePost extends Model
         return self::where('post_date', now()->toDateString())
             ->where('day_of_birth', $dayOfBirth)
             ->whereNotNull('caption')
-            ->whereIn('status', [self::STATUS_POSTED, self::STATUS_GENERATED])
+            ->whereIn('status', [self::STATUS_POSTED, self::STATUS_READY])
             ->latest('updated_at')
             ->first();
     }

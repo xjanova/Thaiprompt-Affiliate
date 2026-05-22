@@ -252,6 +252,18 @@ class FacebookWebhookService implements MessagingPlatformInterface
                         return false;
                     }
 
+                    // ✅ ผู้ใช้ block/ปิด DM/ลบบัญชี (#551 subcode 1545041) หรือ user not found (2018108)
+                    //    → retry ไม่มีประโยชน์ เสีย worker time (~2s/user) — short-circuit ทันที
+                    if (in_array($errorSubcode, [1545041, 2018108])) {
+                        Log::info('ℹ️ ผู้ใช้ไม่พร้อมรับข้อความ — ข้าม retry', [
+                            'recipient' => $recipientId,
+                            'subcode' => $errorSubcode,
+                            'message' => $errorMsg,
+                        ]);
+
+                        return false;
+                    }
+
                     if ($attempt < $maxRetries) {
                         usleep(1000000); // รอ 1 วินาทีก่อน retry
                     }
