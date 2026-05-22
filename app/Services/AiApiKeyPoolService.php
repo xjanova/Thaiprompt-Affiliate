@@ -308,11 +308,16 @@ class AiApiKeyPoolService
             return null;
         }
 
-        // ⭐ กรอง keys ที่เกิน rate_limit_per_minute (ถ้ากำหนดไว้)
+        // ⭐ กรอง keys ที่เกิน rate_limit_per_minute (ใช้ smart default ถ้า admin ไม่ตั้ง)
+        //   🎯 (2026-05-22) ใช้ getEffectiveRpmLimit() — model-aware free tier default
+        //     - admin set N → ใช้ N
+        //     - admin set 0 → unlimited (ข้าม check)
+        //     - admin set NULL → smart default ตาม provider+model (ป้องกัน over-call)
         $eligibleKeys = $keys->filter(function ($key) use ($provider) {
-            if ($key->rate_limit_per_minute) {
+            $rpmLimit = $key->getEffectiveRpmLimit();
+            if ($rpmLimit > 0) {
                 $rpm = $this->getKeyRpm($provider, $key->id);
-                if ($rpm >= $key->rate_limit_per_minute) {
+                if ($rpm >= $rpmLimit) {
                     return false; // key นี้เต็มโควต้า/นาที
                 }
             }
@@ -544,7 +549,13 @@ class AiApiKeyPoolService
                     }
 
                     $rpm = $this->getKeyRpm($provider, $key->id);
-                    $rpmLimit = $key->rate_limit_per_minute ?? 60;
+                    // 🎯 (2026-05-22) ใช้ smart default แทน hardcoded 60
+                    //   เดิม: ?? 60 → free Groq (จริง 30) ยิงเกิน → 429 → drift ไป paid
+                    //   ใหม่: getEffectiveRpmLimit() = admin set || model-aware default
+                    //     - Gemini 2.5 Flash → 9 (จริง 10)
+                    //     - Groq → 28 (จริง 30)
+                    //     - Paid: admin ต้องตั้งเอง (เช่น 1000) — default คือ free
+                    $rpmLimit = $key->getEffectiveRpmLimit();
                     if ($rpmLimit > 0 && $rpm >= $rpmLimit) {
                         return false;
                     }

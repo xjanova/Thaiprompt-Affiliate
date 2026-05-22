@@ -3984,16 +3984,16 @@ PROMPT;
     /**
      * 🎯 Phase I — ดึง effective RPM limit ของ key
      *
-     * ใช้ค่าที่ admin ตั้งไว้ก่อน ไม่งั้นใช้ default ต่อ provider (conservative)
+     * 🆕 (2026-05-22) Delegate ไป AiApiKey::getEffectiveRpmLimit() — model-aware
+     *   เดิม: provider-only default (gemini=12, groq=28)
+     *   ใหม่: model-aware (gemini-2.5-flash=9 vs 2.0-flash=14 vs 2.5-pro=4)
+     *   PROVIDER_DEFAULT_RPM const ยังเก็บไว้สำหรับ back-compat (ไม่ลบ)
+     *
+     * @param  string  $provider  legacy param — ไม่ใช้แล้ว เก็บไว้ BC ของ caller
      */
     protected function getEffectiveRpmLimit(string $provider, AiApiKey $poolKey): int
     {
-        $configured = (int) ($poolKey->rate_limit_per_minute ?? 0);
-        if ($configured > 0) {
-            return $configured;
-        }
-
-        return self::PROVIDER_DEFAULT_RPM[$provider] ?? 30;
+        return $poolKey->getEffectiveRpmLimit();
     }
 
     /**

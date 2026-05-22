@@ -220,6 +220,74 @@ class AiApiKey extends Model
     ];
 
     /**
+     * 🎯 (2026-05-22) Smart RPM defaults สำหรับ FREE tier (provider + model aware)
+     *
+     * ใช้เมื่อ admin ไม่ตั้ง rate_limit_per_minute (NULL):
+     *   - NULL → smart default (สมมติว่าเป็น free key)
+     *   - 0    → ไม่เช็ค RPM เลย (admin บอกชัดว่า unlimited / paid generous)
+     *   - N    → ใช้ N (admin ตั้งเอง)
+     *
+     * เป้าหมาย: ป้องกันยิงเกิน free quota → 429 น้อยลง → free key ยืนยาว
+     *           → ไม่ drift ไป paid key (ที่ admin ตั้ง priority ต่ำเป็น backup)
+     *
+     * ⚠️ Paid tier: admin ต้องตั้ง rate_limit_per_minute เอง (เช่น 1000 RPM)
+     *    ไม่งั้นจะถูก throttle เท่า free tier!
+     *
+     * อ้างอิงฟรี tier จริง (verified 2026-05):
+     *   - Groq: https://console.groq.com/docs/rate-limits (ส่วนมาก 30 RPM)
+     *   - Gemini: https://ai.google.dev/gemini-api/docs/rate-limits
+     *
+     * ค่าในตารางลบ safety margin 5-10% — กัน boundary 429
+     */
+    public const MODEL_RPM_FREE_TIER = [
+        'groq' => [
+            '_default' => 28,                                      // 30 actual
+            'llama-3.3-70b-versatile' => 28,
+            'llama-3.1-8b-instant' => 28,
+            'llama-3.1-70b-versatile' => 28,
+            'llama-3.2-90b-vision-preview' => 14,                  // 15 actual (vision จำกัด)
+            'llama-3.2-11b-vision-preview' => 28,
+            'meta-llama/llama-4-scout-17b-16e-instruct' => 28,
+            'meta-llama/llama-4-maverick-17b-128e-instruct' => 28,
+            'openai/gpt-oss-120b' => 28,
+            'openai/gpt-oss-20b' => 28,
+            'gemma2-9b-it' => 28,
+            'mixtral-8x7b-32768' => 28,
+            'qwen-qwq-32b' => 28,
+            'deepseek-r1-distill-llama-70b' => 28,
+        ],
+        'gemini' => [
+            '_default' => 9,                                       // เริ่มที่ 2.5 Flash
+            // Gemini 3.x preview (น้อยสุด — preview tier เข้มงวด)
+            'gemini-3.1-pro-preview' => 4,                         // 5 actual
+            'gemini-3-flash-preview' => 9,                         // 10 actual
+            'gemini-3.1-flash-lite-preview' => 14,                 // 15 actual
+            // Gemini 2.5
+            'gemini-2.5-pro' => 4,                                 // 5 actual
+            'gemini-2.5-flash' => 9,                               // 10 actual
+            'gemini-2.5-flash-lite' => 14,                         // 15 actual
+            // Gemini 2.0 (legacy)
+            'gemini-2.0-flash' => 14,
+            'gemini-2.0-flash-001' => 14,
+            'gemini-2.0-flash-lite' => 28,                         // 30 actual
+            'gemini-2.0-flash-exp' => 9,
+            // Gemini 1.5 (legacy)
+            'gemini-1.5-flash' => 14,
+            'gemini-1.5-flash-8b' => 14,
+            'gemini-1.5-pro' => 1,                                 // 2 actual
+        ],
+        'grok' => ['_default' => 55],                              // xAI ~60 RPM
+        'openai' => ['_default' => 450],                           // Tier 1 ~500 RPM
+        'openrouter' => ['_default' => 18],                        // free ~20 RPM
+        'deepseek' => ['_default' => 55],
+        'qwen' => ['_default' => 28],                              // HF router ~30 RPM
+        'typhoon' => ['_default' => 55],
+        'xiaomi' => ['_default' => 55],
+        'anthropic' => ['_default' => 45],                         // Tier 1 ~50 RPM
+        'minimax' => ['_default' => 18],
+    ];
+
+    /**
      * 🎯 (2026-05-02) วัตถุประสงค์การใช้ key
      *
      * any        = ใช้ได้ทุกอย่าง (default)
@@ -664,9 +732,15 @@ class AiApiKey extends Model
         }
 
         // ⭐ เกิน per-key rate limit ต่อนาที (ใช้ Cache real-time)
-        if ($this->rate_limit_per_minute) {
+        //   🎯 (2026-05-22) ใช้ getEffectiveRpmLimit() แทนการอ่าน field ตรง
+        //     - admin set N    → ใช้ N
+        //     - admin set 0    → return 0 = unlimited (ข้าม check)
+        //     - admin set NULL → smart default ตาม provider+model (free tier)
+        //   เดิม: ถ้า NULL จะข้าม check → key ที่ admin ลืมตั้งก็ยิงไม่จำกัด → 429
+        $rpmLimit = $this->getEffectiveRpmLimit();
+        if ($rpmLimit > 0) {
             $rpm = (int) Cache::get("pool:rpm:{$this->provider}:{$this->id}", 0);
-            if ($rpm >= $this->rate_limit_per_minute) {
+            if ($rpm >= $rpmLimit) {
                 return false;
             }
         }
@@ -712,6 +786,48 @@ class AiApiKey extends Model
         }
 
         return self::DEFAULT_BASE_URLS[$this->provider] ?? null;
+    }
+
+    /**
+     * 🎯 (2026-05-22) คืน RPM limit ที่ effective สำหรับ key นี้
+     *
+     * Resolution order:
+     *   1. admin-explicit (rate_limit_per_minute ในตาราง)
+     *      - N > 0 → ใช้ N
+     *      - 0     → unlimited (return 0 — caller ข้าม RPM check)
+     *      - NULL  → ตกไปข้อ 2
+     *   2. smart default ตาม MODEL_RPM_FREE_TIER[provider][model]
+     *   3. smart default ตาม MODEL_RPM_FREE_TIER[provider]['_default']
+     *   4. fallback conservative = 30
+     *
+     * เหตุผล: free-tier provider มี RPM ต่ำกว่า 60 มาก
+     *   - Groq free: 30 RPM ทุก model
+     *   - Gemini 2.5 Flash free: 10 RPM
+     *   - Gemini 2.5 Pro free: 5 RPM
+     *   ถ้าใช้ default 60 → ยิงเกิน → 429 → cooldown → fallback paid → quota เสียหาย
+     *
+     * ⚠️ paid tier: admin ต้องตั้งค่าเอง (เช่น 1000) — default จะ assume เป็น free
+     */
+    public function getEffectiveRpmLimit(): int
+    {
+        // 1. Admin-explicit value (รวม 0 = unlimited) ชนะ smart default
+        $configured = $this->attributes['rate_limit_per_minute'] ?? null;
+        if ($configured !== null && $configured !== '') {
+            return (int) $configured;
+        }
+
+        // 2-3. Smart default ตาม provider + model
+        $providerMap = self::MODEL_RPM_FREE_TIER[$this->provider] ?? null;
+        if (! is_array($providerMap)) {
+            return 30; // fallback conservative สำหรับ provider ที่ไม่มีในตาราง
+        }
+
+        $model = ! empty($this->model) ? $this->model : null;
+        if ($model !== null && isset($providerMap[$model])) {
+            return (int) $providerMap[$model];
+        }
+
+        return (int) ($providerMap['_default'] ?? 30);
     }
 
     // ============================================================
