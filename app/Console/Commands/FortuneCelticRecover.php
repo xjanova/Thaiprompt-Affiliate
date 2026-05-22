@@ -49,6 +49,16 @@ class FortuneCelticRecover extends Command
             return 1;
         }
 
+        // 🛑 (2026-05-22 #5) DISABLED auto mode per user request
+        //   "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย — สร้างปัญหามากกว่า"
+        //   admin trigger ตัวเดียวด้วย {id} หรือ {bill_reference} ยังใช้ได้
+        if ($auto) {
+            $this->warn('⛔ auto mode disabled (2026-05-22 #5) — ใช้ fortune:celtic-recover {id|bill_ref} แทน');
+            Log::info('fortune:celtic-recover: --auto disabled, skipping run');
+
+            return 0;
+        }
+
         $readings = collect();
 
         if ($id) {

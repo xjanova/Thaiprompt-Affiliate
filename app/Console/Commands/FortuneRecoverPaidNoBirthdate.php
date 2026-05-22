@@ -53,6 +53,15 @@ class FortuneRecoverPaidNoBirthdate extends Command
         $isAuto = (bool) $this->option('auto');
         $minAgeMinutes = max(1, (int) $this->option('min-age-minutes'));
 
+        // 🛑 (2026-05-22 #5) DISABLED auto mode per user request
+        //   "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย — สร้างปัญหามากกว่า"
+        //   admin trigger ตัวเดียวด้วย --id หรือ --bill ยังใช้ได้
+        if ($isAuto) {
+            Log::info('fortune:recover-paid-no-birthdate: --auto disabled, skipping run');
+
+            return 0;
+        }
+
         if (! $isAuto) {
             $this->info('🛟 หา Deep readings ที่จ่ายแล้วแต่ค้าง (ไม่มีวันเกิด)...');
         }
