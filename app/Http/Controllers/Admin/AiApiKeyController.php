@@ -91,7 +91,7 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'required|string|min:10',
             'priority' => 'nullable|integer|min:0|max:100',
-            'purpose' => 'nullable|in:any,prediction,prediction_deep,prediction_celtic,free_card,chat,sensitive,tts',  // 🎯 (2026-05-13) เพิ่ม prediction_deep + prediction_celtic (แยกแพคเกจ Deep 39 / Celtic 99)
+            'purpose' => 'nullable|in:'.implode(',', array_keys(AiApiKey::PURPOSES)),  // 🎯 (2026-05-23) ใช้ PURPOSES const — รวม chat_paid + future-proof
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',
@@ -103,7 +103,7 @@ class AiApiKeyController extends Controller
         } catch (QueryException $sqlErr) {
             // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มีค่าใหม่
             //    free_card (2026-05-05) / sensitive (2026-05-07) / tts (2026-05-08)
-            $needsMigration = ['free_card', 'sensitive', 'tts', 'prediction_deep', 'prediction_celtic'];
+            $needsMigration = ['free_card', 'sensitive', 'tts', 'prediction_deep', 'prediction_celtic', 'chat_paid'];
             if (in_array($validated['purpose'] ?? null, $needsMigration, true)
                 && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
                 return response()->json([
@@ -179,7 +179,7 @@ class AiApiKeyController extends Controller
             'base_url' => 'nullable|string|max:255|url',           // 🌐 Per-key base URL
             'api_key' => 'nullable|string|min:10',  // nullable เพื่อไม่ต้องส่งถ้าไม่เปลี่ยน
             'priority' => 'nullable|integer|min:0|max:100',
-            'purpose' => 'nullable|in:any,prediction,prediction_deep,prediction_celtic,free_card,chat,sensitive,tts',  // 🎯 (2026-05-13) เพิ่ม prediction_deep + prediction_celtic (แยกแพคเกจ Deep 39 / Celtic 99)
+            'purpose' => 'nullable|in:'.implode(',', array_keys(AiApiKey::PURPOSES)),  // 🎯 (2026-05-23) ใช้ PURPOSES const — รวม chat_paid + future-proof
             'tokens_limit_daily' => 'nullable|integer|min:0',
             'tokens_limit_monthly' => 'nullable|integer|min:0',
             'rate_limit_per_minute' => 'nullable|integer|min:0',
@@ -198,7 +198,7 @@ class AiApiKeyController extends Controller
         } catch (QueryException $sqlErr) {
             // 🩹 (2026-05-05) Migration not run — purpose enum ยังไม่มีค่าใหม่
             //    free_card (2026-05-05) / sensitive (2026-05-07) / tts (2026-05-08)
-            $needsMigration = ['free_card', 'sensitive', 'tts', 'prediction_deep', 'prediction_celtic'];
+            $needsMigration = ['free_card', 'sensitive', 'tts', 'prediction_deep', 'prediction_celtic', 'chat_paid'];
             if (in_array($validated['purpose'] ?? null, $needsMigration, true)
                 && str_contains($sqlErr->getMessage(), 'Data truncated for column')) {
                 return response()->json([
