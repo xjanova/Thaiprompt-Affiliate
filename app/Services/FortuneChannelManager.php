@@ -1568,11 +1568,63 @@ class FortuneChannelManager
             $quickReplies = $this->getFacebookFallbackQuickReplies($action, $result, $offerFortune);
         }
 
-        if (! empty($quickReplies)) {
-            return $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra);
+        $sent = ! empty($quickReplies)
+            ? $fbService->sendQuickReplies($userId, $message, $quickReplies, $extra)
+            : $fbService->sendMessage($userId, $message, $extra);
+
+        // 🌙 (2026-05-22) Pro Session follow-up — กล่องที่ 2 บอก "หมออยู่ตอบเพิ่ม 10 นาที"
+        //   User spec 2026-05-22: "กล่องข้อความต่อท้ายคำทำนายเพิ่มว่า
+        //                          หมอจะอยู่ตอบเพิ่มให้อีก 10 นาที มีอะไรให้รีบถาม"
+        //   เฉพาะกรณี caller request โดยตั้ง flag — กัน follow-up พ่นใส่ action อื่น
+        if ($sent && ! empty($result['send_pro_session_followup'])) {
+            $this->sendFacebookProSessionFollowUp($fbService, $userId, $result, $extra);
         }
 
-        return $fbService->sendMessage($userId, $message, $extra);
+        return $sent;
+    }
+
+    /**
+     * 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย Deep 39
+     *
+     * Pro Session ถูก enter โดย FCS:7950 (processPaymentConfirmed) แล้ว — กล่องนี้แค่
+     * แจ้งลูกค้าให้รู้ว่ามี window 10 นาที สำหรับถามต่อ
+     */
+    protected function sendFacebookProSessionFollowUp(
+        FacebookWebhookService $fbService,
+        string $userId,
+        array $result,
+        array $extra = []
+    ): void {
+        try {
+            $reading = $result['reading'] ?? null;
+            $rawName = $reading?->facebook_user_name ?? '';
+            $greet = ($rawName !== '' && $rawName !== 'คุณ') ? " คุณ{$rawName}" : '';
+
+            // 🌙 ใช้ window จาก setting (default 10 นาที — ProSessionTrait::PRO_SESSION_DEEP_MINUTES)
+            $windowMinutes = (int) ($this->settings->pro_session_deep_minutes ?? 10);
+
+            $followUp = "🌙✨ *แม่หมอจันทราอยู่ตอบเพิ่มอีก {$windowMinutes} นาที{$greet}* ✨\n\n"
+                ."💬 ถ้ามีอะไรสงสัย หรืออยากให้แม่หมอขยายความ — *รีบถามได้เลยค่ะ*\n"
+                ."🪐 แม่หมอจะตอบจากดวงดาว + ไพ่ของเจ้าชะตา\n\n"
+                ."⏳ หลังหมดเวลา — พลังจะค่อยๆ ปิดลง\n"
+                .'🔚 พอใจแล้วพิมพ์ *"พอแค่นี้"* หรือ *"ขอบคุณ"* แม่หมอจะปิดให้ค่ะ';
+
+            usleep(800000); // 0.8s delay กัน race กับ chunks ของคำทำนาย (ห้ามต่ำกว่า 0.5s)
+
+            $fbService->sendMessage($userId, $followUp, $extra);
+
+            Log::info('FortuneChannelManager: ส่ง Pro Session follow-up สำเร็จ', [
+                'user_id' => $userId,
+                'reading_id' => $reading?->id,
+                'window_minutes' => $windowMinutes,
+            ]);
+        } catch (\Throwable $e) {
+            // ไม่ block flow — follow-up เป็น nice-to-have
+            Log::warning('FortuneChannelManager: ส่ง Pro Session follow-up ล้มเหลว (non-blocking)', [
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

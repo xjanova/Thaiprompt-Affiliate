@@ -323,10 +323,13 @@ class FortuneCheckPendingReadings extends Command
 
             // ✅ FIX: Push แจ้งเตือน "คำทำนายพร้อมแล้ว" ถ้ายังไม่เคยแจ้ง
             // ก่อนหน้านี้แค่ตั้ง flag แต่ไม่ push → ผู้ใช้ไม่รู้ว่าคำทำนายพร้อมแล้ว
+            // 📱 (2026-05-22) FB: ส่งคำทำนายเต็มทันที (view_reading_deep) — ตาม user spec
+            //                 LINE: คงเดิม push Flex notification (quota จำกัด)
             $notificationSent = $reading->getConversationState('reading_notification_sent', false);
+            $readingSentDirectly = $reading->getConversationState('reading_sent_directly', false);
             $notifyRetryCount = (int) $reading->getConversationState('phase2_notify_retry_count', 0);
 
-            if (! $notificationSent && $notifyRetryCount < 2 && ! $isDryRun) {
+            if (! $notificationSent && ! $readingSentDirectly && $notifyRetryCount < 2 && ! $isDryRun) {
                 $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
                 $platform = $reading->platform ?: ((preg_match('/^U[0-9a-f]{32}$/i', $userId ?? '')) ? 'line' : 'facebook');
 
@@ -336,27 +339,62 @@ class FortuneCheckPendingReadings extends Command
                         $channelManager = $channelManager ?? new FortuneChannelManager($settings);
                         $name = $reading->facebook_user_name ?? 'คุณ';
 
-                        $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
-                            . '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n\n"
-                            . "🔮 พร้อมอ่านเลยไหมคะ?\n"
-                            . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+                        if ($platform === 'facebook') {
+                            // 📱 FB: ส่งคำทำนายเต็มทันที (view_reading_deep)
+                            $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                            $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                            $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
+                            $fullMessage .= "═══════════════════════\n\n";
+                            $fullMessage .= $reading->deep_response;
 
-                        $pushSent = $channelManager->sendResponse($platform, $userId, [
-                            'action' => 'fortune_ready_notification',
-                            'message' => $readyMessage,
-                            'reading' => $reading,
-                            'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
-                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                            $pushSent = $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'view_reading_deep',
+                                'message' => $fullMessage,
+                                'reading' => $reading,
+                                'chart_image_url' => $reading->reading_image_url,
+                                'tarot_image_urls' => collect($reading->getCollectedTarotCards())
+                                    ->pluck('image_url')->filter()->values()->all(),
+                                // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
+                                'send_pro_session_followup' => true,
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
-                        $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
+                            $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
 
-                        if ($pushSent) {
-                            $reading->setConversationState('reading_notification_sent', true);
-                            $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
-                            $this->info("  📨 {$billRef} — push แจ้ง 'คำทำนายพร้อมแล้ว' สำเร็จ");
+                            if ($pushSent) {
+                                $reading->setConversationState('reading_sent_directly', true);
+                                $reading->setConversationState('reading_ready_sent', true);
+                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                                $reading->setConversationState('reading_notification_sent', true);
+                                $reading->setConversationState('delivered_by_push', true);
+                                $this->info("  📨 {$billRef} — push คำทำนายเต็มสำเร็จ (FB)");
+                            } else {
+                                $reading->setConversationState('reading_notification_attempted', true);
+                                $this->warn("  ⚠️ {$billRef} — push คำทำนายเต็มไม่สำเร็จ (FB) — ลูกค้าจะได้รับเมื่อทักกลับมา");
+                            }
                         } else {
-                            $reading->setConversationState('reading_notification_attempted', true);
-                            $this->warn("  ⚠️ {$billRef} — push แจ้งไม่สำเร็จ (user พิมพ์มาก็จะได้รับผ่าน replyMessage)");
+                            // 💎 LINE: คงเดิม push Flex notification (quota จำกัด)
+                            $readyMessage = "✨ คุณ{$name}คะ คำทำนายเชิงลึกของคุณพร้อมแล้วค่ะ!\n\n"
+                                . '📋 เลขที่บิล: ' . ($reading->bill_reference ?? '-') . "\n\n"
+                                . "🔮 พร้อมอ่านเลยไหมคะ?\n"
+                                . "💡 พิมพ์อะไรก็ได้ หรือกด 'อ่านคำทำนาย' ด้านล่างค่ะ ✨";
+
+                            $pushSent = $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'fortune_ready_notification',
+                                'message' => $readyMessage,
+                                'reading' => $reading,
+                                'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                            $reading->setConversationState('phase2_notify_retry_count', $notifyRetryCount + 1);
+
+                            if ($pushSent) {
+                                $reading->setConversationState('reading_notification_sent', true);
+                                $reading->setConversationState('reading_notification_sent_at', now()->toIso8601String());
+                                $this->info("  📨 {$billRef} — push แจ้ง 'คำทำนายพร้อมแล้ว' สำเร็จ (LINE)");
+                            } else {
+                                $reading->setConversationState('reading_notification_attempted', true);
+                                $this->warn("  ⚠️ {$billRef} — push แจ้งไม่สำเร็จ (LINE) — user พิมพ์มาก็จะได้รับผ่าน replyMessage");
+                            }
                         }
                     } catch (\Exception $notifyErr) {
                         $reading->setConversationState('reading_notification_attempted', true);
@@ -367,8 +405,8 @@ class FortuneCheckPendingReadings extends Command
                         ]);
                     }
                 }
-            } elseif ($notificationSent) {
-                $this->info("  📌 {$billRef} — แจ้งแล้ว รอ user ส่งข้อความมา (รอ {$waitMinutes} นาที)");
+            } elseif ($notificationSent || $readingSentDirectly) {
+                $this->info("  📌 {$billRef} — ".($readingSentDirectly ? 'ส่งคำทำนายเต็มแล้ว' : 'แจ้งแล้ว รอ user ส่งข้อความมา')." (รอ {$waitMinutes} นาที)");
             }
 
             $flagged++;

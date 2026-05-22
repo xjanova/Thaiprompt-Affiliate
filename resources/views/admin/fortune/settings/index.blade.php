@@ -3637,37 +3637,113 @@ Format 2 — JSON array:
             </div>
         </div>
 
+        {{-- 💳 (2026-05-22) Payment Mode Toggle — เลือก 3 โหมด (SMS-only / Stripe-only / Both) --}}
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="platform"
+             x-data="{
+                enableSms: {{ old('enable_sms_payment', $settings->enable_sms_payment ?? true) ? 'true' : 'false' }},
+                enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }},
+                get mode() {
+                    if (this.enableSms && this.enableStripe) return 'both';
+                    if (this.enableStripe) return 'stripe_only';
+                    if (this.enableSms) return 'sms_only';
+                    return 'none';
+                },
+                get modeLabel() {
+                    return {
+                        both: '🎯 Both — ลูกค้าเลือก 3 ปุ่ม (QR ไทย / บัตรในไทย / บัตรต่างประเทศ)',
+                        stripe_only: '💳 Stripe-only — แสดง 2 ปุ่ม (บัตรในไทย / บัตรต่างประเทศ)',
+                        sms_only: '💚 SMS-only — QR ไทยตรงๆ (default, backward compat)',
+                        none: '⚠️ ทั้งคู่ปิด — fallback กลับ SMS อัตโนมัติ (แก้ในแอดมิน)',
+                    }[this.mode];
+                },
+                get modeColor() {
+                    return {
+                        both: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-700 text-blue-800 dark:text-blue-300',
+                        stripe_only: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-300',
+                        sms_only: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-800 dark:text-green-300',
+                        none: 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-800 dark:text-red-300',
+                    }[this.mode];
+                }
+             }">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+                💰 วิธีรับชำระเงิน
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                {{-- SMS / QR Thai toggle --}}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            💚 QR ไทย + SMS Checker
+                        </h4>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="enable_sms_payment" value="1"
+                                   x-model="enableSms"
+                                   {{ old('enable_sms_payment', $settings->enable_sms_payment ?? true) ? 'checked' : '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-green-300 dark:peer-focus:ring-green-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                        PromptPay + ทุกธนาคารไทย — ตรวจสลิปอัตโนมัติผ่าน SmsChecker app
+                    </p>
+                </div>
+
+                {{-- Stripe toggle --}}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                            💳 บัตรเครดิต (Stripe)
+                        </h4>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" name="enable_stripe_payment" value="1"
+                                   x-model="enableStripe"
+                                   {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'checked' : '' }}
+                                   class="sr-only peer">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">
+                        Visa/Mastercard/AmEx — ลูกค้าในไทยไม่บวก fee, ต่างประเทศ +15฿
+                    </p>
+                </div>
+            </div>
+
+            {{-- Mode preview --}}
+            <div :class="modeColor" class="border rounded-lg p-3 text-sm font-medium" x-text="modeLabel"></div>
+        </div>
+
         {{-- 💳 (2026-05-09) Stripe Payment Settings — บัตรต่างประเทศ --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="platform"
              x-data="{ enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
                 <div>
                     <h3 class="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                        💳 ระบบชำระผ่านบัตรเครดิต (Stripe)
+                        🔑 Stripe Configuration
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        ลูกค้าต่างประเทศจ่ายผ่าน Visa/Mastercard/AmEx ได้ — มีค่าบริการ +15 บาท
+                        ตั้งค่า API keys + webhook สำหรับ Stripe Checkout
+                        (ลูกค้าในไทย ไม่บวก fee / ต่างประเทศ +15฿)
                     </p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" name="enable_stripe_payment" value="1"
-                           x-model="enableStripe"
-                           {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'checked' : '' }}
-                           class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
-                </label>
+                <div class="text-xs text-gray-500 dark:text-gray-400">
+                    เปิด/ปิดได้ที่ section "วิธีรับชำระเงิน" ด้านบน
+                </div>
             </div>
 
             <div x-show="enableStripe" x-cloak class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            💰 ค่าบริการ (บาท)
+                            🌍 ค่าบริการ (เฉพาะต่างประเทศ, บาท)
                         </label>
-                        <input type="number" name="stripe_service_fee" min="0" step="0.01"
-                               value="{{ old('stripe_service_fee', $settings->stripe_service_fee ?? 15) }}"
+                        <input type="number" name="stripe_service_fee" min="0" step="1"
+                               value="{{ (int) old('stripe_service_fee', $settings->stripe_service_fee ?? 15) }}"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">บวกเพิ่มจากราคาแพ็กเกจ (Stripe หัก ~3.65%+11฿/transaction)</p>
+                        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            บวกเพิ่มเฉพาะลูกค้าที่เลือก "บัตรต่างประเทศ" — Stripe หัก ~3.65%+11฿/transaction.<br>
+                            ลูกค้าในไทยจ่ายราคาเต็มเท่า QR ไทย (ไม่บวก fee).
+                        </p>
                     </div>
 
                     <div>

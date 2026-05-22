@@ -2862,23 +2862,32 @@ PROMPT;
             ."  - ห้ามบอกราคาผิด (39฿ Deep / 99฿ Celtic Cross)\n"
             .'  - ห้ามแต่งเรื่องอื่นที่ไม่ใช่ความหมายข้างต้น';
 
-        // 💳 (2026-05-09) Stripe option awareness — เปิด toggle เท่านั้น
-        //    ลูกค้าต่างประเทศบอกว่า "อยู่ลาว/USA" / "ใช้บัตรเครดิต" / "ไม่มี QR Thai"
-        //    → AI ต้องรู้และแนะนำให้ถูกขั้นตอน (ไม่ตอบเองหรือสับสน)
+        // 💳 (2026-05-22) Payment options awareness — รองรับ 3 โหมด
+        //    Mode both/stripe_only → AI ต้องรู้ว่ามี 2-3 ปุ่มตอนเลือกวิธีชำระ
+        //    Mode sms_only → ไม่ต้องพูดถึงบัตรเครดิตเพราะ Stripe ปิด
         try {
-            if ($this->settings && $this->settings->enable_stripe_payment) {
-                $serviceFee = (int) ($this->settings->stripe_service_fee ?? 15);
-                $message .= "\n\n[💳 Stripe payment option (เปิดใช้งานอยู่) — สำหรับลูกค้าต่างประเทศ]\n"
-                    ."ระบบรับชำระผ่านบัตรเครดิต/เดบิตสากล (Visa, Mastercard, AmEx, Apple Pay)\n"
-                    ."- ค่าบริการเพิ่ม +{$serviceFee} บาท (ลูกค้าใน Thailand แนะนำใช้ QR Thai เพราะถูกกว่า)\n"
+            $stripeOn = $this->settings && $this->settings->enable_stripe_payment;
+            $smsOn = $this->settings && ($this->settings->enable_sms_payment ?? true);
+
+            if ($stripeOn) {
+                $serviceFee = (int) round((float) ($this->settings->stripe_service_fee ?? 15));
+                $modeDescriptor = $smsOn
+                    ? "Mode: BOTH — ลูกค้าเลือก 3 ปุ่ม (QR ไทย / บัตรในไทย / บัตรต่างประเทศ +{$serviceFee})"
+                    : "Mode: STRIPE-ONLY — ลูกค้าเลือก 2 ปุ่ม (บัตรในไทย / บัตรต่างประเทศ +{$serviceFee})";
+
+                $message .= "\n\n[💳 Payment options (Stripe เปิดใช้งานอยู่)]\n"
+                    ."{$modeDescriptor}\n"
+                    ."บัตรเครดิต/เดบิตที่รองรับ: Visa, Mastercard, AmEx, JCB, Apple Pay, Google Pay\n"
+                    ."- บัตรในไทย → ราคาเต็มเท่าราคาแพ็กเกจ (ไม่บวก fee)\n"
+                    ."- บัตรต่างประเทศ → +{$serviceFee} บาทค่าบริการ (เพราะ Stripe หัก ~3.65%+11฿)\n"
                     ."\n"
                     ."⚙️ พฤติกรรมที่ถูกต้องตามขั้นตอน:\n"
                     ."- ลูกค้าทักว่า 'อยู่ต่างประเทศ', 'ลาว', 'USA', 'บัตรเครดิต', 'ไม่มี QR' (ก่อนถึงขั้นชำระเงิน)\n"
-                    ."  → แนะ \"เดี๋ยวพอถึงขั้นชำระเงิน ระบบจะให้เจ้าชะตาเลือกได้ค่ะ — มี QR Thai หรือบัตรต่างประเทศ (+{$serviceFee} บาทค่าบริการ)\"\n"
-                    ."- ลูกค้าอยู่ขั้น 'เลือกวิธีชำระ' (ระบบเพิ่งส่ง 2 ปุ่ม)\n"
-                    ."  → แนะให้พิมพ์ \"บัตร\" หรือ \"QR ไทย\" หรือกดปุ่ม\n"
+                    ."  → แนะ \"พอถึงขั้นชำระเงิน ระบบจะให้เลือกเองค่ะ — บัตรในไทยไม่บวกค่าบริการ ต่างประเทศ +{$serviceFee} บาท\"\n"
+                    ."- ลูกค้าอยู่ขั้น 'เลือกวิธีชำระ' (ระบบเพิ่งส่งปุ่มไป)\n"
+                    ."  → แนะให้กดปุ่ม หรือพิมพ์ 'บัตรในไทย' / 'บัตรต่างประเทศ'".($smsOn ? " / 'QR ไทย'" : "")."\n"
                     ."- ลูกค้าอยู่ขั้น 'รอจ่ายบัตร' (ส่งลิงก์ Stripe ไปแล้ว)\n"
-                    ."  → ย้ำว่ากดลิงก์ที่ส่งให้ หรือพิมพ์ 'qr ไทย' เพื่อกลับไปเลือก QR Thai\n"
+                    ."  → ย้ำว่ากดลิงก์ที่ส่งให้".($smsOn ? " หรือพิมพ์ 'qr ไทย' เพื่อกลับไป QR Thai" : "")."\n"
                     .'⚠️ ห้าม AI พิมพ์ลิงก์ Stripe เอง — ระบบจัดการเอง AI แค่ "แนะคำสั่ง" เท่านั้น';
             }
         } catch (\Throwable $e) {

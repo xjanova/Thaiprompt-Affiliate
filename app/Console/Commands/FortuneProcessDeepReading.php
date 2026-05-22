@@ -205,12 +205,42 @@ class FortuneProcessDeepReading extends Command
                         $reading->setConversationState('reading_notification_attempted', true);
                         $reading->setConversationState('reading_notification_retry_count', $retryCount + 1);
 
-                        $notifySent = $channelManager->sendResponse($platform, $userId, [
-                            'action' => 'fortune_ready_notification',
-                            'message' => $readyMessage,
-                            'reading' => $reading,
-                            'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
-                        ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        // 📱 (2026-05-22) แยก branch FB / LINE
+                        //    FB: ส่งคำทำนายเต็มทันที (view_reading_deep) — ตาม user spec "ไม่ต้องมีกล่องอ่านพร้อมแล้ว"
+                        //    LINE: คงเดิม — push Flex notification (เพราะ quota จำกัด ต้องรอ user ทักกลับ)
+                        if ($platform === 'facebook') {
+                            $fullMessage = "🌟 *คำทำนายเชิงลึกของคุณ{$name}*\n";
+                            $fullMessage .= '📋 เลขที่บิล: '.($reading->bill_reference ?? '-')."\n";
+                            $fullMessage .= '📅 วันที่: '.$reading->created_at->format('d/m/Y H:i')."\n";
+                            $fullMessage .= "═══════════════════════\n\n";
+                            $fullMessage .= $reading->deep_response;
+
+                            $notifySent = $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'view_reading_deep',
+                                'message' => $fullMessage,
+                                'reading' => $reading,
+                                'chart_image_url' => $reading->reading_image_url,
+                                'tarot_image_urls' => collect($reading->getCollectedTarotCards())
+                                    ->pluck('image_url')->filter()->values()->all(),
+                                // 🌙 (2026-05-22) ส่งกล่อง follow-up "หมออยู่ตอบเพิ่ม 10 นาที" หลังคำทำนาย
+                                'send_pro_session_followup' => true,
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+
+                            // FB ส่งคำทำนายเต็มแล้ว → ตั้ง flag delivered
+                            if ($notifySent) {
+                                $reading->setConversationState('reading_sent_directly', true);
+                                $reading->setConversationState('reading_ready_sent', true);
+                                $reading->setConversationState('reading_ready_sent_at', now()->toIso8601String());
+                                $reading->setConversationState('delivered_by_push', true);
+                            }
+                        } else {
+                            $notifySent = $channelManager->sendResponse($platform, $userId, [
+                                'action' => 'fortune_ready_notification',
+                                'message' => $readyMessage,
+                                'reading' => $reading,
+                                'quick_replies' => ['อ่านคำทำนาย', 'ไว้ดูทีหลัง'],
+                            ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
+                        }
 
                         // ✅ Fallback: ถ้า sendResponse ล้มเหลว → ลอง Flex push ตรงด้วย LineFortuneService
                         if (! $notifySent && $platform === 'line') {

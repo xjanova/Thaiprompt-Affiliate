@@ -9,20 +9,24 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * 💳 Fortune Stripe Service (2026-05-09)
+ * 💳 Fortune Stripe Service (2026-05-09, refactored 2026-05-22)
  *
- * จัดการ Stripe Checkout Session สำหรับลูกค้าต่างประเทศที่ไม่มี QR Thai
+ * จัดการ Stripe Checkout Session — รองรับลูกค้าทั้งในไทยและต่างประเทศ
  *
  * Flow:
- *   1. createCheckoutSession($reading) — POST /v1/checkout/sessions
- *      → return checkout URL ส่งให้ลูกค้า + บันทึก stripe_session_id
+ *   1. createCheckoutSession($reading, $tier) — POST /v1/checkout/sessions
+ *      → return checkout URL ส่งให้ลูกค้า + บันทึก stripe_session_id + stripe_customer_region
  *   2. ลูกค้ากดลิงก์ → จ่ายบัตร → Stripe webhook ยิงกลับ
  *   3. handleWebhookEvent($event) — verify signature + match session_id → trigger reading
  *   4. pollPendingSessions() — fallback กรณี webhook ตก (รัน every 5 min)
  *
- * Pricing:
- *   - Deep 39฿  → 39 + 15 service fee = 54 THB (5400 satang)
- *   - Celtic 99฿ → 99 + 15 service fee = 114 THB (11400 satang)
+ * Pricing (2026-05-22 tier-based, integer THB เท่านั้น):
+ *   tier='th'      — ในไทย ไม่บวกค่าบริการ
+ *     • Deep 39฿  → 39 THB (3900 satang)
+ *     • Celtic 99฿ → 99 THB (9900 satang)
+ *   tier='foreign' — ต่างประเทศ +15฿
+ *     • Deep 39฿  → 39 + 15 = 54 THB (5400 satang)
+ *     • Celtic 99฿ → 99 + 15 = 114 THB (11400 satang)
  *
  * ใช้ existing Stripe products (เตรียมไว้ใน Stripe dashboard แล้ว):
  *   - prod_UU1wXx9DI4s2gq — ดูดวงแม่หมอจันทราแบบธรรมดา 39 บาท (Deep)
@@ -32,6 +36,7 @@ use Illuminate\Support\Facades\Log;
  *   - Webhook signature verify HMAC-SHA256 (timing-safe compare)
  *   - Idempotent webhook handler (ตรวจ stripe_payment_intent_id ซ้ำ)
  *   - First-write-wins guard (กัน double-trigger ถ้า QR Thai จ่ายทันด้วย)
+ *   - billing_address_collection=required → ดึง country audit ลง webhook
  */
 class FortuneStripeService
 {
@@ -62,35 +67,58 @@ class FortuneStripeService
     }
 
     /**
-     * คำนวณยอดรวม (รวมค่าบริการ) สำหรับ reading
+     * 💳 (2026-05-22) คำนวณยอดรวม Stripe — รองรับ tier-based pricing
      *
-     * Deep   = deep_reading_price + stripe_service_fee
-     * Celtic = celtic_cross_price + stripe_service_fee
+     * tier='th'       → ในไทย ไม่บวก fee (เท่าราคา QR Thai)
+     * tier='foreign'  → ต่างประเทศ +stripe_service_fee (default 15฿)
+     * tier=null       → fallback: ใช้ $reading->stripe_customer_region, ถ้าไม่มีใช้ 'foreign' (legacy)
      *
-     * @return array{base: float, fee: float, total: float, currency: string}
+     * ราคา Stripe เป็น integer THB เสมอ (ไม่มีทศนิยม) — แตกต่างจาก QR Thai ที่ +random satang
+     *
+     * @param  string|null  $tier  'th' | 'foreign' | null
+     * @return array{base: int, fee: int, total: int, currency: string, tier: string}
      */
-    public function calculateAmounts(FortuneReading $reading): array
+    public function calculateAmounts(FortuneReading $reading, ?string $tier = null): array
     {
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+
+        // base ราคาแพ็กเกจ — cast เป็น int (ไม่มีทศนิยม)
         $base = $isCeltic
-            ? (float) ($this->settings->celtic_cross_price ?? 99.00)
-            : (float) ($this->settings->deep_reading_price ?? 39.00);
-        $fee = (float) ($this->settings->stripe_service_fee ?? 15.00);
+            ? (int) round((float) ($this->settings->celtic_cross_price ?? 99))
+            : (int) round((float) ($this->settings->deep_reading_price ?? 39));
+
+        // resolve tier
+        $resolvedTier = $tier ?? ($reading->stripe_customer_region ?? 'foreign');
+        if (! in_array($resolvedTier, ['th', 'foreign'], true)) {
+            $resolvedTier = 'foreign';
+        }
+
+        // fee = 0 สำหรับ TH, ค่า settings สำหรับ foreign — cast เป็น int
+        $fee = $resolvedTier === 'th'
+            ? 0
+            : (int) round((float) ($this->settings->stripe_service_fee ?? 15));
 
         return [
             'base' => $base,
             'fee' => $fee,
             'total' => $base + $fee,
             'currency' => 'thb',
+            'tier' => $resolvedTier,
         ];
     }
 
     /**
-     * สร้าง Stripe Checkout Session ใหม่ + อัพเดท reading
+     * 💳 (2026-05-22) สร้าง Stripe Checkout Session ใหม่ + อัพเดท reading
      *
+     * $tier ระบุ tier ก่อนสร้าง:
+     *   - 'th'      → ในไทย, ไม่บวก fee
+     *   - 'foreign' → ต่างประเทศ, +15฿
+     *   - null      → fallback ตาม reading->stripe_customer_region (legacy = foreign)
+     *
+     * @param  string|null  $tier  'th' | 'foreign' | null
      * @return array{success: bool, url?: string, session_id?: string, error?: string, amounts?: array}
      */
-    public function createCheckoutSession(FortuneReading $reading): array
+    public function createCheckoutSession(FortuneReading $reading, ?string $tier = null): array
     {
         if (! $this->isEnabled()) {
             return [
@@ -100,7 +128,8 @@ class FortuneStripeService
         }
 
         try {
-            $amounts = $this->calculateAmounts($reading);
+            $amounts = $this->calculateAmounts($reading, $tier);
+            $resolvedTier = $amounts['tier']; // 'th' | 'foreign'
             $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
 
             // 🐛 (audit-2 fix #6) ถ้ามี session เก่าค้าง — expire ก่อนสร้างใหม่
@@ -133,31 +162,40 @@ class FortuneStripeService
                 ? 'ดูดวงไพ่ 10 ใบ Celtic Cross'
                 : 'ดูดวงแม่หมอจันทรา (เชิงลึก)';
 
-            // 🛒 Line items — แยกเป็น 2 รายการเพื่อ transparency
-            //   1. ราคาแพ็กเกจ (39 / 99)
-            //   2. ค่าบริการบัตรต่างประเทศ (+15)
-            // Stripe ใช้ minor units (THB satang) — 5400 = 54 บาท
+            // 🛒 Line items
+            //   1. ราคาแพ็กเกจ (39 / 99) — integer THB เสมอ
+            //   2. ถ้า tier=foreign + fee>0 → เพิ่มรายการค่าบริการบัตรต่างประเทศ (+15)
+            //      tier=th → ไม่เพิ่ม line item ที่ 2 เลย (ลูกค้าเห็นแค่ราคาแพ็กเกจ)
+            // Stripe ใช้ minor units (THB satang) — 5400 = 54 บาท, 3900 = 39 บาท
             $payload = [
                 'mode' => 'payment',
                 'payment_method_types[0]' => 'card',
                 'line_items[0][price_data][currency]' => $amounts['currency'],
                 'line_items[0][price_data][product_data][name]' => $packageName,
-                'line_items[0][price_data][unit_amount]' => (int) round($amounts['base'] * 100),
+                'line_items[0][price_data][unit_amount]' => $amounts['base'] * 100,
                 'line_items[0][quantity]' => 1,
-                'line_items[1][price_data][currency]' => $amounts['currency'],
-                'line_items[1][price_data][product_data][name]' => 'ค่าบริการบัตรต่างประเทศ',
-                'line_items[1][price_data][unit_amount]' => (int) round($amounts['fee'] * 100),
-                'line_items[1][quantity]' => 1,
                 'metadata[fortune_reading_id]' => (string) $reading->id,
                 'metadata[reading_type]' => $reading->reading_type,
                 'metadata[platform]' => $reading->platform ?? 'facebook',
                 'metadata[bill_reference]' => $reading->bill_reference ?? '',
+                'metadata[customer_region]' => $resolvedTier,
                 'expires_at' => $expiresAt,
                 'success_url' => route('fortune.stripe.success', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 // 🐛 (audit-2 fix #3) ส่ง session_id ใน cancel_url ด้วย — controller ใช้ verify ก่อน revert state
                 'cancel_url' => route('fortune.stripe.cancel', ['reading' => $reading->id]) . '?session_id={CHECKOUT_SESSION_ID}',
                 'locale' => 'auto', // Stripe ตรวจ browser locale อัตโนมัติ (รองรับลาว/EN/TH)
+                // 💳 (2026-05-22) บังคับเก็บ billing address — ใช้ audit ว่าลูกค้าอยู่ประเทศไหนจริง
+                //                  (จะส่งกลับใน webhook customer_details.address.country)
+                'billing_address_collection' => 'required',
             ];
+
+            // 💰 ค่าบริการบัตรต่างประเทศ (tier=foreign เท่านั้น)
+            if ($amounts['fee'] > 0) {
+                $payload['line_items[1][price_data][currency]'] = $amounts['currency'];
+                $payload['line_items[1][price_data][product_data][name]'] = 'ค่าบริการบัตรต่างประเทศ';
+                $payload['line_items[1][price_data][unit_amount]'] = $amounts['fee'] * 100;
+                $payload['line_items[1][quantity]'] = 1;
+            }
 
             // เลือก existing Stripe Product ID ถ้ามี (อ้างอิงไปใน Stripe dashboard)
             $productId = $isCeltic
@@ -198,18 +236,21 @@ class FortuneStripeService
                 ];
             }
 
-            // 💾 บันทึกข้อมูล Stripe ลง reading
+            // 💾 บันทึกข้อมูล Stripe ลง reading — integer THB เท่านั้น
             $reading->update([
                 'payment_method' => FortuneReading::PAYMENT_METHOD_STRIPE,
-                'service_fee' => $amounts['fee'],
-                'amount_paid' => $amounts['total'], // 54 / 114 THB exact (no random satang)
+                'service_fee' => $amounts['fee'], // 0 (th) หรือ 15 (foreign)
+                'amount_paid' => $amounts['total'], // 39 / 54 / 99 / 114 THB exact (no random satang)
                 'stripe_session_id' => $sessionId,
+                'stripe_customer_region' => $resolvedTier, // 'th' หรือ 'foreign'
             ]);
 
             Log::info('FortuneStripeService: created checkout session', [
                 'reading_id' => $reading->id,
                 'session_id' => $sessionId,
+                'tier' => $resolvedTier,
                 'total' => $amounts['total'],
+                'fee' => $amounts['fee'],
                 'expires_at' => date('c', $expiresAt),
             ]);
 
@@ -390,6 +431,21 @@ class FortuneStripeService
                 'handled' => false,
                 'error' => 'reading not found',
             ];
+        }
+
+        // 🌍 (2026-05-22) Audit detected country — Stripe ส่ง customer_details.address.country
+        //    ใช้ log + sanity check (ไม่ override tier เพราะอาจทำให้ refund flow ยุ่ง)
+        $detectedCountry = $session['customer_details']['address']['country'] ?? null;
+        if ($detectedCountry && $reading->stripe_customer_region) {
+            $expectedTier = strtoupper($detectedCountry) === 'TH' ? 'th' : 'foreign';
+            if ($expectedTier !== $reading->stripe_customer_region) {
+                Log::info('FortuneStripeService: customer-selected tier mismatch with detected country', [
+                    'reading_id' => $reading->id,
+                    'selected_tier' => $reading->stripe_customer_region,
+                    'detected_country' => $detectedCountry,
+                    'expected_tier' => $expectedTier,
+                ]);
+            }
         }
 
         // 🛡️ (audit-2 fix #1) Atomic compare-and-swap — กัน webhook ซ้ำ trigger reading 2x

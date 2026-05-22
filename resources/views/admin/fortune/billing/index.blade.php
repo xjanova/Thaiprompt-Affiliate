@@ -240,6 +240,12 @@
                                 @if($bill->payment_method === 'stripe')
                                     {{-- 💳 Stripe payment --}}
                                     <span class="text-purple-600 dark:text-purple-400 font-semibold">💳 Stripe</span>
+                                    {{-- 🌍 Customer region badge (2026-05-22) --}}
+                                    @if($bill->stripe_customer_region === 'th')
+                                        <span class="ml-1 text-xs bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300 px-1.5 py-0.5 rounded">🇹🇭 ในไทย</span>
+                                    @elseif($bill->stripe_customer_region === 'foreign')
+                                        <span class="ml-1 text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded">🌍 ตปท.</span>
+                                    @endif
                                     @if($bill->stripe_payment_intent_id)
                                         @php
                                             $stripeService = new \App\Services\Fortune\FortuneStripeService();

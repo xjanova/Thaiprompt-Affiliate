@@ -43,20 +43,35 @@ class FortuneStripeTest extends Command
         $this->info('───────────────────────');
 
         $enable = (bool) ($settings->enable_stripe_payment ?? false);
+        $enableSms = (bool) ($settings->enable_sms_payment ?? true);
         $sk = $settings->stripe_secret_key ?? '';
         $pk = $settings->stripe_publishable_key ?? '';
         $whsec = $settings->stripe_webhook_secret ?? '';
-        $fee = $settings->stripe_service_fee ?? 15.0;
+        $fee = (int) round((float) ($settings->stripe_service_fee ?? 15));
         $expiry = $settings->stripe_session_expiry_minutes ?? 30;
         $prodDeep = $settings->stripe_product_deep_id ?? '';
         $prodCeltic = $settings->stripe_product_celtic_id ?? '';
 
+        // 💳 (2026-05-22) Detect payment mode
+        $mode = 'none';
+        if ($enable && $enableSms) {
+            $mode = 'both (3 ปุ่ม)';
+        } elseif ($enable && ! $enableSms) {
+            $mode = 'stripe_only (2 ปุ่ม)';
+        } elseif (! $enable && $enableSms) {
+            $mode = 'sms_only (default backward compat)';
+        } else {
+            $mode = 'none (admin misconfig — fallback SMS)';
+        }
+
         $this->table(['Field', 'Value'], [
+            ['Payment Mode', $mode],
             ['enable_stripe_payment', $enable ? '✅ ON' : '⛔ OFF'],
+            ['enable_sms_payment', $enableSms ? '✅ ON' : '⛔ OFF'],
             ['stripe_secret_key', $this->maskKey($sk, 'sk_')],
             ['stripe_publishable_key', $this->maskKey($pk, 'pk_')],
             ['stripe_webhook_secret', $this->maskKey($whsec, 'whsec_')],
-            ['stripe_service_fee', number_format((float) $fee, 2).' THB'],
+            ['stripe_service_fee (foreign only)', "{$fee} THB"],
             ['stripe_session_expiry_minutes', "{$expiry} min"],
             ['stripe_product_deep_id', $prodDeep ?: '(empty)'],
             ['stripe_product_celtic_id', $prodCeltic ?: '(empty)'],
@@ -130,9 +145,10 @@ class FortuneStripeTest extends Command
         $this->newLine();
 
         // ───────────────────────────────────────
-        // Test 3: Create test checkout session (54 THB Deep package)
+        // Test 3: Create test checkout session (Deep 39 + 15 fee = 54 THB, foreign tier)
         // ───────────────────────────────────────
-        $this->info('3️⃣  Create test checkout session (54 THB)');
+        $totalForeign = 39 + $fee; // integer THB เสมอ
+        $this->info("3️⃣  Create test checkout session ({$totalForeign} THB, foreign tier)");
         $this->info('───────────────────────');
 
         $expiresAt = time() + (max(31, (int) $expiry) * 60);
@@ -141,18 +157,20 @@ class FortuneStripeTest extends Command
             'payment_method_types[0]' => 'card',
             'line_items[0][price_data][currency]' => 'thb',
             'line_items[0][price_data][product_data][name]' => 'TEST — Fortune Stripe Test',
-            'line_items[0][price_data][unit_amount]' => 3900, // 39.00 THB
+            'line_items[0][price_data][unit_amount]' => 3900, // 39 THB (integer)
             'line_items[0][quantity]' => 1,
             'line_items[1][price_data][currency]' => 'thb',
-            'line_items[1][price_data][product_data][name]' => 'TEST — Service fee',
-            'line_items[1][price_data][unit_amount]' => (int) round($fee * 100),
+            'line_items[1][price_data][product_data][name]' => 'TEST — Service fee (foreign)',
+            'line_items[1][price_data][unit_amount]' => $fee * 100, // integer * 100 satang
             'line_items[1][quantity]' => 1,
             'metadata[test]' => '1',
+            'metadata[customer_region]' => 'foreign',
             'metadata[run_at]' => now()->toIso8601String(),
             'expires_at' => $expiresAt,
             'success_url' => url('/fortune/stripe/test-success?session_id={CHECKOUT_SESSION_ID}'),
             'cancel_url' => url('/fortune/stripe/test-cancel?session_id={CHECKOUT_SESSION_ID}'),
             'locale' => 'auto',
+            'billing_address_collection' => 'required',
         ];
 
         try {

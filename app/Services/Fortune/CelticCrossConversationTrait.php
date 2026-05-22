@@ -180,7 +180,8 @@ trait CelticCrossConversationTrait
                 $reading->update(['bill_reference' => FortuneReading::generateBillReference()]);
             }
 
-            return $this->createPaymentBill($reading, [], payFirst: true);
+            // 💳 (2026-05-22) Route ตาม payment mode
+            return $this->routePayFirstDeep($reading);
         }
 
         $reading->update(['conversation_status' => FortuneReading::STATUS_TIER_CHOICE]);
@@ -407,7 +408,8 @@ trait CelticCrossConversationTrait
                 }
                 $reading->update($updateData);
 
-                return $this->createPaymentBill($reading, [], payFirst: true);
+                // 💳 (2026-05-22) Route ตาม payment mode
+                return $this->routePayFirstDeep($reading);
             }
         }
 
@@ -547,9 +549,12 @@ trait CelticCrossConversationTrait
      */
     protected function doStartCelticCrossFlow(FortuneReading $reading, bool $skipStripeGate = false): array
     {
-        // 💳 (2026-05-09) Stripe payment method gate — ถ้า admin เปิด Stripe → ถามวิธีชำระก่อน
+        // 💳 (2026-05-22) Payment method matrix:
+        //   - both / stripe_only → ถามวิธีชำระก่อน
+        //   - sms_only / none → ไป QR Thai (createPaymentBill ด้านล่าง) ตรงเลย
         //   $skipStripeGate=true → ลูกค้าเลือก QR Thai แล้ว → ลงสร้างบิล UPA ตรงเลย
-        if (! $skipStripeGate && $this->isStripePaymentAvailable()) {
+        $celticPaymentMode = $this->getActivePaymentMode();
+        if (! $skipStripeGate && ($celticPaymentMode === 'both' || $celticPaymentMode === 'stripe_only')) {
             // ตรวจ resume / dedup ก่อน (ถ้ามี Celtic ค้าง → ไม่ต้องถามวิธีชำระใหม่)
             $resumable = $this->findResumableCelticReading($reading);
             if ($resumable && $resumable->id !== $reading->id) {
@@ -822,10 +827,19 @@ trait CelticCrossConversationTrait
         // 🩹 (2026-05-07 review C1) Bill Psychology สำหรับ Celtic pending bills
         //   หาก Pro key + bill_psychology_enabled → คุยกับลูกค้าแบบจิตวิทยา
         //   ไม่งั้น fallback เป็น message เดิม
+        //
+        // 🌧️ (2026-05-22) เพิ่ม looksLikeCustomerExcuseOrLifeUpdate —
+        //   ลูกค้าพิมพ์ "ไฟดับ/รอแป๊บ/ไม่มีเงิน/แบตหมด" — bot จะรับฟัง ไม่ใช่ส่ง QR ซ้ำเดิม
+        //   เคสจริง FB: ลูกค้าโกรธ "พอรอโอนแล้ว ส่งแต่แบบนี้ไม่ฟังที่ลูกค้าบอกเลย"
         $aiPrefix = '';
-        if (method_exists($this, 'looksLikeMetaOrChitchat')
-            && method_exists($this, 'tryBillPsychologyResponse')
-            && $this->looksLikeMetaOrChitchat($messageText)) {
+        $shouldTriggerAi = method_exists($this, 'looksLikeMetaOrChitchat')
+            && (
+                $this->looksLikeMetaOrChitchat($messageText)
+                || (method_exists($this, 'looksLikeCustomerExcuseOrLifeUpdate')
+                    && $this->looksLikeCustomerExcuseOrLifeUpdate($messageText))
+            );
+
+        if ($shouldTriggerAi && method_exists($this, 'tryBillPsychologyResponse')) {
             try {
                 $platform = $reading->platform ?? (preg_match('/^U[0-9a-f]{32}$/i', $reading->facebook_user_id ?? '') ? 'line' : 'facebook');
                 $platformUserId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
@@ -854,6 +868,28 @@ trait CelticCrossConversationTrait
                     'error' => $e->getMessage(),
                     'reading_id' => $reading->id,
                 ]);
+            }
+
+            // 🩹 (2026-05-22) Fallback — Bill Psychology ไม่ทำงาน (no Pro key / budget block / fail)
+            //   ใช้ buildPendingPaymentNudge (เบากว่า ใช้ chat_ai_api_key)
+            //   เดิม Celtic ไม่มี layer นี้ ทำให้แย่กว่า handlePendingPayment ของ Deep 39฿
+            if (empty($aiPrefix) && method_exists($this, 'buildPendingPaymentNudge')) {
+                try {
+                    $upa = $reading->uniquePaymentAmount;
+                    $remainingMinutes = $upa && $upa->expires_at
+                        ? max(0, (int) now()->diffInMinutes($upa->expires_at, false))
+                        : 30;
+
+                    $nudge = $this->buildPendingPaymentNudge($reading, $messageText, $remainingMinutes);
+                    if (! empty($nudge)) {
+                        $aiPrefix = $nudge."\n\n";
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Celtic: buildPendingPaymentNudge fallback ล้มเหลว', [
+                        'error' => $e->getMessage(),
+                        'reading_id' => $reading->id,
+                    ]);
+                }
             }
         }
 

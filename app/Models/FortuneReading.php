@@ -410,6 +410,8 @@ class FortuneReading extends Model
         'stripe_session_id',
         'stripe_payment_intent_id',
         'stripe_paid_at',
+        // 💳 Stripe customer region — 2026-05-22 (th=ในไทย no fee / foreign=+15฿)
+        'stripe_customer_region',
         // 🔍 Fuzzy Payment Match — 2026-05-15
         'fuzzy_approved_at',
         'fuzzy_approved_delta',
@@ -1110,6 +1112,10 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_QA_PROMPT,
                 // 🎁 Free Card states (2026-05-03) — รอลูกค้าตอบหลังทำนายฟรี
                 self::STATUS_FREE_PREDICTED,
+                // 💳 Stripe Payment states (2026-05-09, scope-fix 2026-05-22)
+                //    เดิมขาดอันนี้ → ลูกค้าทักระหว่างรอจ่าย Stripe → bot ไม่เจอ reading → orphan
+                self::STATUS_AWAITING_PAYMENT_METHOD,
+                self::STATUS_PENDING_STRIPE_PAYMENT,
             ])
             ->where(function ($q) {
                 // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
@@ -1123,9 +1129,19 @@ class FortuneReading extends Model
                         self::STATUS_DISCOVERY_CHAT,
                         self::STATUS_DISCOVERY_CONFIRM,
                         self::STATUS_TIER_CHOICE,
+                        // 💳 (2026-05-22) AWAITING_PAYMENT_METHOD = ลูกค้ารอเลือกวิธีชำระ
+                        //   timeout 30 นาที เพียงพอ — ถ้าเกินก็ปล่อย user reset
+                        self::STATUS_AWAITING_PAYMENT_METHOD,
                     ])
                         ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
                 })
+                // 💳 (2026-05-22) PENDING_STRIPE_PAYMENT: timeout = Stripe session expiry + buffer
+                //    Stripe session อายุ 30-60 นาที (อิงจาก stripe_session_expiry_minutes setting)
+                //    ให้ 90 นาทีคงที่เพื่อเผื่อ buffer (Stripe expire เอง → polling จัดการ revert)
+                    ->orWhere(function ($sub) {
+                        $sub->where('conversation_status', self::STATUS_PENDING_STRIPE_PAYMENT)
+                            ->where('updated_at', '>=', now()->subMinutes(90));
+                    })
                 // pending_payment (Deep + Celtic): timeout 30 นาที (รอโอนเงิน)
                     ->orWhere(function ($sub) {
                         $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
