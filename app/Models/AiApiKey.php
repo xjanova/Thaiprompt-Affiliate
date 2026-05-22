@@ -97,17 +97,13 @@ class AiApiKey extends Model
             'grok-4',                         // stable snapshot
             'grok-4-fast',                    // low-latency variant
             // Grok 3 — reasoning models (Feb 2026)
-            'grok-3-latest',                  // ⭐ apidog/xAI default
+            'grok-3-latest',                  // ⭐ apidog/xAI default (recommended)
             'grok-3',                         // stable
             'grok-3-mini',                    // ถูก + เร็ว
             'grok-3-mini-fast',               // mini optimized for speed
             'grok-3-fast',                    // full-size, optimized latency
-            // Grok 2 (legacy — Dec 2024)
-            'grok-2-latest',
-            'grok-2-1212',
-            'grok-2-vision-1212',             // vision-capable
-            'grok-beta',
-            'grok-vision-beta',
+            // 🚫 (2026-05-22) Grok 2 series + grok-beta — DEPRECATED by xAI (400 "Model not found")
+            //   ลบออกจาก dropdown แล้ว — migration 2026_05_22_210000 อัปเดต DB อัตโนมัติ
         ],
         'groq' => [
             'llama-3.3-70b-versatile',

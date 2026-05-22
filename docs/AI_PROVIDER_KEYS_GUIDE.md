@@ -193,7 +193,8 @@
 
 ### 💡 Tips
 - $150 free credits ใหม่ — หมดอายุใน 1 เดือน
-- Vision: ใช้ `grok-2-vision-1212` (multimodal)
+- ⚠️ **Grok 2 series + grok-beta deprecated แล้ว** (2026-05) — ใช้ grok-3+ เท่านั้น
+- Vision: ใช้ `grok-4` (multimodal) หรือ `grok-3-latest`
 - ตั้ง `rate_limit_per_minute=60` (xAI Tier 1)
 
 ---

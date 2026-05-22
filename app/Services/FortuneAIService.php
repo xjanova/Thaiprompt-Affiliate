@@ -4145,7 +4145,7 @@ PROMPT;
         return match ($provider) {
             'gemini' => 'gemini-2.5-flash',
             'groq' => 'llama-3.3-70b-versatile',
-            'grok' => 'grok-2-latest',
+            'grok' => 'grok-3-latest',  // 🎯 (2026-05-22) grok-2-* deprecated by xAI → use grok-3-latest
             'qwen' => 'Qwen/Qwen2.5-72B-Instruct',
             'openrouter' => 'anthropic/claude-3-haiku',
             'deepseek' => 'deepseek-chat',
@@ -5058,11 +5058,15 @@ TXT;
      */
     protected function callGrok(string $prompt, array $config = []): array
     {
+        // 🎯 (2026-05-22) grok-2-* deprecated by xAI → ใช้ grok-3-latest เป็น fallback
+        //   ก่อนหน้านี้: 'grok-2-latest' fallback → xAI ตอบ 400 "Model not found"
+        $effectiveModel = $this->model ?: 'grok-3-latest';
+
         try {
             $response = Http::timeout(self::DEEP_PROVIDER_TIMEOUT)
                 ->withToken($this->apiKey)
                 ->post('https://api.x.ai/v1/chat/completions', [
-                    'model' => $this->model ?: 'grok-2-latest',
+                    'model' => $effectiveModel,
                     'messages' => [
                         ['role' => 'system', 'content' => self::SYSTEM_MESSAGE],
                         ['role' => 'user', 'content' => $prompt],
@@ -5079,13 +5083,13 @@ TXT;
                 'input_tokens' => $data['usage']['prompt_tokens'] ?? 0,
                 'output_tokens' => $data['usage']['completion_tokens'] ?? 0,
                 'provider' => 'grok',
-                'model' => $this->model ?: 'grok-2-latest',
+                'model' => $effectiveModel,
             ];
         } catch (Exception $e) {
             $errorMsg = $e->getMessage();
             Log::error('Grok API Error', [
                 'error' => $errorMsg,
-                'model' => $this->model ?: 'grok-2-latest',
+                'model' => $effectiveModel,
                 'has_api_key' => ! empty($this->apiKey),
                 'api_key_prefix' => substr($this->apiKey ?? '', 0, 8).'...',
             ]);
