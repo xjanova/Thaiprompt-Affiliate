@@ -16,12 +16,15 @@ Artisan::command('inspire', function () {
 //
 // สแกนทุก 5 นาที — paid + ค้างที่ celtic_pending_payment / picking ไม่มีไพ่ > 5 นาที
 // → re-push first card prompt ผ่าน MESSAGE_TAG=POST_PURCHASE_UPDATE
-Schedule::command('fortune:celtic-recover --auto --minutes=5')
-    ->everyFiveMinutes()
-    ->withoutOverlapping(10)
-    ->onOneServer()
-    ->name('celtic-auto-recovery')
-    ->runInBackground();
+// 🛑 (2026-05-22 #5) DISABLED per user request — "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย"
+//   เหตุผล: re-push "เลือกไพ่ใบแรก" ซ้ำๆ สร้างปัญหา (annoy + FB quota)
+//   ลูกค้า paid + Celtic ค้าง = admin manual ผ่าน /admin/fortune/billing
+// Schedule::command('fortune:celtic-recover --auto --minutes=5')
+//     ->everyFiveMinutes()
+//     ->withoutOverlapping(10)
+//     ->onOneServer()
+//     ->name('celtic-auto-recovery')
+//     ->runInBackground();
 
 // ════════════════════════════════════════════════════════════════
 // 💸 (2026-05-14) Bill Reminder — ทวงลูกค้าที่สร้างบิลแล้วยังไม่โอน
@@ -55,12 +58,15 @@ Schedule::command('fortune:bill-reminder')
 // 🚨 (2026-05-14) เพิ่ม --hours=24 (เดิม 2) — กัน orphan ค้างนานกว่า 2 ชม.
 //   เคส #2545: ลูกค้าจ่าย → expire 30 min ก่อน fix → orphan COMPLETED 8 ชม.
 //   ต้อง window กว้างขึ้น recover ได้
-Schedule::command('fortune:recover-paid-no-birthdate --auto --hours=24 --min-age-minutes=3')
-    ->everyFiveMinutes()
-    ->withoutOverlapping(10)
-    ->onOneServer()
-    ->name('deep-pay-first-auto-recovery')
-    ->runInBackground();
+// 🛑 (2026-05-22 #5) DISABLED per user request — "ปิดระบบตามคนที่ยังไม่ได้รับคำทำนาย"
+//   เหตุผล: re-push "ขอวันเกิด" ซ้ำๆ สร้างปัญหา (ลูกค้าทิ้งแล้วก็ทิ้งเลย)
+//   ลูกค้า paid + ไม่กรอกวันเกิด = admin manual ผ่าน /admin/fortune/billing
+// Schedule::command('fortune:recover-paid-no-birthdate --auto --hours=24 --min-age-minutes=3')
+//     ->everyFiveMinutes()
+//     ->withoutOverlapping(10)
+//     ->onOneServer()
+//     ->name('deep-pay-first-auto-recovery')
+//     ->runInBackground();
 
 // 💳 (2026-05-09) Stripe webhook fallback — poll session ที่ pending recover ถ้า webhook ตก
 //   Stripe webhook ตก/firewall block → บิลจ่ายแล้วลูกค้าไม่ได้คำทำนาย
