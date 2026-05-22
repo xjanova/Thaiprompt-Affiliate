@@ -64,6 +64,7 @@ use App\Http\Controllers\Admin\FeaturedStoreController;
 use App\Http\Controllers\Admin\FloatingToolsController;
 use App\Http\Controllers\Admin\FortuneAdminQAController;
 use App\Http\Controllers\Admin\FortuneAstrologyController;
+use App\Http\Controllers\Admin\FortuneBanController;
 use App\Http\Controllers\Admin\FortuneBannerController;
 use App\Http\Controllers\Admin\FortuneBillingController;
 use App\Http\Controllers\Admin\FortuneCategoriesController;
@@ -4116,6 +4117,13 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/resume', [FortuneTakeoverController::class, 'resume'])->name('resume');
         Route::post('/{reading}/extend', [FortuneTakeoverController::class, 'extend'])->name('extend');
         Route::post('/{reading}/send-message', [FortuneTakeoverController::class, 'sendMessage'])->name('send-message');
+    });
+
+    // 🚫 (2026-05-22) ระบบคุก (Ban/Jail) — ห้ามบอทคุยกับ user ที่ไม่เหมาะสม
+    Route::prefix('bans')->name('bans.')->group(function () {
+        Route::get('/', [FortuneBanController::class, 'index'])->name('index');
+        Route::post('/', [FortuneBanController::class, 'store'])->name('store');
+        Route::delete('/{ban}', [FortuneBanController::class, 'destroy'])->name('destroy');
     });
 
     // คำถามที่ AI ตอบไม่ได้ — รอแอดมินตอบกลับ

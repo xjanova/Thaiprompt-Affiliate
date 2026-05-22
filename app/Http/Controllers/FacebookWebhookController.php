@@ -16,6 +16,7 @@ use App\Services\Fortune\ImageIntentClassifier;
 use App\Services\Fortune\ImageSpamGuard;
 use App\Services\FortuneAIService;
 use App\Services\FortuneBannerService;
+use App\Services\FortuneBanService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneConversationService;
 use App\Services\FortuneLocaleService;
@@ -63,6 +64,11 @@ class FacebookWebhookController extends Controller
     protected FortuneTakeoverService $takeoverService;
 
     /**
+     * FortuneBanService — ระบบ "คุก" ห้ามบอทคุยกับ user ที่ไม่เหมาะสม
+     */
+    protected FortuneBanService $banService;
+
+    /**
      * FortuneBannerService — ส่งภาพแบนเนอร์ก่อนข้อความใน DM
      */
     protected ?FortuneBannerService $bannerService = null;
@@ -76,6 +82,7 @@ class FacebookWebhookController extends Controller
             $this->conversationService = new FortuneConversationService($this->settings);
             $this->channelManager = new FortuneChannelManager($this->settings);
             $this->takeoverService = app(FortuneTakeoverService::class);
+            $this->banService = app(FortuneBanService::class);
             // 🛡️ (2026-05-06) แยก try/catch ออกมา — กัน bannerService = null
             //    ถ้า service ตัวข้างบนไม่ throw แต่ banner init ดันพัง
             //    (ก่อนหน้าถ้า init ก่อนหน้านี้ throw แล้วรันเข้า catch fallback
@@ -1466,6 +1473,36 @@ class FacebookWebhookController extends Controller
             // ส่ง text เป็น 'อ่านคำทำนาย' ถ้า user ส่ง sticker/emoji เพื่อ trigger ส่งคำทำนาย
             $effectiveText = $messageText ?: 'อ่านคำทำนาย';
             $this->processConversationalMessage($senderId, $effectiveText);
+
+            return;
+        }
+
+        // 🚫 (2026-05-22) Ban guard — user ที่ถูกแบนห้ามบอทคุยด้วย
+        //    ⚠️ ต้องอยู่ "หลัง" pendingDelivery — กันลูกค้าจ่ายแล้วถูกแบนกลางทาง คำทำนายค้าง
+        //    Anti-spam: ตอบเตือนครั้งแรกเท่านั้น (cooldown 1 ชม.) หลังจากนั้นเงียบ
+        //    แอดมินยังคุยได้ผ่าน Page Inbox / admin panel (เพราะใช้ Page API ตรง)
+        $activeBan = $this->banService->getActiveBan('facebook', $senderId);
+        if ($activeBan !== null) {
+            if ($this->banService->shouldNotify($activeBan)) {
+                $banMessage = $this->banService->buildBanReplyMessage($activeBan);
+                try {
+                    $this->facebookService->sendMessage($senderId, $banMessage);
+                    $this->banService->recordNotification($activeBan);
+                } catch (\Throwable $e) {
+                    Log::warning('FB ban: ส่งข้อความเตือนแบนล้มเหลว (non-blocking)', [
+                        'sender_id' => $senderId,
+                        'ban_id' => $activeBan->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('🚫 FB: ignore banned user', [
+                'sender_id' => $senderId,
+                'ban_id' => $activeBan->id,
+                'attempt_count' => $activeBan->attempt_count,
+                'permanent' => $activeBan->isPermanent(),
+            ]);
 
             return;
         }

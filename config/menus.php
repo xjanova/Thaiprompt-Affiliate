@@ -743,6 +743,7 @@ return [
                 ['label' => '🖼️ แบนเนอร์ DM', 'route' => 'admin.fortune.banners.index', 'description' => 'อัพโหลด/จัดการแบนเนอร์ที่ส่งให้ลูกค้าใน DM (reaction/comment/welcome)'],
                 ['label' => '🎨 Payment Banner (QR+ธนาคาร)', 'route' => 'admin.fortune.payment-banner.index', 'description' => 'ฝัง Dynamic QR ใน banner ธนาคาร — anti-FB-detection + SMS checker จับคู่ได้'],
                 ['label' => '🎯 เทคโอเวอร์ (แม่หมอคุยเอง)', 'route' => 'admin.fortune.takeover.index', 'description' => 'หยุด AI ให้แม่หมอ/แอดมินคุยเอง — LINE + Facebook'],
+                ['label' => '🚫 ระบบคุก (แบน user)', 'route' => 'admin.fortune.bans.index', 'description' => 'แบน user ไม่ให้บอทคุยด้วย (สแปม/ก่อกวน) — แอดมินยังคุยผ่าน Inbox ได้'],
                 ['label' => '📚 RAG Admin Q&A (เทรนบอทจากคำตอบแอดมิน)', 'route' => 'admin.fortune.admin-qa.index', 'description' => 'จับคู่ Q&A จาก FB Page Inbox → AI เลียนสไตล์แอดมินตอบ chat ลูกค้า'],
                 ['label' => '👥 ผู้ใช้ดูดวง', 'route' => 'admin.fortune.users.index', 'description' => 'จัดการผู้ใช้ที่เคยดูดวง ส่งข้อความ เพิ่มเครดิต'],
                 ['label' => '🎴 บุคลิกลูกค้า (RPG)', 'route' => 'admin.fortune.personas.index', 'description' => 'ระบบจดจำบุคลิกลูกค้า — RPG card, radar chart, level, rarity tier'],

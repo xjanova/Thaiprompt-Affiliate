@@ -7,6 +7,7 @@ use App\Models\FortuneReferral;
 use App\Models\FortuneTellingSetting;
 use App\Models\MlmProspect;
 use App\Services\FortuneBannerService;
+use App\Services\FortuneBanService;
 use App\Services\FortuneChannelManager;
 use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
@@ -36,6 +37,11 @@ class LineFortuneWebhookController extends Controller
     protected FortuneTakeoverService $takeoverService;
 
     /**
+     * FortuneBanService — ระบบ "คุก" ห้ามบอทคุยกับ user ที่ไม่เหมาะสม
+     */
+    protected FortuneBanService $banService;
+
+    /**
      * FortuneBannerService — ส่งภาพแบนเนอร์ก่อนข้อความ
      */
     protected FortuneBannerService $bannerService;
@@ -46,6 +52,7 @@ class LineFortuneWebhookController extends Controller
         $this->lineService = new LineFortuneService($this->settings);
         $this->channelManager = new FortuneChannelManager($this->settings);
         $this->takeoverService = app(FortuneTakeoverService::class);
+        $this->banService = app(FortuneBanService::class);
         $this->bannerService = new FortuneBannerService($this->settings);
     }
 
@@ -149,6 +156,43 @@ class LineFortuneWebhookController extends Controller
                 'user_id' => $userId,
                 'message_type' => $messageType,
                 'text_preview' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return;
+        }
+
+        // 🚫 (2026-05-22) Ban guard — user ที่ถูกแบนห้ามบอทคุยด้วย
+        //    Anti-spam: ตอบเตือนครั้งแรกเท่านั้น (cooldown 1 ชม.) หลังจากนั้นเงียบ
+        //    แอดมินยังคุยได้ผ่าน LINE OA Manager / admin panel (เพราะใช้ Channel Token ตรง)
+        //    ⚠️ LINE ส่งคำทำนายทันทีหลังจ่ายเงิน (ไม่ต้องรอ user ทักเหมือน FB)
+        //    ดังนั้นการแบนระหว่างทาง = แบน user ที่ยังไม่จ่าย / จ่ายเสร็จแล้ว — safe
+        $activeBan = $this->banService->getActiveBan('line', $userId);
+        if ($activeBan !== null) {
+            if ($this->banService->shouldNotify($activeBan)) {
+                $banMessage = $this->banService->buildBanReplyMessage($activeBan);
+                try {
+                    if ($replyToken) {
+                        $this->lineService->replyMessage($replyToken, [
+                            ['type' => 'text', 'text' => $banMessage],
+                        ]);
+                    } else {
+                        $this->lineService->sendMessage($userId, $banMessage);
+                    }
+                    $this->banService->recordNotification($activeBan);
+                } catch (\Throwable $e) {
+                    Log::warning('LINE ban: ส่งข้อความเตือนแบนล้มเหลว (non-blocking)', [
+                        'user_id' => $userId,
+                        'ban_id' => $activeBan->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            Log::info('🚫 LINE: ignore banned user', [
+                'user_id' => $userId,
+                'ban_id' => $activeBan->id,
+                'attempt_count' => $activeBan->attempt_count,
+                'permanent' => $activeBan->isPermanent(),
             ]);
 
             return;
