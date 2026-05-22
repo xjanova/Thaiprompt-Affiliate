@@ -541,6 +541,178 @@ class FortuneCelticCrossController extends Controller
     }
 
     /**
+     * ⏰ (2026-05-22) เพิ่มเวลา Pro Session — admin มอบเวลาคุยกับแม่หมอเพิ่ม
+     *
+     * Use case:
+     *   - ลูกค้ากำลังคุยเพลิน แต่เวลาใกล้หมด → admin extend ให้ +30 นาที
+     *   - ลูกค้าหมดเวลาแล้ว/COMPLETED → admin reactivate session ใหม่
+     *   - ลูกค้า complain เวลาน้อย → admin compensate
+     *
+     * Params:
+     *   - minutes: int 1-300 (จำนวนนาทีที่จะเพิ่ม/รีเซ็ตเป็น)
+     *   - mode: 'add' (default) เพิ่มจาก window เดิม | 'reset' เริ่มเวลาใหม่จากตอนนี้
+     *   - notify: bool (default true) แจ้งลูกค้าให้รู้ว่าได้เวลาเพิ่ม
+     *
+     * Logic:
+     *   - active + remaining>0 + mode=add → pro_session_window_minutes += minutes (started_at คงเดิม)
+     *   - active + mode=reset → started_at=now, window=minutes
+     *   - inactive/expired → reactivate ทั้งหมด (active=true, type=celtic, started_at=now, window=minutes)
+     *   - ถ้า status=COMPLETED → กลับเป็น CELTIC_AWAITING_QUESTION
+     *
+     * Safety:
+     *   - ต้องเป็น Celtic reading + is_paid=true + เปิดไพ่ครบ 10 ใบ
+     *   - ต้องมี user_id (ถ้า notify=true)
+     */
+    public function extendProSession(Request $request, FortuneReading $reading)
+    {
+        if ($reading->reading_type !== FortuneReading::READING_TYPE_CELTIC_CROSS) {
+            abort(404);
+        }
+
+        if (! $reading->is_paid) {
+            return back()->with('error', '❌ Reading นี้ยังไม่ได้ชำระเงิน — เพิ่มเวลาไม่ได้');
+        }
+
+        if ($reading->getCelticPickedCount() < 10) {
+            return back()->with('error', '❌ ลูกค้ายังเปิดไพ่ไม่ครบ 10 ใบ — ยังไม่เข้า Pro Session');
+        }
+
+        $validated = $request->validate([
+            'minutes' => 'required|integer|min:1|max:300',
+            'mode' => 'sometimes|in:add,reset',
+            'notify' => 'sometimes|boolean',
+        ]);
+
+        $minutes = (int) $validated['minutes'];
+        $mode = $validated['mode'] ?? 'add';
+        $notify = (bool) $request->input('notify', true);
+
+        $settings = FortuneTellingSetting::getSettings();
+        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+
+        try {
+            // อ่าน state ปัจจุบัน
+            $startedAtRaw = $reading->getConversationState('pro_session_started_at');
+            $oldWindow = (int) $reading->getConversationState('pro_session_window_minutes', $defaultWindow);
+            $isActive = (bool) $reading->getConversationState('pro_session_active', false);
+
+            $remainingBefore = 0;
+            if ($isActive && ! empty($startedAtRaw)) {
+                try {
+                    $elapsed = (int) \Carbon\Carbon::parse($startedAtRaw)->diffInMinutes(now(), true);
+                    $remainingBefore = max(0, $oldWindow - $elapsed);
+                } catch (\Throwable $e) {
+                    $remainingBefore = 0;
+                }
+            }
+
+            $sessionLive = $isActive && $remainingBefore > 0;
+            $action = '';
+            $newRemaining = 0;
+
+            if ($sessionLive && $mode === 'add') {
+                // 🟢 เพิ่มเวลาจาก window เดิม (started_at คงเดิม)
+                $newWindow = $oldWindow + $minutes;
+                $reading->setConversationState('pro_session_window_minutes', $newWindow);
+                $newRemaining = $remainingBefore + $minutes;
+                $action = "เพิ่ม +{$minutes} นาที (เวลาเดิม {$remainingBefore}m → ใหม่ {$newRemaining}m)";
+            } elseif ($sessionLive && $mode === 'reset') {
+                // 🟡 รีเซ็ตเวลาใหม่จากตอนนี้
+                $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+                $reading->setConversationState('pro_session_window_minutes', $minutes);
+                $newRemaining = $minutes;
+                $action = "รีเซ็ตเวลาใหม่ {$minutes} นาที (เดิมเหลือ {$remainingBefore}m)";
+            } else {
+                // 🔴 Session ปิด/หมดเวลา → reactivate ใหม่ทั้งหมด
+                $reading->setConversationState('pro_session_active', true);
+                $reading->setConversationState('pro_session_type', 'celtic');
+                $reading->setConversationState('pro_session_started_at', now()->toIso8601String());
+                $reading->setConversationState('pro_session_window_minutes', $minutes);
+                $reading->setConversationState('pro_session_pending_exit', false);
+
+                // กลับเข้า chat state ถ้า COMPLETED แล้ว
+                if ($reading->conversation_status === FortuneReading::STATUS_COMPLETED) {
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+                }
+
+                $newRemaining = $minutes;
+                $action = "เปิด Pro Session ใหม่ {$minutes} นาที (session ปิดอยู่)";
+            }
+
+            $reading->refresh();
+
+            // แจ้งลูกค้า
+            $pushed = false;
+            $pushNote = '';
+            if ($notify) {
+                $userId = $reading->platform_user_id ?? $reading->facebook_user_id;
+                if (empty($userId)) {
+                    $pushNote = ' (push ไม่ได้ — ไม่มี user_id)';
+                } else {
+                    $platform = $reading->platform
+                        ?: (preg_match('/^U[0-9a-f]{32}$/i', (string) $userId) ? 'line' : 'facebook');
+                    $name = $reading->facebook_user_name ?? 'เจ้าชะตา';
+                    $channelManager = new FortuneChannelManager($settings);
+
+                    $verb = $mode === 'reset' ? "เริ่มเวลาใหม่ {$minutes} นาที" : "เพิ่มเวลาอีก {$minutes} นาที";
+
+                    $msg = "🌙✨ *แม่หมอจันทราเปิดประตูพลังเพิ่มเวลาให้ค่ะ คุณ{$name}* ✨🌙\n\n"
+                        . "🎁 แอดมินส่งพลังพิเศษให้ — *{$verb}*\n\n"
+                        . "⏳ *เหลือเวลาคุยกับแม่หมอ {$newRemaining} นาที*\n\n"
+                        . "💬 พิมพ์คำถามต่อมาได้เลยค่ะ แม่หมอรอฟังอยู่ ✨\n\n"
+                        . '🛑 หรือพิมพ์ *"ยุติการทำนาย"* เมื่อพอใจแล้วนะคะ';
+
+                    $pushed = (bool) $channelManager->sendResponse($platform, (string) $userId, [
+                        'action' => 'celtic_time_extended',
+                        'message' => $msg,
+                        'reading' => $reading,
+                    ], [
+                        'from_admin' => true,
+                        'message_tag' => 'POST_PURCHASE_UPDATE',
+                    ]);
+                    $pushNote = $pushed ? ' + แจ้งลูกค้าแล้ว ✓' : ' (push ล้มเหลว — ลูกค้าจะเห็นตอนทักกลับ)';
+                }
+            }
+
+            // Log takeover
+            try {
+                \App\Models\FortuneTakeoverLog::create([
+                    'fortune_reading_id' => $reading->id,
+                    'user_id' => auth()->id(),
+                    'platform' => $reading->platform ?? 'unknown',
+                    'action' => 'extend',
+                    'reason' => 'manual',
+                    'duration_minutes' => $minutes,
+                    'message' => "[EXTEND {$mode}] {$action}",
+                ]);
+            } catch (\Throwable $logErr) {
+                // non-critical
+            }
+
+            Log::info('Celtic admin extend pro session', [
+                'reading_id' => $reading->id,
+                'admin_id' => auth()->id(),
+                'mode' => $mode,
+                'minutes' => $minutes,
+                'session_was_live' => $sessionLive,
+                'remaining_before' => $remainingBefore,
+                'remaining_after' => $newRemaining,
+                'notified' => $notify,
+                'pushed' => $pushed,
+            ]);
+
+            return back()->with('success', "✅ {$action}{$pushNote}");
+        } catch (\Throwable $e) {
+            Log::error('Celtic admin extend pro session failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', "❌ เพิ่มเวลาล้มเหลว: {$e->getMessage()}");
+        }
+    }
+
+    /**
      * 🤖 (2026-05-17 Phase 2) Admin Ask AI — AJAX endpoint, sync, return JSON
      *
      * Flow:

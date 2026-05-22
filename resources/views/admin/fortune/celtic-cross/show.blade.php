@@ -26,6 +26,141 @@
                 </a>
             @endif
             @if($reading->is_paid)
+                {{-- ⏰ (2026-05-22) เพิ่มเวลา Pro Session — admin ให้ลูกค้าคุยต่อได้นานขึ้น --}}
+                @if($reading->getCelticPickedCount() >= 10)
+                    @php
+                        // คำนวณเวลาคงเหลือของ Pro Session ปัจจุบัน
+                        $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
+                        $_proStartedAt = $reading->getConversationState('pro_session_started_at');
+                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 30);
+                        $_proRemainingMin = 0;
+                        if ($_proActive && ! empty($_proStartedAt)) {
+                            try {
+                                $_elapsed = (int) \Carbon\Carbon::parse($_proStartedAt)->diffInMinutes(now(), true);
+                                $_proRemainingMin = max(0, $_proWindowMin - $_elapsed);
+                            } catch (\Throwable $e) {
+                                $_proRemainingMin = 0;
+                            }
+                        }
+                        $_proLive = $_proActive && $_proRemainingMin > 0;
+                    @endphp
+                    <div x-data="{ open: false, minutes: 30, mode: 'add', notify: true, custom: false }" class="inline-block">
+                        <button @click="open = true" type="button"
+                                class="px-4 py-2 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-200 dark:hover:bg-cyan-900/50 rounded-lg text-sm font-semibold">
+                            ⏰ เพิ่มเวลา
+                            @if($_proLive)
+                                <span class="ml-1 text-xs opacity-75">(เหลือ {{ $_proRemainingMin }}m)</span>
+                            @else
+                                <span class="ml-1 text-xs opacity-75">(session ปิด)</span>
+                            @endif
+                        </button>
+
+                        {{-- Modal --}}
+                        <div x-show="open" x-cloak
+                             class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                             @click.self="open = false"
+                             @keydown.escape.window="open = false">
+                            <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full p-6">
+                                <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                    ⏰ เพิ่มเวลาคุยกับแม่หมอ
+                                </h3>
+
+                                {{-- สถานะ session ปัจจุบัน --}}
+                                <div class="mb-4 p-3 rounded-lg
+                                    @if($_proLive) bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800
+                                    @else bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 @endif">
+                                    @if($_proLive)
+                                        <p class="text-sm text-emerald-700 dark:text-emerald-300">
+                                            🟢 <strong>Session กำลังใช้งาน</strong> — เหลือ <strong>{{ $_proRemainingMin }} นาที</strong>
+                                            <br><span class="text-xs opacity-75">window {{ $_proWindowMin }}m | started {{ \Carbon\Carbon::parse($_proStartedAt)->format('H:i:s') }}</span>
+                                        </p>
+                                    @else
+                                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                                            ⚫ <strong>Session ปิด/หมดเวลา</strong> — กดเพิ่มเวลาเพื่อ <strong>เปิด session ใหม่</strong>
+                                            <br><span class="text-xs opacity-75">status: {{ $reading->conversation_status }}</span>
+                                        </p>
+                                    @endif
+                                </div>
+
+                                <form action="{{ route('admin.fortune.celtic-cross.extend', $reading) }}" method="POST">
+                                    @csrf
+
+                                    {{-- Preset minutes --}}
+                                    <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                        จำนวนนาทีที่จะเพิ่ม
+                                    </label>
+                                    <div class="grid grid-cols-4 gap-2 mb-2">
+                                        @foreach([10, 30, 60, 120] as $preset)
+                                            <button type="button" @click="minutes = {{ $preset }}; custom = false"
+                                                    :class="!custom && minutes === {{ $preset }} ? 'bg-cyan-600 text-white border-cyan-600' : 'bg-white dark:bg-gray-900 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:border-cyan-400'"
+                                                    class="px-3 py-2 border rounded-lg text-sm font-semibold transition">
+                                                +{{ $preset }}m
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                    <div class="flex items-center gap-2 mb-4">
+                                        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-400 cursor-pointer">
+                                            <input type="checkbox" x-model="custom" class="rounded">
+                                            <span>กำหนดเอง:</span>
+                                        </label>
+                                        <input type="number" name="minutes" x-model.number="minutes"
+                                               :disabled="!custom" min="1" max="300" required
+                                               class="flex-1 px-3 py-1.5 bg-gray-50 dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-cyan-500 focus:outline-none disabled:opacity-50">
+                                        <span class="text-xs text-gray-500">นาที (1-300)</span>
+                                    </div>
+
+                                    {{-- Mode --}}
+                                    @if($_proLive)
+                                        <label class="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                                            โหมด
+                                        </label>
+                                        <div class="space-y-1 mb-4">
+                                            <label class="flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <input type="radio" name="mode" value="add" x-model="mode" class="mt-0.5">
+                                                <div class="text-sm">
+                                                    <strong class="text-gray-900 dark:text-white">เพิ่มต่อเวลาเดิม</strong>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">เวลาเหลือ {{ $_proRemainingMin }}m → <span x-text="{{ $_proRemainingMin }} + minutes"></span>m</p>
+                                                </div>
+                                            </label>
+                                            <label class="flex items-start gap-2 p-2 rounded cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <input type="radio" name="mode" value="reset" x-model="mode" class="mt-0.5">
+                                                <div class="text-sm">
+                                                    <strong class="text-gray-900 dark:text-white">เริ่มเวลาใหม่</strong>
+                                                    <p class="text-xs text-gray-500 dark:text-gray-400">รีเซ็ตเวลาเหลือเป็น <span x-text="minutes"></span>m (started=now)</p>
+                                                </div>
+                                            </label>
+                                        </div>
+                                    @else
+                                        <input type="hidden" name="mode" value="add">
+                                        <div class="mb-4 p-2 bg-cyan-50 dark:bg-cyan-900/20 rounded text-xs text-cyan-700 dark:text-cyan-300">
+                                            🔄 จะ <strong>เปิด Pro Session ใหม่</strong> ให้ลูกค้าคุยกับแม่หมอ <span x-text="minutes"></span> นาที
+                                        </div>
+                                    @endif
+
+                                    {{-- Notify --}}
+                                    <label class="flex items-center gap-2 mb-5 cursor-pointer">
+                                        <input type="checkbox" name="notify" value="1" x-model="notify" class="rounded">
+                                        <span class="text-sm text-gray-700 dark:text-gray-300">
+                                            📤 แจ้งลูกค้าทันที (แม่หมอจะส่งข้อความ "ได้เวลาเพิ่ม")
+                                        </span>
+                                    </label>
+
+                                    <div class="flex gap-2">
+                                        <button @click="open = false" type="button"
+                                                class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold hover:bg-gray-200 dark:hover:bg-gray-600">
+                                            ยกเลิก
+                                        </button>
+                                        <button type="submit"
+                                                class="flex-1 px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold">
+                                            ⏰ ยืนยัน +<span x-text="minutes"></span>m
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- 🔄 (2026-05-16) Restore active chat — เปิด Pro Session กลับให้ลูกค้าคุยต่อ --}}
                 @if($reading->getCelticPickedCount() >= 10)
                     <form action="{{ route('admin.fortune.celtic-cross.restore', $reading) }}" method="POST"
