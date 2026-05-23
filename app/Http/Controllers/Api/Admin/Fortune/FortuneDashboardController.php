@@ -223,10 +223,13 @@ class FortuneDashboardController extends Controller
             });
 
         // ── Recent completed (worker → DM result log) ──
+        // Activity log shows up to 30 most-recent across the last 24h so the
+        // operator can still see history on slow days. The "completed_last_15m"
+        // counter above stays at the 15-minute window for realtime metrics.
         $recent = DB::table('fortune_readings as fr')
             ->select('fr.id', 'fr.facebook_user_name', 'fr.platform', 'fr.questions', 'fr.ai_response', 'fr.responded_at', 'fr.created_at', 'fr.ai_provider')
             ->whereNotNull('fr.responded_at')
-            ->where('fr.responded_at', '>=', $now->copy()->subMinutes(15))
+            ->where('fr.responded_at', '>=', $now->copy()->subDay())
             ->orderByDesc('fr.responded_at')
             ->limit(30)
             ->get()

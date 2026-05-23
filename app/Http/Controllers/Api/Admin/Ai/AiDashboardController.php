@@ -55,13 +55,14 @@ class AiDashboardController extends Controller
     {
         $hours = max(1, min(168, (int) $request->input('hours', 24)));
 
-        // ai_usage_logs is the real usage tracker (created by FortuneAIService etc.).
-        // Bucket per hour for hours<=24, per day otherwise so the chart stays readable.
+        // ai_api_key_usage_logs is the live usage tracker (FortuneAIService writes
+        // via recordUsageForKey()). The empty ai_usage_logs table is legacy and
+        // never written to in this codepath.
         $series = [];
         try {
-            if (Schema::hasTable('ai_usage_logs')) {
+            if (Schema::hasTable('ai_api_key_usage_logs')) {
                 $format = $hours <= 24 ? '%Y-%m-%d %H:00:00' : '%Y-%m-%d 00:00:00';
-                $series = DB::table('ai_usage_logs')
+                $series = DB::table('ai_api_key_usage_logs')
                     ->selectRaw("DATE_FORMAT(created_at, '$format') as time, COUNT(*) as requests, AVG(response_time_ms) as avg_latency_ms")
                     ->where('created_at', '>=', now()->subHours($hours))
                     ->groupBy('time')
@@ -107,71 +108,105 @@ class AiDashboardController extends Controller
         $bucketFormat = $hours <= 1 ? '%Y-%m-%d %H:%i:00' : '%Y-%m-%d %H:00:00';
         $bucketCount = $hours <= 1 ? 60 : $hours;
 
-        $providers = [];
+        if (! Schema::hasTable('ai_api_key_usage_logs') || ! Schema::hasTable('ai_api_keys')) {
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'providers' => [],
+                    'window_hours' => $hours,
+                    'bucket_count' => $bucketCount,
+                    'generated_at' => now()->toIso8601String(),
+                ],
+            ]);
+        }
+
         try {
-            $providerRows = AiProvider::query()
-                ->orderBy('display_name')
-                ->get();
+            // The log table stores ai_api_key_id; provider name lives on
+            // ai_api_keys.provider as a varchar slug ('groq', 'gemini', 'openai',
+            // 'grok', etc.). The ai_providers table is a different concept used by
+            // mobile-admin features — don't conflate the two.
 
-            if (! Schema::hasTable('ai_usage_logs')) {
-                $providers = $providerRows->map(fn ($p) => $this->emptyProviderUsage($p, $bucketCount))->toArray();
-            } else {
-                // Single aggregate query keyed by provider — avoid N+1.
-                $agg = DB::table('ai_usage_logs')
-                    ->selectRaw('provider_id, COUNT(*) as requests, SUM(total_tokens) as tokens, SUM(cost) as cost, AVG(response_time_ms) as avg_ms, SUM(IF(status="error",1,0)) as errors')
-                    ->where('created_at', '>=', $since)
-                    ->groupBy('provider_id')
-                    ->get()
-                    ->keyBy('provider_id');
+            // Aggregate per provider over the window.
+            $agg = DB::table('ai_api_key_usage_logs as l')
+                ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+                ->selectRaw('k.provider as name, COUNT(*) as requests, SUM(l.total_tokens) as tokens, AVG(l.response_time_ms) as avg_ms, SUM(CASE WHEN l.is_success=0 THEN 1 ELSE 0 END) as errors')
+                ->where('l.created_at', '>=', $since)
+                ->groupBy('k.provider')
+                ->get()
+                ->keyBy('name');
 
-                // p95 latency per provider — separate pass over latencies.
-                $latenciesByProvider = DB::table('ai_usage_logs')
-                    ->select('provider_id', 'response_time_ms')
-                    ->where('created_at', '>=', $since)
-                    ->whereNotNull('response_time_ms')
-                    ->get()
-                    ->groupBy('provider_id');
+            // Latencies for p95 — separate pass so we can sort in PHP without
+            // depending on MySQL's PERCENTILE_CONT (8.0+).
+            $latByProvider = DB::table('ai_api_key_usage_logs as l')
+                ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+                ->select('k.provider as name', 'l.response_time_ms')
+                ->where('l.created_at', '>=', $since)
+                ->whereNotNull('l.response_time_ms')
+                ->get()
+                ->groupBy('name');
 
-                // Series — single grouped query so we can slot into per-provider buckets.
-                $seriesRows = DB::table('ai_usage_logs')
-                    ->selectRaw("provider_id, DATE_FORMAT(created_at, '$bucketFormat') as time, COUNT(*) as requests, SUM(total_tokens) as tokens")
-                    ->where('created_at', '>=', $since)
-                    ->groupBy('provider_id', 'time')
-                    ->orderBy('time')
-                    ->get()
-                    ->groupBy('provider_id');
+            // Time-bucketed series for the chart.
+            $seriesByProvider = DB::table('ai_api_key_usage_logs as l')
+                ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+                ->selectRaw("k.provider as name, DATE_FORMAT(l.created_at, '$bucketFormat') as time, COUNT(*) as requests, SUM(l.total_tokens) as tokens")
+                ->where('l.created_at', '>=', $since)
+                ->groupBy('name', 'time')
+                ->orderBy('time')
+                ->get()
+                ->groupBy('name');
 
-                $providers = $providerRows->map(function ($p) use ($agg, $latenciesByProvider, $seriesRows, $bucketCount) {
-                    $a = $agg->get($p->id);
-                    $lats = ($latenciesByProvider->get($p->id) ?? collect())->pluck('response_time_ms')->sort()->values();
-                    $p95 = $lats->count() > 0 ? (int) ($lats[(int) ceil($lats->count() * 0.95) - 1] ?? 0) : 0;
-                    $reqs = (int) ($a->requests ?? 0);
-                    $errors = (int) ($a->errors ?? 0);
-                    $series = ($seriesRows->get($p->id) ?? collect())->map(fn ($r) => [
-                        'time' => (string) $r->time,
-                        'tokens' => (int) ($r->tokens ?? 0),
-                        'requests' => (int) ($r->requests ?? 0),
-                    ])->toArray();
+            // Provider directory: include every provider that has at least one
+            // key (so idle providers still render a card), union with any
+            // provider seen in the log window.
+            $providerNames = DB::table('ai_api_keys')
+                ->select('provider')
+                ->distinct()
+                ->pluck('provider')
+                ->merge($agg->keys())
+                ->unique()
+                ->filter()
+                ->values();
 
-                    return [
-                        'provider_id' => $p->id,
-                        'name' => $p->name,
-                        'display_name' => $p->display_name ?? $p->name,
-                        'type' => $p->provider_type ?? null,
-                        'is_active' => (bool) $p->is_active,
-                        'is_available' => (bool) ($p->is_available ?? false),
-                        'color' => $this->providerColor($p->name),
-                        'requests' => $reqs,
-                        'tokens' => (int) ($a->tokens ?? 0),
-                        'cost_usd' => round((float) ($a->cost ?? 0), 4),
-                        'avg_latency_ms' => (int) round((float) ($a->avg_ms ?? 0)),
-                        'p95_latency_ms' => $p95,
-                        'error_rate_pct' => $reqs > 0 ? round(($errors / $reqs) * 100, 1) : 0.0,
-                        'series' => $series,
-                        'series_buckets' => $bucketCount,
-                    ];
-                })->toArray();
-            }
+            $keyCounts = DB::table('ai_api_keys')
+                ->selectRaw('provider, COUNT(*) as total_keys, SUM(is_active) as active_keys, SUM(tokens_used_today) as tokens_today, SUM(tokens_used_month) as tokens_month')
+                ->groupBy('provider')
+                ->get()
+                ->keyBy('provider');
+
+            $providers = $providerNames->map(function ($name) use ($agg, $latByProvider, $seriesByProvider, $keyCounts, $bucketCount) {
+                $a = $agg->get($name);
+                $lats = ($latByProvider->get($name) ?? collect())->pluck('response_time_ms')->sort()->values();
+                $p95 = $lats->count() > 0
+                    ? (int) ($lats[max(0, (int) ceil($lats->count() * 0.95) - 1)] ?? 0)
+                    : 0;
+                $reqs = (int) ($a->requests ?? 0);
+                $errors = (int) ($a->errors ?? 0);
+                $series = ($seriesByProvider->get($name) ?? collect())->map(fn ($r) => [
+                    'time' => (string) $r->time,
+                    'tokens' => (int) ($r->tokens ?? 0),
+                    'requests' => (int) ($r->requests ?? 0),
+                ])->toArray();
+                $kc = $keyCounts->get($name);
+
+                return [
+                    'name' => $name,
+                    'display_name' => $this->providerDisplayName($name),
+                    'color' => $this->providerColor($name),
+                    'is_active' => $kc ? ((int) $kc->active_keys > 0) : false,
+                    'total_keys' => (int) ($kc->total_keys ?? 0),
+                    'active_keys' => (int) ($kc->active_keys ?? 0),
+                    'requests' => $reqs,
+                    'tokens' => (int) ($a->tokens ?? 0),
+                    'tokens_today' => (int) ($kc->tokens_today ?? 0),
+                    'tokens_month' => (int) ($kc->tokens_month ?? 0),
+                    'cost_usd' => 0.0, // TODO: derive from model pricing
+                    'avg_latency_ms' => (int) round((float) ($a->avg_ms ?? 0)),
+                    'p95_latency_ms' => $p95,
+                    'error_rate_pct' => $reqs > 0 ? round(($errors / $reqs) * 100, 1) : 0.0,
+                    'series' => $series,
+                    'series_buckets' => $bucketCount,
+                ];
+            })->values()->toArray();
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
@@ -191,25 +226,23 @@ class AiDashboardController extends Controller
         ]);
     }
 
-    private function emptyProviderUsage(AiProvider $p, int $buckets): array
+    private function providerDisplayName(string $name): string
     {
-        return [
-            'provider_id' => $p->id,
-            'name' => $p->name,
-            'display_name' => $p->display_name ?? $p->name,
-            'type' => $p->provider_type ?? null,
-            'is_active' => (bool) $p->is_active,
-            'is_available' => (bool) ($p->is_available ?? false),
-            'color' => $this->providerColor($p->name),
-            'requests' => 0,
-            'tokens' => 0,
-            'cost_usd' => 0.0,
-            'avg_latency_ms' => 0,
-            'p95_latency_ms' => 0,
-            'error_rate_pct' => 0.0,
-            'series' => [],
-            'series_buckets' => $buckets,
+        $map = [
+            'openai'        => 'OpenAI',
+            'anthropic'     => 'Anthropic',
+            'groq'          => 'Groq',
+            'grok'          => 'xAI Grok',
+            'google'        => 'Google Gemini',
+            'gemini'        => 'Google Gemini',
+            'deepseek'      => 'DeepSeek',
+            'deepseek-local' => 'DeepSeek (Local)',
+            'qwen'          => 'Qwen',
+            'meta'          => 'Meta Llama',
+            'meta-local'    => 'Meta Llama (Local)',
+            'postxagent'    => 'PostXAgent',
         ];
+        return $map[strtolower($name)] ?? ucfirst($name);
     }
 
     private function providerColor(string $name): string
@@ -220,6 +253,7 @@ class AiDashboardController extends Controller
             'openai'        => '#10b981',
             'anthropic'     => '#d4a747',
             'groq'          => '#22d3ee',
+            'grok'          => '#e879f9',
             'google'        => '#8b5cf6',
             'gemini'        => '#8b5cf6',
             'deepseek'      => '#f59e0b',
@@ -231,7 +265,6 @@ class AiDashboardController extends Controller
         ];
         $k = strtolower($name);
         if (isset($map[$k])) return $map[$k];
-        // Deterministic fallback hue from name hash.
         $hue = abs(crc32($k)) % 360;
         return "hsl($hue, 70%, 55%)";
     }
@@ -255,19 +288,17 @@ class AiDashboardController extends Controller
         ];
 
         try {
-            if (Schema::hasTable('ai_usage_logs')) {
-                // ai_usage_logs.cost is USD (decimal 10,6). UI key kept as
-                // total_cost_thb for backward compat with existing mobile app —
-                // value is now in USD; convert at the consumer when needed.
-                // No cache_hit column → always 0.
-                $row = DB::table('ai_usage_logs')
-                    ->selectRaw('SUM(total_tokens) as tokens, SUM(cost) as cost')
+            if (Schema::hasTable('ai_api_key_usage_logs')) {
+                // No cost column in ai_api_key_usage_logs — only tokens.
+                // total_cost_thb stays at 0 until we wire a per-model pricing
+                // lookup (ai_models.input_cost_per_1m etc.).
+                $row = DB::table('ai_api_key_usage_logs')
+                    ->selectRaw('SUM(total_tokens) as tokens')
                     ->where('created_at', '>=', $start)
                     ->first();
 
                 if ($row) {
                     $stats['total_tokens'] = (int) ($row->tokens ?? 0);
-                    $stats['total_cost_thb'] = round((float) ($row->cost ?? 0), 2);
                 }
             }
         } catch (\Throwable $e) {
@@ -320,10 +351,10 @@ class AiDashboardController extends Controller
         ];
 
         try {
-            if (Schema::hasTable('ai_usage_logs')) {
-                $recent = DB::table('ai_usage_logs')
+            if (Schema::hasTable('ai_api_key_usage_logs')) {
+                $recent = DB::table('ai_api_key_usage_logs')
                     ->where('created_at', '>=', now()->subMinutes(15))
-                    ->get(['response_time_ms', 'status']);
+                    ->get(['response_time_ms', 'is_success']);
 
                 if ($recent->count() > 0) {
                     $latencies = $recent->pluck('response_time_ms')->filter()->sort()->values();
@@ -331,7 +362,7 @@ class AiDashboardController extends Controller
                     $summary['p95_latency_ms'] = (int) ($latencies[$p95Idx] ?? 0);
                     $summary['requests_per_min'] = (int) round($recent->count() / 15);
                     $summary['errors_pct'] = round(
-                        $recent->where('status', 'error')->count() / max(1, $recent->count()) * 100,
+                        $recent->where('is_success', 0)->count() / max(1, $recent->count()) * 100,
                         2
                     );
                 }
@@ -367,17 +398,7 @@ class AiDashboardController extends Controller
 
     private function safeProviderCost(AiProvider $provider): float
     {
-        try {
-            if (Schema::hasTable('ai_usage_logs')) {
-                return (float) DB::table('ai_usage_logs')
-                    ->where('provider_id', $provider->id)
-                    ->where('created_at', '>=', now()->startOfMonth())
-                    ->sum('cost');
-            }
-        } catch (\Throwable $e) {
-            //
-        }
-
+        // No cost field on ai_api_key_usage_logs. Return 0 until pricing wired.
         return 0.0;
     }
 }
