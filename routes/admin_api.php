@@ -2,16 +2,19 @@
 
 use App\Http\Controllers\Api\Admin\Ai\AiBotsController;
 use App\Http\Controllers\Api\Admin\Ai\AiDashboardController;
+use App\Http\Controllers\Api\Admin\Ai\AiPlaygroundController;
 use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\DashboardController;
+use App\Http\Controllers\Api\Admin\Finance\PaymentReconController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
 use App\Http\Controllers\Api\Admin\Finance\WithdrawalController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneDashboardController;
 use App\Http\Controllers\Api\Admin\Fortune\FortuneReadingsController;
 use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceDashboardController;
 use App\Http\Controllers\Api\Admin\Marketplace\MarketplaceOrdersController;
+use App\Http\Controllers\Api\Admin\ModerationController;
 use App\Http\Controllers\Api\Admin\PairingController;
 use App\Http\Controllers\Api\Admin\RanksController;
 use App\Http\Controllers\Api\Admin\UsersController;
@@ -121,6 +124,30 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/{bot}/test', [AiBotsController::class, 'test'])->name('test');
     });
 
+    // ── AI Playground (Warroom /predict) ──
+    Route::prefix('ai/playground')->name('api.admin.ai.playground.')->group(function () {
+        Route::get('/providers', [AiPlaygroundController::class, 'providers'])->name('providers');
+        Route::post('/run', [AiPlaygroundController::class, 'run'])->name('run');
+    });
+
+    // ── Payment Reconciliation (Warroom /payment) ──
+    Route::prefix('payment')->name('api.admin.payment.')->group(function () {
+        Route::get('/sms/inbox', [PaymentReconController::class, 'inbox'])->name('sms.inbox');
+        Route::get('/recon/stats', [PaymentReconController::class, 'stats'])->name('recon.stats');
+        Route::post('/sms/{sms}/match', [PaymentReconController::class, 'match'])->name('sms.match');
+        Route::post('/sms/{sms}/reject', [PaymentReconController::class, 'reject'])->name('sms.reject');
+    });
+
+    // ── Moderation (Warroom /moderation) ──
+    Route::prefix('moderation')->name('api.admin.moderation.')->group(function () {
+        Route::get('/suspects', [ModerationController::class, 'suspects'])->name('suspects');
+        Route::get('/banned', [ModerationController::class, 'banned'])->name('banned');
+        Route::post('/ban', [ModerationController::class, 'ban'])->name('ban');
+        Route::post('/unban/{ban}', [ModerationController::class, 'unban'])->name('unban');
+        Route::get('/rules', [ModerationController::class, 'rules'])->name('rules');
+        Route::put('/rules', [ModerationController::class, 'updateRules'])->name('rules.update');
+    });
+
     // ── Fortune (ดูดวง) ──
     Route::prefix('fortune')->name('api.admin.fortune.')->group(function () {
         Route::get('/dashboard', [FortuneDashboardController::class, 'index'])->name('dashboard');
@@ -136,7 +163,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::prefix('users')->name('api.admin.users.')->group(function () {
         Route::get('/', [UsersController::class, 'index'])->name('index');
         Route::get('/stats', [UsersController::class, 'stats'])->name('stats');
+        // Live presence — must come BEFORE /{user} to avoid matching "admins" as a user id.
+        Route::get('/admins/online', [UsersController::class, 'adminsOnline'])->name('admins.online');
         Route::get('/{user}', [UsersController::class, 'show'])->name('show');
+        Route::get('/{user}/readings', [UsersController::class, 'readings'])->name('readings');
     });
 
     Route::prefix('ranks')->name('api.admin.ranks.')->group(function () {
