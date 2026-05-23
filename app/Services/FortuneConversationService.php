@@ -1909,6 +1909,19 @@ class FortuneConversationService
                             ];
                         }
 
+                        // 💰 (2026-05-23) Pricing question ชนะ generic fortune (basic_done branch)
+                        //   เคสจริง: "ดูดวงคิดค่าครูเท่าไรคะ" — "ค่าครู" STRONG keyword
+                        //   ถ้าให้ isGenericFortuneRequest จับ "ดูดวง" ก่อน → เด้งไป Pay-First ทันที (ลูกค้ายังไม่รู้ราคา!)
+                        //   ต้อง check pricing question ก่อน — แสดงราคา → ลูกค้าตัดสินใจเอง
+                        if ($this->looksLikePricingQuestion($messageText)) {
+                            Log::info('Fortune: pricing menu trigger (basic_done, pre-generic)', [
+                                'user_id' => $facebookUserId,
+                                'text_preview' => mb_substr($messageText, 0, 80),
+                            ]);
+
+                            return $this->presentPricingMenu();
+                        }
+
                         // ✅ ถ้าเป็นคำขอดูดวงชัดเจน → fortune flow เลย
                         // 🎯 Phase O — "ดูดวง" / "ดูดวงความรัก" etc. → deep flow ตรง
                         //    ไม่ต้องกด "ดูดวงละเอียด" อีก (ถ้า deep ถูกเปิด)
@@ -2052,6 +2065,21 @@ class FortuneConversationService
                 // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
                 if ($this->isExplicitDeepReadingRequest($messageText)) {
                     return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
+                }
+
+                // 💰 (2026-05-23) Pricing question ต้องชนะ generic fortune request — ตอบราคาทันที
+                //   เคสจริง: "ดูดวงคิดค่าครูเท่าไรคะ" — มีทั้ง "ดูดวง" + "ค่าครู"
+                //   เดิม: isGenericFortuneRequest จับ "ดูดวง" → startDeepReadingFlow → Celtic Pay-First
+                //         → บอทขอวิธีชำระเงินทันที (ลูกค้ายังไม่ได้รับคำตอบราคา!)
+                //   ใหม่: looksLikePricingQuestion check ก่อน (STRONG keyword "ค่าครู" wins)
+                //         → ตอบ presentPricingMenu ทันที — แสดงราคาก่อนตัดสินใจ
+                if ($this->looksLikePricingQuestion($messageText)) {
+                    Log::info('Fortune: pricing menu trigger (pre-generic-fortune)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 80),
+                    ]);
+
+                    return $this->presentPricingMenu();
                 }
 
                 // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง
