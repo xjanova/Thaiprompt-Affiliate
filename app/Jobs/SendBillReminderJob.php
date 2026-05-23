@@ -230,7 +230,15 @@ EOT;
     private function getFallbackText(FortuneReading $reading): string
     {
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
-        $type = $isCeltic ? 'ไพ่ Celtic Cross 10 ใบ (99฿)' : 'ดูดวงเชิงลึก (39฿)';
+        // 🌙 (2026-05-23) Round 6 — pull ราคาจาก amount_paid ของบิลจริง ไม่ฮาร์ดโค้ด 39/99
+        //   ลูกค้าค้างบิลรู้ราคาตัวเองอยู่แล้ว — ถ้า admin เปลี่ยน price setting → ราคาในบิลยังเดิม
+        $billAmountInt = $reading->amount_paid
+            ? (int) round((float) $reading->amount_paid)
+            : null;
+        $billAmountSuffix = $billAmountInt ? " ({$billAmountInt}฿)" : '';
+        $type = $isCeltic
+            ? "ไพ่ Celtic Cross 10 ใบ{$billAmountSuffix}"
+            : "ดูดวงเชิงลึก{$billAmountSuffix}";
         $upa = $reading->uniquePaymentAmount;
         $amount = number_format((float) ($upa->amount ?? $reading->amount_paid ?? 0), 2);
         $billRef = $reading->bill_reference ?? '-';

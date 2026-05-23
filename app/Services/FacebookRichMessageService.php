@@ -438,6 +438,16 @@ class FacebookRichMessageService
     {
         $settings = FortuneTellingSetting::getSettings();
         $freeEnabled = $settings->isFreeReadingEnabled();
+        // 🌙 (2026-05-23) Round 6 — Deep/Celtic-aware CTA
+        $deepEnabled = $settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        if ($celticEnabled) {
+            try {
+                $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+        }
         $price = number_format((float) ($settings->deep_reading_price ?? 99), 0);
 
         if ($freeEnabled) {
@@ -447,8 +457,12 @@ class FacebookRichMessageService
 
             if ($remaining > 0) {
                 $text .= '💡 พิมพ์คำถามมาได้เลย!';
-            } else {
+            } elseif ($deepEnabled) {
                 $text .= '💎 หมดสิทธิ์ฟรีแล้ว ลองดูดวงเชิงลึกสิ!';
+            } elseif ($celticEnabled) {
+                $text .= "💎 หมดสิทธิ์ฟรีแล้ว ลองไพ่ Celtic Cross 10 ใบ ({$celticPrice}฿) สิ!";
+            } else {
+                $text .= '🙏 หมดสิทธิ์ฟรีวันนี้แล้ว — พรุ่งนี้ลองใหม่ได้นะ';
             }
         } else {
             // ปิดบริการฟรี — ไม่พูดถึงฟรี (ใช้ brand name จาก settings)
@@ -470,11 +484,20 @@ class FacebookRichMessageService
             ];
         }
 
-        $buttons[] = [
-            'type' => 'postback',
-            'title' => '💎 ดูดวง',
-            'payload' => 'DEEP_READING_ACCEPT',
-        ];
+        // 🌙 (2026-05-23) Round 6 — Deep ปิด → swap เป็น Celtic ถ้าเปิด
+        if ($deepEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => '💎 ดูดวง',
+                'payload' => 'DEEP_READING_ACCEPT',
+            ];
+        } elseif ($celticEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'payload' => 'TIER_CELTIC_99',
+            ];
+        }
 
         $lineUrl = $this->getLineAddFriendUrl();
         if ($lineUrl) {
@@ -605,14 +628,29 @@ class FacebookRichMessageService
     {
         // ซ่อนปุ่ม "🔮 ดูดวงฟรี" เมื่อ admin ปิดบริการฟรี
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // 🌙 (2026-05-23) Round 6 — swap Deep button → Celtic ถ้าปิด
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
-        $buttons = [
-            [
+        $buttons = [];
+        if ($deepEnabled) {
+            $buttons[] = [
                 'type' => 'postback',
                 'title' => '💎 เริ่มดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
-            ],
-        ];
+            ];
+        } elseif ($celticEnabled) {
+            $celticPriceX = 99;
+            try {
+                $celticPriceX = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => "🔮 ไพ่ Celtic {$celticPriceX}฿",
+                'payload' => 'TIER_CELTIC_99',
+            ];
+        }
 
         if ($freeEnabled) {
             $buttons[] = [
@@ -648,15 +686,33 @@ class FacebookRichMessageService
     public function buildAiLimitTemplate(float $price): array
     {
         $priceText = number_format($price, 0);
-        $freeEnabled = FortuneTellingSetting::getSettings()->isFreeReadingEnabled();
+        $settings = FortuneTellingSetting::getSettings();
+        $freeEnabled = $settings->isFreeReadingEnabled();
+        // 🌙 (2026-05-23) Round 6 — toggle-aware upsell text + button
+        $deepEnabled = $settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        if ($celticEnabled) {
+            try {
+                $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+        }
 
-        $buttons = [
-            [
+        $buttons = [];
+        if ($deepEnabled) {
+            $buttons[] = [
                 'type' => 'postback',
                 'title' => '💎 ดูดวง',
                 'payload' => 'DEEP_READING_ACCEPT',
-            ],
-        ];
+            ];
+        } elseif ($celticEnabled) {
+            $buttons[] = [
+                'type' => 'postback',
+                'title' => "🔮 ไพ่ 10 ใบ {$celticPrice}฿",
+                'payload' => 'TIER_CELTIC_99',
+            ];
+        }
 
         $lineUrl = $this->getLineAddFriendUrl();
         if ($lineUrl) {
@@ -669,11 +725,25 @@ class FacebookRichMessageService
 
         // 🎯 Phase M — เอาปุ่ม "เช็คสิทธิ์" ออก (ซ้ำซ้อน ผู้ใช้งง)
 
-        // ข้อความแตกต่างตามสถานะฟรี
+        // ข้อความแตกต่างตามสถานะฟรี + Deep/Celtic toggle
         $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
-        $text = $freeEnabled
-            ? "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงเชิงลึกสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!"
-            : "💎 ดูดวงโดย{$this->brandName}\n\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซี (ไม่ยกเมฆ)\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท";
+        if ($freeEnabled) {
+            if ($deepEnabled) {
+                $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงเชิงลึกสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!";
+            } elseif ($celticEnabled) {
+                $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n🔮 ลองไพ่ Celtic Cross 10 ใบสิ!\n• เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n• คุยต่อกับแม่หมอตามจริง (~30 นาที)\n\n💰 ค่าครู {$celticPrice} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!";
+            } else {
+                $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n🙏 กลับมาใหม่พรุ่งนี้ได้\n\n💚 แอด LINE เพื่อรับสิทธิ์พิเศษ!";
+            }
+        } else {
+            if ($deepEnabled) {
+                $text = "💎 ดูดวงโดย{$this->brandName}\n\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซี (ไม่ยกเมฆ)\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท";
+            } elseif ($celticEnabled) {
+                $text = "🔮 ไพ่ Celtic Cross 10 ใบ โดย{$this->brandName}\n\n• เปิดไพ่ยิปซีเต็มสำรับ\n• คุยต่อกับแม่หมอตามจริง\n• ทำนายลึกซึ้ง — แม่นยำที่สุด\n\n💰 ค่าครู {$celticPrice} บาท";
+            } else {
+                $text = "🙏 บริการดูดวงปิดชั่วคราว\n\nกรุณากลับมาใหม่ภายหลังนะคะ";
+            }
+        }
 
         return [
             'attachment' => [
