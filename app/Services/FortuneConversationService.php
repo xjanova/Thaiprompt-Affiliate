@@ -4555,16 +4555,20 @@ class FortuneConversationService
                 return $this->presentTierChoice($reading);
             }
 
-            // Celtic ปิด → flow 39฿ rigid เดิม
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            // 🌙 (2026-05-23) Deep 39฿ ปิด + Celtic 99฿ เปิด → redirect Celtic (ไม่ใช่บล็อก)
+            //    user spec: "ปิด 39฿ ไปก่อน เหลือแต่ 99"
             if (! $this->settings->isDeepReadingEnabled()) {
+                if ($this->settings->enable_celtic_cross ?? false) {
+                    return $this->startCelticCrossFlow($reading);
+                }
                 $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
                 return [
                     'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n".
-                                 "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n".
-                                 "พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n"
+                        ."💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n"
+                        ."พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
                     'reading' => $reading,
                 ];
             }
@@ -4711,16 +4715,22 @@ class FortuneConversationService
             }
 
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            // 🌙 (2026-05-23) Deep 39฿ ปิด + Celtic 99฿ เปิด → redirect Celtic
             if (! $this->settings->isDeepReadingEnabled()) {
                 Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
                     'facebook_user_id' => $facebookUserId,
+                    'redirect_celtic' => (bool) ($this->settings->enable_celtic_cross ?? false),
                 ]);
+
+                if ($this->settings->enable_celtic_cross ?? false) {
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic');
+                }
 
                 return [
                     'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n".
-                                 "💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n".
-                                 "พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
+                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n"
+                        ."💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n"
+                        ."พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
                     'reading' => null,
                 ];
             }
@@ -4917,7 +4927,12 @@ class FortuneConversationService
     {
         try {
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
+            // 🌙 (2026-05-23) Deep 39฿ ปิด + Celtic 99฿ เปิด → redirect Celtic (ใช้ startDeepReadingFlow tier='celtic')
             if (! $this->settings->isDeepReadingEnabled()) {
+                if ($this->settings->enable_celtic_cross ?? false) {
+                    return $this->startDeepReadingFlow($userId, $userProfile, 'celtic');
+                }
+
                 return [
                     'action' => 'deep_reading_disabled',
                     'message' => "🔮 ขออภัยค่ะ บริการดูดวงปิดชั่วคราว\n\n"

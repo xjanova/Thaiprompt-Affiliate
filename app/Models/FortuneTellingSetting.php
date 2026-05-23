@@ -421,7 +421,7 @@ class FortuneTellingSetting extends Model
         'ai_model' => 'gemini-2.5-flash',
         'max_free_readings' => 1,
         'reading_price' => 0,
-        'enable_deep_reading' => true,
+        'enable_deep_reading' => false, // 🌙 (2026-05-23) ปิด 39฿ default — เหลือแต่ Celtic 99฿
         'deep_reading_price' => 39,
         'allow_try_before_buy' => true,
         'free_deep_per_day' => 1,
