@@ -9624,6 +9624,13 @@ class FortuneConversationService
      *
      * นโยบาย: ระหว่างนี้ห้ามมีการสร้างบิลใหม่ / ออกนอกเรื่องทำนาย / ส่งปุ่มไม่เกี่ยวข้อง
      *
+     * 🛡️ (2026-05-24) USER RULE — paid bills ต้อง resume ได้เสมอ "ทุกกรณี"
+     *   เปลี่ยนจาก updated_at >= 2hr window → admin_review_alerted guard
+     *   - paid + ! admin_review_alerted → true (ลูกค้ายังทำนายอยู่ ห้ามสร้างบิลใหม่)
+     *   - paid + admin_review_alerted=true → false (legacy 24hr+ admin จัดการแล้ว)
+     *   เหตุผล: ลูกค้าจ่ายแล้วหายไป 3 ชม. กลับมา → เดิม isInPrediction=false → bot อาจสร้างบิลใหม่
+     *           = double charge. ใหม่: detect ได้ตลอดจนกว่า admin จะตั้ง flag review
+     *
      * Cache 30s — ลด DB hit แต่ยังตามทันการเปลี่ยน state
      */
     public function isInPrediction(string $userId): bool
@@ -9637,13 +9644,21 @@ class FortuneConversationService
             })
                 ->where('is_paid', true)
                 ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
-                ->where('updated_at', '>=', now()->subHours(2))
+                ->where(function ($flag) {
+                    // 🛡️ admin_review_alerted=true → out of scope (admin handles)
+                    $flag->whereNull('conversation_state')
+                        ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                        ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+                })
                 ->exists();
         });
     }
 
     /**
      * 🔒 (2026-05-20) คืน reading ที่กำลังทำนายอยู่ (ใช้ใน Hard Guard เพื่อ route ถูก state)
+     *
+     * 🛡️ (2026-05-24) USER RULE — paid bills resume ได้เสมอ จน admin flag review
+     *   เปลี่ยนจาก 2hr window → admin_review_alerted guard (เหมือน isInPrediction)
      *
      * ไม่ cached — ต้องการ status ล่าสุดเสมอ (state อาจ transition ระหว่าง 30s)
      */
@@ -9655,7 +9670,11 @@ class FortuneConversationService
         })
             ->where('is_paid', true)
             ->whereIn('conversation_status', FortuneReading::IN_PREDICTION_STATUSES)
-            ->where('updated_at', '>=', now()->subHours(2))
+            ->where(function ($flag) {
+                $flag->whereNull('conversation_state')
+                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                    ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+            })
             ->latest('updated_at')
             ->first();
     }

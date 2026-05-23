@@ -1082,10 +1082,18 @@ class FortuneReading extends Model
     /**
      * Scope: ค้นหา reading ที่กำลัง conversation อยู่
      *
-     * เพิ่ม timeout เพื่อป้องกัน conversation ค้างบล็อก conversation ใหม่
-     * - conversation ทั่วไป: timeout 30 นาที
-     * - pending_payment: timeout 30 นาที (รอโอนเงิน)
-     * - paid: timeout 5 นาที (AI กำลังประมวลผลคำทำนาย)
+     * 🛡️ (2026-05-24) USER RULE — ลูกค้าโอนตรงยอด ตัดบิลแล้ว แต่ยังไม่ใช้บริการเสร็จสิ้น
+     *   เมื่อกลับมา ก็จะกู้บริการต่อจากจุดที่ค้างไว้ได้เสมอ — ทุกกรณี
+     *
+     * แบ่งเป็น 2 branches:
+     *  1. PAID bills (is_paid=true) → always in scope (no timeout) — รอนานแค่ไหนก็ resume ได้
+     *     Discriminator: admin_review_alerted=true → out of scope (cron fortune:expire-stuck-paid
+     *     ตั้ง flag นี้หลังบิลค้าง > 24 ชม. → admin จัดการ → ลูกค้าทักใหม่ได้)
+     *  2. UNPAID bills (is_paid=false) → existing timeout rules (กัน orphan PENDING block chat)
+     *
+     * ⚠️ ป้องกัน regression "บอทไม่คุยกับใครเลย" (commit bfa2a8ed0 → revert b601bd68c)
+     *   ครั้งนั้นขยาย 24hr ทุก case → orphan paid+incomplete legacy lock ทุกลูกค้า
+     *   ครั้งนี้: ใช้ admin_review_alerted flag เป็นทางออก (ไม่ block ตลอดกาล)
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
@@ -1118,55 +1126,67 @@ class FortuneReading extends Model
                 self::STATUS_PENDING_STRIPE_PAYMENT,
             ])
             ->where(function ($q) {
-                // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
-                $q->where(function ($sub) {
-                    $sub->whereIn('conversation_status', [
-                        self::STATUS_AWAITING_CONFIRMATION,
-                        self::STATUS_BASIC_DONE,
-                        self::STATUS_COLLECTING_BIRTHDATE,
-                        self::STATUS_COLLECTING_QUESTIONS,
-                        self::STATUS_COLLECTING_TAROT,
-                        self::STATUS_DISCOVERY_CHAT,
-                        self::STATUS_DISCOVERY_CONFIRM,
-                        self::STATUS_TIER_CHOICE,
-                        // 💳 (2026-05-22) AWAITING_PAYMENT_METHOD = ลูกค้ารอเลือกวิธีชำระ
-                        //   timeout 30 นาที เพียงพอ — ถ้าเกินก็ปล่อย user reset
-                        self::STATUS_AWAITING_PAYMENT_METHOD,
-                    ])
-                        ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
+                // ════════════════════════════════════════════════════════════════
+                // 🛡️ BRANCH 1: PAID BILLS — always in scope (no timeout)
+                //    User rule: "ลูกค้าโอนตรงยอด ตัดบิลแล้ว เมื่อกลับมา resume ได้เสมอ"
+                //    ครอบทุก payment path: Pay-First SMS / Pay-Later / Stripe
+                //    Out-of-scope กรณีเดียว: admin_review_alerted=true (legacy 24hr+ flagged)
+                // ════════════════════════════════════════════════════════════════
+                $q->where(function ($paid) {
+                    $paid->where('is_paid', true)
+                        ->where(function ($flag) {
+                            // admin_review_alerted ยังไม่ตั้ง หรือไม่ใช่ true
+                            $flag->whereNull('conversation_state')
+                                ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') IS NULL")
+                                ->orWhereRaw("JSON_EXTRACT(conversation_state, '$.admin_review_alerted') != true");
+                        });
                 })
-                // 💳 (2026-05-22) PENDING_STRIPE_PAYMENT: timeout = Stripe session expiry + buffer
-                //    Stripe session อายุ 30-60 นาที (อิงจาก stripe_session_expiry_minutes setting)
-                //    ให้ 90 นาทีคงที่เพื่อเผื่อ buffer (Stripe expire เอง → polling จัดการ revert)
-                    ->orWhere(function ($sub) {
-                        $sub->where('conversation_status', self::STATUS_PENDING_STRIPE_PAYMENT)
-                            ->where('updated_at', '>=', now()->subMinutes(90));
-                    })
-                // pending_payment (Deep + Celtic): timeout 30 นาที (รอโอนเงิน)
-                    ->orWhere(function ($sub) {
-                        $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
-                            ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
-                    })
-                // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
-                    ->orWhere(function ($sub) {
-                        $sub->where('conversation_status', self::STATUS_FREE_PREDICTED)
-                            ->where('updated_at', '>=', now()->subMinutes(15));
-                    })
-                // paid: timeout 5 นาที (AI ประมวลผล ~45-60 วินาที, ให้ 5 นาทีเพื่อความปลอดภัย)
-                    ->orWhere(function ($sub) {
-                        $sub->where('conversation_status', self::STATUS_PAID)
-                            ->where('updated_at', '>=', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES));
-                    })
-                // 🔮 Celtic Cross flow states (รวม picking, awaiting_question, generating, qa_prompt)
-                //    timeout 90 นาที — Celtic flow มี QA window 60 นาทีหลัง Q1 + buffer
-                    ->orWhere(function ($sub) {
-                        $sub->whereIn('conversation_status', [
-                            self::STATUS_CELTIC_PICKING,
-                            self::STATUS_CELTIC_AWAITING_QUESTION,
-                            self::STATUS_CELTIC_GENERATING,
-                            self::STATUS_CELTIC_QA_PROMPT,
-                        ])->where('updated_at', '>=', now()->subMinutes(90));
+                // ════════════════════════════════════════════════════════════════
+                // 💤 BRANCH 2: UNPAID BILLS — existing timeout rules (กัน orphan block chat)
+                // ════════════════════════════════════════════════════════════════
+                ->orWhere(function ($unpaid) {
+                    $unpaid->where(function ($p) {
+                        $p->where('is_paid', false)->orWhereNull('is_paid');
+                    })->where(function ($timeouts) {
+                        // awaiting_confirmation + conversation ทั่วไป: timeout 30 นาที
+                        $timeouts->where(function ($sub) {
+                            $sub->whereIn('conversation_status', [
+                                self::STATUS_AWAITING_CONFIRMATION,
+                                self::STATUS_BASIC_DONE,
+                                self::STATUS_COLLECTING_BIRTHDATE,
+                                self::STATUS_COLLECTING_QUESTIONS,
+                                self::STATUS_COLLECTING_TAROT,
+                                self::STATUS_DISCOVERY_CHAT,
+                                self::STATUS_DISCOVERY_CONFIRM,
+                                self::STATUS_TIER_CHOICE,
+                                // 💳 (2026-05-22) AWAITING_PAYMENT_METHOD = ลูกค้ารอเลือกวิธีชำระ
+                                //   timeout 30 นาที เพียงพอ — ถ้าเกินก็ปล่อย user reset
+                                self::STATUS_AWAITING_PAYMENT_METHOD,
+                            ])
+                                ->where('updated_at', '>=', now()->subMinutes(self::CONVERSATION_TIMEOUT_MINUTES));
+                        })
+                        // 💳 (2026-05-22) PENDING_STRIPE_PAYMENT: timeout = Stripe session expiry + buffer
+                        //    Stripe session อายุ 30-60 นาที (อิงจาก stripe_session_expiry_minutes setting)
+                        //    ให้ 90 นาทีคงที่เพื่อเผื่อ buffer (Stripe expire เอง → polling จัดการ revert)
+                            ->orWhere(function ($sub) {
+                                $sub->where('conversation_status', self::STATUS_PENDING_STRIPE_PAYMENT)
+                                    ->where('updated_at', '>=', now()->subMinutes(90));
+                            })
+                        // pending_payment (Deep + Celtic): timeout 30 นาที (รอโอนเงิน)
+                            ->orWhere(function ($sub) {
+                                $sub->whereIn('conversation_status', self::PENDING_PAYMENT_STATUSES)
+                                    ->where('updated_at', '>=', now()->subMinutes(self::PAYMENT_TIMEOUT_MINUTES));
+                            })
+                        // 🎁 free_predicted: timeout 15 นาที (ลูกค้ามีโอกาสเลือกซื้อ 39/99 หลังเห็นคำทำนาย)
+                            ->orWhere(function ($sub) {
+                                $sub->where('conversation_status', self::STATUS_FREE_PREDICTED)
+                                    ->where('updated_at', '>=', now()->subMinutes(15));
+                            });
+                        // 🛡️ STATUS_PAID + Celtic flow states ย้ายไป BRANCH 1 (paid) แล้ว
+                        //    ไม่ต้องมี timeout clause สำหรับ states พวกนี้ใน BRANCH 2
+                        //    เพราะ STATUS_PAID/CELTIC_* by definition implies is_paid=true
                     });
+                });
             })
             ->latest();
     }
@@ -1741,16 +1761,25 @@ class FortuneReading extends Model
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
         // ปิด PAID ที่ค้างเกิน timeout (AI processing ล้มเหลว/timeout)
+        // 🛡️ (2026-05-24) USER RULE: paid bills ห้าม expire ทุกกรณี
+        //   "ลูกค้าโอนตรงยอด ตัดบิลแล้ว แต่ยังไม่ใช้บริการเสร็จสิ้น
+        //    เมื่อกลับมา ก็จะกู้บริการต่อจากจุดที่ค้างไว้ได้เสมอ — ทุกกรณี"
+        //   STATUS_PAID by definition implies is_paid=true → branch นี้กลายเป็น no-op
+        //   เก็บไว้เพื่อป้องกัน legacy data inconsistency (status=PAID + is_paid=false)
+        //   Cleanup งาน admin: fortune:expire-stuck-paid (24hr+) ผ่าน admin_review_alerted flag
         $expiredPaid = (clone $baseQuery)
             ->where('conversation_status', self::STATUS_PAID)
+            ->where('is_paid', false)
             ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
-        // 🔮 Celtic flow states (PICKING / AWAITING / GENERATING / QA_PROMPT) ที่ค้างเกิน 90 นาที
-        //    90 = QA window 60 + buffer 30 (หากลูกค้าตอบ Q1 แล้วทิ้ง > 1 ชม. ก็ปิด)
-        //    GENERATING ค้างเกิน 5 นาที = AI hang → ปิดเลย (เหมือน STATUS_PAID)
+        // 🔮 Celtic flow states (PICKING / AWAITING / GENERATING / QA_PROMPT)
+        // 🛡️ (2026-05-24) USER RULE: Celtic paid bills ห้าม expire ทุกกรณี (เหมือน STATUS_PAID)
+        //   Celtic states ตั้งหลังจ่ายเงินทุก state → is_paid=true เป็นปกติ
+        //   is_paid=false guard ป้องกัน legacy data inconsistency เท่านั้น
         $expiredCelticGenerating = (clone $baseQuery)
             ->where('conversation_status', self::STATUS_CELTIC_GENERATING)
+            ->where('is_paid', false)
             ->where('updated_at', '<', now()->subMinutes(self::PAID_PROCESSING_TIMEOUT_MINUTES))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
@@ -1760,6 +1789,7 @@ class FortuneReading extends Model
                 self::STATUS_CELTIC_AWAITING_QUESTION,
                 self::STATUS_CELTIC_QA_PROMPT,
             ])
+            ->where('is_paid', false)
             ->where('updated_at', '<', now()->subMinutes(90))
             ->update(['conversation_status' => self::STATUS_COMPLETED]);
 
