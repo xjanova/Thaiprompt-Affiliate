@@ -1767,35 +1767,52 @@ trait CelticCrossConversationTrait
         $sendUserId = $platform === 'line'
             ? ($reading->platform_user_id ?: $reading->facebook_user_id)
             : ($reading->facebook_user_id ?: $reading->platform_user_id);
-        $delaySeconds = random_int(60, 120);
 
-        if ($sendUserId) {
-            \App\Jobs\SendCelticDelayedPrediction::dispatch(
-                $reading->id,
-                $finalMessage,
-                $platform,
-                $sendUserId,
-            )->delay(now()->addSeconds($delaySeconds));
+        // 🚀 (2026-05-23) Sequence-aware delay — Q1 ส่งทันที, Q2+ ค่อยดึงเวลาตามระยะ
+        //   user spec: "การทำนายแบบ 99 เมื่อคำทำนายพร้อมแล้ว ในคำถามแรก ให้รีบส่งให้ก่อน
+        //                ที่เหลือค่อยดึงเวลาตามระยะ"
+        //   Why: ลูกค้าเพิ่งจ่าย 99฿ + รอ AI 30-60s แล้ว — หน่วงเพิ่ม 60-120s = "บอทเสีย" perception
+        //   เคสจริง 2026-05-23: ลูกค้าจ่ายแล้วบอทไม่ตอบ → ลูกค้าเข้าใจว่าระบบเสีย
+        //
+        //   Sequence ที่ใช้คือลำดับ TYPE:A ของลูกค้า (มาจาก CelticCrossService::askQuestion):
+        //     • sequence = 1 → คำถามแรก / chitchat ก่อนคำถามแรก → ส่งทันที (สร้าง first impression)
+        //     • sequence = 2 → 20-40s (เริ่มสร้างความขลังเล็กน้อย)
+        //     • sequence = 3 → 40-70s (ระยะกลาง)
+        //     • sequence >= 4 → 60-120s (เต็มที่ เหมือนเดิม)
+        $customerSequence = (int) ($sequence ?? 1);
+        if ($customerSequence <= 1) {
+            $delaySeconds = 0;
+        } elseif ($customerSequence === 2) {
+            $delaySeconds = random_int(20, 40);
+        } elseif ($customerSequence === 3) {
+            $delaySeconds = random_int(40, 70);
+        } else {
+            $delaySeconds = random_int(60, 120);
+        }
 
-            // FB เท่านั้น — ส่ง typing_on ทันทีให้ลูกค้าเห็นจุดสามจุด (~20s แล้วหาย)
-            if ($platform === 'facebook') {
+        // 🚀 (2026-05-23) Q1 หรือไม่มี user ID → ส่งทันที (bypass delayed job)
+        //   - Q1: ลูกค้าจ่ายแพง+รอนาน ต้องเห็นคำทำนายทันทีที่ AI พร้อม
+        //   - ไม่มี user ID: fallback เดิม (edge case)
+        if ($delaySeconds === 0 || ! $sendUserId) {
+            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+            // FB — typing_off ก่อน เพื่อล้าง typing dots (ถ้าเคย typing_on จาก thinking ack)
+            if ($sendUserId && $platform === 'facebook') {
                 try {
                     $settings = \App\Models\FortuneTellingSetting::getSettings();
                     (new \App\Services\FacebookWebhookService($settings))
-                        ->sendTypingIndicator($sendUserId, true);
+                        ->sendTypingIndicator($sendUserId, false);
                 } catch (\Throwable $e) {
-                    \Log::debug('Celtic: typing_on ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+                    // ignore — non-blocking
                 }
             }
 
-            \Log::info('Celtic: dispatched delayed prediction', [
+            \Log::info('Celtic: immediate prediction (Q1 or no userId)', [
                 'reading_id' => $reading->id,
-                'delay_sec' => $delaySeconds,
+                'sequence' => $customerSequence,
                 'platform' => $platform,
+                'has_user_id' => (bool) $sendUserId,
             ]);
-        } else {
-            // Edge case — ไม่มี user ID → ส่งทันทีแบบเดิม (fallback)
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
             return [
                 'action' => 'celtic_question_answered',
@@ -1803,6 +1820,32 @@ trait CelticCrossConversationTrait
                 'reading' => $reading,
             ];
         }
+
+        // Q2+ — dispatch delayed (สร้างความขลังให้รู้สึกเหมือนหมอจันทรากำลังพิมพ์เอง)
+        \App\Jobs\SendCelticDelayedPrediction::dispatch(
+            $reading->id,
+            $finalMessage,
+            $platform,
+            $sendUserId,
+        )->delay(now()->addSeconds($delaySeconds));
+
+        // FB เท่านั้น — ส่ง typing_on ทันทีให้ลูกค้าเห็นจุดสามจุด (~20s แล้วหาย)
+        if ($platform === 'facebook') {
+            try {
+                $settings = \App\Models\FortuneTellingSetting::getSettings();
+                (new \App\Services\FacebookWebhookService($settings))
+                    ->sendTypingIndicator($sendUserId, true);
+            } catch (\Throwable $e) {
+                \Log::debug('Celtic: typing_on ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+            }
+        }
+
+        \Log::info('Celtic: dispatched delayed prediction', [
+            'reading_id' => $reading->id,
+            'delay_sec' => $delaySeconds,
+            'sequence' => $customerSequence,
+            'platform' => $platform,
+        ]);
 
         // คืน action 'celtic_typing_only' → ChannelManager ไม่ส่ง message ทันที (รอ Job ส่งให้)
         return [
