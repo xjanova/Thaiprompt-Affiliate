@@ -6200,19 +6200,15 @@ class FortuneConversationService
     }
 
     /**
-     * 💳 (2026-05-22) ถามลูกค้าให้เลือกวิธีชำระเงิน — 3-mode aware
+     * 💳 (2026-05-22 v2) ถามลูกค้าให้เลือกวิธีชำระเงิน
      *
-     * Mode 'both' (SMS+Stripe เปิดทั้งคู่) → 3 ปุ่ม:
+     * Mode 'both' (SMS+Stripe เปิดทั้งคู่) → 2 ปุ่ม:
      *   - 💚 QR ไทย {basePrice}฿ (PromptPay + SMS dedup ใช้ random satang)
-     *   - 💳 บัตรในไทย {basePrice}฿ (Stripe, ไม่บวกค่าบริการ, integer THB)
-     *   - 🌍 บัตรต่างประเทศ {totalForeign}฿ (Stripe + ค่าบริการ {fee}฿)
+     *   - 💳 บัตรเครดิต {totalCard}฿ (Stripe, ทุกประเทศ, +15฿ ค่าบริการ)
      *
-     * Mode 'stripe_only' (SMS ปิด, Stripe เปิด) → 2 ปุ่ม:
-     *   - 💳 บัตรในไทย {basePrice}฿
-     *   - 🌍 บัตรต่างประเทศ {totalForeign}฿
-     *
+     * Mode 'stripe_only' → caller ควรไม่เรียก method นี้ (auto-go to Stripe ตรงๆ)
      * Mode 'sms_only' / 'none' → caller ควรไม่เรียก method นี้ (ไป createPaymentBill ตรงๆ)
-     *   ถ้าโดนเรียก (defensive) → fall through ไป createPaymentBill
+     *   ถ้าโดนเรียก (defensive) → fall through ตาม mode
      *
      * @param  string  $prefixMessage  ข้อความนำหน้าจาก afterTarotCardDrawn (รวมข้อความไพ่ใบล่าสุด)
      */
@@ -6220,7 +6216,7 @@ class FortuneConversationService
     {
         $mode = $this->getActivePaymentMode();
 
-        // SMS-only / none → ไม่ควรมาที่นี่ — ป้องกัน loop เผื่อ caller ลืม guard
+        // SMS-only / none → fall to QR Thai
         if ($mode === 'sms_only' || $mode === 'none') {
             Log::warning('Fortune: askPaymentMethod ถูกเรียกแต่ mode='.$mode.' — fall through ไป QR Thai', [
                 'reading_id' => $reading->id,
@@ -6230,58 +6226,41 @@ class FortuneConversationService
             return $this->createPaymentBill($reading, $questions);
         }
 
-        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        // Stripe-only → ข้ามเมนู ไป Stripe ตรงๆ (foreign tier เสมอ — +15)
+        if ($mode === 'stripe_only') {
+            Log::info('Fortune: stripe_only mode — skip menu, go straight to Stripe', [
+                'reading_id' => $reading->id,
+            ]);
 
-        // คำนวณ 2 tier เพื่อแสดง label ปุ่ม
-        $thAmounts = $service->calculateAmounts($reading, 'th');
-        $foreignAmounts = $service->calculateAmounts($reading, 'foreign');
+            return $this->startStripePaymentFlow($reading, 'foreign');
+        }
+
+        // 🎯 both mode → 2 ปุ่ม QR vs บัตร
+        $service = new \App\Services\Fortune\FortuneStripeService($this->settings);
+        $cardAmounts = $service->calculateAmounts($reading, 'foreign');
 
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
         $packageLabel = $isCeltic ? 'ดูดวงไพ่ยิปซี 10 ใบ' : 'ดูดวงเชิงลึก';
 
-        $basePrice = $thAmounts['base'];          // integer THB
-        $totalTh = $thAmounts['total'];           // = base (fee=0)
-        $totalForeign = $foreignAmounts['total']; // = base + fee
-        $fee = $foreignAmounts['fee'];
+        $basePrice = $cardAmounts['base'];        // integer THB
+        $totalCard = $cardAmounts['total'];       // = base + fee
+        $fee = $cardAmounts['fee'];
 
-        // 📜 Build message body — แตกต่างตาม mode
-        //    🐛 (2026-05-22 audit) ใช้ wording กลาง ใช้ได้ทั้ง pay-first (ยังไม่มีข้อมูล)
-        //                          และ pay-after (ตอบคำถามครบแล้ว) — เดิม "ครบทุกขั้นตอน"
-        //                          misleading ลูกค้า pay-first
         $intro = $prefixMessage
             ."🔮 ขอเชิญเจ้าชะตาเลือกวิธีชำระเงินค่ะ\n"
             ."📦 แพ็กเกจ: {$packageLabel}\n\n"
             ."💰 กรุณาเลือกวิธีชำระเงิน:\n\n";
 
-        $quickReplies = [];
-        $body = '';
+        $body = "💚 QR Code ไทย — {$basePrice} บาท\n"
+            ."   (PromptPay, K+, SCB, ทุกธนาคารไทย)\n\n"
+            ."💳 บัตรเครดิต — {$totalCard} บาท ({$basePrice} + ค่าบริการ {$fee})\n"
+            ."   (Visa, Mastercard, AmEx, Apple Pay — รับทุกประเทศ)\n\n"
+            ."👇 กดเลือกด้านล่างได้เลย";
 
-        if ($mode === 'both') {
-            $body = "💚 QR Code ไทย — {$basePrice} บาท\n"
-                ."   (PromptPay, K+, SCB, ทุกธนาคารไทย)\n\n"
-                ."💳 บัตรในไทย — {$basePrice} บาท\n"
-                ."   (Visa, Mastercard, Apple Pay — ไม่บวกค่าบริการ)\n\n"
-                ."🌍 บัตรต่างประเทศ — {$totalForeign} บาท ({$basePrice} + ค่าบริการ {$fee})\n"
-                ."   (Visa, Mastercard, AmEx — สำหรับลูกค้าต่างประเทศ)\n\n"
-                ."👇 กดเลือกด้านล่างได้เลย";
-
-            $quickReplies = [
-                ['label' => "💚 QR ไทย {$basePrice}฿", 'text' => 'PAY_METHOD_QR_THAI', 'payload' => 'PAY_METHOD_QR_THAI'],
-                ['label' => "💳 บัตรในไทย {$basePrice}฿", 'text' => 'PAY_METHOD_STRIPE_TH', 'payload' => 'PAY_METHOD_STRIPE_TH'],
-                ['label' => "🌍 บัตร ตปท. {$totalForeign}฿", 'text' => 'PAY_METHOD_STRIPE_FOREIGN', 'payload' => 'PAY_METHOD_STRIPE_FOREIGN'],
-            ];
-        } else { // stripe_only
-            $body = "💳 บัตรในไทย — {$basePrice} บาท\n"
-                ."   (Visa, Mastercard, Apple Pay — ไม่บวกค่าบริการ)\n\n"
-                ."🌍 บัตรต่างประเทศ — {$totalForeign} บาท ({$basePrice} + ค่าบริการ {$fee})\n"
-                ."   (Visa, Mastercard, AmEx — สำหรับลูกค้าต่างประเทศ)\n\n"
-                ."👇 กดเลือกด้านล่างได้เลย";
-
-            $quickReplies = [
-                ['label' => "💳 บัตรในไทย {$basePrice}฿", 'text' => 'PAY_METHOD_STRIPE_TH', 'payload' => 'PAY_METHOD_STRIPE_TH'],
-                ['label' => "🌍 บัตร ตปท. {$totalForeign}฿", 'text' => 'PAY_METHOD_STRIPE_FOREIGN', 'payload' => 'PAY_METHOD_STRIPE_FOREIGN'],
-            ];
-        }
+        $quickReplies = [
+            ['label' => "💚 QR ไทย {$basePrice}฿", 'text' => 'PAY_METHOD_QR_THAI', 'payload' => 'PAY_METHOD_QR_THAI'],
+            ['label' => "💳 บัตรเครดิต {$totalCard}฿", 'text' => 'PAY_METHOD_STRIPE', 'payload' => 'PAY_METHOD_STRIPE'],
+        ];
 
         return [
             'action' => 'awaiting_payment_method',
@@ -6293,56 +6272,39 @@ class FortuneConversationService
     }
 
     /**
-     * 💳 (2026-05-22) handler — รับการตอบของลูกค้าหลัง askPaymentMethod (3 ปุ่ม / 2 ปุ่ม)
+     * 💳 (2026-05-22 v2) handler — รับการตอบของลูกค้าหลัง askPaymentMethod (2 ปุ่ม)
      *
      * ตรวจ payload หรือ keyword:
      *   - PAY_METHOD_QR_THAI / "qr ไทย" → QR flow (createPaymentBill)
-     *   - PAY_METHOD_STRIPE_TH / "บัตรในไทย" → Stripe tier='th' (ไม่บวก fee)
-     *   - PAY_METHOD_STRIPE_FOREIGN / "ต่างประเทศ" / legacy PAY_METHOD_STRIPE → Stripe tier='foreign'
+     *   - PAY_METHOD_STRIPE / "บัตร" / legacy PAY_METHOD_STRIPE_TH/FOREIGN → Stripe tier='foreign' (+15)
      *   - อื่นๆ → ส่งปุ่มซ้ำ + AI hint
      *
      * Guard: ถ้า SMS-only mode + ลูกค้าพยายามเลือก Stripe → ปฏิเสธ + show QR
-     *        ถ้า Stripe-only mode + ลูกค้าพยายามเลือก QR → ปฏิเสธ + ส่งปุ่ม Stripe ซ้ำ
+     *        ถ้า Stripe-only mode + ลูกค้าพยายามเลือก QR → ปฏิเสธ + auto Stripe
      */
     protected function handlePaymentMethodSelection(FortuneReading $reading, string $messageText): array
     {
         $clean = mb_strtolower(trim($messageText));
         $mode = $this->getActivePaymentMode();
 
-        // 1) เลือก Stripe (TH tier) — payload + keyword
-        $isStripeTh = str_contains($clean, 'pay_method_stripe_th')
-            || str_contains($clean, 'บัตรในไทย')
-            || str_contains($clean, 'บัตรไทย')
-            // 🐛 (2026-05-22 audit) "บัตรเครดิตไทย" / "บัตรไทยใช้ได้" ก็ต้องจับ
-            || (str_contains($clean, 'บัตร') && str_contains($clean, 'ไทย') && ! str_contains($clean, 'ต่างประเทศ') && ! str_contains($clean, 'ตปท'))
-            || str_contains($clean, 'in thailand')
-            || str_contains($clean, 'in_thailand');
-
-        // 2) เลือก Stripe (foreign tier) — payload + keyword (รวม legacy PAY_METHOD_STRIPE)
-        $isStripeForeign = ! $isStripeTh && (
-            str_contains($clean, 'pay_method_stripe_foreign')
-            || str_contains($clean, 'pay_method_stripe')  // legacy
-            || str_contains($clean, 'ต่างประเทศ')
-            || str_contains($clean, 'ตปท')               // 🐛 (2026-05-22 audit) abbrev ที่ใช้ใน label ปุ่ม
-            || str_contains($clean, 'foreign')
-            || str_contains($clean, 'abroad')
-            || str_contains($clean, 'international')
-            // 🐛 บัตรต่างประเทศแบบจำแนกประเทศ (ลาว/USA/สิงคโปร์ etc.) — match "บัตร" + ประเทศ
-            || (str_contains($clean, 'บัตร') && (str_contains($clean, 'ลาว') || str_contains($clean, 'usa') || str_contains($clean, 'อเมริกา') || str_contains($clean, 'สิงคโปร์')))
-        );
-
-        // 3) เลือก Stripe โดยไม่ระบุ tier — ทั่วไป (default ตาม mode)
-        $isStripeGeneric = ! $isStripeTh && ! $isStripeForeign && (
-            str_contains($clean, 'stripe')
+        // 1) เลือก Stripe (รวมทุก payload + keyword — tier=foreign เสมอ)
+        //    Legacy payloads PAY_METHOD_STRIPE_TH / _FOREIGN ยังจับได้ (backward compat)
+        $isStripeChoice = str_contains($clean, 'pay_method_stripe')  // จับ stripe, stripe_th, stripe_foreign
+            || str_contains($clean, 'stripe')
             || str_contains($clean, 'บัตร')
             || str_contains($clean, 'เครดิต')
+            || str_contains($clean, 'เดบิต')
             || str_contains($clean, 'visa')
             || str_contains($clean, 'master')
             || str_contains($clean, 'card')
-        );
+            || str_contains($clean, 'ต่างประเทศ')
+            || str_contains($clean, 'ตปท')
+            || str_contains($clean, 'foreign')
+            || str_contains($clean, 'abroad')
+            || str_contains($clean, 'international');
 
-        // 4) เลือก QR Thai
-        $isQrChoice = ! $isStripeTh && ! $isStripeForeign && ! $isStripeGeneric && (
+        // 2) เลือก QR Thai
+        $isQrChoice = ! $isStripeChoice && (
             str_contains($clean, 'pay_method_qr_thai')
             || str_contains($clean, 'qr')
             || str_contains($clean, 'ไทย')
@@ -6351,24 +6313,10 @@ class FortuneConversationService
             || str_contains($clean, 'โอน')
         );
 
-        // 🚦 Stripe TH → call flow with tier=th
-        if ($isStripeTh) {
+        // 🚦 Stripe — tier=foreign เสมอ (+15)
+        if ($isStripeChoice) {
             if ($mode === 'sms_only' || $mode === 'none') {
-                // admin ปิด Stripe ระหว่าง state นี้ค้าง — ถาม QR แทน
-                Log::info('Fortune: ลูกค้ากด STRIPE_TH แต่ Stripe ปิดอยู่ — fall back QR', [
-                    'reading_id' => $reading->id,
-                ]);
-
-                return $this->fallbackToQrThai($reading);
-            }
-
-            return $this->startStripePaymentFlow($reading, 'th');
-        }
-
-        // 🚦 Stripe Foreign (รวม legacy)
-        if ($isStripeForeign) {
-            if ($mode === 'sms_only' || $mode === 'none') {
-                Log::info('Fortune: ลูกค้ากด STRIPE_FOREIGN แต่ Stripe ปิดอยู่ — fall back QR', [
+                Log::info('Fortune: ลูกค้ากด Stripe แต่ Stripe ปิดอยู่ — fall back QR', [
                     'reading_id' => $reading->id,
                 ]);
 
@@ -6378,28 +6326,14 @@ class FortuneConversationService
             return $this->startStripePaymentFlow($reading, 'foreign');
         }
 
-        // 🚦 Stripe ทั่วไป (ไม่ระบุ tier) — Stripe-only mode default 'foreign' (กัน fee หาย ถ้าลูกค้าตปท.)
-        //    Both mode → กระตุกให้เลือก tier (re-prompt)
-        if ($isStripeGeneric) {
-            if ($mode === 'sms_only' || $mode === 'none') {
-                return $this->fallbackToQrThai($reading);
-            }
-            if ($mode === 'stripe_only') {
-                // ยังไม่ระบุ TH/foreign → default foreign (กัน revenue หาย ถ้าลูกค้าจริงๆ ต่างประเทศ)
-                return $this->startStripePaymentFlow($reading, 'foreign');
-            }
-            // both mode → ขอให้เลือกชัดเจน
-            return $this->askPaymentMethod($reading, "🔍 ขอเจ้าชะตาเลือกชัดเจนหน่อยนะคะ — บัตรในไทย หรือ บัตรต่างประเทศ?\n\n");
-        }
-
         // 🚦 QR Thai
         if ($isQrChoice) {
             if ($mode === 'stripe_only') {
-                Log::info('Fortune: ลูกค้ากด QR แต่ Stripe-only mode — re-prompt', [
+                Log::info('Fortune: ลูกค้ากด QR แต่ Stripe-only mode — auto ไป Stripe', [
                     'reading_id' => $reading->id,
                 ]);
 
-                return $this->askPaymentMethod($reading, "💳 ตอนนี้รับชำระผ่านบัตรเครดิตเท่านั้นค่ะ\n\n");
+                return $this->startStripePaymentFlow($reading, 'foreign');
             }
 
             return $this->fallbackToQrThai($reading);
@@ -6407,14 +6341,9 @@ class FortuneConversationService
 
         // 🧠 ไม่ตรง — ลูกค้าอาจพิมพ์ chitchat / meta question (เช่น "ราคาเท่าไร" / "อยู่ลาว")
         //    ให้ AI ตอบ + ส่งปุ่มซ้ำ
-        $stepHintBoth = "💫 ขอเจ้าชะตาเลือกวิธีชำระเงินก่อนนะคะ:\n"
+        $stepHint = "💫 ขอเจ้าชะตาเลือกวิธีชำระเงินก่อนนะคะ:\n"
             ."💚 พิมพ์ 'qr ไทย' (PromptPay)\n"
-            ."💳 พิมพ์ 'บัตรในไทย'\n"
-            ."🌍 พิมพ์ 'บัตรต่างประเทศ'";
-        $stepHintStripe = "💫 ขอเจ้าชะตาเลือกวิธีชำระเงินก่อนนะคะ:\n"
-            ."💳 พิมพ์ 'บัตรในไทย'\n"
-            ."🌍 พิมพ์ 'บัตรต่างประเทศ'";
-        $stepHint = $mode === 'stripe_only' ? $stepHintStripe : $stepHintBoth;
+            ."💳 พิมพ์ 'บัตรเครดิต' (รับทุกประเทศ +15฿ ค่าบริการ)";
 
         $aiMessage = $this->buildAIAssistedStepReminder($messageText, $stepHint, $reading->user_profile, 'awaiting_payment_method');
 
@@ -6422,9 +6351,10 @@ class FortuneConversationService
     }
 
     /**
-     * 💳 (2026-05-22) Route Pay-First Deep flow ตาม payment mode
+     * 💳 (2026-05-22 v2) Route Pay-First Deep flow ตาม payment mode
      *
-     * - both / stripe_only → askPaymentMethod (ลูกค้าเลือก) → flow Stripe / QR
+     * - both → askPaymentMethod (2 ปุ่ม: QR/บัตร)
+     * - stripe_only → startStripePaymentFlow ตรงๆ (ข้ามเมนู)
      * - sms_only / none → createPaymentBill(payFirst=true) ตรงๆ
      *
      * เรียกใช้แทน createPaymentBill ทุกจุดที่เป็น pay-first deep flow
@@ -6432,7 +6362,8 @@ class FortuneConversationService
     protected function routePayFirstDeep(FortuneReading $reading): array
     {
         $mode = $this->getActivePaymentMode();
-        if ($mode === 'both' || $mode === 'stripe_only') {
+
+        if ($mode === 'both') {
             // ตั้ง reading_type=deep + รอเลือกวิธีชำระ (questions ยังว่าง — collect หลังจ่าย)
             $reading->update([
                 'reading_type' => FortuneReading::READING_TYPE_DEEP,
@@ -6440,6 +6371,15 @@ class FortuneConversationService
             ]);
 
             return $this->askPaymentMethod($reading);
+        }
+
+        if ($mode === 'stripe_only') {
+            // ตั้ง reading_type=deep แล้วไป Stripe ตรงๆ (skip menu)
+            $reading->update([
+                'reading_type' => FortuneReading::READING_TYPE_DEEP,
+            ]);
+
+            return $this->startStripePaymentFlow($reading, 'foreign');
         }
 
         // sms_only / none → QR Thai pay-first ตามเดิม
@@ -6534,26 +6474,16 @@ class FortuneConversationService
         $amounts = $result['amounts'];
         $totalThb = $amounts['total'];           // integer THB
         $baseThb = $amounts['base'];             // integer THB
-        $feeThb = $amounts['fee'];               // integer THB (0 ถ้า th)
-        $resolvedTier = $amounts['tier'];        // 'th' | 'foreign'
+        $feeThb = $amounts['fee'];               // integer THB (+15)
         $expiryMinutes = max(30, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
 
-        // 💬 Message body — แตกต่างตาม tier
-        if ($resolvedTier === 'th') {
-            $header = "💳 ชำระด้วยบัตรเครดิต/เดบิต (ในไทย)\n\n"
-                ."✅ บัตร: Visa, Mastercard, AmEx, JCB\n"
-                ."✅ Apple Pay, Google Pay\n"
-                ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
-                ."💰 ยอดรวม: {$totalThb} บาท (ไม่มีค่าบริการเพิ่ม)\n";
-        } else {
-            $header = "💳 ชำระด้วยบัตรเครดิต/เดบิตสากล\n\n"
-                ."✅ รองรับ: USA, ลาว, สิงคโปร์ และทั่วโลก\n"
-                ."✅ บัตร: Visa, Mastercard, AmEx, JCB\n"
-                ."✅ Apple Pay, Google Pay\n"
-                ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
-                ."💰 ยอดรวม: {$totalThb} บาท ({$baseThb} + ค่าบริการ {$feeThb})\n"
-                ."💱 ธนาคารของคุณจะแปลงเป็นสกุลเงินท้องถิ่นอัตโนมัติ\n";
-        }
+        // 💬 Message body — บัตรเครดิตทั้งหมด +ค่าบริการ
+        $header = "💳 ชำระด้วยบัตรเครดิต/เดบิต\n\n"
+            ."✅ รับบัตร: Visa, Mastercard, AmEx, JCB\n"
+            ."✅ Apple Pay, Google Pay\n"
+            ."✅ รองรับทั่วโลก (ไทย / ลาว / USA / ทุกประเทศ)\n"
+            ."🔒 ปลอดภัยด้วย Stripe SSL + 3D Secure\n\n"
+            ."💰 ยอดรวม: {$totalThb} บาท ({$baseThb} + ค่าบริการ {$feeThb})\n";
 
         $message = $header
             ."⏰ ลิงก์มีอายุ {$expiryMinutes} นาที\n\n"

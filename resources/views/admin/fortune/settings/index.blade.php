@@ -3650,8 +3650,8 @@ Format 2 — JSON array:
                 },
                 get modeLabel() {
                     return {
-                        both: '🎯 Both — ลูกค้าเลือก 3 ปุ่ม (QR ไทย / บัตรในไทย / บัตรต่างประเทศ)',
-                        stripe_only: '💳 Stripe-only — แสดง 2 ปุ่ม (บัตรในไทย / บัตรต่างประเทศ)',
+                        both: '🎯 Both — ลูกค้าเลือก 2 ปุ่ม (QR ไทย / บัตรเครดิต +15)',
+                        stripe_only: '💳 Stripe-only — บัตรเครดิตเท่านั้น (ข้ามเมนู ไปหน้าจ่ายเลย)',
                         sms_only: '💚 SMS-only — QR ไทยตรงๆ (default, backward compat)',
                         none: '⚠️ ทั้งคู่ปิด — fallback กลับ SMS อัตโนมัติ (แก้ในแอดมิน)',
                     }[this.mode];
@@ -3704,7 +3704,7 @@ Format 2 — JSON array:
                         </label>
                     </div>
                     <p class="text-xs text-gray-600 dark:text-gray-400">
-                        Visa/Mastercard/AmEx — ลูกค้าในไทยไม่บวก fee, ต่างประเทศ +15฿
+                        Visa/Mastercard/AmEx — บัตรเครดิตทุกใบ +15฿ ค่าบริการ (รับทุกประเทศ)
                     </p>
                 </div>
             </div>
@@ -3713,7 +3713,7 @@ Format 2 — JSON array:
             <div :class="modeColor" class="border rounded-lg p-3 text-sm font-medium" x-text="modeLabel"></div>
         </div>
 
-        {{-- 💳 (2026-05-09) Stripe Payment Settings — บัตรต่างประเทศ --}}
+        {{-- 💳 (2026-05-09) Stripe Payment Settings --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6" data-fortune-tab="platform"
              x-data="{ enableStripe: {{ old('enable_stripe_payment', $settings->enable_stripe_payment ?? false) ? 'true' : 'false' }} }">
             <div class="flex items-center justify-between mb-4">
@@ -3722,8 +3722,7 @@ Format 2 — JSON array:
                         🔑 Stripe Configuration
                     </h3>
                     <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                        ตั้งค่า API keys + webhook สำหรับ Stripe Checkout
-                        (ลูกค้าในไทย ไม่บวก fee / ต่างประเทศ +15฿)
+                        ตั้งค่า API keys + webhook สำหรับ Stripe Checkout (รับบัตรเครดิตทุกประเทศ +15฿ ค่าบริการ)
                     </p>
                 </div>
                 <div class="text-xs text-gray-500 dark:text-gray-400">
@@ -3735,14 +3734,14 @@ Format 2 — JSON array:
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            🌍 ค่าบริการ (เฉพาะต่างประเทศ, บาท)
+                            💰 ค่าบริการบัตรเครดิต (บาท)
                         </label>
                         <input type="number" name="stripe_service_fee" min="0" step="1"
                                value="{{ (int) old('stripe_service_fee', $settings->stripe_service_fee ?? 15) }}"
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
                         <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            บวกเพิ่มเฉพาะลูกค้าที่เลือก "บัตรต่างประเทศ" — Stripe หัก ~3.65%+11฿/transaction.<br>
-                            ลูกค้าในไทยจ่ายราคาเต็มเท่า QR ไทย (ไม่บวก fee).
+                            บวกเพิ่มทุกครั้งที่ลูกค้าเลือกชำระผ่านบัตร — Stripe หัก ~3.65%+11฿/transaction.<br>
+                            รับบัตรทุกประเทศ (ไทย / ลาว / USA / ทั่วโลก).
                         </p>
                     </div>
 
