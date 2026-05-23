@@ -132,7 +132,7 @@ class UsersController extends Controller
             ->get([
                 'id', 'user_id', 'facebook_user_id', 'facebook_user_name',
                 'questions', 'ai_provider', 'ai_model', 'tokens_used',
-                'is_paid', 'price_paid', 'rating', 'response_type',
+                'is_paid', 'amount_paid', 'rating', 'response_type',
                 'paid_at', 'responded_at', 'created_at',
             ]);
 
@@ -141,12 +141,12 @@ class UsersController extends Controller
             'data' => [
                 'data' => $readings->map(fn (FortuneReading $r) => [
                     'id' => $r->id,
-                    'questions' => is_array($r->questions) ? $r->questions : [],
+                    'questions' => is_array($r->questions) ? $r->questions : (is_string($r->questions) ? (json_decode($r->questions, true) ?: []) : []),
                     'ai_provider' => $r->ai_provider,
                     'ai_model' => $r->ai_model,
                     'tokens_used' => $r->tokens_used,
                     'is_paid' => (bool) $r->is_paid,
-                    'price_paid_thb' => $r->price_paid !== null ? (float) $r->price_paid : null,
+                    'price_paid_thb' => $r->amount_paid !== null ? (float) $r->amount_paid : null,
                     'rating' => $r->rating !== null ? (int) $r->rating : null,
                     'response_type' => $r->response_type,
                     'paid_at' => $r->paid_at?->toIso8601String(),
@@ -173,13 +173,18 @@ class UsersController extends Controller
         // personal_access_tokens.last_used_at is updated by Sanctum on every
         // authenticated request. Cheap enough to join on for a presence
         // strip (max ~10-20 admin rows in practice).
+        //
+        // NOTE: `avatar` is an accessor on User (returns LINE picture / uploaded
+        // profile_picture / ui-avatars fallback) — NOT a real column. We must
+        // fetch the columns the accessor reads + let the cast surface `avatar`.
         $admins = User::query()
             ->where(function ($q) {
                 $q->where('role', 'admin')->orWhere('is_super_admin', true);
             })
             ->whereNull('blocked_at')
             ->select([
-                'id', 'name', 'email', 'avatar', 'role', 'is_super_admin',
+                'id', 'name', 'email', 'profile_picture', 'line_picture_url',
+                'role', 'is_super_admin',
             ])
             ->limit(40)
             ->get();
@@ -201,11 +206,18 @@ class UsersController extends Controller
             $lastSeen = $lastSeenMap->get($u->id);
             $lastSeenAt = $lastSeen ? Carbon::parse($lastSeen) : null;
             $isOnline = $lastSeenAt && $lastSeenAt->gte($since);
+            // avatar = LINE picture > uploaded profile_picture > default
+            $avatar = $u->line_picture_url
+                ?: ($u->profile_picture
+                    ? (str_starts_with($u->profile_picture, 'http')
+                        ? $u->profile_picture
+                        : '/storage/' . ltrim($u->profile_picture, '/'))
+                    : null);
             return [
                 'id' => $u->id,
                 'name' => $u->name,
                 'email' => $u->email,
-                'avatar' => $u->avatar,
+                'avatar' => $avatar,
                 'role' => $u->is_super_admin ? 'super_admin' : ($u->role ?? 'admin'),
                 'last_seen_at' => $lastSeenAt?->toIso8601String(),
                 'is_online' => $isOnline,

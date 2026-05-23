@@ -37,7 +37,7 @@ class AiPlaygroundController extends Controller
         $providers = AiProvider::query()
             ->where('is_active', true)
             ->where('is_available', true)
-            ->with(['activeModels:id,provider_id,name,display_name,context_window,is_active'])
+            ->with(['activeModels:id,provider_id,model_identifier,display_name,context_window,is_active'])
             ->orderBy('name')
             ->get(['id', 'name', 'display_name', 'provider_type']);
 
@@ -51,7 +51,7 @@ class AiPlaygroundController extends Controller
                     'provider_type' => $p->provider_type,
                     'models' => $p->activeModels->map(fn ($m) => [
                         'id' => $m->id,
-                        'name' => $m->name,
+                        'name' => $m->model_identifier,
                         'display_name' => $m->display_name,
                         'context_window' => $m->context_window,
                     ])->values(),
