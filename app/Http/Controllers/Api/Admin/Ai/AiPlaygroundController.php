@@ -124,12 +124,16 @@ class AiPlaygroundController extends Controller
                     apiKeyOverride: $cfg['api_key'] ?? null,
                 );
 
+                // FortuneAIService::chatWithCustomSystemPrompt returns
+                // ['response' => string, ...] via sanitizeChatResult — the
+                // key is 'response', NOT 'content' / 'text'.
                 $entry['success'] = true;
-                $entry['response'] = is_array($result) ? ($result['content'] ?? $result['text'] ?? null) : (string) $result;
+                $entry['response'] = is_array($result)
+                    ? ($result['response'] ?? $result['content'] ?? $result['text'] ?? null)
+                    : (string) $result;
                 $entry['tokens'] = is_array($result) ? ($result['tokens_used'] ?? $result['tokens'] ?? null) : null;
-                // If chatWithCustomSystemPrompt returns shape with full result, surface it.
                 if (is_array($result)) {
-                    $entry['raw'] = array_intersect_key($result, array_flip(['content', 'text', 'tokens_used', 'finish_reason']));
+                    $entry['raw'] = array_intersect_key($result, array_flip(['response', 'content', 'text', 'tokens_used', 'finish_reason']));
                 }
             } catch (Throwable $e) {
                 $entry['error'] = $e->getMessage();

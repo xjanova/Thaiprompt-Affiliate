@@ -111,8 +111,10 @@ class ChatController extends Controller
                 userMessage: $data['context_text'],
                 config: ['temperature' => 0.6, 'max_tokens' => 220],
             );
+            // FortuneAIService::chatWithCustomSystemPrompt returns
+            // ['response' => string, ...] via sanitizeChatResult.
             $reply = is_array($result)
-                ? ($result['content'] ?? $result['text'] ?? '')
+                ? ($result['response'] ?? $result['content'] ?? $result['text'] ?? '')
                 : (string) $result;
 
             return response()->json([

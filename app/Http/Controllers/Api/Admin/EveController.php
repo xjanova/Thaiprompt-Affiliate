@@ -42,8 +42,10 @@ class EveController extends Controller
                 modelOverride: $model,
             );
 
+            // FortuneAIService::chatWithCustomSystemPrompt returns
+            // ['response' => string, ...] via sanitizeChatResult.
             $reply = is_array($result)
-                ? ($result['content'] ?? $result['text'] ?? '')
+                ? ($result['response'] ?? $result['content'] ?? $result['text'] ?? '')
                 : (string) $result;
             $tokens = is_array($result) ? ($result['tokens_used'] ?? $result['tokens'] ?? null) : null;
             $latencyMs = (int) round((microtime(true) - $started) * 1000);
