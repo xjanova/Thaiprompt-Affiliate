@@ -37,7 +37,9 @@
       "Bash(mkdir -p public/images/landing)",
       "Bash(cp \".claude/temp_theme/design_handoff_thaiprompt_landing/assets/slide-top.png\" public/images/landing/slide-top.png)",
       "Bash(cp \".claude/temp_theme/design_handoff_thaiprompt_landing/assets/slide-temple.png\" public/images/landing/slide-temple.png)",
-      "Bash(cp \".claude/temp_theme/design_handoff_thaiprompt_landing/assets/slide-flow.png\" public/images/landing/slide-flow.png)"
+      "Bash(cp \".claude/temp_theme/design_handoff_thaiprompt_landing/assets/slide-flow.png\" public/images/landing/slide-flow.png)",
+      "mcp__obsidianx-brain__brain_search",
+      "mcp__obsidianx-brain__brain_get_note"
     ],
     "deny": [],
     "ask": []

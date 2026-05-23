@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk:*)",
+      "mcp__obsidianx-brain__brain_search",
+      "mcp__obsidianx-brain__brain_get_note",
+      "mcp__obsidianx-brain__brain_semantic_search",
+      "mcp__obsidianx-brain__ssh_profiles_list",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "mcp__Claude_in_Chrome__list_connected_browsers",
+      "mcp__Claude_in_Chrome__get_page_text",
+      "mcp__Claude_in_Chrome__find",
+      "mcp__Claude_in_Chrome__read_network_requests",
+      "mcp__computer-use__screenshot"
+    ]
+  }
+}
