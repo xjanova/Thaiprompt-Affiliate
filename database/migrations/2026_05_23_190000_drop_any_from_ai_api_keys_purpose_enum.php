@@ -40,17 +40,15 @@ return new class extends Migration
             return;
         }
 
-        // 1. เช็คว่ามี row purpose='any' ที่ยังไม่ soft-delete หรือไม่
-        $orphanCount = DB::table('ai_api_keys')
-            ->where('purpose', 'any')
-            ->whereNull('deleted_at')
-            ->count();
+        // 1. Migrate ทุก row purpose='any' ไป NULL (รวม soft-deleted)
+        //    🩹 (2026-05-23) ต้องครอบคลุม soft-deleted rows ด้วย — ไม่งั้น ALTER ENUM
+        //    จะ fail "Data truncated for column 'purpose'" เพราะ MySQL เช็คทุก row
+        $totalCount = DB::table('ai_api_keys')->where('purpose', 'any')->count();
 
-        if ($orphanCount > 0) {
-            // Migrate ไป NULL (legacy) เพื่อกัน data loss ก่อน drop enum
+        if ($totalCount > 0) {
+            // Update ทั้งหมด (ไม่ filter deleted_at) — ก่อน ALTER ENUM
             DB::table('ai_api_keys')
                 ->where('purpose', 'any')
-                ->whereNull('deleted_at')
                 ->update([
                     'purpose' => null,
                     'is_active' => 0,
@@ -58,7 +56,7 @@ return new class extends Migration
                     'updated_at' => now(),
                 ]);
 
-            Log::warning("Migration: migrated {$orphanCount} keys from purpose='any' → NULL");
+            Log::warning("Migration: migrated {$totalCount} keys from purpose='any' → NULL (รวม soft-deleted)");
         }
 
         // 2. เช็ค enum ปัจจุบัน

@@ -530,7 +530,7 @@ class AiApiKeyPoolService
         //   ถ้ามี key purpose='any' หลุดมาในผลลัพธ์ (legacy data) → reject ก่อน group tier
         //   เหตุผล: 'any' = รูรั่ว — caller ที่ specific purpose หมด/429 จะ fallback มา
         //   จุดนี้ทำให้ admin งง: "ตั้ง OpenAI ใช้แค่ Celtic 99 แต่ token รั่วไป Deep"
-        $allKeys = $allKeys->reject(fn ($k) => $k->purpose === 'any');
+        $allKeys = $query->get()->reject(fn ($k) => $k->purpose === 'any');
 
         if ($allKeys->isEmpty()) {
             return null;
