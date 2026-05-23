@@ -131,7 +131,7 @@ class AiDashboardController extends Controller
                 ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
                 ->selectRaw('k.provider as name, COUNT(*) as requests, SUM(l.total_tokens) as tokens, AVG(l.response_time_ms) as avg_ms, SUM(CASE WHEN l.is_success=0 THEN 1 ELSE 0 END) as errors')
                 ->where('l.created_at', '>=', $since)
-                ->groupBy('k.provider')
+                ->groupBy(DB::raw('k.provider'))
                 ->get()
                 ->keyBy('name');
 
@@ -150,7 +150,7 @@ class AiDashboardController extends Controller
                 ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
                 ->selectRaw("k.provider as name, DATE_FORMAT(l.created_at, '$bucketFormat') as time, COUNT(*) as requests, SUM(l.total_tokens) as tokens")
                 ->where('l.created_at', '>=', $since)
-                ->groupBy('name', 'time')
+                ->groupBy(DB::raw('k.provider'), DB::raw('time'))
                 ->orderBy('time')
                 ->get()
                 ->groupBy('name');
@@ -169,7 +169,7 @@ class AiDashboardController extends Controller
 
             $keyCounts = DB::table('ai_api_keys')
                 ->selectRaw('provider, COUNT(*) as total_keys, SUM(is_active) as active_keys, SUM(tokens_used_today) as tokens_today, SUM(tokens_used_month) as tokens_month')
-                ->groupBy('provider')
+                ->groupBy(DB::raw('provider'))
                 ->get()
                 ->keyBy('provider');
 
