@@ -167,13 +167,22 @@ trait CelticCrossConversationTrait
         //   เดิม: shouldOfferFreeCard() เช็ค first-timer + feature → user-facing free button
         //   ใหม่: ฟรี trigger ผ่าน tryAutoFreeCardForFirstReply() เท่านั้น (silent)
         $offerFree = false;
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+        // 🌙 (2026-05-23) Top guard — Deep ปิด + Celtic เปิด → redirect Celtic ทันที
+        //   ไม่ render tier menu เลย (กัน body text 39 บาท หลุดถ้ามี caller ใหม่ลืม guard)
+        //   user spec: "ปิด 39฿ ไปก่อน เหลือแต่ 99"
+        if (! $deepEnabled && $celticEnabled && ! $offerFree) {
+            return $this->startCelticCrossFlow($reading);
+        }
 
         // 🔒 (2026-05-03) ถ้า admin ปิด Celtic — ปกติข้าม tier menu ไปดูดวง 39฿ ตรงๆ
         //    แต่ถ้า offerFree = true → ต้องโชว์ menu (มีปุ่ม [ฟรี] [39]) ก่อน
         // 💰 (2026-05-10 v3) Pay-First — ปิด legacy COLLECTING_BIRTHDATE
         //    เดิม: เก็บวันเกิด → คำถาม → เปิดไพ่ → afterTarotCardDrawn fall through สร้างบิล
         //    ใหม่: สร้างบิลทันที → จ่าย → เก็บข้อมูล (เลียนแบบ pay-first ที่ user สั่งย้าย)
-        if (! $this->settings->enable_celtic_cross && ! $offerFree) {
+        if (! $celticEnabled && ! $offerFree) {
             $reading->update([
                 'reading_type' => FortuneReading::READING_TYPE_DEEP,
             ]);
@@ -193,11 +202,11 @@ trait CelticCrossConversationTrait
         $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
         $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
-        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
         // 🎁 หัวเมนู — เปลี่ยนตามว่ามีปุ่มฟรีหรือไม่
         // 🌐 (2026-05-03) localize header + intro — ลูกค้าลาวเห็นเมนูเป็นลาว
-        $packageCount = 1 + ($celticEnabled ? 1 : 0) + ($offerFree ? 1 : 0);
+        // 🌙 (2026-05-23) packageCount นับเฉพาะที่ enabled — Deep ปิดก็ไม่นับ
+        $packageCount = ($deepEnabled ? 1 : 0) + ($celticEnabled ? 1 : 0) + ($offerFree ? 1 : 0);
         $welcomeLine = FortuneLocaleService::lo(
             '🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙',
             '🌙✨ *ໝໍຈັນທາຍິນດີຕ້ອນຮັບເຈົ້າຊາຕາເດີ* ✨🌙'
@@ -233,40 +242,46 @@ trait CelticCrossConversationTrait
             $message .= $freeBlock;
         }
 
-        // 📌 หมายเลขแพคเกจ — dynamic ตามว่ามีฟรีไหม
+        // 📌 หมายเลขแพคเกจ — dynamic ตามว่ามีฟรีไหม + Deep เปิดไหม
+        // 🌙 (2026-05-23) ถ้า Deep ปิด — Celtic จะรับเลข Deep แทน
         $deepNum = FortuneLocaleService::lo(
             $offerFree ? 'ที่ 2' : 'ที่ 1',
             $offerFree ? 'ທີ່ 2' : 'ທີ່ 1'
         );
+        // Celtic อยู่ลำดับถัดจาก [ฟรี] + [Deep ถ้าเปิด]
+        $celticPos = ($offerFree ? 1 : 0) + ($deepEnabled ? 1 : 0) + 1;
         $celticNum = FortuneLocaleService::lo(
-            $offerFree ? 'ที่ 3' : 'ที่ 2',
-            $offerFree ? 'ທີ່ 3' : 'ທີ່ 2'
+            "ที่ {$celticPos}",
+            "ທີ່ {$celticPos}"
         );
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━
-        // 🔹 39 บาท — Basic Deep
+        // 🔹 Deep (39 บาท) — Basic — เฉพาะถ้า admin เปิด
         // ━━━━━━━━━━━━━━━━━━━━━━━━
-        $deepBlock = FortuneLocaleService::lo(
-            "━━━━━━━━━━━━━━━━━\n"
-                ."🔹 *แพคเกจ{$deepNum} — ดูดวงพื้นฐาน {$deepPrice} บาท* 💫\n"
-                ."━━━━━━━━━━━━━━━━━\n"
-                ."📅 *วิเคราะห์จากวันเดือนปีเกิด*\n"
-                ."    หมอจะคำนวณดาวเจ้าชนะ + ราศี + ลัคนาให้\n\n"
-                ."🃏 *ไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
-                ."    ไพ่ใบเดียว — ตรงประเด็น แม่นยำ ไม่ยกเมฆ\n\n"
-                ."💎 *เหมาะกับ:* คนอยากรู้ดวงรวมๆ — เริ่มต้นง่าย ราคาเป็นมิตร\n"
-                ."⏱️ *เวลา:* ทำนายเสร็จใน 1-3 นาที\n\n",
-            "━━━━━━━━━━━━━━━━━\n"
-                ."🔹 *ແພັກເກດ{$deepNum} — ເບິ່ງດວງພື້ນຖານ {$deepPrice} ບາດ* 💫\n"
-                ."━━━━━━━━━━━━━━━━━\n"
-                ."📅 *ວິເຄາະຈາກວັນເດືອນປີເກີດ*\n"
-                ."    ໝໍຈະຄຳນວນດາວເຈົ້າຊະນະ + ລາສີ + ລັກຄະນາໃຫ້\n\n"
-                ."🃏 *ໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
-                ."    ໄພ່ໃບດຽວ — ກົງປະເດັນ ແມ່ນຍຳ ບໍ່ຍົກເມກ\n\n"
-                ."💎 *ເໝາະກັບ:* ຄົນຢາກຮູ້ດວງລວມໆ — ເລີ່ມຕົ້ນງ່າຍ ລາຄາເປັນມິດ\n"
-                ."⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1-3 ນາທີ\n\n"
-        );
-        $message .= $deepBlock;
+        // 🌙 (2026-05-23) wrap ใน guard — Deep ปิด = ไม่ render block (กัน "39 บาท" หลุดแม้ caller จะลืม guard)
+        if ($deepEnabled) {
+            $deepBlock = FortuneLocaleService::lo(
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."🔹 *แพคเกจ{$deepNum} — ดูดวงพื้นฐาน {$deepPrice} บาท* 💫\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."📅 *วิเคราะห์จากวันเดือนปีเกิด*\n"
+                    ."    หมอจะคำนวณดาวเจ้าชนะ + ราศี + ลัคนาให้\n\n"
+                    ."🃏 *ไพ่ยิปซี 1 ใบ ที่จิตเจ้าชะตาเลือกเอง*\n"
+                    ."    ไพ่ใบเดียว — ตรงประเด็น แม่นยำ ไม่ยกเมฆ\n\n"
+                    ."💎 *เหมาะกับ:* คนอยากรู้ดวงรวมๆ — เริ่มต้นง่าย ราคาเป็นมิตร\n"
+                    ."⏱️ *เวลา:* ทำนายเสร็จใน 1-3 นาที\n\n",
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."🔹 *ແພັກເກດ{$deepNum} — ເບິ່ງດວງພື້ນຖານ {$deepPrice} ບາດ* 💫\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+                    ."📅 *ວິເຄາະຈາກວັນເດືອນປີເກີດ*\n"
+                    ."    ໝໍຈະຄຳນວນດາວເຈົ້າຊະນະ + ລາສີ + ລັກຄະນາໃຫ້\n\n"
+                    ."🃏 *ໄພ່ຍິບຊີ 1 ໃບ ທີ່ຈິດເຈົ້າຊາຕາເລືອກເອງ*\n"
+                    ."    ໄພ່ໃບດຽວ — ກົງປະເດັນ ແມ່ນຍຳ ບໍ່ຍົກເມກ\n\n"
+                    ."💎 *ເໝາະກັບ:* ຄົນຢາກຮູ້ດວງລວມໆ — ເລີ່ມຕົ້ນງ່າຍ ລາຄາເປັນມິດ\n"
+                    ."⏱️ *ເວລາ:* ທຳນາຍແລ້ວໃນ 1-3 ນາທີ\n\n"
+            );
+            $message .= $deepBlock;
+        }
 
         // ━━━━━━━━━━━━━━━━━━━━━━━━
         // 🔮 99 บาท — Celtic Cross (Premium) — เฉพาะถ้า admin เปิด
@@ -304,10 +319,13 @@ trait CelticCrossConversationTrait
                 "✦ ພິມ *\"ທຳນາຍຟຣີ\"* — ຮັບສິດທິຟຣີ 1 ໃບ\n"
             );
         }
-        $message .= FortuneLocaleService::lo(
-            "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n",
-            "✦ ພິມ *\"{$deepPrice}\"* — ເລີ່ມແພັກເກດພື້ນຖານ {$deepPrice} ບາດ\n"
-        );
+        // 🌙 (2026-05-23) Deep CTA — แสดงเฉพาะเมื่อ Deep เปิด
+        if ($deepEnabled) {
+            $message .= FortuneLocaleService::lo(
+                "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n",
+                "✦ ພິມ *\"{$deepPrice}\"* — ເລີ່ມແພັກເກດພື້ນຖານ {$deepPrice} ບາດ\n"
+            );
+        }
         if ($celticEnabled) {
             $message .= FortuneLocaleService::lo(
                 "✦ พิมพ์ *\"{$celticPrice}\"* หรือ *\"celtic\"* — เริ่มแพคเกจเต็มสำรับ\n",
@@ -425,10 +443,17 @@ trait CelticCrossConversationTrait
         //
         //   Pattern เดียวกับ handleConfirmationResponse:3712, handleBirthdateInput, handleQuestionInput
         //   ✅ safe ที่ปลอดภัย (ทดสอบมาแล้วใน flow อื่น) — ถ้า looksLikeMetaOrChitchat=false → fallback เดิม
-        $stepHintCompact = "🙏 ยังรอเจ้าชะตาเลือกแพคเกจอยู่นะคะ\n"
-            ."🔹 *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท (วันเกิด + ไพ่ 1 ใบ)\n"
-            ."🔮 *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท (10 ใบ + คุยจุใจ {$qaWindow} นาที)\n"
-            ."❌ *\"ยกเลิก\"* — หากไม่ต้องการตอนนี้";
+        // 🌙 (2026-05-23) สร้าง hint dynamic — ถ้า Deep ปิด ไม่ใส่บรรทัด 39
+        $deepEnabledHint = $this->settings->isDeepReadingEnabled();
+        $celticEnabledHint = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $stepHintCompact = "🙏 ยังรอเจ้าชะตาเลือกแพคเกจอยู่นะคะ\n";
+        if ($deepEnabledHint) {
+            $stepHintCompact .= "🔹 *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท (วันเกิด + ไพ่ 1 ใบ)\n";
+        }
+        if ($celticEnabledHint) {
+            $stepHintCompact .= "🔮 *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท (10 ใบ + คุยจุใจ {$qaWindow} นาที)\n";
+        }
+        $stepHintCompact .= "❌ *\"ยกเลิก\"* — หากไม่ต้องการตอนนี้";
 
         // 🛡️ Safe guard — ถ้า looksLikeMetaOrChitchat/buildAIAssistedStepReminder ไม่มี (trait isolation)
         //   หรือ throw exception → fallback re-show menu ปกติ ไม่ทำให้ flow crash
@@ -457,15 +482,22 @@ trait CelticCrossConversationTrait
         }
 
         // ❓ ไม่ใช่ chitchat (หรือ AI fail) → ส่ง re-show menu แบบกระชับ (fallback เดิม)
+        // 🌙 (2026-05-23) re-show menu dynamic — ไม่ใส่บรรทัด 39 ถ้า Deep ปิด
+        $reshowMessage = "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n";
+        if ($deepEnabledHint) {
+            $reshowMessage .= "🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
+                ."    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n";
+        }
+        if ($celticEnabledHint) {
+            $reshowMessage .= "🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
+                ."    🃏 Celtic Cross 10 ใบ + คุยกับแม่หมอจุใจ {$qaWindow} นาที\n\n";
+        }
+        $reshowMessage .= "❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
+            .'👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨';
+
         return [
             'action' => 'tier_choice_invalid',
-            'message' => "🙏 ขอให้เจ้าชะตาเลือกแพคเกจอีกครั้งนะคะ\n\n"
-                ."🔹 พิมพ์ *\"{$deepPriceInt}\"* — ดูดวงพื้นฐาน {$deepPriceInt} บาท\n"
-                ."    📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ\n\n"
-                ."🔮 พิมพ์ *\"{$celticPriceInt}\"* หรือ *\"celtic\"* — ไพ่ยิปซีเต็มสำรับ {$celticPriceInt} บาท\n"
-                ."    🃏 Celtic Cross 10 ใบ + คุยกับแม่หมอจุใจ {$qaWindow} นาที\n\n"
-                ."❌ พิมพ์ *\"ยกเลิก\"* หากไม่ต้องการดูตอนนี้\n\n"
-                .'👇 หรือกดปุ่มด้านล่างก็ได้นะคะ ✨',
+            'message' => $reshowMessage,
             'reading' => $reading,
         ];
     }

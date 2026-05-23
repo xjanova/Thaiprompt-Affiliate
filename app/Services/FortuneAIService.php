@@ -2700,6 +2700,29 @@ PROMPT;
      */
     public function appendUxFriendlyDirective(string $systemMessage): string
     {
+        // 🌙 (2026-05-23) Dynamic tier listing — AI ไม่ควรพูดถึง 39 ถ้า Deep ปิด
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $deepEnabledForAi = $settings->isDeepReadingEnabled();
+        $celticEnabledForAi = (bool) ($settings->enable_celtic_cross ?? false);
+        $deepPriceForAi = (int) ($settings->deep_reading_price ?? 39);
+        $celticPriceForAi = 99;
+        try {
+            $celticPriceForAi = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+            // ใช้ default 99
+        }
+        // ใช้ใน restart hint + sub-system header
+        $tierKeyHint = trim(implode(' / ', array_filter([
+            $deepEnabledForAi ? "'{$deepPriceForAi}'" : null,
+            $celticEnabledForAi ? "'{$celticPriceForAi}'" : null,
+        ])));
+        $tierKeyHint = $tierKeyHint !== '' ? "หรือเลือกแพคเกจ {$tierKeyHint}" : 'หรือพิมพ์ \'ดูดวง\' เพื่อเริ่ม';
+        $costHeader = trim(implode(' / ', array_filter([
+            $deepEnabledForAi ? "{$deepPriceForAi}฿" : null,
+            $celticEnabledForAi ? "{$celticPriceForAi}฿" : null,
+        ])));
+        $costHeader = $costHeader !== '' ? "({$costHeader})" : '';
+
         // 🫂 (2026-05-14 v2) Empathy-First Protocol — TOP PRIORITY
         //   user report: "AI ปิดการขายฮาร์ดเซลเกิน ไม่คุยกับยูสเซอก่อนว่าเขามีปัญหาอะไร เขาเลยปิดใจ ไม่คุยต่อ"
         //   เดิม: ห้ามขายตรงๆ แต่ผสมในกฎอื่น — AI ไม่ enforce
@@ -2751,9 +2774,15 @@ PROMPT;
         //   เคสจริง: chat AI ถูกเรียกตอน status COMPLETED (Celtic จบแล้ว) — แต่ AI เห็น Celtic history
         //            → คิดว่าเป็น "แม่หมอที่ทำนาย" → สร้างบิลปลอม / pretend ทำนายอยู่
         //   ความจริง: chat AI = แค่ chat (rapport, soft-sell) ไม่ใช่ fortune reader/payment system
+        // 🌙 (2026-05-23) System name dynamic — อ้างเฉพาะ tier ที่ enable จริง
+        $systemNameParts = array_filter([
+            $deepEnabledForAi ? "{$deepPriceForAi}฿ Deep" : null,
+            $celticEnabledForAi ? "{$celticPriceForAi}฿ Celtic" : null,
+        ]);
+        $systemNameStr = empty($systemNameParts) ? 'Fortune' : implode(' / ', $systemNameParts);
         $message .= "\n\n[🚫 Anti-Hallucination — บทบาทที่ \"ห้าม\" สวมรอย]\n"
             ."*คุณคือแม่หมอที่กำลัง \"คุย\" — ไม่ใช่กำลัง \"ทำนาย\"*\n"
-            ."ระบบ Fortune Reading (39฿ Deep / 99฿ Celtic) เป็น *flow แยก* — ไม่ใช่ chat นี้\n"
+            ."ระบบ Fortune Reading ({$systemNameStr}) เป็น *flow แยก* — ไม่ใช่ chat นี้\n"
             ."\n"
             ."🚫 **ห้ามทำสิ่งเหล่านี้เด็ดขาด:**\n"
             ."  • ห้าม pretend ว่ากำลังเปิดไพ่ / ทำนาย / ดูดาวให้ → \"เดี๋ยวแม่หมอจะเปิดไพ่...\" ❌\n"
@@ -2832,14 +2861,14 @@ PROMPT;
             ."- ขอดูตามรหัสบิล → แนะ \"พิมพ์ 'ดูบิล FTU-xxxx' หรือเลขบิลตรงๆ ก็ได้ค่ะ\"\n"
             ."- เช็คสิทธิ์ดูดวง → แนะ \"พิมพ์ 'เช็คสิทธิ์' ค่ะ\"\n"
             ."- ขอคุยกับคน/แอดมิน → แนะ \"พิมพ์ 'ขอคุยกับคน' — แม่หมอจะส่งต่อให้\"\n"
-            ."- เริ่มดูดวงใหม่ → แนะ \"พิมพ์ 'ดูดวง' หรือเลือกแพคเกจ '39' / '99' ค่ะ\"\n"
+            ."- เริ่มดูดวงใหม่ → แนะ \"พิมพ์ 'ดูดวง' {$tierKeyHint} ค่ะ\"\n"
             ."- จบ session ก่อนเวลา (ใน Pro Session) → แนะ \"พิมพ์ 'พอแค่นี้' หรือ 'ขอบคุณ' ค่ะ\"\n"
             .'⚠️ ห้าม AI ตอบ \"ขอเวลาดึงข้อมูลให้สักครู่\" หรือ \"กำลังหาให้\" — ระบบทำให้เอง AI แค่ \"แนะคำสั่ง\"';
 
         // 🪔 (2026-05-13) Fortune Values & Psychology directive
         //   user spec: "บอทต้องรู้ว่าเราทำอะไรบ้าง อย่าหลุด"
         //   ลูกค้าถาม "ทำไมต้องเก็บค่าครู?" / "ไม่ฟรี?" / "ไม่มีเงิน" → AI ต้องตอบ consistent
-        $message .= "\n\n[🪔 ค่าครู (39฿ / 99฿) — แม่หมอใช้เงินส่วนนี้ไปทำอะไร — ตอบลูกค้าได้เมื่อถูกถาม]\n"
+        $message .= "\n\n[🪔 ค่าครู {$costHeader} — แม่หมอใช้เงินส่วนนี้ไปทำอะไร — ตอบลูกค้าได้เมื่อถูกถาม]\n"
             ."ค่าครูที่เจ้าชะตาจ่ายมา — แม่หมอนำไป:\n"
             ."  • พิธีไหว้ครู สืบทอดวิชาให้ครูบาอาจารย์\n"
             ."  • ไถ่ชีวิตโคกระบือ — ต่อบุญต่ออายุให้เจ้าชะตา\n"

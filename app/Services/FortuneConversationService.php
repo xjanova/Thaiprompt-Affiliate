@@ -4778,8 +4778,13 @@ class FortuneConversationService
             //
             // 🩹 (2026-05-08) $forceTier='deep'/'celtic' → ข้าม tier menu (single-click fix)
             //   ลูกค้ากดปุ่ม "39 บาท" / "99 บาท" → เข้า flow ตรง ไม่ผ่าน menu ซ้ำ
+            //
+            // 🌙 (2026-05-23) tier menu ต้องการ ทั้ง Deep + Celtic เปิดถึงจะมีให้เลือก
+            //   ถ้า Deep ปิด (แม้ Celtic เปิด) → useTierChoice=false → fall through ไป Celtic
+            //   เคสจริง: ลูกค้าทักบอท → presentTierChoice ขึ้น 39 บาท แต่ Deep ปิด → กดแล้วเด้ง 99 → สับสน
             $useTierChoice = $forceTier === null
-                && (bool) ($this->settings->enable_celtic_cross ?? false);
+                && (bool) ($this->settings->enable_celtic_cross ?? false)
+                && $this->settings->isDeepReadingEnabled();
 
             // 🧠 (2026-04-28) Discovery Chat Mode — fallback ถ้าไม่ใช้ tier menu
             //    Default false หลัง user feedback ว่าไม่เวิร์ค
@@ -4866,6 +4871,19 @@ class FortuneConversationService
                         .'ความรัก การงาน เงินทอง หรือเรื่องใดก็ได้ที่อยากให้หมอช่วยดูดวงให้ค่ะ 🙏',
                     'reading' => $reading,
                 ];
+            }
+
+            // 🌙 (2026-05-23) Deep ปิด + Celtic เปิด → redirect Celtic ก่อนเสมอ
+            //   (กัน routePayFirstDeep สร้างบิล 39฿ ทั้งที่ Deep ปิด)
+            //   user spec: "ปิด 39฿ ไปก่อน เหลือแต่ 99"
+            if (! $this->settings->isDeepReadingEnabled()
+                && ($this->settings->enable_celtic_cross ?? false)) {
+                Log::info('Fortune: Deep ปิด → redirect Celtic (fallback default)', [
+                    'reading_id' => $reading->id,
+                    'facebook_user_id' => $facebookUserId,
+                ]);
+
+                return $this->startCelticCrossFlow($reading);
             }
 
             // 💰 (2026-05-10 v2) Default → Pay-First Deep 39
@@ -12024,8 +12042,26 @@ PROMPT;
                     // 💳 (2026-05-09) Stripe payment states
                     'awaiting_payment_method' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกวิธีชำระเงิน" — มี 2 ปุ่ม: "QR ไทย" หรือ "บัตร ตปท." (Visa/Mastercard +15 บาท) — แนะให้กดปุ่มหรือพิมพ์ "qr ไทย" / "บัตร"',
                     'pending_stripe_payment' => 'ผู้ใช้กำลังรอจ่ายผ่านบัตรเครดิต Stripe — ระบบส่งลิงก์ checkout ให้แล้ว — แนะให้กดลิงก์ หรือพิมพ์ "qr ไทย" เพื่อกลับมาเลือก QR Thai',
-                    // 🎴 (2026-05-19 Batch 3) Tier choice — ลูกค้าเลือกแพคเกจ 39/99 — ห้ามบังคับเลือกอย่างเดียว
-                    'tier_choice' => 'ผู้ใช้กำลังอยู่ขั้น "เลือกแพคเกจ" — มี 39฿ (พื้นฐาน + ไพ่ 1 ใบ) และ 99฿ (Celtic ไพ่ 10 ใบ) — ตอบคำถามเขาให้เข้าใจ แล้วค่อยใบ้ให้เลือกแพคเกจตอนท้าย ห้ามบังคับเลือกทันที',
+                    // 🎴 (2026-05-19 Batch 3) Tier choice — ลูกค้าเลือกแพคเกจ
+                    // 🌙 (2026-05-23) dynamic — ใส่ tier ตามที่ enable เท่านั้น
+                    'tier_choice' => (function () {
+                        $s = $this->settings;
+                        $deepOn = $s->isDeepReadingEnabled();
+                        $celticOn = (bool) ($s->enable_celtic_cross ?? false);
+                        $deepP = (int) ($s->deep_reading_price ?? 39);
+                        $celticP = 99;
+                        try {
+                            $celticP = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                        } catch (\Throwable $e) {
+                        }
+                        $tierParts = array_filter([
+                            $deepOn ? "{$deepP}฿ (พื้นฐาน + ไพ่ 1 ใบ)" : null,
+                            $celticOn ? "{$celticP}฿ (Celtic ไพ่ 10 ใบ)" : null,
+                        ]);
+                        $tierDescr = empty($tierParts) ? '(ไม่มีแพคเกจให้เลือก)' : implode(' และ ', $tierParts);
+
+                        return "ผู้ใช้กำลังอยู่ขั้น \"เลือกแพคเกจ\" — มี {$tierDescr} — ตอบคำถามเขาให้เข้าใจ แล้วค่อยใบ้ให้เลือกแพคเกจตอนท้าย ห้ามบังคับเลือกทันที";
+                    })(),
                 ];
                 $contextHint = $contextMap[$flowContext] ?? '';
             }
