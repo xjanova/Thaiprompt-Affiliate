@@ -110,6 +110,14 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::get('/timeseries', [AiDashboardController::class, 'timeseries'])->name('timeseries');
     });
 
+    // ── AI: Per-provider Usage (Warroom /usage) ──
+    Route::get('ai/usage/per-provider', [AiDashboardController::class, 'perProviderUsage'])
+        ->name('api.admin.ai.usage.per-provider');
+
+    // ── Fortune: Worker queue monitor (Warroom /workers) ──
+    Route::get('fortune/workers/queue', [FortuneDashboardController::class, 'workersQueue'])
+        ->name('api.admin.fortune.workers.queue');
+
     // ── AI: Providers ──
     Route::prefix('ai/providers')->name('api.admin.ai.providers.')->group(function () {
         Route::get('/', [AiProvidersController::class, 'index'])->name('index');
