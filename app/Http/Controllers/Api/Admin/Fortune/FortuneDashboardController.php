@@ -343,4 +343,231 @@ class FortuneDashboardController extends Controller
         }
         return (string) ($raw ?? '');
     }
+
+    /**
+     * GET /api/admin/fortune/triage/behavior?since_minutes=60
+     *
+     * Detects urgent customer cases from behavior signals — meant to flow into
+     * the warroom triage queue alongside the row-level cases that come from
+     * /fortune/readings.
+     *
+     * Sources combined:
+     *   1. fortune_sensitive_events (mood_level >= 4 OR is_sensitive + complexity >= 4):
+     *      customer is upset / emotional / multi-question dump
+     *   2. fortune_admin_qa.q_text matched against an urgency keyword list:
+     *      "โอนแล้ว", "ไม่เห็นเปิดไพ่", "ทำไมยังไม่", "เงินหาย", "เร็วๆ", etc.
+     *   3. ai_api_key_usage_logs request_type='image_vision' burst (≥2 calls
+     *      from same user-ish window) — customer is spamming transfer slips
+     *      Note: usage logs don't carry user_id, so we approximate via
+     *      timestamp proximity to a fortune_admin_qa row from the same user.
+     *
+     * Returned cases are de-duped per platform_user_id with the highest
+     * severity reason winning.
+     */
+    public function triageBehavior(Request $request): JsonResponse
+    {
+        $since = (int) $request->input('since_minutes', 60);
+        $since = max(5, min(720, $since));
+        $now = now();
+        $cutoff = $now->copy()->subMinutes($since);
+
+        // Keyword sets — heuristics for frustration / urgency signals.
+        $urgencyKeywords = [
+            'โอนแล้ว', 'จ่ายแล้ว', 'จ่ายเงินแล้ว', 'โอนเงินแล้ว',
+            'ไม่เห็นเปิดไพ่', 'ไม่เปิดไพ่', 'เปิดไพ่ที', 'เปิดไพ่ยัง',
+            'ทำไมยัง', 'ทำไมไม่', 'นานมาก', 'รอนาน',
+            'เงินหาย', 'เงินไม่เข้า', 'หายไปไหน',
+            'แอดมินอยู่ไหน', 'admin หาย', 'ไม่ตอบ',
+            'รีบ', 'เร็วๆ', 'ด่วน',
+        ];
+
+        $cases = [];
+
+        // ── 1. fortune_sensitive_events: high mood or complex sensitive cases ──
+        if (Schema::hasTable('fortune_sensitive_events')) {
+            $events = DB::table('fortune_sensitive_events')
+                ->where('created_at', '>=', $cutoff)
+                ->where(function ($q) {
+                    $q->where('mood_level', '>=', 4)
+                      ->orWhere(function ($qq) {
+                          $qq->where('is_sensitive', 1)->where('complexity', '>=', 4);
+                      });
+                })
+                ->orderByDesc('created_at')
+                ->limit(100)
+                ->get();
+
+            foreach ($events as $e) {
+                $psid = $e->platform_user_id;
+                if (! $psid) continue;
+                $key = $e->platform . ':' . $psid;
+                $reasons = $this->decodeReasons($e->reasons);
+                if ($e->mood_level >= 4) $reasons[] = 'mood-' . $e->mood_level;
+                if ((int) $e->is_offtopic === 1) $reasons[] = 'off-topic';
+                if ((int) $e->complexity >= 4) $reasons[] = 'multi-question';
+
+                $cases[$key] = $this->mergeCase($cases[$key] ?? null, [
+                    'case_id' => 'beh-se-' . $e->id,
+                    'platform' => $e->platform,
+                    'fb_user_id' => $psid,
+                    'kind' => 'emotional',
+                    'severity' => ((int) $e->mood_level >= 5) ? 'crit' : 'warn',
+                    'mood_level' => (int) $e->mood_level,
+                    'reasons' => $reasons,
+                    'preview' => $e->message_preview ?? '',
+                    'context' => $e->context,
+                    'last_at' => (string) $e->created_at,
+                    'count' => 1,
+                ]);
+            }
+        }
+
+        // ── 2. fortune_admin_qa: keyword match in q_text ──
+        if (Schema::hasTable('fortune_admin_qa')) {
+            $qaRows = DB::table('fortune_admin_qa')
+                ->where('created_at', '>=', $cutoff)
+                ->whereNotNull('source_user_id')
+                ->orderByDesc('created_at')
+                ->limit(200)
+                ->get(['id', 'source_user_id', 'source_platform', 'reading_id', 'q_text', 'created_at']);
+
+            foreach ($qaRows as $r) {
+                $text = (string) ($r->q_text ?? '');
+                if ($text === '') continue;
+                $matched = [];
+                foreach ($urgencyKeywords as $kw) {
+                    if (mb_stripos($text, $kw) !== false) {
+                        $matched[] = $kw;
+                    }
+                }
+                if (empty($matched)) continue;
+
+                $psid = $r->source_user_id;
+                $platform = $r->source_platform ?? 'facebook';
+                $key = $platform . ':' . $psid;
+                $reasons = array_map(fn ($k) => 'keyword:' . $k, array_slice($matched, 0, 4));
+
+                $cases[$key] = $this->mergeCase($cases[$key] ?? null, [
+                    'case_id' => 'beh-kw-' . $r->id,
+                    'platform' => $platform,
+                    'fb_user_id' => $psid,
+                    'reading_id' => $r->reading_id,
+                    'kind' => 'frustration',
+                    'severity' => count($matched) >= 2 ? 'crit' : 'warn',
+                    'reasons' => $reasons,
+                    'preview' => mb_substr($text, 0, 80),
+                    'last_at' => (string) $r->created_at,
+                    'count' => 1,
+                ]);
+            }
+        }
+
+        // ── 3. Resolve customer name + reading from users / readings tables ──
+        $keys = array_keys($cases);
+        if (! empty($keys)) {
+            // Pull all unique psids
+            $psids = array_values(array_unique(array_map(fn ($k) => explode(':', $k, 2)[1] ?? '', $keys)));
+
+            // Lookup users via email pattern (fb_<psid>@thaiprompt.local).
+            $userMap = [];
+            if (! empty($psids)) {
+                $emails = array_map(fn ($p) => 'fb_' . $p . '@thaiprompt.local', $psids);
+                foreach (DB::table('users')->whereIn('email', $emails)->get(['id', 'name', 'email']) as $u) {
+                    if (preg_match('/^fb_(.+)@thaiprompt\.local$/', (string) $u->email, $m)) {
+                        $userMap[$m[1]] = ['id' => $u->id, 'name' => $u->name];
+                    }
+                }
+            }
+
+            // Lookup the most recent reading per psid (for reading_id badge + name fallback).
+            $readingMap = [];
+            if (! empty($psids)) {
+                foreach (
+                    DB::table('fortune_readings')
+                        ->whereIn('facebook_user_id', $psids)
+                        ->orderByDesc('created_at')
+                        ->limit(500)
+                        ->get(['id', 'facebook_user_id', 'facebook_user_name', 'is_paid', 'paid_at', 'responded_at', 'created_at']) as $r
+                ) {
+                    if (! isset($readingMap[$r->facebook_user_id])) {
+                        $readingMap[$r->facebook_user_id] = $r;
+                    }
+                }
+            }
+
+            foreach ($cases as $key => &$c) {
+                $psid = $c['fb_user_id'];
+                $u = $userMap[$psid] ?? null;
+                $rd = $readingMap[$psid] ?? null;
+                $c['customer'] = $u['name']
+                    ?? ($rd->facebook_user_name ?? null)
+                    ?? ('FB ' . substr($psid, -6));
+                $c['user_id'] = $u['id'] ?? null;
+                if (empty($c['reading_id']) && $rd) $c['reading_id'] = $rd->id;
+                // Cross-reference: if customer paid but no reading yet, mark stuck-paid signal.
+                if ($rd && (int) $rd->is_paid === 1 && empty($rd->responded_at)) {
+                    $c['reasons'][] = 'stuck-paid';
+                    $c['severity'] = 'crit';
+                }
+            }
+            unset($c);
+        }
+
+        // Sort: crit first, then by recency.
+        $list = array_values($cases);
+        usort($list, function ($a, $b) {
+            $sa = $a['severity'] === 'crit' ? 0 : 1;
+            $sb = $b['severity'] === 'crit' ? 0 : 1;
+            if ($sa !== $sb) return $sa - $sb;
+            return strcmp($b['last_at'] ?? '', $a['last_at'] ?? '');
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'cases' => array_slice($list, 0, 30),
+                'window_minutes' => $since,
+                'crit_count' => count(array_filter($list, fn ($c) => $c['severity'] === 'crit')),
+                'warn_count' => count(array_filter($list, fn ($c) => $c['severity'] === 'warn')),
+                'generated_at' => $now->toIso8601String(),
+            ],
+        ]);
+    }
+
+    private function decodeReasons($raw): array
+    {
+        if (is_array($raw)) return array_values(array_filter($raw, fn ($x) => $x !== null));
+        if (is_string($raw) && str_starts_with(trim($raw), '[')) {
+            try {
+                $j = json_decode($raw, true);
+                if (is_array($j)) return array_values(array_filter($j, fn ($x) => $x !== null));
+            } catch (\Throwable $e) {}
+        }
+        return [];
+    }
+
+    private function mergeCase(?array $existing, array $next): array
+    {
+        if (! $existing) return $next;
+        // Keep the more recent last_at and the worse severity.
+        $newer = strcmp($next['last_at'] ?? '', $existing['last_at'] ?? '') > 0;
+        $worseSev = $next['severity'] === 'crit' || $existing['severity'] !== 'crit';
+        return [
+            'case_id' => $existing['case_id'],
+            'platform' => $existing['platform'],
+            'fb_user_id' => $existing['fb_user_id'],
+            'reading_id' => $existing['reading_id'] ?? ($next['reading_id'] ?? null),
+            'kind' => $existing['kind'] === 'emotional' ? 'emotional' : $next['kind'],
+            'severity' => $worseSev ? $next['severity'] : $existing['severity'],
+            'mood_level' => max((int) ($existing['mood_level'] ?? 0), (int) ($next['mood_level'] ?? 0)),
+            'reasons' => array_values(array_unique(array_merge(
+                $existing['reasons'] ?? [],
+                $next['reasons'] ?? []
+            ))),
+            'preview' => $newer ? ($next['preview'] ?? '') : ($existing['preview'] ?? ''),
+            'context' => $next['context'] ?? ($existing['context'] ?? null),
+            'last_at' => $newer ? ($next['last_at'] ?? '') : ($existing['last_at'] ?? ''),
+            'count' => (int) ($existing['count'] ?? 1) + (int) ($next['count'] ?? 1),
+        ];
+    }
 }

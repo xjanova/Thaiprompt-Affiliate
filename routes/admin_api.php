@@ -118,6 +118,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::get('fortune/workers/queue', [FortuneDashboardController::class, 'workersQueue'])
         ->name('api.admin.fortune.workers.queue');
 
+    // ── Fortune: Behavioral triage (Warroom dashboard triage queue) ──
+    Route::get('fortune/triage/behavior', [FortuneDashboardController::class, 'triageBehavior'])
+        ->name('api.admin.fortune.triage.behavior');
+
     // ── AI: Providers ──
     Route::prefix('ai/providers')->name('api.admin.ai.providers.')->group(function () {
         Route::get('/', [AiProvidersController::class, 'index'])->name('index');
