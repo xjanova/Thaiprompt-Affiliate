@@ -158,9 +158,16 @@ class FortuneStripeService
             $expiryMinutes = max(31, (int) ($this->settings->stripe_session_expiry_minutes ?? 30));
             $expiresAt = time() + ($expiryMinutes * 60);
 
+            // 🌙 (2026-05-23) Round 7 — Deep ปิด → ใช้ generic name ไม่ระบุ "(เชิงลึก)"
+            //   ลูกค้าเห็นชื่อนี้บน Stripe Checkout page → ต้องสะอาด
+            //   ถ้า Deep ปิดแล้วลูกค้ายังมีบิล Deep ค้าง (legacy) + จ่ายผ่าน Stripe → label generic
+            $deepEnabledStripe = (bool) ($this->settings->isDeepReadingEnabled());
+            $brandName = $this->settings->getFortuneBrandName();
             $packageName = $isCeltic
-                ? 'ดูดวงไพ่ 10 ใบ Celtic Cross'
-                : 'ดูดวงแม่หมอจันทรา (เชิงลึก)';
+                ? "ดูดวงไพ่ 10 ใบ Celtic Cross ({$brandName})"
+                : ($deepEnabledStripe
+                    ? "ดูดวง{$brandName} (เชิงลึก)"
+                    : "ดูดวง{$brandName}");
 
             // 🛒 Line items
             //   1. ราคาแพ็กเกจ (39 / 99) — integer THB เสมอ
