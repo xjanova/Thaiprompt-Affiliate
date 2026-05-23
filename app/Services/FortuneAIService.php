@@ -2998,6 +2998,33 @@ PROMPT;
             $message .= "\n\n[สำคัญ] บริการดูดวงฟรีถูกปิดชั่วคราว — ห้ามพูดถึงฟรีเลย ถ้าลูกค้าถามเรื่องราคา ให้ตอบว่าเป็น 'ค่าครู' ทุกครั้ง ไม่ใช่ 'ค่าบริการ'";
         }
 
+        // 🌙 (2026-05-23) ถ้าปิด Deep → override mentions ทั้งหมดใน template ด้านบน
+        //   ป้องกัน AI quote "ดูดวงเชิงลึก 39 บาท" ตอนที่ admin ปิด feature แล้ว
+        $deepEnabledForOverride = $this->settings->isDeepReadingEnabled();
+        if (! $deepEnabledForOverride) {
+            $celticEnabledOverride = (bool) ($this->settings->enable_celtic_cross ?? false);
+            $celticPriceOverride = 99;
+            if ($celticEnabledOverride) {
+                try {
+                    $celticPriceOverride = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                } catch (\Throwable $e) {
+                }
+            }
+
+            $message .= "\n\n[🌙 บริการ \"ดูดวงเชิงลึก\" (Deep Reading) ปิดชั่วคราว — OVERRIDE ALL Deep mentions ABOVE]\n";
+            if ($celticEnabledOverride) {
+                $message .= "- ทุกที่ที่ prompt ด้านบนพูดถึง 'ดูดวงเชิงลึก' / 'Deep Reading' / 'ค่าครู 39' / '{$deepReadingPrice}' → เปลี่ยนเป็น 'ไพ่ Celtic Cross 10 ใบ ค่าครู {$celticPriceOverride} บาท'\n"
+                    ."- Tag: ห้ามใช้ [DEEP_READING] — ใช้ [OFFER_FORTUNE] แทน\n"
+                    ."- Affiliate level 1/2: 'ทุกครั้งที่เพื่อนใช้บริการ' (ไม่ระบุ 'ดูดวงเชิงลึก')\n"
+                    ."- ถ้าลูกค้าพิมพ์ '39' / 'ดูดวง 39' / 'เชิงลึก' / 'ละเอียด' → ตอบ:\n"
+                    ."  'ขออภัยค่ะ — ดูดวงเชิงลึก 39 บาท หมดช่วงโปรแล้ว แม่หมอมีแพคเกจไพ่ Celtic Cross 10 ใบ {$celticPriceOverride} บาท แทนได้ค่ะ ✨'\n";
+            } else {
+                $message .= "- ทุกที่ที่ prompt ด้านบนพูดถึง 'ดูดวงเชิงลึก' / 'Deep Reading' / 'ค่าครู' / '{$deepReadingPrice}' → ตอบ 'บริการดูดวงปิดชั่วคราว'\n"
+                    ."- ห้ามใส่ tag [DEEP_READING] / [OFFER_FORTUNE]\n"
+                    ."- Affiliate level 1/2: ห้ามอ้างถึงค่าแนะนำ\n";
+            }
+        }
+
         // 🎯 UX directive ย้ายไป appendUxFriendlyDirective() (review L3 fix)
         //   เพื่อให้ใช้ได้แม้ admin ตั้ง custom chat_system_prompt
 

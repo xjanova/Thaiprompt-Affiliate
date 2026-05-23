@@ -187,10 +187,22 @@ class ProcessCommentEngagement implements ShouldQueue
             // 4. ส่ง inbox พร้อม Quick Replies
             // ส่ง comment_id เพื่อให้ใช้ Private Replies endpoint (bypass 24hr window
             // และแก้ error 551 "บุคคลนี้ไม่พร้อมใช้งาน" สำหรับ user ที่ไม่เคยทักเพจ)
+            // 🌙 (2026-05-23) Deep ปิด = ไม่โชว์ปุ่ม Deep — swap เป็น Celtic ถ้าเปิด
+            $deepEnabledQR = $settings->isDeepReadingEnabled();
+            $celticEnabledQR = (bool) ($settings->enable_celtic_cross ?? false);
             $quickReplies = [
                 ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'FORTUNE_BASIC'],
-                ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
             ];
+            if ($deepEnabledQR) {
+                $quickReplies[] = ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'];
+            } elseif ($celticEnabledQR) {
+                $celticPriceQR = 99;
+                try {
+                    $celticPriceQR = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                } catch (\Throwable $e) {
+                }
+                $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+            }
 
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
             // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)

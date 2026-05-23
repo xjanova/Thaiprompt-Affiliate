@@ -524,7 +524,15 @@ class DailyHoroscopeAutoPostService
                 imagettftext($img, 60, 0, 80, 580, $white, $fontPath, $cardName);
                 imagettftext($img, 32, 0, 80, 640, $cream, $fontPath, $position);
                 imagettftext($img, 28, 0, 80, 1000, $gold, $fontPath, '✨ แม่หมอจันทรา • thaiprompt');
-                imagettftext($img, 22, 0, 80, 1040, $cream, $fontPath, 'ดูดวงเชิงลึกทักแชทมาเลย');
+
+                // 🌙 (2026-05-23) CTA text ตาม toggle — ไม่ฮาร์ดโค้ด "ดูดวงเชิงลึก" ถ้า Deep ปิด
+                $settings = \App\Models\FortuneTellingSetting::getSettings();
+                $deepEnabled = $settings->isDeepReadingEnabled();
+                $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+                $ctaText = $deepEnabled
+                    ? 'ดูดวงเชิงลึกทักแชทมาเลย'
+                    : ($celticEnabled ? 'ทักแชทดูไพ่ Celtic 10 ใบ' : 'ทักแชทดูดวงได้เลย');
+                imagettftext($img, 22, 0, 80, 1040, $cream, $fontPath, $ctaText);
             } else {
                 imagestring($img, 5, 80, 100, "Day: {$dayName}", $gold);
                 imagestring($img, 4, 80, 580, ($card?->name_en ?: 'Tarot'), $white);

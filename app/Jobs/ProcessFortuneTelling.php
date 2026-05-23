@@ -167,14 +167,30 @@ class ProcessFortuneTelling implements ShouldQueue
             // ส่งผลกลับไปที่ Facebook
             $this->sendResponse($facebookService, $reading, $aiResponse['response']);
 
+            // 🌙 (2026-05-23) Quick Replies dynamic ตาม toggle — Deep ปิด = ไม่โชว์ปุ่ม Deep
+            $deepEnabledQR = $settings->isDeepReadingEnabled();
+            $celticEnabledQR = (bool) ($settings->enable_celtic_cross ?? false);
+            $celticPriceQR = 99;
+            if ($celticEnabledQR) {
+                try {
+                    $celticPriceQR = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+                } catch (\Throwable $e) {
+                }
+            }
+
             // หลังส่งคำทำนายเชิงลึกฟรี ส่ง quick replies แนะนำสมัครสมาชิก
             if ($isDeep && $settings->isTryBeforeBuyEnabled() && ! $isComment && $fromId) {
                 $tryBeforeBuyMsg = $settings->getTryBeforeBuyMessage();
-                $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, [
+                $tryQR = [
                     ['title' => 'ดูดวงอีกครั้ง', 'payload' => 'FORTUNE_BASIC'],
-                    ['title' => 'ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
-                    ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'],
-                ]);
+                ];
+                if ($deepEnabledQR) {
+                    $tryQR[] = ['title' => 'ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'];
+                } elseif ($celticEnabledQR) {
+                    $tryQR[] = ['title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+                }
+                $tryQR[] = ['title' => 'สมัครสมาชิก', 'payload' => 'SUBSCRIBE'];
+                $facebookService->sendQuickReplies($fromId, $tryBeforeBuyMsg, $tryQR);
             }
 
             // ส่งข้อความชวนเพื่อนมาดูดวง (ทุกประเภท, เฉพาะ Messenger)
@@ -184,10 +200,15 @@ class ProcessFortuneTelling implements ShouldQueue
                 $referMsg .= "📲 ส่งต่อให้เพื่อนๆ มาลองดูดวงด้วยกันสิคะ! แค่แชร์เพจเราให้เพื่อน แล้วบอกให้พิมพ์ \"ดูดวง\" ได้เลย 🔮\n";
                 $referMsg .= '🌟 ยิ่งบอกวันเกิดด้วย ยิ่งแม่นค่ะ!';
 
-                $facebookService->sendQuickReplies($fromId, $referMsg, [
+                $referQR = [
                     ['content_type' => 'text', 'title' => '🔮 ดูดวงอีก', 'payload' => 'FORTUNE_BASIC'],
-                    ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'],
-                ]);
+                ];
+                if ($deepEnabledQR) {
+                    $referQR[] = ['content_type' => 'text', 'title' => '🌟 ดูดวงเชิงลึก', 'payload' => 'FORTUNE_DEEP'];
+                } elseif ($celticEnabledQR) {
+                    $referQR[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
+                }
+                $facebookService->sendQuickReplies($fromId, $referMsg, $referQR);
             }
 
             // Log success

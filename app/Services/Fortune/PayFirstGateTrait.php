@@ -71,9 +71,15 @@ trait PayFirstGateTrait
         $name = $bill->facebook_user_name ?? 'คุณ';
         $billRef = $bill->bill_reference ?? '-';
         $isCeltic = $bill->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
+        // 🌙 (2026-05-23) ใช้ราคาจริงจากบิล — ไม่ฮาร์ดโค้ด 39/99
+        //   ลูกค้าค้างบิลรู้ราคาตัวเองอยู่แล้ว + setting อาจเปลี่ยน — pull จาก amount_paid
+        //   ถ้า amount_paid null/0 → ไม่แสดงราคาเลย (กัน "Cross -฿" / "ดูดวงเชิงลึก 0฿")
+        $billAmountSuffix = $bill->amount_paid
+            ? ' '.number_format((float) $bill->amount_paid, 0).'฿'
+            : '';
         $packageLabel = $isCeltic
-            ? FortuneLocaleService::lo('🔮 Celtic Cross 99฿', '🔮 Celtic Cross 99฿')
-            : FortuneLocaleService::lo('🔹 ดูดวง 39฿', '🔹 ເບິ່ງດວງ 39฿');
+            ? FortuneLocaleService::lo("🔮 Celtic Cross{$billAmountSuffix}", "🔮 Celtic Cross{$billAmountSuffix}")
+            : FortuneLocaleService::lo("🔹 ดูดวงเชิงลึก{$billAmountSuffix}", "🔹 ເບິ່ງດວງເຊີງເລິກ{$billAmountSuffix}");
 
         $isExpired = $bill->conversation_status === FortuneReading::STATUS_COMPLETED;
         $payAmount = $bill->amount_paid

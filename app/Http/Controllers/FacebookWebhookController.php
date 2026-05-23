@@ -2616,10 +2616,22 @@ class FacebookWebhookController extends Controller
             ."ถ้าสนใจให้แม่หมอทำนายดวง\n"
             .'พิมพ์ "ดูดวง" มาได้เลยนะคะ 🔮';
 
+        // 🌙 (2026-05-23) Deep ปิด → ไม่โชว์ปุ่ม Deep — swap เป็น Celtic ถ้าเปิด
+        $deepEnabledArn = $this->settings->isDeepReadingEnabled();
+        $celticEnabledArn = (bool) ($this->settings->enable_celtic_cross ?? false);
         $quickReplies = [
             ['content_type' => 'text', 'title' => '🔮 ดูดวง', 'payload' => 'MENU_FORTUNE'],
-            ['content_type' => 'text', 'title' => '🌟 ดูดวง', 'payload' => 'MENU_DEEP_FORTUNE'],
         ];
+        if ($deepEnabledArn) {
+            $quickReplies[] = ['content_type' => 'text', 'title' => '🌟 ดูดวง', 'payload' => 'MENU_DEEP_FORTUNE'];
+        } elseif ($celticEnabledArn) {
+            $celticPriceArn = 99;
+            try {
+                $celticPriceArn = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+            $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceArn}฿", 'payload' => 'TIER_CELTIC_99'];
+        }
 
         $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
 
@@ -2650,11 +2662,20 @@ class FacebookWebhookController extends Controller
             ."📍 https://xman4289.com\n\n"
             .'💼 สนใจให้ทำระบบให้องค์กร? — ติดต่อได้ที่ xman studio';
 
-        $this->sendButtons($senderId, $message, [
+        // 🌙 (2026-05-23) Deep ปิด → swap ปุ่ม Deep เป็น Celtic ถ้าเปิด ไม่งั้นซ่อน
+        $deepEnabledAu = $this->settings->isDeepReadingEnabled();
+        $celticEnabledAu = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $aboutButtons = [
             ['type' => 'web_url', 'title' => '🌐 เยี่ยมชม xman studio', 'url' => 'https://xman4289.com'],
-            ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
-            ['type' => 'postback', 'title' => '👥 ชวนเพื่อน', 'payload' => 'MENU_REFERRAL'],
-        ]);
+        ];
+        if ($deepEnabledAu) {
+            $aboutButtons[] = ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'];
+        } elseif ($celticEnabledAu) {
+            $aboutButtons[] = ['type' => 'postback', 'title' => '🔮 ไพ่ Celtic Cross', 'payload' => 'TIER_CELTIC_99'];
+        }
+        $aboutButtons[] = ['type' => 'postback', 'title' => '👥 ชวนเพื่อน', 'payload' => 'MENU_REFERRAL'];
+
+        $this->sendButtons($senderId, $message, $aboutButtons);
 
         Log::info('🔍 About Us shown', ['user_id' => $senderId]);
     }
@@ -2678,10 +2699,19 @@ class FacebookWebhookController extends Controller
             ."✅ ถอนเงินได้เมื่อยืนยันตัวตน (KYC)\n\n"
             .'👉 กดปุ่มด้านล่างเพื่อสมัคร — ใช้เวลา 10 วินาที';
 
-        $this->sendButtons($senderId, $message, [
+        // 🌙 (2026-05-23) Deep ปิด → swap ปุ่ม Deep เป็น Celtic ถ้าเปิด
+        $deepEnabledRg = $this->settings->isDeepReadingEnabled();
+        $celticEnabledRg = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $registerButtons = [
             ['type' => 'web_url', 'title' => '📝 สมัครด้วย Facebook', 'url' => $registerUrl, 'webview_height_ratio' => 'full'],
-            ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'],
-        ]);
+        ];
+        if ($deepEnabledRg) {
+            $registerButtons[] = ['type' => 'postback', 'title' => '💎 ดูดวงเชิงลึก', 'payload' => 'MENU_DEEP_FORTUNE'];
+        } elseif ($celticEnabledRg) {
+            $registerButtons[] = ['type' => 'postback', 'title' => '🔮 ไพ่ Celtic Cross', 'payload' => 'TIER_CELTIC_99'];
+        }
+
+        $this->sendButtons($senderId, $message, $registerButtons);
 
         Log::info('📝 Register menu shown', ['user_id' => $senderId]);
     }
@@ -3932,10 +3962,14 @@ class FacebookWebhookController extends Controller
         $recruitUrl = $appUrl.'/auth/line?redirect=/user/fortune-referral/recruit';
         $wealthUrl = $appUrl.'/wealth-guide';
 
+        // 🌙 (2026-05-23) ปรับ wording ตาม toggle — ไม่อ้าง "ดูดวงเชิงลึก" ถ้า Deep ปิด
+        $deepEnabledEi = $this->settings->isDeepReadingEnabled();
+        $earnTier = $deepEnabledEi ? 'ดูดวงเชิงลึก' : 'ดูดวง';
+
         $this->facebookService->sendButtonTemplate($senderId, [
             'template_type' => 'button',
             'text' => "📢 เชิญเพื่อนมาดูดวง — ได้รายได้จริง!\n\n"
-                ."💰 ทุกครั้งที่เพื่อนคุณดูดวงเชิงลึก คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
+                ."💰 ทุกครั้งที่เพื่อนคุณ{$earnTier} คุณจะได้ค่าแนะนำเข้า Wallet ทันที\n"
                 .'🔗 กดศึกษาวิธีและรับลิงก์เชิญเพื่อนได้ด้านล่าง',
             'buttons' => [
                 ['type' => 'web_url', 'title' => '🔗 รับลิงก์เชิญเพื่อน', 'url' => $recruitUrl],
@@ -3953,10 +3987,14 @@ class FacebookWebhookController extends Controller
         $pageId = $this->settings->facebook_page_id ?? null;
         $pageUrl = $pageId ? "https://www.facebook.com/{$pageId}" : config('app.url');
 
+        // 🌙 (2026-05-23) ปรับ wording ตาม toggle — ไม่อ้าง "ดูดวงเชิงลึก" ถ้า Deep ปิด
+        $deepEnabledSp = $this->settings->isDeepReadingEnabled();
+        $shareTier = $deepEnabledSp ? 'ดูดวงเชิงลึก' : 'ดูดวง';
+
         $this->facebookService->sendButtonTemplate($senderId, [
             'template_type' => 'button',
             'text' => "🙏 ขอบคุณที่ใช้บริการ!\n\n"
-                .'📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมาดูดวงเชิงลึก คุณได้ค่าแนะนำเข้า Wallet',
+                ."📢 แชร์เพจนี้ให้เพื่อน — ทุกครั้งที่เพื่อนมา{$shareTier} คุณได้ค่าแนะนำเข้า Wallet",
             'buttons' => [
                 ['type' => 'web_url', 'title' => '📤 แชร์เพจให้เพื่อน', 'url' => $pageUrl],
                 ['type' => 'postback', 'title' => '📢 ดูวิธีรับรายได้', 'payload' => 'FORTUNE_EARN_INFO'],
