@@ -135,21 +135,35 @@ class ProcessCommentEngagement implements ShouldQueue
                 'has_profile' => ! empty($userProfile),
             ]);
 
-            // 2. AI สร้าง comment_reply (public reply ในคอมเม้นต์) — context-aware
-            //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
-            //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
-            try {
-                $engagement = $aiService->generateCommentEngagement(
-                    $commentText,
-                    $userProfile
-                );
-                $commentReply = $engagement['comment_reply'] ?? '';
-            } catch (Throwable $aiError) {
-                Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+            // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
+            //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
+            //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
+            //    Speedup: AI call 2-3s → matcher 1-2ms = ~3× throughput per worker
+            $commentReply = $this->matchCommonGratitudePattern($commentText, $name);
+            $usedTemplate = $commentReply !== null;
+
+            if ($usedTemplate) {
+                Log::info('⚡ Comment Engagement: matched common pattern (skip AI)', [
                     'user_id' => $userId,
-                    'error' => $aiError->getMessage(),
+                    'comment_preview' => mb_substr($commentText, 0, 30),
                 ]);
-                $commentReply = '';
+            } else {
+                // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
+                //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
+                //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
+                try {
+                    $engagement = $aiService->generateCommentEngagement(
+                        $commentText,
+                        $userProfile
+                    );
+                    $commentReply = $engagement['comment_reply'] ?? '';
+                } catch (Throwable $aiError) {
+                    Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                        'user_id' => $userId,
+                        'error' => $aiError->getMessage(),
+                    ]);
+                    $commentReply = '';
+                }
             }
 
             // Comment reply fallback ถ้า AI คืน empty
@@ -275,5 +289,146 @@ class ProcessCommentEngagement implements ShouldQueue
             'data' => $this->data,
             'error' => $exception->getMessage(),
         ]);
+    }
+
+    /**
+     * ⚡ (2026-05-23) Phase 2 — Common gratitude pattern matcher
+     *
+     * ลูกค้าส่วนใหญ่ comment สั้น ("สาธุ", "🙏", "น้อมรับ", "รับค่ะ") — ซ้ำซากมาก
+     * → ไม่จำเป็นต้องใช้ AI gen (เปลือง 2-3s + token cost)
+     * → match pattern → ใช้ canned reply ที่มี variation 4-6 แบบ (ดูไม่ spam)
+     *
+     * @param  string  $commentText  ข้อความคอมเม้นต์ดิบ
+     * @param  string  $name         ชื่อลูกค้า (มาจาก FB profile)
+     * @return string|null  reply ถ้า match, null ถ้าไม่ตรง (caller จะ fallback ไป AI)
+     */
+    protected function matchCommonGratitudePattern(string $commentText, string $name): ?string
+    {
+        $normalized = $this->normalizeForPatternMatch($commentText);
+
+        // ข้อความเปล่า (เป็น emoji ล้วน) → handle ด้วย emoji branch ด้านล่าง
+        // ข้อความยาวเกิน 25 ตัว → น่าจะเป็นคำถาม/คำสั่ง ไม่ match
+        if (mb_strlen($normalized) > 25) {
+            return null;
+        }
+
+        $isLao = \App\Services\FortuneLocaleService::current() === \App\Services\FortuneLocaleService::LOCALE_LO;
+
+        // 🙏 Blessing/gratitude patterns (Thai + Lao)
+        $blessingPatterns = [
+            // Thai — สาธุ family
+            '/^(สาธุ|สาทุ){1,3}(ค่ะ|ครับ|คะ|นะ|ๆ)*$/u',
+            // Thai — น้อมรับ family
+            '/^(ขอ)?น้อมรับ(ค่ะ|ครับ|คะ|พลัง|คำทำนาย|พร|สิ่งดีๆ|ๆ|\s)*$/u',
+            // Thai — รับ family (sole "รับ" mean accept reading offer)
+            '/^รับ(ค่ะ|ครับ|คะ|นะ|เลย|ๆ)*$/u',
+            // Thai — ขอบคุณ family
+            '/^ขอบคุณ(ค่ะ|ครับ|คะ|นะ|มาก|มากๆ|มากค่ะ)*$/u',
+            // Thai — อาเมน / amen
+            '/^(อาเมน|อามีน|amen)$/iu',
+            // Thai — ฟ้าเปิด
+            '/^ฟ้าเปิด(ทาง|ค่ะ|ครับ|แล้ว|ๆ)*$/u',
+            // Thai — ดวงพุ่ง/ดวงดี
+            '/^ดวง(พุ่ง|ดี|เปิด)(แรง|ค่ะ|ครับ|มาก|ๆ)*$/u',
+            // Thai — เปลี่ยน (ตอบโพสต์ "ใครอยากเปลี่ยนชีวิตคอมเม้นเปลี่ยน")
+            '/^เปลี่ยน(ค่ะ|ครับ|คะ|นะ|ๆ)*$/u',
+            // Thai — สวัสดี / ทักทาย
+            '/^(สวัสดี|สวัสดีค่ะ|สวัสดีครับ|หวัดดี|หวัดดีค่ะ|hi|hello)$/iu',
+
+            // Lao — ສາທຸ family
+            '/^(ສາທຸ){1,3}(ເດີ|ໆ)*$/u',
+            // Lao — ນ້ອມຮັບ
+            '/^ນ້ອມຮັບ(ເດີ|ໆ|ພະລັງ|ຄຳທຳນາຍ)*$/u',
+            // Lao — ຮັບ
+            '/^ຮັບ(ເດີ|ໆ)*$/u',
+            // Lao — ຂອບໃຈ
+            '/^ຂອບໃຈ(ເດີ|ຫຼາຍ|ໆ)*$/u',
+            // Lao — ລັບເງີນ (blessing pattern Lao mai)
+            '/^ລັບເງີນ(ສາທຸ|ເດີ)*$/u',
+        ];
+
+        foreach ($blessingPatterns as $pattern) {
+            if (preg_match($pattern, $normalized)) {
+                return $this->pickCannedReply($name, $isLao, 'blessing');
+            }
+        }
+
+        // 💖 Emoji-only or emoji+short — single sentiment expression
+        //   เช็คทั้ง original (มี emoji) — ถ้า normalized ว่าง = emoji ล้วน
+        if (mb_strlen($normalized) === 0) {
+            return $this->pickCannedReply($name, $isLao, 'emoji');
+        }
+
+        // Mixed: emoji + 1-2 ตัวอักษร (เช่น "🙏ค่ะ", "❤️")
+        $stripped = preg_replace('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{1F600}-\x{1F64F}\x{2700}-\x{27BF}\x{2B00}-\x{2BFF}\s]/u', '', $commentText);
+        if (mb_strlen(trim($stripped)) <= 2 && mb_strlen($commentText) > 0) {
+            return $this->pickCannedReply($name, $isLao, 'emoji');
+        }
+
+        return null;
+    }
+
+    /**
+     * Normalize ข้อความสำหรับ pattern matching
+     *  - ตัด emoji, whitespace, punctuation ที่ขอบ
+     *  - lower case
+     */
+    protected function normalizeForPatternMatch(string $text): string
+    {
+        // ตัด emoji (BMP + supplementary planes)
+        $stripped = preg_replace('/[\x{1F300}-\x{1F9FF}\x{2600}-\x{27BF}\x{1F600}-\x{1F64F}\x{2700}-\x{27BF}\x{2B00}-\x{2BFF}]/u', '', $text);
+        // ตัด punctuation พื้นฐาน
+        $stripped = preg_replace('/[\.,\-\!\?\"\'`~@#\$%\^&\*\(\)\[\]\{\}<>\/\\\\|_=\+]+/u', '', $stripped);
+        // collapse whitespace
+        $stripped = preg_replace('/\s+/u', '', $stripped);
+        return mb_strtolower(trim($stripped));
+    }
+
+    /**
+     * เลือก canned reply ตาม category + locale (มี variation กัน FB spam detection)
+     *
+     * @param  string  $name      ชื่อลูกค้า
+     * @param  bool    $isLao     true = ภาษาลาว, false = ไทย
+     * @param  string  $category  'blessing' | 'emoji'
+     * @return string  reply ที่ใส่ name แล้ว
+     */
+    protected function pickCannedReply(string $name, bool $isLao, string $category): string
+    {
+        if ($category === 'blessing') {
+            $replies = $isLao ? [
+                'ສາທຸເດີ {name} 🙏 ຂໍໃຫ້ດວງດີຕະຫຼອດອາທິດນີ້',
+                'ນ້ອມຮັບພອນດີໆ {name} 💖 ຂໍໃຫ້ສຸກສະບາຍ',
+                'ຂອບໃຈເດີ {name} 🌟 ສົ່ງພະລັງບວກໃຫ້ກັບເຊັ່ນກັນ',
+                'ສາທຸ ຟ້າເປີດທາງໃໝ່ໃຫ້ {name} 🙏✨',
+                'ນ້ອມຮັບພະລັງບວກເດີ {name} 💫',
+                'ຂໍໃຫ້ສົມຫວັງທຸກປະການເດີ {name} ✨',
+            ] : [
+                'สาธุค่ะ {name} 🙏 ขอให้ดวงพุ่งแรงทั้งสัปดาห์นี้',
+                'ขอให้สมหวังทุกประการค่ะคุณ {name} ✨',
+                'น้อมรับพรดีๆ ค่ะ {name} 💖 ขอให้สุขภาพแข็งแรงนะคะ',
+                'ขอบคุณค่ะ {name} 🌟 ส่งพลังบวกให้คุณกลับด้วยนะคะ',
+                'สาธุค่ะ ฟ้าเปิดทางใหม่ให้คุณ {name} 🙏✨',
+                'น้อมรับพลังบวกค่ะ {name} 💫 ขอให้สิ่งดีๆ เข้ามาทุกวัน',
+                'ขอให้ทุกอย่างราบรื่นนะคะ {name} 🌈',
+                'สาธุค่ะ ขอให้คุณ {name} โชคดีตลอดทั้งเดือน 🍀',
+            ];
+        } else { // emoji
+            $replies = $isLao ? [
+                '🙏 ສາທຸເດີ {name}',
+                '💖 ສົ່ງພະລັງບວກໃຫ້ {name}',
+                '✨ ຂໍໃຫ້ສຸກສະບາຍເດີ',
+                '🌟 ຂອບໃຈເດີ {name}',
+            ] : [
+                '💖 ขอให้คุณ {name} โชคดีค่ะ',
+                '🙏 สาธุค่ะ ขอพรดีๆ ตามมาเลย',
+                '✨ พลังบวกถึงคุณ {name} แล้วค่ะ',
+                '🌟 ขอบคุณค่ะคุณ {name}',
+                '💫 ส่งความปรารถนาดีกลับนะคะ',
+                '🌈 ขอให้วันนี้สดใสค่ะ {name}',
+            ];
+        }
+
+        $reply = $replies[array_rand($replies)];
+        return str_replace('{name}', $name, $reply);
     }
 }
