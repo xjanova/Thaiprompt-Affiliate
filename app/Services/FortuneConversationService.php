@@ -4716,7 +4716,12 @@ class FortuneConversationService
 
             // ✅ ตรวจสอบว่าเปิดใช้งานดูดวงละเอียดหรือไม่
             // 🌙 (2026-05-23) Deep 39฿ ปิด + Celtic 99฿ เปิด → redirect Celtic
-            if (! $this->settings->isDeepReadingEnabled()) {
+            // 🚨 (2026-05-23 HOTFIX) Skip ถ้า forceTier='celtic' แล้ว — กัน infinite recursion!
+            //   เคสเดิม: Deep ปิด → recursive call ด้วย forceTier='celtic' → เข้ามาที่นี่อีก
+            //            → !isDeepReadingEnabled() ยัง true → recursive อีก → stack overflow → บอทเงียบ
+            //   FIX: ถ้า forceTier='celtic' ส่งมาแล้ว = caller ตั้งใจให้ไป Celtic flow → ข้าม guard นี้
+            //        ปล่อยให้ flow ไหลไป line 4823 ที่ตรวจ forceTier='celtic' → startCelticCrossFlow
+            if (! $this->settings->isDeepReadingEnabled() && $forceTier !== 'celtic') {
                 Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
                     'facebook_user_id' => $facebookUserId,
                     'redirect_celtic' => (bool) ($this->settings->enable_celtic_cross ?? false),
