@@ -2571,10 +2571,21 @@ class FacebookWebhookController extends Controller
     protected function handleAffiliateRecruitYes(string $senderId): void
     {
         // ใช้ราคา dynamic จาก settings (ไม่ hardcode)
+        // 🌙 (2026-05-23) Deep ปิด — ใช้ Celtic price แทน + ปรับ wording
         $deepPrice = number_format($this->getDeepReadingPriceFromSettings(), 0);
+        $deepEnabledAr = $this->settings->isDeepReadingEnabled();
+        $celticEnabledAr = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $celticPriceAr = 99;
+        try {
+            $celticPriceAr = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+        }
+        $tierLine = $deepEnabledAr
+            ? "1️⃣ ดูดวงเชิงลึกกับแม่หมอ {$deepPrice} บาท/ครั้ง\n"
+            : ($celticEnabledAr ? "1️⃣ ดูดวงไพ่ Celtic Cross 10 ใบ {$celticPriceAr} บาท/ครั้ง\n" : "1️⃣ ดูดวงกับแม่หมอ\n");
 
         $message = "🎉 ยินดีค่ะ! วิธีเริ่มง่ายๆ 3 ขั้น\n\n"
-            ."1️⃣ ดูดวงเชิงลึกกับแม่หมอ {$deepPrice} บาท/ครั้ง\n"
+            .$tierLine
             ."2️⃣ หลังดูดวงเสร็จ → ได้เป็นสมาชิกอัตโนมัติ\n"
             ."3️⃣ รับลิงก์แชร์ส่วนตัว → แชร์ให้เพื่อน\n\n"
             ."💰 รายได้:\n"
@@ -2582,10 +2593,13 @@ class FacebookWebhookController extends Controller
             ."• เพื่อนชวนต่อ → ได้ส่วนแบ่งอีกชั้น (Level 2)\n\n"
             .'กดปุ่มด้านล่างเพื่อเริ่มเลยค่ะ ✨';
 
-        $quickReplies = [
-            ['content_type' => 'text', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'],
-            ['content_type' => 'text', 'title' => '🔮 ดูดวงก่อน', 'payload' => 'MENU_FORTUNE'],
-        ];
+        $quickReplies = [];
+        if ($deepEnabledAr) {
+            $quickReplies[] = ['content_type' => 'text', 'title' => "💎 เริ่มดูดวง {$deepPrice} บาท", 'payload' => 'MENU_DEEP_FORTUNE'];
+        } elseif ($celticEnabledAr) {
+            $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceAr}฿", 'payload' => 'TIER_CELTIC_99'];
+        }
+        $quickReplies[] = ['content_type' => 'text', 'title' => '🔮 ดูดวงก่อน', 'payload' => 'MENU_FORTUNE'];
 
         $this->facebookService->sendQuickReplies($senderId, $message, $quickReplies);
 
@@ -2689,10 +2703,21 @@ class FacebookWebhookController extends Controller
 
         if (! $isMember) {
             // ⛔ ยังไม่ใช่สมาชิก — pitch ให้ดูดวง 1 ครั้ง
+            // 🌙 (2026-05-23) Deep ปิด → ใช้ Celtic price ใน pitch
+            $deepEnabledRm = $this->settings->isDeepReadingEnabled();
+            $celticEnabledRm = (bool) ($this->settings->enable_celtic_cross ?? false);
+            $celticPriceRm = 99;
+            try {
+                $celticPriceRm = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+            $signupTier = $deepEnabledRm
+                ? "เพียงดูดวงเชิงลึก *1 ครั้ง* ({$deepPrice} บาท)\n"
+                : ($celticEnabledRm ? "เพียงดูดวงไพ่ Celtic Cross *1 ครั้ง* ({$celticPriceRm} บาท)\n" : "เพียงดูดวง *1 ครั้ง*\n");
             $message = "⚠️ ต้องเป็นสมาชิกก่อนนะคะ\n"
                 ."─────────────\n\n"
                 ."📋 *วิธีเป็นสมาชิก — ง่ายมาก:*\n"
-                ."เพียงดูดวงเชิงลึก *1 ครั้ง* ({$deepPrice} บาท)\n"
+                .$signupTier
                 ."ระบบจะลงทะเบียนให้อัตโนมัติทันที\n\n"
                 ."🎁 *สิทธิ์ที่ได้รับ:*\n"
                 ."• 💎 กระเป๋าเงินส่วนตัวในระบบ\n"

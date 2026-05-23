@@ -9022,19 +9022,45 @@ class FortuneConversationService
     protected function getHelpMessage(): string
     {
         $freeEnabled = $this->settings->isFreeReadingEnabled();
-        if ($freeEnabled) {
-            return "🔮 *ระบบดูดวง AI*\n\n".
-                   "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
-                   'หลังจากนั้นสามารถเลือกดูดวงเชิงลึกได้ ✨';
+        // 🌙 (2026-05-23) Guard Deep mentions
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        try {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
         }
 
-        $price = $this->getDeepReadingPrice();
+        if ($freeEnabled) {
+            $followUpLine = $deepEnabled
+                ? 'หลังจากนั้นสามารถเลือกดูดวงเชิงลึกได้ ✨'
+                : ($celticEnabled
+                    ? "หลังจากนั้นสามารถเลือก Celtic Cross 10 ใบ ({$celticPrice} บาท) ได้ ✨"
+                    : '✨');
+
+            return "🔮 *ระบบดูดวง AI*\n\n".
+                   "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงฟรี\n".
+                   $followUpLine;
+        }
 
         $brandName = $this->settings->getFortuneBrandName();
 
+        // 🌙 (2026-05-23) ไม่มี free — บอกราคา tier ที่ enable
+        if ($deepEnabled) {
+            $price = $this->getDeepReadingPrice();
+
+            return "🔮 *ระบบดูดวงโดย{$brandName}*\n\n".
+                   "พิมพ์ 'ดูดวง' เพื่อเริ่มใช้บริการ\n".
+                   "💎 ค่าครู {$price} บาท/ครั้ง ✨";
+        }
+        if ($celticEnabled) {
+            return "🔮 *ระบบดูดวงโดย{$brandName}*\n\n".
+                   "พิมพ์ 'ดูดวง' เพื่อเริ่มใช้บริการ\n".
+                   "🔮 Celtic Cross 10 ใบ — {$celticPrice} บาท/ครั้ง ✨";
+        }
+
         return "🔮 *ระบบดูดวงโดย{$brandName}*\n\n".
-               "พิมพ์ 'ดูดวง' เพื่อเริ่มใช้บริการ\n".
-               "💎 ค่าครู {$price} บาท/ครั้ง ✨";
+               '🙏 ขณะนี้บริการปิดชั่วคราว';
     }
 
     /**
@@ -13672,7 +13698,10 @@ PROMPT;
             $message = "🏦 บัญชีธนาคารสำหรับชำระเงิน\n\n";
             $message .= $this->getBankAccountsListMessage();
             $message .= "ℹ️ ตอนนี้ยังไม่มีบิลรอชำระค่ะ\n";
-            $message .= "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮";
+            // 🌙 (2026-05-23) ปรับข้อความตาม toggle — ไม่อ้าง "เชิงลึก" ถ้า Deep ปิด
+            $message .= $this->settings->isDeepReadingEnabled()
+                ? "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงเชิงลึกค่ะ 🔮"
+                : "พิมพ์ 'ดูดวง' เพื่อเริ่มดูดวงค่ะ 🔮";
 
             return [
                 'action' => 'bank_account_info',
@@ -16885,6 +16914,19 @@ PROMPT;
         try {
             $brandName = $this->settings->getFortuneBrandName();
             $price = number_format($this->getDeepReadingPrice(), 0);
+            // 🌙 (2026-05-23) Package label dynamic — Deep ปิด = ใช้ Celtic price อ้างอิง
+            $deepEnabledForMarketing = $this->settings->isDeepReadingEnabled();
+            $celticEnabledForMarketing = (bool) ($this->settings->enable_celtic_cross ?? false);
+            $celticPriceForMarketing = 99;
+            try {
+                $celticPriceForMarketing = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+            $packageLabel = $deepEnabledForMarketing
+                ? "ราคาดูดวงเชิงลึก: {$price} บาท/ครั้ง"
+                : ($celticEnabledForMarketing
+                    ? "ราคา Celtic Cross: {$celticPriceForMarketing} บาท/ครั้ง"
+                    : 'ราคาแพ็คเกจ: -');
 
             // ดึงค่าคอมมิชชั่น Level 1 + Level 2
             $readingPrice = (float) ($this->settings->deep_reading_price ?? 0);
@@ -16898,7 +16940,7 @@ PROMPT;
 
             $message = "💰 แผนค่าแนะนำ {$brandName}\n"
                 ."═══════════════════════\n\n"
-                ."📌 ราคาดูดวงเชิงลึก: {$price} บาท/ครั้ง\n\n"
+                ."📌 {$packageLabel}\n\n"
                 ."🏆 ค่าแนะนำ 2 ชั้น:\n"
                 ."┌─ ชั้น 1 (สายตรง): {$level1Amount} บาท/ครั้ง\n"
                 ."│  คุณแนะนำเพื่อน → เพื่อนดูดวง → คุณได้ค่าแนะนำ\n"
@@ -17458,7 +17500,7 @@ PROMPT;
             return [
                 'action' => 'discovery_exhausted',
                 'message' => "🌙 หมอจันทรารับฟังนานพอสมควรแล้วค่ะ\n\n"
-                    .'ถ้าตอนนี้พร้อมดูดวง พิมพ์ "ดูดวงเชิงลึก" — หมอจะเริ่มเปิดไพ่ให้ใหม่นะคะ ✨',
+                    .'ถ้าตอนนี้พร้อมดูดวง พิมพ์ "ดูดวง" — หมอจะเริ่มเปิดไพ่ให้ใหม่นะคะ ✨',
                 'reading' => $reading,
             ];
         }

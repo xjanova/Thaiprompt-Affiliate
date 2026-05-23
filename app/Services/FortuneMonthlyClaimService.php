@@ -277,6 +277,16 @@ class FortuneMonthlyClaimService
         $month = $this->thaiMonthName(Carbon::now('Asia/Bangkok')->month);
         $url = $this->landingUrl();
 
+        // 🌙 (2026-05-23) Closing line dynamic — ไม่ pitch Deep ถ้า toggle ปิด
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $deepOnClaim = $settings->isDeepReadingEnabled();
+        $celticOnClaim = (bool) ($settings->enable_celtic_cross ?? false);
+        $closingLine = $deepOnClaim
+            ? "💎 อยากดูดวงเชิงลึก? ทักแม่หมอใน Messenger ได้เลยค่ะ\n\n"
+            : ($celticOnClaim
+                ? "🔮 อยากดูดวงไพ่ Celtic Cross 10 ใบ? ทักแม่หมอใน Messenger ได้เลยค่ะ\n\n"
+                : "🔮 อยากดูดวงเพิ่มเติม? ทักแม่หมอใน Messenger ได้เลยค่ะ\n\n");
+
         return "🌙✨ สิทธิพิเศษเดือน{$month} ✨🌙\n\n"
             . "🎁 รับสิทธิ์ดูไพ่ฟรี 1 ใบ ประจำเดือน\n"
             . "🔮 สุ่มดูดวงส่วนตัวกับแม่หมอจันทรา (สำหรับสมาชิกในกลุ่ม)\n\n"
@@ -284,7 +294,7 @@ class FortuneMonthlyClaimService
             . "👉 {$url}\n\n"
             . "⏰ กดได้ครั้งเดียวต่อเดือน\n"
             . "🗓️ รีเซ็ตอัตโนมัติทุกวันที่ 1 ของเดือน\n\n"
-            . "💎 อยากดูดวงเชิงลึก? ทักแม่หมอใน Messenger ได้เลยค่ะ\n\n"
+            . $closingLine
             . "#แม่หมอจันทรา #ดูไพ่ฟรี #ดูดวง{$month}";
     }
 }

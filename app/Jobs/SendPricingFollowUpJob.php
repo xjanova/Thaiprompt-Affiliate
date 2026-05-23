@@ -97,9 +97,14 @@ class SendPricingFollowUpJob implements ShouldQueue
             $deepPrice = (int) ($this->pricing['deep_price'] ?? 39);
             $celticPrice = (int) ($this->pricing['celtic_price'] ?? 99);
             $celticEnabled = (bool) ($this->pricing['celtic_enabled'] ?? false);
+            // 🌙 (2026-05-23) prefer flag จาก pricing array (มาจาก presentPricingMenu)
+            //   fallback อ่าน settings ตรงถ้า key ไม่มี (backward compat)
+            $deepEnabled = isset($this->pricing['deep_enabled'])
+                ? (bool) $this->pricing['deep_enabled']
+                : $settings->isDeepReadingEnabled();
 
             $systemMessage = $this->buildSystemMessage($personaContext);
-            $userMessage = $this->buildUserMessage($deepPrice, $celticPrice, $celticEnabled);
+            $userMessage = $this->buildUserMessage($deepPrice, $celticPrice, $celticEnabled, $deepEnabled);
 
             $directKey = $settings->getChatAIApiKey();
 
@@ -210,12 +215,17 @@ class SendPricingFollowUpJob implements ShouldQueue
 EOT;
     }
 
-    private function buildUserMessage(int $deepPrice, int $celticPrice, bool $celticEnabled): string
+    private function buildUserMessage(int $deepPrice, int $celticPrice, bool $celticEnabled, bool $deepEnabled = true): string
     {
-        $packages = "แพ็คเกจ {$deepPrice} บาท (ดูดวงเชิงลึก)";
-        if ($celticEnabled) {
-            $packages .= " และ {$celticPrice} บาท (ไพ่ Celtic Cross 10 ใบ)";
+        // 🌙 (2026-05-23) Dynamic — ใส่เฉพาะ tier ที่ enable
+        $parts = [];
+        if ($deepEnabled) {
+            $parts[] = "{$deepPrice} บาท (ดูดวงเชิงลึก)";
         }
+        if ($celticEnabled) {
+            $parts[] = "{$celticPrice} บาท (ไพ่ Celtic Cross 10 ใบ)";
+        }
+        $packages = empty($parts) ? '(ไม่มีแพ็คเกจ)' : 'แพ็คเกจ '.implode(' และ ', $parts);
 
         return "ลูกค้าเพิ่งเห็นกล่องราคา: {$packages}\n"
             .'ช่วยอธิบายแบบสนทนาว่า "ค่าครู" คืออะไร และทำไมต้องมี — ด้วยน้ำเสียงแม่หมอ';

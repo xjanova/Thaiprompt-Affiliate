@@ -162,6 +162,66 @@ class FortuneRichMenuService
     public function getDefaultEditorConfig(): array
     {
         $price = number_format($this->lineService->getDeepReadingPrice(), 0);
+        // 🌙 (2026-05-23) Deep ปิด — default config ตั้งปุ่มแรกเป็น Celtic แทน
+        //   admin โหลด editor ครั้งแรก / fresh install จะไม่เห็น "ดูดวงเชิงลึก 39 บาท" ที่ทำให้ลูกค้าสับสน
+        //   ⚠️ ปุ่มจริงบน Rich Menu ปัจจุบัน = เก่า — ต้อง redeploy หลัง toggle เปลี่ยน
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $deepEnabled = $settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        try {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+            // default 99
+        }
+
+        $secondButton = $deepEnabled
+            ? [
+                'label' => 'ดูดวงเชิงลึก',
+                'subtitle' => "{$price} บาท",
+                'extra_text' => 'วิเคราะห์เจาะลึก + ดวงชะตา',
+                'icon' => 'star',
+                'bg_color' => '#8C6400',
+                'text_color' => '#FFFFFF',
+                'subtitle_color' => '#FFD700',
+                'font_size' => 56,
+                'subtitle_size' => 44,
+                'action_type' => 'postback',
+                'action_data' => 'action=deep_reading',
+                'display_text' => 'ดูดวง',
+                'glow' => false,
+            ]
+            : ($celticEnabled ? [
+                // 🌙 (2026-05-23) Deep ปิด แต่ Celtic เปิด — โชว์ Celtic Cross แทน
+                'label' => 'ไพ่ยิปซี 10 ใบ',
+                'subtitle' => "{$celticPrice} บาท",
+                'extra_text' => 'Celtic Cross โบราณดั้งเดิม',
+                'icon' => 'star',
+                'bg_color' => '#8C6400',
+                'text_color' => '#FFFFFF',
+                'subtitle_color' => '#FFD700',
+                'font_size' => 56,
+                'subtitle_size' => 44,
+                'action_type' => 'postback',
+                'action_data' => 'action=celtic_cross',
+                'display_text' => 'celtic',
+                'glow' => false,
+            ] : [
+                // Deep + Celtic ปิดทั้งคู่ — ปุ่มสำรอง "ดูคำทำนาย"
+                'label' => 'ดูคำทำนาย',
+                'subtitle' => 'ของฉัน',
+                'extra_text' => '',
+                'icon' => 'scroll',
+                'bg_color' => '#8C6400',
+                'text_color' => '#FFFFFF',
+                'subtitle_color' => '#FFD700',
+                'font_size' => 56,
+                'subtitle_size' => 44,
+                'action_type' => 'postback',
+                'action_data' => 'action=view_last_reading',
+                'display_text' => 'ดูคำทำนายล่าสุด',
+                'glow' => false,
+            ]);
 
         return [
             'theme' => [
@@ -188,21 +248,7 @@ class FortuneRichMenuService
                     'display_text' => '',
                     'glow' => true,
                 ],
-                [
-                    'label' => 'ดูดวงเชิงลึก',
-                    'subtitle' => "{$price} บาท",
-                    'extra_text' => 'วิเคราะห์เจาะลึก + ดวงชะตา',
-                    'icon' => 'star',
-                    'bg_color' => '#8C6400',
-                    'text_color' => '#FFFFFF',
-                    'subtitle_color' => '#FFD700',
-                    'font_size' => 56,
-                    'subtitle_size' => 44,
-                    'action_type' => 'postback',
-                    'action_data' => 'action=deep_reading',
-                    'display_text' => 'ดูดวง',
-                    'glow' => false,
-                ],
+                $secondButton,
                 [
                     'label' => 'ดูคำทำนาย',
                     'subtitle' => 'ล่าสุด',

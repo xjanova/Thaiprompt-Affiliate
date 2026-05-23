@@ -1167,11 +1167,22 @@ EOT;
             return $this->try_before_buy_message;
         }
 
-        $message = "🔮 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ!\n\n";
-        $message .= "📌 คุณได้ใช้สิทธิ์ดูดวงเชิงลึกฟรีวันนี้แล้ว\n\n";
+        // 🌙 (2026-05-23) Deep ปิด — ปรับ wording ไม่อ้าง "ดูดวงเชิงลึก"
+        $deepEnabledForMsg = $this->isDeepReadingEnabled();
+        $celticEnabledForMsg = (bool) ($this->enable_celtic_cross ?? false);
 
-        if ($this->deep_reading_price > 0) {
+        $message = "🔮 หวังว่าคำทำนายจะเป็นประโยชน์นะคะ!\n\n";
+        $message .= "📌 คุณได้ใช้สิทธิ์ดูดวงฟรีวันนี้แล้ว\n\n";
+
+        if ($deepEnabledForMsg && $this->deep_reading_price > 0) {
             $message .= "💰 ดูดวงเชิงลึกเพิ่ม: {$this->deep_reading_price} บาท/ครั้ง\n";
+        } elseif ($celticEnabledForMsg) {
+            $celticPrice = 99;
+            try {
+                $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+            } catch (\Throwable $e) {
+            }
+            $message .= "🔮 ดูดวงไพ่ Celtic Cross 10 ใบ: {$celticPrice} บาท/ครั้ง\n";
         }
 
         if ($this->subscription_enabled) {
