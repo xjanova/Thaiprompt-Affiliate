@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
 use App\Http\Controllers\Api\Admin\ChatController;
+use App\Http\Controllers\Api\Admin\EveController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\Finance\PaymentReconController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
@@ -143,6 +144,11 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     Route::prefix('chat')->name('api.admin.chat.')->group(function () {
         Route::post('/send', [ChatController::class, 'send'])->name('send');
         Route::post('/suggest', [ChatController::class, 'suggest'])->name('suggest');
+    });
+
+    // ── Eve (Warroom AI assistant — operator-facing) ──
+    Route::prefix('eve')->name('api.admin.eve.')->group(function () {
+        Route::post('/chat', [EveController::class, 'chat'])->name('chat');
     });
 
     // ── Moderation (Warroom /moderation) ──
