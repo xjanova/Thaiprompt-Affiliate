@@ -391,7 +391,8 @@ PROMPT;
      * ดึง API key สำหรับ classifier
      *
      * Priority:
-     *   1. AiApiKey pool (purpose='chat' หรือ 'any') — มี rotation/quota
+     *   1. AiApiKey pool (purpose='chat' เท่านั้น) — มี rotation/quota
+     *      🚫 (2026-05-23) ลบ 'any' fallback — Pool ไม่ pick 'any' แล้ว
      *   2. settings->chat_ai_api_key (ถ้าเป็น Groq อยู่แล้ว)
      */
     protected function getClassifierApiKey(string $provider): ?string

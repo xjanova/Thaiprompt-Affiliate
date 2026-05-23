@@ -182,10 +182,13 @@
                                     'chat_paid' => ['emoji' => '💙', 'label' => 'แชทพิเศษ', 'class' => 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 ring-1 ring-blue-400'],
                                     'sensitive' => ['emoji' => '🌟', 'label' => 'Sensitive', 'class' => 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'],
                                     'tts' => ['emoji' => '🎙️', 'label' => 'TTS', 'class' => 'bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300'],
+                                    // 🚫 (2026-05-23) purpose='any' = DEPRECATED — Pool ไม่ pick
+                                    'any' => ['emoji' => '⚠️', 'label' => 'any (DEPRECATED)', 'class' => 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 ring-1 ring-red-400'],
                                 ];
-                                $purpose = $key['purpose'] ?? 'any';
+                                // 🚫 (2026-05-23) ห้าม default 'any' — ถ้าไม่ระบุ ให้เป็น null
+                                $purpose = $key['purpose'] ?? null;
                             @endphp
-                            @if(isset($purposeBadges[$purpose]))
+                            @if($purpose && isset($purposeBadges[$purpose]))
                             <span class="ml-1 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium {{ $purposeBadges[$purpose]['class'] }}"
                                   title="วัตถุประสงค์: {{ $purpose }}">
                                 {{ $purposeBadges[$purpose]['emoji'] }} {{ $purposeBadges[$purpose]['label'] }}

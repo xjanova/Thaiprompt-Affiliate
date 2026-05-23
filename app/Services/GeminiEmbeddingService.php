@@ -176,7 +176,11 @@ class GeminiEmbeddingService
     /**
      * ดึง Gemini API key จาก Pool
      *
-     * Order: purpose='embedding' → 'any' → null (= generic acquireKeyAnyProvider)
+     * 🚫 (2026-05-23) ลบ 'any' fallback ออกแล้ว — User spec: "เอา purpose any ออกไปเลย"
+     *    เหตุผล: purpose='any' เป็นรูรั่ว — caller ใดๆ ที่ purpose specific หมด/429
+     *    จะ fallback ไป key 'any' (เช่น OpenAI key 'any' priority สูง) → เผา quota แพง
+     *
+     * Order ใหม่: purpose='embedding' ก่อน → null (legacy generic) เท่านั้น
      */
     protected function acquireGeminiKey(): ?string
     {
@@ -186,14 +190,7 @@ class GeminiEmbeddingService
             return $key->api_key;
         }
 
-        // 2) Fallback 'any'
-        $key = $this->pool->acquireKey('gemini', 'any');
-        if ($key) {
-            return $key->api_key;
-        }
-
-        // 3) Last resort — generic (อาจได้ Gemini key purpose='chat' ตอน caller=null)
-        //    แต่จะ tier 1 specific แทน — ไม่ใช่ optimal สำหรับ embedding
+        // 2) Last resort — generic (caller=null → Pool จะเลือก specific tier 1 ก่อน)
         //    Note: acquireKeyAnyProvider(null) จะ exclude sensitive/tts ตาม v5.1
         $key = $this->pool->acquireKey('gemini', null);
 

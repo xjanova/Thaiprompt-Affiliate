@@ -585,7 +585,8 @@ class AiApiKeyController extends Controller
                 'key_id' => $row->ai_api_key_id,
                 'name' => $key ? "{$key->provider}/{$key->name}" : "Key #{$row->ai_api_key_id}",
                 'model' => $key->model ?? '-',
-                'purpose' => $key->purpose ?? 'any',
+                // 🚫 (2026-05-23) ลบ default 'any' — null = ไม่ระบุ
+                'purpose' => $key->purpose ?? null,
                 'total_tokens' => (int) $row->tokens,
                 'input_tokens' => (int) $row->input_tokens,
                 'output_tokens' => (int) $row->output_tokens,

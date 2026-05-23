@@ -1297,11 +1297,18 @@ class FortuneSettingsController extends Controller
 
                 // 🆕 (2026-05-06) แสดง purpose badge ใน label
                 //   admin จะเห็นว่า key นี้ถูก lock ใช้งานเฉพาะอะไร (prediction/chat/free_card)
-                $purpose = $poolKey->purpose ?? 'any';
+                // 🚫 (2026-05-23) ลบ default 'any' — null = legacy
+                $purpose = $poolKey->purpose ?? null;
                 $purposeBadge = match ($purpose) {
                     'prediction' => ' 🎯[prediction]',
+                    'prediction_deep' => ' 🌟[Deep 39]',
+                    'prediction_celtic' => ' 💎[Celtic 99]',
                     'chat' => ' 💬[chat]',
+                    'chat_paid' => ' 💙[chat_paid]',
                     'free_card' => ' 🎁[free_card]',
+                    'sensitive' => ' 🌟[sensitive]',
+                    'tts' => ' 🎙️[tts]',
+                    'any' => ' ⚠️[DEPRECATED any]',
                     default => '',
                 };
 

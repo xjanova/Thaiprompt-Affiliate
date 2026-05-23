@@ -685,6 +685,14 @@ class AiApiKey extends Model
      */
     public function scopeForPurpose($query, string $purpose)
     {
+        // 🚫 (2026-05-23) BAN purpose='any' ใน fallback ทุกที่ — User spec:
+        //   "เอา purpose any ออกไปเลย — มันเป็นสาเหตุที่ทำให้ มั่วกันเยอะ"
+        //   เคสจริง: OpenAI key purpose='any' priority สูง → ทุก request ที่ purpose
+        //   specific หมด/429 จะ fallback มาที่นี่ → admin "ตั้ง OpenAI ใช้แค่ Celtic"
+        //   แต่ token รั่วไป Deep/Chat ทำให้ quota หมดเร็ว
+        //   Pool ต้องห้าม pick 'any' — caller ต้องระบุ purpose ตรงเสมอ
+        $query->where('purpose', '!=', 'any');
+
         // 🌟 sensitive = STRICT scope (ไม่ fallback)
         // เหตุผล: Pro model แพง 5-15x — ไม่ใช้ key อื่นแทน
         if ($purpose === 'sensitive') {
@@ -699,29 +707,26 @@ class AiApiKey extends Model
         }
 
         // 💙 (2026-05-23) chat_paid = STRICT scope (เรียกตรงเท่านั้น)
-        //    caller='chat_paid' = admin/system บังคับใช้ paid chat key ตรง
-        //    caller='chat' → ไป path ปกติ (chat+any+null) แต่ acquireKeyAnyProvider
-        //    จะ promote chat_paid เป็น Tier 3 fallback (last resort) อัตโนมัติ
         if ($purpose === 'chat_paid') {
             return $query->where('purpose', 'chat_paid');
         }
 
         // 🎯 (2026-05-13) prediction_deep — Deep 39฿ เจาะจง
-        //   Fallback chain: prediction_deep → prediction → any → null
-        //   admin มาร์คเจาะจง 'prediction_deep' = ใช้ key นี้ก่อน,
-        //   ไม่งั้นใช้ key 'prediction' หรือ 'any'
+        //   Fallback chain ใหม่ (2026-05-23): prediction_deep → prediction → null
+        //   🚫 ลบ 'any' ออก
         if ($purpose === 'prediction_deep') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
-                    ->orWhereIn('purpose', ['any', 'prediction', 'prediction_deep']);
+                    ->orWhereIn('purpose', ['prediction', 'prediction_deep']);
             });
         }
 
         // 🎯 (2026-05-13) prediction_celtic — Celtic 99฿ เจาะจง (ลูกค้าจ่ายแพง คุณภาพสูง)
+        //   Fallback chain ใหม่ (2026-05-23): prediction_celtic → prediction → null
         if ($purpose === 'prediction_celtic') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
-                    ->orWhereIn('purpose', ['any', 'prediction', 'prediction_celtic']);
+                    ->orWhereIn('purpose', ['prediction', 'prediction_celtic']);
             });
         }
 
@@ -729,34 +734,30 @@ class AiApiKey extends Model
         if ($purpose === 'free_card') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
-                    ->orWhereIn('purpose', ['any', 'prediction', 'free_card']);
+                    ->orWhereIn('purpose', ['prediction', 'free_card']);
             });
         }
 
         // prediction = ห้าม free_card / sensitive / deep / celtic key (สงวนไว้เฉพาะของมัน)
-        //   หมายเหตุ: prediction_deep / prediction_celtic ก็ไม่ใช้
-        //   เพราะ admin ตั้งใจให้ key พวกนั้นเจาะจงแพคเกจ
         if ($purpose === 'prediction') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
-                    ->orWhereIn('purpose', ['any', 'prediction']);
+                    ->orWhere('purpose', 'prediction');
             });
         }
 
-        // 💬 (2026-05-23) chat = match [chat, any, null, chat_paid]
-        //    chat_paid อยู่ใน pool เพื่อให้ acquireKeyAnyProvider classify เป็น Tier 3 (last resort)
-        //    ตอน free chat + any หมดแล้วเท่านั้นจึงจะถึง chat_paid
+        // 💬 (2026-05-23) chat = match [chat, null, chat_paid]
+        //    chat_paid = Tier 3 last-resort fallback ใน acquireKeyAnyProvider
         if ($purpose === 'chat') {
             return $query->where(function ($q) {
                 $q->whereNull('purpose')
-                    ->orWhereIn('purpose', ['any', 'chat', 'chat_paid']);
+                    ->orWhereIn('purpose', ['chat', 'chat_paid']);
             });
         }
 
-        // อื่นๆ = match purpose ตรง + any/null (ไม่ใช้ sensitive)
+        // อื่นๆ = match purpose ตรง + null เท่านั้น (ห้าม any)
         return $query->where(function ($q) use ($purpose) {
             $q->whereNull('purpose')
-                ->orWhere('purpose', 'any')
                 ->orWhere('purpose', $purpose);
         });
     }

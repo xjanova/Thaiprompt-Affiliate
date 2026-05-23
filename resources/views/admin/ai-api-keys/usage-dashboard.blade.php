@@ -105,7 +105,8 @@
                             @if ($key->purpose && $key->purpose !== 'any')
                                 <span class="text-xs px-1.5 py-0.5 bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 rounded">{{ $key->purpose }}</span>
                             @elseif ($key->purpose === 'any')
-                                <span class="text-xs px-1.5 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded">any</span>
+                                {{-- 🚫 (2026-05-23) purpose='any' ถูก deprecate — Pool จะไม่ pick key นี้ --}}
+                                <span class="text-xs px-1.5 py-0.5 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded" title="purpose='any' ถูกห้ามใช้แล้ว — เปลี่ยนเป็น specific purpose">⚠️ any (deprecated)</span>
                             @endif
                         </span>
                     </label>

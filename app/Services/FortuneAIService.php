@@ -3643,8 +3643,11 @@ PROMPT;
 
             // เปิด scope กว้าง — รวม prediction_celtic + free_card + chat + null
             // exclude: sensitive (strict, Pro แพง) + tts (schema ต่าง)
+            // 🚫 (2026-05-23) exclude 'any' ด้วย — User: "เอา purpose any ออกไปเลย"
+            //   เคสจริง: Deep 39฿ ปิด toggle + key purpose=deep หมด → emergency rescue
+            //   เลือก OpenAI key purpose='any' → เผา quota OpenAI ที่ admin สงวนไว้
             $emergencyKeys = AiApiKey::available()
-                ->whereNotIn('purpose', ['sensitive', 'tts'])
+                ->whereNotIn('purpose', ['sensitive', 'tts', 'any'])
                 ->when(! empty($triedIds), fn ($q) => $q->whereNotIn('id', $triedIds))
                 ->orderBy('priority', 'desc')
                 ->get();
@@ -3948,7 +3951,8 @@ PROMPT;
         // 🎯 (2026-05-02) Filter keys ตาม purpose ที่ caller ระบุ
         //   prediction = generateWithRetryAndFallback, generateFortuneTelling
         //   chat       = generateChatResponse*, playgroundChat
-        //   keys ที่มี purpose='any' จะใช้ได้ทั้ง 2 (default)
+        // 🚫 (2026-05-23) ลบ 'any' fallback — User: "เอา purpose any ออกไปเลย"
+        //   ตอนนี้ key purpose='any' จะถูก reject ที่ scopeForPurpose ใน Model
 
         // Circuit Breaker: skip providers ที่เพิ่งโดน 429 หนัก
         $downProviders = $this->getDownProviders();
@@ -4018,11 +4022,12 @@ PROMPT;
                     }
 
                     // 🎯 (2026-05-01) ใช้ per-key model + base_url (override default ของ provider)
-                    // 🆕 (2026-05-18) purpose_tier — Axis 1 ใน sort สุดท้าย (exact ชนะ any เสมอ)
+                    // 🆕 (2026-05-18) purpose_tier — Axis 1 ใน sort สุดท้าย (exact ชนะ null/legacy เสมอ)
+                    // 🚫 (2026-05-23) ลบ 'any' tier — User: "เอา purpose any ออกไปเลย"
                     $keyPurposeRaw = $poolKey->purpose ?? null;
                     $purposeTier = ($keyPurposeRaw === $purpose && $purpose !== '' && $purpose !== null)
                         ? 0 // exact match
-                        : (($keyPurposeRaw === 'any') ? 1 : 2); // any | null/legacy
+                        : 2; // null/legacy (any tier ถูกลบแล้ว)
                     $keys[] = [
                         'provider' => $provider,
                         'api_key' => $poolKey->api_key,
@@ -4218,13 +4223,13 @@ PROMPT;
         //   user spec: "ใช้โมเดลที่ใช้ทำนายต้องอยู่เหนือกว่า เฉพาะคำทำนาย"
         //   - exact match (free_card requested + key.purpose=free_card) → +1000 boost
         //   - prediction match (free_card requested + key.purpose=prediction) → +500
-        //   - any/null match → no boost
-        //   ผลลัพธ์: free_card request → free_card key มาก่อนเสมอ (แม้ priority field ต่ำกว่า)
-        $keyPurpose = $poolKey->purpose ?? 'any';
-        if ($keyPurpose === $requestedPurpose && $requestedPurpose !== 'any') {
+        //   - null match → no boost
+        // 🚫 (2026-05-23) ลบ 'any' default — User: "เอา purpose any ออกไปเลย"
+        $keyPurpose = $poolKey->purpose ?? null;
+        if ($keyPurpose && $keyPurpose === $requestedPurpose) {
             $score += 1000; // exact match — สูงสุด
         } elseif ($requestedPurpose === 'free_card' && $keyPurpose === 'prediction') {
-            $score += 500;  // free_card → prediction fallback (ดีกว่า any)
+            $score += 500;  // free_card → prediction fallback
         }
 
         return $score;

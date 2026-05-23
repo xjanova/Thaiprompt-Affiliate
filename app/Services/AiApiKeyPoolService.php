@@ -476,6 +476,11 @@ class AiApiKeyPoolService
      *
      * 🆕 (2026-05-18 v4) **Purpose-first** — purpose เจาะจงชนะ 'any' เสมอ
      *
+     * 🚫 (2026-05-23 v6) **BAN 'any' purpose** — User spec:
+     *   "เอา purpose any ออกไปเลย — มันเป็นสาเหตุที่ทำให้ มั่วกันเยอะ"
+     *   Pool จะ filter key purpose='any' ออกทั้งหมด (skip ก่อน group tier)
+     *   key purpose='any' ที่เหลือใน DB = legacy/deleted ไม่ถูกใช้
+     *
      * User spec (2026-05-18):
      *   "เน้น purpose ก่อน แม้ priority ต่ำกว่า
      *    เช็ค priority ที่ purpose เหมือนกันเท่านั้น ถึงจะมีน้ำหนัก"
@@ -483,8 +488,8 @@ class AiApiKeyPoolService
      * Logic — 3-axis (purpose ก่อน, priority รอง, mode สุดท้าย):
      *   AXIS 1: purpose specificity (สูงสุดก่อน)
      *           Tier 0 = exact purpose match (เช่น purpose='chat' เมื่อขอ 'chat')
-     *           Tier 1 = 'any' (backup สุดท้าย — admin set แบบ general-purpose)
      *           Tier 2 = NULL (legacy / ไม่ระบุ — เก็บไว้กัน BC)
+     *           🚫 'any' tier ถูกลบออกแล้ว (2026-05-23)
      *   AXIS 2: priority tier (DESC — สูงสุดก่อน) — ภายใน purpose-tier เดียวกัน
      *   AXIS 3: rotation_mode "global" ใน priority-tier เดียวกัน
      *           (จาก config('ai.cross_provider_rotation_mode', 'smart'))
@@ -521,7 +526,12 @@ class AiApiKeyPoolService
             $query->whereNotIn('purpose', self::STRICT_PURPOSES_BLOCKED_FOR_GENERIC);
         }
 
-        $allKeys = $query->get();
+        // 🚫 (2026-05-23) BAN purpose='any' — User spec: "เอา purpose any ออกไป"
+        //   ถ้ามี key purpose='any' หลุดมาในผลลัพธ์ (legacy data) → reject ก่อน group tier
+        //   เหตุผล: 'any' = รูรั่ว — caller ที่ specific purpose หมด/429 จะ fallback มา
+        //   จุดนี้ทำให้ admin งง: "ตั้ง OpenAI ใช้แค่ Celtic 99 แต่ token รั่วไป Deep"
+        $allKeys = $allKeys->reject(fn ($k) => $k->purpose === 'any');
+
         if ($allKeys->isEmpty()) {
             return null;
         }
@@ -529,34 +539,30 @@ class AiApiKeyPoolService
         // 2. 🆕 (v5 — 2026-05-19) Group by purpose specificity FIRST
         //    User rule: "key ที่ตั้ง chat ต้องมาก่อน any" — specific purpose ชนะ 'any' เสมอ
         //
+        //    🚫 (v6 — 2026-05-23) ลบ 'any' tier ทิ้ง — User: "เอา purpose any ออกไปเลย"
+        //
         //    Caller ระบุ purpose (เช่น 'chat'):
         //      Tier 0 = exact match (purpose='chat')
-        //      Tier 1 = 'any'        (general backup)
-        //      Tier 2 = null/legacy  (สุดท้าย)
+        //      Tier 2 = null/legacy  (legacy keys ไม่มี purpose)
         //
-        //    Caller ไม่ระบุ purpose (purpose=null) — เปลี่ยน v5:
-        //      Tier 1 = specific (purpose != null, != 'any')  ← Groq 'chat' / OpenAI 'sensitive' ชนะ
-        //      Tier 2 = 'any'                                  ← Gemini 'any' fallback
-        //      Tier 3 = null/legacy                            ← key เก่าไม่มี purpose
-        //      เหตุผล: ถ้า admin ลงทุนตั้ง purpose เจาะจง = ตั้งใจสงวน — ให้ใช้ก่อน 'any'
+        //    Caller ไม่ระบุ purpose (purpose=null):
+        //      Tier 1 = specific (purpose != null)  ← Groq 'chat' / OpenAI 'sensitive' ชนะ
+        //      Tier 3 = null/legacy                  ← key เก่าไม่มี purpose
+        //      เหตุผล: ถ้า admin ลงทุนตั้ง purpose เจาะจง = ตั้งใจสงวน
         $purposeTiers = $allKeys->groupBy(function ($k) use ($purpose) {
             $callerHasPurpose = ($purpose !== null && $purpose !== '');
             $keyPurpose = $k->purpose;
-            $keyIsAny = ($keyPurpose === 'any');
             $keyIsNull = ($keyPurpose === null || $keyPurpose === '');
-            $keyIsSpecific = ! $keyIsAny && ! $keyIsNull;
+            $keyIsSpecific = ! $keyIsNull;
 
             if ($callerHasPurpose) {
-                // Caller ระบุ — exact ก่อน, any ตามมา, null สุดท้าย
+                // Caller ระบุ — exact ก่อน, null/legacy สุดท้าย
                 if ($keyPurpose === $purpose) {
                     return 0; // exact match
                 }
-                if ($keyIsAny) {
-                    return 1; // general-purpose backup
-                }
 
                 // 💙 (2026-05-23) chat_paid = Tier 3 last-resort fallback
-                //    เมื่อ caller='chat' + free chat (Tier 0) + any (Tier 1) + null (Tier 2) หมด
+                //    เมื่อ caller='chat' + free chat (Tier 0) + null (Tier 2) หมด
                 //    ระบบจึงจะถึง chat_paid (paid chat key สีฟ้า)
                 //    กัน paid quota เผาไปกับ chitchat ลูกค้าเดินผ่าน
                 if ($purpose === 'chat' && $keyPurpose === 'chat_paid') {
@@ -566,12 +572,9 @@ class AiApiKeyPoolService
                 return 2; // null / legacy
             }
 
-            // Caller ไม่ระบุ — specific ชนะ any ตาม user rule
+            // Caller ไม่ระบุ — specific ชนะ null/legacy
             if ($keyIsSpecific) {
                 return 1; // เจาะจง purpose (chat/prediction/sensitive/etc.) มาก่อน
-            }
-            if ($keyIsAny) {
-                return 2; // 'any' fallback
             }
 
             return 3; // null / legacy สุดท้าย
@@ -716,20 +719,18 @@ class AiApiKeyPoolService
                     $this->setChatSpacing($provider, $key->id, $key->getEffectiveRpmLimit());
                 }
 
-                // 🆕 (v5 — 2026-05-19) Log purpose-tier label
-                //   Caller specified  : 0=exact, 1=any, 2=null/legacy, 3=chat_paid (last resort)
-                //   Caller null       : 1=specific, 2=any, 3=null/legacy
+                // 🆕 (v6 — 2026-05-23) Log purpose-tier label — 'any' tier ลบแล้ว
+                //   Caller specified  : 0=exact, 2=null/legacy, 3=chat_paid (last resort)
+                //   Caller null       : 1=specific, 3=null/legacy
                 $callerSpecified = ($purpose !== null && $purpose !== '');
                 $tierLabel = $callerSpecified
                     ? match ($pTier) {
                         0 => 'exact',
-                        1 => 'any',
                         3 => 'chat_paid (LAST RESORT)',
                         default => 'null/legacy',
                     }
                 : match ($pTier) {
                     1 => 'specific',
-                    2 => 'any',
                     default => 'null/legacy',
                 };
 
