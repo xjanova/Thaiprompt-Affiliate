@@ -217,7 +217,7 @@ trait FreeCardConversationTrait
                 'platform_user_id' => $platformUserId,
             ]);
 
-            return $this->startDeepReadingFlow($platformUserId, $userProfile);
+            return $this->startDeepReadingFlow($platformUserId, $userProfile, null, $customerMessage);
         }
 
         // 🔒 First-timer check — ถ้าใช้สิทธิ์แล้ว → ไป tier menu ตรง (ไม่กล่าวถึงฟรีอีก)
@@ -227,7 +227,7 @@ trait FreeCardConversationTrait
                 'platform_user_id' => $platformUserId,
             ]);
 
-            return $this->startDeepReadingFlow($platformUserId, $userProfile);
+            return $this->startDeepReadingFlow($platformUserId, $userProfile, null, $customerMessage);
         }
 
         // 🩹 (2026-05-05) Question gate — user spec:
@@ -500,7 +500,7 @@ trait FreeCardConversationTrait
                     // ปิด free reading + เริ่ม Celtic flow ใหม่
                     $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic');
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic', $messageText);
                 }
             }
         }
@@ -522,7 +522,7 @@ trait FreeCardConversationTrait
                     ]);
                     $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, null, $messageText);
                 }
             }
         } elseif ($celticEnabled) {
@@ -535,7 +535,7 @@ trait FreeCardConversationTrait
                     ]);
                     $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic');
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic', $messageText);
                 }
             }
         }

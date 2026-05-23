@@ -1859,7 +1859,7 @@ class FortuneConversationService
 
                         $this->closeAllActiveConversations($facebookUserId);
 
-                        return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                        return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                     }
 
                     // ถ้าอยู่ในสถานะ awaiting_confirmation: เช็คว่าผู้ใช้ยืนยันจะดูดวงหรือไม่
@@ -1915,7 +1915,7 @@ class FortuneConversationService
                         //    ถ้า deep ปิดอยู่ → ใช้ basic flow เดิม (askForQuestionBeforeReading)
                         if ($this->isGenericFortuneRequest($messageText)) {
                             if ($this->settings->isDeepReadingEnabled()) {
-                                return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                                return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                             }
 
                             return $this->askForQuestionBeforeReading($facebookUserId, $messageText, $userProfile);
@@ -1958,7 +1958,7 @@ class FortuneConversationService
                         //   เคส: ลูกค้าเสร็จ basic แล้ว AI บอกให้พิมพ์ "ดูดวงความรัก/การงาน"
                         //         → ต้องไป tier menu เลย ไม่ต้องผ่าน AI chat อีก (กัน AI fail แทรก)
                         if ($this->isGenericFortuneRequest($messageText)) {
-                            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                            return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                         }
 
                         // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง (ไม่ใช้โควต้าฟรี)
@@ -2015,6 +2015,35 @@ class FortuneConversationService
                     return $this->startFreeCardFlow($facebookUserId, $userProfile, $messageText);
                 }
 
+                // 🌙 (2026-05-23) Early gate — Deep 39฿ ปิด + ลูกค้าระบุชัดว่าต้องการ 39
+                //   เคส: ลูกค้าพิมพ์ "39" / "39 บาท" lone → ไม่ตก isExplicitDeepReadingRequest
+                //         (เพราะ keyword นั้นต้องการ "เชิงลึก/ละเอียด")
+                //   → fall through ไป AI chat ที่จะตอบทั่วไป — ไม่บอกชัดว่า "หมดโปร"
+                //   FIX: ดักก่อน entry → ตอบ "หมดช่วงโปรแล้ว" + offer Celtic (ถ้าเปิด)
+                //   หมายเหตุ: "ดูดวงเชิงลึก/ละเอียด" ก็จับที่นี่ด้วย — ไม่ต้องเข้า startDeepReadingFlow ก่อน
+                if (! $this->settings->isDeepReadingEnabled() && $this->isExplicitlyAsking39($messageText)) {
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+                    Log::info('Fortune: ลูกค้าระบุ 39 แต่ Deep ปิด → ตอบหมดช่วงโปร', [
+                        'facebook_user_id' => $facebookUserId,
+                        'message_preview' => mb_substr($messageText, 0, 50),
+                        'celtic_available' => $celticEnabled,
+                    ]);
+
+                    $message = "🌙 ขออภัยค่ะ — ดูดวง 39 บาท หมดช่วงโปรแล้วค่ะ\n"
+                        ."รอโอกาสหน้านะคะ ✨";
+
+                    if ($celticEnabled) {
+                        $message .= "\n\n👑 ตอนนี้เปิดแพคเกจ VIP ไพ่ 10 ใบ 99฿ — สนใจไหมคะ?";
+                    }
+
+                    return [
+                        'action' => 'deep_promo_ended',
+                        'message' => $message,
+                        'reading' => null,
+                    ];
+                }
+
                 // ✅ ตรวจสอบว่าเป็นคำขอดูดวงละเอียด (บริการเสียเงิน) → ข้าม limit ฟรี
                 // 🩹 (2026-05-05) Reorder: explicit deep request ต้องชนะ auto-free trigger
                 //    เคสจริง: ลูกค้าอ่าน DM ฟรี → ตั้งใจขยับเข้าระดับเสีย → พิมพ์ "ดูดวงเชิงลึก"
@@ -2022,7 +2051,7 @@ class FortuneConversationService
                 //    ใหม่: ตรวจ explicit deep keyword ก่อน → respect customer intent
                 // ใช้ isExplicitDeepReadingRequest() ที่เข้มงวดกว่า เพื่อไม่ให้ keyword ทั่วไป (เช่น "ใช่", "ได้") trigger ผิดพลาด
                 if ($this->isExplicitDeepReadingRequest($messageText)) {
-                    return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                 }
 
                 // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง
@@ -2039,7 +2068,7 @@ class FortuneConversationService
                         'text_preview' => mb_substr($messageText, 0, 50),
                     ]);
 
-                    return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                 }
 
                 // 🎁 (2026-05-04) Auto-trigger Free Card สำหรับ first-reply หลังได้ DM react/comment
@@ -2110,7 +2139,7 @@ class FortuneConversationService
                 //    ถ้า deep ปิดอยู่ → ใช้ basic flow เดิม (askForQuestionBeforeReading) + canMakeAICall guard
                 if ($this->isGenericFortuneRequest($messageText)) {
                     if ($this->settings->isDeepReadingEnabled()) {
-                        return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+                        return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
                     }
 
                     if (! $this->canMakeAICall($facebookUserId)) {
@@ -3619,7 +3648,7 @@ class FortuneConversationService
                 'original_message' => mb_substr($messageText, 0, 50),
             ]);
 
-            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
         }
 
         // ⚡ FAST PATH 2: ถ้าปิดบริการฟรี + เปิด deep → ข้ามการสร้าง basic reading
@@ -3633,7 +3662,7 @@ class FortuneConversationService
                 'original_message' => mb_substr($messageText, 0, 50),
             ]);
 
-            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
         }
 
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
@@ -3786,7 +3815,7 @@ class FortuneConversationService
         if ($this->isExplicitDeepReadingRequest($messageText)) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-            return $this->startDeepReadingFlow($facebookUserId, $userProfile);
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
         }
 
         // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม", "สวัสดี")
@@ -4692,7 +4721,7 @@ class FortuneConversationService
      * ใช้เมื่อผู้ใช้กดปุ่ม "💎 ดูดวงละเอียด" โดยไม่มี active reading (เช่น หลังจาก ai_limit)
      * ข้าม canMakeAICall() เพราะเป็นบริการเสียเงิน ไม่ใช่บริการฟรี
      */
-    protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null): array
+    protected function startDeepReadingFlow(string $facebookUserId, ?array $userProfile = null, ?string $forceTier = null, ?string $originalMessage = null): array
     {
         try {
             // 🔒 (2026-05-20) Defense-in-depth — ห้ามสร้างบิลใหม่ระหว่างทำนาย
@@ -4722,13 +4751,35 @@ class FortuneConversationService
             //   FIX: ถ้า forceTier='celtic' ส่งมาแล้ว = caller ตั้งใจให้ไป Celtic flow → ข้าม guard นี้
             //        ปล่อยให้ flow ไหลไป line 4823 ที่ตรวจ forceTier='celtic' → startCelticCrossFlow
             if (! $this->settings->isDeepReadingEnabled() && $forceTier !== 'celtic') {
+                $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                $askedFor39 = $originalMessage !== null && $this->isExplicitlyAsking39($originalMessage);
+
                 Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
                     'facebook_user_id' => $facebookUserId,
-                    'redirect_celtic' => (bool) ($this->settings->enable_celtic_cross ?? false),
+                    'redirect_celtic' => $celticEnabled,
+                    'asked_for_39' => $askedFor39,
+                    'message_preview' => $originalMessage ? mb_substr($originalMessage, 0, 50) : null,
                 ]);
 
-                if ($this->settings->enable_celtic_cross ?? false) {
-                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic');
+                // 🎯 (2026-05-23) ลูกค้าระบุชัดว่าต้องการ 39 (พิมพ์ "39"/"เชิงลึก"/"ละเอียด")
+                //   → แจ้ง "หมดช่วงโปร" + offer Celtic (ถ้าเปิด) — ไม่ silent redirect
+                if ($askedFor39) {
+                    $message = "🌙 ขออภัยค่ะ — ดูดวง 39 บาท หมดช่วงโปรแล้วค่ะ\n"
+                        ."รอโอกาสหน้านะคะ ✨";
+
+                    if ($celticEnabled) {
+                        $message .= "\n\n👑 ตอนนี้เปิดแพคเกจ VIP ไพ่ 10 ใบ 99฿ — สนใจไหมคะ?";
+                    }
+
+                    return [
+                        'action' => 'deep_promo_ended',
+                        'message' => $message,
+                        'reading' => null,
+                    ];
+                }
+
+                if ($celticEnabled) {
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $originalMessage);
                 }
 
                 return [
@@ -8995,6 +9046,14 @@ class FortuneConversationService
     {
         $price = $this->getDeepReadingPrice();
         $freeEnabled = $this->settings->isFreeReadingEnabled();
+        // 🌙 (2026-05-23) Guard Deep + Celtic sections ตาม toggle
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        $celticPrice = 99;
+        try {
+            $celticPrice = (int) app(\App\Services\CelticCrossService::class)->getPrice();
+        } catch (\Throwable $e) {
+        }
         $maxFree = (int) ($this->settings->max_free_readings ?? 0);
 
         $message = "🔮 *เพจดูดวงหมอจันทรายินดีต้อนรับ*\n\n";
@@ -9005,23 +9064,26 @@ class FortuneConversationService
         $message .= "💰 *การเงิน* - โชคลาภ รายได้\n";
         $message .= "🏥 *สุขภาพ* - สิ่งควรระวัง\n\n";
 
-        // ถ้าเปิดบริการฟรี → แสดง section "บริการของหมอ" (basic + deep)
-        // ถ้าปิดบริการฟรี → แสดงแค่การ์ด deep ไม่ต้องมี header/separator ซ้ำซ้อน
-        if ($freeEnabled) {
+        // 🌙 (2026-05-23) ส่วน "บริการของหมอ" — render เฉพาะ tier ที่ enable
+        if ($freeEnabled || $deepEnabled || $celticEnabled) {
             $message .= "═══════════════════════\n";
             $message .= "🎁 *บริการของหมอ*\n";
             $message .= "═══════════════════════\n\n";
-            $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
-            $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
-            $qCount = self::REQUIRED_QUESTIONS;
-            $message .= "💎 *ดูดวงเชิงลึก — {$qCount} คำถาม {$price} บาท*\n";
-            $message .= "   วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n";
-            $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
-        } else {
-            // กระชับ: ราคา + สิ่งที่ได้ (ไม่ต้องมี section header)
-            $qCount = self::REQUIRED_QUESTIONS;
-            $message .= "💎 *ค่าครู {$price} บาท* — {$qCount} คำถาม โฟกัสเดียว\n";
-            $message .= "   วิเคราะห์จากวันเกิด + สีมงคล เลขมงคล ฤกษ์ดี\n\n";
+            if ($freeEnabled) {
+                $message .= "🆓 *ดูดวงฟรี* - วันละ {$maxFree} คำถาม\n";
+                $message .= "   ทำนายเรื่องทั่วไปแบบสั้นๆ\n\n";
+            }
+            if ($deepEnabled) {
+                $qCount = self::REQUIRED_QUESTIONS;
+                $message .= "💎 *ดูดวงเชิงลึก — {$qCount} คำถาม {$price} บาท*\n";
+                $message .= "   วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีจากจิตเจ้าชะตา\n";
+                $message .= "   พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+            }
+            if ($celticEnabled) {
+                $message .= "🔮 *ไพ่ Celtic Cross — 10 ใบ {$celticPrice} บาท*\n";
+                $message .= "   ไพ่ยิปซีเต็มสำรับตามหลัก Celtic Cross โบราณดั้งเดิม\n";
+                $message .= "   ครอบคลุม อดีต → ปัจจุบัน → อนาคต\n\n";
+            }
         }
 
         $message .= "📝 *ตัวอย่างคำถาม*:\n";
@@ -10147,6 +10209,39 @@ class FortuneConversationService
      * ใช้ keyword ที่เฉพาะเจาะจงกว่า isDeepReadingAccepted() เพื่อไม่ให้คำทั่วไป
      * อย่าง "ใช่", "ได้", "ok" trigger การเริ่ม deep reading flow โดยไม่ตั้งใจ
      */
+    /**
+     * 🌙 (2026-05-23) ตรวจว่าผู้ใช้ระบุชัดว่าต้องการ Deep 39฿ — ใช้ตอน Deep ปิดแล้ว
+     *
+     * Use case: เมื่อ admin ปิด enable_deep_reading + เปิด Celtic → ลูกค้าที่เคยรู้ราคา 39
+     *           พิมพ์ "39" / "ดูดวง 39" / "เชิงลึก" → บอทควรตอบ "หมดช่วงโปร" ไม่ใช่ redirect Celtic เงียบๆ
+     *
+     * Match patterns:
+     *   - lone "39" หรือ "39 บาท" (word boundary — ไม่ match "139", "390")
+     *   - "ดูดวง 39", "เริ่ม 39", "ค่าครู 39"
+     *   - "เชิงลึก", "ละเอียด" (Deep tier keywords)
+     */
+    protected function isExplicitlyAsking39(string $text): bool
+    {
+        $normalized = mb_strtolower(trim($text));
+
+        // ✅ Deep tier keywords (ชัดเจนว่าหมายถึง Deep ไม่ใช่ Celtic)
+        $deepKeywords = ['เชิงลึก', 'ละเอียด', 'deep', 'ดูเพิ่มเติม'];
+        foreach ($deepKeywords as $kw) {
+            if (str_contains($normalized, $kw)) {
+                return true;
+            }
+        }
+
+        // ✅ ระบุเลข 39 — ใช้ regex word boundary กัน match "139"/"390"/"3939"
+        //   จับ: "39" / "39฿" / "39 บาท" / "ดูดวง 39" / "39 บ" / "39บ"
+        //   ไม่จับ: "139" / "3900" / "39000"
+        if (preg_match('/(?<![\d])39(?![\d])/u', $normalized)) {
+            return true;
+        }
+
+        return false;
+    }
+
     protected function isExplicitDeepReadingRequest(string $text): bool
     {
         $explicitKeywords = [
@@ -11468,6 +11563,8 @@ PROMPT;
     public function presentPricingMenu(): array
     {
         $deepPrice = (int) $this->getDeepReadingPrice();
+        // 🌙 (2026-05-23) Deep ปิด → ไม่ render block 39 + pass flag ให้ caller (SendPricingFollowUpJob)
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
         $celticPrice = $celticEnabled ? (int) (app(\App\Services\CelticCrossService::class)->getPrice()) : 0;
         $freeEnabled = (bool) ($this->settings->enable_free_card_reading ?? false);
@@ -11475,11 +11572,13 @@ PROMPT;
         $msg = "💎 *อัตราค่าดูดวงกับแม่หมอจันทรา* 💎\n\n";
         $msg .= "━━━━━━━━━━━━━━━━━\n";
 
-        // 39฿ — Deep
-        $msg .= "🔹 *แพ็คเกจ {$deepPrice} บาท* — ดูดวงเชิงลึก\n";
-        $msg .= "   • วิเคราะห์วันเดือนปีเกิด + ดวงดาว\n";
-        $msg .= "   • สุ่มไพ่ยิปซี 1 ใบ + ทำนายเชิงลึก\n";
-        $msg .= "   • ตอบ 2 คำถามที่เจ้าชะตาสงสัย\n\n";
+        // 39฿ — Deep (🌙 2026-05-23 wrap toggle)
+        if ($deepEnabled) {
+            $msg .= "🔹 *แพ็คเกจ {$deepPrice} บาท* — ดูดวงเชิงลึก\n";
+            $msg .= "   • วิเคราะห์วันเดือนปีเกิด + ดวงดาว\n";
+            $msg .= "   • สุ่มไพ่ยิปซี 1 ใบ + ทำนายเชิงลึก\n";
+            $msg .= "   • ตอบ 2 คำถามที่เจ้าชะตาสงสัย\n\n";
+        }
 
         // 99฿ — Celtic
         if ($celticEnabled) {
@@ -11512,6 +11611,7 @@ PROMPT;
             'reading' => null,
             'pricing' => [
                 'deep_price' => $deepPrice,
+                'deep_enabled' => $deepEnabled, // 🌙 (2026-05-23) flag ให้ SendPricingFollowUpJob ใช้
                 'celtic_price' => $celticPrice,
                 'celtic_enabled' => $celticEnabled,
                 'free_enabled' => $freeEnabled,

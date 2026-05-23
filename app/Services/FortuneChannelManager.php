@@ -637,6 +637,19 @@ class FortuneChannelManager
                 'ai_ask_save_question',
                 'send_chart', 'deep_reading_result', 'reading_ready' => $this->sendFacebookTextWithOptionalQuickReplies($fbService, $richService, $userId, $message, $action, $result, $extra),
 
+                // 🌙 (2026-05-23) Deep 39 หมดช่วงโปร — แนบปุ่ม Celtic 99฿ ถ้าเปิดอยู่
+                'deep_promo_ended' => (function () use ($fbService, $userId, $message, $extra) {
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    if ($celticEnabled) {
+                        return $fbService->sendQuickReplies($userId, $message, [
+                            ['content_type' => 'text', 'title' => '👑 VIP ไพ่ 10 ใบ 99฿', 'payload' => 'TIER_CELTIC_99'],
+                            ['content_type' => 'text', 'title' => '🙏 ไว้คราวหน้า', 'payload' => 'NOT_INTERESTED'],
+                        ], $extra);
+                    }
+
+                    return $fbService->sendMessage($userId, $message, $extra);
+                })(),
+
                 // 🔔 คำทำนายพร้อม → ส่ง Button Template พร้อมปุ่ม "อ่านคำทำนาย" โดดเด่น
                 'fortune_ready_notification' => $this->sendFacebookFortuneReadyNotification($fbService, $userId, $message, $result),
 
@@ -1891,6 +1904,19 @@ class FortuneChannelManager
 
                 // ดูดวงละเอียดปิด → Flex แจ้ง
                 'deep_reading_disabled' => $this->sendLineDeepDisabledResponse($lineService, $userId, $result, $replyToken),
+
+                // 🌙 (2026-05-23) Deep 39 หมดช่วงโปร — แนบ Quick Reply Celtic 99฿ ถ้าเปิด
+                'deep_promo_ended' => (function () use ($lineService, $userId, $message, $replyToken) {
+                    $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+                    if ($celticEnabled) {
+                        return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, [
+                            ['label' => '👑 VIP 99฿', 'text' => '99'],
+                            ['label' => '🙏 ไว้คราวหน้า', 'text' => 'ไม่สนใจ'],
+                        ]);
+                    }
+
+                    return $lineService->sendMessageWithReplyFallback($userId, $message, $replyToken);
+                })(),
 
                 // ข้อผิดพลาด → Flex สวยงาม
                 'error', 'retry_question' => $this->sendLineErrorResponse($lineService, $userId, $result, $replyToken),
