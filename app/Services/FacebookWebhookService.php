@@ -1698,6 +1698,20 @@ class FacebookWebhookService implements MessagingPlatformInterface
                 'max_free' => (string) ($this->settings->max_free_readings ?? 3),
             ]);
 
+            // 🌙 (2026-05-23) Deep ปิด → strip "ดูดวงเชิงลึก" lines ที่อาจ hardcode ใน DB template
+            //   default seeder body มี 2 บรรทัด: "🌟 พิมพ์: ดูดวงละเอียด..." + "🌟 ดูดวงเชิงลึกฟรีวันละ 1 ครั้ง"
+            //   admin custom ได้ — runtime strip ปลอดภัยกว่า migrate DB
+            if (! $this->settings->isDeepReadingEnabled()) {
+                $message = preg_replace(
+                    [
+                        '/🌟 พิมพ์[^\n]*ดูดวงละเอียด[^\n]*\n(\s+เช่น:[^\n]*\n)?\n?/u',
+                        '/🌟 ดูดวงเชิงลึก[^\n]*\n?/u',
+                    ],
+                    '',
+                    $message
+                );
+            }
+
             // ส่งรูปส่วนหัว (ถ้ามี)
             if ($template->hasHeaderImage()) {
                 $this->sendImage($recipientId, $template->header_image_url);
@@ -1846,6 +1860,24 @@ class FacebookWebhookService implements MessagingPlatformInterface
             $message = "{$readingTypeLabel}สำหรับคุณ\n\n{$response}\n\n";
             $message .= "---\n";
             $message .= 'ให้คะแนนความพึงพอใจ: '.url("/fortune/{$reading->id}/rate");
+        }
+
+        // 🌙 (2026-05-23) Deep ปิด → strip "ดูดวงเชิงลึก/ละเอียด" CTA ที่ hardcode ใน basic template
+        //   default seeder body มี:
+        //     '💡 ต้องการคำทำนายเชิงลึกละเอียดกว่านี้?'
+        //     'พิมพ์: "ดูดวงละเอียด" เพื่อรับคำทำนายแบบเจาะลึก'
+        //     '🌟 ดูดวงละเอียด → พิมพ์ "ดูดวงละเอียด"'
+        //   admin custom ได้ — runtime strip ปลอดภัยกว่า migrate DB
+        if (! $reading->isDeep() && ! $this->settings->isDeepReadingEnabled()) {
+            $message = preg_replace(
+                [
+                    '/💡 ต้องการคำทำนายเชิงลึก[^\n]*\n/u',
+                    '/พิมพ์[^\n]*ดูดวงละเอียด[^\n]*\n?/u',
+                    '/🌟 ดูดวงละเอียด[^\n]*\n?/u',
+                ],
+                '',
+                $message
+            );
         }
 
         // 1. ส่งรูปส่วนหัว (header image) ถ้ามี

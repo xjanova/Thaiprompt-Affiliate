@@ -510,16 +510,27 @@ class FortuneRichMenuService
      */
     public function getRichMenuAreas(): array
     {
+        // 🌙 (2026-05-23) Row 1 Col 2 action ตาม toggle — Deep ปิด = redirect Celtic หรือ view_last
+        //   ใช้ตอน admin deploy custom mode โดยไม่ส่ง customAreas เข้ามา (rare fallback)
+        $settings = \App\Models\FortuneTellingSetting::getSettings();
+        $deepEnabled = $settings->isDeepReadingEnabled();
+        $celticEnabled = (bool) ($settings->enable_celtic_cross ?? false);
+        $secondAction = $deepEnabled
+            ? ['type' => 'postback', 'data' => 'action=deep_reading', 'displayText' => 'ดูดวง']
+            : ($celticEnabled
+                ? ['type' => 'postback', 'data' => 'action=celtic_cross', 'displayText' => 'celtic']
+                : ['type' => 'postback', 'data' => 'action=view_last_reading', 'displayText' => 'ดูคำทำนายล่าสุด']);
+
         return [
             // Row 1, Col 1: 🔮 ดูดวง
             [
                 'bounds' => ['x' => 0, 'y' => 0, 'width' => self::COL_WIDTH_1, 'height' => self::ROW_HEIGHT],
                 'action' => ['type' => 'message', 'text' => 'ดูดวง'],
             ],
-            // Row 1, Col 2: ✨ ดูดวงละเอียด
+            // Row 1, Col 2: ✨ ดูดวงละเอียด (dynamic ตาม toggle)
             [
                 'bounds' => ['x' => self::COL_WIDTH_1, 'y' => 0, 'width' => self::COL_WIDTH_2, 'height' => self::ROW_HEIGHT],
-                'action' => ['type' => 'postback', 'data' => 'action=deep_reading', 'displayText' => 'ดูดวง'],
+                'action' => $secondAction,
             ],
             // Row 1, Col 3: 📖 ดูคำทำนายล่าสุด
             [
