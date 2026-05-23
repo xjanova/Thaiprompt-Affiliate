@@ -1769,25 +1769,26 @@ trait CelticCrossConversationTrait
             : ($reading->facebook_user_id ?: $reading->platform_user_id);
 
         // 🚀 (2026-05-23) Sequence-aware delay — Q1 ส่งทันที, Q2+ ค่อยดึงเวลาตามระยะ
-        //   user spec: "การทำนายแบบ 99 เมื่อคำทำนายพร้อมแล้ว ในคำถามแรก ให้รีบส่งให้ก่อน
-        //                ที่เหลือค่อยดึงเวลาตามระยะ"
-        //   Why: ลูกค้าเพิ่งจ่าย 99฿ + รอ AI 30-60s แล้ว — หน่วงเพิ่ม 60-120s = "บอทเสีย" perception
-        //   เคสจริง 2026-05-23: ลูกค้าจ่ายแล้วบอทไม่ตอบ → ลูกค้าเข้าใจว่าระบบเสีย
+        //   user spec v1: "ในคำถามแรก ให้รีบส่งให้ก่อน ที่เหลือค่อยดึงเวลาตามระยะ"
+        //   user spec v2: "แต่ละคำถามไม่ควรดึงนานเกิน 2 นาที" — รวม AI generation 30-60s ด้วย
+        //
+        //   Constraint: AI ใช้เวลา generate 30-60s แล้ว — queue delay เพิ่มต้องไม่ทำให้
+        //   total experience ของลูกค้าเกิน 120s (2 min) → cap delay สูงสุด ~60s
         //
         //   Sequence ที่ใช้คือลำดับ TYPE:A ของลูกค้า (มาจาก CelticCrossService::askQuestion):
-        //     • sequence = 1 → คำถามแรก / chitchat ก่อนคำถามแรก → ส่งทันที (สร้าง first impression)
-        //     • sequence = 2 → 20-40s (เริ่มสร้างความขลังเล็กน้อย)
-        //     • sequence = 3 → 40-70s (ระยะกลาง)
-        //     • sequence >= 4 → 60-120s (เต็มที่ เหมือนเดิม)
+        //     • sequence = 1 → คำถามแรก / chitchat ก่อนคำถามแรก → 0s (first impression)
+        //     • sequence = 2 → 10-25s  (รวม AI ≤ 85s)
+        //     • sequence = 3 → 25-45s  (รวม AI ≤ 105s)
+        //     • sequence >= 4 → 45-60s (รวม AI ≤ 120s = 2 min cap)
         $customerSequence = (int) ($sequence ?? 1);
         if ($customerSequence <= 1) {
             $delaySeconds = 0;
         } elseif ($customerSequence === 2) {
-            $delaySeconds = random_int(20, 40);
+            $delaySeconds = random_int(10, 25);
         } elseif ($customerSequence === 3) {
-            $delaySeconds = random_int(40, 70);
+            $delaySeconds = random_int(25, 45);
         } else {
-            $delaySeconds = random_int(60, 120);
+            $delaySeconds = random_int(45, 60);
         }
 
         // 🚀 (2026-05-23) Q1 หรือไม่มี user ID → ส่งทันที (bypass delayed job)
