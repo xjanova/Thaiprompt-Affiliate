@@ -21,6 +21,8 @@ class EveController extends Controller
             'context' => 'nullable|array',
             'provider' => 'nullable|string|max:50',
             'model' => 'nullable|string|max:120',
+            'temperature' => 'nullable|numeric|min:0|max:2',
+            'max_tokens' => 'nullable|integer|min:64|max:1024',
         ]);
 
         $admin = $request->user();
@@ -37,7 +39,10 @@ class EveController extends Controller
             $result = $aiService->chatWithCustomSystemPrompt(
                 systemMessage: $systemPrompt,
                 userMessage: $userMessage,
-                config: ['temperature' => 0.55, 'max_tokens' => 320],
+                config: [
+                    'temperature' => isset($data['temperature']) ? (float) $data['temperature'] : 0.55,
+                    'max_tokens' => isset($data['max_tokens']) ? (int) $data['max_tokens'] : 320,
+                ],
                 providerOverride: $provider,
                 modelOverride: $model,
             );
