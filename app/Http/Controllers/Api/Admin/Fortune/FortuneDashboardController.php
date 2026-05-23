@@ -121,24 +121,22 @@ class FortuneDashboardController extends Controller
     /**
      * GET /api/admin/fortune/workers/queue
      *
-     * Returns the realtime state of the Fortune AI worker pool. Powers warroom
-     * /workers page. Workers themselves are Laravel queue processes (no per-row
-     * registration), so we infer "in-flight" from rows that are paid but not
-     * responded — the queue is processing them right now.
+     * Realtime view of the Fortune AI bot workers — every AI call the bot makes
+     * to reply to a customer (comment-to-DM, paid reading, chat). Powers warroom
+     * /workers page.
      *
-     * Shape:
-     *   {
-     *     queue: { pending_paid, pending_unpaid, in_flight, stuck, completed_last_15m, failed_last_15m },
-     *     throughput: { per_min, per_hour },
-     *     latency: { avg_seconds, p95_seconds },
-     *     in_flight: [ { reading_id, name, platform, comment_preview, created_at, age_seconds, paid } ],
-     *     recent_completed: [ { reading_id, name, platform, ai_response_preview, latency_seconds, responded_at, provider } ],
-     *     generated_at,
-     *   }
+     * Data sources (in priority order):
+     *   - ai_api_key_usage_logs — the canonical "every AI call" log. Each row is
+     *     ONE bot reply to ONE customer. ~70 rows / hour on a normal day.
+     *     This is what the operator actually wants to see.
+     *   - ai_api_keys.provider — joined to get provider name (groq/gemini/...).
+     *   - fortune_comment_engagements — recent comment→DM events for context
+     *     (which FB user just got DM'd).
+     *   - fortune_readings — paid reading queue (pending_paid + stuck counters).
      */
     public function workersQueue(Request $request): JsonResponse
     {
-        if (! Schema::hasTable('fortune_readings')) {
+        if (! Schema::hasTable('ai_api_key_usage_logs') || ! Schema::hasTable('ai_api_keys')) {
             return response()->json([
                 'success' => true,
                 'data' => $this->emptyQueueShape(),
@@ -146,51 +144,28 @@ class FortuneDashboardController extends Controller
         }
 
         $now = now();
-        $stuckThresholdSec = 60;          // > 60s without a response = stuck
-        $inFlightCutoff = $now->copy()->subMinutes(10); // ignore "pending" older than 10min (likely abandoned)
 
-        // ── Queue counts ──
-        $pendingPaid = DB::table('fortune_readings')
-            ->whereNull('responded_at')
-            ->where('is_paid', true)
-            ->where('created_at', '>=', $inFlightCutoff)
+        // ── AI-call counters (the real bot heartbeat) ──
+        $completed15 = DB::table('ai_api_key_usage_logs')
+            ->where('created_at', '>=', $now->copy()->subMinutes(15))
+            ->where('is_success', 1)
             ->count();
-        $pendingUnpaid = DB::table('fortune_readings')
-            ->whereNull('responded_at')
-            ->where('is_paid', false)
-            ->where('created_at', '>=', $inFlightCutoff)
+        $failed15 = DB::table('ai_api_key_usage_logs')
+            ->where('created_at', '>=', $now->copy()->subMinutes(15))
+            ->where('is_success', 0)
             ->count();
-        $stuck = DB::table('fortune_readings')
-            ->whereNull('responded_at')
-            ->where('is_paid', true)
-            ->where('created_at', '<', $now->copy()->subSeconds($stuckThresholdSec))
-            ->where('created_at', '>=', $inFlightCutoff)
-            ->count();
-        $completed15 = DB::table('fortune_readings')
-            ->whereNotNull('responded_at')
-            ->where('responded_at', '>=', $now->copy()->subMinutes(15))
-            ->count();
-        // "failed" proxy: paid but no responded_at AND older than 10min — bot gave up.
-        $failed15 = DB::table('fortune_readings')
-            ->whereNull('responded_at')
-            ->where('is_paid', true)
-            ->where('created_at', '<', $inFlightCutoff)
+        $completed60 = DB::table('ai_api_key_usage_logs')
             ->where('created_at', '>=', $now->copy()->subHour())
+            ->where('is_success', 1)
             ->count();
 
-        // ── Throughput ──
-        $throughputPerMin = (int) round($completed15 / 15);
-        $completed60 = DB::table('fortune_readings')
-            ->whereNotNull('responded_at')
-            ->where('responded_at', '>=', $now->copy()->subHour())
-            ->count();
-
-        // ── Latency (responded_at - created_at) for completed-last-15m ──
-        $latencies = DB::table('fortune_readings')
-            ->selectRaw('TIMESTAMPDIFF(SECOND, created_at, responded_at) as lat')
-            ->whereNotNull('responded_at')
-            ->where('responded_at', '>=', $now->copy()->subMinutes(15))
-            ->pluck('lat')
+        // ── Latency (only successful) ──
+        $latencies = DB::table('ai_api_key_usage_logs')
+            ->select('response_time_ms')
+            ->where('created_at', '>=', $now->copy()->subMinutes(15))
+            ->where('is_success', 1)
+            ->whereNotNull('response_time_ms')
+            ->pluck('response_time_ms')
             ->filter(fn ($v) => $v !== null && $v >= 0)
             ->sort()
             ->values();
@@ -199,57 +174,123 @@ class FortuneDashboardController extends Controller
             ? (int) ($latencies[max(0, (int) ceil($latencies->count() * 0.95) - 1)] ?? 0)
             : 0;
 
-        // ── In-flight rows (workers currently processing these) ──
-        $inFlight = DB::table('fortune_readings as fr')
-            ->select('fr.id', 'fr.facebook_user_name', 'fr.platform', 'fr.questions', 'fr.created_at', 'fr.is_paid')
-            ->whereNull('fr.responded_at')
-            ->where('fr.created_at', '>=', $inFlightCutoff)
-            ->orderByDesc('fr.created_at')
+        // ── Paid-reading queue (separate concept — extra signal for the operator) ──
+        $pendingPaid = 0;
+        $pendingUnpaid = 0;
+        $stuck = 0;
+        if (Schema::hasTable('fortune_readings')) {
+            $inFlightCutoff = $now->copy()->subMinutes(10);
+            $pendingPaid = DB::table('fortune_readings')
+                ->whereNull('responded_at')
+                ->where('is_paid', true)
+                ->where('created_at', '>=', $inFlightCutoff)
+                ->count();
+            $pendingUnpaid = DB::table('fortune_readings')
+                ->whereNull('responded_at')
+                ->where('is_paid', false)
+                ->where('created_at', '>=', $inFlightCutoff)
+                ->count();
+            $stuck = DB::table('fortune_readings')
+                ->whereNull('responded_at')
+                ->where('is_paid', true)
+                ->where('created_at', '<', $now->copy()->subSeconds(60))
+                ->where('created_at', '>=', $inFlightCutoff)
+                ->count();
+        }
+
+        // ── In-flight: most recent successful calls in the last 30s (worker
+        // just finished, or is finishing right now). The bot is fully sync so
+        // there's no formal "in-flight" row — we surface the freshest activity. ──
+        $inFlight = DB::table('ai_api_key_usage_logs as l')
+            ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+            ->select(
+                'l.id', 'l.created_at', 'l.model', 'l.request_type',
+                'l.total_tokens', 'l.response_time_ms', 'l.is_success',
+                'k.provider', 'k.name as key_name'
+            )
+            ->where('l.created_at', '>=', $now->copy()->subSeconds(30))
+            ->orderByDesc('l.created_at')
             ->limit(12)
             ->get()
             ->map(function ($r) use ($now) {
-                $age = (int) max(0, $now->diffInSeconds($r->created_at, false));
-                $age = abs($age);
-                $q = $this->parseQuestions($r->questions);
+                $createdTs = strtotime((string) $r->created_at);
+                $age = max(0, $now->getTimestamp() - $createdTs);
                 return [
-                    'reading_id' => (int) $r->id,
-                    'name' => $r->facebook_user_name ?? '(ลูกค้า)',
-                    'platform' => $r->platform ?? 'facebook',
-                    'comment_preview' => mb_substr($q, 0, 80),
+                    'log_id' => (int) $r->id,
+                    'provider' => $r->provider,
+                    'model' => $r->model,
+                    'key_name' => $r->key_name,
+                    'request_type' => $r->request_type ?: 'unknown',
+                    'tokens' => (int) ($r->total_tokens ?? 0),
+                    'latency_ms' => (int) ($r->response_time_ms ?? 0),
+                    'success' => (bool) $r->is_success,
                     'created_at' => $r->created_at,
                     'age_seconds' => $age,
-                    'paid' => (bool) $r->is_paid,
                 ];
             });
 
-        // ── Recent completed (worker → DM result log) ──
-        // Activity log shows up to 30 most-recent across the last 24h so the
-        // operator can still see history on slow days. The "completed_last_15m"
-        // counter above stays at the 15-minute window for realtime metrics.
-        $recent = DB::table('fortune_readings as fr')
-            ->select('fr.id', 'fr.facebook_user_name', 'fr.platform', 'fr.questions', 'fr.ai_response', 'fr.responded_at', 'fr.created_at', 'fr.ai_provider')
-            ->whereNotNull('fr.responded_at')
-            ->where('fr.responded_at', '>=', $now->copy()->subDay())
-            ->orderByDesc('fr.responded_at')
-            ->limit(30)
+        // ── Recent completed (full activity log, last 24h) ──
+        $recent = DB::table('ai_api_key_usage_logs as l')
+            ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+            ->select(
+                'l.id', 'l.created_at', 'l.model', 'l.request_type',
+                'l.total_tokens', 'l.response_time_ms', 'l.is_success',
+                'l.error_message',
+                'k.provider', 'k.name as key_name'
+            )
+            ->where('l.created_at', '>=', $now->copy()->subDay())
+            ->orderByDesc('l.created_at')
+            ->limit(40)
             ->get()
-            ->map(function ($r) {
-                $lat = null;
-                if ($r->created_at && $r->responded_at) {
-                    $lat = max(0, strtotime($r->responded_at) - strtotime($r->created_at));
-                }
-                $q = $this->parseQuestions($r->questions);
-                return [
-                    'reading_id' => (int) $r->id,
-                    'name' => $r->facebook_user_name ?? '(ลูกค้า)',
-                    'platform' => $r->platform ?? 'facebook',
-                    'comment_preview' => mb_substr($q, 0, 80),
-                    'reply_preview' => mb_substr((string) ($r->ai_response ?? ''), 0, 120),
-                    'latency_seconds' => $lat,
-                    'responded_at' => $r->responded_at,
-                    'provider' => $r->ai_provider,
-                ];
-            });
+            ->map(fn ($r) => [
+                'log_id' => (int) $r->id,
+                'provider' => $r->provider,
+                'model' => $r->model,
+                'key_name' => $r->key_name,
+                'request_type' => $r->request_type ?: 'unknown',
+                'tokens' => (int) ($r->total_tokens ?? 0),
+                'latency_ms' => (int) ($r->response_time_ms ?? 0),
+                'success' => (bool) $r->is_success,
+                'error_message' => $r->error_message,
+                'created_at' => $r->created_at,
+            ]);
+
+        // ── Recent comment→DM engagements (who the bot actually messaged) ──
+        $commentDms = [];
+        if (Schema::hasTable('fortune_comment_engagements')) {
+            $commentDms = DB::table('fortune_comment_engagements')
+                ->select('id', 'facebook_user_id', 'facebook_post_id', 'comment_text', 'comment_reply', 'dm_message', 'engaged_at')
+                ->where('engaged_at', '>=', $now->copy()->subDay())
+                ->orderByDesc('engaged_at')
+                ->limit(20)
+                ->get()
+                ->map(fn ($r) => [
+                    'id' => (int) $r->id,
+                    'fb_user_id' => $r->facebook_user_id,
+                    'fb_post_id' => $r->facebook_post_id,
+                    'comment_text' => mb_substr((string) ($r->comment_text ?? ''), 0, 140),
+                    'comment_reply' => mb_substr((string) ($r->comment_reply ?? ''), 0, 140),
+                    'dm_message' => mb_substr((string) ($r->dm_message ?? ''), 0, 160),
+                    'engaged_at' => $r->engaged_at,
+                ])
+                ->toArray();
+        }
+
+        // ── Per-provider breakdown over the last 15min ──
+        $providerSplit = DB::table('ai_api_key_usage_logs as l')
+            ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
+            ->selectRaw('k.provider as name, COUNT(*) as calls, SUM(CASE WHEN l.is_success=1 THEN 1 ELSE 0 END) as ok, SUM(l.total_tokens) as tokens')
+            ->where('l.created_at', '>=', $now->copy()->subMinutes(15))
+            ->groupBy(DB::raw('k.provider'))
+            ->orderByDesc('calls')
+            ->get()
+            ->map(fn ($r) => [
+                'provider' => $r->name,
+                'calls' => (int) $r->calls,
+                'ok' => (int) $r->ok,
+                'tokens' => (int) ($r->tokens ?? 0),
+            ])
+            ->toArray();
 
         return response()->json([
             'success' => true,
@@ -264,15 +305,17 @@ class FortuneDashboardController extends Controller
                     'failed_last_15m' => $failed15,
                 ],
                 'throughput' => [
-                    'per_min' => $throughputPerMin,
+                    'per_min' => round(($completed15 + $failed15) / 15, 1),
                     'per_hour' => $completed60,
                 ],
                 'latency' => [
-                    'avg_seconds' => round($avgLat, 1),
-                    'p95_seconds' => $p95Lat,
+                    'avg_ms' => (int) round($avgLat),
+                    'p95_ms' => $p95Lat,
                 ],
                 'in_flight' => $inFlight,
                 'recent_completed' => $recent,
+                'comment_dms' => $commentDms,
+                'provider_split' => $providerSplit,
                 'generated_at' => $now->toIso8601String(),
             ],
         ]);
@@ -286,8 +329,8 @@ class FortuneDashboardController extends Controller
                 'completed_last_15m' => 0, 'completed_last_hour' => 0, 'failed_last_15m' => 0,
             ],
             'throughput' => ['per_min' => 0, 'per_hour' => 0],
-            'latency' => ['avg_seconds' => 0, 'p95_seconds' => 0],
-            'in_flight' => [], 'recent_completed' => [],
+            'latency' => ['avg_ms' => 0, 'p95_ms' => 0],
+            'in_flight' => [], 'recent_completed' => [], 'comment_dms' => [], 'provider_split' => [],
             'generated_at' => now()->toIso8601String(),
         ];
     }
