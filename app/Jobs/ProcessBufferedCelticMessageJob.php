@@ -3,9 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\FortuneReading;
-use App\Models\FortuneTellingSetting;
 use App\Services\CelticCrossService;
-use App\Services\FacebookWebhookService;
 use App\Services\Fortune\MessageBuffer;
 use App\Services\FortuneChannelManager;
 use Illuminate\Bus\Queueable;
@@ -108,48 +106,15 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
             return;
         }
 
-        // 🌙 (2026-05-23) Silent sandbagging — TYPE:A counter ใกล้ max → physical delay + cap
-        //    user spec: ลูกค้าจำกติก 30 นาที — ห้ามประกาศ max questions
-        //    คำนวณ remaining → delay/skip ตาม mode (รั้งเวลาให้ใกล้ window 30min หมด)
-        //    remaining=0 → ไม่เรียก AI, ส่ง template เนียน (ลูกค้าเดาว่าใกล้หมดเวลา)
-        $settings = FortuneTellingSetting::getSettings();
-        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 0);
-        $questionsUsed = (int) ($reading->celtic_questions_used ?? 0);
-        $remaining = $maxQuestions > 0 ? max(0, $maxQuestions - $questionsUsed) : 999;
+        // 🌙 (2026-05-23 v3) ลบ silent sandbagging + physical delay ทั้งหมด
+        //    user spec ใหม่: "เปลี่ยนไม่ให้มีการดีเลย์ในการตอบ + 5 คำถาม / 15 นาที + บอกกติการให้ชัด"
+        //    Hard cap จัดการที่ canAskMoreCeltic() (check ด้านบนแล้ว) → endSession ผ่าน trait
+        //    ไม่มี sleep / typing delay / cap template — ส่งทันที ทุกข้อความ
 
-        // Hard cap — ครบ TYPE:A quota แล้ว → ส่ง template + skip AI call
-        if ($maxQuestions > 0 && $remaining === 0) {
-            Log::info('ProcessBufferedCelticMessageJob: TYPE:A cap reached → silent template', [
-                'reading_id' => $this->readingId,
-                'used' => $questionsUsed,
-                'max' => $maxQuestions,
-            ]);
-
-            $this->sendCapReachedTemplate($reading);
-            // คืน state ให้พร้อมรับข้อความถัดไป — bot ตอบ template ซ้ำจน window หมด (cron auto-finalize)
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-
-            return;
-        }
-
-        // Physical typing delay — รั้งเวลาให้ใกล้ window 30min หมด (cron จะส่ง grand_finale)
-        if ($remaining <= 2 && $remaining > 0 && $this->platform === 'facebook') {
-            $delaySeconds = $remaining === 1 ? 10 : 5;
-            try {
-                app(FacebookWebhookService::class)->sendTypingOn($this->userId);
-                sleep($delaySeconds);
-            } catch (\Throwable $delayErr) {
-                Log::debug('ProcessBufferedCelticMessageJob: typing delay fail (non-blocking)', [
-                    'error' => $delayErr->getMessage(),
-                ]);
-            }
-        }
-
-        Log::info('ProcessBufferedCelticMessageJob: flush + AI', [
+        Log::info('ProcessBufferedCelticMessageJob: flush + AI (no delay)', [
             'reading_id' => $this->readingId,
             'platform' => $this->platform,
             'message_count' => $flushed['count'],
-            'remaining' => $remaining,
             'combined_preview' => mb_substr($combined, 0, 120),
         ]);
 
@@ -212,56 +177,6 @@ class ProcessBufferedCelticMessageJob implements ShouldQueue
         }
     }
 
-    /**
-     * 🌙 (2026-05-23) ส่ง template เนียนเมื่อ TYPE:A counter ครบ max
-     *    user spec: ห้ามประกาศ max questions — ลูกค้าจำกติก 30 นาที
-     *    Template ทำให้ลูกค้าเดาว่า "ใกล้หมดเวลา" (จริงๆ ก็ใช่ — window จะหมดอีกไม่นาน)
-     *    bot ตอบซ้ำได้เรื่อยๆ จนกว่า cron FortuneCelticAutoFinalize จะส่ง grand_finale
-     */
-    protected function sendCapReachedTemplate(FortuneReading $reading): void
-    {
-        // physical delay เนียน 12s ก่อนตอบ — ดึงเวลาให้ใกล้ window หมด
-        if ($this->platform === 'facebook') {
-            try {
-                app(FacebookWebhookService::class)->sendTypingOn($this->userId);
-                sleep(12);
-            } catch (\Throwable $delayErr) {
-                // ignore
-            }
-        }
-
-        $messages = [
-            "🌙 *แม่หมอกำลังเก็บพลังให้เจ้าชะตาค่ะ* ✨\n\n"
-                ."ลองนิ่งกับคำตอบที่ผ่านมา ค่อย ๆ อ่านซ้ำหลายรอบ — บางครั้งความหมายแท้จริงจะค่อย ๆ ผุดขึ้นมาเอง 🕯️\n\n"
-                .'_หากมีเรื่องสำคัญที่ยังค้าง — รอแม่หมอเรียบเรียงพลังให้สักครู่นะคะ_',
-
-            "🕯️ *พลังในไพ่กำลังเงียบลงค่ะ*\n\n"
-                ."แม่หมอขอใช้ช่วงนี้เก็บพลังให้เจ้าชะตา — ระหว่างนี้ลองใคร่ครวญสิ่งที่แม่หมอบอกไปก่อนนะคะ\n\n"
-                .'_แม่หมอจะส่งบทสรุปสำคัญให้ในไม่ช้านี้ ✨_',
-
-            "🌙 *แม่หมอนิ่งฟังเจ้าชะตาอยู่ค่ะ*\n\n"
-                ."บางคำถาม — คำตอบที่ดีที่สุดอยู่ในใจของเจ้าชะตาเองอยู่แล้ว 🙏\n\n"
-                .'_ลองอ่านคำทำนายก่อนหน้านี้ซ้ำอีกครั้ง — บางทีจะเข้าใจในมุมใหม่_',
-        ];
-
-        // เลือก template สลับกัน (variety) — ใช้ counter mod
-        $idx = ((int) ($reading->celtic_questions_used ?? 0)) % count($messages);
-        $message = $messages[$idx];
-
-        try {
-            $channelManager = app(FortuneChannelManager::class);
-            $channelManager->sendResponse($this->platform, $this->userId, [
-                'action' => 'celtic_question_answered',
-                'message' => $message,
-                'reading' => $reading,
-            ], [
-                'from_admin' => true,
-                'message_tag' => 'POST_PURCHASE_UPDATE',
-            ]);
-        } catch (\Throwable $e) {
-            Log::warning('ProcessBufferedCelticMessageJob: sendCapReachedTemplate fail', [
-                'error' => $e->getMessage(),
-            ]);
-        }
-    }
+    // 🌙 (2026-05-23 v3) ลบ sendCapReachedTemplate — hard cap จัดการที่ trait endCelticSession() แล้ว
+    //    user spec ใหม่: ตอบทันที / บอกกติกาให้ชัด / ครบ 5 คำถาม → ส่ง Grand Finale (ไม่ใช่ template เนียน)
 }

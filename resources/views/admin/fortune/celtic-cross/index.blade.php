@@ -123,10 +123,10 @@
                         เวลาถามต่อ (นาที)
                     </label>
                     <input type="number" name="celtic_cross_qa_window_minutes"
-                           value="{{ $settings->celtic_cross_qa_window_minutes ?? 30 }}"
+                           value="{{ $settings->celtic_cross_qa_window_minutes ?? 15 }}"
                            min="5" max="1440"
                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500">
-                    <p class="text-xs text-gray-500 mt-1">นับจากคำทำนายแรก — เกินเวลา session จบอัตโนมัติ (default 30 นาที)</p>
+                    <p class="text-xs text-gray-500 mt-1">นับจากคำทำนายแรก — เกินเวลา session จบอัตโนมัติ (default 15 นาที — 2026-05-23 v3)</p>
                 </div>
             </div>
         </div>
@@ -250,7 +250,7 @@
                                         // fallback: สูตรเก่า celtic_first_answered_at + setting (legacy 3Q flow)
                                         $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
                                         $_proStartedAt = $reading->getConversationState('pro_session_started_at');
-                                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 30);
+                                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 15);
                                         $_minRemaining = null;
                                         $_isExtended = false;
 
@@ -258,14 +258,14 @@
                                             try {
                                                 $_elapsed = (int) \Carbon\Carbon::parse($_proStartedAt)->diffInMinutes(now(), true);
                                                 $_minRemaining = max(0, $_proWindowMin - $_elapsed);
-                                                $_isExtended = $_proWindowMin > ($settings->celtic_cross_qa_window_minutes ?? 30);
+                                                $_isExtended = $_proWindowMin > ($settings->celtic_cross_qa_window_minutes ?? 15);
                                             } catch (\Throwable $e) {
                                                 $_minRemaining = null;
                                             }
                                         }
 
                                         if ($_minRemaining === null && $reading->celtic_first_answered_at) {
-                                            $_deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 30);
+                                            $_deadline = $reading->celtic_first_answered_at->copy()->addMinutes($settings->celtic_cross_qa_window_minutes ?? 15);
                                             $_minRemaining = max(0, (int) ceil(now()->diffInSeconds($_deadline, false) / 60));
                                         }
                                     @endphp

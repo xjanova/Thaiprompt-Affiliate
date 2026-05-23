@@ -115,7 +115,9 @@ class FortuneCelticCrossController extends Controller
             'enable_celtic_cross' => 'sometimes|boolean',
             'celtic_cross_proactive_enabled' => 'sometimes|boolean',
             'celtic_cross_price' => 'numeric|min:1|max:9999',
-            'celtic_cross_max_questions' => 'integer|min:0|max:50', // 0 = ไม่จำกัด
+            // 🌙 (2026-05-23 v3) Hard cap 5 คำถาม / 15 นาที — บังคับให้ min 1 (ไม่ใช่ 0)
+            //    user spec: "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
+            'celtic_cross_max_questions' => 'integer|min:1|max:50',
             'celtic_cross_qa_window_minutes' => 'integer|min:5|max:1440',
             'celtic_cross_main_prompt' => 'nullable|string|max:10000',
             'celtic_cross_followup_prompt' => 'nullable|string|max:10000',
@@ -127,7 +129,7 @@ class FortuneCelticCrossController extends Controller
         $settings->celtic_cross_proactive_enabled = $request->boolean('celtic_cross_proactive_enabled');
         $settings->celtic_cross_price = $validated['celtic_cross_price'] ?? 99.00;
         $settings->celtic_cross_max_questions = $validated['celtic_cross_max_questions'] ?? 5;
-        $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 60;
+        $settings->celtic_cross_qa_window_minutes = $validated['celtic_cross_qa_window_minutes'] ?? 15;
 
         // เก็บ prompt เฉพาะถ้าส่งมา (เว้นว่าง = ใช้ default ใน CelticCrossService)
         $settings->celtic_cross_main_prompt = $validated['celtic_cross_main_prompt'] ?? null;
@@ -455,7 +457,7 @@ class FortuneCelticCrossController extends Controller
 
         $notify = (bool) $request->input('notify', true);
         $settings = FortuneTellingSetting::getSettings();
-        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
 
         try {
             // คำนวณเวลาที่เหลือจาก session เดิม
@@ -588,7 +590,7 @@ class FortuneCelticCrossController extends Controller
         $notify = (bool) $request->input('notify', true);
 
         $settings = FortuneTellingSetting::getSettings();
-        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+        $defaultWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
 
         try {
             // อ่าน state ปัจจุบัน

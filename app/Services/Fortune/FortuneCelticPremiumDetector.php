@@ -81,7 +81,7 @@ class FortuneCelticPremiumDetector
         }
 
         // เช็ค window
-        $windowMin = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $windowMin = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
         $deadline = $reading->celtic_first_answered_at->copy()->addMinutes($windowMin);
         if (now()->greaterThan($deadline)) {
             // window หมด → cache negative สั้น ๆ (60s) เพื่อไม่ query ซ้ำ

@@ -3016,7 +3016,7 @@ class FortuneConversationService
         $name = $reading->facebook_user_name ?? 'คุณ';
         $billRef = $reading->bill_reference ?? '-';
         $picked = $reading->getCelticPickedCount();
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
 
         // ยังเปิดไพ่ไม่ครบ — แนะนำให้ต่อ
         if ($picked < 10) {
@@ -3217,9 +3217,12 @@ class FortuneConversationService
         ];
         $canAskMore = $isOngoing && ($maxQ <= 0 || $qUsed < $maxQ);
         if ($canAskMore) {
-            // 🌙 (2026-05-23) ลบ "ถามต่อได้อีก N คำถาม" — user spec: ห้ามประกาศ max questions
-            //    ลูกค้าจำกติก 30 นาที — ใช้เวลาเป็นกรอบเดียวที่บอก
-            $message .= '💬 คุยต่อได้เลยค่ะ — แม่หมอรอฟัง ✨';
+            // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัด — user spec ใหม่: "ต้องบอกกติการให้ชัดทุกที่"
+            $remainingQ = $maxQ > 0 ? max(0, $maxQ - $qUsed) : null;
+            $rule = $remainingQ !== null
+                ? "❓ เหลือถามได้อีก *{$remainingQ} คำถาม* (จากทั้งหมด {$maxQ})\n"
+                : '';
+            $message .= $rule.'💬 พิมพ์คำถามต่อได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
             $quickReplies[] = ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'];
         } else {
             $message .= '✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏';
@@ -11635,11 +11638,15 @@ PROMPT;
         }
 
         // 99฿ — Celtic
+        // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัด: 5 คำถาม / 15 นาที (ดึงจาก settings)
         if ($celticEnabled) {
+            $_maxQCelt = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $_winCelt = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+            $_qTxtCelt = $_maxQCelt > 0 ? "{$_maxQCelt} คำถาม" : 'ไม่จำกัด';
             $msg .= "━━━━━━━━━━━━━━━━━\n";
             $msg .= "💎 *แพ็คเกจ {$celticPrice} บาท* — ไพ่ Celtic Cross 10 ใบ ⭐ พรีเมียม\n";
             $msg .= "   • เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n";
-            $msg .= "   • คุยต่อกับแม่หมอตามจริง (~30 นาที)\n";
+            $msg .= "   • คุยกับแม่หมอได้ {$_qTxtCelt} ภายใน {$_winCelt} นาที (ตอบทันที)\n";
             $msg .= "   • ทำนายลึกซึ้ง — แม่นยำที่สุด\n";
             // 🎙️ (2026-05-16) แสดง "อัดเสียงสรุป" เฉพาะถ้า admin เปิด voice summary
             //    user spec: "เอาเรื่อง อัดคลิปเสียง ออก ถ้าระบบอัดคลิปเสียงไม่ได้เปิด"
@@ -13671,11 +13678,17 @@ PROMPT;
         //   user spec: "เมนูควรปรับปรุงให้สั้นกระชับ ลดคำขยะ ให้ลูกค้าเห็นว่าพิมพ์อะไรได้บ้าง ทำอะไรได้ที่สำคัญ"
         $price = number_format($this->getDeepReadingPrice(), 0);
 
+        // 🌙 (2026-05-23 v3) เมนูบอกกติกาจาก settings (ไม่ hardcode)
+        $_maxQMenu = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $_winMenu = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+        $_qTxtMenu = $_maxQMenu > 0 ? "{$_maxQMenu} ข้อ" : 'ไม่จำกัด';
+        $_celticPrice = number_format(app(CelticCrossService::class)->getPrice(), 0);
+
         $message = \App\Services\FortuneLocaleService::lo(
             "📋 *เมนูแม่หมอจันทรา*\n"
                 ."━━━━━━━━━━━━━━━━━\n\n"
                 ."🔹 *ดูดวง* — Deep {$price}฿ (วันเกิด+คำถาม+ไพ่)\n"
-                ."🔮 *ไพ่ 10 ใบ* — Celtic 99฿ (ถามได้ 5 ข้อ ใน 30 นาที)\n"
+                ."🔮 *ไพ่ 10 ใบ* — Celtic {$_celticPrice}฿ (ถามได้ {$_qTxtMenu} ใน {$_winMenu} นาที — ตอบทันที)\n"
                 ."📖 *คำทำนายล่าสุด* — ดูคำทำนายที่จ่ายแล้ว\n"
                 ."👤 *คุยกับแม่หมอ* — ทักแอดมินจริง\n"
                 ."🌐 *ภาษา* — เปลี่ยนไทย/ลาว\n"
@@ -13684,7 +13697,7 @@ PROMPT;
             "📋 *ເມນູແມ່ໝໍຈັນທາ*\n"
                 ."━━━━━━━━━━━━━━━━━\n\n"
                 ."🔹 *ເບິ່ງດວງ* — Deep {$price}฿ (ວັນເກີດ+ຄຳຖາມ+ໄພ່)\n"
-                ."🔮 *ໄພ່ 10 ໃບ* — Celtic 99฿ (ຖາມໄດ້ 5 ຂໍ້ ໃນ 30 ນາທີ)\n"
+                ."🔮 *ໄພ່ 10 ໃບ* — Celtic {$_celticPrice}฿ (ຖາມໄດ້ {$_maxQMenu} ຂໍ້ ໃນ {$_winMenu} ນາທີ — ຕອບທັນທີ)\n"
                 ."📖 *ຄຳທຳນາຍຫຼ້າສຸດ* — ເບິ່ງຄຳທຳນາຍທີ່ຈ່າຍແລ້ວ\n"
                 ."👤 *ຄຸຍກັບແມ່ໝໍ* — ທັກແອັດມິນຈິງ\n"
                 ."🌐 *ພາສາ* — ປ່ຽນໄທ/ລາວ\n"
@@ -17078,10 +17091,11 @@ PROMPT;
     public const POST_READING_DEEP_MINUTES = 10;
 
     /**
-     * 🆕 (2026-05-08) Celtic 99฿ premium chat window — 30 นาที
+     * 🆕 (2026-05-08) Celtic 99฿ premium chat window
      *   (ตรงกับ celtic_cross_qa_window_minutes default ที่ admin ตั้ง)
+     *   🌙 (2026-05-23 v3) ปรับเป็น 15 — ตามสเปคใหม่ "5 คำถาม / 15 นาที"
      */
-    public const POST_READING_CELTIC_MINUTES = 30;
+    public const POST_READING_CELTIC_MINUTES = 15;
 
     /**
      * จำนวน follow-up turns สูงสุด (กัน abuse)

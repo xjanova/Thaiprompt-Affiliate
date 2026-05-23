@@ -200,7 +200,7 @@ trait CelticCrossConversationTrait
         $celticPrice = number_format(app(CelticCrossService::class)->getPrice(), 0);
         // 🔢 (2026-05-03) อ่านจาก settings — ตรงกับที่ admin ตั้ง (0 = ไม่จำกัด)
         $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
         $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
 
         // 🎁 หัวเมนู — เปลี่ยนตามว่ามีปุ่มฟรีหรือไม่
@@ -287,18 +287,21 @@ trait CelticCrossConversationTrait
         // 🔮 99 บาท — Celtic Cross (Premium) — เฉพาะถ้า admin เปิด
         // ━━━━━━━━━━━━━━━━━━━━━━━━
         if ($celticEnabled) {
-            // 🩹 (2026-05-04) ลด ad copy เหลือสั้น ๆ — user request: "แค่บอกว่าดูแบบโบราณ celtic cross ดั้งเดิม ไม่ต้องสาธยายเยอะ"
+            // 🩹 (2026-05-04) ลด ad copy เหลือสั้น ๆ — user request: "แค่บอกว่าดูแบบโบราณ celtic cross ดั้งเดิม"
+            // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัด — 5 คำถาม / 15 นาที (จาก settings)
             $celticBlock = FortuneLocaleService::lo(
                 "━━━━━━━━━━━━━━━━━\n"
                     ."👑 *แพคเกจ{$celticNum} — Celtic Cross {$celticPrice} บาท*\n"
                     ."━━━━━━━━━━━━━━━━━\n"
                     ."🃏 ไพ่ 10 ใบ ตามหลัก *Celtic Cross โบราณดั้งเดิม*\n"
-                    ."⏱️ ประมาณ 5-10 นาที\n\n",
+                    ."💬 *คุยกับแม่หมอได้ {$qLimitText} ภายใน {$qaWindow} นาที*\n"
+                    ."⏱️ ทำนายเสร็จใน 5-10 นาที (พิมพ์คำถามได้ทันที ไม่มีรอ)\n\n",
                 "━━━━━━━━━━━━━━━━━\n"
                     ."👑 *ແພັກເກດ{$celticNum} — Celtic Cross {$celticPrice} ບາດ*\n"
                     ."━━━━━━━━━━━━━━━━━\n"
                     ."🃏 ໄພ່ 10 ໃບ ຕາມຫລັກ *Celtic Cross ໂບຮານດັ້ງເດີມ*\n"
-                    ."⏱️ ປະມານ 5-10 ນາທີ\n\n"
+                    ."💬 *ຄຸຍກັບແມ່ໝໍໄດ້ {$qLimitText} ພາຍໃນ {$qaWindow} ນາທີ*\n"
+                    ."⏱️ ທຳນາຍແລ້ວໃນ 5-10 ນາທີ (ພິມຄຳຖາມໄດ້ທັນທີ)\n\n"
             );
             $message .= $celticBlock;
         }
@@ -388,7 +391,7 @@ trait CelticCrossConversationTrait
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
         $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
 
         // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
         // ⚠️ เช็ค Celtic ก่อน Deep เผื่อข้อความมีทั้ง "99" และ "39" (ไม่ค่อยเกิด แต่กันไว้)
@@ -751,14 +754,18 @@ trait CelticCrossConversationTrait
                 Log::warning('Celtic: QR gen fail (ส่ง text-only แทน)', ['error' => $qrErr->getMessage()]);
             }
 
-            $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+            $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+            $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $qLimitTxt = $maxQ > 0 ? "{$maxQ} คำถาม" : 'ไม่จำกัด';
 
             return [
                 'action' => 'celtic_pending_payment',
+                // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัดในบิล — 5 คำถาม / 15 นาที
                 'message' => "🔮 *ดูดวงไพ่ยิปซีเต็มสำรับ Celtic Cross*\n\n"
                     ."✨ ค่าครู: {$baseAmountStr} บาท\n"
                     ."🃏 เปิดไพ่ 10 ใบ ตำแหน่งครบสายพันปี\n"
-                    ."💬 คุยกับแม่หมอจันทรา *จนจุใจ {$qaWindow} นาที* (นับจากคำทำนายแรก)\n"
+                    ."💬 คุยกับแม่หมอได้ *{$qLimitTxt} ภายใน {$qaWindow} นาที* (นับจากคำทำนายแรก)\n"
+                    ."⚡ ตอบทันที ไม่มีรอ — พิมพ์ปุ๊บแม่หมอตอบปั๊บ\n"
                     ."🖼️ ได้รับภาพ Celtic Cross spread สวยๆ ส่งให้ตอนจบทำนาย เป็นที่ระลึก\n\n"
                     ."──────────────────────\n"
                     ."💸 *ค่าครูสำหรับบิลนี้: {$payAmount} บาท*\n"
@@ -766,7 +773,7 @@ trait CelticCrossConversationTrait
                     ."👉 โอนตามจำนวนนี้ผ่าน QR ที่ส่งให้ — บิลหมดอายุใน 30 นาที\n\n"
                     ."💚 *กรุณาโอนให้ตรง ตรงจุดทศนิยมด้วย*\n"
                     ."เพื่อเปิดไพ่ยิปซี 10 ใบ ทีละใบ เมื่อครบแล้วจึงเริ่มถาม\n"
-                    ."ถามได้ทุกเรื่องในช่วงเวลานี้ค่ะ ✨",
+                    .'ถามได้ทุกเรื่องในช่วงเวลานี้ค่ะ ✨',
                 'reading' => $reading,
                 'celtic_price' => $payAmount,
                 'celtic_base_price' => $basePrice,
@@ -1328,13 +1335,36 @@ trait CelticCrossConversationTrait
                 ];
 
             case FortuneReading::STATUS_CELTIC_AWAITING_QUESTION:
-                // 🛑 (2026-05-16) ลบ "พอแค่นี้" exit hint — ลูกค้าเข้าใจผิดพิมพ์ก่อนถาม
-                //   user spec: "เอาคำว่าพอแค่นี้ออกไป เพราะคนเข้าใจผิด ทำให้พิมพ์ตั้งแต่แรก"
-                //   ใหม่: positive prompt "แม่หมอพร้อมทำนาย พิมพ์คำถามได้เลยค่ะ"
-                $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
-                $body = "🌟 *เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมรับฟังเจ้าชะตา*\n\n"
-                    ."💬 *แม่หมอพร้อมทำนาย พิมพ์คำถามได้เลยค่ะ* ✨\n\n"
-                    .'⏳ คุยกันได้จนจุใจภายใน *'.$qaWindow.' นาที*';
+                // 🌙 (2026-05-23 v3) เริ่มต้น / resume — ประกาศกติกาให้ชัด (5 คำถาม / 15 นาที)
+                //    + ถ้าเริ่มถามแล้ว — แสดง "เหลือ X คำถาม / Y นาที"
+                $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+                $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+                $usedQ = (int) ($reading->celtic_questions_used ?? 0);
+                $remainingMin = $reading->getCelticQaRemainingMinutes();
+
+                if ($usedQ === 0) {
+                    // ยังไม่ถามครั้งแรก
+                    $qLine = $maxQ > 0
+                        ? "❓ ถามได้ *{$maxQ} คำถาม* ภายใน *{$qaWindow} นาที*\n"
+                        : "⏳ คุยกันได้ภายใน *{$qaWindow} นาที*\n";
+                    $body = "🌟 *เปิดไพ่ครบ 10 ใบแล้ว — แม่หมอพร้อมรับฟังเจ้าชะตา*\n\n"
+                        ."💬 *พิมพ์คำถามแรกได้เลยค่ะ* ✨\n\n"
+                        .$qLine
+                        .'⚡ ตอบทันที ไม่มีรอ';
+                } else {
+                    // ถามต่อ — แสดงเหลือเท่าไหร่
+                    $remainingQ = $maxQ > 0 ? max(0, $maxQ - $usedQ) : null;
+                    $qLine = $remainingQ !== null
+                        ? "❓ เหลือถามได้อีก *{$remainingQ} คำถาม* (จากทั้งหมด {$maxQ})\n"
+                        : '';
+                    $timeLine = $remainingMin !== null
+                        ? "⏳ เหลือเวลา *{$remainingMin} นาที* (จากทั้งหมด {$qaWindow})"
+                        : "⏳ คุยได้ภายใน *{$qaWindow} นาที*";
+                    $body = "🌟 *แม่หมอพร้อมรับคำถามต่อไป*\n\n"
+                        ."💬 *พิมพ์คำถามได้เลยค่ะ* — หรือกด *\"📜 เลิกทำนายและสรุปผล\"* เมื่อพร้อม ✨\n\n"
+                        .$qLine
+                        .$timeLine;
+                }
 
                 return [
                     'action' => 'celtic_resume_qa',
@@ -1403,7 +1433,7 @@ trait CelticCrossConversationTrait
         //   เดิม: ส่ง static text "เล่าให้แม่หมอฟัง" + รอ user พิมพ์ก่อน
         //   ใหม่: call AI ด้วย sentinel "__OPENING_GREETING__" → AI ทักทาย+ชวนเล่าเรื่อง
         //         + เซ็ต celtic_first_answered_at เพื่อ start QA window
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
         $name = $reading->resolveCustomerName();
 
         // 🔔 (2026-05-14) AI Ping — Loading update 10s/30s/60s + admin alert > 1 min
@@ -1437,24 +1467,32 @@ trait CelticCrossConversationTrait
                 ."🃏 ไพ่ทั้ง 10 ใบของเจ้าชะตาเปิดออกแล้ว — แม่หมอเห็นพลังงานที่ห่อหุ้มเจ้าชะตาอยู่\n\n"
                 ."💬 เล่าให้แม่หมอฟังได้เลย — ตอนนี้มีเรื่องอะไรคาใจที่สุด?";
 
-        // start QA window — markCelticAnswered จะตั้ง celtic_first_answered_at + sequence=1
+        // 🌙 (2026-05-23 v3) Start QA window only — เก็บแค่ timestamp ไม่ bump counter
+        //    เดิม: markCelticAnswered(1) → celtic_questions_used = 1 (offset 1 คำถามผิด)
+        //    ใหม่: set celtic_first_answered_at ตรงๆ — ปล่อยให้ counter เริ่ม 0
+        //          → คำถามแรกจริงของลูกค้า markCelticAnswered(1) → used = 1 ✅
         try {
-            $reading->markCelticAnswered(1);
+            if (empty($reading->celtic_first_answered_at)) {
+                $reading->update(['celtic_first_answered_at' => now()]);
+            }
         } catch (\Throwable $e) {
-            \Log::warning('Celtic: markCelticAnswered after opening greeting fail', [
+            \Log::warning('Celtic: set celtic_first_answered_at after opening greeting fail', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
         }
 
-        // 🛑 (2026-05-16) ลบ "พอแค่นี้" exit hint จาก footer หลังเปิดไพ่ครบ 10 ใบ
-        //   user spec: "เอาคำว่าพอแค่นี้ออกไป เพราะคนเข้าใจผิด ทำให้พิมพ์ตั้งแต่แรก
-        //              ทั้งๆที่ยังไม่ได้ทำนาย — ไม่ต้องมีปุ่ม แค่เพิ่มบล๊อกคำพูดว่า
-        //              แม่หมอพร้อมทำนาย พิมพ์คำถามได้เลยค่ะ"
-        //   keyword detection ("พอแค่นี้" / "ขอบคุณ" / "ยุติการทำนาย") ยังคงไว้สำหรับลูกค้าเก่า
+        // 🌙 (2026-05-23 v3) Footer — ประกาศกติกาให้ชัด (5 คำถาม / 15 นาที)
+        //    user spec: "ต้องบอกกติการให้ชัดทุกที่"
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $qLimitLine = $maxQ > 0
+            ? "❓ ถามได้ *{$maxQ} คำถาม* ภายใน *{$qaWindow} นาที*\n"
+            : "⏳ คุยกับแม่หมอได้ *{$qaWindow} นาที* นับจากนี้\n";
+
         $footer = "\n\n──────────────────────\n"
             ."💬 *แม่หมอพร้อมทำนาย พิมพ์คำถามได้เลยค่ะ* ✨\n\n"
-            ."⏳ คุยกับแม่หมอได้ *{$qaWindow} นาที* นับจากนี้\n"
+            .$qLimitLine
+            ."⚡ ตอบทันที ไม่มีรอ — พิมพ์ปุ๊บแม่หมอตอบปั๊บ\n"
             .'🖼️ ภาพไพ่จัดเรียง — แม่หมอจะส่งตอนจบเป็นที่ระลึก';
 
         return [
@@ -1727,77 +1765,41 @@ trait CelticCrossConversationTrait
             return $this->endCelticSession($reading, 'off_topic_repick', $repickMessage);
         }
 
-        // 🌙 (2026-05-14) ลบ max_questions enforce ทั้งหมด
-        //   user spec: "คุยกับแม่หมอจันทรา จนจุใจ 30 นาที"
-        //   เดิม: ถ้าถามครบ max → end session ก่อนหมดเวลา → ลูกค้าโดนตัด → tier menu โผล่
-        //   ใหม่: ถามได้เรื่อยๆ จนกว่า canAskMoreCeltic() = false (หมดเวลา) หรือ "ยุติการทำนาย"
+        // 🌙 (2026-05-23 v3) ปรับแนวทางใหม่ทั้งหมด — user spec final:
+        //   "ในการทำนายแบบ 99 เปลี่ยนไม่ให้มีการดีเลย์ในการตอบ
+        //    แต่ให้ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
         //
-        // 🆕 (2026-05-17) Typing delay 60-120s — ให้รู้สึกเหมือนหมอจันทรากำลังพิมพ์เอง (ไม่ใช่บอท)
-        //   เก็บ status = CELTIC_GENERATING (ไม่กลับ AWAITING ทันที) → กัน user ถามใหม่ทับ
-        //   ระหว่างรอ — handleCelticGenerating จะ reply "หมอกำลังพิจารณา..." ให้
+        //   เปลี่ยนจาก:
+        //     - ❌ Silent sandbagging (Session #1) → ❌ Sequence-aware delay 0-60s (Session #2)
+        //     - ❌ ห้ามประกาศ max questions
+        //   มาเป็น:
+        //     - ✅ ส่งทันทีทุกคำถาม (zero delay)
+        //     - ✅ บังคับ 5 คำถาม + 15 นาที (hard cap ทั้งคู่)
+        //     - ✅ ประกาศกติกาให้ชัดทุกข้อความ (เหลือ X คำถาม / Y นาที)
 
-        $remainingMin = $reading->getCelticQaRemainingMinutes();
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
-        $timeHint = $remainingMin !== null
-            ? "⏳ เหลือเวลาคุยกับหมอจันทราอีก {$remainingMin} นาที"
-            : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
-
-        $followupOffer = "\n\n──────────────────────\n"
-            .$timeHint."\n"
-            .'💬 พิมพ์ต่อได้เรื่อยๆ — หมอจันทรารับฟังจนจุใจ\n'
-            .'หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อมจบรอบ ✨';
-
-        $finalMessage = $aiResponse.$followupOffer;
-
-        // Dispatch delayed send — 60-120s random
-        // 🛡️ (2026-05-21) FIX platform detection
-        //   เคสจริง: reading 3201 ลูกค้า LINE (Ud30f...) แต่ facebook_user_id ก็ populated ด้วย (legacy)
-        //            → เก่าใช้ 'facebook' → FB API throw 'invalid recipient'
-        //   Fix priority:
-        //     1. ใช้ $reading->platform ก่อน (เก็บตอนสร้าง reading)
-        //     2. Fallback: detect จาก user_id pattern (LINE = U[a-f0-9]{32}, FB = digits)
-        //     3. Last resort: facebook_user_id present
+        // ดึง platform + user ID สำหรับ logging
         $platform = $reading->platform;
         if (! $platform || ! in_array($platform, ['facebook', 'line'], true)) {
             $candidateId = $reading->platform_user_id ?: $reading->facebook_user_id ?: '';
             $platform = preg_match('/^U[a-f0-9]{32}$/i', $candidateId) ? 'line' : 'facebook';
         }
-        // For LINE — use platform_user_id (canonical), fallback facebook_user_id (legacy)
-        // For FB — use facebook_user_id (canonical)
         $sendUserId = $platform === 'line'
             ? ($reading->platform_user_id ?: $reading->facebook_user_id)
             : ($reading->facebook_user_id ?: $reading->platform_user_id);
 
-        // 🚀 (2026-05-23) Sequence-aware delay — Q1 ส่งทันที, Q2+ ค่อยดึงเวลาตามระยะ
-        //   user spec v1: "ในคำถามแรก ให้รีบส่งให้ก่อน ที่เหลือค่อยดึงเวลาตามระยะ"
-        //   user spec v2: "แต่ละคำถามไม่ควรดึงนานเกิน 2 นาที" — รวม AI generation 30-60s ด้วย
-        //
-        //   Constraint: AI ใช้เวลา generate 30-60s แล้ว — queue delay เพิ่มต้องไม่ทำให้
-        //   total experience ของลูกค้าเกิน 120s (2 min) → cap delay สูงสุด ~60s
-        //
-        //   Sequence ที่ใช้คือลำดับ TYPE:A ของลูกค้า (มาจาก CelticCrossService::askQuestion):
-        //     • sequence = 1 → คำถามแรก / chitchat ก่อนคำถามแรก → 0s (first impression)
-        //     • sequence = 2 → 10-25s  (รวม AI ≤ 85s)
-        //     • sequence = 3 → 25-45s  (รวม AI ≤ 105s)
-        //     • sequence >= 4 → 45-60s (รวม AI ≤ 120s = 2 min cap)
-        $customerSequence = (int) ($sequence ?? 1);
-        if ($customerSequence <= 1) {
-            $delaySeconds = 0;
-        } elseif ($customerSequence === 2) {
-            $delaySeconds = random_int(10, 25);
-        } elseif ($customerSequence === 3) {
-            $delaySeconds = random_int(25, 45);
-        } else {
-            $delaySeconds = random_int(45, 60);
-        }
+        // นับ counter หลัง AI ตอบ + markCelticAnswered() (refresh ก่อน)
+        $reading->refresh();
+        $remainingMin = $reading->getCelticQaRemainingMinutes();
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+        $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $usedQ = (int) ($reading->celtic_questions_used ?? 0);
+        $remainingQ = $maxQ > 0 ? max(0, $maxQ - $usedQ) : null;
 
-        // 🚀 (2026-05-23) Q1 หรือไม่มี user ID → ส่งทันที (bypass delayed job)
-        //   - Q1: ลูกค้าจ่ายแพง+รอนาน ต้องเห็นคำทำนายทันทีที่ AI พร้อม
-        //   - ไม่มี user ID: fallback เดิม (edge case)
-        if ($delaySeconds === 0 || ! $sendUserId) {
-            $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
-
-            // FB — typing_off ก่อน เพื่อล้าง typing dots (ถ้าเคย typing_on จาก thinking ack)
+        // ⛔ (2026-05-23 v3) Hard cap — ถามครบ max แล้ว → จบ session พร้อม Grand Finale
+        //    endCelticSession('max_questions_reached', $aiResponse) จะรวม
+        //    คำทำนายล่าสุด + summary ฟันธงแล้วส่งให้ลูกค้า + ปิด session
+        if ($maxQ > 0 && $usedQ >= $maxQ) {
+            // typing_off ก่อนปิด session — เคลียร์ typing dots
             if ($sendUserId && $platform === 'facebook') {
                 try {
                     $settings = \App\Models\FortuneTellingSetting::getSettings();
@@ -1808,50 +1810,63 @@ trait CelticCrossConversationTrait
                 }
             }
 
-            \Log::info('Celtic: immediate prediction (Q1 or no userId)', [
+            \Log::info('Celtic: max_questions_reached → end session with Grand Finale', [
                 'reading_id' => $reading->id,
-                'sequence' => $customerSequence,
+                'used' => $usedQ,
+                'max' => $maxQ,
                 'platform' => $platform,
-                'has_user_id' => (bool) $sendUserId,
             ]);
 
-            return [
-                'action' => 'celtic_question_answered',
-                'message' => $finalMessage,
-                'reading' => $reading,
-            ];
+            return $this->endCelticSession($reading, 'max_questions_reached', $aiResponse);
         }
 
-        // Q2+ — dispatch delayed (สร้างความขลังให้รู้สึกเหมือนหมอจันทรากำลังพิมพ์เอง)
-        \App\Jobs\SendCelticDelayedPrediction::dispatch(
-            $reading->id,
-            $finalMessage,
-            $platform,
-            $sendUserId,
-        )->delay(now()->addSeconds($delaySeconds));
+        // 📢 (2026-05-23 v3) Footer — ประกาศกติกาให้ชัดทุกข้อความ
+        //    user spec: "ต้องบอกกติการให้ชัดทุกที่"
+        $timeHint = $remainingMin !== null
+            ? "⏳ เหลือเวลา *{$remainingMin} นาที* (จากทั้งหมด {$qaWindow} นาที)"
+            : "⏳ คุยได้ภายใน *{$qaWindow} นาที* นับจากคำทำนายแรก";
 
-        // FB เท่านั้น — ส่ง typing_on ทันทีให้ลูกค้าเห็นจุดสามจุด (~20s แล้วหาย)
-        if ($platform === 'facebook') {
+        $qHint = '';
+        if ($remainingQ !== null) {
+            $qHint = $remainingQ > 0
+                ? "\n❓ เหลือถามได้อีก *{$remainingQ} คำถาม* (จากทั้งหมด {$maxQ} คำถาม)"
+                : "\n❓ ครบ {$maxQ} คำถามแล้ว — แม่หมอกำลังเตรียมสรุปท้ายให้";
+        }
+
+        $followupOffer = "\n\n──────────────────────\n"
+            .$timeHint
+            .$qHint."\n"
+            .'💬 พิมพ์คำถามต่อไปได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
+
+        $finalMessage = $aiResponse.$followupOffer;
+
+        // 🚀 (2026-05-23 v3) ส่งทันที — ไม่มี delay ทุกคำถาม
+        //    user spec: "เปลี่ยนไม่ให้มีการดีเลย์ในการตอบ"
+        $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
+
+        if ($sendUserId && $platform === 'facebook') {
             try {
                 $settings = \App\Models\FortuneTellingSetting::getSettings();
                 (new \App\Services\FacebookWebhookService($settings))
-                    ->sendTypingIndicator($sendUserId, true);
+                    ->sendTypingIndicator($sendUserId, false);
             } catch (\Throwable $e) {
-                \Log::debug('Celtic: typing_on ล้มเหลว (non-blocking)', ['error' => $e->getMessage()]);
+                // ignore — non-blocking
             }
         }
 
-        \Log::info('Celtic: dispatched delayed prediction', [
+        \Log::info('Celtic: immediate prediction (no delay)', [
             'reading_id' => $reading->id,
-            'delay_sec' => $delaySeconds,
-            'sequence' => $customerSequence,
+            'sequence' => $sequence,
+            'used' => $usedQ,
+            'max' => $maxQ,
+            'remaining_q' => $remainingQ,
+            'remaining_min' => $remainingMin,
             'platform' => $platform,
         ]);
 
-        // คืน action 'celtic_typing_only' → ChannelManager ไม่ส่ง message ทันที (รอ Job ส่งให้)
         return [
-            'action' => 'celtic_typing_only',
-            'message' => '',
+            'action' => 'celtic_question_answered',
+            'message' => $finalMessage,
             'reading' => $reading,
         ];
     }
@@ -1923,7 +1938,7 @@ trait CelticCrossConversationTrait
             : 0;
 
         $maxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
-        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
 
         // 🌟 (2026-05-05) Grand Finale Master Summary — generate ทุกครั้งที่เข้าเงื่อนไข
         //   user spec 2026-05-05: "หากยังถามไม่ครบแต่ยุติลงก่อน...หลุดหมดเวลาคุย ให้เข้าโฟลว์
@@ -1970,7 +1985,15 @@ trait CelticCrossConversationTrait
                     .str_repeat('━', 17)."\n\n";
             }
 
+            // 🌙 (2026-05-23 v3) เหตุผลการจบ — บอกชัดว่าครบกติกาแล้ว (5 คำถาม / 15 นาที)
+            $reasonNotice = match ($reason) {
+                'max_questions_reached' => "✅ *ครบ ".max(1, $maxQ)." คำถามตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
+                'time_expired' => "⏰ *ครบ {$qaWindow} นาทีตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
+                default => '',
+            };
+
             $closingMessage = $finalAnswerSection
+                .$reasonNotice
                 ."🌟✨ *บทสรุปสุดท้ายจากแม่หมอจันทรา* ✨🌟\n"
                 ."👑 *VIP Master Reading*\n\n"
                 .str_repeat('━', 17)."\n\n"

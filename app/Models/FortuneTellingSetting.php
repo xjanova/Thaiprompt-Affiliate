@@ -474,8 +474,8 @@ class FortuneTellingSetting extends Model
         // 🔮 Celtic Cross — ค่าเริ่มต้น (admin ต้องเปิด toggle ก่อนใช้งาน)
         'enable_celtic_cross' => false,
         'celtic_cross_price' => 99.00,
-        'celtic_cross_max_questions' => 5, // (2026-05-03) จำกัด 5 คำถาม default — admin override ได้
-        'celtic_cross_qa_window_minutes' => 30,
+        'celtic_cross_max_questions' => 5, // (2026-05-23 v3) 5 คำถาม — บังคับ hard cap + บอกกติกาให้ชัด
+        'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
         'celtic_cross_proactive_enabled' => true,
         // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
         'enable_free_card_reading' => true,
@@ -677,11 +677,11 @@ class FortuneTellingSetting extends Model
     /**
      * ดึง QA window (นาที) — เวลาที่ลูกค้าคุยกับแม่หมอได้หลังคำทำนายแรก
      *
-     * Default: 30 นาที
+     * Default: 15 นาที (2026-05-23 v3 — ปรับจาก 30)
      */
     public function getCelticQaWindowMinutes(): int
     {
-        return max(1, (int) ($this->celtic_cross_qa_window_minutes ?? 30));
+        return max(1, (int) ($this->celtic_cross_qa_window_minutes ?? 15));
     }
 
     /**

@@ -32,7 +32,7 @@
                         // คำนวณเวลาคงเหลือของ Pro Session ปัจจุบัน
                         $_proActive = (bool) $reading->getConversationState('pro_session_active', false);
                         $_proStartedAt = $reading->getConversationState('pro_session_started_at');
-                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 30);
+                        $_proWindowMin = (int) $reading->getConversationState('pro_session_window_minutes', $settings->celtic_cross_qa_window_minutes ?? 15);
                         $_proRemainingMin = 0;
                         if ($_proActive && ! empty($_proStartedAt)) {
                             try {

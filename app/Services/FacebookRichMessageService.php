@@ -125,15 +125,17 @@ class FacebookRichMessageService
             }
             if ($celticEnabled) {
                 // 🃏 (2026-05-03) ອະທິບາຍ Celtic Cross 10 ໃບ — ໃຫ້ລູກຄ້າເຫັນຄຸນຄ່າ
-                //   ❓ ດຶງຈຳນວນຄຳຖາມຈາກ settings (0 = ບໍ່ຈຳກັດ)
+                // 🌙 (2026-05-23 v3) ປະກາດກະຕິກາໃຫ້ຊັດ: 5 ຄຳຖາມ / 15 ນາທີ + ຕອບທັນທີ
                 $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+                $qaWindowLao = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
                 $qLimitTextLao = $maxQRaw <= 0 ? 'ບໍ່ຈຳກັດ' : "{$maxQRaw} ຄຳຖາມ";
                 $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
                     . "   🃏 ຈິດເລືອກໄພ່ 10 ໃບ ຄອບຄຸມ:\n"
                     . "   • ອະດີດ → ປັດຈຸບັນ → ອະນາຄົດ\n"
                     . "   • ອຸປະສັກ + ຕົວທ່ານ + ຄົນຮອບຂ້າງ\n"
                     . "   • ຄວາມຫວັງ&ຢ້ານ + ຜົນລັບ\n"
-                    . "   ❓ ຖາມໄດ້ {$qLimitTextLao} — ແມ່ນຍຳເລິກກວ່າ";
+                    . "   ❓ ຖາມໄດ້ {$qLimitTextLao} ພາຍໃນ {$qaWindowLao} ນາທີ\n"
+                    . "   ⚡ ຕອບທັນທີ ບໍ່ມີລໍຖ້າ";
             }
             // 🎁 (2026-05-04) ลบบรรทัด "🆓 ດູດວງຟຣີ" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         } else {
@@ -143,16 +145,17 @@ class FacebookRichMessageService
             }
             if ($celticEnabled) {
                 // 🃏 (2026-05-03) อธิบาย Celtic Cross 10 ใบ — ให้ลูกค้าเห็นคุณค่า
-                //   ชื่อ position จริงจาก FortuneReading::CELTIC_POSITIONS
-                //   ❓ ดึงจำนวนคำถามจาก settings (0 = ไม่จำกัด)
+                // 🌙 (2026-05-23 v3) ประกาศกติกาให้ชัด: 5 คำถาม / 15 นาที + ตอบทันที
                 $maxQRaw = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+                $qaWindowTh = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
                 $qLimitText = $maxQRaw <= 0 ? 'ไม่จำกัด' : "{$maxQRaw} คำถาม";
                 $serviceLines[] = "🔮 Celtic Cross 💰💰 {$celticPrice} BAHT 💰💰\n"
                     . "   🃏 จิตเลือกไพ่ 10 ใบ ครอบคลุม:\n"
                     . "   • อดีต → ปัจจุบัน → อนาคต\n"
                     . "   • อุปสรรค + ตัวคุณ + คนรอบข้าง\n"
                     . "   • ความหวัง&กลัว + ผลลัพธ์\n"
-                    . "   ❓ ถามได้ {$qLimitText} — แม่นยำลึกกว่า";
+                    . "   ❓ ถามได้ {$qLimitText} ภายใน {$qaWindowTh} นาที\n"
+                    . "   ⚡ ตอบทันที ไม่มีรอ";
             }
             // 🎁 (2026-05-04) ลบบรรทัด "🆓 ดูดวงฟรี" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         }

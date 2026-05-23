@@ -34,8 +34,9 @@ trait ProSessionTrait
     /**
      * Window ของ Celtic 99 หลังเปิดไพ่ใบที่ 10
      *   (ใช้ celtic_cross_qa_window_minutes ของ admin ก่อน — ค่านี้เป็น fallback)
+     *   🌙 (2026-05-23 v3) ปรับเป็น 15 — ตามสเปคใหม่ "5 คำถาม / 15 นาที"
      */
-    public const PRO_SESSION_CELTIC_MINUTES = 30;
+    public const PRO_SESSION_CELTIC_MINUTES = 15;
 
     /**
      * Confirmation gate timeout — หลังตรวจเจอ "พอแค่นี้/ขอบคุณ"

@@ -1864,15 +1864,23 @@ class FacebookWebhookController extends Controller
             // 5. ส่งคำตอบ + footer
             $reading->refresh();
             $remainingMin = $reading->getCelticQaRemainingMinutes();
-            $qaWindow = (int) (\App\Models\FortuneTellingSetting::getSettings()->celtic_cross_qa_window_minutes ?? 30);
+            $settingsObj = \App\Models\FortuneTellingSetting::getSettings();
+            $qaWindow = (int) ($settingsObj->celtic_cross_qa_window_minutes ?? 15);
+            $maxQ = (int) ($settingsObj->celtic_cross_max_questions ?? 5);
+            $usedQ = (int) ($reading->celtic_questions_used ?? 0);
+            $remainingQ = $maxQ > 0 ? max(0, $maxQ - $usedQ) : null;
+
             $timeHint = $remainingMin !== null
-                ? "⏳ เหลือเวลาคุยกับแม่หมออีก {$remainingMin} นาที"
-                : "⏳ เจ้าชะตาคุยต่อได้ภายใน {$qaWindow} นาทีนับจากคำทำนายแรก";
+                ? "⏳ เหลือเวลา *{$remainingMin} นาที* (จาก {$qaWindow})"
+                : "⏳ คุยได้ภายใน *{$qaWindow} นาที* นับจากคำทำนายแรก";
+            if ($remainingQ !== null) {
+                $timeHint .= "\n❓ เหลือถามได้อีก *{$remainingQ} คำถาม* (จาก {$maxQ})";
+            }
 
             $message = $result['response']
                 ."\n\n──────────────────────\n"
                 .$timeHint."\n"
-                .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
+                .'💬 พิมพ์ต่อได้เลย — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม ✨';
 
             $this->facebookService->sendQuickReplies($senderId, $message, [
                 ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],

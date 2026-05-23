@@ -181,7 +181,7 @@ class FortuneCelticAutoFinalize extends Command
     protected function findExpiredCelticSessions(?string $specificId, int $limit): \Illuminate\Support\Collection
     {
         $settings = FortuneTellingSetting::getSettings();
-        $qaWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+        $qaWindow = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
         $qaCutoff = now()->subMinutes($qaWindow);
 
         $query = FortuneReading::query()

@@ -2509,16 +2509,18 @@ class FortuneReading extends Model
     /**
      * ลูกค้าสามารถถามคำถาม Celtic Cross ต่อได้ไหม
      *
-     * 🆕 (2026-05-02) AI-driven dialog — ไม่จำกัดจำนวนคำถาม
-     *   • Q1 ยังไม่ตอบ → ถามได้เสมอ (เปิดให้พิมพ์คำถามแรก)
-     *   • Q1 ตอบไปแล้ว → ภายใน window (default 30 นาที) นับจาก celtic_first_answered_at
-     *   • AI จะเป็นผู้ตัดสินใจเองว่าจบ session ตอนไหน (ส่ง [END_SESSION] token)
-     *   • ระบบ + ลูกค้ายังกด "พอแค่นี้" ได้ตลอด
+     * 🌙 (2026-05-23 v3) บังคับ hard cap 5 คำถาม / 15 นาที — user spec
+     *   "ถาม 5 คำถาม ภายใน 15 นาที และต้องบอกกติการให้ชัดทุกที่"
+     *
+     *   • Q1 ยังไม่ตอบ → ถามได้เสมอ
+     *   • ครบ max_questions แล้ว → false (จะถูก endCelticSession ส่ง summary)
+     *   • เลย window แล้ว → false (FortuneCelticAutoFinalize ส่ง grand_finale)
      */
     public function canAskMoreCeltic(): bool
     {
         $settings = FortuneTellingSetting::getSettings();
-        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
+        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 5);
 
         // ยังไม่ได้ตอบ Q1 → ถามได้
         if (! $this->celtic_first_answered_at) {
@@ -2527,17 +2529,37 @@ class FortuneReading extends Model
 
         // 🛡️ (2026-05-21) Safety valve — ถ้า admin reset (celticQuestions ว่าง / counter=0)
         //   → ignore stale celtic_first_answered_at + allow asking
-        //   เคสจริง: reading 3201 Q1 ถูก mark answered ตอน push fail (spam silenced)
-        //            → timer expired ลูกค้าไม่รู้ตัว → admin reset แต่ field ค้างอยู่
-        //   Fix: ถ้า questions used ลดลงเป็น 0 หรือ records ว่าง = reset แล้ว → reset timer implicit
         if ($this->celtic_questions_used === 0 || $this->celticQuestions()->count() === 0) {
             return true;
         }
 
-        // หลัง Q1 → เช็ค window 30 นาที (anti-troll)
+        // ⛔ (2026-05-23 v3) Max questions hard cap — เช็คก่อน window
+        //   max=0 = unlimited (admin override) → ข้าม check นี้
+        if ($maxQuestions > 0 && (int) $this->celtic_questions_used >= $maxQuestions) {
+            return false;
+        }
+
+        // หลัง Q1 → เช็ค window (default 15 นาที)
         $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 
         return now()->lessThanOrEqualTo($deadline);
+    }
+
+    /**
+     * 🌙 (2026-05-23 v3) เหลือคำถามอีกกี่ครั้ง — สำหรับแสดง "เหลือ X คำถาม" ทุกข้อความ
+     *
+     * @return int|null  null = unlimited (admin set 0) — caller ไม่ต้องแสดง
+     */
+    public function getCelticRemainingQuestions(): ?int
+    {
+        $settings = FortuneTellingSetting::getSettings();
+        $maxQuestions = (int) ($settings->celtic_cross_max_questions ?? 5);
+
+        if ($maxQuestions <= 0) {
+            return null;
+        }
+
+        return max(0, $maxQuestions - (int) ($this->celtic_questions_used ?? 0));
     }
 
     /**
@@ -2588,7 +2610,7 @@ class FortuneReading extends Model
         }
 
         $settings = FortuneTellingSetting::getSettings();
-        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 30);
+        $windowMin = (int) ($settings->celtic_cross_qa_window_minutes ?? 15);
         $deadline = $this->celtic_first_answered_at->copy()->addMinutes($windowMin);
 
         if (now()->greaterThan($deadline)) {
