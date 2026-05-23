@@ -177,6 +177,8 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
             Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
             Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
             Route::get('/{reading}', [FortuneReadingsController::class, 'show'])->name('show');
+            // Conversation history (initial Q+A from row + admin replies from fortune_admin_qa)
+            Route::get('/{reading}/transcript', [FortuneReadingsController::class, 'transcript'])->name('transcript');
             // Admin actions on a reading (used by warroom /bills page)
             Route::post('/{reading}/mark-paid', [FortuneReadingsController::class, 'markPaid'])->name('mark-paid');
             Route::post('/{reading}/refund', [FortuneReadingsController::class, 'refund'])->name('refund');

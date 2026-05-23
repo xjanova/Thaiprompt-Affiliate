@@ -7,7 +7,9 @@ use App\Http\Resources\Admin\Fortune\FortuneReadingResource;
 use App\Models\FortuneReading;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Admin Mobile API: Fortune Readings
@@ -221,5 +223,127 @@ class FortuneReadingsController extends Controller
             'data' => ['reading_id' => $reading->id],
             'message' => 'ยกเลิกบิลแล้ว',
         ]);
+    }
+
+    /**
+     * GET /api/admin/fortune/readings/{reading}/transcript
+     *
+     * Returns the full message trail for a reading, reconstructed from:
+     *   1. fortune_readings — the initial question + AI response
+     *   2. fortune_admin_qa  — extra admin replies typed in Messenger after
+     *      the initial bot reply (joined by reading_id)
+     *
+     * Used by warroom /chat to render real conversation history instead of
+     * just the initial question/answer pair.
+     */
+    public function transcript(FortuneReading $reading): JsonResponse
+    {
+        $messages = [];
+        $mid = 1;
+
+        $messages[] = [
+            'id' => $mid++,
+            'role' => 'system',
+            'text' => 'เริ่มสนทนา · ' . optional($reading->created_at)->toIso8601String(),
+            'ts' => optional($reading->created_at)->toIso8601String(),
+        ];
+
+        // Initial customer question(s)
+        $questions = $this->normalizeQuestions($reading->questions);
+        foreach ($questions as $q) {
+            $messages[] = [
+                'id' => $mid++,
+                'role' => 'user',
+                'text' => (string) $q,
+                'ts' => optional($reading->created_at)->toIso8601String(),
+            ];
+        }
+
+        // Payment confirmation
+        if ($reading->is_paid && $reading->amount_paid > 0 && $reading->paid_at) {
+            $messages[] = [
+                'id' => $mid++,
+                'role' => 'system',
+                'text' => '✓ รับชำระ ฿' . number_format((float) $reading->amount_paid, 2) . ' · ' . optional($reading->paid_at)->toIso8601String(),
+                'ts' => optional($reading->paid_at)->toIso8601String(),
+            ];
+        }
+
+        // Initial AI response from the row itself
+        if ($reading->ai_response) {
+            $isAdmin = ($reading->response_type ?? '') === 'admin';
+            $messages[] = [
+                'id' => $mid++,
+                'role' => $isAdmin ? 'admin' : 'bot',
+                'by' => $isAdmin ? 'admin' : null,
+                'ai' => $isAdmin ? null : ($reading->ai_provider ?? null),
+                'text' => (string) $reading->ai_response,
+                'ts' => optional($reading->responded_at ?? $reading->created_at)->toIso8601String(),
+            ];
+        } elseif (! $reading->responded_at) {
+            $messages[] = [
+                'id' => $mid++,
+                'role' => 'system',
+                'text' => '⌛ รอคำทำนาย',
+                'ts' => null,
+            ];
+        }
+
+        // Real admin replies typed in Messenger after the initial bot reply.
+        // Stored in fortune_admin_qa keyed by reading_id.
+        if (Schema::hasTable('fortune_admin_qa')) {
+            $follows = DB::table('fortune_admin_qa')
+                ->where('reading_id', $reading->id)
+                ->orderBy('created_at')
+                ->limit(200)
+                ->get(['q_text', 'a_text', 'admin_user_id', 'created_at']);
+
+            foreach ($follows as $row) {
+                if (! empty($row->q_text)) {
+                    $messages[] = [
+                        'id' => $mid++,
+                        'role' => 'user',
+                        'text' => (string) $row->q_text,
+                        'ts' => (string) $row->created_at,
+                    ];
+                }
+                if (! empty($row->a_text)) {
+                    $messages[] = [
+                        'id' => $mid++,
+                        'role' => 'admin',
+                        'by' => $row->admin_user_id ? ('admin#' . $row->admin_user_id) : 'admin',
+                        'text' => (string) $row->a_text,
+                        'ts' => (string) $row->created_at,
+                    ];
+                }
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'reading_id' => $reading->id,
+                'messages' => $messages,
+                'generated_at' => now()->toIso8601String(),
+            ],
+        ]);
+    }
+
+    private function normalizeQuestions($raw): array
+    {
+        if (is_array($raw)) return array_values(array_filter($raw, fn ($x) => $x !== '' && $x !== null));
+        if (is_string($raw) && $raw !== '') {
+            $trimmed = trim($raw);
+            if (str_starts_with($trimmed, '[')) {
+                try {
+                    $decoded = json_decode($trimmed, true);
+                    if (is_array($decoded)) {
+                        return array_values(array_filter($decoded, fn ($x) => $x !== '' && $x !== null));
+                    }
+                } catch (\Throwable $e) {}
+            }
+            return [$trimmed];
+        }
+        return [];
     }
 }
