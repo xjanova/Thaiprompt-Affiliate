@@ -1530,9 +1530,12 @@ trait CelticCrossConversationTrait
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" lone — ตอบ contextual ว่ายังอยู่ในรอบ
         if ($this->looksLikeFortuneRestartRequest($messageText)) {
             $remainingMin = $reading->getCelticQaRemainingMinutes();
+            // 🌙 (2026-05-24) ใช้ dynamic qa window — เดิม hardcode "30 นาที"
+            //   ปัจจุบันสเปคใหม่ 15 นาที (Session 2026-05-23 #7) — admin override ได้
+            $qaWindow = app(CelticCrossService::class)->getQaWindowMinutes();
             $timeHint = $remainingMin !== null && $remainingMin > 0
                 ? "⏳ คุยกับแม่หมอได้อีก {$remainingMin} นาที"
-                : '⏳ คุยกับแม่หมอได้ภายใน 30 นาทีนับจากเปิดไพ่';
+                : "⏳ คุยกับแม่หมอได้ภายใน {$qaWindow} นาทีนับจากเปิดไพ่";
 
             return [
                 'action' => 'celtic_already_in_session',

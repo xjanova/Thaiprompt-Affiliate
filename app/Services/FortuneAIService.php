@@ -5883,7 +5883,11 @@ TXT;
             $upsellLines[] = "🔹 *ดูดวงเชิงลึก {$deepPrice} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซีเฉพาะคำถาม (เสร็จใน 1-3 นาที)";
         }
         if ($celticEnabled) {
-            $upsellLines[] = "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้หลายคำถาม + ภาพไพ่สวยงาม";
+            // 🌙 (2026-05-24) บอกสเปคชัด — เดิม "ถามได้หลายคำถาม" (vague)
+            //   ปัจจุบัน 5 คำถาม / 15 นาที (Session 2026-05-23 #7) — admin override ได้
+            $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+            $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+            $upsellLines[] = "🔮 *ไพ่ยิปซีเต็มสำรับ Celtic Cross {$celticPrice} บาท* — เปิด 10 ใบ ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที + ภาพไพ่สวยงาม";
         }
         $upsellBlock = empty($upsellLines) ? '' : implode("\n", $upsellLines);
 

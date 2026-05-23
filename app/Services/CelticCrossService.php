@@ -122,7 +122,12 @@ class CelticCrossService
         }
 
         if (! $reading->canAskMoreCeltic()) {
-            return ['success' => false, 'message' => 'ครบจำนวนคำถามแล้ว หรือเลยเวลา 1 ชั่วโมง'];
+            // 🌙 (2026-05-24) ใช้ dynamic settings — เดิม hardcode "1 ชั่วโมง" ตั้งแต่สเปคเก่า
+            //   ปัจจุบันสเปคใหม่ 5 คำถาม / 15 นาที (Session 2026-05-23 #7)
+            $maxQ = $this->getMaxQuestions();
+            $qaWindow = $this->getQaWindowMinutes();
+
+            return ['success' => false, 'message' => "ครบจำนวนคำถามแล้ว ({$maxQ} คำถาม) หรือเลยเวลา {$qaWindow} นาทีค่ะ"];
         }
 
         // 🛡️ (2026-05-21) Sequence จาก records จริง — กัน counter inconsistency

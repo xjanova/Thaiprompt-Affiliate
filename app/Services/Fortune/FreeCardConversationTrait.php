@@ -554,10 +554,15 @@ trait FreeCardConversationTrait
                 "🔹 *ເບິ່ງດວງເຈາະເລິກ {$deepPriceInt} ບາດ* — ວິເຄາະດາວເຈົ້າຊະນະ + ໄພ່ຍິບຊີ"
             )
             : null;
+        // 🌙 (2026-05-24) บอกสเปคชัด — เดิม "ถามได้หลายคำถาม / ຖາມໄດ້ຫຼາຍຄຳຖາມ" (vague)
+        //   ปัจจุบัน 5 คำถาม / 15 นาที (Session 2026-05-23 #7) — admin override ได้
+        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+
         $celticLine = $celticEnabled
             ? FortuneLocaleService::lo(
-                "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้หลายคำถาม",
-                "🔮 *Celtic Cross {$celticPriceInt} ບາດ* — ໄພ່ 10 ໃບ ຖາມໄດ້ຫຼາຍຄຳຖາມ"
+                "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้ {$celticMaxQ} คำถาม / {$celticQaWindow} นาที",
+                "🔮 *Celtic Cross {$celticPriceInt} ບາດ* — ໄພ່ 10 ໃບ ຖາມໄດ້ {$celticMaxQ} ຄຳຖາມ / {$celticQaWindow} ນາທີ"
             )
             : null;
         $declineLine = FortuneLocaleService::lo(

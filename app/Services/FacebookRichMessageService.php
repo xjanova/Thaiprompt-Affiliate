@@ -730,11 +730,17 @@ class FacebookRichMessageService
 
         // ข้อความแตกต่างตามสถานะฟรี + Deep/Celtic toggle
         $qCount = \App\Services\FortuneConversationService::REQUIRED_QUESTIONS;
+
+        // 🌙 (2026-05-24) Celtic spec announce — 5 คำถาม / 15 นาที (dynamic จาก settings)
+        $celticMaxQ = (int) ($this->settings->celtic_cross_max_questions ?? 5);
+        $celticQaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+        $celticSpec = "{$celticMaxQ} คำถาม / {$celticQaWindow} นาที";
+
         if ($freeEnabled) {
             if ($deepEnabled) {
                 $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n💎 ลองดูดวงเชิงลึกสิ!\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซีจริง\n\n💰 ค่าครู {$priceText} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!";
             } elseif ($celticEnabled) {
-                $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n🔮 ลองไพ่ Celtic Cross 10 ใบสิ!\n• เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n• คุยต่อกับแม่หมอตามจริง (~30 นาที)\n\n💰 ค่าครู {$celticPrice} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!";
+                $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n🔮 ลองไพ่ Celtic Cross 10 ใบสิ!\n• เปิดไพ่ยิปซี 10 ใบเต็มสำรับ\n• ถามได้ {$celticSpec}\n\n💰 ค่าครู {$celticPrice} บาท\n\n💚 หรือแอด LINE เพื่อรับสิทธิ์พิเศษ!";
             } else {
                 $text = "😊 สิทธิ์ดูดวงฟรีวันนี้หมดแล้ว\n\n🙏 กลับมาใหม่พรุ่งนี้ได้\n\n💚 แอด LINE เพื่อรับสิทธิ์พิเศษ!";
             }
@@ -742,7 +748,7 @@ class FacebookRichMessageService
             if ($deepEnabled) {
                 $text = "💎 ดูดวงโดย{$this->brandName}\n\n• {$qCount} คำถามโฟกัสเดียว — แม่นยำ\n• ดาวเจ้าชนะ + ไพ่ยิปซี (ไม่ยกเมฆ)\n• ใช้วันเกิดวิเคราะห์\n\n💰 ค่าครู {$priceText} บาท";
             } elseif ($celticEnabled) {
-                $text = "🔮 ไพ่ Celtic Cross 10 ใบ โดย{$this->brandName}\n\n• เปิดไพ่ยิปซีเต็มสำรับ\n• คุยต่อกับแม่หมอตามจริง\n• ทำนายลึกซึ้ง — แม่นยำที่สุด\n\n💰 ค่าครู {$celticPrice} บาท";
+                $text = "🔮 ไพ่ Celtic Cross 10 ใบ โดย{$this->brandName}\n\n• เปิดไพ่ยิปซีเต็มสำรับ\n• ถามได้ {$celticSpec}\n• ทำนายลึกซึ้ง — แม่นยำที่สุด\n\n💰 ค่าครู {$celticPrice} บาท";
             } else {
                 $text = "🙏 บริการดูดวงปิดชั่วคราว\n\nกรุณากลับมาใหม่ภายหลังนะคะ";
             }
