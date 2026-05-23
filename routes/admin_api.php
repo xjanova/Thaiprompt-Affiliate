@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\Admin\Ai\AiPlaygroundController;
 use App\Http\Controllers\Api\Admin\Ai\AiProvidersController;
 use App\Http\Controllers\Api\Admin\AnalyticsController;
 use App\Http\Controllers\Api\Admin\AuthController;
+use App\Http\Controllers\Api\Admin\ChatController;
 use App\Http\Controllers\Api\Admin\DashboardController;
 use App\Http\Controllers\Api\Admin\Finance\PaymentReconController;
 use App\Http\Controllers\Api\Admin\Finance\WalletController;
@@ -138,6 +139,12 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::post('/sms/{sms}/reject', [PaymentReconController::class, 'reject'])->name('sms.reject');
     });
 
+    // ── Chat (Warroom /chat takeover compose) ──
+    Route::prefix('chat')->name('api.admin.chat.')->group(function () {
+        Route::post('/send', [ChatController::class, 'send'])->name('send');
+        Route::post('/suggest', [ChatController::class, 'suggest'])->name('suggest');
+    });
+
     // ── Moderation (Warroom /moderation) ──
     Route::prefix('moderation')->name('api.admin.moderation.')->group(function () {
         Route::get('/suspects', [ModerationController::class, 'suspects'])->name('suspects');
@@ -156,6 +163,10 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
             Route::get('/', [FortuneReadingsController::class, 'index'])->name('index');
             Route::get('/stats', [FortuneReadingsController::class, 'stats'])->name('stats');
             Route::get('/{reading}', [FortuneReadingsController::class, 'show'])->name('show');
+            // Admin actions on a reading (used by warroom /bills page)
+            Route::post('/{reading}/mark-paid', [FortuneReadingsController::class, 'markPaid'])->name('mark-paid');
+            Route::post('/{reading}/refund', [FortuneReadingsController::class, 'refund'])->name('refund');
+            Route::post('/{reading}/cancel', [FortuneReadingsController::class, 'cancel'])->name('cancel');
         });
     });
 
