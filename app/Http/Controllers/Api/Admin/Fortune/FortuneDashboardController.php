@@ -371,7 +371,8 @@ class FortuneDashboardController extends Controller
         $now = now();
         $cutoff = $now->copy()->subMinutes($since);
 
-        // Keyword sets — heuristics for frustration / urgency signals.
+        // Frustration / urgency keywords — customer is upset they paid but
+        // haven't been served, or chasing admin.
         $urgencyKeywords = [
             'โอนแล้ว', 'จ่ายแล้ว', 'จ่ายเงินแล้ว', 'โอนเงินแล้ว',
             'ไม่เห็นเปิดไพ่', 'ไม่เปิดไพ่', 'เปิดไพ่ที', 'เปิดไพ่ยัง',
@@ -379,6 +380,18 @@ class FortuneDashboardController extends Controller
             'เงินหาย', 'เงินไม่เข้า', 'หายไปไหน',
             'แอดมินอยู่ไหน', 'admin หาย', 'ไม่ตอบ',
             'รีบ', 'เร็วๆ', 'ด่วน',
+        ];
+
+        // Lead-intent keywords — customer is asking about price / how to
+        // start. These are HOT leads, not complaints. Need a different action
+        // (send price + QR), not retry.
+        $leadKeywords = [
+            'ค่าครู', 'ค่าดู', 'ค่าทำนาย', 'ค่าบริการ',
+            'ราคา', 'ราคาเท่าไหร่', 'ราคาเท่าไร',
+            'กี่บาท', 'กี่ตังค์', 'เท่าไหร่', 'เท่าไร', 'เท่าไหร่ครับ', 'เท่าไหร่ค่ะ',
+            'ดูดวงเท่าไหร่', 'ดูฟรี',
+            'จะดูดวง', 'อยากดูดวง', 'ขอดูดวง',
+            'เริ่มยังไง', 'ทำยังไง', 'เริ่มดู',
         ];
 
         $cases = [];
@@ -434,26 +447,38 @@ class FortuneDashboardController extends Controller
             foreach ($qaRows as $r) {
                 $text = (string) ($r->q_text ?? '');
                 if ($text === '') continue;
-                $matched = [];
+                $matchedUrg = [];
                 foreach ($urgencyKeywords as $kw) {
-                    if (mb_stripos($text, $kw) !== false) {
-                        $matched[] = $kw;
-                    }
+                    if (mb_stripos($text, $kw) !== false) $matchedUrg[] = $kw;
                 }
-                if (empty($matched)) continue;
+                $matchedLead = [];
+                foreach ($leadKeywords as $kw) {
+                    if (mb_stripos($text, $kw) !== false) $matchedLead[] = $kw;
+                }
+                if (empty($matchedUrg) && empty($matchedLead)) continue;
 
                 $psid = $r->source_user_id;
                 $platform = $r->source_platform ?? 'facebook';
                 $key = $platform . ':' . $psid;
-                $reasons = array_map(fn ($k) => 'keyword:' . $k, array_slice($matched, 0, 4));
+                $reasons = array_merge(
+                    array_map(fn ($k) => 'keyword:' . $k, array_slice($matchedUrg, 0, 3)),
+                    array_map(fn ($k) => 'lead:' . $k, array_slice($matchedLead, 0, 3)),
+                );
+
+                // Urgency takes priority: if there are frustration keywords
+                // this is "frustration"; otherwise it's a fresh "lead".
+                $kind = !empty($matchedUrg) ? 'frustration' : 'lead';
+                $severity = !empty($matchedUrg)
+                    ? (count($matchedUrg) >= 2 ? 'crit' : 'warn')
+                    : 'warn'; // lead is always warn — not crit unless paid+stuck
 
                 $cases[$key] = $this->mergeCase($cases[$key] ?? null, [
                     'case_id' => 'beh-kw-' . $r->id,
                     'platform' => $platform,
                     'fb_user_id' => $psid,
                     'reading_id' => $r->reading_id,
-                    'kind' => 'frustration',
-                    'severity' => count($matched) >= 2 ? 'crit' : 'warn',
+                    'kind' => $kind,
+                    'severity' => $severity,
                     'reasons' => $reasons,
                     'preview' => mb_substr($text, 0, 80),
                     'last_at' => (string) $r->created_at,
@@ -462,7 +487,48 @@ class FortuneDashboardController extends Controller
             }
         }
 
-        // ── 3. Resolve customer name + reading from users / readings tables ──
+        // ── 3. Pure leads: customer created a fortune_reading in the last
+        // window but never paid and has no other signal yet. They tapped
+        // "ดูดวง" but stalled — perfect time for admin to nudge with price.
+        if (Schema::hasTable('fortune_readings')) {
+            $leadRows = DB::table('fortune_readings')
+                ->where('created_at', '>=', $cutoff)
+                ->where('is_paid', false)
+                ->whereNull('paid_at')
+                ->orderByDesc('created_at')
+                ->limit(50)
+                ->get(['id', 'facebook_user_id', 'facebook_user_name', 'reading_type', 'amount_paid', 'created_at']);
+
+            foreach ($leadRows as $r) {
+                $psid = $r->facebook_user_id;
+                if (! $psid) continue;
+                $key = 'facebook:' . $psid;
+                // Don't downgrade an existing crit/frustration to a fresh lead.
+                $existing = $cases[$key] ?? null;
+                if ($existing && $existing['kind'] === 'frustration') continue;
+
+                $ageSec = max(0, time() - strtotime((string) $r->created_at));
+                // 5min < age < 60min is the sweet spot to ping. Newer = let the
+                // bot do its thing first. Older = customer cooled off.
+                if ($ageSec < 300) continue;
+
+                $svc = $r->reading_type === 'celtic_cross' ? 'Celtic Cross' : 'ดูดวง 3 ใบ';
+                $cases[$key] = $this->mergeCase($existing, [
+                    'case_id' => 'beh-lead-' . $r->id,
+                    'platform' => 'facebook',
+                    'fb_user_id' => $psid,
+                    'reading_id' => $r->id,
+                    'kind' => 'lead',
+                    'severity' => 'warn',
+                    'reasons' => ['started-not-paid', 'service:' . $svc],
+                    'preview' => 'เริ่มดูดวง ' . $svc . ' แต่ยังไม่จ่าย',
+                    'last_at' => (string) $r->created_at,
+                    'count' => 1,
+                ]);
+            }
+        }
+
+        // ── 4. Resolve customer name + reading from users / readings tables ──
         $keys = array_keys($cases);
         if (! empty($keys)) {
             // Pull all unique psids

@@ -161,6 +161,8 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
     // ── Eve (Warroom AI assistant — operator-facing) ──
     Route::prefix('eve')->name('api.admin.eve.')->group(function () {
         Route::post('/chat', [EveController::class, 'chat'])->name('chat');
+        // Aggregated mission-control signals Eve reasons over.
+        Route::get('/signals', [EveController::class, 'signals'])->name('signals');
     });
 
     // ── Moderation (Warroom /moderation) ──

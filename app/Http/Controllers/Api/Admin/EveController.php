@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Services\FortuneAIService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class EveController extends Controller
@@ -122,6 +124,228 @@ class EveController extends Controller
         $lines[] = 'Admin: ' . $latest;
         $lines[] = 'Eve:';
         return implode("\n", $lines);
+    }
+
+    /**
+     * GET /api/admin/eve/signals
+     *
+     * Aggregator that feeds Eve. Each "signal" is a single number Eve can
+     * reason over — she doesn't need raw SQL, just the headline counts
+     * and a few hot pointers.
+     *
+     * This is also what the warroom polls so Eve panel can show live
+     * mission-control numbers next to her face.
+     */
+    public function signals(Request $request): JsonResponse
+    {
+        $now = now();
+
+        $payload = [
+            'generated_at' => $now->toIso8601String(),
+            'fortune' => $this->fortuneSignals($now),
+            'ai_pool' => $this->aiPoolSignals($now),
+            'finance' => $this->financeSignals($now),
+            'moderation' => $this->moderationSignals($now),
+        ];
+
+        // Compute a top-line "alert level" for Eve's badge.
+        $crit = ($payload['fortune']['stuck_paid'] ?? 0)
+            + ($payload['fortune']['triage_crit'] ?? 0)
+            + ($payload['ai_pool']['providers_offline'] ?? 0)
+            + ($payload['finance']['withdrawals_pending'] ?? 0);
+        $warn = ($payload['fortune']['triage_warn'] ?? 0)
+            + ($payload['fortune']['lead_count'] ?? 0)
+            + ($payload['moderation']['suspects'] ?? 0);
+
+        $payload['alert'] = [
+            'crit' => $crit,
+            'warn' => $warn,
+            'level' => $crit > 0 ? 'crit' : ($warn > 0 ? 'warn' : 'ok'),
+            'headline' => $this->buildHeadline($payload),
+        ];
+
+        return response()->json(['success' => true, 'data' => $payload]);
+    }
+
+    private function fortuneSignals(\DateTimeInterface $now): array
+    {
+        $out = [
+            'in_flight' => 0,           // paid + has responded_at < 60s
+            'stuck_paid' => 0,          // paid + no responded_at, > 60s
+            'unpaid_followups' => 0,    // !paid, created < 24h
+            'lead_count' => 0,          // !paid, age 5-60 min — fresh leads
+            'completed_15m' => 0,
+            'failed_15m' => 0,
+            'triage_crit' => 0,
+            'triage_warn' => 0,
+            'oldest_stuck_paid_min' => null,
+        ];
+        try {
+            if (Schema::hasTable('fortune_readings')) {
+                $cutoff10 = (clone $now)->modify('-10 minutes');
+                $cutoff24h = (clone $now)->modify('-24 hours');
+                $cutoff60s = (clone $now)->modify('-60 seconds');
+
+                $out['unpaid_followups'] = DB::table('fortune_readings')
+                    ->where('is_paid', false)
+                    ->whereNull('paid_at')
+                    ->where('created_at', '>=', $cutoff24h)
+                    ->count();
+
+                $out['lead_count'] = DB::table('fortune_readings')
+                    ->where('is_paid', false)
+                    ->whereNull('paid_at')
+                    ->where('created_at', '<', (clone $now)->modify('-5 minutes'))
+                    ->where('created_at', '>=', (clone $now)->modify('-60 minutes'))
+                    ->count();
+
+                $stuck = DB::table('fortune_readings')
+                    ->where('is_paid', true)
+                    ->whereNull('responded_at')
+                    ->where('created_at', '>=', $cutoff10)
+                    ->get(['id', 'paid_at', 'created_at']);
+                $out['stuck_paid'] = $stuck->count();
+                if ($stuck->count() > 0) {
+                    $oldestSec = $stuck->reduce(function ($carry, $r) use ($now) {
+                        $ts = $r->paid_at ?? $r->created_at;
+                        if (! $ts) return $carry;
+                        $diff = max(0, $now->getTimestamp() - strtotime((string) $ts));
+                        return max($carry, $diff);
+                    }, 0);
+                    $out['oldest_stuck_paid_min'] = (int) round($oldestSec / 60);
+                }
+            }
+
+            if (Schema::hasTable('ai_api_key_usage_logs')) {
+                $out['completed_15m'] = DB::table('ai_api_key_usage_logs')
+                    ->where('created_at', '>=', (clone $now)->modify('-15 minutes'))
+                    ->where('is_success', 1)
+                    ->count();
+                $out['failed_15m'] = DB::table('ai_api_key_usage_logs')
+                    ->where('created_at', '>=', (clone $now)->modify('-15 minutes'))
+                    ->where('is_success', 0)
+                    ->count();
+            }
+
+            // Re-use the behavior triage logic by counting our own sources.
+            if (Schema::hasTable('fortune_sensitive_events')) {
+                $window = (clone $now)->modify('-6 hours');
+                $out['triage_crit'] = DB::table('fortune_sensitive_events')
+                    ->where('created_at', '>=', $window)
+                    ->where('mood_level', '>=', 5)
+                    ->count();
+                $out['triage_warn'] = DB::table('fortune_sensitive_events')
+                    ->where('created_at', '>=', $window)
+                    ->where(function ($q) {
+                        $q->where('mood_level', '>=', 4)->orWhere('is_sensitive', 1);
+                    })
+                    ->count() - $out['triage_crit'];
+                $out['triage_warn'] = max(0, $out['triage_warn']);
+            }
+        } catch (\Throwable $e) {
+            //
+        }
+        return $out;
+    }
+
+    private function aiPoolSignals(\DateTimeInterface $now): array
+    {
+        $out = [
+            'providers_offline' => 0,
+            'keys_disabled' => 0,
+            'keys_active' => 0,
+            'error_rate_15m_pct' => 0.0,
+        ];
+        try {
+            if (Schema::hasTable('ai_api_keys')) {
+                $out['keys_active'] = DB::table('ai_api_keys')->where('is_active', 1)->count();
+                $out['keys_disabled'] = DB::table('ai_api_keys')->where('is_active', 0)->count();
+                $out['providers_offline'] = DB::table('ai_api_keys')
+                    ->where('consecutive_errors', '>=', 5)
+                    ->count();
+            }
+            if (Schema::hasTable('ai_api_key_usage_logs')) {
+                $row = DB::table('ai_api_key_usage_logs')
+                    ->where('created_at', '>=', (clone $now)->modify('-15 minutes'))
+                    ->selectRaw('COUNT(*) as total, SUM(CASE WHEN is_success=0 THEN 1 ELSE 0 END) as fails')
+                    ->first();
+                $tot = (int) ($row->total ?? 0);
+                $out['error_rate_15m_pct'] = $tot > 0
+                    ? round((((int) ($row->fails ?? 0)) / $tot) * 100, 1)
+                    : 0.0;
+            }
+        } catch (\Throwable $e) {
+            //
+        }
+        return $out;
+    }
+
+    private function financeSignals(\DateTimeInterface $now): array
+    {
+        $out = ['withdrawals_pending' => 0, 'sms_unmatched' => 0];
+        try {
+            if (Schema::hasTable('withdrawal_requests')) {
+                $out['withdrawals_pending'] = DB::table('withdrawal_requests')
+                    ->where('status', 'pending')
+                    ->count();
+            }
+            if (Schema::hasTable('sms_payment_notifications')) {
+                $out['sms_unmatched'] = DB::table('sms_payment_notifications')
+                    ->where('status', 'pending')
+                    ->where('created_at', '>=', (clone $now)->modify('-24 hours'))
+                    ->count();
+            }
+        } catch (\Throwable $e) {
+            //
+        }
+        return $out;
+    }
+
+    private function moderationSignals(\DateTimeInterface $now): array
+    {
+        $out = ['suspects' => 0, 'banned_active' => 0];
+        try {
+            if (Schema::hasTable('fortune_user_bans')) {
+                $out['banned_active'] = DB::table('fortune_user_bans')
+                    ->where(function ($q) use ($now) {
+                        $q->whereNull('banned_until')->orWhere('banned_until', '>=', $now);
+                    })
+                    ->count();
+            }
+        } catch (\Throwable $e) {
+            //
+        }
+        return $out;
+    }
+
+    /**
+     * Short Thai sentence Eve can announce. Generated server-side so the
+     * frontend doesn't need to re-derive it from raw numbers.
+     */
+    private function buildHeadline(array $payload): string
+    {
+        $f = $payload['fortune'] ?? [];
+        $a = $payload['ai_pool'] ?? [];
+
+        $bits = [];
+        if (($f['stuck_paid'] ?? 0) > 0) {
+            $msg = '💰 มี ' . $f['stuck_paid'] . ' รายจ่ายแล้วยังไม่ได้คำทำนาย';
+            if (! empty($f['oldest_stuck_paid_min'])) {
+                $msg .= ' (เก่าสุด ' . $f['oldest_stuck_paid_min'] . ' นาที)';
+            }
+            $bits[] = $msg;
+        }
+        if (($f['lead_count'] ?? 0) > 0) {
+            $bits[] = '🎯 ' . $f['lead_count'] . ' ลีดสด รอตอบ';
+        }
+        if (($a['providers_offline'] ?? 0) > 0) {
+            $bits[] = '🔌 ' . $a['providers_offline'] . ' provider offline';
+        }
+        if (($a['error_rate_15m_pct'] ?? 0) > 20) {
+            $bits[] = '⚠ error rate ' . $a['error_rate_15m_pct'] . '%';
+        }
+        if (empty($bits)) return '✓ ทุกอย่างปกติ — Eve เฝ้าดูอยู่';
+        return implode(' · ', $bits);
     }
 
     private function guessMood(string $reply): string
