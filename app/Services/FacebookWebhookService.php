@@ -81,6 +81,8 @@ class FacebookWebhookService implements MessagingPlatformInterface
     public function getDefaultQuickReplies(): array
     {
         $isLao = FortuneLocaleService::current() === FortuneLocaleService::LOCALE_LO;
+        // 🌙 (2026-05-23) Deep 39฿ ปิดเพราะลูกค้าสับสน — เช็ค toggle ก่อนโชว์ปุ่ม
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
         $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
         $celticPrice = 99;
@@ -90,13 +92,16 @@ class FacebookWebhookService implements MessagingPlatformInterface
             // ใช้ default 99
         }
 
-        $items = [
-            [
+        $items = [];
+
+        // 🌙 (2026-05-23) ปุ่ม Deep — แสดงเฉพาะเมื่อเปิด toggle
+        if ($deepEnabled) {
+            $items[] = [
                 'content_type' => 'text',
                 'title' => $isLao ? "🔹 ດວງ {$deepPrice}฿" : "🔹 ดูดวง {$deepPrice}฿",
                 'payload' => 'TIER_DEEP_39',
-            ],
-        ];
+            ];
+        }
 
         if ($celticEnabled) {
             $items[] = [

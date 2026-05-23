@@ -686,6 +686,7 @@ class FortuneChannelManager
                 //   ✏️ (2026-05-01) ปรับ label ให้ผู้สูงอายุเข้าใจราคาและบริการชัดเจน
                 //   ✏️ (2026-05-03) ซ่อนปุ่ม 99 ถ้า admin ปิด Celtic
                 'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $buttons = [];
@@ -696,9 +697,12 @@ class FortuneChannelManager
                             'title' => FortuneLocaleService::lo('🎁 ทำนายฟรี (1 ใบ)', '🎁 ທຳນາຍຟຣີ (1 ໃບ)'),
                             'payload' => 'FREE_CARD_START'];
                     }
-                    $buttons[] = ['content_type' => 'text',
-                        'title' => FortuneLocaleService::lo('🔹 ดูดวง 39 บาท', '🔹 ເບິ່ງດວງ 39 ບາດ'),
-                        'payload' => 'TIER_DEEP_39'];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => FortuneLocaleService::lo('🔹 ดูดวง 39 บาท', '🔹 ເບິ່ງດວງ 39 ບາດ'),
+                            'payload' => 'TIER_DEEP_39'];
+                    }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo('👑 VIP ไพ่ 10 ใบ 99฿', '👑 VIP ໄພ່ 10 ໃບ 99฿'),
@@ -715,6 +719,7 @@ class FortuneChannelManager
                 //   trigger เมื่อลูกค้าถาม "ราคา/อัตรา/กี่บาท" (ไม่ต้องอยู่ใน fortune flow)
                 'pricing_menu' => (function () use ($fbService, $userId, $message, $result, $extra) {
                     $pricing = $result['pricing'] ?? [];
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
                     $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
 
@@ -724,9 +729,12 @@ class FortuneChannelManager
                             'title' => '🎁 ทำนายฟรี',
                             'payload' => 'FREE_CARD_START'];
                     }
-                    $buttons[] = ['content_type' => 'text',
-                        'title' => '🔹 เริ่ม 39 บาท',
-                        'payload' => 'TIER_DEEP_39'];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => '🔹 เริ่ม 39 บาท',
+                            'payload' => 'TIER_DEEP_39'];
+                    }
                     if ($celticEnabled) {
                         $buttons[] = ['content_type' => 'text',
                             'title' => '👑 VIP 99 บาท',
@@ -777,15 +785,18 @@ class FortuneChannelManager
                     }
 
                     // 2. ส่งข้อความทำนาย + Quick Reply ตัวเลือก (🌐 localize labels)
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $deepPrice = (int) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
                     $celticPrice = (int) app(CelticCrossService::class)->getPrice();
 
-                    $buttons = [
-                        ['content_type' => 'text',
+                    $buttons = [];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $buttons[] = ['content_type' => 'text',
                             'title' => FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
-                            'payload' => 'TIER_DEEP_39'],
-                    ];
+                            'payload' => 'TIER_DEEP_39'];
+                    }
                     if ($celticEnabled) {
                         // 🛡️ FB QR title cap = 20 chars — เลิก "— " เพื่อ fit ใน 19 chars
                         $buttons[] = ['content_type' => 'text',
@@ -1960,6 +1971,7 @@ class FortuneChannelManager
                 //   - 39฿ Basic Deep
                 //   - 99฿ Celtic Cross (ถ้า admin เปิด)
                 'tier_choice', 'tier_choice_invalid', 'tier_choice_chitchat' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
                     $quickReplies = [];
@@ -1970,10 +1982,13 @@ class FortuneChannelManager
                             'text' => FortuneLocaleService::lo('ทำนายฟรี', 'ທຳນາຍຟຣີ'),
                         ];
                     }
-                    $quickReplies[] = [
-                        'label' => FortuneLocaleService::lo('🔹 39฿ พื้นฐาน', '🔹 39฿ ພື້ນຖານ'),
-                        'text' => '39',
-                    ];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $quickReplies[] = [
+                            'label' => FortuneLocaleService::lo('🔹 39฿ พื้นฐาน', '🔹 39฿ ພື້ນຖານ'),
+                            'text' => '39',
+                        ];
+                    }
                     if ($celticEnabled) {
                         $quickReplies[] = [
                             'label' => FortuneLocaleService::lo('👑 VIP 99฿', '👑 VIP 99฿'),
@@ -1991,6 +2006,7 @@ class FortuneChannelManager
                 // 💰 (2026-05-08) Pricing menu (LINE) — ส่งกล่องราคา + ปุ่มเริ่มดูดวง
                 'pricing_menu' => (function () use ($lineService, $userId, $message, $replyToken, $result) {
                     $pricing = $result['pricing'] ?? [];
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($pricing['celtic_enabled'] ?? false);
                     $freeEnabled = (bool) ($pricing['free_enabled'] ?? false);
 
@@ -1998,7 +2014,10 @@ class FortuneChannelManager
                     if ($freeEnabled) {
                         $quickReplies[] = ['label' => '🎁 ทำนายฟรี', 'text' => 'ทำนายฟรี'];
                     }
-                    $quickReplies[] = ['label' => '🔹 เริ่ม 39 บาท', 'text' => 'ดูดวง'];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $quickReplies[] = ['label' => '🔹 เริ่ม 39 บาท', 'text' => 'ดูดวง'];
+                    }
                     if ($celticEnabled) {
                         $quickReplies[] = ['label' => '👑 VIP 99 บาท', 'text' => '99'];
                     }
@@ -2039,17 +2058,20 @@ class FortuneChannelManager
                         }
                     }
 
+                    $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $deepPrice = (int) (FortuneTellingSetting::getSettings()->deep_reading_price ?? 39);
                     $celticPrice = (int) app(CelticCrossService::class)->getPrice();
 
                     // 🌐 localize Quick Reply labels
-                    $quickReplies = [
-                        [
+                    $quickReplies = [];
+                    // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนปุ่ม
+                    if ($deepEnabled) {
+                        $quickReplies[] = [
                             'label' => FortuneLocaleService::lo("🔹 ดูดวง {$deepPrice}฿", "🔹 ເບິ່ງດວງ {$deepPrice}฿"),
                             'text' => '39',
-                        ],
-                    ];
+                        ];
+                    }
                     if ($celticEnabled) {
                         $quickReplies[] = [
                             'label' => "👑 VIP {$celticPrice}฿",

@@ -463,7 +463,11 @@ trait FreeCardConversationTrait
         $textLower = mb_strtolower(trim($messageText));
         $deepPriceInt = (int) $this->getDeepReadingPrice();
         $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
+        // 🌙 (2026-05-23) Deep 39฿ ปิดเพราะลูกค้าสับสน — keyword/upsell ของ Deep ต้อง guard
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
+        // tier ที่ใช้ใน startDeepReadingFlow — ถ้า Deep ปิดแต่ Celtic เปิด ส่ง celtic explicit
+        $upsellTier = (! $deepEnabled && $celticEnabled) ? 'celtic' : null;
 
         // ❌ ปฏิเสธ / ไม่สนใจ — ส่งคำลา + ปรัชญา (ไม่ฮาร์ดเซล)
         $declineKeywords = [
@@ -496,25 +500,43 @@ trait FreeCardConversationTrait
                     // ปิด free reading + เริ่ม Celtic flow ใหม่
                     $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic');
                 }
             }
         }
 
-        // 🔹 39฿ Deep
-        $deepKeywords = [
-            (string) $deepPriceInt, 'ดูดวง 39', 'เชิงลึก', 'ละเอียด', 'พื้นฐาน',
-            'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'tier_deep', 'tier_deep_39',
-            'ดูดวง', 'ทำนาย', // ลูกค้าพิมพ์ "ดูดวง" lone หลังฟรี = อยากซื้อต่อ
-        ];
-        foreach ($deepKeywords as $kw) {
-            if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
-                Log::info('FreeCard: ลูกค้าเลือก Deep 39฿ หลังทำนายฟรี', [
-                    'reading_id' => $reading->id,
-                ]);
-                $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+        // 🔹 39฿ Deep — เฉพาะถ้า toggle เปิด (🌙 2026-05-23 ปิดเพราะลูกค้าสับสน)
+        //   ⚠️ ถ้า Deep ปิด ห้ามจับ keyword 'ดูดวง'/'ทำนาย' แล้ว redirect ไป Deep เพราะ
+        //     - ระบบจะตกไป startDeepReadingFlow → tier menu (ที่ถูก guard แล้ว) → Celtic ตรง
+        //     - แต่ถ้า Deep ปิด + Celtic ปิด → flow break ลูกค้าค้าง chitchat
+        if ($deepEnabled) {
+            $deepKeywords = [
+                (string) $deepPriceInt, 'ดูดวง 39', 'เชิงลึก', 'ละเอียด', 'พื้นฐาน',
+                'แพคเกจ 1', 'แพคเกจที่ 1', 'แบบที่ 1', 'tier_deep', 'tier_deep_39',
+                'ดูดวง', 'ทำนาย', // ลูกค้าพิมพ์ "ดูดวง" lone หลังฟรี = อยากซื้อต่อ
+            ];
+            foreach ($deepKeywords as $kw) {
+                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                    Log::info('FreeCard: ลูกค้าเลือก Deep 39฿ หลังทำนายฟรี', [
+                        'reading_id' => $reading->id,
+                    ]);
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
-                return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile);
+                }
+            }
+        } elseif ($celticEnabled) {
+            // Deep ปิด + Celtic เปิด → ดักคำว่า "ดูดวง"/"ทำนาย" lone redirect ไป Celtic แทน
+            $genericKeywords = ['ดูดวง', 'ทำนาย', 'ต่อ', 'ซื้อ'];
+            foreach ($genericKeywords as $kw) {
+                if (mb_strpos($textLower, mb_strtolower($kw)) !== false) {
+                    Log::info('FreeCard: Deep ปิด — redirect Celtic 99฿ หลังทำนายฟรี', [
+                        'reading_id' => $reading->id,
+                    ]);
+                    $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
+
+                    return $this->startDeepReadingFlow($reading->facebook_user_id, $reading->user_profile, 'celtic');
+                }
             }
         }
 
@@ -525,10 +547,13 @@ trait FreeCardConversationTrait
             '🌙 หากเจ้าชะตาอยากเจาะลึก เลือกได้ที่ปุ่มด้านล่างเลยนะคะ ✨',
             '🌙 ຫາກເຈົ້າຊາຕາຢາກເຈາະເລິກ ເລືອກໄດ້ທີ່ປຸ່ມດ້ານລຸ່ມເລີຍເດີ ✨'
         );
-        $deepLine = FortuneLocaleService::lo(
-            "🔹 *ดูดวงเชิงลึก {$deepPriceInt} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี",
-            "🔹 *ເບິ່ງດວງເຈາະເລິກ {$deepPriceInt} ບາດ* — ວິເຄາະດາວເຈົ້າຊະນະ + ໄພ່ຍິບຊີ"
-        );
+        // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนบรรทัด Deep ออกจาก hint
+        $deepLine = $deepEnabled
+            ? FortuneLocaleService::lo(
+                "🔹 *ดูดวงเชิงลึก {$deepPriceInt} บาท* — วิเคราะห์ดาวเจ้าชนะ + ไพ่ยิปซี",
+                "🔹 *ເບິ່ງດວງເຈາະເລິກ {$deepPriceInt} ບາດ* — ວິເຄາະດາວເຈົ້າຊະນະ + ໄພ່ຍິບຊີ"
+            )
+            : null;
         $celticLine = $celticEnabled
             ? FortuneLocaleService::lo(
                 "🔮 *Celtic Cross {$celticPriceInt} บาท* — ไพ่ 10 ใบ ถามได้หลายคำถาม",
@@ -543,7 +568,7 @@ trait FreeCardConversationTrait
         return [
             'action' => 'free_card_chitchat',
             'message' => $hintLine."\n\n"
-                .$deepLine."\n"
+                .($deepLine ? $deepLine."\n" : '')
                 .($celticLine ? $celticLine."\n" : '')
                 .$declineLine,
             'reading' => $reading,

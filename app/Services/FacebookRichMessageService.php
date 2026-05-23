@@ -66,6 +66,8 @@ class FacebookRichMessageService
                 // ถ้า DB error → fall back behave เดิม (ไม่ block welcome)
             }
         }
+        // 🌙 (2026-05-23) Deep 39฿ ปิดเพราะลูกค้าสับสน — เช็ค toggle ก่อนโชว์บรรทัด Deep
+        $deepEnabled = $this->settings->isDeepReadingEnabled();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
         $deepPrice = (int) ($this->settings->deep_reading_price ?? 39);
         $celticPrice = 99;
@@ -117,7 +119,10 @@ class FacebookRichMessageService
         //    (FB Messenger ไม่รองรับ markdown bold — ใช้ visual emphasis แทน)
         $serviceLines = [];
         if ($isLao) {
-            $serviceLines[] = "🔹 ເບິ່ງດວງ 💰💰 {$deepPrice} BAHT 💰💰\n   📅 ວັນເດືອນປີເກີດ + 🃏 ໄພ່ຍິບຊີ 1 ໃບ";
+            // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนบรรทัด Deep
+            if ($deepEnabled) {
+                $serviceLines[] = "🔹 ເບິ່ງດວງ 💰💰 {$deepPrice} BAHT 💰💰\n   📅 ວັນເດືອນປີເກີດ + 🃏 ໄພ່ຍິບຊີ 1 ໃບ";
+            }
             if ($celticEnabled) {
                 // 🃏 (2026-05-03) ອະທິບາຍ Celtic Cross 10 ໃບ — ໃຫ້ລູກຄ້າເຫັນຄຸນຄ່າ
                 //   ❓ ດຶງຈຳນວນຄຳຖາມຈາກ settings (0 = ບໍ່ຈຳກັດ)
@@ -132,7 +137,10 @@ class FacebookRichMessageService
             }
             // 🎁 (2026-05-04) ลบบรรทัด "🆓 ດູດວງຟຣີ" ออก — ฟรีได้เฉพาะตอบกลับ DM react/comment
         } else {
-            $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
+            // 🌙 (2026-05-23) Deep 39฿ ปิด — ซ่อนบรรทัด Deep
+            if ($deepEnabled) {
+                $serviceLines[] = "🔹 ดูดวง 💰💰 {$deepPrice} BAHT 💰💰\n   📅 วันเดือนปีเกิด + 🃏 ไพ่ยิปซี 1 ใบ";
+            }
             if ($celticEnabled) {
                 // 🃏 (2026-05-03) อธิบาย Celtic Cross 10 ใบ — ให้ลูกค้าเห็นคุณค่า
                 //   ชื่อ position จริงจาก FortuneReading::CELTIC_POSITIONS

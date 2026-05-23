@@ -529,8 +529,10 @@ class FcmNotificationService
             ?? $reading->line_user_name
             ?? 'ลูกค้าดูดวง';
 
+        // 🌙 (2026-05-23) เลิกผูกราคา 39฿ ใน label — ใช้ชื่อบริการกลางๆ
+        //   ลูกค้าสับสนเรื่อง 39฿ + ราคาอาจเปลี่ยน → ไม่ฮาร์ดโค้ดในข้อความ admin
         $purposeLabel = match ($aiPurpose) {
-            'deep' => 'ดูดวง 39฿',
+            'deep' => 'ดูดวงเชิงลึก (Deep)',
             'celtic-opening' => 'Celtic เปิดบทสนทนา',
             'celtic-question' => 'Celtic ตอบคำถาม',
             'chat' => 'แชท AI',
