@@ -40,13 +40,32 @@ return new class extends Migration
             return;
         }
 
-        // 1. Migrate ทุก row purpose='any' ไป NULL (รวม soft-deleted)
-        //    🩹 (2026-05-23) ต้องครอบคลุม soft-deleted rows ด้วย — ไม่งั้น ALTER ENUM
-        //    จะ fail "Data truncated for column 'purpose'" เพราะ MySQL เช็คทุก row
+        // 1. ALTER column เป็น NULLABLE ก่อน (เพื่อให้ migrate purpose='any' ไป NULL ได้)
+        //    🩹 (2026-05-23 v2) column ปัจจุบันเป็น NOT NULL → update ไป NULL ไม่ได้
+        //    Step 1: ALTER MODIFY ให้ nullable + เพิ่ม 'any' ใน enum ชั่วคราว (compat)
+        //    Step 2: UPDATE purpose=any → NULL
+        //    Step 3: ALTER MODIFY ลบ 'any' ออก enum
+        DB::statement("
+            ALTER TABLE ai_api_keys
+            MODIFY COLUMN purpose ENUM(
+                'any',
+                'prediction',
+                'prediction_deep',
+                'prediction_celtic',
+                'free_card',
+                'chat',
+                'chat_paid',
+                'sensitive',
+                'tts'
+            ) NULL DEFAULT 'any'
+        ");
+
+        // 2. Migrate ทุก row purpose='any' ไป NULL (รวม soft-deleted)
+        //    🩹 ต้องครอบคลุม soft-deleted rows — ไม่งั้น ALTER ENUM จะ fail
+        //    "Data truncated for column 'purpose'"
         $totalCount = DB::table('ai_api_keys')->where('purpose', 'any')->count();
 
         if ($totalCount > 0) {
-            // Update ทั้งหมด (ไม่ filter deleted_at) — ก่อน ALTER ENUM
             DB::table('ai_api_keys')
                 ->where('purpose', 'any')
                 ->update([
