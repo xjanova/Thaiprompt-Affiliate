@@ -1024,13 +1024,22 @@ class CelticCrossService
         //    AI แยก: คำถาม (ใช้ไพ่) / ระบาย (empathy) / chitchat (สั้น) / เล่าเรื่อง (ฟัง+ผูกไพ่)
         //    เก่า (rev2): Q1-Q2 full storytelling, Q3+ short → เปลี่ยน guard >= 3 → >= 2
         if ($sequence >= 2) {
+            // 🌙 (2026-05-23) Silent sandbagging — คำนวณ TYPE:A counter เหลือเท่าไหร่
+            //    user spec: ลูกค้าจำกติก 30 นาที — ห้ามประกาศ max questions
+            //    AI ตอบสั้นลง + แนะให้ใคร่ครวญเมื่อใกล้ max → ดึงเวลาให้ถึง 30 นาที
+            //    หลัง window หมด → FortuneCelticAutoFinalize cron ส่ง grand_finale
+            $questionsUsed = (int) ($reading->celtic_questions_used ?? 0);
+            $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 0);
+            $remaining = $maxQuestions > 0 ? max(0, $maxQuestions - $questionsUsed) : 999;
+
             return $this->buildShortFollowupPrompt(
                 $brandName,
                 $cardsText,
                 $previousContext,
                 $userQuestion,
                 $sequence,
-                $personaBlock
+                $personaBlock,
+                $remaining
             );
         }
 
@@ -1314,8 +1323,37 @@ class CelticCrossService
         string $previousContext,
         string $userQuestion,
         int $sequence,
-        string $personaBlock
+        string $personaBlock,
+        int $remaining = 999
     ): string {
+        // 🌙 (2026-05-23) Silent sandbagging mode block — ใส่ตอน TYPE:A counter ใกล้ max
+        //    user spec: ลูกค้าจำกติก 30 นาที — ห้ามประกาศ max questions
+        //    AI ตอบสั้นลง + แนะให้ใคร่ครวญ → ดึงเวลาให้ใกล้ 30 นาที (FortuneCelticAutoFinalize)
+        //    เกณฑ์: นับเฉพาะ TYPE:A (response_type=A) — chitchat/empathy/เล่าเรื่อง ไม่นับ
+        $sandbagBlock = '';
+        if ($remaining <= 2 && $remaining > 0) {
+            $sandbagBlock = "\n\n━━━━━━━━━━━━━━━━━\n"
+                ."🕯️ Mode พิเศษ: ตอบช้าลง ลึกลง (เฉพาะ TYPE:A)\n"
+                ."━━━━━━━━━━━━━━━━━\n";
+
+            if ($remaining === 2) {
+                // Reflective mode — รั้งเวลา ตอบสั้นลง แนะให้คิด
+                $sandbagBlock .= "• พลังไพ่เริ่มอ่อนลง — สำหรับ TYPE:A *ลด char เป็น 150-250* (ปกติ 200-450)\n"
+                    ."• เปิดด้วยพักหายใจ: \"ขอแม่หมอนิ่งกับไพ่สักครู่...\" / \"พลังไพ่ตอนนี้บอกว่า...\"\n"
+                    ."• ปิดท้าย *แนะให้ใคร่ครวญ* ก่อนถามต่อ — \"ลองนั่งกับคำตอบนี้สักครู่นะคะ ค่อย ๆ คิด\"\n"
+                    ."• อย่าตอบทุกประเด็น — เลือก 1-2 จุดสำคัญที่สุดของคำถาม\n"
+                    ."• TYPE:B/C/D ตอบสั้นปกติ (ไม่กระทบ)";
+            } elseif ($remaining === 1) {
+                // Grounding mode — รั้งหนัก ตอบสั้นมาก
+                $sandbagBlock .= "• พลังไพ่ใกล้ขั้นสุดท้าย — สำหรับ TYPE:A *ลด char เป็น 120-200* (ปกติ 200-450)\n"
+                    ."• เปิดด้วย: \"แม่หมอใช้พลังเต็มที่กับคำถามนี้นะคะ...\" / \"นี่คือสิ่งที่ไพ่บอกแม่หมอ...\"\n"
+                    ."• ตอบ *1 ประเด็นเด่นที่สุด* — ไม่ครอบคลุมทุกมิติ\n"
+                    ."• ปิดท้ายเข้ม — \"ลองอ่านคำตอบนี้ซ้ำ 2-3 ครั้ง แต่ละครั้งอาจเข้าใจไม่เหมือนกัน\"\n"
+                    ."• ห้ามแนะ \"ถามต่อได้\" — เพราะแม่หมอกำลังเก็บพลังให้\n"
+                    ."• TYPE:B/C/D ตอบสั้นปกติ (ไม่กระทบ)";
+            }
+        }
+
         // 🃏 Off-topic guard — judgment-based ไม่ใช่ auto-trigger
         //    user spec 2026-05-16 (rev2): "ถ้าจำเป็นเห็นว่าเจ้าชะตาเริ่มออกทะเลย หรือวุ่นวายหนัก
         //                                  ค่อยชวนจับไพ่ใหม่ ถ้าไพ่ที่มีอยู่ตอนนี้ไม่ตอบโจทย์แล้วจริงๆ"
@@ -1413,7 +1451,8 @@ class CelticCrossService
             ."• ❌ ห้ามชวนดูดวงแพคใหม่/ขายของ\n"
             ."• ❌ ห้ามใช้ markdown headers (##, ###) — plain text + emoji หัวข้อได้\n"
             ."• ❌ ห้ามขัดแย้งตัวเอง (ดวงดี vs สร้างกรรม / รักได้ vs ไม่รัก ในประโยคเดียวกัน)"
-            .$offTopicGuard."\n\n"
+            .$offTopicGuard
+            .$sandbagBlock."\n\n"
 
             ."❓ ข้อความล่าสุดของเจ้าชะตา: \"{$userQuestion}\"\n\n"
 
@@ -1922,7 +1961,6 @@ class CelticCrossService
     protected function buildAwaitingQuestionResume(FortuneReading $reading, string $header, string $billRef): array
     {
         $remainingMin = $reading->getCelticQaRemainingMinutes();
-        $maxQ = $this->getMaxQuestions();
         $usedQ = (int) ($reading->celtic_questions_used ?? 0);
 
         $timeHint = $remainingMin !== null && $remainingMin > 0
@@ -1931,20 +1969,18 @@ class CelticCrossService
                 ? '⏳ หมดเวลาคุยแล้ว — แม่หมอจะปิด session'
                 : "⏳ คุยกับแม่หมอได้ภายใน {$this->getQaWindowMinutes()} นาทีนับจากคำทำนายแรก");
 
-        $qHint = $maxQ > 0
-            ? '❓ ถามได้อีก *'.max(0, $maxQ - $usedQ)."* จาก {$maxQ} คำถาม"
-            : '❓ ถามได้ *ไม่จำกัด* (ภายในเวลาที่กำหนด)';
-
+        // 🌙 (2026-05-23) ลบ qHint "ถามได้อีก N จาก M คำถาม"
+        //    user spec: ลูกค้าจำกติก 30 นาที — ห้ามประกาศ max questions
+        //    Sandbagging จัดการที่ buildShortFollowupPrompt + ProcessBufferedCelticMessageJob
         $promptLine = $usedQ === 0
             ? '💬 พิมพ์ *คำถามแรก* ที่อยากรู้มาเลยค่ะ — แม่หมอจะอ่านพลังจากไพ่ทั้ง 10 ใบ'
-            : '💬 พิมพ์ *คำถามถัดไป* ที่อยากรู้ — หรือพิมพ์ *"พอแค่นี้"* เพื่อจบสนทนา';
+            : '💬 พิมพ์ *คำถามถัดไป* ที่อยากรู้ — หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อม';
 
         return [
             'message' => $header
                 ."🃏 เจ้าชะตาเปิดไพ่ครบ 10 ใบแล้ว ✅\n\n"
                 .$promptLine."\n\n"
                 .$timeHint."\n"
-                .$qHint."\n"
                 ."📋 บิล: {$billRef}",
             'quick_replies' => [],
         ];

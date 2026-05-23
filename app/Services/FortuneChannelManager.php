@@ -962,8 +962,16 @@ class FortuneChannelManager
 
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — user spec: ลูกค้าพิมพ์คำถามได้เลย
                 //                  เหลือแค่ปุ่ม "ยุติการทำนาย" เพื่อจบ session
-                'celtic_question_answered', 'celtic_qa_prompt_resume' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+                // 🆕 (2026-05-23) celtic_continue = alias หลัง user ยืนยัน "ขอคุยต่อ"
+                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => $fbService->sendQuickReplies($userId, $message, [
+                    ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
+                ], $extra),
+
+                // 🆕 (2026-05-23) celtic_end_confirm — 2-step confirm dialog ก่อนจบ session
+                //    user spec: "ถามก่อนว่าจะเลิกแล้วสรุปเลยจริงไหม เพราะบางคนมือไปกดผิด"
+                'celtic_end_confirm' => $fbService->sendQuickReplies($userId, $message, $result['quick_replies'] ?? [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ ส่งสรุปเลย', 'payload' => 'CELTIC_END_YES'],
+                    ['content_type' => 'text', 'title' => '↩️ ขอคุยต่ออีกหน่อย', 'payload' => 'CELTIC_END_NO'],
                 ], $extra),
 
                 // 🆕 (2026-05-17) celtic_typing_only — typing delay 60-120s pattern
@@ -1022,7 +1030,7 @@ class FortuneChannelManager
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
                     $quickReplies = $canAskMore
                         ? [
-                            ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+                            ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
                         ]
                         : [
                             ['content_type' => 'text', 'title' => '🔮 ดูดวงใหม่', 'payload' => 'MENU_FORTUNE'],
@@ -2147,7 +2155,7 @@ class FortuneChannelManager
                     $quickReplies = [];
                     if ($picked >= 10) {
                         // ครบ 10 ใบ — Q&A mode → ปุ่มเดียว
-                        $quickReplies[] = ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'];
+                        $quickReplies[] = ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'];
                     } else {
                         // ยังเปิดไม่ครบ → ปุ่มเปิดไพ่ + สับใหม่ (ถ้ามีสิทธิ์) + ยกเลิก
                         $nextLabel = $picked === 0 ? '🃏 เปิดไพ่ใบที่ 1' : '🃏 เปิดไพ่ใบถัดไป';
@@ -2246,7 +2254,8 @@ class FortuneChannelManager
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — เหลือแค่ "ยุติการทำนาย"
                 // 🛡️ (2026-05-21) Force push — replyMessage ไม่เสถียร (ลูกค้าจ่าย 99฿
                 //   ทำนายเสร็จที่ server แต่ไม่ส่งถึงลูกค้าบน LINE)
-                'celtic_question_answered', 'celtic_qa_prompt_resume' => (function () use ($lineService, $userId, $message, $result) {
+                // 🆕 (2026-05-23) celtic_continue = alias หลัง user ยืนยัน "ขอคุยต่อ"
+                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => (function () use ($lineService, $userId, $message, $result) {
                     $reading = $result['reading'] ?? null;
 
                     // 🚀 (2026-05-21) No throttle — user spec 'ยอมจ่าย push เลย'
@@ -2261,7 +2270,7 @@ class FortuneChannelManager
                     try {
                         $textOk = $lineService->sendMessage($userId, $message, [
                             'quick_replies' => [
-                                ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
+                                ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
                             ],
                         ]);
                         \Log::info('LINE Celtic Q&A: sendMessage (push) result', [
@@ -2293,6 +2302,15 @@ class FortuneChannelManager
                 //   Trait dispatch SendCelticDelayedPrediction job แล้ว — channel manager no-op
                 //   ลูกค้ารู้แล้วว่าต้องรอ 1-2 นาที (sendCelticThinkingAck แจ้งไว้)
                 'celtic_typing_only' => true,
+
+                // 🆕 (2026-05-23) celtic_end_confirm — 2-step confirm dialog ก่อนจบ session (LINE)
+                //    user spec: "ถามก่อนว่าจะเลิกแล้วสรุปเลยจริงไหม เพราะบางคนมือไปกดผิด"
+                'celtic_end_confirm' => $lineService->sendMessage($userId, $message, [
+                    'quick_replies' => [
+                        ['label' => '✅ ใช่ ส่งสรุปเลย', 'text' => 'ส่งสรุปเลย'],
+                        ['label' => '↩️ ขอคุยต่ออีกหน่อย', 'text' => 'ขอคุยต่อ'],
+                    ],
+                ]),
 
                 // 🎙️ (2026-05-08) celtic_session_ended (LINE) — ภาพ + closing
                 //                 Voice ส่งผ่าน ProcessVoiceSummaryJob async (push หลัง 5-15s)
@@ -2331,7 +2349,7 @@ class FortuneChannelManager
 
                     $canAskMore = (bool) ($result['celtic_can_ask_more'] ?? false);
                     $replies = $canAskMore
-                        ? [['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย']]
+                        ? [['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'ยุติการทำนาย']]
                         : [['label' => '🔮 ดูดวงใหม่', 'text' => 'ดูดวง']];
 
                     return $this->sendLineMessageWithQuickReply(
@@ -3037,7 +3055,7 @@ class FortuneChannelManager
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_AWAITING_QUESTION) {
                     $hint = '👉 พิมพ์คำถามที่อยากรู้มาได้เลย — แม่หมอจะอ่านพลังงานให้';
                     $quickReplies = [
-                        ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+                        ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
                     ];
                 } elseif ($reading->conversation_status === FortuneReading::STATUS_CELTIC_GENERATING) {
                     $hint = '🌌 แม่หมอกำลังพิจารณาไพ่ทั้ง 10 ใบ — กรุณารอสักครู่ (~30-60 วินาที) ✨';
@@ -3046,7 +3064,7 @@ class FortuneChannelManager
                     // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — พิมพ์คำถามเข้ามาได้เลย
                     $hint = '👉 พิมพ์คำถามมาได้เลย — หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบรอบ';
                     $quickReplies = [
-                        ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+                        ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
                     ];
                 }
 

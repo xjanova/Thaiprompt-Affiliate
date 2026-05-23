@@ -84,10 +84,10 @@ class SendCelticDelayedPrediction implements ShouldQueue
                 $fb->sendTypingIndicator($this->userId, false);
                 usleep(300000); // 300ms — กัน race
 
-                // ส่งคำทำนาย + quick reply "ยุติการทำนาย"
+                // ส่งคำทำนาย + quick reply "เลิกทำนายและสรุปผล" (2026-05-23 — 2-step confirm)
                 $fb->sendMessage($this->userId, $this->message, [
                     'quick_replies' => [
-                        ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
+                        ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
                     ],
                 ]);
             } else {
@@ -95,7 +95,7 @@ class SendCelticDelayedPrediction implements ShouldQueue
                 $line = new LineFortuneService($settings);
                 $line->sendMessage($this->userId, $this->message, [
                     'quick_replies' => [
-                        ['label' => '🛑 ยุติการทำนาย', 'text' => 'ยุติการทำนาย'],
+                        ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
                     ],
                 ]);
             }

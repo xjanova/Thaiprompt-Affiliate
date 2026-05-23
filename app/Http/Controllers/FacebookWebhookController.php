@@ -1875,7 +1875,7 @@ class FacebookWebhookController extends Controller
                 .'💬 พิมพ์ต่อได้เรื่อยๆ — แม่หมอรับฟังจนจุใจ';
 
             $this->facebookService->sendQuickReplies($senderId, $message, [
-                ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'],
+                ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
             ], ['from_admin' => true, 'message_tag' => 'POST_PURCHASE_UPDATE']);
 
             \Log::info('FB Celtic vision สำเร็จ', [
@@ -3667,7 +3667,18 @@ class FacebookWebhookController extends Controller
             'CELTIC_READY' => $this->processConversationalMessage($senderId, 'พร้อม'),
             'CELTIC_RESET' => $this->processConversationalMessage($senderId, 'สับใหม่'),
             'CELTIC_CONTINUE' => $this->processConversationalMessage($senderId, 'ถามต่อ'),
-            'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'ยุติการทำนาย'),
+
+            // 🌙 (2026-05-23) Celtic end-session 2-step confirm
+            //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล + ถามก่อนว่าจะเลิกแล้วสรุปเลย
+            //                 จริงไหม เพราะบางคนมือไปกดผิด"
+            //    CELTIC_END_ASK = กดปุ่มเลิก → ส่ง confirm dialog
+            //    CELTIC_END_YES = ยืนยัน → call endCelticSession (Grand Finale)
+            //    CELTIC_END_NO  = ยกเลิก → clear flag + กลับ Q&A normal
+            'CELTIC_END_ASK' => $this->processConversationalMessage($senderId, 'เลิกทำนายและสรุปผล'),
+            'CELTIC_END_YES' => $this->processConversationalMessage($senderId, 'ส่งสรุปเลย'),
+            'CELTIC_END_NO' => $this->processConversationalMessage($senderId, 'ขอคุยต่อ'),
+            // Backward compat — ลูกค้าที่ FB cache ปุ่มเก่าไว้ (CELTIC_DONE) → เข้าสู่ confirm dialog
+            'CELTIC_DONE' => $this->processConversationalMessage($senderId, 'เลิกทำนายและสรุปผล'),
 
             // 📜 (2026-05-03) Celtic Q&A review — ดูคำตอบที่ผ่านมา (state ไม่เปลี่ยน)
             'CELTIC_VIEW_LIST' => $this->handleCelticViewList($senderId),

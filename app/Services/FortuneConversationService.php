@@ -3160,13 +3160,10 @@ class FortuneConversationService
         ];
         $canAskMore = $isOngoing && ($maxQ <= 0 || $qUsed < $maxQ);
         if ($canAskMore) {
-            if ($maxQ > 0) {
-                $remaining = $maxQ - $qUsed;
-                $message .= "💬 ถามต่อได้อีก *{$remaining}* คำถาม";
-            } else {
-                $message .= '💬 ถามต่อได้ *ไม่จำกัด*';
-            }
-            $quickReplies[] = ['content_type' => 'text', 'title' => '🛑 ยุติการทำนาย', 'payload' => 'CELTIC_DONE'];
+            // 🌙 (2026-05-23) ลบ "ถามต่อได้อีก N คำถาม" — user spec: ห้ามประกาศ max questions
+            //    ลูกค้าจำกติก 30 นาที — ใช้เวลาเป็นกรอบเดียวที่บอก
+            $message .= '💬 คุยต่อได้เลยค่ะ — แม่หมอรอฟัง ✨';
+            $quickReplies[] = ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'];
         } else {
             $message .= '✅ จบทำนายแล้ว — อ่านเป็นที่ระลึกได้นะคะ 🙏';
         }

@@ -643,7 +643,11 @@ trait ProSessionTrait
         }
 
         // 2. ตรวจ exit intent ใหม่ — Pro Session catches BEFORE celtic handler's own keyword check
-        if ($this->looksLikeProSessionExitIntent($messageText)) {
+        // 🌙 (2026-05-23) Skip Pro Session gate สำหรับ Celtic 99฿ —
+        //    ปล่อยให้ handleCelticEndConfirmation จัดการแทน (มี Quick Reply UX กันมือลั่นดีกว่า)
+        //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล + ถามก่อน"
+        $proType = (string) $reading->getConversationState('pro_session_type', 'deep');
+        if ($proType !== 'celtic' && $this->looksLikeProSessionExitIntent($messageText)) {
             $reading->setConversationState('pro_session_pending_exit', true);
             $reading->setConversationState('pro_session_pending_exit_at', now()->toIso8601String());
 

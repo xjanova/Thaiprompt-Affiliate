@@ -9,6 +9,7 @@ use App\Services\CelticCrossService;
 use App\Services\CelticSpreadImageGenerator;
 use App\Services\FcmNotificationService;
 use App\Services\FortuneLocaleService;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -1323,7 +1324,7 @@ trait CelticCrossConversationTrait
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — พิมพ์คำถามมาได้เลย
                 $body = "💬 *อยากถามอะไรต่อก็พิมพ์มาได้เลยค่ะ*\n\n"
                     ."👉 พิมพ์คำถามที่อยากรู้ — แม่หมอจะอ่านพลังงานให้\n"
-                    .'🛑 หรือกด *"ยุติการทำนาย"* เพื่อจบรอบ';
+                    .'📜 หรือกด *"เลิกทำนายและสรุปผล"* เมื่อพร้อมจบรอบ';
 
                 return [
                     'action' => 'celtic_qa_prompt_resume',
@@ -1440,10 +1441,15 @@ trait CelticCrossConversationTrait
     {
         $question = trim($messageText);
 
-        // 🔚 ลูกค้าขอจบ → จบสุขุม
-        //   "ยุติการทำนาย" = ปุ่มใหม่ 2026-05-16 (แทน "พอแค่นี้" ที่ลูกค้าเข้าใจผิด)
-        if ($this->matchesExactKeyword($messageText, ['ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ', 'พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ', 'หยุด', 'stop'])) {
-            return $this->endCelticSession($reading, 'customer_said_done');
+        // 🔚 (2026-05-23) ลูกค้าขอจบ → 2-step confirm กันมือลั่น
+        //    user spec: "ปุ่มยุติทำนายเปลี่ยนเป็น เลิกทำนายและสรุปผล แทน และถามก่อนว่าจะเลิกแล้วสรุปเลย
+        //                 จริงไหม เพราะบางคนมือไปกดผิด"
+        //    Helper return:
+        //      - array = handled (ส่ง confirm prompt / yes → end / no → continue)
+        //      - null  = ไม่เกี่ยว — pass through ลงไปทำงานต่อ
+        $confirmResult = $this->handleCelticEndConfirmation($reading, $messageText);
+        if ($confirmResult !== null) {
+            return $confirmResult;
         }
 
         // 🆕 (2026-05-13) Free Chat mode — ลบ Q1/Q2/Q3 + ลบ predict-now button
@@ -1463,8 +1469,8 @@ trait CelticCrossConversationTrait
                 'message' => "🌙 เจ้าชะตาอยู่ในรอบคุยกับแม่หมออยู่แล้วนะคะ\n\n"
                     ."💬 เล่าเรื่องที่ค้างคาใจมาได้เลย — แม่หมอพร้อมรับฟัง\n\n"
                     .$timeHint."\n"
-                    // 🛑 (2026-05-16) เปลี่ยน "พอแค่นี้" → "ยุติการทำนาย" (ลูกค้าเข้าใจผิด)
-                    .'❌ หรือพิมพ์ *"ยุติการทำนาย"* เพื่อจบสนทนา',
+                    // 🌙 (2026-05-23) เปลี่ยน "ยุติการทำนาย" → "เลิกทำนายและสรุปผล" + 2-step confirm
+                    .'📜 หรือกด *"เลิกทำนายและสรุปผล"* เมื่อพร้อมจบรอบ',
                 'reading' => $reading,
             ];
         }
@@ -1707,7 +1713,7 @@ trait CelticCrossConversationTrait
         $followupOffer = "\n\n──────────────────────\n"
             .$timeHint."\n"
             .'💬 พิมพ์ต่อได้เรื่อยๆ — หมอจันทรารับฟังจนจุใจ\n'
-            .'หรือกด *"🛑 ยุติการทำนาย"* เพื่อจบสนทนา ✨';
+            .'หรือกด *"📜 เลิกทำนายและสรุปผล"* เมื่อพร้อมจบรอบ ✨';
 
         $finalMessage = $aiResponse.$followupOffer;
 
@@ -1993,12 +1999,12 @@ trait CelticCrossConversationTrait
         //   เกิดเมื่อ: max_questions_reached (3Q ครบ) แต่ window 30 นาทียังเหลือ
         if ($proSessionActive && $proSessionRemaining > 0
             && in_array($reason, ['max_questions_reached', 'ai_signal'], true)) {
-            // 🛑 (2026-05-16) เปลี่ยน "พอแค่นี้/ขอบคุณ" → "ยุติการทำนาย" (ลูกค้าเข้าใจผิด)
+            // 🌙 (2026-05-23) เปลี่ยน "ยุติการทำนาย" → "เลิกทำนายและสรุปผล" + 2-step confirm
             $closingMessage .= "\n\n──────────────────────\n"
                 ."🌙 *แต่แม่หมอยังไม่ลานะคะ — ยังเปิดประตูพลังให้อีก {$proSessionRemaining} นาที* ✨\n\n"
                 ."💬 ถ้าเจ้าชะตามีอะไรอยากถามเพิ่มเติมจากบทสรุป — พิมพ์มาได้เลยค่ะ\n"
                 ."   แม่หมอจะอ่านพลังงานจากไพ่ทั้ง 10 ใบให้ละเอียดยิ่งขึ้น\n\n"
-                .'🔚 หรือถ้าพอใจแล้วพิมพ์ *"ยุติการทำนาย"* แม่หมอจะปิดการส่งพลังให้';
+                .'📜 หรือถ้าพอใจแล้วพิมพ์ *"เลิกทำนายและสรุปผล"* แม่หมอจะสรุปผลให้ค่ะ';
         } elseif (in_array($reason, ['customer_said_done', 'time_expired', 'idle'], true)
             && method_exists($this, 'clearProSessionFlags')) {
             // 🩹 (2026-05-09 audit fix CC2) Clear Pro Session flag เมื่อ customer ลาจริง
@@ -2031,15 +2037,118 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticQaPrompt(FortuneReading $reading, string $messageText): array
     {
-        // "ยุติการทำนาย" / "พอแค่นี้" / "จบ" → จบ session อย่างสุขุม
-        if ($this->matchesExactKeyword($messageText, ['ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ', 'พอแค่นี้', 'พอแล้ว', 'จบ', 'ขอบคุณ', 'thanks', 'พอ'])) {
-            return $this->endCelticSession($reading, 'customer_said_done');
+        // 🔚 (2026-05-23) "ยุติการทำนาย" / "เลิกทำนายและสรุปผล" → 2-step confirm กันมือลั่น
+        $confirmResult = $this->handleCelticEndConfirmation($reading, $messageText);
+        if ($confirmResult !== null) {
+            return $confirmResult;
         }
 
         // อย่างอื่น = ถือเป็นคำถามใหม่
         $reading->update(['conversation_status' => FortuneReading::STATUS_CELTIC_AWAITING_QUESTION]);
 
         return $this->handleCelticAwaitingQuestion($reading, $messageText);
+    }
+
+    /**
+     * 🔚 (2026-05-23) 2-step confirm สำหรับ "เลิกทำนายและสรุปผล"
+     *
+     * Why:
+     *   user spec: ปุ่มยุติเดิม → กดผิดมือลั่น = session จบทันที สูญเงิน 99฿
+     *   ใหม่: เปลี่ยนปุ่มเป็น "📜 เลิกทำนายและสรุปผล" + ถามยืนยันก่อนจริงๆ
+     *
+     * Flow:
+     *   1. ครั้งแรก: ลูกค้าพิมพ์ "ยุติ"/"เลิก"/"จบ" หรือกดปุ่ม CELTIC_END_ASK
+     *      → ส่ง confirm prompt + Quick Replies (ใช่/ขอคุยต่อ)
+     *      → set Cache flag celtic_pending_end_confirm:{readingId} TTL 2 min
+     *   2. ครั้งที่สอง (มี flag):
+     *      → "ใช่"/"ส่งสรุป" / CELTIC_END_YES → call endCelticSession (จริง)
+     *      → "ไม่"/"ขอคุยต่อ" / CELTIC_END_NO → clear flag + กลับ Q&A
+     *      → อย่างอื่น → clear flag + ปล่อยให้ caller handle ปกติ
+     *
+     * @return array|null  array = handled, null = ไม่เกี่ยว (caller จัดการต่อ)
+     */
+    protected function handleCelticEndConfirmation(FortuneReading $reading, string $messageText): ?array
+    {
+        $cacheKey = "celtic_pending_end_confirm:{$reading->id}";
+        $pending = Cache::has($cacheKey);
+
+        // 1️⃣ มี pending + ลูกค้ายืนยัน → จบ session จริง
+        $yesKeywords = [
+            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'yes', 'ok', 'okay', 'โอเค', 'ยืนยัน',
+            'ส่งสรุป', 'ส่งสรุปเลย', 'สรุปเลย', 'สรุป', 'จบเลย', 'จบ',
+            'confirm', 'ส่งเลย', 'CELTIC_END_YES',
+        ];
+        if ($pending && $this->matchesExactKeyword($messageText, $yesKeywords)) {
+            Cache::forget($cacheKey);
+            Log::info('Celtic: end_confirm YES → endCelticSession', [
+                'reading_id' => $reading->id,
+                'message' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return $this->endCelticSession($reading, 'customer_said_done');
+        }
+
+        // 2️⃣ มี pending + ลูกค้ายกเลิก → กลับ Q&A normal
+        $noKeywords = [
+            'ไม่', 'ไม่ค่ะ', 'ไม่ครับ', 'no', 'ขอคุยต่อ', 'คุยต่อ', 'ขอต่อ',
+            'ขออีก', 'อีก', 'ต่อ', 'ไม่ใช่', 'cancel', 'ยกเลิก',
+            'CELTIC_END_NO',
+        ];
+        if ($pending && $this->matchesExactKeyword($messageText, $noKeywords)) {
+            Cache::forget($cacheKey);
+            Log::info('Celtic: end_confirm NO → continue Q&A', [
+                'reading_id' => $reading->id,
+            ]);
+
+            return [
+                'action' => 'celtic_continue',
+                'message' => "🌙 *ได้ค่ะ — แม่หมอยังอยู่ตรงนี้* ✨\n\n"
+                    .'💬 พิมพ์คำถามต่อมาได้เลยนะคะ แม่หมอรอฟังอยู่',
+                'reading' => $reading,
+            ];
+        }
+
+        // 3️⃣ ไม่มี pending + ลูกค้าพิมพ์ "ยุติ"/"เลิก"/"จบ" → ส่ง confirm prompt
+        $askEndKeywords = [
+            // legacy keywords (backward compat กับลูกค้าเก่าที่จำได้)
+            'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
+            'พอแค่นี้', 'พอแล้ว', 'พอ', 'หยุด', 'stop',
+            'ขอบคุณ', 'thanks',
+            // 2026-05-23 ปุ่มใหม่
+            'เลิกทำนายและสรุปผล', 'เลิกทำนาย', 'เลิก',
+            'จบการทำนาย',
+            'CELTIC_END_ASK',
+        ];
+        if (! $pending && $this->matchesExactKeyword($messageText, $askEndKeywords)) {
+            Cache::put($cacheKey, true, 120); // TTL 2 นาที
+            Log::info('Celtic: end_confirm ASK → prompt user to confirm', [
+                'reading_id' => $reading->id,
+                'message' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return [
+                'action' => 'celtic_end_confirm',
+                'message' => "📜 *ต้องการให้แม่หมอส่งสรุปผลและจบการทำนายเลยใช่ไหมคะ?*\n\n"
+                    ."🌙 _กดผิดได้ค่ะ — ถ้ายังไม่พร้อมเลือก \"ขอคุยต่อ\"_",
+                'reading' => $reading,
+                'quick_replies' => [
+                    ['content_type' => 'text', 'title' => '✅ ใช่ ส่งสรุปเลย', 'payload' => 'CELTIC_END_YES'],
+                    ['content_type' => 'text', 'title' => '↩️ ขอคุยต่ออีกหน่อย', 'payload' => 'CELTIC_END_NO'],
+                ],
+            ];
+        }
+
+        // 4️⃣ มี pending แต่ตอบอย่างอื่น (เช่น พิมพ์คำถามใหม่) → clear flag + pass through
+        //    ให้ caller (handleCelticAwaitingQuestion) จัดการเป็น Q&A ปกติต่อไป
+        if ($pending) {
+            Cache::forget($cacheKey);
+            Log::info('Celtic: end_confirm pending — got unrelated message, clear flag + pass through', [
+                'reading_id' => $reading->id,
+                'message' => mb_substr($messageText, 0, 50),
+            ]);
+        }
+
+        return null;
     }
 
     /**
