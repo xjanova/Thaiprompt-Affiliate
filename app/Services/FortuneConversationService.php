@@ -4974,9 +4974,16 @@ class FortuneConversationService
 
             // 🧠 (2026-04-28) Discovery Chat Mode — fallback ถ้าไม่ใช้ tier menu
             //    Default false หลัง user feedback ว่าไม่เวิร์ค
+            // 🌙 (2026-05-24) Guard: ถ้า Deep ปิด → ไม่ใช้ discovery chat
+            //   เคสจริง (screenshot ลูกค้าทองพูน): Deep off + Celtic on + discovery_chat=true
+            //   → ลูกค้าพิมพ์ "ดูดวง" → bot AI Chat "เล่าให้ฟังหน่อย..." (สับสน + ยืดยื้อ)
+            //   user feedback: "เดิมก็ดีอยู่แล้ว พูดแล้วบอกค่าใช้จ่ายเลย จุดประสงค์ชัดเจน"
+            //   FIX: discovery_chat ออกแบบเพื่อ pitch Deep 39฿ — Deep ปิดแล้วไม่มีความหมาย
+            //        → fall through ไป Celtic flow (line 5065+) ตรง = ออกบิลทันที
             $useDiscoveryChat = ! $useTierChoice
                 && $forceTier === null
-                && (bool) ($this->settings->enable_discovery_chat ?? false);
+                && (bool) ($this->settings->enable_discovery_chat ?? false)
+                && $this->settings->isDeepReadingEnabled();
 
             // 🛡️ Pre-check: ถ้าไม่มี Chat AI API key → ใช้ rigid flow ทันที (กัน user ค้าง)
             if ($useDiscoveryChat && empty($this->settings->getChatAIApiKey())) {
