@@ -702,11 +702,15 @@ class CelticCrossService
 
         $cardsText = $this->formatCardsForPrompt($cards);
 
+        // 💬 (2026-05-24) Pre-Celtic chat context — บริบทสนทนาก่อนซื้อ
+        $preChatContext = $this->buildPreCelticChatContext($reading);
+
         // 🆕 (2026-05-13) User-specified template — แม่หมอจันทราพยากรณ์ Celtic 99฿
         //   user spec: 8 sections (เปิด → ภาพรวม → ความรู้สึกอีกฝ่าย → อุปสรรค → Timeline →
         //               ผลลัพธ์ → คำแนะนำ → สรุปฟันธง → ปิดท้าย)
         //   เน้น: ฟันธง, ไม่กลางๆ, ไม่โลกสวย, เชื่อมโยงไพ่ทุกใบ
-        return "คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
+        return $preChatContext
+            ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
             ."ภารกิจของคุณ:\n"
             ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
             ."• เข้าใจบริบทคำถามและความรู้สึกของลูกค้า\n"
@@ -1047,6 +1051,9 @@ class CelticCrossService
             $maxQuestions = (int) ($this->settings->celtic_cross_max_questions ?? 0);
             $remaining = $maxQuestions > 0 ? max(0, $maxQuestions - $questionsUsed) : 999;
 
+            // 💬 (2026-05-24) Pre-Celtic chat context — pass ไป Q2+ เช่นกัน
+            $preChatContextQ2 = $this->buildPreCelticChatContext($reading);
+
             return $this->buildShortFollowupPrompt(
                 $brandName,
                 $cardsText,
@@ -1054,7 +1061,8 @@ class CelticCrossService
                 $userQuestion,
                 $sequence,
                 $personaBlock,
-                $remaining
+                $remaining,
+                $preChatContextQ2
             );
         }
 
@@ -1064,7 +1072,11 @@ class CelticCrossService
         //   admin override ผ่าน settings.celtic_cross_followup_prompt
         $personaPrefix = $personaBlock !== '' ? $personaBlock."\n\n" : '';
 
+        // 💬 (2026-05-24) Pre-Celtic chat context — บริบทสนทนาก่อนซื้อ
+        $preChatContext = $this->buildPreCelticChatContext($reading);
+
         return $personaPrefix
+            .$preChatContext
             ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
 
             ."ภารกิจของคุณ:\n"
@@ -1339,7 +1351,8 @@ class CelticCrossService
         string $userQuestion,
         int $sequence,
         string $personaBlock,
-        int $remaining = 999
+        int $remaining = 999,
+        string $preChatContext = ''
     ): string {
         // 🌙 (2026-05-23 v3) ลบ silent sandbagging block ทั้งหมด
         //    user spec ใหม่: "เปลี่ยนไม่ให้มีการดีเลย์ในการตอบ + 5 คำถาม / 15 นาที + บอกกติการให้ชัด"
@@ -1374,7 +1387,9 @@ class CelticCrossService
         //    เน้นบุคลิก: ใจดี ปลอบใจได้ แก้ปัญหาเก่ง = เสน่ห์ที่ลูกค้ากลับมา
         //    หลักอธิบาย: หลักพุทธ เหตุและปัจจัย — ห้ามคำลอย ๆ ("บุญเก่าหนุน")
         //    Provider: OpenAI 5.5 ตลอด session (lock at askQuestion path)
+        // 💬 (2026-05-24) Pre-Celtic chat context — passed จาก caller buildFollowupPrompt
         return $personaPrefix
+            .$preChatContext
             ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบที่ลูกค้าเปิดไว้แล้ว)\n"
             ."ตอนนี้กำลังคุยกับเจ้าชะตาหลังจาก Q1 ทำนายเต็มไปแล้ว — เป็นแม่หมอที่ใจดี ฟังลูกค้า ปลอบใจได้ แก้ปัญหาเก่ง\n\n"
 
@@ -1524,6 +1539,135 @@ class CelticCrossService
     /**
      * Format ไพ่ทั้ง 10 ใบเป็น text ส่งให้ AI
      */
+    /**
+     * 💬 (2026-05-24) Pre-Celtic chat context — inject บทสนทนาก่อนซื้อ Celtic เข้า prompt
+     *
+     * Why: AI generates predictions โดย "ไม่รู้" ว่าลูกค้าเคยเล่าอะไรก่อนหน้านี้
+     *   เช่น conv 4961 ลูกค้าเล่า "ทิ้งผมกะลูกสาว / ลูกสาวเรียน มม.ส ปี 2" ก่อนซื้อ
+     *   → AI ทำนายโดยไม่รู้บริบทนี้ → generic
+     *
+     * Window: 60 นาทีก่อน paid_at (หรือ created_at ถ้ายังไม่ paid — เคสฟรี)
+     * Cap: 12 turns / 1500 chars total (กัน token bloat)
+     * Filter: skip messages ที่เป็น quick_replies/payment templates (noise)
+     *
+     * Returns formatted block หรือ '' ถ้าไม่มีบทสนทนา
+     */
+    protected function buildPreCelticChatContext(FortuneReading $reading): string
+    {
+        try {
+            $userId = $reading->facebook_user_id
+                ?? $reading->platform_user_id
+                ?? $reading->line_user_id
+                ?? null;
+
+            if (empty($userId)) {
+                return '';
+            }
+
+            // Anchor time: paid_at > celtic_first_answered_at > created_at
+            $anchorTime = $reading->paid_at
+                ?? $reading->celtic_first_answered_at
+                ?? $reading->created_at;
+
+            if (! $anchorTime) {
+                return '';
+            }
+
+            // ค้น conversation (LineBotConversation ครอบทั้ง FB+LINE — column = line_user_id legacy)
+            $conversation = \App\Models\LineBotConversation::where('line_user_id', (string) $userId)
+                ->orderBy('updated_at', 'desc')
+                ->first();
+
+            if (! $conversation) {
+                return '';
+            }
+
+            // ดึง messages ช่วง 60 นาทีก่อน anchor (chitchat ก่อนซื้อ)
+            $windowStart = (clone $anchorTime)->subMinutes(60);
+            $messages = \App\Models\LineBotMessage::where('conversation_id', $conversation->id)
+                ->whereBetween('created_at', [$windowStart, $anchorTime])
+                ->orderBy('id', 'asc')
+                ->limit(30)  // safety cap
+                ->get();
+
+            if ($messages->isEmpty()) {
+                return '';
+            }
+
+            // Filter noise + format
+            $lines = [];
+            $totalChars = 0;
+            $maxChars = 1500;
+            $maxTurns = 12;
+            $turnCount = 0;
+
+            // Pattern noise ที่ skip — payment template, sticky QR text, system messages
+            $noisePatterns = [
+                '/^🌙\s*สวัสดี/u',
+                '/^📋\s*เมนู/u',
+                '/^💰.*BAHT/u',
+                '/QR\s*Code/i',
+                '/PromptPay/i',
+                '/^✅.*ระบบกำลังดำเนินการ/u',
+                '/^หมอจันทรา.*พักรับคำถาม/u',
+            ];
+
+            foreach ($messages as $msg) {
+                if ($turnCount >= $maxTurns || $totalChars >= $maxChars) {
+                    break;
+                }
+
+                $text = trim((string) $msg->message);
+                if ($text === '') {
+                    continue;
+                }
+
+                // Skip ข้อความสั้นเกินจากบอท (noise: typing/empty/ack)
+                if ($msg->role === 'assistant' && mb_strlen($text) < 8) {
+                    continue;
+                }
+
+                // Skip noise patterns (template/system)
+                $isNoise = false;
+                foreach ($noisePatterns as $pattern) {
+                    if (preg_match($pattern, $text)) {
+                        $isNoise = true;
+                        break;
+                    }
+                }
+                if ($isNoise) {
+                    continue;
+                }
+
+                $role = $msg->role === 'assistant' ? 'แม่หมอ' : 'ลูกค้า';
+                $snippet = mb_substr($text, 0, $msg->role === 'assistant' ? 150 : 200);
+
+                $line = "{$role}: {$snippet}";
+                $totalChars += mb_strlen($line);
+                $lines[] = $line;
+                $turnCount++;
+            }
+
+            if (empty($lines)) {
+                return '';
+            }
+
+            $block = "━━━━━━━━━━━━━━━━━\n"
+                ."💬 บริบทสนทนาก่อนเปิดไพ่ (ใช้ผูกคำทำนายให้ตรงเรื่องราวจริงของลูกค้า)\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                .implode("\n", $lines)."\n\n";
+
+            return $block;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('Celtic: buildPreCelticChatContext fail (non-blocking)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+
+            return '';
+        }
+    }
+
     protected function formatCardsForPrompt(array $cards): string
     {
         $lines = [];
