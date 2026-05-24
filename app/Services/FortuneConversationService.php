@@ -2283,6 +2283,40 @@ class FortuneConversationService
                     return $this->presentPricingMenu();
                 }
 
+                // 🔒 (2026-05-24) Post-Celtic 5Q cap — ลูกค้าถามต่อหลังจบ Celtic
+                //   user spec: "ใครที่ถามเกิน 5 คำถาม ก็ตอบ แม่หมอมีพลังเปิดให้ 5 คำถาม
+                //   เจ้าชะตาต้องเปิดไพ่ชุดใหม่สำหรับคำถามใหม่ ไพ่ชุดเดิมตอบจริงไม่เกิน 5 คำถาม"
+                //   เคส: Celtic completed (Grand Finale ส่งแล้ว) → ลูกค้ายังพิมพ์ถามต่อ
+                //   ไม่ใช่ "ดูดวง" (Tier 3 จับแล้ว → flow ใหม่) + ไม่ใช่ pricing (gate จับแล้ว)
+                if ($this->looksLikeFortuneFollowupQuestion($messageText)) {
+                    $recentCelticDone = FortuneReading::where('facebook_user_id', $facebookUserId)
+                        ->where('reading_type', FortuneReading::READING_TYPE_CELTIC_CROSS)
+                        ->where('conversation_status', FortuneReading::STATUS_COMPLETED)
+                        ->where('is_paid', true)
+                        ->where('updated_at', '>=', now()->subMinutes(60))
+                        ->latest('updated_at')
+                        ->first();
+
+                    if ($recentCelticDone) {
+                        Log::info('Fortune: post-Celtic 5Q cap → ขอเปิดไพ่ชุดใหม่', [
+                            'user_id' => $facebookUserId,
+                            'recent_celtic_id' => $recentCelticDone->id,
+                            'questions_used' => $recentCelticDone->celtic_questions_used,
+                            'text_preview' => mb_substr($messageText, 0, 80),
+                        ]);
+
+                        return [
+                            'action' => 'celtic_5q_cap_followup',
+                            'message' => "🌙 ต้องขออภัยนะคะ\n\n"
+                                ."แม่หมอมีพลังเปิดให้ได้เพียง *5 คำถาม* ต่อครั้งค่ะ\n"
+                                ."ไพ่ชุดเดิมตอบให้ตามจริงได้ไม่เกิน 5 คำถาม\n\n"
+                                ."ถ้าเจ้าชะตามีคำถามใหม่ ต้อง*เปิดไพ่ชุดใหม่*สำหรับคำถามใหม่นะคะ ✨\n\n"
+                                .'พิมพ์ "ดูดวง" เพื่อเริ่ม session ใหม่ได้เลยค่ะ 🔮',
+                            'reading' => null,
+                        ];
+                    }
+                }
+
                 // ✅ AI Chat ทั่วไป — สนทนาเป็นธรรมชาติ + ชวนดูดวง
                 // คำเกี่ยวกับดวง (เช่น "ความรัก", "การเงิน", "ปีนี้") จะถูกจัดการโดย AI Chat
                 // ไม่สร้าง FortuneReading → ไม่ใช้สิทธิ์ฟรี
@@ -11298,6 +11332,58 @@ class FortuneConversationService
                 ."_(พิมพ์ \"ยืนยันยกเลิก\" ถ้าต้องการยกเลิกแน่นอน)_",
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🔒 (2026-05-24) ตรวจว่าลูกค้าถามต่อยอด fortune หลังจบ Celtic 5Q
+     *
+     * User spec: "ใครที่ถามเกิน 5 คำถาม ก็ตอบ ต้องเปิดไพ่ชุดใหม่"
+     *
+     * จับ fortune follow-up question (ลูกค้ายังคิดว่าคุยกับแม่หมอ):
+     *   - "อยากถาม/ถามอีก/ขอถาม/อยากรู้"
+     *   - "ความรัก/การงาน/การเงิน/สุขภาพ + ของฉัน"
+     *   - "เนื้อคู่/คู่ครอง/แฟน"
+     *   - "ปีนี้จะ.../ดีไหม/มีไหม"
+     *
+     * Exclude:
+     *   - `isGenericFortuneRequest` → ลูกค้าพิมพ์ "ดูดวง" = อยากเปิด session ใหม่ (Tier 3 จับแล้ว)
+     *   - `looksLikePricingQuestion` → pricing gate ครอบแล้ว
+     *
+     * Caller ต้องเช็ค recent Celtic completed + paid ภายใน 60 นาที ก่อนใช้ผลลัพธ์นี้
+     */
+    public function looksLikeFortuneFollowupQuestion(string $text): bool
+    {
+        $clean = mb_strtolower(trim($text));
+        if (mb_strlen($clean) < 4) {
+            return false;
+        }
+
+        // Exclude: ลูกค้าจะ restart session ใหม่ → Tier 3 จับ
+        if ($this->isGenericFortuneRequest($text)) {
+            return false;
+        }
+
+        // Exclude: pricing question — pricing gate handles it
+        if ($this->looksLikePricingQuestion($text)) {
+            return false;
+        }
+
+        // Fortune follow-up question patterns
+        $followupPatterns = [
+            'อยากถาม', 'ถามอีก', 'ขอถาม', 'อยากรู้',
+            'จะเป็นยังไง', 'จะดีไหม', 'จะมีไหม', 'จะรวยไหม', 'จะสำเร็จไหม',
+            'ความรักของฉัน', 'การงานของฉัน', 'การเงินของฉัน', 'ดวงของฉัน',
+            'เนื้อคู่', 'คู่ครอง', 'แฟนใหม่',
+            'ปีนี้จะ', 'เดือนนี้จะ', 'อาทิตย์นี้',
+            'ขอเลขมงคล', 'ขอสีมงคล', 'ฤกษ์ดี',
+        ];
+        foreach ($followupPatterns as $kw) {
+            if (str_contains($clean, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
