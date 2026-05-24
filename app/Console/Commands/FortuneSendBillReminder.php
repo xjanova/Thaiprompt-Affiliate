@@ -22,10 +22,10 @@ use Illuminate\Support\Facades\Log;
 class FortuneSendBillReminder extends Command
 {
     protected $signature = 'fortune:bill-reminder
-        {--min=20 : นาทีต่ำสุดที่บิลค้าง (pending_payment) ก่อนเริ่มทวง (default 20)}
-        {--max=60 : นาทีสูงสุดที่บิลค้าง — เก่ากว่านี้ปล่อย expire เอง (default 60)}
-        {--method-min=5 : นาทีต่ำสุดสำหรับ awaiting_payment_method (default 5)}
-        {--method-max=30 : นาทีสูงสุดสำหรับ awaiting_payment_method (default 30)}
+        {--min=1 : นาทีต่ำสุดที่บิลค้าง (pending_payment) ก่อนเริ่มทวง (default 1)}
+        {--max=8 : นาทีสูงสุดที่บิลค้าง — เก่ากว่านี้ถือว่าไม่ตอบสนอง (default 8)}
+        {--method-min=1 : นาทีต่ำสุดสำหรับ awaiting_payment_method (default 1)}
+        {--method-max=8 : นาทีสูงสุดสำหรับ awaiting_payment_method (default 8)}
         {--dry-run : ไม่ dispatch จริง — แค่ scan + รายงาน}';
 
     protected $description = 'สแกนบิลที่ค้างจ่าย + dispatch SendBillReminderJob ทวงลูกค้าด้วย AI (รองรับ awaiting_payment_method)';
