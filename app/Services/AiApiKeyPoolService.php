@@ -1056,6 +1056,89 @@ class AiApiKeyPoolService
         return $used >= $threshold;
     }
 
+    /**
+     * 🪙 (2026-05-24 Phase 6) ตรวจว่า request นี้จะทะลุ TPM ของ key หรือไม่
+     *
+     * ต่าง isTpmSaturated() ตรงที่เช็คขนาด request ที่กำลังจะส่งด้วย:
+     *   ถ้า (used + estimatedRequestTokens) > limit → return true → caller skip key นี้
+     *
+     * เคสที่เจอ 2026-05-24: pool's isTpmSaturated() filter ที่ 90% ของ limit ผิด (limit ใส่ผิด)
+     *   8b-instant ใส่ 30000 (จริง 6000) → never saturated → request 700-tokens slip through
+     *   → Groq เห็น used 5500 + this_request 700 = 6200 > 6000 → 413 reject
+     *
+     * แก้: caller ที่รู้ขนาด request ของตัวเอง (เช่น input_chars / 3 + max_completion)
+     *      เรียก method นี้ก่อน → pool คืนค่า true ถ้าจะไม่ผ่าน
+     *
+     * @param  int  $estimatedRequestTokens  ประมาณการ input_tokens + max_completion_tokens
+     */
+    public function requestExceedsTpm(AiApiKey $key, int $estimatedRequestTokens): bool
+    {
+        $limit = $key->getEffectiveTpmLimit();
+        if ($limit <= 0) {
+            return false; // unlimited
+        }
+
+        if ($estimatedRequestTokens <= 0) {
+            // ไม่รู้ขนาด — fallback to accumulated check เดิม
+            return $this->isTpmSaturated($key);
+        }
+
+        // กัน request เดี่ยวที่ใหญ่กว่า limit เลย (ต่อให้ usage = 0)
+        if ($estimatedRequestTokens > $limit) {
+            return true;
+        }
+
+        $used = $this->getKeyTpm($key->provider, $key->id);
+        // ใช้ safety 95% สำหรับ per-request check (looser กว่า saturated 90%)
+        //   เหตุผล: ถ้าเข้มไป จะ filter ทิ้งคีย์ที่ยังมีที่ว่างพอ → starvation
+        $safeLimit = (int) ($limit * 0.95);
+
+        return ($used + $estimatedRequestTokens) >= $safeLimit;
+    }
+
+    /**
+     * 🪙 (2026-05-24 Phase 6) Mark key TPM-saturated ทันที (manual override)
+     *
+     * เรียกเมื่อได้ 413 จริงๆ จาก API → fill accumulator ให้ทะลุ limit
+     * → ครั้งถัดไป isTpmSaturated() = true → key ถูก skip 60s
+     *
+     * ใช้เมื่อ caller จับ 413 หรือ error "Request too large" ได้แล้ว
+     */
+    public function markTpmSaturated(AiApiKey $key, int $seconds = 60): void
+    {
+        $limit = $key->getEffectiveTpmLimit();
+        if ($limit <= 0) {
+            $limit = 30000; // fallback ถ้า unlimited (impossible 413 case)
+        }
+
+        $tpmKey = self::TPM_PREFIX."{$key->provider}:{$key->id}";
+        Cache::put($tpmKey, $limit + 1, $seconds); // +1 เพื่อให้ทะลุ threshold แน่ๆ
+
+        Log::info('Pool: markTpmSaturated', [
+            'key_id' => $key->id,
+            'provider' => $key->provider,
+            'model' => $key->model,
+            'limit' => $limit,
+            'cooldown_sec' => $seconds,
+        ]);
+    }
+
+    /**
+     * 🪙 (2026-05-24 Phase 6) ประมาณการ token จาก text
+     *
+     * Heuristic (รวดเร็ว ไม่ต้อง tokenizer):
+     *   - Thai: 1 token ≈ 2 chars
+     *   - English/code: 1 token ≈ 4 chars
+     *
+     * ใช้ค่ากลาง 3 chars/token + 10% buffer (safer over-estimate)
+     */
+    public static function estimateTokens(string $text): int
+    {
+        $chars = mb_strlen($text);
+
+        return (int) ceil($chars / 3 * 1.1);
+    }
+
     // ============================================================
     // Cache Management
     // ============================================================

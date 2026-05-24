@@ -4384,39 +4384,52 @@ PROMPT;
         }
 
         if (! $success && $errorMessage !== null) {
-            // Per-key cooldown ถ้าโดน rate limit (429) — 30s
+            // Per-key cooldown ถ้าโดน rate limit (429/413) — 30s
+            // 🪙 (2026-05-24) 413 "Request too large" = TPM exhausted — treat like 429
+            //    (เคยเจอ 2026-05-23/24: 11 Groq keys ทะลุพร้อมกัน เพราะ TPM นับ per-org)
             $msg = mb_strtolower($errorMessage);
             $is429 = str_contains($msg, '429') || str_contains($msg, 'rate limit') || str_contains($msg, 'quota');
+            $is413 = str_contains($msg, '413') || str_contains($msg, 'request too large') || str_contains($msg, 'tokens per minute');
 
-            if ($is429) {
+            if ($is429 || $is413) {
+                $codeLabel = $is413 ? '413 (TPM)' : '429';
                 cache()->put("pool:cooldown:{$provider}:{$poolKey->id}", true, 30);
-                Log::info('FortuneAI: Per-key cooldown 30s (429)', [
+                Log::info("FortuneAI: Per-key cooldown 30s ({$codeLabel})", [
                     'provider' => $provider,
                     'key_id' => $poolKey->id,
                     'error_preview' => mb_substr($errorMessage, 0, 80),
                 ]);
 
-                // 🏢 (2026-05-23 Phase 4) Groq org-level ban
-                //   ถ้า provider=groq → extract org_id + ban ทั้ง org 60s
-                //   ทุก key อื่นใน org เดียวกันจะถูก skip ใน Pool filter
-                //   → กัน rotate ใน org เดิม → กระจายไป org อื่น
-                if ($provider === 'groq') {
-                    try {
-                        /** @var \App\Services\AiApiKeyPoolService $pool */
-                        $pool = app(\App\Services\AiApiKeyPoolService::class);
+                try {
+                    /** @var \App\Services\AiApiKeyPoolService $pool */
+                    $pool = app(\App\Services\AiApiKeyPoolService::class);
+
+                    // 🪙 (2026-05-24 Phase 6) Mark TPM saturated เมื่อ 413
+                    //    → fill accumulator → key อื่นเช็คผ่าน isTpmSaturated/requestExceedsTpm
+                    //    → skip key นี้ตรง 60s window ที่ Groq นับ
+                    if ($is413) {
+                        $pool->markTpmSaturated($poolKey, 60);
+                    }
+
+                    // 🏢 (2026-05-23 Phase 4) Groq org-level ban
+                    //   ถ้า provider=groq → extract org_id + ban ทั้ง org 60s
+                    //   ทุก key อื่นใน org เดียวกันจะถูก skip ใน Pool filter
+                    //   → กัน rotate ใน org เดิม → กระจายไป org อื่น
+                    //   (อัปเดต 2026-05-24: ทำกับ 413 ด้วย เพราะ Groq นับ TPM per-org)
+                    if ($provider === 'groq') {
                         $orgId = $pool->learnGroqOrgId($poolKey, $errorMessage);
                         if ($orgId) {
                             $pool->banGroqOrg($orgId, 60);
-                            Log::warning('FortuneAI: Groq org banned 60s', [
+                            Log::warning("FortuneAI: Groq org banned 60s ({$codeLabel})", [
                                 'key_id' => $poolKey->id,
                                 'org_id' => $orgId,
                             ]);
                         }
-                    } catch (\Throwable $e) {
-                        Log::warning('FortuneAI: Groq org ban failed', [
-                            'error' => $e->getMessage(),
-                        ]);
                     }
+                } catch (\Throwable $e) {
+                    Log::warning('FortuneAI: post-rate-limit handling failed', [
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
         }
@@ -5876,11 +5889,17 @@ TXT;
         $msg = mb_strtolower($errorMessage);
         $isRateLimit = (
             str_contains($msg, '429')
+            // 🪙 (2026-05-24) 413 "Request too large" = TPM exhausted — transient เหมือน 429
+            //    Groq enforce TPM ที่ระดับ per-request: ถ้า (used_in_minute + this_req) > TPM → 413
+            //    ก่อนหน้านี้ 413 ถูกนับเป็น "key พัง" → 3 strikes → critical → admin ต้อง unblock
+            || str_contains($msg, '413')
+            || str_contains($msg, 'request too large')
             || str_contains($msg, 'too many requests')
             || str_contains($msg, 'rate limit')
             || str_contains($msg, 'rate_limit')
             || str_contains($msg, 'quota exceeded')
             || str_contains($msg, 'quota_exceeded')
+            || str_contains($msg, 'tokens per minute')
         );
 
         $retryAfter = null;

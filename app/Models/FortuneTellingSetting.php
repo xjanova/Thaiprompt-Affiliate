@@ -512,7 +512,8 @@ class FortuneTellingSetting extends Model
         'sensitive_provider' => 'gemini',
         'sensitive_model' => 'gemini-3.1-pro-preview',
         'sensitive_classifier_provider' => 'groq',
-        'sensitive_classifier_model' => 'llama-3.1-8b-instant',
+        // 🎯 (2026-05-24) เปลี่ยน default 8b → 3.3-70b — TPM 6000 → 12000 ลด 413
+        'sensitive_classifier_model' => 'llama-3.3-70b-versatile',
         'sensitive_max_per_user_daily' => 5,
         'sensitive_max_total_daily_thb' => 200.00,
         'sensitive_max_tokens_per_call' => 2000,

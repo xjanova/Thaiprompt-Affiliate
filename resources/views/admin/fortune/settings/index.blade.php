@@ -812,9 +812,9 @@
                                 <option value="gemini" {{ ($settings->sensitive_classifier_provider ?? '') === 'gemini' ? 'selected' : '' }}>Gemini</option>
                             </select>
                             <input type="text" name="sensitive_classifier_model"
-                                   value="{{ old('sensitive_classifier_model', $settings->sensitive_classifier_model ?? 'llama-3.1-8b-instant') }}"
+                                   value="{{ old('sensitive_classifier_model', $settings->sensitive_classifier_model ?? 'llama-3.3-70b-versatile') }}"
                                    class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                                   placeholder="llama-3.1-8b-instant">
+                                   placeholder="llama-3.3-70b-versatile">
                         </div>
                     </div>
                 </div>

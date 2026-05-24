@@ -106,15 +106,18 @@ class AiApiKey extends Model
             //   ลบออกจาก dropdown แล้ว — migration 2026_05_22_210000 อัปเดต DB อัตโนมัติ
         ],
         'groq' => [
-            'llama-3.3-70b-versatile',
-            'llama-3.1-8b-instant',
-            'llama-3.1-70b-versatile',
-            'meta-llama/llama-4-scout-17b-16e-instruct',
-            'meta-llama/llama-4-maverick-17b-128e-instruct',
-            'openai/gpt-oss-120b',
-            'openai/gpt-oss-20b',
-            'gemma2-9b-it',
-            'mixtral-8x7b-32768',
+            // 🚫 (2026-05-24) ลบ models ที่ Groq ลบไปแล้ว — verify จาก console.groq.com/docs/models
+            //   - llama-3.1-70b-versatile          (shutdown 2025-01-24 → llama-3.3-70b-versatile)
+            //   - meta-llama/llama-4-maverick-...  (shutdown 2026-03-09 → openai/gpt-oss-120b)
+            //   - gemma2-9b-it                     (shutdown 2025-10-08 → llama-3.1-8b-instant)
+            //   - mixtral-8x7b-32768               (shutdown 2025-03-20 → llama-3.3-70b-versatile)
+            //   ลบจาก dropdown แล้ว — migration 2026_05_24_120000 อัปเดต DB อัตโนมัติ
+            'llama-3.3-70b-versatile',                          // ⭐ production default
+            'llama-3.1-8b-instant',                             // production — เร็ว+ถูก
+            'meta-llama/llama-4-scout-17b-16e-instruct',        // preview — Llama 4 Scout
+            'qwen/qwen3-32b',                                   // preview — Qwen 3
+            'openai/gpt-oss-120b',                              // production — flagship
+            'openai/gpt-oss-20b',                               // production — เร็วสุด 1000 t/s
         ],
         'openai' => [
             // 🆕 (2026-05-08) GPT-5.x family — current generation (May 2026)
@@ -259,19 +262,19 @@ class AiApiKey extends Model
      */
     public const MODEL_TPM_FREE_TIER = [
         'groq' => [
+            // 🚫 (2026-05-24) ลบ entries ของ models ที่ Groq ลบไปแล้ว (ดู MODELS_BY_PROVIDER comment)
+            //
+            // 🔧 (2026-05-24 v2) Verified จาก https://console.groq.com/docs/rate-limits — ค่าจริง free tier
+            //    ก่อนหน้านี้ผิด: 8b-instant=30000 (จริง=6000), 70b-versatile=6000 (จริง=12000)
+            //    → 8b ทะลุง่ายมาก → 413 "Request too large"
+            //    → 70b ถูก filter ทิ้งเร็วเกิน เพราะคิดว่าทะลุที่ 6000
             '_default' => 6000,
-            'llama-3.3-70b-versatile' => 6000,           // ตัวที่ทะลุจริงในระบบเรา
-            'llama-3.1-70b-versatile' => 6000,
-            'llama-3.1-8b-instant' => 30000,             // ขยับมาใช้ตัวนี้แทน 70b — TPM 5x
-            'llama-3.2-90b-vision-preview' => 7000,
-            'llama-3.2-11b-vision-preview' => 7000,
-            'meta-llama/llama-4-scout-17b-16e-instruct' => 30000,
-            'meta-llama/llama-4-maverick-17b-128e-instruct' => 30000,
-            'openai/gpt-oss-120b' => 8000,
-            'openai/gpt-oss-20b' => 8000,
-            'gemma2-9b-it' => 15000,
-            'qwen-qwq-32b' => 6000,
-            'deepseek-r1-distill-llama-70b' => 6000,
+            'llama-3.3-70b-versatile' => 12000,                  // ✅ verified Groq free
+            'llama-3.1-8b-instant' => 6000,                      // ✅ verified — ก่อนหน้านี้ใส่ 30000 ผิด!
+            'meta-llama/llama-4-scout-17b-16e-instruct' => 30000, // ✅ verified — สูงสุด, เหมาะ heavy prompts
+            'qwen/qwen3-32b' => 6000,                            // ✅ verified preview
+            'openai/gpt-oss-120b' => 8000,                       // ✅ verified
+            'openai/gpt-oss-20b' => 8000,                        // ✅ verified
         ],
         'gemini' => [
             // Gemini ใช้ Project quota เป็นหลัก (RPD/TPD) — TPM ไม่ใช่ bottleneck หลัก
@@ -299,20 +302,15 @@ class AiApiKey extends Model
 
     public const MODEL_RPM_FREE_TIER = [
         'groq' => [
-            '_default' => 28,                                      // 30 actual
+            // 🚫 (2026-05-24) ลบ entries ของ models ที่ Groq ลบไปแล้ว (ดู MODELS_BY_PROVIDER comment)
+            // 🔧 (2026-05-24 v2) Verified Groq free RPM — ทุกตัว 30 ยกเว้น qwen3-32b = 60
+            '_default' => 28,                                      // 30 actual - safety 5%
             'llama-3.3-70b-versatile' => 28,
             'llama-3.1-8b-instant' => 28,
-            'llama-3.1-70b-versatile' => 28,
-            'llama-3.2-90b-vision-preview' => 14,                  // 15 actual (vision จำกัด)
-            'llama-3.2-11b-vision-preview' => 28,
             'meta-llama/llama-4-scout-17b-16e-instruct' => 28,
-            'meta-llama/llama-4-maverick-17b-128e-instruct' => 28,
+            'qwen/qwen3-32b' => 55,                                // ⭐ 60 actual — ดี ใช้สลับเป็น overflow
             'openai/gpt-oss-120b' => 28,
             'openai/gpt-oss-20b' => 28,
-            'gemma2-9b-it' => 28,
-            'mixtral-8x7b-32768' => 28,
-            'qwen-qwq-32b' => 28,
-            'deepseek-r1-distill-llama-70b' => 28,
         ],
         'gemini' => [
             '_default' => 9,                                       // เริ่มที่ 2.5 Flash
@@ -993,6 +991,18 @@ class AiApiKey extends Model
         // 🎯 (2026-05-01) 429 ไม่นับ strike toward critical
         //   เหตุผล: rate-limit เป็นเรื่องชั่วคราว, ไม่ใช่สัญญาณว่า key พัง
         //   admin จะตัดสินใจ mark critical เองเมื่อเห็นว่า key โดน ban จริง
+        //
+        // 🪙 (2026-05-24) 413 "Request too large" = TPM exhausted (Groq) — treat like 429
+        //   ปกติ caller จะส่ง $isRateLimit=true เอง แต่กันลืม — auto-detect ด้วย
+        //   ถ้า error message มี "413" หรือ "Request too large" → cooldown 60s no-strike
+        if (! $isRateLimit) {
+            $msgLower = mb_strtolower($errorMessage);
+            $isRateLimit = str_contains($errorMessage, '413')
+                || str_contains($msgLower, 'request too large')
+                || str_contains($msgLower, 'rate_limit_exceeded')
+                || str_contains($msgLower, 'tokens per minute');
+        }
+
         if ($isRateLimit) {
             $cooldownSeconds = max(60, min($retryAfter ?? 60, 600));
             $this->update([
@@ -1005,7 +1015,7 @@ class AiApiKey extends Model
             $this->usageLogs()->create(array_merge([
                 'model' => $model,
                 'is_success' => false,
-                'error_message' => "[429] {$errorMessage}",
+                'error_message' => "[RATE_LIMIT] {$errorMessage}",
             ], $this->customerContextColumns($context)));
 
             return;
@@ -1168,6 +1178,23 @@ class AiApiKey extends Model
      */
     public function recordError(string $errorMessage, ?string $model = null, ?array $context = null): void
     {
+        // 🪙 (2026-05-24) Route ผ่าน recordSmartError เพื่อให้ auto-detect 429/413
+        //    legacy callers ที่เรียก recordError() จะได้ rate-limit handling ที่ฉลาดขึ้น
+        //    (ไม่งั้นทุก 413 → +1 consecutive_errors → 3 strikes → key disabled 5min ทันที)
+        $msgLower = mb_strtolower($errorMessage);
+        $isRateLimit = str_contains($errorMessage, '429')
+            || str_contains($errorMessage, '413')
+            || str_contains($msgLower, 'rate limit')
+            || str_contains($msgLower, 'request too large')
+            || str_contains($msgLower, 'rate_limit_exceeded')
+            || str_contains($msgLower, 'tokens per minute');
+
+        if ($isRateLimit) {
+            $this->recordSmartError($errorMessage, $model, true, null, $context);
+
+            return;
+        }
+
         $this->increment('consecutive_errors');
 
         $this->update([

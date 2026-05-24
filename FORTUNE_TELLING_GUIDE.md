@@ -66,7 +66,7 @@ Facebook Webhook ส่งข้อมูลมาที่ระบบ
 | Provider | Model | ราคา | ความเร็ว | คุณภาพ |
 |----------|-------|------|----------|--------|
 | **Gemini** ⭐ | gemini-1.5-flash | ฟรี | เร็วมาก | ดีมาก |
-| **Groq** | llama-3.1-70b | ฟรี | เร็วที่สุด | ดี |
+| **Groq** | llama-3.3-70b-versatile | ฟรี | เร็วที่สุด | ดี |
 | **Qwen** | Qwen/Qwen2.5-72B | ฟรี (HF) | ปานกลาง | ดีมาก |
 | **OpenRouter** | หลายรุ่น | มีค่าใช้จ่าย | ขึ้นกับรุ่น | ดีเยี่ยม |
 
@@ -235,7 +235,7 @@ php artisan tinker
 3. ไปที่ **API Keys** → สร้าง Key ใหม่
 4. กรอกใน Admin Panel:
    - **AI Provider**: เลือก `Groq`
-   - **AI Model**: `llama-3.1-70b-versatile`
+   - **AI Model**: `llama-3.3-70b-versatile`
    - **API Key**: วาง API Key
 
 **ราคา**: **ฟรี** (มีโควต้า)

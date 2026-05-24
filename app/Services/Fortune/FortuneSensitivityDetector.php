@@ -299,12 +299,9 @@ class FortuneSensitivityDetector
         }
 
         $provider = $this->settings->sensitive_classifier_provider ?? 'groq';
-        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.1-8b-instant';
-        $apiKey = $this->getClassifierApiKey($provider);
-
-        if (empty($apiKey)) {
-            throw new Exception("Classifier API key หายไปสำหรับ provider={$provider}");
-        }
+        // 🎯 (2026-05-24) Default ใช้ llama-3.3-70b-versatile (TPM 12000) ดีกว่า 8b-instant (TPM 6000)
+        //    ลด 413 "Request too large" ที่เกิดเมื่อหลาย classifier call พร้อมกัน
+        $model = $this->settings->sensitive_classifier_model ?? 'llama-3.3-70b-versatile';
 
         $endpoint = match ($provider) {
             'groq' => 'https://api.groq.com/openai/v1/chat/completions',
@@ -344,14 +341,55 @@ PROMPT;
             ],
         ];
 
-        $response = Http::withToken($apiKey)
-            ->timeout(5) // budget tight — ห้ามเกิน 5s
-            ->retry(1, 200)
-            ->post($endpoint, $payload);
+        // 🪙 (2026-05-24 Phase 6) Pre-flight: ประมาณ token + filter key ที่ใกล้ทะลุ TPM
+        //   เดิม: detector ขอ key 1 ตัวจาก pool → ส่ง request → 413 → exception
+        //   ใหม่: loop max 3 keys, mark TPM saturated เมื่อ 413, ลอง key ถัดไป
+        $estimatedTokens = \App\Services\AiApiKeyPoolService::estimateTokens($systemPrompt)
+            + \App\Services\AiApiKeyPoolService::estimateTokens($message)
+            + 150;  // + max_tokens
 
-        if (! $response->successful()) {
+        $pool = new \App\Services\AiApiKeyPoolService;
+        $response = null;
+        $lastError = null;
+        $triedKeyIds = [];
+
+        for ($attempt = 1; $attempt <= 3; $attempt++) {
+            $keyObj = $this->acquireClassifierKey($pool, $provider, $estimatedTokens, $triedKeyIds);
+            if (! $keyObj) {
+                // ไม่มี key เหลือ — fall back to legacy single-key
+                $apiKey = $this->getClassifierApiKey($provider);
+                if (empty($apiKey)) {
+                    throw new Exception("Classifier API key หายไปสำหรับ provider={$provider} (attempt {$attempt})");
+                }
+                $response = Http::withToken($apiKey)->timeout(5)->retry(1, 200)->post($endpoint, $payload);
+                break;
+            }
+
+            $triedKeyIds[] = $keyObj->id;
+            $response = Http::withToken($keyObj->api_key)->timeout(5)->retry(1, 200)->post($endpoint, $payload);
+
+            // 413/429 → mark TPM saturated + try next key
+            if (! $response->successful() && in_array($response->status(), [413, 429], true)) {
+                $errMsg = "HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200);
+                Log::warning('Classifier: key TPM/rate-limit hit, rotating', [
+                    'key_id' => $keyObj->id,
+                    'status' => $response->status(),
+                    'attempt' => $attempt,
+                ]);
+                $pool->markTpmSaturated($keyObj, 60);
+                $keyObj->recordSmartError($errMsg, $model, true, 60);
+                $lastError = $errMsg;
+                $response = null;
+
+                continue;
+            }
+            break;
+        }
+
+        if ($response === null || ! $response->successful()) {
             $this->recordClassifierFailure();
-            throw new Exception("Classifier HTTP {$response->status()}: ".$response->body());
+            $statusInfo = $response ? "HTTP {$response->status()}: ".$response->body() : ($lastError ?? 'no response');
+            throw new Exception("Classifier {$statusInfo}");
         }
 
         $body = $response->json();
@@ -414,6 +452,52 @@ PROMPT;
         // Fallback: settings chat_ai_api_key (ถ้าเป็น provider เดียวกัน)
         if (($this->settings->chat_ai_provider ?? null) === $provider) {
             return $this->settings->getChatAIApiKey();
+        }
+
+        return null;
+    }
+
+    /**
+     * 🪙 (2026-05-24 Phase 6) ขอ key จาก pool พร้อม TPM pre-flight check
+     *
+     * - skip key ที่อยู่ใน triedKeyIds (กัน loop ใช้ key เดิม)
+     * - skip key ที่ TPM ใกล้เต็มเมื่อบวก estimatedTokens
+     *
+     * @param  array<int>  $triedKeyIds
+     */
+    protected function acquireClassifierKey(
+        \App\Services\AiApiKeyPoolService $pool,
+        string $provider,
+        int $estimatedTokens,
+        array $triedKeyIds = []
+    ): ?\App\Models\AiApiKey {
+        try {
+            // ขอหลาย key มากกว่า 1 เผื่อหลีกเลี่ยงตัวที่ TPM ใกล้เต็ม
+            for ($i = 0; $i < 5; $i++) {
+                $key = $pool->acquireKey($provider, 'chat');
+                if (! $key) {
+                    return null;
+                }
+                $pool->releaseKey($provider, $key->id);
+
+                if (in_array($key->id, $triedKeyIds, true)) {
+                    continue; // ลองตัวอื่น
+                }
+
+                // 🪙 pre-flight TPM check
+                if ($pool->requestExceedsTpm($key, $estimatedTokens)) {
+                    Log::info('Classifier: skip key — request would exceed TPM', [
+                        'key_id' => $key->id,
+                        'estimated_tokens' => $estimatedTokens,
+                    ]);
+
+                    continue;
+                }
+
+                return $key;
+            }
+        } catch (Exception $e) {
+            Log::warning('Classifier: acquireClassifierKey failed', ['error' => $e->getMessage()]);
         }
 
         return null;
