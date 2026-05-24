@@ -1123,6 +1123,46 @@ class FortuneConversationService
                 }
             }
 
+            // 🌙 (2026-05-24) Farewell silence — เคารพการจบสนทนาของลูกค้า ไม่บังคับตอบทุกข้อความ
+            //   เคสจริง:
+            //     • conv 4961 ลูกค้าพูด "ขอบคุณมากครับ" + "ครับๆ" → บอทยังเปิดประตู
+            //       "ถ้าอยากคุยอะไรเพิ่ม...หมออยู่ตรงนี้ ?" → chitchat 7 turns เรื่องลูกสาว
+            //     • conv 4835 ลูกค้า "ยกเลิก" → บอท chitchat 2 turns กว่าจะปิดได้
+            //   นโยบาย: ลูกค้าพูด farewell → อวยพรสไตล์แม่หมอ 1 บรรทัด → set flag → silent
+            //   Wake up: (1) พิมพ์ขอดูดวง / (2) cache TTL หมด (endOfDay) / (3) paid_active_reading
+            if (! $hasPaidActiveReading) {
+                if ($this->isFarewellClosed($facebookUserId)) {
+                    if ($this->isGenericFortuneRequest($messageText)) {
+                        // wake up — ลูกค้ากลับมาขอดูดวง
+                        $this->clearFarewellClose($facebookUserId);
+                        Log::info('Fortune: farewell — wake up (fortune intent)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+                    } else {
+                        Log::info('Fortune: farewell — silent skip (post-blessing)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip',
+                            'message' => null,
+                            'reading' => null,
+                        ];
+                    }
+                } elseif ($this->looksLikeFarewell($messageText)) {
+                    $userName = ! empty($userProfile['name']) ? $userProfile['name'] : 'เจ้าชะตา';
+                    $this->markFarewellClosed($facebookUserId);
+                    Log::info('Fortune: farewell — blessing + close', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 30),
+                    ]);
+
+                    return $this->makeFarewellBlessingResponse($userName, $facebookUserId);
+                }
+            }
+
             // 🎯 Phase N — นับ rapid-fire: เกินเกณฑ์ → เข้า silent mode พร้อม warning 1 ครั้ง
             //   🛡️ (2026-05-05) Paid customer → threshold 2x (ลูกค้าใจร้อนหลังจ่าย ปกติ)
             $rapidCount = $this->countRapidFire($facebookUserId);
@@ -11450,6 +11490,130 @@ class FortuneConversationService
         }
 
         return false;
+    }
+
+    /**
+     * 🌙 (2026-05-24) ตรวจคำลา/อวยพรปิดสนทนาของลูกค้า
+     *
+     * เคสจริง (conv 4961 / 4835 / 4936):
+     *   ลูกค้าพูด "ขอบคุณมากครับ" / "สาธุ" / "ครับๆ" → บอทยังเปิดประตู chitchat
+     *   ต่อ 7+ turns เพราะ AI default = empathy + open-ended question (เปลือง token)
+     *
+     * Policy: เคารพการจบสนทนา → อวยพร 1 บรรทัด → silent ทุกอย่างจนวันใหม่/พิมพ์ "ดูดวง"
+     */
+    public function looksLikeFarewell(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        // Normalize ลบคำลงท้าย + punctuation/emoji ทั่วไป
+        $normalized = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|คับ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|มาก|มากๆ|มากครับ|มากค่ะ|ครับผม|ค่ะ ขอบคุณ)\s*$/u',
+            '',
+            $text
+        );
+        $normalized = trim(preg_replace('/[?!.,…\s]+$/u', '', $normalized));
+
+        // Strong farewell (gratitude + closing phrases)
+        $farewellSubstrings = [
+            'ขอบคุณ', 'ขอบพระคุณ', 'ขอบคุน', 'ขอบใจ',
+            'สาธุ',
+            'ลาก่อน', 'บายบาย', 'goodbye',
+            'พรุ่งนี้เจอกัน', 'แล้วเจอกัน', 'ไว้เจอกัน', 'พรุ่งนี้คุยกัน',
+            'thanks', 'thank you',
+            'ขอตัวก่อน', 'ขอตัวนะ', 'ขอตัวละ',
+            // Lao
+            'ຂອບໃຈ', 'ສາທຸ', 'ລາກ່ອນ',
+        ];
+        foreach ($farewellSubstrings as $kw) {
+            if (str_contains($normalized, $kw)) {
+                return true;
+            }
+        }
+
+        // Standalone short ack — "ครับๆ", "ค่ะๆ", "โอเค", "ok", "อืม"
+        if (mb_strlen($normalized) <= 8) {
+            $standaloneAck = [
+                'ครับๆ', 'ครัฟๆ', 'คับๆ', 'ค่ะๆ', 'คะๆ', 'คับ ผม',
+                'โอเค', 'โอเคค่ะ', 'โอเคครับ', 'โอเค ค่ะ', 'โอเค ครับ',
+                'ok', 'okay', 'okๆ', 'k', 'kk', 'okค่ะ', 'okครับ',
+                'อืม', 'อืมๆ', 'อืมม', 'อืออ', 'อ้อ',
+                'รับทราบ', 'เข้าใจ', 'จ้า', 'จ๊ะ',
+                'bye', 'byeๆ', 'บาย',
+                'thx', 'tnx', 'ty',
+            ];
+            foreach ($standaloneAck as $kw) {
+                if ($normalized === $kw) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🌙 (2026-05-24) เช็คว่าลูกค้าเพิ่งจบสนทนาไป — silent ต่อจนกว่าจะตื่น
+     */
+    public function isFarewellClosed(string $userId): bool
+    {
+        try {
+            return (bool) Cache::get("fortune:farewell_closed:{$userId}", false);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * 🌙 (2026-05-24) Set farewell close flag — TTL จนหมดวัน (กลับมา DM พรุ่งนี้ = ตื่นเอง)
+     */
+    protected function markFarewellClosed(string $userId): void
+    {
+        try {
+            $secondsToEndOfDay = now()->diffInSeconds(now()->endOfDay(), false);
+            $ttl = max(60, (int) $secondsToEndOfDay);
+            Cache::put("fortune:farewell_closed:{$userId}", true, $ttl);
+        } catch (\Throwable $e) {
+            // fail-safe — ปล่อยให้ flow ปกติทำงาน
+        }
+    }
+
+    /**
+     * 🌙 (2026-05-24) Clear farewell flag — ลูกค้ากลับมาขอดูดวง / paid event
+     */
+    public function clearFarewellClose(string $userId): void
+    {
+        try {
+            Cache::forget("fortune:farewell_closed:{$userId}");
+        } catch (\Throwable $e) {
+            //
+        }
+    }
+
+    /**
+     * 🌙 (2026-05-24) สร้าง blessing สั้น 1 บรรทัด + set close flag
+     *
+     * สไตล์แม่หมอ — อวยพร สงบ ไม่เปิดประตู chitchat
+     * Rotate 3 templates ตาม user_id + วันที่ (กันซ้ำเดิมๆ)
+     */
+    protected function makeFarewellBlessingResponse(string $name, string $userId): array
+    {
+        $templates = [
+            "🌙 ขอให้ดวงดาวคุ้มครอง{$name} พบเจอแต่สิ่งดี ๆ นะคะ ✨",
+            "🙏 สาธุค่ะ ขอบุญรักษา{$name} ผ่านพ้นอุปสรรคไปได้ด้วยดี ✨",
+            "✨ หมอจันทราอวยพรให้{$name}แข็งแรงทั้งกายใจ ดวงดีค่ะ 🌙",
+        ];
+        $idx = abs((int) crc32($userId.date('Ymd'))) % count($templates);
+
+        return [
+            'action' => 'farewell_blessing',
+            'message' => $templates[$idx],
+            'reading' => null,
+            'show_quick_replies' => false,
+            'block_followups' => true,
+        ];
     }
 
     /**
