@@ -2047,6 +2047,48 @@ Format 2 — JSON array:
                     </div>
                 </div>
 
+                {{-- 🖼️ (2026-05-24) Master Toggle: Image Vision (ครอบทุก provider)
+                     Default: false — ปิด vision ทุก provider (OpenAI Celtic + Gemini classifier)
+                     เมื่อ OFF: chatWithImage + chatWithImageGemini return null ทันที
+                                → Celtic 99 vision read ปิด + slip auto-detect ปิด
+                                → ลูกค้าต้องพิมพ์เลขบิล/จำนวนเงินเอง
+                     เมื่อ ON: vision ทำงานปกติ (Celtic deep + slip classify routing) --}}
+                <div class="mb-4 p-4 rounded-lg border-2"
+                     :class="enableImageVision
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
+                        : 'bg-green-50 dark:bg-green-900/20 border-green-300 dark:border-green-700'">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg" x-text="enableImageVision ? '⚠️' : '🔒'"></span>
+                            <span class="font-semibold text-gray-900 dark:text-white">
+                                บอทดูรูปลูกค้า (Image Vision) — ครอบทุก provider
+                            </span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="hidden" name="enable_image_vision" value="0">
+                            <input type="checkbox" name="enable_image_vision" value="1"
+                                   {{ old('enable_image_vision', $settings->enable_image_vision ?? false) ? 'checked' : '' }}
+                                   class="sr-only peer"
+                                   x-model="enableImageVision">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                    <div x-show="!enableImageVision" class="text-xs text-green-800 dark:text-green-200 space-y-1">
+                        <p>🔒 <strong>ปิดอยู่ (แนะนำ)</strong> — บอทไม่วิเคราะห์รูปทุกประเภท ทุก provider</p>
+                        <p>• ✅ <strong>OpenAI Vision ปิด</strong> — Celtic 99฿ ไม่วิเคราะห์รูปลูกค้า (ใช้ไพ่ + คำถามแทน)</p>
+                        <p>• ✅ <strong>Gemini Classifier ปิด</strong> — ไม่มี <code>image_vision</code> token bleed (saved ~50K tok/วัน)</p>
+                        <p>• ⚠️ <strong>Slip auto-detect ปิดด้วย</strong> — ลูกค้าต้องพิมพ์เลขบิล/จำนวนเงินเอง</p>
+                        <p>• ✅ <strong>SMS payment matching ยังทำงาน</strong> — แค่ไม่อ่านรูปสลิป</p>
+                    </div>
+                    <div x-show="enableImageVision" class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                        <p>⚠️ <strong>เปิดอยู่</strong> — บอทดูรูปได้ทุก context (Celtic vision + slip classify)</p>
+                        <p>• ใช้ OpenAI Vision (Celtic 99 paid customer ส่งรูป → AI วิเคราะห์ในบริบทไพ่)</p>
+                        <p>• ใช้ Gemini Flash Lite (classify รูปทุกใบ → route slip/celtic/general/emoji)</p>
+                        <p>• Cost: OpenAI ~$0.05-0.10/call | Gemini ~$0.00005/call</p>
+                        <p>• 🛡️ Gate <code>$hasActiveFortune</code> ยังทำงาน — chat ปกติไม่เรียก vision</p>
+                    </div>
+                </div>
+
                 {{-- โหมดการทำงาน --}}
                 <div class="mb-4" x-show="enablePublicCommentReply" x-transition>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -4254,6 +4296,8 @@ function fortuneSettings() {
         commentEngagementMode: '{{ old('comment_engagement_mode', $settings->comment_engagement_mode ?? 'ai') }}',
         // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ (default false — รอ App Review)
         enablePublicCommentReply: {{ old('enable_public_comment_reply', $settings->enable_public_comment_reply ?? false) ? 'true' : 'false' }},
+        // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider (default false)
+        enableImageVision: {{ old('enable_image_vision', $settings->enable_image_vision ?? false) ? 'true' : 'false' }},
         switchTab(tab) {
             this.activeTab = tab;
             localStorage.setItem('fortune_settings_tab', tab);

@@ -103,6 +103,11 @@ class FortuneTellingSetting extends Model
         //    ถ้า Page Token ยังไม่มี pages_manage_engagement scope → ปิด toggle นี้
         //    เพื่อกัน AI quota เผาเปล่าตอนพยายาม replyToComment แล้ว fail 403
         'enable_public_comment_reply',
+        // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider — default=false
+        //    OFF: gate chatWithImage (OpenAI) + chatWithImageGemini (classifier) entry points
+        //    → Celtic vision read ปิด + slip auto-detect classifier ปิด
+        //    ON: vision ทำงานปกติ (Celtic 99 + slip classify routing)
+        'enable_image_vision',
         'comment_reply_template',
         'comment_dm_template',
         'comment_engagement_prompt',
@@ -309,6 +314,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_enabled' => 'boolean',
         // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
         'enable_public_comment_reply' => 'boolean',
+        // 🖼️ (2026-05-24) Master toggle image vision (default false) — ครอบทุก provider
+        'enable_image_vision' => 'boolean',
         'admin_handover_enabled' => 'boolean',
         'admin_handover_timeout' => 'integer',
         'admin_qa_capture_enabled' => 'boolean',
@@ -441,6 +448,8 @@ class FortuneTellingSetting extends Model
         'comment_engagement_mode' => 'ai',
         // 🚫 (2026-05-24) Default false — รอ App Review อนุมัติ pages_manage_engagement
         'enable_public_comment_reply' => false,
+        // 🖼️ (2026-05-24) Default false — ปิด vision ทุก provider ประหยัด quota
+        'enable_image_vision' => false,
         // LINE Settings
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
@@ -1242,6 +1251,25 @@ EOT;
     public function isPublicCommentReplyEnabled(): bool
     {
         return (bool) ($this->enable_public_comment_reply ?? false);
+    }
+
+    /**
+     * 🖼️ (2026-05-24) เช็คว่า image vision เปิดอยู่หรือไม่ — ครอบทุก provider
+     *
+     * Gate นี้ครอบ:
+     *   - chatWithImage() (OpenAI Celtic 99 vision read)
+     *   - chatWithImageGemini() (Gemini image classifier — slip routing)
+     *   - future: chatWithImageAnthropic / etc.
+     *
+     * เมื่อ false: vision call ทั้งหมด return null ตั้งแต่ entry point
+     *   → ImageIntentClassifier คืน DEFAULT_INTENT_ON_FAIL (general_photo)
+     *   → caller fall through ไป legacy logic (no vision)
+     *
+     * เมื่อ true: vision ทำงานปกติ (Celtic deep vision + slip auto-detect)
+     */
+    public function isImageVisionEnabled(): bool
+    {
+        return (bool) ($this->enable_image_vision ?? false);
     }
 
     /**

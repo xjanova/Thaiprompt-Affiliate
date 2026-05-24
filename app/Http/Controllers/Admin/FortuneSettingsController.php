@@ -248,6 +248,9 @@ class FortuneSettingsController extends Controller
             'comment_engagement_mode' => 'nullable|in:ai,template',
             // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ (ปิด default — กัน AI quota เผาเปล่าตอน pages_manage_engagement ยังไม่ approved)
             'enable_public_comment_reply' => 'boolean',
+            // 🖼️ (2026-05-24) Master toggle: image vision ครอบทุก provider (OpenAI + Gemini)
+            //    OFF: Celtic vision read + slip auto-detect classifier ถูกปิดทั้งหมด
+            'enable_image_vision' => 'boolean',
             'comment_reply_template' => 'nullable|string|max:500',
             'comment_dm_template' => 'nullable|string|max:2000',
             'comment_engagement_prompt' => 'nullable|string|max:3000',
@@ -414,6 +417,8 @@ class FortuneSettingsController extends Controller
             'use_global_ai_settings', 'comment_engagement_enabled',
             // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
             'enable_public_comment_reply',
+            // 🖼️ (2026-05-24) Master toggle image vision (default false) — ครอบทุก provider
+            'enable_image_vision',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate', 'fortune_level2_enabled',
             'fortune_central_fallback_enabled',

@@ -1008,6 +1008,19 @@ PROMPT;
         string $userText = '',
         array $config = []
     ): ?array {
+        // 🖼️ (2026-05-24) Master gate: ปิด image vision ทุก provider ในจุดเดียว
+        //   User spec: "ปิด image_vision ให้ครอบคลุมทุก provider"
+        //   เมื่อ enable_image_vision=false → return null ทันที (ไม่แตะ key/AI/cost)
+        //   ครอบ Celtic 99 vision read (caller: CelticCrossService:1236)
+        if (! $this->settings->isImageVisionEnabled()) {
+            Log::info('🚫 FortuneAIService chatWithImage skipped — enable_image_vision=false', [
+                'provider' => 'openai',
+                'gate' => 'master_image_vision_toggle',
+            ]);
+
+            return null;
+        }
+
         // 🔒 (2026-05-16) บังคับ OpenAI only — ไม่ fallback Gemini/Anthropic
         //   เหตุผล: Gemini ต้อง fetch + base64 ก่อน (latency สูง) ส่วน chat provider หลัก
         //   (Groq Llama) ไม่รองรับ vision อยู่แล้ว — ดังนั้นถ้าไม่มี OpenAI key vision-capable
@@ -1196,6 +1209,20 @@ PROMPT;
         ?string $model = null,
         array $config = []
     ): ?array {
+        // 🖼️ (2026-05-24) Master gate: ปิด image vision ทุก provider ในจุดเดียว
+        //   User spec: "ปิด image_vision ให้ครอบคลุมทุก provider"
+        //   เมื่อ enable_image_vision=false → return null ทันที (ไม่แตะ key/AI/cost)
+        //   ครอบ ImageIntentClassifier (slip routing) — caller: FB:1660 + LINE:283
+        //   ⚠️ Side effect: slip auto-detect ปิดด้วย — ลูกค้าต้องพิมพ์เลขบิลแทน
+        if (! $this->settings->isImageVisionEnabled()) {
+            Log::info('🚫 FortuneAIService chatWithImageGemini skipped — enable_image_vision=false', [
+                'provider' => 'gemini',
+                'gate' => 'master_image_vision_toggle',
+            ]);
+
+            return null;
+        }
+
         // 1. Download → base64 (Gemini ก็ดึง external URL ไม่ได้ในหลายกรณี — ทำ base64 เสมอเพื่อความสม่ำเสมอ)
         $dataUrl = $this->ensureImageAsDataUrl($imageData, 'chatWithImageGemini');
         if ($dataUrl === null) {
