@@ -1691,6 +1691,39 @@ class FortuneConversationService
                     return $this->presentPricingMenu();
                 }
 
+                // 🌙 (2026-05-24) Generic fortune request wins — ก่อน active reading branch
+                //   เคสจริง (screenshot ลูกค้าทองพูน ชื่นรัมย์):
+                //     ลูกค้าคลิก Quick Reply "ดูดวง" หลังบอททักไป (ตอนนี้อยู่ AWAITING_CONFIRMATION)
+                //     → handleConfirmationResponse → AI Chat discovery (ขอเล่าเรื่อง) แทน tier menu
+                //     ลูกค้าคาดหวัง: เห็น Celtic 99฿ tier menu ทันที
+                //   Block list: state ที่ "อยู่ระหว่างทำ" ไม่ควร restart
+                $earlyGenericBlockingStatuses = [
+                    FortuneReading::STATUS_PAID,
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                    FortuneReading::STATUS_CELTIC_PICKING,
+                    FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                    FortuneReading::STATUS_CELTIC_QA_PROMPT,
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_PENDING_STRIPE_PAYMENT,
+                    FortuneReading::STATUS_AWAITING_PAYMENT_METHOD,
+                    FortuneReading::STATUS_COLLECTING_BIRTHDATE,
+                    FortuneReading::STATUS_COLLECTING_QUESTIONS,
+                    FortuneReading::STATUS_COLLECTING_TAROT,
+                ];
+                $earlyGenericBlocking = $earlyActiveCheck
+                    && in_array($earlyActiveCheck->conversation_status, $earlyGenericBlockingStatuses, true);
+
+                if (! $earlyGenericBlocking && $this->isGenericFortuneRequest($messageText)) {
+                    Log::info('Fortune: generic fortune request (early-gate) → start fortune flow', [
+                        'user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 80),
+                        'active_status' => $earlyActiveCheck?->conversation_status,
+                    ]);
+
+                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
+                }
+
                 // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
                 $activeReading = $earlyActiveCheck;
 
