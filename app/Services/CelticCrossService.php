@@ -708,11 +708,20 @@ class CelticCrossService
         // 🔍 (2026-05-25) Enrichment directive — AI ถาม clarifying ถ้าคำถาม vague
         $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
 
+        // 📜 (2026-05-25) Past readings context — รู้ประวัติทำนายของลูกค้า
+        //   ⚠️ อนาคตเปลี่ยนได้ — ไพ่ขัดแย้งกับครั้งก่อนเป็นเรื่องปกติ
+        $pastReadingsContext = $this->buildPastReadingsContext($reading);
+
+        // 👋 (2026-05-25) Check-in opener — ถ้าลูกค้าเก่า ให้เปิดด้วย "ผ่านมาเป็นไงบ้าง"
+        $checkinDirective = $this->buildRepeatCheckinDirective($reading);
+
         // 🆕 (2026-05-13) User-specified template — แม่หมอจันทราพยากรณ์ Celtic 99฿
         //   user spec: 8 sections (เปิด → ภาพรวม → ความรู้สึกอีกฝ่าย → อุปสรรค → Timeline →
         //               ผลลัพธ์ → คำแนะนำ → สรุปฟันธง → ปิดท้าย)
         //   เน้น: ฟันธง, ไม่กลางๆ, ไม่โลกสวย, เชื่อมโยงไพ่ทุกใบ
-        return $preChatContext
+        return $pastReadingsContext
+            .$checkinDirective
+            .$preChatContext
             .$enrichmentDirective
             ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
             ."ภารกิจของคุณ:\n"
@@ -1082,7 +1091,15 @@ class CelticCrossService
         // 🔍 (2026-05-25) Enrichment directive — AI ถาม clarifying ถ้าคำถาม vague
         $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
 
+        // 📜 (2026-05-25) Past readings context — ลูกค้าเก่า ดวงเปลี่ยนได้
+        $pastReadingsContext = $this->buildPastReadingsContext($reading);
+
+        // 👋 (2026-05-25) Check-in opener สำหรับลูกค้าเก่า
+        $checkinDirective = $this->buildRepeatCheckinDirective($reading);
+
         return $personaPrefix
+            .$pastReadingsContext
+            .$checkinDirective
             .$preChatContext
             .$enrichmentDirective
             ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
@@ -1738,6 +1755,169 @@ class CelticCrossService
                 'error' => $e->getMessage(),
             ]);
 
+            return '';
+        }
+    }
+
+    /**
+     * 📜 (2026-05-25) Past readings context — ดึงประวัติทำนายเก่าของลูกค้า เพื่อ weave storyline
+     *
+     * ⚠️ **สำคัญมาก:** ใช้เป็น context — **ไม่ใช่ constraint**
+     *   user spec 2026-05-25: "ไพ่ขัดแย้งได้ เพราะอนาคตเปลี่ยนได้"
+     *   AI ห้ามผูกมัดให้ทำนายตรงกับครั้งก่อน — ถ้าขัดแย้ง = ปกติ
+     *   AI ต้องพูดอย่างนุ่มนวลว่า "พลังเปลี่ยน / ดวงคลาย / พลิกได้" — ไม่ใช่ "ครั้งก่อนผิด"
+     *
+     * Cache 30 นาที per reading (กัน DB hit ซ้ำใน Q1+Q2+...)
+     *
+     * @return string ว่างถ้าไม่ใช่ลูกค้าเก่า / ไม่มี FB user
+     */
+    protected function buildPastReadingsContext(FortuneReading $reading): string
+    {
+        try {
+            $userId = $reading->facebook_user_id ?? null;
+            if (empty($userId)) {
+                return ''; // LINE ยังไม่ support (line_user_id ไม่มีใน fortune_readings)
+            }
+
+            $cacheKey = "fortune:past_readings_ctx:{$reading->id}";
+            $cached = \Illuminate\Support\Facades\Cache::get($cacheKey);
+            if ($cached !== null) {
+                return $cached === 'EMPTY' ? '' : $cached;
+            }
+
+            // ดึง 5 readings ล่าสุดที่จ่ายเงิน (paid) + ไม่ใช่ตัวปัจจุบัน
+            $past = FortuneReading::where('facebook_user_id', $userId)
+                ->where('id', '!=', $reading->id)
+                ->where('is_paid', true)
+                ->whereIn('conversation_status', [
+                    FortuneReading::STATUS_COMPLETED,
+                    'celtic_grand_finale',
+                    'celtic_generating',
+                ])
+                ->orderByDesc('paid_at')
+                ->limit(5)
+                ->get();
+
+            if ($past->isEmpty()) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, 'EMPTY', 1800);
+                return '';
+            }
+
+            $lines = [];
+            foreach ($past as $p) {
+                $daysAgo = (int) max(0, now()->diffInDays($p->paid_at, false) * -1);
+                $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
+
+                $questions = $p->questions ?? [];
+                $firstQ = is_array($questions) && ! empty($questions) ? mb_substr((string) ($questions[0] ?? ''), 0, 80) : '';
+                $topicText = $firstQ !== '' ? $firstQ : '(ไม่ระบุเรื่อง)';
+
+                $type = $p->reading_type ?? 'basic';
+                $typeLabel = $type === 'celtic_cross' ? 'Celtic 10 ใบ' : ($type === 'deep' ? 'Deep' : 'Basic');
+
+                // หาคำทำนายสรุป — celtic_grand_finale_summary > ai_response (cap 250 chars)
+                $summary = (string) ($p->getConversationState('celtic_grand_finale_summary', '') ?? '');
+                if ($summary === '') {
+                    $summary = (string) ($p->ai_response ?? '');
+                }
+                $summarySnippet = mb_substr(trim($summary), 0, 250);
+
+                // ไพ่ Celtic (ถ้ามี)
+                $cardsLine = '';
+                if ($type === 'celtic_cross') {
+                    $cards = $p->getCelticCards();
+                    if (! empty($cards)) {
+                        $cardNames = [];
+                        foreach ($cards as $c) {
+                            $name = (string) ($c['card_name_th'] ?? $c['card_name_en'] ?? '?');
+                            $rev = ! empty($c['is_reversed']) ? ' (กลับหัว)' : '';
+                            $cardNames[] = $name.$rev;
+                            if (count($cardNames) >= 4) {
+                                $cardNames[] = '...';
+                                break;
+                            }
+                        }
+                        $cardsLine = "  ไพ่: ".implode(' / ', $cardNames)."\n";
+                    }
+                }
+
+                $lines[] = "• [{$daysText}] {$typeLabel} — \"{$topicText}\"\n"
+                    .$cardsLine
+                    ."  สรุป: {$summarySnippet}".(mb_strlen($summary) > 250 ? '…' : '');
+            }
+
+            $block = "━━━━━━━━━━━━━━━━━\n"
+                ."📜 ประวัติทำนายเก่าของลูกค้า (".count($past)." ครั้งล่าสุด)\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                .implode("\n\n", $lines)."\n\n"
+                ."⚠️ **กฎสำคัญ: ดวงเปลี่ยนได้**\n"
+                ."• ใช้ประวัตินี้เพื่อ **ต่อ storyline + รู้จักลูกค้า** — ไม่ใช่ผูกมัด\n"
+                ."• ถ้าวันนี้ไพ่ออกขัดแย้งกับครั้งก่อน = **ปกติ** เพราะอนาคตเปลี่ยนได้ตามการกระทำ\n"
+                ."• ห้ามพูดว่า \"ครั้งก่อนผิด\" / \"ทำนายพลาด\" — ใช้ \"พลังเปลี่ยน\" / \"ดวงคลาย\" / \"ความตั้งใจของลูกค้าพลิกสถานการณ์\"\n"
+                ."• ถ้าผลตรงกับครั้งก่อน → ยืนยันว่า \"แม่หมอเห็นพลังเดิมต่อเนื่อง\" + ลึกขึ้น\n"
+                ."• weave เรื่องราว: \"ครั้งก่อนเจอ X / วันนี้พลังเปลี่ยนเป็น Y\"\n\n";
+
+            \Illuminate\Support\Facades\Cache::put($cacheKey, $block, 1800);
+            return $block;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('Celtic: buildPastReadingsContext fail (non-blocking)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
+            return '';
+        }
+    }
+
+    /**
+     * 👋 (2026-05-25) Check-in directive — ลูกค้าเก่า เปิดด้วย "ผ่านมาเป็นไงบ้าง"
+     *
+     * Trigger: มี ≥1 paid reading ภายใน 30 วัน + ตัวปัจจุบันยังไม่ตอบ Q1 (sequence=1)
+     *
+     * @return string directive หรือว่างเปล่าถ้าเป็นลูกค้าใหม่
+     */
+    protected function buildRepeatCheckinDirective(FortuneReading $reading): string
+    {
+        try {
+            $userId = $reading->facebook_user_id ?? null;
+            if (empty($userId)) {
+                return '';
+            }
+
+            // ดูครั้งล่าสุดภายใน 30 วัน
+            $lastRecent = FortuneReading::where('facebook_user_id', $userId)
+                ->where('id', '!=', $reading->id)
+                ->where('is_paid', true)
+                ->where('paid_at', '>=', now()->subDays(30))
+                ->orderByDesc('paid_at')
+                ->first();
+
+            if (! $lastRecent) {
+                return ''; // ลูกค้าใหม่ หรือนานเกิน 30 วัน — ไม่ต้อง check-in
+            }
+
+            $daysAgo = (int) max(0, now()->diffInDays($lastRecent->paid_at, false) * -1);
+            $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
+
+            $questions = $lastRecent->questions ?? [];
+            $lastTopic = is_array($questions) && ! empty($questions)
+                ? mb_substr((string) ($questions[0] ?? ''), 0, 50)
+                : '';
+            $topicHint = $lastTopic !== '' ? " เรื่อง \"{$lastTopic}\"" : '';
+
+            return "━━━━━━━━━━━━━━━━━\n"
+                ."👋 [REPEAT_CUSTOMER_CHECKIN] เปิดคำทำนายด้วยการ check-in\n"
+                ."━━━━━━━━━━━━━━━━━\n"
+                ."ลูกค้าคนนี้เคยดูดวงไปแล้ว{$daysText}{$topicHint}\n"
+                ."🎯 AI: **เปิด section 1 ด้วยการ check-in 1-2 ประโยค** ก่อนเริ่มทำนายปกติ:\n"
+                ."  ตัวอย่าง: \"ผ่านมา{$daysText}แล้วเนอะ ที่แม่หมอทำนายไว้คราวก่อน...เป็นยังไงบ้างคะ?\"\n"
+                ."  หรือ: \"แม่หมอจำได้นะ — {$daysText}เปิดไพ่ให้{$topicHint} ผ่านมา...สถานการณ์เป็นยังไงบ้าง?\"\n"
+                ."⚠️ ห้ามทำเหมือนเจอครั้งแรก — ห้ามถามชื่อ / ห้ามทักทาย formal เกินไป\n"
+                ."⚠️ ถ้าลูกค้าไม่ตอบ check-in (ถามคำถามใหม่เลย) → AI ทำนายปกติ ไม่ต้องบังคับ\n\n";
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::debug('Celtic: buildRepeatCheckinDirective fail (non-blocking)', [
+                'reading_id' => $reading->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
             return '';
         }
     }

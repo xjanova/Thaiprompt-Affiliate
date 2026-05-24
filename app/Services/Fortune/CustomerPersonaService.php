@@ -4,6 +4,7 @@ namespace App\Services\Fortune;
 
 use App\Jobs\ExtractCustomerPersonaJob;
 use App\Models\FortuneCustomerPersona;
+use App\Models\FortuneReading;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
@@ -66,12 +67,88 @@ class CustomerPersonaService
      */
     public function buildInjectBlock(string $platform, string $userId): string
     {
+        // 📅 (2026-05-25) Timeline header — รู้จักลูกค้า + รู้ช่วงเวลา
+        //   ห้ามทำเหมือนคนใหม่ ถ้าเคยดูดวงมาก่อน
+        $timeline = $this->buildTimelineHeader($platform, $userId);
+
         $persona = $this->getCached($platform, $userId);
         if (! $persona) {
-            return '';
+            // ลูกค้าใหม่จริงๆ (ไม่มี persona) → return timeline only (อาจมี past readings)
+            return $timeline;
         }
 
-        return $persona->toAiContextBlock();
+        return $timeline.$persona->toAiContextBlock();
+    }
+
+    /**
+     * 📅 (2026-05-25) Timeline header — บอก AI ว่ารู้จักลูกค้าคนนี้แค่ไหน
+     *
+     * Format:
+     *   - 🆕 ลูกค้าใหม่ (ครั้งแรก) → ถ้าไม่เคยดูดวง (paid)
+     *   - 👤 ลูกค้าเก่า — ดูดวงเป็นครั้งที่ N / ครั้งล่าสุด X วันก่อน เรื่อง "..."
+     *
+     * Cached 1 ชม. — invalidate ตอน paid reading ใหม่ (ไม่ critical หากช้า)
+     *
+     * @param  string  $platform  'facebook' / 'line'
+     * @param  string  $userId    FB PSID / LINE userId
+     * @return string  ว่างเปล่าถ้าไม่ใช่ FB user (line ใช้ user_id table — ต้อง resolve ก่อน)
+     */
+    public function buildTimelineHeader(string $platform, string $userId): string
+    {
+        $cacheKey = "fortune:persona_timeline:{$platform}:{$userId}";
+        $cached = Cache::get($cacheKey);
+        if ($cached !== null) {
+            return $cached === 'EMPTY' ? '' : $cached;
+        }
+
+        try {
+            // ✅ ดึงเฉพาะ paid + completed (Deep / Celtic) — ไม่นับ free / unpaid
+            //   line ใช้ผ่าน user_id resolve เพิ่มทีหลัง — รอบนี้ FB เป็นหลัก
+            $query = FortuneReading::where('is_paid', true)
+                ->whereIn('conversation_status', ['completed', 'celtic_grand_finale', 'celtic_generating']);
+
+            if ($platform === 'facebook') {
+                $query->where('facebook_user_id', $userId);
+            } else {
+                // LINE: ผ่าน user_id (line_user_id ไม่มีใน fortune_readings ตาม code comment)
+                //   skip ชั่วคราว — return empty (จะปรับให้ resolve ภายหลัง)
+                Cache::put($cacheKey, 'EMPTY', 3600);
+                return '';
+            }
+
+            $count = $query->count();
+            $last = (clone $query)->orderByDesc('paid_at')->first();
+
+            if ($count === 0 || ! $last) {
+                $header = "🆕 [CUSTOMER_TIMELINE] ลูกค้าใหม่ครั้งแรก — ยังไม่เคยดูดวงแบบจ่ายเงินมาก่อน\n\n";
+                Cache::put($cacheKey, $header, 3600);
+                return $header;
+            }
+
+            $daysAgo = (int) max(0, now()->diffInDays($last->paid_at, false) * -1);
+            $daysText = $daysAgo === 0 ? 'วันนี้' : ($daysAgo === 1 ? 'เมื่อวาน' : "{$daysAgo} วันก่อน");
+
+            // หา topic จาก questions[0]
+            $questions = $last->questions ?? [];
+            $firstQ = is_array($questions) && ! empty($questions) ? (string) ($questions[0] ?? '') : '';
+            $topicSnippet = mb_substr(trim($firstQ), 0, 60);
+            $topicText = $topicSnippet ? "เรื่อง \"{$topicSnippet}\"" : 'ไม่ระบุเรื่อง';
+
+            $header = "👤 [CUSTOMER_TIMELINE] ลูกค้าเก่า — ดูดวงแบบจ่ายเงินเป็นครั้งที่ ".($count + 1).
+                " / ครั้งล่าสุด {$daysText} {$topicText}\n".
+                "  ⚠️ AI: รู้จักลูกค้าคนนี้แล้ว — ห้ามทำเหมือนพบครั้งแรก ห้ามถามชื่อ/ทักทาย formal เกินไป\n\n";
+
+            Cache::put($cacheKey, $header, 3600);
+            return $header;
+        } catch (\Throwable $e) {
+            Log::debug('CustomerPersonaService: buildTimelineHeader fail (non-blocking)', [
+                'platform' => $platform,
+                'user_id' => $userId,
+                'error' => $e->getMessage(),
+            ]);
+            Cache::put($cacheKey, 'EMPTY', 600);
+            return '';
+        }
     }
 
     /**
