@@ -47,6 +47,8 @@ class FortuneCustomerPersona extends Model
         'dislikes',
         'conversation_themes',
         'communication_style',
+        // 🚩 (2026-05-25) Risk flags — ลูกค้าที่ต้องระวัง (mental_fragile/abusive/etc.)
+        'risk_flags',
         'topic_tags',
         'note_markdown',
         'observation_count',
@@ -68,6 +70,7 @@ class FortuneCustomerPersona extends Model
         'dislikes' => 'array',
         'conversation_themes' => 'array',
         'communication_style' => 'array',
+        'risk_flags' => 'array',
         'observation_count' => 'integer',
         'last_observed_at' => 'datetime',
         'last_persona_sync_at' => 'datetime',
@@ -157,6 +160,29 @@ class FortuneCustomerPersona extends Model
                 $existing = $this->{$key} ?? [];
                 $this->{$key} = array_merge($existing, $extracted[$key]);
             }
+        }
+
+        // 🚩 (2026-05-25) Risk flags — sticky merge
+        //   Rule: ค่า true ห้ามทับด้วย false อัตโนมัติ — ต้อง explicit positive signal
+        //   เช่น mental_fragile=true แล้ว → ถ้า extract รอบหน้าได้ false → IGNORE
+        //        (เพราะลูกค้าวิกฤตครั้งเดียว = ต้อง flag ยาว)
+        //   ยกเว้น crisis_resources_sent (timestamp string) → ทับได้เสมอ (อัพเดทเวลาส่ง)
+        if (! empty($extracted['risk_flags']) && is_array($extracted['risk_flags'])) {
+            $existing = $this->risk_flags ?? [];
+            $merged = $existing;
+            foreach ($extracted['risk_flags'] as $flag => $value) {
+                if ($flag === 'crisis_resources_sent') {
+                    // Timestamp field — ทับได้
+                    $merged[$flag] = $value;
+                    continue;
+                }
+                // Boolean sticky: true ทับ false / true ไม่โดนทับ
+                if (! empty($value) && $value !== 'false') {
+                    $merged[$flag] = true;
+                }
+                // value=false → ข้าม (sticky)
+            }
+            $this->risk_flags = $merged;
         }
 
         // Topic tags — union comma-separated
@@ -252,6 +278,12 @@ class FortuneCustomerPersona extends Model
             $lines[] = "⚠️ score รบกวน: {$timeWasterScore}/100 (เคยคุยฟุ้งไม่ปิดการขาย) — ตอบสั้น ≤1 ประโยค ไม่ chitchat ปรับเข้าเรื่องดูดวงทันที";
         }
 
+        // 🚩 (2026-05-25) Risk flags directive — guidance ละเอียดตามความเสี่ยง
+        $riskGuidance = $this->buildRiskGuidanceLines();
+        if (! empty($riskGuidance)) {
+            $lines = array_merge($lines, $riskGuidance);
+        }
+
         if (empty($lines)) {
             return ''; // ไม่มีข้อมูล → ไม่ inject block
         }
@@ -259,6 +291,74 @@ class FortuneCustomerPersona extends Model
         return "[👤 CUSTOMER_PERSONA — ใช้ปรับ tone เท่านั้น ห้ามอ้างตรงๆ ในคำตอบ]\n"
             . implode("\n", $lines)
             . "\n⚠️ AI ใช้ข้อมูลนี้ \"ใต้พรม\" — ปรับน้ำเสียง/คำพูดให้เข้ากับลูกค้า แต่อย่าเอ่ยถึงว่า \"จำได้ว่า...\" ตรงๆ";
+    }
+
+    /**
+     * 🚩 (2026-05-25) สร้าง risk guidance lines — directive ละเอียดตาม flag
+     *
+     * แต่ละ flag → 1 บรรทัด directive ที่ AI ต้องปฏิบัติ
+     * ใช้ใน toAiContextBlock() — append หลัง persona lines
+     */
+    public function buildRiskGuidanceLines(): array
+    {
+        $flags = $this->risk_flags ?? [];
+        if (empty($flags)) {
+            return [];
+        }
+
+        $lines = [];
+
+        // mental_fragile — วิกฤต ฆ่าตัวตาย ดื้อยา
+        if (! empty($flags['mental_fragile'])) {
+            $lines[] = '⚠️ MENTAL_FRAGILE: ลูกค้าเคยพูดเรื่องวิกฤต/ทำร้ายตัวเอง → ตอบสั้น 1-2 บรรทัด / ห้าม pitch / ไม่ถามขุดอารมณ์';
+
+            // 7-day cadence สำหรับ 1323/1669
+            $lastSent = $flags['crisis_resources_sent'] ?? null;
+            $needsResource = true;
+            if ($lastSent) {
+                try {
+                    $needsResource = \Carbon\Carbon::parse($lastSent)
+                        ->lt(now()->subDays(7));
+                } catch (\Throwable $e) {
+                    $needsResource = true;
+                }
+            }
+            if ($needsResource) {
+                $lines[] = '   → แทรกบรรทัด "หากต้องการคนคุย โทร 1323 (สุขภาพจิต) หรือ 1669 (ฉุกเฉิน) ฟรี 24 ชม. นะคะ 🙏" ในคำตอบนี้';
+            }
+        }
+
+        // over_emotional — อ่อนไหวมาก
+        if (! empty($flags['over_emotional'])) {
+            $lines[] = '⚠️ OVER_EMOTIONAL: อ่อนไหวง่าย → empathy สั้น / ไม่ถามต่อ ห้าม "เล่าให้ฟังหน่อย"';
+        }
+
+        // quiet_listener — ตอบสั้น
+        if (! empty($flags['quiet_listener'])) {
+            $lines[] = '⚠️ QUIET_LISTENER: ตอบสั้นเสมอ → AI ตอบ ≤2 ประโยค ห้ามถามต่อ ห้าม open-ended';
+        }
+
+        // abusive_tone — คำหยาบ/ก้าวร้าว
+        if (! empty($flags['abusive_tone'])) {
+            $lines[] = '⚠️ ABUSIVE_TONE: ใช้คำหยาบ/ก้าวร้าว → ตอบกลางๆ ห้าม emoji เยอะ ห้ามยั่ว ปกป้องขอบเขต';
+        }
+
+        // decline_pusher — ปฏิเสธแล้วยังตื๊อ
+        if (! empty($flags['decline_pusher'])) {
+            $lines[] = '⚠️ DECLINE_PUSHER: เคารพ decline ทันที — ลูกค้า "ไม่พร้อม/ไว้คราวหน้า" → ยุติทันที ห้ามตื๊อขายเพิ่ม';
+        }
+
+        // scam_victim — เคยโดนโกง
+        if (! empty($flags['scam_victim'])) {
+            $lines[] = '⚠️ SCAM_VICTIM: เคยโดนหลอกเงิน → ไม่ pitch แรง / explain ราคา/คุณค่าอย่างชัดเจน';
+        }
+
+        // complaint_prone — ชอบบ่น
+        if (! empty($flags['complaint_prone'])) {
+            $lines[] = '⚠️ COMPLAINT_PRONE: ชอบบ่น/ติ → รับฟัง+empathy / ห้าม defensive / ไม่ pitch ทันทีหลังบ่น';
+        }
+
+        return $lines;
     }
 
     /**
