@@ -964,7 +964,8 @@ class AiApiKey extends Model
         string $errorMessage,
         ?string $model = null,
         bool $isRateLimit = false,
-        ?int $retryAfter = null
+        ?int $retryAfter = null,
+        ?array $context = null
     ): void {
         // ถ้า critical แล้ว ไม่ทำอะไร (รอ admin)
         if ($this->is_critical) {
@@ -980,11 +981,11 @@ class AiApiKey extends Model
                 'last_error' => $errorMessage,
                 'last_error_at' => now(),
             ]);
-            $this->usageLogs()->create([
+            $this->usageLogs()->create(array_merge([
                 'model' => $model,
                 'is_success' => false,
                 'error_message' => '[CONCURRENT] '.$errorMessage,
-            ]);
+            ], $this->customerContextColumns($context)));
 
             return;
         }
@@ -1001,11 +1002,11 @@ class AiApiKey extends Model
                 'last_health_check_at' => now(),
                 // ⚠️ ไม่แตะ consecutive_errors / error_check_attempts
             ]);
-            $this->usageLogs()->create([
+            $this->usageLogs()->create(array_merge([
                 'model' => $model,
                 'is_success' => false,
                 'error_message' => "[429] {$errorMessage}",
-            ]);
+            ], $this->customerContextColumns($context)));
 
             return;
         }
@@ -1026,11 +1027,11 @@ class AiApiKey extends Model
             ]);
 
             // log critical
-            $this->usageLogs()->create([
+            $this->usageLogs()->create(array_merge([
                 'model' => $model,
                 'is_success' => false,
                 'error_message' => "[CRITICAL] {$errorMessage}",
-            ]);
+            ], $this->customerContextColumns($context)));
 
             return;
         }
@@ -1048,11 +1049,44 @@ class AiApiKey extends Model
             'last_health_check_at' => now(),
         ]);
 
-        $this->usageLogs()->create([
+        $this->usageLogs()->create(array_merge([
             'model' => $model,
             'is_success' => false,
             'error_message' => $errorMessage,
-        ]);
+        ], $this->customerContextColumns($context)));
+    }
+
+    /**
+     * Pluck only the customer-context keys (reading_id/user_id/fb_user_id/
+     * customer_name) from a free-form context array so we never accidentally
+     * mass-assign arbitrary attributes onto AiApiKeyUsageLog.
+     * Customer name is truncated to fit the column (varchar 120).
+     *
+     * @param  array<string,mixed>|null  $context
+     * @return array<string,mixed>
+     */
+    private function customerContextColumns(?array $context): array
+    {
+        if (! $context) {
+            return [];
+        }
+        $out = [];
+        if (isset($context['reading_id']) && is_numeric($context['reading_id'])) {
+            $out['reading_id'] = (int) $context['reading_id'];
+        }
+        if (isset($context['user_id']) && is_numeric($context['user_id'])) {
+            $out['user_id'] = (int) $context['user_id'];
+        }
+        if (! empty($context['fb_user_id'])) {
+            // Truncate to fb_user_id column width (varchar(100), matches
+            // sibling tables fortune_readings.facebook_user_id etc.)
+            $out['fb_user_id'] = mb_substr((string) $context['fb_user_id'], 0, 100);
+        }
+        if (! empty($context['customer_name'])) {
+            $out['customer_name'] = mb_substr((string) $context['customer_name'], 0, 120);
+        }
+
+        return $out;
     }
 
     /**
@@ -1073,8 +1107,12 @@ class AiApiKey extends Model
 
     /**
      * บันทึกการใช้งาน tokens
+     *
+     * @param  array<string,mixed>|null  $context  Optional customer identity to denormalize
+     *   onto the log row. Keys: reading_id, user_id, fb_user_id, customer_name.
+     *   Used by warroom /workers → /chat deep-link.
      */
-    public function recordUsage(int $inputTokens, int $outputTokens, ?string $model = null, ?int $responseTimeMs = null, string $requestType = 'general'): void
+    public function recordUsage(int $inputTokens, int $outputTokens, ?string $model = null, ?int $responseTimeMs = null, string $requestType = 'general', ?array $context = null): void
     {
         $totalTokens = $inputTokens + $outputTokens;
 
@@ -1102,7 +1140,7 @@ class AiApiKey extends Model
         ]);
 
         // บันทึก log
-        $this->usageLogs()->create([
+        $this->usageLogs()->create(array_merge([
             'model' => $model,
             'input_tokens' => $inputTokens,
             'output_tokens' => $outputTokens,
@@ -1110,7 +1148,7 @@ class AiApiKey extends Model
             'response_time_ms' => $responseTimeMs,
             'is_success' => true,
             'request_type' => $requestType,
-        ]);
+        ], $this->customerContextColumns($context)));
 
         // 🪙 (2026-05-23 Phase 5) Accumulate TPM (Tokens Per Minute) — กัน Groq llama-3.3-70b ทะลุ 6000
         //   ทุก call ที่สำเร็จ → บวก tokens ลง 'pool:tpm:{provider}:{key_id}' (TTL 60s)
@@ -1128,7 +1166,7 @@ class AiApiKey extends Model
     /**
      * บันทึก error
      */
-    public function recordError(string $errorMessage, ?string $model = null): void
+    public function recordError(string $errorMessage, ?string $model = null, ?array $context = null): void
     {
         $this->increment('consecutive_errors');
 
@@ -1138,11 +1176,11 @@ class AiApiKey extends Model
         ]);
 
         // บันทึก log
-        $this->usageLogs()->create([
+        $this->usageLogs()->create(array_merge([
             'model' => $model,
             'is_success' => false,
             'error_message' => $errorMessage,
-        ]);
+        ], $this->customerContextColumns($context)));
 
         // Disable ชั่วคราวถ้า error มากเกินไป
         $settings = AiApiKeySetting::forProvider($this->provider);

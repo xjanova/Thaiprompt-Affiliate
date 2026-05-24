@@ -49,6 +49,21 @@ class FortuneAIService
     protected ?string $defaultPurpose = null;
 
     /**
+     * 🆕 (2026-05-24) customer identity for the current generate-call.
+     * Set via withCustomerContext() before generateWithRetryAndFallback /
+     * generateFortuneTelling so each ai_api_key_usage_logs row knows which
+     * chat thread (reading_id / fb_user_id / user_id / customer_name) it
+     * was answering. Powers warroom /workers → /chat deep-link + live
+     * "ตอบโดย groq/llama-3.3" badge on the chat header.
+     *
+     * Cleared automatically after each successful generate to avoid leaking
+     * one customer's identity into the next call on a reused service.
+     *
+     * @var array<string,mixed>|null
+     */
+    protected ?array $callContext = null;
+
+    /**
      * 🆕 (2026-05-07) constructor รับ $purpose เพื่อเลือก key ที่ตรง purpose ตั้งแต่แรก
      *   เดิม: acquire key โดยไม่รู้ purpose → ได้ key ทั่วไป (ละเลย purpose enum)
      *   ใหม่: caller ระบุ purpose ('prediction'/'chat'/'free_card') → key ตรงประเภทถูกเลือก
@@ -749,13 +764,18 @@ class FortuneAIService
 
         $config = array_merge(['temperature' => 0.7, 'max_tokens' => 600], $config);
 
-        $rawResult = match ($chatProvider) {
-            'gemini' => $this->callChatGemini($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
-            'anthropic' => $this->callChatAnthropic($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
-            default => $this->callChatOpenAICompatible($userMessage, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
-        };
+        try {
+            $rawResult = match ($chatProvider) {
+                'gemini' => $this->callChatGemini($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
+                'anthropic' => $this->callChatAnthropic($userMessage, $systemMessage, $chatApiKey, $chatModel, $config),
+                default => $this->callChatOpenAICompatible($userMessage, $systemMessage, $chatApiKey, $chatModel, $chatProvider, $config),
+            };
 
-        return $this->sanitizeChatResult($rawResult);
+            return $this->sanitizeChatResult($rawResult);
+        } finally {
+            // 🪪 (2026-05-24) Clear customer context — see generateFortuneTelling.
+            $this->callContext = null;
+        }
     }
 
     /**
@@ -1043,7 +1063,8 @@ PROMPT;
                 (int) ($result['output_tokens'] ?? 0),
                 $model,
                 $responseTime,
-                'celtic_vision'
+                'celtic_vision',
+                $this->callContext
             );
 
             Log::info('FortuneAIService chatWithImage สำเร็จ', [
@@ -1056,7 +1077,7 @@ PROMPT;
             return $this->sanitizeChatResult($result);
         } catch (\Throwable $e) {
             if (method_exists($sensitiveKey, 'recordError')) {
-                $sensitiveKey->recordError($e->getMessage(), $model);
+                $sensitiveKey->recordError($e->getMessage(), $model, $this->callContext);
             }
             Log::warning('FortuneAIService chatWithImage ล้มเหลว', [
                 'provider' => $provider,
@@ -1258,7 +1279,7 @@ PROMPT;
 
                 // record error สำหรับ Pool circuit breaker (ถ้า acquire จาก Pool)
                 if ($acquiredKey && method_exists($acquiredKey, 'recordError')) {
-                    $acquiredKey->recordError("HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200), $model);
+                    $acquiredKey->recordError("HTTP {$response->status()}: ".mb_substr($response->body(), 0, 200), $model, $this->callContext);
                 }
 
                 return null;
@@ -1282,7 +1303,8 @@ PROMPT;
                     (int) ($data['usageMetadata']['candidatesTokenCount'] ?? 0),
                     $model,
                     $responseTime,
-                    'image_vision'
+                    'image_vision',
+                    $this->callContext
                 );
             }
 
@@ -1309,7 +1331,7 @@ PROMPT;
             ]);
 
             if ($acquiredKey && method_exists($acquiredKey, 'recordError')) {
-                $acquiredKey->recordError($e->getMessage(), $model);
+                $acquiredKey->recordError($e->getMessage(), $model, $this->callContext);
             }
 
             return null;
@@ -1663,7 +1685,8 @@ PROMPT;
                 (int) ($result['output_tokens'] ?? 0),
                 $resolvedModel,
                 $responseTime,
-                'sensitive_chat'
+                'sensitive_chat',
+                $this->callContext
             );
 
             Log::info('FortuneAIService: Sensitive chat สำเร็จ', [
@@ -1676,7 +1699,7 @@ PROMPT;
 
             return $this->sanitizeChatResult($result);
         } catch (Exception $e) {
-            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
+            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel, $this->callContext);
 
             Log::warning('FortuneAIService: Sensitive chat ล้มเหลว — caller ต้อง fallback', [
                 'provider' => $sensitiveProvider,
@@ -1876,7 +1899,8 @@ PROMPT;
                 (int) ($result['output_tokens'] ?? 0),
                 $resolvedModel,
                 $responseTime,
-                $requestType
+                $requestType,
+                $this->callContext
             );
 
             Log::info("FortuneAIService: Pro {$requestType} สำเร็จ", [
@@ -1888,7 +1912,7 @@ PROMPT;
 
             return $this->sanitizeChatResult($result);
         } catch (Exception $e) {
-            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel);
+            $sensitiveKey->recordError($e->getMessage(), $sensitiveModel, $this->callContext);
 
             Log::warning("FortuneAIService: Pro {$requestType} ล้มเหลว — caller fallback", [
                 'error' => $e->getMessage(),
@@ -3431,7 +3455,37 @@ PROMPT;
             // บันทึก error ผ่าน Pool
             $this->recordError($e->getMessage(), $this->model);
             throw $e;
+        } finally {
+            // 🪪 (2026-05-24) Clear customer context so the next call on a reused
+            // FortuneAIService instance can't inherit this customer's identity.
+            $this->callContext = null;
         }
+    }
+
+    /**
+     * 🆕 (2026-05-24) Attach customer identity to the next AI call so the
+     * usage log row knows which chat thread / customer it served.
+     *
+     * Callers (FB webhook, Juntra /fortune/read, daily horoscope, etc.) call
+     * this RIGHT BEFORE generateWithRetryAndFallback / generateChatResponse:
+     *
+     *     $ai->withCustomerContext([
+     *         'reading_id'    => $reading->id,
+     *         'user_id'       => $reading->user_id,
+     *         'fb_user_id'    => $reading->facebook_user_id,
+     *         'customer_name' => $reading->user?->name ?? $reading->facebook_user_name,
+     *     ])->generateWithRetryAndFallback(...);
+     *
+     * Cleared after each generate so the next call on a reused service
+     * doesn't get leaked identity.
+     *
+     * @param  array<string,mixed>|null  $context  keys: reading_id, user_id, fb_user_id, customer_name
+     */
+    public function withCustomerContext(?array $context): self
+    {
+        $this->callContext = $context && count($context) > 0 ? $context : null;
+
+        return $this;
     }
 
     /**
@@ -3457,6 +3511,35 @@ PROMPT;
      * @throws Exception เมื่อทุก provider ล้มเหลวหมด
      */
     public function generateWithRetryAndFallback(
+        array $questions,
+        ?array $userProfile = null,
+        ?array $userPosts = null,
+        ?string $promptTemplate = null,
+        string $readingType = 'basic',
+        ?string $birthDate = null,
+        ?string $userContext = null,
+        string $purpose = 'prediction'
+    ): array {
+        try {
+            return $this->generateWithRetryAndFallbackInner(
+                $questions, $userProfile, $userPosts, $promptTemplate,
+                $readingType, $birthDate, $userContext, $purpose,
+            );
+        } finally {
+            // 🪪 (2026-05-24) Clear customer context — same reason as
+            // generateFortuneTelling. Even if the inner method throws, this
+            // wrapper guarantees the next call on a reused FortuneAIService
+            // instance starts with a clean slate.
+            $this->callContext = null;
+        }
+    }
+
+    /**
+     * Original body of generateWithRetryAndFallback — extracted so the public
+     * method can wrap it in a try/finally guard without touching every
+     * existing return/throw site. Internal: do not call directly.
+     */
+    protected function generateWithRetryAndFallbackInner(
         array $questions,
         ?array $userProfile = null,
         ?array $userPosts = null,
@@ -5703,7 +5786,8 @@ TXT;
                 $outputTokens,
                 $model,
                 $responseTime,
-                $requestType
+                $requestType,
+                $this->callContext
             );
         } catch (Exception $e) {
             Log::warning('FortuneAIService: บันทึก usage ไม่สำเร็จ', ['error' => $e->getMessage()]);
@@ -5725,7 +5809,7 @@ TXT;
         try {
             // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
             [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
-            $this->currentKey->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
+            $this->currentKey->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter, $this->callContext);
         } catch (Exception $e) {
             Log::warning('FortuneAIService: บันทึก error ไม่สำเร็จ', ['error' => $e->getMessage()]);
         }
@@ -5745,7 +5829,7 @@ TXT;
         try {
             $inputTokens = (int) ($tokensUsed * 0.3);
             $outputTokens = $tokensUsed - $inputTokens;
-            $key->recordUsage($inputTokens, $outputTokens, $model, $responseTime, $requestType);
+            $key->recordUsage($inputTokens, $outputTokens, $model, $responseTime, $requestType, $this->callContext);
         } catch (Exception $e) {
             Log::warning('FortuneAI: บันทึก usage สำหรับ key ไม่สำเร็จ', [
                 'key_id' => $key->id,
@@ -5766,7 +5850,7 @@ TXT;
         try {
             // 🩺 (2026-05-01) ใช้ smart error handling — แยก 429 จาก error อื่น + 3-strikes critical
             [$isRateLimit, $retryAfter] = $this->detectRateLimit($errorMessage);
-            $key->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter);
+            $key->recordSmartError($errorMessage, $model, $isRateLimit, $retryAfter, $this->callContext);
         } catch (Exception $e) {
             Log::warning('FortuneAI: บันทึก error สำหรับ key ไม่สำเร็จ', [
                 'key_id' => $key->id,

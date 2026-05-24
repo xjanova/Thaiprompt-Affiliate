@@ -20,6 +20,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $is_success สำเร็จหรือไม่
  * @property string|null $error_message Error message
  * @property string|null $request_type ประเภท request
+ * @property int|null $reading_id fortune_readings.id (deep-link warroom /workers → /chat)
+ * @property int|null $user_id users.id ของลูกค้า (เมื่อทราบ)
+ * @property string|null $fb_user_id Facebook PSID ของลูกค้า (เมื่อทราบ)
+ * @property string|null $customer_name display name snapshot ตอน call (สำหรับ render เร็ว)
  */
 class AiApiKeyUsageLog extends Model
 {
@@ -41,6 +45,10 @@ class AiApiKeyUsageLog extends Model
         'is_success',
         'error_message',
         'request_type',
+        'reading_id',
+        'user_id',
+        'fb_user_id',
+        'customer_name',
     ];
 
     /**
@@ -53,6 +61,8 @@ class AiApiKeyUsageLog extends Model
         'total_tokens' => 'integer',
         'response_time_ms' => 'integer',
         'is_success' => 'boolean',
+        'reading_id' => 'integer',
+        'user_id' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

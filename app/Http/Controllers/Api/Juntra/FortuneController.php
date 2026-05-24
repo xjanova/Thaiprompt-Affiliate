@@ -218,6 +218,15 @@ class FortuneController extends Controller
                 'cards' => $cards,
             ];
 
+            // 🪪 (2026-05-24) Tag the AI usage log with customer identity so
+            //   warroom /workers can deep-link to /chat?id=r-{reading_id}.
+            $aiService->withCustomerContext([
+                'reading_id' => $reading->id,
+                'user_id' => $request->user()->id,
+                'fb_user_id' => $reading->facebook_user_id,
+                'customer_name' => $request->user()->name,
+            ]);
+
             $result = $aiService->generateWithRetryAndFallback(
                 questions: $questions,
                 userProfile: ['name' => $request->user()->name ?? 'ลูก'],

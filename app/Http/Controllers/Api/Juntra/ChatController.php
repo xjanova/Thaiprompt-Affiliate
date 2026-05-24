@@ -74,6 +74,14 @@ TXT;
                 ->map(fn ($m) => ($m['role'] === 'user' ? 'ลูก: ' : 'แม่หมอ: ') . $m['text'])
                 ->implode("\n");
 
+            // 🪪 (2026-05-24) Tag the AI usage log with customer identity —
+            //   no reading_id for free chat, but user_id + name is enough
+            //   to render "ตอบ {คุณ X}" on warroom /workers cards.
+            $ai->withCustomerContext([
+                'user_id' => $user->id,
+                'customer_name' => $user->name,
+            ]);
+
             $result = $ai->chatWithCustomSystemPrompt(
                 systemMessage: self::SYSTEM_PROMPT,
                 userMessage: "บทสนทนาที่ผ่านมา:\n{$contextLines}\n\nกรุณาตอบ '{$text}' ด้วยน้ำเสียงแม่หมอจันทรา",

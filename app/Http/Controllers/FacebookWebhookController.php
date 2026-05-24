@@ -3520,6 +3520,23 @@ class FacebookWebhookController extends Controller
 
             $readingType = $isDeep ? 'deep' : 'basic';
 
+            // 🪪 (2026-05-24) Tag the AI usage log with customer identity so
+            //   warroom /workers can deep-link to /chat?id=fb-{psid}. The
+            //   reading_id isn't known yet (created below) — we only carry
+            //   fb_user_id + customer_name. A post-create hook backfills
+            //   reading_id once we have it.
+            $this->aiService->withCustomerContext([
+                'fb_user_id' => $fromId,
+                'customer_name' => $fromName ?? $userProfile['name'] ?? null,
+            ]);
+
+            // 🪪 Capture the timestamp BEFORE the AI call so the post-create
+            //   backfill only touches log rows written DURING this handler —
+            //   never an earlier reading from the same PSID. Without this,
+            //   two fortune requests from the same user within 5min would
+            //   collide and the second would steal the first's logs.
+            $aiCallStartedAt = now();
+
             $aiResponse = $this->aiService->generateFortuneTelling(
                 $questions,
                 $userProfile,
@@ -3548,6 +3565,27 @@ class FacebookWebhookController extends Controller
                 'user_image_url' => $userImageUrl,
                 'is_paid' => false,
             ]);
+
+            // 🪪 (2026-05-24) Backfill reading_id onto the AI usage log row(s)
+            //   we just wrote for this customer. Narrowed by
+            //     fb_user_id + reading_id IS NULL + created_at >= $aiCallStartedAt
+            //   so it never paints over another reading for the same PSID
+            //   (rapid-fire fortunes within minutes). Safe to no-op if
+            //   columns aren't yet migrated.
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('ai_api_key_usage_logs', 'reading_id')) {
+                    \Illuminate\Support\Facades\DB::table('ai_api_key_usage_logs')
+                        ->where('fb_user_id', $fromId)
+                        ->whereNull('reading_id')
+                        ->where('created_at', '>=', $aiCallStartedAt)
+                        ->update(['reading_id' => $reading->id]);
+                }
+            } catch (\Throwable $bfErr) {
+                Log::debug('FacebookWebhookController: backfill reading_id failed (non-blocking)', [
+                    'reading_id' => $reading->id,
+                    'error' => $bfErr->getMessage(),
+                ]);
+            }
 
             // ปิด typing indicator
             if (! $isComment) {

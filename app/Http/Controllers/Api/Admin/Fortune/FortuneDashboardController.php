@@ -198,24 +198,35 @@ class FortuneDashboardController extends Controller
                 ->count();
         }
 
+        // 🪪 (2026-05-24) Detect whether the customer-context columns exist.
+        //   New deploys have them (migration 2026_05_24_140000); older DB
+        //   snapshots don't — fall back to the original projection so the
+        //   page never breaks.
+        $hasCustomerCols = Schema::hasColumn('ai_api_key_usage_logs', 'reading_id');
+
         // ── In-flight: most recent successful calls in the last 30s (worker
         // just finished, or is finishing right now). The bot is fully sync so
         // there's no formal "in-flight" row — we surface the freshest activity. ──
+        $inFlightSelect = ['l.id', 'l.created_at', 'l.model', 'l.request_type',
+            'l.total_tokens', 'l.response_time_ms', 'l.is_success',
+            'k.provider', 'k.name as key_name'];
+        if ($hasCustomerCols) {
+            $inFlightSelect = array_merge($inFlightSelect, [
+                'l.reading_id', 'l.user_id', 'l.fb_user_id', 'l.customer_name',
+            ]);
+        }
+
         $inFlight = DB::table('ai_api_key_usage_logs as l')
             ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
-            ->select(
-                'l.id', 'l.created_at', 'l.model', 'l.request_type',
-                'l.total_tokens', 'l.response_time_ms', 'l.is_success',
-                'k.provider', 'k.name as key_name'
-            )
+            ->select($inFlightSelect)
             ->where('l.created_at', '>=', $now->copy()->subSeconds(30))
             ->orderByDesc('l.created_at')
             ->limit(12)
             ->get()
-            ->map(function ($r) use ($now) {
+            ->map(function ($r) use ($now, $hasCustomerCols) {
                 $createdTs = strtotime((string) $r->created_at);
                 $age = max(0, $now->getTimestamp() - $createdTs);
-                return [
+                $row = [
                     'log_id' => (int) $r->id,
                     'provider' => $r->provider,
                     'model' => $r->model,
@@ -227,44 +238,97 @@ class FortuneDashboardController extends Controller
                     'created_at' => $r->created_at,
                     'age_seconds' => $age,
                 ];
+                if ($hasCustomerCols) {
+                    $row['reading_id'] = $r->reading_id !== null ? (int) $r->reading_id : null;
+                    $row['user_id'] = $r->user_id !== null ? (int) $r->user_id : null;
+                    $row['fb_user_id'] = $r->fb_user_id ?: null;
+                    $row['customer_name'] = $r->customer_name ?: null;
+                }
+
+                return $row;
             });
 
         // ── Recent completed (full activity log, last 24h) ──
+        $recentSelect = ['l.id', 'l.created_at', 'l.model', 'l.request_type',
+            'l.total_tokens', 'l.response_time_ms', 'l.is_success', 'l.error_message',
+            'k.provider', 'k.name as key_name'];
+        if ($hasCustomerCols) {
+            $recentSelect = array_merge($recentSelect, [
+                'l.reading_id', 'l.user_id', 'l.fb_user_id', 'l.customer_name',
+            ]);
+        }
+
         $recent = DB::table('ai_api_key_usage_logs as l')
             ->join('ai_api_keys as k', 'k.id', '=', 'l.ai_api_key_id')
-            ->select(
-                'l.id', 'l.created_at', 'l.model', 'l.request_type',
-                'l.total_tokens', 'l.response_time_ms', 'l.is_success',
-                'l.error_message',
-                'k.provider', 'k.name as key_name'
-            )
+            ->select($recentSelect)
             ->where('l.created_at', '>=', $now->copy()->subDay())
             ->orderByDesc('l.created_at')
             ->limit(40)
             ->get()
-            ->map(fn ($r) => [
-                'log_id' => (int) $r->id,
-                'provider' => $r->provider,
-                'model' => $r->model,
-                'key_name' => $r->key_name,
-                'request_type' => $r->request_type ?: 'unknown',
-                'tokens' => (int) ($r->total_tokens ?? 0),
-                'latency_ms' => (int) ($r->response_time_ms ?? 0),
-                'success' => (bool) $r->is_success,
-                'error_message' => $r->error_message,
-                'created_at' => $r->created_at,
-            ]);
+            ->map(function ($r) use ($hasCustomerCols) {
+                $row = [
+                    'log_id' => (int) $r->id,
+                    'provider' => $r->provider,
+                    'model' => $r->model,
+                    'key_name' => $r->key_name,
+                    'request_type' => $r->request_type ?: 'unknown',
+                    'tokens' => (int) ($r->total_tokens ?? 0),
+                    'latency_ms' => (int) ($r->response_time_ms ?? 0),
+                    'success' => (bool) $r->is_success,
+                    'error_message' => $r->error_message,
+                    'created_at' => $r->created_at,
+                ];
+                if ($hasCustomerCols) {
+                    $row['reading_id'] = $r->reading_id !== null ? (int) $r->reading_id : null;
+                    $row['user_id'] = $r->user_id !== null ? (int) $r->user_id : null;
+                    $row['fb_user_id'] = $r->fb_user_id ?: null;
+                    $row['customer_name'] = $r->customer_name ?: null;
+                }
+
+                return $row;
+            });
 
         // ── Recent comment→DM engagements (who the bot actually messaged) ──
         $commentDms = [];
         if (Schema::hasTable('fortune_comment_engagements')) {
-            $commentDms = DB::table('fortune_comment_engagements')
+            $rows = DB::table('fortune_comment_engagements')
                 ->select('id', 'facebook_user_id', 'facebook_post_id', 'facebook_comment_id', 'comment_text', 'comment_reply', 'dm_message', 'engaged_at')
                 ->where('engaged_at', '>=', $now->copy()->subDay())
                 ->orderByDesc('engaged_at')
                 ->limit(20)
-                ->get()
-                ->map(fn ($r) => [
+                ->get();
+
+            // 🪪 (2026-05-24) Resolve display name + linkable reading per PSID.
+            //   We don't store the name on fortune_comment_engagements, so we
+            //   look up the most-recent fortune_readings row for the same
+            //   facebook_user_id (the bot creates one shortly after the DM).
+            //   Same lookup also gives us reading_id for /chat deep-linking.
+            $psids = $rows->pluck('facebook_user_id')->filter()->unique()->values()->all();
+            $identity = [];
+            if (! empty($psids) && Schema::hasTable('fortune_readings')) {
+                $latestPerPsid = DB::table('fortune_readings')
+                    ->select('facebook_user_id', 'facebook_user_name', 'id', 'user_id', 'created_at')
+                    ->whereIn('facebook_user_id', $psids)
+                    ->orderByDesc('created_at')
+                    ->get();
+                foreach ($latestPerPsid as $r) {
+                    // first occurrence (groupBy semantics via foreach + existing-check)
+                    if (! isset($identity[$r->facebook_user_id])) {
+                        $identity[$r->facebook_user_id] = [
+                            'customer_name' => $r->facebook_user_name,
+                            'reading_id' => (int) $r->id,
+                            'user_id' => $r->user_id !== null ? (int) $r->user_id : null,
+                        ];
+                    }
+                }
+            }
+
+            $commentDms = $rows->map(function ($r) use ($identity) {
+                $idn = $identity[$r->facebook_user_id] ?? [
+                    'customer_name' => null, 'reading_id' => null, 'user_id' => null,
+                ];
+
+                return [
                     'id' => (int) $r->id,
                     'fb_user_id' => $r->facebook_user_id,
                     'fb_post_id' => $r->facebook_post_id,
@@ -273,8 +337,13 @@ class FortuneDashboardController extends Controller
                     'comment_reply' => mb_substr((string) ($r->comment_reply ?? ''), 0, 140),
                     'dm_message' => mb_substr((string) ($r->dm_message ?? ''), 0, 160),
                     'engaged_at' => $r->engaged_at,
-                ])
-                ->toArray();
+                    // 🪪 customer identity for warroom — name shown after PSID,
+                    // reading_id makes the card a deep-link to /chat
+                    'customer_name' => $idn['customer_name'],
+                    'reading_id' => $idn['reading_id'],
+                    'user_id' => $idn['user_id'],
+                ];
+            })->toArray();
         }
 
         // ── Per-provider breakdown over the last 15min ──
