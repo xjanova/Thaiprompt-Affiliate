@@ -348,7 +348,11 @@ class AiApiKey extends Model
     /**
      * 🎯 (2026-05-02) วัตถุประสงค์การใช้ key
      *
-     * any        = ใช้ได้ทุกอย่าง (default)
+     * 🚫 (2026-05-24) ลบ 'any' ออกจาก dropdown — User: "เอา 'ใช้ทุกอย่าง' ออกไปด้วย"
+     *                Pool service ban 'any' อยู่แล้ว (commit 2026-05-23) — UI ตามไปด้วย
+     *                key เดิมใน DB ที่ purpose='any' จะแสดง badge ⚠️[DEPRECATED any]
+     *                และ Pool reject ก่อน group tier (AiApiKeyPoolService:533)
+     *
      * prediction = เฉพาะคำทำนาย deep readings (paid Deep 39 / Celtic 99)
      * chat       = เฉพาะ chat conversation (กัน prediction ดูดหมด)
      * free_card  = (2026-05-05) เฉพาะทำนายฟรีหลัง DM react/comment
@@ -356,11 +360,10 @@ class AiApiKey extends Model
      * sensitive  = 🌟 (2026-05-07) เฉพาะบริบทละเอียดอ่อน (Pro model only)
      *              ใช้เมื่อลูกค้าอารมณ์ร้าย / คำหยาบ / คำถามซับซ้อน /
      *              หัวข้อหนัก (ตาย/ป่วย/หย่า/ฆ่าตัวตาย)
-     *              ⚠️ STRICT scope — ไม่ fallback ไป any/prediction
+     *              ⚠️ STRICT scope — ไม่ fallback ไป prediction
      *              เพราะ Pro model แพง 5-15 เท่าของ default
      */
     public const PURPOSES = [
-        'any' => '⚙️ ใช้ได้ทุกอย่าง (default — แชท/ทำนาย/ฟรีการ์ด ใช้ได้)',
         'chat' => '💬 แชทสนทนา (คุยกับลูกค้าทั่วไป)',
         // 💙 (2026-05-23) Paid chat — last resort หลัง free chat + any หมด
         //    STRICT scope (เหมือน 'sensitive') — caller=null ไม่ใช้

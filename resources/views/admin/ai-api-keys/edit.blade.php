@@ -133,20 +133,27 @@
                 </label>
                 <select x-model="form.purpose"
                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500">
-                    {{-- 🎯 (2026-05-08) ใช้ AiApiKey::PURPOSES const — ครอบคลุม any/prediction/free_card/chat/sensitive/tts
-                         เดิม hardcode 4 options ขาด sensitive (Sensitive AI Mode) + tts (TTS providers) --}}
+                    {{-- 🚫 (2026-05-24) ลบ 'any' ออกจาก PURPOSES — บังคับ admin เลือก purpose เจาะจง
+                         key เก่าที่เคย purpose='any' จะแสดง blank — admin ต้องเลือกใหม่ก่อนบันทึก --}}
+                    <option value="">— กรุณาเลือกวัตถุประสงค์ —</option>
                     @foreach(\App\Models\AiApiKey::PURPOSES as $val => $label)
                         <option value="{{ $val }}">{{ $label }}</option>
                     @endforeach
                 </select>
+                @if($key->purpose === 'any')
+                <p class="mt-1 text-xs text-red-600 dark:text-red-400 font-medium">
+                    ⚠️ Key นี้ใช้ <code>purpose='any'</code> ซึ่งถูกยกเลิกแล้ว — Pool จะไม่เลือก key นี้
+                    จนกว่าจะตั้งวัตถุประสงค์ใหม่
+                </p>
+                @endif
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
                     📋 <strong>Hierarchy การเลือก key</strong> (เจาะจง → ทั่วไป):<br>
-                    💎 <strong>prediction_celtic</strong> → Celtic 99฿ ก่อน, fallback → prediction → any<br>
-                    🌟 <strong>prediction_deep</strong> → Deep 39฿ ก่อน, fallback → prediction → any<br>
+                    💎 <strong>prediction_celtic</strong> → Celtic 99฿ ก่อน, fallback → prediction<br>
+                    🌟 <strong>prediction_deep</strong> → Deep 39฿ ก่อน, fallback → prediction<br>
                     🔮 <strong>prediction</strong> = legacy — ใช้ทั้ง Deep + Celtic (ถ้าไม่อยากแยก)<br>
                     🎁 <strong>free_card</strong> → ทำนายฟรี (boost +1000 — สงวน paid keys)<br>
                     💬 <strong>chat</strong> → แชทสนทนา (FREE) — ไม่กระทบ pool ทำนาย<br>
-                    <span class="text-blue-600 dark:text-blue-400">💙 <strong>chat_paid</strong> → แชทพิเศษ (สีฟ้า, paid) — LAST RESORT หลัง free + any หมด</span><br>
+                    <span class="text-blue-600 dark:text-blue-400">💙 <strong>chat_paid</strong> → แชทพิเศษ (สีฟ้า, paid) — LAST RESORT หลัง free หมด</span><br>
                     🌟 <strong>sensitive</strong> = STRICT — Pro Session (Bill / Celtic Premium) ไม่ fallback<br>
                     🎙️ <strong>tts</strong> = STRICT — เฉพาะสังเคราะห์เสียง<br>
                     🔼 <strong>Priority</strong> สูง = เลือกก่อนใน purpose เดียวกัน (100 = สูงสุด)
@@ -251,7 +258,7 @@ function editApiKey() {
             api_key: '',
             is_active: {{ $key->is_active ? 'true' : 'false' }},
             priority: {{ $key->priority ?? 0 }},
-            purpose: @json($key->purpose ?? 'any'),
+            purpose: @json($key->purpose === 'any' ? '' : ($key->purpose ?? '')),
             tokens_limit_daily: {{ $key->tokens_limit_daily ?? 'null' }},
             tokens_limit_monthly: {{ $key->tokens_limit_monthly ?? 'null' }},
             rate_limit_per_minute: {{ $key->rate_limit_per_minute ?? 'null' }},
