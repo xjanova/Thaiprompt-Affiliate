@@ -850,6 +850,22 @@ trait CelticCrossConversationTrait
             ? number_format((float) $reading->amount_paid, 2)
             : '99.00';
 
+        // 🛑 (2026-05-24) Soft decline detector — ลูกค้าบอก "ไม่พร้อม/ไว้คราวหน้า"
+        //   User spec: "ฟังเขาไม่ใช่ส่งซ้ำเหมือนอยากขาย — ยกเลิกถ้าเขาบอกไม่พร้อม"
+        //   ⚠️ ต้องเช็ค looksLikeNeedPaymentHelp ก่อน — กัน false-cancel "โอนไม่เป็น"
+        if (method_exists($this, 'looksLikeSoftDeclineDuringPayment')
+            && method_exists($this, 'looksLikeNeedPaymentHelp')
+            && ! $this->looksLikeNeedPaymentHelp($messageText)
+            && $this->looksLikeSoftDeclineDuringPayment($messageText)
+            && method_exists($this, 'executeCancelAndReturnToChat')) {
+            \Illuminate\Support\Facades\Log::info('Fortune: soft decline detected (celtic_pending_payment) → cancel + ขอบคุณ', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+
+            return $this->executeCancelAndReturnToChat($reading, 'soft_decline');
+        }
+
         // 🔄 ลูกค้าพิมพ์ "ดูดวง" / "เริ่มใหม่" — แจ้งสถานะรอจ่ายให้ชัด
         if ($this->looksLikeFortuneRestartRequest($messageText)) {
             return [

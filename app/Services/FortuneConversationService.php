@@ -6527,6 +6527,18 @@ class FortuneConversationService
             return $this->fallbackToQrThai($reading);
         }
 
+        // 🛑 (2026-05-24) Soft decline detector — ลูกค้าบอก "ไม่พร้อม/ไว้คราวหน้า"
+        //   User spec: "ฟังเขาไม่ใช่ส่งซ้ำเหมือนอยากขาย — ยกเลิกถ้าเขาบอกไม่พร้อม"
+        if (! $this->looksLikeNeedPaymentHelp($messageText)
+            && $this->looksLikeSoftDeclineDuringPayment($messageText)) {
+            Log::info('Fortune: soft decline detected (awaiting_payment_method) → cancel + ขอบคุณ', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+
+            return $this->executeCancelAndReturnToChat($reading, 'soft_decline');
+        }
+
         // 🧠 ไม่ตรง — ลูกค้าอาจพิมพ์ chitchat / meta question (เช่น "ราคาเท่าไร" / "อยู่ลาว")
         //    ให้ AI ตอบ + ส่งปุ่มซ้ำ
         $stepHint = "💫 ขอเจ้าชะตาเลือกวิธีชำระเงินก่อนนะคะ:\n"
@@ -6932,6 +6944,19 @@ class FortuneConversationService
         //    ตอบตามจริง: paid แล้ว / กำลังตรวจสอบ / ยังไม่พบ
         if ($this->isPaymentClaimRequest($messageText)) {
             return $this->handlePaymentClaim($reading, $uniqueAmount);
+        }
+
+        // 🛑 (2026-05-24) Soft decline detector — ลูกค้าบอก "ไม่พร้อม/ไว้คราวหน้า"
+        //   User spec: "ฟังเขาไม่ใช่ส่งซ้ำเหมือนอยากขาย — ยกเลิกถ้าเขาบอกไม่พร้อม"
+        //   ⚠️ ต้องเช็ค looksLikeNeedPaymentHelp ก่อน — กัน false-cancel "โอนไม่เป็น"
+        if (! $this->looksLikeNeedPaymentHelp($messageText)
+            && $this->looksLikeSoftDeclineDuringPayment($messageText)) {
+            Log::info('Fortune: soft decline detected (pending_payment) → cancel + ขอบคุณ', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+
+            return $this->executeCancelAndReturnToChat($reading, 'soft_decline');
         }
 
         // 🪄 (2026-05-10) Pay-First — ถ้าลูกค้าถามเชิง "ทำไมต้องจ่ายก่อน?"
@@ -11208,6 +11233,72 @@ class FortuneConversationService
                 ."_(พิมพ์ \"ยืนยันยกเลิก\" ถ้าต้องการยกเลิกแน่นอน)_",
             'reading' => $reading,
         ];
+    }
+
+    /**
+     * 🛑 (2026-05-24) ตรวจ "soft decline" ระหว่างรอจ่ายเงิน — declarative ปฏิเสธ
+     *
+     * User spec: "ฟังเขาไม่ใช่ส่งซ้ำเหมือนอยากขาย — ยกเลิกถ้าเขาบอกไม่พร้อม"
+     *
+     * ใช้ใน handlePendingPayment / handleCelticPendingPayment / handlePaymentMethodSelection
+     * ดักก่อน Bill Psychology / AI nudge — ลูกค้าบอกชัดว่าไม่พร้อม → ไม่ตื๊อ ยกเลิกให้
+     *
+     * จับเฉพาะ declarative decline ที่ไม่กำกวม:
+     *   - "ไม่พร้อม" (alone)
+     *   - "ไม่สะดวก" (alone)
+     *   - "ไว้คราวหน้า", "ไว้โอกาสหน้า", "ไว้ครั้งหน้า"
+     *   - "เอาไว้ก่อน", "เอาไว้คราวหน้า"
+     *   - "ขอผ่าน", "ขอผ่านก่อน"
+     *   - "ไม่เอาแล้ว", "ไม่เอาละ"
+     *   - "ไม่จ่ายแล้ว", "ไม่จ่ายละ"
+     *   - "ไม่ทำตอนนี้", "ไม่เอาตอนนี้"
+     *   - "ขอบายก่อน", "บายก่อน"
+     *
+     * Exclude (ตีความเป็น "ขอเวลา" — ไม่ cancel):
+     *   - "ยัง..." prefix → "ยังไม่พร้อม" = wait → empathy ตอบ
+     *   - "ทำไม่ได้", "ไม่ไหว", "โอนไม่ได้" → looksLikeNeedPaymentHelp จับก่อน (ต้องช่วยเหลือ)
+     *
+     * ⚠️ Caller ต้องเช็ค `looksLikeNeedPaymentHelp` ก่อน (กัน false-cancel "โอนไม่เป็น")
+     */
+    public function looksLikeSoftDeclineDuringPayment(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '') {
+            return false;
+        }
+
+        // Normalize ลบคำลงท้าย
+        $normalized = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หน่อย|ด้วย|ที|สิ|เลย|อะ)\s*$/u',
+            '',
+            $text
+        );
+        $normalized = trim($normalized);
+
+        // Exclude — "ยัง..." prefix = เดี๋ยวจะ... ไม่ใช่ decline
+        if (str_starts_with($normalized, 'ยัง')) {
+            return false;
+        }
+
+        // Declarative decline keywords
+        $strongDecline = [
+            'ไม่พร้อม', 'ไม่สะดวก',
+            'ไว้คราวหน้า', 'ไว้โอกาสหน้า', 'ไว้ครั้งหน้า', 'ไว้รอบหน้า',
+            'เอาไว้ก่อน', 'เอาไว้คราวหน้า',
+            'ขอผ่าน', 'ขอผ่านก่อน',
+            'ไม่เอาแล้ว', 'ไม่เอาละ',
+            'ไม่จ่ายแล้ว', 'ไม่จ่ายละ',
+            'ไม่ทำตอนนี้', 'ไม่เอาตอนนี้',
+            'ขอบายก่อน', 'บายก่อน',
+        ];
+
+        foreach ($strongDecline as $kw) {
+            if (str_contains($normalized, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
