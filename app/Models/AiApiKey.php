@@ -146,21 +146,23 @@ class AiApiKey extends Model
             'tts-1-hd',
         ],
         'gemini' => [
-            // 🆕 (2026-05-06) Gemini 3.x — current generation (May 2026)
-            //   ตรวจชื่อ model จาก ai.google.dev/gemini-api/docs/models
-            //   ⚠️ "preview" suffix = ยังไม่ stable — ใช้แล้วระวังเปลี่ยน
-            'gemini-3.1-pro-preview',         // ⭐ ฉลาดสุด — agentic + reasoning
-            'gemini-3-flash-preview',         // ⭐ multimodal/agentic
-            'gemini-3.1-flash-lite-preview',  // ⭐ ถูกที่สุด — high-volume
+            // 🚫 (2026-05-24) ลบ Gemini 2.0/1.5 ที่ Google deprecated — verify ai.google.dev/gemini-api/docs/models
+            //   - gemini-2.0-flash-001 / -lite / -exp → "will be shut down soon"
+            //   - gemini-1.5-flash / -flash-8b / -pro → not listed (likely removed)
+            //   migration 2026_05_24_120000 อัปเดต DB rows อัตโนมัติ → gemini-2.5-flash
 
-            // Gemini 2.5 — stable (still available)
-            'gemini-2.5-flash',           // default ปลอดภัย
-            'gemini-2.5-pro',             // stable + ฉลาด
-            'gemini-2.5-flash-lite',      // stable + ถูก
+            // 🆕 (2026-05-24) Gemini 3.x stable — release ใหม่จาก Q2 2026
+            'gemini-3.5-flash',               // ⭐ stable — รุ่นใหม่สุด, multimodal/agentic
+            'gemini-3.1-flash-lite',          // ⭐ stable — ถูกที่สุด, high-volume
+            // Preview (อาจเปลี่ยนชื่อ/หาย)
+            'gemini-3.1-pro-preview',         // preview — ฉลาดสุด, agentic + reasoning
+            'gemini-3-flash-preview',         // preview — multimodal/agentic
+            'gemini-3.1-flash-lite-preview',  // preview — high-volume
 
-            // Gemini 2.0 — deprecated (เก็บไว้กัน BC)
-            'gemini-2.0-flash-001',       // legacy
-            'gemini-1.5-flash',           // legacy fallback
+            // Gemini 2.5 — stable (ยังใช้ได้ตามปกติ)
+            'gemini-2.5-flash',               // ⭐ default ปลอดภัย ใช้กันแพร่หลายในระบบเรา
+            'gemini-2.5-pro',                 // stable + ฉลาด
+            'gemini-2.5-flash-lite',          // stable + ถูก
         ],
         'qwen' => [
             'qwen-max',
@@ -279,15 +281,19 @@ class AiApiKey extends Model
         'gemini' => [
             // Gemini ใช้ Project quota เป็นหลัก (RPD/TPD) — TPM ไม่ใช่ bottleneck หลัก
             // แต่ใส่ไว้กันเหนียว
+            // 🚫 (2026-05-24) ลบ entries 2.0/1.5 ที่ Google deprecated
             '_default' => 250000,
+            // Gemini 3.x stable
+            'gemini-3.5-flash' => 250000,
+            'gemini-3.1-flash-lite' => 250000,
+            // Gemini 3.x preview
             'gemini-3.1-pro-preview' => 250000,
+            'gemini-3-flash-preview' => 250000,
+            'gemini-3.1-flash-lite-preview' => 250000,
+            // Gemini 2.5 stable
             'gemini-2.5-pro' => 250000,
             'gemini-2.5-flash' => 250000,
             'gemini-2.5-flash-lite' => 250000,
-            'gemini-2.0-flash' => 1000000,
-            'gemini-2.0-flash-lite' => 1000000,
-            'gemini-1.5-flash' => 250000,
-            'gemini-1.5-pro' => 32000,
         ],
         'grok' => ['_default' => 100000],
         'openai' => ['_default' => 200000],                  // Tier 1
@@ -313,24 +319,19 @@ class AiApiKey extends Model
             'openai/gpt-oss-20b' => 28,
         ],
         'gemini' => [
+            // 🚫 (2026-05-24) ลบ entries 2.0/1.5 ที่ Google deprecated/removed
             '_default' => 9,                                       // เริ่มที่ 2.5 Flash
+            // Gemini 3.x stable
+            'gemini-3.5-flash' => 9,                               // 10 actual
+            'gemini-3.1-flash-lite' => 14,                         // 15 actual
             // Gemini 3.x preview (น้อยสุด — preview tier เข้มงวด)
             'gemini-3.1-pro-preview' => 4,                         // 5 actual
             'gemini-3-flash-preview' => 9,                         // 10 actual
             'gemini-3.1-flash-lite-preview' => 14,                 // 15 actual
-            // Gemini 2.5
+            // Gemini 2.5 stable
             'gemini-2.5-pro' => 4,                                 // 5 actual
             'gemini-2.5-flash' => 9,                               // 10 actual
             'gemini-2.5-flash-lite' => 14,                         // 15 actual
-            // Gemini 2.0 (legacy)
-            'gemini-2.0-flash' => 14,
-            'gemini-2.0-flash-001' => 14,
-            'gemini-2.0-flash-lite' => 28,                         // 30 actual
-            'gemini-2.0-flash-exp' => 9,
-            // Gemini 1.5 (legacy)
-            'gemini-1.5-flash' => 14,
-            'gemini-1.5-flash-8b' => 14,
-            'gemini-1.5-pro' => 1,                                 // 2 actual
         ],
         'grok' => ['_default' => 55],                              // xAI ~60 RPM
         'openai' => ['_default' => 450],                           // Tier 1 ~500 RPM
@@ -995,8 +996,8 @@ class AiApiKey extends Model
         // 🪙 (2026-05-24) 413 "Request too large" = TPM exhausted (Groq) — treat like 429
         //   ปกติ caller จะส่ง $isRateLimit=true เอง แต่กันลืม — auto-detect ด้วย
         //   ถ้า error message มี "413" หรือ "Request too large" → cooldown 60s no-strike
+        $msgLower = mb_strtolower($errorMessage);
         if (! $isRateLimit) {
-            $msgLower = mb_strtolower($errorMessage);
             $isRateLimit = str_contains($errorMessage, '413')
                 || str_contains($msgLower, 'request too large')
                 || str_contains($msgLower, 'rate_limit_exceeded')
@@ -1017,6 +1018,95 @@ class AiApiKey extends Model
                 'is_success' => false,
                 'error_message' => "[RATE_LIMIT] {$errorMessage}",
             ], $this->customerContextColumns($context)));
+
+            return;
+        }
+
+        // 🌐 (2026-05-24) Transient error detection — 5xx + timeout = provider infra issue
+        //   เดิม: 5xx/timeout = +1 strike → 3 strikes → key disabled 5min (อันตราย ทำ key ดีๆ พัง)
+        //   ใหม่: provider พังเป็นช่วงๆ (เช่น Gemini Q4 2025 มี 503 spike เป็นชั่วโมง)
+        //         → cooldown 90s no-strike ไม่ลงโทษ key
+        $isTransient = str_contains($errorMessage, '500')
+            || str_contains($errorMessage, '502')
+            || str_contains($errorMessage, '503')
+            || str_contains($errorMessage, '504')
+            || str_contains($msgLower, 'timeout')
+            || str_contains($msgLower, 'timed out')
+            || str_contains($msgLower, 'connection refused')
+            || str_contains($msgLower, 'connection reset')
+            || str_contains($msgLower, 'curl error 28')   // cURL timeout
+            || str_contains($msgLower, 'curl error 7')    // cURL connect failed
+            || str_contains($msgLower, 'service unavailable')
+            || str_contains($msgLower, 'bad gateway')
+            || str_contains($msgLower, 'gateway timeout')
+            || str_contains($msgLower, 'internal server error')
+            || str_contains($msgLower, 'overloaded')
+            || str_contains($msgLower, 'temporarily unavailable');
+
+        if ($isTransient) {
+            $this->update([
+                'last_error' => $errorMessage,
+                'last_error_at' => now(),
+                'disabled_until' => now()->addSeconds(90),  // cooldown 90s ลองใหม่
+                'last_health_check_at' => now(),
+                // ⚠️ ไม่แตะ consecutive_errors / error_check_attempts
+            ]);
+            $this->usageLogs()->create(array_merge([
+                'model' => $model,
+                'is_success' => false,
+                'error_message' => "[TRANSIENT] {$errorMessage}",
+            ], $this->customerContextColumns($context)));
+
+            return;
+        }
+
+        // 💳 (2026-05-24) Payment/credit errors — fast-track to critical (no point retrying)
+        //   402 = payment required (OpenRouter, Anthropic billing)
+        //   "insufficient credit" / "out of credits" / "billing" → permanent until admin acts
+        $isPaymentError = str_contains($errorMessage, '402')
+            || str_contains($msgLower, 'insufficient credit')
+            || str_contains($msgLower, 'out of credits')
+            || str_contains($msgLower, 'requires more credits')
+            || str_contains($msgLower, 'payment required')
+            || str_contains($msgLower, 'billing');
+
+        if ($isPaymentError) {
+            $this->update([
+                'is_critical' => true,
+                'is_active' => false,
+                'last_error' => $errorMessage,
+                'last_error_at' => now(),
+                'error_check_attempts' => max(3, $this->error_check_attempts ?? 0),  // ⭐ skip 3 strikes
+                'disabled_until' => null,  // permanent disable
+                'last_health_check_at' => now(),
+            ]);
+            $this->usageLogs()->create(array_merge([
+                'model' => $model,
+                'is_success' => false,
+                'error_message' => "[BILLING_CRITICAL] {$errorMessage}",
+            ], $this->customerContextColumns($context)));
+
+            // 🔔 Alert admin via LineAlertService — billing requires manual action
+            //   มีอยู่แล้วในระบบ — public alertSystemError(string, array)
+            try {
+                if (class_exists('\App\Services\LineAlertService')) {
+                    /** @var \App\Services\LineAlertService $alert */
+                    $alert = app(\App\Services\LineAlertService::class);
+                    $alert->alertSystemError(
+                        "AI Key billing error — {$this->provider}/{$this->name}",
+                        [
+                            'key_id' => (string) $this->id,
+                            'provider' => (string) $this->provider,
+                            'model' => (string) ($model ?? '(default)'),
+                            'message' => mb_substr($errorMessage, 0, 200),
+                            'action' => 'admin ต้อง refill credits / เปลี่ยน key',
+                        ]
+                    );
+                }
+            } catch (\Throwable $e) {
+                // silent — alert ไม่ block flow
+                Log::critical("AI Key billing exhausted (alert failed): {$this->provider} key#{$this->id} — {$errorMessage}");
+            }
 
             return;
         }
@@ -1178,19 +1268,35 @@ class AiApiKey extends Model
      */
     public function recordError(string $errorMessage, ?string $model = null, ?array $context = null): void
     {
-        // 🪙 (2026-05-24) Route ผ่าน recordSmartError เพื่อให้ auto-detect 429/413
-        //    legacy callers ที่เรียก recordError() จะได้ rate-limit handling ที่ฉลาดขึ้น
-        //    (ไม่งั้นทุก 413 → +1 consecutive_errors → 3 strikes → key disabled 5min ทันที)
+        // 🪙 (2026-05-24) Route ผ่าน recordSmartError เพื่อให้ auto-detect ทุกประเภท error
+        //    - 429/413 rate-limit → cooldown only, no strike
+        //    - 5xx/timeout transient → cooldown 90s no strike
+        //    - 402/billing → mark critical immediately + alert admin
+        //    legacy callers ที่เรียก recordError() จะได้ smart handling ฟรี ไม่ต้องแก้
         $msgLower = mb_strtolower($errorMessage);
-        $isRateLimit = str_contains($errorMessage, '429')
+        $needsSmartRouting = str_contains($errorMessage, '429')
             || str_contains($errorMessage, '413')
+            || str_contains($errorMessage, '402')
+            || str_contains($errorMessage, '500')
+            || str_contains($errorMessage, '502')
+            || str_contains($errorMessage, '503')
+            || str_contains($errorMessage, '504')
             || str_contains($msgLower, 'rate limit')
             || str_contains($msgLower, 'request too large')
             || str_contains($msgLower, 'rate_limit_exceeded')
-            || str_contains($msgLower, 'tokens per minute');
+            || str_contains($msgLower, 'tokens per minute')
+            || str_contains($msgLower, 'timeout')
+            || str_contains($msgLower, 'timed out')
+            || str_contains($msgLower, 'connection refused')
+            || str_contains($msgLower, 'connection reset')
+            || str_contains($msgLower, 'service unavailable')
+            || str_contains($msgLower, 'insufficient credit')
+            || str_contains($msgLower, 'requires more credits')
+            || str_contains($msgLower, 'out of credits');
 
-        if ($isRateLimit) {
-            $this->recordSmartError($errorMessage, $model, true, null, $context);
+        if ($needsSmartRouting) {
+            // recordSmartError จะแยกเอง: rate-limit / transient / payment / regular
+            $this->recordSmartError($errorMessage, $model, false, null, $context);
 
             return;
         }
