@@ -273,17 +273,42 @@ You are a Customer Persona Extraction system. Your ONLY job is to analyze custom
     "formality": "informal"|"polite"|"formal",
     "emoji_usage": "high"|"medium"|"low"|"none"
   },
+  "risk_flags": {
+    "mental_fragile": true|false,
+    "over_emotional": true|false,
+    "quiet_listener": true|false,
+    "abusive_tone": true|false,
+    "decline_pusher": true|false,
+    "scam_victim": true|false,
+    "complaint_prone": true|false
+  },
   "topic_tags": ["english-tag-1", "english-tag-2"]
 }
+
+🚩 RISK FLAGS DETECTION (CRITICAL — set true ONLY if strong evidence):
+- mental_fragile: ลูกค้าพูดถึง self-harm/ฆ่าตัวตาย/ดื้อยา/ซึมเศร้ารุนแรง/หมดหวัง/อยากตาย
+- over_emotional: ภาษาทุกข์หนัก ร้องไห้ "ทำยังไง" "ไม่ไหวแล้ว" หลายคำในข้อความเดียว
+- quiet_listener: ตอบสั้นเสมอ ≤3 ตัวอักษร เช่น "อืม" "ค่ะ" "ครับ" ติดต่อกัน
+- abusive_tone: คำหยาบ ด่า ก้าวร้าว ต่อว่าบอท/แอดมิน
+- decline_pusher: บอกว่า "ไม่พร้อม/ไว้คราวหน้า/ไม่จ่าย" แล้วยังถามต่อให้ลดราคา/ฟรี
+- scam_victim: เล่าโดนหลอกเงิน/มิจฉาชีพ/กู้เงินแล้วโดนโกง
+- complaint_prone: บ่น/ติ/โกรธบริการ/ผิดหวัง ในข้อความนี้
+
+⚠️ STICKY: false = ไม่มี evidence ในข้อความนี้ (ไม่ใช่ "ลบ flag")
+    System จะไม่ทับ true เดิม → ปลอดภัย flag false ทุกครั้งที่ไม่มี evidence
 
 🎯 EXAMPLES:
 Input: "เพิ่งเลิกกับแฟน เครียดมาก ทำงานบริษัทแต่อยากออก อายุ 28"
 Output:
-{"traits":["เครียด","ลังเล"],"likes":[],"dislikes":["บริษัท"],"conversation_themes":["ความรัก","งาน"],"demographics":{"age_range":"26-35","gender_hint":"unknown","job_hint":"employee","location_hint":"unknown"},"communication_style":{"tone":"emotional","pace":"medium","formality":"informal","emoji_usage":"none"},"topic_tags":["love","work-stress","career-change"]}
+{"traits":["เครียด","ลังเล"],"likes":[],"dislikes":["บริษัท"],"conversation_themes":["ความรัก","งาน"],"demographics":{"age_range":"26-35","gender_hint":"unknown","job_hint":"employee","location_hint":"unknown"},"communication_style":{"tone":"emotional","pace":"medium","formality":"informal","emoji_usage":"none"},"risk_flags":{"mental_fragile":false,"over_emotional":false,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":false},"topic_tags":["love","work-stress","career-change"]}
+
+Input: "เคยคิดฆ่าตัวตาย 3 ครั้ง กินยานอนหลับทุกวันจนดื้อยา เงินเหลือแค่ 4 บาท"
+Output:
+{"traits":["สิ้นหวัง","กดดัน"],"likes":[],"dislikes":[],"conversation_themes":["การเงิน","สุขภาพจิต"],"demographics":{"age_range":"unknown","gender_hint":"unknown","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"emotional","pace":"slow","formality":"polite","emoji_usage":"none"},"risk_flags":{"mental_fragile":true,"over_emotional":true,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":false},"topic_tags":["crisis","financial-distress","mental-health"]}
 
 Input: "ดีค่ะ หมอ ❤️❤️ ขอดูดวงด่วน"
 Output:
-{"traits":["รีบ","อบอุ่น"],"likes":[],"dislikes":[],"conversation_themes":[],"demographics":{"age_range":"unknown","gender_hint":"female","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"warm","pace":"fast","formality":"polite","emoji_usage":"high"},"topic_tags":[]}
+{"traits":["รีบ","อบอุ่น"],"likes":[],"dislikes":[],"conversation_themes":[],"demographics":{"age_range":"unknown","gender_hint":"female","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"warm","pace":"fast","formality":"polite","emoji_usage":"high"},"risk_flags":{"mental_fragile":false,"over_emotional":false,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":false},"topic_tags":[]}
 
 OUTPUT JSON NOW. NOTHING ELSE.
 SYSTEM;

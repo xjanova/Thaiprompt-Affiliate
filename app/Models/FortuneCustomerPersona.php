@@ -205,6 +205,27 @@ class FortuneCustomerPersona extends Model
     }
 
     /**
+     * 🚩 (2026-05-25) เช็คว่ามี risk flag ตัวที่ระบุไหม
+     */
+    public function hasRiskFlag(string $flag): bool
+    {
+        $flags = $this->risk_flags ?? [];
+
+        return ! empty($flags[$flag]);
+    }
+
+    /**
+     * 🚩 (2026-05-25) บันทึก timestamp ที่ส่ง crisis resources (1323/1669)
+     */
+    public function markCrisisResourcesSent(): void
+    {
+        $flags = $this->risk_flags ?? [];
+        $flags['crisis_resources_sent'] = now()->toIso8601String();
+        $this->risk_flags = $flags;
+        $this->save();
+    }
+
+    /**
      * 🎯 สร้าง context block สำหรับ inject ใน AI system prompt
      *
      * แสดงแค่ข้อมูลที่มี (ไม่เปลือง token)

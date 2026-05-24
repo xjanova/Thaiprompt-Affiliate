@@ -30,7 +30,8 @@ class CustomerPersonaService
     private const INJECT_CACHE_TTL = 86400; // 24 ชม
 
     /** Cache TTL สำหรับ extraction throttle (วินาที) */
-    private const EXTRACTION_THROTTLE_TTL = 1800; // 30 นาที
+    private const EXTRACTION_THROTTLE_TTL = 1800; // 30 นาที (default)
+    private const EXTRACTION_THROTTLE_TTL_CRITICAL = 600; // 10 นาที (เคสวิกฤต)
 
     /** ข้อความที่สั้นกว่านี้จะไม่ extract (ไม่มีอะไรให้วิเคราะห์) */
     private const MIN_MESSAGE_LENGTH = 20;
@@ -89,9 +90,17 @@ class CustomerPersonaService
             return false;
         }
 
+        // 🚩 (2026-05-25) Critical keyword → throttle สั้นลง 30→10 min
+        //   เคสจริง conv 4936: "เคยคิดฆ่าตัวตาย 3 ครั้ง" / "กินยานอนหลับจนดื้อยา"
+        //   → ระบบต้อง flag เร็ว เพื่อปรับ tone ตอบ + แนะ 1323/1669
+        $isCritical = $this->hasCriticalKeyword($messageText);
+        $throttleTtl = $isCritical
+            ? self::EXTRACTION_THROTTLE_TTL_CRITICAL
+            : self::EXTRACTION_THROTTLE_TTL;
+
         // Throttle — กัน spam AI cost
         $throttleKey = $this->throttleCacheKey($platform, $userId);
-        if (Cache::has($throttleKey)) {
+        if (Cache::has($throttleKey) && ! $isCritical) {
             Log::debug('CustomerPersonaService: skip extraction — throttled', [
                 'platform' => $platform,
                 'user_id' => $userId,
@@ -99,7 +108,7 @@ class CustomerPersonaService
 
             return false;
         }
-        Cache::put($throttleKey, true, self::EXTRACTION_THROTTLE_TTL);
+        Cache::put($throttleKey, true, $throttleTtl);
 
         // 🎯 (2026-05-17) ใช้ dispatchAfterResponse — ทำงานได้ทั้ง sync และ async driver
         //   เดิม: ถ้า QUEUE_CONNECTION=sync → skip dispatch → persona table ว่างเปล่า
@@ -322,5 +331,41 @@ class CustomerPersonaService
     private function throttleCacheKey(string $platform, string $userId): string
     {
         return "fortune:persona:extract_throttle:{$platform}:{$userId}";
+    }
+
+    /**
+     * 🚩 (2026-05-25) ตรวจ critical keyword → ลด throttle จาก 30→10 min
+     *
+     * Keywords ที่ถือเป็น mental crisis / abuse → ต้อง extract เร็ว
+     * เพื่อ flag mental_fragile / abusive_tone / scam_victim ทันสถานการณ์
+     */
+    public function hasCriticalKeyword(string $text): bool
+    {
+        $lower = mb_strtolower(trim($text));
+        if ($lower === '') {
+            return false;
+        }
+
+        $critical = [
+            // Mental crisis
+            'ฆ่าตัวตาย', 'ฆ่าตัวเอง', 'อยากตาย', 'อยากจบ',
+            'ทำร้ายตัวเอง', 'กรีดข้อมือ', 'กินยาตาย',
+            'หมดหวัง', 'ไม่อยากอยู่', 'ไม่ไหวแล้ว',
+            'กินยานอนหลับ', 'ดื้อยา',
+            'ซึมเศร้า', 'แพนิค',
+            // Abusive
+            'ห่า', 'เหี้ย', 'ไอ้สัส', 'แม่ง', 'ควาย',
+            'โง่', 'กาก', 'ห่วยแตก',
+            // Scam victim
+            'โดนหลอก', 'โดนโกง', 'มิจฉาชีพ', 'คอลเซ็นเตอร์',
+        ];
+
+        foreach ($critical as $kw) {
+            if (mb_strpos($lower, mb_strtolower($kw)) !== false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
