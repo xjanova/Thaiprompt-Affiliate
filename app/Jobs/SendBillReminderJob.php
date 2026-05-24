@@ -44,9 +44,16 @@ class SendBillReminderJob implements ShouldQueue
             return; // safety — บิลจ่ายแล้ว
         }
 
-        $upa = $reading->uniquePaymentAmount;
-        if (! $upa || $upa->expires_at <= now()) {
-            return; // บิลหมดอายุ — ไม่ต้องทวง
+        // 🌙 (2026-05-24) Branch ตาม state:
+        //   - AWAITING_PAYMENT_METHOD → ยังไม่มี UPA — nudge ให้กดปุ่มเลือกวิธีจ่าย
+        //   - PENDING_PAYMENT / CELTIC_PENDING_PAYMENT → require UPA reserved ยังไม่หมดอายุ
+        $isAwaitingMethod = $reading->conversation_status === FortuneReading::STATUS_AWAITING_PAYMENT_METHOD;
+
+        if (! $isAwaitingMethod) {
+            $upa = $reading->uniquePaymentAmount;
+            if (! $upa || $upa->expires_at <= now()) {
+                return; // บิลหมดอายุ — ไม่ต้องทวง
+            }
         }
 
         // 🩹 Dedup re-check — กัน race (command + queue overlap)
@@ -104,8 +111,23 @@ class SendBillReminderJob implements ShouldQueue
             $settings = FortuneTellingSetting::getSettings();
             $aiService = new FortuneAIService($settings);
 
-            $systemMessage = $this->buildSystemMessage($personaContext);
-            $userMessage = $this->buildUserMessage($reading);
+            $isAwaitingMethod = $reading->conversation_status === FortuneReading::STATUS_AWAITING_PAYMENT_METHOD;
+            $systemMessage = $this->buildSystemMessage($personaContext, $isAwaitingMethod);
+            $userMessage = $this->buildUserMessage($reading, $isAwaitingMethod);
+
+            // 📚 (2026-05-24) Inject RAG admin Q&A few-shot — เรียน tone จากแอดมินที่เคยตอบ
+            //   category=pre_payment (ครอบ awaiting_payment_method + pending_payment + celtic_pending_payment)
+            //   query = last customer message ใน history (ถ้ามี) — fallback เป็น descriptor สถานะ
+            try {
+                $queryText = $this->extractRagQueryText($reading, $isAwaitingMethod);
+                $systemMessage = $aiService->injectAdminQARagFewShot($systemMessage, $queryText, $reading);
+            } catch (\Throwable $e) {
+                // RAG ล้ม → ใช้ system message เดิม (ไม่ break job)
+                Log::debug('SendBillReminderJob: RAG inject ล้ม fallback no-RAG', [
+                    'reading_id' => $reading->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             $directKey = $settings->getChatAIApiKey();
 
@@ -171,21 +193,72 @@ class SendBillReminderJob implements ShouldQueue
         }
     }
 
-    private function buildSystemMessage(string $personaContext): string
+    /**
+     * 🔍 (2026-05-24) สร้าง query text สำหรับ RAG retrieve admin Q&A
+     *
+     * Strategy:
+     *   1. ดึงข้อความล่าสุดของลูกค้าจาก conversation history (LineBotConversation)
+     *   2. ถ้าไม่มี → ใช้ descriptor ของ state เป็น query (จะ match กับ admin Q&A category=pre_payment)
+     */
+    private function extractRagQueryText(FortuneReading $reading, bool $isAwaitingMethod): string
+    {
+        try {
+            $platform = ! empty($reading->line_user_id) ? 'line' : 'facebook';
+            $userId = $reading->facebook_user_id ?: $reading->line_user_id ?: $reading->platform_user_id;
+            if (! empty($userId)) {
+                $conv = \App\Models\LineBotConversation::where('line_user_id', $userId)
+                    ->where('platform', $platform)
+                    ->first();
+                if ($conv && ! empty($conv->history)) {
+                    $history = is_array($conv->history) ? $conv->history : json_decode($conv->history, true);
+                    if (is_array($history)) {
+                        // หา user message ล่าสุด
+                        for ($i = count($history) - 1; $i >= 0; $i--) {
+                            $msg = $history[$i] ?? null;
+                            if (is_array($msg) && ($msg['role'] ?? '') === 'user') {
+                                $text = trim((string) ($msg['content'] ?? ''));
+                                if (mb_strlen($text) >= 2) {
+                                    return mb_substr($text, 0, 300);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // Fallback — ใช้ descriptor ของ state (RAG จะดึง pre_payment category ตาม classifier)
+        return $isAwaitingMethod
+            ? 'ลูกค้าเห็นปุ่มเลือกวิธีชำระเงิน QR/บัตรเครดิต แต่ยังไม่ได้เลือก ไม่ตัดสินใจ'
+            : 'ลูกค้าสร้างบิลแล้ว แต่ยังไม่ได้โอนเงิน';
+    }
+
+    private function buildSystemMessage(string $personaContext, bool $isAwaitingMethod = false): string
     {
         $personaBlock = ! empty($personaContext) ? "\n\n{$personaContext}\n" : '';
+
+        $missionLine = $isAwaitingMethod
+            ? 'ภารกิจ: ลูกค้าเห็นปุ่มเลือกวิธีชำระเงิน (QR ไทย / บัตรเครดิต) แต่ยังลังเล ไม่ได้กดเลือก ผ่านมา 5+ นาที — ช่วยกระตุ้นเบา ๆ + อาจขอช่วยถ้าติดขัด'
+            : 'ภารกิจ: ลูกค้าสร้างบิลดูดวงไว้แต่ยังไม่ได้โอนเงิน (ผ่านมา 20+ นาที) — ช่วยเตือนเบา ๆ ด้วยความห่วงใย ไม่ใช่ทวงแบบเจ้าหนี้';
+
+        $bulletGoals = $isAwaitingMethod
+            ? "1. แสดงความใส่ใจ — \"แม่หมอเห็นว่าเจ้าชะตายังตัดสินใจอยู่\"\n"
+                .'2. ชี้ทางเลือกที่ง่าย — "ถ้าเลือกไม่ถูก ทักมาบอกแม่หมอได้ค่ะ"' . "\n"
+                .'3. เปิดทางช่วย — "ติดขัดตรงไหน บอกได้นะคะ" หรือ "ถ้าไม่สะดวก พิมพ์ \'ยกเลิก\' ได้"'
+            : "1. แสดงความใส่ใจ — \"แม่หมอเห็นว่าเจ้าชะตายังไม่ได้โอน\"\n"
+                ."2. บอกเหตุการณ์เป็นกลาง (ไม่กดดัน) — \"บิลใกล้หมดอายุ\"\n"
+                .'3. เปิดทางเลือก — "ถ้าตัดสินใจอยู่ ทักได้นะคะ / ถ้าจะยกเลิก พิมพ์ \'ยกเลิก\'"';
 
         return <<<EOT
 คุณคือ "แม่หมอจันทรา" — แม่หมอ Tarot ไทยวัยกลางคน
 นุ่มนวล อบอุ่น เอาใจใส่ ไม่บีบบังคับ
 
-ภารกิจ: ลูกค้าสร้างบิลดูดวงไว้แต่ยังไม่ได้โอนเงิน (ผ่านมา 20+ นาที)
-ช่วยเตือนเบา ๆ ด้วยความห่วงใย ไม่ใช่ทวงแบบเจ้าหนี้
+{$missionLine}
 
 จงเขียนข้อความสนทนา (พูดคุยปกติ ไม่ใช่กล่อง) ครอบคลุม:
-1. แสดงความใส่ใจ — "แม่หมอเห็นว่าเจ้าชะตายังไม่ได้โอน"
-2. บอกเหตุการณ์เป็นกลาง (ไม่กดดัน) — "บิลใกล้หมดอายุ"
-3. เปิดทางเลือก — "ถ้าตัดสินใจอยู่ ทักได้นะคะ / ถ้าจะยกเลิก พิมพ์ 'ยกเลิก'"
+{$bulletGoals}
 
 กฎเหล็ก (ห้ามฝ่าฝืน):
 - ✅ ภาษาธรรมชาติ พูดคุยเหมือนคน (ไม่มี ━━━ ไม่มี bullet)
@@ -199,22 +272,37 @@ class SendBillReminderJob implements ShouldQueue
 - ❌ ห้าม corporate-speak ("กรุณา..." "หากท่านมีข้อสงสัย")
 {$personaBlock}
 ปรับ tone ตาม persona ลูกค้า (ถ้ามี) — แต่ใต้พรม ไม่อ้างตรงๆ ว่า "จำได้ว่า..."
+ถ้ามีตัวอย่างคำตอบของแอดมินที่ inject เพิ่ม (📚) — เลียนแบบ "tone + จังหวะ" ไม่ใช่ copy-paste
 
 ตอบเป็น plain text บรรทัดเดียวต่อเนื่อง (ขึ้นบรรทัดใหม่ \n ได้ถ้าจำเป็น)
 EOT;
     }
 
-    private function buildUserMessage(FortuneReading $reading): string
+    private function buildUserMessage(FortuneReading $reading, bool $isAwaitingMethod = false): string
     {
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
         $type = $isCeltic ? 'ไพ่ Celtic Cross 10 ใบ' : 'ดูดวงเชิงลึก';
+        $billRef = $reading->bill_reference ?? '-';
+        $minutesAgo = (int) $reading->created_at->diffInMinutes(now());
+
+        if ($isAwaitingMethod) {
+            // ไม่มี UPA / amount ที่แน่ชัดในสถานะนี้ (ยังไม่เลือกวิธีจ่าย)
+            $expectedAmount = (int) ($reading->amount_paid ?? 0);
+            $amountLine = $expectedAmount > 0 ? "- คาดว่าจะจ่าย: ~฿{$expectedAmount}\n" : '';
+
+            return "สถานการณ์:\n"
+                ."- ลูกค้าเห็นเมนูเลือกวิธีชำระเงิน ({$type}) เมื่อ {$minutesAgo} นาทีก่อน\n"
+                .'- มีปุ่ม "QR ไทย" และ "บัตรเครดิต" ให้กด แต่ยังไม่กดเลือก' . "\n"
+                .$amountLine
+                ."- อาจจะลังเล หรือสับสน หรือกำลังหาเงิน\n\n"
+                .'ช่วยกระตุ้นเบา ๆ + เปิดทางถามถ้าติดขัด — ไม่ใช่ทวง';
+        }
+
         $upa = $reading->uniquePaymentAmount;
         $amount = number_format((float) ($upa->amount ?? $reading->amount_paid ?? 0), 2);
-        $billRef = $reading->bill_reference ?? '-';
         $remainingMin = $upa && $upa->expires_at
             ? max(1, (int) now()->diffInMinutes($upa->expires_at, false))
             : 5;
-        $minutesAgo = (int) $reading->created_at->diffInMinutes(now());
 
         return "สถานการณ์:\n"
             ."- ลูกค้าสร้างบิล {$type} ไว้เมื่อ {$minutesAgo} นาทีก่อน\n"
@@ -229,9 +317,9 @@ EOT;
      */
     private function getFallbackText(FortuneReading $reading): string
     {
+        $isAwaitingMethod = $reading->conversation_status === FortuneReading::STATUS_AWAITING_PAYMENT_METHOD;
         $isCeltic = $reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS;
         // 🌙 (2026-05-23) Round 6 — pull ราคาจาก amount_paid ของบิลจริง ไม่ฮาร์ดโค้ด 39/99
-        //   ลูกค้าค้างบิลรู้ราคาตัวเองอยู่แล้ว — ถ้า admin เปลี่ยน price setting → ราคาในบิลยังเดิม
         $billAmountInt = $reading->amount_paid
             ? (int) round((float) $reading->amount_paid)
             : null;
@@ -239,6 +327,16 @@ EOT;
         $type = $isCeltic
             ? "ไพ่ Celtic Cross 10 ใบ{$billAmountSuffix}"
             : "ดูดวงเชิงลึก{$billAmountSuffix}";
+
+        // 🌙 (2026-05-24) Branch ตาม state
+        if ($isAwaitingMethod) {
+            return "🌙 ลูกศิษย์... แม่หมอเห็นว่ายังตัดสินใจอยู่ที่เมนู {$type} นะคะ\n\n"
+                ."ติดขัดตรงไหน บอกแม่หมอได้เลยค่ะ ถ้าเลือกไม่ถูก แม่หมอช่วยแนะนำให้\n\n"
+                ."💚 ถ้าใช้พร้อมเพย์ในไทย → พิมพ์ 'qr ไทย'\n"
+                ."💳 ถ้าใช้บัตรเครดิต/ต่างประเทศ → พิมพ์ 'บัตร'\n\n"
+                .'ถ้าไม่สะดวกจะดูตอนนี้ → พิมพ์ \'ยกเลิก\' ได้ ไม่เป็นไรนะคะ 🙏';
+        }
+
         $upa = $reading->uniquePaymentAmount;
         $amount = number_format((float) ($upa->amount ?? $reading->amount_paid ?? 0), 2);
         $billRef = $reading->bill_reference ?? '-';
