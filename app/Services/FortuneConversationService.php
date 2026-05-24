@@ -4194,6 +4194,31 @@ class FortuneConversationService
             }
         }
 
+        // ✅ Tier 3 (2026-05-24) — STRONG keyword anywhere in text (relaxed match)
+        //   เคสที่ tier 1+2 พลาด: "พิมร์ดูดวงค่ะแม่หมอ" / "แม่หมอช่วยดูดวงให้หน่อย"
+        //   user feedback: "มั่วไปหมด ไม่ยอมส่งกล่องเลือกวิธีชำระเงิน"
+        //   Pattern: ตรวจ str_contains "ดูดวง"/"ทำนาย"/"หมอดู" + exclude negation/meta
+        $negationOrMeta = [
+            'ไม่อยาก', 'ไม่ต้องการ', 'ไม่ดู', 'ไม่เอา', 'อย่าดู',
+            'ทำไมต้อง', 'ทำไมถึง', 'ดูดวงทำไม',
+            'ดูดวงคืออะไร', 'ดูดวงยังไง',
+            // exclude pricing — pricing gate ครอบแล้ว
+            'ค่าครู', 'ค่าดูดวง', 'ราคาดูดวง', 'ดูดวงเท่าไร', 'ดูดวงกี่บาท',
+        ];
+        foreach ($negationOrMeta as $exclude) {
+            if (str_contains($textClean, $exclude)) {
+                return false;
+            }
+        }
+
+        $strongTriggers = ['ดูดวง', 'ทำนายดวง', 'ขอดู', 'ขอทำนาย', 'อยากดู',
+            'ເບິ່ງດວງ', 'ທຳນາຍດວງ', 'ຂໍເບິ່ງດວງ'];
+        foreach ($strongTriggers as $trigger) {
+            if (str_contains($textClean, mb_strtolower($trigger))) {
+                return true;
+            }
+        }
+
         return false;
     }
 
