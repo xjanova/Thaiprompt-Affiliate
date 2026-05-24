@@ -262,30 +262,32 @@ class LineFortuneWebhookController extends Controller
             }
 
             // 🆕 (2026-05-20 Phase 3b.5) Classify image — ดึง LINE content แล้ว classify
-            //   หมายเหตุ: LINE webhook ไม่ส่ง URL ตรง ๆ ต้องดึงผ่าน content API + base64 ก่อน
-            //   ถ้า download fail → fall through ไป existing logic (Celtic vision หรือ slip handler ดึงเอง)
+            // ⚠️ (2026-05-24) Gate classify ที่ $hasActiveFortune เท่านั้น
+            //    User spec: "ห้ามใช้ image_vision กับระบบ chat ทั่วไป เพราะมันเปลืองโควต้า"
+            //    เคส no active flow → skip classify (Vision quota saved) + silent ignore ตามด้านล่าง
+            //    เคส active flow → classify ตามเดิม (Celtic vision / slip routing)
+            //    หมายเหตุ: LINE webhook ไม่ส่ง URL ตรง ๆ ต้องดึงผ่าน content API + base64 ก่อน
+            //    ถ้า download fail → fall through ไป existing logic (Celtic vision หรือ slip handler ดึงเอง)
             $intent = null;
             $cachedBase64 = null; // เก็บไว้ส่งต่อให้ handleCelticVisionImage ได้
-            if (! empty($messageId)) {
+            $hasActiveFortune = FortuneReading::where(function ($q) use ($userId) {
+                $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
+            })
+                ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
+                ->exists();
+
+            if (! empty($messageId) && $hasActiveFortune) {
                 try {
                     $cachedBase64 = $this->downloadLineImageAsBase64($messageId);
                     if ($cachedBase64) {
-                        $hasActiveFortune = FortuneReading::where(function ($q) use ($userId) {
-                            $q->where('platform_user_id', $userId)->orWhere('facebook_user_id', $userId);
-                        })
-                            ->where('conversation_status', '!=', FortuneReading::STATUS_COMPLETED)
-                            ->exists();
-
-                        $contextHint = $hasActiveFortune ? 'celtic_active' : 'chat_normal';
                         $intentResult = app(\App\Services\Fortune\ImageIntentClassifier::class)
-                            ->classify($cachedBase64, $contextHint);
+                            ->classify($cachedBase64, 'celtic_active');
                         $intent = $intentResult['intent'] ?? null;
 
-                        Log::info('LINE: image classified', [
+                        Log::info('LINE: image classified (active flow)', [
                             'user_id' => $userId,
                             'intent' => $intent,
                             'confidence' => $intentResult['confidence'] ?? null,
-                            'context_hint' => $contextHint,
                         ]);
                     }
                 } catch (\Throwable $clErr) {
@@ -295,7 +297,18 @@ class LineFortuneWebhookController extends Controller
                 }
             }
 
+            // 🔇 (2026-05-24) ไม่มี active flow + รูป → silent (Vision skipped, ประหยัด quota)
+            //    User: "ตอนลูกค้าส่งรูปในแชทปกติ → เงียบ ไม่ตอบ"
+            if (! $hasActiveFortune) {
+                Log::debug('LINE: silent ignore image (no active fortune flow, vision skipped)', [
+                    'user_id' => $userId,
+                ]);
+
+                return;
+            }
+
             // 🤐 Emoji/nonsense → silent
+            //    หมายเหตุ: intent=null เมื่อ classify ถูก skip → in_array=false → fall through
             if (in_array($intent, [
                 \App\Services\Fortune\ImageIntentClassifier::INTENT_EMOJI_STICKER,
                 \App\Services\Fortune\ImageIntentClassifier::INTENT_NONSENSE,

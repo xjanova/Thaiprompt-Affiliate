@@ -1643,27 +1643,28 @@ class FacebookWebhookController extends Controller
             }
 
             // 🆕 (2026-05-20 Phase 3b.5) Classify image intent ก่อน routing
-            //   ใช้ Gemini Flash (ราคาถูก) เพื่อ first-pass classify:
-            //     • payment_slip       → existing slip flow
-            //     • fortune_subject    → Celtic vision (ถ้า Celtic active+10ใบ) OR hint
-            //     • general_photo      → chat reply (เมื่อ no active)
-            //     • emoji_sticker      → silent (ลูกค้าส่งสติ๊กเกอร์ไม่ต้องตอบทุกครั้ง)
-            //     • nonsense           → silent
-            //   Fallback: ถ้า classifier fail → fall through ไป existing logic (zero regression)
-            //   ⚠️ Patch 2: Celtic paid vision bypassed แล้ว — ตรงนี้ classify เฉพาะ non-paid path
+            // ⚠️ (2026-05-24) Gate classify ที่ $hasActiveFortune เท่านั้น
+            //    User spec: "ห้ามใช้ image_vision กับระบบ chat ทั่วไป เพราะมันเปลืองโควต้า"
+            //    เคส no active flow → skip classify (Vision quota saved) + silent ignore
+            //    เคส active flow → classify ตามเดิม:
+            //      • payment_slip       → slip handler
+            //      • fortune_subject    → Celtic vision (ถ้า Celtic+10ใบ) หรือ slip handler
+            //      • general_photo      → slip handler (active flow + รูป)
+            //      • emoji_sticker      → silent
+            //      • nonsense           → silent
+            //    Fallback: ถ้า classifier fail → fall through ไป existing logic (zero regression)
+            //    ⚠️ Patch 2: Celtic paid vision bypassed ก่อนถึงตรงนี้แล้ว
             $intent = null;
-            if ($userImageUrl) {
+            if ($userImageUrl && $hasActiveFortune) {
                 try {
-                    $contextHint = $hasActiveFortune ? 'celtic_active' : 'chat_normal';
-                    $intentResult = app(ImageIntentClassifier::class)->classify($userImageUrl, $contextHint);
+                    $intentResult = app(ImageIntentClassifier::class)->classify($userImageUrl, 'celtic_active');
                     $intent = $intentResult['intent'] ?? null;
 
-                    Log::info('FB: image classified', [
+                    Log::info('FB: image classified (active flow)', [
                         'sender_id' => $senderId,
                         'intent' => $intent,
                         'confidence' => $intentResult['confidence'] ?? null,
                         'reason' => $intentResult['reason'] ?? null,
-                        'context_hint' => $contextHint,
                     ]);
                 } catch (\Throwable $clErr) {
                     Log::debug('FB: classifier exception (fall through to legacy logic)', [
@@ -1673,6 +1674,7 @@ class FacebookWebhookController extends Controller
             }
 
             // 🤐 Emoji/nonsense → silent (ไม่ตอบ ไม่ flood ลูกค้า)
+            //    หมายเหตุ: intent=null เมื่อ no active flow → in_array=false → fall through
             if (in_array($intent, [ImageIntentClassifier::INTENT_EMOJI_STICKER, ImageIntentClassifier::INTENT_NONSENSE], true)) {
                 Log::debug('FB: emoji/nonsense → silent', [
                     'sender_id' => $senderId,
@@ -1682,43 +1684,14 @@ class FacebookWebhookController extends Controller
                 return;
             }
 
-            // 🔇 ไม่มี active flow + attachment ใดๆ → silent (ทุกประเภท)
-            //   เคสที่ classifier ไม่ active (intent=null) — เก็บ behavior เดิม
-            //   เคสที่ classifier บอก general_photo + no active flow → ตอบ chat สั้น ๆ
+            // 🔇 (2026-05-24) ไม่มี active flow + attachment ใดๆ → silent ทุกประเภท
+            //    User: "ตอนลูกค้าส่งรูปในแชทปกติ → เงียบ ไม่ตอบ"
+            //    Vision classify ถูก skip ไปแล้ว (gate ที่ $hasActiveFortune) — saved quota
             if (empty($messageText) && ! $hasActiveFortune) {
-                // 🆕 (2026-05-20) Classifier บอก general_photo / fortune_subject → ตอบเชิญดูดวง
-                if ($intent === ImageIntentClassifier::INTENT_FORTUNE_SUBJECT) {
-                    $this->facebookService->sendMessage(
-                        $senderId,
-                        "🌙 เห็นเจ้าชะตาส่งรูปมา — สนใจดูดวงเรื่องคนในรูปใช่ไหมคะ?\n\n"
-                        ."✨ พิมพ์ \"ดูดวง\" เพื่อเริ่มทำนายเลยค่ะ"
-                    );
-
-                    Log::info('FB: classifier=fortune_subject (no active) → invite ดูดวง', [
-                        'sender_id' => $senderId,
-                    ]);
-
-                    return;
-                }
-                if ($intent === ImageIntentClassifier::INTENT_PAYMENT_SLIP) {
-                    $this->facebookService->sendMessage(
-                        $senderId,
-                        "🌙 ดูเหมือนเป็นสลิปการโอนเงิน — แต่แม่หมอยังไม่มีรายการที่ต้องชำระสำหรับเจ้าชะตาตอนนี้นะคะ\n\n"
-                        ."✨ ถ้าอยากดูดวง พิมพ์ \"ดูดวง\" เพื่อเริ่มเลยค่ะ"
-                    );
-
-                    Log::info('FB: classifier=payment_slip (no active) → แจ้งไม่มีรายการ', [
-                        'sender_id' => $senderId,
-                    ]);
-
-                    return;
-                }
-                // general_photo / unknown → silent เดิม (ไม่ตอบรูปสุ่ม)
-                Log::debug('FB: silent ignore attachment (no active fortune flow)', [
+                Log::debug('FB: silent ignore attachment (no active fortune flow, vision skipped)', [
                     'sender_id' => $senderId,
                     'has_image' => ! empty($userImageUrl),
                     'has_sticker' => $hasSticker,
-                    'intent' => $intent,
                     'attachment_types' => array_column($attachments, 'type'),
                 ]);
 
