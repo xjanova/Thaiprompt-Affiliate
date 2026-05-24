@@ -246,6 +246,8 @@ class FortuneSettingsController extends Controller
             // Comment Engagement
             'comment_engagement_enabled' => 'boolean',
             'comment_engagement_mode' => 'nullable|in:ai,template',
+            // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ (ปิด default — กัน AI quota เผาเปล่าตอน pages_manage_engagement ยังไม่ approved)
+            'enable_public_comment_reply' => 'boolean',
             'comment_reply_template' => 'nullable|string|max:500',
             'comment_dm_template' => 'nullable|string|max:2000',
             'comment_engagement_prompt' => 'nullable|string|max:3000',
@@ -410,6 +412,8 @@ class FortuneSettingsController extends Controller
             'is_enabled', 'respond_in_comment', 'require_registration',
             'enable_deep_reading', 'allow_try_before_buy', 'subscription_enabled',
             'use_global_ai_settings', 'comment_engagement_enabled',
+            // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
+            'enable_public_comment_reply',
             'fortune_affiliate_enabled', 'fortune_auto_register_enabled',
             'fortune_use_global_commission_rate', 'fortune_level2_enabled',
             'fortune_central_fallback_enabled',

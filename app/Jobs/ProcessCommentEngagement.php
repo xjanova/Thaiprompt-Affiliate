@@ -135,44 +135,60 @@ class ProcessCommentEngagement implements ShouldQueue
                 'has_profile' => ! empty($userProfile),
             ]);
 
-            // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
-            //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
-            //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
-            //    Speedup: AI call 2-3s → matcher 1-2ms = ~3× throughput per worker
-            $commentReply = $this->matchCommonGratitudePattern($commentText, $name);
-            $usedTemplate = $commentReply !== null;
+            // 🚫 (2026-05-24) Sub-toggle: เปิดตอบคอมเม้นต์สาธารณะหรือไม่?
+            //    User: "บอท api ตอบโพสแต่ไม่ได้โพสจริง (app ยังไม่ให้โพส) ทำให้เสีย quota
+            //          แค่ DM อย่างเดียวพอ"
+            //    เมื่อ false (default): skip pattern match + AI gen + replyToComment + reactToComment
+            //                          ส่ง DM อย่างเดียว (Page Messaging — scope แยก ไม่กระทบ)
+            //    เมื่อ true: ทำงานครบ — สำหรับเมื่อ App Review approved pages_manage_engagement แล้ว
+            $publicReplyEnabled = $settings->isPublicCommentReplyEnabled();
+            $commentReply = '';
 
-            if ($usedTemplate) {
-                Log::info('⚡ Comment Engagement: matched common pattern (skip AI)', [
-                    'user_id' => $userId,
-                    'comment_preview' => mb_substr($commentText, 0, 30),
-                ]);
-            } else {
-                // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
-                //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
-                //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
-                try {
-                    $engagement = $aiService->generateCommentEngagement(
-                        $commentText,
-                        $userProfile
-                    );
-                    $commentReply = $engagement['comment_reply'] ?? '';
-                } catch (Throwable $aiError) {
-                    Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+            if ($publicReplyEnabled) {
+                // 2. ⚡ (2026-05-23) Phase 2: ลอง match common gratitude pattern ก่อน — skip AI ถ้าตรง
+                //    pattern matcher → "สาธุ/น้อมรับ/รับ/ขอบคุณ/🙏/✨" (Thai + Lao + emoji-only)
+                //    Hit rate คาดหวัง: 40-60% ของ comment ทั่วไป (ลูกค้ามักทักสั้นๆ)
+                //    Speedup: AI call 2-3s → matcher 1-2ms = ~3× throughput per worker
+                $commentReply = $this->matchCommonGratitudePattern($commentText, $name);
+                $usedTemplate = $commentReply !== null;
+
+                if ($usedTemplate) {
+                    Log::info('⚡ Comment Engagement: matched common pattern (skip AI)', [
                         'user_id' => $userId,
-                        'error' => $aiError->getMessage(),
+                        'comment_preview' => mb_substr($commentText, 0, 30),
                     ]);
-                    $commentReply = '';
+                } else {
+                    // 2b. AI สร้าง comment_reply (context-aware) — comment ไม่ตรง pattern
+                    //    🌙 (2026-05-21) DM message เปลี่ยนเป็น "ดวงประจำวันสั้นๆ" (deterministic)
+                    //    AI ไม่ generate dm_message อีกต่อไป — ใช้ FortuneGreetingService แทน
+                    try {
+                        $engagement = $aiService->generateCommentEngagement(
+                            $commentText,
+                            $userProfile
+                        );
+                        $commentReply = $engagement['comment_reply'] ?? '';
+                    } catch (Throwable $aiError) {
+                        Log::warning('Comment Engagement: AI ล้ม → ใช้ template fallback', [
+                            'user_id' => $userId,
+                            'error' => $aiError->getMessage(),
+                        ]);
+                        $commentReply = '';
+                    }
                 }
-            }
 
-            // Comment reply fallback ถ้า AI คืน empty
-            if (empty($commentReply)) {
-                $commentReply = str_replace(
-                    ['{name}', '{comment}'],
-                    [$name, $commentText],
-                    $settings->getCommentReplyTemplate()
-                );
+                // Comment reply fallback ถ้า AI คืน empty
+                if (empty($commentReply)) {
+                    $commentReply = str_replace(
+                        ['{name}', '{comment}'],
+                        [$name, $commentText],
+                        $settings->getCommentReplyTemplate()
+                    );
+                }
+            } else {
+                Log::info('🚫 Comment Engagement: public reply ปิดอยู่ — skip AI + replyToComment (DM ปกติ)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                ]);
             }
 
             // 🌙 DM message — ดวงประจำวันสั้นๆ (มีวันเกิด → ดวงวันเกิด, ไม่มี → ชวนดูดวง)
@@ -180,22 +196,25 @@ class ProcessCommentEngagement implements ShouldQueue
             $dmMessage = $greetingService->buildDailyHoroscopeGreeting($userId, $name);
 
             // 3. ตอบคอมเม้นต์ (best-effort — ถ้าล้มยังส่ง DM ต่อได้)
-            try {
-                $facebookService->replyToComment($commentId, $commentReply);
-            } catch (Throwable $e) {
-                Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
-                    'comment_id' => $commentId,
-                    'error' => $e->getMessage(),
-                ]);
-            }
+            //    🚫 (2026-05-24) Skip ทั้งหมดถ้า public reply ปิดอยู่ (กัน FB API call เปล่า)
+            if ($publicReplyEnabled && ! empty($commentReply)) {
+                try {
+                    $facebookService->replyToComment($commentId, $commentReply);
+                } catch (Throwable $e) {
+                    Log::warning('replyToComment ล้ม (ยังส่ง DM ต่อ)', [
+                        'comment_id' => $commentId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 
-            // 3.5 💗 กด LIKE คอมเม้นต์อัตโนมัติ — boost engagement signal ให้ FB algorithm
-            //     (ไม่ block ถ้า fail — best-effort)
-            try {
-                $facebookService->reactToComment($commentId, 'LIKE');
-            } catch (Throwable $e) {
-                // non-blocking
-                Log::debug('reactToComment LIKE ล้ม (non-blocking): '.$e->getMessage());
+                // 3.5 💗 กด LIKE คอมเม้นต์อัตโนมัติ — boost engagement signal ให้ FB algorithm
+                //     (ไม่ block ถ้า fail — best-effort)
+                try {
+                    $facebookService->reactToComment($commentId, 'LIKE');
+                } catch (Throwable $e) {
+                    // non-blocking
+                    Log::debug('reactToComment LIKE ล้ม (non-blocking): '.$e->getMessage());
+                }
             }
 
             // 4. ส่ง inbox พร้อม Quick Replies

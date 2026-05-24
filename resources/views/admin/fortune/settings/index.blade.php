@@ -2010,10 +2010,47 @@ Format 2 — JSON array:
             </p>
 
             <div x-show="commentEngagementEnabled" x-transition>
+                {{-- 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ
+                     Default: false — รอ Facebook App Review อนุมัติ pages_manage_engagement scope
+                     ก่อน flip ON: ทดสอบว่า replyToComment สำเร็จ (ไม่ใช่ 403) ก่อน --}}
+                <div class="mb-4 p-4 rounded-lg border-2"
+                     :class="enablePublicCommentReply
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-300 dark:border-amber-700'
+                        : 'bg-blue-50 dark:bg-blue-900/20 border-blue-300 dark:border-blue-700'">
+                    <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="text-lg" x-text="enablePublicCommentReply ? '⚠️' : '🔒'"></span>
+                            <span class="font-semibold text-gray-900 dark:text-white">
+                                ตอบคอมเม้นต์สาธารณะ (Public Comment Reply)
+                            </span>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="hidden" name="enable_public_comment_reply" value="0">
+                            <input type="checkbox" name="enable_public_comment_reply" value="1"
+                                   {{ old('enable_public_comment_reply', $settings->enable_public_comment_reply ?? false) ? 'checked' : '' }}
+                                   class="sr-only peer"
+                                   x-model="enablePublicCommentReply">
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-amber-300 dark:peer-focus:ring-amber-800 rounded-full peer dark:bg-gray-600 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-500 peer-checked:bg-amber-600"></div>
+                        </label>
+                    </div>
+                    <div x-show="!enablePublicCommentReply" class="text-xs text-blue-800 dark:text-blue-200 space-y-1">
+                        <p>🔒 <strong>ปิดอยู่ (แนะนำ)</strong> — บอทส่งเฉพาะ DM ไม่ตอบในโพสต์สาธารณะ</p>
+                        <p>• <strong>ประหยัด AI quota</strong> — ไม่เรียก AI สำหรับ comment_reply (~400 tokens/ครั้ง)</p>
+                        <p>• <strong>ไม่ขึ้น 403 error</strong> — ระบบไม่พยายามโพสต์ในคอมเม้นต์ (Page Token ขาด <code>pages_manage_engagement</code> scope)</p>
+                        <p>• DM ผ่าน Page Messaging ใช้ scope แยก ทำงานปกติ</p>
+                    </div>
+                    <div x-show="enablePublicCommentReply" class="text-xs text-amber-800 dark:text-amber-200 space-y-1">
+                        <p>⚠️ <strong>เปิดอยู่</strong> — บอทจะตอบทั้งในคอมเม้นต์สาธารณะ + ส่ง DM</p>
+                        <p>• ⚠️ <strong>ต้องการ <code>pages_manage_engagement</code> scope</strong> — ต้องผ่าน Facebook App Review</p>
+                        <p>• ถ้ายังไม่ได้รับอนุมัติ → AI gen ทุก comment เปล่าๆ (เผา quota)</p>
+                        <p>• เช็คได้จาก log: ถ้าเห็น <code>"Page Access Token ขาด pages_manage_engagement scope"</code> → ปิด toggle นี้</p>
+                    </div>
+                </div>
+
                 {{-- โหมดการทำงาน --}}
-                <div class="mb-4">
+                <div class="mb-4" x-show="enablePublicCommentReply" x-transition>
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        โหมดสร้างข้อความ
+                        โหมดสร้างข้อความตอบคอมเม้นต์
                     </label>
                     <select name="comment_engagement_mode"
                             x-model="commentEngagementMode"
@@ -2028,7 +2065,7 @@ Format 2 — JSON array:
                 </div>
 
                 {{-- AI Mode: Prompt --}}
-                <div x-show="commentEngagementMode === 'ai'" x-transition class="mb-4">
+                <div x-show="enablePublicCommentReply && commentEngagementMode === 'ai'" x-transition class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         AI Prompt (คำสั่งสำหรับ AI สร้างข้อความชวน)
                     </label>
@@ -2039,7 +2076,7 @@ Format 2 — JSON array:
                 </div>
 
                 {{-- Template Mode: Comment Reply --}}
-                <div x-show="commentEngagementMode === 'template'" x-transition class="mb-4">
+                <div x-show="enablePublicCommentReply && commentEngagementMode === 'template'" x-transition class="mb-4">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         เทมเพลตตอบคอมเม้นต์
                     </label>
@@ -4215,6 +4252,8 @@ function fortuneSettings() {
         activeTab: localStorage.getItem('fortune_settings_tab') || 'ai',
         commentEngagementEnabled: {{ $settings->comment_engagement_enabled ? 'true' : 'false' }},
         commentEngagementMode: '{{ old('comment_engagement_mode', $settings->comment_engagement_mode ?? 'ai') }}',
+        // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะ (default false — รอ App Review)
+        enablePublicCommentReply: {{ old('enable_public_comment_reply', $settings->enable_public_comment_reply ?? false) ? 'true' : 'false' }},
         switchTab(tab) {
             this.activeTab = tab;
             localStorage.setItem('fortune_settings_tab', tab);

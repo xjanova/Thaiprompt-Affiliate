@@ -99,6 +99,10 @@ class FortuneTellingSetting extends Model
         // Comment Engagement
         'comment_engagement_enabled',
         'comment_engagement_mode',
+        // 🚫 (2026-05-24) Sub-toggle: ตอบคอมเม้นต์สาธารณะหรือไม่ — default=false
+        //    ถ้า Page Token ยังไม่มี pages_manage_engagement scope → ปิด toggle นี้
+        //    เพื่อกัน AI quota เผาเปล่าตอนพยายาม replyToComment แล้ว fail 403
+        'enable_public_comment_reply',
         'comment_reply_template',
         'comment_dm_template',
         'comment_engagement_prompt',
@@ -303,6 +307,8 @@ class FortuneTellingSetting extends Model
         'allow_try_before_buy' => 'boolean',
         'subscription_enabled' => 'boolean',
         'comment_engagement_enabled' => 'boolean',
+        // 🚫 (2026-05-24) Sub-toggle public comment reply (default false)
+        'enable_public_comment_reply' => 'boolean',
         'admin_handover_enabled' => 'boolean',
         'admin_handover_timeout' => 'integer',
         'admin_qa_capture_enabled' => 'boolean',
@@ -433,6 +439,8 @@ class FortuneTellingSetting extends Model
         'require_registration' => false,
         'comment_engagement_enabled' => false,
         'comment_engagement_mode' => 'ai',
+        // 🚫 (2026-05-24) Default false — รอ App Review อนุมัติ pages_manage_engagement
+        'enable_public_comment_reply' => false,
         // LINE Settings
         'line_enabled' => false,
         'line_flex_primary_color' => '#6B46C1',
@@ -1219,6 +1227,20 @@ EOT;
     public function getCommentEngagementMode(): string
     {
         return $this->comment_engagement_mode ?? 'ai';
+    }
+
+    /**
+     * 🚫 (2026-05-24) ตรวจสอบว่าเปิดตอบคอมเม้นต์สาธารณะหรือไม่
+     *
+     * Default: false — รอ Facebook App Review อนุมัติ pages_manage_engagement scope ก่อน
+     *
+     * เมื่อ false: ProcessCommentEngagement skip pattern match + AI gen + replyToComment + reactToComment
+     *              แต่ยังส่ง DM ตามปกติ (Page Messaging ใช้ scope แยก)
+     * เมื่อ true: ทำงานครบทุก step (สำหรับเมื่อ App Review approved แล้ว)
+     */
+    public function isPublicCommentReplyEnabled(): bool
+    {
+        return (bool) ($this->enable_public_comment_reply ?? false);
     }
 
     /**
