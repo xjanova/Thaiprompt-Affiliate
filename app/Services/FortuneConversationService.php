@@ -1890,21 +1890,28 @@ class FortuneConversationService
                             $freeEnabled = $this->settings->isFreeReadingEnabled();
 
                             $msg = "🎂 เห็นวันเกิด {$formattedDate} แล้วนะ\n\n";
+                            $celticEnabledBd = (bool) ($this->settings->enable_celtic_cross ?? false);
                             if ($deepEnabled) {
                                 $price = (int) $this->getDeepReadingPrice();
                                 $msg .= "💎 อยากให้หมอดูดวงเชิงลึกให้ไหม? (ค่าครู {$price} บาท)\n\n"
                                     .'👇 กดปุ่มด้านล่าง';
+                            } elseif ($celticEnabledBd) {
+                                // 🌙 (2026-05-24) Deep off + Celtic on → offer Celtic
+                                $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+                                $msg .= "🔮 อยากให้หมอดูดวง Celtic Cross 10 ใบให้ไหม? ({$celticPrice} บาท)\n\n"
+                                    .'👇 กดปุ่มด้านล่าง';
                             } elseif ($freeEnabled) {
                                 $msg .= "🔮 อยากให้หมอดูดวงจากวันเกิดนี้ไหม?\n👇 กดปุ่มด้านล่าง";
                             } else {
-                                $msg .= '🙏 ขณะนี้บริการปิดชั่วคราว';
+                                $msg .= "🌙 หมอจันทราพักรับคำถามชั่วคราวค่ะ\n"
+                                    .'เดี๋ยวกลับมาดูดวงให้ใหม่นะคะ ขอบคุณมาก ✨';
                             }
 
                             return [
                                 'action' => 'birthdate_detected',
                                 'message' => $msg,
                                 'reading' => null,
-                                'show_quick_replies' => ($deepEnabled || $freeEnabled),
+                                'show_quick_replies' => ($deepEnabled || $celticEnabledBd || $freeEnabled),
                                 'pending_birthdate' => $standaloneBirthdate,
                             ];
                         }
@@ -3696,6 +3703,20 @@ class FortuneConversationService
             return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
         }
 
+        // ⚡ FAST PATH 3 (2026-05-24) ปิด free + ปิด deep + เปิด celtic → redirect celtic ตรง
+        //   เคสจริง (screenshot ลูกค้าณัฐวรรณ): บอททักทายแล้วลูกค้าตอบ "เงินน้อยค่ะ"
+        //                                       → fall through มาที่นี่ → เจอ "บริการปิดชั่วคราว"
+        //                                       ทั้งที่ Celtic 99฿ ยังเปิด → ลูกค้าเข้าใจผิดว่า "ปิดเพจ" → จากไป
+        //   FIX: redirect ไป Celtic flow เลย (เหมือน FAST PATH 2 ทำกับ Deep)
+        if (! $freeEnabled && ! $deepEnabled && $celticEnabled) {
+            Log::info('Fortune: ปิด free+deep + เปิด celtic → redirect celtic flow ตรง', [
+                'facebook_user_id' => $facebookUserId,
+                'original_message' => mb_substr($messageText, 0, 50),
+            ]);
+
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $messageText);
+        }
+
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
         $userCredit = FortuneUserCredit::findByUser($facebookUserId);
 
@@ -3764,10 +3785,12 @@ class FortuneConversationService
         $message = "🔮 สวัสดี คุณ{$name} ✨\n\n";
         $message .= "เพจดูดวงหมอจันทรายินดีต้อนรับ\n\n";
 
-        // Edge case: ปิดทั้ง free และ deep → แจ้งสั้นๆ ว่าปิดชั่วคราว
+        // Edge case: ปิดทั้ง free, deep และ celtic → แจ้งอ่อนโยน (ไม่ดูเหมือนไล่ลูกค้า)
+        //   หมายเหตุ: FAST PATH 3 ดัก celtic-on case ไปแล้ว — ที่นี่คือกรณีปิดหมดจริงๆ
         if (! $freeEnabled) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
-            $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
+            $message .= "🌙 หมอจันทราพักรับคำถามชั่วคราวค่ะ\n"
+                .'เดี๋ยวกลับมาดูดวงให้ใหม่นะคะ ขอบคุณมาก ✨';
 
             return [
                 'action' => 'awaiting_confirmation',
@@ -3803,6 +3826,13 @@ class FortuneConversationService
                 $message .= '💎 *ดูดวงโดย'.$this->settings->getFortuneBrandName()." — {$qCount} คำถาม {$price} บาท*\n";
                 $message .= "📌 วิเคราะห์จากดาวเจ้าชนะ + ไพ่ยิปซีที่จิตเจ้าชะตาเลือก ไม่ยกเมฆ\n";
                 $message .= "📌 พร้อมสีมงคล เลขมงคล ฤกษ์ดี\n\n";
+                $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
+            } elseif ($celticEnabled) {
+                // 🌙 (2026-05-24) Deep off + Celtic on → offer Celtic แทน "กลับมาใหม่พรุ่งนี้"
+                $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+                $message .= "🔮 *Celtic Cross 10 ใบ — {$celticPrice} บาท*\n";
+                $message .= "📌 ไพ่ 10 ใบครอบคลุมรอบด้าน — งาน ความรัก สุขภาพ\n";
+                $message .= "📌 ถามได้สูงสุด 5 คำถามภายใน 15 นาที\n\n";
                 $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
             } else {
                 $message .= 'กลับมาใหม่พรุ่งนี้ได้ 🙏';
@@ -9091,7 +9121,8 @@ class FortuneConversationService
         }
 
         return "🔮 *ระบบดูดวงโดย{$brandName}*\n\n".
-               '🙏 ขณะนี้บริการปิดชั่วคราว';
+               "🌙 หมอจันทราพักรับคำถามชั่วคราวค่ะ\n".
+               'เดี๋ยวกลับมาดูดวงให้ใหม่นะคะ ขอบคุณมาก ✨';
     }
 
     /**
@@ -10167,10 +10198,20 @@ class FortuneConversationService
             $message .= "5️⃣ โอนเงินตามยอดในบิล\n\n";
 
             $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
+        } elseif ((bool) ($this->settings->enable_celtic_cross ?? false)) {
+            // 🌙 (2026-05-24) Deep off + Celtic on → offer Celtic แทนข้อความปิด
+            $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+            $message .= "═══════════════════════\n";
+            $message .= "🔮 *Celtic Cross 10 ใบ — {$celticPrice} บาท*\n";
+            $message .= "═══════════════════════\n\n";
+            $message .= "📌 ไพ่ 10 ใบครอบคลุมรอบด้าน\n";
+            $message .= "📌 ถามได้สูงสุด 5 คำถามภายใน 15 นาที\n\n";
+            $message .= 'กดปุ่มด้านล่างเพื่อเริ่ม 👇';
         } elseif ($freeEnabled) {
             $message .= 'กลับมาใหม่พรุ่งนี้ได้ 🙏';
         } else {
-            $message .= '🙏 ขณะนี้บริการปิดชั่วคราว';
+            $message .= "🌙 หมอจันทราพักรับคำถามชั่วคราวค่ะ\n".
+                'เดี๋ยวกลับมาดูดวงให้ใหม่นะคะ ขอบคุณมาก ✨';
         }
 
         return $message;
