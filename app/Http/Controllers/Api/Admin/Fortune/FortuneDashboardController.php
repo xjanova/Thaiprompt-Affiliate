@@ -259,7 +259,7 @@ class FortuneDashboardController extends Controller
         $commentDms = [];
         if (Schema::hasTable('fortune_comment_engagements')) {
             $commentDms = DB::table('fortune_comment_engagements')
-                ->select('id', 'facebook_user_id', 'facebook_post_id', 'comment_text', 'comment_reply', 'dm_message', 'engaged_at')
+                ->select('id', 'facebook_user_id', 'facebook_post_id', 'facebook_comment_id', 'comment_text', 'comment_reply', 'dm_message', 'engaged_at')
                 ->where('engaged_at', '>=', $now->copy()->subDay())
                 ->orderByDesc('engaged_at')
                 ->limit(20)
@@ -268,6 +268,7 @@ class FortuneDashboardController extends Controller
                     'id' => (int) $r->id,
                     'fb_user_id' => $r->facebook_user_id,
                     'fb_post_id' => $r->facebook_post_id,
+                    'fb_comment_id' => $r->facebook_comment_id,
                     'comment_text' => mb_substr((string) ($r->comment_text ?? ''), 0, 140),
                     'comment_reply' => mb_substr((string) ($r->comment_reply ?? ''), 0, 140),
                     'dm_message' => mb_substr((string) ($r->dm_message ?? ''), 0, 160),
