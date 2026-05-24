@@ -41,6 +41,27 @@
         </div>
     </div>
 
+    {{-- Flash messages (session-based — สำหรับ ban redirect) --}}
+    @if (session('success'))
+        <div class="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200 text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if ($errors->any())
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200">
+            <ul class="list-disc list-inside text-sm">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {{-- LEFT: Takeover Control Panel --}}
         <div class="lg:col-span-1 space-y-4">
@@ -157,6 +178,56 @@
                     @endif
                 </div>
                 @endif
+            </div>
+
+            {{-- 🚫 (2026-05-23) Ban Danger Zone — แบน user คนนี้ (ไม่ต้องไปหน้า /admin/fortune/bans) --}}
+            <div x-data="{ banDuration: 'permanent' }"
+                 class="bg-white dark:bg-gray-800 rounded-xl shadow border-2 border-red-200 dark:border-red-900 overflow-hidden">
+                <div class="bg-red-50 dark:bg-red-900/30 px-5 py-3 border-b border-red-200 dark:border-red-900">
+                    <h3 class="font-semibold text-red-900 dark:text-red-200 flex items-center gap-2">
+                        🚫 ระบบคุก — แบน user คนนี้
+                    </h3>
+                    <p class="text-xs text-red-700 dark:text-red-300 mt-0.5">
+                        บอทจะไม่ตอบ user คนนี้อีก (admin ยังคุยผ่าน Page Inbox / LINE OA ได้)
+                    </p>
+                </div>
+                <form method="POST" action="{{ route('admin.fortune.takeover.ban', $reading) }}"
+                      onsubmit="return confirm('ยืนยันการแบน user คนนี้?');">
+                    @csrf
+                    <input type="hidden" name="from" value="show">
+
+                    <div class="p-5 space-y-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                ระยะเวลาแบน
+                            </label>
+                            <div class="grid grid-cols-1 gap-1.5">
+                                <template x-for="opt in [
+                                    {value: '10m', label: '⏱ 10 นาที — เตือนสั้นๆ', danger: false},
+                                    {value: '1h', label: '⏰ 1 ชั่วโมง', danger: false},
+                                    {value: '24h', label: '📅 24 ชั่วโมง', danger: false},
+                                    {value: '7d', label: '🗓️ 7 วัน', danger: false},
+                                    {value: 'permanent', label: '🔒 ถาวร', danger: true}
+                                ]" :key="opt.value">
+                                    <label class="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 cursor-pointer transition text-sm"
+                                           :class="banDuration === opt.value
+                                                ? 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-500'
+                                                : 'border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'">
+                                        <input type="radio" name="duration" :value="opt.value" x-model="banDuration"
+                                               class="text-red-600 focus:ring-red-500">
+                                        <span :class="opt.danger ? 'font-semibold text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'"
+                                              x-text="opt.label"></span>
+                                    </label>
+                                </template>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                                class="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">
+                            🚫 ยืนยันแบน user คนนี้
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 

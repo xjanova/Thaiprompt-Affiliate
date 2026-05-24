@@ -3,7 +3,38 @@
 @section('title', 'เทคโอเวอร์ — ระบบดูดวง')
 
 @section('content')
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto px-4 py-6"
+     x-data="{
+        showBan: false,
+        banForm: { id: null, name: '', platform: 'facebook', userId: '', duration: 'permanent' },
+        openBan(id, name, platform, userId) {
+            this.banForm = { id: id, name: name || '(ไม่ระบุชื่อ)', platform: platform, userId: userId, duration: 'permanent' };
+            this.showBan = true;
+        },
+        closeBan() { this.showBan = false; }
+     }">
+
+    {{-- Flash messages --}}
+    @if (session('success'))
+        <div class="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-lg text-emerald-800 dark:text-emerald-200 text-sm">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if (session('error'))
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200 text-sm">
+            {{ session('error') }}
+        </div>
+    @endif
+    @if ($errors->any())
+        <div class="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-200">
+            <ul class="list-disc list-inside text-sm">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     {{-- Page Header --}}
     <div class="mb-6">
         <div class="flex items-center justify-between flex-wrap gap-3">
@@ -175,10 +206,19 @@
                                 {{ $reading->updated_at->diffForHumans() }}
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <a href="{{ route('admin.fortune.takeover.show', $reading) }}"
-                                   class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition">
-                                    เปิดคุย →
-                                </a>
+                                <div class="inline-flex items-center gap-1.5 justify-end">
+                                    <a href="{{ route('admin.fortune.takeover.show', $reading) }}"
+                                       class="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600 text-white rounded-lg text-xs font-medium transition">
+                                        เปิดคุย →
+                                    </a>
+                                    {{-- 🚫 (2026-05-23) ปุ่มแบนด่วน — เปิด modal เลือก duration --}}
+                                    <button type="button"
+                                            @click="openBan({{ $reading->id }}, @js($reading->facebook_user_name), @js($reading->platform ?? 'facebook'), @js($reading->platform_user_id ?: $reading->facebook_user_id))"
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white rounded-lg text-xs font-medium transition"
+                                            title="แบน user คนนี้">
+                                        🚫
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -197,6 +237,83 @@
     {{-- Pagination --}}
     <div class="mt-4">
         {{ $readings->links() }}
+    </div>
+
+    {{-- 🚫 (2026-05-23) Modal แบน user — เลือก preset duration --}}
+    <div x-show="showBan" x-cloak
+         x-transition.opacity
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60"
+         @keydown.escape.window="closeBan()"
+         @click.self="closeBan()">
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full overflow-hidden"
+             x-transition.scale.95.duration.150ms>
+            {{-- Header --}}
+            <div class="bg-gradient-to-r from-red-600 to-red-700 px-5 py-4 text-white">
+                <h3 class="text-lg font-bold flex items-center gap-2">
+                    🚫 แบน user คนนี้
+                </h3>
+                <p class="text-xs text-red-100 mt-1">
+                    บอทจะไม่ตอบ user คนนี้อีก (admin ยังคุยผ่าน Page Inbox / LINE OA ได้)
+                </p>
+            </div>
+
+            {{-- Body --}}
+            <form method="POST" :action="'{{ url('admin/fortune/takeover') }}/' + banForm.id + '/ban'">
+                @csrf
+                <input type="hidden" name="from" value="index">
+
+                <div class="p-5 space-y-4">
+                    {{-- User info --}}
+                    <div class="bg-gray-50 dark:bg-gray-900/50 rounded-lg p-3 text-sm">
+                        <div class="font-semibold text-gray-900 dark:text-white" x-text="banForm.name"></div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5 flex items-center gap-1.5 flex-wrap">
+                            <span x-text="banForm.platform === 'line' ? '💚 LINE' : '🔵 Facebook'"></span>
+                            <span class="opacity-70">•</span>
+                            <span x-text="banForm.userId"></span>
+                        </div>
+                    </div>
+
+                    {{-- Duration preset --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                            ระยะเวลาแบน
+                        </label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <template x-for="opt in [
+                                {value: '10m', label: '⏱ 10 นาที — เตือนสั้นๆ', danger: false},
+                                {value: '1h', label: '⏰ 1 ชั่วโมง', danger: false},
+                                {value: '24h', label: '📅 24 ชั่วโมง', danger: false},
+                                {value: '7d', label: '🗓️ 7 วัน', danger: false},
+                                {value: 'permanent', label: '🔒 ถาวร', danger: true}
+                            ]" :key="opt.value">
+                                <label class="flex items-center gap-2.5 px-3 py-2 rounded-lg border-2 cursor-pointer transition"
+                                       :class="banForm.duration === opt.value
+                                            ? 'border-red-500 bg-red-50 dark:bg-red-900/30 dark:border-red-500'
+                                            : 'border-gray-200 dark:border-gray-700 hover:border-red-300 dark:hover:border-red-700'">
+                                    <input type="radio" name="duration" :value="opt.value" x-model="banForm.duration"
+                                           class="text-red-600 focus:ring-red-500">
+                                    <span class="text-sm"
+                                          :class="opt.danger ? 'font-semibold text-red-700 dark:text-red-300' : 'text-gray-900 dark:text-gray-100'"
+                                          x-text="opt.label"></span>
+                                </label>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="bg-gray-50 dark:bg-gray-900/50 px-5 py-3 flex items-center justify-end gap-2">
+                    <button type="button" @click="closeBan()"
+                            class="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg text-sm font-medium transition">
+                        ยกเลิก
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold transition">
+                        🚫 ยืนยันแบน
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection

@@ -7,9 +7,11 @@ use App\Models\FortuneReading;
 use App\Models\FortuneTakeoverLog;
 use App\Models\FortuneTellingSetting;
 use App\Services\FacebookWebhookService;
+use App\Services\FortuneBanService;
 use App\Services\FortuneTakeoverService;
 use App\Services\LineFortuneService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -239,6 +241,92 @@ class FortuneTakeoverController extends Controller
                 'message_preview' => mb_substr($message, 0, 100),
             ],
         ]);
+    }
+
+    /**
+     * 🚫 (2026-05-23) แบน user จากหน้า takeover (list/detail) ในคลิกเดียว
+     *
+     * เป้าหมาย: admin กดปุ่ม "🚫 แบน" ที่ตาราง/หน้า detail → เลือก preset duration → POST ที่ route นี้
+     * ดึง platform + user_id + display_name จาก $reading อัตโนมัติ (ไม่ต้อง copy PSID เอง)
+     * รองรับทั้งเคสที่ลูกค้ายังไม่สร้างบิล (status=new) เพราะ FortuneReading ถูกสร้างตั้งแต่ first webhook
+     *
+     * Duration preset:
+     *   - 10m  = 10 นาที (เตือนระยะสั้น)
+     *   - 1h   = 1 ชั่วโมง
+     *   - 24h  = 1 วัน
+     *   - 7d   = 7 วัน
+     *   - permanent = ถาวร (null minutes)
+     *
+     * @param  Request  $request  duration (required) + from (index|show)
+     * @param  FortuneReading  $reading  reading ที่กำลังแชทอยู่
+     * @param  FortuneBanService  $banService  injected service
+     */
+    public function ban(Request $request, FortuneReading $reading, FortuneBanService $banService): RedirectResponse
+    {
+        $validated = $request->validate([
+            'duration' => 'required|in:10m,1h,24h,7d,permanent',
+            'from' => 'nullable|in:index,show',
+        ]);
+
+        // แปลง preset → นาที (null = ถาวร)
+        $minutes = match ($validated['duration']) {
+            '10m' => 10,
+            '1h' => 60,
+            '24h' => 1440,
+            '7d' => 10080,
+            'permanent' => null,
+        };
+
+        // ดึง platform + user_id จาก reading
+        // FB: facebook_user_id (PSID), LINE: platform_user_id
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $platform === 'facebook'
+            ? ($reading->facebook_user_id ?: $reading->platform_user_id)
+            : ($reading->platform_user_id ?: $reading->facebook_user_id);
+
+        if (empty($userId)) {
+            return redirect()
+                ->back()
+                ->with('error', '❌ ไม่พบ user ID ของบทสนทนานี้ — แบนไม่ได้');
+        }
+
+        // เรียก service แบน (ใช้ updateOrCreate — กรณีถูกแบนอยู่แล้วจะทับด้วย duration ใหม่)
+        $ban = $banService->ban(
+            platform: $platform,
+            platformUserId: $userId,
+            minutes: $minutes,
+            reason: 'แบนจากหน้า Takeover (Reading #' . $reading->id . ')',
+            adminId: Auth::id(),
+            displayName: $reading->facebook_user_name,
+        );
+
+        Log::info('🚫 Admin: แบน user จากหน้า takeover', [
+            'ban_id' => $ban->id,
+            'reading_id' => $reading->id,
+            'platform' => $platform,
+            'user_id' => $userId,
+            'duration' => $validated['duration'],
+            'admin_id' => Auth::id(),
+        ]);
+
+        // 🎯 ถ้า reading กำลังถูก takeover อยู่ → resume AI ก่อน
+        //   (ทำเพื่อไม่ให้ takeover timer ค้างหลังจาก user ถูกแบน — บอทไม่คุยอยู่แล้ว ไม่ต้อง takeover)
+        if ($reading->isAdminTakenOver()) {
+            $this->takeoverService->resume($reading, Auth::id(), false);
+        }
+
+        // ข้อความ flash
+        $name = $reading->facebook_user_name ?: $userId;
+        $durationText = $ban->isPermanent() ? 'ถาวร' : $ban->remainingHumanReadable();
+        $msg = "🚫 แบน {$name} เรียบร้อย ({$durationText})";
+
+        // redirect กลับตาม from — default = index
+        $from = $validated['from'] ?? 'index';
+        $route = $from === 'show'
+            ? route('admin.fortune.takeover.show', $reading)
+            : route('admin.fortune.takeover.index');
+
+        return redirect()->to($route)->with('success', $msg);
     }
 
     /**

@@ -4117,6 +4117,8 @@ Route::prefix('fortune')->name('fortune.')->group(function () {
         Route::post('/{reading}/resume', [FortuneTakeoverController::class, 'resume'])->name('resume');
         Route::post('/{reading}/extend', [FortuneTakeoverController::class, 'extend'])->name('extend');
         Route::post('/{reading}/send-message', [FortuneTakeoverController::class, 'sendMessage'])->name('send-message');
+        // 🚫 (2026-05-23) แบน user จากหน้า takeover — กดที่ชื่อคนกำลังแชท แบนได้แม้ยังไม่สร้างบิล
+        Route::post('/{reading}/ban', [FortuneTakeoverController::class, 'ban'])->name('ban');
     });
 
     // 🚫 (2026-05-22) ระบบคุก (Ban/Jail) — ห้ามบอทคุยกับ user ที่ไม่เหมาะสม
