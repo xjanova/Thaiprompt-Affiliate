@@ -33,6 +33,10 @@ class FortuneReadingResource extends JsonResource
             'reading_type' => $this->reading_type,
             'ai_response' => $this->ai_response,
             'reading_image_url' => $this->reading_image_url,
+            // 📸 (2026-05-24) Payment slip / customer-sent image. Warroom /chat
+            //    surfaces this as an image bubble so the operator can see the
+            //    slip before pressing "✓ อนุมัติ 39/99".
+            'user_image_url' => $this->user_image_url,
 
             // Payment
             'is_paid' => (bool) $this->is_paid,

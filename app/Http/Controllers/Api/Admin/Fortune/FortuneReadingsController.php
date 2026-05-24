@@ -121,6 +121,13 @@ class FortuneReadingsController extends Controller
      * Admin override: mark a reading as paid without an SMS match. Updates
      * `is_paid` + `amount_paid` + `paid_at`. Does NOT touch payment_transactions
      * (those have their own lifecycle managed by PaymentService).
+     *
+     * 💸 (2026-05-24) Triggers the fortune-telling flow after marking paid:
+     *   - Deep 39฿ → ProcessDeepFortuneReadingJob (async — AI gen + send to FB/LINE)
+     *   - Celtic 99฿ → SmsPaymentService::handleCelticPaymentMatched (same path
+     *     as the SMS auto-match flow, keeps Celtic state machine consistent)
+     * Previously only flipped is_paid → customer never received their reading
+     * when warroom admin approved manually. Now mirrors the Stripe webhook flow.
      */
     public function markPaid(FortuneReading $reading, Request $request): JsonResponse
     {
@@ -148,11 +155,79 @@ class FortuneReadingsController extends Controller
             'note' => $data['note'] ?? null,
         ]);
 
+        // 💸 Kick off the fortune-telling flow so the customer actually receives
+        //    their reading. Failures here don't roll back the mark-paid — the
+        //    customer is paid in DB; if dispatch fails the operator can retry
+        //    from /workers or by /chat send. Logged at error level for ops.
+        $this->triggerFortuneFlowAfterPayment($reading->fresh());
+
         return response()->json([
             'success' => true,
             'data' => new FortuneReadingResource($reading->fresh()),
-            'message' => 'มาร์คจ่ายเรียบร้อย',
+            'message' => 'มาร์คจ่ายเรียบร้อย — ส่งคำทำนายให้ลูกค้าแล้ว',
         ]);
+    }
+
+    /**
+     * 💸 (2026-05-24) Mirror of FortuneStripeWebhookController::triggerFortuneFlow
+     * for the admin manual-approve path. Kept inline (not a shared service) to
+     * avoid threading a new dependency through the controller — the logic is
+     * 30 lines and only used in two places. If a third call site appears,
+     * extract to App\Services\FortunePaymentApprovalService.
+     */
+    protected function triggerFortuneFlowAfterPayment(FortuneReading $reading): void
+    {
+        // Idempotency — if the reading is already in a downstream state, skip.
+        // Same guard as the Stripe webhook so re-triggering is safe.
+        if (in_array($reading->conversation_status, [
+            FortuneReading::STATUS_PAID,
+            FortuneReading::STATUS_COMPLETED,
+            FortuneReading::STATUS_CELTIC_PICKING,
+            FortuneReading::STATUS_CELTIC_AWAITING_QUESTION,
+            FortuneReading::STATUS_CELTIC_GENERATING,
+            FortuneReading::STATUS_CELTIC_QA_PROMPT,
+        ], true)) {
+            Log::info('FortuneReading: mark-paid skip trigger — already in flight', [
+                'reading_id' => $reading->id,
+                'status' => $reading->conversation_status,
+            ]);
+            return;
+        }
+
+        $reading->update(['conversation_status' => FortuneReading::STATUS_PAID]);
+
+        $platform = $reading->platform ?? 'facebook';
+        $userId = $reading->facebook_user_id ?? $reading->platform_user_id ?? '';
+
+        try {
+            if ($reading->reading_type === FortuneReading::READING_TYPE_CELTIC_CROSS) {
+                // Celtic uses the SMS service path so Celtic state machine
+                // stays consistent with the auto-match flow.
+                app(\App\Services\SmsPaymentService::class)->handleCelticPaymentMatched(
+                    $reading, null, $platform, $userId, (float) $reading->amount_paid
+                );
+                Log::info('FortuneReading: Celtic flow triggered after admin mark-paid', [
+                    'reading_id' => $reading->id,
+                ]);
+            } else {
+                // Deep/basic — async job that runs AI gen + push to FB/LINE.
+                \App\Jobs\ProcessDeepFortuneReadingJob::dispatchSmart(
+                    $reading->id,
+                    /* notificationId: */ null,
+                    $platform,
+                    $userId
+                );
+                Log::info('FortuneReading: Deep job dispatched after admin mark-paid', [
+                    'reading_id' => $reading->id,
+                    'platform' => $platform,
+                ]);
+            }
+        } catch (\Throwable $e) {
+            Log::error('FortuneReading: trigger fortune flow failed after admin mark-paid', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -255,6 +330,21 @@ class FortuneReadingsController extends Controller
                 'id' => $mid++,
                 'role' => 'user',
                 'text' => (string) $q,
+                'ts' => optional($reading->created_at)->toIso8601String(),
+            ];
+        }
+
+        // 📸 (2026-05-24) Customer-sent image (payment slip or fortune-question
+        //    picture). Surface as a dedicated user message so the warroom
+        //    operator can SEE the slip before approving — previously was
+        //    invisible to admins on /chat.
+        if (! empty($reading->user_image_url)) {
+            $isSlip = $reading->is_paid || ! empty($reading->bill_reference);
+            $messages[] = [
+                'id' => $mid++,
+                'role' => 'user',
+                'text' => $isSlip ? '📎 ส่งสลิปการโอน' : '📷 ส่งรูปภาพ',
+                'image_url' => (string) $reading->user_image_url,
                 'ts' => optional($reading->created_at)->toIso8601String(),
             ];
         }
