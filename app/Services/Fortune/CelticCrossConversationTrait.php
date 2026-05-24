@@ -1982,16 +1982,20 @@ trait CelticCrossConversationTrait
         //   ใหม่: ส่งคำตอบสุดท้ายก่อน → แล้วต่อด้วย Grand Finale
         if (! empty($grandFinale)) {
             $finalAnswerSection = '';
-            if (! empty($aiMessage) && in_array($reason, ['max_questions_reached', 'time_expired', 'idle'], true)) {
+            // 🌙 (2026-05-24) เพิ่ม customer_said_done ใน combine list — user pivot
+            //   "พอใจก่อน ก็สรุป" → ต้องได้ Grand Finale เต็มรูปแบบเหมือนครบ 5Q/หมดเวลา
+            if (! empty($aiMessage) && in_array($reason, ['max_questions_reached', 'time_expired', 'idle', 'customer_said_done'], true)) {
                 $finalAnswerSection = "🎴 *คำทำนายข้อสุดท้ายของเจ้าชะตา:*\n\n"
                     .trim($aiMessage)."\n\n"
                     .str_repeat('━', 17)."\n\n";
             }
 
             // 🌙 (2026-05-23 v3) เหตุผลการจบ — บอกชัดว่าครบกติกาแล้ว (5 คำถาม / 15 นาที)
+            //   🌙 (2026-05-24) เพิ่ม customer_said_done — บอกชัดว่าลูกค้าขอจบเอง
             $reasonNotice = match ($reason) {
                 'max_questions_reached' => "✅ *ครบ ".max(1, $maxQ)." คำถามตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
                 'time_expired' => "⏰ *ครบ {$qaWindow} นาทีตามกติกาแล้ว* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
+                'customer_said_done' => "💝 *เจ้าชะตาขอจบรอบนี้* — แม่หมอส่งบทสรุปท้ายให้ค่ะ\n\n",
                 default => '',
             };
 
@@ -2171,34 +2175,51 @@ trait CelticCrossConversationTrait
      */
     protected function handleCelticEndConfirmation(FortuneReading $reading, string $messageText): ?array
     {
-        $cacheKey = "celtic_pending_end_confirm:{$reading->id}";
-        $pending = Cache::has($cacheKey);
+        // 🔥 (2026-05-24) ลบ 2-step confirm — user pivot: "พอใจก่อน ก็สรุปเลย ไม่ต้องรอกดปุ่ม"
+        //   เดิม: keyword "พอ/จบ" → ASK confirm + Quick Reply ใช่/ไม่ → รอกด ✅ → endCelticSession
+        //   ใหม่: keyword end → endCelticSession ทันที (combine final answer + Grand Finale)
+        //   ตัด "ขอบคุณ"/"thanks" ออก — false positive สูง (ลูกค้าขอบคุณแล้วถามต่อ)
+        //   เก็บ NO keyword + clear legacy pending cache สำหรับ user ที่ติดจากเวอร์ชันก่อน
 
-        // 1️⃣ มี pending + ลูกค้ายืนยัน → จบ session จริง
-        $yesKeywords = [
-            'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'yes', 'ok', 'okay', 'โอเค', 'ยืนยัน',
-            'ส่งสรุป', 'ส่งสรุปเลย', 'สรุปเลย', 'สรุป', 'จบเลย', 'จบ',
-            'confirm', 'ส่งเลย', 'CELTIC_END_YES',
+        $cacheKey = "celtic_pending_end_confirm:{$reading->id}";
+        $hadPending = Cache::has($cacheKey);
+
+        // 🔚 End keywords — explicit "เลิก/พอ/จบ/ส่งสรุป" → endCelticSession ทันที
+        $endKeywords = [
+            // ปุ่ม / postback (ทุกแบบ → end ทันที)
+            'CELTIC_END_YES', 'CELTIC_END_ASK', 'CELTIC_END',
+            // เลิก / ยุติ
+            'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
+            'เลิกทำนายและสรุปผล', 'เลิกทำนาย', 'เลิก',
+            'จบการทำนาย', 'จบเลย', 'จบ',
+            // พอใจ / พอแล้ว
+            'พอแค่นี้', 'พอแล้ว', 'พอ', 'หยุด', 'stop',
+            // ขอสรุป
+            'ส่งสรุป', 'ส่งสรุปเลย', 'สรุปเลย', 'สรุป',
+            // legacy YES ที่ลูกค้าอาจกดจาก confirm prompt เก่า
+            'ใช่ ส่งสรุปเลย', 'ส่งเลย',
         ];
-        if ($pending && $this->matchesExactKeyword($messageText, $yesKeywords)) {
-            Cache::forget($cacheKey);
-            Log::info('Celtic: end_confirm YES → endCelticSession', [
+
+        if ($this->matchesExactKeyword($messageText, $endKeywords)) {
+            Cache::forget($cacheKey); // clear legacy pending if any
+            Log::info('Celtic: end keyword → endCelticSession ทันที (no confirm)', [
                 'reading_id' => $reading->id,
                 'message' => mb_substr($messageText, 0, 50),
+                'had_legacy_pending' => $hadPending,
             ]);
 
             return $this->endCelticSession($reading, 'customer_said_done');
         }
 
-        // 2️⃣ มี pending + ลูกค้ายกเลิก → กลับ Q&A normal
+        // 🔄 NO keyword — เก็บไว้รองรับ user ที่กด "ขอคุยต่อ" จาก confirm prompt เก่า
+        //   หลังจาก deploy แล้วระบบไม่ส่ง confirm prompt อีก → keyword นี้แทบไม่มี trigger
         $noKeywords = [
-            'ไม่', 'ไม่ค่ะ', 'ไม่ครับ', 'no', 'ขอคุยต่อ', 'คุยต่อ', 'ขอต่อ',
-            'ขออีก', 'อีก', 'ต่อ', 'ไม่ใช่', 'cancel', 'ยกเลิก',
             'CELTIC_END_NO',
+            'ขอคุยต่อ', 'คุยต่อ', 'ขอคุยต่ออีกหน่อย', 'ขออีก',
         ];
-        if ($pending && $this->matchesExactKeyword($messageText, $noKeywords)) {
+        if ($hadPending && $this->matchesExactKeyword($messageText, $noKeywords)) {
             Cache::forget($cacheKey);
-            Log::info('Celtic: end_confirm NO → continue Q&A', [
+            Log::info('Celtic: end_confirm NO (legacy) → continue Q&A', [
                 'reading_id' => $reading->id,
             ]);
 
@@ -2210,44 +2231,9 @@ trait CelticCrossConversationTrait
             ];
         }
 
-        // 3️⃣ ไม่มี pending + ลูกค้าพิมพ์ "ยุติ"/"เลิก"/"จบ" → ส่ง confirm prompt
-        $askEndKeywords = [
-            // legacy keywords (backward compat กับลูกค้าเก่าที่จำได้)
-            'ยุติการทำนาย', 'ยุติทำนาย', 'ยุติ',
-            'พอแค่นี้', 'พอแล้ว', 'พอ', 'หยุด', 'stop',
-            'ขอบคุณ', 'thanks',
-            // 2026-05-23 ปุ่มใหม่
-            'เลิกทำนายและสรุปผล', 'เลิกทำนาย', 'เลิก',
-            'จบการทำนาย',
-            'CELTIC_END_ASK',
-        ];
-        if (! $pending && $this->matchesExactKeyword($messageText, $askEndKeywords)) {
-            Cache::put($cacheKey, true, 120); // TTL 2 นาที
-            Log::info('Celtic: end_confirm ASK → prompt user to confirm', [
-                'reading_id' => $reading->id,
-                'message' => mb_substr($messageText, 0, 50),
-            ]);
-
-            return [
-                'action' => 'celtic_end_confirm',
-                'message' => "📜 *ต้องการให้แม่หมอส่งสรุปผลและจบการทำนายเลยใช่ไหมคะ?*\n\n"
-                    ."🌙 _กดผิดได้ค่ะ — ถ้ายังไม่พร้อมเลือก \"ขอคุยต่อ\"_",
-                'reading' => $reading,
-                'quick_replies' => [
-                    ['content_type' => 'text', 'title' => '✅ ใช่ ส่งสรุปเลย', 'payload' => 'CELTIC_END_YES'],
-                    ['content_type' => 'text', 'title' => '↩️ ขอคุยต่ออีกหน่อย', 'payload' => 'CELTIC_END_NO'],
-                ],
-            ];
-        }
-
-        // 4️⃣ มี pending แต่ตอบอย่างอื่น (เช่น พิมพ์คำถามใหม่) → clear flag + pass through
-        //    ให้ caller (handleCelticAwaitingQuestion) จัดการเป็น Q&A ปกติต่อไป
-        if ($pending) {
+        // อย่างอื่น → ปล่อยให้ caller handle ปกติ (clear legacy pending ถ้ามี)
+        if ($hadPending) {
             Cache::forget($cacheKey);
-            Log::info('Celtic: end_confirm pending — got unrelated message, clear flag + pass through', [
-                'reading_id' => $reading->id,
-                'message' => mb_substr($messageText, 0, 50),
-            ]);
         }
 
         return null;

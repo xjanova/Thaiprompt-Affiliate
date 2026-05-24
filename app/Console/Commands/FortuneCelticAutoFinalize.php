@@ -58,6 +58,11 @@ class FortuneCelticAutoFinalize extends Command
             return 0;
         }
 
+        // 🩹 (2026-05-24) Fix: ดึง max_q เป็น local var ไม่ attach กับ model
+        //   เดิม: $r->settings_max_q = ... → Eloquent dirty-track → save SQL ERROR
+        //         (Column not found: 'settings_max_q') → cron ค้างทุกรอบ ลูกค้าไม่ได้ Grand Finale
+        $maxQDisplay = (int) (FortuneTellingSetting::getSettings()->celtic_cross_max_questions ?? 5);
+
         $this->info("🔍 พบ {$candidates->count()} session ที่จะ finalize:");
         $this->table(
             ['ID', 'User', 'Status', 'Q used', 'Q1 answered', 'Updated'],
@@ -65,7 +70,7 @@ class FortuneCelticAutoFinalize extends Command
                 $r->id,
                 ($r->facebook_user_name ?? '-').' ('.($r->platform ?? '?').')',
                 $r->conversation_status,
-                ($r->celtic_questions_used ?? 0).'/'.((int) ($r->settings_max_q ?? 5)),
+                ($r->celtic_questions_used ?? 0).'/'.$maxQDisplay,
                 $r->celtic_first_answered_at?->diffForHumans() ?? '?',
                 $r->updated_at?->diffForHumans() ?? '?',
             ])->toArray()
@@ -214,10 +219,8 @@ class FortuneCelticAutoFinalize extends Command
 
         $readings = $query->orderBy('updated_at', 'asc')->get();
 
-        // เก็บ max_q ติด session แต่ละ reading (สำหรับ display)
-        foreach ($readings as $r) {
-            $r->settings_max_q = (int) ($settings->celtic_cross_max_questions ?? 5);
-        }
+        // 🩹 (2026-05-24) ลบ block "$r->settings_max_q = ..." — ทำให้ Eloquent save SQL ERROR
+        //   max_q สำหรับ display อยู่ใน handle() แล้ว (local var $maxQDisplay)
 
         return $readings;
     }
