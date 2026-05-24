@@ -280,7 +280,9 @@ You are a Customer Persona Extraction system. Your ONLY job is to analyze custom
     "abusive_tone": true|false,
     "decline_pusher": true|false,
     "scam_victim": true|false,
-    "complaint_prone": true|false
+    "complaint_prone": true|false,
+    "disruptive_troll": true|false,
+    "hostile_superior": true|false
   },
   "topic_tags": ["english-tag-1", "english-tag-2"]
 }
@@ -293,6 +295,10 @@ You are a Customer Persona Extraction system. Your ONLY job is to analyze custom
 - decline_pusher: บอกว่า "ไม่พร้อม/ไว้คราวหน้า/ไม่จ่าย" แล้วยังถามต่อให้ลดราคา/ฟรี
 - scam_victim: เล่าโดนหลอกเงิน/มิจฉาชีพ/กู้เงินแล้วโดนโกง
 - complaint_prone: บ่น/ติ/โกรธบริการ/ผิดหวัง ในข้อความนี้
+- disruptive_troll: มากวนป่วน/เพ้อเจ้อ/เล่าเรื่องเหนือธรรมชาติฟุ้งซ่าน/ส่งข้อความไม่เกี่ยวดูดวง+provoke 3+ turn
+                    (e.g. "เจอผีบอก..." / random one-liners / probing บอท)
+- hostile_superior: โต้แย้งหาเรื่อง/คิดว่ารู้เหนือกว่า/กล่าวหา "หลอก/มั่ว/ปลอม"/philosophical แบบเหยียดบอท
+                    (e.g. "หาแดกง่ายนะ" / "เริ่มมั่วแล้ว" / "ดูที่เจตนานะ" + คำหยาบ)
 
 ⚠️ STICKY: false = ไม่มี evidence ในข้อความนี้ (ไม่ใช่ "ลบ flag")
     System จะไม่ทับ true เดิม → ปลอดภัย flag false ทุกครั้งที่ไม่มี evidence
