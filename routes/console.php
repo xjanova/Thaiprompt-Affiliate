@@ -28,11 +28,11 @@ Artisan::command('inspire', function () {
 
 // ════════════════════════════════════════════════════════════════
 // 💸 (2026-05-14) Bill Reminder — ทวงลูกค้าที่สร้างบิลแล้วยังไม่โอน
-// 🌙 (2026-05-24) ขยาย: ครอบ AWAITING_PAYMENT_METHOD + กระตุ้นภายใน 1 นาทีถ้า idle
+// 🌙 (2026-05-24) ขยาย: ครอบ AWAITING_PAYMENT_METHOD + กระตุ้นภายใน 2 นาทีถ้า idle
 // ════════════════════════════════════════════════════════════════
 // สแกน every minute — 2 จุด:
-//   1) AWAITING_PAYMENT_METHOD อายุ 1-8 นาที (ลูกค้าเห็นปุ่ม QR/บัตร แต่ไม่กด)
-//   2) PENDING_PAYMENT / CELTIC_PENDING_PAYMENT อายุ 1-8 นาที (สร้างบิลแล้วไม่โอน)
+//   1) AWAITING_PAYMENT_METHOD อายุ 2-10 นาที (ลูกค้าเห็นปุ่ม QR/บัตร แต่ไม่กด)
+//   2) PENDING_PAYMENT / CELTIC_PENDING_PAYMENT อายุ 2-10 นาที (สร้างบิลแล้วไม่โอน)
 // → dispatch SendBillReminderJob (AI + RAG admin Q&A few-shot + persona)
 // → mark bill_reminder_sent_at — ส่งครั้งเดียว/บิล (กัน spam)
 //
