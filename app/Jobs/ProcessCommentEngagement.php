@@ -240,9 +240,11 @@ class ProcessCommentEngagement implements ShouldQueue
             // 🖼️ ส่งแบนเนอร์ก่อน text DM (ถ้าเปิดใน admin)
             // 🆕 (2026-05-07) ส่ง comment_id เพื่อใช้ Private Replies endpoint (bypass error 551)
             // 👤 (2026-05-14) ส่งเฉพาะลูกค้าใหม่ — skip ลูกค้าเก่า (ลด mass spam unreachable)
+            // 📸 (2026-05-25) เก็บผล bannerSent เพื่อใช้ตัดสิน partial success ด้านล่าง
+            $bannerSent = false;
             try {
                 $bannerService = new FortuneBannerService($settings);
-                $bannerService->sendBannerThenWait(
+                $bannerSent = (bool) $bannerService->sendBannerThenWait(
                     fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
                     'comment',
                     'facebook',
@@ -257,15 +259,28 @@ class ProcessCommentEngagement implements ShouldQueue
                 'comment_id' => $commentId,
             ]);
 
-            // 5. บันทึก engagement เฉพาะเมื่อ DM ส่งสำเร็จ
-            //    ถ้าส่งไม่สำเร็จ → ไม่ dedupe ลูกค้า ให้ retry ได้ในคอมเม้นต์ถัดไป
-            if (! $dmSent) {
-                Log::warning('❌ DM ไม่ได้ส่งถึงลูกค้า — ไม่สร้าง engagement record (allow retry)', [
+            // 5. บันทึก engagement ถ้า DM text **หรือ** banner image ส่งถึงลูกค้าได้
+            //    📌 (2026-05-25) FB Reels comment_id ใช้ใน Private Reply ได้ครั้งเดียว
+            //       — ถ้าภาพถึง แต่ text fail (#10900) ลูกค้าได้ engagement แล้ว
+            //       ห้าม retry ส่งภาพซ้ำ + ห้ามให้ comment ถัดไปส่งภาพซ้ำ
+            //       ดังนั้นบันทึก engagement record แม้ text fail
+            //    ❌ retry เฉพาะกรณี fail ทั้งภาพและ text (เช่น FB user privacy block จริงๆ)
+            if (! $dmSent && ! $bannerSent) {
+                Log::warning('❌ DM ไม่ได้ส่งถึงลูกค้า (ทั้ง text + banner fail) — ไม่สร้าง engagement record (allow retry)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
                 return;
+            }
+
+            if (! $dmSent && $bannerSent) {
+                // 📸 Partial success — ลูกค้าได้ภาพ แต่ Quick Replies ไม่ถึง (FB race ของ Reels)
+                //    บันทึกไว้กันส่งภาพซ้ำ — Quick Replies จะ recover ตอนลูกค้าตอบ DM ครั้งแรก
+                Log::info('📸 Comment Engagement: partial success (banner OK, text fail) — บันทึก engagement กัน duplicate', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                ]);
             }
 
             // 5.5 👁️ Follow-page prompt — gated ที่ DB (cooldown 7 วัน + skip ถ้าติดตามแล้ว)

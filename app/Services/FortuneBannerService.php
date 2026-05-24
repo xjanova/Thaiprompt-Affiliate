@@ -239,9 +239,12 @@ class FortuneBannerService
             if ($sent) {
                 $banner->recordSend();
 
-                // 🚀 (2026-05-06) ลบ usleep(300ms) — ไม่ block request thread
-                //   FB ส่งภาพ + text ใน same request → ภาพมักมาก่อนอยู่แล้ว
-                //   ถ้ายังเจอ ordering ผิด ค่อยใช้ async queue / scheduled message
+                // 🐌 (2026-05-25) คืน usleep 800ms — แก้ race condition FB Reels
+                //   ปัญหาเดิม (commit 2026-05-06 ลบออก): comment_id ของ Reels ใช้ใน Private Reply
+                //   ได้ครั้งเดียว — ส่งภาพแล้วส่ง text ตามภายใน 1s → FB block (#10900 Activity already replied)
+                //   ส่งผลให้ ~50% ของ comment engagement ลูกค้าได้ภาพแต่ไม่ได้ Quick Replies/CTA
+                //   อยู่ใน queue job แล้ว (tpix-default) ไม่กระทบ request thread → block ได้ปลอดภัย
+                usleep(800000); // 800ms ระหว่างภาพ + text DM
 
                 Log::info('🖼️ Fortune banner sent', [
                     'banner_id' => $banner->id,
