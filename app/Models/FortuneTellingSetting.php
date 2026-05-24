@@ -236,6 +236,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_main_prompt',
         'celtic_cross_followup_prompt',
         'celtic_cross_proactive_enabled',
+        // 🔍 (2026-05-25) Celtic enrichment — AI ถาม clarifying ก่อนทำนายลึก
+        'enable_celtic_enrichment',
         // 📦 (2026-05-20 Phase 4) Message debounce — รอรวมข้อความที่ลูกค้าพิมพ์ติด ๆ
         'message_debounce_seconds',
         // 🎁 Free Card Reading (2026-05-03) — ฟรี 1 ใบ ครั้งแรก/platform
@@ -387,6 +389,7 @@ class FortuneTellingSetting extends Model
         'celtic_cross_max_questions' => 'integer',
         'celtic_cross_qa_window_minutes' => 'integer',
         'celtic_cross_proactive_enabled' => 'boolean',
+        'enable_celtic_enrichment' => 'boolean',
         // 🎁 Free Card Reading (2026-05-03)
         'enable_free_card_reading' => 'boolean',
         // 🌟 Group Invite + Monthly Free Claim (2026-05-04)
@@ -494,6 +497,8 @@ class FortuneTellingSetting extends Model
         'celtic_cross_max_questions' => 5, // (2026-05-23 v3) 5 คำถาม — บังคับ hard cap + บอกกติกาให้ชัด
         'celtic_cross_qa_window_minutes' => 15, // (2026-05-23 v3) 15 นาที — ลดจาก 30
         'celtic_cross_proactive_enabled' => true,
+        // 🔍 (2026-05-25) Celtic enrichment — default true (admin ปิดได้ที่ admin UI)
+        'enable_celtic_enrichment' => true,
         // 🎁 Free Card Reading — ค่าเริ่มต้นเปิด (ลูกค้าใหม่ครั้งแรก/platform ได้สิทธิ์)
         'enable_free_card_reading' => true,
         // 🎙️ (2026-05-08) Voice Summary — ปิดเป็น default (admin เปิด + ตั้ง MiniMax key ก่อน)

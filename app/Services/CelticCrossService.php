@@ -705,11 +705,15 @@ class CelticCrossService
         // 💬 (2026-05-24) Pre-Celtic chat context — บริบทสนทนาก่อนซื้อ
         $preChatContext = $this->buildPreCelticChatContext($reading);
 
+        // 🔍 (2026-05-25) Enrichment directive — AI ถาม clarifying ถ้าคำถาม vague
+        $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
+
         // 🆕 (2026-05-13) User-specified template — แม่หมอจันทราพยากรณ์ Celtic 99฿
         //   user spec: 8 sections (เปิด → ภาพรวม → ความรู้สึกอีกฝ่าย → อุปสรรค → Timeline →
         //               ผลลัพธ์ → คำแนะนำ → สรุปฟันธง → ปิดท้าย)
         //   เน้น: ฟันธง, ไม่กลางๆ, ไม่โลกสวย, เชื่อมโยงไพ่ทุกใบ
         return $preChatContext
+            .$enrichmentDirective
             ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
             ."ภารกิจของคุณ:\n"
             ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
@@ -1075,8 +1079,12 @@ class CelticCrossService
         // 💬 (2026-05-24) Pre-Celtic chat context — บริบทสนทนาก่อนซื้อ
         $preChatContext = $this->buildPreCelticChatContext($reading);
 
+        // 🔍 (2026-05-25) Enrichment directive — AI ถาม clarifying ถ้าคำถาม vague
+        $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
+
         return $personaPrefix
             .$preChatContext
+            .$enrichmentDirective
             ."คุณคือ \"{$brandName}พยากรณ์\" ผู้เชี่ยวชาญไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ)\n\n"
 
             ."ภารกิจของคุณ:\n"
@@ -1539,6 +1547,72 @@ class CelticCrossService
     /**
      * Format ไพ่ทั้ง 10 ใบเป็น text ส่งให้ AI
      */
+    /**
+     * 🔍 (2026-05-25) Enrichment directive — บอก AI ถาม clarifying ก่อนทำนายลึก
+     *
+     * Trigger: ถ้าคำถามลูกค้า "vague" (ดวงรัก/ดวงงาน/ปีนี้เป็นไง)
+     *          + persona ไม่ได้เป็น quiet_listener/mental_fragile/over_emotional
+     *          → AI ตอบ "primer reading 60-70% + clarifying question 1-2 ข้อ"
+     *          → ลูกค้าตอบ → Q2 จะทำนายลึกขึ้น
+     *
+     * Settings gate: enable_celtic_enrichment (default true)
+     *
+     * Risk-aware skip: ถ้า persona มี flag ห้าม → SKIP (ตอบทำนายเต็มทันที)
+     *
+     * NOTE: AI ตัดสินใจเองว่า "vague" คืออะไร — ไม่ pre-classify
+     *       เพื่อลด AI call extra (เร็ว + ถูก) — trust AI judgment
+     */
+    protected function buildEnrichmentDirective(FortuneReading $reading, string $userQuestion): string
+    {
+        // Settings gate
+        if (! (bool) ($this->settings->enable_celtic_enrichment ?? true)) {
+            return '';
+        }
+
+        // Risk-aware skip — ดู persona flags
+        try {
+            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
+            if (! empty($userId)) {
+                $persona = app(CustomerPersonaService::class)->getCached($platform, (string) $userId);
+                if ($persona) {
+                    $skipFlags = ['quiet_listener', 'mental_fragile', 'over_emotional'];
+                    foreach ($skipFlags as $flag) {
+                        if ($persona->hasRiskFlag($flag)) {
+                            // ลูกค้าที่ต้องระวัง → ตอบทำนายตรงทันที ไม่ถามต่อ
+                            return '';
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // persona fail → ไป enrichment ปกติ
+        }
+
+        $qLen = mb_strlen(trim($userQuestion));
+        $qPreview = mb_substr(trim($userQuestion), 0, 100);
+
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🔍 ENRICHMENT GATE — อ่านก่อนทำนาย\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."คำถามของลูกค้า: \"{$qPreview}\"\n"
+            ."ความยาว: {$qLen} ตัวอักษร\n\n"
+            ."ตัดสินใจ:\n"
+            ."• **คำถามชัด** (เช่น \"เขาจะกลับมาหาผมไหม\" / \"ตำแหน่งที่สมัครจะได้ไหม\")\n"
+            ."   → ทำนายเต็มที่ตามโครงสร้างปกติ (8 sections)\n\n"
+            ."• **คำถาม vague** (เช่น \"ดวงรัก\" / \"ดวงการเงิน\" / \"ปีนี้เป็นไง\" / \"ดวงทั่วไป\")\n"
+            ."   **และ** บริบทสนทนาก่อนหน้า ไม่ได้ระบุเรื่องเฉพาะ\n"
+            ."   → **ตอบสั้นแบบ primer 200-300 ตัวอักษร** (ภาพรวมพลังไพ่)\n"
+            ."   → **ลงท้ายด้วยคำถาม clarifying 1-2 ข้อ** ที่ AI อยากรู้เพิ่ม\n"
+            ."     เช่น \"พอจะเล่าให้แม่หมอฟังได้ไหมว่า…\"\n"
+            ."     \"หมอเห็นไพ่บอกถึงเรื่อง X กับ Y — เจ้าชะตาอยากให้ดูเรื่องไหนเป็นพิเศษคะ?\"\n"
+            ."   → ลูกค้าตอบ → คำถามถัดไป AI จะทำนายลึกตรงประเด็นได้\n\n"
+            ."⚠️ ห้ามถาม clarifying ถ้า:\n"
+            ."   • คำถามชัดพอแล้ว\n"
+            ."   • บริบทสนทนาก่อนหน้า ระบุเรื่องเฉพาะแล้ว (เช่น เล่าเรื่องแฟนก่อนแล้ว)\n"
+            ."   • ลูกค้าเคยถามรอบก่อนไปแล้ว (sequence > 1)\n\n";
+    }
+
     /**
      * 💬 (2026-05-24) Pre-Celtic chat context — inject บทสนทนาก่อนซื้อ Celtic เข้า prompt
      *
