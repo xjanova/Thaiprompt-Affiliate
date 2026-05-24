@@ -57,9 +57,14 @@ RESPONSE,
         ]);
 
         // Keyword 2: FAQ - Shipping
+        // 🚫 (2026-05-25) ปิดไว้ — leak เข้า Fortune Bot (category=faq match กับ fortune)
+        //   เคสจริง: ลูกค้าเล่าเรื่องมี "ส่งของออกต่างประเทศ" → trigger shipping template
+        //   user feedback: "ข้อมูลการส่งมาจากไหน อย่ามีสิ"
+        //   FortuneConversationService::checkDatabaseKeywords scan category in (fortune, faq)
+        //   → faq leaks ecommerce templates → wrong response
         LineBotKeyword::create([
             'keyword' => 'shipping',
-            'description' => 'คำถามเกี่ยวกับการจัดส่ง',
+            'description' => 'คำถามเกี่ยวกับการจัดส่ง (DISABLED — leak เข้า Fortune Bot)',
             'trigger_words' => ['shipping', 'จัดส่ง', 'delivery', 'ส่งของ', 'ค่าส่ง', 'ขนส่ง'],
             'response_type' => 'text',
             'response_text' => <<<'RESPONSE'
@@ -84,7 +89,7 @@ RESPONSE,
 RESPONSE,
             'category' => 'faq',
             'priority' => 75,
-            'is_active' => true,
+            'is_active' => false, // 🚫 ปิดเพื่อกัน leak เข้า Fortune Bot
         ]);
 
         // Keyword 3: Support - Payment Issue
