@@ -165,10 +165,14 @@ Route::middleware(['auth:sanctum', 'admin.api'])->group(function () {
         Route::get('/signals', [EveController::class, 'signals'])->name('signals');
     });
 
-    // ── Moderation (Warroom /moderation) ──
+    // ── Moderation (Warroom /moderation + /chat ban badge) ──
     Route::prefix('moderation')->name('api.admin.moderation.')->group(function () {
         Route::get('/suspects', [ModerationController::class, 'suspects'])->name('suspects');
         Route::get('/banned', [ModerationController::class, 'banned'])->name('banned');
+        // 🪪 (2026-05-24) Single-user ban-status lookup powering the /chat
+        //   header badge. Cheap (one cache hit) — safe to poll per active
+        //   thread switch.
+        Route::get('/ban-status', [ModerationController::class, 'banStatus'])->name('ban-status');
         Route::post('/ban', [ModerationController::class, 'ban'])->name('ban');
         Route::post('/unban/{ban}', [ModerationController::class, 'unban'])->name('unban');
         Route::get('/rules', [ModerationController::class, 'rules'])->name('rules');

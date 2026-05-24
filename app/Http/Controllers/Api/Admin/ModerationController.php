@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\FortuneReading;
 use App\Models\FortuneUserBan;
+use App\Services\FortuneBanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -197,38 +198,126 @@ class ModerationController extends Controller
     }
 
     /**
-     * POST /api/admin/moderation/ban
-     * Body: { platform, platform_user_id, display_name?, reason?, banned_until? (ISO8601 or null for permanent) }
+     * GET /api/admin/moderation/ban-status?platform=&platform_user_id=
+     *
+     * Lightweight single-user ban lookup for the Warroom /chat header
+     * badge. Returns the active ban row (if any) so the UI can render
+     * "🚫 ติดแบน — เหลือ N ชั่วโมง" + a "ปลดแบน" button.
+     *
+     * Response:
+     *   { is_banned: true, ban: ModerationBan, remaining_seconds: int|null }
+     *   { is_banned: false, ban: null }
      */
-    public function ban(Request $request): JsonResponse
+    public function banStatus(Request $request): JsonResponse
+    {
+        $data = $request->validate([
+            'platform' => 'required|in:facebook,line',
+            'platform_user_id' => 'required|string|max:255',
+        ]);
+
+        $ban = FortuneUserBan::query()
+            ->forPlatform($data['platform'])
+            ->where('platform_user_id', $data['platform_user_id'])
+            ->first();
+
+        $isActive = $ban && $ban->isActive();
+        $remainingSec = null;
+        if ($isActive && $ban->banned_until) {
+            $remainingSec = max(0, $ban->banned_until->getTimestamp() - now()->getTimestamp());
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'is_banned' => $isActive,
+                'ban' => $ban && $isActive ? [
+                    'id' => $ban->id,
+                    'platform' => $ban->platform,
+                    'platform_user_id' => $ban->platform_user_id,
+                    'display_name' => $ban->display_name,
+                    'reason' => $ban->reason,
+                    'banned_until' => $ban->banned_until?->toIso8601String(),
+                    'is_permanent' => $ban->banned_until === null,
+                    'is_active' => true,
+                    'attempt_count' => (int) ($ban->attempt_count ?? 0),
+                    'notify_count' => (int) ($ban->notify_count ?? 0),
+                    'last_notified_at' => $ban->last_notified_at?->toIso8601String(),
+                    'banned_by' => $ban->banned_by !== null ? [
+                        'id' => (int) $ban->banned_by,
+                        'name' => optional($ban->bannedBy)->name,
+                        'email' => optional($ban->bannedBy)->email,
+                    ] : null,
+                    'created_at' => $ban->created_at?->toIso8601String(),
+                ] : null,
+                'remaining_seconds' => $remainingSec,
+            ],
+        ]);
+    }
+
+    /**
+     * POST /api/admin/moderation/ban
+     * Body: { platform, platform_user_id, display_name?, reason?, minutes? (preset),
+     *         banned_until? (ISO8601 fallback; minutes wins. null = permanent) }
+     */
+    public function ban(Request $request, FortuneBanService $banService): JsonResponse
     {
         $data = $request->validate([
             'platform' => 'required|in:facebook,line',
             'platform_user_id' => 'required|string|max:255',
             'display_name' => 'nullable|string|max:255',
             'reason' => 'nullable|string|max:500',
+            // Either banned_until (ISO) or minutes (duration preset) — minutes wins.
             'banned_until' => 'nullable|date',
+            'minutes' => 'nullable|integer|min:1',
         ]);
 
         $admin = $request->user();
 
-        $ban = FortuneUserBan::updateOrCreate(
-            [
-                'platform' => $data['platform'],
-                'platform_user_id' => $data['platform_user_id'],
-            ],
-            [
-                'display_name' => $data['display_name'] ?? null,
-                'reason' => $data['reason'] ?? 'banned_by_admin',
-                'banned_until' => $data['banned_until'] ?? null,
-                'banned_by' => $admin?->id,
-            ],
+        // 🪪 (2026-05-24) Route through FortuneBanService — bypassing it left
+        //   the webhook ban-cache stale for up to 24h and never reset the
+        //   anti-spam counter. See [[Fortune Bot — ระบบคุก]].
+        $minutes = $data['minutes'] ?? null;
+        if ($minutes === null && ! empty($data['banned_until'])) {
+            // Translate banned_until → minutes-from-now so the service can
+            // recompute and write the canonical timestamp.
+            // 🚨 (2026-05-24) Reject past timestamps — silently treating them
+            //   as "permanent" would let an admin paste a stale form value
+            //   and accidentally lock a user out forever. Caller must pass
+            //   either a future timestamp OR omit it entirely (= permanent).
+            try {
+                $until = Carbon::parse($data['banned_until']);
+                $diff = $until->getTimestamp() - now()->getTimestamp();
+                if ($diff <= 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'banned_until ต้องเป็นเวลาในอนาคต — ถ้าต้องการแบนถาวรให้เว้นค่านี้',
+                        'errors' => ['banned_until' => ['must be in the future; omit for permanent ban']],
+                    ], 422);
+                }
+                $minutes = (int) max(1, ceil($diff / 60));
+            } catch (\Throwable) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'banned_until ไม่ใช่วันที่ที่ถูกต้อง',
+                    'errors' => ['banned_until' => ['unparseable date']],
+                ], 422);
+            }
+        }
+
+        $ban = $banService->ban(
+            platform: $data['platform'],
+            platformUserId: $data['platform_user_id'],
+            minutes: $minutes, // null = permanent
+            reason: $data['reason'] ?? 'banned_by_admin',
+            adminId: $admin?->id,
+            displayName: $data['display_name'] ?? null,
         );
 
         Log::info('Moderation: user banned', [
             'ban_id' => $ban->id,
             'platform' => $ban->platform,
             'platform_user_id' => $ban->platform_user_id,
+            'minutes' => $minutes,
             'admin_id' => $admin?->id,
         ]);
 
@@ -242,16 +331,16 @@ class ModerationController extends Controller
     /**
      * POST /api/admin/moderation/unban/{ban}
      */
-    public function unban(FortuneUserBan $ban, Request $request): JsonResponse
+    public function unban(FortuneUserBan $ban, Request $request, FortuneBanService $banService): JsonResponse
     {
         $admin = $request->user();
         $platform = $ban->platform;
         $platformUserId = $ban->platform_user_id;
 
-        // We don't physically delete — set banned_until to a past time so
-        // the row stays for audit but the user is no longer banned.
-        $ban->banned_until = now()->subSecond();
-        $ban->save();
+        // 🪪 (2026-05-24) Route through FortuneBanService — clears the
+        //   webhook ban-cache so the user can talk to the bot again
+        //   immediately (was up to 24h cache TTL before).
+        $banService->unban($platform, $platformUserId, $admin?->id);
 
         Log::info('Moderation: user unbanned', [
             'ban_id' => $ban->id,
@@ -262,7 +351,18 @@ class ModerationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => ['ban' => $ban->fresh()],
+            // Ban row was HARD-DELETED by FortuneBanService::unban() — `id`
+            // is intentionally null so a client that retries with this id
+            // gets a clean 404 instead of stale-row confusion.
+            'data' => [
+                'ban' => [
+                    'id' => null,
+                    'platform' => $platform,
+                    'platform_user_id' => $platformUserId,
+                    'is_active' => false,
+                    'banned_until' => null,
+                ],
+            ],
             'message' => 'ปลดแบนสำเร็จ',
         ]);
     }
