@@ -1544,9 +1544,18 @@ class FacebookWebhookController extends Controller
             return;
         }
 
+        // 🛡️ (2026-05-24) VIP Bypass — ลูกค้าจ่ายเงินแล้ว + ยังทำนายอยู่ → ห้ามมี guard ใดบล็อก
+        //   User directive: "ลูกค้าจ่ายตังแล้ว อย่าเอาอะไรไปขวาง บายพาสให้หมด จบการทำนายค่อยว่ากันใหม่"
+        //   เคสจริง P7572 (2026-05-24): ลูกค้ากด Quick Reply "🃏 เปิดไพ่ใบถัดไป" 3 ครั้งใน 30s
+        //     → repeat_flood silence 5 นาที → พิมพ์อะไรก็ไม่ตอบ → โวย
+        //   ครอบคลุม: paid + status active (CELTIC_PICKING/AWAITING/GENERATING/QA_PROMPT, GENERATING)
+        //   ลบ spam silence + clear cache ที่อาจค้างอยู่ทันที (กันลูกค้าเก่าที่ติดอยู่แล้ว)
+        $isVipPaid = $this->conversationService->hasPaidActiveReading($senderId);
+
         // 🚫 (2026-04-28) Spam guard — ปิดการตอบสนองคนป่วน
         // กัน: ส่งวิดีโอ/รูปสุ่ม/ลิงก์/ข้อความซ้ำ ๆ
-        if ($this->isUserSpamming($senderId, $messageText, $attachments)) {
+        // ⚠️ (2026-05-24) Skip ถ้าเป็น VIP paid customer ระหว่างทำนาย
+        if (! $isVipPaid && $this->isUserSpamming($senderId, $messageText, $attachments)) {
             // ไม่ตอบ ไม่ log error — แค่ log info สำหรับ audit
             Log::info('🚫 Fortune: ignore spam message (silenced)', [
                 'sender_id' => $senderId,
@@ -1555,6 +1564,13 @@ class FacebookWebhookController extends Controller
             ]);
 
             return;
+        }
+
+        // 🛡️ (2026-05-24) VIP paid → clear spam keys ที่อาจค้างจากก่อนหน้า (กันลูกค้าเดิมที่ติด silence)
+        if ($isVipPaid) {
+            foreach (['fortune:spam:silenced', 'fortune:spam:rate', 'fortune:spam:repeat'] as $k) {
+                Cache::forget("{$k}:{$senderId}");
+            }
         }
 
         // 🔇 (2026-05-01) Silent rule — ลูกค้าสั่ง: รูป/ลิงก์/วิดีโอ/อีโมจิ/sticker นอก fortune flow → ห้ามตอบ
@@ -1610,7 +1626,8 @@ class FacebookWebhookController extends Controller
             //   sustained (>= 5/60s) → cooldown 5 นาที + alert admin
             //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
             //   ⚠️ Patch 1: Celtic paid bypass แล้ว — มาถึงตรงนี้ = non-paid Celtic / no active
-            if ($userImageUrl) {
+            //   🛡️ (2026-05-24) VIP Bypass — paid + active reading → skip image spam ด้วย
+            if ($userImageUrl && ! $isVipPaid) {
                 try {
                     $spamGuard = app(ImageSpamGuard::class);
                     $spamCheck = $spamGuard->check('facebook', $senderId);

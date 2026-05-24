@@ -9585,7 +9585,20 @@ class FortuneConversationService
         return null; // ตอบได้
     }
 
-    protected function hasPaidActiveReading(string $userId): bool
+    /**
+     * 🛡️ (2026-05-24) VIP Bypass — เช็คว่า user มี reading จ่ายเงินแล้ว + ยังไม่จบ
+     *
+     * User directive 2026-05-24: "ลูกค้าจ่ายตังแล้ว อย่าเอาอะไรไปขวาง
+     *   บายพาสให้หมด จบการทำนายค่อยว่ากันใหม่"
+     *
+     * ใช้สำหรับ bypass ทุก spam guard / silence / rate limit ระหว่างทำนาย
+     * - FacebookWebhookController::isUserSpamming wrap
+     * - LineFortuneWebhookController::isUserSpamming wrap
+     * - ImageSpamGuard wrap (FB + LINE)
+     *
+     * เปลี่ยนเป็น public เพื่อ webhook controllers เรียกได้ตรง
+     */
+    public function hasPaidActiveReading(string $userId): bool
     {
         $key = "fortune:has_paid_active:{$userId}";
 

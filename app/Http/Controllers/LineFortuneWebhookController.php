@@ -149,9 +149,16 @@ class LineFortuneWebhookController extends Controller
         $messageText = $event['message']['text'] ?? '';
         $messageId = $event['message']['id'] ?? '';
 
+        // 🛡️ (2026-05-24) VIP Bypass — parity กับ FB
+        //   User directive 2026-05-24: "ลูกค้าจ่ายตังแล้ว อย่าเอาอะไรไปขวาง บายพาสให้หมด"
+        //   ใช้ FortuneConversationService::hasPaidActiveReading() (cache 30s — ราคาถูก)
+        //   เคสจริง LINE Celtic 2026-05-21: ลูกค้าพิมพ์ "พร้อม" 5 ครั้ง → silenced 1 ชม. (จาก FortuneCelticKick.php:95 comment)
+        $isVipPaid = app(\App\Services\FortuneConversationService::class)->hasPaidActiveReading($userId);
+
         // 🚫 (2026-04-28) Spam guard — silence คนป่วน (parity กับ FB)
         // กัน: video/sticker/audio ซ้ำๆ, ข้อความมี URL, ข้อความซ้ำ
-        if ($this->isUserSpamming($userId, $messageText, $messageType)) {
+        // ⚠️ (2026-05-24) Skip ถ้าเป็น VIP paid customer
+        if (! $isVipPaid && $this->isUserSpamming($userId, $messageText, $messageType)) {
             Log::info('🚫 LINE Fortune: ignore spam message (silenced)', [
                 'user_id' => $userId,
                 'message_type' => $messageType,
@@ -159,6 +166,13 @@ class LineFortuneWebhookController extends Controller
             ]);
 
             return;
+        }
+
+        // 🛡️ (2026-05-24) VIP paid → clear LINE spam keys ที่อาจค้าง
+        if ($isVipPaid) {
+            \Illuminate\Support\Facades\Cache::forget("fortune:spam:silenced:line:{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("fortune:spam:strikes:line:{$userId}");
+            \Illuminate\Support\Facades\Cache::forget("fortune:spam:last_text:line:{$userId}");
         }
 
         // 🚫 (2026-05-22) Ban guard — user ที่ถูกแบนห้ามบอทคุยด้วย
@@ -234,31 +248,34 @@ class LineFortuneWebhookController extends Controller
             // 🚫 (2026-05-20 Phase 3b.5) Image spam guard — ก่อน dispatch
             //   user spec 2026-05-20: "ถ้าส่งรูปรัวๆ จะถือว่าสแปม"
             //   ⚠️ Patch 1: Celtic paid bypassed แล้ว — มาถึงตรงนี้ = non-paid path
-            try {
-                $spamGuard = app(\App\Services\Fortune\ImageSpamGuard::class);
-                $spamCheck = $spamGuard->check('line', $userId);
-                if ($spamCheck['blocked']) {
-                    Log::info('LINE: image spam cooldown active → silent', [
-                        'user_id' => $userId,
-                        'level' => $spamCheck['level'],
-                    ]);
+            //   🛡️ (2026-05-24) VIP Bypass — paid + active → skip image spam guard ด้วย
+            if (! $isVipPaid) {
+                try {
+                    $spamGuard = app(\App\Services\Fortune\ImageSpamGuard::class);
+                    $spamCheck = $spamGuard->check('line', $userId);
+                    if ($spamCheck['blocked']) {
+                        Log::info('LINE: image spam cooldown active → silent', [
+                            'user_id' => $userId,
+                            'level' => $spamCheck['level'],
+                        ]);
 
-                    return;
-                }
-                $spamRecord = $spamGuard->record('line', $userId);
-                if ($spamRecord['triggered']) {
-                    Log::info('LINE: image spam triggered (silent)', [
-                        'user_id' => $userId,
-                        'level' => $spamRecord['level'],
-                        'count' => $spamRecord['count'],
-                    ]);
+                        return;
+                    }
+                    $spamRecord = $spamGuard->record('line', $userId);
+                    if ($spamRecord['triggered']) {
+                        Log::info('LINE: image spam triggered (silent)', [
+                            'user_id' => $userId,
+                            'level' => $spamRecord['level'],
+                            'count' => $spamRecord['count'],
+                        ]);
 
-                    return;
+                        return;
+                    }
+                } catch (\Throwable $spamErr) {
+                    Log::debug('LINE: spam guard exception (non-blocking)', [
+                        'error' => $spamErr->getMessage(),
+                    ]);
                 }
-            } catch (\Throwable $spamErr) {
-                Log::debug('LINE: spam guard exception (non-blocking)', [
-                    'error' => $spamErr->getMessage(),
-                ]);
             }
 
             // 🆕 (2026-05-20 Phase 3b.5) Classify image — ดึง LINE content แล้ว classify
