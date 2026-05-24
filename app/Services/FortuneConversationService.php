@@ -1663,8 +1663,36 @@ class FortuneConversationService
                     self::$pendingPaymentWarning = $warning;
                 }
 
+                // 💰 (2026-05-24) Pricing question wins ALL states — ลูกค้าถามราคาต้องตอบราคาเสมอ
+                //   เคสจริง (screenshot ลูกค้า Chalawluck): "ค่าครูเท่าไร" หลัง AI Chat → fallback message
+                //   ใส่ early-gate ที่นี่ก่อน findActiveConversation + branches — pricing wins
+                //   STRONG keyword detection ("ค่าครู", "ค่าดูดวง", "ดูดวงเท่าไร") → safe
+                //   ยกเว้น: ถ้ามี active reading status = PAID/CELTIC_GENERATING (AI กำลังทำงาน) — skip
+                $earlyActiveCheck = null;
+                try {
+                    $earlyActiveCheck = FortuneReading::findActiveConversation($facebookUserId);
+                } catch (\Throwable $e) {
+                    // ignore — fall through
+                }
+                $earlyStatusBlocking = $earlyActiveCheck ? in_array($earlyActiveCheck->conversation_status, [
+                    FortuneReading::STATUS_PAID,
+                    FortuneReading::STATUS_CELTIC_GENERATING,
+                    FortuneReading::STATUS_PENDING_PAYMENT,
+                    FortuneReading::STATUS_CELTIC_PENDING_PAYMENT,
+                ], true) : false;
+
+                if (! $earlyStatusBlocking && $this->looksLikePricingQuestion($messageText)) {
+                    Log::info('Fortune: pricing menu trigger (early-gate, any state)', [
+                        'user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 80),
+                        'active_status' => $earlyActiveCheck?->conversation_status,
+                    ]);
+
+                    return $this->presentPricingMenu();
+                }
+
                 // ตรวจสอบว่ามี conversation ที่กำลังดำเนินอยู่หรือไม่
-                $activeReading = FortuneReading::findActiveConversation($facebookUserId);
+                $activeReading = $earlyActiveCheck;
 
                 // 🔍 Debug log: ติดตามสถานะ conversation
                 Log::info('Fortune processMessage: ตรวจสอบ active conversation', [
@@ -3877,6 +3905,19 @@ class FortuneConversationService
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
 
             return $this->startDeepReadingFlow($facebookUserId, $userProfile, null, $messageText);
+        }
+
+        // 💰 (2026-05-24) Pricing question ระหว่าง AWAITING_CONFIRMATION → ตอบราคาทันที
+        //   เคสจริง (screenshot ลูกค้า Chalawluck): ลูกค้าถาม "ค่าครูเท่าไร" หลัง AI Chat ครั้งแรก
+        //   เดิม: looksLikeMetaOrChitchat จับ "ค่าครู" → AI step reminder → exception → fallback message
+        //   ใหม่: pricing question wins → presentPricingMenu ตอบราคาตรงๆ
+        if ($this->looksLikePricingQuestion($messageText)) {
+            Log::info('Fortune: pricing menu trigger (awaiting_confirmation)', [
+                'user_id' => $facebookUserId,
+                'text_preview' => mb_substr($messageText, 0, 80),
+            ]);
+
+            return $this->presentPricingMenu();
         }
 
         // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม", "สวัสดี")
@@ -11692,11 +11733,33 @@ PROMPT;
      */
     public function presentPricingMenu(): array
     {
-        $deepPrice = (int) $this->getDeepReadingPrice();
+        // 🛡️ (2026-05-24) ห่อทุก fetch ด้วย try/catch — กัน exception bubble ไปถึง processMessage catch
+        //   เคสจริง: ลูกค้าถาม "ค่าครู" + CelticCrossService DI fail → exception → getFallbackMessage
+        $deepPrice = 39;
+        try {
+            $deepPrice = (int) $this->getDeepReadingPrice();
+        } catch (\Throwable $e) {
+            Log::warning('Fortune: presentPricingMenu getDeepReadingPrice ล้ม fallback 39', ['error' => $e->getMessage()]);
+        }
+
         // 🌙 (2026-05-23) Deep ปิด → ไม่ render block 39 + pass flag ให้ caller (SendPricingFollowUpJob)
         $deepEnabled = $this->settings->isDeepReadingEnabled();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
-        $celticPrice = $celticEnabled ? (int) (app(\App\Services\CelticCrossService::class)->getPrice()) : 0;
+
+        $celticPrice = 0;
+        if ($celticEnabled) {
+            try {
+                $celticPrice = (int) (app(\App\Services\CelticCrossService::class)->getPrice());
+            } catch (\Throwable $e) {
+                // 🛡️ DI/service fail → ใช้ settings ตรงเป็น fallback (กัน exception bubble)
+                $celticPrice = (int) ($this->settings->celtic_cross_price ?? 99);
+                Log::warning('Fortune: presentPricingMenu CelticCrossService::getPrice ล้ม fallback settings', [
+                    'error' => $e->getMessage(),
+                    'fallback_price' => $celticPrice,
+                ]);
+            }
+        }
+
         $freeEnabled = (bool) ($this->settings->enable_free_card_reading ?? false);
 
         $msg = "💎 *อัตราค่าดูดวงกับแม่หมอจันทรา* 💎\n\n";
