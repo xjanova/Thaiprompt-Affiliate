@@ -104,6 +104,20 @@ class ProcessCommentEngagement implements ShouldQueue
                 return;
             }
 
+            // 🌙 (2026-05-25) USER RULE: ห้าม DM ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกันแล้ว
+            //    ลูกค้าที่จ่ายแล้ว ดูเสร็จ → ยังเห็นโพสเพจ + comment/like ได้
+            //    แต่บอทไม่ควร DM ขายซ้ำ = สแปม + เสียประสบการณ์
+            //    ลูกค้ายังติดต่อมาเองได้ปกติ (inbound) — guard นี้ block แค่ outbound DM
+            if (\App\Models\FortuneReading::hasPaidReadingThisCalendarMonth($userId)) {
+                Log::info('Comment engagement skip — user ดูดวงสำเร็จเดือนนี้แล้ว (no re-pitch)', [
+                    'user_id' => $userId,
+                    'comment_id' => $commentId,
+                    'month' => now()->format('Y-m'),
+                ]);
+
+                return;
+            }
+
             // 1. ดึง user profile (ชื่อ, เพศ, วันเกิด ฯลฯ)
             $userProfile = $facebookService->getUserProfile($userId);
             if (! is_array($userProfile)) {

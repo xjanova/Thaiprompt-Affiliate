@@ -550,6 +550,21 @@ class FacebookWebhookController extends Controller
                 Log::debug('tryReactionDm: active check failed (non-blocking): '.$e->getMessage());
             }
 
+            // 🌙 (2026-05-25) USER RULE: ห้าม DM ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกันแล้ว
+            //    กดไลก์/reaction → ไม่ส่งทักทาย daily horoscope ซ้ำ (ลูกค้าจ่ายแล้วเดือนนี้)
+            //    เหตุผล: ลูกค้าดูเสร็จ → DM ใหม่ = สแปม. ลูกค้ายังติดต่อมาเองได้ตลอด
+            if (FortuneReading::hasPaidReadingThisCalendarMonth($userId)) {
+                Log::info('👍 Reaction DM ข้าม — user ดูดวงสำเร็จเดือนนี้แล้ว (no re-pitch)', [
+                    'user_id' => $userId,
+                    'post_id' => $reaction->facebook_post_id,
+                    'month' => now()->format('Y-m'),
+                ]);
+                $reaction->dm_success = false;
+                $reaction->save();
+
+                return;
+            }
+
             // 🌙 (2026-05-21) Daily Horoscope greeting — แทน returning-user variants เดิม
             //    มี birth_date ใน DB → ส่งดวงประจำวันตาม day_of_birth
             //    ไม่มี → ทักทายชวนดูดวง + promise ส่งดวงฟรีหลังจากนั้น
