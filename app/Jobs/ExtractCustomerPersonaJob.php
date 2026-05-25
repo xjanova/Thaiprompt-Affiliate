@@ -282,7 +282,8 @@ You are a Customer Persona Extraction system. Your ONLY job is to analyze custom
     "scam_victim": true|false,
     "complaint_prone": true|false,
     "disruptive_troll": true|false,
-    "hostile_superior": true|false
+    "hostile_superior": true|false,
+    "tarot_literate": true|false
   },
   "topic_tags": ["english-tag-1", "english-tag-2"]
 }
@@ -299,6 +300,9 @@ You are a Customer Persona Extraction system. Your ONLY job is to analyze custom
                     (e.g. "เจอผีบอก..." / random one-liners / probing บอท)
 - hostile_superior: โต้แย้งหาเรื่อง/คิดว่ารู้เหนือกว่า/กล่าวหา "หลอก/มั่ว/ปลอม"/philosophical แบบเหยียดบอท
                     (e.g. "หาแดกง่ายนะ" / "เริ่มมั่วแล้ว" / "ดูที่เจตนานะ" + คำหยาบ)
+- tarot_literate: ลูกค้าเป็น tarot reader/เรียนไพ่/รู้ความหมายไพ่ — บ่นบอท "อ่านเหมือนตำรา/เพิ่งหัด/ขั้นต้น"
+                   หรือพูดถึงประสบการณ์อ่านไพ่เอง (e.g. "ตอนเรียนไพ่ก็อ่านแบบนี้" / "เคยอ่านไพ่มาก่อน"
+                   / "อ่านไพ่เอง" / "เห็นไพ่แล้วตีความเองได้" / "เป็นเพื่อนร่วมศาสตร์")
 
 ⚠️ STICKY: false = ไม่มี evidence ในข้อความนี้ (ไม่ใช่ "ลบ flag")
     System จะไม่ทับ true เดิม → ปลอดภัย flag false ทุกครั้งที่ไม่มี evidence
@@ -314,7 +318,11 @@ Output:
 
 Input: "ดีค่ะ หมอ ❤️❤️ ขอดูดวงด่วน"
 Output:
-{"traits":["รีบ","อบอุ่น"],"likes":[],"dislikes":[],"conversation_themes":[],"demographics":{"age_range":"unknown","gender_hint":"female","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"warm","pace":"fast","formality":"polite","emoji_usage":"high"},"risk_flags":{"mental_fragile":false,"over_emotional":false,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":false},"topic_tags":[]}
+{"traits":["รีบ","อบอุ่น"],"likes":[],"dislikes":[],"conversation_themes":[],"demographics":{"age_range":"unknown","gender_hint":"female","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"warm","pace":"fast","formality":"polite","emoji_usage":"high"},"risk_flags":{"mental_fragile":false,"over_emotional":false,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":false,"disruptive_troll":false,"hostile_superior":false,"tarot_literate":false},"topic_tags":[]}
+
+Input: "เหมือนคนเพิ่งเรียนอ่านไพ่เลย ตอนเรียนใหม่ก็อ่านแบบนี้ค่ะ"
+Output:
+{"traits":["มีประสบการณ์","วิจารณ์ตรง"],"likes":["ทาโรต์"],"dislikes":["ตำรา"],"conversation_themes":["ไพ่","วิจารณ์การทำนาย"],"demographics":{"age_range":"unknown","gender_hint":"unknown","job_hint":"unknown","location_hint":"unknown"},"communication_style":{"tone":"reserved","pace":"medium","formality":"informal","emoji_usage":"none"},"risk_flags":{"mental_fragile":false,"over_emotional":false,"quiet_listener":false,"abusive_tone":false,"decline_pusher":false,"scam_victim":false,"complaint_prone":true,"disruptive_troll":false,"hostile_superior":false,"tarot_literate":true},"topic_tags":["tarot-reader","critic"]}
 
 OUTPUT JSON NOW. NOTHING ELSE.
 SYSTEM;

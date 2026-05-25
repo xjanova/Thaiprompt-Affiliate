@@ -429,6 +429,21 @@ class Kernel extends ConsoleKernel
             });
 
         // ========================================
+        // 🔔 (2026-05-25 Patch E) Fortune Remind Stuck Celtic — Soft reminder
+        //   หาบิล Celtic 99฿ ที่จ่ายแล้วเงียบ (0 user msg หลัง paid) 30 min - 6 hr
+        //   → ส่ง DM soft reminder ครั้งเดียวต่อ reading (mark flag กัน duplicate)
+        //   เคสจริง R3711 (2026-05-25): paid 4hr stuck celtic_picking
+        //   ⚠️ ส่งครั้งเดียว ไม่ annoy — ถ้าลูกค้ายังเงียบ → expire-stuck-paid 24hr รับช่วงต่อ
+        // ========================================
+        $schedule->command('fortune:remind-stuck-celtic', ['--min-minutes=30', '--max-hours=6', '--limit=20'])
+            ->everyFifteenMinutes()
+            ->withoutOverlapping(15)
+            ->runInBackground()
+            ->onFailure(function () {
+                \Log::error('[Fortune Remind Stuck Celtic] soft reminder ส่งล้มเหลว');
+            });
+
+        // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
         //   ลบบิลเก่าที่ยังค้างใน UI (รัน 06:00 — low traffic)
         //   แก้เคส: บิลถูกยกเลิกแล้วแต่แอพ smschecker ยังเก็บค้างเพราะ

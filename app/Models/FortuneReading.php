@@ -2247,6 +2247,21 @@ class FortuneReading extends Model
                     'matched_at' => now(),
                 ]);
         }
+
+        // 👤 (2026-05-25 Patch F) Eager Persona extraction on payment
+        //   เคสจริง: ลูกค้าทักเริ่ม → จ่ายภายใน 13 นาที (R3741) → persona ไม่ทันสร้าง
+        //   ผลคือ AI ทำนาย Q1 โดยไม่รู้นิสัยลูกค้า → ตอบ generic
+        //   Fix: trigger extraction ทันทีหลัง paid โดยใช้ messages 60min ก่อน paid_at
+        try {
+            app(\App\Services\Fortune\CustomerPersonaService::class)
+                ->dispatchEagerExtractionOnPaid($this);
+        } catch (\Throwable $e) {
+            // Non-blocking — ไม่ให้กระทบ payment flow
+            \Illuminate\Support\Facades\Log::warning(
+                'FortuneReading: eager persona extraction failed (non-blocking)',
+                ['reading_id' => $this->id, 'error' => $e->getMessage()]
+            );
+        }
     }
 
     // ============================================================

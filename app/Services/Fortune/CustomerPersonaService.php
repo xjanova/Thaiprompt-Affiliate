@@ -6,6 +6,7 @@ use App\Jobs\ExtractCustomerPersonaJob;
 use App\Models\FortuneCustomerPersona;
 use App\Models\FortuneReading;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -245,6 +246,101 @@ class CustomerPersonaService
     public function invalidateCache(string $platform, string $userId): void
     {
         Cache::forget($this->injectCacheKey($platform, $userId));
+    }
+
+    /**
+     * 👤 (2026-05-25 Patch F) Eager Persona extraction หลังลูกค้าจ่ายเงิน
+     *
+     * เคสจริง R3741 (2026-05-25): ลูกค้าทัก 10:11 → จ่าย 10:24 = 13 นาที
+     * → Persona ไม่ทันสร้าง → AI ทำนาย Q1 โดยไม่รู้นิสัย → ตอบ generic
+     *
+     * Fix: ดึง messages 60 นาทีก่อน paid_at รวมเป็นหนึ่งก้อน → ส่งให้ Job
+     *      Bypass throttle ปกติ (30 min) — เคสนี้สำคัญ เริ่มทำนายแล้ว
+     *
+     * Window: 60 min ก่อน paid_at (เหมือน buildPreCelticChatContext)
+     * Cap: รวม 2000 chars (กัน prompt บวม)
+     */
+    public function dispatchEagerExtractionOnPaid(FortuneReading $reading): bool
+    {
+        // Resolve platform + user
+        $platform = $reading->platform
+            ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+        $userId = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
+
+        if ($userId === '' || ! $reading->paid_at) {
+            return false;
+        }
+
+        // ดึง user messages 60 min ก่อน paid_at จาก line_bot_messages
+        $anchor = $reading->paid_at;
+        $messages = DB::table('line_bot_conversations as c')
+            ->join('line_bot_messages as m', 'm.conversation_id', '=', 'c.id')
+            ->where('c.platform', $platform)
+            ->where('c.line_user_id', $userId)
+            ->where('m.role', 'user')
+            ->where('m.created_at', '>=', $anchor->copy()->subMinutes(60))
+            ->where('m.created_at', '<=', $anchor)
+            ->orderBy('m.created_at')
+            ->pluck('m.message')
+            ->filter(fn ($t) => trim((string) $t) !== '')
+            ->all();
+
+        if (empty($messages)) {
+            Log::debug('CustomerPersonaService: eager extraction skip — no pre-paid messages', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+            ]);
+
+            return false;
+        }
+
+        // รวม + cap
+        $combined = trim(implode(' / ', $messages));
+        if (mb_strlen($combined) > 2000) {
+            $combined = mb_substr($combined, -2000); // เก็บ tail (ใกล้ paid_at ที่สุด)
+        }
+
+        if (mb_strlen($combined) < self::MIN_MESSAGE_LENGTH) {
+            return false;
+        }
+
+        // 🔥 Bypass throttle — eager call หลัง paid สำคัญกว่า throttle ปกติ
+        $displayName = $reading->facebook_user_name ?? null;
+
+        try {
+            // Always sync after-response style (run hot)
+            ExtractCustomerPersonaJob::dispatchAfterResponse(
+                $platform,
+                $userId,
+                $combined,
+                $displayName
+            );
+
+            // Update throttle ให้ skip duplicate extraction ใน 10 นาที
+            Cache::put(
+                $this->throttleCacheKey($platform, $userId),
+                true,
+                self::EXTRACTION_THROTTLE_TTL_CRITICAL
+            );
+
+            Log::info('CustomerPersonaService: dispatched EAGER extraction on paid', [
+                'reading_id' => $reading->id,
+                'platform' => $platform,
+                'user_id' => $userId,
+                'pre_paid_msgs' => count($messages),
+                'combined_length' => mb_strlen($combined),
+            ]);
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('CustomerPersonaService: eager extraction dispatch failed', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
     }
 
     /**

@@ -379,6 +379,18 @@ class FortuneCustomerPersona extends Model
             $lines[] = '⚠️ COMPLAINT_PRONE: ชอบบ่น/ติ → รับฟัง+empathy / ห้าม defensive / ไม่ pitch ทันทีหลังบ่น';
         }
 
+        // 🃏 (2026-05-25) tarot_literate — ลูกค้ารู้ไพ่ — สำคัญมาก (เคส R3726)
+        //   ลูกค้าเป็น tarot reader / เคยเรียนไพ่ → จับได้ทันทีว่าบอท "ยกหน้าตำรา"
+        //   ผลคือ: บ่นว่า "เหมือนคนเพิ่งหัด" + เปรียบเทียบกับครั้งก่อน + ลด trust
+        if (! empty($flags['tarot_literate'])) {
+            $lines[] = '🃏 TAROT_LITERATE: ลูกค้าเป็น tarot reader / รู้ไพ่ — สำคัญมาก:';
+            $lines[] = '   → ❌ ลดการอ้างชื่อไพ่ตรงๆ ("ห้าแห่งดาบ" / "นักมายากล")';
+            $lines[] = '   → ❌ เลิกอธิบายความหมายตามตำรา (textbook meaning)';
+            $lines[] = '   → ✅ ใช้ภาษา intuitive: "แม่หมอสัมผัสได้ว่า..." / "พลังในไพ่บอก..."';
+            $lines[] = '   → ✅ ผูกไพ่กับ situation จริงของลูกค้าโดยตรง (ไม่ใช่ generic)';
+            $lines[] = '   → ✅ ยอมรับเมื่อลูกค้าวิจารณ์ ห้าม defensive ห้ามอ้างว่า "ผมไม่ได้ใช้ตำรา"';
+        }
+
         // 🎭 (2026-05-25) disruptive_troll — มากวนป่วน/เพ้อเจ้อ/ไม่ตั้งใจดูดวง
         if (! empty($flags['disruptive_troll'])) {
             $lines[] = '⚠️ DISRUPTIVE_TROLL: ลูกค้ามาเล่น/กวนป่วน/เพ้อเจ้อ — ไม่จริงจังดูดวง';
