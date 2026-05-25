@@ -81,6 +81,25 @@ Schedule::command('fortune:stripe-poll --max-age=7200')
     ->name('fortune-stripe-poll')
     ->runInBackground();
 
+// ════════════════════════════════════════════════════════════════
+// 🔔 (2026-05-25 Patch E) Fortune Remind Stuck Celtic — Soft reminder
+// ════════════════════════════════════════════════════════════════
+// เคสจริง R3711 (2026-05-25 06:59 → stuck 4hr celtic_picking 0 user msg)
+//   หาบิล Celtic 99฿ ที่จ่ายแล้วเงียบ 30 min - 6 hr → ส่ง DM soft reminder
+//   ครั้งเดียวต่อ reading (mark conversation_state.celtic_stuck_reminder_sent_at)
+//
+// Soft tone: "หมอจันทรารอเปิดไพ่ให้คุณ{name}อยู่นะคะ" + ไม่ annoy
+// ถ้าลูกค้ายังเงียบ 24hr → fortune:expire-stuck-paid (legacy in Kernel — ghost!) รับช่วงต่อ
+//
+// ⚠️ NOTE: schedule นี้อยู่ที่นี่ (ไม่ใช่ Kernel.php) เพราะ Laravel 11 bootstrap/app.php
+//    ไม่ register Kernel.php — schedule ใน Kernel.php ทั้งหมดเป็น dead code
+Schedule::command('fortune:remind-stuck-celtic --min-minutes=30 --max-hours=6 --limit=20')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('fortune-remind-stuck-celtic')
+    ->runInBackground();
+
 // 🛡️ (2026-05-10) Auto-scan คอมเม้นต์สแปม (link spam moderation)
 //   รันทุกชั่วโมง — incremental (เฉพาะคอมใหม่ตั้งแต่ scan ล่าสุด)
 //   ครอบคลุม: posts + Reels, per-post=unlimited (รองรับโพสไวรัลคอมหมื่นๆ)

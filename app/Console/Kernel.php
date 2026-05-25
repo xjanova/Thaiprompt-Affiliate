@@ -428,20 +428,11 @@ class Kernel extends ConsoleKernel
                 \Log::error('[Fortune Expire Stuck Paid] expire stuck paid readings ล้มเหลว');
             });
 
-        // ========================================
-        // 🔔 (2026-05-25 Patch E) Fortune Remind Stuck Celtic — Soft reminder
-        //   หาบิล Celtic 99฿ ที่จ่ายแล้วเงียบ (0 user msg หลัง paid) 30 min - 6 hr
-        //   → ส่ง DM soft reminder ครั้งเดียวต่อ reading (mark flag กัน duplicate)
-        //   เคสจริง R3711 (2026-05-25): paid 4hr stuck celtic_picking
-        //   ⚠️ ส่งครั้งเดียว ไม่ annoy — ถ้าลูกค้ายังเงียบ → expire-stuck-paid 24hr รับช่วงต่อ
-        // ========================================
-        $schedule->command('fortune:remind-stuck-celtic', ['--min-minutes=30', '--max-hours=6', '--limit=20'])
-            ->everyFifteenMinutes()
-            ->withoutOverlapping(15)
-            ->runInBackground()
-            ->onFailure(function () {
-                \Log::error('[Fortune Remind Stuck Celtic] soft reminder ส่งล้มเหลว');
-            });
+        // ⚠️ (2026-05-25) NOTE: Kernel::schedule() ใน Laravel 11 ไม่ถูกเรียก
+        //    เพราะ bootstrap/app.php ไม่มี withKernel(Kernel::class)
+        //    → schedule ทั้งหมดใน file นี้ = DEAD CODE (ghost schedules)
+        //    → ใช้ routes/console.php (Schedule:: facade) แทน
+        //    → fortune:remind-stuck-celtic ย้ายไป routes/console.php แล้ว (2026-05-25 Patch E)
 
         // ========================================
         // Fortune Resync Cancelled Bills - backfill FCM ให้แอพ smschecker
