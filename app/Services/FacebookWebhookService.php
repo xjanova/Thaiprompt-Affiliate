@@ -522,6 +522,85 @@ class FacebookWebhookService implements MessagingPlatformInterface
     }
 
     /**
+     * 🎯 (2026-05-25 v2) Option G — ส่งภาพ + Quick Replies ใน Private Reply call เดียว
+     *
+     * แก้ race condition #10900 "Activity already replied" — FB Reels comment_id ใช้ครั้งเดียว
+     * ปกติเราส่ง image (1 call) + text+QR (1 call) → 2 calls = ติด race
+     * วิธีนี้: 1 call เดียว image attachment + quick_replies → atomic, no race possible
+     *
+     * @param  string  $commentId
+     * @param  string  $imageUrl  banner image URL (https)
+     * @param  array  $quickReplies  pre-formatted FB structure: [{content_type, title, payload}]
+     * @return bool true ถ้าส่งสำเร็จ
+     */
+    public function sendPrivateReplyImageWithQuickReplies(string $commentId, string $imageUrl, array $quickReplies): bool
+    {
+        try {
+            // FB จำกัด 13 quick replies + title 20 chars
+            $formatted = array_map(function ($qr) {
+                // รองรับทั้ง pre-formatted และ raw {title, payload}
+                if (isset($qr['content_type'])) {
+                    return [
+                        'content_type' => $qr['content_type'],
+                        'title' => mb_substr((string) ($qr['title'] ?? ''), 0, 20),
+                        'payload' => (string) ($qr['payload'] ?? $qr['title'] ?? ''),
+                    ];
+                }
+
+                return [
+                    'content_type' => 'text',
+                    'title' => mb_substr((string) ($qr['title'] ?? ''), 0, 20),
+                    'payload' => (string) ($qr['payload'] ?? $qr['title'] ?? ''),
+                ];
+            }, array_slice($quickReplies, 0, 13));
+
+            $payload = [
+                'recipient' => ['comment_id' => $commentId],
+                'message' => [
+                    'attachment' => [
+                        'type' => 'image',
+                        'payload' => [
+                            'url' => $imageUrl,
+                            'is_reusable' => true,
+                        ],
+                    ],
+                    'quick_replies' => $formatted,
+                ],
+                'access_token' => $this->pageAccessToken,
+            ];
+
+            $response = Http::timeout(30)
+                ->post($this->graphUrl('/me/messages'), $payload);
+
+            if ($response->successful()) {
+                Log::info('✅ Private Reply image+QR สำเร็จ (Option G atomic)', [
+                    'comment_id' => $commentId,
+                    'qr_count' => count($formatted),
+                ]);
+
+                return true;
+            }
+
+            $err = $response->json();
+            Log::info('Private Reply image+QR (Option G) ล้ม', [
+                'comment_id' => $commentId,
+                'http_status' => $response->status(),
+                'error_code' => $err['error']['code'] ?? null,
+                'error_subcode' => $err['error']['error_subcode'] ?? null,
+                'error_message' => $err['error']['message'] ?? $response->body(),
+            ]);
+
+            return false;
+        } catch (Exception $e) {
+            Log::warning('Private Reply image+QR exception: '.$e->getMessage(), [
+                'comment_id' => $commentId,
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
      * 🎙️ (2026-05-08) ส่ง audio attachment ไป Facebook Messenger
      *
      * FB Audio Attachment API:
