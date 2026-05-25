@@ -406,11 +406,6 @@ PROMPT;
 
     /**
      * ดึงรายชื่อเป้าหมาย
-     *
-     * 🌙 (2026-05-25) USER RULE: ห้าม DM ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกันแล้ว
-     *   → exclude facebook_user_id ที่มี is_paid=true reading created_at >= startOfMonth()
-     *   → ลูกค้าจะติดต่อมาเองได้ปกติ (inbound) — แค่ไม่ถูก outbound DM ซ้ำ
-     *   เหตุผล: ลูกค้าจ่ายแล้วยังโดน pitch ขายซ้ำ = สแปม + เสียประสบการณ์
      */
     private function getRecipients(FortuneMarketingCampaign $campaign)
     {
@@ -443,32 +438,11 @@ PROMPT;
                 break;
         }
 
-        // 🌙 (2026-05-25) Exclude ลูกค้าที่ดูดวงสำเร็จในเดือนนี้แล้ว — ห้าม DM ซ้ำ
-        //   ใช้ HAVING SUM แทน whereNotIn subquery — เพราะ query หลักมี groupBy อยู่แล้ว
-        //   เงื่อนไข: ในกลุ่ม facebook_user_id เดียวกัน ต้องไม่มี row ที่
-        //   is_paid=1 AND created_at >= startOfMonth() (ไม่งั้นถูกตัด)
-        $monthStart = now()->startOfMonth();
-        $query->havingRaw(
-            'SUM(CASE WHEN is_paid = 1 AND created_at >= ? THEN 1 ELSE 0 END) = 0',
-            [$monthStart]
-        );
-
         // จำกัดจำนวน
         if ($campaign->target_limit) {
             $query->limit($campaign->target_limit);
         }
 
-        $recipients = $query->get();
-
-        Log::info('Fortune marketing: getRecipients post-filter', [
-            'campaign_id' => $campaign->id,
-            'target_audience' => $campaign->target_audience,
-            'target_platform' => $campaign->target_platform,
-            'recipients_count' => $recipients->count(),
-            'month_start_exclude' => $monthStart->toDateString(),
-            'note' => 'excluded users with is_paid=true reading this calendar month',
-        ]);
-
-        return $recipients;
+        return $query->get();
     }
 }
