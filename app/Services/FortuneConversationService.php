@@ -5122,8 +5122,10 @@ class FortuneConversationService
             ]);
 
             // 🩹 (2026-05-08) forceTier='celtic' → ข้าม tier menu, เข้า Celtic flow ทันที
+            // ⚡ (2026-05-25) skip_payment_gate flag จาก postback → ข้ามเมนู "QR/บัตร?" → QR ไทยเลย
             if ($forceTier === 'celtic' && ($this->settings->enable_celtic_cross ?? false)) {
-                return $this->startCelticCrossFlow($reading);
+                $skipGate = (bool) Cache::pull("fortune:skip_payment_gate:{$facebookUserId}");
+                return $this->startCelticCrossFlow($reading, $skipGate);
             }
 
             // 💰 (2026-05-10) forceTier='deep' → Pay-First flow
@@ -5137,7 +5139,9 @@ class FortuneConversationService
                 ]);
 
                 // 💳 (2026-05-22) Route ตาม payment mode
-                return $this->routePayFirstDeep($reading);
+                // ⚡ (2026-05-25) skip_payment_gate flag จาก postback → QR ไทยเลย ไม่ถามวิธีชำระ
+                $skipGate = (bool) Cache::pull("fortune:skip_payment_gate:{$facebookUserId}");
+                return $this->routePayFirstDeep($reading, $skipGate);
             }
 
             // 🆕 Tier Choice: ส่ง menu ให้ลูกค้าเลือก 39฿ vs 99฿ Celtic
@@ -6698,9 +6702,20 @@ class FortuneConversationService
      *
      * เรียกใช้แทน createPaymentBill ทุกจุดที่เป็น pay-first deep flow
      */
-    protected function routePayFirstDeep(FortuneReading $reading): array
+    protected function routePayFirstDeep(FortuneReading $reading, bool $skipPaymentGate = false): array
     {
         $mode = $this->getActivePaymentMode();
+
+        // ⚡ (2026-05-25) skip_payment_gate (จาก postback button) → QR ไทยเลย ไม่ถาม "QR/บัตร?"
+        //   user spec: "กดปุ่ม = intent ชัด ไม่ต้องถามอะไรก่อน"
+        //   ลูกค้าอยาก Stripe ค่อยพิมพ์ "บัตร" หลังบิลออก — handlePaymentMethodSelection จับได้
+        if ($skipPaymentGate && $mode === 'both') {
+            Log::info('Fortune: Deep 39 skip payment-gate → QR Thai ตรง (postback intent)', [
+                'reading_id' => $reading->id,
+            ]);
+            $reading->update(['reading_type' => FortuneReading::READING_TYPE_DEEP]);
+            return $this->createPaymentBill($reading, [], payFirst: true);
+        }
 
         if ($mode === 'both') {
             // ตั้ง reading_type=deep + รอเลือกวิธีชำระ (questions ยังว่าง — collect หลังจ่าย)
