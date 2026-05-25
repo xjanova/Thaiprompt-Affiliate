@@ -318,6 +318,65 @@ class FortuneReading extends Model
     }
 
     /**
+     * 🌙 (2026-05-25) เช็คว่า user มี reading ที่จ่ายเงินสำเร็จในเดือนนี้ (calendar month) หรือยัง
+     *
+     * USER RULE: ห้าม DM/pitch ขายซ้ำคนที่ดูดวงสำเร็จในเดือนเดียวกัน
+     * - เกณฑ์ "ดูสำเร็จ" = is_paid=true (ครอบทุก reading_type — deep/celtic/free upgrade)
+     * - "เดือนนี้" = ตั้งแต่ startOfMonth() ปัจจุบัน (reset อัตโนมัติวันที่ 1 ของเดือนถัดไป)
+     *
+     * ใช้ที่:
+     *   - FortuneMarketingController::getRecipients — exclude ออกจาก outbound campaigns
+     *   - FortuneConversationService::shouldSuppressSalesPitch — guard inbound pricing pitch
+     *
+     * Cache 5 นาที — ลด DB hit (สำคัญสำหรับ marketing scan ลูกค้าหลายพัน) + ทันเวลาพอ
+     * Cache key มี Y-m → switch อัตโนมัติเมื่อขึ้นเดือนใหม่
+     *
+     * @param  string|null  $facebookUserId  FB page-scoped ID
+     * @param  string|null  $platformUserId  LINE/Universal user ID (optional)
+     */
+    public static function hasPaidReadingThisCalendarMonth(?string $facebookUserId, ?string $platformUserId = null): bool
+    {
+        $cacheRoot = $facebookUserId ?: $platformUserId;
+        if (empty($cacheRoot)) {
+            return false;
+        }
+
+        $monthKey = now()->format('Y-m');
+        $cacheKey = "fortune:paid_this_month:{$monthKey}:{$cacheRoot}";
+
+        return (bool) \Illuminate\Support\Facades\Cache::remember(
+            $cacheKey,
+            now()->addMinutes(5),
+            function () use ($facebookUserId, $platformUserId) {
+                return self::query()
+                    ->where(function ($q) use ($facebookUserId, $platformUserId) {
+                        if (! empty($facebookUserId)) {
+                            $q->where('facebook_user_id', $facebookUserId);
+                        }
+                        if (! empty($platformUserId)) {
+                            $q->orWhere('platform_user_id', $platformUserId);
+                        }
+                    })
+                    ->where('is_paid', true)
+                    ->where('created_at', '>=', now()->startOfMonth())
+                    ->exists();
+            }
+        );
+    }
+
+    /**
+     * 🧹 ล้าง cache hasPaidReadingThisCalendarMonth — เรียกหลังจ่ายเงินสำเร็จ
+     * เพื่อให้ guard ทำงานทันทีในข้อความถัดไป (ไม่ต้องรอ 5 นาที)
+     */
+    public static function clearPaidThisMonthCache(?string $facebookUserId, ?string $platformUserId = null): void
+    {
+        $monthKey = now()->format('Y-m');
+        foreach (array_filter([$facebookUserId, $platformUserId]) as $key) {
+            \Illuminate\Support\Facades\Cache::forget("fortune:paid_this_month:{$monthKey}:{$key}");
+        }
+    }
+
+    /**
      * ตำแหน่ง Celtic Cross 10 ตำแหน่งมาตรฐาน
      *
      * Layout (ตามภาพมาตรฐาน):

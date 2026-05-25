@@ -1728,7 +1728,7 @@ class FortuneConversationService
                         'active_status' => $earlyActiveCheck?->conversation_status,
                     ]);
 
-                    return $this->presentPricingMenu();
+                    return $this->presentPricingMenu($facebookUserId, $messageText);
                 }
 
                 // 🌙 (2026-05-24) Generic fortune request wins — ก่อน active reading branch
@@ -2027,7 +2027,7 @@ class FortuneConversationService
                                 'text_preview' => mb_substr($messageText, 0, 80),
                             ]);
 
-                            return $this->presentPricingMenu();
+                            return $this->presentPricingMenu($facebookUserId, $messageText);
                         }
 
                         // ✅ ถ้าเป็นคำขอดูดวงชัดเจน → fortune flow เลย
@@ -2072,7 +2072,7 @@ class FortuneConversationService
                                 'text_preview' => mb_substr($messageText, 0, 80),
                             ]);
 
-                            return $this->presentPricingMenu();
+                            return $this->presentPricingMenu($facebookUserId, $messageText);
                         }
 
                         // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง (ก่อน AI chat)
@@ -2187,7 +2187,7 @@ class FortuneConversationService
                         'text_preview' => mb_substr($messageText, 0, 80),
                     ]);
 
-                    return $this->presentPricingMenu();
+                    return $this->presentPricingMenu($facebookUserId, $messageText);
                 }
 
                 // 🎯 (2026-05-09) Generic fortune request → tier menu ตรง
@@ -2320,7 +2320,7 @@ class FortuneConversationService
                         'text_preview' => mb_substr($messageText, 0, 80),
                     ]);
 
-                    return $this->presentPricingMenu();
+                    return $this->presentPricingMenu($facebookUserId, $messageText);
                 }
 
                 // 🔒 (2026-05-24) Post-Celtic 5Q cap — ลูกค้าถามต่อหลังจบ Celtic
@@ -4024,7 +4024,7 @@ class FortuneConversationService
                 'text_preview' => mb_substr($messageText, 0, 80),
             ]);
 
-            return $this->presentPricingMenu();
+            return $this->presentPricingMenu($facebookUserId, $messageText);
         }
 
         // 🧠 ถ้าลูกค้าพูดเรื่อง meta/chitchat (เช่น "ราคาเท่าไร", "แม่นไหม", "สวัสดี")
@@ -9877,6 +9877,74 @@ class FortuneConversationService
     {
         Cache::forget("fortune:has_paid_active:{$userId}");
         Cache::forget("fortune:in_prediction:{$userId}");
+        // 🌙 (2026-05-25) ล้าง paid-this-month cache ด้วย — guard ทำงานทันทีในข้อความถัดไป
+        FortuneReading::clearPaidThisMonthCache($userId);
+    }
+
+    /**
+     * 🌙 (2026-05-25) USER RULE: ลูกค้าที่ดูดวงสำเร็จในเดือนเดียวกัน → ห้ามปิดการขายอีก
+     *
+     * "ปิดการขาย" = ส่ง pricing menu / tier choice / pitch ราคาเอง
+     * "คุยปกติได้" = AI Chat / chitchat / Q&A — ไม่ถูกบล็อก
+     *
+     * Bypass conditions (ลูกค้าขอดูดวงเอง = ไม่ suppress):
+     *   1. isGenericFortuneRequest — "ดูดวง" / "ทำนาย" / "เปิดไพ่"
+     *   2. isExplicitlyAsking39 — ระบุเลขราคา 39 / "เชิงลึก"
+     *   3. looksLikePricingQuestion — "ราคา" / "ค่าครู" / "เท่าไร"
+     *   4. กดปุ่ม TIER_DEEP_39/TIER_CELTIC_99 (controller inject "ดูดวง" → ผ่าน #1)
+     *
+     * @param  string  $userId  facebook_user_id หรือ platform_user_id
+     * @param  string|null  $messageText  ข้อความที่ลูกค้าพิมพ์ (null = bypass check ไม่ได้ → suppress)
+     */
+    public function shouldSuppressSalesPitch(string $userId, ?string $messageText = null): bool
+    {
+        // ยกเว้น: ลูกค้าขอดูดวงเอง / พูดถึงดูดวงเอง / กดปุ่มดูดวง → ไม่ suppress
+        if ($messageText !== null && trim($messageText) !== '') {
+            if ($this->isGenericFortuneRequest($messageText)
+                || $this->isExplicitlyAsking39($messageText)
+                || $this->looksLikePricingQuestion($messageText)
+            ) {
+                return false;
+            }
+        }
+
+        // เช็คว่าเคยจ่ายดูดวงสำเร็จในเดือนนี้แล้วหรือยัง (cache 5 นาที)
+        return FortuneReading::hasPaidReadingThisCalendarMonth($userId);
+    }
+
+    /**
+     * 🌙 (2026-05-25) ข้อความตอบลูกค้าที่ดูดวงสำเร็จเดือนนี้แล้ว แต่ทักมาเฉยๆ (ไม่ขอดูดวง)
+     *
+     * ใช้แทน presentPricingMenu เมื่อ shouldSuppressSalesPitch() = true
+     * - อบอุ่น เป็นกันเอง คุยปกติ — ไม่มีกล่องราคา ไม่มี "รีบจ่าย"
+     * - บอกชัดว่า "ทักมาเล่นๆ ได้ พร้อมเมื่อไรค่อยมาดูใหม่"
+     * - ไม่มี Quick Replies pricing — แต่มี soft hint ว่าทักดูดวงได้ตลอด
+     */
+    protected function makePostMonthlyCustomerChatResponse(string $userId): array
+    {
+        $templates = [
+            "🙏 สวัสดีค่ะ แม่หมอจำได้นะ — เดือนนี้เปิดไพ่ให้แล้ว ✨\n"
+                ."ทักมาเล่นๆ ได้ตลอดนะคะ ไม่ต้องเกรงใจ\n"
+                ."ถ้าอยากดูดวงใหม่เมื่อไร พิมพ์ 'ดูดวง' มาได้เลยค่ะ 🌙",
+            "🌙 ไหว้แม่หมอ ลูกศิษย์เอ๋ย ~ เห็นชื่อก็ดีใจ ✨\n"
+                ."เดือนนี้แม่หมอเปิดไพ่ให้แล้วเนอะ — ทักทายคุยกันได้นะคะ\n"
+                ."อยากดูดวงใหม่อีกครั้ง พิมพ์ 'ดูดวง' มาได้ทุกเมื่อค่ะ 📿",
+            "✨ สวัสดีค่ะลูก แม่หมอจำได้ — เดือนนี้แม่หมอเปิดไพ่ให้แล้ว 🪷\n"
+                ."ทักมาคุยเล่นๆ ก็ได้ ไม่ต้องดูดวงทุกครั้งนะคะ\n"
+                ."พร้อมดูดวงใหม่เมื่อไร พิมพ์ 'ดูดวง' มาเลยค่ะ 🙏",
+        ];
+
+        // เลือก template แบบ deterministic ตาม user — ทักครั้งเดียวกันได้ข้อความเดียวกัน (ไม่ flicker)
+        $idx = abs(crc32($userId . now()->format('Y-m'))) % count($templates);
+        $message = $templates[$idx];
+
+        return [
+            'success' => true,
+            'response' => $message,
+            'message' => $message,
+            'show_quick_replies' => false,
+            'block_followups' => true,
+        ];
     }
 
     /**
@@ -12151,9 +12219,27 @@ PROMPT;
      *
      * ส่งเมื่อลูกค้าถาม "ราคา/อัตราค่าดูดวง" โดยตรง
      * รวม Deep 39฿ + Celtic 99฿ + ฟรี (ถ้าเปิด) + กดปุ่มเข้า flow ได้ทันที
+     *
+     * 🌙 (2026-05-25) USER RULE: ลูกค้าที่ดูดวงสำเร็จเดือนนี้แล้ว — ห้ามปิดการขายซ้ำ
+     *   ถ้า $facebookUserId + $messageText ถูกส่งมา + shouldSuppressSalesPitch=true
+     *   → return makePostMonthlyCustomerChatResponse (คุยปกติ ไม่มีกล่องราคา)
+     *   Bypass: ลูกค้าขอดูดวงเอง / พิมพ์ "ราคา" / กดปุ่ม → ไม่ suppress
+     *
+     * @param  string|null  $facebookUserId  user id สำหรับ guard (null = ข้าม guard — preserve backward compat)
+     * @param  string|null  $messageText  ข้อความล่าสุดของลูกค้า สำหรับเช็ค bypass keywords
      */
-    public function presentPricingMenu(): array
+    public function presentPricingMenu(?string $facebookUserId = null, ?string $messageText = null): array
     {
+        // 🌙 (2026-05-25) Suppress guard — ลูกค้าที่ดูดวงสำเร็จเดือนนี้แล้ว ไม่ pitch ขายซ้ำ
+        if ($facebookUserId !== null && $this->shouldSuppressSalesPitch($facebookUserId, $messageText)) {
+            Log::info('Fortune: presentPricingMenu suppressed (already paid this month)', [
+                'user_id' => $facebookUserId,
+                'message_preview' => $messageText ? mb_substr($messageText, 0, 60) : null,
+            ]);
+
+            return $this->makePostMonthlyCustomerChatResponse($facebookUserId);
+        }
+
         // 🛡️ (2026-05-24) ห่อทุก fetch ด้วย try/catch — กัน exception bubble ไปถึง processMessage catch
         //   เคสจริง: ลูกค้าถาม "ค่าครู" + CelticCrossService DI fail → exception → getFallbackMessage
         $deepPrice = 39;
