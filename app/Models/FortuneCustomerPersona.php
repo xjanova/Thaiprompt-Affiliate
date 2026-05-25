@@ -236,19 +236,14 @@ class FortuneCustomerPersona extends Model
         $lines = [];
 
         // Demographics
+        // 🚫 (2026-05-26) DO NOT inject gender_hint — AI Grok mirror pronoun เป็น "ครับ"
+        //   เคส "ขุน" FB 27532619583011840: persona male → บอทตอบ "เข้าใจเลยครับ" (ผิด!)
+        //   แม่หมอจันทรา = ผู้หญิงเสมอ ต้องใช้ "ค่ะ" — gender ลูกค้าไม่เกี่ยวกับ pronoun ของแม่หมอ
+        //   เก็บ gender_hint ใน DB ไว้ใช้กับ name salutation (คุณ/พี่) แต่ห้าม inject ใน AI prompt
         $demo = $this->demographics ?? [];
         $demoParts = [];
         if (! empty($demo['age_range']) && $demo['age_range'] !== 'unknown') {
             $demoParts[] = "อายุ ~{$demo['age_range']}";
-        }
-        if (! empty($demo['gender_hint']) && $demo['gender_hint'] !== 'unknown') {
-            $genderTh = match ($demo['gender_hint']) {
-                'male' => 'ชาย',
-                'female' => 'หญิง',
-                'non_binary' => 'ไม่ระบุเพศชัด',
-                default => $demo['gender_hint'],
-            };
-            $demoParts[] = "เพศ {$genderTh}";
         }
         if (! empty($demo['job_hint']) && $demo['job_hint'] !== 'unknown') {
             $demoParts[] = "งาน: {$demo['job_hint']}";
