@@ -208,3 +208,354 @@ Schedule::job(new \App\Jobs\BotAutomation\ProcessScheduledPostsJob)
     ->withoutOverlapping(5)
     ->onOneServer()
     ->name('bot-scheduled-posts-publish');
+
+// ════════════════════════════════════════════════════════════════
+// 🚨 (2026-05-25) GHOST SCHEDULES RESCUE — Migrate Kernel.php → routes/console.php
+// ════════════════════════════════════════════════════════════════
+// Discovery (2026-05-25 Patch E.fix): app/Console/Kernel.php::schedule()
+// ไม่ถูกเรียกใน Laravel 11 เพราะ bootstrap/app.php ไม่มี withKernel(Kernel::class)
+// → 30+ schedules ใน Kernel.php silent dead code ตั้งแต่ L11 upgrade
+//
+// Migration policy:
+//   ✅ ย้ายทั้งหมดที่ command มีอยู่จริงใน artisan list (verified)
+//   ❌ Skip: snake-game:spawn-items + line:cleanup-conversations (commands ไม่มี)
+//   ✅ Pattern: ->onOneServer()->name()->runInBackground() — เหมือน schedules ที่มีอยู่
+//   ✅ Naming convention: <module>-<purpose> (e.g. fortune-check-pending)
+// ════════════════════════════════════════════════════════════════
+
+// ────────────────────────────────────────────────────────────────
+// 🔥 CRITICAL — ลูกค้าจ่ายแล้วต้องได้คำทำนาย (revenue impact)
+// ────────────────────────────────────────────────────────────────
+
+// 1) Fortune Check Pending — ตรวจสอบบิล Deep 39฿ จ่ายแล้วไม่มี deep_response
+//    ทุกนาที — retry ProcessDeepFortuneReadingJob (safety net ถ้า queue worker ตก)
+Schedule::command('fortune:check-pending')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-check-pending')
+    ->runInBackground();
+
+// 2) Fortune Expire Stuck Paid — last-resort safety net
+//    บิลจ่ายแล้วเกิน 24 ชม. ยังไม่ได้คำทำนาย → admin_review + LINE alert
+//    ครอบ Deep 39฿ + Celtic 99฿ ทั้งคู่
+Schedule::command('fortune:expire-stuck-paid --hours=24 --limit=50')
+    ->everySixHours()
+    ->withoutOverlapping(30)
+    ->onOneServer()
+    ->name('fortune-expire-stuck-paid')
+    ->runInBackground();
+
+// 3) Fortune Celtic Auto-Finalize — push Grand Finale ลูกค้า Celtic 99฿
+//    user spec: ลูกค้าจ่าย 99 บาท ต้องได้ summary ทุกครั้ง ไม่ว่าจบยังไง
+//    ทุก 5 นาที สแกน QA window หมดอายุ → push สรุปสุดท้าย
+Schedule::command('fortune:celtic-auto-finalize --limit=20')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('fortune-celtic-auto-finalize')
+    ->runInBackground();
+
+// 4) Fortune Expire Conversations — ปิด orphan conversations + ล้าง takeover หมดเวลา
+//    ทุก 5 นาที — กัน conversation ค้างไม่ปิด
+Schedule::command('fortune:expire-conversations')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-expire-conversations')
+    ->runInBackground();
+
+// 5) AI Recheck Critical — auto-unban critical API keys ที่ probe สำเร็จ
+//    AI ใช้ไม่ได้ = ทำนายไม่ได้ → keys ที่ banned ต้องลอง unban อัตโนมัติ
+//    Exponential backoff: 1h → 4h → 12h → 24h → 72h(cap)
+Schedule::command('ai:recheck-critical --limit=20')
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('ai-recheck-critical')
+    ->runInBackground();
+
+// ────────────────────────────────────────────────────────────────
+// 💰 PAYMENT / SMS CHECKER
+// ────────────────────────────────────────────────────────────────
+
+// 6) SMS Checker Cleanup — ยกเลิก orders หมดเวลาชำระ (30 นาที) + ล้าง expired amounts
+Schedule::command('smschecker:cleanup')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('smschecker-cleanup')
+    ->runInBackground();
+
+// 7) Crypto Scan Deposits — สแกน blockchain หา deposits ใหม่ (TPIX)
+Schedule::command('crypto:scan-deposits')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('crypto-scan-deposits')
+    ->runInBackground();
+
+// 8) Crypto Process Withdrawals — process pending withdrawals
+Schedule::command('crypto:process-withdrawals')
+    ->everyTwoMinutes()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('crypto-process-withdrawals')
+    ->runInBackground();
+
+// ────────────────────────────────────────────────────────────────
+// 🌟 FORTUNE BUSINESS (marketing / cleanup / horoscope)
+// ────────────────────────────────────────────────────────────────
+
+// 9) Fortune Marketing Send — แคมเปญดูดวงตามเวลาที่ตั้งไว้
+Schedule::command('fortune:marketing-send')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-marketing-send')
+    ->runInBackground();
+
+// 10) Fortune Cleanup Free Readings — ล้าง DB คำทำนายฟรีเก่า (daily 03:00)
+Schedule::command('fortune:cleanup-free')
+    ->dailyAt('03:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('fortune-cleanup-free')
+    ->runInBackground();
+
+// 11) Fortune Resync Cancelled Bills — backfill FCM ให้แอพ smschecker (daily 06:00)
+Schedule::command('fortune:resync-cancelled-bills --days=30 --limit=500')
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('fortune-resync-cancelled-bills')
+    ->runInBackground();
+
+// 12) Fortune Horoscope Process Generate — สร้างเนื้อหาดวง (ทุก 15 นาที)
+Schedule::command('fortune:horoscope-process --generate --sync')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(20)
+    ->onOneServer()
+    ->name('fortune-horoscope-generate')
+    ->runInBackground();
+
+// 13) Fortune Horoscope Process Publish — โพสเนื้อหาที่พร้อม (ทุก 5 นาที)
+Schedule::command('fortune:horoscope-process --publish')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('fortune-horoscope-publish')
+    ->runInBackground();
+
+// 14) Horoscope Public Generate Daily — AI สร้างดวง 12 ราศี + 7 วันเกิด (06:00)
+Schedule::command('horoscope:generate-daily')
+    ->dailyAt('06:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('horoscope-generate-daily')
+    ->runInBackground();
+
+// ────────────────────────────────────────────────────────────────
+// 🛒 E-COMMERCE (orders / earnings / payouts)
+// ────────────────────────────────────────────────────────────────
+
+// 15) Orders Process Distribution — paid orders ยังไม่ได้ distribute (ทุก 5 นาที)
+Schedule::command('orders:process-distribution --limit=50')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('orders-process-distribution')
+    ->runInBackground();
+
+// 16) Earnings Release Pending — ปล่อย earnings ที่ถึงเวลา available (ทุก 10 นาที)
+Schedule::command('earnings:release-pending --limit=100')
+    ->everyTenMinutes()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('earnings-release-pending')
+    ->runInBackground();
+
+// 17) Payouts Process Scheduled — process payout requests ที่ scheduled
+Schedule::command('payouts:process-scheduled')
+    ->everyFifteenMinutes()
+    ->withoutOverlapping(20)
+    ->onOneServer()
+    ->name('payouts-process-scheduled')
+    ->runInBackground();
+
+// ────────────────────────────────────────────────────────────────
+// 📊 ANALYTICS / DEBT / LINE / INVESTMENT
+// ────────────────────────────────────────────────────────────────
+
+// 18) Analytics Collect — system metrics ทุก 5 นาที
+Schedule::command('analytics:collect')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('analytics-collect')
+    ->runInBackground();
+
+// 19) Analytics Cleanup — ล้าง analytics เก่า > 30 วัน (daily 02:00)
+Schedule::command('analytics:collect --cleanup')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('analytics-cleanup')
+    ->runInBackground();
+
+// 20) Debt Collect Batch — เก็บหนี้อัตโนมัติจาก earnings available (ทุก 30 นาที)
+Schedule::command('debt:collect-batch --limit=50')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping(35)
+    ->onOneServer()
+    ->name('debt-collect-batch')
+    ->runInBackground();
+
+// 21) LINE Cleanup Tokens — ล้าง LINE access tokens หมดอายุ (daily 03:30)
+Schedule::command('line:cleanup-tokens --force')
+    ->dailyAt('03:30')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('line-cleanup-tokens')
+    ->runInBackground();
+
+// 22) Investment Distribute ROI — ROI to staking positions (daily 00:05)
+Schedule::command('investment:distribute-roi')
+    ->dailyAt('00:05')
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('investment-distribute-roi')
+    ->runInBackground();
+
+// 23) Investment Distribute ROI Retry — retry ROI ที่ fail (ทุก 6 ชั่วโมง)
+Schedule::command('investment:distribute-roi --retry')
+    ->everySixHours()
+    ->withoutOverlapping(60)
+    ->onOneServer()
+    ->name('investment-distribute-roi-retry')
+    ->runInBackground();
+
+// 24) Threat Intelligence Update — DB-driven schedule
+//    Settings: threat_auto_update_enabled / threat_update_frequency / threat_update_time
+//    Frequency: hourly | daily | weekly | custom (cron expression)
+$threatEnabled = false;
+$threatFrequency = 'daily';
+$threatTime = '03:00';
+$threatCustomCron = '';
+$threatDayOfWeek = 0;
+try {
+    $threatEnabled = (bool) \App\Models\Setting::get('threat_auto_update_enabled', 'boolean', true);
+    $threatFrequency = (string) \App\Models\Setting::get('threat_update_frequency', 'string', 'daily');
+    $threatTime = (string) \App\Models\Setting::get('threat_update_time', 'string', '03:00');
+    $threatCustomCron = (string) \App\Models\Setting::get('threat_update_cron', 'string', '');
+    $threatDayOfWeek = (int) \App\Models\Setting::get('threat_update_day', 'integer', 0);
+} catch (\Throwable $e) {
+    // DB ไม่พร้อม (CI ก่อน migrate) → skip ลงทะเบียน schedule นี้
+    $threatEnabled = false;
+}
+
+if ($threatEnabled) {
+    $threatCmd = Schedule::command('threat:update')
+        ->withoutOverlapping(60)
+        ->onOneServer()
+        ->name('threat-update')
+        ->runInBackground();
+
+    switch ($threatFrequency) {
+        case 'hourly':
+            $threatCmd->hourly();
+            break;
+        case 'weekly':
+            $threatCmd->weeklyOn($threatDayOfWeek, $threatTime);
+            break;
+        case 'custom':
+            if (! empty($threatCustomCron)) {
+                $threatCmd->cron($threatCustomCron);
+            } else {
+                $threatCmd->dailyAt($threatTime);
+            }
+            break;
+        case 'daily':
+        default:
+            $threatCmd->dailyAt($threatTime);
+    }
+}
+
+// ────────────────────────────────────────────────────────────────
+// 🤖 AI RENTAL GPU SYSTEM
+// ────────────────────────────────────────────────────────────────
+
+// 25) AI Rental Health Check — health checks ทุก 5 นาที
+Schedule::command('ai-rental:check-health --frequency=5min')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('ai-rental-check-health')
+    ->runInBackground();
+
+// 26) AI Rental Reset Budgets — รีเซ็ต budget limits (daily 00:00)
+Schedule::command('ai-rental:reset-budgets')
+    ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('ai-rental-reset-budgets')
+    ->runInBackground();
+
+// 27) AI Rental Cleanup Alerts — auto-resolve alerts หมดอายุ (hourly)
+Schedule::command('ai-rental:cleanup-alerts')
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('ai-rental-cleanup-alerts')
+    ->runInBackground();
+
+// 28) AI Rental Cleanup Logs — ลบ audit logs > 90 วัน (daily 02:00)
+Schedule::command('ai-rental:cleanup-logs --days=90')
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->name('ai-rental-cleanup-logs')
+    ->runInBackground();
+
+// ────────────────────────────────────────────────────────────────
+// 🎬 VIDEO AUTOMATION SYSTEM
+// ────────────────────────────────────────────────────────────────
+
+// 29) Video Automation Schedules — schedule processing (ทุก 5 นาที)
+Schedule::command('video-automation:process --schedules --limit=5')
+    ->everyFiveMinutes()
+    ->withoutOverlapping(10)
+    ->onOneServer()
+    ->name('video-automation-schedules')
+    ->runInBackground();
+
+// 30) Video Automation Pending — pending jobs (ทุก 2 นาที)
+Schedule::command('video-automation:process --pending --limit=3')
+    ->everyTwoMinutes()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('video-automation-pending')
+    ->runInBackground();
+
+// 31) Video Automation Retry — failed jobs retry (ทุก 30 นาที)
+Schedule::command('video-automation:process --retry --limit=5')
+    ->everyThirtyMinutes()
+    ->withoutOverlapping(35)
+    ->onOneServer()
+    ->name('video-automation-retry')
+    ->runInBackground();
+
+// 32) Video Automation Cleanup — ลบไฟล์ต้นฉบับหลังโพสสำเร็จ (hourly)
+Schedule::command('video-automation:process --cleanup --limit=10')
+    ->hourly()
+    ->withoutOverlapping(15)
+    ->onOneServer()
+    ->name('video-automation-cleanup')
+    ->runInBackground();
+
+// ════════════════════════════════════════════════════════════════
+// ⚠️ DROPPED (commands ไม่อยู่ใน artisan list)
+//   - snake-game:spawn-items     — command file ไม่พบ
+//   - line:cleanup-conversations — command file ไม่พบ
+// ถ้าต้องการกลับมา → restore command file ก่อน แล้วเพิ่ม Schedule ที่นี่
+// ════════════════════════════════════════════════════════════════
