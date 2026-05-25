@@ -37,6 +37,32 @@
         @csrf
         @method('PUT')
 
+        {{-- 🏷️ (2026-05-25) Cancellation Banner — โชว์ที่ด้านบนถ้าบิลถูกยกเลิก --}}
+        @php
+            $cancellationLabel = $reading->getCancellationReasonLabelOrNull();
+            $cancellationReason = data_get($reading->conversation_state, 'cancellation_reason');
+            $cancelledAt = data_get($reading->conversation_state, 'cancelled_at');
+        @endphp
+        @if($cancellationLabel)
+            <div class="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-500 dark:border-red-400 rounded-xl shadow-lg p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <div class="text-3xl">❌</div>
+                    <div class="flex-1">
+                        <h3 class="text-lg font-bold text-red-900 dark:text-red-200">
+                            {{ $cancellationLabel }}
+                        </h3>
+                        <p class="text-sm text-red-700 dark:text-red-300 mt-1">
+                            <span class="font-medium">เหตุผล:</span>
+                            <code class="text-xs bg-red-100 dark:bg-red-900/50 px-2 py-0.5 rounded">{{ $cancellationReason }}</code>
+                            @if($cancelledAt)
+                                · <span class="font-medium">เวลายกเลิก:</span> {{ \Carbon\Carbon::parse($cancelledAt)->format('Y-m-d H:i') }}
+                            @endif
+                        </p>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         {{-- Bill Status --}}
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-6">
             <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">💳 สถานะบิล</h3>

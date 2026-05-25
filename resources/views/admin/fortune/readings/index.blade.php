@@ -293,8 +293,19 @@
                                         🆓 ฟรี
                                     </span>
                                 @endif
+                                @php
+                                    // 🏷️ (2026-05-25) Cancellation badge — ก่อน badge อื่นๆ
+                                    $readingCancellationLabel = $reading->getCancellationReasonLabelOrNull();
+                                @endphp
+                                @if($readingCancellationLabel)
+                                    <div class="mt-1">
+                                        <span class="px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300"
+                                              title="reason: {{ data_get($reading->conversation_state, 'cancellation_reason') }}">
+                                            ❌ {{ $readingCancellationLabel }}
+                                        </span>
+                                    </div>
                                 {{-- 🛟 (2026-05-14) Pay-First incomplete — ลูกค้าจ่ายแล้วแต่ไม่กรอกข้อมูล --}}
-                                @if($reading->is_paid && $reading->reading_type === 'deep' && empty($reading->birth_date) && empty($reading->deep_response))
+                                @elseif($reading->is_paid && $reading->reading_type === 'deep' && empty($reading->birth_date) && empty($reading->deep_response))
                                     <div class="mt-1">
                                         <span class="px-2 py-0.5 text-xs rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" title="ลูกค้าจ่ายแล้วแต่ยังไม่กรอกวันเกิด">
                                             🛟 รอวันเกิด

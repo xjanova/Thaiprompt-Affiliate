@@ -218,6 +218,11 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                @php
+                                    // 🏷️ (2026-05-25) Cancellation detection — ดู conversation_state.cancellation_reason
+                                    //    Cancelled bills ใช้ status=completed + is_paid=false (ไม่มี STATUS_CANCELLED แยก)
+                                    $cancellationLabel = $bill->getCancellationReasonLabelOrNull();
+                                @endphp
                                 @if($bill->is_paid)
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                         ✅ ชำระแล้ว
@@ -225,6 +230,11 @@
                                 @elseif($bill->conversation_status === 'pending_payment')
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                                         ⏳ รอชำระ
+                                    </span>
+                                @elseif($cancellationLabel)
+                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                                          title="{{ data_get($bill->conversation_state, 'cancellation_reason', 'unknown') }}">
+                                        ❌ {{ $cancellationLabel }}
                                     </span>
                                 @elseif($bill->is_floating)
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">

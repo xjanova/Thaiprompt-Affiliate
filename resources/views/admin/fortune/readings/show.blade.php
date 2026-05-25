@@ -245,10 +245,20 @@
             <div>
                 <span class="text-gray-600 dark:text-gray-400">สถานะ:</span>
                 <span class="ml-2">
+                    @php
+                        // 🏷️ (2026-05-25) Cancellation detection
+                        $cancellationLabel = $reading->getCancellationReasonLabelOrNull();
+                        $cancellationReason = data_get($reading->conversation_state, 'cancellation_reason');
+                    @endphp
                     @if($reading->is_paid)
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">ชำระแล้ว</span>
                     @elseif($reading->conversation_status === 'pending_payment')
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">💳 รอชำระ</span>
+                    @elseif($cancellationLabel)
+                        <span class="px-3 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                              title="reason key: {{ $cancellationReason }}">
+                            ❌ {{ $cancellationLabel }}
+                        </span>
                     @elseif($reading->reading_type === 'deep' && $reading->amount_paid > 0)
                         <span class="px-3 py-1 text-xs font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200">รอชำระ</span>
                     @else

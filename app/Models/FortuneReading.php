@@ -1025,6 +1025,71 @@ class FortuneReading extends Model
         };
     }
 
+    /**
+     * 🏷️ (2026-05-25) Map cancellation_reason enum → Thai display label
+     *
+     * User spec: "บิลที่ถูกยกเลิกโดยระบบ ให้ขึ้นในแอพและในระบบต่างๆ ว่า ยกเลิกโดยระบบ"
+     *
+     * Source enum (stored in conversation_state.cancellation_reason):
+     *   - `auto_expired`        — Phase J cron (30+ นาที pending payment)
+     *   - `auto_expired_grace`  — SmsPaymentService cleanup (90+ นาที grace)
+     *   - `user_cancelled`      — ลูกค้ากดยกเลิกเอง
+     *   - `unknown`             — legacy/missing
+     *
+     * Routing display:
+     *   - auto_expired + auto_expired_grace → "ยกเลิกโดยระบบ"
+     *   - user_cancelled                     → "ยกเลิกโดยลูกค้า"
+     *   - unknown / null                     → "ยกเลิก (ไม่ทราบสาเหตุ)"
+     *
+     * ใช้ใน: SmsPaymentController sync API + FcmNotificationService FCM data + admin billing index
+     *
+     * @param  string|null  $reason  enum key from conversation_state.cancellation_reason
+     * @return string  Thai label พร้อมแสดง UI
+     */
+    public static function getCancellationReasonLabel(?string $reason): string
+    {
+        return match ($reason) {
+            'auto_expired', 'auto_expired_grace' => 'ยกเลิกโดยระบบ',
+            'user_cancelled' => 'ยกเลิกโดยลูกค้า',
+            default => 'ยกเลิก (ไม่ทราบสาเหตุ)',
+        };
+    }
+
+    /**
+     * 🏷️ (2026-05-25) Instance shortcut — ดึง cancellation_reason จาก conversation_state แล้ว map → label
+     *
+     * คืน null ถ้า reading นี้ยังไม่ถูก cancel (ไม่มี cancellation_reason ใน state)
+     * ใช้ใน admin Blade: `{{ $bill->getCancellationReasonLabelOrNull() ?? '-' }}`
+     */
+    public function getCancellationReasonLabelOrNull(): ?string
+    {
+        $state = $this->conversation_state ?? [];
+        if (! is_array($state) || empty($state['cancellation_reason'])) {
+            return null;
+        }
+
+        return self::getCancellationReasonLabel((string) $state['cancellation_reason']);
+    }
+
+    /**
+     * 🏷️ (2026-05-25) เช็คว่า bill นี้ถูก cancel หรือไม่
+     *
+     * Logic: conversation_status = 'completed' + is_paid = false + มี cancellation_reason ใน state
+     *        (cancelled bills ใช้ STATUS_COMPLETED + is_paid=false — ไม่มี STATUS_CANCELLED แยก)
+     */
+    public function isCancelled(): bool
+    {
+        if ($this->is_paid) {
+            return false;
+        }
+        if ($this->conversation_status !== self::STATUS_COMPLETED) {
+            return false;
+        }
+        $state = $this->conversation_state ?? [];
+
+        return is_array($state) && ! empty($state['cancellation_reason']);
+    }
+
     // ============================================================
     // Conversation State Management
     // ============================================================

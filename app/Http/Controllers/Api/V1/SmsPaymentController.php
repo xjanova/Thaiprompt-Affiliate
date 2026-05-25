@@ -363,6 +363,14 @@ class SmsPaymentController extends Controller
         // ใช้ offset ID เพื่อไม่ให้ชนกับ PaymentTransaction ID ใน Android local DB
         $offsetId = $reading->id + self::FORTUNE_READING_ID_OFFSET;
 
+        // 🏷️ (2026-05-25) Human-readable label สำหรับ smschecker app
+        //    User spec: "บิลที่ถูกยกเลิกโดยระบบ ให้ขึ้นในแอพและในระบบต่างๆ ว่า ยกเลิกโดยระบบ"
+        //    ส่ง cancellation_reason (enum key) + cancellation_reason_label (Thai text) พร้อมกัน
+        //    → app สามารถใช้ label ตรงๆ ได้ ไม่ต้อง map เอง (backward compat กับ app เก่า)
+        $cancellationReasonLabel = $cancellationReason
+            ? FortuneReading::getCancellationReasonLabel($cancellationReason)
+            : null;
+
         return [
             'id' => $offsetId,
             'notification_id' => $reading->sms_notification_id,
@@ -370,6 +378,7 @@ class SmsPaymentController extends Controller
             'device_id' => null,
             'approval_status' => $approvalStatus,
             'cancellation_reason' => $cancellationReason,
+            'cancellation_reason_label' => $cancellationReasonLabel,
             'confidence' => $reading->is_paid ? 'high' : 'medium',
             'approved_by' => null,
             'approved_at' => $reading->paid_at?->toIso8601String(),

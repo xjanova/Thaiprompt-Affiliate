@@ -358,12 +358,20 @@ class FcmNotificationService
             // ปล่อย default 'unknown'
         }
 
+        // 🏷️ (2026-05-25) Human-readable label สำหรับ smschecker app
+        //    User spec: "บิลที่ถูกยกเลิกโดยระบบ ให้ขึ้นในแอพและในระบบต่างๆ ว่า ยกเลิกโดยระบบ"
+        //    auto_expired / auto_expired_grace → "ยกเลิกโดยระบบ"
+        //    user_cancelled                     → "ยกเลิกโดยลูกค้า"
+        //    unknown                            → "ยกเลิก (ไม่ทราบสาเหตุ)"
+        $cancellationReasonLabel = FortuneReading::getCancellationReasonLabel($cancellationReason);
+
         $data = [
             'type' => 'order_cancelled',
             'order_id' => (string) $offsetId,
             'order_number' => $reading->bill_reference ?? ('FTU-'.$reading->id),
             'payment_status' => 'cancelled',
             'cancellation_reason' => $cancellationReason,
+            'cancellation_reason_label' => $cancellationReasonLabel,
             'is_fortune_reading' => 'true',
             'server_url' => config('app.url'),
         ];
@@ -373,6 +381,7 @@ class FcmNotificationService
             'reading_id' => $reading->id,
             'bill_reference' => $reading->bill_reference,
             'cancellation_reason' => $cancellationReason,
+            'cancellation_reason_label' => $cancellationReasonLabel,
         ]);
 
         return $this->sendToMultipleTokens($tokens, $data, null);

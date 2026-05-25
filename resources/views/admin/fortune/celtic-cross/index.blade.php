@@ -231,10 +231,21 @@
                                 <td class="px-3 py-2 font-mono text-xs">{{ $reading->bill_reference ?? '#'.$reading->id }}</td>
                                 <td class="px-3 py-2">{{ $reading->facebook_user_name ?? '-' }}</td>
                                 <td class="px-3 py-2">
-                                    <span class="px-2 py-1 rounded text-xs
-                                        {{ $reading->conversation_status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' }}">
-                                        {{ $reading->conversation_status }}
-                                    </span>
+                                    @php
+                                        // 🏷️ (2026-05-25) Cancellation overrides raw status display
+                                        $celticCancellationLabel = $reading->getCancellationReasonLabelOrNull();
+                                    @endphp
+                                    @if($celticCancellationLabel)
+                                        <span class="px-2 py-1 rounded text-xs bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"
+                                              title="reason: {{ data_get($reading->conversation_state, 'cancellation_reason') }}">
+                                            ❌ {{ $celticCancellationLabel }}
+                                        </span>
+                                    @else
+                                        <span class="px-2 py-1 rounded text-xs
+                                            {{ $reading->conversation_status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' }}">
+                                            {{ $reading->conversation_status }}
+                                        </span>
+                                    @endif
                                 </td>
                                 <td class="px-3 py-2">
                                     @if($reading->is_paid)
