@@ -155,18 +155,23 @@ class AiApiKey extends Model
             //   error: "This model models/gemini-3.1-flash-lite-preview is no longer available"
             //   ใช้ stable version แทน: gemini-3.1-flash-lite (drop `-preview` suffix)
             //   migration 2026_05_26_140000 อัปเดต DB rows อัตโนมัติ → gemini-3.1-flash-lite
+            //
+            // 🚫 (2026-05-26 v2) ลบ ALL preview models — admin directive "ใช้ได้จริงเท่านั้น"
+            //   Google docs: "Most production apps should use a specific stable model"
+            //                 "Preview models will be deprecated with at least 2 weeks notice"
+            //   ลบ gemini-3.1-pro-preview + gemini-3-flash-preview (no stable Gemini 3 Pro yet)
+            //   → ใช้ gemini-2.5-pro สำหรับ reasoning, gemini-3.5-flash สำหรับ frontier flash
+            //   migration 2026_05_26_150000 อัปเดต DB rows: preview → gemini-2.5-pro
 
-            // 🆕 (2026-05-24) Gemini 3.x stable — release ใหม่จาก Q2 2026
-            'gemini-3.5-flash',               // ⭐ stable — รุ่นใหม่สุด, multimodal/agentic
-            'gemini-3.1-flash-lite',          // ⭐ stable — ถูกที่สุด, high-volume (แทน -preview ที่ถูก shut down 2026-05-26)
-            // Preview (อาจเปลี่ยนชื่อ/หาย)
-            'gemini-3.1-pro-preview',         // preview — ฉลาดสุด, agentic + reasoning
-            'gemini-3-flash-preview',         // preview — multimodal/agentic
+            // ⭐ Stable models only — production-grade, ไม่มีความเสี่ยง shutdown 2-week notice
+            // Gemini 3.x stable (Q2 2026 release)
+            'gemini-3.5-flash',               // ⭐ frontier flash — multimodal/agentic, รุ่นใหม่สุด
+            'gemini-3.1-flash-lite',          // ⭐ ถูกที่สุด, high-volume
 
-            // Gemini 2.5 — stable (ยังใช้ได้ตามปกติ)
-            'gemini-2.5-flash',               // ⭐ default ปลอดภัย ใช้กันแพร่หลายในระบบเรา
-            'gemini-2.5-pro',                 // stable + ฉลาด
-            'gemini-2.5-flash-lite',          // stable + ถูก
+            // Gemini 2.5 stable (legacy แต่ใช้ได้นาน)
+            'gemini-2.5-pro',                 // ⭐ ฉลาดสุด — deep reasoning, แทน 3.1-pro-preview
+            'gemini-2.5-flash',               // ⭐ balanced — default ปลอดภัย ใช้กันแพร่หลายในระบบเรา
+            'gemini-2.5-flash-lite',          // ถูก
         ],
         'qwen' => [
             'qwen-max',
@@ -290,10 +295,8 @@ class AiApiKey extends Model
             // Gemini 3.x stable
             'gemini-3.5-flash' => 250000,
             'gemini-3.1-flash-lite' => 250000,
-            // Gemini 3.x preview
-            'gemini-3.1-pro-preview' => 250000,
-            'gemini-3-flash-preview' => 250000,
-            // 🚫 (2026-05-26) gemini-3.1-flash-lite-preview shut down — ใช้ gemini-3.1-flash-lite (stable) แทน
+            // 🚫 (2026-05-26 v2) ลบ ALL preview models — production-grade only
+            //   - gemini-3.1-pro-preview, gemini-3-flash-preview, gemini-3.1-flash-lite-preview shut down
             // Gemini 2.5 stable
             'gemini-2.5-pro' => 250000,
             'gemini-2.5-flash' => 250000,
@@ -328,10 +331,8 @@ class AiApiKey extends Model
             // Gemini 3.x stable
             'gemini-3.5-flash' => 9,                               // 10 actual
             'gemini-3.1-flash-lite' => 14,                         // 15 actual
-            // Gemini 3.x preview (น้อยสุด — preview tier เข้มงวด)
-            'gemini-3.1-pro-preview' => 4,                         // 5 actual
-            'gemini-3-flash-preview' => 9,                         // 10 actual
-            // 🚫 (2026-05-26) gemini-3.1-flash-lite-preview shut down — ใช้ gemini-3.1-flash-lite (stable) แทน
+            // 🚫 (2026-05-26 v2) ลบ ALL preview models — production-grade only
+            //   - gemini-3.1-pro-preview, gemini-3-flash-preview, gemini-3.1-flash-lite-preview shut down
             // Gemini 2.5 stable
             'gemini-2.5-pro' => 4,                                 // 5 actual
             'gemini-2.5-flash' => 9,                               // 10 actual
