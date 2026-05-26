@@ -216,10 +216,16 @@ class FortuneBannerService
      */
     public function sendBannerThenWait(callable $sendFn, string $channel, ?string $platform = null, ?string $userId = null): bool
     {
-        // 👤 (2026-05-14) Skip ลูกค้าเก่า ถ้าระบุ platform+userId
-        //   user spec: "ส่งแค่ลูกค้าใหม่จริงๆ" — backward compat: ไม่ระบุ = ไม่ check
-        if ($platform && $userId && $this->isReturningCustomer($platform, $userId)) {
-            Log::info('FortuneBanner: skip — returning customer (sendBannerThenWait)', [
+        // 👤 (2026-05-14) Skip ลูกค้าเก่า — เฉพาะ 'welcome' channel
+        // 🖼️ (2026-05-26) USER SPEC: comment/reaction ต้องส่ง banner ครบ
+        //    เดิม: skip returning ทุก channel → ลูกค้าเก่า comment/like ไม่ได้ banner
+        //    user complaint: "ทำไมไม่ส่งรูปแบนเนอร์ มีแต่ตัวหนังสือ ทำให้ส่งครบได้ไหม"
+        //    ใหม่: skip เฉพาะ 'welcome' (เพื่อไม่ทักทาย first-time ซ้ำเมื่อลูกค้าเก่าทักเพจ)
+        //          'comment'/'reaction' = ส่งทุกครั้ง — 24hr cooldown (FortuneCommentEngagement::hasEngagedRecently)
+        //          ป้องกัน spam อยู่แล้วใน layer caller
+        $skipForReturning = ($channel === 'welcome');
+        if ($skipForReturning && $platform && $userId && $this->isReturningCustomer($platform, $userId)) {
+            Log::info('FortuneBanner: skip — returning customer (welcome channel only)', [
                 'platform' => $platform,
                 'user_id' => $userId,
                 'channel' => $channel,

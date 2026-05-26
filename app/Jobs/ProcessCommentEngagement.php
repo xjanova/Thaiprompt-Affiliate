@@ -272,16 +272,46 @@ class ProcessCommentEngagement implements ShouldQueue
             ]);
 
             if ($stage1TextSent) {
-                // Stage 1 สำเร็จ → ส่งภาพตามหลัง 800ms (bonus, best effort — fail #10900 = ปกติ)
-                usleep(800000);
+                // Stage 1 สำเร็จ → ส่งภาพตามหลัง 1500ms ผ่าน user PSID (ไม่ใช่ comment_id)
+                //
+                // 🖼️ (2026-05-26) USER SPEC: ส่ง banner ให้ครบ — แก้ปัญหาภาพไม่ถึง ~70%
+                //
+                // เดิม: ส่งภาพผ่าน comment_id → FB Reels race #10900 "Activity already replied"
+                //       เพราะ Stage 1 (text+QR) consume comment_id แล้ว → ภาพ fail
+                //
+                // ใหม่:
+                //   1. ลบ comment_id ออก → ส่งผ่าน user PSID (Send API ปกติ recipient.id)
+                //      หลัง Stage 1 ส่ง Private Reply สำเร็จ → ลูกค้าเข้า 24hr window อัตโนมัติ
+                //      → Send API ปกติ work
+                //   2. เพิ่ม delay 800 → 1500ms — ให้ FB ประมวลผล Stage 1 message ก่อน
+                //   3. Fallback: ถ้า PSID fail (24hr window ยังไม่เปิด) → ลอง comment_id อีกครั้ง
+                //      (rare case, ส่วนใหญ่ FB เปิด window ทันทีหลัง Private Reply)
+                usleep(1500000); // 1.5s buffer ให้ FB process Stage 1 + เปิด 24hr window
                 try {
                     $bannerService = new FortuneBannerService($settings);
                     $bannerAfterTextSent = (bool) $bannerService->sendBannerThenWait(
-                        fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
+                        // 🎯 Primary: user PSID (no comment_id race)
+                        fn ($url) => $facebookService->sendImage($userId, $url),
                         'comment',
                         'facebook',
                         $userId
                     );
+
+                    // Fallback: ถ้า PSID fail → ลอง comment_id อีกครั้ง (best effort)
+                    //   เกิดเฉพาะ rare case ที่ FB ยังไม่เปิด 24hr window หลัง Private Reply
+                    if (! $bannerAfterTextSent) {
+                        Log::info('🔁 Banner-after-text via PSID fail → fallback ผ่าน comment_id', [
+                            'user_id' => $userId,
+                            'comment_id' => $commentId,
+                        ]);
+                        usleep(800000); // อีก 800ms ก่อน retry
+                        $bannerAfterTextSent = (bool) $bannerService->sendBannerThenWait(
+                            fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
+                            'comment',
+                            'facebook',
+                            $userId
+                        );
+                    }
                 } catch (Throwable $bannerErr) {
                     Log::debug('Comment Engagement: banner-after-text ล้ม (non-blocking): '.$bannerErr->getMessage());
                 }
