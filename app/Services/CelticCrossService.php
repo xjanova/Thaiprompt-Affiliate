@@ -677,6 +677,33 @@ class CelticCrossService
     }
 
     /**
+     * 🃏 (2026-05-26) USER SPEC: ห้าม AI ใช้คำว่า "แห่ง" ระหว่างเลขกับสำรับใน Minor Arcana
+     *
+     * Layer 3 defense (Layer 1=DB seed, Layer 2=migration update existing rows):
+     *   - กัน past snapshot leak — ลูกค้าเก่าที่ทำนายก่อน migration → snapshot ใน
+     *     conversation_state.celtic_cards JSON เก็บ "สองแห่งดาบ" → buildPastReadingsContext
+     *     ดึงมา → AI prompt เห็นชื่อเก่า → อาจใช้ตามนั้น
+     *   - กัน AI hallucination — แม้ DB ใหม่จะเป็น "สองดาบ" — AI อาจ "เติม" แห่ง เองจาก
+     *     training data ทั่วไป (Thai general usage มักใช้ "X แห่ง Y" ในบริบทอื่น)
+     *
+     * Inject ทั้ง 4 prompts: buildMainPrompt + buildFollowupPrompt + buildShortFollowupPrompt
+     *                        + buildGrandFinalePrompt
+     */
+    protected function buildCardNamingDirective(): string
+    {
+        return "━━━━━━━━━━━━━━━━━\n"
+            ."🃏 กฎเรียกชื่อไพ่ (สำคัญ — ห้ามฝ่าฝืน)\n"
+            ."━━━━━━━━━━━━━━━━━\n"
+            ."• ใช้ชื่อไพ่ตามที่ระบุใน prompt เท่านั้น — ห้ามดัดแปลง ห้ามเติมคำเชื่อม\n"
+            ."• ❌ ห้ามใช้คำว่า \"แห่ง\" / \"ของ\" / \"ใน\" ระหว่างเลขกับสำรับ\n"
+            ."    ❌ ผิด: \"สองแห่งดาบ\" / \"สิบแห่งเหรียญ\" / \"อัศวินแห่งถ้วย\" / \"ราชินีของดาบ\"\n"
+            ."    ✅ ถูก: \"สองดาบ\" / \"สิบเหรียญ\" / \"อัศวินถ้วย\" / \"ราชินีดาบ\"\n"
+            ."• ถ้าใน context (เช่น ประวัติเก่า) เจอชื่อเก่ารูปแบบ \"X แห่ง Y\" → แปลงเป็น \"XY\"\n"
+            ."• Major Arcana ใช้ตามชื่อเดิม (เช่น \"กงล้อแห่งโชค\", \"นักมายากล\") — กฎนี้ไม่ครอบ\n"
+            ."━━━━━━━━━━━━━━━━━\n\n";
+    }
+
+    /**
      * สร้าง Main Prompt (Q1) — แม่หมอจันทรา ผู้สื่อพลังจักรวาล อ่านพลังงานไพ่ + จิตเจ้าชะตา
      *
      * บุคลิกแม่หมอจันทรา:
@@ -727,6 +754,7 @@ class CelticCrossService
             .$preChatContext
             .$enrichmentDirective
             .$advisorDirective
+            .$this->buildCardNamingDirective()
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
             ."ภารกิจของคุณ:\n"
             ."• ทำนายจากไพ่ 10 ใบที่ลูกค้าเปิด\n"
@@ -1147,6 +1175,7 @@ class CelticCrossService
             .$preChatContext
             .$enrichmentDirective
             .$advisorDirective2
+            .$this->buildCardNamingDirective()
             .$complaintHandlingQ1
             .$multiBulletHandlingQ1
             ."คุณคือ \"{$brandName}พยากรณ์\" นักพยากรณ์ระดับปรมาจารย์ที่ใช้ไพ่ยิปซีโบราณ ระบบเซลติก (10 ใบ) — มีหลักการและเหตุผลรองรับทุกคำแนะนำ\n\n"
@@ -1512,6 +1541,7 @@ class CelticCrossService
             .$preChatContext
             .$complaintHandling
             .$multiBulletHandling
+            .$this->buildCardNamingDirective()
             ."คุณคือ \"{$brandName}\" — แม่หมอเซียนระบบเซลติก (ไพ่ 10 ใบที่ลูกค้าเปิดไว้แล้ว)\n"
             ."ตอนนี้กำลังคุยกับเจ้าชะตาหลังจาก Q1 ทำนายเต็มไปแล้ว — เป็นแม่หมอที่ใจดี ฟังลูกค้า ปลอบใจได้ แก้ปัญหาเก่ง\n\n"
 
@@ -2464,6 +2494,7 @@ class CelticCrossService
         }
 
         return $localeDirective
+            .$this->buildCardNamingDirective()
             ."คุณคือ \"{$brandName}\" — *นักพยากรณ์ชั้นปรมาจารย์ระดับเซียน* ผ่านการดูชะตาคนมาเป็นพันคน 30+ ปี\n"
             ."สถานะ: คุณกำลังจะปิดบทสนทนากับเจ้าชะตาท่านนี้ — ขณะนี้คือ *บทสรุปสุดท้ายระดับศาสตร์ลึก*\n"
             ."บุคลิก: สุขุม นิ่ง อบอุ่น เปี่ยมพลัง พูดน้อยแต่แทงใจดำ — เห็นเหมือนตาเห็น\n\n"
