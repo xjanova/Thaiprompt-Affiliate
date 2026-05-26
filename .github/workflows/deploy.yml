@@ -1,6 +1,17 @@
 name: Deploy to Production
 
 on:
+  # 🔧 (2026-05-26) Direct push trigger — independent of CI
+  #   เดิม: workflow_call จาก ci.yml — แต่ CI tests/code-quality ใช้ shivammathur/setup-php
+  #   external action ที่ codeload.github.com flaky → CI fail → auto-deploy skip
+  #   ใหม่: deploy trigger ตรงจาก push — ไม่พึ่ง CI tests
+  #   Safety: deploy.sh มี verify-seeders + composer install + migrate ครอบครุม
+  #   Code review ผ่าน PR review ก่อน push
+  push:
+    branches:
+      - claude/Main
+      - main
+
   # Manual trigger
   workflow_dispatch:
     inputs:
@@ -12,13 +23,16 @@ on:
         options:
           - production
           - staging
-  # Auto-trigger when called from ci.yml
+
+  # Backward compat — ถ้า ci.yml ยังเรียก workflow_call
   workflow_call:
 
 jobs:
   deploy:
     name: Deploy to ${{ github.event.inputs.environment || 'production' }}
     runs-on: ubuntu-latest
+    # ⏭️ Skip ถ้า commit message มี [skip ci] — เคารพ release bot commits
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
 
     steps:
       - name: Check required secrets
