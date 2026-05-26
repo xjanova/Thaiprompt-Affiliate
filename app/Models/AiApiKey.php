@@ -150,14 +150,18 @@ class AiApiKey extends Model
             //   - gemini-2.0-flash-001 / -lite / -exp → "will be shut down soon"
             //   - gemini-1.5-flash / -flash-8b / -pro → not listed (likely removed)
             //   migration 2026_05_24_120000 อัปเดต DB rows อัตโนมัติ → gemini-2.5-flash
+            //
+            // 🚫 (2026-05-26) ลบ gemini-3.1-flash-lite-preview — Google shut down แล้ว
+            //   error: "This model models/gemini-3.1-flash-lite-preview is no longer available"
+            //   ใช้ stable version แทน: gemini-3.1-flash-lite (drop `-preview` suffix)
+            //   migration 2026_05_26_140000 อัปเดต DB rows อัตโนมัติ → gemini-3.1-flash-lite
 
             // 🆕 (2026-05-24) Gemini 3.x stable — release ใหม่จาก Q2 2026
             'gemini-3.5-flash',               // ⭐ stable — รุ่นใหม่สุด, multimodal/agentic
-            'gemini-3.1-flash-lite',          // ⭐ stable — ถูกที่สุด, high-volume
+            'gemini-3.1-flash-lite',          // ⭐ stable — ถูกที่สุด, high-volume (แทน -preview ที่ถูก shut down 2026-05-26)
             // Preview (อาจเปลี่ยนชื่อ/หาย)
             'gemini-3.1-pro-preview',         // preview — ฉลาดสุด, agentic + reasoning
             'gemini-3-flash-preview',         // preview — multimodal/agentic
-            'gemini-3.1-flash-lite-preview',  // preview — high-volume
 
             // Gemini 2.5 — stable (ยังใช้ได้ตามปกติ)
             'gemini-2.5-flash',               // ⭐ default ปลอดภัย ใช้กันแพร่หลายในระบบเรา
@@ -289,7 +293,7 @@ class AiApiKey extends Model
             // Gemini 3.x preview
             'gemini-3.1-pro-preview' => 250000,
             'gemini-3-flash-preview' => 250000,
-            'gemini-3.1-flash-lite-preview' => 250000,
+            // 🚫 (2026-05-26) gemini-3.1-flash-lite-preview shut down — ใช้ gemini-3.1-flash-lite (stable) แทน
             // Gemini 2.5 stable
             'gemini-2.5-pro' => 250000,
             'gemini-2.5-flash' => 250000,
@@ -327,7 +331,7 @@ class AiApiKey extends Model
             // Gemini 3.x preview (น้อยสุด — preview tier เข้มงวด)
             'gemini-3.1-pro-preview' => 4,                         // 5 actual
             'gemini-3-flash-preview' => 9,                         // 10 actual
-            'gemini-3.1-flash-lite-preview' => 14,                 // 15 actual
+            // 🚫 (2026-05-26) gemini-3.1-flash-lite-preview shut down — ใช้ gemini-3.1-flash-lite (stable) แทน
             // Gemini 2.5 stable
             'gemini-2.5-pro' => 4,                                 // 5 actual
             'gemini-2.5-flash' => 9,                               // 10 actual
