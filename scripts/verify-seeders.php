@@ -79,6 +79,8 @@ $intentionallyExcludedSeeders = [
     'PageBuilderSeeder',        // SKIP: Already exists - ใช้ครั้งเดียว
     'ThaipromptMlmSeeder',      // ❌ ปิดไว้ - ทดสอบสมัครปกติ
     'WalletTopupPackagesSeeder', // ❌ ยกเลิก - ระบบเติมเงินไม่ใช้สินค้าแล้ว ใช้ PaymentTransaction โดยตรง
+    'AppConfigSeeder',          // 🔧 รัน manual: php artisan db:seed --class=AppConfigSeeder (admin custom values อาจถูก upsert overwrite)
+    'FeatureFlagSeeder',        // 🔧 รัน manual: php artisan db:seed --class=FeatureFlagSeeder (admin toggle อาจถูก reset)
 ];
 
 // Check if directories exist
