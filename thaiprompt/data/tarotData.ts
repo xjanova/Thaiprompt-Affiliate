@@ -388,17 +388,20 @@ const createMinorArcana = (
     { number: 14, name: 'King', name_th: 'กษัตริย์', icon: '🤴' },
   ];
 
+  // 🃏 (2026-05-26) USER SPEC: ไม่ใช้คำว่า "แห่ง" — sync กับ Laravel seeder + migration
+  //   "สองแห่งดาบ" → "สองดาบ" / "สิบแห่งเหรียญ" → "สิบเหรียญ"
+  //   ดู: database/seeders/TarotSystemSeeder.php + migration 2026_05_26_010000_remove_haeng_from_minor_arcana_names.php
   return ranks.map((rank, index) => ({
     id: startId + index,
     number: rank.number,
     type: 'minor_arcana' as CardType,
     suit,
     name_en: `${rank.name} of ${suit!.charAt(0).toUpperCase() + suit!.slice(1)}`,
-    name_th: `${rank.name_th}แห่ง${suitTh}`,
+    name_th: `${rank.name_th}${suitTh}`,
     keywords_en: keywords.en,
     keywords_th: keywords.th,
-    upright_meaning_th: `ด้านบวกของ${keywords.th.join(', ')} - ${rank.name_th}แห่ง${suitTh}`,
-    reversed_meaning_th: `ด้านลบของ${keywords.th.join(', ')} - ${rank.name_th}แห่ง${suitTh}`,
+    upright_meaning_th: `ด้านบวกของ${keywords.th.join(', ')} - ${rank.name_th}${suitTh}`,
+    reversed_meaning_th: `ด้านลบของ${keywords.th.join(', ')} - ${rank.name_th}${suitTh}`,
     icon: rank.number <= 10 ? suitIcon : rank.icon,
   }));
 };
