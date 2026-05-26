@@ -4293,38 +4293,61 @@ class FortuneConversationService
             }
         }
 
-        // ✅ Tier 4 (2026-05-26) — Typo tolerance
-        //   เคสจริง: ลูกค้าวิวัฒน์ FB 27555224654066635 พิมพ์ "เ฿ดวง" (mobile typo ใช้ ฿ แทน ู)
-        //   → keyword "ดูดวง" จับไม่เจอ → ตกไป chat AI → AI หลอนเปิดไพ่ทำนายฟรี
+        // ✅ Tier 4 (2026-05-26 v2 tighter) — Typo tolerance with stopwords + intent verb
+        //   เคสจริง: ลูกค้าวิวัฒน์ FB 27555224654066635 พิมพ์ "เ฿ดวง" → ไม่ match → AI หลอน
         //
-        //   Strategy: ลบ non-Thai/non-Lao chars (฿ ◌ ◌่ symbols, English) แล้วเช็คซ้ำ
-        //   เงื่อนไข: ต้องสั้น (≤20 chars หลัง normalize) — กัน false positive
-        //              ในข้อความยาวที่บังเอิญมี "ดวง" ปนมา
+        //   v2 changes (กัน FP ที่ค้นพบ):
+        //   - "ดวงตา" (4 chars) → no stopword "ตา" → trigger Celtic 🚨 → add stopwords
+        //   - "ดวงไฟดับ" (7 chars) → no stopword → trigger Celtic 🚨 → add stopwords
+        //   - "ดวงอาทิตย์ตก" (12 chars) → no stopword → trigger 🚨 → add stopwords
+        //   - len > 6 → require intent verb (ขอ/อยาก/ดู/ทำนาย) เพื่อกัน compound noun
         //
         //   Test cases:
-        //     "เ฿ดวง" → strip ฿ → "เดวง" → match "ดวง" substring → ✅ true
-        //     "ด฿วง" → strip → "ดวง" → exact match short word → ✅ true
-        //     "อยาก ดูดวง ค่ะ ห" → strip → "อยากดูดวงคะห" (12 chars) → contains "ดวง" → ✅ true
-        //     "ดวงดาวบนท้องฟ้าสวยมาก" (20 chars) → contains "ดวง" → match
-        //       ⚠️ FP risk → แก้: เพิ่ม short threshold (≤15 chars) + ห้าม contains stopwords
+        //     "เ฿ดวง" → "เดวง" → contains "ดวง"? no — but contains "เดวง" variant → ✅ true
+        //     "ด฿วง" → "ดวง" → short word exact → ✅ true
+        //     "ดูดวง" → exact → ✅ true
+        //     "ดวงตา" → stopword "ตา" → ❌ false (NEW)
+        //     "ดวงไฟดับ" → stopword "ไฟ" → ❌ false (NEW)
+        //     "ดวงอาทิตย์ตก" → stopword "อาทิตย์" → ❌ false (NEW)
+        //     "ดวงดี" (5 chars, no stopword, no intent verb) → ❌ false (len > 4)
+        //     "ขอดูดวง" → contains intent "ขอ" → ✅ true
         $thaiOnly = preg_replace('/[^\p{Thai}\p{Lao}]/u', '', $textClean);
         if ($thaiOnly !== null && $thaiOnly !== '' && mb_strlen($thaiOnly) >= 2 && mb_strlen($thaiOnly) <= 15) {
-            // กัน FP: ถ้ามีคำที่ไม่ใช่ intent ดูดวง เช่น "ดาว" "ฟ้า" "สวย" → return false
-            $nonIntentStopwords = ['ดาว', 'ฟ้า', 'สวย', 'หล่อ', 'น่ารัก', 'รัก', 'เกลียด', 'โกรธ'];
+            // กัน FP: stopwords ที่บ่งบอกว่าไม่ใช่ขอดูดวง (compound noun with "ดวง")
+            //   ดวงตา (eye) / ดวงดาว (star) / ดวงจันทร์ (moon) / ดวงไฟ (light) / ดวงวิญญาณ (soul)
+            //   ดวงอาทิตย์ (sun) / ดวงเดือน (moon) / ดวงแก้ว (crystal ball) / ดวงเพชร (diamond)
+            //   + คำเกี่ยวกับครอบครัว/ความรู้สึกที่ user มักพิมพ์
+            $nonIntentStopwords = [
+                'ดาว', 'ฟ้า', 'สวย', 'หล่อ', 'น่ารัก', 'รัก', 'เกลียด', 'โกรธ',
+                'ตา', 'ไฟ', 'อาทิตย์', 'วิญญาณ', 'จันทร์', 'เดือน', 'แก้ว', 'เพชร', 'ทอง',
+                'ครอบครัว', 'พ่อ', 'แม่', 'ลูก', 'พี่', 'น้อง', 'สามี', 'ภรรยา', 'แฟน',
+            ];
             foreach ($nonIntentStopwords as $sw) {
                 if (str_contains($thaiOnly, $sw)) {
                     return false;
                 }
             }
-            // ตรงๆ "ดวง" คำเดียว (≤4 chars)
+            // ตรงๆ "ดวง" คำเดียวสั้น (≤4 chars) = น่าจะตั้งใจขอดูดวง
             if (mb_strlen($thaiOnly) <= 4 && (str_contains($thaiOnly, 'ດວງ') || str_contains($thaiOnly, 'ดวง'))) {
                 return true;
             }
-            // "ดูดวง" / "เดูดวง" / "ดูวง" — typo variants
-            $typoVariants = ['ดูดวง', 'ดดวง', 'ดูวง', 'ดเวง', 'ดวง', 'เดวง'];
+            // "ดูดวง" / typo variants — exact substring
+            $typoVariants = ['ดูดวง', 'ดดวง', 'ดูวง', 'ดเวง', 'เดวง'];
             foreach ($typoVariants as $tv) {
                 if (str_contains($thaiOnly, $tv)) {
                     return true;
+                }
+            }
+            // ถ้าเหลือแค่ "ดวง" + tail >4 chars → require intent verb เพื่อกัน compound noun ใหม่ๆ
+            //   "ดวงดี" (5 chars) → no intent → false
+            //   "ขอดวงดี" (6 chars) → intent "ขอ" → true
+            //   "อยากดวงเปลี่ยน" → intent "อยาก" → true
+            if (str_contains($thaiOnly, 'ดวง') || str_contains($thaiOnly, 'ດວງ')) {
+                $intentVerbs = ['ขอ', 'อยาก', 'ดู', 'ทำนาย', 'เช็ค', 'รบกวน', 'ช่วย'];
+                foreach ($intentVerbs as $verb) {
+                    if (str_contains($thaiOnly, $verb)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -13758,13 +13781,18 @@ PROMPT;
             // 🎯 Phase H — ส่ง userId เป็น context เพื่อให้ key ordering กระจายตาม user
             //    (users ต่างคน → key ต่างลำดับ → ลด thundering herd)
             if ($result === null) {
+                // 🛡 (2026-05-26 v2 F2) ลูกค้ามี paid Celtic/Deep ที่ active → bypass hallucination check
+                //   AI อาจอ้างไพ่เก่า ("ในไพ่ Celtic ที่หมอเปิดให้... Five of Pentacles") = legitimate
+                //   ใช้ dmContext['has_fresh_paid_deep'] flag ที่ buildReturningCustomerContext set ไว้
+                $sanitizeMode = ! empty($dmContext['has_fresh_paid_deep']) ? 'paid_chat' : 'chat';
                 $result = $aiService->generateChatResponseWithPoolFallback(
                     $messageForAI,
                     $userProfile,
                     $history,
                     15000,  // totalTimeoutMs (Phase G)
                     8,      // 🎯 (2026-05-22) maxPoolAttempts 4→8 — Pool fallback ล้มเหลว `free=4, paid=0`
-                    $userId // userContext (Phase H)
+                    $userId, // userContext (Phase H)
+                    $sanitizeMode // 🛡 (2026-05-26 v2)
                 );
 
                 // ถ้า detection trigger แต่ไม่ได้ใช้ Pro (no key / budget block / fallback) → log

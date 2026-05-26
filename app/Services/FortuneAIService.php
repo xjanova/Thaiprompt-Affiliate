@@ -515,7 +515,7 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      *
      * @throws Exception เมื่อไม่มี API Key หรือ API ล้มเหลว
      */
-    public function generateChatResponse(string $messageText, ?array $userProfile = null): array
+    public function generateChatResponse(string $messageText, ?array $userProfile = null, string $sanitizeMode = 'chat'): array
     {
         // 🛡 (2026-05-26) Input sanitizer — block adversarial input ก่อน call AI
         //   ลูกค้ารู้โค้ดอาจส่ง "ignore previous instructions" / "DAN mode" / "write Python"
@@ -596,7 +596,7 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
                 'tokens' => $result['tokens_used'] ?? 0,
             ]);
 
-            return $this->sanitizeChatResult($result, 'chat');
+            return $this->sanitizeChatResult($result, $sanitizeMode);
 
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat response ล้มเหลว', [
@@ -654,8 +654,12 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         //     AI หลอนตอบ "เรียบร้อยแล้วค่ะ หมอจันทราเปิดไพ่ Celtic 10 ใบ..." (1580+3415 chars)
         //     สมมติชื่อไพ่ Five of Pentacles, The Star, Eight of Swords ฯลฯ — ลูกค้าได้ฟรี
         //   Defense: block 4 signals แม้แค่ 1 ตัวเจอ
-        if ($mode === 'chat' && $cleaned !== null && $cleaned !== '') {
-            $detected = self::detectHallucinatedReading($cleaned);
+        //
+        //   F2 (2026-05-26 v2): hasPaidContext — caller pass mode='paid_chat' จะ bypass
+        //     เพราะ post-paid ลูกค้าถามต่อเรื่องไพ่ = legitimate
+        if (($mode === 'chat' || $mode === 'paid_chat') && $cleaned !== null && $cleaned !== '') {
+            $hasPaidContext = ($mode === 'paid_chat');
+            $detected = self::detectHallucinatedReading($cleaned, $hasPaidContext);
             if ($detected !== null) {
                 \Illuminate\Support\Facades\Log::warning('FortuneAIService: ตรวจพบ AI หลอนเปิดไพ่ใน chat — block + replace', [
                     'pattern' => $detected,
@@ -684,72 +688,103 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
      *
      * Returns: pattern name (string) ถ้าจับได้ / null ถ้าปกติ
      *
-     * Patterns (4 signals — เจอ 1 = block):
-     *   1. "เปิดไพ่...ให้แล้ว/เสร็จ/เรียบร้อย" — fake completion claim
-     *   2. ชื่อไพ่ tarot ภาษาอังกฤษ (Five of Pentacles, The Star, ฯลฯ)
-     *   3. ชื่อไพ่ภาษาไทย ("5 เหรียญ", "8 ดาบ", "ราชินีถ้วย") + ทำนาย structure
-     *   4. structure "1. สถานการณ์... 2. อุปสรรค..." + numbering >= 5 = Celtic 10-card structure
+     * Detection (4 signals + multi-signal threshold):
+     *   1. "เปิดไพ่...ให้แล้ว/เสร็จ/เรียบร้อย" — fake completion claim (high confidence — block ทันที)
+     *   2. ชื่อไพ่ tarot ภาษาอังกฤษ (Five of Pentacles, The Star) — **low confidence** (อาจอธิบายความรู้)
+     *   3. ชื่อไพ่ภาษาไทย ("5 เหรียญ", "8 ดาบ") — low confidence ถ้าเดี่ยว
+     *   4. structure "1. สถานการณ์... 2. อุปสรรค..." — medium
      *
-     * ⚠️ False-positive guard:
-     *   - Skip ถ้าเจอ tag intended [OFFER_FORTUNE] / [DEEP_READING] ท้ายข้อความ
-     *     (AI ตอบถูก: "ไพ่ที่ขึ้นมา? พิมพ์ ดูดวง เพื่อเริ่ม [OFFER_FORTUNE]")
-     *   - ตรวจหลัง stripInternalContextTags — เพื่อไม่ให้ context tag เก่าๆ มาก่อกวน
+     * ⚠️ Multi-Signal Rule (2026-05-26 v2):
+     *   - Signal 1 (fake completion / fake ritual) = high confidence → block ตัวเดียวพอ
+     *   - Signal 2-4 (card names / structure) = low/medium confidence → **ต้องการ ≥2 signals**
+     *   - กัน FP: AI อธิบายความรู้ทั่วไป "ไพ่ The Star หมายถึง..." → 1 signal เท่านั้น = pass
+     *   - กัน FP: post-paid Q&A "ในไพ่ Celtic ที่เปิดให้... Five of Pentacles" → 1 signal = pass
+     *
+     * ⚠️ Knowledge marker bypass:
+     *   - ถ้าเจอคำว่า "คืออะไร/หมายถึง/อธิบาย/คือไพ่/Major Arcana/Minor Arcana"
+     *     → general knowledge Q&A — bypass block
+     *
+     * ⚠️ Paid context bypass (called from caller with hasFreshPaid flag):
+     *   - parameter $hasPaidContext = true (จาก context tag [HAS_FRESH_DEEP_READING])
+     *     → ลูกค้าจ่ายแล้ว ถามต่อเรื่องไพ่เก่า = legitimate — bypass
      *
      * @param  string  $text  AI response (หลัง strip context tags)
+     * @param  bool    $hasPaidContext  true ถ้าลูกค้ามี paid Celtic/Deep ที่ active (bypass)
      * @return string|null  pattern name ถ้าจับได้ / null = clean
      */
-    public static function detectHallucinatedReading(string $text): ?string
+    public static function detectHallucinatedReading(string $text, bool $hasPaidContext = false): ?string
     {
         if ($text === '' || mb_strlen($text) < 60) {
             return null;
         }
 
         // Whitelist: ถ้าจบด้วย [OFFER_FORTUNE]/[DEEP_READING] = AI ตอบถูก ห้าม block
-        //   ใช้ trailing 80 chars เพื่อยืดหยุ่นต่อ punctuation ท้าย
         $tail = mb_substr($text, -80);
         if (preg_match('/\[(?:OFFER_FORTUNE|DEEP_READING|ASK_SAVE)\]\s*$/u', $tail)) {
             return null;
         }
 
-        // Signal 1: fake completion — "เปิดไพ่...ให้แล้ว/เสร็จ/เรียบร้อย/ขึ้นมาแล้ว"
+        // F2 (2026-05-26 v2): Paid context bypass — ลูกค้าจ่ายแล้ว ถามต่อเรื่องไพ่ = legitimate
+        if ($hasPaidContext) {
+            return null;
+        }
+
+        // F1 (2026-05-26 v2): Knowledge marker bypass — AI อธิบายความรู้ทั่วไป ไม่ใช่ทำนาย
+        //   เคสจริง: "ไพ่ทาโร่มี 78 ใบ Major Arcana 22 ใบ... The Fool คืออะไร..."
+        //   ลูกค้าถามอธิบาย — AI ตอบเชิงความรู้ — ห้าม block
+        if (preg_match('/(คืออะไร|หมายถึง|หมายความว่า|อธิบาย|อธิบายให้|รู้จัก|เรียกว่า|พื้นฐาน|ทั่วไป|major\s+arcana|minor\s+arcana|78\s*ใบ|22\s*ใบ|56\s*ใบ|history|history\s+of|ทาโร่[ตจคที]?(?:คือ|มา|เกิด|กำเนิด)|ไพ่[ก-๛\s]{0,10}(?:คือ|มี|แบ่ง|มาจาก))/iu', $text)) {
+            return null;
+        }
+
+        // === HIGH CONFIDENCE signals — block ตัวเดียวพอ ===
+        // Signal H1: fake completion "เปิดไพ่...ให้แล้ว/เสร็จ"
         if (preg_match('/(เปิดไพ่|เปิดดวง|เรียงไพ่|จั่วไพ่|ดูดาว)[^\n]{0,40}(ให้แล้ว|ให้เสร็จ|เสร็จแล้ว|เรียบร้อยแล้ว|ขึ้นมา[แแล้ว]|ปรากฏ)/u', $text)) {
             return 'fake_card_open_completion';
         }
-        // Variant: "เรียบร้อยแล้ว...ไพ่...ขึ้น/บอก/แสดง"
+        // Signal H2: "เรียบร้อยแล้ว...ไพ่...ขึ้น/บอก/แสดง"
         if (preg_match('/เรียบร้อย[แล้ว]{0,2}[^\n]{0,80}ไพ่[^\n]{0,30}(ขึ้น|บอก|แสดง|สะท้อน|ปรากฏ)/u', $text)) {
             return 'fake_reading_complete';
         }
-        // Variant: "ตั้งจิตอธิษฐาน...เปิดไพ่" — AI แกล้งทำพิธี
+        // Signal H3: "ตั้งจิตอธิษฐาน...เปิดไพ่" — AI แกล้งทำพิธี
         if (preg_match('/(ตั้งจิตอธิษฐาน|ตั้งจิต|อธิษฐาน|สวดมนต์)[^\n]{0,60}(เปิดไพ่|เปิดดวง|จั่วไพ่|ทำนาย)/u', $text)) {
             return 'fake_ritual_in_chat';
         }
 
-        // Signal 2: English tarot card names (Minor + Major arcana)
+        // === LOW/MEDIUM CONFIDENCE signals — require ≥2 to block ===
+        $signals = [];
+
+        // Signal L1: English tarot card names
         $minorPattern = '/\b(Ace|Two|Three|Four|Five|Six|Seven|Eight|Nine|Ten|Page|Knight|Queen|King)\s+of\s+(Pentacles|Swords|Cups|Wands|Coins|Disks)\b/i';
         $majorPattern = '/\bThe\s+(Fool|Magician|High\s+Priestess|Empress|Emperor|Hierophant|Lovers|Chariot|Strength|Hermit|Wheel(?:\s+of\s+Fortune)?|Justice|Hanged\s+Man|Death|Temperance|Devil|Tower|Star|Moon|Sun|Judgement|Judgment|World)\b/i';
-        if (preg_match($minorPattern, $text) || preg_match($majorPattern, $text)) {
-            return 'tarot_card_name_english';
+        $minorCount = preg_match_all($minorPattern, $text);
+        $majorCount = preg_match_all($majorPattern, $text);
+        // ต้องการ ≥3 ชื่อไพ่ (กัน FP "อธิบาย The Star")
+        if ($minorCount + $majorCount >= 3) {
+            $signals[] = 'tarot_card_name_english';
         }
 
-        // Signal 3: Thai tarot card names + reading structure
-        //   "5 เหรียญ" / "8 ดาบ" / "10 ถ้วย" / "ราชินีไม้เท้า" — ต้องเจอ ≥2 ครั้งกัน FP
+        // Signal L2: Thai tarot card names (require ≥2 occurrences — same as before)
         $thaiTarotCount = preg_match_all('/(?:^|\s)(?:\d{1,2}|เอซ|ราชา|ราชินี|อัศวิน|ข้าราชบริพาร)\s*(?:แห่ง|ของ|)?\s*(?:เหรียญ|ดาบ|ถ้วย|ไม้เท้า|กระบอง|เพนตาเคิล|ซอร์ด|คัพ|วันด์)/u', $text);
         if ($thaiTarotCount >= 2) {
-            return 'tarot_card_name_thai';
+            $signals[] = 'tarot_card_name_thai';
         }
 
-        // Signal 4: Celtic-style numbered structure (≥3 of 6 known position labels)
-        //   ตำแหน่งจริง Celtic Cross 10 ใบ: สถานการณ์ปัจจุบัน / อุปสรรค / อดีต / อนาคต /
-        //                                  จิตสำนึก / จิตใต้สำนึก / เหตุการณ์ภายนอก / ความหวัง / ผลลัพธ์
+        // Signal L3: Celtic-style numbered structure (≥3 of position labels)
         $positionLabels = [
             'สถานการณ์ปัจจุบัน', 'อุปสรรค', 'รากเหง้า', 'อดีต(?:ที่|อัน)?(?:ผ่าน|ใกล้)',
             'อนาคต(?:อัน|ที่)?(?:ใกล้|จะมาถึง)', 'จิตสำนึก', 'จิตใต้สำนึก',
             'เหตุการณ์ภายนอก', 'อิทธิพลภายนอก', 'ความหวัง(?:และความ)?กลัว', 'ผลลัพธ์(?:สุดท้าย)?',
         ];
         $posPattern = '/\d+[\.\)]\s*(?:\*\*)?\s*('.implode('|', $positionLabels).')/u';
-        $posMatches = preg_match_all($posPattern, $text);
-        if ($posMatches >= 3) {
-            return 'celtic_structure_numbered';
+        if (preg_match_all($posPattern, $text) >= 3) {
+            $signals[] = 'celtic_structure_numbered';
+        }
+
+        // Multi-signal threshold — require ≥2 low/medium signals
+        //   "อธิบาย The Star, The Moon, The Fool" → L1 only → 1 signal → pass ✅
+        //   "Celtic Cross ที่เปิดให้: 1.สถานการณ์ Five of Pentacles 2.อุปสรรค Eight of Swords..." → L1+L3 → block 🚨
+        if (count($signals) >= 2) {
+            return 'multi_signal_'.implode('+', $signals);
         }
 
         return null;
@@ -847,8 +882,21 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
 
         // 4. Code request — 2 keyword match (action verb + code noun) ลด FP
         //   ⚠️ allow space ใน character class — "write me a python" / "เขียน script" ต้อง match
-        $codeNouns = '(?:โค้ด|code|script|python|javascript|typescript|java(?!\s+มี)|sql|html|css|php|bash|powershell|kotlin|swift|rust|golang|c\+\+|c#|ruby|perl|powershell|yaml|json|xml|regex|regular\s+expression)';
-        if (preg_match('/(?:เขียน|สร้าง|ทำ|ช่วย|generate|write|create|build|make|code|compose|develop)[a-zA-Zก-๛\s]{0,25}?'.$codeNouns.'/iu', $textLower)) {
+        //
+        //   v2 (2026-05-26): ลบ ambiguous keywords:
+        //   - "script" → ลูกค้าใช้แปลว่า "บท/บทพูด" → FP
+        //   - "python" → ลูกค้าอาจหมาย "งู/พยากรณ์/วันเกิด" → FP (เหลือเฉพาะ "write python" ตรงๆ ที่จับ)
+        //   - "java" → standalone อาจตีความเป็น "ชวา" หรือ kafe → ลบ (เก็บ javascript แทน)
+        //   เก็บแค่ tech-specific ที่ไม่มี Thai ambiguity
+        $codeNouns = '(?:โค้ด|code|javascript|typescript|sql|html|css|php(?:\s|$)|bash|powershell|kotlin|swift|rust|golang|c\+\+|c#|ruby|perl|yaml|json|xml|regex|regular\s+expression)';
+        if (preg_match('/(?:เขียน|สร้าง|generate|write|create|build|make|code|compose|develop)[a-zA-Zก-๛\s]{0,25}?'.$codeNouns.'/iu', $textLower)) {
+            return 'code_request';
+        }
+        // Stricter sub-pattern: "python/script + technical context" — ต้องมี "code/script/program" รวมด้วย
+        //   "write me a python script" / "create a python program" / "generate ruby code"
+        //   "สร้าง python script" — รับ Thai prefix ผ่าน character class ผสม
+        //   allow 0-15 chars between verb และ language name (me a / for me / the / this / that)
+        if (preg_match('/(?:write|create|generate|เขียน|สร้าง|ทำ|ช่วย)[a-zก-๛\s]{0,15}?(?:python|script|java|ruby)\s+(?:script|code|program|function|class)/iu', $textLower)) {
             return 'code_request';
         }
         // Code fence in user message
@@ -1857,11 +1905,12 @@ PROMPT;
     public function generateChatResponseWithHistory(
         string $messageText,
         ?array $userProfile = null,
-        array $history = []
+        array $history = [],
+        string $sanitizeMode = 'chat'  // 🛡 (2026-05-26 v2)
     ): array {
         // ถ้าไม่มี history → ใช้ generateChatResponse ปกติ (มี input guard อยู่แล้ว)
         if (empty($history)) {
-            return $this->generateChatResponse($messageText, $userProfile);
+            return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
         }
 
         // 🛡 (2026-05-26) Input sanitizer — same guard
@@ -1935,7 +1984,7 @@ PROMPT;
                 'tokens' => $result['tokens_used'] ?? 0,
             ]);
 
-            return $this->sanitizeChatResult($result, 'chat');
+            return $this->sanitizeChatResult($result, $sanitizeMode);
 
         } catch (Exception $e) {
             Log::warning('FortuneAIService: Chat with history ล้มเหลว ลอง fallback ไม่มี history', [
@@ -2493,7 +2542,8 @@ PROMPT;
         array $history = [],
         int $totalTimeoutMs = 15000,
         int $maxPoolAttempts = 8,  // 🎯 (2026-05-22) bumped 4→8 — 429 fail fast (~330ms) มีเวลาลองหลายตัว
-        ?string $userContext = null
+        ?string $userContext = null,
+        string $sanitizeMode = 'chat'  // 🛡 (2026-05-26 v2) 'chat' (strict) | 'paid_chat' (bypass hallucination check)
     ): array {
         $startTime = microtime(true);
 
@@ -2541,10 +2591,10 @@ PROMPT;
             //   Logic ปัจจุบัน: 429 → log + fallback Pool ตรง (เร็วกว่า ลด Groq quota 2x)
             try {
                 if (! empty($history)) {
-                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history);
+                    return $this->generateChatResponseWithHistory($messageText, $userProfile, $history, $sanitizeMode);
                 }
 
-                return $this->generateChatResponse($messageText, $userProfile);
+                return $this->generateChatResponse($messageText, $userProfile, $sanitizeMode);
             } catch (Exception $primaryErr) {
                 $errMsg = $primaryErr->getMessage();
                 $is429 = str_contains($errMsg, '429') || stripos($errMsg, 'rate limit') !== false;
@@ -2708,7 +2758,7 @@ PROMPT;
                     'elapsed_ms' => $elapsedMs(),
                 ]);
 
-                return $this->sanitizeChatResult($result, 'chat');
+                return $this->sanitizeChatResult($result, $sanitizeMode);
             } catch (Exception $poolErr) {
                 $this->releaseKeyInflight($keyInfo, $inflightCache, false, $poolErr->getMessage());
 
@@ -2773,7 +2823,7 @@ PROMPT;
                         'elapsed_ms' => $elapsedMs(),
                     ]);
 
-                    return $this->sanitizeChatResult($result, 'chat');
+                    return $this->sanitizeChatResult($result, $sanitizeMode);
                 } catch (Exception $paidErr) {
                     $this->releaseKeyInflight($keyInfo, $inflightCache, false, $paidErr->getMessage());
 
