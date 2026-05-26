@@ -36,7 +36,10 @@ jobs:
           echo "Deploy path: ${{ vars.DEPLOY_PATH }}"
 
       - name: Deploy via SSH (run deploy.sh on server)
-        uses: appleboy/ssh-action@v1
+        # 🔧 (2026-05-26) Pin exact v1.2.5 — @v1 mutable tag resolved to deleted SHA
+        #   0ff4204d59e8e51228ff73bce53f80d53301dee2 → 404 since 2026-05-08
+        #   → auto-deploy dead 18 days. Latest stable = v1.2.5 (Jan 2026)
+        uses: appleboy/ssh-action@v1.2.5
         env:
           DEPLOY_DIR: ${{ vars.DEPLOY_PATH }}
         with:
