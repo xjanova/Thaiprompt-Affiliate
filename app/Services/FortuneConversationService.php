@@ -4293,6 +4293,42 @@ class FortuneConversationService
             }
         }
 
+        // ✅ Tier 4 (2026-05-26) — Typo tolerance
+        //   เคสจริง: ลูกค้าวิวัฒน์ FB 27555224654066635 พิมพ์ "เ฿ดวง" (mobile typo ใช้ ฿ แทน ู)
+        //   → keyword "ดูดวง" จับไม่เจอ → ตกไป chat AI → AI หลอนเปิดไพ่ทำนายฟรี
+        //
+        //   Strategy: ลบ non-Thai/non-Lao chars (฿ ◌ ◌่ symbols, English) แล้วเช็คซ้ำ
+        //   เงื่อนไข: ต้องสั้น (≤20 chars หลัง normalize) — กัน false positive
+        //              ในข้อความยาวที่บังเอิญมี "ดวง" ปนมา
+        //
+        //   Test cases:
+        //     "เ฿ดวง" → strip ฿ → "เดวง" → match "ดวง" substring → ✅ true
+        //     "ด฿วง" → strip → "ดวง" → exact match short word → ✅ true
+        //     "อยาก ดูดวง ค่ะ ห" → strip → "อยากดูดวงคะห" (12 chars) → contains "ดวง" → ✅ true
+        //     "ดวงดาวบนท้องฟ้าสวยมาก" (20 chars) → contains "ดวง" → match
+        //       ⚠️ FP risk → แก้: เพิ่ม short threshold (≤15 chars) + ห้าม contains stopwords
+        $thaiOnly = preg_replace('/[^\p{Thai}\p{Lao}]/u', '', $textClean);
+        if ($thaiOnly !== null && $thaiOnly !== '' && mb_strlen($thaiOnly) >= 2 && mb_strlen($thaiOnly) <= 15) {
+            // กัน FP: ถ้ามีคำที่ไม่ใช่ intent ดูดวง เช่น "ดาว" "ฟ้า" "สวย" → return false
+            $nonIntentStopwords = ['ดาว', 'ฟ้า', 'สวย', 'หล่อ', 'น่ารัก', 'รัก', 'เกลียด', 'โกรธ'];
+            foreach ($nonIntentStopwords as $sw) {
+                if (str_contains($thaiOnly, $sw)) {
+                    return false;
+                }
+            }
+            // ตรงๆ "ดวง" คำเดียว (≤4 chars)
+            if (mb_strlen($thaiOnly) <= 4 && (str_contains($thaiOnly, 'ດວງ') || str_contains($thaiOnly, 'ดวง'))) {
+                return true;
+            }
+            // "ดูดวง" / "เดูดวง" / "ดูวง" — typo variants
+            $typoVariants = ['ดูดวง', 'ดดวง', 'ดูวง', 'ดเวง', 'ดวง', 'เดวง'];
+            foreach ($typoVariants as $tv) {
+                if (str_contains($thaiOnly, $tv)) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 
