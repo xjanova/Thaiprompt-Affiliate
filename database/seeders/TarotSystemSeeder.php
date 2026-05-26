@@ -294,16 +294,22 @@ class TarotSystemSeeder extends Seeder
         ];
 
         foreach ($ranks as $rank) {
+            // 🃏 (2026-05-26) USER SPEC: ห้ามใช้ "แห่ง" ในชื่อไพ่ Minor Arcana
+            //   "สองแห่งดาบ" / "สิบแห่งเหรียญ" ทำให้ลูกค้างง
+            //   ใช้ format ตรงๆ "สองดาบ" / "สิบเหรียญ" — สั้น เข้าใจง่ายกว่า
+            //   migration 2026_05_26_*_remove_haeng_from_minor_arcana_names อัพเดท rows เก่าด้วย
+            $cardNameTh = $rank['name_th'].$suitTh;
+
             TarotCard::create([
                 'type' => 'minor_arcana',
                 'suit' => $suit,
                 'number' => $rank['number'],
                 'name_en' => $rank['name'].' of '.ucfirst($suit),
-                'name_th' => $rank['name_th'].'แห่ง'.$suitTh,
+                'name_th' => $cardNameTh,
                 'keywords_en' => $keywords['en'],
                 'keywords_th' => $keywords['th'],
                 'description_en' => $rank['name'].' of '.ucfirst($suit).' - '.implode(', ', $keywords['en']),
-                'description_th' => $rank['name_th'].'แห่ง'.$suitTh.' - '.implode(', ', $keywords['th']),
+                'description_th' => $cardNameTh.' - '.implode(', ', $keywords['th']),
                 'upright_meaning_en' => 'Positive aspects of '.implode(', ', $keywords['en']),
                 'upright_meaning_th' => 'ด้านบวกของ'.implode(', ', $keywords['th']),
                 'reversed_meaning_en' => 'Negative aspects of '.implode(', ', $keywords['en']),

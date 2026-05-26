@@ -379,7 +379,7 @@ class FortuneCustomerPersona extends Model
         //   ผลคือ: บ่นว่า "เหมือนคนเพิ่งหัด" + เปรียบเทียบกับครั้งก่อน + ลด trust
         if (! empty($flags['tarot_literate'])) {
             $lines[] = '🃏 TAROT_LITERATE: ลูกค้าเป็น tarot reader / รู้ไพ่ — สำคัญมาก:';
-            $lines[] = '   → ❌ ลดการอ้างชื่อไพ่ตรงๆ ("ห้าแห่งดาบ" / "นักมายากล")';
+            $lines[] = '   → ❌ ลดการอ้างชื่อไพ่ตรงๆ ("ห้าดาบ" / "นักมายากล")';
             $lines[] = '   → ❌ เลิกอธิบายความหมายตามตำรา (textbook meaning)';
             $lines[] = '   → ✅ ใช้ภาษา intuitive: "แม่หมอสัมผัสได้ว่า..." / "พลังในไพ่บอก..."';
             $lines[] = '   → ✅ ผูกไพ่กับ situation จริงของลูกค้าโดยตรง (ไม่ใช่ generic)';
