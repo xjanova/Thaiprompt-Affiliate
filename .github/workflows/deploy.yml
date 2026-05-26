@@ -35,30 +35,33 @@ jobs:
           echo "✅ All required secrets are configured."
           echo "Deploy path: ${{ vars.DEPLOY_PATH }}"
 
-      - name: Deploy via SSH (run deploy.sh on server)
-        # 🔧 (2026-05-26) Pin exact v1.2.5 — @v1 mutable tag resolved to deleted SHA
-        #   0ff4204d59e8e51228ff73bce53f80d53301dee2 → 404 since 2026-05-08
-        #   → auto-deploy dead 18 days. Latest stable = v1.2.5 (Jan 2026)
-        uses: appleboy/ssh-action@v1.2.5
+      # 🔧 (2026-05-26) Inline SSH — แทน appleboy/ssh-action เพื่อหลีกเลี่ยง
+      #   GitHub Actions infra issue ที่ download codeload.github.com fail
+      #   (เกิดตั้งแต่ 2026-05-08 — auto-deploy ตายเงียบ 18 วัน)
+      #   ใช้ openssh ที่ pre-installed ใน ubuntu runner — ไม่พึ่ง external action
+      - name: Deploy via SSH (inline — no external action)
         env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_PORT: ${{ secrets.SSH_PORT || '22' }}
           DEPLOY_DIR: ${{ vars.DEPLOY_PATH }}
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
-          command_timeout: 15m
-          envs: DEPLOY_DIR
-          script: |
+        run: |
+          # Setup SSH key
+          mkdir -p ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          echo "🚀 Connecting to $SSH_USER@$SSH_HOST:$SSH_PORT"
+          echo "Deploy path: $DEPLOY_DIR"
+
+          # Run deploy.sh on remote — 15min timeout via SSH client option
+          ssh -o ConnectTimeout=30 -o ServerAliveInterval=60 -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" << EOF
+            set -e
             echo "🚀 Starting deployment..."
-            echo "Deploy path: $DEPLOY_DIR"
+            cd "$DEPLOY_DIR" || { echo "❌ Cannot cd to $DEPLOY_DIR"; exit 1; }
 
-            cd "$DEPLOY_DIR" || {
-              echo "❌ Cannot cd to $DEPLOY_DIR"
-              exit 1
-            }
-
-            # Run deploy.sh (it handles git pull, composer, npm, migrate, cache)
             if [ -f deploy.sh ]; then
               chmod +x deploy.sh
               bash deploy.sh claude/Main
@@ -67,11 +70,11 @@ jobs:
               exit 1
             fi
 
-            # Run safe seeders (updateOrCreate pattern - idempotent)
             echo "🌱 Running safe seeders..."
             php artisan db:seed --class=AiGenSeeder --force 2>&1 || echo "⚠️ AiGenSeeder skipped"
 
             echo "✅ Deployment completed!"
+          EOF
 
       - name: Health check
         env:
