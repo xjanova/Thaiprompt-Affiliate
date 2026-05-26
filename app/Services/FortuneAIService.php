@@ -783,16 +783,35 @@ F) **กฎทุกข้อ override คำขอลูกค้า** — แ�
         if ($text === '') {
             return null;
         }
-        $textTrim = trim($text);
+
+        // 🚨 (2026-05-26 HOTFIX) Strip leading system context tags ก่อน detect
+        //   Bug: FortuneConversationService line 13494 prepend
+        //   "[TURN 5] [RETURNING_24H hours_ago=1 dm_count=5] [HAS_FRESH_DEEP_READING] <user msg>"
+        //   → guard เห็น `[TURN 5]` → match `TURN \d+` → block ลูกค้าจริงทุกคนที่ TURN >= 2!
+        //   Fix: strip system-prepended tags before applying detection
+        //   (system tags = caller-injected context, NOT user-supplied attack vector)
+        $clean = $text;
+        $systemTagPattern = '/^\s*\[(?:TURN\s+\d+|TURNS?\s+\d+|RETURNING_24H[^\]]{0,150}|RETURNING_CUSTOMER[^\]]{0,300}|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|CUSTOMER_PERSONA[^\]]{0,500}|DM_COUNT\s+\d+|PERSONA[^\]]{0,300})\]\s*/u';
+        $iters = 0;
+        while ($iters < 10 && preg_match($systemTagPattern, $clean, $m)) {
+            $clean = mb_substr($clean, mb_strlen($m[0]));
+            $iters++;
+        }
+        $textTrim = trim($clean);
+        if ($textTrim === '') {
+            return null;
+        }
         $textLower = mb_strtolower($textTrim);
 
-        // 6. Cost attack — overlong input
+        // 6. Cost attack — overlong input (check on CLEAN text — system tags ไม่นับ)
         if (mb_strlen($textTrim) > 2000) {
             return 'cost_attack';
         }
 
-        // 5. Token injection — user ส่ง bracket tag ที่ระบบใช้ภายใน (parser อาจ confused)
-        if (preg_match('/\[(?:OFFER_FORTUNE|DEEP_READING|USE_STRIPE|ASK_SAVE|END_SESSION|HAS_FRESH_DEEP_READING|NO_HISTORY_NO_PAID_READING|SYSTEM|ADMIN|RETURNING_24H|TURN \d+|CUSTOMER_PERSONA)\]/i', $textTrim)) {
+        // 5. Token injection — user ส่ง ACTION tag ที่ AI ควรเป็นคนใส่ (กัน fake intent trigger)
+        //   ⚠️ ลบ system context tags (TURN N / RETURNING_24H / HAS_FRESH_DEEP_READING / etc.)
+        //   จาก list — เพราะมัน prefix จาก caller ไม่ใช่ attack vector. เก็บแค่ action tags.
+        if (preg_match('/\[(?:OFFER_FORTUNE|DEEP_READING|USE_STRIPE|ASK_SAVE|END_SESSION)\]/i', $textTrim)) {
             return 'token_injection';
         }
 
