@@ -134,6 +134,7 @@ class DatabaseSeeder extends Seeder
 
             // 12. Additional Systems
             TarotSystemSeeder::class,           // ระบบดูดวงไพ่ทาโรต์
+            TarotCelticPositionMeaningsSeeder::class, // 🔮 คำทำนายไพ่ Celtic Cross 7,800 entries (78 ใบ × 10 ตำแหน่ง × 2 ทิศ × 5 หมวด)
             ProvinceSeeder::class,              // ข้อมูลจังหวัดไทย 77 จังหวัด พร้อมพิกัด GPS
             HotelSeeder::class,                 // ระบบจองโรงแรม
             InvestmentPlanSeeder::class,        // แพลนการลงทุน
