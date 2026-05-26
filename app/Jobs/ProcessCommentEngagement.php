@@ -251,104 +251,73 @@ class ProcessCommentEngagement implements ShouldQueue
                 $quickReplies[] = ['content_type' => 'text', 'title' => "🔮 ไพ่ 10 ใบ {$celticPriceQR}฿", 'payload' => 'TIER_CELTIC_99'];
             }
 
-            // 🎯 (2026-05-25 v2) F+G Strategy — แก้ race condition FB Reels Private Reply
-            //   เดิม v1: ส่งภาพ → 800ms → text+QR → race condition #10900 91% fail
-            //   ใหม่ v2: text+QR ก่อน (CTA สำคัญสุด!) → ภาพตามทีหลัง best effort
-            //           ถ้า text+QR ล้ม → fallback Option G (image+QR atomic single call)
-            //           ถ้า Option G ล้ม → fallback Option H (image only — last resort)
+            // 🎯 (2026-05-26 v3) BANNER-FIRST Strategy — Atomic image+QR เป็น PRIMARY
+            //   USER SPEC: "ลูกค้าใหม่ก็ไม่ได้แบนเนอร์ภาพอยู่ดี" — ต้องส่ง banner ครบ
             //
-            //   เหตุผล: Quick Replies = "🔮 ไพ่ 10 ใบ 99฿" / "🌟 ดูดวงเชิงลึก" = CTA conversion
-            //          ลูกค้าเสียภาพ banner = แค่ decoration. ลูกค้าเสีย CTA = สูญ conversion
-            $stage1TextSent = false; // Option F primary: text+QR
-            $stage2gImageQrSent = false; // Option G fallback: image+QR atomic
-            $stage3ImageOnlySent = false; // Option H last resort: image only
-            $bannerAfterTextSent = false; // Bonus: image หลัง text สำเร็จแล้ว
+            //   เดิม v2 (commit aed7e8caa): text+QR ก่อน → image bonus หลัง 1500ms via PSID
+            //     ปัญหา: ลูกค้าใหม่ (comment Reels) ไม่อยู่ใน 24hr window → PSID fail #551
+            //            comment_id ถูก consume ใน Stage 1 แล้ว → ใช้ Private Reply ไม่ได้
+            //            → banner ไม่ถึงลูกค้าใหม่
+            //
+            //   ใหม่ v3: Atomic image+QR ผ่าน Private Reply เป็น Stage 1 (ครั้งเดียวจบ)
+            //     • Stage 1 PRIMARY: sendPrivateReplyImageWithQuickReplies — image + QR ใน 1 call atomic
+            //                        → ภาพ + QR ครบ 100% (ลูกค้าใหม่+เก่าได้เหมือนกัน)
+            //                        → trade: เสีย verbose AI text body (FB API limit: attachment XOR text)
+            //     • Stage 2 FALLBACK: text+QR เดิม (เผื่อ banner ปิด/ไม่มี active banner/atomic API fail)
+            //     • Stage 3 LAST RESORT: image only (ไม่มี QR)
+            //
+            //   เหตุผล: User เลือก banner > verbose text — banner = engagement signal สำคัญ +
+            //          QR เก็บ CTA ไว้ใน atomic call → ไม่เสีย conversion
+            $stage1AtomicSent = false;       // PRIMARY: Atomic image+QR via comment_id
+            $stage2TextSent = false;          // FALLBACK: text+QR (เมื่อ atomic fail/banner ปิด)
+            $stage3ImageOnlySent = false;     // LAST RESORT: image only
 
-            // STAGE 1 (Option F primary) — text + Quick Replies ก่อน
-            //   ผ่าน sendQuickReplies → sendPrivateReply Send API + recipient.comment_id
-            $stage1TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
-                'from_comment_engagement' => true,
-                'comment_id' => $commentId,
-            ]);
+            // STAGE 1 (NEW PRIMARY): Atomic image+QR — ภาพ + QR ใน 1 call atomic
+            //   ผ่าน sendPrivateReplyImageWithQuickReplies — recipient.comment_id + attachment + quick_replies
+            //   No race possible: 1 API call ใช้ comment_id ครั้งเดียว ภาพ + QR ส่งพร้อมกัน
+            try {
+                $bannerService = new FortuneBannerService($settings);
+                $stage1AtomicSent = (bool) $bannerService->sendBannerThenWait(
+                    fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
+                        $commentId,
+                        $url,
+                        $quickReplies
+                    ),
+                    'comment',
+                    'facebook',
+                    $userId
+                );
+            } catch (Throwable $atomicErr) {
+                Log::debug('Comment Engagement: Stage 1 (atomic image+QR) ล้ม (non-blocking): '.$atomicErr->getMessage());
+            }
 
-            if ($stage1TextSent) {
-                // Stage 1 สำเร็จ → ส่งภาพตามหลัง 1500ms ผ่าน user PSID (ไม่ใช่ comment_id)
-                //
-                // 🖼️ (2026-05-26) USER SPEC: ส่ง banner ให้ครบ — แก้ปัญหาภาพไม่ถึง ~70%
-                //
-                // เดิม: ส่งภาพผ่าน comment_id → FB Reels race #10900 "Activity already replied"
-                //       เพราะ Stage 1 (text+QR) consume comment_id แล้ว → ภาพ fail
-                //
-                // ใหม่:
-                //   1. ลบ comment_id ออก → ส่งผ่าน user PSID (Send API ปกติ recipient.id)
-                //      หลัง Stage 1 ส่ง Private Reply สำเร็จ → ลูกค้าเข้า 24hr window อัตโนมัติ
-                //      → Send API ปกติ work
-                //   2. เพิ่ม delay 800 → 1500ms — ให้ FB ประมวลผล Stage 1 message ก่อน
-                //   3. Fallback: ถ้า PSID fail (24hr window ยังไม่เปิด) → ลอง comment_id อีกครั้ง
-                //      (rare case, ส่วนใหญ่ FB เปิด window ทันทีหลัง Private Reply)
-                usleep(1500000); // 1.5s buffer ให้ FB process Stage 1 + เปิด 24hr window
-                try {
-                    $bannerService = new FortuneBannerService($settings);
-                    $bannerAfterTextSent = (bool) $bannerService->sendBannerThenWait(
-                        // 🎯 Primary: user PSID (no comment_id race)
-                        fn ($url) => $facebookService->sendImage($userId, $url),
-                        'comment',
-                        'facebook',
-                        $userId
-                    );
-
-                    // Fallback: ถ้า PSID fail → ลอง comment_id อีกครั้ง (best effort)
-                    //   เกิดเฉพาะ rare case ที่ FB ยังไม่เปิด 24hr window หลัง Private Reply
-                    if (! $bannerAfterTextSent) {
-                        Log::info('🔁 Banner-after-text via PSID fail → fallback ผ่าน comment_id', [
-                            'user_id' => $userId,
-                            'comment_id' => $commentId,
-                        ]);
-                        usleep(800000); // อีก 800ms ก่อน retry
-                        $bannerAfterTextSent = (bool) $bannerService->sendBannerThenWait(
-                            fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
-                            'comment',
-                            'facebook',
-                            $userId
-                        );
-                    }
-                } catch (Throwable $bannerErr) {
-                    Log::debug('Comment Engagement: banner-after-text ล้ม (non-blocking): '.$bannerErr->getMessage());
-                }
-            } else {
-                // STAGE 2 (Option G fallback) — image + QR ใน single call atomic
-                //   ใช้ pattern: sendBannerThenWait + callback ใช้ new method
-                Log::info('🔁 Comment Engagement: Stage 1 (text+QR) ล้ม → ลอง Stage 2 Option G (image+QR atomic)', [
+            // STAGE 2 (FALLBACK): text+QR ผ่าน comment_id — เมื่อ Stage 1 ไม่ได้ส่ง
+            //   เกิดเฉพาะ:
+            //     - Banner ปิด (enable_dm_banner=false หรือ per-channel toggle off)
+            //     - ไม่มี active banner ในตาราง fortune_banners
+            //     - FB API ล่ม ตอน atomic call
+            //   ใช้ Stage 1 v2 เดิม (text+QR ผ่าน Private Reply) — ลูกค้ายังได้ CTA
+            if (! $stage1AtomicSent) {
+                Log::info('🔁 Comment Engagement: Stage 1 (atomic) skip/fail → fallback Stage 2 (text+QR)', [
                     'user_id' => $userId,
                     'comment_id' => $commentId,
                 ]);
 
-                try {
-                    $bannerService = new FortuneBannerService($settings);
-                    $stage2gImageQrSent = (bool) $bannerService->sendBannerThenWait(
-                        fn ($url) => $facebookService->sendPrivateReplyImageWithQuickReplies(
-                            $commentId,
-                            $url,
-                            $quickReplies
-                        ),
-                        'comment',
-                        'facebook',
-                        $userId
-                    );
-                } catch (Throwable $gErr) {
-                    Log::debug('Comment Engagement: Stage 2 (Option G) ล้ม (non-blocking): '.$gErr->getMessage());
-                }
+                $stage2TextSent = $facebookService->sendQuickReplies($userId, $dmMessage, $quickReplies, [
+                    'from_comment_engagement' => true,
+                    'comment_id' => $commentId,
+                ]);
 
-                // STAGE 3 (Option H last resort) — image only (ภาพอย่างเดียว ไม่มี QR)
-                //   เกิดเฉพาะเมื่อ Stage 1 + Stage 2 ล้มทั้งคู่ — ลูกค้าได้อย่างน้อยภาพ banner
-                if (! $stage2gImageQrSent) {
-                    Log::info('🔁 Comment Engagement: Stage 2 (Option G) ล้ม → ลอง Stage 3 (image only last resort)', [
+                // STAGE 3 (LAST RESORT): image only — ถ้า Stage 2 ก็ fail (FB privacy block ฯลฯ)
+                //   ลูกค้าได้อย่างน้อยภาพ banner (ถ้าเปิด) — แม้ไม่มี text/QR
+                if (! $stage2TextSent) {
+                    Log::info('🔁 Comment Engagement: Stage 2 (text+QR) ล้ม → ลอง Stage 3 (image only last resort)', [
                         'user_id' => $userId,
                         'comment_id' => $commentId,
                     ]);
 
                     try {
-                        $bannerService = new FortuneBannerService($settings);
+                        $bannerService = $bannerService ?? new FortuneBannerService($settings);
                         $stage3ImageOnlySent = (bool) $bannerService->sendBannerThenWait(
                             fn ($url) => $facebookService->sendImage($userId, $url, null, ['comment_id' => $commentId]),
                             'comment',
@@ -361,9 +330,13 @@ class ProcessCommentEngagement implements ShouldQueue
                 }
             }
 
-            // map สำหรับ engagement record logic (compat กับเดิม)
-            $dmSent = $stage1TextSent || $stage2gImageQrSent; // ลูกค้าได้ CTA แบบใดแบบหนึ่ง
-            $bannerSent = $bannerAfterTextSent || $stage2gImageQrSent || $stage3ImageOnlySent; // ลูกค้าได้ภาพแบบใดแบบหนึ่ง
+            // map สำหรับ engagement record logic
+            $dmSent = $stage1AtomicSent || $stage2TextSent;          // ลูกค้าได้ CTA (QR) แบบใดแบบหนึ่ง
+            $bannerSent = $stage1AtomicSent || $stage3ImageOnlySent; // ลูกค้าได้ภาพ banner แบบใดแบบหนึ่ง
+            // ตัวแปร backward-compat สำหรับ log section ด้านล่าง
+            $stage1TextSent = $stage2TextSent;       // alias เพื่อให้ log path เดิม work
+            $stage2gImageQrSent = $stage1AtomicSent; // alias — Option G คือ atomic เดิม
+            $bannerAfterTextSent = false;            // ลบ bonus path — atomic ครอบครบแล้ว
 
             // 5. บันทึก engagement ถ้าอย่างน้อย stage ใด stage หนึ่งสำเร็จ
             //    ❌ retry เฉพาะกรณี fail ทั้ง 3 stages (FB privacy block ฯลฯ)
