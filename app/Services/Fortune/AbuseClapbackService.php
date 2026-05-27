@@ -125,11 +125,27 @@ class AbuseClapbackService
 
         // ━━━━━━━━━━━━━━━━━
         // 🍯 หน้าหม้อ (Creepy Flirt) — sexual interest in bot persona
+        //   (2026-05-27) Expanded coverage หลังเคส Atthanon Thamsiri (FB 26746501991711160)
+        //   ลูกค้าเล่นจีบบอท 82 turns/วัน — "สุดที่รัก/จุ้บ/หยอด/มาดูแมว/จีบเป็นแฟน" หลุด regex เดิม
         // ━━━━━━━━━━━━━━━━━
         $creepyPatterns = [
+            // direct compliments / questions about bot
             'หมอสวย', 'หมอน่ารัก', 'แม่หมอสวย', 'ขอเบอร์หมอ', 'หมออายุเท่าไหร่',
             'ขอรูปหมอ', 'หมอโสด', 'มีแฟนหรือยัง', 'นัดเจอ', 'ไปทานข้าว',
             'หมอเซ็กซี่', 'รักหมอ', 'ชอบหมอ', 'แต่งงานกับหมอ',
+            // pet names / endearments
+            'สุดที่รัก', 'ที่รักจ๋า', 'ที่รักครับ', 'ที่รักค่ะ', 'หวานใจ',
+            'ผัวเก่า', 'แฟนเก่า', 'แฟนใหม่', 'เป็นแฟนกัน', 'เป็นแฟน',
+            // kissing / physical
+            'จุ้บ', 'จุ๊บ', 'จูบ', 'หอมแก้ม', 'หอมหน่อย', 'กอด',
+            // flirting verbs
+            'จีบหมอ', 'จีบ', 'หยอดหมอ', 'หยอด', 'กิ๊กกัน', 'มีกิ๊ก',
+            // invitations
+            'มาบ้าน', 'มาดูแมว', 'มาดูหมา', 'มาดูปลา', 'ที่ห้องผม', 'ที่ห้องครับ', 'ห้องผม', 'ห้องของผม',
+            'นอนด้วย', 'นอนเป็นเพื่อน', 'มานอน', 'อยู่ด้วยกัน', 'มาเที่ยว',
+            // sexual undertone (mild — nuclear catches explicit)
+            'หวาน ๆ', 'หวานๆ', 'อยากกอด', 'อยากจูบ', 'อยากหอม',
+            'ผมหล่อไหม', 'ผมโสด', 'ผมหล่อ',
         ];
         foreach ($creepyPatterns as $kw) {
             if (mb_strpos($lower, $kw) !== false) {
@@ -139,6 +155,12 @@ class AbuseClapbackService
                     $result['severity'] = 'mild';
                 }
             }
+        }
+
+        // 🎯 Severity bump — ถ้า creepy_flirt match ≥ 2 unique keywords → hard
+        //   เคส Atthanon: "จีบหมอ" + "สุดที่รัก" + "จุ้บ" + "มาดูแมวที่ห้องผม" = persistent → hard
+        if ($result['persona'] === self::PERSONA_CREEPY_FLIRT && count(array_unique($matchedKeywords)) >= 2) {
+            $result['severity'] = 'hard';
         }
 
         // ━━━━━━━━━━━━━━━━━

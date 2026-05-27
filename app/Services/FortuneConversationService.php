@@ -1161,6 +1161,40 @@ class FortuneConversationService
 
                     return $this->makeFarewellBlessingResponse($userName, $facebookUserId);
                 }
+
+                // 🚪 (2026-05-27) No-Intent Disengage — ลูกค้าบอกชัดว่าไม่มาดูดวง
+                //   เคส Atthanon Thamsiri 2026-05-27: 82 turns/วัน, "เรื่องผมไม่ต้องดู" + "ผมรู้หมดแล้ว"
+                //   pattern คล้าย farewell แต่ trigger word + TTL ต่าง (6hr vs endOfDay)
+                if ($this->isNoIntentClosed($facebookUserId)) {
+                    if ($this->isGenericFortuneRequest($messageText)) {
+                        // wake up — ลูกค้าเปลี่ยนใจ
+                        $this->clearNoIntentClose($facebookUserId);
+                        Log::info('Fortune: no-intent — wake up (fortune intent)', [
+                            'facebook_user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+                    } else {
+                        Log::info('Fortune: no-intent — silent skip', [
+                            'facebook_user_id' => $facebookUserId,
+                            'text_preview' => mb_substr($messageText, 0, 30),
+                        ]);
+
+                        return [
+                            'action' => 'silent_skip',
+                            'message' => null,
+                            'reading' => null,
+                        ];
+                    }
+                } elseif ($this->looksLikeNoIntent($messageText)) {
+                    $userName = ! empty($userProfile['name']) ? $userProfile['name'] : 'เจ้าชะตา';
+                    $this->markNoIntentClosed($facebookUserId);
+                    Log::info('Fortune: no-intent — polite dismiss + close', [
+                        'facebook_user_id' => $facebookUserId,
+                        'text_preview' => mb_substr($messageText, 0, 50),
+                    ]);
+
+                    return $this->makeNoIntentDismissResponse($userName, $facebookUserId);
+                }
             }
 
             // 🛡️ (2026-05-27) Abuse Clapback — ลูกค้าด่า/ป่วน/หน้าหม้อ → savage mode
@@ -11749,6 +11783,124 @@ class FortuneConversationService
         } catch (\Throwable $e) {
             //
         }
+    }
+
+    /**
+     * 🚪 (2026-05-27) No-Intent Disengage — ลูกค้าบอกชัดว่าไม่มาดูดวง
+     *
+     * เคสจริง: Atthanon Thamsiri (FB 26746501991711160, conv 5226) วันที่ 2026-05-27
+     *   "เรื่องผมไม่ต้องดูหรอกครับ" + "ผมมีของผมรู้หมดและ" + 82 turns chitchat/flirt
+     *   → บอท engage ทุก turn = token bleed
+     *
+     * ต่างจาก farewell:
+     *   • farewell = "ขอบคุณ/ลาก่อน" → กำลังจะปิด → blessing
+     *   • no-intent = "ไม่ใช่มาดูดวง" → ไม่เคยอยากดู → polite dismiss
+     *
+     * Policy: เคารพว่าไม่มี intent → ตอบสุภาพ 1 บรรทัด + silent 6 ชม.
+     *         (สั้นกว่า farewell endOfDay — ลูกค้าอาจเปลี่ยนใจในวันเดียวกัน)
+     */
+    public function looksLikeNoIntent(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '' || mb_strlen($text) > 200) {
+            return false; // ข้อความยาวเกิน = อาจเป็นเรื่องอื่น
+        }
+
+        // Normalize ลบคำลงท้าย
+        $normalized = preg_replace(
+            '/\s*(ค่ะ|ครับ|คะ|คับ|จ้า|จ้ะ|จ๊ะ|นะ|นะคะ|นะครับ|หรอก|หรอกค่ะ|หรอกครับ|และ|แล้ว|ละ|อะ)\s*$/u',
+            '',
+            $text
+        );
+        $normalized = trim(preg_replace('/[?!.,…\s]+$/u', '', $normalized));
+
+        // No-intent substrings — explicit statement of not wanting fortune
+        $noIntentSubstrings = [
+            // direct refusal of reading
+            'ไม่ต้องดู', 'ไม่ต้องทำนาย', 'ไม่ต้องเปิดไพ่',
+            'ของผมไม่ต้องดู', 'เรื่องผมไม่ต้องดู', 'เรื่องของผมไม่ต้องดู',
+            'ของหนูไม่ต้องดู', 'เรื่องหนูไม่ต้องดู',
+            'ผมไม่ต้องดู', 'หนูไม่ต้องดู', 'ฉันไม่ต้องดู',
+            'ไม่อยากดู', 'ไม่อยากให้ดู', 'ไม่อยากดวง', 'ไม่อยากทำนาย',
+            'ไม่ต้องการดู', 'ไม่ต้องการทำนาย', 'ไม่ต้องการให้ดู',
+            // "not here for fortune"
+            'ไม่ใช่มาดูดวง', 'ไม่ได้มาดูดวง', 'ไม่ได้มาเพื่อดูดวง',
+            'แค่มาทักทาย', 'แค่มาคุยเล่น', 'มาคุยเล่นๆ', 'แค่มาทัก',
+            'แค่ทักทาย', 'ทักเล่นๆ',
+            // dismissive "I already know"
+            'รู้หมดแล้ว', 'รู้หมดและ', 'มีของผมรู้',
+            'ผมรู้แล้ว', 'หนูรู้แล้ว', 'ฉันรู้แล้ว',
+            'ผมก็รู้', 'รู้อยู่แล้ว',
+            // English
+            'not here for fortune', 'just chatting',
+        ];
+
+        foreach ($noIntentSubstrings as $kw) {
+            if (str_contains($normalized, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * 🚪 (2026-05-27) เช็ค flag — ลูกค้าบอกไม่มา intent แล้ว
+     */
+    public function isNoIntentClosed(string $userId): bool
+    {
+        try {
+            return (bool) Cache::get("fortune:no_intent_closed:{$userId}", false);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /**
+     * 🚪 (2026-05-27) Mark no-intent silent — TTL 6 ชม. (สั้นกว่า farewell)
+     */
+    protected function markNoIntentClosed(string $userId): void
+    {
+        try {
+            Cache::put("fortune:no_intent_closed:{$userId}", true, now()->addHours(6));
+        } catch (\Throwable $e) {
+            // fail-safe
+        }
+    }
+
+    /**
+     * 🚪 (2026-05-27) Clear no-intent flag — ลูกค้าพิมพ์ "ดูดวง" / paid event
+     */
+    public function clearNoIntentClose(string $userId): void
+    {
+        try {
+            Cache::forget("fortune:no_intent_closed:{$userId}");
+        } catch (\Throwable $e) {
+            //
+        }
+    }
+
+    /**
+     * 🚪 (2026-05-27) Polite dismiss — ไม่ pitch, ไม่ savage, แค่เคารพการตัดสินใจ
+     *
+     * Rotate 3 templates ตาม user_id + วันที่
+     */
+    protected function makeNoIntentDismissResponse(string $name, string $userId): array
+    {
+        $templates = [
+            "หมอจันทราเข้าใจค่ะ 🙏 ถ้าวันไหนอยากคุยเรื่องดวง ทักมาใหม่ได้เลยนะคะ 🌙",
+            "ได้เลยค่ะ {$name} 🌙 หมอจันทราอยู่ตรงนี้เสมอ ถ้าอยากดูดวงจริงๆ ค่อยกลับมาคุยกันใหม่นะ",
+            "🙏 รับทราบค่ะ หมอจันทราเชี่ยวชาญแค่เรื่องดวง ถ้าอยากคุยเรื่องดวงเมื่อไหร่ ทักมาได้ค่ะ ✨",
+        ];
+        $idx = abs((int) crc32($userId.date('Ymd'))) % count($templates);
+
+        return [
+            'action' => 'no_intent_dismiss',
+            'message' => $templates[$idx],
+            'reading' => null,
+            'show_quick_replies' => false,
+            'block_followups' => true,
+        ];
     }
 
     /**
