@@ -1163,6 +1163,56 @@ class FortuneConversationService
                 }
             }
 
+            // 🛡️ (2026-05-27) Abuse Clapback — ลูกค้าด่า/ป่วน/หน้าหม้อ → savage mode
+            //   ถ้า: !hasPaidActiveReading (Celtic จัดการเอง) + admin opt-in (settings.enable_abuse_clapback)
+            //   → ดักก่อน normal AI call, ตอบด้วย Grok savage + escalation L1→L4
+            //   → L4 = admin alert (NO auto-ban — admin ตัดสินเอง)
+            if (! $hasPaidActiveReading) {
+                try {
+                    $abusePlatform = $this->currentPlatform ?? 'facebook';
+                    $personaModel = null;
+                    try {
+                        $personaModel = app(\App\Services\Fortune\CustomerPersonaService::class)
+                            ->getCached($abusePlatform, $facebookUserId);
+                    } catch (\Throwable $e) {
+                        // persona fetch fail → continue without
+                    }
+
+                    $intercepted = app(\App\Services\Fortune\AbuseClapbackService::class)
+                        ->maybeInterceptChat($abusePlatform, $facebookUserId, $messageText, $personaModel);
+
+                    if ($intercepted !== null) {
+                        // L4 → alert admin (no auto-ban — admin decides)
+                        if ($intercepted['should_alert_admin'] ?? false) {
+                            try {
+                                app(\App\Services\Fortune\AbuseClapbackService::class)->alertAdminL4(
+                                    $abusePlatform,
+                                    $facebookUserId,
+                                    $messageText,
+                                    $intercepted['evidence'] ?? '',
+                                    null
+                                );
+                            } catch (\Throwable $e) {
+                                Log::warning('AbuseClapback: alert fail', ['error' => $e->getMessage()]);
+                            }
+                        }
+
+                        return [
+                            'action' => 'abuse_clapback',
+                            'message' => $intercepted['response'],
+                            'reading' => null,
+                            'clapback' => $intercepted,
+                        ];
+                    }
+                } catch (\Throwable $e) {
+                    // ถ้า clapback fail → log + ปล่อยไป normal flow (fail-safe)
+                    Log::warning('AbuseClapback: intercept fail (non-blocking)', [
+                        'facebook_user_id' => $facebookUserId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             // 🎯 Phase N — นับ rapid-fire: เกินเกณฑ์ → เข้า silent mode พร้อม warning 1 ครั้ง
             //   🛡️ (2026-05-05) Paid customer → threshold 2x (ลูกค้าใจร้อนหลังจ่าย ปกติ)
             $rapidCount = $this->countRapidFire($facebookUserId);

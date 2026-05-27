@@ -1114,15 +1114,34 @@ class CelticCrossService
         //    Guard: ถ้า persona ไม่มีข้อมูล → return '' → ไม่ inject
         //    Sanitize: bracket directive `[👤 CUSTOMER_PERSONA...]` ถูก filter ใน FortuneAIService อยู่แล้ว
         $personaBlock = '';
+        $personaModel = null;
+        $celticPlatform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
+        $celticUserId = (string) ($reading->facebook_user_id ?? $reading->line_user_id ?? '');
         try {
-            $platform = $reading->platform ?? (! empty($reading->facebook_user_id) ? 'facebook' : 'line');
-            $userId = $reading->facebook_user_id ?? $reading->line_user_id ?? '';
-            if (! empty($userId)) {
-                $personaBlock = app(CustomerPersonaService::class)->buildInjectBlock($platform, (string) $userId);
+            if ($celticUserId !== '') {
+                $personaService = app(CustomerPersonaService::class);
+                $personaBlock = $personaService->buildInjectBlock($celticPlatform, $celticUserId);
+                $personaModel = $personaService->getCached($celticPlatform, $celticUserId);
             }
         } catch (\Throwable $e) {
             // persona fail → skip ไป — ไม่ block flow
             Log::debug('Celtic: persona inject fail (non-blocking)', [
+                'reading_id' => $reading->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
+        // 🛡️ (2026-05-27) Abuse Clapback directive — ลูกค้าด่า/ป่วน/หน้าหม้อ → savage mode
+        //   ใน paid Celtic: L1+L2 เท่านั้น (ไม่ pause/ban — ทำนายครบตามที่จ่าย)
+        //   ตอบแสบแต่ professional + อ้าง พ.ร.บ.คอม
+        $clapbackDirective = '';
+        try {
+            if ($celticUserId !== '') {
+                $clapbackDirective = app(\App\Services\Fortune\AbuseClapbackService::class)
+                    ->getCelticDirective($celticPlatform, $celticUserId, $userQuestion, $personaModel);
+            }
+        } catch (\Throwable $e) {
+            Log::debug('Celtic: clapback inject fail (non-blocking)', [
                 'reading_id' => $reading->id,
                 'error' => $e->getMessage(),
             ]);
@@ -1147,7 +1166,8 @@ class CelticCrossService
             // 🪷 (2026-05-27) Advisor directive — ต้อง inject Q2+ ด้วย
             //   user complaint: "Q2+ ตอบสั้น เน้นเคล็ด/ธรรมะ ไม่ให้คำปรึกษา"
             //   root cause: buildLifeCoachDirective ถูก inject แค่ Q1 → Q2+ เพี้ยนไป dharma talk
-            $advisorDirectiveQ2 = $this->buildLifeCoachDirective($reading);
+            //   🛡️ (2026-05-27) prepend clapback directive — supersedes advisor tone ถ้า abuse
+            $advisorDirectiveQ2 = $clapbackDirective.$this->buildLifeCoachDirective($reading);
 
             return $this->buildShortFollowupPrompt(
                 $brandName,
@@ -1175,7 +1195,8 @@ class CelticCrossService
         $enrichmentDirective = $this->buildEnrichmentDirective($reading, $userQuestion);
 
         // 🪷 (2026-05-25) Advisor directive — แม่หมอ = ที่ปรึกษา มีหลักการ+เหตุผล
-        $advisorDirective2 = $this->buildLifeCoachDirective($reading);
+        //   🛡️ (2026-05-27) prepend clapback directive — supersedes advisor tone ถ้า abuse
+        $advisorDirective2 = $clapbackDirective.$this->buildLifeCoachDirective($reading);
 
         // 📜 (2026-05-25) Past readings context — ลูกค้าเก่า ดวงเปลี่ยนได้
         $pastReadingsContext = $this->buildPastReadingsContext($reading);
