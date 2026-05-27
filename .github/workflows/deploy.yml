@@ -1,18 +1,13 @@
 name: Deploy to Production
 
 on:
-  # 🔧 (2026-05-26) Direct push trigger — independent of CI
-  #   เดิม: workflow_call จาก ci.yml — แต่ CI tests/code-quality ใช้ shivammathur/setup-php
-  #   external action ที่ codeload.github.com flaky → CI fail → auto-deploy skip
-  #   ใหม่: deploy trigger ตรงจาก push — ไม่พึ่ง CI tests
-  #   Safety: deploy.sh มี verify-seeders + composer install + migrate ครอบครุม
-  #   Code review ผ่าน PR review ก่อน push
-  push:
-    branches:
-      - claude/Main
-      - main
-
-  # Manual trigger
+  # 🔧 (2026-05-27) กลับเป็น CI-gated mode — รอ CI pass ก่อน deploy
+  #   เดิม (2026-05-26): trigger ตรงจาก push (ตอน CI flaky) → bad code อาจขึ้น prod ถ้า CI fail
+  #   ใหม่: เฉพาะ workflow_call (จาก ci.yml's auto-deploy หลัง tests+code-quality pass)
+  #         + workflow_dispatch (manual GH UI — emergency bypass)
+  #   Emergency manual deploy (bypass CI):
+  #     - GitHub UI: Actions tab → "Deploy to Production" → "Run workflow" (workflow_dispatch)
+  #     - หรือ SSH ตรง: `ssh admin@prod && cd <deploy-path> && ./deploy.sh claude/Main`
   workflow_dispatch:
     inputs:
       environment:
@@ -24,7 +19,7 @@ on:
           - production
           - staging
 
-  # Backward compat — ถ้า ci.yml ยังเรียก workflow_call
+  # Called from ci.yml's auto-deploy job (after tests + code-quality + auto-release pass)
   workflow_call:
 
 jobs:
