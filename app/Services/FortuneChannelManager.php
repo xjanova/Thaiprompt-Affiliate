@@ -702,7 +702,24 @@ class FortuneChannelManager
                     $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
+                    $celticOnlyIntro = (bool) ($result['celtic_only_intro'] ?? false);
                     $buttons = [];
+
+                    // 🆕 (2026-05-27) Celtic-only intro — ปุ่ม "เริ่มเลย / ไว้คราวหน้า" (ไม่ใช่ "เลือกแพคเกจ")
+                    //   user feedback: "ลูกค้าพิมพ์ดูดวง→สร้างบิลเลย ลูกค้ายังไม่รู้ว่าต้องจ่ายเงิน"
+                    //   ปุ่มควรชัด: เริ่ม=ยินยอม / ไว้คราวหน้า=ปฏิเสธ
+                    if ($celticOnlyIntro) {
+                        $celticPriceLabel = (int) ($result['celtic_price'] ?? 99);
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => FortuneLocaleService::lo("✨ เริ่มเลย {$celticPriceLabel}฿", "✨ ເລີ່ມເລີຍ {$celticPriceLabel}฿"),
+                            'payload' => 'TIER_CELTIC_99'];
+                        $buttons[] = ['content_type' => 'text',
+                            'title' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
+                            'payload' => 'CANCEL_FORTUNE'];
+
+                        return $fbService->sendQuickReplies($userId, $message, $buttons, $extra);
+                    }
+
                     // 🎁 (2026-05-03) ปุ่ม "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด (offer_free flag)
                     // 🌐 localize labels — ลูกค้าลาวเห็น Quick Reply เป็นลาว
                     if ($offerFree) {
@@ -2000,7 +2017,25 @@ class FortuneChannelManager
                     $deepEnabled = $this->settings->isDeepReadingEnabled();
                     $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                     $offerFree = (bool) ($result['offer_free'] ?? false);
+                    $celticOnlyIntro = (bool) ($result['celtic_only_intro'] ?? false);
                     $quickReplies = [];
+
+                    // 🆕 (2026-05-27) Celtic-only intro — ปุ่ม "เริ่มเลย / ไว้คราวหน้า"
+                    //   ลูกค้าเห็น intro แล้วเลือก: ยินยอม=เริ่มเลย / ปฏิเสธ=ไว้คราวหน้า
+                    if ($celticOnlyIntro) {
+                        $celticPriceLabel = (int) ($result['celtic_price'] ?? 99);
+                        $quickReplies[] = [
+                            'label' => FortuneLocaleService::lo("✨ เริ่มเลย {$celticPriceLabel}฿", "✨ ເລີ່ມເລີຍ {$celticPriceLabel}฿"),
+                            'text' => 'เริ่มเลย',
+                        ];
+                        $quickReplies[] = [
+                            'label' => FortuneLocaleService::lo('🙏 ไว้คราวหน้า', '🙏 ໄວ້ຄາວໜ້າ'),
+                            'text' => FortuneLocaleService::lo('ไว้คราวหน้า', 'ໄວ້ຄາວໜ້າ'),
+                        ];
+
+                        return $this->sendLineMessageWithQuickReply($lineService, $userId, $message, $replyToken, $quickReplies);
+                    }
+
                     // 🌐 localize Quick Reply labels
                     if ($offerFree) {
                         $quickReplies[] = [

@@ -3843,13 +3843,24 @@ class FortuneConversationService
         //                                       → fall through มาที่นี่ → เจอ "บริการปิดชั่วคราว"
         //                                       ทั้งที่ Celtic 99฿ ยังเปิด → ลูกค้าเข้าใจผิดว่า "ปิดเพจ" → จากไป
         //   FIX: redirect ไป Celtic flow เลย (เหมือน FAST PATH 2 ทำกับ Deep)
+        //
+        //   🆕 (2026-05-27) Soft Intro Gate — กัน "ดูดวง" generic → สร้างบิลเลย
+        //     ลูกค้ากดปุ่ม postback (Cache flag) หรือพิมพ์ Celtic keyword ชัด → ไป Celtic ตรง
+        //     ลูกค้าพิมพ์ "ดูดวง" generic → ไม่ force tier → ผ่าน intro card ก่อน
         if (! $freeEnabled && ! $deepEnabled && $celticEnabled) {
-            Log::info('Fortune: ปิด free+deep + เปิด celtic → redirect celtic flow ตรง', [
+            $hasExplicitIntent = (bool) Cache::get("fortune:force_tier:{$facebookUserId}");
+            $hasExplicitCeltic = $this->matchesCelticCrossKeyword($messageText);
+            $forceTierArg = ($hasExplicitIntent || $hasExplicitCeltic) ? 'celtic' : null;
+
+            Log::info('Fortune: FAST PATH 3 — ปิด free+deep + เปิด celtic', [
                 'facebook_user_id' => $facebookUserId,
+                'has_explicit_intent' => $hasExplicitIntent,
+                'has_explicit_celtic' => $hasExplicitCeltic,
+                'force_tier' => $forceTierArg,
                 'original_message' => mb_substr($messageText, 0, 50),
             ]);
 
-            return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $messageText);
+            return $this->startDeepReadingFlow($facebookUserId, $userProfile, $forceTierArg, $messageText);
         }
 
         $remaining = $this->getRemainingFreeQuestions($facebookUserId);
@@ -5043,14 +5054,24 @@ class FortuneConversationService
             //            → !isDeepReadingEnabled() ยัง true → recursive อีก → stack overflow → บอทเงียบ
             //   FIX: ถ้า forceTier='celtic' ส่งมาแล้ว = caller ตั้งใจให้ไป Celtic flow → ข้าม guard นี้
             //        ปล่อยให้ flow ไหลไป line 4823 ที่ตรวจ forceTier='celtic' → startCelticCrossFlow
+            // 🆕 (2026-05-27) Celtic-only Soft Intro Gate:
+            //   user feedback: "พิมพ์ดูดวง→สร้างบิลเลย ลูกค้ายังไม่รู้ว่าต้องเสียเงิน"
+            //   ลูกค้าพิมพ์ generic "ดูดวง" → ต้องเห็น intro (ราคา+กติกา+ปุ่มยืนยัน) ก่อนสร้างบิล
+            //   Skip intro ถ้า: postback (Cache flag) / explicit Celtic keyword
             if (! $this->settings->isDeepReadingEnabled() && $forceTier !== 'celtic') {
                 $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
                 $askedFor39 = $originalMessage !== null && $this->isExplicitlyAsking39($originalMessage);
+                $hasExplicitIntent = (bool) Cache::get("fortune:force_tier:{$facebookUserId}");
+                $hasExplicitCeltic = $originalMessage !== null
+                    && method_exists($this, 'matchesCelticCrossKeyword')
+                    && $this->matchesCelticCrossKeyword($originalMessage);
 
                 Log::info('Fortune: ผู้ใช้ขอดูดวงละเอียด แต่ระบบปิดการใช้งานอยู่', [
                     'facebook_user_id' => $facebookUserId,
                     'redirect_celtic' => $celticEnabled,
                     'asked_for_39' => $askedFor39,
+                    'has_explicit_intent' => $hasExplicitIntent,
+                    'has_explicit_celtic' => $hasExplicitCeltic,
                     'message_preview' => $originalMessage ? mb_substr($originalMessage, 0, 50) : null,
                 ]);
 
@@ -5072,16 +5093,21 @@ class FortuneConversationService
                 }
 
                 if ($celticEnabled) {
-                    return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $originalMessage);
+                    // 🆕 (2026-05-27) ลูกค้ามี intent ชัดเจน (postback/keyword) → ไป Celtic flow ทันที
+                    //   ถ้าไม่ชัด (generic "ดูดวง") → fall through ไปสร้าง reading + แสดง tier_choice intro
+                    if ($hasExplicitIntent || $hasExplicitCeltic) {
+                        return $this->startDeepReadingFlow($facebookUserId, $userProfile, 'celtic', $originalMessage);
+                    }
+                    // else: fall through — useTierChoice ด้านล่างจะจับเป็น Celtic-only intro
+                } else {
+                    return [
+                        'action' => 'deep_reading_disabled',
+                        'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n"
+                            ."💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n"
+                            ."พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
+                        'reading' => null,
+                    ];
                 }
-
-                return [
-                    'action' => 'deep_reading_disabled',
-                    'message' => "🔮 ขออภัยค่ะ บริการดูดวงถูกปิดการใช้งานชั่วคราว\n\n"
-                        ."💫 สามารถดูดวงทั่วไปฟรีได้ตามปกติ\n"
-                        ."พิมพ์คำถามมาได้เลย หรือพิมพ์ 'ดูดวง' เพื่อเริ่มใหม่ 🙏",
-                    'reading' => null,
-                ];
             }
 
             // ⚡ ใช้ profile จาก FortuneChannelManager (ไม่เรียก API ซ้ำ)
@@ -5123,12 +5149,13 @@ class FortuneConversationService
             // 🩹 (2026-05-08) $forceTier='deep'/'celtic' → ข้าม tier menu (single-click fix)
             //   ลูกค้ากดปุ่ม "39 บาท" / "99 บาท" → เข้า flow ตรง ไม่ผ่าน menu ซ้ำ
             //
-            // 🌙 (2026-05-23) tier menu ต้องการ ทั้ง Deep + Celtic เปิดถึงจะมีให้เลือก
-            //   ถ้า Deep ปิด (แม้ Celtic เปิด) → useTierChoice=false → fall through ไป Celtic
-            //   เคสจริง: ลูกค้าทักบอท → presentTierChoice ขึ้น 39 บาท แต่ Deep ปิด → กดแล้วเด้ง 99 → สับสน
+            // 🌙 (2026-05-23 → 2026-05-27 modified) tier menu ใช้ได้กับ:
+            //   (1) Deep+Celtic เปิดทั้งคู่ → menu เลือก 2 แพคเกจ (เดิม)
+            //   (2) Celtic-only mode → intro card "พร้อมเริ่ม Celtic 99฿ ไหมคะ?" (ใหม่)
+            //   user feedback: ลูกค้าพิมพ์ "ดูดวง" → เคยสร้างบิลเลย ลูกค้าสับสน
+            //   ใหม่: ทุก generic "ดูดวง" → เห็น intro+ราคา+ปุ่มยืนยันก่อน
             $useTierChoice = $forceTier === null
-                && (bool) ($this->settings->enable_celtic_cross ?? false)
-                && $this->settings->isDeepReadingEnabled();
+                && (bool) ($this->settings->enable_celtic_cross ?? false);
 
             // 🧠 (2026-04-28) Discovery Chat Mode — fallback ถ้าไม่ใช้ tier menu
             //    Default false หลัง user feedback ว่าไม่เวิร์ค
@@ -11546,15 +11573,23 @@ class FortuneConversationService
         }
 
         // Declarative decline keywords
+        // 🆕 (2026-05-27) ขยาย — user feedback "หลังแสกน QR แล้ว บอทตามแล้ว ลูกค้ายืนยันไม่เอา → ต้องยกเลิก"
         $strongDecline = [
             'ไม่พร้อม', 'ไม่สะดวก',
             'ไว้คราวหน้า', 'ไว้โอกาสหน้า', 'ไว้ครั้งหน้า', 'ไว้รอบหน้า',
-            'เอาไว้ก่อน', 'เอาไว้คราวหน้า',
-            'ขอผ่าน', 'ขอผ่านก่อน',
-            'ไม่เอาแล้ว', 'ไม่เอาละ',
-            'ไม่จ่ายแล้ว', 'ไม่จ่ายละ',
-            'ไม่ทำตอนนี้', 'ไม่เอาตอนนี้',
-            'ขอบายก่อน', 'บายก่อน',
+            'ไว้ทีหลัง', 'ไว้ค่อยดู', 'ไว้คราวอื่น',
+            'เอาไว้ก่อน', 'เอาไว้คราวหน้า', 'เอาไว้ทีหลัง',
+            'ขอผ่าน', 'ขอผ่านก่อน', 'ขอเลิก',
+            'ไม่เอา', 'ไม่เอาแล้ว', 'ไม่เอาละ', 'ไม่เอาขอบคุณ', 'ไม่เอาดีกว่า',
+            'ไม่จ่ายแล้ว', 'ไม่จ่ายละ', 'ไม่จ่ายดีกว่า',
+            'ไม่ทำตอนนี้', 'ไม่เอาตอนนี้', 'ไม่ทำแล้ว',
+            'ไม่อยากดู', 'ไม่อยากดูแล้ว', 'ไม่อยากทำ', 'ไม่อยากจ่าย',
+            'ไม่ดู', 'ไม่ดูแล้ว', 'ไม่ดูดีกว่า',
+            'พอแล้ว', 'พอก่อน',
+            'ไม่ต้องแล้ว', 'ไม่ต้องการ', 'ไม่ต้องการแล้ว',
+            'หยุดเลย', 'หยุดก่อน',
+            'เลิกดู', 'เลิกเลย', 'เลิกเถอะ',
+            'ขอบายก่อน', 'บายก่อน', 'ขอบายไว้',
         ];
 
         foreach ($strongDecline as $kw) {

@@ -170,12 +170,11 @@ trait CelticCrossConversationTrait
         $deepEnabled = $this->settings->isDeepReadingEnabled();
         $celticEnabled = (bool) ($this->settings->enable_celtic_cross ?? false);
 
-        // 🌙 (2026-05-23) Top guard — Deep ปิด + Celtic เปิด → redirect Celtic ทันที
-        //   ไม่ render tier menu เลย (กัน body text 39 บาท หลุดถ้ามี caller ใหม่ลืม guard)
-        //   user spec: "ปิด 39฿ ไปก่อน เหลือแต่ 99"
-        if (! $deepEnabled && $celticEnabled && ! $offerFree) {
-            return $this->startCelticCrossFlow($reading);
-        }
+        // 🌙 (2026-05-23 → 2026-05-27 modified) Celtic-only mode handling
+        //   เดิม: Deep ปิด + Celtic เปิด → startCelticCrossFlow ทันที (สร้างบิลเลย — ลูกค้าสับสน)
+        //   ใหม่: render intro card สำหรับ Celtic-only ก่อน — ให้ลูกค้าเห็นราคา+ยืนยัน ก่อนสร้างบิล
+        //   user feedback: "พิมพ์ดูดวง→สร้างบิลเลย ลูกค้ายังไม่รู้ว่าต้องเสียเงิน"
+        //   ⚠️ ขั้นถัด: handleTierChoice มี keyword "celtic"/"99"/"เริ่มเลย" จับเข้า startCelticCrossFlow
 
         // 🔒 (2026-05-03) ถ้า admin ปิด Celtic — ปกติข้าม tier menu ไปดูดวง 39฿ ตรงๆ
         //    แต่ถ้า offerFree = true → ต้องโชว์ menu (มีปุ่ม [ฟรี] [39]) ก่อน
@@ -206,17 +205,30 @@ trait CelticCrossConversationTrait
         // 🎁 หัวเมนู — เปลี่ยนตามว่ามีปุ่มฟรีหรือไม่
         // 🌐 (2026-05-03) localize header + intro — ลูกค้าลาวเห็นเมนูเป็นลาว
         // 🌙 (2026-05-23) packageCount นับเฉพาะที่ enabled — Deep ปิดก็ไม่นับ
+        // 🆕 (2026-05-27) Celtic-only mode = intro tone (ไม่ใช่ "เลือก 1 จาก 1")
         $packageCount = ($deepEnabled ? 1 : 0) + ($celticEnabled ? 1 : 0) + ($offerFree ? 1 : 0);
+        $isCelticOnlyIntro = ! $deepEnabled && $celticEnabled && ! $offerFree;
+
         $welcomeLine = FortuneLocaleService::lo(
             '🌙✨ *หมอจันทรายินดีต้อนรับเจ้าชะตาค่ะ* ✨🌙',
             '🌙✨ *ໝໍຈັນທາຍິນດີຕ້ອນຮັບເຈົ້າຊາຕາເດີ* ✨🌙'
         );
-        $introLine = FortuneLocaleService::lo(
-            "วันนี้เจ้าชะตาอยากให้หมอเปิดทางดวงให้แบบไหนคะ?\n"
-                ."เลือกได้ *1 จาก {$packageCount} แพคเกจ* ด้านล่างเลย 👇",
-            "ມື້ນີ້ເຈົ້າຊາຕາຢາກໃຫ້ໝໍເປີດທາງດວງໃຫ້ແບບໃດເດີ?\n"
-                ."ເລືອກໄດ້ *1 ໃນ {$packageCount} ແພັກເກດ* ດ້ານລຸ່ມເລີຍ 👇"
-        );
+        if ($isCelticOnlyIntro) {
+            // Celtic-only — intro tone (ไม่บังคับ ลูกค้าเลือกเองได้ พร้อมจะอ่านราคาก่อน)
+            $introLine = FortuneLocaleService::lo(
+                "ตอนนี้แม่หมอเปิดบริการ *Celtic Cross* เพียงแพคเกจเดียวค่ะ\n"
+                    ."ลองอ่านรายละเอียดด้านล่างก่อน — ถ้าพร้อมค่อยเริ่มได้เลย 👇",
+                "ຕອນນີ້ແມ່ໝໍເປີດບໍລິການ *Celtic Cross* ພຽງແພັກເກດດຽວເດີ\n"
+                    ."ລອງອ່ານລາຍລະອຽດດ້ານລຸ່ມກ່ອນ — ຖ້າພ້ອມຄ່ອຍເລີ່ມໄດ້ເລີຍ 👇"
+            );
+        } else {
+            $introLine = FortuneLocaleService::lo(
+                "วันนี้เจ้าชะตาอยากให้หมอเปิดทางดวงให้แบบไหนคะ?\n"
+                    ."เลือกได้ *1 จาก {$packageCount} แพคเกจ* ด้านล่างเลย 👇",
+                "ມື້ນີ້ເຈົ້າຊາຕາຢາກໃຫ້ໝໍເປີດທາງດວງໃຫ້ແບບໃດເດີ?\n"
+                    ."ເລືອກໄດ້ *1 ໃນ {$packageCount} ແພັກເກດ* ດ້ານລຸ່ມເລີຍ 👇"
+            );
+        }
         $message = $welcomeLine."\n\n".$introLine."\n\n";
 
         // 🎁 (2026-05-03) แพคเกจ "ทำนายฟรี" — เฉพาะ first-timer + feature เปิด
@@ -307,40 +319,61 @@ trait CelticCrossConversationTrait
         }
 
         // 👇 CTA — รวมตัวเลือกตามที่มี
-        $ctaHeader = FortuneLocaleService::lo(
-            "━━━━━━━━━━━━━━━━━\n"
-                ."👇 *เลือกแพคเกจของเจ้าชะตา* 👇\n"
-                ."━━━━━━━━━━━━━━━━━\n",
-            "━━━━━━━━━━━━━━━━━\n"
-                ."👇 *ເລືອກແພັກເກດຂອງເຈົ້າຊາຕາ* 👇\n"
-                ."━━━━━━━━━━━━━━━━━\n"
-        );
-        $message .= $ctaHeader;
-        if ($offerFree) {
+        // 🆕 (2026-05-27) Celtic-only intro = CTA tone "พร้อม/ไว้คราวหน้า" (ไม่ใช่ "เลือกแพคเกจ")
+        if ($isCelticOnlyIntro) {
+            $ctaHeader = FortuneLocaleService::lo(
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."👇 *พร้อมเริ่มหรือยังคะ?* 👇\n"
+                    ."━━━━━━━━━━━━━━━━━\n",
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."👇 *ພ້ອມເລີ່ມຫຼືຍັງເດີ?* 👇\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+            );
+            $message .= $ctaHeader;
             $message .= FortuneLocaleService::lo(
-                "✦ พิมพ์ *\"ทำนายฟรี\"* — รับสิทธิ์ฟรี 1 ใบ\n",
-                "✦ ພິມ *\"ທຳນາຍຟຣີ\"* — ຮັບສິດທິຟຣີ 1 ໃບ\n"
+                "✦ ถ้าพร้อม — พิมพ์ *\"เริ่มเลย\"* / *\"celtic\"* / *\"{$celticPrice}\"*\n"
+                    ."✦ ถ้าอยากถามอะไรก่อน — พิมพ์มาได้เลย แม่หมอตอบให้\n"
+                    ."✦ ถ้ายังไม่พร้อม — พิมพ์ *\"ไว้คราวหน้า\"* หรือ *\"ยกเลิก\"* ก็ได้ ไม่เป็นไรค่ะ 🙏",
+                "✦ ຖ້າພ້ອມ — ພິມ *\"ເລີ່ມເລີຍ\"* / *\"celtic\"* / *\"{$celticPrice}\"*\n"
+                    ."✦ ຖ້າຢາກຖາມຫຍັງກ່ອນ — ພິມມາໄດ້ເລີຍ ແມ່ໝໍຕອບໃຫ້\n"
+                    ."✦ ຖ້າຍັງບໍ່ພ້ອມ — ພິມ *\"ໄວ້ຄາວໜ້າ\"* ຫຼື *\"ຍົກເລີກ\"* ກໍ່ໄດ້ ບໍ່ເປັນຫຍັງເດີ 🙏"
+            );
+        } else {
+            $ctaHeader = FortuneLocaleService::lo(
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."👇 *เลือกแพคเกจของเจ้าชะตา* 👇\n"
+                    ."━━━━━━━━━━━━━━━━━\n",
+                "━━━━━━━━━━━━━━━━━\n"
+                    ."👇 *ເລືອກແພັກເກດຂອງເຈົ້າຊາຕາ* 👇\n"
+                    ."━━━━━━━━━━━━━━━━━\n"
+            );
+            $message .= $ctaHeader;
+            if ($offerFree) {
+                $message .= FortuneLocaleService::lo(
+                    "✦ พิมพ์ *\"ทำนายฟรี\"* — รับสิทธิ์ฟรี 1 ใบ\n",
+                    "✦ ພິມ *\"ທຳນາຍຟຣີ\"* — ຮັບສິດທິຟຣີ 1 ໃບ\n"
+                );
+            }
+            // 🌙 (2026-05-23) Deep CTA — แสดงเฉพาะเมื่อ Deep เปิด
+            if ($deepEnabled) {
+                $message .= FortuneLocaleService::lo(
+                    "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n",
+                    "✦ ພິມ *\"{$deepPrice}\"* — ເລີ່ມແພັກເກດພື້ນຖານ {$deepPrice} ບາດ\n"
+                );
+            }
+            if ($celticEnabled) {
+                $message .= FortuneLocaleService::lo(
+                    "✦ พิมพ์ *\"{$celticPrice}\"* หรือ *\"celtic\"* — เริ่มแพคเกจเต็มสำรับ\n",
+                    "✦ ພິມ *\"{$celticPrice}\"* ຫຼື *\"celtic\"* — ເລີ່ມແພັກເກດເຕັມສຳລັບ\n"
+                );
+            }
+            $message .= FortuneLocaleService::lo(
+                "✦ หรือ *กดปุ่มด้านล่าง* ได้เลยค่ะ ✨\n\n"
+                    .'🙏 ถ้ายังไม่พร้อม พิมพ์ *"ยกเลิก"* ได้นะคะ',
+                "✦ ຫຼື *ກົດປຸ່ມດ້ານລຸ່ມ* ໄດ້ເລີຍເດີ ✨\n\n"
+                    .'🙏 ຖ້າຍັງບໍ່ພ້ອມ ພິມ *"ຍົກເລີກ"* ໄດ້ເດີ'
             );
         }
-        // 🌙 (2026-05-23) Deep CTA — แสดงเฉพาะเมื่อ Deep เปิด
-        if ($deepEnabled) {
-            $message .= FortuneLocaleService::lo(
-                "✦ พิมพ์ *\"{$deepPrice}\"* — เริ่มแพคเกจพื้นฐาน {$deepPrice} บาท\n",
-                "✦ ພິມ *\"{$deepPrice}\"* — ເລີ່ມແພັກເກດພື້ນຖານ {$deepPrice} ບາດ\n"
-            );
-        }
-        if ($celticEnabled) {
-            $message .= FortuneLocaleService::lo(
-                "✦ พิมพ์ *\"{$celticPrice}\"* หรือ *\"celtic\"* — เริ่มแพคเกจเต็มสำรับ\n",
-                "✦ ພິມ *\"{$celticPrice}\"* ຫຼື *\"celtic\"* — ເລີ່ມແພັກເກດເຕັມສຳລັບ\n"
-            );
-        }
-        $message .= FortuneLocaleService::lo(
-            "✦ หรือ *กดปุ่มด้านล่าง* ได้เลยค่ะ ✨\n\n"
-                .'🙏 ถ้ายังไม่พร้อม พิมพ์ *"ยกเลิก"* ได้นะคะ',
-            "✦ ຫຼື *ກົດປຸ່ມດ້ານລຸ່ມ* ໄດ້ເລີຍເດີ ✨\n\n"
-                .'🙏 ຖ້າຍັງບໍ່ພ້ອມ ພິມ *"ຍົກເລີກ"* ໄດ້ເດີ'
-        );
 
         return [
             'action' => 'tier_choice',
@@ -349,6 +382,7 @@ trait CelticCrossConversationTrait
             'deep_price' => $deepPrice,
             'celtic_price' => $celticPrice,
             'offer_free' => $offerFree, // 🎁 (2026-05-03) flag ให้ ChannelManager เพิ่มปุ่ม "🎁 ทำนายฟรี"
+            'celtic_only_intro' => $isCelticOnlyIntro, // 🆕 (2026-05-27) flag ให้ ChannelManager เปลี่ยน label ปุ่ม
         ];
     }
 
@@ -378,6 +412,22 @@ trait CelticCrossConversationTrait
             ];
         }
 
+        // 🛑 (2026-05-27) Soft decline ที่ tier_choice — ลูกค้ายังไม่ทันสร้างบิล แต่บอก "ไม่พร้อม/ไว้คราวหน้า/ไม่เอา"
+        //   User spec: "ฟัง อย่าตื้อ — ลูกค้ายังไม่รู้ว่าต้องจ่ายเงิน เห็น intro แล้วบอกไม่เอา → ยกเลิกให้เลย"
+        //   ⚠️ ต้องเช็ค looksLikeNeedPaymentHelp ก่อน — กัน false-cancel "ไม่เข้าใจ" / "งง"
+        if (method_exists($this, 'looksLikeSoftDeclineDuringPayment')
+            && method_exists($this, 'looksLikeNeedPaymentHelp')
+            && ! $this->looksLikeNeedPaymentHelp($messageText)
+            && $this->looksLikeSoftDeclineDuringPayment($messageText)
+            && method_exists($this, 'executeCancelAndReturnToChat')) {
+            \Illuminate\Support\Facades\Log::info('Fortune: soft decline ที่ tier_choice → cancel + ขอบคุณ', [
+                'reading_id' => $reading->id,
+                'text_preview' => mb_substr($messageText, 0, 60),
+            ]);
+
+            return $this->executeCancelAndReturnToChat($reading, 'soft_decline_tier_choice');
+        }
+
         // 🎁 (2026-05-03) ทำนายฟรี — ถ้าลูกค้าพิมพ์/กด → ปิด tier reading + เริ่ม free flow
         if ($this->matchesFreeCardKeyword($messageText)) {
             $reading->update(['conversation_status' => FortuneReading::STATUS_COMPLETED]);
@@ -392,6 +442,42 @@ trait CelticCrossConversationTrait
         $deepPriceInt = (int) $this->getDeepReadingPrice();
         $celticPriceInt = (int) app(CelticCrossService::class)->getPrice();
         $qaWindow = (int) ($this->settings->celtic_cross_qa_window_minutes ?? 15);
+        $deepEnabledLocal = $this->settings->isDeepReadingEnabled();
+        $celticEnabledLocal = (bool) ($this->settings->enable_celtic_cross ?? false);
+
+        // 🆕 (2026-05-27) Celtic-only intro accept — ลูกค้ากด "เริ่มเลย" หรือพิมพ์ "ตกลง/พร้อม/เอา"
+        //   ใช้เฉพาะ Celtic-only mode (Deep ปิด) — ไม่ ambiguous
+        //   เคสเสริม: ลูกค้ากดปุ่ม postback TIER_CELTIC_99 (FB ส่ง "ดูดวง" + Cache flag)
+        //             → Cache flag = "intent ชัด ต้องการ Celtic" → ยอมรับเป็น accept
+        if (! $deepEnabledLocal && $celticEnabledLocal) {
+            $userIdForCache = $reading->facebook_user_id ?? $reading->platform_user_id;
+            $hasForceTierFlag = ! empty($userIdForCache)
+                && \Illuminate\Support\Facades\Cache::get("fortune:force_tier:{$userIdForCache}") === 'celtic';
+
+            if ($hasForceTierFlag) {
+                \Illuminate\Support\Facades\Log::info('Fortune: Celtic-only intro accepted via postback Cache flag', [
+                    'reading_id' => $reading->id,
+                ]);
+
+                return $this->startCelticCrossFlow($reading);
+            }
+
+            $acceptKeywords = [
+                'เริ่มเลย', 'เริ่ม', 'พร้อม', 'พร้อมแล้ว', 'ตกลง', 'โอเค', 'เอาเลย', 'เอา',
+                'ok', 'okay', 'yes', 'ใช่', 'ใช่ค่ะ', 'ใช่ครับ', 'จัดมา',
+                'celtic_intro_start', 'celtic_intro_accept',
+            ];
+            foreach ($acceptKeywords as $kw) {
+                if ($textLower === mb_strtolower($kw) || mb_strpos($textLower, mb_strtolower($kw)) === 0) {
+                    \Illuminate\Support\Facades\Log::info('Fortune: Celtic-only intro accepted', [
+                        'reading_id' => $reading->id,
+                        'keyword' => $kw,
+                    ]);
+
+                    return $this->startCelticCrossFlow($reading);
+                }
+            }
+        }
 
         // 🔮 99฿ Celtic Cross — keyword: "99", "celtic", "เต็ม", "เต็มสำรับ", "ไพ่ยิปซีเต็ม", "พรีเมียม"
         // ⚠️ เช็ค Celtic ก่อน Deep เผื่อข้อความมีทั้ง "99" และ "39" (ไม่ค่อยเกิด แต่กันไว้)
