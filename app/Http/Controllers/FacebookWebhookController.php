@@ -3718,16 +3718,20 @@ class FacebookWebhookController extends Controller
             // 🩹 (2026-05-08) Single-click fix — ลูกค้ากด 39 / 99 → เข้า flow ตรงไม่ผ่าน tier menu
             //   เดิม: TIER_DEEP_39 → "ดูดวง 39 บาท" → startDeepReadingFlow → tier menu (ต้องกด 2 ครั้ง)
             //   ใหม่: ตั้ง Cache flag forceTier → processMessage จะเช็คที่ top แล้ว skip tier menu
-            // ⚡ (2026-05-25) Skip payment-gate menu — กดปุ่ม = intent ชัด → ไป QR ไทยเลย ไม่ถาม "QR/บัตร?"
-            //    user spec: "ถ้าลูกค้ากดปุ่ม เพื่อดูดวง ก็ควรเข้ากระบวนการเริ่มชำระเลย ยังไม่ต้องถามอะไรก่อน"
+            //
+            // 🔄 (2026-05-27 reverted) เลิกตั้ง skip_payment_gate
+            //   เดิม (2026-05-25 #4): กดปุ่ม → bypass askPaymentMethod gate → QR ไทยตรง
+            //   user feedback ใหม่: "มีคน กด ดูดวง แล้วไม่ให้เลือก วิธีชำระเงิน มันไปสร้างบิลเลย"
+            //   ใหม่: กดปุ่ม → ยังคง force_tier (skip intro card) — แต่ askPaymentMethod ทำงานปกติ
+            //         ลูกค้าเห็น "💚 QR ไทย / 💳 บัตรเครดิต" → เลือก → ค่อยสร้างบิล
+            //   ⚠️ ถ้า payment_mode='sms_only' / 'none' จะข้าม gate (ไม่มี choice) → ไปสร้างบิลปกติ
+            //   ⚠️ ถ้า payment_mode='stripe_only' → ข้ามไป Stripe ตรง (ไม่มี choice เช่นกัน)
             'TIER_DEEP_39' => (function () use ($senderId) {
                 Cache::put("fortune:force_tier:{$senderId}", 'deep', 30);
-                Cache::put("fortune:skip_payment_gate:{$senderId}", true, 30);
                 $this->processConversationalMessage($senderId, 'ดูดวง');
             })(),
             'TIER_CELTIC_99' => (function () use ($senderId) {
                 Cache::put("fortune:force_tier:{$senderId}", 'celtic', 30);
-                Cache::put("fortune:skip_payment_gate:{$senderId}", true, 30);
                 $this->processConversationalMessage($senderId, 'ดูดวง');
             })(),
             // 🆓 (2026-05-01) ปุ่ม "ดูดวงฟรี" จาก welcome — ส่ง category picker (ไม่ผ่าน tier menu)
@@ -3830,14 +3834,14 @@ class FacebookWebhookController extends Controller
 
             // Quick Replies เดิม (backward compatibility)
             // ผู้สูงอายุงง → ปุ่ม "ดูดวง" และ "ดูดวงละเอียด" → deep flow เดียวกัน
-            // ⚡ (2026-05-25) Auto-pick tier + skip payment-gate menu (ผ่าน button = intent ชัด)
-            //    user spec: "กดปุ่ม เพื่อดูดวง ก็ควรเข้ากระบวนการเริ่มชำระเลย ยังไม่ต้องถามอะไรก่อน"
+            // 🔄 (2026-05-27 reverted) เลิกตั้ง skip_payment_gate (เหมือน TIER_DEEP_39/TIER_CELTIC_99)
+            //   user feedback: "กด ดูดวง แล้วไม่ให้เลือก วิธีชำระเงิน มันไปสร้างบิลเลย"
+            //   เก็บ force_tier ไว้ (skip intro card) — แต่ askPaymentMethod gate ทำงานปกติ
             'FORTUNE_BASIC' => (function () use ($senderId) {
                 $tier = ($this->settings->enable_celtic_cross ?? false) ? 'celtic'
                     : ($this->settings->isDeepReadingEnabled() ? 'deep' : null);
                 if ($tier) {
                     Cache::put("fortune:force_tier:{$senderId}", $tier, 30);
-                    Cache::put("fortune:skip_payment_gate:{$senderId}", true, 30);
                 }
                 $this->processConversationalMessage($senderId, 'ดูดวง');
             })(),
@@ -3846,7 +3850,6 @@ class FacebookWebhookController extends Controller
                     : ($this->settings->isDeepReadingEnabled() ? 'deep' : null);
                 if ($tier) {
                     Cache::put("fortune:force_tier:{$senderId}", $tier, 30);
-                    Cache::put("fortune:skip_payment_gate:{$senderId}", true, 30);
                 }
                 $this->processConversationalMessage($senderId, 'ดูดวง');
             })(),
