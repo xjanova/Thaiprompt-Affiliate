@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Death",
+    "name_th": "ความตาย",
+    "number": 13,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การเปลี่ยนแปลงครั้งใหญ่กำลังเกิดขึ้นในชีวิต",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน Death หัวตั้งบ่งบอกถึงการเปลี่ยนแปลงครั้งใหญ่ที่กำลังเกิด ไม่ใช่ความตายจริง แต่เป็นการจบของช่วงหนึ่งและเริ่มต้นใหม่ บทหนึ่งของชีวิตกำลังปิด - งานเก่า ความสัมพันธ์เก่า ตัวตนเก่า การยอมรับและปล่อยวางคือกุญแจ การเกิดใหม่รออยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Hanged Man = ปล่อยวาง, The World = บรรลุ",
+            "wands": "Eight of Cups = ออกจาก",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในปัจจุบัน คือ 'จบเพื่อเริ่มใหม่'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลง ปล่อยสิ่งที่จบแล้ว เปิดใจรับสิ่งใหม่ ทุกการจบคือการเริ่มต้น",
+          "keywords_th": ["จบ", "เริ่มใหม่", "เปลี่ยนแปลง", "ปล่อยวาง"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์เปลี่ยนแปลงครั้งใหญ่ - จบเพื่อเริ่มใหม่",
+          "detailed_interpretation_th": "ในรักปัจจุบัน อยู่ในช่วงเปลี่ยนแปลงครั้งใหญ่ - อาจเป็นการเลิกความสัมพันธ์ที่ไม่ดี การจบบทเก่าเพื่อเริ่มความสัมพันธ์ใหม่ที่ลึกซึ้งกว่า การปลดปล่อยจากความรักที่หมดอายุ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Tower = ระเบิด",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม, Three of Swords = แผลใจ",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในปัจจุบันรัก คือ 'จบเพื่อรักใหม่'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์เปลี่ยน - เลิกหรือเข้าสู่ระดับใหม่ การจบไม่ใช่ความล้มเหลว แต่เป็นทางสู่สิ่งดีกว่า",
+          "keywords_th": ["รักเปลี่ยน", "จบบทเก่า", "เริ่มใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "งานหรือธุรกิจกำลังจบและเริ่มต้นใหม่",
+          "detailed_interpretation_th": "ในการงาน-การเงิน เป็นช่วงเปลี่ยนแปลงใหญ่ - อาจเป็นการลาออก เปลี่ยนสายอาชีพ ปิดธุรกิจเก่าเพื่อเริ่มใหม่ ทักษะเก่าไม่ใช้ได้แล้ว ต้องเรียนรู้ใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Fool = เริ่มใหม่",
+            "wands": "Eight of Wands = เร่ง, Ace of Wands = เริ่มใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย, Ace of Pentacles = เริ่ม",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในปัจจุบันงาน-เงิน คือ 'จบเพื่อเริ่มอาชีพใหม่'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลงในงาน - อาจเจ็บปวดในตอนนี้ แต่นำมาซึ่งโอกาสใหม่ที่ดีกว่า",
+          "keywords_th": ["จบงานเก่า", "อาชีพใหม่", "เปลี่ยนสาย"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ตัวตนเก่ากำลังตายเพื่อเกิดใหม่",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ตัวตนเก่ากำลังจบ - ความเชื่อเก่า ค่านิยมเก่า บทบาทเก่า การยอมรับการเปลี่ยนแปลงนี้นำมาซึ่งการเกิดใหม่ทางจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = ความหวัง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในปัจจุบันจิตวิญญาณ คือ 'ตัวตนเก่าตาย ใหม่เกิด'",
+          "advice_th": "ยอมรับการเปลี่ยนแปลงในตัวเอง ปล่อยตัวตนเก่า เปิดใจรับตัวตนใหม่ที่กำลังเกิด",
+          "keywords_th": ["ตัวตนใหม่", "เกิดใหม่", "ปล่อยเก่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การเปลี่ยนแปลงครั้งใหญ่ของวิถีชีวิตและสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ จะมีการเปลี่ยนแปลงครั้งใหญ่ในวิถีชีวิต - เลิกนิสัยทำลาย เริ่มกิจวัตรใหม่ ฟื้นฟูจากความเจ็บป่วย การ 'ตาย' ของวิถีเก่าและเกิดใหม่ด้วยสุขภาพที่ดีขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = วินัยใหม่",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = วินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในปัจจุบันสุขภาพ คือ 'วิถีเก่าตาย ใหม่เกิด'",
+          "advice_th": "เลิกนิสัยทำลายสุขภาพ เริ่มกิจวัตรใหม่ทันที การเปลี่ยนแปลงครั้งใหญ่จำเป็น",
+          "keywords_th": ["เลิกนิสัยเก่า", "เริ่มกิจวัตรใหม่", "เกิดใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต่อต้านการเปลี่ยนแปลงและติดในอดีต",
+          "detailed_interpretation_th": "Death กลับหัวในปัจจุบัน บ่งบอกถึงการต่อต้านการเปลี่ยนแปลงที่ต้องเกิด - ยึดในสิ่งที่จบแล้ว ปฏิเสธความจริง ทำให้ติดอยู่ การต่อต้านการเปลี่ยนแปลงทำให้ทุกข์ยิ่งกว่าการยอมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight กลับหัว = ไม่เปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวในปัจจุบัน คือ 'ยอมรับการเปลี่ยน'",
+          "advice_th": "หยุดต่อต้านสิ่งที่หลีกเลี่ยงไม่ได้ ยอมรับและก้าวต่อ การต่อต้านทำให้ทุกข์",
+          "keywords_th": ["ต่อต้านเปลี่ยน", "ติดในอดีต", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ยึดในความสัมพันธ์ที่ควรจบ",
+          "detailed_interpretation_th": "ในรัก ยึดในความสัมพันธ์ที่จบไปแล้ว - กลับไปคืนดีกับคนเก่าซ้ำๆ ปฏิเสธว่าความสัมพันธ์ตาย ความทุกข์เพิ่มทุกครั้งที่ฝืน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรัก, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ, Six of Cups = ติดอดีต",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรัก คือ 'ปล่อยรักที่ตาย'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์จบแล้ว ปล่อยและก้าวต่อ การฝืนทำให้เจ็บปวดมากขึ้น",
+          "keywords_th": ["ยึดในรัก", "ตายแล้ว", "ปล่อย"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ยึดในงานเก่าที่ควรเลิก",
+          "detailed_interpretation_th": "ในงาน-เงิน ยึดในงานเก่า - กลัวเปลี่ยน ทักษะล้าสมัย รายได้ลดลง ความสำเร็จที่เคยมีไม่กลับมา ต้องยอมรับและเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวงาน-เงิน คือ 'ปล่อยอาชีพเก่า'",
+          "advice_th": "ยอมรับว่าอาชีพเก่าไม่ใช่ทาง วางแผนเปลี่ยน ทักษะใหม่ networking",
+          "keywords_th": ["ติดอาชีพเก่า", "ทักษะล้าสมัย", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในตัวตนเก่าและปฏิเสธการเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ติดในตัวตนเก่า - ปฏิเสธว่าตัวเองเปลี่ยน ทำตัวเป็นคนเดิมแม้ไม่ใช่อีกแล้ว การปฏิเสธการเติบโตทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวจิตวิญญาณ คือ 'ยอมรับการเปลี่ยน'",
+          "advice_th": "ยอมรับว่าคุณเปลี่ยน ตัวตนเก่าไม่ใช่ของจริงอีกแล้ว เปิดใจรับตัวตนใหม่",
+          "keywords_th": ["ติดตัวตนเก่า", "ปฏิเสธการเติบโต", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดในนิสัยที่ทำลายสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ ติดในนิสัยที่ทำลาย - สูบบุหรี่ ดื่ม กินไม่ดี ไม่ออกกำลังกาย รู้ว่าไม่ดีแต่ไม่เลิก การติดทำให้ร่างกายแย่ลงเรื่อยๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียกร้อง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวสุขภาพ คือ 'เลิกหรือพัง'",
+          "advice_th": "เลิกนิสัยทำลายเดี๋ยวนี้ ไม่รอจังหวะ ทุกวันที่ยืดเวลาทำลายร่างกายมากขึ้น",
+          "keywords_th": ["ติดนิสัยทำลาย", "ไม่เลิก", "พัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องยอมรับการเปลี่ยนแปลงที่หลีกเลี่ยงไม่ได้",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค Death (ตีความตั้งตรงเสมอ) บ่งบอกว่าความท้าทายคือการยอมรับการเปลี่ยนแปลง - ของชีวิต ของคนรอบข้าง ของตัวเอง การปฏิเสธทำให้ทุกข์ การยอมรับนำความสงบ",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ยอมรับ, Eight of Cups = ปล่อยวาง",
+            "wands": "Eight of Cups = ออกจาก",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในอุปสรรค คือ 'ยอมรับและก้าวต่อ'",
+          "advice_th": "ระบุสิ่งที่กำลังเปลี่ยน - ยอมรับและก้าวต่อ การยึดทำให้ทุกข์",
+          "keywords_th": ["ยอมรับ", "เปลี่ยนแปลง", "ปล่อย"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องยอมรับว่าความสัมพันธ์ต้องเปลี่ยน",
+          "detailed_interpretation_th": "อุปสรรคในรักคือการยอมรับการเปลี่ยนแปลง - อาจเลิก อาจห่างเหิน อาจเปลี่ยนความสัมพันธ์ การยึดทำให้เจ็บปวดมากขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, Eight of Cups = ออกจาก",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Eight of Cups = ปล่อยวาง, Three of Swords = แผลใจ",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อุปสรรครัก คือ 'ปล่อยรักที่จบ'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์เปลี่ยน อาจไม่ใช่จุดจบ แต่เป็นการเปลี่ยนรูปแบบ",
+          "keywords_th": ["รักเปลี่ยน", "ยอมรับ", "ก้าวต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องยอมรับว่างานเก่าไม่ใช่ทางต่อ",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือการยอมรับว่าอาชีพเก่าไม่ใช่ทาง - ตลาดเปลี่ยน ทักษะล้าสมัย ความสำเร็จเก่าไม่กลับมา ต้องเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = เริ่มใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่ม",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อุปสรรคงาน-เงิน คือ 'จบเพื่อเริ่ม'",
+          "advice_th": "ยอมรับว่าอาชีพเก่าจบ วางแผนเริ่มใหม่ - ทักษะใหม่ networking",
+          "keywords_th": ["อาชีพจบ", "เริ่มใหม่", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องปล่อยตัวตนเก่าเพื่อเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการปล่อยตัวตนเก่า - บทบาทเก่า ความเชื่อเก่า กรอบเก่า การยึดในตัวตนเก่าทำให้ไม่เติบโต",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Hanged Man = ปล่อย",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อุปสรรคจิตวิญญาณ คือ 'ปล่อยตัวตนเก่า'",
+          "advice_th": "ระบุตัวตนเก่าที่ยึด - บทบาท ความเชื่อ ปล่อย เกิดใหม่",
+          "keywords_th": ["ปล่อยตัวตน", "เกิดใหม่", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องเลิกนิสัยที่ทำลายสุขภาพ",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคือการเลิกนิสัยทำลาย - สูบบุหรี่ ดื่ม กินไม่ดี การติดในนิสัยเก่าทำให้สุขภาพแย่ลง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Tower = ร่างกายเรียก",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = วินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อุปสรรคสุขภาพ คือ 'เลิกนิสัยทำลาย'",
+          "advice_th": "เลิกหนึ่งนิสัยที่ทำลายเดี๋ยวนี้ - บุหรี่ น้ำตาล แอลกอฮอล์ การเลิกคือการเกิดใหม่",
+          "keywords_th": ["เลิกนิสัย", "ทำลาย", "เกิดใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ปฏิเสธความจริงและติดในวงจรเดิม",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการปฏิเสธความจริง - ติดในความสัมพันธ์ที่จบ งานที่ไม่ใช่ ตัวตนที่หายไป การปฏิเสธทำให้ติดในวงจร",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'ยอมรับความจริง'",
+          "advice_th": "หยุดปฏิเสธ ยอมรับความจริง ความจริงเจ็บแต่จำเป็น",
+          "keywords_th": ["ปฏิเสธความจริง", "ติด", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปฏิเสธว่าความสัมพันธ์จบแล้ว",
+          "detailed_interpretation_th": "ในรัก ปฏิเสธความจริง - กลับไปคืนดีซ้ำๆ คิดว่าจะเปลี่ยน หวังให้ดีขึ้น ความสัมพันธ์ตายไปแล้วแต่คุณไม่ยอมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจซ้ำ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'ยอมรับว่าจบ'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์จบ ปล่อย เริ่มใหม่ การฝืนทำให้เจ็บปวดทั้งสองคน",
+          "keywords_th": ["ปฏิเสธว่าจบ", "วงจรซ้ำ", "ปล่อย"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ปฏิเสธว่าอาชีพเก่าไม่ใช่ทาง",
+          "detailed_interpretation_th": "ในงาน-เงิน ปฏิเสธว่างานเก่าไม่ใช่ทาง - ยึดในตำแหน่งเก่า ความสำเร็จเก่า ทักษะที่ล้าสมัย ต้องยอมรับและเริ่มใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่เห็นโอกาส",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'ยอมรับเปลี่ยนทาง'",
+          "advice_th": "ยอมรับว่าอาชีพเก่าจบแล้ว วางแผนเริ่มใหม่ ใช้เวลาฝึกทักษะใหม่",
+          "keywords_th": ["ปฏิเสธเปลี่ยน", "ติดอาชีพเก่า", "เริ่มใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยึดในตัวตนที่ไม่ใช่ตัวจริงอีกแล้ว",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ยึดในตัวตนเก่า - 'ฉันเป็นคนแบบนี้' แม้คุณเปลี่ยนไปแล้ว การยึดในตัวตนเก่าทำให้ไม่โต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'ปล่อยตัวตนเก่า'",
+          "advice_th": "ยอมรับว่าคุณเปลี่ยน ปล่อยตัวตนเก่า เปิดใจรับตัวตนใหม่",
+          "keywords_th": ["ติดตัวตนเก่า", "ไม่ใช่ตัวจริง", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดในนิสัยที่รู้ว่าทำลายแต่ไม่เลิก",
+          "detailed_interpretation_th": "ในสุขภาพ ติดในนิสัยทำลายแม้รู้ว่าไม่ดี - บุหรี่ ดื่ม กินไม่ดี การติดนี้ทำให้ร่างกายแย่ลงเรื่อยๆ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียก",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = กังวลแต่ไม่เลิก",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'เลิกเดี๋ยวนี้'",
+          "advice_th": "เลิกหนึ่งนิสัยทำลายตอนนี้ ทุกวันที่รอทำให้ร่างกายเสียหายมากขึ้น",
+          "keywords_th": ["ติดนิสัยรู้ทำลาย", "ไม่เลิก", "เลิกเดี๋ยวนี้"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยผ่านการเปลี่ยนแปลงใหญ่ที่นำมาซึ่งการเกิดใหม่",
+          "detailed_interpretation_th": "Death หัวตั้งในอดีต บ่งบอกถึงช่วงเวลาที่คุณเคยผ่านการเปลี่ยนแปลงใหญ่ - การจบบทเก่า การสูญเสีย ที่นำมาซึ่งการเกิดใหม่ ประสบการณ์นี้ทำให้คุณแข็งแกร่งและฉลาดขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Star = ฟื้นฟู",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Six of Cups = ความทรงจำ",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ในอดีต คือ 'เปลี่ยนแปลงเก่าทำให้แกร่ง'",
+          "advice_th": "ระลึกการเปลี่ยนแปลงใหญ่ในอดีต - คุณรอดและเติบโตได้อย่างไร? ใช้พลังเดียวกันในปัจจุบัน",
+          "keywords_th": ["เปลี่ยนแปลงเก่า", "เกิดใหม่", "แกร่งขึ้น"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยจบความสัมพันธ์เพื่อเริ่มใหม่ที่ดีกว่า",
+          "detailed_interpretation_th": "ในรักอดีต เคยจบความสัมพันธ์ใหญ่ - การเลิก การหย่า การสูญเสียคนรัก ประสบการณ์นี้สอนคุณเรื่องรักและตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, Six of Swords = ก้าวข้าม",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Five of Cups = เสียใจ, Six of Cups = ความทรงจำ",
+            "swords": "Three of Swords = แผลใจ, Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups = คนรักเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อดีตรัก คือ 'รักเก่าจบเพื่อใหม่'",
+          "advice_th": "ใช้บทเรียนจากความสัมพันธ์เก่า - คราวนี้เลือกฉลาดกว่า",
+          "keywords_th": ["รักจบเก่า", "บทเรียน", "เริ่มใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยเปลี่ยนสายอาชีพหรือเลิกธุรกิจ",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต เคยมีการเปลี่ยนแปลงใหญ่ - เปลี่ยนสาย ลาออก ปิดธุรกิจ การเปลี่ยนนั้นนำมาถึงปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อดีตงาน-เงิน คือ 'เปลี่ยนเพื่อใหม่ดีกว่า'",
+          "advice_th": "ใช้บทเรียนจากการเปลี่ยนเก่า - คราวนี้วางแผนฉลาดกว่า",
+          "keywords_th": ["เปลี่ยนอาชีพเก่า", "บทเรียน", "ก้าวต่อ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยมีการเปลี่ยนแปลงทางจิตวิญญาณครั้งใหญ่",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยมีการเปลี่ยนแปลงครั้งสำคัญ - การตื่นรู้ การละทิ้งความเชื่อเก่า การพบครู ตัวตนเก่าตายไป ตัวตนใหม่เกิด",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = แสง",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อดีตจิตวิญญาณ คือ 'ตื่นรู้ครั้งใหญ่'",
+          "advice_th": "ระลึกการตื่นรู้ในอดีต - เปลี่ยนคุณอย่างไร? ใช้เป็นแรงบันดาลใจ",
+          "keywords_th": ["ตื่นรู้เก่า", "เกิดใหม่", "พลัง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยฟื้นฟูจากความเจ็บป่วยใหญ่",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยฟื้นฟูจากความเจ็บป่วยใหญ่ - ผ่าตัด โรคร้าย burnout การฟื้นฟูนั้นพิสูจน์ว่าร่างกายมีพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อดีตสุขภาพ คือ 'ฟื้นฟูได้แล้ว'",
+          "advice_th": "ระลึกตอนฟื้นฟูจากเจ็บป่วย - ใช้พลังเดียวกันในปัจจุบัน ร่างกายฟื้นฟูได้",
+          "keywords_th": ["ฟื้นฟูเก่า", "เกิดใหม่", "พลังร่างกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยต่อต้านการเปลี่ยนแปลงนานเกินไป",
+          "detailed_interpretation_th": "Death กลับหัวในอดีต บ่งบอกถึงช่วงที่คุณต่อต้านการเปลี่ยนแปลง - ยึดในสิ่งที่ควรปล่อย ทำให้ทุกข์นาน บทเรียนคือต้องยอมรับเร็วขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight กลับหัว = ไม่ยอม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอดีต คือ 'บทเรียนจากการยึด'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ยอมรับการเปลี่ยนเร็วขึ้น ไม่ยึดนาน",
+          "keywords_th": ["ยึดเก่า", "บทเรียน", "ยอมรับเร็ว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยยึดในความสัมพันธ์ที่จบไปนาน",
+          "detailed_interpretation_th": "ในรักอดีต ยึดในความสัมพันธ์ที่จบ - กลับไปคืนดีซ้ำ ปฏิเสธว่าจบ ใช้เวลานานกว่าจะยอมรับ บทเรียนคือต้องปล่อยเร็วขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ, Six of Cups = ติดอดีต",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอดีตรัก คือ 'รู้จักปล่อยเร็วขึ้น'",
+          "advice_th": "ใช้บทเรียน - ในรักครั้งใหม่ ถ้าจบ ปล่อยเร็ว ไม่ยึดให้เจ็บปวด",
+          "keywords_th": ["ยึดรักเก่า", "บทเรียน", "ปล่อยเร็ว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยยึดในงานเก่าจนเสียโอกาส",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต ยึดในงานเก่านาน - กลัวเปลี่ยน ทักษะล้าสมัย พลาดโอกาสใหม่ บทเรียนคือต้องกล้าเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติดในงาน",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอดีตงาน-เงิน คือ 'กล้าเปลี่ยนเร็ว'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ติดตามตลาด ปรับตัวเร็ว ไม่ติดในงานนานเกิน",
+          "keywords_th": ["ยึดงานเก่า", "พลาดโอกาส", "กล้าเปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยติดในตัวตนเก่าและไม่ยอมเติบโต",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต ติดในตัวตนเก่า - บทบาทเก่า ความเชื่อเก่า ใช้เวลานานกว่าจะยอมเปลี่ยน บทเรียนคือต้องยอมรับการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Hanged Man = หยุดนิ่ง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอดีตจิตวิญญาณ คือ 'ยอมรับการเปลี่ยนเร็ว'",
+          "advice_th": "ใช้บทเรียน - คราวนี้ตื่นรู้กับการเปลี่ยนแปลงในตัวเองเร็ว ปล่อยตัวตนเก่า",
+          "keywords_th": ["ติดตัวเก่า", "ไม่โต", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยติดในนิสัยทำลายสุขภาพนาน",
+          "detailed_interpretation_th": "ในสุขภาพอดีต ติดในนิสัยทำลาย - สูบบุหรี่ ดื่ม กินไม่ดี รู้ว่าไม่ดีแต่ไม่เลิก ใช้เวลานานกว่าจะเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียก",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอดีตสุขภาพ คือ 'เลิกได้แล้ว'",
+          "advice_th": "ใช้บทเรียน - เลิกนิสัยทำลายเร็วขึ้น ทุกวันที่ยึดร่างกายเสียหายมากขึ้น",
+          "keywords_th": ["ติดนิสัยเก่า", "ยึดนาน", "เลิกเร็ว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "การเปลี่ยนแปลงครั้งใหญ่กำลังจะเกิดในอนาคต",
+          "detailed_interpretation_th": "Death หัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า จะมีการเปลี่ยนแปลงครั้งใหญ่ - การจบบทเก่า การเริ่มใหม่ การเกิดใหม่ เตรียมตัวรับและปล่อยวางสิ่งเก่า",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Star = ฟื้นฟู",
+            "wands": "Eight of Wands = เร่ง, Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อนาคต คือ 'เปลี่ยนแปลงใหญ่จะมา'",
+          "advice_th": "เตรียมพร้อม - การเงิน ความสัมพันธ์ สุขภาพ การเปลี่ยนแปลงนำมาซึ่งโอกาสใหม่",
+          "keywords_th": ["เปลี่ยนแปลงใหญ่", "จบเก่า", "เริ่มใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะเปลี่ยนแปลงใหญ่",
+          "detailed_interpretation_th": "ในรักอนาคต จะมีการเปลี่ยนแปลงใหญ่ - อาจเป็นการเลิก การก้าวสู่ระดับใหม่ การพบคนใหม่ การปลดปล่อยจากสิ่งที่จบ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Tower = ระเบิด",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Eight of Cups = ออกจาก, Ace of Cups = ความรักใหม่",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อนาคตรัก คือ 'รักเปลี่ยนใหญ่'",
+          "advice_th": "เตรียมใจ - การเปลี่ยนแปลงในรักนำมาซึ่งสิ่งที่ดีกว่า ปล่อยวางการควบคุม",
+          "keywords_th": ["รักเปลี่ยน", "จบใหม่", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "การเปลี่ยนสายอาชีพหรือธุรกิจในอนาคต",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต จะมีการเปลี่ยนแปลงใหญ่ - เปลี่ยนสาย ลาออก เปิดธุรกิจใหม่ การเปลี่ยนนี้นำมาซึ่งโอกาสใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Fool = เริ่มใหม่, The Sun = สำเร็จ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อนาคตงาน-เงิน คือ 'เปลี่ยนใหญ่นำโอกาส'",
+          "advice_th": "เตรียมตัว - เก็บเงิน เรียนทักษะใหม่ การเปลี่ยนใหญ่ต้องการความพร้อม",
+          "keywords_th": ["เปลี่ยนอาชีพ", "เริ่มใหม่", "โอกาส"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "การเกิดใหม่ทางจิตวิญญาณกำลังมา",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต จะมีการเกิดใหม่ - ตัวตนเก่าตาย ตัวตนใหม่เกิด ค่านิยมเปลี่ยน เห็นชีวิตจากมุมใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อนาคตจิตวิญญาณ คือ 'เกิดใหม่'",
+          "advice_th": "เปิดใจรับการเกิดใหม่ ปล่อยตัวตนเก่า ค่านิยมเก่า ความเชื่อเก่า เปิดใจรับใหม่",
+          "keywords_th": ["เกิดใหม่", "ตัวตนใหม่", "เปลี่ยน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "การเปลี่ยนแปลงครั้งใหญ่ของวิถีสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต จะมีการเปลี่ยนแปลงใหญ่ - เลิกนิสัยทำลาย เริ่มกิจวัตรใหม่ ฟื้นฟูจากอาการเก่า การเกิดใหม่ของร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death อนาคตสุขภาพ คือ 'วิถีใหม่'",
+          "advice_th": "เตรียมตัวเปลี่ยนวิถี - diet ใหม่ การออกกำลังกายใหม่ การพักผ่อนแบบใหม่",
+          "keywords_th": ["วิถีใหม่", "เลิกเก่า", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต่อต้านการเปลี่ยนแปลงที่จะมา",
+          "detailed_interpretation_th": "Death กลับหัวในอนาคต เตือนว่าจะมีการเปลี่ยนแปลงใหญ่ที่คุณต่อต้าน - กลัวเปลี่ยน ยึดในเก่า การต่อต้านทำให้ทุกข์มากกว่าการยอมรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Knight กลับหัว = ไม่เปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอนาคต คือ 'ฝึกยอมรับเดี๋ยวนี้'",
+          "advice_th": "ฝึกยอมรับการเปลี่ยนแปลงตั้งแต่ตอนนี้ การต่อต้านจะทำให้คุณทุกข์ในอนาคต",
+          "keywords_th": ["ต่อต้าน", "กลัวเปลี่ยน", "ยอมรับ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ยึดในความสัมพันธ์ที่ควรปล่อย",
+          "detailed_interpretation_th": "ในรักอนาคต ยึดในความสัมพันธ์ที่ตายแล้ว - กลัวเลิก กลัวอยู่คนเดียว แม้รู้ว่าไม่ดี การฝืนทำให้ทั้งสองคนทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรัก, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอนาคตรัก คือ 'ปล่อยรักที่ตาย'",
+          "advice_th": "ยอมรับว่าความสัมพันธ์ตายแล้ว ปล่อยและก้าวต่อ ไม่กลับไปคืนดีซ้ำ",
+          "keywords_th": ["ติดในรัก", "กลัวเลิก", "ปล่อย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวเปลี่ยนงานแม้รู้ว่าไม่ใช่ทาง",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต กลัวเปลี่ยนงาน - แม้รู้ว่าอาชีพเก่าไม่ใช่ทาง กลัวความไม่แน่นอน ติดในเงินเดือน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่เริ่ม"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอนาคตงาน-เงิน คือ 'วางแผนเปลี่ยน'",
+          "advice_th": "เริ่มวางแผนเปลี่ยนงาน - emergency fund ทักษะใหม่ networking ไม่ใช่ตอนนี้ แต่เตรียมพร้อม",
+          "keywords_th": ["กลัวเปลี่ยน", "ติดในงาน", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปฏิเสธว่าตัวเองเปลี่ยน",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ปฏิเสธการเปลี่ยนแปลงในตัวเอง - ค่านิยมเปลี่ยน ความเชื่อเปลี่ยน แต่คุณยึดในตัวเก่า การฝืนทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในตัวเก่า, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอนาคตจิตวิญญาณ คือ 'ยอมรับการเปลี่ยน'",
+          "advice_th": "ยอมรับว่าคุณกำลังเปลี่ยน ปล่อยตัวเก่า เปิดใจรับใหม่",
+          "keywords_th": ["ปฏิเสธเปลี่ยน", "ติดตัวเก่า", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดในนิสัยทำลายแม้รู้ว่าต้องเลิก",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ติดในนิสัยทำลาย - สูบบุหรี่ ดื่ม กินไม่ดี รู้ว่าต้องเลิกแต่ไม่ทำ ร่างกายจะเรียกร้องในอนาคต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียก",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวอนาคตสุขภาพ คือ 'เลิกก่อนพัง'",
+          "advice_th": "เลิกนิสัยทำลายเดี๋ยวนี้ ก่อนร่างกายบังคับให้เลิกแบบเจ็บปวด",
+          "keywords_th": ["ติดนิสัยทำลาย", "ไม่เลิก", "พัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการการเปลี่ยนแปลงครั้งใหญ่และเกิดใหม่",
+          "detailed_interpretation_th": "Death หัวตั้งในเป้าหมาย สะท้อนความปรารถนา - ต้องการการเปลี่ยนแปลงใหญ่ การจบบทเก่า การเกิดใหม่ ใช้ชีวิตในแบบใหม่ที่แท้จริง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Star = ความหวัง, The Sun = บรรลุ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death เป้าหมาย คือ 'เกิดใหม่'",
+          "advice_th": "เก็บความปรารถนานี้ - ลงมือเปลี่ยน ปล่อยเก่า รับใหม่ การเกิดใหม่อยู่ในมือคุณ",
+          "keywords_th": ["เปลี่ยนแปลงใหญ่", "เกิดใหม่", "ปล่อยเก่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความรักที่ลึกซึ้งและเปลี่ยนชีวิต",
+          "detailed_interpretation_th": "เป้าหมายในรักคือความรักที่ลึกซึ้ง - ไม่ใช่ความรักผิวเผิน แต่เป็นความรักที่เปลี่ยนชีวิต โซลเมต ที่ทั้งคู่เติบโตด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ลึกซึ้ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death เป้าหมายรัก คือ 'รักเปลี่ยนชีวิต'",
+          "advice_th": "อย่ายอมรับรักที่ไม่ลึก - คุณคู่ควรกับ soul mate ที่เติบโตด้วยกัน",
+          "keywords_th": ["รักลึก", "soul mate", "เปลี่ยนชีวิต"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการเปลี่ยนสายอาชีพให้ตรงกับใจ",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคือการเปลี่ยนสาย - ทำงานที่ตรงกับใจ เริ่มธุรกิจของตัวเอง ปล่อยอาชีพที่ไม่ใช่ เกิดใหม่ทางอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Fool = เริ่มใหม่",
+            "wands": "Ace of Wands = พลังใหม่, King of Wands = ผู้ประกอบการ",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death เป้าหมายงาน-เงิน คือ 'อาชีพใหม่ตรงใจ'",
+          "advice_th": "วางแผนเปลี่ยนสายอาชีพ - ทักษะใหม่ ทุน แผน ลงมือทำ",
+          "keywords_th": ["เปลี่ยนสาย", "อาชีพใหม่", "ตรงใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็นคนใหม่ที่ดีกว่าเดิม",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเป็นคนใหม่ - ปล่อยตัวตนเก่า บทบาทเก่า ความเชื่อเก่า เกิดใหม่เป็นคนที่ดีกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death เป้าหมายจิตวิญญาณ คือ 'เกิดใหม่'",
+          "advice_th": "ระบุตัวตนเก่าที่ต้องปล่อย - บทบาท ความเชื่อ นิสัย เริ่มสร้างตัวตนใหม่ทุกวัน",
+          "keywords_th": ["เกิดใหม่", "ตัวตนใหม่", "เปลี่ยน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการเปลี่ยนวิถีชีวิตและร่างกาย",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือการเปลี่ยนวิถี - เลิกนิสัยทำลาย เริ่มกิจวัตรใหม่ ร่างกายเกิดใหม่ มีสุขภาพที่ดีกว่าเดิม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death เป้าหมายสุขภาพ คือ 'ร่างกายใหม่'",
+          "advice_th": "ตั้งเป้าเปลี่ยนวิถี - กิจวัตรใหม่ diet ใหม่ ออกกำลังกายใหม่ ลงมือเดี๋ยวนี้",
+          "keywords_th": ["วิถีใหม่", "ร่างกายใหม่", "เลิกเก่า"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการเปลี่ยนแต่กลัวการสูญเสีย",
+          "detailed_interpretation_th": "Death กลับหัวในเป้าหมาย บ่งบอกถึงความขัดแย้งภายใน - อยากเปลี่ยนแต่กลัวสูญเสีย ความกลัวขังการเปลี่ยนแปลง ต้องเลือก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวเป้าหมาย คือ 'ตัดสินใจ'",
+          "advice_th": "เลือก - เปลี่ยนหรือยอมรับสภาพปัจจุบัน การลังเลทำให้ทุกข์",
+          "keywords_th": ["กลัวสูญเสีย", "อยากเปลี่ยน", "ตัดสินใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อยากออกจากความสัมพันธ์แต่กลัวอยู่คนเดียว",
+          "detailed_interpretation_th": "ในรัก ขัดแย้งภายใน - อยากเลิกแต่กลัวอยู่คนเดียว อยากเปลี่ยนคู่แต่กลัวคนใหม่จะไม่ดี ความกลัวขังในความสัมพันธ์ที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = กลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ไม่จริงจัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวเป้าหมายรัก คือ 'กล้าตัดสินใจ'",
+          "advice_th": "อยู่คนเดียวดีกว่าอยู่ในรักที่ไม่ใช่ กล้าออก ความรักที่ดีจะมาเมื่อคุณพร้อม",
+          "keywords_th": ["อยากออก", "กลัวเดี่ยว", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อยากเปลี่ยนงานแต่กลัวเสียเงินเดือน",
+          "detailed_interpretation_th": "ในงาน-เงิน ขัดแย้งภายใน - อยากเปลี่ยนสายแต่กลัวเสียเงินเดือน อยากเปิดธุรกิจแต่กลัวล้มเหลว ความกลัวขังในงานที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในเงิน, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Two of Swords = ตัดสินใจไม่ได้",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวเป้าหมายงาน-เงิน คือ 'วางแผนเปลี่ยน'",
+          "advice_th": "วางแผนการเงินก่อนเปลี่ยน - emergency fund 12 เดือน ลงทุน ทักษะใหม่ ค่อยๆ ก้าว",
+          "keywords_th": ["อยากเปลี่ยน", "กลัวเสียเงิน", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อยากเปลี่ยนแต่กลัวความไม่แน่นอน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อยากเปลี่ยน - เป็นคนใหม่ ปล่อยตัวเก่า แต่กลัวความไม่แน่นอน ใครจะเป็นถ้าไม่ใช่ตัวเดิม การเปลี่ยนนำมาซึ่งการค้นพบ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวเป้าหมายจิตวิญญาณ คือ 'กล้าเป็นคนใหม่'",
+          "advice_th": "การเปลี่ยนแปลงน่ากลัว แต่การติดในเก่ายิ่งน่ากลัวกว่า เริ่มเปลี่ยนทีละนิด",
+          "keywords_th": ["กลัวเปลี่ยน", "ไม่แน่นอน", "ค่อยๆ เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อยากเปลี่ยนนิสัยแต่กลัวเลิกได้",
+          "detailed_interpretation_th": "ในสุขภาพ อยากเลิกนิสัยทำลายแต่กลัวจะเลิกไม่ได้ การกลัวล้มเหลวทำให้ไม่กล้าเริ่ม ต้องลงมือ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวเป้าหมายสุขภาพ คือ 'เริ่มเล็กๆ'",
+          "advice_th": "เริ่มเปลี่ยนหนึ่งนิสัยเล็กๆ ก่อน - ดื่มน้ำเพิ่ม นอนเร็วขึ้น ความสำเร็จเล็กสร้างความเชื่อมั่น",
+          "keywords_th": ["กลัวเลิกไม่ได้", "ไม่เริ่ม", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ความสามารถยอมรับการเปลี่ยนแปลงฝังในแกน",
+          "detailed_interpretation_th": "Death หัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีความสามารถยอมรับการเปลี่ยนแปลง ปล่อยวาง เกิดใหม่ พลังนี้คือพรสวรรค์ ใช้ในการเดินทางชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Star = ฟื้นฟู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death รากฐาน คือ 'ปรับตัวเก่ง'",
+          "advice_th": "ใช้ความสามารถยอมรับการเปลี่ยนแปลง - คุณปรับตัวได้ดีกว่าที่คิด",
+          "keywords_th": ["ปรับตัว", "ยอมรับ", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถปล่อยวางในความรักฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความสามารถปล่อยวาง - ไม่ยึดมั่น รักโดยไม่บีบ ปล่อยคู่เป็นตัวเอง พลังนี้สร้างความสัมพันธ์ที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The High Priestess = ปัญญา",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death รากฐานรัก คือ 'รักโดยไม่บีบ'",
+          "advice_th": "ใช้ความสามารถปล่อยวางในความสัมพันธ์ - ไม่บีบ ไว้ใจ ความรักที่อิสระยั่งยืน",
+          "keywords_th": ["ปล่อยวางรัก", "ไม่บีบ", "อิสระ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความสามารถปรับตัวกับการเปลี่ยนแปลงของตลาด",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือความสามารถปรับตัว - เห็นการเปลี่ยนของตลาด พร้อมเปลี่ยนสาย ปรับกลยุทธ์ พลังนี้สร้างความสำเร็จ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความซื่อสัตย์",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death รากฐานงาน-เงิน คือ 'ปรับตัวเร็ว'",
+          "advice_th": "ใช้ความสามารถปรับตัว - ติดตามตลาด เรียนรู้ทักษะใหม่ พร้อมเปลี่ยน",
+          "keywords_th": ["ปรับตัวเร็ว", "ตลาดเปลี่ยน", "ทักษะใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ความสามารถเกิดใหม่ทางจิตวิญญาณฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือความสามารถเกิดใหม่ - ปล่อยตัวตนเก่า ค่านิยมเก่า ความเชื่อเก่า เกิดใหม่ พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ",
+            "wands": "Wands ข้างเคียง = พลังจิต",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death รากฐานจิตวิญญาณ คือ 'พลังเกิดใหม่'",
+          "advice_th": "ใช้ความสามารถปล่อยและเกิดใหม่ - คุณเปลี่ยนได้เสมอ ในทุกช่วงชีวิต",
+          "keywords_th": ["พลังเกิดใหม่", "ปล่อย", "เปลี่ยน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายฟื้นฟูดีและปรับตัวเร็ว",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือความสามารถฟื้นฟู - ร่างกายปรับตัวเร็ว ฟื้นจากการบาดเจ็บได้ดี ใช้ทุนนี้สร้างสุขภาพยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแกร่ง",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death รากฐานสุขภาพ คือ 'ฟื้นฟูเก่ง'",
+          "advice_th": "ใช้ทุนทางร่างกาย - ฟื้นฟูดี ออกกำลังกาย ลงทุนกับสุขภาพ",
+          "keywords_th": ["ฟื้นฟูเก่ง", "ปรับตัว", "ทุน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงฝังลึก",
+          "detailed_interpretation_th": "Death กลับหัวในรากฐาน บ่งบอกถึงความกลัวการเปลี่ยนแปลงฝังลึก - อาจมาจากการสูญเสียในวัยเด็ก ทำให้ปัจจุบันยึดมั่น ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = บาดแผล",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรากฐาน คือ 'รักษาความกลัวเปลี่ยน'",
+          "advice_th": "ทำงานกับบาดแผลในวัยเด็ก - การสูญเสีย การเปลี่ยนที่กระทบ รักษาเพื่อกล้าเปลี่ยน",
+          "keywords_th": ["กลัวเปลี่ยน", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวการสูญเสียคู่จึงยึดเกินไป",
+          "detailed_interpretation_th": "ในรัก รากฐานคือความกลัวสูญเสีย - บีบคู่ ควบคุม ไม่ให้ห่าง ความกลัวทำให้ทำลายความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรัก, The Moon = กลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Queen of Cups กลับหัว = ผู้ให้เหนื่อย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรากฐานรัก คือ 'ปล่อยและไว้ใจ'",
+          "advice_th": "ทำงานกับความกลัวสูญเสีย - มาจากบาดแผลเก่า การบีบทำลายความรัก ฝึกไว้ใจ",
+          "keywords_th": ["กลัวสูญเสีย", "บีบ", "ไว้ใจ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ยึดในความมั่นคงของงานเก่า",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานคือการยึดในความมั่นคง - กลัวเปลี่ยน กลัวเสี่ยง ติดในเงินเดือน ทำให้ไม่เติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรากฐานงาน-เงิน คือ 'กล้าเสี่ยง'",
+          "advice_th": "ความมั่นคงปลอม - งานประจำก็เสียได้ ลงทุน ทักษะใหม่ มีรายได้หลายทาง",
+          "keywords_th": ["ยึดมั่นคง", "กลัวเสี่ยง", "หลายทาง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยึดในอดีตและตัวตนที่ไม่ใช่อีกแล้ว",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือการยึดอดีต - ตัวตนเก่า ความสำเร็จเก่า บาดแผลเก่า การยึดทำให้ไม่เติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรากฐานจิตวิญญาณ คือ 'ปล่อยอดีต'",
+          "advice_th": "ฝึกปล่อยวางอดีต - เขียนจดหมายให้ตัวเองในอดีต ขอบคุณ ปล่อย",
+          "keywords_th": ["ยึดอดีต", "ตัวเก่า", "ปล่อย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ติดในนิสัยสุขภาพที่ไม่ใช้ได้แล้ว",
+          "detailed_interpretation_th": "รากฐานสุขภาพคือการติดในนิสัยเก่า - กินเหมือนตอนวัยรุ่น ออกกำลังกายแบบเดิม ร่างกายเปลี่ยนแต่นิสัยไม่ปรับ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายเรียก",
+            "wands": "Knight of Wands กลับหัว = ฝืน",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Four of Pentacles = ไม่ปรับ",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวรากฐานสุขภาพ คือ 'ปรับตามวัย'",
+          "advice_th": "ปรับนิสัยตามวัย - กินเบาขึ้น นอนเร็วขึ้น ออกกำลังกายเหมาะกับร่างกาย",
+          "keywords_th": ["นิสัยเก่า", "ไม่ปรับ", "ตามวัย"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ยอมรับการเปลี่ยนแปลงและปล่อยสิ่งที่จบ",
+          "detailed_interpretation_th": "คำแนะนำจาก Death หัวตั้ง: ยอมรับการเปลี่ยนแปลง ปล่อยสิ่งที่จบไปแล้ว เปิดใจรับสิ่งใหม่ การปล่อยวางคือพลัง การยึดทำให้ทุกข์",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ปล่อย, The Star = ความหวัง",
+            "wands": "Eight of Cups = ออกจาก",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Knight ทุกชุด = พลัง"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death คำแนะนำ คือ 'ปล่อยและก้าวต่อ'",
+          "advice_th": "ระบุสิ่งที่ต้องปล่อย - คน งาน นิสัย ความเชื่อ ปล่อย ทำสำเร็จก้าวต่อ",
+          "keywords_th": ["ปล่อย", "ยอมรับ", "ก้าวต่อ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ปล่อยรักที่จบและเปิดใจรับใหม่",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้าความสัมพันธ์จบ ปล่อย ไม่กลับ ไม่ติดต่อ ใช้เวลารักษา เปิดใจรับรักใหม่",
+          "adjacent_influences": {
+            "major_arcana": "Eight of Cups = ออกจาก, The Star = ความหวัง",
+            "wands": "Knight of Wands = กล้า",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Knight of Cups = เปิดใจรัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death คำแนะนำในรัก คือ 'ปล่อยและรับใหม่'",
+          "advice_th": "ถ้าจบ ตัดขาด ไม่ติดต่อ ใช้เวลา 6-12 เดือนรักษา แล้วเปิดใจรับรักใหม่",
+          "keywords_th": ["ปล่อยรัก", "ตัดขาด", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ลาออกจากงานที่ไม่ใช่และเริ่มใหม่",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ถ้างานไม่ใช่ทาง ลาออก เริ่มใหม่ การติดในงานที่ไม่รักทำลายชีวิต ใช้เวลาสร้างใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Fool = เริ่มใหม่, The Magician = ทักษะ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ตัดสินใจ",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death คำแนะนำงาน-เงิน คือ 'กล้าเปลี่ยน'",
+          "advice_th": "วางแผน 12 เดือน - เก็บเงิน เรียนทักษะใหม่ networking แล้วลาออก เริ่มใหม่",
+          "keywords_th": ["ลาออก", "เริ่มใหม่", "วางแผน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ปล่อยตัวตนเก่าและเป็นคนใหม่",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ปล่อยตัวตนเก่า - บทบาท ความเชื่อ นิสัย เปิดใจเป็นคนใหม่ การยึดทำให้ติด",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Eight of Cups = ปล่อยวาง",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death คำแนะนำการเติบโต คือ 'เป็นคนใหม่'",
+          "advice_th": "ระบุสิ่งที่ต้องปล่อย - บทบาทเก่า ความเชื่อจำกัด นิสัยทำลาย ปล่อย เริ่มใหม่",
+          "keywords_th": ["ปล่อยตัวเก่า", "คนใหม่", "เปิดใจ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เลิกนิสัยทำลายและเริ่มกิจวัตรใหม่",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: เลิกนิสัยทำลาย - บุหรี่ แอลกอฮอล์ น้ำตาล อาหารแปรรูป เริ่มกิจวัตรใหม่ ร่างกายเกิดใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Strength = พลัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death คำแนะนำสุขภาพ คือ 'เลิกและเริ่มใหม่'",
+          "advice_th": "เลิกหนึ่งนิสัยทำลายและเริ่มหนึ่งนิสัยดีวันนี้ ร่างกายเกิดใหม่ทุกวัน",
+          "keywords_th": ["เลิกทำลาย", "เริ่มกิจวัตรใหม่", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อย่ารีบทิ้งสิ่งที่ยังมีค่า",
+          "detailed_interpretation_th": "คำแนะนำ Death กลับหัว: ก่อนทิ้งสิ่งใด พิจารณาให้ดี - ความสัมพันธ์ยังแก้ได้ไหม? งานยังเหมาะไหม? อย่ารีบเปลี่ยนเพราะอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ตัดสินใจ, Two of Swords = พิจารณา",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "Queen of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวคำแนะนำ คือ 'พิจารณาก่อนเปลี่ยน'",
+          "advice_th": "ก่อนเปลี่ยนใหญ่ คิดให้ดี ปรึกษาคนไว้ใจ บางสิ่งแก้ได้ไม่ต้องทิ้ง",
+          "keywords_th": ["พิจารณา", "อย่ารีบ", "ปรึกษา"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อย่ารีบเลิกความสัมพันธ์",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ก่อนเลิก พิจารณา - ปัญหาแก้ได้ไหม? คุยกันไหม? บางทีการสื่อสารช่วยได้ ไม่ต้องเลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = ตัดสินใจ, The Hierophant = ค่านิยม",
+            "wands": "Two of Wands = ตัดสินใจ",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวคำแนะนำในรัก คือ 'สื่อสารก่อนเลิก'",
+          "advice_th": "ก่อนตัดสินใจเลิก คุยกับคู่ตรงๆ ปรึกษา couple therapy บางความสัมพันธ์แก้ได้",
+          "keywords_th": ["พิจารณาเลิก", "สื่อสาร", "therapy"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "อย่ารีบลาออก - วางแผนก่อน",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: อย่าลาออกหุนหัน ก่อนเปลี่ยน - emergency fund ทักษะใหม่ networking งานใหม่ที่รออยู่ การเปลี่ยนต้องวางแผน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = วางแผน, The Magician = ทักษะ",
+            "wands": "Two of Wands = วางแผน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "King of Pentacles = วางแผน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวคำแนะนำงาน-เงิน คือ 'วางแผนก่อนเปลี่ยน'",
+          "advice_th": "ใช้ 12 เดือนวางแผน - เก็บเงิน 6-12 เดือน ทักษะใหม่ network ก่อนลาออก",
+          "keywords_th": ["อย่าหุนหัน", "วางแผน", "เตรียมพร้อม"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อย่ารีบปฏิเสธอดีตทั้งหมด",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: อย่าปฏิเสธทุกอย่างในอดีต - บางส่วนของตัวเดิมยังดี เก็บส่วนดี ปล่อยส่วนที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = พิจารณา, Justice = ความสมดุล",
+            "wands": "Two of Wands = พิจารณา",
+            "cups": "Six of Cups = ความทรงจำดี",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Seven of Pentacles = ประเมิน",
+            "court_cards": "Queen of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวคำแนะนำการเติบโต คือ 'เก็บส่วนดี'",
+          "advice_th": "ระบุส่วนของตัวเดิมที่ยังดี - ค่านิยม ทักษะ ความสัมพันธ์ เก็บส่วนดี ปล่อยส่วนไม่ดี",
+          "keywords_th": ["เก็บส่วนดี", "ไม่ทิ้งหมด", "พิจารณา"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ค่อยๆ เปลี่ยนนิสัย ไม่หักโหม",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ค่อยๆ เปลี่ยนนิสัย ไม่หักโหม การเปลี่ยนเร็วเกินทำให้กลับ ค่อยๆ ปรับยั่งยืนกว่า",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Star = ฟื้นฟู",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Four of Cups = พัก",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Knight of Pentacles = ช้าๆ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวคำแนะนำสุขภาพ คือ 'ค่อยๆ เปลี่ยน'",
+          "advice_th": "เปลี่ยนหนึ่งนิสัยต่อเดือน ไม่ทุกอย่างพร้อมกัน สม่ำเสมอชนะรวดเร็ว",
+          "keywords_th": ["ค่อยๆ", "ไม่หักโหม", "ยั่งยืน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างกำลังเปลี่ยนแปลงและก้าวต่อ",
+          "detailed_interpretation_th": "Death หัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างกำลังเปลี่ยน - เพื่อนย้าย คนรอบข้างเติบโต ครอบครัวเปลี่ยน คุณก็ต้องปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Star = ฟื้นฟู",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Five of Pentacles = สูญเสีย",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ภายนอก คือ 'ทุกคนเปลี่ยน'",
+          "advice_th": "ยอมรับว่าคนรอบข้างเปลี่ยน - บางคนไป บางคนมา การยึดในสังคมเก่าทำให้ติด",
+          "keywords_th": ["คนรอบข้างเปลี่ยน", "เพื่อนใหม่", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่หรือครอบครัวกำลังเปลี่ยนแปลง",
+          "detailed_interpretation_th": "ในรัก คู่หรือครอบครัวกำลังเปลี่ยน - คู่เติบโต พ่อแม่แก่ ลูกโต ทุกคนเปลี่ยนตามวัย ต้องยอมรับและปรับตัวด้วยกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = ครอบครัว, The Lovers = รัก",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Six of Cups = ความทรงจำ",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = ครอบครัว",
+            "court_cards": "Queen of Cups = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ภายนอกรัก คือ 'ครอบครัวเปลี่ยน'",
+          "advice_th": "ยอมรับการเปลี่ยนของคู่และครอบครัว - คู่ที่ดีเติบโตด้วยกัน",
+          "keywords_th": ["คู่เปลี่ยน", "ครอบครัวเปลี่ยน", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "วงการและตลาดกำลังเปลี่ยน",
+          "detailed_interpretation_th": "ในงาน-เงิน วงการกำลังเปลี่ยน - AI มา อาชีพเก่าหาย อาชีพใหม่เกิด ตลาดเปลี่ยน ต้องปรับตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Magician = ทักษะใหม่",
+            "wands": "Eight of Wands = เร่ง",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = โอกาสใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ภายนอกงาน-เงิน คือ 'ตลาดเปลี่ยน'",
+          "advice_th": "ติดตามการเปลี่ยนแปลงในวงการ เรียนรู้ทักษะใหม่ ปรับธุรกิจให้ตรงเทรนด์",
+          "keywords_th": ["ตลาดเปลี่ยน", "AI", "ปรับตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูหรือชุมชนช่วยให้ก้าวข้าม",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มีครูหรือชุมชนที่ช่วยให้ก้าวข้ามการเปลี่ยนแปลง - mentor therapy กลุ่มสนับสนุน ใช้พลังของพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ครูทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ภายนอกจิตวิญญาณ คือ 'ครูช่วยก้าวข้าม'",
+          "advice_th": "ขอความช่วยเหลือ - therapy ครู ชุมชน ในช่วงเปลี่ยนใหญ่ ไม่ต้องเดินคนเดียว",
+          "keywords_th": ["ครูช่วย", "ชุมชน", "ขอความช่วยเหลือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หมอหรือผู้เชี่ยวชาญช่วยฟื้นฟู",
+          "detailed_interpretation_th": "ในสุขภาพ มีหมอ trainer healer ที่ช่วยฟื้นฟู - functional medicine นักโภชนาการ therapist ใช้บริการพวกเขา",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Hierophant = ครู",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Queen of Cups = ผู้ดูแล",
+            "swords": "King of Swords = หมอ",
+            "pentacles": "King of Pentacles = ผู้เชี่ยวชาญ",
+            "court_cards": "Queen of Pentacles = ผู้ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ภายนอกสุขภาพ คือ 'ผู้เชี่ยวชาญช่วย'",
+          "advice_th": "ลงทุนกับผู้เชี่ยวชาญ - หมอ trainer therapist การฟื้นฟูเร็วขึ้นกับมืออาชีพ",
+          "keywords_th": ["หมอช่วย", "ผู้เชี่ยวชาญ", "ลงทุน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างต่อต้านการเปลี่ยนแปลงของคุณ",
+          "detailed_interpretation_th": "Death กลับหัวในภายนอก เตือนว่าคนรอบข้างต่อต้านการเปลี่ยนของคุณ - ครอบครัวไม่เห็นด้วย เพื่อนวิจารณ์ พยายามดึงกลับ ต้องยืนหยัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ดึงกลับ, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวภายนอก คือ 'ยืนหยัดการเปลี่ยน'",
+          "advice_th": "ไม่ต้องอธิบายให้คนที่ไม่ฟัง - การเปลี่ยนของคุณคือของคุณ หาเพื่อนใหม่ที่เข้าใจ",
+          "keywords_th": ["คนต่อต้าน", "ยืนหยัด", "เพื่อนใหม่"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ครอบครัวคู่ไม่ยอมให้เลิกหรือเปลี่ยน",
+          "detailed_interpretation_th": "ในรัก ครอบครัวอาจไม่ยอมให้เปลี่ยน - ไม่ให้เลิก ไม่ให้แต่ง ไม่ให้ย้าย ต้องตัดสินใจระหว่างทำตามใจหรือตามครอบครัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Tower = ระเบิด",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ครอบครัวหวง",
+            "court_cards": "King of Swords กลับหัว = ผู้ใหญ่ตัดสิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวภายนอกรัก คือ 'ตัดสินใจของคุณ'",
+          "advice_th": "ชีวิตของคุณ คุณเลือก ครอบครัวอาจไม่เข้าใจ แต่คุณต้องอยู่กับผล",
+          "keywords_th": ["ครอบครัวกดดัน", "ตัดสินใจ", "ชีวิตของคุณ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ครอบครัวกดดันไม่ให้ลาออกหรือเปลี่ยนสาย",
+          "detailed_interpretation_th": "ในงาน-เงิน ครอบครัวกดดัน - 'งานดีอยู่แล้ว' 'ทำไมต้องเสี่ยง' 'คิดถึงครอบครัว' ทำให้ยากต่อการเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = แรงกดดัน, The Hierophant = ค่านิยม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ครอบครัวหวงเงิน",
+            "court_cards": "King of Pentacles กลับหัว = ผู้ใหญ่กดดัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวภายนอกงาน-เงิน คือ 'ชีวิตของคุณ'",
+          "advice_th": "อาชีพของคุณคือของคุณ พ่อแม่ไม่อยู่ทำงานแทน ทำตามใจ แต่วางแผนดี",
+          "keywords_th": ["ครอบครัวกดดัน", "ทำตามใจ", "วางแผน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตและพยายามดึงกลับ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างไม่เข้าใจ - 'เปลี่ยนไป' 'ไม่ใช่คนเดิม' พยายามดึงกลับสู่ตัวเก่า การเติบโตของคุณคือของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ดึงกลับ, The Hermit = อยู่คนเดียว",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = คนรอบไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวภายนอกจิตวิญญาณ คือ 'เปลี่ยนวงเพื่อน'",
+          "advice_th": "หาเพื่อนใหม่ที่เข้าใจการเติบโต คนเก่าอาจไม่ตามไปด้วย นี่เป็นธรรมชาติ",
+          "keywords_th": ["ไม่เข้าใจ", "ดึงกลับ", "เพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ครอบครัวไม่สนับสนุนการเปลี่ยนวิถี",
+          "detailed_interpretation_th": "ในสุขภาพ ครอบครัวอาจไม่สนับสนุน - 'ยังไม่ต้องเลิกบุหรี่' 'กินกับเรา' 'อย่าเครียดเรื่องสุขภาพ' ทำให้เลิกยาก",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยรอบข้าง, The Tower = สุขภาพพัง",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวภายนอกสุขภาพ คือ 'ปกป้องตัวเอง'",
+          "advice_th": "ตั้งขีดจำกัด - บอกครอบครัวว่าเปลี่ยนวิถี ขอความเข้าใจ ถ้าไม่เข้าใจ ดูแลตัวเองก่อน",
+          "keywords_th": ["ครอบครัวไม่สนับสนุน", "ปกป้องตัว", "ขีดจำกัด"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังการเกิดใหม่และเปลี่ยนชีวิต",
+          "detailed_interpretation_th": "Death หัวตั้งในความหวัง สะท้อนความปรารถนา - หวังการเปลี่ยนแปลงใหญ่ การเกิดใหม่ การจบบทเก่าและเริ่มใหม่ ความหวังนี้ขับเคลื่อนคุณ",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, Judgement = ตื่นรู้",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Knight of Wands = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ความหวัง คือ 'เกิดใหม่'",
+          "advice_th": "เก็บความหวังนี้ ลงมือเปลี่ยน การเกิดใหม่ในมือคุณ",
+          "keywords_th": ["เกิดใหม่", "เปลี่ยน", "ขับเคลื่อน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังพบรักใหม่หลังจบบทเก่า",
+          "detailed_interpretation_th": "ในรัก ความหวังคือพบรักใหม่ที่ดีกว่า - หลังจบความสัมพันธ์เก่า เปิดใจรับใหม่ ความรักที่ใช่รออยู่",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Lovers = รัก",
+            "wands": "Knight of Wands = คนรัก",
+            "cups": "Ace of Cups = รักใหม่",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คู่ใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ความหวังรัก คือ 'รักใหม่ดีกว่า'",
+          "advice_th": "ปล่อยรักเก่าให้สมบูรณ์ก่อน รักใหม่ที่ดีจะมาเมื่อคุณพร้อม",
+          "keywords_th": ["รักใหม่", "ดีกว่าเก่า", "พร้อม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเปลี่ยนอาชีพและเริ่มสร้างใหม่",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือเปลี่ยนสาย - ทำงานที่รัก เริ่มธุรกิจ สร้างความมั่งคั่งในแบบใหม่ ความหวังนี้สวยงาม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สำเร็จ, The Magician = ทักษะ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = งานที่รัก",
+            "swords": "Ace of Swords = ความชัดเจน",
+            "pentacles": "Ace of Pentacles = เงินก้อนใหม่",
+            "court_cards": "Knight of Wands = entrepreneur"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ความหวังงาน-เงิน คือ 'อาชีพใหม่'",
+          "advice_th": "เก็บความหวัง วางแผน ลงมือ การเปลี่ยนสายสามารถเกิดได้",
+          "keywords_th": ["อาชีพใหม่", "เริ่มใหม่", "ความหวัง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็นคนใหม่ที่ดีกว่าเดิม",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือเป็นคนใหม่ - ปล่อยตัวเก่า ค่านิยมเก่า กลายเป็นคนที่ดีกว่า การเกิดใหม่ทางจิตวิญญาณ",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Page ทุกชุด = นักเรียนใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ความหวังจิตวิญญาณ คือ 'คนใหม่ดีกว่า'",
+          "advice_th": "ระบุตัวตนใหม่ที่ต้องการ - ค่านิยม นิสัย พฤติกรรม สร้างทีละวัน",
+          "keywords_th": ["คนใหม่", "ดีกว่าเดิม", "เกิดใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังร่างกายที่เกิดใหม่และสุขภาพดี",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายที่เกิดใหม่ - เลิกนิสัยทำลาย เริ่มกิจวัตรใหม่ มีพลังงาน อารมณ์ดี อายุยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ace of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ace of Pentacles = เริ่มใหม่",
+            "court_cards": "Queen of Pentacles = ดูแล"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ความหวังสุขภาพ คือ 'ร่างกายใหม่'",
+          "advice_th": "เริ่มเปลี่ยนนิสัยวันนี้ ร่างกายเกิดใหม่ทุกวัน ทุกเซลล์",
+          "keywords_th": ["ร่างกายใหม่", "เกิดใหม่", "เริ่ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวการเปลี่ยนแปลงและการสูญเสีย",
+          "detailed_interpretation_th": "Death กลับหัวในความหวัง บ่งบอกถึงความกลัว - กลัวเปลี่ยน กลัวสูญเสีย กลัวความไม่แน่นอน ความกลัวขังจากการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียดาย",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวความหวัง คือ 'กล้าเปลี่ยน'",
+          "advice_th": "ความกลัวเป็นธรรมชาติ แต่ไม่ควรเป็นเจ้านาย ทำสิ่งที่กลัวทีละนิด",
+          "keywords_th": ["กลัวเปลี่ยน", "กลัวสูญเสีย", "กล้า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวที่จะออกจากความสัมพันธ์เก่าหรือเปิดใจรับใหม่",
+          "detailed_interpretation_th": "ในรัก กลัว - กลัวออกจากความสัมพันธ์ที่ไม่ดี กลัวเปิดใจรับใหม่ ความกลัวขังจากความรักที่ดี",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัว, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = ขมขื่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวความหวังรัก คือ 'กล้าออก กล้ารัก'",
+          "advice_th": "ทำงานกับความกลัว - therapy การให้อภัย เปิดใจค่อยๆ",
+          "keywords_th": ["กลัวออก", "กลัวรัก", "ค่อยๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "กลัวเปลี่ยนงานเพราะกลัวล้มเหลว",
+          "detailed_interpretation_th": "ในงาน-เงิน กลัวเปลี่ยน - กลัวล้มเหลว กลัวเสียเงิน กลัวไม่สำเร็จ ความกลัวขังในงานที่ไม่ใช่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวความหวังงาน-เงิน คือ 'เริ่มเล็กๆ'",
+          "advice_th": "เริ่ม side hustle ก่อนลาออก ทดสอบไอเดียเล็กๆ ความสำเร็จเล็กสร้างความเชื่อมั่น",
+          "keywords_th": ["กลัวล้มเหลว", "side hustle", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวที่จะเป็นคนใหม่",
+          "detailed_interpretation_th": "ในจิตวิญญาณ กลัวเป็นคนใหม่ - ใครจะรัก? คุณจะเป็นใคร? ความกลัวการสูญเสียตัวเก่าทำให้ติด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในตัวเก่า, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่กล้าโต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวความหวังจิตวิญญาณ คือ 'คุณยังเป็นคุณ'",
+          "advice_th": "เปลี่ยนแปลงไม่ทำให้คุณไม่ใช่คุณอีก คุณยังคงเป็นคุณ - แค่เวอร์ชั่นที่ดีกว่า",
+          "keywords_th": ["กลัวเป็นคนใหม่", "ยังเป็นคุณ", "ดีกว่า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ไม่เชื่อว่าจะเปลี่ยนนิสัยได้",
+          "detailed_interpretation_th": "ในสุขภาพ ไม่เชื่อว่าจะเลิกนิสัยทำลายได้ - 'ฉันเป็นแบบนี้ตลอด' 'พยายามมาแล้วล้มเหลว' ความเชื่อนี้ขังตัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวความหวังสุขภาพ คือ 'ลองอีกครั้ง'",
+          "advice_th": "ใช้วิธีใหม่ - ขอความช่วยเหลือ habit tracker accountability ทุกคนเปลี่ยนได้",
+          "keywords_th": ["ไม่เชื่อเปลี่ยน", "ลองอีก", "ทุกคนได้"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือการเกิดใหม่และชีวิตที่เปลี่ยนไปในทางที่ดี",
+          "detailed_interpretation_th": "Death หัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ ผลลัพธ์คือการเกิดใหม่ - ตัวตนใหม่ ชีวิตใหม่ ความเป็นไปได้ใหม่ การจบของบทเก่านำมาซึ่งเริ่มต้นที่ดีกว่า",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ความหวัง, The Sun = สำเร็จ, The World = บรรลุ",
+            "wands": "Ace of Wands = พลังใหม่",
+            "cups": "Ace of Cups = อารมณ์ใหม่",
+            "swords": "Ace of Swords = ความคิดใหม่",
+            "pentacles": "Ace of Pentacles = ฐานะใหม่",
+            "court_cards": "Knight ทุกชุด = พลังเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ผลลัพธ์ คือ 'เกิดใหม่'",
+          "advice_th": "ดำเนินยอมรับการเปลี่ยนต่อ ผลลัพธ์คือชีวิตที่ดีกว่า",
+          "keywords_th": ["เกิดใหม่", "ชีวิตใหม่", "ดีกว่า"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือพบรักใหม่ที่ลึกซึ้งกว่า",
+          "detailed_interpretation_th": "ในรัก ผลลัพธ์คือพบรักใหม่ - หลังจบเก่า ความรักที่ลึกซึ้งและตรงกับตัวคุณรออยู่ การเกิดใหม่ทางความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Knight of Cups = คนรักใหม่"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ผลลัพธ์รัก คือ 'รักใหม่ลึกซึ้ง'",
+          "advice_th": "ปล่อยรักเก่า เปิดใจรับใหม่ ความรักที่ใช่กำลังจะมา",
+          "keywords_th": ["รักใหม่", "ลึกซึ้ง", "soul mate"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือสร้างอาชีพใหม่ที่ตรงกับใจ",
+          "detailed_interpretation_th": "เส้นทางนี้นำไปสู่อาชีพใหม่ - ทำงานที่รัก เริ่มธุรกิจ ความสำเร็จที่ตรงกับตัวคุณ ความมั่งคั่งจากการเป็นตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = รุ่งเรือง, The Magician = ทักษะ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้ประกอบการ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง, Ten of Pentacles = อาณาจักร",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ผลลัพธ์งาน-เงิน คือ 'อาชีพใหม่ตรงใจ'",
+          "advice_th": "ดำเนินวางแผนเปลี่ยน ผลลัพธ์คือชีวิตการทำงานที่ดีกว่า",
+          "keywords_th": ["อาชีพใหม่", "ตรงใจ", "ความมั่งคั่ง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือเป็นคนใหม่ที่ดีและมีปัญญา",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่การเกิดใหม่ - ตัวตนใหม่ที่ดีกว่า ค่านิยมตรงใจ ใช้ชีวิตอย่างมีความหมาย กลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "Judgement = ตื่นรู้, The Star = บรรลุ, The World = สมบูรณ์",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ผลลัพธ์จิตวิญญาณ คือ 'คนใหม่ที่แท้'",
+          "advice_th": "ดำเนินการเปลี่ยนแปลงต่อ ผลลัพธ์คือชีวิตที่ตรงกับตัวจริง",
+          "keywords_th": ["คนใหม่", "ปัญญา", "แบบอย่าง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือร่างกายและสุขภาพที่เกิดใหม่",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์คือร่างกายที่ดีกว่าเดิม - เลิกนิสัยทำลาย เริ่มกิจวัตรใหม่ มีพลัง อายุยืน คุณกลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สดใส, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death ผลลัพธ์สุขภาพ คือ 'ร่างกายเกิดใหม่'",
+          "advice_th": "ดำเนินการดูแลใหม่ ผลลัพธ์คือร่างกายที่อยากได้",
+          "keywords_th": ["ร่างกายใหม่", "อายุยืน", "พลังเต็ม"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ติดอยู่ในที่เดิมตลอดถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "Death กลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงต่อต้านการเปลี่ยนแปลง ผลลัพธ์คือชีวิตที่หยุดนิ่ง - ความเสียดาย ความทุกข์ การพลาดโอกาส ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = ติด, The Devil = ติด",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ยึด",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวผลลัพธ์ คือ 'เปลี่ยนหรือติด'",
+          "advice_th": "ลงมือเปลี่ยนเดี๋ยวนี้ การติดในเก่าคือเส้นทางที่เลือก ไม่ใช่โชค",
+          "keywords_th": ["ติดตลอด", "เสียดาย", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ติดในความสัมพันธ์ที่ไม่ดีตลอด",
+          "detailed_interpretation_th": "ในรัก ถ้ายังคงยึดในความสัมพันธ์ที่ตาย ผลลัพธ์คือชีวิตคู่ที่ทุกข์ - การกลับไปคืนดีซ้ำๆ การไม่สามารถพบรักจริง ปล่อย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวผลลัพธ์รัก คือ 'ปล่อยและรักใหม่'",
+          "advice_th": "ปล่อยรักที่ตาย ใช้เวลารักษา ความรักจริงรอคุณอยู่",
+          "keywords_th": ["รักไม่ดีตลอด", "ปล่อย", "รักใหม่"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ติดในงานที่ไม่ใช่ทางตลอด",
+          "detailed_interpretation_th": "ในงาน-เงิน ถ้ายังคงติดในงานเก่า ผลลัพธ์คือชีวิตการทำงานที่ทุกข์ - รายได้คงที่ ทักษะล้าสมัย ไม่เติบโต ความเสียดายในวัยชรา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติด, The Hanged Man = หยุดนิ่ง",
+            "wands": "Eight of Wands กลับหัว = ชะลอ",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดเงินเดือน",
+            "court_cards": "Page of Pentacles กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวผลลัพธ์งาน-เงิน คือ 'เปลี่ยนก่อนสาย'",
+          "advice_th": "วางแผนเปลี่ยนเดี๋ยวนี้ 5 ปีอีก 10 ปีจะติดอยู่ตลอดถ้าไม่เริ่ม",
+          "keywords_th": ["ติดงาน", "ไม่เติบโต", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่เติบโตและติดในตัวเก่า",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ถ้ายังคงติดในตัวเก่า ผลลัพธ์คือไม่เติบโต - ชีวิตเดิม นิสัยเดิม ความทุกข์เดิม การยึดทำให้ติด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Hanged Man = หยุดนิ่ง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Six of Cups = ติดอดีต",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = rigid",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวผลลัพธ์จิตวิญญาณ คือ 'เปลี่ยนหรือติด'",
+          "advice_th": "ลงมือเปลี่ยนตอนนี้ - หนึ่งนิสัยเล็กๆ ความสำเร็จเล็กสะสม",
+          "keywords_th": ["ไม่เติบโต", "ติดตัวเก่า", "เปลี่ยน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สุขภาพแย่ลงตลอดจากการไม่เลิกนิสัยทำลาย",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังไม่เลิกนิสัยทำลาย - บุหรี่ ดื่ม อาหารแย่ ร่างกายจะแย่ลงเรื่อยๆ ในที่สุดร่างกายบังคับให้เลิก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในนิสัย",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: Death กลับหัวผลลัพธ์สุขภาพ คือ 'เลิกก่อนพัง'",
+          "advice_th": "เลิกนิสัยทำลายเดี๋ยวนี้ ก่อนร่างกายบังคับด้วยโรคหรือ burnout",
+          "keywords_th": ["สุขภาพแย่ลง", "ติดนิสัย", "เลิกเดี๋ยวนี้"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}
