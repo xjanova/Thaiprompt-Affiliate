@@ -1,0 +1,1791 @@
+{
+  "card_identifier": {
+    "name_en": "Strength",
+    "name_th": "พลัง",
+    "number": 8,
+    "type": "major_arcana",
+    "suit": null
+  },
+  "positions": {
+    "1": {
+      "position_slug": "present",
+      "position_name_th": "ปัจจุบัน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คุณมีพลังภายในที่ลึกซึ้งและกำลังเอาชนะอุปสรรคด้วยความอ่อนโยน",
+          "detailed_interpretation_th": "ในตำแหน่งปัจจุบัน พลังหัวตั้งบ่งบอกว่าคุณกำลังอยู่ในช่วงที่มีพลังภายในที่แข็งแกร่ง คุณเอาชนะอุปสรรคไม่ใช่ด้วยกำลัง แต่ด้วยความอ่อนโยนและความอดทน คุณคือผู้ที่ปลุกสิงโต (ความกลัว ความโกรธ ความอ่อนแอ) ในตัวเอง ทำให้มันยอมรับและสงบ พลังที่แท้คือการควบคุมตัวเอง ไม่ใช่การควบคุมคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = พลังขับเคลื่อน, The Empress = อ่อนโยน",
+            "wands": "Knight of Wands = พลังหลงใหล",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Wands = ผู้นำที่อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในปัจจุบัน คือ 'พลังที่อ่อนโยน' ความอดทนชนะกำลัง",
+          "advice_th": "ใช้พลังของคุณอย่างฉลาด - อ่อนโยนแต่มั่นคง อดทนแต่ไม่ยอม คุณมีพลังในการเอาชนะทุกอุปสรรค",
+          "keywords_th": ["พลังภายใน", "อ่อนโยน", "อดทน", "ควบคุมตัว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คุณรักคู่ด้วยความอดทนและให้พลังในความสัมพันธ์",
+          "detailed_interpretation_th": "ในรักปัจจุบัน คุณรักด้วยความอดทน เข้าใจ ให้พื้นที่ ไม่ควบคุม ไม่บีบ ความรักของคุณคือพลังที่อ่อนโยน ทำให้คู่รู้สึกปลอดภัยและเป็นตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รักลึก, The Lovers = ความผูกพัน",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก, Two of Cups = ผูกพัน",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในปัจจุบันรัก คือ 'รักด้วยความอดทน'",
+          "advice_th": "อดทนกับคู่ ให้พื้นที่ ไม่บีบ ความรักที่อ่อนโยนสร้างความสัมพันธ์ที่ลึก",
+          "keywords_th": ["รักอดทน", "อ่อนโยน", "ให้พื้นที่"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ใช้ความอดทนและทักษะในการเอาชนะอุปสรรคในงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน คุณกำลังเอาชนะความท้าทายด้วยความอดทนและทักษะ ไม่ใช้กำลัง ไม่หุนหัน ค่อยๆ แก้ปัญหาทีละข้อ ความอ่อนโยนแต่มั่นคงทำให้คุณก้าวข้ามอุปสรรค",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย, Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Wands = ผู้นำที่อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในปัจจุบันงาน-เงิน คือ 'อดทนชนะอุปสรรค'",
+          "advice_th": "อย่ารีบ อย่าตอบโต้ด้วยอารมณ์ ใช้ความอดทนและปัญญาแก้ปัญหา คุณจะชนะ",
+          "keywords_th": ["อดทน", "ทักษะ", "เอาชนะอุปสรรค"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คุณกำลังควบคุมอารมณ์และความอยากภายในได้ดี",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังเป็น master ของตัวเอง ควบคุมอารมณ์ ความอยาก ความกลัว ใช้ปัญญานำชีวิต ไม่ใช่อารมณ์ พลังภายในของคุณตื่นรู้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "Queen ทุกชุด = ปัญญาในตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในปัจจุบันจิตวิญญาณ คือ 'master ตัวเอง'",
+          "advice_th": "ใช้พลังภายในควบคุมตัวเอง - อารมณ์ พฤติกรรม ความอยาก คุณคือนายของตัวเอง",
+          "keywords_th": ["ควบคุมตัว", "master", "พลังใน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายแข็งแรงและคุณดูแลตัวเองด้วยความอ่อนโยน",
+          "detailed_interpretation_th": "ในสุขภาพ คุณดูแลร่างกายด้วยความรัก ไม่บังคับ ออกกำลังกายที่เหมาะกับตัว กินอาหารดี พักผ่อนเพียงพอ ร่างกายตอบสนองด้วยพลังเต็ม",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Queen of Pentacles = ดูแลด้วยรัก",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในปัจจุบันสุขภาพ คือ 'รักร่างกาย'",
+          "advice_th": "ดูแลร่างกายด้วยความรัก ไม่ใช่ความเข้มงวด ฟังร่างกาย ออกกำลังกายที่สนุก",
+          "keywords_th": ["รักร่างกาย", "อ่อนโยน", "พลังเต็ม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "พลังภายในอ่อนลงหรือถูกความกลัวเข้าครอบงำ",
+          "detailed_interpretation_th": "พลังกลับหัวในปัจจุบัน บ่งบอกว่าคุณกำลังขาดพลังภายใน อาจรู้สึกอ่อนแอ ถูกความกลัวเข้าครอบงำ ไม่สามารถควบคุมอารมณ์ตัวเองได้ สิงโตในตัวกำลังกัดคุณแทนที่จะอยู่ใต้การควบคุม",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวในปัจจุบัน คือ 'ความกลัวเข้าครอบงำ'",
+          "advice_th": "พักผ่อน ฟื้นฟูพลังภายใน ฝึกสมาธิ ดูแลอารมณ์ ความอ่อนแอเป็นชั่วคราว",
+          "keywords_th": ["อ่อนแอ", "กลัว", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์มีการควบคุมหรือความก้าวร้าว",
+          "detailed_interpretation_th": "ในรัก พลังกลับหัวเตือนถึงความสัมพันธ์ที่ฝ่ายใดฝ่ายหนึ่งใช้กำลัง ก้าวร้าว หรือควบคุมเกินไป หรือคุณเองอาจขาดพลังในการตั้งขีดจำกัด ยอมทุกอย่าง ทั้งสองรูปแบบเป็นพิษ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = ก้าวร้าว, Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Swords กลับหัว = ก้าวร้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรัก คือ 'ความสัมพันธ์ไม่สมดุล'",
+          "advice_th": "ถ้าคู่ก้าวร้าว ตั้งขีดจำกัดหรือออก ถ้าคุณยอมเกิน เริ่มพูดและปกป้องตัวเอง",
+          "keywords_th": ["ความสัมพันธ์ก้าวร้าว", "ยอมเกิน", "ขีดจำกัด"],
+          "intensity_level": 5,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ขาดพลังในการเผชิญหน้าในงานหรือยอมแพ้ง่าย",
+          "detailed_interpretation_th": "ในงาน-เงิน พลังกลับหัวบ่งบอกว่าคุณขาดความกล้าเผชิญหน้า ไม่กล้าขอเงินเดือนเพิ่ม ไม่กล้าตั้งราคาสมควร ยอมรับลูกค้าที่เอาเปรียบ ความอ่อนแอนี้ทำลายการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ยอมในสิ่งที่ไม่ใช่, The Moon = สับสน",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง, Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = imposter"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวงาน-เงิน คือ 'หาความกล้า'",
+          "advice_th": "ฝึกพูด - ขอเงินเดือนเพิ่ม ตั้งราคาสมควร ปฏิเสธลูกค้าไม่ดี ค่าของคุณคือสิ่งที่คุณเรียกร้อง",
+          "keywords_th": ["ขาดกล้า", "ยอมเกิน", "หาพลัง"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ถูกความกลัวควบคุมหรือไม่สามารถจัดการอารมณ์",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คุณกำลังถูกอารมณ์ครอบงำ - ความโกรธ ความกลัว ความเสียใจ ความอยาก สิงโตในตัวกำลังกัดแทนที่จะอยู่ใต้การควบคุม ต้องฝึกการจัดการอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในอารมณ์, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวจิตวิญญาณ คือ 'ฝึกจัดการอารมณ์'",
+          "advice_th": "ฝึกสมาธิ ทำ therapy เรียนรู้การจัดการอารมณ์ ความสามารถนี้สำคัญสำหรับชีวิต",
+          "keywords_th": ["อารมณ์ครอบงำ", "สิงโตกัด", "ฝึกจัดการ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายอ่อนแอจากความเครียดหรือนิสัยทำลาย",
+          "detailed_interpretation_th": "ในสุขภาพ พลังกลับหัวบ่งบอกถึงร่างกายอ่อนแอ พลังงานต่ำ ภูมิคุ้มกันลด เป็นผลจากความเครียดสะสมหรือนิสัยที่ทำลาย ต้องฟื้นฟู",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = สุขภาพพัง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = เผาตัวเอง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวสุขภาพ คือ 'ฟื้นฟูร่างกาย'",
+          "advice_th": "พักผ่อน นอนเยอะ กินอาหารบำรุง ลดความเครียด ตรวจสุขภาพ - vitamin D, B12, ฮอร์โมน",
+          "keywords_th": ["พลังต่ำ", "อ่อนแอ", "ฟื้นฟู"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "2": {
+      "position_slug": "challenge",
+      "position_name_th": "อุปสรรค",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องใช้ความอดทนและพลังภายในเผชิญสถานการณ์ยาก",
+          "detailed_interpretation_th": "ในตำแหน่งอุปสรรค พลัง (ตีความตั้งตรงเสมอ) บ่งบอกว่าคุณกำลังเผชิญสถานการณ์ที่ต้องการความอดทน ความอ่อนโยน และพลังภายใน อาจมีคนยากร่วมงาน ความสัมพันธ์ที่ซับซ้อน หรือความท้าทายที่ไม่ใช้กำลังแก้ได้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, Temperance = สมดุล",
+            "wands": "Seven of Wands = ป้องกัน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Wands = ผู้นำที่อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในอุปสรรค คือ 'อดทนชนะกำลัง'",
+          "advice_th": "อย่าตอบโต้ด้วยอารมณ์ อ่อนโยนแต่มั่นคง การอดทนคือพลัง",
+          "keywords_th": ["อดทน", "อ่อนโยน", "พลังใน"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องอดทนกับปัญหาในความสัมพันธ์",
+          "detailed_interpretation_th": "อุปสรรคในรักคือสถานการณ์ที่ต้องการความอดทน คู่อาจกำลังเผชิญช่วงยาก คุณต้องอ่อนโยนแต่ไม่ยอม สนับสนุนแต่ไม่สูญเสียตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = ปัญญา",
+            "wands": "Seven of Wands = ป้องกัน",
+            "cups": "Four of Cups = ทบทวน",
+            "swords": "Two of Swords = สมดุล",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอุปสรรครัก คือ 'อดทนแต่ไม่ยอม'",
+          "advice_th": "อดทนกับคู่ในช่วงยาก แต่ตั้งขีดจำกัดให้ชัด ความรักไม่ใช่การเสียสละไม่จำกัด",
+          "keywords_th": ["อดทนรัก", "ขีดจำกัด", "สนับสนุน"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องอดทนกับคนยากร่วมงานหรือสถานการณ์ที่ท้าทาย",
+          "detailed_interpretation_th": "อุปสรรคในงาน-เงินคือคนยากร่วมงาน หัวหน้าที่ท้าทาย ลูกค้าที่จู้จี้ ต้องใช้ความอดทนและทักษะการจัดการคน ไม่ตอบโต้ด้วยอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ความยุติธรรม, The Hermit = ปัญญา",
+            "wands": "Seven of Wands = ป้องกัน",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Swords = ปัญญาในการทำงาน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอุปสรรคงาน-เงิน คือ 'อดทนและใช้ปัญญา'",
+          "advice_th": "อย่าตอบโต้คนยากด้วยอารมณ์ ใช้ความเย็นและทักษะการสื่อสาร EQ สำคัญกว่า IQ ในที่ทำงาน",
+          "keywords_th": ["คนยาก", "อดทน", "EQ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องเผชิญความกลัวและความอ่อนแอในตัวเอง",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการเผชิญหน้ากับสิงโตในตัว - ความกลัว ความโกรธ ความอ่อนแอ คุณต้องไม่หนี ไม่ปฏิเสธ แต่เข้าใจและรวมเข้ากับตัว shadow work คือกุญแจ",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = เผชิญเงา, The Moon = บาดแผล",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "Five of Cups = เสียใจที่ต้องเผชิญ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Knight of Pentacles = อดทน",
+            "court_cards": "Queen of Cups = ปัญญาทางใจ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอุปสรรคจิตวิญญาณ คือ 'เผชิญเงา'",
+          "advice_th": "ทำงานกับเงาของตัวเอง - ส่วนที่ไม่ชอบ ส่วนที่ปฏิเสธ ส่วนที่กลัว เข้าใจและรวมเข้าตัว",
+          "keywords_th": ["shadow work", "เผชิญเงา", "เข้าใจตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องอดทนกับการรักษาอาการเรื้อรัง",
+          "detailed_interpretation_th": "อุปสรรคทางสุขภาพคืออาการเรื้อรังที่ต้องการเวลาและความอดทนในการรักษา ไม่มีทางลัด ต้องดูแลตัวเองอย่างสม่ำเสมอ ผลจะมาในระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Four of Cups = ผ่อน",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Seven of Pentacles = อดทน",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอุปสรรคสุขภาพ คือ 'อดทนกับการรักษา'",
+          "advice_th": "การรักษาเรื้อรังต้องการเวลาและวินัย ทำตามแผนของหมอ ไม่หาทางลัด ผลจะมาแน่",
+          "keywords_th": ["อาการเรื้อรัง", "อดทน", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "neutral"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ถูกอารมณ์ครอบงำหรือขาดวินัยควบคุมตัวเอง",
+          "detailed_interpretation_th": "(บริบทกลับหัวในอุปสรรค) ปัญหาคือการถูกอารมณ์ครอบงำ - ความโกรธ ความหุนหัน ความอยาก ความกลัว ทำให้ตัดสินใจผิด พูดผิด ทำผิด ต้องฝึกการจัดการอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในอารมณ์, The Tower = ระเบิด",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = อารมณ์เสียใจ",
+            "swords": "Five of Swords = ก้าวร้าว, Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = สิ้นหวัง",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวในอุปสรรค คือ 'จัดการอารมณ์ก่อน'",
+          "advice_th": "ก่อนตอบโต้ทุกครั้ง หยุด 24 ชั่วโมง อารมณ์เปลี่ยน ปัญญาจะมา ฝึกสมาธิเพื่อสร้างพื้นที่ระหว่างสิ่งเร้าและการตอบสนอง",
+          "keywords_th": ["อารมณ์ครอบงำ", "หุนหัน", "จัดการอารมณ์"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ทะเลาะบ่อยหรือพูดเจ็บปวดเพราะอารมณ์",
+          "detailed_interpretation_th": "ในรัก อุปสรรคคือการทะเลาะเพราะอารมณ์ พูดเจ็บปวดที่หลังเสียใจ ขาดการควบคุมตัวเองในความสัมพันธ์ ต้องฝึก",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติดในอารมณ์",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจหลังทะเลาะ",
+            "swords": "Five of Swords = ก้าวร้าว, Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ดื้อรั้น",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรครัก คือ 'หยุดก่อนพูด'",
+          "advice_th": "ก่อนทะเลาะ ขอเวลา 30 นาที สงบ คิด แล้วค่อยคุย คำพูดที่ออกไปเรียกกลับไม่ได้",
+          "keywords_th": ["ทะเลาะบ่อย", "พูดเจ็บ", "หยุดก่อน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ตอบโต้ในงานด้วยอารมณ์จนเสียโอกาส",
+          "detailed_interpretation_th": "ในงาน-เงิน อุปสรรคคือการตอบโต้ด้วยอารมณ์ - ส่งอีเมลที่เสียใจหลัง พูดในที่ประชุมที่ไม่ควร ตัดสินใจที่อารมณ์มาก่อนปัญญา ส่งผลต่ออาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติดในอารมณ์",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Swords กลับหัว = ก้าวร้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคงาน-เงิน คือ 'EQ คือทักษะ'",
+          "advice_th": "ฝึก EQ - ก่อนตอบโต้ในงานทุกครั้ง รอ 24 ชั่วโมง สงบ คิด แล้วค่อยทำ การคิดด้วยปัญญาดีกว่า",
+          "keywords_th": ["อารมณ์ในงาน", "ตอบโต้", "ฝึก EQ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ไม่สามารถจัดการความรู้สึกลึกในตัว",
+          "detailed_interpretation_th": "ในจิตวิญญาณ อุปสรรคคือการที่ไม่สามารถจัดการสิ่งลึกในตัว - ความโกรธที่กดไว้ ความเสียใจที่ไม่ได้แสดง ความอยากที่ไม่ได้พิจารณา ทำให้ระเบิดในที่ไม่ควร",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = อารมณ์ลึก, The Devil = ติดในเงา",
+            "wands": "Five of Wands = ขัดแย้งภายใน",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคจิตวิญญาณ คือ 'รักษาอารมณ์ลึก'",
+          "advice_th": "ทำงานกับอารมณ์ลึก - therapy journaling สมาธิ การร้องไห้เป็นการรักษา ไม่ใช่ความอ่อนแอ",
+          "keywords_th": ["อารมณ์ลึก", "ระเบิด", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "นิสัยทำลายสุขภาพจากการขาดวินัย",
+          "detailed_interpretation_th": "ในสุขภาพ อุปสรรคคือการขาดวินัย - กินตามอารมณ์ ดื่มจากเครียด ไม่ออกกำลังกายเพราะขี้เกียจ นิสัยเหล่านี้ทำลายร่างกาย ต้องสร้างวินัย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Pentacles กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: บริบทกลับหัวอุปสรรคสุขภาพ คือ 'สร้างวินัยเล็กๆ'",
+          "advice_th": "เริ่มจากนิสัยเล็กที่ทำได้ - ดื่มน้ำก่อนนอน ไม่กินหลัง 8 โมง วินัยเล็กสร้างวินัยใหญ่",
+          "keywords_th": ["ขาดวินัย", "นิสัยทำลาย", "สร้างวินัยเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "3": {
+      "position_slug": "past",
+      "position_name_th": "อดีต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "เคยพัฒนาพลังภายในจากการเผชิญความท้าทาย",
+          "detailed_interpretation_th": "พลังหัวตั้งในอดีต บ่งบอกว่าคุณเคยผ่านความท้าทายที่ทำให้แข็งแกร่งขึ้น อาจเป็นวิกฤตในชีวิต ความสัมพันธ์ที่ยาก หรือการป่วยที่ฟื้นมาได้ ประสบการณ์นี้สร้างพลังภายในที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "The Chariot = พลังเก่า, The Star = ฟื้นฟู",
+            "wands": "Seven of Wands = เผชิญหน้าเก่า",
+            "cups": "Six of Cups = ความทรงจำ",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Queen of Wands = ผู้นำที่อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังในอดีต คือ 'ความท้าทายสร้างความแกร่ง'",
+          "advice_th": "ระลึกความท้าทายที่ผ่านมา - คุณรอดมาได้อย่างไร? พลังนั้นยังอยู่ในตัว",
+          "keywords_th": ["พลังเก่า", "ผ่านวิกฤต", "แข็งแกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยมีความรักที่ผ่านการพิสูจน์ความอดทน",
+          "detailed_interpretation_th": "ในรักอดีต คุณเคยมีความสัมพันธ์ที่ผ่านการทดสอบ - ระยะห่าง อุปสรรค ความขัดแย้ง และผ่านมาได้ด้วยความอดทนและความรัก พลังนี้เป็นแม่แบบ",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, Temperance = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Six of Cups = ความทรงจำดี",
+            "swords": "Six of Swords = ก้าวข้ามอุปสรรค",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอดีตรัก คือ 'รักผ่านการทดสอบ'",
+          "advice_th": "ระลึกว่ารักที่อดทนผ่านอะไรมา - ความอดทนคือทักษะที่สั่งสมได้ ใช้ในความสัมพันธ์ปัจจุบัน",
+          "keywords_th": ["รักผ่านทดสอบ", "อดทน", "บทเรียน"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยพัฒนาทักษะและประสบการณ์ผ่านการทำงานหนัก",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต คุณเคยทำงานหนัก เผชิญสถานการณ์ยาก สั่งสมทักษะและประสบการณ์ พลังนี้คือทรัพย์สิน ใช้ในงานปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "Knight of Wands = พลัง, King of Wands = ผู้นำ",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึก, King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = ระดับ expert"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอดีตงาน-เงิน คือ 'ทักษะสะสมจากความท้าทาย'",
+          "advice_th": "ใช้ทักษะและประสบการณ์ที่สั่งสม คุณเก่งกว่าที่คิด ใช้ในการตัดสินใจปัจจุบัน",
+          "keywords_th": ["ทักษะสะสม", "ประสบการณ์", "แข็งแกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยฝึกควบคุมอารมณ์และสร้างวินัยภายใน",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต คุณเคยฝึกควบคุมตัวเอง - อารมณ์ พฤติกรรม ความอยาก พลังภายในที่สั่งสมมาจากการฝึก ยังอยู่ในตัว",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Hermit = ปัญญา",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอดีตจิตวิญญาณ คือ 'วินัยเก่ายังอยู่'",
+          "advice_th": "ระลึกตอนคุณมีวินัย - ทำอะไร? นำกลับมาทำใหม่ พลังนั้นไม่หาย แค่ลืม",
+          "keywords_th": ["วินัยเก่า", "ควบคุมตัว", "พลังคงอยู่"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยมีร่างกายแข็งแรงและฟื้นฟูจากการป่วย",
+          "detailed_interpretation_th": "ในสุขภาพอดีต ร่างกายเคยแข็งแรง หรือคุณเคยฟื้นฟูจากการป่วย พิสูจน์ว่าร่างกายมีความสามารถในการฟื้นฟู ใช้เป็นความเชื่อมั่นในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Nine of Pentacles = อิสระ",
+            "court_cards": "Queen of Pentacles = ดูแลตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอดีตสุขภาพ คือ 'ร่างกายฟื้นฟูได้'",
+          "advice_th": "เชื่อมั่นในร่างกาย - เคยฟื้นฟูได้ ทำได้อีก ใช้พลังการฟื้นฟูที่ฝังในตัว",
+          "keywords_th": ["ร่างกายแข็งแกร่งเก่า", "ฟื้นฟูได้", "เชื่อมั่น"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "เคยถูกครอบงำด้วยอารมณ์หรืออ่อนแอจนเสียใจ",
+          "detailed_interpretation_th": "พลังกลับหัวในอดีต บ่งบอกถึงช่วงเวลาที่คุณอ่อนแอ - ตอบโต้ด้วยอารมณ์จนเสียใจ ยอมในสถานการณ์ที่ไม่ควรยอม ขาดวินัย บาดแผลเหล่านี้สอนบทเรียน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความอ่อนแอ, The Moon = ลวงตา",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหันเก่า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอดีต คือ 'บทเรียนจากความอ่อนแอ'",
+          "advice_th": "ใช้บทเรียนจากความอ่อนแอ - เรียนรู้ที่จะแข็งแกร่ง ฝึกพลังภายใน",
+          "keywords_th": ["อ่อนแอเก่า", "บทเรียน", "แข็งแกร่งขึ้น"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "เคยอยู่ในความสัมพันธ์ที่ก้าวร้าวหรือถูกควบคุม",
+          "detailed_interpretation_th": "ในรักอดีต คุณเคยอยู่ในความสัมพันธ์ที่ทำร้าย - ก้าวร้าว ควบคุม หรือยอมเกินไป บาดแผลนี้ทำให้กลัวเปิดใจ ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ทำลาย, The Tower = ระเบิด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Three of Swords = แผลใจ, Five of Swords = ก้าวร้าว",
+            "pentacles": "Four of Pentacles = ควบคุม",
+            "court_cards": "Knight of Swords กลับหัว = ก้าวร้าว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอดีตรัก คือ 'รักษาบาดแผล'",
+          "advice_th": "ทำงานกับบาดแผลจากความสัมพันธ์เก่า อาจใช้ therapy เรียนรู้ที่จะตั้งขีดจำกัด",
+          "keywords_th": ["รักทำร้าย", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เคยยอมเอาเปรียบในงานเพราะขาดความกล้า",
+          "detailed_interpretation_th": "ในงาน-เงินอดีต อาจเคยถูกหัวหน้าเอาเปรียบ ลูกค้าโกง หรือยอมรับเงินเดือนต่ำกว่าค่า เพราะขาดความกล้า บทเรียนคือต้องสร้างพลังภายใน",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ไม่ยุติธรรม, The Devil = ติดในการยอม",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย, Ten of Swords = ถูกทรยศ",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "King of Swords กลับหัว = ถูกเอาเปรียบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอดีตงาน-เงิน คือ 'หาความกล้า'",
+          "advice_th": "ใช้บทเรียนเก่า - หาความกล้าในการเรียกร้องในปัจจุบัน คุณมีค่ามากกว่าที่ได้",
+          "keywords_th": ["ถูกเอาเปรียบเก่า", "ขาดกล้า", "ยืนหยัด"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "เคยถูกครอบงำด้วยอารมณ์หรือนิสัยทำลาย",
+          "detailed_interpretation_th": "ในจิตวิญญาณอดีต เคยถูกครอบงำ - ความโกรธทำให้ทำสิ่งที่เสียใจ ความอยากครอบงำพฤติกรรม ความกลัวขังการเติบโต บทเรียนคือต้องสร้างวินัย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในอารมณ์, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หุนหัน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอดีตจิตวิญญาณ คือ 'บทเรียนสำคัญ'",
+          "advice_th": "ใช้บทเรียนจากการถูกครอบงำในอดีต - ฝึกควบคุมตัวเอง การจัดการอารมณ์คือทักษะ",
+          "keywords_th": ["อารมณ์ครอบงำเก่า", "บทเรียน", "ฝึก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "เคยทำลายสุขภาพด้วยนิสัยไม่ดี",
+          "detailed_interpretation_th": "ในสุขภาพอดีต เคยทำลายร่างกาย - กินไม่ดี ดื่มมาก ไม่นอน ทำงานหนัก ผลกระทบยังอยู่ ต้องเรียนรู้และดูแลในปัจจุบัน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Tower = ร่างกายพัง",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Three of Cups กลับหัว = ดื่มเกิน",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอดีตสุขภาพ คือ 'แก้ไขนิสัย'",
+          "advice_th": "เรียนรู้จากนิสัยเก่าที่ทำลาย ปรับในปัจจุบัน ร่างกายฟื้นฟูได้ถ้าให้โอกาส",
+          "keywords_th": ["นิสัยทำลายเก่า", "ผลกระทบ", "ดูแลใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "4": {
+      "position_slug": "future",
+      "position_name_th": "อนาคต",
+      "upright": {
+        "general": {
+          "core_meaning_th": "จะพัฒนาพลังภายในและเอาชนะอุปสรรคได้",
+          "detailed_interpretation_th": "พลังหัวตั้งในอนาคต บ่งบอกว่าใน 3-6 เดือนข้างหน้า คุณจะพัฒนาพลังภายในมากขึ้น เอาชนะอุปสรรคที่อยู่ตรงหน้า กลายเป็นคนที่แกร่งและอ่อนโยนพร้อมกัน",
+          "adjacent_influences": {
+            "major_arcana": "The Chariot = ชัยชนะ, The Star = ความหวัง",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Queen of Cups = ปัญญา",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Wands = ผู้นำที่อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอนาคต คือ 'แข็งแกร่งและอ่อนโยน'",
+          "advice_th": "เตรียมตัวสำหรับการเติบโตทางพลังภายใน ความท้าทายจะมาแต่คุณพร้อม",
+          "keywords_th": ["พลังเติบโต", "เอาชนะอุปสรรค", "แข็งแกร่ง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความรักจะลึกซึ้งขึ้นจากการเผชิญและก้าวข้ามอุปสรรค",
+          "detailed_interpretation_th": "ในรักอนาคต คุณและคู่จะเผชิญสถานการณ์ที่ทดสอบ แต่ผ่านมาได้ด้วยความรักและความอดทน ความสัมพันธ์จะลึกซึ้งขึ้น",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, Temperance = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน",
+            "swords": "Six of Swords = ก้าวข้าม",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = ปัญญารัก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอนาคตรัก คือ 'รักที่ผ่านการพิสูจน์'",
+          "advice_th": "พร้อมเผชิญความท้าทายร่วมกับคู่ การผ่านอุปสรรคด้วยกันทำให้รักลึก",
+          "keywords_th": ["รักลึกขึ้น", "ผ่านอุปสรรค", "อดทน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "จะเอาชนะความท้าทายในงานและก้าวหน้า",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต คุณจะเผชิญความท้าทาย แต่เอาชนะได้ด้วยทักษะและความอดทน การก้าวหน้าจะมาหลังจากผ่านอุปสรรค",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = ชัยชนะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Nine of Cups = สมหวัง",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ฝึก, King of Pentacles = บรรลุ",
+            "court_cards": "King ของ Wands = ผู้นำ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอนาคตงาน-เงิน คือ 'ผ่านอุปสรรคก้าวหน้า'",
+          "advice_th": "เตรียมตัวสำหรับความท้าทาย ใช้ทักษะและความอดทน ความสำเร็จจะมา",
+          "keywords_th": ["ก้าวหน้า", "ผ่านอุปสรรค", "ทักษะ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "จะพัฒนาวินัยและการควบคุมตัวเองให้ลึก",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต คุณจะพัฒนาวินัย การควบคุมอารมณ์ การจัดการความกลัว เป็นช่วงของการเติบโตที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอนาคตจิตวิญญาณ คือ 'พัฒนาวินัยลึก'",
+          "advice_th": "เตรียมตัวสำหรับการเติบโตทางวินัย - สมาธิ ฝึกตัว การควบคุมอารมณ์",
+          "keywords_th": ["พัฒนาวินัย", "ควบคุมตัว", "เติบโต"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายจะแข็งแรงขึ้นจากการดูแลด้วยความอดทน",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ร่างกายจะดีขึ้นจากการดูแลสม่ำเสมอ ออกกำลังกายเหมาะกับตัว กินอาหารดี พักผ่อนเพียงพอ ความอดทนให้ผล",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, The Sun = สุขภาพดี",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังอนาคตสุขภาพ คือ 'อดทนให้ผล'",
+          "advice_th": "ดำเนินการดูแลสุขภาพต่อ ความสม่ำเสมอจะให้ผล ร่างกายจะแข็งแกร่งขึ้น",
+          "keywords_th": ["ร่างกายดีขึ้น", "อดทน", "สม่ำเสมอ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "อาจเสียพลังหรือถูกครอบงำในอนาคต",
+          "detailed_interpretation_th": "พลังกลับหัวในอนาคต เตือนว่าใน 3-6 เดือนข้างหน้า อาจมีช่วงที่อ่อนแอ ถูกอารมณ์ครอบงำ หรือเสียการควบคุม ต้องเตรียมพลังภายใน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในอารมณ์, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอนาคต คือ 'เตรียมพลังภายใน'",
+          "advice_th": "เริ่มฝึกสมาธิตอนนี้ สร้างวินัย ดูแลสุขภาพ เตรียมพลังสำหรับช่วงท้าทาย",
+          "keywords_th": ["จะอ่อนแอ", "ครอบงำ", "เตรียมพลัง"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "อาจมีการทะเลาะหรือสูญเสียการควบคุมในความสัมพันธ์",
+          "detailed_interpretation_th": "ในรักอนาคต ระวังการทะเลาะใหญ่ การพูดที่เสียใจ การตอบโต้ด้วยอารมณ์ ต้องฝึกการจัดการอารมณ์ในความสัมพันธ์",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = ติด",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = ก้าวร้าว",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอนาคตรัก คือ 'ระวังคำพูด'",
+          "advice_th": "ฝึกการสื่อสารใจเย็น ก่อนพูดสิ่งสำคัญ รอ 24 ชั่วโมง คำพูดที่ออกไปเรียกกลับไม่ได้",
+          "keywords_th": ["ระวังทะเลาะ", "คำพูด", "ใจเย็น"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "อาจตัดสินใจในงานด้วยอารมณ์จนเสียใจ",
+          "detailed_interpretation_th": "ในงาน-เงินอนาคต ระวังการตัดสินใจด้วยอารมณ์ - ลาออกหุนหัน ทะเลาะหัวหน้า ส่งอีเมลที่เสียใจ ก่อนตัดสินใจสำคัญ ใจเย็นก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติดในอารมณ์",
+            "wands": "Five of Wands = ทะเลาะ",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Five of Swords = สูญเสีย",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอนาคตงาน-เงิน คือ 'อย่าตัดสินใจตามอารมณ์'",
+          "advice_th": "ก่อนการตัดสินใจสำคัญในงาน รอ 48 ชั่วโมง ปรึกษาคนไว้ใจ ใช้ปัญญาไม่ใช่อารมณ์",
+          "keywords_th": ["ตัดสินใจตามอารมณ์", "ระวัง", "ใจเย็น"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "อาจถูกความกลัวหรือนิสัยเก่าครอบงำ",
+          "detailed_interpretation_th": "ในจิตวิญญาณอนาคต ระวังการกลับสู่นิสัยเก่า ความกลัวเก่า รูปแบบเดิม ต้องตื่นตัวและเลือกที่จะแข็งแกร่ง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในนิสัย, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = เฉยชา",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในกรอบ",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอนาคตจิตวิญญาณ คือ 'ตื่นตัว'",
+          "advice_th": "ระบุตัวกระตุ้นของนิสัยเก่า เตรียมแผนรับมือ ฝึกสติทุกวัน",
+          "keywords_th": ["นิสัยเก่ากลับ", "ความกลัว", "ตื่นตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "อาจมีอาการเรื้อรังกลับมาจากความเครียด",
+          "detailed_interpretation_th": "ในสุขภาพอนาคต ระวังอาการเรื้อรังกลับมา - ปวดหัว ปวดท้อง นอนไม่หลับ ฮอร์โมนผิด เป็นผลจากความเครียดสะสม ต้องจัดการ",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในความเครียด",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = เผาตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวอนาคตสุขภาพ คือ 'จัดการความเครียด'",
+          "advice_th": "เริ่มจัดการความเครียดตอนนี้ - สมาธิ ออกกำลังกาย พักผ่อน ก่อนอาการเรื้อรังกลับ",
+          "keywords_th": ["อาการเรื้อรัง", "เครียด", "จัดการ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "5": {
+      "position_slug": "above",
+      "position_name_th": "เป้าหมาย",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ต้องการเป็นคนที่แข็งแกร่งและอ่อนโยนพร้อมกัน",
+          "detailed_interpretation_th": "พลังหัวตั้งในเป้าหมาย สะท้อนความปรารถนา - เป็นคนที่มีพลังภายใน ควบคุมตัวเอง อ่อนโยนแต่มั่นคง สามารถเอาชนะอุปสรรคโดยไม่สูญเสียความเป็นมนุษย์",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Hermit = ปัญญา, Strength เสริม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "Queen of Wands = อ่อนโยนแต่แกร่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังเป้าหมาย คือ 'แกร่งและอ่อนโยน'",
+          "advice_th": "ฝึกพลังภายใน - วินัย สมาธิ การจัดการอารมณ์ + รักษาความอ่อนโยน เป็นทั้งสองได้",
+          "keywords_th": ["แกร่งและอ่อน", "พลังใน", "ควบคุมตัว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการความสัมพันธ์ที่ทั้งคู่แกร่งและอ่อนโยน",
+          "detailed_interpretation_th": "เป้าหมายในรักคือคู่ที่มีพลังภายในของตัวเอง - แข็งแกร่งแต่อ่อนโยน เป็นที่พึ่งของกันได้ ไม่ต้องพึ่งกันมากเกินไป ความรักของผู้ใหญ่",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "King of Wands = ผู้นำที่อ่อนโยน",
+            "cups": "King of Cups = คู่ที่เข้าใจ",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Wands = คู่ที่แกร่งและอ่อน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังเป้าหมายรัก คือ 'คู่ที่เป็นผู้ใหญ่'",
+          "advice_th": "หาคู่ที่มีพลังของตัวเอง ไม่พึ่งคุณมากเกินไป ทั้งคู่แกร่งและอ่อนโยน",
+          "keywords_th": ["คู่ผู้ใหญ่", "พลังของตัว", "อ่อนโยน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการเป็นผู้นำที่อ่อนโยนแต่มีความสามารถ",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายคือการเป็นผู้นำที่มีทั้งความแข็งแกร่งและความเห็นอกเห็นใจ - นำทีมด้วยปัญญา ดูแลคน สร้างผลลัพธ์ ไม่ใช่ผู้นำที่ใช้กำลังหรืออ่อนเกินไป",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ครู",
+            "wands": "King of Wands = CEO ที่ดี",
+            "cups": "King of Cups = ผู้นำที่เข้าใจคน",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ผู้นำการเงิน",
+            "court_cards": "King ทุกชุด = ผู้นำที่สมดุล"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังเป้าหมายงาน-เงิน คือ 'ผู้นำที่สมดุล'",
+          "advice_th": "พัฒนาทั้งทักษะธุรกิจและการจัดการคน ผู้นำที่ดีต้องมีทั้ง IQ และ EQ",
+          "keywords_th": ["ผู้นำที่อ่อนโยน", "EQ", "IQ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการเป็น master ของอารมณ์และสร้างพลังภายใน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายคือการเป็น master ของอารมณ์ตัวเอง - ไม่ถูกครอบงำ ไม่ปฏิเสธ แต่เข้าใจและใช้พลังของอารมณ์ พลังภายในที่ลึกซึ้ง",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Hermit = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ปฏิบัติ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังเป้าหมายจิตวิญญาณ คือ 'master อารมณ์'",
+          "advice_th": "ฝึกการเข้าใจและใช้อารมณ์ - ไม่ปฏิเสธ ไม่ติด เข้าใจและตอบสนองอย่างฉลาด",
+          "keywords_th": ["master อารมณ์", "พลังใน", "ปัญญา"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการร่างกายที่แข็งแกร่งและฟื้นฟูดี",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพคือร่างกายที่แข็งแกร่ง ฟื้นฟูดี อายุยืน มีพลังงานพอจะทำสิ่งที่อยากทำ ไม่ใช่แค่ดูดี แต่รู้สึกดีและทำงานได้",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังเป้าหมายสุขภาพ คือ 'แข็งแกร่งและยั่งยืน'",
+          "advice_th": "ดูแลร่างกายเพื่อสมรรถภาพและพลังงาน ไม่ใช่แค่รูปลักษณ์ - กิน นอน เคลื่อนไหว + จัดการความเครียด",
+          "keywords_th": ["แข็งแกร่ง", "ฟื้นฟูดี", "อายุยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ต้องการดูแข็งแกร่งภายนอกแต่ภายในกลวง",
+          "detailed_interpretation_th": "พลังกลับหัวในเป้าหมาย บ่งบอกว่าเป้าหมายอาจเป็นไปเพื่อภายนอก - ดูแข็งแกร่ง ไม่อ่อนแอ ไม่ร้องไห้ ไม่ขอความช่วยเหลือ แต่จริงๆ ภายในยังเปราะบาง ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในภาพ, The Moon = ลวงตา",
+            "wands": "Seven of Wands = ป้องกันตัว",
+            "cups": "Four of Cups = ปฏิเสธอารมณ์",
+            "swords": "Eight of Swords = ขังในภาพ",
+            "pentacles": "Four of Pentacles = ติดในรูปลักษณ์",
+            "court_cards": "Knight of Swords = แข็งแบบไม่ยืดหยุ่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวเป้าหมาย คือ 'แกร่งภายในด้วย'",
+          "advice_th": "เพิ่มมิติของความอ่อนโยน - ขอความช่วยเหลือได้ ร้องไห้ได้ อ่อนแอบ้างได้ ความสมดุลคือพลังที่แท้",
+          "keywords_th": ["แกร่งภายนอก", "เปราะภายใน", "สมดุล"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ต้องการคู่ที่แข็งแกร่งเพื่อปกป้องคุณ",
+          "detailed_interpretation_th": "เป้าหมายในรักอาจเป็นการหาคู่ที่ 'ปกป้อง' คุณ พึ่งพา ไม่ต้องเป็นตัวเอง การพึ่งคู่มากเกินไปทำให้สูญเสียพลัง ต้องสร้างพลังของตัวเอง",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการพึ่ง, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลังตัว",
+            "cups": "Four of Cups = ไม่กล้าเป็นตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Cups กลับหัว = ตามอารมณ์"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวเป้าหมายรัก คือ 'แกร่งของตัวเอง'",
+          "advice_th": "พัฒนาพลังของตัวเองก่อน ไม่หาคู่เพื่อเติมเต็มตัวเอง คุณต้องเต็มก่อนถึงรักได้",
+          "keywords_th": ["พึ่งคู่เกิน", "แกร่งของตัว", "เป็นตัว"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ต้องการอำนาจในงานเพื่อพิสูจน์ตัวเอง",
+          "detailed_interpretation_th": "ในงาน-เงิน เป้าหมายอาจเป็นการมีอำนาจเพื่อพิสูจน์ตัวเอง ไม่ใช่เพื่อสร้างคุณค่า แรงจูงใจมาจากความไม่มั่นใจภายใน ต้องรักษาก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการพิสูจน์, The Moon = ลวงตา",
+            "wands": "Five of Wands = แข่งขัน",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Five of Swords = ก้าวร้าว",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "King of Wands กลับหัว = ผู้นำที่ผิด"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวเป้าหมายงาน-เงิน คือ 'อำนาจเพื่อพิสูจน์'",
+          "advice_th": "ทำงานเพื่อสร้างคุณค่า ไม่ใช่เพื่อพิสูจน์ การพิสูจน์ตัวเองไม่มีจุดจบ การสร้างคุณค่าเติมเต็มจริง",
+          "keywords_th": ["พิสูจน์ตัวเอง", "อำนาจผิด", "ทบทวน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ต้องการดูเป็นคนแข็งแกร่งทางอารมณ์แต่จริงๆ ปฏิเสธความรู้สึก",
+          "detailed_interpretation_th": "ในจิตวิญญาณ เป้าหมายอาจเป็นการ 'ไม่อ่อนแอ' การปฏิเสธความรู้สึกถูกมองว่าเป็นพลัง จริงๆ คือการหนีจากอารมณ์ ความแข็งแกร่งที่แท้คือยอมรับอารมณ์",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในการแกร่ง, The Moon = ลวงตา",
+            "wands": "Seven of Wands = ป้องกัน",
+            "cups": "Four of Cups = ปฏิเสธอารมณ์",
+            "swords": "Queen of Swords กลับหัว = เย็นชา",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Knight of Swords = ตรรกะอย่างเดียว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวเป้าหมายจิตวิญญาณ คือ 'ยอมรับอารมณ์'",
+          "advice_th": "ความแข็งแกร่งที่แท้คือยอมรับและจัดการอารมณ์ ไม่ใช่ปฏิเสธ ฝึกการอ่อนโยนกับตัวเอง",
+          "keywords_th": ["ปฏิเสธอารมณ์", "แกร่งปลอม", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ต้องการร่างกายที่ดูแข็งแรงแต่ฝืนความรู้สึก",
+          "detailed_interpretation_th": "เป้าหมายสุขภาพอาจเป็นการดูแข็งแรง - กล้าม six-pack วิ่งมาราธอน แต่จริงๆ ฝืนร่างกายเพื่อภาพลักษณ์ ไม่ฟังเสียงร่างกาย",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในรูปลักษณ์, The Moon = ลวงตา",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Four of Cups = ไม่พอใจตัว",
+            "swords": "Nine of Swords = กังวลรูปร่าง",
+            "pentacles": "Four of Pentacles = ใช้เงินผิด",
+            "court_cards": "Queen of Wands กลับหัว = ภายนอกเด่น"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวเป้าหมายสุขภาพ คือ 'รู้สึกดี ไม่ใช่แค่ดูดี'",
+          "advice_th": "วัดสุขภาพด้วยพลังงาน อารมณ์ การนอน ไม่ใช่ตัวเลขในกระจก รูปลักษณ์มาเมื่อสุขภาพดี",
+          "keywords_th": ["รูปลักษณ์", "ฝืนร่างกาย", "รู้สึกดี"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "6": {
+      "position_slug": "below",
+      "position_name_th": "รากฐาน",
+      "upright": {
+        "general": {
+          "core_meaning_th": "พลังภายในและความอ่อนโยนฝังในแกน",
+          "detailed_interpretation_th": "พลังหัวตั้งในรากฐาน บ่งบอกว่าจิตใต้สำนึกของคุณมีพลังภายในและความอ่อนโยนฝังลึก คุณเป็นคนที่สามารถเผชิญความท้าทายด้วยปัญญา ความสามารถนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Empress = อ่อนโยน",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Queen of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Queen of Pentacles = ดูแล",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังรากฐาน คือ 'แกร่งและอ่อนในแกน'",
+          "advice_th": "ใช้พลังที่ฝังในตัว เผชิญความท้าทายด้วยอ่อนโยนแต่มั่นคง",
+          "keywords_th": ["พลังใน", "อ่อนโยน", "พรสวรรค์"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสามารถรักด้วยความอดทนฝังในแกน",
+          "detailed_interpretation_th": "ในรัก รากฐานของคุณคือความสามารถรักด้วยความอดทน เข้าใจ ให้ คุณเป็นคนรักลึก ไม่เลิกง่าย พลังนี้คือพรสวรรค์",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รัก, The Lovers = ผูกพัน",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังรากฐานรัก คือ 'รักลึกในแกน'",
+          "advice_th": "ใช้ความสามารถรักลึกในความสัมพันธ์ปัจจุบัน แต่อย่ายอมเกิน",
+          "keywords_th": ["รักลึก", "อดทน", "พรสวรรค์"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความอดทนและทักษะแก้ปัญหาเป็นรากความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานของคุณคือความอดทนและทักษะแก้ปัญหา คุณไม่ใช่คนที่ยอมแพ้ง่าย ทำงานหนัก แก้ไขสิ่งยาก พลังนี้สร้างอาชีพ",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Chariot = พลัง",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญา",
+            "swords": "King of Swords = แก้ปัญหา",
+            "pentacles": "Knight of Pentacles = อดทน, King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังรากฐานงาน-เงิน คือ 'อดทน + แก้ปัญหา'",
+          "advice_th": "ใช้ความอดทนและทักษะแก้ปัญหาในงาน คุณคือคนที่บริษัทพึ่งพาในเรื่องยาก",
+          "keywords_th": ["อดทน", "แก้ปัญหา", "ทักษะ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "วินัยและการควบคุมตัวเองฝังในแกน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือวินัยและการควบคุมตัวเอง พลังนี้ทำให้คุณบรรลุเป้าหมายได้ ฝึกได้ พัฒนาได้ ใช้เป็นจุดแข็ง",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Hermit = ปัญญา",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "King of Cups = สมดุล",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังรากฐานจิตวิญญาณ คือ 'วินัยในแกน'",
+          "advice_th": "ใช้วินัยที่ฝังในตัวกับเป้าหมายใหม่ คุณสามารถบรรลุที่ตั้งไว้",
+          "keywords_th": ["วินัย", "ควบคุมตัว", "พลังใน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายแข็งแกร่งและฟื้นฟูดีเป็นทุนเดิม",
+          "detailed_interpretation_th": "รากฐานสุขภาพดี ร่างกายมีพลังฟื้นฟูสูง ระบบทำงานดี ทนต่อความเครียดได้ ใช้ทุนนี้สร้างสุขภาพระยะยาว",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = พลัง, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = อารมณ์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "King of Pentacles = ร่างกายแกร่ง",
+            "court_cards": "Knight of Pentacles = สม่ำเสมอ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังรากฐานสุขภาพ คือ 'ร่างกายฟื้นฟูดี'",
+          "advice_th": "ใช้ทุนทางร่างกาย - ออกกำลังกาย ลงทุนกับสุขภาพ ร่างกายของคุณรองรับได้",
+          "keywords_th": ["ร่างกายแกร่ง", "ฟื้นฟูดี", "ทุนเดิม"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "ความกลัวและความอ่อนแอฝังลึก",
+          "detailed_interpretation_th": "พลังกลับหัวในรากฐาน บ่งบอกถึงความกลัวและความอ่อนแอฝังลึก อาจมาจากบาดแผลในวัยเด็กที่ทำให้รู้สึกว่าตัวเองไม่แกร่งพอ ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = บาดแผล",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรากฐาน คือ 'รักษาความกลัวลึก'",
+          "advice_th": "ทำงานกับบาดแผลในวัยเด็ก ความกลัวเริ่มจากที่นั่น รักษาผ่าน therapy หรือ inner child work",
+          "keywords_th": ["กลัวฝังลึก", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "นิสัยยอมในความสัมพันธ์เพื่อหลีกเลี่ยงความขัดแย้ง",
+          "detailed_interpretation_th": "ในรัก รากฐานคือการยอมเสมอ เพื่อหลีกเลี่ยงความขัดแย้ง คุณกลัวการสูญเสียคู่ จึงไม่กล้าตั้งขีดจำกัด นิสัยนี้ทำลายความรัก ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, The Moon = กลัว",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ปฏิเสธความรู้สึก",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Page of Cups = ไม่กล้าพูด"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรากฐานรัก คือ 'ตั้งขีดจำกัด'",
+          "advice_th": "ฝึกตั้งขีดจำกัดในรัก พูด 'ไม่' กับสิ่งที่ทำร้าย ความรักที่ดีไม่ต้องเสียตัวเอง",
+          "keywords_th": ["ยอมเกิน", "กลัวเสียคู่", "ตั้งขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ความเชื่อว่าต้องอ่อนน้อมในการทำงาน",
+          "detailed_interpretation_th": "ในงาน-เงิน รากฐานมีความเชื่อ 'อย่าโต้แย้งหัวหน้า' 'รับงานที่ได้รับ' 'อย่าขอ' ความเชื่อเหล่านี้ขังคุณจากการเติบโต ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Hierophant = ตามแบบ",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่กล้า",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ติดในเงินเดือน",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรากฐานงาน-เงิน คือ 'เปลี่ยนความเชื่อ'",
+          "advice_th": "ฝึกการต่อรอง ขอ พูด คุณคู่ควรกับการได้รับการยอมรับและตอบแทนสมควร",
+          "keywords_th": ["อ่อนน้อมเกิน", "ความเชื่อจำกัด", "ฝึกกล้า"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ขาดความเชื่อมั่นในตัวเองลึกๆ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ รากฐานคือการไม่เชื่อในตัวเอง ความคิด 'ฉันไม่แกร่งพอ' 'ฉันไม่สามารถ' ฝังลึก ทำให้ไม่กล้าเริ่ม ต้องสร้างความเชื่อมั่นใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรากฐานจิตวิญญาณ คือ 'สร้างความเชื่อมั่นใหม่'",
+          "advice_th": "ทำสิ่งเล็กๆ ที่ไม่กล้าทำ พิสูจน์กับตัวเองว่าทำได้ ความเชื่อมั่นสร้างจากการพิสูจน์เล็กๆ",
+          "keywords_th": ["ไม่เชื่อในตัว", "ฝังลึก", "พิสูจน์เล็กๆ"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายอ่อนแอจากความเครียดเรื้อรัง",
+          "detailed_interpretation_th": "รากฐานสุขภาพอ่อนแอจากความเครียดเรื้อรัง อาจมีปัญหาฮอร์โมน ภูมิคุ้มกัน หรือปัญหาเรื้อรัง ต้องฟื้นฟูจากรากเหง้า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเครียด, The Tower = ร่างกายพัง",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = เผาตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวรากฐานสุขภาพ คือ 'ฟื้นฟูจากราก'",
+          "advice_th": "ตรวจฮอร์โมน วิตามิน ภูมิคุ้มกัน ฟื้นฟูจากรากเหง้า การจัดการความเครียดสำคัญ",
+          "keywords_th": ["ร่างกายอ่อน", "เครียดเรื้อรัง", "ฟื้นฟูราก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "7": {
+      "position_slug": "advice",
+      "position_name_th": "คำแนะนำ",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ใช้ความอดทนและพลังภายใน - ไม่ตอบโต้ด้วยกำลัง",
+          "detailed_interpretation_th": "คำแนะนำจากพลังหัวตั้ง: ใช้ความอดทน อ่อนโยน แต่มั่นคง ไม่ตอบโต้ด้วยอารมณ์ ความแข็งแกร่งที่แท้คือการควบคุมตัวเอง ไม่ใช่การควบคุมคนอื่น",
+          "adjacent_influences": {
+            "major_arcana": "Temperance = สมดุล, The Hermit = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ควบคุมอารมณ์",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังคำแนะนำ คือ 'อ่อนโยนแต่มั่นคง'",
+          "advice_th": "เมื่อเผชิญความท้าทาย หยุดและหายใจ ตอบโต้ด้วยปัญญา ไม่ใช่อารมณ์ ความอดทนคือพลัง",
+          "keywords_th": ["อดทน", "อ่อนโยน", "ควบคุมตัว"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "รักด้วยความอดทนและให้พื้นที่",
+          "detailed_interpretation_th": "คำแนะนำในรัก: รักด้วยความอดทน ให้พื้นที่ ไม่ควบคุม ฟังคู่ ก่อนตอบโต้ทุกครั้ง คิด อ่อนโยนคือพลังในความรัก",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = อ่อนโยน, Temperance = สมดุล",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Queen of Cups = ปัญญารัก",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังคำแนะนำในรัก คือ 'อ่อนโยน + อดทน'",
+          "advice_th": "ก่อนตอบโต้ในความรักทุกครั้ง รอ คิด อ่อนโยน ความรักต้องการความอดทน",
+          "keywords_th": ["อดทนรัก", "อ่อนโยน", "ฟัง"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ใช้ EQ และความอดทนแก้ปัญหาในงาน",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ใช้ EQ ในการจัดการคน ความอดทนในการแก้ปัญหา ไม่ตอบโต้ด้วยอารมณ์ คนเก่งในที่ทำงานคือคนที่ควบคุมตัวเองได้",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ยุติธรรม, The Hermit = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = วินัย",
+            "court_cards": "Queen of Swords = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังคำแนะนำงาน-เงิน คือ 'EQ ในงาน'",
+          "advice_th": "ก่อนส่งอีเมล โต้แย้งในประชุม ตัดสินใจสำคัญ รอ 24 ชั่วโมง คิดด้วยปัญญา ไม่ใช่อารมณ์",
+          "keywords_th": ["EQ", "อดทน", "ปัญญา"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ฝึกควบคุมอารมณ์และวินัยภายใน",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ฝึกควบคุมตัวเอง - สมาธิ การจัดการอารมณ์ วินัย การควบคุมพฤติกรรม นี่คือพลังที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = ปัญญา, The Magician = ทักษะ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "King ทุกชุด = mastery"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังคำแนะนำการเติบโต คือ 'ฝึกควบคุมตัว'",
+          "advice_th": "เริ่มกิจวัตรประจำวันที่ฝึกวินัย - สมาธิ 10 นาที จด journal ออกกำลังกาย ความสม่ำเสมอสร้าง mastery",
+          "keywords_th": ["วินัย", "ควบคุมตัว", "สมาธิ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ดูแลร่างกายด้วยความอ่อนโยนและสม่ำเสมอ",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ดูแลร่างกายด้วยความรัก ไม่ใช่บังคับ ออกกำลังกายที่เหมาะ กินอาหารดี พักผ่อนพอ ความสม่ำเสมอชนะความหักโหม",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Temperance = สมดุล",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Queen of Cups = ดูแลด้วยใจ",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = สม่ำเสมอ",
+            "court_cards": "Queen of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังคำแนะนำสุขภาพ คือ 'รักร่างกาย'",
+          "advice_th": "ดูแลร่างกายเหมือนเพื่อน - ฟังเขา ดูแลเขา ไม่ฝืน การดูแลด้วยรักให้ผลยั่งยืน",
+          "keywords_th": ["รักร่างกาย", "อ่อนโยน", "สม่ำเสมอ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หยุดฝืนตัวเอง - ยอมรับความอ่อนแอและขอความช่วยเหลือ",
+          "detailed_interpretation_th": "คำแนะนำพลังกลับหัว: ถ้าคุณกำลังฝืนตัวเอง พยายามแกร่งตลอดเวลา ปฏิเสธความอ่อนแอ หยุด การยอมรับความอ่อนแอคือพลัง การขอความช่วยเหลือคือความกล้า",
+          "adjacent_influences": {
+            "major_arcana": "The Hanged Man = พิจารณา, The Star = หวัง",
+            "wands": "Wands กลับหัว = ผ่อน",
+            "cups": "Queen of Cups = ดูแลด้วยใจ",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Cups = ขอความช่วยเหลือ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวคำแนะนำ คือ 'ยอมรับและขอ'",
+          "advice_th": "ขอความช่วยเหลือจากคนไว้ใจ ปรึกษา therapist พักผ่อน ความอ่อนแอเป็นมนุษย์ ไม่ใช่ความล้มเหลว",
+          "keywords_th": ["ยอมรับอ่อนแอ", "ขอช่วย", "พัก"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ออกจากความสัมพันธ์ที่ทำร้ายแม้จะยาก",
+          "detailed_interpretation_th": "คำแนะนำในรัก: ถ้าความสัมพันธ์ทำร้าย - ก้าวร้าว ควบคุม ทำให้คุณเล็ก ออก ไม่มีความรักที่ดีที่ทำให้คุณรู้สึกไม่ปลอดภัย ความกล้าที่จะออกคือพลัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, Six of Swords = ไปข้างหน้า",
+            "wands": "Eight of Wands = ก้าวออก",
+            "cups": "Eight of Cups = ออกจาก",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Four of Pentacles = ปล่อย",
+            "court_cards": "Knight of Swords = กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวคำแนะนำในรัก คือ 'ออกจากความสัมพันธ์ที่ทำร้าย'",
+          "advice_th": "วางแผนออกอย่างปลอดภัย ปรึกษาคนไว้ใจ หา therapist การออกคือการรักตัวเอง",
+          "keywords_th": ["ออกจากความสัมพันธ์", "รักษาตัว", "ปลอดภัย"],
+          "intensity_level": 5,
+          "emotional_tone": "neutral"
+        },
+        "career-finance": {
+          "core_meaning_th": "ลาออกจากงานที่ทำลายสุขภาพ",
+          "detailed_interpretation_th": "คำแนะนำงาน-เงิน: ถ้างานทำลายสุขภาพ - ทำงานหนักเกิน หัวหน้ากดดัน burnout ลาออก ความสุขภาพและจิตใจสำคัญกว่าเงินเดือน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ออกจากสิ่งพัง, Six of Swords = ไปข้างหน้า",
+            "wands": "Eight of Wands = ก้าวออก",
+            "cups": "Eight of Cups = ออกจากงานเก่า",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Four of Pentacles = ปล่อยเงินเดือน",
+            "court_cards": "Knight of Wands = กล้าเปลี่ยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวคำแนะนำงาน-เงิน คือ 'สุขภาพก่อนเงิน'",
+          "advice_th": "ถ้างานทำลาย ลาออก ก่อน burnout วางแผนการเงิน หางานใหม่ ชีวิตของคุณสำคัญกว่าตำแหน่ง",
+          "keywords_th": ["ลาออก", "สุขภาพก่อนเงิน", "กล้า"],
+          "intensity_level": 4,
+          "emotional_tone": "neutral"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ยอมรับว่าต้องการความช่วยเหลือ - therapy หรือ mentor",
+          "detailed_interpretation_th": "คำแนะนำการเติบโต: ถ้าติดอยู่ ไม่ก้าวหน้า อย่าทำคนเดียว ขอความช่วยเหลือ - therapist coach mentor การมีคนช่วยคือความฉลาด ไม่ใช่ความอ่อนแอ",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลัง",
+            "cups": "King of Cups = ที่ปรึกษา",
+            "swords": "King of Swords = ที่ปรึกษา",
+            "pentacles": "King of Pentacles = mentor",
+            "court_cards": "Queen ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวคำแนะนำการเติบโต คือ 'ขอความช่วยเหลือ'",
+          "advice_th": "ลงทุน therapy หรือ coach การมีคนเข้าใจและนำทางทำให้ก้าวหน้าเร็ว",
+          "keywords_th": ["ขอช่วย", "therapy", "ความช่วยเหลือ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "พักผ่อนและฟื้นฟูร่างกายก่อนพัง",
+          "detailed_interpretation_th": "คำแนะนำสุขภาพ: ถ้าฝืนร่างกาย หักโหม ละเลย หยุดและพักผ่อน ร่างกายต้องการการฟื้นฟูเหมือนต้องการการทำงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Star = ฟื้นฟู, Four of Swords = พัก",
+            "wands": "Wands กลับหัว = ลด",
+            "cups": "Queen of Cups = ดูแลใจ",
+            "swords": "Four of Swords = พัก",
+            "pentacles": "Queen of Pentacles = ดูแลตัว",
+            "court_cards": "Queen of Cups = อ่อนโยน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวคำแนะนำสุขภาพ คือ 'พักผ่อน'",
+          "advice_th": "ใช้ 1-2 สัปดาห์พักจริงๆ ไม่ทำงาน ไม่ออกกำลังกายหนัก ฟื้นฟูร่างกาย แล้วค่อยกลับมา",
+          "keywords_th": ["พักผ่อน", "ฟื้นฟู", "หยุด"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      }
+    },
+    "8": {
+      "position_slug": "external",
+      "position_name_th": "ภายนอก",
+      "upright": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างเห็นคุณเป็นคนแกร่งและที่พึ่งได้",
+          "detailed_interpretation_th": "พลังหัวตั้งในภายนอก บ่งบอกว่าคนรอบข้างเห็นคุณเป็นคนแข็งแกร่ง ที่พึ่งได้ คนที่จะช่วยในยามยาก สภาพแวดล้อมรอบตัวสนับสนุนการเติบโตของคุณ",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Empress = ครอบครัว",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Three of Cups = เพื่อน",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ผู้รู้",
+            "court_cards": "Queen ทุกชุด = ปัญญา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังภายนอก คือ 'เป็นที่พึ่ง'",
+          "advice_th": "ใช้พลังของการเป็นที่พึ่งให้คนอื่น แต่อย่าให้พวกเขาใช้คุณเกินไป ตั้งขีดจำกัด",
+          "keywords_th": ["เป็นที่พึ่ง", "แกร่ง", "สนับสนุน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่รักเห็นคุณเป็นเสาหลักของชีวิต",
+          "detailed_interpretation_th": "ในรัก คู่ของคุณเห็นคุณเป็นเสาหลัก คุณคือคนที่เขาพึ่งพา การที่คู่ไว้ใจคุณคือพลัง ดูแลความสัมพันธ์นี้",
+          "adjacent_influences": {
+            "major_arcana": "The Empress = รัก, The Lovers = ผูกพัน",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = ผูกพัน, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสาร",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังภายนอกรัก คือ 'เสาหลักของคู่'",
+          "advice_th": "เป็นที่พึ่งของคู่อย่างฉลาด แต่ขอให้เขาดูแลคุณบ้าง ความสัมพันธ์ต้องสมดุล",
+          "keywords_th": ["เสาหลัก", "ที่พึ่ง", "สมดุล"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานหรือลูกค้าเห็นคุณเป็นมืออาชีพ",
+          "detailed_interpretation_th": "ในงาน-เงิน เพื่อนร่วมงานและลูกค้าเห็นคุณเป็นมืออาชีพที่ไว้ใจได้ ทำงานได้ดี การมีชื่อเสียงดีเปิดประตูใหม่",
+          "adjacent_influences": {
+            "major_arcana": "The Magician = ทักษะ, The Emperor = ผู้นำ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "Three of Cups = เพื่อนร่วมงาน",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "Eight of Pentacles = ทักษะ, King of Pentacles = mentor",
+            "court_cards": "King ทุกชุด = mentor"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังภายนอกงาน-เงิน คือ 'มืออาชีพที่ไว้ใจ'",
+          "advice_th": "ใช้ชื่อเสียงดีในการสร้างโอกาส - ขอแนะนำ networking สร้างความสัมพันธ์ในวงการ",
+          "keywords_th": ["มืออาชีพ", "ไว้ใจ", "โอกาส"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ครูหรือกลุ่มที่ช่วยให้คุณพัฒนาพลังภายใน",
+          "detailed_interpretation_th": "ในจิตวิญญาณ มี mentor ครู หรือกลุ่มที่ช่วยให้คุณพัฒนา การมีเพื่อนเส้นทางเร่งการเติบโต",
+          "adjacent_influences": {
+            "major_arcana": "The Hierophant = ครู, The Hermit = ปัญญา",
+            "wands": "Wands ข้างเคียง = พลังร่วม",
+            "cups": "Three of Cups = เพื่อนแท้",
+            "swords": "King of Swords = ครู",
+            "pentacles": "Knight of Pentacles = ฝึก",
+            "court_cards": "King ทุกชุด = ครู"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังภายนอกจิตวิญญาณ คือ 'ครูและเพื่อน'",
+          "advice_th": "หาครูที่ไว้ใจ เข้ากลุ่มที่มีเป้าหมายคล้ายกัน พลังของกลุ่มเร่งการเติบโต",
+          "keywords_th": ["ครูดี", "กลุ่มสนับสนุน", "เพื่อนเส้นทาง"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "trainer หรือเพื่อนช่วยให้ดูแลสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ มีคนรอบข้างช่วย - trainer ที่ติดตาม เพื่อนที่ออกกำลังกายด้วยกัน คู่ที่สนับสนุน หาคนรอบข้างเอื้อต่อสุขภาพ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Three of Cups = สังสรรค์ดี",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Knight of Pentacles = trainer",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังภายนอกสุขภาพ คือ 'มีคู่สุขภาพ'",
+          "advice_th": "ลงทุน trainer หรือชวนเพื่อนทำกิจกรรมสุขภาพ การมีคู่ทำให้สม่ำเสมอ",
+          "keywords_th": ["trainer", "เพื่อนสุขภาพ", "สม่ำเสมอ"],
+          "intensity_level": 3,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "คนรอบข้างใช้คุณเป็นที่พึ่งจนหมดพลัง",
+          "detailed_interpretation_th": "พลังกลับหัวในภายนอก เตือนว่ามีคนรอบข้างใช้คุณ - เป็นที่พึ่งทุกครั้ง รับฟังปัญหา ช่วยเหลือ จนคุณหมดพลัง ต้องตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, Ten of Wands = ภาระเกิน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Five of Swords = ถูกใช้",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = ถูกเอาเปรียบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวภายนอก คือ 'คนใช้คุณ'",
+          "advice_th": "ตั้งขีดจำกัดกับคนที่ใช้คุณ พูด 'ไม่' คุณไม่ใช่ therapist ฟรีของทุกคน",
+          "keywords_th": ["ถูกใช้", "ภาระ", "ขีดจำกัด"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "คู่ครองพึ่งคุณมากเกินไปจนหมดพลัง",
+          "detailed_interpretation_th": "ในรัก คู่ของคุณพึ่งคุณมากเกินไป - ทางอารมณ์ การเงิน การตัดสินใจ คุณรับภาระทั้งหมด เหนื่อย ต้องคุยและสร้างสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = สัมพันธ์ที่ทำลาย, Ten of Wands = ภาระ",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Four of Pentacles = แบกการเงิน",
+            "court_cards": "Knight of Cups กลับหัว = พึ่งเกิน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวภายนอกรัก คือ 'สมดุลในรัก'",
+          "advice_th": "คุยกับคู่เรื่องการแบ่งภาระ - การเงิน บ้าน อารมณ์ ทั้งคู่ต้องเป็นผู้ใหญ่ที่ดูแลตัวเองได้",
+          "keywords_th": ["คู่พึ่งเกิน", "ภาระไม่สมดุล", "คุย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "เพื่อนร่วมงานหรือลูกค้าเอาเปรียบความใจดี",
+          "detailed_interpretation_th": "ในงาน-เงิน ระวังเพื่อนร่วมงานที่ใช้คุณทำงานแทน หัวหน้าที่ใช้คุณเกินขอบเขต ลูกค้าที่ต่อรองตลอด ต้องตั้งขีดจำกัด",
+          "adjacent_influences": {
+            "major_arcana": "Justice = ความไม่ยุติธรรม, The Devil = ถูกใช้",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Three of Cups กลับหัว = เพื่อนทรยศ",
+            "swords": "Five of Swords = ถูกใช้, Ten of Swords = พ่ายแพ้",
+            "pentacles": "Five of Pentacles = เสียเปรียบ",
+            "court_cards": "Knight of Pentacles กลับหัว = ถูกเอาเปรียบ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวภายนอกงาน-เงิน คือ 'ตั้งขีดจำกัด'",
+          "advice_th": "เรียนรู้พูด 'ไม่' กับงานที่ไม่ใช่หน้าที่ ขึ้นราคาให้ลูกค้าที่ต่อรองตลอด ค่าของคุณคือสิ่งที่คุณเรียกร้อง",
+          "keywords_th": ["ถูกเอาเปรียบ", "ขีดจำกัด", "ค่าตัว"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "คนรอบข้างไม่เข้าใจการเติบโตของคุณ",
+          "detailed_interpretation_th": "ในจิตวิญญาณ คนรอบข้างอาจไม่เข้าใจการเปลี่ยนแปลง อาจทำให้รู้สึกโดดเดี่ยว ต้องหาเพื่อนใหม่ที่เข้าใจ",
+          "adjacent_influences": {
+            "major_arcana": "The Hermit = อยู่คนเดียว, The Devil = ถูกดึงกลับ",
+            "wands": "Five of Wands = ขัดแย้ง",
+            "cups": "Four of Cups = ไม่พอใจ",
+            "swords": "Six of Swords = ไปข้างหน้า",
+            "pentacles": "Eight of Pentacles = ฝึกตัว",
+            "court_cards": "Page กลับหัว = ไม่โต"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวภายนอกจิตวิญญาณ คือ 'หาคนเข้าใจ'",
+          "advice_th": "หาเพื่อนใหม่ที่อยู่ในเส้นทางคล้าย เข้ากลุ่ม community การมีเพื่อนเส้นทางสำคัญ",
+          "keywords_th": ["ไม่มีใครเข้าใจ", "โดดเดี่ยว", "หาเพื่อนใหม่"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "สภาพแวดล้อมไม่เอื้อต่อสุขภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ สภาพแวดล้อมรอบตัวไม่เอื้อ - ครอบครัวที่กินไม่ดี เพื่อนชวนดื่ม คู่ที่ไม่สนับสนุน คุณต้องเลือกหรือเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = นิสัยรอบข้าง, The Tower = สุขภาพพัง",
+            "wands": "Knight of Wands กลับหัว = ตามแรง",
+            "cups": "Three of Cups กลับหัว = สังสรรค์ทำลาย",
+            "swords": "Nine of Swords = นอนไม่หลับ",
+            "pentacles": "Five of Pentacles = ละเลย",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวภายนอกสุขภาพ คือ 'เปลี่ยนสภาพแวดล้อม'",
+          "advice_th": "เปลี่ยนสภาพแวดล้อม - กลุ่มเพื่อนใหม่ อาหารที่บ้าน คุยกับคู่เรื่องสุขภาพ คุณคู่ควรกับสุขภาพดี",
+          "keywords_th": ["สภาพแวดล้อมไม่ดี", "เปลี่ยน", "เลือก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "9": {
+      "position_slug": "hopes",
+      "position_name_th": "ความหวัง",
+      "upright": {
+        "general": {
+          "core_meaning_th": "หวังเป็นคนที่แข็งแกร่งทั้งภายในและภายนอก",
+          "detailed_interpretation_th": "พลังหัวตั้งในความหวัง สะท้อนความปรารถนา - เป็นคนที่มีพลังภายใน ควบคุมตัวเอง อ่อนโยนแต่แกร่ง สามารถเอาชนะอุปสรรคในชีวิต",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, Strength เสริม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "Queen of Wands = อ่อนโยนแต่แกร่ง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังความหวัง คือ 'แกร่งและอ่อนโยน'",
+          "advice_th": "เก็บความหวังนี้ ฝึกพลังภายในทุกวัน คุณคู่ควรกับการเป็นคนที่แข็งแกร่ง",
+          "keywords_th": ["แข็งแกร่ง", "พลังใน", "บรรลุ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "หวังคู่ที่มีพลังของตัวเองและรักได้อย่างผู้ใหญ่",
+          "detailed_interpretation_th": "ในรัก ความหวังคือคู่ที่มีพลังของตัวเอง ไม่พึ่งกันมากเกิน รักกันแบบผู้ใหญ่ ที่ทั้งคู่ดูแลตัวเองและกันและกันได้",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รัก, The Empress = ครอบครัว",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = คู่ที่เข้าใจ",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "Queen of Cups = นักรักลึก"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังความหวังรัก คือ 'คู่ผู้ใหญ่'",
+          "advice_th": "พัฒนาตัวเองเป็นคนที่มีพลัง คุณจะดึงดูดคนที่มีพลังเหมือนกัน",
+          "keywords_th": ["คู่ผู้ใหญ่", "พลังของตัว", "รักลึก"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "หวังเป็นผู้นำที่มีทั้ง EQ และ IQ สูง",
+          "detailed_interpretation_th": "ในงาน-เงิน ความหวังคือการเป็นผู้นำที่ดี - มีทักษะ มีปัญญา มี EQ เก่งทั้งงานและจัดการคน เป็นคนที่ทุกคนอยากร่วมงาน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The Hierophant = ครู",
+            "wands": "King of Wands = CEO",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = ผู้นำที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังความหวังงาน-เงิน คือ 'ผู้นำที่สมดุล'",
+          "advice_th": "พัฒนาทั้ง hard skills และ soft skills การเป็นผู้นำที่ดีต้องการทั้งสอง",
+          "keywords_th": ["ผู้นำที่ดี", "EQ", "IQ"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "หวังเป็น master ของอารมณ์และความอยาก",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความหวังคือการเป็น master ของตัวเอง ไม่ถูกอารมณ์ครอบงำ ไม่ถูกความอยากชักจูง พลังภายในที่ลึก",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Hermit = ปัญญา",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังความหวังจิตวิญญาณ คือ 'master ตัวเอง'",
+          "advice_th": "ฝึกการควบคุมตัวเองทุกวัน - สมาธิ การจัดการอารมณ์ วินัย ทักษะที่สำคัญที่สุดในชีวิต",
+          "keywords_th": ["master", "ควบคุมตัว", "พลังใน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "หวังร่างกายที่แข็งแกร่งและฟื้นฟูดีตลอดชีวิต",
+          "detailed_interpretation_th": "ในสุขภาพ ความหวังคือร่างกายที่แข็งแกร่ง ฟื้นฟูดี อายุยืน มีสมรรถภาพทำสิ่งที่อยากทำ ความหวังเป็นจริงได้ด้วยการดูแลสม่ำเสมอ",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สุขภาพดี, The Star = ฟื้นฟู",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = สุขภาพระดับสูง"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังความหวังสุขภาพ คือ 'แข็งแกร่งยั่งยืน'",
+          "advice_th": "ลงทุนกับสุขภาพต่อเนื่อง - ออกกำลังกายสม่ำเสมอ กินดี นอนพอ ผลตอบแทนคือร่างกายที่อยากได้",
+          "keywords_th": ["แข็งแกร่ง", "ฟื้นฟูดี", "อายุยืน"],
+          "intensity_level": 4,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "กลัวว่าจะไม่แข็งแกร่งพอหรือไม่สามารถควบคุมตัวเอง",
+          "detailed_interpretation_th": "พลังกลับหัวในความหวัง บ่งบอกถึงความกลัวลึกๆ - กลัวอ่อนแอ กลัวเสียการควบคุม กลัวถูกครอบงำ ความกลัวเหล่านี้ขังคุณจากการเป็นตัวเองที่แท้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความกลัว, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวความหวัง คือ 'ความกลัวอ่อนแอ'",
+          "advice_th": "ยอมรับว่าทุกคนมีจุดอ่อน ความแข็งแกร่งที่แท้คือยอมรับและทำงานกับจุดอ่อน ไม่ใช่ปฏิเสธ",
+          "keywords_th": ["กลัวอ่อนแอ", "ยอมรับ", "ทำงานกับใจ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "กลัวเปิดใจหรือถูกทำร้ายในความสัมพันธ์",
+          "detailed_interpretation_th": "ในรัก ความกลัวซ่อนอยู่ - กลัวเปิดใจแล้วเจ็บ กลัวถูกทำร้าย กลัวรักแล้วเสีย ความกลัวขังคุณจากความรักที่ลึก ต้องรักษา",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = กลัวรัก, The Devil = ติดในบาดแผล",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = เสียใจเก่า",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวความหวังรัก คือ 'รักษาความกลัว'",
+          "advice_th": "ทำงานกับบาดแผลความรักเก่า รักษาตัวเอง เปิดใจช้าๆ ความรักคุ้มค่ากับความเสี่ยง",
+          "keywords_th": ["กลัวรัก", "บาดแผล", "รักษา"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "ไม่เชื่อว่าจะแกร่งพอที่จะเป็นผู้นำ",
+          "detailed_interpretation_th": "ในงาน-เงิน imposter syndrome - ความเชื่อ 'ฉันไม่กล้าเป็นผู้นำ' 'ฉันไม่สามารถตัดสินใจใหญ่' ขัดขวางการเติบโต ทุกผู้นำเริ่มจากความกลัว",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Four of Cups = ไม่เห็นค่าตัว",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Page of Wands กลับหัว = ไม่กล้า"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวความหวังงาน-เงิน คือ 'imposter syndrome'",
+          "advice_th": "เริ่มจากการนำในเรื่องเล็ก สร้างความเชื่อมั่นทีละขั้น ทุกผู้นำเริ่มจากความกลัว",
+          "keywords_th": ["imposter syndrome", "ไม่กล้านำ", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "กลัวว่าจะไม่สามารถควบคุมอารมณ์ได้",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ความกลัว 'ฉันจะระเบิดอีก' 'ฉันจะไม่สามารถควบคุมความโกรธ' ขัดขวางการเติบโต ทุกคนสามารถฝึกได้",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในความเชื่อ, The Moon = ลวงตา",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หุนหัน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวความหวังจิตวิญญาณ คือ 'ฝึกได้'",
+          "advice_th": "เริ่มฝึกการควบคุมในเรื่องเล็ก - หายใจ 10 ครั้งก่อนตอบโต้ ทักษะนี้สร้างได้",
+          "keywords_th": ["กลัวไม่ควบคุม", "ฝึกได้", "เริ่มเล็ก"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "กลัวว่าร่างกายจะแกร่งไม่ได้อีก",
+          "detailed_interpretation_th": "ในสุขภาพ ความเชื่อ 'ฉันแก่เกินไป' 'ร่างกายฉันไม่ฟื้นฟูได้' ขัดขวางการดูแลตัวเอง ร่างกายสร้างใหม่ได้ทุกวัย",
+          "adjacent_influences": {
+            "major_arcana": "The Moon = ลวงตา, The Devil = ติดในนิสัย",
+            "wands": "Wands กลับหัว = ขาดพลัง",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = กังวล",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight กลับหัว = ขาดวินัย"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวความหวังสุขภาพ คือ 'ร่างกายฟื้นฟูได้'",
+          "advice_th": "หาเรื่องคนวัยเดียวกันฟื้นฟูสุขภาพ - หลักฐานว่าเป็นไปได้ ทุกวัยสามารถแข็งแกร่งขึ้นได้",
+          "keywords_th": ["กลัวไม่ฟื้นฟู", "เชื่อว่าได้", "หลักฐาน"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        }
+      }
+    },
+    "10": {
+      "position_slug": "outcome",
+      "position_name_th": "ผลลัพธ์",
+      "upright": {
+        "general": {
+          "core_meaning_th": "ผลลัพธ์คือคุณกลายเป็นคนที่แข็งแกร่งและอ่อนโยน",
+          "detailed_interpretation_th": "พลังหัวตั้งในผลลัพธ์ บ่งบอกว่าถ้าดำเนินต่อ คุณจะกลายเป็นคนที่มีพลังภายในที่ลึก สามารถเอาชนะอุปสรรค ควบคุมตัวเอง เป็นที่พึ่งของคนอื่น ผลลัพธ์งดงาม",
+          "adjacent_influences": {
+            "major_arcana": "The World = บรรลุ, The Sun = สดใส, Strength เสริม",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "Queen of Wands = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังผลลัพธ์ คือ 'แกร่งและอ่อนโยน'",
+          "advice_th": "ดำเนินฝึกพลังภายในต่อ ผลลัพธ์คือชีวิตที่ควบคุมตัวเองได้ คุ้มค่ากับการเดินทาง",
+          "keywords_th": ["แกร่งและอ่อน", "พลังใน", "บรรลุ"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ผลลัพธ์คือความรักที่ทั้งคู่แกร่งและอ่อนโยน",
+          "detailed_interpretation_th": "ในรัก เส้นทางนี้นำไปสู่ความสัมพันธ์ที่ผู้ใหญ่ - ทั้งคู่มีพลังของตัวเอง รักกันโดยไม่พึ่งกันมากเกิน ความสัมพันธ์ที่ลึกซึ้งและยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Lovers = รักลึก, The Empress = ครอบครัว",
+            "wands": "Knight of Wands = หลงใหล",
+            "cups": "Two of Cups = soul mate, Ten of Cups = ครอบครัว",
+            "swords": "Ace of Swords = สื่อสารชัด",
+            "pentacles": "Ten of Pentacles = มั่นคง",
+            "court_cards": "King of Cups = คู่ที่ดี"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังผลลัพธ์รัก คือ 'รักผู้ใหญ่'",
+          "advice_th": "ดำเนินการพัฒนาตัวเองและความสัมพันธ์ ผลลัพธ์คือความรักที่ลึกและยั่งยืน",
+          "keywords_th": ["รักผู้ใหญ่", "ลึกซึ้ง", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "career-finance": {
+          "core_meaning_th": "ผลลัพธ์คือการเป็นผู้นำที่คนนับถือและประสบความสำเร็จ",
+          "detailed_interpretation_th": "ในงาน-เงิน เส้นทางนี้นำไปสู่การเป็นผู้นำที่ดี - ผู้คนนับถือ มีทักษะและ EQ สูง ทีมรัก ลูกค้าไว้ใจ ความสำเร็จยั่งยืน",
+          "adjacent_influences": {
+            "major_arcana": "The Emperor = ผู้นำ, The World = บรรลุ",
+            "wands": "King of Wands = CEO",
+            "cups": "King of Cups = ผู้นำที่เข้าใจ",
+            "swords": "King of Swords = ปัญญา",
+            "pentacles": "King of Pentacles = ความมั่งคั่ง",
+            "court_cards": "King ทุกชุด = บรรลุ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังผลลัพธ์งาน-เงิน คือ 'ผู้นำที่ดี'",
+          "advice_th": "ดำเนินการพัฒนาตัวเองเป็นผู้นำต่อ ทักษะและ EQ จะนำมาซึ่งความสำเร็จ",
+          "keywords_th": ["ผู้นำที่ดี", "ความสำเร็จ", "ยั่งยืน"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ผลลัพธ์คือการเป็น master ของอารมณ์และตัวเอง",
+          "detailed_interpretation_th": "เส้นทางจิตวิญญาณนี้นำไปสู่ self-mastery คุณจะควบคุมอารมณ์ พฤติกรรม ความอยาก ใช้พลังในการสร้างชีวิต กลายเป็นแบบอย่าง",
+          "adjacent_influences": {
+            "major_arcana": "Strength เสริม, The Magician = ทักษะ, The World = บรรลุ",
+            "wands": "King of Wands = ผู้นำ",
+            "cups": "King of Cups = ปัญญาทางใจ",
+            "swords": "Queen of Swords = ปัญญาคม",
+            "pentacles": "King of Pentacles = mastery",
+            "court_cards": "King ทุกชุด = master"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังผลลัพธ์จิตวิญญาณ คือ 'self-mastery'",
+          "advice_th": "ดำเนินการฝึกตัวเองต่อ คุณจะกลายเป็นคนที่ตัวเองในวัยเด็กจะภูมิใจ",
+          "keywords_th": ["master", "ควบคุมตัว", "แบบอย่าง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ผลลัพธ์คือร่างกายแข็งแกร่งและอายุยืนอย่างมีคุณภาพ",
+          "detailed_interpretation_th": "ในสุขภาพ เส้นทางนี้นำไปสู่ร่างกายแข็งแกร่ง ฟื้นฟูดี อายุยืนอย่างมีคุณภาพ คุณจะเป็นแบบอย่างเรื่องสุขภาพให้คนรอบข้าง",
+          "adjacent_influences": {
+            "major_arcana": "The Sun = สดใส, The Star = ฟื้นฟู, The World = สมบูรณ์",
+            "wands": "Knight of Wands = พลัง",
+            "cups": "Ten of Cups = ความสุข",
+            "swords": "Ace of Swords = วินัย",
+            "pentacles": "Ten of Pentacles = ยั่งยืน",
+            "court_cards": "King of Pentacles = ผู้รู้สุขภาพ"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังผลลัพธ์สุขภาพ คือ 'แข็งแกร่งยั่งยืน'",
+          "advice_th": "ดำเนินการดูแลสุขภาพต่อ ผลลัพธ์คือร่างกายที่อยากได้และเป็นแบบอย่างให้คนอื่น",
+          "keywords_th": ["แข็งแกร่ง", "อายุยืน", "แบบอย่าง"],
+          "intensity_level": 5,
+          "emotional_tone": "positive"
+        }
+      },
+      "reversed": {
+        "general": {
+          "core_meaning_th": "หมดพลังหรือถูกครอบงำถ้าไม่เปลี่ยน",
+          "detailed_interpretation_th": "พลังกลับหัวในผลลัพธ์ เตือนว่าถ้ายังคงปฏิเสธความอ่อนแอ ฝืนตัวเอง ไม่ขอความช่วยเหลือ ผลลัพธ์คือ burnout การเสียพลัง ความเหนื่อยล้าเรื้อรัง ต้องเปลี่ยน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติด",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = เผาตัว"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวผลลัพธ์ คือ 'อย่าหมดพลัง'",
+          "advice_th": "เปลี่ยนวิธี - ขอความช่วยเหลือ พักผ่อน ยอมรับความอ่อนแอ การฝืนตัวเองตลอดทำลายในที่สุด",
+          "keywords_th": ["หมดพลัง", "burnout", "เปลี่ยน"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "love-relationships": {
+          "core_meaning_th": "ความสัมพันธ์จะจบจากการที่ฝ่ายเดียวรับภาระทั้งหมด",
+          "detailed_interpretation_th": "ในรัก ถ้ายังคงรับภาระทั้งหมด ไม่ขอให้คู่ช่วย ผลลัพธ์คือ burnout ทางอารมณ์ การเลิกรา ความสัมพันธ์ต้องสมดุล",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ระเบิด, The Devil = สัมพันธ์ทำลาย",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Five of Cups = เสียใจ, Eight of Cups = ออกจาก",
+            "swords": "Three of Swords = แผลใจ",
+            "pentacles": "Four of Pentacles = หวง",
+            "court_cards": "Queen of Cups กลับหัว = ผู้ให้ที่เหนื่อย"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวผลลัพธ์รัก คือ 'สมดุลก่อนพัง'",
+          "advice_th": "คุยกับคู่เรื่องการแบ่งภาระ ถ้าเขาไม่ปรับ พิจารณาทางเลือก ความรักไม่ใช่การเสียสละไม่จำกัด",
+          "keywords_th": ["รักจะพัง", "สมดุล", "ขอช่วย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "career-finance": {
+          "core_meaning_th": "burnout จากการทำงานหนักเกินไป",
+          "detailed_interpretation_th": "ในงาน-เงิน ถ้ายังคงทำงานหนักโดยไม่พัก ผลลัพธ์คือ burnout อาการเรื้อรัง ทุกอย่างพังพร้อมกัน ต้องหาสมดุลก่อน",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = วิกฤต, The Devil = ติดในการทำงาน",
+            "wands": "Ten of Wands = ภาระเกิน",
+            "cups": "Four of Cups = ไม่มีความสุข",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ขาด",
+            "court_cards": "Knight of Wands กลับหัว = หักโหม"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวผลลัพธ์งาน-เงิน คือ 'ป้องกัน burnout'",
+          "advice_th": "ลดภาระงาน มอบหมายงาน หาเวลาพัก สุขภาพและจิตใจสำคัญกว่าทุกตำแหน่ง",
+          "keywords_th": ["burnout", "ภาระเกิน", "พัก"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        },
+        "personal-growth": {
+          "core_meaning_th": "ติดในการพยายามแข็งแกร่งจนเครียดตลอด",
+          "detailed_interpretation_th": "ในจิตวิญญาณ ถ้ายังคงพยายามแข็งแกร่งตลอด ปฏิเสธอารมณ์ ไม่ยอมขอความช่วยเหลือ ผลลัพธ์คือการตัดขาดจากตัวเอง ความเหงา ความว่างเปล่า",
+          "adjacent_influences": {
+            "major_arcana": "The Devil = ติดในภาพ, The Moon = ลวงตา",
+            "wands": "Seven of Wands = ป้องกันตัว",
+            "cups": "Four of Cups = ตัดอารมณ์",
+            "swords": "Eight of Swords = ขัง",
+            "pentacles": "Four of Pentacles = ป้องกัน",
+            "court_cards": "Queen of Swords กลับหัว = เย็นชา"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวผลลัพธ์จิตวิญญาณ คือ 'ยอมรับความเป็นมนุษย์'",
+          "advice_th": "ยอมรับว่าคุณเป็นมนุษย์ - มีอ่อนแอ มีกลัว มีร้องไห้ ความสามารถนี้คือพลังที่แท้",
+          "keywords_th": ["แข็งเกินจริง", "ตัดอารมณ์", "ยอมรับ"],
+          "intensity_level": 3,
+          "emotional_tone": "negative"
+        },
+        "health-wellness": {
+          "core_meaning_th": "ร่างกายพังจากการฝืนเกินไป",
+          "detailed_interpretation_th": "ในสุขภาพ ผลลัพธ์ไม่ดีถ้ายังคงฝืนร่างกาย - ออกกำลังกายหนักเกิน diet เข้มงวด ไม่พัก ร่างกายจะพ่ายแพ้ บาดเจ็บ หรืออาการเรื้อรัง",
+          "adjacent_influences": {
+            "major_arcana": "The Tower = ร่างกายพัง, The Devil = ติดในการฝืน",
+            "wands": "Knight of Wands กลับหัว = หักโหม",
+            "cups": "Five of Cups = ซึมเศร้า",
+            "swords": "Nine of Swords = นอนไม่หลับ, Ten of Swords = burnout",
+            "pentacles": "Five of Pentacles = ทำลายตัว",
+            "court_cards": "Knight of Wands กลับหัว = ฝืน"
+          },
+          "secret_keys_th": "เคล็ดลับ: พลังกลับหัวผลลัพธ์สุขภาพ คือ 'ฟังร่างกาย'",
+          "advice_th": "ผ่อนคลายการดูแล มีวันพัก ฟังร่างกายไม่ฝืน ความยั่งยืนสำคัญกว่าความเข้มงวด",
+          "keywords_th": ["ร่างกายพัง", "ฝืนเกิน", "ฟังร่างกาย"],
+          "intensity_level": 4,
+          "emotional_tone": "negative"
+        }
+      }
+    }
+  }
+}
