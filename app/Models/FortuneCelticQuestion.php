@@ -22,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $ai_tokens_used
  * @property int $ai_response_time_ms
  * @property \Carbon\Carbon|null $answered_at
+ * @property \Carbon\Carbon|null $delivered_at เวลาที่ push ถึงลูกค้าสำเร็จจริง (null = ยังไม่ถึง)
+ * @property int $delivery_attempts จำนวนครั้งที่พยายามส่งคำตอบให้ลูกค้า
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
@@ -39,6 +41,8 @@ class FortuneCelticQuestion extends Model
         'ai_tokens_used',
         'ai_response_time_ms',
         'answered_at',
+        'delivered_at',
+        'delivery_attempts',
     ];
 
     protected $casts = [
@@ -46,6 +50,8 @@ class FortuneCelticQuestion extends Model
         'ai_tokens_used' => 'integer',
         'ai_response_time_ms' => 'integer',
         'answered_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'delivery_attempts' => 'integer',
     ];
 
     /**
@@ -70,5 +76,34 @@ class FortuneCelticQuestion extends Model
     public function isFollowup(): bool
     {
         return $this->sequence > 1;
+    }
+
+    /**
+     * 🐛 (2026-05-28) ทำเครื่องหมายว่า push คำตอบถึงลูกค้าสำเร็จแล้ว
+     *
+     * เรียกจาก FortuneChannelManager หลัง send สำเร็จ + จาก fortune:celtic-redeliver cron
+     * idempotent — set แค่ครั้งแรก (กัน overwrite เวลาส่งจริง)
+     */
+    public function markDelivered(): void
+    {
+        if ($this->delivered_at !== null) {
+            return;
+        }
+
+        $this->forceFill(['delivered_at' => now()])->save();
+    }
+
+    /**
+     * scope: คำถามที่ตอบแล้วแต่ยังส่งไม่ถึงลูกค้า (สำหรับ cron re-deliver)
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    public function scopeUndelivered($query)
+    {
+        return $query->whereNotNull('answered_at')
+            ->whereNull('delivered_at')
+            ->whereNotNull('response')
+            ->where('response', '!=', '');
     }
 }

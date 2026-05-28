@@ -884,7 +884,7 @@ class FortuneChannelManager
                 })(),
 
                 // 💳 (2026-05-09) Stripe checkout session created — ส่งลิงก์ + Quick Reply กลับไป QR Thai
-                'pending_stripe_payment', 'pending_stripe_payment_reminder' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                'pending_stripe_payment', 'pending_stripe_payment_reminder' => (function () use ($fbService, $userId, $message, $extra) {
                     // FB Quick Reply ไม่ render URL — จึงใช้ text Quick Reply แทน + ลิงก์อยู่ใน body
                     $qrs = [
                         ['content_type' => 'text', 'title' => '💳 จ่ายต่อ', 'payload' => 'STRIPE_RESUME'],
@@ -1004,9 +1004,37 @@ class FortuneChannelManager
                 // 🛑 (2026-05-16) เอาปุ่ม "ถามต่อ" ออก — user spec: ลูกค้าพิมพ์คำถามได้เลย
                 //                  เหลือแค่ปุ่ม "ยุติการทำนาย" เพื่อจบ session
                 // 🆕 (2026-05-23) celtic_continue = alias หลัง user ยืนยัน "ขอคุยต่อ"
-                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => $fbService->sendQuickReplies($userId, $message, [
-                    ['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK'],
-                ], $extra),
+                // 🐛 (2026-05-28) Delivery confirm — capture push result, retry 1x, mark delivered
+                //   เคสจริง บิล FTU-260528-E8815: AI ตอบสำเร็จ แต่ push ไม่ถึงลูกค้า เห็นแค่ "ติดขัด"
+                //   เดิม FB ไม่เช็คผลส่งเลย → fortune:celtic-redeliver cron จับ delivered_at=null ส่งซ้ำ
+                'celtic_question_answered', 'celtic_qa_prompt_resume', 'celtic_continue' => (function () use ($fbService, $userId, $message, $result, $extra) {
+                    $qr = [['content_type' => 'text', 'title' => '📜 เลิกทำนายและสรุปผล', 'payload' => 'CELTIC_END_ASK']];
+                    $ok = $fbService->sendQuickReplies($userId, $message, $qr, $extra);
+                    if (! $ok) {
+                        usleep(800000); // 0.8s แล้ว retry 1 ครั้ง — กัน transient FB blip
+                        $ok = $fbService->sendQuickReplies($userId, $message, $qr, $extra);
+                    }
+
+                    $reading = $result['reading'] ?? null;
+                    if ($ok && $reading) {
+                        try {
+                            $reading->celticQuestions()
+                                ->whereNotNull('answered_at')
+                                ->orderByDesc('sequence')
+                                ->first()?->markDelivered();
+                        } catch (\Throwable $e) {
+                            \Log::debug('FB Celtic: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
+                    } elseif (! $ok) {
+                        \Log::critical('FB Celtic Q&A: ส่งคำทำนายล้มเหลว — ลูกค้าไม่ได้รับ! (cron จะ re-deliver)', [
+                            'user_id' => $userId,
+                            'reading_id' => $reading?->id,
+                            'msg_preview' => mb_substr($message, 0, 150),
+                        ]);
+                    }
+
+                    return $ok;
+                })(),
 
                 // 🆕 (2026-05-23) celtic_end_confirm — 2-step confirm dialog ก่อนจบ session
                 //    user spec: "ถามก่อนว่าจะเลิกแล้วสรุปเลยจริงไหม เพราะบางคนมือไปกดผิด"
@@ -2350,12 +2378,11 @@ class FortuneChannelManager
                     ]);
 
                     $textOk = false;
+                    $lineQr = ['quick_replies' => [
+                        ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
+                    ]];
                     try {
-                        $textOk = $lineService->sendMessage($userId, $message, [
-                            'quick_replies' => [
-                                ['label' => '📜 เลิกทำนายและสรุปผล', 'text' => 'เลิกทำนายและสรุปผล'],
-                            ],
-                        ]);
+                        $textOk = $lineService->sendMessage($userId, $message, $lineQr);
                         \Log::info('LINE Celtic Q&A: sendMessage (push) result', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
@@ -2370,8 +2397,30 @@ class FortuneChannelManager
                         ]);
                     }
 
+                    // 🐛 (2026-05-28) sync retry 1 ครั้งถ้า fail — กัน transient LINE blip
                     if (! $textOk) {
-                        \Log::critical('LINE Celtic Q&A: ส่งคำทำนายล้มเหลว — ลูกค้าไม่ได้รับ!', [
+                        try {
+                            usleep(800000);
+                            $textOk = $lineService->sendMessage($userId, $message, $lineQr);
+                        } catch (\Throwable $e) {
+                            // ignore — critical log + cron re-deliver จัดการต่อ
+                        }
+                    }
+
+                    // 🐛 (2026-05-28) mark delivered เมื่อส่งสำเร็จ — กัน cron re-deliver ซ้ำ
+                    if ($textOk && $reading) {
+                        try {
+                            $reading->celticQuestions()
+                                ->whereNotNull('answered_at')
+                                ->orderByDesc('sequence')
+                                ->first()?->markDelivered();
+                        } catch (\Throwable $e) {
+                            \Log::debug('LINE Celtic: markDelivered fail (non-blocking)', ['error' => $e->getMessage()]);
+                        }
+                    }
+
+                    if (! $textOk) {
+                        \Log::critical('LINE Celtic Q&A: ส่งคำทำนายล้มเหลว — ลูกค้าไม่ได้รับ! (cron จะ re-deliver)', [
                             'user_id' => $userId,
                             'reading_id' => $reading?->id,
                             'msg_preview' => mb_substr($message, 0, 200),

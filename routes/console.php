@@ -256,6 +256,17 @@ Schedule::command('fortune:celtic-auto-finalize --limit=20')
     ->name('fortune-celtic-auto-finalize')
     ->runInBackground();
 
+// 3b) Fortune Celtic Re-Deliver — 🐛 (2026-05-28) หลักประกันลูกค้าได้รับคำทำนายเสมอ
+//     เคส FTU-260528-E8815: AI ตอบสำเร็จ + บันทึก DB แต่ push แรกไม่ถึงลูกค้า (เห็นแค่ "ติดขัด")
+//     ทุกนาที — หา question ที่ answered แต่ delivered_at null (ภายใน 2 ชม.) → re-push
+//     ChannelManager set delivered_at ตอน push สำเร็จ → cron จับเฉพาะที่ค้างจริง
+Schedule::command('fortune:celtic-redeliver --limit=30')
+    ->everyMinute()
+    ->withoutOverlapping(5)
+    ->onOneServer()
+    ->name('fortune-celtic-redeliver')
+    ->runInBackground();
+
 // 4) Fortune Expire Conversations — ปิด orphan conversations + ล้าง takeover หมดเวลา
 //    ทุก 5 นาที — กัน conversation ค้างไม่ปิด
 Schedule::command('fortune:expire-conversations')
