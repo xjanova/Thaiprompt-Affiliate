@@ -11849,6 +11849,54 @@ class FortuneConversationService
     }
 
     /**
+     * 💬 (2026-05-28) ตรวจ "ระบายอารมณ์/บ่นวนไม่ดูดวง" — ขยาย Hook C ให้ครอบ venter
+     *
+     * เคส สุบิน สาวันดี: ระบายเรื่องชีวิต 68 turns ไม่ขอดูดวง (เหนื่อย/ต้องทน/มืดแปดด้าน/ผัวไม่ดี)
+     *   looksLikeMetaOrChitchat ไม่จับ (ไม่ใช่ทักทาย/meta) → Hook C counter ไม่ขยับ → ไม่ silence
+     *   detector นี้จับ "คำระบาย/บ่น ที่ไม่ใช่คำถามดูดวง" เพื่อให้นับเข้า Hook C silence
+     *
+     * ⚠️ ไม่จับ (กัน false positive):
+     *   - คำถาม (มี ?, ไหม, เมื่อไหร่ ฯลฯ) = engaged → ปล่อยให้ AI เสนอดูดวง
+     *   - buy-intent → caller เช็ค shouldBypassSilence แยก
+     *   - วิกฤต (อยากตาย ฯลฯ) → caller เช็ค hasCriticalKeyword แยก → ห้าม silence คนวิกฤต
+     */
+    protected function looksLikeLowValueRamble(string $message): bool
+    {
+        $text = mb_strtolower(trim($message));
+        if ($text === '' || mb_strlen($text) > 200) {
+            return false; // ยาวเกิน = อาจเป็นเนื้อหา/คำถามจริง
+        }
+
+        // ไม่นับถ้าเป็น "คำถาม" (ลูกค้า engaged — ปล่อยให้ AI ตอบ + เสนอดูดวง ไม่ silence)
+        if (str_contains($text, '?')) {
+            return false;
+        }
+        $questionMarkers = ['ไหม', 'มั้ย', 'เมื่อไหร่', 'เมื่อไร', 'กี่', 'ทำนาย', 'ดูดวง', 'ดูให้', 'เปิดไพ่', 'ราศี', 'ฤกษ์', 'อยากรู้', 'ช่วยดู'];
+        foreach ($questionMarkers as $q) {
+            if (str_contains($text, $q)) {
+                return false;
+            }
+        }
+
+        // คำระบาย/บ่น/ความทุกข์ (เป็น statement ไม่ใช่คำถาม → low-value chat วนไม่ converting)
+        $ventMarkers = [
+            'เหนื่อย', 'ท้อ', 'เครียด', 'ทุกข์', 'เศร้า', 'เบื่อ', 'เซ็ง', 'กลุ้ม', 'หดหู่',
+            'น้อยใจ', 'เสียใจ', 'ร้องไห้', 'ปวดใจ', 'ช้ำใจ', 'หมดกำลังใจ', 'สิ้นหวัง',
+            'ไม่ไหว', 'ทนไม่', 'ต้องทน', 'มืดแปดด้าน', 'มืดมน', 'ตันไปหมด', 'ไม่มีทางออก',
+            'กรรม', 'เวรกรรม', 'โชคร้าย', 'ซวย', 'ชีวิตแย่', 'ลำบาก',
+            'ผัวไม่ดี', 'เมียไม่ดี', 'แฟนไม่ดี', 'โดนทิ้ง', 'ถูกทิ้ง', 'นอกใจ', 'ทะเลาะ', 'เลิกกัน', 'อกหัก',
+            'ไม่มีเงิน', 'เงินไม่พอ', 'เป็นหนี้', 'หนี้สิน', 'ตกงาน', 'ว่างงาน', 'ไม่มีกิน',
+        ];
+        foreach ($ventMarkers as $kw) {
+            if (str_contains($text, $kw)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 🚪 (2026-05-27) เช็ค flag — ลูกค้าบอกไม่มา intent แล้ว
      */
     public function isNoIntentClosed(string $userId): bool
@@ -13627,8 +13675,12 @@ PROMPT;
             //   - failed_count++
             //   - ครบ 3 → trigger silence 10 ชม + ส่ง "เนียน goodbye" 1 ข้อความ
             //   ตรวจก่อน AI call → ประหยัด token + ตัดเร็ว
-            if ($this->looksLikeMetaOrChitchat($messageText)
-                && ! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)) {
+            // 💬 (2026-05-28) ขยาย gate — นับ "ระบายวนไม่ดูดวง" (venting) ด้วย ไม่ใช่แค่ chitchat/meta
+            //   เคส สุบิน สาวันดี 68 turns: venting ไม่เคยถูกนับ → ไม่ silence
+            //   🛡️ bypass คนวิกฤต (hasCriticalKeyword) — ห้าม silence คนที่อยากตาย/หมดหวัง (ต้อง empathy + 1323)
+            if (($this->looksLikeMetaOrChitchat($messageText) || $this->looksLikeLowValueRamble($messageText))
+                && ! \App\Models\FortuneCustomerPersona::shouldBypassSilence($messageText)
+                && ! app(\App\Services\Fortune\CustomerPersonaService::class)->hasCriticalKeyword($messageText)) {
                 try {
                     $personaSvc = app(\App\Services\Fortune\CustomerPersonaService::class);
                     $chitchatResult = $personaSvc->recordChitchatAfterPitch(
